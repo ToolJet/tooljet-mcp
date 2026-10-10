@@ -866,6 +866,45 @@ for (const [type, schema] of Object.entries(schemas)) {
   };
 }
 
+// 2026-10-10: the pack's new widgets, one usage hint each (data shapes, sizing, binding patterns).
+const SHAD_USAGE = {
+  ShadNumberInput: 'value is a number or null. Put units in prefix/suffix, not the label; min/max are validation.minValue/maxValue. Height 64 with a label, 36 without, +24 with help text.',
+  ShadPasswordInput: 'showStrength adds a weak/fair/strong meter (16px) for sign-up forms; exposes strength. Height 64 with a label.',
+  ShadPhoneInput: 'Save value (E.164, e.g. +442071234567); isValid is false for an invalid number, so gate the submit button on it. defaultCountry is an ISO code. Height 64 with a label.',
+  ShadCurrencyInput: 'value is a plain number; show formattedValue elsewhere. currency is an ISO code, locale formats it. Height 64 with a label.',
+  ShadOtpInput: 'Run the verification query on onComplete; exposes value and isComplete. length 4 to 8. Height 64 with a label.',
+  ShadTimePicker: "value is 'HH:mm' (24-hour); minTime/maxTime take '09:00' or '9:00 AM'. Height 64 with a label.",
+  ShadDateTimePicker: "value is 'YYYY-MM-DDTHH:mm', also selectedDate, selectedTime and unixTimestamp (ms); defaultValue takes ISO text, 'YYYY-MM-DD HH:mm' or a timestamp. Height 64 with a label.",
+  ShadCombobox: 'options [{ label, value, description?, icon?, group?, disabled? }]; read components.<name>.value or selectedOption. Server-side search: bind the query to searchText and turn serverSideSearch on. Height 64 with a label, 36 without.',
+  ShadMultiselect: 'options as for ShadCombobox; read components.<name>.values (an array) or selectedOptions. Height 64 with a label.',
+  ShadTagsInput: 'defaultValue is an array of text; exposes tags. Height 64 with a label; it grows as tags wrap.',
+  ShadColorPicker: "value is '#rrggbb' ('#rrggbbaa' with allowAlpha); swatches is an array of hex values.",
+  ShadRating: 'value is 0 when unrated; readOnly for display. About 24px tall, +22 with a label.',
+  ShadFileUpload: 'files [{ name, type, size, content (text), base64Data, dataURL, parsedData? }]: upload base64Data. About 160px tall (180 with a label) plus about 66px per listed file.',
+  ShadImage: "aspectRatio 'auto' fills the drawn box; a ratio such as '16/9' sizes it from the width. Fallback shows when the URL is empty or fails.",
+  ShadIcon: "Any lucide icon name (kebab or Pascal case). { icon: 'users', tone: 'primary', chip: 'square' } is the tinted icon chip of a KPI card; 40px tall.",
+  ShadLink: 'linkTarget opens in targetType new or same tab; with no target it acts as a button (onClick). 24px tall.',
+  ShadTags: "Read-only chips from an array or comma text; tagColors { Paid: '#16a34a' } tints them. 24px per line.",
+  ShadCircularProgress: 'value 0 to 100; centerText value, custom or none with a sub-label. Height equals the size.',
+  ShadSpinner: 'For an inline busy state; most widgets have loadingState instead. 24px tall, 52 with the label below.',
+  ShadKeyValue: "A record's details: an object or [{ label, value, type?, format? }], types text, number, currency, date, badge, link, boolean; 1 to 4 columns. About 41px per row inline.",
+  ShadTimeline: 'items [{ title, description?, time, status or color, icon? }]; status words (done, active, pending, failed...) map to theme colours. About 66px per item with a description.',
+  ShadSteps: 'steps [{ id, title, description? }], currentStep is an id; setStep, nextStep, previousStep; exposes currentStepIndex. 60px tall, 78 with descriptions.',
+  ShadPagination: 'numberOfPages, or totalRecords with pageSize; onPageChange; offset = (components.<name>.currentPageIndex - 1) * pageSize. 36px tall.',
+  ShadDropdownMenu: "triggerType 'icon' gives a row '⋯' menu; branch on components.<name>.lastClickedOption.value in onSelect. 36px tall.",
+  ShadButtonGroup: "mode 'single' with defaultValue is a view switcher: bind components.<name>.value. 'actions' fires onClick with lastClicked. 36px tall, +22 with a label.",
+  ShadNavigation: 'A vertical sidebar fills its height; a horizontal top bar is 40px. Wire onSelect to switch-page on components.<name>.value; setActive on page load does not fire onSelect.',
+  ShadCalendar: "An inline month (about 300x250 per month); markers [{ date: 'YYYY-MM-DD', label, color }]; query the visible month with visibleStart/visibleEnd.",
+  ShadCarousel: "slides [{ image, title?, description?, link? }]; height follows width and aspectRatio (+28 for dots, +52 for captions below); aspectRatio 'fill' fills a fixed height.",
+  ShadLineChart: "Rows [{ month, revenue, expenses }] with xField 'month' and yFields ['revenue', 'expenses']; referenceValue draws a target line; yAxisFormat percent expects values already in percent. 200 to 320px tall.",
+  ShadRadarChart: "Rows [{ skill: 'Speed', alex: 86 }] with categoryField 'skill'; set maxValue 100 for scores. Keep it square, 240 to 320px.",
+  ShadRadialChart: "mode 'progress' (value against maxValue, centre value and label) or 'categories'. Angles 90/-270 a full ring, 180/0 a semicircle gauge (about twice as wide as tall).",
+  ShadSparkline: 'data [12, 18, ...] or [{ x, y }]; 24 to 64px tall under a ShadStat; exposes trend (up, down, flat) to bind to the Stat trend.',
+};
+for (const [type, usage] of Object.entries(SHAD_USAGE)) {
+  if (schemas[type]) schemas[type].authoringHints = { ...schemas[type].authoringHints, usage };
+}
+
 // 2026-10-10: the shadcn Dialog is ModalV2 in the pack's look: the same slots, close lifecycle and coordinate space.
 if (schemas.ShadDialog && schemas.ModalV2) {
   schemas.ShadDialog.renderingHints = schemas.ModalV2.renderingHints;

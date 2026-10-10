@@ -376,6 +376,219 @@
     }
    }
   },
+  "ShadButtonGroup": {
+   "properties": {
+    "label": {
+     "value": ""
+    },
+    "description": {
+     "value": ""
+    },
+    "buttons": {
+     "value": "{{[{ label: 'Day', value: 'day' }, { label: 'Week', value: 'week' }, { label: 'Month', value: 'month' }]}}"
+    },
+    "mode": {
+     "value": "single"
+    },
+    "defaultValue": {
+     "value": "week"
+    },
+    "allowDeselect": {
+     "value": "{{false}}"
+    },
+    "variant": {
+     "value": "outline"
+    },
+    "size": {
+     "value": "default"
+    },
+    "orientation": {
+     "value": "horizontal"
+    },
+    "fullWidth": {
+     "value": "{{false}}"
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadCalendar": {
+   "properties": {
+    "mode": {
+     "value": "single"
+    },
+    "defaultValue": {
+     "value": ""
+    },
+    "defaultMonth": {
+     "value": ""
+    },
+    "markers": {
+     "value": "{{[{ date: moment().format('YYYY-MM-DD'), label: 'Stand-up' }, { date: moment().add(3, 'days').format('YYYY-MM-DD'), label: 'Release', color: '#16a34a' }, { date: moment().add(8, 'days').format('YYYY-MM-DD'), label: 'Review', color: '#f59e0b' }]}}"
+    },
+    "minDate": {
+     "value": ""
+    },
+    "maxDate": {
+     "value": ""
+    },
+    "disabledDates": {
+     "value": "{{[]}}"
+    },
+    "disabledDays": {
+     "value": "{{[]}}"
+    },
+    "weekStartsOn": {
+     "value": "sunday"
+    },
+    "numberOfMonths": {
+     "value": "{{1}}"
+    },
+    "showOutsideDays": {
+     "value": "{{true}}"
+    },
+    "fixedWeeks": {
+     "value": "{{false}}"
+    },
+    "fullWidth": {
+     "value": "{{false}}"
+    },
+    "showBorder": {
+     "value": "{{true}}"
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadCarousel": {
+   "properties": {
+    "slides": {
+     "value": "{{[{ image: 'https://picsum.photos/seed/tj-coast/1200/675', title: 'Coastal routes', description: 'Plan deliveries along the shoreline' }, { image: 'https://picsum.photos/seed/tj-city/1200/675', title: 'City hubs', description: 'Twelve depots, one dashboard' }, { image: 'https://picsum.photos/seed/tj-hills/1200/675', title: 'Mountain passes', description: 'Seasonal schedules at a glance' }]}}"
+    },
+    "defaultIndex": {
+     "value": "{{0}}"
+    },
+    "aspectRatio": {
+     "value": "16/9"
+    },
+    "imageFit": {
+     "value": "cover"
+    },
+    "captionPosition": {
+     "value": "overlay"
+    },
+    "slidesPerView": {
+     "value": "{{1}}"
+    },
+    "showArrows": {
+     "value": "{{true}}"
+    },
+    "showDots": {
+     "value": "{{true}}"
+    },
+    "loop": {
+     "value": "{{true}}"
+    },
+    "autoplay": {
+     "value": "{{false}}"
+    },
+    "interval": {
+     "value": "{{5000}}"
+    },
+    "pauseOnHover": {
+     "value": "{{true}}"
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
   "ShadCheckbox": {
    "properties": {
     "label": {
@@ -386,6 +599,254 @@
     },
     "defaultChecked": {
      "value": "{{false}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadCircularProgress": {
+   "properties": {
+    "value": {
+     "value": "{{63}}"
+    },
+    "size": {
+     "value": "{{96}}"
+    },
+    "thickness": {
+     "value": "{{8}}"
+    },
+    "lineCap": {
+     "value": "round"
+    },
+    "centerText": {
+     "value": "value"
+    },
+    "text": {
+     "value": ""
+    },
+    "label": {
+     "value": "Complete"
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    },
+    "alignment": {
+     "value": "center"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadColorPicker": {
+   "properties": {
+    "label": {
+     "value": "Brand color"
+    },
+    "description": {
+     "value": ""
+    },
+    "defaultValue": {
+     "value": "#6366f1"
+    },
+    "placeholder": {
+     "value": "Pick a color"
+    },
+    "swatches": {
+     "value": "{{['#0f172a', '#64748b', '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#ec4899']}}"
+    },
+    "showSwatches": {
+     "value": "{{true}}"
+    },
+    "showPicker": {
+     "value": "{{true}}"
+    },
+    "allowAlpha": {
+     "value": "{{false}}"
+    },
+    "triggerStyle": {
+     "value": "field"
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadCombobox": {
+   "properties": {
+    "label": {
+     "value": "Country"
+    },
+    "description": {
+     "value": ""
+    },
+    "options": {
+     "value": "{{[{ label: 'United States', value: 'us', group: 'Americas' }, { label: 'Canada', value: 'ca', group: 'Americas' }, { label: 'United Kingdom', value: 'uk', group: 'Europe' }, { label: 'Germany', value: 'de', group: 'Europe' }, { label: 'India', value: 'in', group: 'Asia Pacific' }, { label: 'Japan', value: 'jp', group: 'Asia Pacific' }]}}"
+    },
+    "placeholder": {
+     "value": "Select a country..."
+    },
+    "searchPlaceholder": {
+     "value": "Search countries..."
+    },
+    "emptyText": {
+     "value": "No country found."
+    },
+    "showSearch": {
+     "value": "{{true}}"
+    },
+    "serverSideSearch": {
+     "value": "{{false}}"
+    },
+    "showClearBtn": {
+     "value": "{{true}}"
+    },
+    "optionsLoadingState": {
+     "value": "{{false}}"
+    },
+    "defaultValue": {
+     "value": ""
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadCurrencyInput": {
+   "properties": {
+    "label": {
+     "value": "Amount"
+    },
+    "description": {
+     "value": ""
+    },
+    "placeholder": {
+     "value": "0.00"
+    },
+    "defaultValue": {
+     "value": "{{1250}}"
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "currencyOptions": {
+     "value": "{{[]}}"
+    },
+    "locale": {
+     "value": "en-US"
+    },
+    "decimalPlaces": {
+     "value": ""
+    },
+    "currencyDisplay": {
+     "value": "symbol"
     },
     "loadingState": {
      "value": "{{false}}"
@@ -467,6 +928,261 @@
     }
    }
   },
+  "ShadDateTimePicker": {
+   "properties": {
+    "label": {
+     "value": "Date and time"
+    },
+    "description": {
+     "value": ""
+    },
+    "placeholder": {
+     "value": "Pick a date and time"
+    },
+    "defaultValue": {
+     "value": ""
+    },
+    "dateFormat": {
+     "value": "DD MMM YYYY"
+    },
+    "timeFormat": {
+     "value": "12h"
+    },
+    "minuteStep": {
+     "value": "{{5}}"
+    },
+    "minDate": {
+     "value": ""
+    },
+    "maxDate": {
+     "value": ""
+    },
+    "disabledDates": {
+     "value": "{{[]}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadDialog": {
+   "properties": {
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "dynamicHeight": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "collapseWhenHidden": {
+     "value": "{{false}}"
+    },
+    "disabledTrigger": {
+     "value": "{{false}}"
+    },
+    "disabledModal": {
+     "value": "{{false}}"
+    },
+    "useDefaultButton": {
+     "value": "{{true}}"
+    },
+    "triggerButtonLabel": {
+     "value": "Open dialog"
+    },
+    "size": {
+     "value": "lg"
+    },
+    "showHeader": {
+     "value": "{{true}}"
+    },
+    "showFooter": {
+     "value": "{{true}}"
+    },
+    "hideCloseButton": {
+     "value": "{{false}}"
+    },
+    "hideOnEsc": {
+     "value": "{{true}}"
+    },
+    "closeOnClickingOutside": {
+     "value": "{{false}}"
+    },
+    "modalHeight": {
+     "value": "{{400}}"
+    },
+    "headerHeight": {
+     "value": 80
+    },
+    "footerHeight": {
+     "value": 68
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    },
+    "variant": {
+     "value": "dialog"
+    },
+    "side": {
+     "value": "right"
+    }
+   },
+   "styles": {
+    "icon": {
+     "value": "IconAlignBoxBottomLeft"
+    },
+    "iconVisibility": {
+     "value": false
+    },
+    "iconColor": {
+     "value": "var(--cc-surface1-surface)"
+    },
+    "direction": {
+     "value": "left"
+    },
+    "headerBackgroundColor": {
+     "value": "var(--cc-surface1-surface)"
+    },
+    "footerBackgroundColor": {
+     "value": "var(--cc-surface1-surface)"
+    },
+    "bodyBackgroundColor": {
+     "value": "var(--cc-surface1-surface)"
+    },
+    "triggerButtonBackgroundColor": {
+     "value": "var(--cc-primary-brand)"
+    },
+    "triggerButtonHoverBackgroundMode": {
+     "value": "auto"
+    },
+    "triggerButtonHoverBackgroundColor": {
+     "value": "var(--cc-primary-brand)"
+    },
+    "triggerButtonTextColor": {
+     "value": "var(--cc-surface1-surface)"
+    },
+    "triggerButtonTextSize": {
+     "value": "{{14}}"
+    },
+    "triggerButtonFontWeight": {
+     "value": "normal"
+    },
+    "triggerButtonContentAlignment": {
+     "value": "center"
+    },
+    "headerDividerColor": {
+     "value": "#00000000"
+    },
+    "footerDividerColor": {
+     "value": "#00000000"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadDropdownMenu": {
+   "properties": {
+    "label": {
+     "value": "Actions"
+    },
+    "triggerType": {
+     "value": "button"
+    },
+    "variant": {
+     "value": "outline"
+    },
+    "size": {
+     "value": "default"
+    },
+    "triggerIcon": {
+     "value": ""
+    },
+    "showChevron": {
+     "value": "{{true}}"
+    },
+    "fullWidth": {
+     "value": "{{false}}"
+    },
+    "items": {
+     "value": "{{[{ label: 'Edit', value: 'edit', icon: 'IconPencil', shortcut: '⌘E' }, { label: 'Duplicate', value: 'duplicate', icon: 'IconCopy', shortcut: '⌘D' }, { label: 'Archive', value: 'archive', icon: 'IconArchive' }, { label: 'Delete', value: 'delete', icon: 'IconTrash', destructive: true, separator: true }]}}"
+    },
+    "menuLabel": {
+     "value": ""
+    },
+    "align": {
+     "value": "start"
+    },
+    "side": {
+     "value": "bottom"
+    },
+    "optionsLoadingState": {
+     "value": "{{false}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
   "ShadEmpty": {
    "properties": {
     "title": {
@@ -477,6 +1193,80 @@
     },
     "actionLabel": {
      "value": ""
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadFileUpload": {
+   "properties": {
+    "label": {
+     "value": "Attachments"
+    },
+    "description": {
+     "value": ""
+    },
+    "title": {
+     "value": "Drag & drop files here"
+    },
+    "hint": {
+     "value": ""
+    },
+    "accept": {
+     "value": "image/*,application/pdf"
+    },
+    "multiple": {
+     "value": "{{true}}"
+    },
+    "maxFiles": {
+     "value": "{{5}}"
+    },
+    "maxSize": {
+     "value": "{{5242880}}"
+    },
+    "minSize": {
+     "value": "{{0}}"
+    },
+    "showPreview": {
+     "value": "{{true}}"
+    },
+    "parseContent": {
+     "value": "{{false}}"
+    },
+    "parseFileType": {
+     "value": "auto-detect"
+    },
+    "delimiter": {
+     "value": ","
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
     },
     "loadingState": {
      "value": "{{false}}"
@@ -541,6 +1331,121 @@
     },
     "textAlign": {
      "value": "left"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadIcon": {
+   "properties": {
+    "icon": {
+     "value": "trending-up"
+    },
+    "size": {
+     "value": "{{20}}"
+    },
+    "strokeWidth": {
+     "value": "{{2}}"
+    },
+    "tone": {
+     "value": "primary"
+    },
+    "chip": {
+     "value": "square"
+    },
+    "chipSize": {
+     "value": ""
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    },
+    "alignment": {
+     "value": "left"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadImage": {
+   "properties": {
+    "source": {
+     "value": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800"
+    },
+    "alternativeText": {
+     "value": "Mountain lake at sunrise"
+    },
+    "imageFit": {
+     "value": "cover"
+    },
+    "aspectRatio": {
+     "value": "auto"
+    },
+    "caption": {
+     "value": ""
+    },
+    "fallback": {
+     "value": "placeholder"
+    },
+    "fallbackText": {
+     "value": ""
+    },
+    "showBorder": {
+     "value": "{{false}}"
+    },
+    "zoomOnClick": {
+     "value": "{{false}}"
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
     }
    },
    "others": {
@@ -709,6 +1614,216 @@
     }
    }
   },
+  "ShadKeyValue": {
+   "properties": {
+    "data": {
+     "value": "{{[{ label: 'Customer', value: 'Ada Lovelace' }, { label: 'Email', value: 'ada@example.com', type: 'link' }, { label: 'Status', value: 'Active', type: 'badge' }, { label: 'Plan', value: 'Pro' }, { label: 'Amount', value: 1250, type: 'currency' }, { label: 'Renews', value: '2026-11-14', type: 'date' }]}}"
+    },
+    "columns": {
+     "value": "1"
+    },
+    "layout": {
+     "value": "inline"
+    },
+    "labelWidth": {
+     "value": "40%"
+    },
+    "dividers": {
+     "value": "{{true}}"
+    },
+    "emptyText": {
+     "value": "—"
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "locale": {
+     "value": "en-US"
+    },
+    "dateFormat": {
+     "value": "DD MMM YYYY"
+    },
+    "badgeColors": {
+     "value": "{{{ Active: '#16a34a' }}}"
+    },
+    "allowCopy": {
+     "value": "{{false}}"
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadLineChart": {
+   "properties": {
+    "data": {
+     "value": "{{[{ month: 'Jan', revenue: 18600, expenses: 8000 }, { month: 'Feb', revenue: 30500, expenses: 20000 }, { month: 'Mar', revenue: 23700, expenses: 12000 }, { month: 'Apr', revenue: 7300, expenses: 19000 }, { month: 'May', revenue: 20900, expenses: 13000 }, { month: 'Jun', revenue: 21400, expenses: 14000 }]}}"
+    },
+    "xField": {
+     "value": "month"
+    },
+    "yFields": {
+     "value": "{{['revenue', 'expenses']}}"
+    },
+    "curve": {
+     "value": "monotone"
+    },
+    "showDots": {
+     "value": "{{false}}"
+    },
+    "strokeWidth": {
+     "value": "{{2}}"
+    },
+    "dashedFields": {
+     "value": ""
+    },
+    "referenceValue": {
+     "value": ""
+    },
+    "referenceLabel": {
+     "value": ""
+    },
+    "yAxisFormat": {
+     "value": "currency"
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "valuePrefix": {
+     "value": ""
+    },
+    "valueSuffix": {
+     "value": ""
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "animate": {
+     "value": "{{true}}"
+    },
+    "showGrid": {
+     "value": "{{true}}"
+    },
+    "showLegend": {
+     "value": "{{true}}"
+    },
+    "colors": {
+     "value": "{{[]}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadLink": {
+   "properties": {
+    "linkText": {
+     "value": "View details"
+    },
+    "linkTarget": {
+     "value": "https://tooljet.com"
+    },
+    "targetType": {
+     "value": "new"
+    },
+    "underline": {
+     "value": "on-hover"
+    },
+    "showIcon": {
+     "value": "{{false}}"
+    },
+    "fontSize": {
+     "value": "{{14}}"
+    },
+    "fontWeight": {
+     "value": "medium"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    },
+    "alignment": {
+     "value": "left"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
   "ShadListView": {
    "properties": {
     "data": {
@@ -775,6 +1890,422 @@
     },
     "itemShadow": {
      "value": "none"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadMultiselect": {
+   "properties": {
+    "label": {
+     "value": "Teams"
+    },
+    "description": {
+     "value": ""
+    },
+    "options": {
+     "value": "{{[{ label: 'Design', value: 'design' }, { label: 'Engineering', value: 'engineering' }, { label: 'Marketing', value: 'marketing' }, { label: 'Sales', value: 'sales' }, { label: 'Support', value: 'support' }]}}"
+    },
+    "placeholder": {
+     "value": "Select teams..."
+    },
+    "searchPlaceholder": {
+     "value": "Search teams..."
+    },
+    "emptyText": {
+     "value": "No team found."
+    },
+    "showSearch": {
+     "value": "{{true}}"
+    },
+    "serverSideSearch": {
+     "value": "{{false}}"
+    },
+    "showClearBtn": {
+     "value": "{{true}}"
+    },
+    "optionsLoadingState": {
+     "value": "{{false}}"
+    },
+    "defaultValue": {
+     "value": "{{['design', 'engineering']}}"
+    },
+    "showSelectAll": {
+     "value": "{{true}}"
+    },
+    "maxVisibleChips": {
+     "value": "{{3}}"
+    },
+    "maxSelections": {
+     "value": "{{0}}"
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadNavigation": {
+   "properties": {
+    "items": {
+     "value": "{{[{ label: 'Dashboard', value: 'dashboard', icon: 'IconLayoutDashboard' }, { label: 'Orders', value: 'orders', icon: 'IconShoppingCart', badge: 12 }, { label: 'Customers', value: 'customers', icon: 'IconUsers' }, { label: 'Reports', value: 'reports', icon: 'IconChartBar', children: [{ label: 'Sales', value: 'sales' }, { label: 'Traffic', value: 'traffic' }] }, { label: 'Settings', value: 'settings', icon: 'IconSettings', group: 'Workspace' }]}}"
+    },
+    "defaultValue": {
+     "value": "dashboard"
+    },
+    "orientation": {
+     "value": "vertical"
+    },
+    "variant": {
+     "value": "pills"
+    },
+    "size": {
+     "value": "default"
+    },
+    "align": {
+     "value": "start"
+    },
+    "collapsed": {
+     "value": "{{false}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadNumberInput": {
+   "properties": {
+    "label": {
+     "value": "Quantity"
+    },
+    "description": {
+     "value": ""
+    },
+    "placeholder": {
+     "value": "0"
+    },
+    "defaultValue": {
+     "value": "{{1}}"
+    },
+    "decimalPlaces": {
+     "value": "{{2}}"
+    },
+    "step": {
+     "value": "{{1}}"
+    },
+    "stepper": {
+     "value": "split"
+    },
+    "prefix": {
+     "value": ""
+    },
+    "suffix": {
+     "value": ""
+    },
+    "thousandSeparator": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadOtpInput": {
+   "properties": {
+    "label": {
+     "value": "Verification code"
+    },
+    "description": {
+     "value": ""
+    },
+    "length": {
+     "value": "{{6}}"
+    },
+    "characters": {
+     "value": "numeric"
+    },
+    "separator": {
+     "value": "{{false}}"
+    },
+    "slotStyle": {
+     "value": "joined"
+    },
+    "masked": {
+     "value": "{{false}}"
+    },
+    "placeholder": {
+     "value": ""
+    },
+    "defaultValue": {
+     "value": ""
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadPagination": {
+   "properties": {
+    "numberOfPages": {
+     "value": "{{10}}"
+    },
+    "totalRecords": {
+     "value": ""
+    },
+    "pageSize": {
+     "value": "{{10}}"
+    },
+    "defaultPageIndex": {
+     "value": "{{1}}"
+    },
+    "siblingCount": {
+     "value": "{{1}}"
+    },
+    "showFirstLast": {
+     "value": "{{false}}"
+    },
+    "showLabels": {
+     "value": "{{true}}"
+    },
+    "size": {
+     "value": "default"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    },
+    "alignment": {
+     "value": "left"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadPasswordInput": {
+   "properties": {
+    "label": {
+     "value": "Password"
+    },
+    "description": {
+     "value": ""
+    },
+    "placeholder": {
+     "value": ""
+    },
+    "defaultValue": {
+     "value": ""
+    },
+    "showToggle": {
+     "value": "{{true}}"
+    },
+    "showStrength": {
+     "value": "{{false}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadPhoneInput": {
+   "properties": {
+    "label": {
+     "value": "Phone number"
+    },
+    "description": {
+     "value": ""
+    },
+    "placeholder": {
+     "value": ""
+    },
+    "defaultValue": {
+     "value": ""
+    },
+    "defaultCountry": {
+     "value": "US"
+    },
+    "onlyCountries": {
+     "value": "{{[]}}"
+    },
+    "isCountryChangeEnabled": {
+     "value": "{{true}}"
+    },
+    "showFlag": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
     }
    },
    "others": {
@@ -886,6 +2417,169 @@
     }
    }
   },
+  "ShadRadarChart": {
+   "properties": {
+    "data": {
+     "value": "{{[{ skill: 'Speed', alex: 86, jordan: 65 }, { skill: 'Quality', alex: 72, jordan: 90 }, { skill: 'Support', alex: 64, jordan: 78 }, { skill: 'Pricing', alex: 90, jordan: 58 }, { skill: 'Reach', alex: 58, jordan: 84 }, { skill: 'Design', alex: 75, jordan: 70 }]}}"
+    },
+    "categoryField": {
+     "value": "skill"
+    },
+    "yFields": {
+     "value": "{{['alex', 'jordan']}}"
+    },
+    "maxValue": {
+     "value": "{{100}}"
+    },
+    "fillOpacity": {
+     "value": "{{0.5}}"
+    },
+    "gridShape": {
+     "value": "polygon"
+    },
+    "showGrid": {
+     "value": "{{true}}"
+    },
+    "showDots": {
+     "value": "{{false}}"
+    },
+    "valuePrefix": {
+     "value": ""
+    },
+    "valueSuffix": {
+     "value": ""
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "animate": {
+     "value": "{{true}}"
+    },
+    "showLegend": {
+     "value": "{{true}}"
+    },
+    "colors": {
+     "value": "{{[]}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadRadialChart": {
+   "properties": {
+    "mode": {
+     "value": "progress"
+    },
+    "value": {
+     "value": "{{72}}"
+    },
+    "maxValue": {
+     "value": "{{100}}"
+    },
+    "data": {
+     "value": "{{[{ channel: 'Direct', visitors: 275 }, { channel: 'Search', visitors: 200 }, { channel: 'Social', visitors: 187 }, { channel: 'Email', visitors: 120 }]}}"
+    },
+    "categoryField": {
+     "value": "channel"
+    },
+    "valueField": {
+     "value": "visitors"
+    },
+    "centerValue": {
+     "value": ""
+    },
+    "centerLabel": {
+     "value": "Completed"
+    },
+    "startAngle": {
+     "value": "{{90}}"
+    },
+    "endAngle": {
+     "value": "{{-270}}"
+    },
+    "thickness": {
+     "value": ""
+    },
+    "rounded": {
+     "value": "{{true}}"
+    },
+    "showTrack": {
+     "value": "{{true}}"
+    },
+    "valuePrefix": {
+     "value": ""
+    },
+    "valueSuffix": {
+     "value": "%"
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "animate": {
+     "value": "{{true}}"
+    },
+    "showLegend": {
+     "value": "{{true}}"
+    },
+    "colors": {
+     "value": "{{[]}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
   "ShadRadioGroup": {
    "properties": {
     "label": {
@@ -902,6 +2596,74 @@
     },
     "horizontal": {
      "value": "{{false}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadRating": {
+   "properties": {
+    "label": {
+     "value": ""
+    },
+    "description": {
+     "value": ""
+    },
+    "defaultValue": {
+     "value": "{{4}}"
+    },
+    "max": {
+     "value": "{{5}}"
+    },
+    "icon": {
+     "value": "star"
+    },
+    "size": {
+     "value": "default"
+    },
+    "allowHalf": {
+     "value": "{{false}}"
+    },
+    "allowClear": {
+     "value": "{{true}}"
+    },
+    "readOnly": {
+     "value": "{{false}}"
+    },
+    "showValue": {
+     "value": "{{false}}"
+    },
+    "valueLabels": {
+     "value": "{{[]}}"
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
     },
     "loadingState": {
      "value": "{{false}}"
@@ -1103,6 +2865,130 @@
     }
    }
   },
+  "ShadSparkline": {
+   "properties": {
+    "data": {
+     "value": "{{[12, 18, 15, 22, 19, 26, 24, 31]}}"
+    },
+    "type": {
+     "value": "area"
+    },
+    "curve": {
+     "value": "monotone"
+    },
+    "strokeWidth": {
+     "value": "{{2}}"
+    },
+    "showEndDot": {
+     "value": "{{true}}"
+    },
+    "colorByTrend": {
+     "value": "{{false}}"
+    },
+    "lowerIsBetter": {
+     "value": "{{false}}"
+    },
+    "showBand": {
+     "value": "{{false}}"
+    },
+    "bandMin": {
+     "value": ""
+    },
+    "bandMax": {
+     "value": ""
+    },
+    "showTooltip": {
+     "value": "{{false}}"
+    },
+    "valuePrefix": {
+     "value": ""
+    },
+    "valueSuffix": {
+     "value": ""
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "animate": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadSpinner": {
+   "properties": {
+    "variant": {
+     "value": "ring"
+    },
+    "size": {
+     "value": "default"
+    },
+    "label": {
+     "value": "Loading…"
+    },
+    "labelPosition": {
+     "value": "right"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    },
+    "alignment": {
+     "value": "left"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
   "ShadStat": {
    "properties": {
     "label": {
@@ -1122,6 +3008,56 @@
     },
     "card": {
      "value": "{{true}}"
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadSteps": {
+   "properties": {
+    "steps": {
+     "value": "{{[{ id: 1, name: 'Account', description: 'Your details' }, { id: 2, name: 'Company', description: 'Team and size' }, { id: 3, name: 'Billing', description: 'Plan and payment' }, { id: 4, name: 'Done', description: 'Review and finish' }]}}"
+    },
+    "currentStep": {
+     "value": "{{2}}"
+    },
+    "stepsSelectable": {
+     "value": "{{true}}"
+    },
+    "orientation": {
+     "value": "horizontal"
+    },
+    "variant": {
+     "value": "numbers"
     },
     "dynamicHeight": {
      "value": "{{true}}"
@@ -1490,6 +3426,130 @@
     }
    }
   },
+  "ShadTags": {
+   "properties": {
+    "tags": {
+     "value": "{{['Design', 'Frontend', 'Urgent']}}"
+    },
+    "tagColors": {
+     "value": "{{{ Urgent: '#dc2626' }}}"
+    },
+    "variant": {
+     "value": "soft"
+    },
+    "size": {
+     "value": "default"
+    },
+    "overflow": {
+     "value": "wrap"
+    },
+    "pill": {
+     "value": "{{false}}"
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadTagsInput": {
+   "properties": {
+    "label": {
+     "value": "Tags"
+    },
+    "description": {
+     "value": ""
+    },
+    "placeholder": {
+     "value": "Add a tag..."
+    },
+    "defaultValue": {
+     "value": "{{['react', 'typescript']}}"
+    },
+    "suggestions": {
+     "value": "{{['react', 'typescript', 'node', 'python', 'design', 'devops']}}"
+    },
+    "allowCustomTags": {
+     "value": "{{true}}"
+    },
+    "maxTags": {
+     "value": "{{0}}"
+    },
+    "caseSensitive": {
+     "value": "{{false}}"
+    },
+    "tagPattern": {
+     "value": ""
+    },
+    "patternError": {
+     "value": ""
+    },
+    "addOnBlur": {
+     "value": "{{false}}"
+    },
+    "showClearBtn": {
+     "value": "{{false}}"
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
   "ShadText": {
    "properties": {
     "text": {
@@ -1578,16 +3638,31 @@
     }
    }
   },
-  "ShadToggleGroup": {
+  "ShadTimeline": {
    "properties": {
-    "options": {
-     "value": "{{['All', 'Open', 'Closed']}}"
+    "items": {
+     "value": "{{[{ title: 'Order placed', description: 'Ada Lovelace placed order #1024', time: '09:12', status: 'done', icon: 'shopping-cart' }, { title: 'Payment confirmed', description: '$1,250.00 by card', time: '09:14', status: 'done', icon: 'credit-card' }, { title: 'Packed', description: 'Warehouse A, bay 4', time: '11:30', status: 'active', icon: 'package' }, { title: 'Out for delivery', time: 'Pending', status: 'pending', icon: 'truck' }]}}"
     },
-    "defaultValue": {
-     "value": "All"
+    "marker": {
+     "value": "dot"
     },
-    "fullWidth": {
+    "density": {
+     "value": "comfortable"
+    },
+    "newestFirst": {
      "value": "{{false}}"
+    },
+    "timePosition": {
+     "value": "right"
+    },
+    "dateFormat": {
+     "value": ""
+    },
+    "statusColors": {
+     "value": "{{{}}}"
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
     },
     "loadingState": {
      "value": "{{false}}"
@@ -1619,120 +3694,95 @@
     }
    }
   },
-  "ShadDialog": {
+  "ShadTimePicker": {
    "properties": {
-    "loadingState": {
-     "value": "{{false}}"
+    "label": {
+     "value": "Time"
     },
-    "dynamicHeight": {
+    "description": {
+     "value": ""
+    },
+    "placeholder": {
+     "value": "Pick a time"
+    },
+    "defaultValue": {
+     "value": ""
+    },
+    "timeFormat": {
+     "value": "12h"
+    },
+    "pickerStyle": {
+     "value": "columns"
+    },
+    "minuteStep": {
+     "value": "{{15}}"
+    },
+    "minTime": {
+     "value": ""
+    },
+    "maxTime": {
+     "value": ""
+    },
+    "loadingState": {
      "value": "{{false}}"
     },
     "visibility": {
      "value": "{{true}}"
     },
-    "collapseWhenHidden": {
+    "disabledState": {
      "value": "{{false}}"
-    },
-    "disabledTrigger": {
-     "value": "{{false}}"
-    },
-    "disabledModal": {
-     "value": "{{false}}"
-    },
-    "useDefaultButton": {
-     "value": "{{true}}"
-    },
-    "triggerButtonLabel": {
-     "value": "Open dialog"
-    },
-    "size": {
-     "value": "lg"
-    },
-    "showHeader": {
-     "value": "{{true}}"
-    },
-    "showFooter": {
-     "value": "{{true}}"
-    },
-    "hideCloseButton": {
-     "value": "{{false}}"
-    },
-    "hideOnEsc": {
-     "value": "{{true}}"
-    },
-    "closeOnClickingOutside": {
-     "value": "{{false}}"
-    },
-    "modalHeight": {
-     "value": "{{400}}"
-    },
-    "headerHeight": {
-     "value": 80
-    },
-    "footerHeight": {
-     "value": 68
     },
     "tooltipFormat": {
      "value": "plainText"
     },
     "tooltip": {
      "value": ""
-    },
-    "variant": {
-     "value": "dialog"
-    },
-    "side": {
-     "value": "right"
     }
    },
    "styles": {
-    "icon": {
-     "value": "IconAlignBoxBottomLeft"
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
     },
-    "iconVisibility": {
-     "value": false
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadToggleGroup": {
+   "properties": {
+    "options": {
+     "value": "{{['All', 'Open', 'Closed']}}"
     },
-    "iconColor": {
-     "value": "var(--cc-surface1-surface)"
+    "defaultValue": {
+     "value": "All"
     },
-    "direction": {
-     "value": "left"
+    "fullWidth": {
+     "value": "{{false}}"
     },
-    "headerBackgroundColor": {
-     "value": "var(--cc-surface1-surface)"
+    "loadingState": {
+     "value": "{{false}}"
     },
-    "footerBackgroundColor": {
-     "value": "var(--cc-surface1-surface)"
+    "visibility": {
+     "value": "{{true}}"
     },
-    "bodyBackgroundColor": {
-     "value": "var(--cc-surface1-surface)"
+    "disabledState": {
+     "value": "{{false}}"
     },
-    "triggerButtonBackgroundColor": {
-     "value": "var(--cc-primary-brand)"
+    "tooltipFormat": {
+     "value": "plainText"
     },
-    "triggerButtonHoverBackgroundMode": {
-     "value": "auto"
-    },
-    "triggerButtonHoverBackgroundColor": {
-     "value": "var(--cc-primary-brand)"
-    },
-    "triggerButtonTextColor": {
-     "value": "var(--cc-surface1-surface)"
-    },
-    "triggerButtonTextSize": {
-     "value": "{{14}}"
-    },
-    "triggerButtonFontWeight": {
-     "value": "normal"
-    },
-    "triggerButtonContentAlignment": {
-     "value": "center"
-    },
-    "headerDividerColor": {
-     "value": "#00000000"
-    },
-    "footerDividerColor": {
-     "value": "#00000000"
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
     }
    },
    "others": {
