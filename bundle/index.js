@@ -76482,6 +76482,18 @@ function polishFlexRows(input) {
       setProp(container, "alignItems", "last baseline");
       warnings.push(`Row "${label2}" pairs a heading with meta text; its alignItems is now "last baseline" so they share a baseline.`);
     }
+    if (text(prop2(container, "justifyContent")) === "space-between" && children.length >= 3) {
+      const first = children[0];
+      if (isTitle(first, childrenOf)) {
+        const rects = [first.layout, first.layouts?.desktop].filter((rect2) => !!rect2 && rect2.fillWidth !== true);
+        if (rects.length) {
+          rects.forEach((rect2) => {
+            rect2.fillWidth = true;
+          });
+          warnings.push(`Row "${label2}": the title now takes the free space, so the items after it sit together at the right of the header.`);
+        }
+      }
+    }
     const authored = valueOf2(prop2(container, "childOrder"));
     const authoredOrder = Array.isArray(authored) ? authored.filter((entry) => typeof entry === "string") : null;
     const ordered = authoredOrder?.length ? [

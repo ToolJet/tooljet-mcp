@@ -309,3 +309,27 @@ describe('polishFlexRows: a chart in the shorter of two stretched cards fills it
     expect(components.find((c) => c.clientRef === 'c')!.layout!.height).toBe(290);
   });
 });
+
+describe('polishFlexRows: a header title takes the free space', () => {
+  it('lets the title grow so a badge and a button sit together at the right (the badge floated mid-header)', () => {
+    const input = [
+      row('header', { justifyContent: { value: 'space-between' } }),
+      { ...child('title', 'ShadHeading', 'header', { text: { value: "Today's appointments" } }), layout: { top: 0, left: 0, width: 20, height: 40, fillWidth: false, widthPx: 400 } },
+      { ...child('count', 'ShadBadge', 'header', { text: { value: '3 clinicians' } }), layout: { top: 0, left: 0, width: 4, height: 24 } },
+      { ...child('refresh', 'ShadButton', 'header', { text: { value: 'Refresh' } }), layout: { top: 0, left: 0, width: 4, height: 36 } },
+    ];
+    const { components, warnings } = polishFlexRows(input as ComponentSpec[]);
+    expect((components.find((c) => c.clientRef === 'title')!.layout as Record<string, unknown>).fillWidth).toBe(true);
+    expect(warnings.join(' ')).toMatch(/header/);
+  });
+
+  it('leaves a two-item header alone', () => {
+    const input = [
+      row('header', { justifyContent: { value: 'space-between' } }),
+      { ...child('title', 'ShadHeading', 'header', { text: { value: 'Stock' } }), layout: { top: 0, left: 0, width: 20, height: 40, fillWidth: false, widthPx: 300 } },
+      { ...child('add', 'ShadButton', 'header', { text: { value: 'Add' } }), layout: { top: 0, left: 0, width: 4, height: 36 } },
+    ];
+    const { components } = polishFlexRows(input as ComponentSpec[]);
+    expect((components.find((c) => c.clientRef === 'title')!.layout as Record<string, unknown>).fillWidth).toBe(false);
+  });
+});

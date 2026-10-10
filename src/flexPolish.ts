@@ -267,6 +267,23 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
       warnings.push(`Row "${label}" pairs a heading with meta text; its alignItems is now "last baseline" so they share a baseline.`);
     }
 
+    // 4b. A space-between header with a title and two or more items after it: the title takes the free space, so the
+    //     badges and actions gather at the right instead of one floating mid-header.
+    if (text(prop(container, 'justifyContent')) === 'space-between' && children.length >= 3) {
+      const first = children[0];
+      if (isTitle(first, childrenOf)) {
+        const rects = [first.layout, first.layouts?.desktop].filter(
+          (rect): rect is NonNullable<ComponentSpec['layout']> => !!rect && (rect as FlexRect).fillWidth !== true
+        );
+        if (rects.length) {
+          rects.forEach((rect) => {
+            (rect as FlexRect).fillWidth = true;
+          });
+          warnings.push(`Row "${label}": the title now takes the free space, so the items after it sit together at the right of the header.`);
+        }
+      }
+    }
+
     // 5. Actions before the title in a header row move after it.
     const authored = valueOf(prop(container, 'childOrder'));
     const authoredOrder = Array.isArray(authored) ? authored.filter((entry): entry is string => typeof entry === 'string') : null;
