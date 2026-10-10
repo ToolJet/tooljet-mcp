@@ -474,6 +474,18 @@ if (schemas.DropdownV2) {
   }
 }
 
+// FlexContainer stores its children's order in properties.childOrder (frontend flexContainerSlice.js), a key the
+// widget config does not declare. Declare it so a written order is a known key, never stripped as unknown.
+if (schemas.FlexContainer && !schemas.FlexContainer.properties.some((property) => property.key === 'childOrder')) {
+  schemas.FlexContainer.properties.push({
+    key: 'childOrder',
+    label: 'Child order',
+    valueType: 'array',
+    default: [],
+    description: 'Child component ids in render order. MCP writes it when children are created or reparented; update_components also accepts child names.',
+  });
+}
+
 // Curated rendering hints (not harvestable from the widget defs) — sizing/readability defaults the
 // design guardrails reference, served as DATA via get_component_catalog(type) so the agent reads them
 // rather than relying on prose. Defaults, not hard limits.
@@ -512,6 +524,15 @@ const RENDERING_HINTS = {
     recommendedFieldRowStepPx: 'authored field height + 30px (20px label/validation footprint + 10px gap); this is 70px only for a 40px-authored field',
     recommendedTextAreaHeightPx: '90–100',
     recommendedTwoColumnGutterCols: 2,
+  },
+  // Verified in Widgets/FlexContainer (FlexContainer.jsx, flexContainer.utils.js, useFlexWidgetLayout.js).
+  FlexContainer: {
+    childOrder: 'Children render in the order of properties.childOrder (an array of child component ids); grid top/left of a child are ignored. A child missing from childOrder lands after the listed ones in an arbitrary order. MCP writes childOrder: request order when the container and its children are created together, appended for a child added or reparented later.',
+    childWidth: 'A child fills the free main-axis width by default (layouts.desktop.fillWidth true). For a fixed width set layouts.desktop.fillWidth=false and widthPx=<pixels>. The grid width/left are still required by the API but do not change the rendered width.',
+    childHeight: 'A child is its authored layout height in px. Only a child with its own dynamicHeight on grows to its content (in view mode).',
+    containerHeight: 'With properties.dynamicHeight {{true}} the container grows to fit its children in view mode; the editor keeps the authored height. Without it, children beyond the authored height (padding included) are cut off.',
+    antCard: "cardStyle 'antCard' draws an Ant Design card: a light surface with an 8px radius and a 1px border, plus a 56px header with cardTitle on the left and cardExtra on the right. The header appears only when cardTitle or cardExtra is set and takes its 56px from the body. In that mode backgroundColor, borderColor and borderRadius styles are ignored.",
+    spacing: 'padding and gap are properties in px, not styles.',
   },
   KeyValuePair: {
     currentPaddingBehavior: 'In the current ToolJet renderer, styles.padding values "default" and "none" do not add a visible content inset. Do not rely on this property to create card padding.',
@@ -566,6 +587,11 @@ const AUTHORING_HINTS = {
   Map: {
     providerSetup: 'Map.jsx loads Google Maps using deployment public_config.GOOGLE_MAPS_API_KEY. If Google reports a configuration/access error, report the dependency and ask the deployment owner to fix it; do not invent a working key, suppress the warning, or claim the map is production-ready.',
     markerSelection: 'Use defaultMarkers entries with lat, lng and a stable source-record id. onMarkerClick publishes that whole object as selectedMarker before handlers run. Capture the selected id into the same detail context used by list selection. Do not match solely by coordinates: different visits may share a property.',
+  },
+  FlexContainer: {
+    creation: 'Create the container and its children in one add_components call: the container gets a client_ref, each child the matching parent_ref, listed in display order. Children may share the same top/left (for example 0,0): flex children are not linted for overlap.',
+    reorder: 'Reorder with update_components on the container: definition.properties.childOrder = [child names or ids] in the wanted order; children left out keep their relative order after the listed ones.',
+    childOrderManaged: 'Do not author childOrder ids on create; MCP fills them in. A childOrder given on create may name batch children by client_ref or name.',
   },
   ButtonGroupV2: {
     selectionTiming: {

@@ -9,6 +9,33 @@ Read this selectively for exact component binding rules or the built-in palette.
 | Component (`type`) | Purpose |
 |---|---|
 | `Accordion` | Accordion — Group components |
+| `AntAlert` | AntAlert — Ant Design alert banner |
+| `AntAvatar` | AntAvatar — Ant Design avatar or avatar group |
+| `AntBadge` | AntBadge — Ant Design status dot with text |
+| `AntBreadcrumb` | AntBreadcrumb — Ant Design breadcrumb |
+| `AntButton` | AntButton — Ant Design button |
+| `AntCard` | AntCard — Ant Design card |
+| `AntCheckbox` | AntCheckbox — Ant Design checkbox |
+| `AntDatePicker` | AntDatePicker — Ant Design date picker |
+| `AntDescriptions` | AntDescriptions — Ant Design label and value pairs |
+| `AntDivider` | AntDivider — Ant Design divider with optional text |
+| `AntEmpty` | AntEmpty — Ant Design empty state |
+| `AntInput` | AntInput — Ant Design text input |
+| `AntInputNumber` | AntInputNumber — Ant Design number input |
+| `AntList` | AntList — Ant Design list of records with avatar, title, description and an action |
+| `AntProgress` | AntProgress — Ant Design progress bar or circle |
+| `AntRangePicker` | AntRangePicker — Ant Design date range picker |
+| `AntSegmented` | AntSegmented — Ant Design segmented control (filters, views) |
+| `AntSelect` | AntSelect — Ant Design select |
+| `AntStatistic` | AntStatistic — Ant Design statistic |
+| `AntSteps` | AntSteps — Ant Design steps |
+| `AntSwitch` | AntSwitch — Ant Design switch with label |
+| `AntTable` | AntTable — Ant Design table |
+| `AntTag` | AntTag — Ant Design tag |
+| `AntText` | AntText — Ant Design text or paragraph |
+| `AntTextArea` | AntTextArea — Ant Design multi-line input |
+| `AntTimeline` | AntTimeline — Ant Design timeline |
+| `AntTitle` | AntTitle — Ant Design heading |
 | `AudioRecorder` | AudioRecorder — Records audio |
 | `BoundedBox` | BoundedBox — An infinitely customizable image annotation widget |
 | `Button` | Button — Trigger actions: queries, alerts, set variables etc. |

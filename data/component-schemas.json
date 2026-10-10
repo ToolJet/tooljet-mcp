@@ -595,6 +595,2452 @@
       }
     ]
   },
+  "AntAlert": {
+    "type": "AntAlert",
+    "name": "AntAlert",
+    "description": "Ant Design alert banner",
+    "defaultSize": {
+      "width": 20,
+      "height": 60
+    },
+    "properties": [
+      {
+        "key": "message",
+        "label": "Message",
+        "valueType": "string",
+        "default": "Heads up"
+      },
+      {
+        "key": "description",
+        "label": "Description",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "type",
+        "label": "Type",
+        "valueType": "string",
+        "default": "info",
+        "allowedValues": [
+          "info",
+          "success",
+          "warning",
+          "error"
+        ]
+      },
+      {
+        "key": "showIcon",
+        "label": "Show icon",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "AntAvatar": {
+    "type": "AntAvatar",
+    "name": "AntAvatar",
+    "description": "Ant Design avatar or avatar group",
+    "defaultSize": {
+      "width": 6,
+      "height": 40
+    },
+    "properties": [
+      {
+        "key": "names",
+        "label": "Names (one or many)",
+        "valueType": "union",
+        "default": "Ada Lovelace"
+      },
+      {
+        "key": "src",
+        "label": "Image URL (single avatar)",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "size",
+        "label": "Size",
+        "valueType": "string",
+        "default": "default",
+        "allowedValues": [
+          "small",
+          "default",
+          "large"
+        ]
+      },
+      {
+        "key": "maxCount",
+        "label": "Max shown",
+        "valueType": "number",
+        "default": "{{4}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "AntBadge": {
+    "type": "AntBadge",
+    "name": "AntBadge",
+    "description": "Ant Design status dot with text",
+    "defaultSize": {
+      "width": 6,
+      "height": 30
+    },
+    "properties": [
+      {
+        "key": "text",
+        "label": "Text",
+        "valueType": "string",
+        "default": "Active"
+      },
+      {
+        "key": "status",
+        "label": "Status",
+        "valueType": "string",
+        "default": "success",
+        "allowedValues": [
+          "success",
+          "processing",
+          "warning",
+          "error",
+          "default"
+        ]
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "AntBreadcrumb": {
+    "type": "AntBreadcrumb",
+    "name": "AntBreadcrumb",
+    "description": "Ant Design breadcrumb",
+    "defaultSize": {
+      "width": 14,
+      "height": 30
+    },
+    "properties": [
+      {
+        "key": "items",
+        "label": "Items",
+        "valueType": "array",
+        "default": "{{['Home', 'Section', 'Page']}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "AntButton": {
+    "type": "AntButton",
+    "name": "AntButton",
+    "description": "Ant Design button",
+    "defaultSize": {
+      "width": 6,
+      "height": 40
+    },
+    "properties": [
+      {
+        "key": "text",
+        "label": "Label",
+        "valueType": "string",
+        "default": "Button"
+      },
+      {
+        "key": "type",
+        "label": "Type",
+        "valueType": "string",
+        "default": "primary",
+        "allowedValues": [
+          "primary",
+          "default",
+          "dashed",
+          "text",
+          "link"
+        ]
+      },
+      {
+        "key": "danger",
+        "label": "Danger",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "block",
+        "label": "Full width",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onClick",
+        "label": "On click"
+      }
+    ],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "AntCard": {
+    "type": "AntCard",
+    "name": "AntCard",
+    "description": "Ant Design card",
+    "defaultSize": {
+      "width": 12,
+      "height": 160
+    },
+    "properties": [
+      {
+        "key": "title",
+        "label": "Title",
+        "valueType": "string",
+        "default": "Card title"
+      },
+      {
+        "key": "extra",
+        "label": "Extra (top right)",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "content",
+        "label": "Content",
+        "valueType": "string",
+        "default": "Card content"
+      },
+      {
+        "key": "hoverable",
+        "label": "Hoverable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onClick",
+        "label": "On click"
+      }
+    ],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "AntCheckbox": {
+    "type": "AntCheckbox",
+    "name": "AntCheckbox",
+    "description": "Ant Design checkbox",
+    "defaultSize": {
+      "width": 8,
+      "height": 30
+    },
+    "properties": [
+      {
+        "key": "label",
+        "label": "Label",
+        "valueType": "string",
+        "default": "Checkbox"
+      },
+      {
+        "key": "defaultChecked",
+        "label": "Checked by default",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onChange",
+        "label": "On change"
+      }
+    ],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      },
+      {
+        "name": "value",
+        "default": false
+      }
+    ]
+  },
+  "AntDatePicker": {
+    "type": "AntDatePicker",
+    "name": "AntDatePicker",
+    "description": "Ant Design date picker",
+    "defaultSize": {
+      "width": 8,
+      "height": 40
+    },
+    "properties": [
+      {
+        "key": "placeholder",
+        "label": "Placeholder",
+        "valueType": "string",
+        "default": "Select date"
+      },
+      {
+        "key": "defaultValue",
+        "label": "Default value (YYYY-MM-DD)",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "format",
+        "label": "Display format",
+        "valueType": "string",
+        "default": "DD MMM YYYY"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onChange",
+        "label": "On change"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "clear",
+        "displayName": "Clear"
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      },
+      {
+        "name": "value",
+        "default": ""
+      }
+    ]
+  },
+  "AntDescriptions": {
+    "type": "AntDescriptions",
+    "name": "AntDescriptions",
+    "description": "Ant Design label and value pairs",
+    "defaultSize": {
+      "width": 20,
+      "height": 160
+    },
+    "properties": [
+      {
+        "key": "title",
+        "label": "Title",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "items",
+        "label": "Items",
+        "valueType": "array",
+        "default": "{{[{ label: 'Owner', value: 'Ada Lovelace' }, { label: 'Status', value: 'Active' }]}}"
+      },
+      {
+        "key": "column",
+        "label": "Columns",
+        "valueType": "number",
+        "default": "{{2}}"
+      },
+      {
+        "key": "bordered",
+        "label": "Bordered",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "layout",
+        "label": "Layout",
+        "valueType": "string",
+        "default": "horizontal",
+        "allowedValues": [
+          "horizontal",
+          "vertical"
+        ]
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "AntDivider": {
+    "type": "AntDivider",
+    "name": "AntDivider",
+    "description": "Ant Design divider with optional text",
+    "defaultSize": {
+      "width": 20,
+      "height": 30
+    },
+    "properties": [
+      {
+        "key": "text",
+        "label": "Text",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "orientation",
+        "label": "Text position",
+        "valueType": "string",
+        "default": "left",
+        "allowedValues": [
+          "left",
+          "center",
+          "right"
+        ]
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "AntEmpty": {
+    "type": "AntEmpty",
+    "name": "AntEmpty",
+    "description": "Ant Design empty state",
+    "defaultSize": {
+      "width": 12,
+      "height": 160
+    },
+    "properties": [
+      {
+        "key": "description",
+        "label": "Description",
+        "valueType": "string",
+        "default": "No data"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "AntInput": {
+    "type": "AntInput",
+    "name": "AntInput",
+    "description": "Ant Design text input",
+    "defaultSize": {
+      "width": 10,
+      "height": 40
+    },
+    "properties": [
+      {
+        "key": "placeholder",
+        "label": "Placeholder",
+        "valueType": "string",
+        "default": "Type here"
+      },
+      {
+        "key": "defaultValue",
+        "label": "Default value",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "allowClear",
+        "label": "Show clear button",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onChange",
+        "label": "On change"
+      },
+      {
+        "id": "onEnterPressed",
+        "label": "On enter pressed"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setText",
+        "displayName": "Set text",
+        "params": [
+          {
+            "handle": "text",
+            "displayName": "Text",
+            "defaultValue": ""
+          }
+        ]
+      },
+      {
+        "handle": "clear",
+        "displayName": "Clear"
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      },
+      {
+        "name": "value",
+        "default": ""
+      }
+    ]
+  },
+  "AntInputNumber": {
+    "type": "AntInputNumber",
+    "name": "AntInputNumber",
+    "description": "Ant Design number input",
+    "defaultSize": {
+      "width": 8,
+      "height": 40
+    },
+    "properties": [
+      {
+        "key": "defaultValue",
+        "label": "Default value",
+        "valueType": "number",
+        "default": "{{0}}"
+      },
+      {
+        "key": "min",
+        "label": "Minimum",
+        "valueType": "number",
+        "default": "{{0}}"
+      },
+      {
+        "key": "max",
+        "label": "Maximum",
+        "valueType": "number",
+        "default": "{{1000000}}"
+      },
+      {
+        "key": "step",
+        "label": "Step",
+        "valueType": "number",
+        "default": "{{1}}"
+      },
+      {
+        "key": "prefix",
+        "label": "Prefix",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onChange",
+        "label": "On change"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setValue",
+        "displayName": "Set value",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{0}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      },
+      {
+        "name": "value",
+        "default": 0
+      }
+    ]
+  },
+  "AntList": {
+    "type": "AntList",
+    "name": "AntList",
+    "description": "Ant Design list of records with avatar, title, description and an action",
+    "defaultSize": {
+      "width": 20,
+      "height": 300
+    },
+    "properties": [
+      {
+        "key": "data",
+        "label": "Data",
+        "valueType": "array",
+        "default": "{{[{ id: 1, title: 'First item', description: 'Details' }]}}"
+      },
+      {
+        "key": "titleKey",
+        "label": "Title field",
+        "valueType": "string",
+        "default": "title"
+      },
+      {
+        "key": "descriptionKey",
+        "label": "Description field",
+        "valueType": "string",
+        "default": "description"
+      },
+      {
+        "key": "avatarKey",
+        "label": "Avatar field (name or image URL)",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "extraKey",
+        "label": "Right-side field",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "actionLabel",
+        "label": "Action label",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "bordered",
+        "label": "Bordered",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "pageSize",
+        "label": "Items per page (0 = all)",
+        "valueType": "number",
+        "default": "{{0}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onItemClicked",
+        "label": "On item clicked"
+      },
+      {
+        "id": "onActionClicked",
+        "label": "On action clicked"
+      }
+    ],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      },
+      {
+        "name": "selectedItem",
+        "default": {}
+      },
+      {
+        "name": "selectedItemIndex",
+        "default": null
+      }
+    ]
+  },
+  "AntProgress": {
+    "type": "AntProgress",
+    "name": "AntProgress",
+    "description": "Ant Design progress bar or circle",
+    "defaultSize": {
+      "width": 12,
+      "height": 40
+    },
+    "properties": [
+      {
+        "key": "percent",
+        "label": "Percent",
+        "valueType": "number",
+        "default": "{{60}}"
+      },
+      {
+        "key": "type",
+        "label": "Type",
+        "valueType": "string",
+        "default": "line",
+        "allowedValues": [
+          "line",
+          "circle",
+          "dashboard"
+        ]
+      },
+      {
+        "key": "status",
+        "label": "Status",
+        "valueType": "string",
+        "default": "normal",
+        "allowedValues": [
+          "normal",
+          "active",
+          "success",
+          "exception"
+        ]
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "AntRangePicker": {
+    "type": "AntRangePicker",
+    "name": "AntRangePicker",
+    "description": "Ant Design date range picker",
+    "defaultSize": {
+      "width": 12,
+      "height": 40
+    },
+    "properties": [
+      {
+        "key": "defaultStart",
+        "label": "Default start (YYYY-MM-DD)",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "defaultEnd",
+        "label": "Default end (YYYY-MM-DD)",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "format",
+        "label": "Display format",
+        "valueType": "string",
+        "default": "DD MMM YYYY"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onChange",
+        "label": "On change"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "clear",
+        "displayName": "Clear"
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      },
+      {
+        "name": "startDate",
+        "default": ""
+      },
+      {
+        "name": "endDate",
+        "default": ""
+      },
+      {
+        "name": "nights",
+        "default": 0
+      }
+    ]
+  },
+  "AntSegmented": {
+    "type": "AntSegmented",
+    "name": "AntSegmented",
+    "description": "Ant Design segmented control (filters, views)",
+    "defaultSize": {
+      "width": 14,
+      "height": 40
+    },
+    "properties": [
+      {
+        "key": "options",
+        "label": "Options",
+        "valueType": "array",
+        "default": "{{['All', 'Open', 'Closed']}}"
+      },
+      {
+        "key": "defaultValue",
+        "label": "Default value",
+        "valueType": "union",
+        "default": "All"
+      },
+      {
+        "key": "block",
+        "label": "Full width",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onChange",
+        "label": "On change"
+      }
+    ],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      },
+      {
+        "name": "value",
+        "default": ""
+      }
+    ]
+  },
+  "AntSelect": {
+    "type": "AntSelect",
+    "name": "AntSelect",
+    "description": "Ant Design select",
+    "defaultSize": {
+      "width": 10,
+      "height": 40
+    },
+    "properties": [
+      {
+        "key": "options",
+        "label": "Options",
+        "valueType": "array",
+        "default": "{{[{ label: 'One', value: 1 }, { label: 'Two', value: 2 }]}}"
+      },
+      {
+        "key": "placeholder",
+        "label": "Placeholder",
+        "valueType": "string",
+        "default": "Select"
+      },
+      {
+        "key": "defaultValue",
+        "label": "Default value",
+        "valueType": "union",
+        "default": ""
+      },
+      {
+        "key": "allowClear",
+        "label": "Show clear button",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showSearch",
+        "label": "Searchable",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onChange",
+        "label": "On change"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "selectOption",
+        "displayName": "Select option",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": ""
+          }
+        ]
+      },
+      {
+        "handle": "clear",
+        "displayName": "Clear"
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      },
+      {
+        "name": "value",
+        "default": ""
+      },
+      {
+        "name": "selectedOption",
+        "default": {}
+      }
+    ]
+  },
+  "AntStatistic": {
+    "type": "AntStatistic",
+    "name": "AntStatistic",
+    "description": "Ant Design statistic",
+    "defaultSize": {
+      "width": 10,
+      "height": 110
+    },
+    "properties": [
+      {
+        "key": "title",
+        "label": "Title",
+        "valueType": "string",
+        "default": "Statistic"
+      },
+      {
+        "key": "value",
+        "label": "Value",
+        "valueType": "union",
+        "default": "{{0}}"
+      },
+      {
+        "key": "prefix",
+        "label": "Prefix",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "suffix",
+        "label": "Suffix",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "precision",
+        "label": "Decimals",
+        "valueType": "number",
+        "default": "{{0}}"
+      },
+      {
+        "key": "card",
+        "label": "Show as card",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "AntSteps": {
+    "type": "AntSteps",
+    "name": "AntSteps",
+    "description": "Ant Design steps",
+    "defaultSize": {
+      "width": 24,
+      "height": 60
+    },
+    "properties": [
+      {
+        "key": "items",
+        "label": "Steps",
+        "valueType": "array",
+        "default": "{{[{ title: 'Requested' }, { title: 'Confirmed' }, { title: 'At sea' }]}}"
+      },
+      {
+        "key": "current",
+        "label": "Current step (0-based)",
+        "valueType": "number",
+        "default": "{{0}}"
+      },
+      {
+        "key": "size",
+        "label": "Size",
+        "valueType": "string",
+        "default": "small",
+        "allowedValues": [
+          "default",
+          "small"
+        ]
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "AntSwitch": {
+    "type": "AntSwitch",
+    "name": "AntSwitch",
+    "description": "Ant Design switch with label",
+    "defaultSize": {
+      "width": 8,
+      "height": 30
+    },
+    "properties": [
+      {
+        "key": "label",
+        "label": "Label",
+        "valueType": "string",
+        "default": "Enabled"
+      },
+      {
+        "key": "defaultChecked",
+        "label": "On by default",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onChange",
+        "label": "On change"
+      }
+    ],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      },
+      {
+        "name": "value",
+        "default": false
+      }
+    ]
+  },
+  "AntTable": {
+    "type": "AntTable",
+    "name": "AntTable",
+    "description": "Ant Design table",
+    "defaultSize": {
+      "width": 28,
+      "height": 420
+    },
+    "properties": [
+      {
+        "key": "data",
+        "label": "Data",
+        "valueType": "array",
+        "default": "{{[{ id: 1, name: 'Sample', status: 'active', amount: 1200 }]}}"
+      },
+      {
+        "key": "columns",
+        "label": "Columns",
+        "valueType": "array",
+        "default": "{{[{ title: 'Name', dataIndex: 'name' }, { title: 'Status', dataIndex: 'status', kind: 'tag' }, { title: 'Amount', dataIndex: 'amount', kind: 'money' }]}}"
+      },
+      {
+        "key": "pageSize",
+        "label": "Rows per page",
+        "valueType": "number",
+        "default": "{{8}}"
+      },
+      {
+        "key": "size",
+        "label": "Density",
+        "valueType": "string",
+        "default": "middle",
+        "allowedValues": [
+          "small",
+          "middle",
+          "large"
+        ]
+      },
+      {
+        "key": "bordered",
+        "label": "Bordered",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onRowClicked",
+        "label": "On row clicked"
+      }
+    ],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      },
+      {
+        "name": "selectedRow",
+        "default": {}
+      },
+      {
+        "name": "selectedRowIndex",
+        "default": null
+      }
+    ]
+  },
+  "AntTag": {
+    "type": "AntTag",
+    "name": "AntTag",
+    "description": "Ant Design tag",
+    "defaultSize": {
+      "width": 4,
+      "height": 30
+    },
+    "properties": [
+      {
+        "key": "text",
+        "label": "Text",
+        "valueType": "string",
+        "default": "Tag"
+      },
+      {
+        "key": "color",
+        "label": "Color",
+        "valueType": "string",
+        "default": "default"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "AntText": {
+    "type": "AntText",
+    "name": "AntText",
+    "description": "Ant Design text or paragraph",
+    "defaultSize": {
+      "width": 16,
+      "height": 30
+    },
+    "properties": [
+      {
+        "key": "text",
+        "label": "Text",
+        "valueType": "string",
+        "default": "Text"
+      },
+      {
+        "key": "tone",
+        "label": "Tone",
+        "valueType": "string",
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "secondary",
+          "success",
+          "warning",
+          "danger"
+        ]
+      },
+      {
+        "key": "strong",
+        "label": "Bold",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "paragraph",
+        "label": "Paragraph (wraps)",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "copyable",
+        "label": "Copyable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "AntTextArea": {
+    "type": "AntTextArea",
+    "name": "AntTextArea",
+    "description": "Ant Design multi-line input",
+    "defaultSize": {
+      "width": 14,
+      "height": 100
+    },
+    "properties": [
+      {
+        "key": "placeholder",
+        "label": "Placeholder",
+        "valueType": "string",
+        "default": "Type here"
+      },
+      {
+        "key": "defaultValue",
+        "label": "Default value",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "rows",
+        "label": "Rows",
+        "valueType": "number",
+        "default": "{{3}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onChange",
+        "label": "On change"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setText",
+        "displayName": "Set text",
+        "params": [
+          {
+            "handle": "text",
+            "displayName": "Text",
+            "defaultValue": ""
+          }
+        ]
+      },
+      {
+        "handle": "clear",
+        "displayName": "Clear"
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      },
+      {
+        "name": "value",
+        "default": ""
+      }
+    ]
+  },
+  "AntTimeline": {
+    "type": "AntTimeline",
+    "name": "AntTimeline",
+    "description": "Ant Design timeline",
+    "defaultSize": {
+      "width": 14,
+      "height": 240
+    },
+    "properties": [
+      {
+        "key": "items",
+        "label": "Items",
+        "valueType": "array",
+        "default": "{{[{ children: 'Created', color: 'blue' }, { children: 'Approved', color: 'green' }]}}"
+      },
+      {
+        "key": "mode",
+        "label": "Mode",
+        "valueType": "string",
+        "default": "left",
+        "allowedValues": [
+          "left",
+          "alternate",
+          "right"
+        ]
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "AntTitle": {
+    "type": "AntTitle",
+    "name": "AntTitle",
+    "description": "Ant Design heading",
+    "defaultSize": {
+      "width": 16,
+      "height": 40
+    },
+    "properties": [
+      {
+        "key": "text",
+        "label": "Text",
+        "valueType": "string",
+        "default": "Heading"
+      },
+      {
+        "key": "level",
+        "label": "Level",
+        "valueType": "string",
+        "default": "3",
+        "allowedValues": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ]
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
   "AudioRecorder": {
     "type": "AudioRecorder",
     "name": "AudioRecorder",
@@ -7530,6 +9976,28 @@
     },
     "properties": [
       {
+        "key": "cardStyle",
+        "label": "Surface",
+        "valueType": "string",
+        "default": "none",
+        "allowedValues": [
+          "none",
+          "antCard"
+        ]
+      },
+      {
+        "key": "cardTitle",
+        "label": "Card title",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "cardExtra",
+        "label": "Card extra (top right)",
+        "valueType": "string",
+        "default": ""
+      },
+      {
         "key": "direction",
         "label": "Direction",
         "valueType": "string",
@@ -7626,6 +10094,13 @@
         "label": "Tooltip",
         "valueType": "string",
         "default": "Tooltip text"
+      },
+      {
+        "key": "childOrder",
+        "label": "Child order",
+        "valueType": "array",
+        "default": [],
+        "description": "Child component ids in render order. MCP writes it when children are created or reparented; update_components also accepts child names."
       }
     ],
     "styles": [
@@ -7695,7 +10170,20 @@
         "name": "isDisabled",
         "default": false
       }
-    ]
+    ],
+    "renderingHints": {
+      "childOrder": "Children render in the order of properties.childOrder (an array of child component ids); grid top/left of a child are ignored. A child missing from childOrder lands after the listed ones in an arbitrary order. MCP writes childOrder: request order when the container and its children are created together, appended for a child added or reparented later.",
+      "childWidth": "A child fills the free main-axis width by default (layouts.desktop.fillWidth true). For a fixed width set layouts.desktop.fillWidth=false and widthPx=<pixels>. The grid width/left are still required by the API but do not change the rendered width.",
+      "childHeight": "A child is its authored layout height in px. Only a child with its own dynamicHeight on grows to its content (in view mode).",
+      "containerHeight": "With properties.dynamicHeight {{true}} the container grows to fit its children in view mode; the editor keeps the authored height. Without it, children beyond the authored height (padding included) are cut off.",
+      "antCard": "cardStyle 'antCard' draws an Ant Design card: a light surface with an 8px radius and a 1px border, plus a 56px header with cardTitle on the left and cardExtra on the right. The header appears only when cardTitle or cardExtra is set and takes its 56px from the body. In that mode backgroundColor, borderColor and borderRadius styles are ignored.",
+      "spacing": "padding and gap are properties in px, not styles."
+    },
+    "authoringHints": {
+      "creation": "Create the container and its children in one add_components call: the container gets a client_ref, each child the matching parent_ref, listed in display order. Children may share the same top/left (for example 0,0): flex children are not linted for overlap.",
+      "reorder": "Reorder with update_components on the container: definition.properties.childOrder = [child names or ids] in the wanted order; children left out keep their relative order after the listed ones.",
+      "childOrderManaged": "Do not author childOrder ids on create; MCP fills them in. A childOrder given on create may name batch children by client_ref or name."
+    }
   },
   "Form": {
     "type": "Form",

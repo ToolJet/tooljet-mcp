@@ -13,6 +13,141 @@
       "description": "Group components"
     },
     {
+      "type": "AntAlert",
+      "name": "AntAlert",
+      "description": "Ant Design alert banner"
+    },
+    {
+      "type": "AntAvatar",
+      "name": "AntAvatar",
+      "description": "Ant Design avatar or avatar group"
+    },
+    {
+      "type": "AntBadge",
+      "name": "AntBadge",
+      "description": "Ant Design status dot with text"
+    },
+    {
+      "type": "AntBreadcrumb",
+      "name": "AntBreadcrumb",
+      "description": "Ant Design breadcrumb"
+    },
+    {
+      "type": "AntButton",
+      "name": "AntButton",
+      "description": "Ant Design button"
+    },
+    {
+      "type": "AntCard",
+      "name": "AntCard",
+      "description": "Ant Design card"
+    },
+    {
+      "type": "AntCheckbox",
+      "name": "AntCheckbox",
+      "description": "Ant Design checkbox"
+    },
+    {
+      "type": "AntDatePicker",
+      "name": "AntDatePicker",
+      "description": "Ant Design date picker"
+    },
+    {
+      "type": "AntDescriptions",
+      "name": "AntDescriptions",
+      "description": "Ant Design label and value pairs"
+    },
+    {
+      "type": "AntDivider",
+      "name": "AntDivider",
+      "description": "Ant Design divider with optional text"
+    },
+    {
+      "type": "AntEmpty",
+      "name": "AntEmpty",
+      "description": "Ant Design empty state"
+    },
+    {
+      "type": "AntInput",
+      "name": "AntInput",
+      "description": "Ant Design text input"
+    },
+    {
+      "type": "AntInputNumber",
+      "name": "AntInputNumber",
+      "description": "Ant Design number input"
+    },
+    {
+      "type": "AntList",
+      "name": "AntList",
+      "description": "Ant Design list of records with avatar, title, description and an action"
+    },
+    {
+      "type": "AntProgress",
+      "name": "AntProgress",
+      "description": "Ant Design progress bar or circle"
+    },
+    {
+      "type": "AntRangePicker",
+      "name": "AntRangePicker",
+      "description": "Ant Design date range picker"
+    },
+    {
+      "type": "AntSegmented",
+      "name": "AntSegmented",
+      "description": "Ant Design segmented control (filters, views)"
+    },
+    {
+      "type": "AntSelect",
+      "name": "AntSelect",
+      "description": "Ant Design select"
+    },
+    {
+      "type": "AntStatistic",
+      "name": "AntStatistic",
+      "description": "Ant Design statistic"
+    },
+    {
+      "type": "AntSteps",
+      "name": "AntSteps",
+      "description": "Ant Design steps"
+    },
+    {
+      "type": "AntSwitch",
+      "name": "AntSwitch",
+      "description": "Ant Design switch with label"
+    },
+    {
+      "type": "AntTable",
+      "name": "AntTable",
+      "description": "Ant Design table"
+    },
+    {
+      "type": "AntTag",
+      "name": "AntTag",
+      "description": "Ant Design tag"
+    },
+    {
+      "type": "AntText",
+      "name": "AntText",
+      "description": "Ant Design text or paragraph"
+    },
+    {
+      "type": "AntTextArea",
+      "name": "AntTextArea",
+      "description": "Ant Design multi-line input"
+    },
+    {
+      "type": "AntTimeline",
+      "name": "AntTimeline",
+      "description": "Ant Design timeline"
+    },
+    {
+      "type": "AntTitle",
+      "name": "AntTitle",
+      "description": "Ant Design heading"
+    },
+    {
       "type": "AudioRecorder",
       "name": "AudioRecorder",
       "description": "Records audio"

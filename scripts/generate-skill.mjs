@@ -71,9 +71,11 @@ function readWidgetCatalog() {
   const items = [];
   for (const f of files) {
     const txt = readFileSync(resolve(dir, f), 'utf8');
-    const name = txt.match(/\bname:\s*'([^']+)'/)?.[1];
-    const desc = txt.match(/\bdescription:\s*'([^']+)'/)?.[1];
-    const type = txt.match(/\bcomponent:\s*'([^']+)'/)?.[1] || name;
+    // Hand-written configs use bare keys and single quotes; generated ones (the Ant Design pack) are JSON literals.
+    const field = (key) => txt.match(new RegExp(`(?:\\b${key}|"${key}"):\\s*(?:'([^']+)'|"([^"]+)")`))?.slice(1).find(Boolean);
+    const name = field('name');
+    const desc = field('description');
+    const type = field('component') || name;
     if (name && desc && !LEGACY_REPLACEMENTS[type]) items.push({ type, name, description: desc });
   }
   // de-dupe by type, sort by type
