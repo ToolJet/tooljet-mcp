@@ -20119,6 +20119,12 @@
         "default": "{{false}}"
       },
       {
+        "key": "seriesLabels",
+        "label": "Series labels ({ field: label })",
+        "valueType": "object",
+        "default": "{{{} }}"
+      },
+      {
         "key": "emptyText",
         "label": "Empty message",
         "valueType": "string",
@@ -20285,7 +20291,7 @@
       }
     ],
     "authoringHints": {
-      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover. chartColor alone gives an on-brand palette (lighter tints and a deeper shade of it for later series); properties.colors lists explicit series colours in order."
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover. properties.seriesLabels names each series in the legend and tooltip ({ revenue: \"Revenue\" }); without it the field name is shown made readable. chartColor alone gives an on-brand palette (lighter tints and a deeper shade of it for later series); properties.colors lists explicit series colours in order."
     }
   },
   "ShadAvatar": {
@@ -20641,6 +20647,12 @@
         "default": "{{false}}"
       },
       {
+        "key": "seriesLabels",
+        "label": "Series labels ({ field: label })",
+        "valueType": "object",
+        "default": "{{{} }}"
+      },
+      {
         "key": "emptyText",
         "label": "Empty message",
         "valueType": "string",
@@ -20795,7 +20807,7 @@
       }
     ],
     "authoringHints": {
-      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover. chartColor alone gives an on-brand palette (lighter tints and a deeper shade of it for later series); properties.colors lists explicit series colours in order."
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover. properties.seriesLabels names each series in the legend and tooltip ({ food_cost_pct: \"Food cost\" }); without it the field name is shown made readable. chartColor alone gives an on-brand palette (lighter tints and a deeper shade of it for later series); properties.colors lists explicit series colours in order."
     }
   },
   "ShadBreadcrumb": {
@@ -29451,6 +29463,12 @@
         "default": "{{true}}"
       },
       {
+        "key": "seriesLabels",
+        "label": "Series labels ({ field: label })",
+        "valueType": "object",
+        "default": "{{{} }}"
+      },
+      {
         "key": "colors",
         "label": "Series colors (in order)",
         "valueType": "array",
@@ -31547,6 +31565,12 @@
         "label": "Legend",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "seriesLabels",
+        "label": "Series labels ({ field: label })",
+        "valueType": "object",
+        "default": "{{{} }}"
       },
       {
         "key": "colors",

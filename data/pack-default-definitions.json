@@ -108,6 +108,9 @@
     "showLegend": {
      "value": "{{false}}"
     },
+    "seriesLabels": {
+     "value": "{{{} }}"
+    },
     "emptyText": {
      "value": "No data"
     },
@@ -254,6 +257,9 @@
     },
     "showLegend": {
      "value": "{{false}}"
+    },
+    "seriesLabels": {
+     "value": "{{{} }}"
     },
     "emptyText": {
      "value": "No data"
@@ -1735,6 +1741,9 @@
     "showLegend": {
      "value": "{{true}}"
     },
+    "seriesLabels": {
+     "value": "{{{} }}"
+    },
     "colors": {
      "value": "{{[]}}"
     },
@@ -2457,6 +2466,9 @@
     },
     "showLegend": {
      "value": "{{true}}"
+    },
+    "seriesLabels": {
+     "value": "{{{} }}"
     },
     "colors": {
      "value": "{{[]}}"
