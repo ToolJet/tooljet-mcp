@@ -441,7 +441,10 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     warnings.push(...normalized.flatMap((item) => item.warnings));
     const expansion = materializeRequiredDefaultChildren(normalized.map((item) => item.component));
     warnings.push(...expansion.warnings);
-    const componentLint = lintComponents(expansion.components, options);
+    const componentLint = lintComponents(expansion.components, {
+      ...options,
+      flexContainerIds: (existingPage?.components ?? []).filter((component) => component.type === 'FlexContainer').map((component) => component.id),
+    });
     errors.push(...componentLint.errors.map((message) => `Page "${plannedPage.name}": ${message}`));
     errors.push(...lintQueryFedCharts(expansion.components, spec.queries ?? []).map((message) => `Page "${plannedPage.name}": ${message}`));
     warnings.push(...componentLint.warnings.map((message) => `Page "${plannedPage.name}": ${message}`));

@@ -15,8 +15,23 @@ import { COMPONENT_SLOT_NAMES, componentSlotSchema, decodeComponentParent, encod
 import { ok, fail, type ToolDef } from './types.js';
 import { resolveRef } from '../refResolution.js';
 import { strictEntry } from '../strictEntry.js';
+import {
+  appendedChildOrders,
+  childOrderProperty,
+  FLEX_FILL_WIDTH_DESCRIPTION,
+  FLEX_WIDTH_PX_DESCRIPTION,
+  reparentAdditions,
+} from '../flexContainer.js';
 
-const rect = z.object({ top: z.number(), left: z.number(), width: z.number(), height: z.number() });
+const rect = z.object({
+  top: z.number(),
+  left: z.number(),
+  width: z.number(),
+  height: z.number(),
+  fillWidth: z.boolean().optional().describe(FLEX_FILL_WIDTH_DESCRIPTION),
+  widthPx: z.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION),
+});
+type LayoutRect = z.infer<typeof rect>;
 
 const RECT_KEYS = new Set(['top', 'left', 'width', 'height']);
 
@@ -58,7 +73,8 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
       'in the immediate parent canvas\'s own 43-column grid, including nested containers; `top`/`height` are pixels. ' +
       'Full rows use width 43, independent of the parent outer width. Container/Form/modal insets may use left 2, width 39; grid-mode Listview full rows use left 0, width 43. Provide desktop and/or mobile per ' +
       'component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` ' +
-      '(header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent.',
+      '(header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent. ' +
+      'A FlexContainer child takes its width from fillWidth/widthPx, not width/left; a component reparented into a FlexContainer is appended to its childOrder.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),
@@ -71,8 +87,8 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
       page_id: string;
       layouts: Array<{
         component_id: string;
-        desktop?: { top: number; left: number; width: number; height: number };
-        mobile?: { top: number; left: number; width: number; height: number };
+        desktop?: LayoutRect;
+        mobile?: LayoutRect;
         parent?: string;
         slot_name?: 'body' | 'header' | 'footer' | 'modal';
       }>;
@@ -191,6 +207,22 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
             slotName: l.slot_name,
           })),
         });
+        // A child moved into a FlexContainer joins the end of its childOrder, as the editor does on a drop.
+        const appended = appendedChildOrders(page.components, reparentAdditions(page.components, resolvedLayouts.map((layout) => ({
+          componentId: layout.component_id,
+          parent: layout.parent !== undefined ? encodeComponentParent(layout.parent, layout.slot_name) : undefined,
+        }))));
+        if (appended.size) {
+          await client.updateComponents({
+            appId: args.app_id,
+            versionId: args.version_id,
+            pageId: args.page_id,
+            updates: [...appended].map(([componentId, order]) => ({
+              componentId,
+              definition: { properties: { childOrder: childOrderProperty(order) } },
+            })),
+          });
+        }
         return ok({ ...result, warnings });
       } catch (err) {
         return fail(err);

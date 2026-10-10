@@ -1,5 +1,5 @@
 import { getComponentSchema } from './catalog.js';
-import { STYLE_KEYS_IN_PROPERTIES, PROPERTY_KEY_ALIASES, nearestCatalogKey } from './lint.js';
+import { STYLE_KEYS_IN_PROPERTIES, PROPERTY_KEY_ALIASES, isMisplacedStyleKey, nearestCatalogKey } from './lint.js';
 import type { ComponentSpec } from './tooljetClient.js';
 import { separateAdjacentClosingBracesDeep } from './bindingBraces.js';
 
@@ -142,7 +142,7 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
   for (const key of Object.keys(properties)) {
     const aliasTarget = aliasTargetFor(key);
     const canonical = aliasTarget ?? key;
-    const belongsInStyles = canonical !== 'styles' && (STYLE_KEYS_IN_PROPERTIES.has(canonical) ||
+    const belongsInStyles = canonical !== 'styles' && (isMisplacedStyleKey(component.type, canonical) ||
       (!!aliasTarget && !!knownStyleKeys?.has(canonical) && !knownPropertyKeys?.has(canonical)));
     if (!aliasTarget && !belongsInStyles) continue;
     if (belongsInStyles) {
@@ -157,6 +157,23 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
       if (properties[canonical] === undefined) properties[canonical] = properties[key];
       delete properties[key];
       warnings.push(`${component.type} "${component.name}": renamed alias "${key}" to "${canonical}".`);
+    }
+  }
+  // The reverse: a key this type declares only as a property, authored under styles (FlexContainer padding,
+  // which ToolJet reads from properties). Moved rather than stripped as an unknown style. New definitions only: a
+  // persisted definition can carry legacy style leaves ToolJet itself wrote, which an update must not reinterpret.
+  if (schema && options.stripUnknownKeys) {
+    for (const key of Object.keys(stylesValue)) {
+      if (knownStyleKeys!.has(key) || !knownPropertyKeys!.has(key)) continue;
+      if (properties[key] === undefined) {
+        properties[key] = stylesValue[key];
+        propertyPatch[key] = stylesValue[key];
+      }
+      delete stylesValue[key];
+      stylesChanged = true;
+      warnings.push(
+        `${component.type} "${component.name}": moved styles.${key} to properties.${key} (ToolJet reads it from properties for ${component.type}).`
+      );
     }
   }
   if (stylesChanged) normalizedSections.styles.value = stylesValue;

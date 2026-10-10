@@ -6,10 +6,18 @@ import { isDeepStrictEqual } from 'node:util';
 import { assertPageIcon } from './pageIcons.js';
 import type { Auth, Workspace } from './auth.js';
 import type { Config } from './config.js';
-import { STYLE_KEYS_IN_PROPERTIES } from './lint.js';
+import { isMisplacedStyleKey } from './lint.js';
 import { assertPersistableQueryToggles } from './queryToggles.js';
 import { hasNonEmptyDefinition } from './strictEntry.js';
 import { decodeComponentParent, encodeComponentParent, type ComponentSlotName } from './componentParent.js';
+import {
+  appendedChildOrders,
+  batchChildOrders,
+  childOrderProperty,
+  flexBodyParentId,
+  isFlexContainerType,
+  type FlexPageComponent,
+} from './flexContainer.js';
 import { tableCreationLevels, TOOLJET_DB_RESERVED_COLUMN_NAMES } from './tableValidation.js';
 import { booleanBindingValue, isCanonicalStaticBooleanBinding, staticBooleanBinding } from './bindings.js';
 import { invalidSeedTimestamps } from './seedTimestampValidation.js';
@@ -236,6 +244,10 @@ export interface ComponentLayout {
   left?: number;
   width?: number;
   height?: number;
+  /** FlexContainer child only: fill the remaining main-axis width (ToolJet's default) or use widthPx. */
+  fillWidth?: boolean;
+  /** FlexContainer child only: fixed width in pixels, used when fillWidth is false. */
+  widthPx?: number;
 }
 
 export interface CreateComponentParams {
@@ -291,6 +303,9 @@ export interface CreateComponentsParams {
   versionId: string;
   pageId: string;
   components: ComponentSpec[];
+  /** The page's components as already read, used to append new children to an existing FlexContainer's
+   *  childOrder. Read from ToolJet when omitted and a component targets an existing parent. */
+  pageComponents?: FlexPageComponent[];
 }
 
 /** One query in a batch (versionId is shared across the batch). */
@@ -2469,7 +2484,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   function buildComponentDto(spec: ComponentSpec): Record<string, unknown> {
     // Guard: styling nested under `properties` is silently discarded by ToolJet (its renderer
     // reads styles from `definition.styles`). Reject early with an actionable message.
-    const misplaced = Object.keys(spec.properties ?? {}).filter((k) => STYLE_KEYS_IN_PROPERTIES.has(k));
+    const misplaced = Object.keys(spec.properties ?? {}).filter((k) => isMisplacedStyleKey(spec.type, k));
     if (misplaced.length) {
       throw new Error(
         `Component "${spec.name}": style keys ${JSON.stringify(misplaced)} were placed under \`properties\`, ` +
@@ -2537,13 +2552,69 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       diff[e.id] = dto;
     }
 
+    // FlexContainer renders its children in properties.childOrder order (ids), not by grid position. A container
+    // created here gets its children in request order, after any order the caller set; a child added under a
+    // container that already exists is appended to that container's stored order (a second write, below).
+    const batchIds = new Set(entries.map((e) => e.id));
+    const flexEntries = entries.map((e) => ({
+      id: e.id,
+      type: e.spec.type,
+      parentId: flexBodyParentId((diff[e.id] as { parent?: string }).parent),
+    }));
+    const explicitOrders = new Map(entries
+      .filter((e) => isFlexContainerType(e.spec.type) && e.spec.properties?.childOrder !== undefined)
+      .map((e) => {
+        const raw = e.spec.properties.childOrder as { value?: unknown } | unknown[];
+        const value = Array.isArray(raw) ? raw : raw?.value;
+        return [e.id, Array.isArray(value) ? value : []] as const;
+      }));
+    const nameToId = new Map(entries.map((e) => [e.spec.name, e.id]));
+    const orders = batchChildOrders(flexEntries, explicitOrders, (ref) => refToId.get(ref) ?? nameToId.get(ref));
+    for (const [id, order] of orders) {
+      const dto = diff[id] as { properties?: Record<string, unknown> };
+      dto.properties = { ...(dto.properties ?? {}), childOrder: childOrderProperty(order) };
+    }
+    const additions = flexEntries.flatMap((e) =>
+      e.parentId && !batchIds.has(e.parentId) ? [{ parentId: e.parentId, childId: e.id }] : []);
+    let pageComponents = params.pageComponents;
+    if (additions.length && !pageComponents) {
+      const summary = await getAppSummary(params.appId, params.versionId);
+      pageComponents = summary.pages.find((page) => page.id === params.pageId)?.components ?? [];
+    }
+    const appended = additions.length ? appendedChildOrders(pageComponents ?? [], additions) : new Map<string, string[]>();
+
     const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/components`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_user_switched_version: false, pageId: params.pageId, diff }),
     });
     await assertOk(res, 'createComponents');
-    return entries.map((e) => ({ component_id: e.id, name: e.spec.name }));
+    const created = entries.map((e) => ({ component_id: e.id, name: e.spec.name }));
+    if (appended.size) {
+      try {
+        await writeFlexChildOrders(params.appId, params.versionId, params.pageId, appended);
+      } catch (err) {
+        throw new PartialWriteError('createComponents', created, [
+          `FlexContainer child order (${[...appended.keys()].join(', ')}): ${err instanceof Error ? err.message : String(err)}. ` +
+            'The components exist; set the container\'s childOrder with update_components.',
+        ], err);
+      }
+    }
+    return created;
+  }
+
+  /** Persist FlexContainer child orders. The server merges arrays index by index for this widget, which is safe:
+   *  ToolJet's renderer drops unknown and repeated ids from childOrder, so a shorter order cannot reorder. */
+  async function writeFlexChildOrders(appId: string, versionId: string, pageId: string, orders: Map<string, string[]>): Promise<void> {
+    const diff = Object.fromEntries([...orders].map(([id, order]) => [
+      id, { component: { definition: { properties: { childOrder: childOrderProperty(order) } } } },
+    ]));
+    const res = await auth.authedFetch(`/api/v2/apps/${appId}/versions/${versionId}/components`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_user_switched_version: false, pageId, diff }),
+    });
+    await assertOk(res, 'writeFlexChildOrders');
   }
 
   async function createComponent(params: CreateComponentParams): Promise<CreateComponentResult> {

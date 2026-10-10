@@ -7,12 +7,15 @@ import { normalizeComponentSpec } from './componentNormalization.js';
 import { normalizePlannedLayouts } from './layoutNormalization.js';
 import type { ComponentSpec } from './tooljetClient.js';
 import { componentNameSchema } from './componentName.js';
+import { FLEX_FILL_WIDTH_DESCRIPTION, FLEX_WIDTH_PX_DESCRIPTION } from './flexContainer.js';
 
 const layoutSchema = z.object({
   top: z.number(),
   left: z.number().describe('Columns in the immediate parent canvas, which has its own 43-column grid.'),
   width: z.number().describe('Columns out of 43 in the immediate parent canvas, independent of the parent outer width. Full width is 43. Container/Form/modal inset full rows use left 2, width 39; grid-mode Listview full rows use left 0, width 43.'),
   height: z.number(),
+  fillWidth: z.boolean().optional().describe(FLEX_FILL_WIDTH_DESCRIPTION),
+  widthPx: z.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION),
 });
 
 export const componentInputSchema = z.object({
@@ -48,7 +51,11 @@ export interface PreparedComponentBatch {
 }
 
 /** Normalize and fully lint one page's component batch before any ToolJet write. */
-export function prepareComponentBatch(inputs: ComponentInput[], options: { canvasColor?: string } = {}): PreparedComponentBatch {
+export function prepareComponentBatch(
+  inputs: ComponentInput[],
+  // flexContainerIds: FlexContainers already on the page, so children added to them by id are not linted as grid items.
+  options: { canvasColor?: string; flexContainerIds?: Iterable<string> } = {}
+): PreparedComponentBatch {
   const requested = inputs.map(({ client_ref, parent_ref, slot_name, ...component }) => ({
     ...component,
     clientRef: client_ref,

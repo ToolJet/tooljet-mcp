@@ -1,6 +1,6 @@
 import { mapKeyRefusal } from '../mapKeyGuard.js';
 import { z } from 'zod';
-import type { ToolJetClient } from '../tooljetClient.js';
+import type { AppSummary, ToolJetClient } from '../tooljetClient.js';
 import { componentInputSchema, prepareComponentBatch, type ComponentInput } from '../componentBatch.js';
 import { fail, ok, type ToolDef } from './types.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
@@ -43,19 +43,30 @@ export function addComponentBatchesTool(client: ToolJetClient): ToolDef {
       }
       const pages = structuredClone(args.pages);
       const aliasWarnings: string[] = [];
-      if (pages.some(page => page.components.some(c => c.client_ref && c.client_ref !== c.name))) {
+      const needsAliases = pages.some(page => page.components.some(c => c.client_ref && c.client_ref !== c.name));
+      // A child added under an existing parent may be going into a FlexContainer, whose children are not grid items.
+      const targetsExistingParent = pages.some(page => page.components.some(c => c.parent));
+      let summary: AppSummary | undefined;
+      if (needsAliases || targetsExistingParent) {
         try {
-          const summary = await client.getAppSummary(args.app_id);
+          summary = await client.getAppSummary(args.app_id);
           if (summary.version_id && summary.version_id !== args.version_id) {
             return fail(new Error('Cannot normalize this write against a different editing version. Refresh the app version.'));
           }
-          aliasWarnings.push(...normalizePlanBindingAliases({ pages }, summary));
+          if (needsAliases) aliasWarnings.push(...normalizePlanBindingAliases({ pages }, summary));
         } catch {
-          aliasWarnings.push('Batch component aliases were not normalized because existing names could not be read. Use exact runtime names.');
+          if (needsAliases) aliasWarnings.push('Batch component aliases were not normalized because existing names could not be read. Use exact runtime names.');
         }
       }
+      const pageComponentsOf = (pageId: string) => summary?.pages.find((page) => page.id === pageId)?.components;
       const canvasColor = await literalCanvasColor(client, args.app_id, args.version_id);
-      const prepared = pages.map((page) => ({ ...page, prepared: prepareComponentBatch(page.components, { canvasColor }) }));
+      const prepared = pages.map((page) => ({
+        ...page,
+        prepared: prepareComponentBatch(page.components, {
+          canvasColor,
+          flexContainerIds: (pageComponentsOf(page.page_id) ?? []).filter((c) => c.type === 'FlexContainer').map((c) => c.id),
+        }),
+      }));
       const errors = prepared.flatMap((page) =>
         page.prepared.errors.map((error) => `Page ${page.page_id}: ${error}`)
       );
@@ -70,6 +81,7 @@ export function addComponentBatchesTool(client: ToolJetClient): ToolDef {
           versionId: args.version_id,
           pageId: page.page_id,
           components: page.prepared.components,
+          pageComponents: pageComponentsOf(page.page_id),
         }),
         warnings: page.prepared.warnings,
       })));

@@ -61,6 +61,15 @@ export const STYLE_KEYS_IN_PROPERTIES = new Set([
   'iconColor',
 ]);
 
+/** A style key authored under `properties` where ToolJet ignores it. A key the component's own schema declares as a
+ *  property, and not as a style, is where it belongs: FlexContainer `padding` is a property (widgets/flexContainer.js). */
+export function isMisplacedStyleKey(type: string | undefined, key: string): boolean {
+  if (!STYLE_KEYS_IN_PROPERTIES.has(key)) return false;
+  const schema = type ? getComponentSchema(type) : null;
+  if (!schema) return true;
+  return !(schema.properties.some((entry) => entry.key === key) && !schema.styles.some((entry) => entry.key === key));
+}
+
 /** Known wrong property/style keys (CSS or other-builder names, or bad casing) mapped to the correct
  *  ToolJet key. The edit-distance suggester misses these because the names differ too much
  *  (fontSize vs textSize). Lookup is case-insensitive; a match is only used when its target is actually
@@ -1620,7 +1629,7 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
   }
 
   // ERROR: style keys under `properties` are silently dropped by ToolJet.
-  const misplaced = Object.keys(props).filter((k) => STYLE_KEYS_IN_PROPERTIES.has(k));
+  const misplaced = Object.keys(props).filter((k) => isMisplacedStyleKey(spec.type, k));
   if (misplaced.length) {
     errors.push(
       `Component "${label}": style keys ${JSON.stringify(misplaced)} are under \`properties\`, where ToolJet ` +
@@ -2449,9 +2458,30 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
   return { errors, warnings };
 }
 
-/** Pairwise desktop-rect overlap within a set of components. */
-export function detectOverlaps(components: LintComponent[]): string[] {
+/** Which components a geometry check knows about besides the ones it is given: FlexContainers already on the
+ *  page that new children in the checked set target by id. */
+export interface GeometryContext {
+  flexContainerIds?: Iterable<string>;
+}
+
+/** Placement keys (see placementKey) of FlexContainer bodies. A FlexContainer lays its children out with CSS
+ *  flexbox in childOrder order, so their grid top/left are not where they render: two children at the same
+ *  coordinates are stacked, not overlapping, and their rects say nothing about siblings outside the container. */
+function flexPlacementKeys(components: LintComponent[], context: GeometryContext = {}): Set<string> {
+  const keys = new Set<string>();
+  for (const id of context.flexContainerIds ?? []) keys.add(`${id}::body`);
+  for (const component of components) {
+    if (component.type !== 'FlexContainer') continue;
+    for (const ref of [component.clientRef, component.id, component.name]) if (ref) keys.add(`${ref}::body`);
+  }
+  return keys;
+}
+
+/** Pairwise desktop-rect overlap within a set of components. Children of a FlexContainer are skipped: the browser
+ *  places them, so their authored rects cannot overlap each other or anything outside the container. */
+export function detectOverlaps(components: LintComponent[], context: GeometryContext = {}): string[] {
   const warnings: string[] = [];
+  const flexBodies = flexPlacementKeys(components, context);
   const items = components
     .filter((c) => !(c.type === 'ModalV2' && isFalseBinding(propVal(c.properties, 'useDefaultButton'))))
     .map((c) => ({
@@ -2460,7 +2490,7 @@ export function detectOverlaps(components: LintComponent[]): string[] {
       r: c.layouts?.desktop ?? c.layout,
       parent: placementKey(c),
     }))
-    .filter((x): x is { component: LintComponent; name: string; r: Rect; parent: string } => !!x.r);
+    .filter((x): x is { component: LintComponent; name: string; r: Rect; parent: string } => !!x.r && !flexBodies.has(x.parent));
   for (let i = 0; i < items.length; i++) {
     for (let j = i + 1; j < items.length; j++) {
       if (items[i].parent !== items[j].parent) continue;
@@ -2525,11 +2555,12 @@ const TOOLBAR_BUTTON_TYPES = new Set(['Button', 'ButtonGroup']);
  *  A top-labelled input renders its label in the first 20px and its box below (see renderedHeight), so a
  *  button authored at the inputs' top sits on the label band, visibly above the fields. Measured on
  *  2026-09-12 in three Luna builds (todo, vendors, inventory): every toolbar button was misaligned. */
-export function lintToolbarButtonAlignment(components: LintComponent[]): string[] {
+export function lintToolbarButtonAlignment(components: LintComponent[], context: GeometryContext = {}): string[] {
   const errors: string[] = [];
+  const flexBodies = flexPlacementKeys(components, context);
   const items = components
     .map((c) => ({ component: c, name: c.name ?? c.type ?? '?', r: c.layouts?.desktop ?? c.layout, parent: placementKey(c) }))
-    .filter((x): x is { component: LintComponent; name: string; r: Rect; parent: string } => !!x.r);
+    .filter((x): x is { component: LintComponent; name: string; r: Rect; parent: string } => !!x.r && !flexBodies.has(x.parent));
   const grownInputs = items.filter((x) => renderedHeight(x.component, x.r) > (x.r.height ?? 0));
   if (!grownInputs.length) return errors;
   for (const button of items) {
@@ -2726,10 +2757,10 @@ export function lintModalChildren(components: LintComponent[]): string[] {
 /** Geometry a customer sees as broken: components on top of each other, a toolbar button on the label
  *  band, modal or list children outside their parent. Filed as errors: on 2026-09-12 the same overlaps
  *  shipped in every round while they were warnings, because a model reads a warning as optional. */
-export function lintRenderedGeometryBlocking(components: LintComponent[]): string[] {
+export function lintRenderedGeometryBlocking(components: LintComponent[], context: GeometryContext = {}): string[] {
   return [
-    ...detectOverlaps(components),
-    ...lintToolbarButtonAlignment(components),
+    ...detectOverlaps(components, context),
+    ...lintToolbarButtonAlignment(components, context),
     ...lintModalChildren(components).filter((warning) => !MODAL_HEADER_ADVICE.test(warning)),
     ...lintListviewChildren(components),
   ];
@@ -2792,6 +2823,7 @@ export function lintNestedContainerWidths(components: LintComponent[]): string[]
  *  the page for nothing (merch m2 two re-plans, m8 two re-layouts and rowsPerPage 4; trace review 2026-09-24). */
 export function lintRenderedGeometryAdvisory(components: LintComponent[]): string[] {
   return [
+    ...lintFlexContainerFit(components),
     ...lintNestedContainerWidths(components),
     ...lintDesktopCanvasCoverage(components),
     ...lintCanvasSideGutter(components),
@@ -2799,8 +2831,52 @@ export function lintRenderedGeometryAdvisory(components: LintComponent[]): strin
   ];
 }
 
-export function lintRenderedGeometry(components: LintComponent[]): string[] {
-  return [...lintRenderedGeometryBlocking(components), ...lintRenderedGeometryAdvisory(components)];
+export function lintRenderedGeometry(components: LintComponent[], context: GeometryContext = {}): string[] {
+  return [...lintRenderedGeometryBlocking(components, context), ...lintRenderedGeometryAdvisory(components)];
+}
+
+/** FlexContainer's ant card header (FlexContainer.jsx): drawn only with a title or an extra. */
+const FLEX_ANT_CARD_HEADER_PX = 56;
+
+function flexNumber(value: unknown, fallback: number): number {
+  const text = typeof value === 'string' ? value.replace(/[{}\s]/g, '').replace(/px$/, '') : value;
+  const n = typeof text === 'number' ? text : typeof text === 'string' && text !== '' ? Number(text) : NaN;
+  return Number.isFinite(n) ? n : fallback;
+}
+
+/** A FlexContainer's children keep their authored pixel heights (unless dynamicHeight), and the container keeps its
+ *  own height in the editor; it grows only in view mode with dynamicHeight on. Children that need more room than
+ *  the container has are cut off. Advisory: wrapping rows and dynamic children are estimates. */
+export function lintFlexContainerFit(components: LintComponent[]): string[] {
+  const warnings: string[] = [];
+  for (const container of components) {
+    if (container.type !== 'FlexContainer') continue;
+    const rect = container.layouts?.desktop ?? container.layout;
+    if (!rect || typeof rect.height !== 'number') continue;
+    const keys = new Set([container.clientRef, container.id, container.name].filter(Boolean).map((ref) => `${ref}::body`));
+    const children = components.filter((child) => child !== container && keys.has(placementKey(child)));
+    if (!children.length) continue;
+    const props = container.properties;
+    if (isTruthyBinding(propVal(props, 'dynamicHeight'))) continue;
+    const padding = flexNumber(propVal(props, 'padding'), 12);
+    const gap = flexNumber(propVal(props, 'gap'), 12);
+    const direction = String(propVal(props, 'direction') ?? 'row');
+    const card = propVal(props, 'cardStyle') === 'antCard' &&
+      (Boolean(propVal(props, 'cardTitle')) || Boolean(propVal(props, 'cardExtra')));
+    const heights = children.map((child) => renderedHeight(child, child.layouts?.desktop ?? child.layout));
+    const content = direction === 'column'
+      ? heights.reduce((sum, h) => sum + h, 0) + gap * (children.length - 1)
+      : Math.max(...heights);
+    const needed = Math.ceil(content + 2 * padding + (card ? FLEX_ANT_CARD_HEADER_PX : 0) + 2);
+    if (needed <= rect.height) continue;
+    warnings.push(
+      `FlexContainer "${container.name ?? container.id ?? '?'}": its ${children.length} ${direction === 'column' ? 'stacked ' : ''}children need about ` +
+        `${needed}px (heights${direction === 'column' ? ` + ${gap}px gaps` : ''} + ${padding}px padding top and bottom` +
+        `${card ? ` + ${FLEX_ANT_CARD_HEADER_PX}px card header` : ''}) but the container is ${rect.height}px tall, so the rest is cut off. ` +
+        'Raise its height, or set properties.dynamicHeight to {{true}} so it grows in view mode (the editor still shows the authored height).'
+    );
+  }
+  return warnings;
 }
 
 // Widgets that are legitimately a few pixels tall, or whose authored box is not what renders.
@@ -2913,7 +2989,7 @@ export function lintFormSubmitButtons(components: LintComponent[]): string[] {
 }
 
 /** Lint a batch: per-component checks + overlap detection across the batch. */
-export function lintComponents(components: LintComponent[], options: { canvasColor?: string } = {}): LintResult {
+export function lintComponents(components: LintComponent[], options: { canvasColor?: string } & GeometryContext = {}): LintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const around = surfaceAroundResolver(components, options.canvasColor);
@@ -2945,7 +3021,7 @@ export function lintComponents(components: LintComponent[], options: { canvasCol
   for (const c of components) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c, around(c)), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
   warnings.push(...lintTextGeometry(components));
   for (const c of components) warnings.push(...lintSurfaceInsets(c));
-  errors.push(...lintRenderedGeometryBlocking(components));
+  errors.push(...lintRenderedGeometryBlocking(components, options));
   warnings.push(...lintRenderedGeometryAdvisory(components));
   warnings.push(...lintKanbanInteractions(components));
   warnings.push(...lintHiddenModalHitTargets(components));
