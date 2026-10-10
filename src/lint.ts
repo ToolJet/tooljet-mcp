@@ -762,8 +762,9 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
     if (!slotName) continue;
     const placement = parentPlacement(component);
     const parent = placement ? refs.get(placement.parentId) : undefined;
+    // A FlexContainer has one canvas, its body: slot_name "body" there is the plain parent, as for a Container.
     const validParent = slotName === 'modal' ? parent?.type === 'Kanban' : isTabSlot(slotName) ? parent?.type === 'Tabs' :
-      SLOT_PARENT_TYPES.has(parent?.type ?? '') || (slotName === 'body' && parent?.type === 'Kanban');
+      SLOT_PARENT_TYPES.has(parent?.type ?? '') || (slotName === 'body' && (parent?.type === 'Kanban' || parent?.type === 'FlexContainer'));
     // A child in a tab the Tabs does not have is saved but never shown (review 2026-09-25). Static tabItems only:
     // with useDynamicOptions the ids come from a binding.
     if (parent?.type === 'Tabs' && isTabSlot(slotName) && !isTruthyBinding(propVal(parent.properties, 'useDynamicOptions'))) {
@@ -2857,10 +2858,15 @@ export function lintFlexContainerFit(components: LintComponent[]): string[] {
     const children = components.filter((child) => child !== container && keys.has(placementKey(child)));
     if (!children.length) continue;
     const props = container.properties;
-    if (isTruthyBinding(propVal(props, 'dynamicHeight'))) continue;
+    // Only a fixed height cuts content off: dynamic height is the create default (tooljetClient), and ToolJet always
+    // fits a card (antCard, shadcnCard) or a row to its content in the viewer (frontend dynamicHeightPolicy).
+    const dynamic = propVal(props, 'dynamicHeight');
+    if (dynamic === undefined || isTruthyBinding(dynamic)) continue;
+    if (['antCard', 'shadcnCard'].includes(String(propVal(props, 'cardStyle') ?? ''))) continue;
     const padding = flexNumber(propVal(props, 'padding'), 12);
     const gap = flexNumber(propVal(props, 'gap'), 12);
-    const direction = String(propVal(props, 'direction') ?? 'row');
+    const direction = String(propVal(props, 'direction') ?? 'column');
+    if (direction === 'row') continue;
     const card = propVal(props, 'cardStyle') === 'antCard' &&
       (Boolean(propVal(props, 'cardTitle')) || Boolean(propVal(props, 'cardExtra')));
     const heights = children.map((child) => renderedHeight(child, child.layouts?.desktop ?? child.layout));

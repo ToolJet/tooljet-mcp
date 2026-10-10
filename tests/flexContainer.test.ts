@@ -320,7 +320,7 @@ describe('FlexContainer children in geometry lint (bug 3)', () => {
 
   it('warns when stacked children need more height than a fixed-height FlexContainer has', () => {
     const components = [
-      { name: 'panel', type: 'FlexContainer', clientRef: 'panel', properties: { direction: { value: 'column' }, gap: { value: 10 }, padding: { value: 10 } }, layout: { top: 0, left: 0, width: 43, height: 100 } },
+      { name: 'panel', type: 'FlexContainer', clientRef: 'panel', properties: { direction: { value: 'column' }, gap: { value: 10 }, padding: { value: 10 }, dynamicHeight: { value: '{{false}}' } }, layout: { top: 0, left: 0, width: 43, height: 100 } },
       { name: 'a', type: 'Text', parentRef: 'panel', properties: {}, layout: rect() },
       { name: 'b', type: 'Text', parentRef: 'panel', properties: {}, layout: rect() },
     ];
@@ -328,6 +328,15 @@ describe('FlexContainer children in geometry lint (bug 3)', () => {
     const grows = [{ ...components[0]!, properties: { ...components[0]!.properties, dynamicHeight: { value: '{{true}}' } } }, ...components.slice(1)];
     expect(lintFlexContainerFit(grows)).toEqual([]);
     expect(lintComponents(components).warnings.join(' ')).toMatch(/FlexContainer "panel"/);
+    // Created without the property, a FlexContainer grows (dynamic height is its create default since 2026-10-09);
+    // a card or a row always fits its content in the viewer, whatever the property says.
+    const unset = { ...components[0]!.properties };
+    delete (unset as Record<string, unknown>).dynamicHeight;
+    expect(lintFlexContainerFit([{ ...components[0]!, properties: unset }, ...components.slice(1)])).toEqual([]);
+    const card = { ...components[0]!.properties, cardStyle: { value: 'shadcnCard' } };
+    expect(lintFlexContainerFit([{ ...components[0]!, properties: card }, ...components.slice(1)])).toEqual([]);
+    const row = { ...components[0]!.properties, direction: { value: 'row' } };
+    expect(lintFlexContainerFit([{ ...components[0]!, properties: row }, ...components.slice(1)])).toEqual([]);
   });
 });
 
@@ -392,5 +401,35 @@ describe('Ant Design pack and FlexContainer catalog', () => {
     expect(text).toMatch(/widthPx/);
     expect(text).toMatch(/dynamicHeight/);
     expect(text).toMatch(/antCard/);
+  });
+});
+
+// Air India fleet build (2026-10-09): rows and cards made without dynamic height scrolled inside or clipped their
+// content once their children grew; and a slot_name "body" on FlexContainer children was refused, costing a repair.
+describe('FlexContainer create defaults and slots', () => {
+  it('creates a FlexContainer with dynamic height on unless the author sets it', async () => {
+    const auth = makeAuth();
+    const client = createClient(auth, config);
+    await client.createComponents({
+      appId: 'app1', versionId: 'v1', pageId: 'p1',
+      components: [
+        { name: 'row', type: 'FlexContainer', properties: { direction: { value: 'row' } }, layout: rect(0, 200) },
+        { name: 'fixed', type: 'FlexContainer', properties: { dynamicHeight: { value: '{{false}}' } }, layout: rect(220, 200) },
+      ],
+    });
+    const created = Object.values(bodies(auth, 'POST')[0]!.diff) as Array<{ name: string; properties: Record<string, unknown> }>;
+    const byName = Object.fromEntries(created.map((c) => [c.name, c]));
+    expect(byName.row!.properties.dynamicHeight).toEqual({ value: '{{true}}' });
+    expect(byName.fixed!.properties.dynamicHeight).toEqual({ value: '{{false}}' });
+  });
+
+  it('accepts slot_name "body" for a FlexContainer child and still refuses a header slot there', async () => {
+    const { lintComponentSlots } = await import('../src/lint.js');
+    const child = (slotName: string) => lintComponentSlots([
+      { clientRef: 'p', name: 'p', type: 'FlexContainer' },
+      { clientRef: 'c', name: 'c', type: 'Text', parentRef: 'p', slotName },
+    ] as never);
+    expect(child('body')).toEqual([]);
+    expect(child('header').join(' ')).toMatch(/header/);
   });
 });

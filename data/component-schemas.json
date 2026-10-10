@@ -24496,7 +24496,7 @@
         "key": "dynamicHeight",
         "label": "Dynamic height",
         "valueType": "boolean",
-        "default": "{{false}}"
+        "default": "{{true}}"
       },
       {
         "key": "loadingState",
@@ -24591,7 +24591,7 @@
         "key": "dynamicHeight",
         "label": "Dynamic height",
         "valueType": "boolean",
-        "default": "{{false}}"
+        "default": "{{true}}"
       },
       {
         "key": "loadingState",
@@ -25530,7 +25530,7 @@
         "key": "dynamicHeight",
         "label": "Dynamic height",
         "valueType": "boolean",
-        "default": "{{false}}"
+        "default": "{{true}}"
       },
       {
         "key": "loadingState",
@@ -26414,6 +26414,12 @@
         "default": "{{true}}"
       },
       {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
         "key": "loadingState",
         "label": "Loading state",
         "valueType": "boolean",
@@ -26590,7 +26596,7 @@
         "key": "dynamicHeight",
         "label": "Dynamic height",
         "valueType": "boolean",
-        "default": "{{false}}"
+        "default": "{{true}}"
       },
       {
         "key": "loadingState",
@@ -26686,7 +26692,7 @@
         "key": "dynamicHeight",
         "label": "Dynamic height",
         "valueType": "boolean",
-        "default": "{{false}}"
+        "default": "{{true}}"
       },
       {
         "key": "loadingState",
@@ -26926,6 +26932,157 @@
       {
         "name": "value",
         "default": ""
+      }
+    ]
+  },
+  "ShadKanban": {
+    "type": "ShadKanban",
+    "name": "ShadKanban",
+    "description": "shadcn/ui Kanban board from data: columns are values of a status field, cards show title, description, badge, avatar and meta fields; drag a card to move it, then save the move with a query on onCardMoved (components.<name>.movedCard)",
+    "defaultSize": {
+      "width": 43,
+      "height": 420
+    },
+    "properties": [
+      {
+        "key": "data",
+        "label": "Cards",
+        "valueType": "array",
+        "default": "{{[{ id: 1, title: 'Draft the brief', status: 'todo', priority: 'High', owner: 'Ada Lovelace' }, { id: 2, title: 'Review designs', status: 'doing', priority:…"
+      },
+      {
+        "key": "columns",
+        "label": "Columns (in order)",
+        "valueType": "array",
+        "default": "{{[{ id: 'todo', title: 'To do' }, { id: 'doing', title: 'In progress' }, { id: 'done', title: 'Done' }]}}"
+      },
+      {
+        "key": "statusField",
+        "label": "Status field",
+        "valueType": "string",
+        "default": "status"
+      },
+      {
+        "key": "idField",
+        "label": "Id field",
+        "valueType": "string",
+        "default": "id"
+      },
+      {
+        "key": "titleField",
+        "label": "Title field",
+        "valueType": "string",
+        "default": "title"
+      },
+      {
+        "key": "descriptionField",
+        "label": "Description field",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "badgeField",
+        "label": "Badge field",
+        "valueType": "string",
+        "default": "priority"
+      },
+      {
+        "key": "avatarField",
+        "label": "Avatar field (a name)",
+        "valueType": "string",
+        "default": "owner"
+      },
+      {
+        "key": "metaField",
+        "label": "Meta field (a date, a count)",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "allowDrag",
+        "label": "Drag to move",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "emptyText",
+        "label": "Empty column message",
+        "valueType": "string",
+        "default": "No cards"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onCardClicked",
+        "label": "On card clicked"
+      },
+      {
+        "id": "onCardMoved",
+        "label": "On card moved"
+      }
+    ],
+    "actions": [],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      },
+      {
+        "name": "selectedCard",
+        "default": {}
+      },
+      {
+        "name": "movedCard",
+        "default": {}
+      },
+      {
+        "name": "lastMove",
+        "default": {}
       }
     ]
   }

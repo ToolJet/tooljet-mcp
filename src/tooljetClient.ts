@@ -2498,7 +2498,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const dto: Record<string, unknown> = {
       name: spec.name,
       type: spec.type,
-      properties: spec.properties,
+      // A FlexContainer grows with its children unless the author fixes its height: with dynamic height off, a row or
+      // card whose children grew scrolled inside or clipped them (Air India fleet build, 2026-10-09).
+      properties:
+        spec.type === 'FlexContainer' ? { dynamicHeight: { value: '{{true}}' }, ...(spec.properties ?? {}) } : spec.properties,
       // A FlexContainer is layout: invisible unless the author gives it a surface (cardStyle 'antCard', or a
       // background or border). ToolJet's own default draws every row and column as a bordered box.
       styles:

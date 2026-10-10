@@ -67549,7 +67549,7 @@ function lintComponentSlots(components) {
       continue;
     const placement = parentPlacement(component);
     const parent = placement ? refs2.get(placement.parentId) : void 0;
-    const validParent = slotName === "modal" ? parent?.type === "Kanban" : isTabSlot(slotName) ? parent?.type === "Tabs" : SLOT_PARENT_TYPES.has(parent?.type ?? "") || slotName === "body" && parent?.type === "Kanban";
+    const validParent = slotName === "modal" ? parent?.type === "Kanban" : isTabSlot(slotName) ? parent?.type === "Tabs" : SLOT_PARENT_TYPES.has(parent?.type ?? "") || slotName === "body" && (parent?.type === "Kanban" || parent?.type === "FlexContainer");
     if (parent?.type === "Tabs" && isTabSlot(slotName) && !isTruthyBinding(propVal2(parent.properties, "useDynamicOptions"))) {
       const items = propVal2(parent.properties, "tabItems");
       const ids = Array.isArray(items) ? items.map((item) => String(item?.id ?? "")) : void 0;
@@ -68957,11 +68957,16 @@ function lintFlexContainerFit(components) {
     if (!children.length)
       continue;
     const props = container.properties;
-    if (isTruthyBinding(propVal2(props, "dynamicHeight")))
+    const dynamic = propVal2(props, "dynamicHeight");
+    if (dynamic === void 0 || isTruthyBinding(dynamic))
+      continue;
+    if (["antCard", "shadcnCard"].includes(String(propVal2(props, "cardStyle") ?? "")))
       continue;
     const padding = flexNumber(propVal2(props, "padding"), 12);
     const gap = flexNumber(propVal2(props, "gap"), 12);
-    const direction = String(propVal2(props, "direction") ?? "row");
+    const direction = String(propVal2(props, "direction") ?? "column");
+    if (direction === "row")
+      continue;
     const card = propVal2(props, "cardStyle") === "antCard" && (Boolean(propVal2(props, "cardTitle")) || Boolean(propVal2(props, "cardExtra")));
     const heights = children.map((child) => renderedHeight(child, child.layouts?.desktop ?? child.layout));
     const content = direction === "column" ? heights.reduce((sum, h) => sum + h, 0) + gap * (children.length - 1) : Math.max(...heights);
@@ -71429,7 +71434,9 @@ function createClient(auth, config2) {
     const dto = {
       name: spec.name,
       type: spec.type,
-      properties: spec.properties,
+      // A FlexContainer grows with its children unless the author fixes its height: with dynamic height off, a row or
+      // card whose children grew scrolled inside or clipped them (Air India fleet build, 2026-10-09).
+      properties: spec.type === "FlexContainer" ? { dynamicHeight: { value: "{{true}}" }, ...spec.properties ?? {} } : spec.properties,
       // A FlexContainer is layout: invisible unless the author gives it a surface (cardStyle 'antCard', or a
       // background or border). ToolJet's own default draws every row and column as a bordered box.
       styles: spec.type === "FlexContainer" ? { backgroundColor: { value: "transparent" }, borderColor: { value: "transparent" }, ...spec.styles ?? {} } : spec.styles ?? {},
