@@ -411,6 +411,28 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
     );
   }
 
+  // A true/false property given a bare expression ("queries.getFlights.isLoading") without {{ }} is plain text, which
+  // ToolJet reads as true: three Air India tables showed their loading spinner forever. Wrap it.
+  const booleanKeys = new Set(['loadingState', 'visibility', 'disabledState']);
+  for (const entry of schema?.properties ?? []) if (entry.valueType === 'boolean') booleanKeys.add(entry.key);
+  const BARE_EXPRESSION = /^\s*!?\s*\(?\s*(queries|components|variables|globals|page|constants|parameters)\.[\w$]/;
+  const wrappedKeys: string[] = [];
+  for (const key of booleanKeys) {
+    const current = propValue(properties, key);
+    if (typeof current !== 'string' || current.includes('{{') || !BARE_EXPRESSION.test(current)) continue;
+    const entry = properties[key];
+    const wrapped = { ...(entry && typeof entry === 'object' && !Array.isArray(entry) ? entry : {}), value: `{{${current.trim()}}}`, fxActive: true };
+    properties[key] = wrapped;
+    propertyPatch[key] = wrapped;
+    wrappedKeys.push(key);
+  }
+  if (wrappedKeys.length) {
+    warnings.push(
+      `${component.type} "${component.name}": wrapped the bare expression in ${wrappedKeys.map((k) => `properties.${k}`).join(', ')} ` +
+        'in {{ }}; without the braces ToolJet reads it as text, which counts as true (a table stays on its loading spinner).'
+    );
+  }
+
   const patch = Object.fromEntries(
     (['properties', 'styles', 'validation', 'others'] as DefinitionSection[]).flatMap((section) => {
       const envelopePatch = normalizedSections[section].patch ?? {};
