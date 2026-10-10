@@ -1584,6 +1584,29 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
     }
   }
 
+  // A shadcn Table with dynamic height off scrolls inside its drawn height (ShadTable.jsx: toolbar 56px, footer
+  // 52px, header ~41px, rows 36/44/56px by cellSize). Drawn too short, it shows part of a page of rows with the
+  // cut-off row at the edge (a Luna build showed 5.5 of 10 rows, 2026-10-10).
+  if (spec.type === 'ShadTable' && isFalseBinding(propVal(props, 'dynamicHeight'))) {
+    const height = Number((spec as { layout?: { height?: unknown } }).layout?.height);
+    const paginated = !isFalseBinding(propVal(props, 'enablePagination'));
+    const rows = Number(String(propVal(props, 'rowsPerPage') ?? '10').replace(/[{}\s]/g, '')) || 10;
+    if (paginated && Number.isFinite(height) && height > 0) {
+      const off = (key: string) => isFalseBinding(propVal(props, key));
+      const on = (key: string) => isTrueBinding(propVal(props, key));
+      const toolbar = !off('displaySearchBox') || !off('showFilterButton') || !on('hideColumnSelectorButton') ||
+        on('showDownloadButton') || on('showRefreshButton');
+      const rowHeight = ({ condensed: 36, spacious: 56 } as Record<string, number>)[String(propVal(props, 'cellSize'))] ?? 44;
+      const needed = (toolbar ? 56 : 0) + 52 + 41 + rows * rowHeight;
+      if (height < needed) {
+        errors.push(
+          `ShadTable "${label}" has dynamicHeight off and height ${height}px, but ${rows} rows per page needs at least ${needed}px, so rows are cut off inside it. ` +
+            `Remove dynamicHeight:false (the table then fits its rows), raise the height to ${needed}, or lower rowsPerPage.`
+        );
+      }
+    }
+  }
+
   if (spec.type === 'Table') {
     const columns = propVal(props, 'columns');
     if (Array.isArray(columns)) {

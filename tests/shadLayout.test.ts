@@ -53,3 +53,19 @@ it('refuses a binding that never closes', async () => {
   const result = lintComponentSpec({ name: 'k', type: 'ShadKeyValue', properties: { data: { value: '{{[{ label: "A", value: 1 }]}' } } });
   expect(result.errors.join(' ')).toMatch(/properties\.data .*never closes/);
 });
+
+it('refuses a fixed-height shadcn Table too short for a page of rows', async () => {
+  // A Luna build set dynamicHeight false and drew a 10-row table at ~420px: it showed five and a half rows.
+  const { lintComponentSpec } = await import('../src/lint.js');
+  const table = (height: number, extra: Record<string, unknown> = {}) => ({
+    name: 'products', type: 'ShadTable', layout: { top: 0, left: 1, width: 40, height },
+    properties: { dynamicHeight: { value: '{{false}}' }, rowsPerPage: { value: '{{10}}' }, ...extra },
+  });
+  expect(lintComponentSpec(table(420)).errors.join(' ')).toMatch(/needs at least 589px/);
+  expect(lintComponentSpec(table(600)).errors.join(' ')).not.toMatch(/needs at least/);
+  // dynamicHeight on (the default) fits its rows, so any drawn height is fine.
+  expect(lintComponentSpec({ ...table(300), properties: { rowsPerPage: { value: 10 } } }).errors.join(' ')).not.toMatch(/needs at least/);
+  // condensed rows and no toolbar need less.
+  const lean = table(420, { cellSize: { value: 'condensed' }, displaySearchBox: { value: '{{false}}' }, showFilterButton: { value: '{{false}}' }, hideColumnSelectorButton: { value: '{{true}}' } });
+  expect(lintComponentSpec(lean).errors.join(' ')).toMatch(/needs at least 453px/);
+});
