@@ -228,7 +228,16 @@ export function getComponentCatalogTool(client: ToolJetClient): ToolDef {
           if (!schema) {
             const near = nearbyTypes(singleType);
             const suggested = [...new Set([...packSuggestions(singleType), ...near])].slice(0, 6);
-            return ok({ error: `Unknown component type "${singleType}". Call with no argument to list valid types.`, ...(suggested.length ? { did_you_mean: suggested } : {}) });
+            // A guessed pack name (ShadCard, even ShadZZZ to fish for a list) gets the pack's whole type list, as a
+            // batch request does: a build that never saw ShadFunnelChart wrote its funnel as a line of text.
+            const packTypes = /^Shad[A-Z]/.test(singleType)
+              ? getCatalog().map((entry) => entry.type).filter((type) => /^Shad[A-Z]/.test(type))
+              : [];
+            return ok({
+              error: `Unknown component type "${singleType}". Call with no argument to list valid types.`,
+              ...(suggested.length ? { did_you_mean: suggested } : {}),
+              ...(packTypes.length ? { pack_types: packTypes } : {}),
+            });
           }
           return ok({
             ...selectSchema(schema, args),
