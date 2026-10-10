@@ -812,6 +812,32 @@ for (const [type, hints] of Object.entries(AUTHORING_HINTS)) {
   if (schemas[type]) schemas[type].authoringHints = hints;
 }
 
+// 2026-10-10: every shadcn/ui widget has a style set (Kanban's hint above lists its own), each falling back to the
+// app theme, so a design can blend the widgets into its theme or brand.
+const SHAD_STYLE_HINT =
+  'Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px.';
+const SHAD_STYLE_EXTRAS = {
+  ShadButton: 'Each variant keeps its own colours unless set: a set backgroundColor darkens slightly on hover unless hoverBackgroundColor is set; set textColor with it.',
+  ShadBadge: 'Each variant keeps its own colours unless set; a tinted chip is a light backgroundColor with a strong textColor of the same hue.',
+  ShadTable: 'properties.badgeColors maps badge-column values to colours, e.g. { Paid: "#16a34a", Overdue: "#dc2626" } (tinted chip, coloured text); unnamed values keep the built-in colours.',
+  ShadStat: 'positiveColor and negativeColor colour the change badge (text on a light tint) for trend "up" and "down"; unset keeps a neutral outline badge.',
+  ShadAreaChart: 'chartColor alone gives an on-brand palette (lighter tints and a deeper shade of it for later series); properties.colors lists explicit series colours in order.',
+  ShadBarChart: 'chartColor alone gives an on-brand palette (lighter tints and a deeper shade of it for later series); properties.colors lists explicit series colours in order.',
+  ShadPieChart: 'chartColor alone gives an on-brand palette (lighter tints and a deeper shade of it for later slices); properties.colors lists explicit slice colours in order.',
+  ShadInput: 'accentColor colours the focus ring.',
+  ShadTextarea: 'accentColor colours the focus ring.',
+  ShadSelect: 'accentColor colours the focus ring.',
+  ShadDatePicker: "accentColor colours the focus ring and the calendar's selected days.",
+  ShadProgress: 'barColor colours the bar; the track is a tint of it unless trackColor is set.',
+};
+for (const [type, schema] of Object.entries(schemas)) {
+  if (!type.startsWith('Shad') || type === 'ShadKanban') continue;
+  schema.authoringHints = {
+    ...schema.authoringHints,
+    styles: [SHAD_STYLE_HINT, SHAD_STYLE_EXTRAS[type]].filter(Boolean).join(' '),
+  };
+}
+
 // Also deliver these contracts in selective authoringHints reads, which intentionally omit
 // overview and exposedVariables. Do not expand every compact property response globally.
 if (schemas.Calendar) {

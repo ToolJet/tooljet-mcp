@@ -19799,6 +19799,26 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "titleColor",
+        "label": "Item title color",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Item content color",
+        "valueType": "string"
+      },
+      {
+        "key": "dividerColor",
+        "label": "Divider color",
+        "valueType": "string"
+      },
+      {
+        "key": "iconColor",
+        "label": "Chevron color",
+        "valueType": "string"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -19828,7 +19848,10 @@
         "name": "openIndexes",
         "default": []
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px."
+    }
   },
   "ShadAlert": {
     "type": "ShadAlert",
@@ -19894,6 +19917,31 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "backgroundColor",
+        "label": "Alert background",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Alert border color",
+        "valueType": "string"
+      },
+      {
+        "key": "titleColor",
+        "label": "Alert title color",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Alert description color",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Alert radius",
+        "valueType": "union"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -19914,7 +19962,10 @@
         "name": "isDisabled",
         "default": false
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px."
+    }
   },
   "ShadAreaChart": {
     "type": "ShadAreaChart",
@@ -19968,6 +20019,12 @@
         "default": "No data"
       },
       {
+        "key": "colors",
+        "label": "Series colors (in order)",
+        "valueType": "array",
+        "default": "{{[]}}"
+      },
+      {
         "key": "lineOnly",
         "label": "Line only (no fill)",
         "valueType": "boolean",
@@ -20017,6 +20074,26 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "chartColor",
+        "label": "Chart color (series palette from it)",
+        "valueType": "string"
+      },
+      {
+        "key": "gridColor",
+        "label": "Grid line color",
+        "valueType": "string"
+      },
+      {
+        "key": "axisTextColor",
+        "label": "Axis label color",
+        "valueType": "string"
+      },
+      {
+        "key": "legendTextColor",
+        "label": "Legend text color",
+        "valueType": "string"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -20046,7 +20123,10 @@
         "name": "clickedDatum",
         "default": {}
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. chartColor alone gives an on-brand palette (lighter tints and a deeper shade of it for later series); properties.colors lists explicit series colours in order."
+    }
   },
   "ShadAvatar": {
     "type": "ShadAvatar",
@@ -20102,6 +20182,21 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "backgroundColor",
+        "label": "Initials background",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Initials color",
+        "valueType": "string"
+      },
+      {
+        "key": "ringColor",
+        "label": "Ring color (between stacked avatars)",
+        "valueType": "string"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -20122,7 +20217,10 @@
         "name": "isDisabled",
         "default": false
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px."
+    }
   },
   "ShadBadge": {
     "type": "ShadBadge",
@@ -20180,6 +20278,26 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "backgroundColor",
+        "label": "Badge background",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Badge text color",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Badge border color",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Badge radius",
+        "valueType": "union"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -20200,7 +20318,10 @@
         "name": "isDisabled",
         "default": false
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Each variant keeps its own colours unless set; a tinted chip is a light backgroundColor with a strong textColor of the same hue."
+    }
   },
   "ShadBarChart": {
     "type": "ShadBarChart",
@@ -20254,6 +20375,12 @@
         "default": "No data"
       },
       {
+        "key": "colors",
+        "label": "Series colors (in order)",
+        "valueType": "array",
+        "default": "{{[]}}"
+      },
+      {
         "key": "horizontal",
         "label": "Horizontal bars",
         "valueType": "boolean",
@@ -20292,6 +20419,26 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "chartColor",
+        "label": "Chart color (series palette from it)",
+        "valueType": "string"
+      },
+      {
+        "key": "gridColor",
+        "label": "Grid line color",
+        "valueType": "string"
+      },
+      {
+        "key": "axisTextColor",
+        "label": "Axis label color",
+        "valueType": "string"
+      },
+      {
+        "key": "legendTextColor",
+        "label": "Legend text color",
+        "valueType": "string"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -20321,7 +20468,10 @@
         "name": "clickedDatum",
         "default": {}
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. chartColor alone gives an on-brand palette (lighter tints and a deeper shade of it for later series); properties.colors lists explicit series colours in order."
+    }
   },
   "ShadBreadcrumb": {
     "type": "ShadBreadcrumb",
@@ -20365,6 +20515,21 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "textColor",
+        "label": "Breadcrumb link color",
+        "valueType": "string"
+      },
+      {
+        "key": "currentColor",
+        "label": "Current page color",
+        "valueType": "string"
+      },
+      {
+        "key": "separatorColor",
+        "label": "Separator color",
+        "valueType": "string"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -20385,7 +20550,10 @@
         "name": "isDisabled",
         "default": false
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px."
+    }
   },
   "ShadButton": {
     "type": "ShadButton",
@@ -20460,6 +20628,31 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "backgroundColor",
+        "label": "Button background",
+        "valueType": "string"
+      },
+      {
+        "key": "hoverBackgroundColor",
+        "label": "Button hover background",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Button text color",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Button border color",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Button radius",
+        "valueType": "union"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -20485,7 +20678,10 @@
         "name": "isDisabled",
         "default": false
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Each variant keeps its own colours unless set: a set backgroundColor darkens slightly on hover unless hoverBackgroundColor is set; set textColor with it."
+    }
   },
   "ShadCheckbox": {
     "type": "ShadCheckbox",
@@ -20541,6 +20737,26 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "accentColor",
+        "label": "Checked color",
+        "valueType": "string"
+      },
+      {
+        "key": "labelColor",
+        "label": "Label color",
+        "valueType": "string"
+      },
+      {
+        "key": "helpTextColor",
+        "label": "Help text color",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Unchecked box border color",
+        "valueType": "string"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -20570,7 +20786,10 @@
         "name": "value",
         "default": false
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px."
+    }
   },
   "ShadDatePicker": {
     "type": "ShadDatePicker",
@@ -20648,6 +20867,46 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "labelColor",
+        "label": "Label color",
+        "valueType": "string"
+      },
+      {
+        "key": "helpTextColor",
+        "label": "Help text color",
+        "valueType": "string"
+      },
+      {
+        "key": "backgroundColor",
+        "label": "Field background",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Field text color",
+        "valueType": "string"
+      },
+      {
+        "key": "placeholderColor",
+        "label": "Placeholder color",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Field border color",
+        "valueType": "string"
+      },
+      {
+        "key": "accentColor",
+        "label": "Accent (focus ring, selection)",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Field radius",
+        "valueType": "union"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -20690,7 +20949,10 @@
         "name": "endDate",
         "default": ""
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. accentColor colours the focus ring and the calendar's selected days."
+    }
   },
   "ShadEmpty": {
     "type": "ShadEmpty",
@@ -20746,6 +21008,41 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "backgroundColor",
+        "label": "Background",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Dashed border color",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Radius",
+        "valueType": "union"
+      },
+      {
+        "key": "iconBackgroundColor",
+        "label": "Icon background",
+        "valueType": "string"
+      },
+      {
+        "key": "iconColor",
+        "label": "Icon color",
+        "valueType": "string"
+      },
+      {
+        "key": "titleColor",
+        "label": "Title color",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Description color",
+        "valueType": "string"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -20771,7 +21068,10 @@
         "name": "isDisabled",
         "default": false
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px."
+    }
   },
   "ShadHeading": {
     "type": "ShadHeading",
@@ -20833,6 +21133,17 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "textColor",
+        "label": "Heading color",
+        "valueType": "string"
+      },
+      {
+        "key": "textAlign",
+        "label": "Text alignment (left, center, right)",
+        "valueType": "string",
+        "default": "left"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -20853,7 +21164,10 @@
         "name": "isDisabled",
         "default": false
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px."
+    }
   },
   "ShadInput": {
     "type": "ShadInput",
@@ -20928,6 +21242,46 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "labelColor",
+        "label": "Label color",
+        "valueType": "string"
+      },
+      {
+        "key": "helpTextColor",
+        "label": "Help text color",
+        "valueType": "string"
+      },
+      {
+        "key": "backgroundColor",
+        "label": "Field background",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Field text color",
+        "valueType": "string"
+      },
+      {
+        "key": "placeholderColor",
+        "label": "Placeholder color",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Field border color",
+        "valueType": "string"
+      },
+      {
+        "key": "accentColor",
+        "label": "Accent (focus ring, selection)",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Field radius",
+        "valueType": "union"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -20977,7 +21331,10 @@
         "name": "value",
         "default": ""
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. accentColor colours the focus ring."
+    }
   },
   "ShadPieChart": {
     "type": "ShadPieChart",
@@ -21037,6 +21394,12 @@
         "default": "No data"
       },
       {
+        "key": "colors",
+        "label": "Series colors (in order)",
+        "valueType": "array",
+        "default": "{{[]}}"
+      },
+      {
         "key": "loadingState",
         "label": "Loading state",
         "valueType": "boolean",
@@ -21061,6 +21424,31 @@
         "label": "Box shadow",
         "valueType": "union",
         "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "chartColor",
+        "label": "Chart color (series palette from it)",
+        "valueType": "string"
+      },
+      {
+        "key": "legendTextColor",
+        "label": "Legend text color",
+        "valueType": "string"
+      },
+      {
+        "key": "sliceBorderColor",
+        "label": "Slice border color",
+        "valueType": "string"
+      },
+      {
+        "key": "centerValueColor",
+        "label": "Center figure color",
+        "valueType": "string"
+      },
+      {
+        "key": "centerLabelColor",
+        "label": "Center caption color",
+        "valueType": "string"
       },
       {
         "key": "cssClass",
@@ -21092,7 +21480,10 @@
         "name": "clickedDatum",
         "default": {}
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. chartColor alone gives an on-brand palette (lighter tints and a deeper shade of it for later slices); properties.colors lists explicit slice colours in order."
+    }
   },
   "ShadProgress": {
     "type": "ShadProgress",
@@ -21148,6 +21539,31 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "barColor",
+        "label": "Bar color",
+        "valueType": "string"
+      },
+      {
+        "key": "trackColor",
+        "label": "Track color",
+        "valueType": "string"
+      },
+      {
+        "key": "labelColor",
+        "label": "Label color",
+        "valueType": "string"
+      },
+      {
+        "key": "valueColor",
+        "label": "Percent text color",
+        "valueType": "string"
+      },
+      {
+        "key": "barHeight",
+        "label": "Bar height",
+        "valueType": "union"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -21168,7 +21584,10 @@
         "name": "isDisabled",
         "default": false
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. barColor colours the bar; the track is a tint of it unless trackColor is set."
+    }
   },
   "ShadRadioGroup": {
     "type": "ShadRadioGroup",
@@ -21236,6 +21655,26 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "accentColor",
+        "label": "Selected color",
+        "valueType": "string"
+      },
+      {
+        "key": "labelColor",
+        "label": "Label color",
+        "valueType": "string"
+      },
+      {
+        "key": "helpTextColor",
+        "label": "Help text color",
+        "valueType": "string"
+      },
+      {
+        "key": "optionTextColor",
+        "label": "Option text color",
+        "valueType": "string"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -21277,7 +21716,10 @@
         "name": "value",
         "default": ""
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px."
+    }
   },
   "ShadSelect": {
     "type": "ShadSelect",
@@ -21345,6 +21787,46 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "labelColor",
+        "label": "Label color",
+        "valueType": "string"
+      },
+      {
+        "key": "helpTextColor",
+        "label": "Help text color",
+        "valueType": "string"
+      },
+      {
+        "key": "backgroundColor",
+        "label": "Field background",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Field text color",
+        "valueType": "string"
+      },
+      {
+        "key": "placeholderColor",
+        "label": "Placeholder color",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Field border color",
+        "valueType": "string"
+      },
+      {
+        "key": "accentColor",
+        "label": "Accent (focus ring, selection)",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Field radius",
+        "valueType": "union"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -21394,7 +21876,10 @@
         "name": "selectedOption",
         "default": {}
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. accentColor colours the focus ring."
+    }
   },
   "ShadSeparator": {
     "type": "ShadSeparator",
@@ -21442,6 +21927,16 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "lineColor",
+        "label": "Line color",
+        "valueType": "string"
+      },
+      {
+        "key": "thickness",
+        "label": "Line thickness",
+        "valueType": "union"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -21462,7 +21957,10 @@
         "name": "isDisabled",
         "default": false
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px."
+    }
   },
   "ShadSkeleton": {
     "type": "ShadSkeleton",
@@ -21512,6 +22010,11 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "placeholderColor",
+        "label": "Placeholder color",
+        "valueType": "string"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -21532,7 +22035,10 @@
         "name": "isDisabled",
         "default": false
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px."
+    }
   },
   "ShadSlider": {
     "type": "ShadSlider",
@@ -21606,6 +22112,26 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "accentColor",
+        "label": "Range and handle color",
+        "valueType": "string"
+      },
+      {
+        "key": "labelColor",
+        "label": "Label color",
+        "valueType": "string"
+      },
+      {
+        "key": "helpTextColor",
+        "label": "Help text color",
+        "valueType": "string"
+      },
+      {
+        "key": "trackColor",
+        "label": "Track color",
+        "valueType": "string"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -21635,7 +22161,10 @@
         "name": "value",
         "default": 50
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px."
+    }
   },
   "ShadStat": {
     "type": "ShadStat",
@@ -21720,6 +22249,46 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "backgroundColor",
+        "label": "Card background",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Card border color",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Card radius",
+        "valueType": "union"
+      },
+      {
+        "key": "labelColor",
+        "label": "Label color",
+        "valueType": "string"
+      },
+      {
+        "key": "valueColor",
+        "label": "Value color",
+        "valueType": "string"
+      },
+      {
+        "key": "footnoteColor",
+        "label": "Footnote color",
+        "valueType": "string"
+      },
+      {
+        "key": "positiveColor",
+        "label": "Change color when trend is up",
+        "valueType": "string"
+      },
+      {
+        "key": "negativeColor",
+        "label": "Change color when trend is down",
+        "valueType": "string"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -21740,7 +22309,10 @@
         "name": "isDisabled",
         "default": false
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. positiveColor and negativeColor colour the change badge (text on a light tint) for trend \"up\" and \"down\"; unset keeps a neutral outline badge."
+    }
   },
   "ShadSwitch": {
     "type": "ShadSwitch",
@@ -21796,6 +22368,26 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "accentColor",
+        "label": "Switch on color",
+        "valueType": "string"
+      },
+      {
+        "key": "labelColor",
+        "label": "Label color",
+        "valueType": "string"
+      },
+      {
+        "key": "helpTextColor",
+        "label": "Help text color",
+        "valueType": "string"
+      },
+      {
+        "key": "offColor",
+        "label": "Switch off color",
+        "valueType": "string"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -21825,7 +22417,10 @@
         "name": "value",
         "default": false
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px."
+    }
   },
   "ShadTable": {
     "type": "ShadTable",
@@ -21867,6 +22462,12 @@
         "default": "No results."
       },
       {
+        "key": "badgeColors",
+        "label": "Badge colours by value",
+        "valueType": "object",
+        "default": "{{{}}}"
+      },
+      {
         "key": "dynamicHeight",
         "label": "Dynamic height",
         "valueType": "boolean",
@@ -21897,6 +22498,46 @@
         "label": "Box shadow",
         "valueType": "union",
         "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "backgroundColor",
+        "label": "Table background",
+        "valueType": "string"
+      },
+      {
+        "key": "headerBackgroundColor",
+        "label": "Header row background",
+        "valueType": "string"
+      },
+      {
+        "key": "headerTextColor",
+        "label": "Header text color",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Cell text color",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Table border and row divider color",
+        "valueType": "string"
+      },
+      {
+        "key": "rowHoverColor",
+        "label": "Row hover background",
+        "valueType": "string"
+      },
+      {
+        "key": "selectedRowColor",
+        "label": "Selected row background",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Table radius",
+        "valueType": "union"
       },
       {
         "key": "cssClass",
@@ -21932,7 +22573,10 @@
         "name": "selectedRowIndex",
         "default": null
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. properties.badgeColors maps badge-column values to colours, e.g. { Paid: \"#16a34a\", Overdue: \"#dc2626\" } (tinted chip, coloured text); unnamed values keep the built-in colours."
+    }
   },
   "ShadText": {
     "type": "ShadText",
@@ -21995,6 +22639,17 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "textColor",
+        "label": "Text color",
+        "valueType": "string"
+      },
+      {
+        "key": "textAlign",
+        "label": "Text alignment (left, center, right)",
+        "valueType": "string",
+        "default": "left"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -22015,7 +22670,10 @@
         "name": "isDisabled",
         "default": false
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px."
+    }
   },
   "ShadTextarea": {
     "type": "ShadTextarea",
@@ -22077,6 +22735,46 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "labelColor",
+        "label": "Label color",
+        "valueType": "string"
+      },
+      {
+        "key": "helpTextColor",
+        "label": "Help text color",
+        "valueType": "string"
+      },
+      {
+        "key": "backgroundColor",
+        "label": "Field background",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Field text color",
+        "valueType": "string"
+      },
+      {
+        "key": "placeholderColor",
+        "label": "Placeholder color",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Field border color",
+        "valueType": "string"
+      },
+      {
+        "key": "accentColor",
+        "label": "Accent (focus ring, selection)",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Field radius",
+        "valueType": "union"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -22122,7 +22820,10 @@
         "name": "value",
         "default": ""
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. accentColor colours the focus ring."
+    }
   },
   "ShadToggleGroup": {
     "type": "ShadToggleGroup",
@@ -22178,6 +22879,31 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "backgroundColor",
+        "label": "Group background",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Option text color",
+        "valueType": "string"
+      },
+      {
+        "key": "selectedBackgroundColor",
+        "label": "Selected option background",
+        "valueType": "string"
+      },
+      {
+        "key": "selectedTextColor",
+        "label": "Selected option text color",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Group radius",
+        "valueType": "union"
+      },
+      {
         "key": "cssClass",
         "label": "CSS class",
         "default": ""
@@ -22207,7 +22933,10 @@
         "name": "value",
         "default": ""
       }
-    ]
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px."
+    }
   },
   "ShadKanban": {
     "type": "ShadKanban",
