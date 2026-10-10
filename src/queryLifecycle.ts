@@ -1,4 +1,5 @@
 import type { AppSummary, EventSpec } from './tooljetClient.js';
+import { isModalV2Type } from './modalTypes.js';
 
 export interface LifecycleAlert {
   message: string;
@@ -84,7 +85,7 @@ export function expandQueryLifecycles(
     if (lifecycle.closeModalId) {
       const modal = components.get(lifecycle.closeModalId);
       if (!modal) throw new Error(`Query "${sourceName}" lifecycle modal "${lifecycle.closeModalId}" does not exist.`);
-      if (!['Modal', 'ModalV2'].includes(modal.type ?? '')) {
+      if (modal.type !== 'Modal' && !isModalV2Type(modal.type)) {
         throw new Error(
           `Query "${sourceName}" lifecycle close target "${modal.name ?? modal.id}" is ${modal.type ?? 'unknown'}, not a Modal.`
         );

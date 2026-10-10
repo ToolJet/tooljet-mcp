@@ -162,7 +162,7 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
     for (let j = i + 1; j < boxes.length; j++) {
       const a = boxes[i];
       const b = boxes[j];
-      if (a.name.startsWith('ModalV2:') || b.name.startsWith('ModalV2:')) continue;
+      if (/^(ModalV2|ShadDialog):/.test(a.name) || /^(ModalV2|ShadDialog):/.test(b.name)) continue;
       if (a.name.split(':')[1] === b.name.split(':')[1]) continue; // a widget's inner container repeats its name
       if (a.el.contains(b.el) || b.el.contains(a.el)) continue; // a child inside its parent (a Kanban card, a modal body) is not an overlap
       const ix = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);

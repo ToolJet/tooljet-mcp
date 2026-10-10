@@ -31,3 +31,13 @@ it('refuses a binding nested inside another', async () => {
   const result = lintComponentSpec({ name: 't', type: 'ShadTable', properties: { columns: { value: "{{[{ key: 'a', textColor: '{{rowData.a}}' }]}}" } } });
   expect(result.errors.join(' ')).toMatch(/conditionalStyles/);
 });
+
+it('treats the shadcn Dialog as a ModalV2: header and footer slots, and a show-modal target', async () => {
+  const dialog = { id: 'dlg', type: 'ShadDialog', properties: { useDefaultButton: { value: '{{false}}' } } };
+  const title = { id: 'ttl', type: 'ShadHeading', parent: 'dlg-header', layout: { left: 1, top: 12, width: 20, height: 32 } };
+  const save = { id: 'save', type: 'ShadButton', parent: 'dlg-footer', layout: { left: 34, top: 16, width: 8, height: 36 } };
+  expect(lintComponentSlots([dialog, title, save])).toEqual([]);
+  const { isModalV2Type } = await import('../src/modalTypes.js');
+  expect(isModalV2Type('ShadDialog')).toBe(true);
+  expect(isModalV2Type('ShadCard')).toBe(false);
+});

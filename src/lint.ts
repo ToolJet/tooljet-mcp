@@ -37,6 +37,7 @@ import {
   FORM_SCHEMA_FIELD_TYPE_SET,
   SAFE_GENERATED_FORM_FIELD_TYPE_SET,
 } from './formFieldTypes.js';
+import { isModalV2Type } from './modalTypes.js';
 
 export interface LintResult {
   errors: string[];
@@ -187,7 +188,7 @@ const TABLE_FOOTER_HEIGHT_PX = 46;
 const TABLE_BORDER_PX = 2;
 /** Above this many visible Table columns, a default-width table usually forces horizontal scrolling. */
 const TABLE_VISIBLE_COLUMN_WARN = 10;
-const SLOT_PARENT_TYPES = new Set(['ModalV2', 'Form', 'Container', 'Accordion']);
+const SLOT_PARENT_TYPES = new Set(['ModalV2', 'ShadDialog', 'Form', 'Container', 'Accordion']);
 // Widgets with the Tabs contract (tabItems, per-tab canvases, tab-<id> slots): the native Tabs and the shadcn/ui pack's.
 const TABS_TYPES = new Set(['Tabs', 'ShadTabs']);
 // Row-scoped lists that repeat one canvas per item (listItem): the native Listview and the shadcn/ui pack's.
@@ -786,7 +787,7 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
     if (parent && !validParent) {
       errors.push(
         `Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" with ` +
-          `${parent.type ?? 'unknown'} parent "${parent.name ?? parent.id}"; header/body/footer belong to ModalV2, Form, and Container (header and body also to Accordion); Kanban supports body (card) and modal; tab-t0, tab-t1 ... belong to Tabs.`
+          `${parent.type ?? 'unknown'} parent "${parent.name ?? parent.id}"; header/body/footer belong to ModalV2 (and ShadDialog), Form, and Container (header and body also to Accordion); Kanban supports body (card) and modal; tab-t0, tab-t1 ... belong to Tabs.`
       );
     }
   }
@@ -1270,7 +1271,7 @@ export function lintCanvasSideGutter(components: LintComponent[]): string[] {
   const MAX_RIGHT = 41;
   // Modals/drawers carry a trigger-ish desktop rect that is not page content, so a right-edge value
   // there is not a gutter problem.
-  const EXEMPT = new Set(['Modal', 'ModalV2', 'Drawer']);
+  const EXEMPT = new Set(['Modal', 'ModalV2', 'ShadDialog', 'Drawer']);
   const roots = components.filter(
     (component) => !parentPlacement(component) && !EXEMPT.has(component.type ?? '')
   );
@@ -1648,10 +1649,10 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
 
   // A ModalV2 keeps its catalog default useDefaultButton:true, so a "Launch Modal" trigger button renders at the
   // modal's own coordinates: on 2026-09-12 that was the stray dark block at the bottom of two inventory-build pages.
-  if (spec.type === 'ModalV2' && !isFalseBinding(propVal(props, 'useDefaultButton'))) {
+  if (isModalV2Type(spec.type) && !isFalseBinding(propVal(props, 'useDefaultButton'))) {
     const top = (spec.layouts?.desktop ?? spec.layout)?.top;
     errors.push(
-      `ModalV2 "${label}": properties.useDefaultButton is on (the catalog default), so ToolJet renders a "Launch Modal" trigger ` +
+      `${spec.type} "${label}": properties.useDefaultButton is on (the catalog default), so ToolJet renders a "Launch Modal" trigger ` +
         `button at the modal's own coordinates${typeof top === 'number' ? ` (top ${top})` : ''} as a stray block on the page. ` +
         'Set properties.useDefaultButton to false and open the modal from your own Button with a show-modal event.'
     );
@@ -2547,7 +2548,7 @@ export function detectOverlaps(components: LintComponent[], context: GeometryCon
   const warnings: string[] = [];
   const flexBodies = flexPlacementKeys(components, context);
   const items = components
-    .filter((c) => !(c.type === 'ModalV2' && isFalseBinding(propVal(c.properties, 'useDefaultButton'))))
+    .filter((c) => !(isModalV2Type(c.type) && isFalseBinding(propVal(c.properties, 'useDefaultButton'))))
     .map((c) => ({
       component: c,
       name: c.name ?? c.type ?? '?',
@@ -2595,7 +2596,7 @@ export function lintHiddenModalHitTargets(components: LintComponent[]): string[]
   const interactive = new Set(['Button', 'ButtonGroup', 'ButtonGroupV2', 'Table', 'Kanban', 'Calendar', 'Map', ...FORM_INPUT_TYPES]);
   const warnings: string[] = [];
   for (const modal of components) {
-    if (modal.type !== 'ModalV2' || !isFalseBinding(propVal(modal.properties, 'useDefaultButton'))) continue;
+    if (!isModalV2Type(modal.type) || !isFalseBinding(propVal(modal.properties, 'useDefaultButton'))) continue;
     const a = modal.layouts?.desktop ?? modal.layout;
     if (!a) continue;
     const targets: string[] = [];
@@ -2608,7 +2609,7 @@ export function lintHiddenModalHitTargets(components: LintComponent[]): string[]
         targets.push(target.name ?? target.type ?? '?');
       }
     }
-    if (targets.length) warnings.push(`ModalV2 "${modal.name ?? '?'}" hides its launch button but its canvas footprint overlaps interactive component(s) ${targets.map(n=>`"${n}"`).join(', ')}. The invisible wrapper can intercept clicks even with useDefaultButton:false. Move its footprint to unused canvas space, keeping modal contents in their own slots, and verify the actual trigger is clickable. Do not disable the modal or remove its open action.`);
+    if (targets.length) warnings.push(`${modal.type} "${modal.name ?? '?'}" hides its launch button but its canvas footprint overlaps interactive component(s) ${targets.map(n=>`"${n}"`).join(', ')}. The invisible wrapper can intercept clicks even with useDefaultButton:false. Move its footprint to unused canvas space, keeping modal contents in their own slots, and verify the actual trigger is clickable. Do not disable the modal or remove its open action.`);
   }
   return warnings;
 }
@@ -2724,7 +2725,7 @@ export function lintModalChildren(components: LintComponent[]): string[] {
     refs.get(parentPlacement(component)?.parentId ?? '');
   const modalChildren = components.filter((component) => {
     const parent = parentOf(component);
-    return parent?.type === 'ModalV2' || parent?.type === 'Modal';
+    return isModalV2Type(parent?.type) || parent?.type === 'Modal';
   });
   const bodyChildren = modalChildren.filter((component) => parentPlacement(component)?.slotName === 'body');
 
@@ -2764,11 +2765,11 @@ export function lintModalChildren(components: LintComponent[]): string[] {
     }
   }
 
-  for (const modal of components.filter((component) => component.type === 'ModalV2' || component.type === 'Modal')) {
+  for (const modal of components.filter((component) => isModalV2Type(component.type) || component.type === 'Modal')) {
     const key = componentKey(modal);
     if (!key) continue;
     const children = bodyChildren.filter((child) => parentPlacement(child)?.parentId === key);
-    if (modal.type === 'ModalV2' && !isFalseBinding(propVal(modal.properties, 'showHeader'))) {
+    if (isModalV2Type(modal.type) && !isFalseBinding(propVal(modal.properties, 'showHeader'))) {
       const headerChildren = modalChildren.filter((child) => {
         const placement = parentPlacement(child);
         return placement?.parentId === key && placement.slotName === 'header';
@@ -2796,7 +2797,7 @@ export function lintModalChildren(components: LintComponent[]): string[] {
 
     const lowest = childBottoms.reduce((current, candidate) => candidate.bottom > current.bottom ? candidate : current);
     const modalHeight = staticNumber(propVal(modal.properties, 'modalHeight'), 400);
-    const isV2 = modal.type === 'ModalV2';
+    const isV2 = isModalV2Type(modal.type);
     const headerHeight = !isV2 || isFalseBinding(propVal(modal.properties, 'showHeader'))
       ? 0
       : staticNumber(propVal(modal.properties, 'headerHeight'), 80);
@@ -2949,7 +2950,7 @@ export function lintFlexContainerFit(components: LintComponent[]): string[] {
 }
 
 // Widgets that are legitimately a few pixels tall, or whose authored box is not what renders.
-const THIN_BY_DESIGN = new Set(['Divider', 'VerticalDivider', 'Spacer', 'ModalV2', 'Modal', 'Icon']);
+const THIN_BY_DESIGN = new Set(['Divider', 'VerticalDivider', 'Spacer', 'ModalV2', 'ShadDialog', 'Modal', 'Icon']);
 const MIN_RENDERABLE_HEIGHT = 24;
 
 /** A model that mistakes the pixel grid for row units authors 14px headers, 10px inputs and 1px

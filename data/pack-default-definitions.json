@@ -1618,6 +1618,131 @@
      "value": "{{false}}"
     }
    }
+  },
+  "ShadDialog": {
+   "properties": {
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "dynamicHeight": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "collapseWhenHidden": {
+     "value": "{{false}}"
+    },
+    "disabledTrigger": {
+     "value": "{{false}}"
+    },
+    "disabledModal": {
+     "value": "{{false}}"
+    },
+    "useDefaultButton": {
+     "value": "{{true}}"
+    },
+    "triggerButtonLabel": {
+     "value": "Open dialog"
+    },
+    "size": {
+     "value": "lg"
+    },
+    "showHeader": {
+     "value": "{{true}}"
+    },
+    "showFooter": {
+     "value": "{{true}}"
+    },
+    "hideCloseButton": {
+     "value": "{{false}}"
+    },
+    "hideOnEsc": {
+     "value": "{{true}}"
+    },
+    "closeOnClickingOutside": {
+     "value": "{{false}}"
+    },
+    "modalHeight": {
+     "value": "{{400}}"
+    },
+    "headerHeight": {
+     "value": 80
+    },
+    "footerHeight": {
+     "value": 68
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    },
+    "variant": {
+     "value": "dialog"
+    },
+    "side": {
+     "value": "right"
+    }
+   },
+   "styles": {
+    "icon": {
+     "value": "IconAlignBoxBottomLeft"
+    },
+    "iconVisibility": {
+     "value": false
+    },
+    "iconColor": {
+     "value": "var(--cc-surface1-surface)"
+    },
+    "direction": {
+     "value": "left"
+    },
+    "headerBackgroundColor": {
+     "value": "var(--cc-surface1-surface)"
+    },
+    "footerBackgroundColor": {
+     "value": "var(--cc-surface1-surface)"
+    },
+    "bodyBackgroundColor": {
+     "value": "var(--cc-surface1-surface)"
+    },
+    "triggerButtonBackgroundColor": {
+     "value": "var(--cc-primary-brand)"
+    },
+    "triggerButtonHoverBackgroundMode": {
+     "value": "auto"
+    },
+    "triggerButtonHoverBackgroundColor": {
+     "value": "var(--cc-primary-brand)"
+    },
+    "triggerButtonTextColor": {
+     "value": "var(--cc-surface1-surface)"
+    },
+    "triggerButtonTextSize": {
+     "value": "{{14}}"
+    },
+    "triggerButtonFontWeight": {
+     "value": "normal"
+    },
+    "triggerButtonContentAlignment": {
+     "value": "center"
+    },
+    "headerDividerColor": {
+     "value": "#00000000"
+    },
+    "footerDividerColor": {
+     "value": "#00000000"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
   }
  }
 }

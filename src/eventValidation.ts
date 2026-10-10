@@ -5,6 +5,7 @@ import { lintComponentStateBindings } from './componentStateBindings.js';
 import { requiredMutationGuardWarnings } from './requiredMutationGuard.js';
 import { queryEventCycleErrors } from './queryEventCycles.js';
 import type { AppSummary, EventSpec, EventSourceType } from './tooljetClient.js';
+import { isModalV2Type } from './modalTypes.js';
 
 export interface EventValidationResult {
   errors: string[];
@@ -340,9 +341,9 @@ export function validateEvents(
       const target = typeof modal === 'string' ? components.get(modal) : undefined;
       if (!target) {
         errors.push(`${label}: ${actionId} modal target "${String(modal)}" does not exist.`);
-      } else if (!['Modal', 'ModalV2'].includes(target.type ?? '')) {
+      } else if (target.type !== 'Modal' && !isModalV2Type(target.type)) {
         errors.push(
-          `${label}: ${actionId} target must be a Modal or ModalV2, not ${target.type ?? 'unknown'} ` +
+          `${label}: ${actionId} target must be a Modal, ModalV2 or ShadDialog, not ${target.type ?? 'unknown'} ` +
             `"${target.name ?? target.id}".`
         );
       }
@@ -488,9 +489,9 @@ export function validateEvents(
         visited.add(child.id);
         const parent = components.get(decodeComponentParent(child.parent).parentId);
         if (!parent) break;
-        if (parent.type === 'ModalV2' && chain.slice(index + 1).some(({ event: later }) =>
+        if (isModalV2Type(parent.type) && chain.slice(index + 1).some(({ event: later }) =>
           later.action.actionId === 'show-modal' && later.action.modal === parent.id)) {
-          errors.push(`Event "${event.name ?? index}": prefill targets a child of ModalV2 "${parent.name ?? parent.id}" ` +
+          errors.push(`Event "${event.name ?? index}": prefill targets a child of ${parent.type} "${parent.name ?? parent.id}" ` +
             'before show-modal. Closed modal children are not mounted; these values can be lost. ' +
             'Bind input defaults to the selected record, or initialize after the modal opens.');
           break;

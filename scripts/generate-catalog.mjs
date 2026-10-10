@@ -843,7 +843,7 @@ for (const [type, hints] of Object.entries(AUTHORING_HINTS)) {
 // 2026-10-10: every shadcn/ui widget has a style set (Kanban's hint above lists its own), each falling back to the
 // app theme, so a design can blend the widgets into its theme or brand.
 const SHAD_STYLE_HINT =
-  'Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px.';
+  'Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query\'s isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.';
 const SHAD_STYLE_EXTRAS = {
   ShadButton: 'Each variant keeps its own colours unless set: a set backgroundColor darkens slightly on hover unless hoverBackgroundColor is set; set textColor with it.',
   ShadBadge: 'Each variant keeps its own colours unless set; a tinted chip is a light backgroundColor with a strong textColor of the same hue.',
@@ -863,6 +863,17 @@ for (const [type, schema] of Object.entries(schemas)) {
   schema.authoringHints = {
     ...schema.authoringHints,
     styles: [SHAD_STYLE_HINT, SHAD_STYLE_EXTRAS[type]].filter(Boolean).join(' '),
+  };
+}
+
+// 2026-10-10: the shadcn Dialog is ModalV2 in the pack's look: the same slots, close lifecycle and coordinate space.
+if (schemas.ShadDialog && schemas.ModalV2) {
+  schemas.ShadDialog.renderingHints = schemas.ModalV2.renderingHints;
+  schemas.ShadDialog.authoringHints = {
+    ...schemas.ModalV2.authoringHints,
+    ...schemas.ShadDialog.authoringHints,
+    composition:
+      'Header: a ShadHeading (level "h4") with a muted ShadText description under it; body: the content or form; footer: ShadButtons, an outline Cancel then the primary action, right-aligned. Set useDefaultButton false and open it with show-modal from a ShadButton or a table row event. variant "sheet" (side "right") is a full-height side panel for record details and edit forms; "dialog" is centred for confirmations and short forms.',
   };
 }
 

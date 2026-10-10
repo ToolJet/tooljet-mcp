@@ -1013,7 +1013,7 @@ describe('add_events tool', () => {
     });
 
     expect(result.isError).toBe(true);
-    expect(result.content[0]!.text).toMatch(/show-modal target must be a Modal or ModalV2, not Text/i);
+    expect(result.content[0]!.text).toMatch(/show-modal target must be a Modal, ModalV2 or ShadDialog, not Text/i);
     expect(client.createEvents).not.toHaveBeenCalled();
   });
 

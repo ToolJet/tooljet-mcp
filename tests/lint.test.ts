@@ -1342,7 +1342,7 @@ describe('lintComponents (batch)', () => {
       { name: 'board', type: 'Kanban', clientRef: 'board' },
       { name: 'badHeader', type: 'Text', parentRef: 'board', slotName: 'header', properties: {} },
     ]);
-    expect(result.errors.join(' ')).toMatch(/slot_name:"header".*Kanban parent.*ModalV2, Form, and Container/i);
+    expect(result.errors.join(' ')).toMatch(/slot_name:"header".*Kanban parent.*ModalV2 \(and ShadDialog\), Form, and Container/i);
   });
 
   it('aggregates per-component results and overlaps', () => {
