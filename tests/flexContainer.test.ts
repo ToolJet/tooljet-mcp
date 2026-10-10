@@ -381,14 +381,12 @@ describe('Ant Design pack and FlexContainer catalog', () => {
     'AntStatistic', 'AntTitle', 'AntText', 'AntDescriptions', 'AntBadge', 'AntAvatar', 'AntProgress', 'AntTimeline', 'AntEmpty',
     'AntTextArea', 'AntInputNumber', 'AntCheckbox', 'AntSwitch', 'AntSegmented', 'AntAlert', 'AntSteps', 'AntBreadcrumb', 'AntDivider'];
 
-  it('lists every Ant Design type in the palette and add_components accepts them', () => {
+  // The Ant Design pack is parked (2026-10-10): its widgets stay registered in ToolJet so existing apps render, but
+  // the catalog no longer offers them, so builds use the shadcn/ui pack.
+  it('keeps the parked Ant Design pack out of the palette', () => {
     const palette = new Set(getCatalog().map((entry) => entry.type));
-    for (const type of antTypes) expect(palette.has(type), type).toBe(true);
-    const prepared = prepareComponentBatch([
-      { name: 'save', type: 'AntButton', properties: { text: 'Save', type: 'primary' }, layout: { top: 20, left: 2, width: 8, height: 40 } },
-    ]);
-    expect(prepared.errors).toEqual([]);
-    expect(prepared.warnings.join(' ')).not.toMatch(/unknown/);
+    for (const type of antTypes) expect(palette.has(type), type).toBe(false);
+    expect(palette.has('ShadButton')).toBe(true);
   });
 
   it('serves FlexContainer card properties and authoring hints', async () => {
