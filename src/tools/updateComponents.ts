@@ -6,6 +6,7 @@ import {
   lintComponentSlots,
   lintComponentSpec,
   lintKanbanInteractions,
+  lintShadKanbanCards,
   lintRenderedGeometry,
   lintStandardSingleLineInputHeight,
   lintTextGeometry,
@@ -296,6 +297,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
         warnings.push(...introducedForChanged(lintTextGeometry));
         warnings.push(...lintRenderedGeometry(allComponents));
         warnings.push(...lintKanbanInteractions(allComponents));
+        warnings.push(...lintShadKanbanCards(allComponents));
         const result = await client.updateComponents({
           appId: args.app_id,
           versionId: args.version_id,

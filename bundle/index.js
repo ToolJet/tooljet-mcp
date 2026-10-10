@@ -67549,7 +67549,7 @@ function lintComponentSlots(components) {
       continue;
     const placement = parentPlacement(component);
     const parent = placement ? refs2.get(placement.parentId) : void 0;
-    const validParent = slotName === "modal" ? parent?.type === "Kanban" : isTabSlot(slotName) ? parent?.type === "Tabs" : SLOT_PARENT_TYPES.has(parent?.type ?? "") || slotName === "body" && (parent?.type === "Kanban" || parent?.type === "FlexContainer");
+    const validParent = slotName === "modal" ? parent?.type === "Kanban" : isTabSlot(slotName) ? parent?.type === "Tabs" : SLOT_PARENT_TYPES.has(parent?.type ?? "") || slotName === "body" && ["Kanban", "ShadKanban", "FlexContainer"].includes(parent?.type ?? "");
     if (parent?.type === "Tabs" && isTabSlot(slotName) && !isTruthyBinding(propVal2(parent.properties, "useDynamicOptions"))) {
       const items = propVal2(parent.properties, "tabItems");
       const ids = Array.isArray(items) ? items.map((item) => String(item?.id ?? "")) : void 0;
@@ -67562,6 +67562,23 @@ function lintComponentSlots(components) {
     }
   }
   return errors;
+}
+function lintShadKanbanCards(components) {
+  const warnings = [];
+  for (const board of components.filter((component) => component.type === "ShadKanban")) {
+    const key4 = componentKey(board);
+    if (!key4)
+      continue;
+    const custom2 = propVal2(board.properties, "cardLayout") === "custom";
+    const children = components.filter((component) => parentPlacement(component)?.parentId === key4);
+    const label2 = `ShadKanban "${board.name ?? board.id ?? "ShadKanban"}"`;
+    if (children.length && !custom2) {
+      warnings.push(`${label2} has ${children.length} card child component(s), but its cardLayout is not "custom", so they are never shown. Set properties.cardLayout to "custom" (and cardHeight to the card content height), or remove the children and map fields instead.`);
+    } else if (!children.length && custom2) {
+      warnings.push(`${label2} uses cardLayout "custom" but has no card child components, so every card renders blank. Add children with parent_ref to the board, laid out on the card canvas and bound to {{cardData.<field>}}, or use the default Fields content.`);
+    }
+  }
+  return warnings;
 }
 function lintKanbanInteractions(components) {
   const warnings = [];
@@ -69084,6 +69101,7 @@ function lintComponents(components, options2 = {}) {
   errors.push(...lintComponentSlots(components));
   errors.push(...lintFormSubmitButtons(components));
   warnings.push(...lintKanbanCardChildren(components));
+  warnings.push(...lintShadKanbanCards(components));
   warnings.push(...lintStatisticsRows(components));
   warnings.push(...lintEmptyTabs(components));
   errors.push(...lintUnusableTextGeometry(components));
@@ -69485,6 +69503,7 @@ function validateAppStructure(summary, options2 = {}) {
     errors.push(...lintRenderedGeometryBlocking(p.components));
     warnings.push(...lintRenderedGeometryAdvisory(p.components));
     warnings.push(...lintKanbanInteractions(p.components));
+    warnings.push(...lintShadKanbanCards(p.components));
   }
   warnings.push(...lintInnerPageBands(summary));
   const readiness = lintUntriggeredDataQueries(summary);
@@ -80453,6 +80472,7 @@ function updateComponentsTool(client) {
         warnings.push(...introducedForChanged(lintTextGeometry));
         warnings.push(...lintRenderedGeometry(allComponents));
         warnings.push(...lintKanbanInteractions(allComponents));
+        warnings.push(...lintShadKanbanCards(allComponents));
         const result = await client.updateComponents({
           appId: args.app_id,
           versionId: args.version_id,

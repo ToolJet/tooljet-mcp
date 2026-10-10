@@ -764,7 +764,7 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
     const parent = placement ? refs.get(placement.parentId) : undefined;
     // A FlexContainer has one canvas, its body: slot_name "body" there is the plain parent, as for a Container.
     const validParent = slotName === 'modal' ? parent?.type === 'Kanban' : isTabSlot(slotName) ? parent?.type === 'Tabs' :
-      SLOT_PARENT_TYPES.has(parent?.type ?? '') || (slotName === 'body' && (parent?.type === 'Kanban' || parent?.type === 'FlexContainer'));
+      SLOT_PARENT_TYPES.has(parent?.type ?? '') || (slotName === 'body' && ['Kanban', 'ShadKanban', 'FlexContainer'].includes(parent?.type ?? ''));
     // A child in a tab the Tabs does not have is saved but never shown (review 2026-09-25). Static tabItems only:
     // with useDynamicOptions the ids come from a binding.
     if (parent?.type === 'Tabs' && isTabSlot(slotName) && !isTruthyBinding(propVal(parent.properties, 'useDynamicOptions'))) {
@@ -785,6 +785,32 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
     }
   }
   return errors;
+}
+
+/** The shadcn/ui Kanban shows child components only with cardLayout "custom", where each card renders them with its
+ *  own cardData; with the default Fields content they are saved but never shown, and a custom board without children
+ *  draws blank cards. */
+export function lintShadKanbanCards(components: LintComponent[]): string[] {
+  const warnings: string[] = [];
+  for (const board of components.filter((component) => component.type === 'ShadKanban')) {
+    const key = componentKey(board);
+    if (!key) continue;
+    const custom = propVal(board.properties, 'cardLayout') === 'custom';
+    const children = components.filter((component) => parentPlacement(component)?.parentId === key);
+    const label = `ShadKanban "${board.name ?? board.id ?? 'ShadKanban'}"`;
+    if (children.length && !custom) {
+      warnings.push(
+        `${label} has ${children.length} card child component(s), but its cardLayout is not "custom", so they are never shown. ` +
+          'Set properties.cardLayout to "custom" (and cardHeight to the card content height), or remove the children and map fields instead.'
+      );
+    } else if (!children.length && custom) {
+      warnings.push(
+        `${label} uses cardLayout "custom" but has no card child components, so every card renders blank. ` +
+          'Add children with parent_ref to the board, laid out on the card canvas and bound to {{cardData.<field>}}, or use the default Fields content.'
+      );
+    }
+  }
+  return warnings;
 }
 
 /** Cross-component Kanban checks that require seeing both the board and its card children. */
@@ -3019,6 +3045,7 @@ export function lintComponents(components: LintComponent[], options: { canvasCol
   errors.push(...lintComponentSlots(components));
   errors.push(...lintFormSubmitButtons(components));
   warnings.push(...lintKanbanCardChildren(components));
+  warnings.push(...lintShadKanbanCards(components));
   warnings.push(...lintStatisticsRows(components));
   warnings.push(...lintEmptyTabs(components)); // a partial add may create the parent before its children
   errors.push(...lintUnusableTextGeometry(components));
@@ -3571,6 +3598,7 @@ export function validateAppStructure(summary: AppSummary, options: { canvasColor
     errors.push(...lintRenderedGeometryBlocking(p.components as LintComponent[]));
     warnings.push(...lintRenderedGeometryAdvisory(p.components as LintComponent[]));
     warnings.push(...lintKanbanInteractions(p.components as LintComponent[]));
+    warnings.push(...lintShadKanbanCards(p.components as LintComponent[]));
   }
   warnings.push(...lintInnerPageBands(summary));
   // Data-bound components whose query nothing runs render No data forever.
