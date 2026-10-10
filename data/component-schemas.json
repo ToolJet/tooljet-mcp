@@ -20290,7 +20290,7 @@
   "ShadAvatar": {
     "type": "ShadAvatar",
     "name": "ShadAvatar",
-    "description": "shadcn/ui avatar or avatar stack",
+    "description": "shadcn/ui avatar or avatar group: names is one name, a comma-separated list, or an array of names or { name, src } (a photo per person); the first maxVisible show, the rest as a +N chip",
     "defaultSize": {
       "width": 6,
       "height": 36
@@ -20298,7 +20298,7 @@
     "properties": [
       {
         "key": "names",
-        "label": "Names (one or many)",
+        "label": "Names (one or many; or [{ name, src }])",
         "valueType": "union",
         "default": "Ada Lovelace"
       },
@@ -20313,6 +20313,12 @@
         "label": "Size (px)",
         "valueType": "number",
         "default": "{{32}}"
+      },
+      {
+        "key": "maxVisible",
+        "label": "Most avatars shown (rest as +N)",
+        "valueType": "number",
+        "default": "{{5}}"
       },
       {
         "key": "loadingState",

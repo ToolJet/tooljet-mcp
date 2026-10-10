@@ -16,7 +16,10 @@ it('accepts tab slots on the shadcn Tabs and requires its tabs to have content',
 });
 
 it('flags shadcn Tabs left with the catalog default titles', () => {
-  expect(lintRenderedText(shadTabs(['Overview', 'Activity', 'Settings'])).join(' ')).toMatch(/tabItems/);
+  const message = lintRenderedText(shadTabs(['Overview', 'Activity', 'Settings'])).join(' ');
+  expect(message).toMatch(/tabItems/);
+  expect(message).toMatch(/ShadTabs .*default "Overview \/ Activity \/ Settings"/);
+  expect(message).not.toMatch(/Tab 1/);
   expect(lintRenderedText(shadTabs(['Overview', 'Invoices', 'Settings']))).toEqual([]);
 });
 

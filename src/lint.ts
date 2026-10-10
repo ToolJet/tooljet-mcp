@@ -1362,8 +1362,9 @@ export function lintRenderedText(spec: LintComponent): string[] {
     if (dynamic && (tabs === undefined || tabs === null || tabs === '')) {
       errors.push(`Tabs "${label}": useDynamicOptions is on but properties.tabs is empty, so nothing renders. Bind tabs to an array of {id, title}.`);
     } else if (!dynamic && !authoredItems) {
+      const placeholder = spec.type === 'ShadTabs' ? SHAD_TABS_DEFAULT_TITLES.join(' / ') : 'Tab 1 / Tab 2 / Tab 3';
       errors.push(
-        `Tabs "${label}": ToolJet renders properties.tabItems (default "Tab 1 / Tab 2 / Tab 3") unless useDynamicOptions is true; ` +
+        `${spec.type} "${label}": it renders properties.tabItems (default "${placeholder}") unless useDynamicOptions is true; ` +
           (tabs !== undefined ? 'the authored properties.tabs is ignored. ' : '') +
           'Either set properties.useDynamicOptions to "{{true}}" and keep tabs as [{id, title}], or author properties.tabItems with the real titles.'
       );

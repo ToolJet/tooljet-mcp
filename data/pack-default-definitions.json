@@ -164,6 +164,9 @@
     "size": {
      "value": "{{32}}"
     },
+    "maxVisible": {
+     "value": "{{5}}"
+    },
     "loadingState": {
      "value": "{{false}}"
     },
