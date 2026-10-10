@@ -532,6 +532,7 @@ const RENDERING_HINTS = {
     childHeight: 'A child is its authored layout height in px. Only a child with its own dynamicHeight on grows to its content (in view mode).',
     containerHeight: 'With properties.dynamicHeight {{true}} the container grows to fit its children in view mode; the editor keeps the authored height. Without it, children beyond the authored height (padding included) are cut off.',
     antCard: "cardStyle 'antCard' draws an Ant Design card: a light surface with an 8px radius and a 1px border, plus a 56px header with cardTitle on the left and cardExtra on the right. The header appears only when cardTitle or cardExtra is set and takes its 56px from the body. In that mode backgroundColor, borderColor and borderRadius styles are ignored.",
+    shadcnCard: "cardStyle 'shadcnCard' draws a shadcn/ui card: a light surface with a 14px radius, a 1px border and a faint shadow, plus a header with cardTitle (semibold) and cardExtra as a muted description beneath it. The header takes 48px with a title only and 70px with a description, from the body. Pair it with the Shad* widgets, as antCard pairs with the Ant* widgets.",
     spacing: 'padding and gap are properties in px, not styles.',
     surface: "A FlexContainer is pure layout and is created transparent (no background, no border) unless you give it a surface: cardStyle 'antCard' (an Ant Design card with optional cardTitle/cardExtra header) or your own backgroundColor/borderColor. Add a surface only where you want one; rows and columns used for layout stay invisible.",
   },

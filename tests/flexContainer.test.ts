@@ -384,7 +384,7 @@ describe('Ant Design pack and FlexContainer catalog', () => {
 
   it('serves FlexContainer card properties and authoring hints', async () => {
     const schema = getComponentSchema('FlexContainer')!;
-    expect(schema.properties.find((p) => p.key === 'cardStyle')?.allowedValues).toEqual(['none', 'antCard']);
+    expect(schema.properties.find((p) => p.key === 'cardStyle')?.allowedValues).toEqual(['none', 'antCard', 'shadcnCard']);
     expect(schema.properties.map((p) => p.key)).toEqual(expect.arrayContaining(['cardTitle', 'cardExtra', 'padding', 'childOrder']));
     const result = await getComponentCatalogTool(undefined as never).handler({ type: 'FlexContainer', sections: ['renderingHints', 'authoringHints'] });
     const text = (result.content[0] as { text: string }).text;
