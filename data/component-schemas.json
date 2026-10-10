@@ -22425,35 +22425,219 @@
   "ShadTable": {
     "type": "ShadTable",
     "name": "ShadTable",
-    "description": "shadcn/ui data table (TanStack): sortable columns, row selection, pagination",
+    "description": "shadcn/ui data table: typed columns (text, number, currency, date, badge, tags, boolean, link, image, avatar, progress, buttons), search, sort, filters, pagination (client or server side), single or bulk selection, inline editing with save/discard, CSV export, column chooser. Native Table conventions",
     "defaultSize": {
-      "width": 28,
-      "height": 420
+      "width": 30,
+      "height": 440
     },
     "properties": [
       {
         "key": "data",
-        "label": "Data",
+        "label": "Table data",
         "valueType": "array",
-        "default": "{{[{ id: 1, name: 'Sample', status: 'active', amount: 1200 }]}}"
+        "default": "{{[{ id: 1, name: 'Ada Lovelace', status: 'Paid', amount: 1250, date: '2026-09-14' }, { id: 2, name: 'Alan Turing', status: 'Pending', amount: 980.5, date: '…"
       },
       {
         "key": "columns",
-        "label": "Columns",
+        "label": "Columns (empty: from the data)",
         "valueType": "array",
-        "default": "{{[{ title: 'Name', dataIndex: 'name' }, { title: 'Status', dataIndex: 'status', kind: 'badge' }, { title: 'Amount', dataIndex: 'amount', kind: 'money' }]}}"
+        "default": "{{[{ key: 'name', name: 'Name' }, { key: 'status', name: 'Status', columnType: 'badge' }, { key: 'date', name: 'Date', columnType: 'date' }, { key: 'amount',…"
       },
       {
-        "key": "pageSize",
-        "label": "Rows per page (0 = all)",
+        "key": "idField",
+        "label": "Row id field",
+        "valueType": "string",
+        "default": "id"
+      },
+      {
+        "key": "enablePagination",
+        "label": "Pagination",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "rowsPerPage",
+        "label": "Rows per page",
         "valueType": "number",
         "default": "{{10}}"
       },
       {
+        "key": "serverSidePagination",
+        "label": "Server-side pagination (data is one page)",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "totalRecords",
+        "label": "Total records (server-side)",
+        "valueType": "number",
+        "default": "{{0}}"
+      },
+      {
+        "key": "enablePrevButton",
+        "label": "Previous page enabled (server-side)",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "enableNextButton",
+        "label": "Next page enabled (server-side)",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "displaySearchBox",
+        "label": "Search box",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "searchPlaceholder",
+        "label": "Search placeholder",
+        "valueType": "string",
+        "default": "Search…"
+      },
+      {
+        "key": "serverSideSearch",
+        "label": "Server-side search",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "enabledSort",
+        "label": "Column sorting",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "serverSideSort",
+        "label": "Server-side sort",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "showFilterButton",
+        "label": "Filter button",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "serverSideFilter",
+        "label": "Server-side filters",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "allowSelection",
+        "label": "Row selection",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showBulkSelector",
+        "label": "Bulk selection (checkboxes)",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "highlightSelectedRow",
+        "label": "Highlight selected row",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disableRowDeselection",
+        "label": "Keep a row selected (no deselect)",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "defaultSelectedRow",
+        "label": "Default selected row ({ key: value })",
+        "valueType": "object",
+        "default": "{{{}}}"
+      },
+      {
+        "key": "hideColumnSelectorButton",
+        "label": "Hide column chooser",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "showDownloadButton",
+        "label": "Download button",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "showRefreshButton",
+        "label": "Refresh button",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "showBulkUpdateActions",
+        "label": "Save / discard bar for edits",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showRowCount",
+        "label": "Row count in the footer",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "cellSize",
+        "label": "Row height",
+        "valueType": "string",
+        "default": "regular",
+        "allowedValues": [
+          "condensed",
+          "regular",
+          "spacious"
+        ]
+      },
+      {
+        "key": "tableType",
+        "label": "Rows",
+        "valueType": "string",
+        "default": "regular",
+        "allowedValues": [
+          "regular",
+          "striped",
+          "bordered"
+        ]
+      },
+      {
+        "key": "stickyHeader",
+        "label": "Sticky header (scrolls inside)",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
         "key": "currency",
-        "label": "Currency (money columns)",
+        "label": "Currency (currency columns)",
         "valueType": "string",
         "default": "USD"
+      },
+      {
+        "key": "locale",
+        "label": "Number locale",
+        "valueType": "string",
+        "default": "en-US"
+      },
+      {
+        "key": "dateFormat",
+        "label": "Date format (date columns)",
+        "valueType": "string",
+        "default": "DD MMM YYYY"
+      },
+      {
+        "key": "badgeColors",
+        "label": "Badge colours by value",
+        "valueType": "object",
+        "default": "{{{}}}"
       },
       {
         "key": "emptyText",
@@ -22462,10 +22646,16 @@
         "default": "No results."
       },
       {
-        "key": "badgeColors",
-        "label": "Badge colours by value",
-        "valueType": "object",
-        "default": "{{{}}}"
+        "key": "emptyDescription",
+        "label": "Empty description",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
       },
       {
         "key": "dynamicHeight",
@@ -22500,6 +22690,11 @@
         "default": "0px 0px 0px 0px #00000040"
       },
       {
+        "key": "accentColor",
+        "label": "Accent (checkboxes, focus, active page)",
+        "valueType": "string"
+      },
+      {
         "key": "backgroundColor",
         "label": "Table background",
         "valueType": "string"
@@ -22520,8 +22715,13 @@
         "valueType": "string"
       },
       {
+        "key": "mutedTextColor",
+        "label": "Secondary text color (footer, empty state)",
+        "valueType": "string"
+      },
+      {
         "key": "borderColor",
-        "label": "Table border and row divider color",
+        "label": "Border and row divider color",
         "valueType": "string"
       },
       {
@@ -22535,9 +22735,35 @@
         "valueType": "string"
       },
       {
+        "key": "stripedRowColor",
+        "label": "Striped row background",
+        "valueType": "string"
+      },
+      {
         "key": "borderRadius",
         "label": "Table radius",
         "valueType": "union"
+      },
+      {
+        "key": "fontSize",
+        "label": "Font size (px)",
+        "valueType": "union"
+      },
+      {
+        "key": "headerCasing",
+        "label": "Header casing",
+        "valueType": "string",
+        "default": "none",
+        "allowedValues": [
+          "none",
+          "uppercase"
+        ]
+      },
+      {
+        "key": "showBorder",
+        "label": "Border around the table",
+        "valueType": "boolean",
+        "default": true
       },
       {
         "key": "cssClass",
@@ -22548,10 +22774,218 @@
     "events": [
       {
         "id": "onRowClicked",
-        "label": "On row clicked"
+        "label": "Row clicked"
+      },
+      {
+        "id": "onSelectionChanged",
+        "label": "Selection changed"
+      },
+      {
+        "id": "onActionButtonClicked",
+        "label": "Action button clicked"
+      },
+      {
+        "id": "onSearch",
+        "label": "Search"
+      },
+      {
+        "id": "onSort",
+        "label": "Sort applied"
+      },
+      {
+        "id": "onFilterChanged",
+        "label": "Filter changed"
+      },
+      {
+        "id": "onPageChanged",
+        "label": "Page changed"
+      },
+      {
+        "id": "onCellValueChanged",
+        "label": "Cell value changed"
+      },
+      {
+        "id": "onBulkUpdate",
+        "label": "Save changes"
+      },
+      {
+        "id": "onCancelChanges",
+        "label": "Cancel changes"
+      },
+      {
+        "id": "onRefresh",
+        "label": "Refresh"
       }
     ],
-    "actions": [],
+    "actions": [
+      {
+        "handle": "setPage",
+        "displayName": "Set page",
+        "params": [
+          {
+            "handle": "page",
+            "displayName": "Page (1-based)",
+            "defaultValue": "{{1}}"
+          }
+        ]
+      },
+      {
+        "handle": "selectRow",
+        "displayName": "Select row",
+        "params": [
+          {
+            "handle": "key",
+            "displayName": "Key",
+            "defaultValue": "id"
+          },
+          {
+            "handle": "value",
+            "displayName": "Value"
+          }
+        ]
+      },
+      {
+        "handle": "deselectRow",
+        "displayName": "Deselect row",
+        "params": []
+      },
+      {
+        "handle": "selectRows",
+        "displayName": "Select rows",
+        "params": [
+          {
+            "handle": "key",
+            "displayName": "Key",
+            "defaultValue": "id"
+          },
+          {
+            "handle": "values",
+            "displayName": "Values",
+            "defaultValue": "{{[]}}"
+          }
+        ]
+      },
+      {
+        "handle": "deselectRows",
+        "displayName": "Deselect rows",
+        "params": [
+          {
+            "handle": "key",
+            "displayName": "Key",
+            "defaultValue": "id"
+          },
+          {
+            "handle": "values",
+            "displayName": "Values",
+            "defaultValue": "{{[]}}"
+          }
+        ]
+      },
+      {
+        "handle": "selectAllRows",
+        "displayName": "Select all rows",
+        "params": []
+      },
+      {
+        "handle": "deselectAllRows",
+        "displayName": "Deselect all rows",
+        "params": []
+      },
+      {
+        "handle": "setFilters",
+        "displayName": "Set filters",
+        "params": [
+          {
+            "handle": "parameters",
+            "displayName": "Filters",
+            "defaultValue": "{{[{ column: 'status', condition: 'equals', value: 'Paid' }]}}"
+          }
+        ]
+      },
+      {
+        "handle": "clearFilters",
+        "displayName": "Clear filters",
+        "params": []
+      },
+      {
+        "handle": "setSort",
+        "displayName": "Set sort",
+        "params": [
+          {
+            "handle": "columnKey",
+            "displayName": "Column key"
+          },
+          {
+            "handle": "direction",
+            "displayName": "Direction (asc, desc)",
+            "defaultValue": "asc"
+          }
+        ]
+      },
+      {
+        "handle": "setSearchText",
+        "displayName": "Set search text",
+        "params": [
+          {
+            "handle": "text",
+            "displayName": "Text",
+            "defaultValue": ""
+          }
+        ]
+      },
+      {
+        "handle": "discardChanges",
+        "displayName": "Discard changes",
+        "params": []
+      },
+      {
+        "handle": "downloadTableData",
+        "displayName": "Download table data",
+        "params": [
+          {
+            "handle": "type",
+            "displayName": "Type (csv or json)",
+            "defaultValue": "csv"
+          }
+        ]
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
     "exposedVariables": [
       {
         "name": "isVisible",
@@ -22570,11 +23004,71 @@
         "default": {}
       },
       {
-        "name": "selectedRowIndex",
+        "name": "selectedRowId",
         "default": null
+      },
+      {
+        "name": "selectedRows",
+        "default": []
+      },
+      {
+        "name": "selectedRowsId",
+        "default": []
+      },
+      {
+        "name": "pageIndex",
+        "default": 1
+      },
+      {
+        "name": "searchText",
+        "default": ""
+      },
+      {
+        "name": "sortApplied",
+        "default": []
+      },
+      {
+        "name": "filters",
+        "default": []
+      },
+      {
+        "name": "changeSet",
+        "default": {}
+      },
+      {
+        "name": "dataUpdates",
+        "default": []
+      },
+      {
+        "name": "updatedData",
+        "default": []
+      },
+      {
+        "name": "currentData",
+        "default": []
+      },
+      {
+        "name": "currentPageData",
+        "default": []
+      },
+      {
+        "name": "filteredData",
+        "default": []
+      },
+      {
+        "name": "lastActionClicked",
+        "default": {}
       }
     ],
     "authoringHints": {
+      "table": {
+        "columns": "properties.columns: [{ key, name, columnType }]. columnType: string (default), number, currency, date, datetime, badge (status chips; badgeColors per column or table-wide, or options [{value,label}]), tags (array or comma list), boolean, link (displayText, linkTarget), image (imageShape round|square), avatar (a name or {name, src}), progress (maxValue), button (buttons: [{ id, label, variant default|outline|secondary|ghost|destructive }]), json, html. Per column: horizontalAlignment, columnSize (px), decimalPlaces, currency, dateFormat, prefix, suffix, columnVisibility, sortable, isEditable, wrap, fontWeight. Per-row styling is data, never a nested binding (a {{ }} inside the columns binding breaks it): conditionalStyles: [{ condition, value, textColor, backgroundColor, fontWeight }] (first match wins; conditions as filters: equals, ne, contains, gt, lt, gte, lte, isEmpty, ...; add key to test another field of the row). A button's disabledWhen / hiddenWhen: { key, condition, value }. Empty columns are generated from the data.",
+        "selection": "allowSelection (single; selectedRow, selectedRowId = data index), showBulkSelector (checkbox column; selectedRows, selectedRowsId), highlightSelectedRow, disableRowDeselection, defaultSelectedRow {key: value}. onRowClicked fires after selectedRow is set; onSelectionChanged on any selection change. Row ids come from idField (default id), so a selection survives a refetch.",
+        "actions": "A button column fires onActionButtonClicked after setting lastActionClicked { buttonId, columnKey, row } and selectedRow to that row: one event handler serves every button, branching on components.<table>.lastActionClicked.buttonId.",
+        "serverSide": "Server-side pagination: serverSidePagination true, data is the current page, bind the query offset to components.<table>.pageIndex (1-based) and rowsPerPage, set totalRecords for page numbers (or toggle enableNextButton), refetch onPageChanged. serverSideSearch / serverSideSort / serverSideFilter stop the table filtering, sorting or searching locally: read searchText, sortApplied [{column, columnKey, direction}] and filters [{column, condition, value}] in the query and refetch on onSearch / onSort / onFilterChanged (each resets pageIndex to 1 except sort). setPage does not fire onPageChanged.",
+        "editing": "isEditable columns edit in place: changeSet {dataIndex: {key: value}}, dataUpdates (full edited rows), updatedData; onCellValueChanged per edit; the Save changes bar fires onBulkUpdate (save there, then refetch: edits clear when the data changes); Discard fires onCancelChanges.",
+        "chrome": "Toolbar: displaySearchBox, showFilterButton, hideColumnSelectorButton (false shows the column chooser), showDownloadButton (CSV/JSON of the filtered, sorted, edited rows), showRefreshButton (onRefresh). cellSize condensed|regular|spacious, tableType regular|striped|bordered, stickyHeader. More than 150 rows on a page are virtualised. Styles: accent, background, header background/text, cell text, secondary text, border, hover, selected, striped, radius, font size, header casing, outer border."
+      },
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. properties.badgeColors maps badge-column values to colours, e.g. { Paid: \"#16a34a\", Overdue: \"#dc2626\" } (tinted chip, coloured text); unnamed values keep the built-in colours."
     }
   },

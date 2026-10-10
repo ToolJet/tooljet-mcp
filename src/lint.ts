@@ -819,6 +819,19 @@ export function lintShadKanbanCards(components: LintComponent[]): string[] {
   return warnings;
 }
 
+/** Whether a string opens a second {{ before the first binding's }} closes. */
+export function hasNestedBinding(value: string): boolean {
+  let at = value.indexOf('{{');
+  while (at !== -1) {
+    const close = value.indexOf('}}', at + 2);
+    if (close === -1) return false;
+    const inner = value.indexOf('{{', at + 2);
+    if (inner !== -1 && inner < close) return true;
+    at = value.indexOf('{{', close + 2);
+  }
+  return false;
+}
+
 /** Cross-component Kanban checks that require seeing both the board and its card children. */
 export function lintKanbanInteractions(components: LintComponent[]): string[] {
   const warnings: string[] = [];
@@ -1535,6 +1548,21 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
       'Supply the intended text or binding; use an explicit empty string if this display is intentionally blank. ' +
       'Do not invent replacement copy or change its layout.'
     );
+  }
+
+  // A binding nested inside another (a per-row "{{rowData.x}}" inside a "{{[...]}}" columns binding) ends the outer
+  // one at its first "}}": the property resolves to a broken fragment (a shadcn Table fell back to generated columns,
+  // 2026-10-10).
+  for (const key of Object.keys(props)) {
+    const value = propVal(props, key);
+    if (typeof value === 'string' && hasNestedBinding(value)) {
+      errors.push(
+        `Component "${label}".properties.${key} nests a {{ }} binding inside another; ToolJet ends the outer binding at the first "}}", so the value breaks. ` +
+          (spec.type === 'ShadTable'
+            ? 'For per-row styling use the column\'s conditionalStyles ([{ condition, value, textColor, backgroundColor }]) and a button\'s disabledWhen / hiddenWhen ({ key, condition, value }) instead of bindings.'
+            : 'Compute the inner value in the outer expression, or in a JavaScript query.')
+      );
+    }
   }
 
   if (spec.type === 'Table') {

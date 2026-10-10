@@ -698,6 +698,17 @@ const AUTHORING_HINTS = {
       },
     },
   },
+  // 2026-10-10: the shadcn/ui data table. Native Table names and server-side conventions.
+  ShadTable: {
+    table: {
+      columns: 'properties.columns: [{ key, name, columnType }]. columnType: string (default), number, currency, date, datetime, badge (status chips; badgeColors per column or table-wide, or options [{value,label}]), tags (array or comma list), boolean, link (displayText, linkTarget), image (imageShape round|square), avatar (a name or {name, src}), progress (maxValue), button (buttons: [{ id, label, variant default|outline|secondary|ghost|destructive }]), json, html. Per column: horizontalAlignment, columnSize (px), decimalPlaces, currency, dateFormat, prefix, suffix, columnVisibility, sortable, isEditable, wrap, fontWeight. Per-row styling is data, never a nested binding (a {{ }} inside the columns binding breaks it): conditionalStyles: [{ condition, value, textColor, backgroundColor, fontWeight }] (first match wins; conditions as filters: equals, ne, contains, gt, lt, gte, lte, isEmpty, ...; add key to test another field of the row). A button\'s disabledWhen / hiddenWhen: { key, condition, value }. Empty columns are generated from the data.',
+      selection: 'allowSelection (single; selectedRow, selectedRowId = data index), showBulkSelector (checkbox column; selectedRows, selectedRowsId), highlightSelectedRow, disableRowDeselection, defaultSelectedRow {key: value}. onRowClicked fires after selectedRow is set; onSelectionChanged on any selection change. Row ids come from idField (default id), so a selection survives a refetch.',
+      actions: 'A button column fires onActionButtonClicked after setting lastActionClicked { buttonId, columnKey, row } and selectedRow to that row: one event handler serves every button, branching on components.<table>.lastActionClicked.buttonId.',
+      serverSide: 'Server-side pagination: serverSidePagination true, data is the current page, bind the query offset to components.<table>.pageIndex (1-based) and rowsPerPage, set totalRecords for page numbers (or toggle enableNextButton), refetch onPageChanged. serverSideSearch / serverSideSort / serverSideFilter stop the table filtering, sorting or searching locally: read searchText, sortApplied [{column, columnKey, direction}] and filters [{column, condition, value}] in the query and refetch on onSearch / onSort / onFilterChanged (each resets pageIndex to 1 except sort). setPage does not fire onPageChanged.',
+      editing: 'isEditable columns edit in place: changeSet {dataIndex: {key: value}}, dataUpdates (full edited rows), updatedData; onCellValueChanged per edit; the Save changes bar fires onBulkUpdate (save there, then refetch: edits clear when the data changes); Discard fires onCancelChanges.',
+      chrome: 'Toolbar: displaySearchBox, showFilterButton, hideColumnSelectorButton (false shows the column chooser), showDownloadButton (CSV/JSON of the filtered, sorted, edited rows), showRefreshButton (onRefresh). cellSize condensed|regular|spacious, tableType regular|striped|bordered, stickyHeader. More than 150 rows on a page are virtualised. Styles: accent, background, header background/text, cell text, secondary text, border, hover, selected, striped, radius, font size, header casing, outer border.',
+    },
+  },
   // 2026-10-10: shadcn/ui layout containers. Same contracts as the native Tabs and Listview.
   ShadTabs: {
     tabs: {

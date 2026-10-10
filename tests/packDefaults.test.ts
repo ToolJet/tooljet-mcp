@@ -41,3 +41,14 @@ it('leaves a native component to the server defaults', async () => {
   const dto = Object.values(posted(auth))[0] as { properties: Record<string, unknown> };
   expect(Object.keys(dto.properties)).toEqual(['text']);
 });
+
+it('skips sample content defaults beside the caller\'s own data', async () => {
+  const auth = makeAuth();
+  await createClient(auth, config).createComponents({
+    appId: 'app1', versionId: 'v1', pageId: 'p1',
+    components: [{ name: 't', type: 'ShadTable', properties: { data: { value: '{{[{ sku: 1 }]}}' } }, layout: { top: 0, left: 2, width: 20, height: 300 } }],
+  });
+  const dto = Object.values(posted(auth))[0] as { properties: Record<string, { value: unknown }> };
+  expect(dto.properties.columns).toBeUndefined();
+  expect(dto.properties.enablePagination.value).toBe('{{true}}');
+});

@@ -2500,9 +2500,19 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     // merges no defaults over pack types, so an omitted property would stay unset (and read as off in the inspector).
     const pack = packDefaultDefinition(spec.type);
     if (pack) {
+      // Sample content (array or object literals such as a Table's sample columns) only fills a component given no
+      // data of its own: beside the caller's data it would describe someone else's rows.
+      const ownData = spec.properties?.data !== undefined;
+      const sample = (entry: unknown) => {
+        const value = (entry as { value?: unknown } | undefined)?.value;
+        return typeof value === 'string' && /^\{\{\s*[[{]/.test(value);
+      };
+      const packProperties = Object.fromEntries(
+        Object.entries(pack.properties ?? {}).filter(([, entry]) => !(ownData && sample(entry)))
+      );
       spec = {
         ...spec,
-        properties: { ...(pack.properties ?? {}), ...(spec.properties ?? {}) },
+        properties: { ...packProperties, ...(spec.properties ?? {}) },
         styles: { ...(pack.styles ?? {}), ...(spec.styles ?? {}) },
         others: { ...(pack.others ?? {}), ...(spec.others ?? {}) },
       };

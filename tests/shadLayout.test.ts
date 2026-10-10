@@ -19,3 +19,12 @@ it('flags shadcn Tabs left with the catalog default titles', () => {
   expect(lintRenderedText(shadTabs(['Overview', 'Activity', 'Settings'])).join(' ')).toMatch(/tabItems/);
   expect(lintRenderedText(shadTabs(['Overview', 'Invoices', 'Settings']))).toEqual([]);
 });
+
+it('refuses a binding nested inside another', async () => {
+  const { lintComponentSpec, hasNestedBinding } = await import('../src/lint.js');
+  expect(hasNestedBinding("{{[{ textColor: \"{{rowData.a < 0 ? 'red' : ''}}\" }]}}")).toBe(true);
+  expect(hasNestedBinding('{{a}} and {{b}}')).toBe(false);
+  expect(hasNestedBinding('plain')).toBe(false);
+  const result = lintComponentSpec({ name: 't', type: 'ShadTable', properties: { columns: { value: "{{[{ key: 'a', textColor: '{{rowData.a}}' }]}}" } } });
+  expect(result.errors.join(' ')).toMatch(/conditionalStyles/);
+});

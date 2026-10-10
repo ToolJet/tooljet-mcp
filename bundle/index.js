@@ -67583,6 +67583,19 @@ function lintShadKanbanCards(components) {
   }
   return warnings;
 }
+function hasNestedBinding(value2) {
+  let at = value2.indexOf("{{");
+  while (at !== -1) {
+    const close = value2.indexOf("}}", at + 2);
+    if (close === -1)
+      return false;
+    const inner = value2.indexOf("{{", at + 2);
+    if (inner !== -1 && inner < close)
+      return true;
+    at = value2.indexOf("{{", close + 2);
+  }
+  return false;
+}
 function lintKanbanInteractions(components) {
   const warnings = [];
   const boards = components.filter((component) => component.type === "Kanban");
@@ -68125,6 +68138,12 @@ function lintComponentSpec(spec, context = {}) {
   const label2 = spec.name ?? spec.type ?? "component";
   if (spec.type === "Text" && propVal2(props, "text") === void 0) {
     warnings.push(`Text "${label2}" has no properties.text and will render ToolJet's default greeting. Supply the intended text or binding; use an explicit empty string if this display is intentionally blank. Do not invent replacement copy or change its layout.`);
+  }
+  for (const key4 of Object.keys(props)) {
+    const value2 = propVal2(props, key4);
+    if (typeof value2 === "string" && hasNestedBinding(value2)) {
+      errors.push(`Component "${label2}".properties.${key4} nests a {{ }} binding inside another; ToolJet ends the outer binding at the first "}}", so the value breaks. ` + (spec.type === "ShadTable" ? "For per-row styling use the column's conditionalStyles ([{ condition, value, textColor, backgroundColor }]) and a button's disabledWhen / hiddenWhen ({ key, condition, value }) instead of bindings." : "Compute the inner value in the outer expression, or in a JavaScript query."));
+    }
   }
   if (spec.type === "Table") {
     const columns = propVal2(props, "columns");
@@ -71473,9 +71492,15 @@ function createClient(auth, config2) {
     }
     const pack = packDefaultDefinition(spec.type);
     if (pack) {
+      const ownData = spec.properties?.data !== void 0;
+      const sample = (entry) => {
+        const value2 = entry?.value;
+        return typeof value2 === "string" && /^\{\{\s*[[{]/.test(value2);
+      };
+      const packProperties = Object.fromEntries(Object.entries(pack.properties ?? {}).filter(([, entry]) => !(ownData && sample(entry))));
       spec = {
         ...spec,
-        properties: { ...pack.properties ?? {}, ...spec.properties ?? {} },
+        properties: { ...packProperties, ...spec.properties ?? {} },
         styles: { ...pack.styles ?? {}, ...spec.styles ?? {} },
         others: { ...pack.others ?? {}, ...spec.others ?? {} }
       };
