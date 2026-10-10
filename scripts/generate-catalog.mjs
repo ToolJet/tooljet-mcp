@@ -901,6 +901,7 @@ const SHAD_USAGE = {
   ShadComboChart: "Bars and lines over one x axis: barFields ['revenue'], lineFields ['margin']; rightAxisFields ['margin'] puts a different unit (a rate, a percent) on its own right axis with rightAxisFormat. 240 to 340px tall.",
   ShadScatterChart: "Two measures per row: xField and yField; sizeField makes bubbles, groupField colours and a legend per value, nameField titles the tooltip; referenceX/referenceY split it into quadrants. 260 to 360px tall.",
   ShadFunnelChart: "Ordered stages [{ stage: 'Visited', count: 12480 }] with stageField and valueField; each stage shows its value and conversion from the one before (conversionBase 'first' for overall). About 44px per stage.",
+  ShadHeatmapChart: "Two categories against each other shaded by a value: rows [{ day: 'Mon', hour: '09:00', tickets: 12 }] with yField (rows), xField (columns), valueField; yOrder/xOrder fix the order (weekdays, hours). About 32px per row plus 40.",
   ShadRadarChart: "Rows [{ skill: 'Speed', alex: 86 }] with categoryField 'skill'; set maxValue 100 for scores. Keep it square, 240 to 320px.",
   ShadRadialChart: "mode 'progress' (value against maxValue, centre value and label) or 'categories'. Angles 90/-270 a full ring, 180/0 a semicircle gauge (about twice as wide as tall).",
   ShadSparkline: 'data [12, 18, ...] or [{ x, y }]; 24 to 64px tall under a ShadStat; exposes trend (up, down, flat) to bind to the Stat trend.',

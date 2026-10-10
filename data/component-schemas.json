@@ -36224,5 +36224,250 @@
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
       "usage": "Two measures per row: xField and yField; sizeField makes bubbles, groupField colours and a legend per value, nameField titles the tooltip; referenceX/referenceY split it into quadrants. 260 to 360px tall."
     }
+  },
+  "ShadHeatmapChart": {
+    "type": "ShadHeatmapChart",
+    "name": "ShadHeatmapChart",
+    "description": "shadcn/ui heatmap: a grid of cells shaded by value, for two categories against each other (weekday by hour, region by month). data [{ day: 'Mon', hour: '09:00', tickets: 12 }], yField 'day' (rows), xField 'hour' (columns), valueField 'tickets' (rows landing in the same cell are summed); xOrder / yOrder fix the order (else first appearance); showValues prints each value; a min-to-max legend. Height about 32 px per row plus 40; clicking a cell sets clickedDatum and fires onClick.",
+    "defaultSize": {
+      "width": 24,
+      "height": 280
+    },
+    "properties": [
+      {
+        "key": "data",
+        "label": "Data",
+        "valueType": "array",
+        "default": "{{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].flatMap((day, d) => ['08', '10', '12', '14', '16', '18'].map((hour, h) => ({ day, hour: hour + ':00', tic…"
+      },
+      {
+        "key": "xField",
+        "label": "Column field",
+        "valueType": "string",
+        "default": "hour"
+      },
+      {
+        "key": "yField",
+        "label": "Row field",
+        "valueType": "string",
+        "default": "day"
+      },
+      {
+        "key": "valueField",
+        "label": "Value field",
+        "valueType": "string",
+        "default": "tickets"
+      },
+      {
+        "key": "xOrder",
+        "label": "Column order",
+        "valueType": "array",
+        "default": "{{[]}}"
+      },
+      {
+        "key": "yOrder",
+        "label": "Row order",
+        "valueType": "array",
+        "default": "{{[]}}"
+      },
+      {
+        "key": "showValues",
+        "label": "Show values",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "cellGap",
+        "label": "Cell gap (px)",
+        "valueType": "union",
+        "default": "{{3}}"
+      },
+      {
+        "key": "yAxisFormat",
+        "label": "Value format",
+        "valueType": "string",
+        "default": "number",
+        "allowedValues": [
+          "number",
+          "currency",
+          "percent",
+          "compact"
+        ]
+      },
+      {
+        "key": "currency",
+        "label": "Currency code",
+        "valueType": "string",
+        "default": "USD"
+      },
+      {
+        "key": "valuePrefix",
+        "label": "Value prefix",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "valueSuffix",
+        "label": "Value suffix",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "emptyText",
+        "label": "Empty message",
+        "valueType": "string",
+        "default": "No data"
+      },
+      {
+        "key": "animate",
+        "label": "Animate",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showLegend",
+        "label": "Legend",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "loadingIndicator",
+        "label": "Loading look",
+        "valueType": "string",
+        "default": "spinner",
+        "allowedValues": [
+          "spinner",
+          "skeleton"
+        ]
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "chartColor",
+        "label": "Chart color (the strongest cell)",
+        "valueType": "string"
+      },
+      {
+        "key": "axisTextColor",
+        "label": "Label color",
+        "valueType": "string"
+      },
+      {
+        "key": "legendTextColor",
+        "label": "Legend text color",
+        "valueType": "string"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onClick",
+        "label": "On click"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      },
+      {
+        "name": "clickedDatum",
+        "default": {}
+      }
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
+      "usage": "Two categories against each other shaded by a value: rows [{ day: 'Mon', hour: '09:00', tickets: 12 }] with yField (rows), xField (columns), valueField; yOrder/xOrder fix the order (weekdays, hours). About 32px per row plus 40."
+    }
   }
 }
