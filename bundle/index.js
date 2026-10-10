@@ -66937,6 +66937,14 @@ var STYLE_KEYS_IN_PROPERTIES = /* @__PURE__ */ new Set([
   "accentColor",
   "iconColor"
 ]);
+function isMisplacedStyleKey(type, key4) {
+  if (!STYLE_KEYS_IN_PROPERTIES.has(key4))
+    return false;
+  const schema = type ? getComponentSchema(type) : null;
+  if (!schema)
+    return true;
+  return !(schema.properties.some((entry) => entry.key === key4) && !schema.styles.some((entry) => entry.key === key4));
+}
 var PROPERTY_KEY_ALIASES = {
   disabled: "disabledState",
   isdisabled: "disabledState",
@@ -68174,7 +68182,7 @@ function lintComponentSpec(spec, context = {}) {
       errors.push(`Component "${label2}": slot_name requires parent_ref or parent.`);
     }
   }
-  const misplaced = Object.keys(props).filter((k) => STYLE_KEYS_IN_PROPERTIES.has(k));
+  const misplaced = Object.keys(props).filter((k) => isMisplacedStyleKey(spec.type, k));
   if (misplaced.length) {
     errors.push(`Component "${label2}": style keys ${JSON.stringify(misplaced)} are under \`properties\`, where ToolJet ignores them \u2014 move them to the top-level \`styles\` object.`);
   }
@@ -68648,14 +68656,28 @@ function lintComponentSpec(spec, context = {}) {
   }
   return { errors, warnings };
 }
-function detectOverlaps(components) {
+function flexPlacementKeys(components, context = {}) {
+  const keys = /* @__PURE__ */ new Set();
+  for (const id of context.flexContainerIds ?? [])
+    keys.add(`${id}::body`);
+  for (const component of components) {
+    if (component.type !== "FlexContainer")
+      continue;
+    for (const ref2 of [component.clientRef, component.id, component.name])
+      if (ref2)
+        keys.add(`${ref2}::body`);
+  }
+  return keys;
+}
+function detectOverlaps(components, context = {}) {
   const warnings = [];
+  const flexBodies = flexPlacementKeys(components, context);
   const items = components.filter((c) => !(c.type === "ModalV2" && isFalseBinding(propVal2(c.properties, "useDefaultButton")))).map((c) => ({
     component: c,
     name: c.name ?? c.type ?? "?",
     r: c.layouts?.desktop ?? c.layout,
     parent: placementKey(c)
-  })).filter((x) => !!x.r);
+  })).filter((x) => !!x.r && !flexBodies.has(x.parent));
   for (let i = 0; i < items.length; i++) {
     for (let j = i + 1; j < items.length; j++) {
       if (items[i].parent !== items[j].parent)
@@ -68700,9 +68722,10 @@ function lintHiddenModalHitTargets(components) {
   return warnings;
 }
 var TOOLBAR_BUTTON_TYPES = /* @__PURE__ */ new Set(["Button", "ButtonGroup"]);
-function lintToolbarButtonAlignment(components) {
+function lintToolbarButtonAlignment(components, context = {}) {
   const errors = [];
-  const items = components.map((c) => ({ component: c, name: c.name ?? c.type ?? "?", r: c.layouts?.desktop ?? c.layout, parent: placementKey(c) })).filter((x) => !!x.r);
+  const flexBodies = flexPlacementKeys(components, context);
+  const items = components.map((c) => ({ component: c, name: c.name ?? c.type ?? "?", r: c.layouts?.desktop ?? c.layout, parent: placementKey(c) })).filter((x) => !!x.r && !flexBodies.has(x.parent));
   const grownInputs = items.filter((x) => renderedHeight(x.component, x.r) > (x.r.height ?? 0));
   if (!grownInputs.length)
     return errors;
@@ -68851,10 +68874,10 @@ function lintModalChildren(components) {
   }
   return warnings;
 }
-function lintRenderedGeometryBlocking(components) {
+function lintRenderedGeometryBlocking(components, context = {}) {
   return [
-    ...detectOverlaps(components),
-    ...lintToolbarButtonAlignment(components),
+    ...detectOverlaps(components, context),
+    ...lintToolbarButtonAlignment(components, context),
     ...lintModalChildren(components).filter((warning) => !MODAL_HEADER_ADVICE.test(warning)),
     ...lintListviewChildren(components)
   ];
@@ -68905,14 +68928,49 @@ function lintNestedContainerWidths(components) {
 }
 function lintRenderedGeometryAdvisory(components) {
   return [
+    ...lintFlexContainerFit(components),
     ...lintNestedContainerWidths(components),
     ...lintDesktopCanvasCoverage(components),
     ...lintCanvasSideGutter(components),
     ...lintModalChildren(components).filter((warning) => MODAL_HEADER_ADVICE.test(warning))
   ];
 }
-function lintRenderedGeometry(components) {
-  return [...lintRenderedGeometryBlocking(components), ...lintRenderedGeometryAdvisory(components)];
+function lintRenderedGeometry(components, context = {}) {
+  return [...lintRenderedGeometryBlocking(components, context), ...lintRenderedGeometryAdvisory(components)];
+}
+var FLEX_ANT_CARD_HEADER_PX = 56;
+function flexNumber(value2, fallback) {
+  const text = typeof value2 === "string" ? value2.replace(/[{}\s]/g, "").replace(/px$/, "") : value2;
+  const n = typeof text === "number" ? text : typeof text === "string" && text !== "" ? Number(text) : NaN;
+  return Number.isFinite(n) ? n : fallback;
+}
+function lintFlexContainerFit(components) {
+  const warnings = [];
+  for (const container of components) {
+    if (container.type !== "FlexContainer")
+      continue;
+    const rect2 = container.layouts?.desktop ?? container.layout;
+    if (!rect2 || typeof rect2.height !== "number")
+      continue;
+    const keys = new Set([container.clientRef, container.id, container.name].filter(Boolean).map((ref2) => `${ref2}::body`));
+    const children = components.filter((child) => child !== container && keys.has(placementKey(child)));
+    if (!children.length)
+      continue;
+    const props = container.properties;
+    if (isTruthyBinding(propVal2(props, "dynamicHeight")))
+      continue;
+    const padding = flexNumber(propVal2(props, "padding"), 12);
+    const gap = flexNumber(propVal2(props, "gap"), 12);
+    const direction = String(propVal2(props, "direction") ?? "row");
+    const card = propVal2(props, "cardStyle") === "antCard" && (Boolean(propVal2(props, "cardTitle")) || Boolean(propVal2(props, "cardExtra")));
+    const heights = children.map((child) => renderedHeight(child, child.layouts?.desktop ?? child.layout));
+    const content = direction === "column" ? heights.reduce((sum, h) => sum + h, 0) + gap * (children.length - 1) : Math.max(...heights);
+    const needed = Math.ceil(content + 2 * padding + (card ? FLEX_ANT_CARD_HEADER_PX : 0) + 2);
+    if (needed <= rect2.height)
+      continue;
+    warnings.push(`FlexContainer "${container.name ?? container.id ?? "?"}": its ${children.length} ${direction === "column" ? "stacked " : ""}children need about ${needed}px (heights${direction === "column" ? ` + ${gap}px gaps` : ""} + ${padding}px padding top and bottom${card ? ` + ${FLEX_ANT_CARD_HEADER_PX}px card header` : ""}) but the container is ${rect2.height}px tall, so the rest is cut off. Raise its height, or set properties.dynamicHeight to {{true}} so it grows in view mode (the editor still shows the authored height).`);
+  }
+  return warnings;
 }
 var THIN_BY_DESIGN = /* @__PURE__ */ new Set(["Divider", "VerticalDivider", "Spacer", "ModalV2", "Modal", "Icon"]);
 var MIN_RENDERABLE_HEIGHT = 24;
@@ -69031,7 +69089,7 @@ function lintComponents(components, options2 = {}) {
   warnings.push(...lintTextGeometry(components));
   for (const c of components)
     warnings.push(...lintSurfaceInsets(c));
-  errors.push(...lintRenderedGeometryBlocking(components));
+  errors.push(...lintRenderedGeometryBlocking(components, options2));
   warnings.push(...lintRenderedGeometryAdvisory(components));
   warnings.push(...lintKanbanInteractions(components));
   warnings.push(...lintHiddenModalHitTargets(components));
@@ -69487,6 +69545,117 @@ function hasNonEmptyDefinition(definition2) {
   if (!definition2)
     return false;
   return Object.values(definition2).some((section) => section !== null && typeof section === "object" && Object.keys(section).length > 0);
+}
+
+// dist/flexContainer.js
+var FLEX_CONTAINER_TYPE = "FlexContainer";
+var FLEX_FILL_WIDTH_DESCRIPTION = "FlexContainer child only: true (the default) fills the free main-axis width; false uses widthPx. Ignored elsewhere.";
+var FLEX_WIDTH_PX_DESCRIPTION = "FlexContainer child only: fixed width in pixels, applied when fillWidth is false. Ignored elsewhere.";
+function isFlexContainerType(type) {
+  return type === FLEX_CONTAINER_TYPE;
+}
+function storedChildOrder(properties) {
+  const entry = properties?.childOrder;
+  const value2 = Array.isArray(entry) ? entry : entry?.value;
+  return Array.isArray(value2) ? value2.filter((id) => typeof id === "string" && id.length > 0) : [];
+}
+function normalizeChildOrder(childOrder, actualChildIds) {
+  const actual = new Set(actualChildIds);
+  const seen = /* @__PURE__ */ new Set();
+  const normalized2 = [];
+  for (const id of [...childOrder.filter((id2) => actual.has(id2)), ...actualChildIds]) {
+    if (seen.has(id))
+      continue;
+    seen.add(id);
+    normalized2.push(id);
+  }
+  return normalized2;
+}
+function desktopRect(component) {
+  const desktop = component.layouts?.desktop;
+  return {
+    top: typeof desktop?.top === "number" ? desktop.top : 0,
+    left: typeof desktop?.left === "number" ? desktop.left : 0
+  };
+}
+function bodyParentId(parent) {
+  if (!parent)
+    return void 0;
+  const decoded = decodeComponentParent(parent);
+  return decoded.slotName === "body" ? decoded.parentId : void 0;
+}
+function currentChildOrder(container, page) {
+  const children = page.filter((component) => bodyParentId(component.parent) === container.id);
+  const stored = storedChildOrder(container.properties);
+  const storedSet = new Set(stored);
+  const unordered = children.filter((child) => !storedSet.has(child.id)).sort((a, b) => {
+    const ra = desktopRect(a), rb = desktopRect(b);
+    return ra.top - rb.top || ra.left - rb.left;
+  }).map((child) => child.id);
+  return normalizeChildOrder(stored, [...children.map((child) => child.id).filter((id) => storedSet.has(id)), ...unordered]);
+}
+function appendedChildOrders(page, additions) {
+  const byId = new Map(page.map((component) => [component.id, component]));
+  const added = /* @__PURE__ */ new Map();
+  for (const { parentId, childId } of additions) {
+    const container = byId.get(parentId);
+    if (!container || !isFlexContainerType(container.type))
+      continue;
+    const ids = added.get(parentId) ?? [];
+    if (!ids.includes(childId))
+      ids.push(childId);
+    added.set(parentId, ids);
+  }
+  const orders = /* @__PURE__ */ new Map();
+  for (const [parentId, newIds] of added) {
+    const container = byId.get(parentId);
+    const newSet = new Set(newIds);
+    const existing = currentChildOrder(container, page.filter((component) => !newSet.has(component.id)));
+    const stored = storedChildOrder(container.properties);
+    const next = normalizeChildOrder(stored, [...existing, ...newIds]);
+    if (next.length !== stored.length || next.some((id, index) => stored[index] !== id))
+      orders.set(parentId, next);
+  }
+  return orders;
+}
+function batchChildOrders(entries, explicit = /* @__PURE__ */ new Map(), resolveRef4 = () => void 0) {
+  const orders = /* @__PURE__ */ new Map();
+  for (const container of entries) {
+    if (!isFlexContainerType(container.type))
+      continue;
+    const children = entries.filter((entry) => entry.parentId === container.id).map((entry) => entry.id);
+    const authored = (explicit.get(container.id) ?? []).flatMap((ref2) => typeof ref2 === "string" ? [resolveRef4(ref2) ?? ref2] : []);
+    orders.set(container.id, [.../* @__PURE__ */ new Set([...authored, ...children])]);
+  }
+  return orders;
+}
+function childOrderProperty(order) {
+  return { value: order };
+}
+function reparentAdditions(page, moves) {
+  const byId = new Map(page.map((component) => [component.id, component]));
+  return moves.flatMap(({ componentId, parent }) => {
+    if (parent === void 0)
+      return [];
+    const nextParent = bodyParentId(parent);
+    if (!nextParent || nextParent === bodyParentId(byId.get(componentId)?.parent))
+      return [];
+    return [{ parentId: nextParent, childId: componentId }];
+  });
+}
+function resolveAuthoredChildOrder(container, page, authored) {
+  const children = page.filter((component) => bodyParentId(component.parent) === container.id);
+  const unknown2 = [];
+  const ids = authored.flatMap((item) => {
+    const ref2 = typeof item === "string" ? item : String(item);
+    const child = children.find((candidate) => candidate.id === ref2) ?? children.find((candidate) => candidate.name === ref2);
+    if (!child) {
+      unknown2.push(ref2);
+      return [];
+    }
+    return [child.id];
+  });
+  return { order: normalizeChildOrder(ids, [...ids, ...currentChildOrder(container, page)]), unknown: unknown2 };
 }
 
 // dist/tableValidation.js
@@ -71251,7 +71420,7 @@ function createClient(auth, config2) {
     return completed;
   }
   function buildComponentDto(spec) {
-    const misplaced = Object.keys(spec.properties ?? {}).filter((k) => STYLE_KEYS_IN_PROPERTIES.has(k));
+    const misplaced = Object.keys(spec.properties ?? {}).filter((k) => isMisplacedStyleKey(spec.type, k));
     if (misplaced.length) {
       throw new Error(`Component "${spec.name}": style keys ${JSON.stringify(misplaced)} were placed under \`properties\`, where ToolJet silently ignores them. Move them to the top-level \`styles\` object instead.`);
     }
@@ -71303,13 +71472,59 @@ function createClient(auth, config2) {
       }
       diff[e.id] = dto;
     }
+    const batchIds = new Set(entries.map((e) => e.id));
+    const flexEntries = entries.map((e) => ({
+      id: e.id,
+      type: e.spec.type,
+      parentId: bodyParentId(diff[e.id].parent)
+    }));
+    const explicitOrders = new Map(entries.filter((e) => isFlexContainerType(e.spec.type) && e.spec.properties?.childOrder !== void 0).map((e) => {
+      const raw = e.spec.properties.childOrder;
+      const value2 = Array.isArray(raw) ? raw : raw?.value;
+      return [e.id, Array.isArray(value2) ? value2 : []];
+    }));
+    const nameToId = new Map(entries.map((e) => [e.spec.name, e.id]));
+    const orders = batchChildOrders(flexEntries, explicitOrders, (ref2) => refToId.get(ref2) ?? nameToId.get(ref2));
+    for (const [id, order] of orders) {
+      const dto = diff[id];
+      dto.properties = { ...dto.properties ?? {}, childOrder: childOrderProperty(order) };
+    }
+    const additions = flexEntries.flatMap((e) => e.parentId && !batchIds.has(e.parentId) ? [{ parentId: e.parentId, childId: e.id }] : []);
+    let pageComponents = params.pageComponents;
+    if (additions.length && !pageComponents) {
+      const summary = await getAppSummary(params.appId, params.versionId);
+      pageComponents = summary.pages.find((page) => page.id === params.pageId)?.components ?? [];
+    }
+    const appended = additions.length ? appendedChildOrders(pageComponents ?? [], additions) : /* @__PURE__ */ new Map();
     const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/components`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ is_user_switched_version: false, pageId: params.pageId, diff })
     });
     await assertOk(res, "createComponents");
-    return entries.map((e) => ({ component_id: e.id, name: e.spec.name }));
+    const created = entries.map((e) => ({ component_id: e.id, name: e.spec.name }));
+    if (appended.size) {
+      try {
+        await writeFlexChildOrders(params.appId, params.versionId, params.pageId, appended);
+      } catch (err) {
+        throw new PartialWriteError("createComponents", created, [
+          `FlexContainer child order (${[...appended.keys()].join(", ")}): ${err instanceof Error ? err.message : String(err)}. The components exist; set the container's childOrder with update_components.`
+        ], err);
+      }
+    }
+    return created;
+  }
+  async function writeFlexChildOrders(appId, versionId, pageId, orders) {
+    const diff = Object.fromEntries([...orders].map(([id, order]) => [
+      id,
+      { component: { definition: { properties: { childOrder: childOrderProperty(order) } } } }
+    ]));
+    const res = await auth.authedFetch(`/api/v2/apps/${appId}/versions/${versionId}/components`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_user_switched_version: false, pageId, diff })
+    });
+    await assertOk(res, "writeFlexChildOrders");
   }
   async function createComponent(params) {
     const [r] = await createComponents({
@@ -76298,7 +76513,7 @@ function normalizeComponentSpec(component, options2 = {}) {
   for (const key4 of Object.keys(properties)) {
     const aliasTarget = aliasTargetFor(key4);
     const canonical3 = aliasTarget ?? key4;
-    const belongsInStyles = canonical3 !== "styles" && (STYLE_KEYS_IN_PROPERTIES.has(canonical3) || !!aliasTarget && !!knownStyleKeys?.has(canonical3) && !knownPropertyKeys?.has(canonical3));
+    const belongsInStyles = canonical3 !== "styles" && (isMisplacedStyleKey(component.type, canonical3) || !!aliasTarget && !!knownStyleKeys?.has(canonical3) && !knownPropertyKeys?.has(canonical3));
     if (!aliasTarget && !belongsInStyles)
       continue;
     if (belongsInStyles) {
@@ -76312,6 +76527,19 @@ function normalizeComponentSpec(component, options2 = {}) {
         properties[canonical3] = properties[key4];
       delete properties[key4];
       warnings.push(`${component.type} "${component.name}": renamed alias "${key4}" to "${canonical3}".`);
+    }
+  }
+  if (schema && options2.stripUnknownKeys) {
+    for (const key4 of Object.keys(stylesValue)) {
+      if (knownStyleKeys.has(key4) || !knownPropertyKeys.has(key4))
+        continue;
+      if (properties[key4] === void 0) {
+        properties[key4] = stylesValue[key4];
+        propertyPatch[key4] = stylesValue[key4];
+      }
+      delete stylesValue[key4];
+      stylesChanged = true;
+      warnings.push(`${component.type} "${component.name}": moved styles.${key4} to properties.${key4} (ToolJet reads it from properties for ${component.type}).`);
     }
   }
   if (stylesChanged)
@@ -76856,7 +77084,10 @@ function lintPlannedApp(spec, existingSummary, options2 = {}) {
     warnings.push(...normalized2.flatMap((item) => item.warnings));
     const expansion = materializeRequiredDefaultChildren(normalized2.map((item) => item.component));
     warnings.push(...expansion.warnings);
-    const componentLint = lintComponents(expansion.components, options2);
+    const componentLint = lintComponents(expansion.components, {
+      ...options2,
+      flexContainerIds: (existingPage?.components ?? []).filter((component) => component.type === "FlexContainer").map((component) => component.id)
+    });
     errors.push(...componentLint.errors.map((message) => `Page "${plannedPage.name}": ${message}`));
     errors.push(...lintQueryFedCharts(expansion.components, spec.queries ?? []).map((message) => `Page "${plannedPage.name}": ${message}`));
     warnings.push(...componentLint.warnings.map((message) => `Page "${plannedPage.name}": ${message}`));
@@ -77130,7 +77361,9 @@ var layoutSchema = external_exports.object({
   top: external_exports.number(),
   left: external_exports.number().describe("Columns in the immediate parent canvas, which has its own 43-column grid."),
   width: external_exports.number().describe("Columns out of 43 in the immediate parent canvas, independent of the parent outer width. Full width is 43. Container/Form/modal inset full rows use left 2, width 39; grid-mode Listview full rows use left 0, width 43."),
-  height: external_exports.number()
+  height: external_exports.number(),
+  fillWidth: external_exports.boolean().optional().describe(FLEX_FILL_WIDTH_DESCRIPTION),
+  widthPx: external_exports.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION)
 });
 var componentInputSchema = external_exports.object({
   name: componentNameSchema,
@@ -78259,12 +78492,14 @@ function differingKey(type, section, planned, stored, definitions) {
   return void 0;
 }
 var RECT_KEYS = ["top", "left", "width", "height"];
+var FLEX_LAYOUT_KEYS = ["fillWidth", "widthPx"];
 var sameRect = (planned, stored) => {
   if (!planned)
     return true;
   if (!stored || typeof stored !== "object")
     return false;
-  return RECT_KEYS.every((key4) => Number(stored[key4]) === Number(planned[key4]));
+  const held = stored;
+  return RECT_KEYS.every((key4) => Number(held[key4]) === Number(planned[key4])) && FLEX_LAYOUT_KEYS.every((key4) => planned[key4] === void 0 || held[key4] === planned[key4]);
 };
 function diffPageInPlace(stored, planned, definitions = bundledDefinitions(), newId = randomUUID4) {
   const storedByName = new Map(stored.filter((component) => component.name).map((component) => [component.name, component]));
@@ -78277,6 +78512,21 @@ function diffPageInPlace(stored, planned, definitions = bundledDefinitions(), ne
     if (spec.clientRef)
       ids.set(spec.clientRef, id);
   }
+  const plannedParentId = (spec) => {
+    const parent = spec.parentRef ? ids.get(spec.parentRef) : spec.parent;
+    if (!parent)
+      return void 0;
+    const slot = spec.slotName ?? decodeComponentParent(parent).slotName;
+    return slot === "body" ? decodeComponentParent(parent).parentId : void 0;
+  };
+  const explicitOrders = new Map(planned.flatMap((spec) => {
+    if (!isFlexContainerType(spec.type) || spec.properties?.childOrder === void 0)
+      return [];
+    const raw = spec.properties.childOrder;
+    const value2 = Array.isArray(raw) ? raw : raw?.value;
+    return [[idOf.get(spec), Array.isArray(value2) ? value2 : []]];
+  }));
+  const childOrders = batchChildOrders(planned.map((spec) => ({ id: idOf.get(spec), type: spec.type, parentId: plannedParentId(spec) })), explicitOrders, (ref2) => ids.get(ref2));
   const diff = { ids, keep: [], relayout: [], create: [], recreated: [], deleteIds: [], why: {} };
   const plannedNames = new Set(planned.map((spec) => spec.name));
   for (const component of stored)
@@ -78287,7 +78537,10 @@ function diffPageInPlace(stored, planned, definitions = bundledDefinitions(), ne
     const parent = spec.parentRef ? ids.get(spec.parentRef) : spec.parent;
     const submit = spec.type === "Form" ? spec.properties?.buttonToSubmit : void 0;
     const submitId = submit && typeof submit.value === "string" ? ids.get(submit.value) : void 0;
-    const properties = submit && submitId ? { ...spec.properties, buttonToSubmit: { ...submit, value: submitId } } : spec.properties;
+    let properties = submit && submitId ? { ...spec.properties, buttonToSubmit: { ...submit, value: submitId } } : spec.properties;
+    const childOrder = childOrders.get(id);
+    if (childOrder)
+      properties = { ...properties, childOrder: childOrderProperty(childOrder) };
     const { clientRef: _clientRef, parentRef: _parentRef, ...rest } = spec;
     const resolved = { ...rest, properties, id, ...parent ? { parent } : {} };
     if (!parent)
@@ -79854,7 +80107,7 @@ function addComponentsTool(client) {
       destructiveHint: false,
       openWorldHint: true
     },
-    description: "Place MANY components on one page in a single call (all share app_id/version_id/page_id). Prefer this over repeated add_component when building an app \u2014 it is one request. Returns [{ component_id, name }]. Note: the batch is atomic \u2014 if one component is invalid (e.g. missing name), the whole call fails; fix that component and retry. Property/style/validation/other leaves may be supplied as concise raw values or canonical `{ value: ... }` envelopes; MCP persists the canonical ToolJet shape. " + COMPONENT_FX_GUIDANCE + 'IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, \u2026) in each component\u2019s top-level `styles` object, NOT under `properties` \u2014 ToolJet silently ignores styles nested in properties (and this tool will reject them). Provide either `layout` (one rectangle for both resolutions) or `layouts:{desktop,mobile}`. To create a modal/container and its children atomically, give the parent a unique `client_ref` and each child the matching `parent_ref`; child bindings may also use unique client_ref aliases declared in this batch; MCP resolves them to runtime names when existing names can be checked, without overriding an existing runtime name. coordinates are relative to that parent, with a fresh 43-column grid in each nested canvas. A full-row child uses width 43 even in a narrow parent. Container/Form/modal slots may use left 2, width 39 for insets; grid-mode Listview full rows use left 0, width 43. For ModalV2/Form/Container native regions, set child `slot_name` to `header`, `body`, or `footer`; body is the default. A Kanban with no explicit child automatically gets its catalog card children so cards are not blank; supplying a child with its `parent_ref` suppresses those defaults (use Html for wrapped multi-line card content). For the Kanban card-click modal, parent its detail controls to the Kanban with slot_name:"modal"; these do not replace card children.',
+    description: "Place MANY components on one page in a single call (all share app_id/version_id/page_id). Prefer this over repeated add_component when building an app \u2014 it is one request. Returns [{ component_id, name }]. Note: the batch is atomic \u2014 if one component is invalid (e.g. missing name), the whole call fails; fix that component and retry. Property/style/validation/other leaves may be supplied as concise raw values or canonical `{ value: ... }` envelopes; MCP persists the canonical ToolJet shape. " + COMPONENT_FX_GUIDANCE + 'IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, \u2026) in each component\u2019s top-level `styles` object, NOT under `properties` \u2014 ToolJet silently ignores styles nested in properties (and this tool will reject them). Provide either `layout` (one rectangle for both resolutions) or `layouts:{desktop,mobile}`. To create a modal/container and its children atomically, give the parent a unique `client_ref` and each child the matching `parent_ref`; child bindings may also use unique client_ref aliases declared in this batch; MCP resolves them to runtime names when existing names can be checked, without overriding an existing runtime name. coordinates are relative to that parent, with a fresh 43-column grid in each nested canvas. A full-row child uses width 43 even in a narrow parent. Container/Form/modal slots may use left 2, width 39 for insets; grid-mode Listview full rows use left 0, width 43. For ModalV2/Form/Container native regions, set child `slot_name` to `header`, `body`, or `footer`; body is the default. A Kanban with no explicit child automatically gets its catalog card children so cards are not blank; supplying a child with its `parent_ref` suppresses those defaults (use Html for wrapped multi-line card content). For the Kanban card-click modal, parent its detail controls to the Kanban with slot_name:"modal"; these do not replace card children. FlexContainer children render in request order (MCP writes the container childOrder), ignore top/left, fill the width unless the child layout sets fillWidth:false with widthPx, and keep their px height.',
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -79875,7 +80128,11 @@ function addComponentsTool(client) {
       }
       if (summary)
         pageWarnings.push(...normalizePlanBindingAliases({ pages: [{ components: inputs }] }, summary));
-      const prepared = prepareComponentBatch(inputs, { canvasColor: await literalCanvasColor(client, args.app_id, summary?.version_id ?? args.version_id) });
+      const existingPage = summary?.pages.find((candidate) => candidate.id === args.page_id);
+      const prepared = prepareComponentBatch(inputs, {
+        canvasColor: await literalCanvasColor(client, args.app_id, summary?.version_id ?? args.version_id),
+        flexContainerIds: existingPage?.components.filter((component) => component.type === "FlexContainer").map((component) => component.id)
+      });
       if (prepared.errors.length)
         return fail(new Error(prepared.errors.join(" ")));
       try {
@@ -79897,7 +80154,9 @@ function addComponentsTool(client) {
           appId: args.app_id,
           versionId: args.version_id,
           pageId: args.page_id,
-          components: prepared.components
+          components: prepared.components,
+          // Lets a child added to an existing FlexContainer join its childOrder without another page read.
+          pageComponents: existingPage?.components
         });
         return ok({
           components: result,
@@ -79937,19 +80196,31 @@ function addComponentBatchesTool(client) {
       }
       const pages = structuredClone(args.pages);
       const aliasWarnings = [];
-      if (pages.some((page) => page.components.some((c) => c.client_ref && c.client_ref !== c.name))) {
+      const needsAliases = pages.some((page) => page.components.some((c) => c.client_ref && c.client_ref !== c.name));
+      const targetsExistingParent = pages.some((page) => page.components.some((c) => c.parent));
+      let summary;
+      if (needsAliases || targetsExistingParent) {
         try {
-          const summary = await client.getAppSummary(args.app_id);
+          summary = await client.getAppSummary(args.app_id);
           if (summary.version_id && summary.version_id !== args.version_id) {
             return fail(new Error("Cannot normalize this write against a different editing version. Refresh the app version."));
           }
-          aliasWarnings.push(...normalizePlanBindingAliases({ pages }, summary));
+          if (needsAliases)
+            aliasWarnings.push(...normalizePlanBindingAliases({ pages }, summary));
         } catch {
-          aliasWarnings.push("Batch component aliases were not normalized because existing names could not be read. Use exact runtime names.");
+          if (needsAliases)
+            aliasWarnings.push("Batch component aliases were not normalized because existing names could not be read. Use exact runtime names.");
         }
       }
+      const pageComponentsOf = (pageId) => summary?.pages.find((page) => page.id === pageId)?.components;
       const canvasColor = await literalCanvasColor(client, args.app_id, args.version_id);
-      const prepared = pages.map((page) => ({ ...page, prepared: prepareComponentBatch(page.components, { canvasColor }) }));
+      const prepared = pages.map((page) => ({
+        ...page,
+        prepared: prepareComponentBatch(page.components, {
+          canvasColor,
+          flexContainerIds: (pageComponentsOf(page.page_id) ?? []).filter((c) => c.type === "FlexContainer").map((c) => c.id)
+        })
+      }));
       const errors = prepared.flatMap((page) => page.prepared.errors.map((error51) => `Page ${page.page_id}: ${error51}`));
       const mapRefusal = await mapKeyRefusal(client, pages.flatMap((page) => page.components.map((c) => String(c.type))));
       if (mapRefusal)
@@ -79962,7 +80233,8 @@ function addComponentBatchesTool(client) {
           appId: args.app_id,
           versionId: args.version_id,
           pageId: page.page_id,
-          components: page.prepared.components
+          components: page.prepared.components,
+          pageComponents: pageComponentsOf(page.page_id)
         }),
         warnings: page.prepared.warnings
       })));
@@ -80014,7 +80286,7 @@ function updateComponentsTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves under `definition` (properties/styles/validation/others) \u2014 ToolJet deep-merges, so untouched values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. " + COMPONENT_FX_UPDATE_GUIDANCE + "NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container regions, or modal for Kanban card-click content; omit parent to keep the current parent. Unknown entry keys are rejected (a top-level properties/styles patch is an error, not a silent no-op), and an entry that changes nothing fails. Get component ids + current values from get_app_summary / get_component.",
+    description: "Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves under `definition` (properties/styles/validation/others) \u2014 ToolJet deep-merges, so untouched values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. " + COMPONENT_FX_UPDATE_GUIDANCE + "NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container regions, or modal for Kanban card-click content; omit parent to keep the current parent. Unknown entry keys are rejected (a top-level properties/styles patch is an error, not a silent no-op), and an entry that changes nothing fails. Get component ids + current values from get_app_summary / get_component. To reorder a FlexContainer, set its properties.childOrder to the child names or ids in the wanted order; unlisted children follow in their current order.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -80073,6 +80345,24 @@ function updateComponentsTool(client) {
               }
             }
           }
+          const authoredOrder = update.definition?.properties?.childOrder;
+          if (authoredOrder !== void 0 && isFlexContainerType(current.type)) {
+            const raw = authoredOrder;
+            const value2 = Array.isArray(raw) ? raw : raw?.value;
+            if (!Array.isArray(value2)) {
+              errors.push(`FlexContainer "${current.name ?? current.id}": properties.childOrder must be an array of child component ids or names.`);
+              continue;
+            }
+            const resolved = resolveAuthoredChildOrder(current, page.components, value2);
+            if (resolved.unknown.length) {
+              errors.push(`FlexContainer "${current.name ?? current.id}": childOrder names ${resolved.unknown.map((ref2) => `"${ref2}"`).join(", ")}, which are not children of this container. List its child component ids or names.`);
+              continue;
+            }
+            update.definition = {
+              ...update.definition,
+              properties: { ...update.definition.properties, childOrder: childOrderProperty(resolved.order) }
+            };
+          }
           const definition2 = update.definition;
           const next = {
             id: current.id,
@@ -80096,10 +80386,10 @@ function updateComponentsTool(client) {
           });
           const normalizedNext = { ...normalized2.component, id: current.id };
           const heightFix = update.definition ? suggestedHtmlHeight(normalizedNext) : null;
-          const desktopRect = current.layouts?.desktop;
-          if (heightFix && desktopRect && typeof desktopRect.top === "number") {
-            normalizedNext.layouts = { ...normalizedNext.layouts ?? {}, desktop: { ...desktopRect, height: heightFix.to } };
-            layoutFixes.push({ componentId: current.id, desktop: { ...desktopRect, height: heightFix.to } });
+          const desktopRect2 = current.layouts?.desktop;
+          if (heightFix && desktopRect2 && typeof desktopRect2.top === "number") {
+            normalizedNext.layouts = { ...normalizedNext.layouts ?? {}, desktop: { ...desktopRect2, height: heightFix.to } };
+            layoutFixes.push({ componentId: current.id, desktop: { ...desktopRect2, height: heightFix.to } });
             warnings.push(`Html "${normalizedNext.name ?? current.id}" needed about ${heightFix.needed}px for its new markup but was ${heightFix.from}px; its height is now ${heightFix.to}px. Anything within ${heightFix.to - heightFix.from}px below it now overlaps; move it down.`);
           }
           projected.set(current.id, normalizedNext);
@@ -80152,6 +80442,21 @@ function updateComponentsTool(client) {
         });
         if (layoutFixes.length) {
           await client.updateLayouts({ appId: args.app_id, versionId: args.version_id, pageId: args.page_id, layouts: layoutFixes });
+        }
+        const appended = appendedChildOrders(page.components, reparentAdditions(page.components, resolvedUpdates.map((update) => ({
+          componentId: update.componentId,
+          parent: update.parent !== void 0 ? encodeComponentParent(update.parent, update.slotName) : void 0
+        }))));
+        if (appended.size) {
+          await client.updateComponents({
+            appId: args.app_id,
+            versionId: args.version_id,
+            pageId: args.page_id,
+            updates: [...appended].map(([componentId, order]) => ({
+              componentId,
+              definition: { properties: { childOrder: childOrderProperty(order) } }
+            }))
+          });
         }
         return ok({ ...result, warnings: [...new Set(warnings)] });
       } catch (err) {
@@ -80269,7 +80574,14 @@ function deleteComponentsTool(client) {
 }
 
 // dist/tools/updateLayout.js
-var rect = external_exports.object({ top: external_exports.number(), left: external_exports.number(), width: external_exports.number(), height: external_exports.number() });
+var rect = external_exports.object({
+  top: external_exports.number(),
+  left: external_exports.number(),
+  width: external_exports.number(),
+  height: external_exports.number(),
+  fillWidth: external_exports.boolean().optional().describe(FLEX_FILL_WIDTH_DESCRIPTION),
+  widthPx: external_exports.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION)
+});
 var RECT_KEYS2 = /* @__PURE__ */ new Set(["top", "left", "width", "height"]);
 var layoutEntrySchema = strictEntry({
   component_id: external_exports.string(),
@@ -80298,7 +80610,7 @@ function updateLayoutTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Move / resize existing components (batch) without touching their properties. `left`/`width` are in the immediate parent canvas's own 43-column grid, including nested containers; `top`/`height` are pixels. Full rows use width 43, independent of the parent outer width. Container/Form/modal insets may use left 2, width 39; grid-mode Listview full rows use left 0, width 43. Provide desktop and/or mobile per component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` (header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent.",
+    description: "Move / resize existing components (batch) without touching their properties. `left`/`width` are in the immediate parent canvas's own 43-column grid, including nested containers; `top`/`height` are pixels. Full rows use width 43, independent of the parent outer width. Container/Form/modal insets may use left 2, width 39; grid-mode Listview full rows use left 0, width 43. Provide desktop and/or mobile per component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` (header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent. A FlexContainer child takes its width from fillWidth/widthPx, not width/left; a component reparented into a FlexContainer is appended to its childOrder.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -80407,6 +80719,21 @@ function updateLayoutTool(client) {
             slotName: l.slot_name
           }))
         });
+        const appended = appendedChildOrders(page.components, reparentAdditions(page.components, resolvedLayouts.map((layout) => ({
+          componentId: layout.component_id,
+          parent: layout.parent !== void 0 ? encodeComponentParent(layout.parent, layout.slot_name) : void 0
+        }))));
+        if (appended.size) {
+          await client.updateComponents({
+            appId: args.app_id,
+            versionId: args.version_id,
+            pageId: args.page_id,
+            updates: [...appended].map(([componentId, order]) => ({
+              componentId,
+              definition: { properties: { childOrder: childOrderProperty(order) } }
+            }))
+          });
+        }
         return ok({ ...result, warnings });
       } catch (err) {
         return fail(err);
