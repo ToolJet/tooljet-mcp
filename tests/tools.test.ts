@@ -1098,6 +1098,30 @@ describe('add_events tool', () => {
     expect(client.createEvents).not.toHaveBeenCalled();
   });
 
+  it('accepts onCardSelected on a shadcn/ui Kanban with the card modal off: that style selects on any click', async () => {
+    const client = makeClient();
+    client.getAppSummary.mockResolvedValue({
+      app_id: 'app1',
+      pages: [{ id: 'p1', components: [{
+        id: 'board1', name: 'dispatchBoard', type: 'Kanban',
+        properties: { openModalOnCardClick: { value: '{{false}}' }, skin: { value: 'shadcn' } },
+      }] }],
+      queries: [], events: [],
+    });
+    client.createEvents.mockResolvedValue([{ id: 'e1' }]);
+
+    const result = await addEventsTool(client as unknown as ToolJetClient).handler({
+      app_id: 'app1', version_id: 'v1',
+      events: [{
+        source_id: 'board1', source_type: 'component', trigger: 'onCardSelected',
+        action: { actionId: 'show-alert', message: 'Selected', alertType: 'info' },
+      }],
+    });
+
+    expect(result.content[0]!.text).not.toMatch(/onCardSelected cannot fire/i);
+    expect(client.createEvents).toHaveBeenCalled();
+  });
+
   it('blocks handlers placed after switch-page in the same trigger chain', async () => {
     const client = makeClient();
     client.getAppSummary.mockResolvedValue({

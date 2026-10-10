@@ -11636,6 +11636,16 @@
         "default": "{{100}}"
       },
       {
+        "key": "skin",
+        "label": "Style",
+        "valueType": "string",
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "shadcn"
+        ]
+      },
+      {
         "key": "enableAddCard",
         "label": "Enable adding card",
         "default": "{{true}}"
@@ -11712,6 +11722,54 @@
         "key": "accentColor",
         "label": "Accent color",
         "default": "var(--cc-primary-brand)"
+      },
+      {
+        "key": "columnBackgroundColor",
+        "label": "Column background",
+        "valueType": "string"
+      },
+      {
+        "key": "columnBorderColor",
+        "label": "Column border color",
+        "valueType": "string"
+      },
+      {
+        "key": "columnBorderRadius",
+        "label": "Column radius",
+        "valueType": "union"
+      },
+      {
+        "key": "columnTitleColor",
+        "label": "Column title color",
+        "valueType": "string"
+      },
+      {
+        "key": "cardBackgroundColor",
+        "label": "Card background",
+        "valueType": "string"
+      },
+      {
+        "key": "cardBorderColor",
+        "label": "Card border color",
+        "valueType": "string"
+      },
+      {
+        "key": "cardBorderRadius",
+        "label": "Card radius",
+        "valueType": "union"
+      },
+      {
+        "key": "cardBoxShadow",
+        "label": "Card shadow",
+        "valueType": "string",
+        "default": "default",
+        "allowedValues": [
+          "default",
+          "none",
+          "sm",
+          "md",
+          "lg"
+        ]
       },
       {
         "key": "cssClass",
@@ -11903,12 +11961,18 @@
             "cardData"
           ]
         },
-        "widthRule": "Do not infer the rendered Kanban column width from cardWidth. Pin the Html content width/max-width explicitly in CSS and verify it in the viewer; current columns can retain a wider minimum than the card canvas.",
+        "widthRule": "cardWidth is the card canvas width in px; each column is cardWidth + 48px wide. Size Html card content to cardWidth (minus your own padding) and set cardHeight to the content height.",
         "interactionRule": {
-          "selectionDependency": "onCardSelected fires only when openModalOnCardClick is true; ToolJet returns before setting lastSelectedCard or firing the event when it is false. MCP rejects that dead event binding.",
+          "selectionDependency": "onCardSelected fires only when openModalOnCardClick is true, unless properties.skin is \"shadcn\"; with the default style ToolJet returns before setting lastSelectedCard or firing the event when the modal is off, and MCP rejects that dead event binding. With skin \"shadcn\" any click inside a card (buttons in it included) selects it, sets lastSelectedCard and fires onCardSelected, modal on or off, and the selected card is outlined.",
           "selectedRecord": "Read components.<board>.lastSelectedCard (not selectedCard) in onCardSelected. Preserve its id and raw fields before switching pages; use the id to find the source query record when cards contain display projections.",
           "customHtmlModal": "Card children (native or Html) do not populate the card-click modal. Author its detail/edit controls with parent_ref pointing to the Kanban and slot_name:\"modal\"; bind cardData or lastSelectedCard. Page-root controls remain behind the modal backdrop. For a board without selection, disable openModalOnCardClick and omit onCardSelected."
         }
+      },
+      "look": {
+        "skin": "properties.skin \"shadcn\" draws shadcn/ui columns and cards from the app theme (muted columns with a count badge, bordered cards, a delete zone shown only while dragging, a selected-card outline). Same card template, modal, actions and events as the default style. Use it in apps built with the shadcn/ui pack (Shad* components).",
+        "styles": "Optional, all fall back to the chosen style: columnBackgroundColor, columnBorderColor, columnBorderRadius (px number), columnTitleColor, cardBackgroundColor, cardBorderColor, cardBorderRadius (px number), cardBoxShadow (\"default\" | \"none\" | \"sm\" | \"md\" | \"lg\"). Set them from the app theme only when the design calls for it; the shadcn style is complete without them.",
+        "leaveAlone": "accentColor applies only to the default style. size and modalHeight matter only with the modal on. tooltip, tooltipFormat and collapseWhenHidden are rarely useful on a board; leave them unset.",
+        "modalDefault": "openModalOnCardClick defaults to true and then opens an empty dialog on every card click. Set it to \"{{false}}\" unless you also author modal children (slot_name:\"modal\")."
       }
     }
   },

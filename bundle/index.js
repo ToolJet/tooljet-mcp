@@ -67580,7 +67580,7 @@ function lintKanbanInteractions(components) {
     });
     if (modalChildren.length)
       continue;
-    warnings.push(`Kanban "${board.name ?? board.id ?? "Kanban"}" enables the native card modal but has no modal children. Cards (including custom Html) can look correct while a blank built-in modal covers page-level detail controls. Parent the detail controls to this Kanban with slot_name:"modal"; ordinary body children only populate cards. For a board without card selection use openModalOnCardClick:false and omit onCardSelected. Never merely enable the modal to satisfy the event lint without giving it content.`);
+    warnings.push(`Kanban "${board.name ?? board.id ?? "Kanban"}" enables the native card modal but has no modal children. Cards (including custom Html) can look correct while a blank built-in modal covers page-level detail controls. Parent the detail controls to this Kanban with slot_name:"modal"; ordinary body children only populate cards. For a board without card selection use openModalOnCardClick:false and omit onCardSelected; with skin:"shadcn" a card click still selects the card (onCardSelected, lastSelectedCard) without the modal. Never merely enable the modal to satisfy the event lint without giving it content.`);
   }
   return warnings;
 }
@@ -75245,8 +75245,9 @@ function validateEvents(summary, events, options2 = {}) {
         if (schema && !validTriggers.includes(event.trigger)) {
           errors.push(`${label2}: trigger "${event.trigger}" is not valid for ${source2.type}. Valid triggers: ${validTriggers.join(", ") || "none"}.`);
         }
-        if (source2.type === "Kanban" && event.trigger === "onCardSelected" && isFalseBinding2(propVal3(source2.properties, "openModalOnCardClick"))) {
-          errors.push(`${label2}: Kanban onCardSelected cannot fire while openModalOnCardClick is false; ToolJet returns before it sets lastSelectedCard or fires the event. Enable the native card modal AND populate it with children parented to the Kanban using slot_name:"modal", or remove this handler and use a separate supported detail flow.`);
+        if (source2.type === "Kanban" && event.trigger === "onCardSelected" && isFalseBinding2(propVal3(source2.properties, "openModalOnCardClick")) && // The shadcn/ui style selects a card on any click, modal or not.
+        propVal3(source2.properties, "skin") !== "shadcn") {
+          errors.push(`${label2}: Kanban onCardSelected cannot fire while openModalOnCardClick is false; ToolJet returns before it sets lastSelectedCard or fires the event. Enable the native card modal AND populate it with children parented to the Kanban using slot_name:"modal", or set properties.skin to "shadcn" (that style selects a card on any click without the modal), or remove this handler and use a separate supported detail flow.`);
         }
       }
     } else if (event.sourceType === "data_query") {

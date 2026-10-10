@@ -217,11 +217,14 @@ export function validateEvents(
         if (
           source.type === 'Kanban' &&
           event.trigger === 'onCardSelected' &&
-          isFalseBinding(propVal(source.properties, 'openModalOnCardClick'))
+          isFalseBinding(propVal(source.properties, 'openModalOnCardClick')) &&
+          // The shadcn/ui style selects a card on any click, modal or not.
+          propVal(source.properties, 'skin') !== 'shadcn'
         ) {
           errors.push(
             `${label}: Kanban onCardSelected cannot fire while openModalOnCardClick is false; ` +
               'ToolJet returns before it sets lastSelectedCard or fires the event. Enable the native card modal AND populate it with children parented to the Kanban using slot_name:"modal", ' +
+              'or set properties.skin to "shadcn" (that style selects a card on any click without the modal), ' +
               'or remove this handler and use a separate supported detail flow.'
           );
         }
