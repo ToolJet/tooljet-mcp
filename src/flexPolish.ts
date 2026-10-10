@@ -82,6 +82,22 @@ const isTitle = (component: ComponentSpec, children: (ref: string) => ComponentS
     !isRow(component) &&
     children(refOf(component) ?? '').some((inner) => inner.type === 'ShadHeading'));
 
+// One line of heading text: font size by level (ui.jsx HEADING) times an average glyph width, plus a little slack.
+const HEADING_PX: Record<string, number> = { h1: 36, h2: 30, h3: 24, h4: 20 };
+const headingLineWidth = (component: ComponentSpec): number | null => {
+  const raw = text(prop(component, 'text'));
+  if (!raw || raw.includes('{{')) return null;
+  const size = HEADING_PX[text(prop(component, 'level'))] ?? HEADING_PX.h2;
+  return Math.ceil(raw.length * size * (size >= 36 ? 0.6 : 0.56) + 8);
+};
+type FlexRect = { widthPx?: number; fillWidth?: boolean };
+const fixedRects = (component: ComponentSpec): FlexRect[] =>
+  [component.layout, component.layouts?.desktop].filter(
+    (rect): rect is FlexRect & NonNullable<ComponentSpec['layout']> =>
+      !!rect && (rect as FlexRect).fillWidth === false && typeof (rect as FlexRect).widthPx === 'number'
+  ) as FlexRect[];
+const META_TYPES = new Set(['ShadText', 'ShadBadge', 'ShadTags']);
+
 export interface FlexPolishResult {
   components: ComponentSpec[];
   warnings: string[];
@@ -93,7 +109,21 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
   const warnings: string[] = [];
   if (!Array.isArray(input) || !input.length) return { components: Array.isArray(input) ? [...input] : [], warnings };
   const components = input.map((component) =>
-    component && typeof component === 'object' ? { ...component, properties: { ...props(component) } } : component
+    component && typeof component === 'object'
+      ? {
+          ...component,
+          properties: { ...props(component) },
+          ...(component.layout ? { layout: { ...component.layout } } : {}),
+          ...(component.layouts
+            ? {
+                layouts: {
+                  ...component.layouts,
+                  ...(component.layouts.desktop ? { desktop: { ...component.layouts.desktop } } : {}),
+                },
+              }
+            : {}),
+        }
+      : component
   );
   const childrenOf = (ref: string): ComponentSpec[] =>
     components.filter((component) => component && component.parentRef === ref && !component.slotName);
@@ -127,7 +157,33 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
       warnings.push(`Row "${label}" holds ${children.length} cards; its alignItems is now stretch so they share one height.`);
     }
 
-    // 3. Actions before the title in a header row move after it.
+    // 3. A fixed-width heading too narrow for one line of its text is widened to fit (it wrapped onto two lines).
+    for (const child of children) {
+      if (child.type !== 'ShadHeading') continue;
+      const needed = headingLineWidth(child);
+      if (!needed) continue;
+      const rects = fixedRects(child);
+      if (!rects.length || rects.every((rect) => (rect.widthPx ?? 0) >= needed)) continue;
+      rects.forEach((rect) => {
+        rect.widthPx = Math.max(rect.widthPx ?? 0, needed);
+      });
+      warnings.push(
+        `Heading "${child.name}" in row "${label}" was too narrow for one line of its text; its widthPx is now ${needed}.`
+      );
+    }
+
+    // 4. A heading with meta text or a badge beside it (no controls) sits on one text baseline.
+    if (
+      children.some((child) => child.type === 'ShadHeading') &&
+      children.some((child) => META_TYPES.has(child.type)) &&
+      children.every((child) => child.type === 'ShadHeading' || META_TYPES.has(child.type)) &&
+      ['', 'center', 'flex-start'].includes(align)
+    ) {
+      setProp(container, 'alignItems', 'last baseline');
+      warnings.push(`Row "${label}" pairs a heading with meta text; its alignItems is now "last baseline" so they share a baseline.`);
+    }
+
+    // 5. Actions before the title in a header row move after it.
     const authored = valueOf(prop(container, 'childOrder'));
     const authoredOrder = Array.isArray(authored) ? authored.filter((entry): entry is string => typeof entry === 'string') : null;
     const ordered = authoredOrder?.length

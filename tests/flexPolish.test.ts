@@ -154,3 +154,56 @@ describe('polishFlexRows: header actions', () => {
     expect(polishFlexRows([]).components).toEqual([]);
   });
 });
+
+describe('polishFlexRows: headings in rows', () => {
+  const sized = (c: ComponentSpec, widthPx: number): ComponentSpec => ({
+    ...c,
+    layout: { top: 0, left: 0, width: 8, height: 34, fillWidth: false, widthPx } as ComponentSpec['layout'],
+  });
+  const widthOf = (components: ComponentSpec[], ref: string) =>
+    (components.find((c) => c.clientRef === ref)?.layout as { widthPx?: number } | undefined)?.widthPx;
+
+  it('widens a fixed-width heading too narrow for one line of its text', () => {
+    const { components, warnings } = polishFlexRows([
+      row('summary'),
+      sized(child('queueHeading', 'ShadHeading', 'summary', { text: { value: 'Ticket queue' }, level: { value: 'h2' } }), 170),
+      child('count', 'ShadText', 'summary', { text: { value: '29 tickets' } }),
+    ]);
+    expect(widthOf(components, 'queueHeading')).toBeGreaterThanOrEqual(200);
+    expect(warnings.join(' ')).toMatch(/queueHeading/);
+  });
+
+  it('leaves a heading that fits, and one bound to an expression, alone', () => {
+    const fits = polishFlexRows([
+      row('summary'),
+      sized(child('h', 'ShadHeading', 'summary', { text: { value: 'Queue' }, level: { value: 'h4' } }), 170),
+      child('c', 'ShadText', 'summary'),
+    ]);
+    expect(widthOf(fits.components, 'h')).toBe(170);
+    const bound = polishFlexRows([
+      row('summary'),
+      sized(child('h', 'ShadHeading', 'summary', { text: { value: '{{queries.q.data.title}}' }, level: { value: 'h1' } }), 120),
+      child('c', 'ShadText', 'summary'),
+    ]);
+    expect(widthOf(bound.components, 'h')).toBe(120);
+  });
+
+  it('puts a heading and its meta text on one baseline', () => {
+    const { components } = polishFlexRows([
+      row('summary', { alignItems: { value: 'center' } }),
+      child('h', 'ShadHeading', 'summary', { text: { value: 'Ticket queue' } }),
+      child('meta', 'ShadText', 'summary', { text: { value: '29 tickets · 19 active' } }),
+    ]);
+    expect(prop(components, 'summary', 'alignItems')).toBe('last baseline');
+  });
+
+  it('keeps a heading row with actions centred', () => {
+    const { components } = polishFlexRows([
+      row('header', { alignItems: { value: 'center' } }),
+      child('h', 'ShadHeading', 'header'),
+      child('meta', 'ShadText', 'header'),
+      child('cta', 'ShadButton', 'header'),
+    ]);
+    expect(prop(components, 'header', 'alignItems')).toBe('center');
+  });
+});
