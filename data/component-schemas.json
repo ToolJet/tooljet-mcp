@@ -632,7 +632,7 @@
         "key": "showIcon",
         "label": "Show icon",
         "valueType": "boolean",
-        "default": "{{true}}"
+        "default": "{{false}}"
       },
       {
         "key": "dynamicHeight",
@@ -955,7 +955,7 @@
         "key": "block",
         "label": "Full width",
         "valueType": "boolean",
-        "default": "{{true}}"
+        "default": "{{false}}"
       },
       {
         "key": "loadingState",
@@ -1535,7 +1535,7 @@
         "key": "allowClear",
         "label": "Show clear button",
         "valueType": "boolean",
-        "default": "{{true}}"
+        "default": "{{false}}"
       },
       {
         "key": "loadingState",
@@ -1773,7 +1773,7 @@
         "key": "bordered",
         "label": "Bordered",
         "valueType": "boolean",
-        "default": "{{true}}"
+        "default": "{{false}}"
       },
       {
         "key": "pageSize",
@@ -2154,13 +2154,13 @@
         "key": "allowClear",
         "label": "Show clear button",
         "valueType": "boolean",
-        "default": "{{true}}"
+        "default": "{{false}}"
       },
       {
         "key": "showSearch",
         "label": "Searchable",
         "valueType": "boolean",
-        "default": "{{true}}"
+        "default": "{{false}}"
       },
       {
         "key": "loadingState",
@@ -2283,7 +2283,7 @@
         "key": "card",
         "label": "Show as card",
         "valueType": "boolean",
-        "default": "{{true}}"
+        "default": "{{false}}"
       },
       {
         "key": "loadingState",
