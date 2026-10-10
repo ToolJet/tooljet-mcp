@@ -698,6 +698,16 @@ const AUTHORING_HINTS = {
       },
     },
   },
+  // 2026-10-10: the shadcn/ui board's editing contract. Its events fire for UI changes and for its actions alike.
+  ShadKanban: {
+    board: {
+      content: 'A card shows only the fields you map: titleField, descriptionField, badgeField (priority words colour the badge), tagsField (an array or a comma list), progressField (0 to 100), metaField (a short date or count), avatarField (a name, shown as initials). Map what the job needs; leave the rest empty. density "compact" for long boards.',
+      saving: 'Every change shows on the board at once and fires an event with its payload: onCardMoved (movedCard, lastMove), onCardAdded (lastAddedCard), onCardUpdated (lastUpdatedCard), onCardRemoved (lastRemovedCard); components.<name>.cards is the whole board. Save in that event handler with a query. The actions (addCard, updateCard, moveCard, deleteCard) fire the same events, so either call an action and save in its event, or save with a query and refresh the data; never both, or the save runs twice.',
+      addFlow: 'allowAdd shows an Add card button under each column: it sets addCardColumn and fires onAddCardClick. Open a modal form there; on submit run the insert with status components.<name>.addCardColumn, then refresh the data query (or call addCard without a separate insert).',
+      deleteFlow: 'allowDelete shows a delete button on card hover: the card leaves the board and onCardRemoved fires with lastRemovedCard; delete the row in that handler.',
+      styles: 'Optional, each falls back to the app theme: columnBackgroundColor, columnBorderRadius (px), cardBackgroundColor, cardBorderColor, cardBorderRadius (px), cardShadow ("none" | "sm" | "md" | "lg", default "sm"). Set them only when the design calls for it.',
+    },
+  },
   Listview: {
     modes: {
       componentType: 'Listview',
