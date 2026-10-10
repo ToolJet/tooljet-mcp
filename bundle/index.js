@@ -76373,6 +76373,22 @@ function polishFlexRows(input) {
     }
     if (children.length < 2)
       continue;
+    if (children.some((child) => !ACTION_TYPES.has(child.type))) {
+      for (const child of children) {
+        if (child.type !== "ShadButton")
+          continue;
+        const rects = [child.layout, child.layouts?.desktop].filter((rect2) => !!rect2 && rect2.fillWidth === true);
+        if (!rects.length)
+          continue;
+        const caption = text(prop2(child, "text")) || text(prop2(child, "label"));
+        const width = Math.max(96, Math.ceil(caption.length * 8 + (text(prop2(child, "icon")) ? 64 : 40)));
+        rects.forEach((rect2) => {
+          rect2.fillWidth = false;
+          rect2.widthPx = width;
+        });
+        warnings.push(`Button "${child.name}" in row "${label0}" filled the row's width; it now keeps its own (${width}px).`);
+      }
+    }
     const align = text(prop2(container, "alignItems"));
     const label2 = container.name ?? ref2;
     if (children.every((child) => INLINE_TYPES.has(child.type)) && children.some(isLabelledField) && children.some((child) => !isLabelledField(child)) && align !== "last baseline") {

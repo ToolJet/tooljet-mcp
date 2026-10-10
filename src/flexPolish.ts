@@ -158,6 +158,25 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
       }
     }
     if (children.length < 2) continue;
+
+    // 0b. A button beside other content keeps its own width: filling, it took half the row and drew at the left of
+    //     that half (a header's page action sat mid-header).
+    if (children.some((child) => !ACTION_TYPES.has(child.type))) {
+      for (const child of children) {
+        if (child.type !== 'ShadButton') continue;
+        const rects = [child.layout, child.layouts?.desktop].filter(
+          (rect): rect is NonNullable<ComponentSpec['layout']> => !!rect && (rect as FlexRect).fillWidth === true
+        );
+        if (!rects.length) continue;
+        const caption = text(prop(child, 'text')) || text(prop(child, 'label'));
+        const width = Math.max(96, Math.ceil(caption.length * 8 + (text(prop(child, 'icon')) ? 64 : 40)));
+        rects.forEach((rect) => {
+          (rect as FlexRect).fillWidth = false;
+          (rect as FlexRect).widthPx = width;
+        });
+        warnings.push(`Button "${child.name}" in row "${label0}" filled the row's width; it now keeps its own (${width}px).`);
+      }
+    }
     const align = text(prop(container, 'alignItems'));
     const label = container.name ?? ref;
 

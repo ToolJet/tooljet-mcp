@@ -233,3 +233,19 @@ describe('polishFlexRows: a plain row fits its tallest child', () => {
     expect(h(card, 'card')).toBe(30);
   });
 });
+
+describe('polishFlexRows: a button in a row keeps its own width', () => {
+  it('stops a header button from filling half the row (it drew at the middle of the header)', () => {
+    const input = [
+      row('header', { justifyContent: { value: 'space-between' } }),
+      { ...child('title', 'ShadHeading', 'header', { text: { value: 'Bed management' } }), layout: { top: 0, left: 0, width: 20, height: 40, fillWidth: true } },
+      { ...child('assign', 'ShadButton', 'header', { text: { value: 'Assign a free bed' } }), layout: { top: 0, left: 0, width: 20, height: 36, fillWidth: true } },
+    ];
+    const { components, warnings } = polishFlexRows(input as ComponentSpec[]);
+    const btn = components.find((c) => c.clientRef === 'assign')!.layout as Record<string, unknown>;
+    expect(btn.fillWidth).toBe(false);
+    expect(btn.widthPx).toBeGreaterThanOrEqual(150);
+    expect((components.find((c) => c.clientRef === 'title')!.layout as Record<string, unknown>).fillWidth).toBe(true);
+    expect(warnings.join(' ')).toMatch(/assign/);
+  });
+});
