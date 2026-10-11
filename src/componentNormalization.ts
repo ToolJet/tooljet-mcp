@@ -312,6 +312,21 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
           );
           return { ...entry, isDateSelectionEnabled: true };
         }
+        // A state (one severity, status or stage per row) drawn as a read-only multi-select showed "Select.." on every
+        // row: the multi-select reads an array and the value was one string. A single select shows it.
+        if (
+          column && typeof column === 'object' && !Array.isArray(column) &&
+          (column as Record<string, unknown>).columnType === 'newMultiSelect' &&
+          !isTruthy((column as Record<string, unknown>).isEditable) &&
+          /^(status|severity|priority|stage|state|level|risk)$/i.test(
+            String((column as Record<string, unknown>).key ?? (column as Record<string, unknown>).name ?? '').replace(/[_\s-]+/g, '')
+          )
+        ) {
+          changedColumns = true;
+          const entry = column as Record<string, unknown>;
+          warnings.push(`Table "${component.name}" column "${entry.name ?? entry.key}": a single state per row; columnType is now "select" (a multi-select shows "Select.." for a single value).`);
+          column = { ...entry, columnType: 'select' };
+        }
         // The shadcn look reads numbers right-aligned (shadcn's data table, and how money and counts scan down a
         // column); a number column that sets no alignment gets right, which the inspector shows and can change.
         // It also groups thousands (100000 reads 100,000) unless the column says otherwise.

@@ -53,3 +53,16 @@ describe('a short shadcn-look table', () => {
     expect(short(245, { serverSidePagination: { value: true } }).component.properties?.dynamicHeight).toBeUndefined();
   });
 });
+
+describe('a single state drawn as a multi-select', () => {
+  it('becomes a single select when read-only (it showed "Select.." on every row)', () => {
+    const result = normalizeComponentSpec(
+      table(undefined, [
+        { id: 's', key: 'severity', name: 'Severity', columnType: 'newMultiSelect', options: [{ label: 'High', value: 'High' }] },
+        { id: 't', key: 'tags', name: 'Tags', columnType: 'newMultiSelect' },
+      ])
+    );
+    const columns = (result.component.properties?.columns as { value: Record<string, unknown>[] }).value;
+    expect(columns.map((c) => c.columnType)).toEqual(['select', 'newMultiSelect']);
+  });
+});
