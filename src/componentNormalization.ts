@@ -51,6 +51,10 @@ function catalogDefault(type: string, key: string, fallback: unknown): unknown {
   return getComponentSchema(type)?.properties.find((property) => property.key === key)?.default ?? fallback;
 }
 
+// Table column names that hold money, and ones that hold a state (a shadcn-look table finishes both).
+const MONEY_WORDS = /\b(price|amount|cost|total|revenue|balance|fee|fees|spend|spent|salary|budget|paid|payment|invoice|subtotal|tax|refund|value|mrr|arr)\b/i;
+const STATE_WORDS = /\b(status|stage|state|priority|severity|availability|health|risk|condition)\b/i;
+
 const CLIENT_SERVER_BOOLEAN_KEYS = new Set([
   'serverSidePagination',
   'serverSideSearch',
@@ -363,11 +367,41 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
         ) {
           changedColumns = true;
           const entry = column as Record<string, unknown>;
-          return {
+          column = {
             ...entry,
             horizontalAlignment: entry.horizontalAlignment ?? 'right',
             thousandSeparator: entry.thousandSeparator ?? true,
           };
+        }
+        if (shadcnLook && column && typeof column === 'object' && !Array.isArray(column)) {
+          const entry = column as Record<string, unknown>;
+          const words = `${String(entry.key ?? '')} ${String(entry.name ?? '')}`.replace(/[_-]+/g, ' ');
+          const next: Record<string, unknown> = { ...entry };
+          // Money reads with two decimals (19.50, not 19.5) unless the column says otherwise (builds of 2026-10-10
+          // showed "Amount 19.5" and "Retail price 3.5").
+          if (entry.columnType === 'number' && entry.decimalPlaces === undefined && MONEY_WORDS.test(words)) {
+            next.decimalPlaces = 2;
+          }
+          // A read-only state (status, stage, priority) is drawn as a status chip, whose tone the Table reads from the
+          // value's words. Plain text was what the builds shipped, though the lint asked for chips.
+          if (
+            ['string', undefined].includes(entry.columnType as string | undefined) &&
+            entry.displayAsChip === undefined && !isTruthy(entry.isEditable) && STATE_WORDS.test(words)
+          ) {
+            next.displayAsChip = true;
+          }
+          // A header needs its label's width plus the cell padding, and the pencil of an editable column: "On hand"
+          // at 60px read "On h...".
+          const size = Number(entry.columnSize);
+          const label = String(entry.name ?? entry.key ?? '');
+          if (Number.isFinite(size) && size > 0 && label) {
+            const needed = Math.ceil(label.length * 7.5) + 32 + (isTruthy(entry.isEditable) ? 18 : 0);
+            if (size < needed) next.columnSize = needed;
+          }
+          if (Object.keys(next).some((k) => next[k] !== entry[k])) {
+            changedColumns = true;
+            column = next;
+          }
         }
         return column;
       });

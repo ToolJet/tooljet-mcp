@@ -101,3 +101,40 @@ describe('a pack card', () => {
     expect(props.dynamicHeight.value).toBe(false);
   });
 });
+
+describe('shadcn-look Table finish', () => {
+  const cols = (columns: unknown[], look: string | undefined = 'shadcn') =>
+    (normalizeComponentSpec(table(look, columns)).component.properties?.columns as { value: Record<string, unknown>[] }).value;
+
+  it('draws a read-only state column as a status chip', () => {
+    const columns = cols([
+      { id: 'a', key: 'status', name: 'Status', columnType: 'string' },
+      { id: 'b', key: 'stock_status', name: 'Stock status' },
+      { id: 'c', key: 'priority', name: 'Priority', columnType: 'string', isEditable: true },
+      { id: 'd', key: 'stage', name: 'Stage', columnType: 'string', displayAsChip: false },
+      { id: 'e', key: 'name', name: 'Name', columnType: 'string' },
+    ]);
+    expect(columns.map((c) => c.displayAsChip)).toEqual([true, true, undefined, false, undefined]);
+    expect(cols([{ id: 'a', key: 'status', name: 'Status', columnType: 'string' }], 'default')[0]!.displayAsChip).toBeUndefined();
+  });
+
+  it('shows money with two decimals unless the column says otherwise', () => {
+    const columns = cols([
+      { id: 'a', key: 'retail_price', name: 'Retail price', columnType: 'number' },
+      { id: 'b', key: 'amount', name: 'Amount', columnType: 'number', decimalPlaces: 0 },
+      { id: 'c', key: 'qty', name: 'Qty', columnType: 'number' },
+    ]);
+    expect(columns.map((c) => c.decimalPlaces)).toEqual([2, 0, undefined]);
+  });
+
+  it('gives a column room for its header, and an editable one room for the pencil too', () => {
+    const columns = cols([
+      { id: 'a', key: 'on_hand', name: 'On hand', columnType: 'number', columnSize: 60, isEditable: true },
+      { id: 'b', key: 'sku', name: 'SKU', columnType: 'string', columnSize: 80 },
+      { id: 'c', key: 'duration', name: 'Duration', columnType: 'string', columnSize: 70 },
+    ]);
+    expect(columns[0]!.columnSize).toBeGreaterThanOrEqual(100);
+    expect(columns[1]!.columnSize).toBe(80);
+    expect(columns[2]!.columnSize).toBeGreaterThanOrEqual(86);
+  });
+});

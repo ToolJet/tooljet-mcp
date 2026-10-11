@@ -1099,14 +1099,33 @@ export function lintPlainStateColumns(spec: LintComponent): string[] {
   if (!Array.isArray(columns)) return [];
   const plain = columns
     .filter((c): c is Record<string, unknown> => !!c && typeof c === 'object')
-    .filter((c) => c.columnVisibility !== false && ['string', 'text', undefined].includes(c.columnType as string | undefined))
+    .filter((c) => c.columnVisibility !== false && c.displayAsChip === undefined && ['string', 'text', undefined].includes(c.columnType as string | undefined))
     .filter((c) => /^(status|stage|state|priority|severity|availability|health|risk)$/i.test(String(c.key ?? '').replace(/[_\s-]+/g, '')) ||
       /^(status|stage|state|priority|severity|availability|health|risk)$/i.test(String(c.name ?? '').trim()));
   if (!plain.length) return [];
   return [
     `Table "${spec.name ?? '?'}": ${plain.map((c) => `"${c.name ?? c.key}"`).join(', ')} show a state as plain text. ` +
-      'Draw it as a chip so it reads at a glance: an html column whose data maps each value to ' +
+      'Draw it as a chip so it reads at a glance: displayAsChip: true on the string column ("Show as status chip", the tone ' +
+      'read from the value: Paid green, Pending amber, Overdue red), or for tones of your own an html column whose data maps each value to ' +
       '<span class="tj-chip tj-chip-success|warning|danger|info|neutral">Value</span> (theme-aware in light and dark).',
+  ];
+}
+
+/** A shadcn-look Table number column holding money with no currency sign: "Retail price 4.25" (2026-10-10 builds). */
+export function lintBareMoneyColumns(spec: LintComponent): string[] {
+  if (spec.type !== 'Table') return [];
+  if (propVal(spec.styles as Record<string, unknown> | undefined, 'tableLook') !== 'shadcn') return [];
+  const columns = propVal(spec.properties as Record<string, unknown> | undefined, 'columns');
+  if (!Array.isArray(columns)) return [];
+  const bare = columns
+    .filter((c): c is Record<string, unknown> => !!c && typeof c === 'object')
+    .filter((c) => c.columnVisibility !== false && c.columnType === 'number' && !c.prefix && !c.suffix)
+    .filter((c) => /\b(price|amount|cost|total|revenue|balance|fees?|spend|spent|salary|budget|payment|subtotal|refund|mrr|arr)\b/i
+      .test(`${String(c.key ?? '')} ${String(c.name ?? '')}`.replace(/[_-]+/g, ' ')));
+  if (!bare.length) return [];
+  return [
+    `Table "${spec.name ?? '?'}": ${bare.map((c) => `"${c.name ?? c.key}"`).join(', ')} show money without a currency sign. ` +
+      'Set the number column\'s prefix to the sign the request uses ("$", "€", "£", "₹"); decimalPlaces 2 is applied for you.',
   ];
 }
 
@@ -3169,6 +3188,7 @@ export function lintComponents(components: LintComponent[], options: { canvasCol
     errors.push(...lintButtonLabelWidth(c));
     warnings.push(...lintUnboundEmptyState(c));
     warnings.push(...lintPlainStateColumns(c));
+    warnings.push(...lintBareMoneyColumns(c));
     errors.push(...lintTableProjectionRender(c, warnings));
     errors.push(...lintStaticDisabledSurface(c));
     errors.push(...lintDefaultInputLabel(c));
