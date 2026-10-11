@@ -115,6 +115,8 @@ describe('shadcn-look Table finish', () => {
       { id: 'e', key: 'name', name: 'Name', columnType: 'string' },
     ]);
     expect(columns.map((c) => c.displayAsChip)).toEqual([true, true, undefined, false, undefined]);
+    const [narrow] = cols([{ id: 'a', key: 'status', name: 'Status', columnType: 'string', columnSize: 100 }]);
+    expect(narrow!.columnSize).toBeGreaterThanOrEqual(140);
     expect(cols([{ id: 'a', key: 'status', name: 'Status', columnType: 'string' }], 'default')[0]!.displayAsChip).toBeUndefined();
   });
 

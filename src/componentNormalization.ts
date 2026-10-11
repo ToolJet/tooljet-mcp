@@ -402,7 +402,9 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
           if (Number.isFinite(size) && size > 0 && label) {
             // An address needs about 240px on one line; at 185px "sofia.alvarez@example.c / om" broke mid-word.
             const email = /\be ?mail\b/i.test(words) ? 240 : 0;
-            const needed = Math.max(email, Math.ceil(label.length * 7.5) + 32 + (isTruthy(entry.isEditable) ? 18 : 0));
+            // A status chip needs room for its longest state ("Waiting on customer" was cut at 100px).
+            const chip = next.displayAsChip === true || entry.displayAsChip === true ? 140 : 0;
+            const needed = Math.max(email, chip, Math.ceil(label.length * 7.5) + 32 + (isTruthy(entry.isEditable) ? 18 : 0));
             if (size < needed) next.columnSize = needed;
           }
           // A row action in the default colours is an outline button, as shadcn's data table draws row actions: a
