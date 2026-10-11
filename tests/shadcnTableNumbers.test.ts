@@ -125,6 +125,21 @@ describe('shadcn-look Table finish', () => {
       { id: 'c', key: 'qty', name: 'Qty', columnType: 'number' },
     ]);
     expect(columns.map((c) => c.decimalPlaces)).toEqual([2, 0, undefined]);
+    const units = cols([
+      { id: 'a', key: 'total_minutes', name: 'Total (min)', columnType: 'number' },
+      { id: 'b', key: 'total_reps', name: 'Total reps', columnType: 'number' },
+      { id: 'c', key: 'total', name: 'Total', columnType: 'number' },
+    ]);
+    expect(units.map((c) => c.decimalPlaces)).toEqual([undefined, undefined, 2]);
+  });
+
+  it('gives an email column room for an address on one line', () => {
+    const [email, plain] = cols([
+      { id: 'a', key: 'email', name: 'Email', columnType: 'string', columnSize: 185 },
+      { id: 'b', key: 'company', name: 'Company', columnType: 'string', columnSize: 150 },
+    ]);
+    expect(email!.columnSize).toBeGreaterThanOrEqual(240);
+    expect(plain!.columnSize).toBe(150);
   });
 
   it('gives a column room for its header, and an editable one room for the pencil too', () => {

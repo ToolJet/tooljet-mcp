@@ -54,6 +54,8 @@ function catalogDefault(type: string, key: string, fallback: unknown): unknown {
 // Table column names that hold money, and ones that hold a state (a shadcn-look table finishes both).
 const MONEY_WORDS = /\b(price|amount|cost|total|revenue|balance|fee|fees|spend|spent|salary|budget|paid|payment|invoice|subtotal|tax|refund|value|mrr|arr)\b/i;
 const PERSON_WORDS = /\b(customer|client|requester|requestor|owner|assignee|assigned to|contact|lead|member|patient|guest|organi[sz]er|employee|technician|tech|agent|rep|student|author|reporter|host|driver|candidate|applicant|tenant|buyer|seller|manager|person|attendee|trainer|coach|instructor|doctor|vet|veterinarian|nurse|resident|full name|customer name|contact name)\b/i;
+// A total of minutes, reps or items is a count, not money ("Total (min)" read "47.00").
+const UNIT_WORDS = /\b(min|mins|minutes?|hours?|hrs?|days?|weeks?|time|count|qty|quantity|servings?|units?|items?|points?|score|percent|pct|kg|lbs?|reps?|sets?|seats?|guests?|nights?|orders?|tickets?|visits?)\b/i;
 const STATE_WORDS = /\b(status|stage|state|priority|severity|availability|health|risk|condition)\b/i;
 
 const CLIENT_SERVER_BOOLEAN_KEYS = new Set([
@@ -380,7 +382,7 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
           const next: Record<string, unknown> = { ...entry };
           // Money reads with two decimals (19.50, not 19.5) unless the column says otherwise (builds of 2026-10-10
           // showed "Amount 19.5" and "Retail price 3.5").
-          if (entry.columnType === 'number' && entry.decimalPlaces === undefined && MONEY_WORDS.test(words)) {
+          if (entry.columnType === 'number' && entry.decimalPlaces === undefined && MONEY_WORDS.test(words) && !UNIT_WORDS.test(words)) {
             next.decimalPlaces = 2;
           }
           // A read-only state (status, stage, priority) is drawn as a status chip, whose tone the Table reads from the
@@ -396,7 +398,9 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
           const size = Number(entry.columnSize);
           const label = String(entry.name ?? entry.key ?? '');
           if (Number.isFinite(size) && size > 0 && label) {
-            const needed = Math.ceil(label.length * 7.5) + 32 + (isTruthy(entry.isEditable) ? 18 : 0);
+            // An address needs about 240px on one line; at 185px "sofia.alvarez@example.c / om" broke mid-word.
+            const email = /\be ?mail\b/i.test(words) ? 240 : 0;
+            const needed = Math.max(email, Math.ceil(label.length * 7.5) + 32 + (isTruthy(entry.isEditable) ? 18 : 0));
             if (size < needed) next.columnSize = needed;
           }
           // A row action in the default colours is an outline button, as shadcn's data table draws row actions: a
@@ -430,7 +434,12 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
         if (visible.length > 1 && total > 1240) {
           const factor = 1240 / total;
           const floor = (c: Record<string, unknown>) =>
-            c.columnType === 'button' ? 110 : Math.max(64, Math.ceil(String(c.name ?? c.key ?? '').length * 7.5) + 32);
+            c.columnType === 'button'
+              ? 110
+              : Math.max(
+                  /\be ?mail\b/i.test(`${String(c.key ?? '')} ${String(c.name ?? '')}`.replace(/[_-]+/g, ' ')) ? 240 : 64,
+                  Math.ceil(String(c.name ?? c.key ?? '').length * 7.5) + 32
+                );
           for (let i = 0; i < repairedColumns.length; i++) {
             const c = repairedColumns[i] as Record<string, unknown>;
             if (!visible.includes(c)) continue;
