@@ -208,6 +208,37 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
   }
 
   if (component.type === 'Table') {
+    // A shadcn-look table drawn shorter than its rows per page showed a row and a half and scrolled inside its card
+    // (an incident console, four cards). Fewer rows per page when three or more fit, else the table fits its rows.
+    const lookEntry0 = stylesValue.tableLook;
+    const look0 = lookEntry0 && typeof lookEntry0 === 'object' ? (lookEntry0 as { value?: unknown }).value : lookEntry0;
+    const height = (component.layouts?.desktop ?? component.layout)?.height;
+    const staticNumber = (v: unknown): number | undefined => {
+      const m = typeof v === 'number' ? String(v) : typeof v === 'string' ? /^\s*(?:\{\{\s*)?(\d+)\s*(?:\}\})?\s*$/.exec(v)?.[1] : undefined;
+      return m !== undefined ? Number(m) : undefined;
+    };
+    const isFalse = (v: unknown) => v === false || (typeof v === 'string' && /^\s*(\{\{\s*)?false(\s*\}\})?\s*$/.test(v));
+    if (
+      look0 === 'shadcn' &&
+      typeof height === 'number' &&
+      !isTruthy(propValue(properties, 'dynamicHeight')) &&
+      !isTruthy(propValue(properties, 'serverSidePagination')) &&
+      !isFalse(propValue(properties, 'enablePagination'))
+    ) {
+      const rowsPerPage = staticNumber(propValue(properties, 'rowsPerPage')) ?? 10;
+      const toolbar = isFalse(propValue(properties, 'displaySearchBox')) ? 0 : 64;
+      // The look's measured chrome: toolbar, a 40px header, the footer and borders; rows are about 45px.
+      const fit = Math.floor((height - toolbar - 40 - 58) / 45);
+      if (fit < rowsPerPage) {
+        if (fit >= 3) {
+          setProperty('rowsPerPage', `{{${fit}}}`);
+          warnings.push(`Table "${component.name}": height ${height}px fits ${fit} rows; rowsPerPage is now ${fit} so no row is cut off.`);
+        } else {
+          setProperty('dynamicHeight', '{{true}}');
+          warnings.push(`Table "${component.name}": height ${height}px fits fewer than 3 rows; dynamicHeight is on so the table fits its rows.`);
+        }
+      }
+    }
     if (properties.useDynamicColumn === undefined) {
       setProperty('useDynamicColumn', catalogDefault('Table', 'useDynamicColumn', '{{false}}'));
     }

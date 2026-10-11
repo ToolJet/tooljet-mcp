@@ -29,3 +29,27 @@ describe('shadcn-look Table numbers', () => {
     expect(columns[0]!.thousandSeparator).toBeUndefined();
   });
 });
+
+describe('a short shadcn-look table', () => {
+  const short = (height: number, extra: Record<string, unknown> = {}) =>
+    normalizeComponentSpec({
+      type: 'Table',
+      name: 'incidents',
+      properties: { data: { value: '{{queries.q.data}}' }, ...extra },
+      styles: { tableLook: { value: 'shadcn' } },
+      layout: { top: 0, left: 0, width: 20, height },
+    } as never);
+  it('fits its rows when the drawn height shows fewer than three (an incident console showed a row and a half)', () => {
+    const result = short(245);
+    expect((result.component.properties?.dynamicHeight as { value: unknown }).value).toBe('{{true}}');
+  });
+  it('shows as many rows per page as fit when three or more do', () => {
+    const result = short(400);
+    expect((result.component.properties?.rowsPerPage as { value: unknown }).value).toBe('{{5}}');
+  });
+  it('leaves a tall table, dynamic height and server paging alone', () => {
+    expect(short(700).component.properties?.rowsPerPage).toBeUndefined();
+    expect(short(245, { dynamicHeight: { value: '{{true}}' } }).component.properties?.rowsPerPage).toBeUndefined();
+    expect(short(245, { serverSidePagination: { value: true } }).component.properties?.dynamicHeight).toBeUndefined();
+  });
+});

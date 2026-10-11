@@ -77054,6 +77054,28 @@ function normalizeComponentSpec(component, options2 = {}) {
     warnings.push(`${component.name} "${key4}": normalized ${JSON.stringify(current)} to a boolean ToolJet binding.`);
   }
   if (component.type === "Table") {
+    const lookEntry0 = stylesValue.tableLook;
+    const look0 = lookEntry0 && typeof lookEntry0 === "object" ? lookEntry0.value : lookEntry0;
+    const height = (component.layouts?.desktop ?? component.layout)?.height;
+    const staticNumber2 = (v) => {
+      const m = typeof v === "number" ? String(v) : typeof v === "string" ? /^\s*(?:\{\{\s*)?(\d+)\s*(?:\}\})?\s*$/.exec(v)?.[1] : void 0;
+      return m !== void 0 ? Number(m) : void 0;
+    };
+    const isFalse = (v) => v === false || typeof v === "string" && /^\s*(\{\{\s*)?false(\s*\}\})?\s*$/.test(v);
+    if (look0 === "shadcn" && typeof height === "number" && !isTruthy(propValue(properties, "dynamicHeight")) && !isTruthy(propValue(properties, "serverSidePagination")) && !isFalse(propValue(properties, "enablePagination"))) {
+      const rowsPerPage = staticNumber2(propValue(properties, "rowsPerPage")) ?? 10;
+      const toolbar = isFalse(propValue(properties, "displaySearchBox")) ? 0 : 64;
+      const fit = Math.floor((height - toolbar - 40 - 58) / 45);
+      if (fit < rowsPerPage) {
+        if (fit >= 3) {
+          setProperty("rowsPerPage", `{{${fit}}}`);
+          warnings.push(`Table "${component.name}": height ${height}px fits ${fit} rows; rowsPerPage is now ${fit} so no row is cut off.`);
+        } else {
+          setProperty("dynamicHeight", "{{true}}");
+          warnings.push(`Table "${component.name}": height ${height}px fits fewer than 3 rows; dynamicHeight is on so the table fits its rows.`);
+        }
+      }
+    }
     if (properties.useDynamicColumn === void 0) {
       setProperty("useDynamicColumn", catalogDefault("Table", "useDynamicColumn", "{{false}}"));
     }
