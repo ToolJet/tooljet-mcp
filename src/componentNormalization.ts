@@ -53,6 +53,7 @@ function catalogDefault(type: string, key: string, fallback: unknown): unknown {
 
 // Table column names that hold money, and ones that hold a state (a shadcn-look table finishes both).
 const MONEY_WORDS = /\b(price|amount|cost|total|revenue|balance|fee|fees|spend|spent|salary|budget|paid|payment|invoice|subtotal|tax|refund|value|mrr|arr)\b/i;
+const PERSON_WORDS = /\b(customer|client|requester|requestor|owner|assignee|assigned to|contact|lead|member|patient|guest|organi[sz]er|employee|technician|tech|agent|rep|student|author|reporter|host|driver|candidate|applicant|tenant|buyer|seller|manager|person|attendee|trainer|coach|instructor|doctor|vet|veterinarian|nurse|resident|full name|customer name|contact name)\b/i;
 const STATE_WORDS = /\b(status|stage|state|priority|severity|availability|health|risk|condition)\b/i;
 
 const CLIENT_SERVER_BOOLEAN_KEYS = new Set([
@@ -437,6 +438,22 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
           }
           changedColumns = true;
           warnings.push(`Table "${component.name}": its visible columns (${total}px) were wider than a page; they now scale to fit about 1240px.`);
+        }
+      }
+      // The first column of people shows an avatar beside each name, as a designed CRM or helpdesk table does (an
+      // email, id or editable column never; "name" alone may be a product's, so only words that name a person count).
+      if (shadcnLook) {
+        const index = repairedColumns.findIndex((c) => {
+          if (!c || typeof c !== 'object' || Array.isArray(c)) return false;
+          const entry = c as Record<string, unknown>;
+          const words = `${String(entry.key ?? '')} ${String(entry.name ?? '')}`.replace(/[_-]+/g, ' ');
+          return entry.columnVisibility !== false && ['string', undefined].includes(entry.columnType as string | undefined) &&
+            PERSON_WORDS.test(words) && !/\b(e ?mail|id|phone|count|type|notes?)\b/i.test(words);
+        });
+        const entry = index >= 0 ? (repairedColumns[index] as Record<string, unknown>) : undefined;
+        if (entry && entry.displayAvatar === undefined && entry.displayAsChip === undefined && !isTruthy(entry.isEditable)) {
+          repairedColumns[index] = { ...entry, displayAvatar: true };
+          changedColumns = true;
         }
       }
       if (changedColumns) setProperty('columns', repairedColumns);

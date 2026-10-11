@@ -169,3 +169,23 @@ describe('shadcn-look Table rows', () => {
     expect(few[0]!.columnSize).toBe(300);
   });
 });
+
+describe('shadcn-look Table people', () => {
+  const cols = (columns: unknown[], look = 'shadcn') =>
+    (normalizeComponentSpec(table(look, columns)).component.properties?.columns as { value: Record<string, unknown>[] }).value;
+  it('shows an avatar beside the first column of people', () => {
+    const columns = cols([
+      { id: 'a', key: 'ticket', name: 'Ticket', columnType: 'string' },
+      { id: 'b', key: 'requester', name: 'Requester', columnType: 'string' },
+      { id: 'c', key: 'assignee', name: 'Assignee', columnType: 'string' },
+      { id: 'd', key: 'requester_email', name: 'Email', columnType: 'string' },
+    ]);
+    expect(columns.map((c) => c.displayAvatar)).toEqual([undefined, true, undefined, undefined]);
+  });
+  it('leaves names of things, explicit choices and editable columns alone', () => {
+    expect(cols([{ id: 'a', key: 'name', name: 'Product', columnType: 'string' }])[0]!.displayAvatar).toBeUndefined();
+    expect(cols([{ id: 'a', key: 'owner', name: 'Owner', displayAvatar: false }])[0]!.displayAvatar).toBe(false);
+    expect(cols([{ id: 'a', key: 'owner', name: 'Owner', isEditable: true }])[0]!.displayAvatar).toBeUndefined();
+    expect(cols([{ id: 'a', key: 'owner', name: 'Owner' }], 'default')[0]!.displayAvatar).toBeUndefined();
+  });
+});
