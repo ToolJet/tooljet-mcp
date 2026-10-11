@@ -354,6 +354,28 @@ describe('polishFlexRows: a table in a narrow card fits its columns', () => {
     expect(warnings.join(' ')).toMatch(/aT/);
   });
 
+  it('fits a table card beside a chart, to its own width when it sets one', () => {
+    const fixedCard = { ...card('t'), layout: { top: 0, left: 0, width: 14, height: 300, fillWidth: false, widthPx: 390 } };
+    const input = [
+      row('board', { gap: { value: 16 } }),
+      child('trend', 'ShadBarChart', 'board'),
+      fixedCard as ComponentSpec,
+      table('tT', 't', [130, 200, 145, 120, 120, 200]),
+    ];
+    const { components, warnings } = polishFlexRows(input);
+    // Six columns cannot be read in 360px: the build is told to show fewer instead of each being squeezed.
+    expect(warnings.join(' ')).toMatch(/tT.*fewer columns/);
+    const four = polishFlexRows([
+      row('board', { gap: { value: 16 } }),
+      child('trend', 'ShadBarChart', 'board'),
+      { ...card('t'), layout: { top: 0, left: 0, width: 14, height: 300, fillWidth: false, widthPx: 420 } } as ComponentSpec,
+      table('tT', 't', [120, 160, 120, 140]),
+    ]).components;
+    const sizes = ((four.find((c) => c.clientRef === 'tT')!.properties!.columns as { value: { columnSize: number }[] }).value).map((c) => c.columnSize);
+    expect(sizes.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(420 - 24);
+    void components;
+  });
+
   it('leaves a table that already fits, and a lone card, alone', () => {
     const fits = polishFlexRows([row('board'), card('a'), table('aT', 'a', [100, 100]), card('b'), table('bT', 'b', [100])]).components;
     expect(((fits.find((c) => c.clientRef === 'aT')!.properties!.columns as { value: { columnSize: number }[] }).value)[0].columnSize).toBe(100);

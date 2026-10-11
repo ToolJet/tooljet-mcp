@@ -368,14 +368,18 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
     // 2c. A table in one of several cards side by side fits its columns to the card's share of the page (about 1280px
     //     wide): four tables on a room board clipped their last column ("Mark clean", guest names). Columns scale
     //     down together, none below 64px; the widths stay ordinary column sizes, editable in the inspector.
-    if (children.length >= 2 && children.every(isSurface)) {
+    //     A table card beside a chart counts too, at its own width when it sets one: a six-column table in a 390px
+    //     card beside a trend chart ran off the card's right edge.
+    if (children.length >= 2 && children.some(isSurface)) {
       const rawGap = text(prop(container, 'gap'));
       const gap = rawGap === '' ? 16 : Number(rawGap) || 0;
       const share = Math.floor((1280 - gap * (children.length - 1)) / children.length);
       for (const card of children) {
+        if (!isSurface(card)) continue;
         const rawPad = text(prop(card, 'padding'));
         const pad = rawPad === '' ? 12 : Number(rawPad) || 0;
-        const available = share - pad * 2 - 4;
+        const own = fixedRects(card).map((rect) => rect.widthPx).find((w) => typeof w === 'number' && w > 0);
+        const available = (own ?? share) - pad * 2 - 4;
         for (const table of childrenOf(refOf(card) ?? '')) {
           if (table.type !== 'Table') continue;
           const columns = valueOf(prop(table, 'columns'));
@@ -386,6 +390,14 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
           const size = (c: Record<string, unknown>) => (Number.isFinite(Number(c.columnSize)) ? Number(c.columnSize) : 120);
           const total = visible.reduce((sum, c) => sum + size(c), 0);
           if (!visible.length || total <= available) continue;
+          // Squeezed under 80px a column cuts its values to a letter or two: ask for fewer columns instead.
+          if (available / visible.length < 80) {
+            warnings.push(
+              `Table "${table.name}" shows ${visible.length} columns (${total}px) in a card about ${available}px wide; ` +
+                'show fewer columns there (the 3 or 4 this card is about), or give the card more of the row.'
+            );
+            continue;
+          }
           const factor = available / total;
           setProp(
             table,
