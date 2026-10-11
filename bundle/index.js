@@ -76392,6 +76392,14 @@ function polishFlexRows(input) {
     } : {}
   } : component);
   const childrenOf = (ref2) => components.filter((component) => component && component.parentRef === ref2 && !component.slotName);
+  for (const root of components) {
+    if (!root || root.type !== "FlexContainer" || root.parentRef || root.parent)
+      continue;
+    const dynamic = text(prop2(root, "dynamicHeight")).replace(/[{}\s]/g, "");
+    if (dynamic === "true")
+      continue;
+    setProp(root, "dynamicHeight", "{{true}}");
+  }
   for (const container of components) {
     if (!container || !isRow(container))
       continue;
@@ -76446,19 +76454,23 @@ function polishFlexRows(input) {
       warnings.push(`Row "${label0}": ${fullWidth.length} children were each drawn full-width; they now share the row.`);
     }
     if (children.some((child) => !ACTION_TYPES.has(child.type))) {
+      const hasTitle = children.some((c) => isTitle(c, childrenOf));
       for (const child of children) {
-        if (child.type !== "ShadButton")
+        const inline = child.type === "ShadButton" || hasTitle && ["ShadBadge", "ShadTags", "ShadLink"].includes(child.type);
+        if (!inline)
           continue;
-        const rects = [child.layout, child.layouts?.desktop].filter((rect2) => !!rect2 && rect2.fillWidth === true);
+        const rects = [child.layout, child.layouts?.desktop].filter((rect2) => !!rect2 && rect2.fillWidth !== false);
         if (!rects.length)
           continue;
         const caption = text(prop2(child, "text")) || text(prop2(child, "label"));
-        const width = Math.max(96, Math.ceil(caption.length * 8 + (text(prop2(child, "icon")) ? 64 : 40)));
+        const fitted = child.type === "ShadButton" ? Math.max(96, Math.ceil(caption.length * 8 + (text(prop2(child, "icon")) ? 64 : 40))) : Math.min(320, Math.max(48, Math.ceil(caption.length * 7 + 28)));
+        const own2 = rects.map((rect2) => rect2.widthPx).find((w) => typeof w === "number" && w > 0);
+        const width = own2 ?? fitted;
         rects.forEach((rect2) => {
           rect2.fillWidth = false;
           rect2.widthPx = width;
         });
-        warnings.push(`Button "${child.name}" in row "${label0}" filled the row's width; it now keeps its own (${width}px).`);
+        warnings.push(`"${child.name}" in row "${label0}" filled the row's width; it now keeps its own (${width}px).`);
       }
     }
     const align = text(prop2(container, "alignItems"));

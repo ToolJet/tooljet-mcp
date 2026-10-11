@@ -374,3 +374,42 @@ describe('polishFlexRows: children drawn full-width in a row share it', () => {
     expect((components.find((c) => c.clientRef === 'a')!.layout as Record<string, unknown>).fillWidth).toBeUndefined();
   });
 });
+
+describe('polishFlexRows: a page root grows with its content', () => {
+  it('turns dynamic height on for a top-level container (a gym page root clipped its cards)', () => {
+    const input = [{ name: 'pageRoot', type: 'FlexContainer', clientRef: 'pageRoot', properties: { direction: { value: 'column' }, dynamicHeight: { value: false } } }];
+    const { components } = polishFlexRows(input as ComponentSpec[]);
+    expect(prop(components, 'pageRoot', 'dynamicHeight')).toBe('{{true}}');
+  });
+  it('leaves nested containers to their own setting', () => {
+    const input = [row('outer'), { ...child('inner', 'FlexContainer', 'outer', { dynamicHeight: { value: false } }) }];
+    const { components } = polishFlexRows(input as ComponentSpec[]);
+    expect(prop(components, 'inner', 'dynamicHeight')).toBe(false);
+  });
+});
+
+describe('polishFlexRows: a button with no fill flag', () => {
+  it('keeps its own width (an unset flag fills by default and drew the button mid-header)', () => {
+    const input = [
+      row('header', { justifyContent: { value: 'space-between' } }),
+      { ...child('title', 'FlexContainer', 'header', { direction: { value: 'column' } }), layout: { top: 0, left: 0, width: 28, height: 72, fillWidth: true } },
+      { ...child('log', 'ShadButton', 'header', { text: { value: 'Log workout' } }), layout: { top: 0, left: 0, width: 6, height: 36, widthPx: 160 } },
+    ];
+    const btn = polishFlexRows(input as ComponentSpec[]).components.find((c) => c.clientRef === 'log')!.layout as Record<string, unknown>;
+    expect(btn.fillWidth).toBe(false);
+    expect(btn.widthPx).toBe(160);
+  });
+});
+
+describe('polishFlexRows: a badge beside a title', () => {
+  it('keeps its own width instead of filling (a "3 clinicians" badge floated mid-header)', () => {
+    const input = [
+      row('header', { justifyContent: { value: 'space-between' } }),
+      { ...child('title', 'ShadHeading', 'header', { text: { value: "Today's appointments" } }), layout: { top: 0, left: 0, width: 20, height: 40 } },
+      { ...child('count', 'ShadBadge', 'header', { text: { value: '3 clinicians' } }), layout: { top: 0, left: 0, width: 4, height: 24 } },
+    ];
+    const badge = polishFlexRows(input as ComponentSpec[]).components.find((c) => c.clientRef === 'count')!.layout as Record<string, unknown>;
+    expect(badge.fillWidth).toBe(false);
+    expect(badge.widthPx).toBeGreaterThan(80);
+  });
+});

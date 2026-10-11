@@ -128,6 +128,15 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
   const childrenOf = (ref: string): ComponentSpec[] =>
     components.filter((component) => component && component.parentRef === ref && !component.slotName);
 
+  // A page's top-level FlexContainer grows with its content: a gym page's root fixed at 710px with dynamic height off
+  // clipped both cards and the table under them.
+  for (const root of components) {
+    if (!root || root.type !== 'FlexContainer' || root.parentRef || (root as { parent?: unknown }).parent) continue;
+    const dynamic = text(prop(root, 'dynamicHeight')).replace(/[{}\s]/g, '');
+    if (dynamic === 'true') continue;
+    setProp(root, 'dynamicHeight', '{{true}}'); // silent: it changes nothing the model must reconsider
+  }
+
   for (const container of components) {
     if (!container || !isRow(container)) continue;
     const ref = refOf(container);
@@ -195,19 +204,29 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
     // 0b. A button beside other content keeps its own width: filling, it took half the row and drew at the left of
     //     that half (a header's page action sat mid-header).
     if (children.some((child) => !ACTION_TYPES.has(child.type))) {
+      const hasTitle = children.some((c) => isTitle(c, childrenOf));
       for (const child of children) {
-        if (child.type !== 'ShadButton') continue;
+        // A button anywhere in a mixed row; a badge, tag or link beside a title (it filled and floated mid-header).
+        const inline = child.type === 'ShadButton' || (hasTitle && ['ShadBadge', 'ShadTags', 'ShadLink'].includes(child.type));
+        if (!inline) continue;
+        // A flex child fills unless it says fillWidth:false (flexContainer.utils resolveFlexChildSizing): an unset flag
+        // filled half a gym header and drew its button mid-header, even with widthPx set.
         const rects = [child.layout, child.layouts?.desktop].filter(
-          (rect): rect is NonNullable<ComponentSpec['layout']> => !!rect && (rect as FlexRect).fillWidth === true
+          (rect): rect is NonNullable<ComponentSpec['layout']> => !!rect && (rect as FlexRect).fillWidth !== false
         );
         if (!rects.length) continue;
         const caption = text(prop(child, 'text')) || text(prop(child, 'label'));
-        const width = Math.max(96, Math.ceil(caption.length * 8 + (text(prop(child, 'icon')) ? 64 : 40)));
+        const fitted =
+          child.type === 'ShadButton'
+            ? Math.max(96, Math.ceil(caption.length * 8 + (text(prop(child, 'icon')) ? 64 : 40)))
+            : Math.min(320, Math.max(48, Math.ceil(caption.length * 7 + 28)));
+        const own = rects.map((rect) => (rect as FlexRect).widthPx).find((w) => typeof w === 'number' && w > 0);
+        const width = own ?? fitted;
         rects.forEach((rect) => {
           (rect as FlexRect).fillWidth = false;
           (rect as FlexRect).widthPx = width;
         });
-        warnings.push(`Button "${child.name}" in row "${label0}" filled the row's width; it now keeps its own (${width}px).`);
+        warnings.push(`"${child.name}" in row "${label0}" filled the row's width; it now keeps its own (${width}px).`);
       }
     }
     const align = text(prop(container, 'alignItems'));
