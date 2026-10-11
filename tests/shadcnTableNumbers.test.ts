@@ -82,3 +82,22 @@ describe('row selection in a shadcn-look table', () => {
     expect(t({}, 'default').highlightSelectedRow).toBeUndefined();
   });
 });
+
+describe('a pack card', () => {
+  it('fits its content even when the build turned dynamic height off', () => {
+    const props = normalizeComponentSpec({
+      type: 'FlexContainer',
+      name: 'riskCard',
+      properties: { cardStyle: { value: 'shadcnCard' }, dynamicHeight: { value: false } },
+    } as never).component.properties as Record<string, { value: unknown }>;
+    expect(props.dynamicHeight.value).toBe('{{true}}');
+  });
+  it('leaves a plain container alone', () => {
+    const props = normalizeComponentSpec({
+      type: 'FlexContainer',
+      name: 'rail',
+      properties: { dynamicHeight: { value: false } },
+    } as never).component.properties as Record<string, { value: unknown }>;
+    expect(props.dynamicHeight.value).toBe(false);
+  });
+});

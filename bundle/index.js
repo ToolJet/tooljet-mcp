@@ -77053,6 +77053,12 @@ function normalizeComponentSpec(component, options2 = {}) {
     setProperty(key4, current === "serverSide");
     warnings.push(`${component.name} "${key4}": normalized ${JSON.stringify(current)} to a boolean ToolJet binding.`);
   }
+  if (component.type === "FlexContainer") {
+    const card = propValue(properties, "cardStyle");
+    if ((card === "shadcnCard" || card === "antCard") && !isTruthy(propValue(properties, "dynamicHeight"))) {
+      setProperty("dynamicHeight", "{{true}}");
+    }
+  }
   if (component.type === "Table") {
     const lookEntry0 = stylesValue.tableLook;
     const look0 = lookEntry0 && typeof lookEntry0 === "object" ? lookEntry0.value : lookEntry0;

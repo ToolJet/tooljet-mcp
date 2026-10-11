@@ -207,6 +207,15 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
     );
   }
 
+  // A pack card (cardStyle shadcnCard / antCard) fits its content; equal heights in a row come from the row's
+  // stretch. A churn card fixed at 780px with dynamicHeight off kept 140px under its table.
+  if (component.type === 'FlexContainer') {
+    const card = propValue(properties, 'cardStyle');
+    if ((card === 'shadcnCard' || card === 'antCard') && !isTruthy(propValue(properties, 'dynamicHeight'))) {
+      setProperty('dynamicHeight', '{{true}}');
+    }
+  }
+
   if (component.type === 'Table') {
     // A shadcn-look table drawn shorter than its rows per page showed a row and a half and scrolled inside its card
     // (an incident console, four cards). Fewer rows per page when three or more fit, else the table fits its rows.
