@@ -241,6 +241,49 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
       });
     }
 
+    // 2c. A table in one of several cards side by side fits its columns to the card's share of the page (about 1280px
+    //     wide): four tables on a room board clipped their last column ("Mark clean", guest names). Columns scale
+    //     down together, none below 64px; the widths stay ordinary column sizes, editable in the inspector.
+    if (children.length >= 2 && children.every(isSurface)) {
+      const rawGap = text(prop(container, 'gap'));
+      const gap = rawGap === '' ? 16 : Number(rawGap) || 0;
+      const share = Math.floor((1280 - gap * (children.length - 1)) / children.length);
+      for (const card of children) {
+        const rawPad = text(prop(card, 'padding'));
+        const pad = rawPad === '' ? 12 : Number(rawPad) || 0;
+        const available = share - pad * 2 - 4;
+        for (const table of childrenOf(refOf(card) ?? '')) {
+          if (table.type !== 'Table') continue;
+          const columns = valueOf(prop(table, 'columns'));
+          if (!Array.isArray(columns)) continue;
+          const visible = columns.filter(
+            (c): c is Record<string, unknown> => !!c && typeof c === 'object' && (c as Record<string, unknown>).columnVisibility !== false
+          );
+          const size = (c: Record<string, unknown>) => (Number.isFinite(Number(c.columnSize)) ? Number(c.columnSize) : 120);
+          const total = visible.reduce((sum, c) => sum + size(c), 0);
+          if (!visible.length || total <= available) continue;
+          const factor = available / total;
+          setProp(
+            table,
+            'columns',
+            columns.map((c) =>
+              visible.includes(c as Record<string, unknown>)
+                ? {
+                    ...(c as Record<string, unknown>),
+                    // A button column keeps room for its button's label.
+                    columnSize: Math.max(
+                      (c as Record<string, unknown>).columnType === 'button' ? 110 : 64,
+                      Math.floor(size(c as Record<string, unknown>) * factor)
+                    ),
+                  }
+                : c
+            )
+          );
+          warnings.push(`Table "${table.name}" in a narrow card: its columns (${total}px) now fit the card's ${available}px.`);
+        }
+      }
+    }
+
     // 3. A fixed-width heading too narrow for one line of its text is widened to fit (it wrapped onto two lines).
     for (const child of children) {
       if (child.type !== 'ShadHeading') continue;

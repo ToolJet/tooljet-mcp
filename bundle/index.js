@@ -76481,6 +76481,35 @@ function polishFlexRows(input) {
         warnings.push(`Chart "${last.name}" grows by ${grow}px to fill its card, which is stretched to the tallest card in row "${label2}".`);
       });
     }
+    if (children.length >= 2 && children.every(isSurface)) {
+      const rawGap = text(prop2(container, "gap"));
+      const gap = rawGap === "" ? 16 : Number(rawGap) || 0;
+      const share = Math.floor((1280 - gap * (children.length - 1)) / children.length);
+      for (const card of children) {
+        const rawPad = text(prop2(card, "padding"));
+        const pad = rawPad === "" ? 12 : Number(rawPad) || 0;
+        const available = share - pad * 2 - 4;
+        for (const table of childrenOf(refOf(card) ?? "")) {
+          if (table.type !== "Table")
+            continue;
+          const columns = valueOf2(prop2(table, "columns"));
+          if (!Array.isArray(columns))
+            continue;
+          const visible = columns.filter((c) => !!c && typeof c === "object" && c.columnVisibility !== false);
+          const size2 = (c) => Number.isFinite(Number(c.columnSize)) ? Number(c.columnSize) : 120;
+          const total = visible.reduce((sum, c) => sum + size2(c), 0);
+          if (!visible.length || total <= available)
+            continue;
+          const factor = available / total;
+          setProp(table, "columns", columns.map((c) => visible.includes(c) ? {
+            ...c,
+            // A button column keeps room for its button's label.
+            columnSize: Math.max(c.columnType === "button" ? 110 : 64, Math.floor(size2(c) * factor))
+          } : c));
+          warnings.push(`Table "${table.name}" in a narrow card: its columns (${total}px) now fit the card's ${available}px.`);
+        }
+      }
+    }
     for (const child of children) {
       if (child.type !== "ShadHeading")
         continue;

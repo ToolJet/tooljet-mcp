@@ -333,3 +333,29 @@ describe('polishFlexRows: a header title takes the free space', () => {
     expect((components.find((c) => c.clientRef === 'title')!.layout as Record<string, unknown>).fillWidth).toBe(false);
   });
 });
+
+describe('polishFlexRows: a table in a narrow card fits its columns', () => {
+  const card = (ref: string) =>
+    child(ref, 'FlexContainer', 'board', { cardStyle: { value: 'shadcnCard' }, direction: { value: 'column' }, padding: { value: 12 } });
+  const table = (ref: string, parent: string, sizes: number[]) =>
+    child(ref, 'Table', parent, {
+      columns: { value: sizes.map((columnSize, i) => ({ id: `c${i}`, key: `k${i}`, name: `C${i}`, columnSize })) },
+    });
+  it('scales the columns of a table in a quarter-width card so the last one is not clipped', () => {
+    const input = [
+      row('board', { gap: { value: 16 } }),
+      ...['a', 'b', 'c', 'd'].flatMap((r) => [card(r), table(`${r}T`, r, [100, 140, 160])]),
+    ];
+    const { components, warnings } = polishFlexRows(input);
+    const sizes = ((components.find((c) => c.clientRef === 'aT')!.properties!.columns as { value: { columnSize: number }[] }).value).map((c) => c.columnSize);
+    const total = sizes.reduce((a, b) => a + b, 0);
+    expect(total).toBeLessThanOrEqual(Math.floor((1280 - 16 * 3) / 4) - 28);
+    expect(sizes[2]).toBeGreaterThan(sizes[0]);
+    expect(warnings.join(' ')).toMatch(/aT/);
+  });
+
+  it('leaves a table that already fits, and a lone card, alone', () => {
+    const fits = polishFlexRows([row('board'), card('a'), table('aT', 'a', [100, 100]), card('b'), table('bT', 'b', [100])]).components;
+    expect(((fits.find((c) => c.clientRef === 'aT')!.properties!.columns as { value: { columnSize: number }[] }).value)[0].columnSize).toBe(100);
+  });
+});
