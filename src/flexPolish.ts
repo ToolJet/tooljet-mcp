@@ -183,6 +183,23 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
         warnings.push(`Row "${label0}" was shorter than its tallest child; its height is now ${needed}.`);
       }
     }
+    // A lone button in a row placed at its end or centre keeps its own width: filling, it drew at the left of the row.
+    const lone = children.length === 1 ? children[0] : undefined;
+    if (lone && lone.type === 'ShadButton' && ['flex-end', 'end', 'center'].includes(text(prop(container, 'justifyContent')))) {
+      const rects = [lone.layout, lone.layouts?.desktop].filter(
+        (rect): rect is NonNullable<ComponentSpec['layout']> => !!rect && (rect as FlexRect).fillWidth !== false
+      );
+      if (rects.length) {
+        const caption = text(prop(lone, 'text')) || text(prop(lone, 'label'));
+        const own = rects.map((rect) => (rect as FlexRect).widthPx).find((w) => typeof w === 'number' && w > 0);
+        const width = own ?? Math.max(96, Math.ceil(caption.length * 8 + (text(prop(lone, 'icon')) ? 64 : 40)));
+        rects.forEach((rect) => {
+          (rect as FlexRect).fillWidth = false;
+          (rect as FlexRect).widthPx = width;
+        });
+        warnings.push(`"${lone.name}" filled row "${label0}" and drew at its left; it now keeps its own width (${width}px).`);
+      }
+    }
     if (children.length < 2) continue;
 
     // 0a. Two or more children each drawn the row's full width (43 columns) were meant to share it: unfilled, each took
