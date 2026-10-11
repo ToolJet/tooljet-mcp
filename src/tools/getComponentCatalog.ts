@@ -73,7 +73,9 @@ function resolveCatalogType(requestedType: string): {
 const PACK_CONCEPTS: Array<[RegExp, string[]]> = [
   [/table|grid|datatable/i, ['ShadTable']],
   [/metric|stat|kpi/i, ['ShadStat', 'ShadSparkline']],
-  [/card|panel|surface/i, ['FlexContainer (cardStyle "shadcnCard")']],
+  [/card|panel|surface/i, ['FlexContainer (cardStyle "shadcnCard")', 'ShadCardGrid']],
+  [/gallery|tiles?|catalog|products?|cards|grid/i, ['ShadCardGrid']],
+  [/hero|header|masthead|jumbotron|cover|welcome/i, ['ShadHero']],
   [/modal|dialog|sheet|drawer/i, ['ShadDialog']],
   [/dropdown|menu/i, ['ShadDropdownMenu', 'ShadSelect', 'ShadCombobox']],
   [/list/i, ['ShadListView', 'ShadKeyValue']],

@@ -36498,5 +36498,550 @@
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
       "usage": "Two categories against each other shaded by a value: rows [{ day: 'Mon', hour: '09:00', tickets: 12 }] with yField (rows), xField (columns), valueField; yOrder/xOrder fix the order (weekdays, hours). About 32px per row plus 40."
     }
+  },
+  "ShadHero": {
+    "type": "ShadHero",
+    "name": "ShadHero",
+    "description": "shadcn/ui page hero at the top of a page: eyebrow (small caps line above), title, subtitle, meta facts (['Sun, 11 Oct', '14 bookings'] or [{ label, value }]) and up to two actions (actionLabel, secondaryActionLabel; onActionClick, onSecondaryActionClick). background 'plain' (no panel), 'tint' (a soft panel in the accent), 'gradient' (accent wash), 'image' (imageUrl behind a dark overlay, white text) or 'dark' (deep accent panel, white text); icon (lucide name) in a rounded tile beside the title; align left or center; size compact, default or large. Styles accentColor (else the theme's primary), titleFontFamily ('serif', 'display', ...). Height: grows with its content (about 150px default, 120px compact, 220px large; add 40px for actions)",
+    "defaultSize": {
+      "width": 43,
+      "height": 160
+    },
+    "properties": [
+      {
+        "key": "eyebrow",
+        "label": "Eyebrow",
+        "valueType": "string",
+        "default": "Operations"
+      },
+      {
+        "key": "title",
+        "label": "Title",
+        "valueType": "string",
+        "default": "Good morning, Ada"
+      },
+      {
+        "key": "subtitle",
+        "label": "Subtitle",
+        "valueType": "string",
+        "default": "Here is what needs you today."
+      },
+      {
+        "key": "meta",
+        "label": "Meta facts",
+        "valueType": "union",
+        "default": "{{['Sun, 11 Oct', '14 bookings', '3 need a reply']}}"
+      },
+      {
+        "key": "actionLabel",
+        "label": "Primary action label (empty hides it)",
+        "valueType": "string",
+        "default": "New booking"
+      },
+      {
+        "key": "secondaryActionLabel",
+        "label": "Secondary action label (empty hides it)",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "icon",
+        "label": "Icon (lucide name, e.g. sparkles)",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "background",
+        "label": "Background",
+        "valueType": "string",
+        "default": "tint",
+        "allowedValues": [
+          "plain",
+          "tint",
+          "gradient",
+          "image",
+          "dark"
+        ]
+      },
+      {
+        "key": "imageUrl",
+        "label": "Background image URL (background image)",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "align",
+        "label": "Align",
+        "valueType": "string",
+        "default": "left",
+        "allowedValues": [
+          "left",
+          "center"
+        ]
+      },
+      {
+        "key": "size",
+        "label": "Size",
+        "valueType": "string",
+        "default": "default",
+        "allowedValues": [
+          "compact",
+          "default",
+          "large"
+        ]
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "loadingIndicator",
+        "label": "Loading look",
+        "valueType": "string",
+        "default": "spinner",
+        "allowedValues": [
+          "spinner",
+          "skeleton"
+        ]
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "accentColor",
+        "label": "Accent color",
+        "valueType": "string"
+      },
+      {
+        "key": "backgroundColor",
+        "label": "Panel background (overrides the background style)",
+        "valueType": "string"
+      },
+      {
+        "key": "titleColor",
+        "label": "Title color",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Subtitle and meta color",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Panel radius",
+        "valueType": "union"
+      },
+      {
+        "key": "titleFontFamily",
+        "label": "Title typeface",
+        "valueType": "string",
+        "default": "theme",
+        "allowedValues": [
+          "theme",
+          "sans",
+          "serif",
+          "display",
+          "mono"
+        ]
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onActionClick",
+        "label": "On primary action click"
+      },
+      {
+        "id": "onSecondaryActionClick",
+        "label": "On secondary action click"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover."
+    }
+  },
+  "ShadCardGrid": {
+    "type": "ShadCardGrid",
+    "name": "ShadCardGrid",
+    "description": "shadcn/ui grid of cards from data, for things with a face (recipes, products, listings, people, rooms): each card shows an image (imageField; without one, a tinted panel with the title's initials), title, subtitle, a badge (badgeField, toned by its words: Available green, Low stock amber, Sold out red), a description (two lines) and a meta line (metaFields, a comma list; 'prep:{} min' puts the value in a label, 'serves:Serves' puts the label first). columns (a number, or 'auto' to fit cards of minCardWidth), imageAspect ('16/9', '4/3', '1/1'), cardStyle 'elevated', 'outline' or 'flat'. A click selects the card (selectedItem, selectedItemId; onCardClick). Height: grows with its rows (about 300px per row with an image, 150px without)",
+    "defaultSize": {
+      "width": 43,
+      "height": 620
+    },
+    "properties": [
+      {
+        "key": "data",
+        "label": "Data",
+        "valueType": "array",
+        "default": "{{[{ id: 1, name: 'Lemon herb roast chicken', cuisine: 'Dinner', prep: 20, serves: 4, note: 'Crisp skin, bright pan sauce' }, { id: 2, name: 'Miso glazed sal…"
+      },
+      {
+        "key": "titleField",
+        "label": "Title field",
+        "valueType": "string",
+        "default": "name"
+      },
+      {
+        "key": "subtitleField",
+        "label": "Subtitle field",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "imageField",
+        "label": "Image field (URL)",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "badgeField",
+        "label": "Badge field",
+        "valueType": "string",
+        "default": "cuisine"
+      },
+      {
+        "key": "descriptionField",
+        "label": "Description field",
+        "valueType": "string",
+        "default": "note"
+      },
+      {
+        "key": "metaFields",
+        "label": "Meta fields (comma list; 'prep:{} min')",
+        "valueType": "string",
+        "default": "prep:{} min, serves:Serves"
+      },
+      {
+        "key": "idField",
+        "label": "Id field",
+        "valueType": "string",
+        "default": "id"
+      },
+      {
+        "key": "columns",
+        "label": "Columns (a number or 'auto')",
+        "valueType": "union",
+        "default": "{{3}}"
+      },
+      {
+        "key": "minCardWidth",
+        "label": "Minimum card width (px)",
+        "valueType": "union",
+        "default": "{{240}}"
+      },
+      {
+        "key": "imageAspect",
+        "label": "Image shape",
+        "valueType": "string",
+        "default": "4/3",
+        "allowedValues": [
+          "16/9",
+          "4/3",
+          "1/1"
+        ]
+      },
+      {
+        "key": "showImage",
+        "label": "Show image",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "cardStyle",
+        "label": "Card style",
+        "valueType": "string",
+        "default": "elevated",
+        "allowedValues": [
+          "elevated",
+          "outline",
+          "flat"
+        ]
+      },
+      {
+        "key": "highlightSelected",
+        "label": "Highlight the selected card",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "emptyText",
+        "label": "Empty text",
+        "valueType": "string",
+        "default": "Nothing here yet"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "loadingIndicator",
+        "label": "Loading look",
+        "valueType": "string",
+        "default": "spinner",
+        "allowedValues": [
+          "spinner",
+          "skeleton"
+        ]
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "cardBackground",
+        "label": "Card background",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Card border color",
+        "valueType": "string"
+      },
+      {
+        "key": "titleColor",
+        "label": "Title color",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Subtitle and meta color",
+        "valueType": "string"
+      },
+      {
+        "key": "accentColor",
+        "label": "Selected card accent",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Card radius",
+        "valueType": "union"
+      },
+      {
+        "key": "titleFontFamily",
+        "label": "Title typeface",
+        "valueType": "string",
+        "default": "theme",
+        "allowedValues": [
+          "theme",
+          "sans",
+          "serif",
+          "display",
+          "mono"
+        ]
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onCardClick",
+        "label": "On card click"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      },
+      {
+        "name": "selectedItem",
+        "default": {}
+      },
+      {
+        "name": "selectedItemId",
+        "default": null
+      }
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover."
+    }
   }
 }
