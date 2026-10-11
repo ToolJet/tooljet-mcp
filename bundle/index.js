@@ -76432,6 +76432,19 @@ function polishFlexRows(input) {
     }
     if (children.length < 2)
       continue;
+    const fullWidth = children.filter((child) => {
+      const rect2 = child.layout ?? child.layouts?.desktop;
+      return rect2 && typeof rect2.width === "number" && rect2.width >= 40 && rect2.fillWidth !== true && typeof rect2.widthPx !== "number";
+    });
+    if (fullWidth.length >= 2) {
+      fullWidth.forEach((child) => {
+        [child.layout, child.layouts?.desktop].forEach((rect2) => {
+          if (rect2)
+            rect2.fillWidth = true;
+        });
+      });
+      warnings.push(`Row "${label0}": ${fullWidth.length} children were each drawn full-width; they now share the row.`);
+    }
     if (children.some((child) => !ACTION_TYPES.has(child.type))) {
       for (const child of children) {
         if (child.type !== "ShadButton")
@@ -77251,6 +77264,27 @@ function normalizeComponentSpec(component, options2 = {}) {
   }
   if (wrappedKeys.length) {
     warnings.push(`${component.type} "${component.name}": wrapped the bare expression in ${wrappedKeys.map((k) => `properties.${k}`).join(", ")} in {{ }}; without the braces ToolJet reads it as text, which counts as true (a table stays on its loading spinner).`);
+  }
+  const CODE_START = /^\s*(?:String|Number|Math|moment|Intl|JSON|Object|Array)\s*[.(]|^\s*[([!]|^\s*(?:queries|components|variables|globals|page|constants|parameters)\.[\w$]/;
+  const CODE_ROOT = /\b(?:queries|components|variables|globals|constants|parameters)\.[\w$]/;
+  const CODE_OPERATOR = /=>|\|\||&&|===|!==|\.length\b|\.(?:filter|map|reduce|toFixed|toLocaleString|find|some)\s*\(/;
+  const codeKeys = [];
+  const showsCode = /CodeEditor|Html|Markdown|RichText|Json/i.test(component.type ?? "");
+  for (const [key4, entry] of Object.entries(showsCode ? {} : properties)) {
+    if (booleanKeys.has(key4))
+      continue;
+    const current = propValue(properties, key4);
+    if (typeof current !== "string" || current.includes("{{") || current.length > 2e3)
+      continue;
+    if (!CODE_START.test(current) || !CODE_ROOT.test(current) || !CODE_OPERATOR.test(current))
+      continue;
+    const wrapped = { ...entry && typeof entry === "object" && !Array.isArray(entry) ? entry : {}, value: `{{${current.trim()}}}` };
+    properties[key4] = wrapped;
+    propertyPatch[key4] = wrapped;
+    codeKeys.push(key4);
+  }
+  if (codeKeys.length) {
+    warnings.push(`${component.type} "${component.name}": ${codeKeys.map((k) => `properties.${k}`).join(", ")} held a JavaScript expression without {{ }}, which shows the code on screen; it is now wrapped in {{ }}.`);
   }
   const patch = Object.fromEntries(["properties", "styles", "validation", "others"].flatMap((section) => {
     const envelopePatch = normalizedSections[section].patch ?? {};

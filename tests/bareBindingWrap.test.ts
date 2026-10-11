@@ -53,3 +53,23 @@ describe('bare expressions in true/false properties', () => {
     expect(value(component, 'text')).toBe('queries.getFlights.data');
   });
 });
+
+describe('code written as text', () => {
+  it('wraps a whole expression left without braces in a text property (it showed the code on screen)', () => {
+    const code = "String((queries.get_expenses.data || []).filter(r => r.status === 'Pending').length) + ' expenses awaiting review'";
+    const { component, warnings } = normalizeComponentSpec({
+      name: 'pendingNote',
+      type: 'ShadText',
+      properties: { text: { value: code } },
+    });
+    expect(value(component, 'text')).toBe(`{{${code}}}`);
+    expect(warnings.join(' ')).toMatch(/without \{\{ \}\}/);
+  });
+
+  it('leaves prose, bindings and plain words alone', () => {
+    for (const text of ['Pending review', 'Uses queries.getExpenses to list rows', '{{queries.q.data.length}} rows', '(see notes)']) {
+      const { component } = normalizeComponentSpec({ name: 't', type: 'ShadText', properties: { text: { value: text } } });
+      expect(value(component, 'text')).toBe(text);
+    }
+  });
+});

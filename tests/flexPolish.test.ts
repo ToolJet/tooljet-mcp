@@ -359,3 +359,18 @@ describe('polishFlexRows: a table in a narrow card fits its columns', () => {
     expect(((fits.find((c) => c.clientRef === 'aT')!.properties!.columns as { value: { columnSize: number }[] }).value)[0].columnSize).toBe(100);
   });
 });
+
+describe('polishFlexRows: children drawn full-width in a row share it', () => {
+  it('makes full-width children fill (five KPI cards each 43 columns wide stacked one per line)', () => {
+    const tile = (ref: string) => ({ ...child(ref, 'FlexContainer', 'metrics', { cardStyle: { value: 'shadcnCard' } }), layout: { top: 0, left: 0, width: 43, height: 120, minWidthPx: 185 } });
+    const input = [row('metrics', { flexWrap: { value: true } }), tile('a'), tile('b'), tile('c')];
+    const { components, warnings } = polishFlexRows(input as ComponentSpec[]);
+    for (const ref of ['a', 'b', 'c']) expect((components.find((c) => c.clientRef === ref)!.layout as Record<string, unknown>).fillWidth).toBe(true);
+    expect(warnings.join(' ')).toMatch(/metrics/);
+  });
+  it('leaves narrower children alone', () => {
+    const input = [row('r'), { ...child('a', 'ShadBadge', 'r'), layout: { top: 0, left: 0, width: 6, height: 24 } }, { ...child('b', 'ShadBadge', 'r'), layout: { top: 0, left: 0, width: 6, height: 24 } }];
+    const { components } = polishFlexRows(input as ComponentSpec[]);
+    expect((components.find((c) => c.clientRef === 'a')!.layout as Record<string, unknown>).fillWidth).toBeUndefined();
+  });
+});

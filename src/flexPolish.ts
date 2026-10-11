@@ -176,6 +176,22 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
     }
     if (children.length < 2) continue;
 
+    // 0a. Two or more children each drawn the row's full width (43 columns) were meant to share it: unfilled, each took
+    //     a whole line of a wrapping row and five KPI cards stacked down the first screen.
+    const fullWidth = children.filter((child) => {
+      const rect = child.layout ?? child.layouts?.desktop;
+      return rect && typeof rect.width === 'number' && rect.width >= 40 && (rect as FlexRect).fillWidth !== true &&
+        typeof (rect as FlexRect).widthPx !== 'number';
+    });
+    if (fullWidth.length >= 2) {
+      fullWidth.forEach((child) => {
+        [child.layout, child.layouts?.desktop].forEach((rect) => {
+          if (rect) (rect as FlexRect).fillWidth = true;
+        });
+      });
+      warnings.push(`Row "${label0}": ${fullWidth.length} children were each drawn full-width; they now share the row.`);
+    }
+
     // 0b. A button beside other content keeps its own width: filling, it took half the row and drew at the left of
     //     that half (a header's page action sat mid-header).
     if (children.some((child) => !ACTION_TYPES.has(child.type))) {

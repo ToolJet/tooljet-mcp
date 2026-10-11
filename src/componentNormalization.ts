@@ -524,6 +524,32 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
     );
   }
 
+  // A text property holding a whole JavaScript expression without {{ }} shows the code on screen: an expense KPI read
+  // "String((queries.get_expenses.data || []).filter(r => ...).length) + ' expenses awaiting review'". Only a value
+  // that is plainly code (opens with a call, a bracket or a ToolJet root, references one and uses an operator) is
+  // wrapped; prose that mentions a query is left alone.
+  const CODE_START = /^\s*(?:String|Number|Math|moment|Intl|JSON|Object|Array)\s*[.(]|^\s*[([!]|^\s*(?:queries|components|variables|globals|page|constants|parameters)\.[\w$]/;
+  const CODE_ROOT = /\b(?:queries|components|variables|globals|constants|parameters)\.[\w$]/;
+  const CODE_OPERATOR = /=>|\|\||&&|===|!==|\.length\b|\.(?:filter|map|reduce|toFixed|toLocaleString|find|some)\s*\(/;
+  const codeKeys: string[] = [];
+  const showsCode = /CodeEditor|Html|Markdown|RichText|Json/i.test(component.type ?? '');
+  for (const [key, entry] of Object.entries(showsCode ? {} : properties)) {
+    if (booleanKeys.has(key)) continue;
+    const current = propValue(properties, key);
+    if (typeof current !== 'string' || current.includes('{{') || current.length > 2000) continue;
+    if (!CODE_START.test(current) || !CODE_ROOT.test(current) || !CODE_OPERATOR.test(current)) continue;
+    const wrapped = { ...(entry && typeof entry === 'object' && !Array.isArray(entry) ? entry : {}), value: `{{${current.trim()}}}` };
+    properties[key] = wrapped;
+    propertyPatch[key] = wrapped;
+    codeKeys.push(key);
+  }
+  if (codeKeys.length) {
+    warnings.push(
+      `${component.type} "${component.name}": ${codeKeys.map((k) => `properties.${k}`).join(', ')} held a JavaScript ` +
+        'expression without {{ }}, which shows the code on screen; it is now wrapped in {{ }}.'
+    );
+  }
+
   const patch = Object.fromEntries(
     (['properties', 'styles', 'validation', 'others'] as DefinitionSection[]).flatMap((section) => {
       const envelopePatch = normalizedSections[section].patch ?? {};
