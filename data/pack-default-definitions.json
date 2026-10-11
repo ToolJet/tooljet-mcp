@@ -3027,6 +3027,12 @@
     "value": {
      "value": "$1,250.00"
     },
+    "valueFormat": {
+     "value": "auto"
+    },
+    "currency": {
+     "value": "USD"
+    },
     "change": {
      "value": ""
     },

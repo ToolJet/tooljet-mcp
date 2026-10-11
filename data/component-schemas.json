@@ -23433,7 +23433,7 @@
   "ShadStat": {
     "type": "ShadStat",
     "name": "ShadStat",
-    "description": "shadcn/ui dashboard figure, from a single number to a full KPI card: label, value, change badge (change, trend) with a context line (changeLabel, e.g. 'vs last month'), footnote; optional icon (any lucide name, iconPosition right, left or top, iconStyle square, circle or none), trendData for a small trend line under the figure (numbers or [{ x, y }]), progress (0 to 100) with progressLabel for a target bar, and size sm, default or lg. Each part shows only when set. Styles valueFontFamily ('serif', 'display', 'mono', ...), labelTextTransform ('uppercase') and labelLetterSpacing ('0.1em') set the figure's typeface and a small-caps label",
+    "description": "shadcn/ui dashboard figure, from a single number to a full KPI card: label, value (a number groups its digits; valueFormat currency in currency, percent or compact formats it), change badge (change, trend) with a context line (changeLabel, e.g. 'vs last month'), footnote; optional icon (any lucide name, iconPosition right, left or top, iconStyle square, circle or none), trendData for a small trend line under the figure (numbers or [{ x, y }]), progress (0 to 100) with progressLabel for a target bar, and size sm, default or lg. Each part shows only when set. Styles valueFontFamily ('serif', 'display', 'mono', ...), labelTextTransform ('uppercase') and labelLetterSpacing ('0.1em') set the figure's typeface and a small-caps label",
     "defaultSize": {
       "width": 10,
       "height": 120
@@ -23450,6 +23450,25 @@
         "label": "Value",
         "valueType": "union",
         "default": "$1,250.00"
+      },
+      {
+        "key": "valueFormat",
+        "label": "Value format",
+        "valueType": "string",
+        "default": "auto",
+        "allowedValues": [
+          "auto",
+          "number",
+          "currency",
+          "percent",
+          "compact"
+        ]
+      },
+      {
+        "key": "currency",
+        "label": "Currency (ISO code, e.g. USD)",
+        "valueType": "string",
+        "default": "USD"
       },
       {
         "key": "change",

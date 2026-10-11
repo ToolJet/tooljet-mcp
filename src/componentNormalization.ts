@@ -56,6 +56,8 @@ const MONEY_WORDS = /\b(price|amount|cost|total|revenue|balance|fee|fees|spend|s
 const PERSON_WORDS = /\b(customer|client|requester|requestor|owner|assignee|assigned to|contact|lead|member|patient|guest|organi[sz]er|employee|technician|tech|agent|rep|student|author|reporter|host|driver|candidate|applicant|tenant|buyer|seller|manager|person|attendee|trainer|coach|instructor|doctor|vet|veterinarian|nurse|resident|full name|customer name|contact name)\b/i;
 // A total of minutes, reps or items is a count, not money ("Total (min)" read "47.00").
 const UNIT_WORDS = /\b(min|mins|minutes?|hours?|hrs?|days?|weeks?|time|count|qty|quantity|servings?|units?|items?|points?|score|percent|pct|kg|lbs?|reps?|sets?|seats?|guests?|nights?|orders?|tickets?|visits?)\b/i;
+// Counts a KPI label can name besides money; periods ("this week") are not among them.
+const COUNT_WORDS = /\b(min|mins|minutes?|hours?|hrs?|count|qty|quantity|servings?|units?|items?|points?|score|percent|pct|kg|lbs?|reps?|sets?|seats?|guests?|nights?|orders?|tickets?|visits?|jobs?|rate)\b/i;
 const STATE_WORDS = /\b(status|stage|state|priority|severity|availability|health|risk|condition)\b/i;
 
 const CLIENT_SERVER_BOOLEAN_KEYS = new Set([
@@ -466,6 +468,21 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
         }
       }
       if (changedColumns) setProperty('columns', repairedColumns);
+    }
+  }
+
+  // A money KPI bound to a number shows it as currency: "Revenue this week 947.37" read like a count. A binding that
+  // formats its own text ('$' + ..., toLocaleString, toFixed) or a typed figure is left as written, and so is an
+  // explicit valueFormat. The Stat shows text unchanged, so a binding that returns text is unaffected anyway.
+  if (component.type === 'ShadStat' && propValue(properties, 'valueFormat') === undefined) {
+    const label = String(propValue(properties, 'label') ?? '');
+    const value = propValue(properties, 'value');
+    if (
+      typeof value === 'string' && /^\s*\{\{[\s\S]*\}\}\s*$/.test(value) &&
+      !/[$€£₹¥]|toLocaleString|toFixed|Intl\.|currency/i.test(value) &&
+      MONEY_WORDS.test(label.replace(/[_-]+/g, ' ')) && !COUNT_WORDS.test(label)
+    ) {
+      setProperty('valueFormat', 'currency');
     }
   }
 
