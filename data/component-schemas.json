@@ -20618,7 +20618,7 @@
   "ShadBarChart": {
     "type": "ShadBarChart",
     "name": "ShadBarChart",
-    "description": "shadcn/ui bar chart, vertical or horizontal, grouped or stacked. highlight emphasises categories (an x value, a list, or 'first', 'last', 'max', 'min') and draws the other bars muted",
+    "description": "shadcn/ui bar chart, vertical or horizontal, grouped or stacked. highlight emphasises categories (an x value, a list, or 'first', 'last', 'max', 'min') and draws the other bars muted; categoryColors { Won: '#16a34a', Lost: '#dc2626' } colours each category's bars",
     "defaultSize": {
       "width": 20,
       "height": 280
@@ -20697,10 +20697,26 @@
         "default": ""
       },
       {
+        "key": "categoryColors",
+        "label": "Category colors ({ category: color })",
+        "valueType": "object",
+        "default": "{{{} }}"
+      },
+      {
         "key": "loadingState",
         "label": "Loading state",
         "valueType": "boolean",
         "default": "{{false}}"
+      },
+      {
+        "key": "loadingIndicator",
+        "label": "Loading look",
+        "valueType": "string",
+        "default": "spinner",
+        "allowedValues": [
+          "spinner",
+          "skeleton"
+        ]
       },
       {
         "key": "visibility",

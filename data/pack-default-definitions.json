@@ -276,8 +276,14 @@
     "highlight": {
      "value": ""
     },
+    "categoryColors": {
+     "value": "{{{} }}"
+    },
     "loadingState": {
      "value": "{{false}}"
+    },
+    "loadingIndicator": {
+     "value": "spinner"
     },
     "visibility": {
      "value": "{{true}}"
