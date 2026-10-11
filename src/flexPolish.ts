@@ -229,6 +229,73 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
         warnings.push(`"${child.name}" in row "${label0}" filled the row's width; it now keeps its own (${width}px).`);
       }
     }
+    // 0c. Headers with a title. A column of only buttons beside it is laid out as a row (a pets header stacked "Add a
+    //     pet" over "Record vaccination"). In a space-between header, a group of actions and short meta text keep their
+    //     own width and the title takes the rest: with all of them filling, the header split in halves and "Add recipe"
+    //     and "24 saved" sat mid-header.
+    if (children.some((c) => isTitle(c, childrenOf))) {
+      const buttonWidth = (button: ComponentSpec): number => {
+        const own = [button.layout, button.layouts?.desktop]
+          .map((rect) => (rect as FlexRect | undefined)?.widthPx)
+          .find((w) => typeof w === 'number' && w > 0);
+        if (own) return own;
+        const caption = text(prop(button, 'text')) || text(prop(button, 'label'));
+        return Math.max(96, Math.ceil(caption.length * 8 + (text(prop(button, 'icon')) ? 64 : 40)));
+      };
+      const actionGroup = (c: ComponentSpec): ComponentSpec[] | null => {
+        if (c.type !== 'FlexContainer' || isSurface(c)) return null;
+        const inner = childrenOf(refOf(c) ?? '');
+        return inner.length && inner.every((b) => ACTION_TYPES.has(b.type)) ? inner : null;
+      };
+      for (const c of children) {
+        const inner = actionGroup(c);
+        if (!inner || inner.length < 2 || isRow(c)) continue;
+        setProp(c, 'direction', 'row');
+        if (text(prop(c, 'gap')) === '') setProp(c, 'gap', 8);
+        warnings.push(`"${c.name}" stacked its ${inner.length} buttons beside a title; it now lays them out in a row.`);
+      }
+      const [first, ...rest] = children;
+      if (first && rest.length && isTitle(first, childrenOf) && text(prop(container, 'justifyContent')) === 'space-between') {
+        const fills = (c: ComponentSpec) =>
+          [c.layout, c.layouts?.desktop].filter(
+            (rect): rect is NonNullable<ComponentSpec['layout']> => !!rect && (rect as FlexRect).fillWidth !== false
+          );
+        for (const c of rest) {
+          const rects = fills(c);
+          if (!rects.length) continue;
+          let width: number | null = null;
+          const inner = actionGroup(c);
+          if (inner) {
+            const rawGap = text(prop(c, 'gap'));
+            const gap = rawGap === '' ? 8 : Number(rawGap) || 0;
+            const rawPad = text(prop(c, 'padding'));
+            const pad = rawPad === '' ? 12 : Number(rawPad) || 0;
+            width = inner.reduce((sum, b) => sum + buttonWidth(b), 0) + gap * (inner.length - 1) + pad * 2 + 4;
+          } else if (c.type === 'ShadText') {
+            // A binding counts as a few characters ("{{rows.length}} saved" reads "24 saved").
+            const shown = text(prop(c, 'text')).replace(/\{\{[\s\S]*?\}\}/g, '0000');
+            if (shown.length <= 40) width = Math.min(320, Math.max(48, Math.ceil(shown.length * 7 + 28)));
+          }
+          if (width === null) continue;
+          const own = width;
+          rects.forEach((rect) => {
+            (rect as FlexRect).fillWidth = false;
+            (rect as FlexRect).widthPx = own;
+          });
+          warnings.push(`"${c.name}" in header "${label0}" filled half the header; it now keeps its own width (${own}px).`);
+        }
+        const titleRects = [first.layout, first.layouts?.desktop].filter(
+          // A title the build sized itself (fillWidth:false) keeps its width; space-between still puts the rest right.
+          (rect): rect is NonNullable<ComponentSpec['layout']> => !!rect && (rect as FlexRect).fillWidth === undefined
+        );
+        if (titleRects.length && rest.every((c) => !fills(c).length)) {
+          titleRects.forEach((rect) => {
+            (rect as FlexRect).fillWidth = true;
+          });
+        }
+      }
+    }
+
     const align = text(prop(container, 'alignItems'));
     const label = container.name ?? ref;
 

@@ -413,3 +413,43 @@ describe('polishFlexRows: a badge beside a title', () => {
     expect(badge.widthPx).toBeGreaterThan(80);
   });
 });
+
+describe('polishFlexRows: a header with one item after its title', () => {
+  const rect = (c: ComponentSpec | undefined) => (c?.layout ?? {}) as { fillWidth?: boolean; widthPx?: number };
+  const withLayout = (c: ComponentSpec): ComponentSpec => ({ ...c, layout: { top: 0, left: 0, width: 20, height: 40 } });
+
+  it('lets the title fill and the actions group keep its own width (the action floated mid-header)', () => {
+    const { components } = polishFlexRows([
+      row('topBar', { justifyContent: { value: 'space-between' } }),
+      withLayout({ ...child('titleBlock', 'FlexContainer', 'topBar', { direction: { value: 'column' } }) }),
+      child('pageTitle', 'ShadHeading', 'titleBlock', { text: { value: 'Recipe Book' } }),
+      withLayout(row('topActions', { justifyContent: { value: 'flex-end' } }, { parentRef: 'topBar' })),
+      withLayout(child('addRecipe', 'ShadButton', 'topActions', { text: { value: 'Add recipe' } })),
+    ]);
+    expect(rect(components.find((c) => c.clientRef === 'titleBlock')).fillWidth).toBe(true);
+    const actions = rect(components.find((c) => c.clientRef === 'topActions'));
+    expect(actions.fillWidth).toBe(false);
+    expect(actions.widthPx).toBeGreaterThanOrEqual(96);
+  });
+
+  it('keeps short meta text beside a heading at its own width', () => {
+    const { components } = polishFlexRows([
+      row('panelHeader', { justifyContent: { value: 'space-between' } }),
+      withLayout(child('panelTitle', 'ShadHeading', 'panelHeader', { text: { value: 'Recipes' } })),
+      withLayout(child('count', 'ShadText', 'panelHeader', { text: { value: '{{(queries.r.data || []).length}} saved' } })),
+    ]);
+    expect(rect(components.find((c) => c.clientRef === 'panelTitle')).fillWidth).toBe(true);
+    expect(rect(components.find((c) => c.clientRef === 'count')).fillWidth).toBe(false);
+  });
+
+  it('lays a column of buttons beside a title out as a row', () => {
+    const { components } = polishFlexRows([
+      row('header'),
+      withLayout(child('title', 'ShadHeading', 'header', { text: { value: 'Vaccination tracker' } })),
+      withLayout({ ...child('buttons', 'FlexContainer', 'header', { direction: { value: 'column' } }) }),
+      withLayout(child('addPet', 'ShadButton', 'buttons', { text: { value: 'Add a pet' } })),
+      withLayout(child('record', 'ShadButton', 'buttons', { text: { value: 'Record vaccination' } })),
+    ]);
+    expect(prop(components, 'buttons', 'direction')).toBe('row');
+  });
+});
