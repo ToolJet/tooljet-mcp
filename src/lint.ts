@@ -1105,8 +1105,8 @@ export function lintPlainStateColumns(spec: LintComponent): string[] {
   if (!plain.length) return [];
   return [
     `Table "${spec.name ?? '?'}": ${plain.map((c) => `"${c.name ?? c.key}"`).join(', ')} show a state as plain text. ` +
-      'Draw it as a chip so it reads at a glance: an html column whose data maps each value to a tinted pill ' +
-      '(see the tint map in references/ui-layout.md).',
+      'Draw it as a chip so it reads at a glance: an html column whose data maps each value to ' +
+      '<span class="tj-chip tj-chip-success|warning|danger|info|neutral">Value</span> (theme-aware in light and dark).',
   ];
 }
 
