@@ -203,7 +203,12 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
 
     // 0b. A button beside other content keeps its own width: filling, it took half the row and drew at the left of
     //     that half (a header's page action sat mid-header).
-    if (children.some((child) => !ACTION_TYPES.has(child.type))) {
+    // A row of only buttons placed at its end, centre or spread (justifyContent) too: a filling button draws at the
+    // left of its box, so "Add recipe" sat at the left of a flex-end actions row.
+    const placed = ['flex-end', 'end', 'center', 'space-between', 'space-around', 'space-evenly'].includes(
+      text(prop(container, 'justifyContent'))
+    );
+    if (placed || children.some((child) => !ACTION_TYPES.has(child.type))) {
       const hasTitle = children.some((c) => isTitle(c, childrenOf));
       for (const child of children) {
         // A button anywhere in a mixed row; a badge, tag or link beside a title (it filled and floated mid-header).

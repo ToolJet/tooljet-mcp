@@ -453,3 +453,21 @@ describe('polishFlexRows: a header with one item after its title', () => {
     expect(prop(components, 'buttons', 'direction')).toBe('row');
   });
 });
+
+describe('polishFlexRows: a row of only buttons placed at its end', () => {
+  it('gives its buttons their own width, so they sit at the end', () => {
+    const { components } = polishFlexRows([
+      row('actions', { justifyContent: { value: 'flex-end' } }),
+      { ...child('add', 'ShadButton', 'actions', { text: { value: 'Add recipe' } }), layout: { top: 0, left: 0, width: 9, height: 36 } },
+    ]);
+    expect((components.find((c) => c.clientRef === 'add')!.layout as Record<string, unknown>).fillWidth).toBe(false);
+  });
+  it('leaves a plain row of buttons alone', () => {
+    const { components } = polishFlexRows([
+      row('pair'),
+      { ...child('a', 'ShadButton', 'pair', { text: { value: 'One' } }), layout: { top: 0, left: 0, width: 9, height: 36 } },
+      { ...child('b', 'ShadButton', 'pair', { text: { value: 'Two' } }), layout: { top: 0, left: 0, width: 9, height: 36 } },
+    ]);
+    expect((components.find((c) => c.clientRef === 'a')!.layout as Record<string, unknown>).fillWidth).toBeUndefined();
+  });
+});
