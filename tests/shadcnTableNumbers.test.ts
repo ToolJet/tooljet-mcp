@@ -66,3 +66,21 @@ describe('a single state drawn as a multi-select', () => {
     expect(columns.map((c) => c.columnType)).toEqual(['select', 'newMultiSelect']);
   });
 });
+
+describe('row selection in a shadcn-look table', () => {
+  const t = (extra: Record<string, unknown> = {}, look = 'shadcn') =>
+    normalizeComponentSpec({
+      type: 'Table',
+      name: 't',
+      properties: { data: { value: '{{queries.q.data}}' }, ...extra },
+      styles: { tableLook: { value: look } },
+    } as never).component.properties as Record<string, { value: unknown } | undefined>;
+  it('highlights the selected row instead of drawing a checkbox per row', () => {
+    expect(t().highlightSelectedRow?.value).toBe('{{true}}');
+  });
+  it('keeps checkboxes for bulk selection, an explicit choice, and the ToolJet look', () => {
+    expect(t({ showBulkSelector: { value: '{{true}}' } }).highlightSelectedRow).toBeUndefined();
+    expect(t({ highlightSelectedRow: { value: false } }).highlightSelectedRow?.value).toBe(false);
+    expect(t({}, 'default').highlightSelectedRow).toBeUndefined();
+  });
+});

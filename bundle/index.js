@@ -77076,6 +77076,9 @@ function normalizeComponentSpec(component, options2 = {}) {
         }
       }
     }
+    if (look0 === "shadcn" && properties.highlightSelectedRow === void 0 && !isTruthy(propValue(properties, "showBulkSelector")) && !isFalse(propValue(properties, "allowSelection"))) {
+      setProperty("highlightSelectedRow", "{{true}}");
+    }
     if (properties.useDynamicColumn === void 0) {
       setProperty("useDynamicColumn", catalogDefault("Table", "useDynamicColumn", "{{false}}"));
     }

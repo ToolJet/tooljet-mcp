@@ -239,6 +239,17 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
         }
       }
     }
+    // Selection without bulk select draws a checkbox per row unless the selected row is highlighted: shadcn-look
+    // tables in an incident console, an energy dashboard and a clinic showed checkboxes nothing used. The row
+    // highlights instead; selectedRow works the same.
+    if (
+      look0 === 'shadcn' &&
+      properties.highlightSelectedRow === undefined &&
+      !isTruthy(propValue(properties, 'showBulkSelector')) &&
+      !isFalse(propValue(properties, 'allowSelection'))
+    ) {
+      setProperty('highlightSelectedRow', '{{true}}');
+    }
     if (properties.useDynamicColumn === undefined) {
       setProperty('useDynamicColumn', catalogDefault('Table', 'useDynamicColumn', '{{false}}'));
     }
