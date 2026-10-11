@@ -81,7 +81,7 @@ const PACK_CONCEPTS: Array<[RegExp, string[]]> = [
   [/funnel|conversion/i, ['ShadFunnelChart']],
   [/scatter|bubble|correlation/i, ['ShadScatterChart']],
   [/heat|matrix|grid|calendar/i, ['ShadHeatmapChart']],
-  [/board|kanban|pipeline|stage|trello/i, ['ShadKanban']],
+  [/board|kanban|pipeline|stage|trello|dispatch|grouped by/i, ['ShadKanban']],
   [/combo|composed|mixed|dual/i, ['ShadComboChart']],
   [/label|title|typography/i, ['ShadHeading', 'ShadText']],
   [/date/i, ['ShadDatePicker', 'ShadDateTimePicker', 'ShadCalendar']],

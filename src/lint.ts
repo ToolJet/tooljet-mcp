@@ -1129,6 +1129,24 @@ export function lintBareMoneyColumns(spec: LintComponent): string[] {
   ];
 }
 
+/** A list of records drawn as one string in a text ("8:00 AM · Kofi James · Outer Sunset · repair • 9:00 AM · ..."): a
+ *  dispatch board of 2026-10-10 rendered each technician's jobs that way and read as unformatted text. */
+export function lintListDrawnAsText(spec: LintComponent): string[] {
+  if (!['ShadText', 'Text', 'ShadHeading'].includes(spec.type ?? '')) return [];
+  const value = propVal(spec.properties ?? {}, 'text');
+  if (typeof value !== 'string' || !value.includes('{{')) return [];
+  const mapped = /\.map\(\s*\(?\s*(\w+)[^=]*=>([\s\S]*?)\)\s*\.join\(/.exec(value);
+  if (!mapped) return [];
+  const item = mapped[1]!;
+  const fields = new Set([...mapped[2]!.matchAll(new RegExp(`\\b${item}\\.(\\w+)`, 'g'))].map((m) => m[1] ?? ""));
+  if (fields.size < 3) return [];
+  return [
+    `${spec.type} "${spec.name ?? '?'}": joins each record's ${fields.size} fields into one string, so a list reads as a run-on ` +
+      'line of text. Draw records as items: ShadListView (one row per record with its title, details and a badge), or ' +
+      'ShadKanban for a board grouped by a field (a column per technician, stage or day).',
+  ];
+}
+
 export function lintUnboundEmptyState(spec: LintComponent): string[] {
   if (spec.type !== 'Text' && spec.type !== 'Html') return [];
   const key = spec.type === 'Html' ? 'rawHtml' : 'text';
@@ -3187,6 +3205,7 @@ export function lintComponents(components: LintComponent[], options: { canvasCol
     errors.push(...lintStandardSingleLineInputHeight(c));
     errors.push(...lintButtonLabelWidth(c));
     warnings.push(...lintUnboundEmptyState(c));
+    warnings.push(...lintListDrawnAsText(c));
     warnings.push(...lintPlainStateColumns(c));
     warnings.push(...lintBareMoneyColumns(c));
     errors.push(...lintTableProjectionRender(c, warnings));
