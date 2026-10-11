@@ -36755,7 +36755,8 @@
       }
     ],
     "authoringHints": {
-      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover."
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
+      "usage": "The top of a page that should read as a product (a personal or customer-facing app, a dashboard home, a front desk): one hero in place of a heading and subtitle. background 'tint' or 'gradient' for a staff tool; 'image' with imageUrl, or 'dark', for a premium or consumer page; meta for the 2 or 3 facts that matter today; actionLabel for the page's main action (onActionClick). About 150px tall, 190 with actions."
     }
   },
   "ShadCardGrid": {
@@ -37041,7 +37042,8 @@
       }
     ],
     "authoringHints": {
-      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover."
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
+      "usage": "Things with a face as cards instead of table rows: recipes, products, listings, rooms, people, tasks. imageField when rows have photos (else each card shows a tinted initials panel), badgeField for a state, descriptionField for a line of detail, metaFields for 2 or 3 facts ('prep:{} min, serves:Serves'). onCardClick with selectedItem opens details. About 300px per row with images, 150 without."
     }
   }
 }
