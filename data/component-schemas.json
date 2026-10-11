@@ -36335,12 +36335,6 @@
         "default": "No data"
       },
       {
-        "key": "animate",
-        "label": "Animate",
-        "valueType": "boolean",
-        "default": "{{true}}"
-      },
-      {
         "key": "showLegend",
         "label": "Legend",
         "valueType": "boolean",

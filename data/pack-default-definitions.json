@@ -4183,9 +4183,6 @@
     "emptyText": {
      "value": "No data"
     },
-    "animate": {
-     "value": "{{true}}"
-    },
     "showLegend": {
      "value": "{{true}}"
     },
