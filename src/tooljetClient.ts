@@ -2584,6 +2584,14 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       }
       refToId.set(e.spec.clientRef, e.id);
     }
+    // A parentRef may name its parent: lint and the flex polish read a component's name as its ref, so a plan they
+    // passed (a header row with client_ref "header" and children parented to "todayHeader") must apply too. Names
+    // only fill in where no clientRef claims the ref, and only a name used once in the batch.
+    const nameCounts = new Map<string, number>();
+    for (const e of entries) nameCounts.set(e.spec.name, (nameCounts.get(e.spec.name) ?? 0) + 1);
+    for (const e of entries) {
+      if (!refToId.has(e.spec.name) && nameCounts.get(e.spec.name) === 1) refToId.set(e.spec.name, e.id);
+    }
     const diff: Record<string, unknown> = {};
     for (const e of entries) {
       if (e.spec.parent && e.spec.parentRef) {

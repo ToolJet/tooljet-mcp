@@ -431,3 +431,25 @@ describe('FlexContainer create defaults and slots', () => {
     expect(child('header').join(' ')).toMatch(/header/);
   });
 });
+
+describe('createComponents: a parentRef that names its parent', () => {
+  it('resolves a parentRef by the parent\'s name when no clientRef matches (lint and polish read names as refs)', async () => {
+    const auth = makeAuth();
+    const client = createClient(auth, config);
+    const created = await client.createComponents({
+      appId: 'app1', versionId: 'v1', pageId: 'p1',
+      components: [
+        { name: 'todayHeader', type: 'FlexContainer', clientRef: 'header', properties: { direction: { value: 'row' } }, layout: rect() },
+        { name: 'newJobButton', type: 'ShadButton', parentRef: 'todayHeader', properties: {}, layout: rect() },
+        { name: 'noRefRow', type: 'FlexContainer', properties: {}, layout: rect() },
+        { name: 'inner', type: 'ShadText', parentRef: 'noRefRow', properties: {}, layout: rect() },
+      ],
+    });
+    const [post] = bodies(auth, 'POST');
+    const header = created.find((c) => c.name === 'todayHeader')!.component_id;
+    const row = created.find((c) => c.name === 'noRefRow')!.component_id;
+    const byName = (n: string) => Object.values(post!.diff).find((d: any) => d.name === n) as any;
+    expect(byName('newJobButton').parent).toBe(header);
+    expect(byName('inner').parent).toBe(row);
+  });
+});
