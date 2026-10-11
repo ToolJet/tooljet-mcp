@@ -138,3 +138,34 @@ describe('shadcn-look Table finish', () => {
     expect(columns[2]!.columnSize).toBeGreaterThanOrEqual(86);
   });
 });
+
+describe('shadcn-look Table rows', () => {
+  const cols = (columns: unknown[], look = 'shadcn') =>
+    (normalizeComponentSpec(table(look, columns)).component.properties?.columns as { value: Record<string, unknown>[] }).value;
+
+  it('draws a default-coloured row action as an outline button, like shadcn row actions', () => {
+    const [actions] = cols([
+      {
+        id: 'x', key: 'actions', name: 'Actions', columnType: 'button',
+        buttons: [
+          { id: 'edit', buttonLabel: 'Update', buttonType: 'solid', buttonBackgroundColor: 'var(--cc-primary-brand)' },
+          { id: 'del', buttonLabel: 'Delete', buttonType: 'solid', buttonBackgroundColor: 'var(--cc-error-systemStatus)' },
+          { id: 'view', buttonLabel: 'View' },
+        ],
+      },
+    ]);
+    expect((actions!.buttons as Record<string, unknown>[]).map((b) => b.buttonType)).toEqual(['outline', 'solid', 'outline']);
+    const [plain] = cols([{ id: 'x', key: 'a', name: 'Actions', columnType: 'button', buttons: [{ id: 'e', buttonLabel: 'Edit' }] }], 'default');
+    expect((plain!.buttons as Record<string, unknown>[])[0]!.buttonType).toBeUndefined();
+  });
+
+  it('fits columns wider than a page into it', () => {
+    const many = Array.from({ length: 9 }, (_, i) => ({ id: `c${i}`, key: `f${i}`, name: `F${i}`, columnType: 'string', columnSize: 170 }));
+    const columns = cols([...many, { id: 'h', key: 'hidden', name: 'Hidden', columnSize: 400, columnVisibility: false }]);
+    const total = columns.filter((c) => c.columnVisibility !== false).reduce((s, c) => s + Number(c.columnSize), 0);
+    expect(total).toBeLessThanOrEqual(1240);
+    expect(columns[9]!.columnSize).toBe(400);
+    const few = cols([{ id: 'a', key: 'a', name: 'A', columnSize: 300 }]);
+    expect(few[0]!.columnSize).toBe(300);
+  });
+});

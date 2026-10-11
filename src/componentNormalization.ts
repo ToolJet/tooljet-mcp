@@ -398,6 +398,19 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
             const needed = Math.ceil(label.length * 7.5) + 32 + (isTruthy(entry.isEditable) ? 18 : 0);
             if (size < needed) next.columnSize = needed;
           }
+          // A row action in the default colours is an outline button, as shadcn's data table draws row actions: a
+          // filled brand button on every row ("Update" down a CRM table) was the loudest thing on the page. A button
+          // given its own colour (a red Delete) keeps it.
+          if (entry.columnType === 'button' && Array.isArray(entry.buttons)) {
+            const buttons = (entry.buttons as unknown[]).map((button) => {
+              if (!button || typeof button !== 'object' || Array.isArray(button)) return button;
+              const b = button as Record<string, unknown>;
+              const bg = b.buttonBackgroundColor;
+              const defaultBg = bg === undefined || ['#4368E3', '#4368e3', 'var(--cc-primary-brand)'].includes(String(bg));
+              return (b.buttonType === undefined || b.buttonType === 'solid') && defaultBg ? { ...b, buttonType: 'outline' } : button;
+            });
+            if (buttons.some((b, i) => b !== (entry.buttons as unknown[])[i])) next.buttons = buttons;
+          }
           if (Object.keys(next).some((k) => next[k] !== entry[k])) {
             changedColumns = true;
             column = next;
@@ -405,6 +418,27 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
         }
         return column;
       });
+      // Visible columns wider than a page (about 1240px inside a card) scale down together: the last ones ran under the
+      // frozen actions column. A column keeps at least its header's width; unsized columns count as 120px.
+      if (shadcnLook) {
+        const visible = repairedColumns.filter(
+          (c): c is Record<string, unknown> => !!c && typeof c === 'object' && !Array.isArray(c) && (c as Record<string, unknown>).columnVisibility !== false
+        );
+        const width = (c: Record<string, unknown>) => (Number(c.columnSize) > 0 ? Number(c.columnSize) : 120);
+        const total = visible.reduce((sum, c) => sum + width(c), 0);
+        if (visible.length > 1 && total > 1240) {
+          const factor = 1240 / total;
+          const floor = (c: Record<string, unknown>) =>
+            c.columnType === 'button' ? 110 : Math.max(64, Math.ceil(String(c.name ?? c.key ?? '').length * 7.5) + 32);
+          for (let i = 0; i < repairedColumns.length; i++) {
+            const c = repairedColumns[i] as Record<string, unknown>;
+            if (!visible.includes(c)) continue;
+            repairedColumns[i] = { ...c, columnSize: Math.max(floor(c), Math.floor(width(c) * factor)) };
+          }
+          changedColumns = true;
+          warnings.push(`Table "${component.name}": its visible columns (${total}px) were wider than a page; they now scale to fit about 1240px.`);
+        }
+      }
       if (changedColumns) setProperty('columns', repairedColumns);
     }
   }
