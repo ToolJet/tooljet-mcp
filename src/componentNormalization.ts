@@ -218,6 +218,11 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
       return m !== undefined ? Number(m) : undefined;
     };
     const isFalse = (v: unknown) => v === false || (typeof v === 'string' && /^\s*(\{\{\s*)?false(\s*\}\})?\s*$/.test(v));
+    // A shadcn data table is as tall as its rows. Drawn heights left a band under the last row (a store dashboard, a
+    // churn report, a fleet view) or cut rows off (an incident console), so dynamicHeight turns on unless set.
+    if (look0 === 'shadcn' && properties.dynamicHeight === undefined) {
+      setProperty('dynamicHeight', '{{true}}');
+    }
     if (
       look0 === 'shadcn' &&
       typeof height === 'number' &&

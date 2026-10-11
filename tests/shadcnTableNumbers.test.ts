@@ -39,18 +39,16 @@ describe('a short shadcn-look table', () => {
       styles: { tableLook: { value: 'shadcn' } },
       layout: { top: 0, left: 0, width: 20, height },
     } as never);
-  it('fits its rows when the drawn height shows fewer than three (an incident console showed a row and a half)', () => {
+  it('is as tall as its rows unless it says otherwise', () => {
     const result = short(245);
     expect((result.component.properties?.dynamicHeight as { value: unknown }).value).toBe('{{true}}');
+    expect(result.component.properties?.rowsPerPage).toBeUndefined();
   });
-  it('shows as many rows per page as fit when three or more do', () => {
-    const result = short(400);
-    expect((result.component.properties?.rowsPerPage as { value: unknown }).value).toBe('{{5}}');
-  });
-  it('leaves a tall table, dynamic height and server paging alone', () => {
-    expect(short(700).component.properties?.rowsPerPage).toBeUndefined();
-    expect(short(245, { dynamicHeight: { value: '{{true}}' } }).component.properties?.rowsPerPage).toBeUndefined();
-    expect(short(245, { serverSidePagination: { value: true } }).component.properties?.dynamicHeight).toBeUndefined();
+  it('with dynamic height off, shows the rows that fit, or fits its rows when fewer than three do', () => {
+    const off = { dynamicHeight: { value: '{{false}}' } };
+    expect((short(400, off).component.properties?.rowsPerPage as { value: unknown }).value).toBe('{{5}}');
+    expect((short(245, off).component.properties?.dynamicHeight as { value: unknown }).value).toBe('{{true}}');
+    expect(short(700, off).component.properties?.rowsPerPage).toBeUndefined();
   });
 });
 

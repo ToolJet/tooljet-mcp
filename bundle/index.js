@@ -77062,6 +77062,9 @@ function normalizeComponentSpec(component, options2 = {}) {
       return m !== void 0 ? Number(m) : void 0;
     };
     const isFalse = (v) => v === false || typeof v === "string" && /^\s*(\{\{\s*)?false(\s*\}\})?\s*$/.test(v);
+    if (look0 === "shadcn" && properties.dynamicHeight === void 0) {
+      setProperty("dynamicHeight", "{{true}}");
+    }
     if (look0 === "shadcn" && typeof height === "number" && !isTruthy(propValue(properties, "dynamicHeight")) && !isTruthy(propValue(properties, "serverSidePagination")) && !isFalse(propValue(properties, "enablePagination"))) {
       const rowsPerPage = staticNumber2(propValue(properties, "rowsPerPage")) ?? 10;
       const toolbar = isFalse(propValue(properties, "displaySearchBox")) ? 0 : 64;
