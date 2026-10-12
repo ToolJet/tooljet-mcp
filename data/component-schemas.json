@@ -16744,6 +16744,8 @@
     },
     "authoringHints": {
       "look": "styles.tableLook \"shadcn\" draws this Table like shadcn/ui's data table (card frame, search-first toolbar, quiet header, hairline rows, shadcn buttons and pagination); use it for tables in apps built with the shadcn/ui pack. Properties, columns, row action buttons, events and exposed values are the Table's own in both looks.",
+      "rowActionDisplay": "In the shadcn look a button column takes buttonDisplay: 'icons' (32px ghost icon buttons, the label as tooltip) for one to three actions every row needs at a glance (View, Edit, Delete), or 'menu' (one '...' button at the row's right edge opening a dropdown) for three or more actions or rarely used ones; 'buttons' (default) keeps labelled buttons, for a single primary row action ('Check in', 'Approve'). Icons come from buttonIconName with buttonIconVisibility true, else from the label's verb (Edit pencil, Delete trash, View eye, Approve check, Send, Export, Copy, Archive...): give every button a short verb label. Delete, Remove and Reject draw in the destructive colour, set apart at the end of the menu. Events, rowData bindings (buttonVisibility, disableButton) and selectedRow work as for labelled buttons; leave name empty or 'Actions' and do not pin it. The ToolJet look ignores buttonDisplay.",
+      "checkboxSelection": "For bulk actions (approve, export, assign, delete several rows) turn on showBulkSelector: the table draws a checkbox column with a select-all box in the header (shadcn's checkbox in the shadcn look). Read components.<table>.selectedRows (the row objects) and selectedRowsId; put the bulk action in a ShadButton above the table whose text counts them ('Approve 3') and whose disabledState is {{!(components.<table>.selectedRows || []).length}}; onSelectionChanged fires on each change. Keep allowSelection on. After the action runs, refresh the data query (the selection clears with new data). A checkbox column is for acting on several rows; for opening one record, use onRowClicked.",
       "serverSideDataFlow": {
         "exposedVariables": {
           "pageIndex": "1-based number",
@@ -27978,7 +27980,7 @@
         "verification": "Test Cancel, native X, each enabled dismissal path and successful-save close, then reopen the same record and a different record. Do not assume a working Cancel proves every close path."
       },
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
-      "composition": "Header: a ShadHeading (level \"h4\") with a muted ShadText description under it; body: the content or form; footer: ShadButtons, an outline Cancel then the primary action, right-aligned. Set useDefaultButton false and open it with show-modal from a ShadButton or a table row event. variant \"sheet\" (side \"right\") is a full-height side panel for record details and edit forms; \"dialog\" is centred for confirmations and short forms."
+      "composition": "Header: a ShadHeading (level \"h4\") with a muted ShadText description under it; body: the content or form; footer: ShadButtons, an outline Cancel then the primary action, right-aligned. Set useDefaultButton false and open it with show-modal from a ShadButton or a table row event. variant \"sheet\" (side \"right\") is a full-height side panel for record details and edit forms; \"dialog\" is centred for confirmations and short forms. Body of a record-details sheet: one FlexContainer column holding, top to bottom, the headline figure or status (a ShadStat or a ShadBadge), one ShadKeyValue for the fields (data an array of { label, value, type } from the selected record, columns 2, layout \"stacked\"), then longer notes in a ShadText; never label and value ShadTexts placed by hand on a grid. Footer: every button inside one FlexContainer row (justifyContent \"flex-end\", gap 8), the outline or ghost action first, the primary last. Read the record as components.<table>?.selectedRow?.<field> ?? '-', or guard on components.<table>?.selectedRow?.id: a selection is {} when nothing is selected, which is truthy."
     },
     "renderingHints": {
       "childCoordinateSpace": "Modal-local 43-column grid; child (0,0) is the modal body top-left.",
@@ -37523,7 +37525,7 @@
   "ShadRecordList": {
     "type": "ShadRecordList",
     "name": "ShadRecordList",
-    "description": "shadcn/ui list of records as two-line rows, for a recent-orders, people, tickets or activity panel beside a chart or a table: an avatar (avatarField: an image URL, else the initials of that field's text, else of the title), the title (titleField), a meta line under it (metaFields, a comma list of field specs joined with ' · ': 'city', 'total|currency', 'due|date:Due {}' (value in a label), 'seats:Seats' (label first); formats number, currency, percent, compact, date, datetime), a status chip on the right (statusField, toned by its words: Paid green, Pending amber, Overdue red, Open blue) and a trailing value (valueField in valueFormat: currency in currency, date, number, ...). density compact, default or comfortable; showDividers; listStyle 'card' (bordered panel) or 'plain'; avatarShape circle or rounded. A click selects the row (selectedItem, selectedItemId; onRowClicked). Draws 100 rows and a Show more button. Height: grows with its rows (about 60px a row at default density)",
+    "description": "List of records as two-line rows, for a recent-orders, people, tickets or activity panel beside a chart or a table: an avatar (avatarField: an image URL, else the initials of that field's text, else of the title), the title (titleField), a meta line under it (metaFields, a comma list of field specs joined with ' · ': 'city', 'total|currency', 'due|date:Due {}' (value in a label), 'seats:Seats' (label first); formats number, currency, percent, compact, date, datetime), a progress bar under the meta line (progressField: a percentage 0 to 100, as 42 or '42%'; onboarding, a project's completion), a status chip on the right (statusField, toned by its words: Paid green, Pending amber, Overdue red, Open blue) and a trailing value (valueField in valueFormat: currency in currency, date, number, ...). density compact, default or comfortable; showDividers; listStyle 'card' (bordered panel) or 'plain'; avatarShape circle or rounded. A click selects the row (selectedItem, selectedItemId; onRowClicked; the native List view's onRecordClicked, selectedRecord and selectedRecordId, the row's position in data). Draws 100 rows and a Show more button. Height: grows with its rows (about 60px a row at default density)",
     "defaultSize": {
       "width": 20,
       "height": 340
@@ -37558,6 +37560,12 @@
         "label": "Status field (a chip toned by its words)",
         "valueType": "string",
         "default": "status"
+      },
+      {
+        "key": "progressField",
+        "label": "Progress field (a percentage, 0 to 100)",
+        "valueType": "string",
+        "default": ""
       },
       {
         "key": "valueField",
@@ -37764,6 +37772,10 @@
       {
         "id": "onRowClicked",
         "label": "On row clicked"
+      },
+      {
+        "id": "onRecordClicked",
+        "label": "Record clicked"
       }
     ],
     "actions": [
@@ -37824,11 +37836,27 @@
       {
         "name": "selectedItemId",
         "default": null
+      },
+      {
+        "name": "selectedRecord",
+        "default": {}
+      },
+      {
+        "name": "selectedRecordId",
+        "default": null
+      },
+      {
+        "name": "selectedRow",
+        "default": {}
+      },
+      {
+        "name": "selectedRowId",
+        "default": null
       }
     ],
     "authoringHints": {
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
-      "usage": "A short list of records as two-line rows beside a chart or a table, the 'recent orders', 'today's bookings', 'who is on shift' or 'latest tickets' panel: titleField, metaFields for the second line ('contact, due|date:Due {}'), statusField for a toned chip, valueField with valueFormat for an amount or a date on the right, avatarField for a photo or a person's initials. onRowClicked with selectedItem opens details. Use ShadTable for long, sortable or editable data. About 60px per row plus 2.",
+      "usage": "A short list of records as two-line rows beside a chart or a table, the 'recent orders', 'today's bookings', 'who is on shift' or 'latest tickets' panel: titleField, metaFields for the second line ('contact, due|date:Due {}'), statusField for a toned chip, valueField with valueFormat for an amount or a date on the right, avatarField for a photo or a person's initials, progressField for a percentage bar under the meta line (onboarding, a project's completion). onRowClicked with selectedItem opens details. Use ShadTable for long, sortable or editable data. About 60px per row plus 2.",
       "photos": {
         "food": [
           {
@@ -37967,6 +37995,649 @@
           }
         ]
       }
+    }
+  },
+  "ShadProgressList": {
+    "type": "ShadProgressList",
+    "name": "ShadProgressList",
+    "description": "List of progress rows from data, for goals, budgets, quotas, onboarding steps and capacity: each row has a label (labelField), its value against a target ('$18,400 of $25,000': valueField, targetField, in valueFormat: auto, number, currency in currency, percent, compact), a progress bar, an optional status (statusField: a chip toned by its words, On track green, At risk amber, Over budget or Behind red; a status that only names a tone, success, warning, danger, info or neutral, colours the bar without a chip) and an optional trailing caption under the bar ('12 days left': captionField). The percentage is percentField when the data has one (0 to 100), else value / target; a row with a value and no target reads the value as the percentage. autoTone colours bars from their percentage when the row has no status: 'goal' green at 100%, 'limit' (budgets, quotas, storage) amber from 80% and red over 100%. showValues and showPercent pick the figures shown; barSize thin, default or thick; listStyle 'card' (bordered panel) or 'plain'. A click on a row exposes selectedItem and selectedItemId and fires onItemClick (rows look clickable only when it is handled). Use a Stat or a Summary strip for one headline figure, a Progress for a single bar. Height: grows with its rows (about 64px a row, 76px with captions)",
+    "defaultSize": {
+      "width": 20,
+      "height": 330
+    },
+    "properties": [
+      {
+        "key": "data",
+        "label": "Data",
+        "valueType": "array",
+        "default": "{{[{ id: 1, label: 'Marketing', spent: 18400, budget: 25000, status: 'On track', note: '12 days left in the quarter' }, { id: 2, label: 'Engineering tools',…"
+      },
+      {
+        "key": "labelField",
+        "label": "Label field",
+        "valueType": "string",
+        "default": "label"
+      },
+      {
+        "key": "valueField",
+        "label": "Value field",
+        "valueType": "string",
+        "default": "spent"
+      },
+      {
+        "key": "targetField",
+        "label": "Target field",
+        "valueType": "string",
+        "default": "budget"
+      },
+      {
+        "key": "percentField",
+        "label": "Percent field (0 to 100; overrides value / target)",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "captionField",
+        "label": "Caption field (a line under the bar)",
+        "valueType": "string",
+        "default": "note"
+      },
+      {
+        "key": "statusField",
+        "label": "Status field (a chip, or a tone name)",
+        "valueType": "string",
+        "default": "status"
+      },
+      {
+        "key": "valueFormat",
+        "label": "Value format",
+        "valueType": "string",
+        "default": "currency",
+        "allowedValues": [
+          "auto",
+          "number",
+          "currency",
+          "percent",
+          "compact"
+        ]
+      },
+      {
+        "key": "currency",
+        "label": "Currency (ISO code, e.g. USD)",
+        "valueType": "string",
+        "default": "USD"
+      },
+      {
+        "key": "idField",
+        "label": "Id field",
+        "valueType": "string",
+        "default": "id"
+      },
+      {
+        "key": "autoTone",
+        "label": "Tone from progress",
+        "valueType": "string",
+        "default": "none",
+        "allowedValues": [
+          "none",
+          "goal",
+          "limit"
+        ]
+      },
+      {
+        "key": "showValues",
+        "label": "Show value of target",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showPercent",
+        "label": "Show percentage",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "barSize",
+        "label": "Bar size",
+        "valueType": "string",
+        "default": "default",
+        "allowedValues": [
+          "thin",
+          "default",
+          "thick"
+        ]
+      },
+      {
+        "key": "listStyle",
+        "label": "List style",
+        "valueType": "string",
+        "default": "card",
+        "allowedValues": [
+          "card",
+          "plain"
+        ]
+      },
+      {
+        "key": "emptyText",
+        "label": "Empty text",
+        "valueType": "string",
+        "default": "Nothing to track yet"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "loadingIndicator",
+        "label": "Loading look",
+        "valueType": "string",
+        "default": "spinner",
+        "allowedValues": [
+          "spinner",
+          "skeleton"
+        ]
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "backgroundColor",
+        "label": "List background",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Border and divider color",
+        "valueType": "string"
+      },
+      {
+        "key": "titleColor",
+        "label": "Label and value color",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Caption color",
+        "valueType": "string"
+      },
+      {
+        "key": "accentColor",
+        "label": "Bar color (rows without a tone)",
+        "valueType": "string"
+      },
+      {
+        "key": "trackColor",
+        "label": "Bar track color",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "List radius",
+        "valueType": "union"
+      },
+      {
+        "key": "titleFontFamily",
+        "label": "Label typeface",
+        "valueType": "string",
+        "default": "theme",
+        "allowedValues": [
+          "theme",
+          "sans",
+          "serif",
+          "display",
+          "mono"
+        ]
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onItemClick",
+        "label": "On item click"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      },
+      {
+        "name": "selectedItem",
+        "default": {}
+      },
+      {
+        "name": "selectedItemId",
+        "default": null
+      }
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
+      "usage": "Goals, budgets, quotas, capacity and onboarding steps as rows of label, 'value of target' and a bar, in place of a table of percentages or a stack of ShadProgress widgets: data rows with labelField, valueField and targetField (or percentField 0 to 100 when the data already has a percentage; a value with no target is read as the percentage), valueFormat 'currency' (with currency) for budgets and 'number' for counts. statusField chips tone the bar by their words (On track green, At risk amber, Over budget or Behind red; a bare tone name success, warning, danger or info colours the bar with no chip); without a status, autoTone 'limit' turns budgets and quotas amber from 80% and red over 100%, 'goal' turns a target green at 100%. captionField is a short line under the bar ('12 days left', 'Renewals due in November'). listStyle 'plain' inside a card, 'card' on its own; barSize 'thin' for a dense side panel. onItemClick with selectedItem opens details. About 64px per row, 76 with captions."
+    }
+  },
+  "ShadSchedule": {
+    "type": "ShadSchedule",
+    "name": "ShadSchedule",
+    "description": "Resource schedule: resources down the side (rooms, desks, people on shift or on call, vehicles, equipment) and time across, with bookings drawn as blocks. scale 'hours' shows one day (date, empty for today) from dayStart to dayEnd (hours, 0 to 24) with empty slots of slotMinutes; scale 'days' shows `days` days from date (a week of shifts, an on-call rota). resources: ['Atlas', 'Cove'] or [{ id, name, caption, avatar }] (empty: the distinct values of the bookings' resourceField). bookings: rows read through startField and endField (an ISO date-time, 'YYYY-MM-DD HH:mm', 'HH:mm' for a time on the shown day, or 'YYYY-MM-DD' for a whole day; no end lasts an hour), resourceField (a resource's id or name), titleField, subtitleField (a second line: the host, the person) and statusField (toned by its words: Confirmed green, Tentative or Pending amber, Cancelled red, Booked blue; or a tone name). Overlapping bookings of one resource stack in lanes. A now-line marks the current time on today (showNowLine). A click on a booking exposes selectedBooking (its row) and selectedBookingId and fires onBookingClick; a click on an empty slot exposes selectedSlot { resourceId, resource, start, end (ISO), date, startTime, endTime, label } and fires onSlotClick (open a booking form from it). hourFormat 12h or 24h; resourceTitle heads the resource column. Scrolls sideways when the hours do not fit. Height: grows with its rows (40px header plus rowHeight, default 56, per resource; more where bookings overlap)",
+    "defaultSize": {
+      "width": 43,
+      "height": 300
+    },
+    "properties": [
+      {
+        "key": "resources",
+        "label": "Resources",
+        "valueType": "array",
+        "default": "{{[{ id: 'atlas', name: 'Atlas', caption: '8 seats' }, { id: 'borealis', name: 'Borealis', caption: '4 seats' }, { id: 'cove', name: 'Cove', caption: '12 sea…"
+      },
+      {
+        "key": "bookings",
+        "label": "Bookings",
+        "valueType": "array",
+        "default": "{{[{ id: 1, room: 'atlas', title: 'Design review', start: '09:00', end: '10:30', status: 'Confirmed', host: 'Maya Chen' }, { id: 2, room: 'atlas', title: '1:…"
+      },
+      {
+        "key": "resourceField",
+        "label": "Resource field (a resource's id or name)",
+        "valueType": "string",
+        "default": "room"
+      },
+      {
+        "key": "startField",
+        "label": "Start field",
+        "valueType": "string",
+        "default": "start"
+      },
+      {
+        "key": "endField",
+        "label": "End field",
+        "valueType": "string",
+        "default": "end"
+      },
+      {
+        "key": "titleField",
+        "label": "Title field",
+        "valueType": "string",
+        "default": "title"
+      },
+      {
+        "key": "subtitleField",
+        "label": "Second line field",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "statusField",
+        "label": "Status field (toned by its words)",
+        "valueType": "string",
+        "default": "status"
+      },
+      {
+        "key": "idField",
+        "label": "Id field",
+        "valueType": "string",
+        "default": "id"
+      },
+      {
+        "key": "scale",
+        "label": "Time across",
+        "valueType": "string",
+        "default": "hours",
+        "allowedValues": [
+          "hours",
+          "days"
+        ]
+      },
+      {
+        "key": "date",
+        "label": "Date shown (empty for today)",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "dayStart",
+        "label": "Day starts at (hour)",
+        "valueType": "number",
+        "default": "{{8}}"
+      },
+      {
+        "key": "dayEnd",
+        "label": "Day ends at (hour)",
+        "valueType": "number",
+        "default": "{{18}}"
+      },
+      {
+        "key": "slotMinutes",
+        "label": "Slot length (minutes)",
+        "valueType": "number",
+        "default": "{{30}}"
+      },
+      {
+        "key": "days",
+        "label": "Days shown",
+        "valueType": "number",
+        "default": "{{7}}"
+      },
+      {
+        "key": "hourFormat",
+        "label": "Hour format",
+        "valueType": "string",
+        "default": "12h",
+        "allowedValues": [
+          "12h",
+          "24h"
+        ]
+      },
+      {
+        "key": "resourceTitle",
+        "label": "Resource column title",
+        "valueType": "string",
+        "default": "Room"
+      },
+      {
+        "key": "resourceWidth",
+        "label": "Resource column width (px)",
+        "valueType": "number",
+        "default": "{{168}}"
+      },
+      {
+        "key": "rowHeight",
+        "label": "Row height (px)",
+        "valueType": "number",
+        "default": "{{56}}"
+      },
+      {
+        "key": "showNowLine",
+        "label": "Show the current time",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "highlightSelected",
+        "label": "Highlight the selected booking",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "emptyText",
+        "label": "Empty text",
+        "valueType": "string",
+        "default": "No resources to schedule"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "loadingIndicator",
+        "label": "Loading look",
+        "valueType": "string",
+        "default": "spinner",
+        "allowedValues": [
+          "spinner",
+          "skeleton"
+        ]
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "tooltipFormat",
+        "label": "Tooltip",
+        "default": "plainText",
+        "allowedValues": [
+          "plainText",
+          "markdown",
+          "html"
+        ]
+      },
+      {
+        "key": "tooltip",
+        "label": "Tooltip",
+        "valueType": "string",
+        "default": ""
+      }
+    ],
+    "styles": [
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "union",
+        "default": "0px 0px 0px 0px #00000040"
+      },
+      {
+        "key": "backgroundColor",
+        "label": "Background",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Grid line color",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Label color",
+        "valueType": "string"
+      },
+      {
+        "key": "accentColor",
+        "label": "Booking accent (bookings without a status, the selection)",
+        "valueType": "string"
+      },
+      {
+        "key": "nowColor",
+        "label": "Current time line color",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Radius",
+        "valueType": "union"
+      },
+      {
+        "key": "cssClass",
+        "label": "CSS class",
+        "default": ""
+      }
+    ],
+    "events": [
+      {
+        "id": "onBookingClick",
+        "label": "On booking click"
+      },
+      {
+        "id": "onSlotClick",
+        "label": "On empty slot click"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value",
+            "defaultValue": "{{true}}",
+            "type": "toggle"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      },
+      {
+        "name": "selectedBooking",
+        "default": {}
+      },
+      {
+        "name": "selectedBookingId",
+        "default": null
+      },
+      {
+        "name": "selectedSlot",
+        "default": {}
+      }
+    ],
+    "authoringHints": {
+      "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
+      "usage": "Rooms, desks, shifts, on-call rotas, vehicles, equipment and appointments: resources down the side, time across, bookings as blocks, in place of a table of start and end times or a Calendar when the question is who or what is free when. scale 'hours' is one day (date, empty for today; dayStart and dayEnd in hours; slotMinutes for empty slots), scale 'days' is a run of days (days 7 for a week, 14 for a rota). resources [{ id, name, caption }] (caption: seats, role, plate); bookings rows mapped through resourceField (a resource id or name), startField and endField (ISO date-times, 'YYYY-MM-DD HH:mm', 'HH:mm' on the shown day, or 'YYYY-MM-DD' for whole days), titleField, subtitleField (who), statusField (Confirmed green, Tentative or Pending amber, Cancelled red and struck through). Wire onSlotClick to open a booking form prefilled from components.<name>.selectedSlot { resourceId, resource, start, end, date, startTime, endTime }, and onBookingClick to a details sheet from selectedBooking; after saving, refresh the bookings query. resourceTitle names the column ('Room', 'Engineer'). Full width; about 40px plus 56px per resource."
     }
   },
   "ShadTagsInput": {
@@ -39498,7 +40169,7 @@
   "ShadHero": {
     "type": "ShadHero",
     "name": "ShadHero",
-    "description": "shadcn/ui page hero at the top of a page: eyebrow (small caps line above), title, subtitle, meta facts (['Sun, 11 Oct', '14 bookings'] or [{ label, value }]) and up to two actions (actionLabel, secondaryActionLabel; onActionClick, onSecondaryActionClick). background 'plain' (no panel), 'tint' (a soft panel in the accent), 'gradient' (accent wash), 'image' (imageUrl behind a dark overlay, white text) or 'dark' (deep accent panel, white text); icon (lucide name) in a rounded tile beside the title; align left or center; size compact, default or large. Styles accentColor (else the theme's primary), titleFontFamily ('serif', 'display', ...). Height: grows with its content (about 150px default, 120px compact, 220px large; add 40px for actions)",
+    "description": "Page hero at the top of a page: eyebrow (small caps line above), title, subtitle, meta facts (['Sun, 11 Oct', '14 bookings'] or [{ label, value }]), an aside on the right and up to two actions (actionLabel, secondaryActionLabel; onActionClick, onSecondaryActionClick). The aside is one headline figure (asideValue 12480 or '$12,480', asideLabel 'Revenue today' above it) or a short list of facts (asideValue [{ label: 'Open', value: 14 }, { label: 'Due today', value: 3 }], up to 4, asideLabel as their heading). Greetings and header facts belong in the hero itself: 'Good morning, Ada' as the title, one line of what needs attention as the subtitle, today's date and counts as meta chips, the one number that matters in the aside; never a separate Text or Stat floating beside or over the header. With an aside, the actions sit under the text. background 'plain' (no panel), 'tint' (a soft panel in the accent), 'gradient' (accent wash), 'image' (imageUrl behind a dark overlay, white text) or 'dark' (deep accent panel, white text); icon (lucide name) in a rounded tile beside the title; align left or center (the aside goes under the text); size compact, default or large. Styles accentColor (else the theme's primary), titleFontFamily ('serif', 'display', ...). Height: grows with its content (about 150px default, 120px compact, 220px large; add 40px for actions under the text)",
     "defaultSize": {
       "width": 43,
       "height": 200
@@ -39537,6 +40208,18 @@
       {
         "key": "secondaryActionLabel",
         "label": "Secondary action label (empty hides it)",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "asideValue",
+        "label": "Aside: a figure, or a list of facts",
+        "valueType": "union",
+        "default": ""
+      },
+      {
+        "key": "asideLabel",
+        "label": "Aside label (the figure's caption, the facts' heading)",
         "valueType": "string",
         "default": ""
       },
@@ -39758,7 +40441,7 @@
     ],
     "authoringHints": {
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
-      "usage": "The top of a page that should read as a product (a personal or customer-facing app, a dashboard home, a front desk): one hero in place of a heading and subtitle. background 'tint' or 'gradient' for a staff tool; 'image' with imageUrl, or 'dark', for a premium or consumer page; meta for the 2 or 3 facts that matter today; actionLabel for the page's main action (onActionClick). About 150px tall, 190 with actions.",
+      "usage": "The top of a page that should read as a product (a personal or customer-facing app, a dashboard home, a front desk): one hero in place of a heading and subtitle. background 'tint' or 'gradient' for a staff tool; 'image' with imageUrl, or 'dark', for a premium or consumer page; meta for the 2 or 3 facts that matter today; actionLabel for the page's main action (onActionClick). A greeting is the hero's own title ('Good morning, Ada') with one subtitle line of what needs attention; the one number that matters goes in the aside (asideValue '$12,480' or 12480, asideLabel 'Revenue today' above it), or up to four header facts as asideValue [{ label: 'Open', value: 14 }] with asideLabel as their heading. Never float a separate Text, Stat or status line beside or over the hero: put it in subtitle, meta or the aside. With an aside the actions sit under the text; a hero narrower than 560px stacks text, aside, actions. About 150px tall, 190 with actions.",
       "photos": {
         "food": [
           {
@@ -39902,7 +40585,7 @@
   "ShadCardGrid": {
     "type": "ShadCardGrid",
     "name": "ShadCardGrid",
-    "description": "shadcn/ui grid of cards from data, for things with a face (recipes, products, listings, people, rooms): each card shows an image when imageField is mapped (a row without a picture gets a tinted panel with the title's initials; no imageField, no picture area), title, subtitle, a badge (badgeField, toned by its words: Available green, Low stock amber, Sold out red), a description (two lines) and a meta line (metaFields, a comma list; 'prep:{} min' puts the value in a label, 'serves:Serves' puts the label first). columns (a number, or 'auto' to fit cards of minCardWidth), imageAspect ('16/9', '4/3', '1/1'), cardStyle 'elevated', 'outline' or 'flat'. A click selects the card (selectedItem, selectedItemId; onCardClick). Height: grows with its rows (about 300px per row with an image, 150px without)",
+    "description": "Grid of cards from data, for things with a face (recipes, products, listings, people, rooms, projects): each card shows an image when imageField is mapped (a row without a picture gets a tinted panel with the title's initials; no imageField, no picture area), an eyebrow (eyebrowField: a small caps line above the title, such as a category or a code), an avatar beside the title (avatarField: an image URL, else the initials of that field's text; for people and owners), title, subtitle, badges (badgeField, plus badgeFields for more: 'cuisine, diet', at most 4; each toned by its words: Available green, Low stock amber, Sold out red), a description (two lines), a progress bar (progressField: a percentage 0 to 100, as 42 or '42%') and a meta line (metaFields, a comma list; 'prep:{} min' puts the value in a label, 'serves:Serves' puts the label first). layout 'stacked' (image on top) or 'row' (image left, text right: listings, people, a compact catalogue). columns (a number, or 'auto' to fit cards of minCardWidth), imageAspect ('16/9', '4/3', '1/1'; stacked only), cardStyle 'elevated', 'outline' or 'flat'. A click selects the card (selectedItem, selectedItemId; onCardClick). Height: grows with its rows (about 300px per row stacked with an image, 150px without or in rows)",
     "defaultSize": {
       "width": 43,
       "height": 620
@@ -39939,10 +40622,34 @@
         "default": "cuisine"
       },
       {
+        "key": "badgeFields",
+        "label": "More badge fields (comma list, e.g. 'diet, spice')",
+        "valueType": "union",
+        "default": ""
+      },
+      {
+        "key": "eyebrowField",
+        "label": "Eyebrow field (a small line above the title)",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "avatarField",
+        "label": "Avatar field (image URL or a name)",
+        "valueType": "string",
+        "default": ""
+      },
+      {
         "key": "descriptionField",
         "label": "Description field",
         "valueType": "string",
         "default": "note"
+      },
+      {
+        "key": "progressField",
+        "label": "Progress field (a percentage, 0 to 100)",
+        "valueType": "string",
+        "default": ""
       },
       {
         "key": "metaFields",
@@ -39955,6 +40662,16 @@
         "label": "Id field",
         "valueType": "string",
         "default": "id"
+      },
+      {
+        "key": "layout",
+        "label": "Layout",
+        "valueType": "string",
+        "default": "stacked",
+        "allowedValues": [
+          "stacked",
+          "row"
+        ]
       },
       {
         "key": "columns",
@@ -40189,7 +40906,7 @@
     ],
     "authoringHints": {
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
-      "usage": "Things with a face as cards instead of table rows: recipes, products, listings, rooms, people, tasks. imageField when rows have photos (without it the cards have no picture area; authoringHints.photos lists checked photo URLs by subject: seed each row with a different one, cycling through the subject's list, and never draw an SVG or data: image as a picture), badgeField for a state, descriptionField for a line of detail, metaFields for 2 or 3 facts ('prep:{} min, serves:Serves'). onCardClick with selectedItem opens details. About 300px per row with images, 150 without.",
+      "usage": "Things with a face as cards instead of table rows: recipes, products, listings, rooms, people, tasks. imageField when rows have photos (without it the cards have no picture area; authoringHints.photos lists checked photo URLs by subject: seed each row with a different one, cycling through the subject's list, and never draw an SVG or data: image as a picture), badgeField for a state, descriptionField for a line of detail, metaFields for 2 or 3 facts ('prep:{} min, serves:Serves'). More on a card: badgeFields for extra chips ('diet, spice', up to 4 with badgeField), eyebrowField for a small caps line above the title (a category, a city, a team, a code), avatarField for an owner or host (a photo URL, else initials), progressField for a percentage bar (a project, a goal, a course). layout 'row' puts the image left of the text: listings, people and a compact catalogue in two columns. onCardClick with selectedItem opens details. About 300px per row with images, 150 without or in rows.",
       "photos": {
         "food": [
           {

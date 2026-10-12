@@ -752,3 +752,31 @@ describe('polishFlexRows: a bound count beside a heading', () => {
     expect(rect.widthPx).toBeGreaterThanOrEqual(' recipes in your book'.length * 7);
   });
 });
+
+describe('polishFlexRows: dialog footer buttons placed by hand', () => {
+  // Expense build (2026-10-12): Close, Reject and Approve sat straight in a sheet's footer at left 2, 16 and 29, so the
+  // gaps between them were uneven. They are gathered into one row, in their left-to-right order, at the right.
+  const btn = (ref: string, text: string, left: number, variant = 'default'): ComponentSpec => ({
+    name: ref, type: 'ShadButton', clientRef: ref, parentRef: 'sheet', slotName: 'footer',
+    properties: { text: { value: text }, variant: { value: variant } }, layout: { top: 8, left, width: 10, height: 36 },
+  });
+  it('gathers two or more footer buttons into one row', () => {
+    const { components, warnings } = polishFlexRows([
+      { name: 'sheet', type: 'ShadDialog', clientRef: 'sheet', properties: {} },
+      btn('approve', 'Approve claim', 29), btn('close', 'Close', 2, 'outline'), btn('reject', 'Reject claim', 16, 'destructive'),
+    ]);
+    const row = components.find((c) => c.type === 'FlexContainer' && c.parentRef === 'sheet');
+    expect(row?.slotName).toBe('footer');
+    expect(prop(components, row!.clientRef!, 'direction')).toBe('row');
+    expect(prop(components, row!.clientRef!, 'justifyContent')).toBe('flex-end');
+    expect(order(components, row!.clientRef!)).toEqual(['close', 'reject', 'approve']);
+    const close = components.find((c) => c.clientRef === 'close')!;
+    expect(close.slotName).toBeUndefined();
+    expect((close.layout as { fillWidth?: boolean }).fillWidth).toBe(false);
+    expect(warnings.join(' ')).toMatch(/footer/);
+  });
+  it('leaves a single button, or buttons already in a row, alone', () => {
+    const one = polishFlexRows([{ name: 'sheet', type: 'ShadDialog', clientRef: 'sheet', properties: {} }, btn('done', 'Done', 30)]);
+    expect(one.components.some((c) => c.type === 'FlexContainer')).toBe(false);
+  });
+});

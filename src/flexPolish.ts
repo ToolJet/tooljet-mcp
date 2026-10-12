@@ -730,6 +730,59 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
     );
   }
 
+  // Buttons placed straight in a dialog's footer slot (expense build, 2026-10-12: Close, Reject and Approve at left 2, 16
+  // and 29, uneven gaps) are gathered into one FlexContainer row at the right, in their left-to-right order, each at the
+  // width of its label.
+  const DIALOGS = new Set(['ShadDialog', 'ModalV2']);
+  for (const dialog of [...components]) {
+    if (!dialog || !DIALOGS.has(dialog.type)) continue;
+    const ref = refOf(dialog);
+    if (!ref) continue;
+    const bare = components.filter((c) => c && c.parentRef === ref && c.slotName === 'footer' && c.type === 'ShadButton');
+    if (bare.length < 2 || components.some((c) => c && c.parentRef === ref && c.slotName === 'footer' && c.type !== 'ShadButton')) continue;
+    const rowRef = `${ref}FooterRow`;
+    if (components.some((c) => c && refOf(c) === rowRef)) continue;
+    const leftOf = (c: ComponentSpec) => Number(c.layout?.left ?? c.layouts?.desktop?.left ?? 0);
+    const ordered = [...bare].sort((a, b) => leftOf(a) - leftOf(b));
+    const top = Math.min(...bare.map((c) => Number(c.layout?.top ?? c.layouts?.desktop?.top ?? 0)));
+    const row: ComponentSpec = {
+      name: rowRef,
+      type: 'FlexContainer',
+      clientRef: rowRef,
+      parentRef: ref,
+      slotName: 'footer',
+      properties: {
+        direction: { value: 'row' },
+        justifyContent: { value: 'flex-end' },
+        alignItems: { value: 'center' },
+        gap: { value: 8 },
+        padding: { value: 0 },
+        dynamicHeight: { value: '{{true}}' },
+      },
+      layout: { top: Number.isFinite(top) ? top : 0, left: 0, width: 43, height: 48 },
+    };
+    for (const button of ordered) {
+      button.parentRef = rowRef;
+      delete (button as { slotName?: string }).slotName;
+      const label = text(prop(button, 'text'));
+      const width = Math.max(80, Math.ceil(label.length * 8 + (text(prop(button, 'icon')) ? 64 : 40)));
+      [button.layout, button.layouts?.desktop].forEach((rect) => {
+        if (!rect) return;
+        (rect as FlexRect).fillWidth = false;
+        (rect as FlexRect).widthPx = (rect as FlexRect).widthPx ?? width;
+      });
+    }
+    // Request order is render order for children created together: the row first, then its buttons left to right.
+    const firstIndex = Math.min(...ordered.map((c) => components.indexOf(c)));
+    const rest = components.filter((c) => !ordered.includes(c));
+    rest.splice(Math.min(firstIndex, rest.length), 0, row, ...ordered);
+    components.splice(0, components.length, ...rest);
+    warnings.push(
+      `Dialog "${dialog.name}": its ${ordered.length} footer buttons were placed by hand with uneven gaps; they now sit in one ` +
+        `row "${rowRef}" at the right, in their order (${ordered.map((c) => `"${c.name}"`).join(', ')}).`
+    );
+  }
+
   // Charts on the page in one accent (chartAccentLint.ts): an odd hand-set colour takes the page's most common one.
   const accents = unifyChartAccents(components);
   // Tables among pack widgets draw in the pack's look (packTableLook.ts).
