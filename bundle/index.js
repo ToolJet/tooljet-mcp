@@ -62979,10 +62979,10 @@ function toggleRewriteWarning(before, after) {
 }
 function assertPersistableQueryToggles(options2, subject) {
   const issues = queryToggleIssues(options2);
-  const strings = isPlainObject3(options2) ? QUERY_TOGGLES.filter((key4) => typeof options2[key4] === "string") : [];
+  const strings2 = isPlainObject3(options2) ? QUERY_TOGGLES.filter((key4) => typeof options2[key4] === "string") : [];
   const messages = [
     ...issues.map((issue3) => issue3.message),
-    ...strings.filter((key4) => !issues.some((issue3) => issue3.path === key4)).map((key4) => `${key4} must be sent as a boolean, not ${JSON.stringify(options2[key4])}.`)
+    ...strings2.filter((key4) => !issues.some((issue3) => issue3.path === key4)).map((key4) => `${key4} must be sent as a boolean, not ${JSON.stringify(options2[key4])}.`)
   ];
   if (messages.length)
     throw new Error(`${subject}: ${messages.join(" ")}`);
@@ -67298,6 +67298,33 @@ function lintPhotolessCardGrids(components) {
   return warnings;
 }
 
+// dist/selectionGuardLint.js
+var OBJECT_GUARD = /components\??\.(\w+)\??\.(selectedRow|selectedItem|selectedBooking)\s*(\?(?![.?])|&&)/g;
+var strings = (value2, out = []) => {
+  if (typeof value2 === "string")
+    out.push(value2);
+  else if (Array.isArray(value2))
+    value2.forEach((v) => strings(v, out));
+  else if (value2 && typeof value2 === "object")
+    Object.values(value2).forEach((v) => strings(v, out));
+  return out;
+};
+function lintTruthySelectionGuards(components) {
+  const errors = [];
+  for (const c of components) {
+    const found = /* @__PURE__ */ new Set();
+    for (const text2 of strings(c.properties)) {
+      for (const m of text2.matchAll(OBJECT_GUARD))
+        found.add(`components.${m[1]}.${m[2]}`);
+    }
+    if (!found.size)
+      continue;
+    const [first] = found;
+    errors.push(`${c.type ?? "Component"} "${c.name ?? ""}" tests ${[...found].join(", ")} itself, but a selection is {} when nothing is selected, which is truthy: the guard always passes and the values draw blank. Test a stable key instead: ${first.replace(/\.(selectedRow|selectedItem|selectedBooking)$/, "?.$1")}?.id ? ... : '-' (or read each field as ${first.replace(/\.(selectedRow|selectedItem|selectedBooking)$/, "?.$1")}?.field ?? '-').`);
+  }
+  return errors;
+}
+
 // dist/lint.js
 var STYLE_KEYS_IN_PROPERTIES = /* @__PURE__ */ new Set([
   "styles",
@@ -69615,6 +69642,7 @@ function lintComponents(components, options2 = {}) {
   warnings.push(...lintChartAccents(components));
   warnings.push(...lintKpiCardGrids(components));
   warnings.push(...lintPhotolessCardGrids(components));
+  errors.push(...lintTruthySelectionGuards(components));
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));
@@ -70080,6 +70108,16 @@ var SAMPLE_BLANKS = {
   ShadHero: { eyebrow: "", subtitle: "", meta: "{{[]}}", actionLabel: "" },
   ShadCardGrid: { badgeField: "", descriptionField: "", metaFields: "" },
   ShadRecordList: { metaFields: "", valueField: "", valueFormat: "auto" },
+  // The sample's budget fields (spent, budget, note, status) are not a build's data: the config's own names stand.
+  ShadProgressList: {
+    labelField: "label",
+    valueField: "value",
+    targetField: "target",
+    captionField: "",
+    statusField: "",
+    valueFormat: "auto"
+  },
+  ShadSchedule: { resourceField: "resource", resourceTitle: "" },
   // 'auto' reads money from a figure's label; the 'currency' default showed counts of rooms as dollars.
   ShadSummaryStrip: { valueFormat: "auto" },
   ShadTags: { tags: "{{[]}}", tagColors: "{{{}}}" },
@@ -74031,7 +74069,9 @@ var PACK_CONCEPTS = [
   [/label|title|typography/i, ["ShadHeading", "ShadText"]],
   [/date/i, ["ShadDatePicker", "ShadDateTimePicker", "ShadCalendar"]],
   [/toast|notification|banner/i, ["ShadAlert"]],
-  [/divider/i, ["ShadSeparator"]]
+  [/divider/i, ["ShadSeparator"]],
+  [/schedule|scheduler|booking|reservation|roster|rota|shift|on.?call|resource|timeline.?view|gantt|availability|rooms?/i, ["ShadSchedule"]],
+  [/progress|goal|budget|quota|target|onboarding|checklist|capacity|completion/i, ["ShadProgressList", "ShadProgress"]]
 ];
 function packSuggestions(requestedType) {
   if (!/^Shad[A-Z]/.test(requestedType))
@@ -77432,6 +77472,56 @@ function polishFlexRows(input) {
     if (node2?.type !== "ShadHeading")
       continue;
     warnings.push(`Card "${card.name}" is already titled "${title}" and opens with heading "${text(prop2(node2, "text"))}": two section titles stacked read as a card in a card. Keep one: drop the heading (and its caption) or clear cardTitle and cardExtra.`);
+  }
+  const DIALOGS = /* @__PURE__ */ new Set(["ShadDialog", "ModalV2"]);
+  for (const dialog of [...components]) {
+    if (!dialog || !DIALOGS.has(dialog.type))
+      continue;
+    const ref2 = refOf(dialog);
+    if (!ref2)
+      continue;
+    const bare = components.filter((c) => c && c.parentRef === ref2 && c.slotName === "footer" && c.type === "ShadButton");
+    if (bare.length < 2 || components.some((c) => c && c.parentRef === ref2 && c.slotName === "footer" && c.type !== "ShadButton"))
+      continue;
+    const rowRef = `${ref2}FooterRow`;
+    if (components.some((c) => c && refOf(c) === rowRef))
+      continue;
+    const leftOf = (c) => Number(c.layout?.left ?? c.layouts?.desktop?.left ?? 0);
+    const ordered = [...bare].sort((a, b) => leftOf(a) - leftOf(b));
+    const top = Math.min(...bare.map((c) => Number(c.layout?.top ?? c.layouts?.desktop?.top ?? 0)));
+    const row = {
+      name: rowRef,
+      type: "FlexContainer",
+      clientRef: rowRef,
+      parentRef: ref2,
+      slotName: "footer",
+      properties: {
+        direction: { value: "row" },
+        justifyContent: { value: "flex-end" },
+        alignItems: { value: "center" },
+        gap: { value: 8 },
+        padding: { value: 0 },
+        dynamicHeight: { value: "{{true}}" }
+      },
+      layout: { top: Number.isFinite(top) ? top : 0, left: 0, width: 43, height: 48 }
+    };
+    for (const button of ordered) {
+      button.parentRef = rowRef;
+      delete button.slotName;
+      const label3 = text(prop2(button, "text"));
+      const width = Math.max(80, Math.ceil(label3.length * 8 + (text(prop2(button, "icon")) ? 64 : 40)));
+      [button.layout, button.layouts?.desktop].forEach((rect2) => {
+        if (!rect2)
+          return;
+        rect2.fillWidth = false;
+        rect2.widthPx = rect2.widthPx ?? width;
+      });
+    }
+    const firstIndex = Math.min(...ordered.map((c) => components.indexOf(c)));
+    const rest = components.filter((c) => !ordered.includes(c));
+    rest.splice(Math.min(firstIndex, rest.length), 0, row, ...ordered);
+    components.splice(0, components.length, ...rest);
+    warnings.push(`Dialog "${dialog.name}": its ${ordered.length} footer buttons were placed by hand with uneven gaps; they now sit in one row "${rowRef}" at the right, in their order (${ordered.map((c) => `"${c.name}"`).join(", ")}).`);
   }
   const accents = unifyChartAccents(components);
   const tables = packTableLook(accents.components);
