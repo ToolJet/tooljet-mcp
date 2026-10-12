@@ -25,13 +25,15 @@ describe('verify_page_render', () => {
   });
 });
 
-function browserFixture({ status = 200, widgets = 1, landed = 'http://viewer.test/applications/app1/home', resource, redirect, method = 'GET', duringSettle = false }: {
-  status?: number; widgets?: number; landed?: string; resource?: string; redirect?: string; method?: string; duringSettle?: boolean;
+function browserFixture({ status = 200, widgets = 1, landed = 'http://viewer.test/applications/app1/home', resource, redirect, method = 'GET', duringSettle = false, resourceType = 'document', socket = false }: {
+  status?: number; widgets?: number; landed?: string; resource?: string; redirect?: string; method?: string; duringSettle?: boolean; resourceType?: string; socket?: boolean;
 } = {}) {
   let handler: (route: any) => Promise<void>;
+  let onSocket: ((ws: any) => void) | undefined;
   const route = {
-    request: () => ({ url: () => resource ?? 'http://viewer.test/applications/app1/home', method: () => method }),
+    request: () => ({ url: () => resource ?? 'http://viewer.test/applications/app1/home', method: () => method, resourceType: () => resourceType }),
     abort: vi.fn().mockResolvedValue(undefined),
+    continue: vi.fn().mockResolvedValue(undefined),
     fetch: vi.fn().mockResolvedValue({
       status: () => redirect ? 302 : 200, headers: () => redirect ? { location: redirect } : {},
       dispose: vi.fn().mockResolvedValue(undefined),
@@ -40,10 +42,10 @@ function browserFixture({ status = 200, widgets = 1, landed = 'http://viewer.tes
   };
   const context = {
     route: vi.fn(async (_: string, cb: typeof handler) => { handler = cb; }),
-    routeWebSocket: vi.fn(),
+    routeWebSocket: vi.fn(async (_: string, cb: (ws: any) => void) => { onSocket = cb; }),
     close: vi.fn().mockResolvedValue(undefined),
     newPage: vi.fn().mockResolvedValue({
-      goto: async () => { if (!duringSettle && (resource || redirect)) { await handler(route); if (route.abort.mock.calls.length) throw new Error('aborted'); } return { status: () => status }; },
+      goto: async () => { if (socket) onSocket?.({ url: () => 'ws://viewer.test/ws', close: () => {} }); if (!duringSettle && (resource || redirect)) { await handler(route); if (route.abort.mock.calls.length) throw new Error('aborted'); } return { status: () => status }; },
       waitForTimeout: vi.fn(async () => { if (duringSettle) await handler(route); }), waitForFunction: vi.fn().mockResolvedValue(undefined),
       url: () => landed, evaluate: vi.fn().mockResolvedValue({ widgets, findings: [] }),
     }),
@@ -160,6 +162,17 @@ describe('render audit network boundary and honest results', () => {
     expect(report.findings[0].detail).toMatch(/no widgets/i);
   });
 
+  it('reports every distinct block on a page that rendered, not only the first', async () => {
+    // 2026-10-12: the always-blocked WebSocket came first and hid the blocked query run behind it, so a page whose
+    // data never loaded read as verified apart from "live behavior".
+    const f = browserFixture({ socket: true, resource: 'http://viewer.test/api/apps/app1/session', method: 'POST', duringSettle: true });
+    const [report] = await auditPages(target, {}, f.driver);
+    const reasons = report.findings.map((x) => x.reason);
+    expect(reasons).toContain('blocked_destination');
+    expect(reasons).toContain('blocked_execution');
+    expect(report.findings.find((x) => x.reason === 'blocked_execution')?.detail).toMatch(/POST \/api\/apps\/app1\/session/);
+  });
+
   it('distinguishes no widgets, sign-in and browser setup failure from a clean render', async () => {
     expect((await auditPages(target, {}, browserFixture({ widgets: 0 }).driver))[0].findings[0].reason).toBe('no_widgets');
     expect((await auditPages(target, {}, browserFixture({ landed: 'http://viewer.test/login' }).driver))[0].findings[0].reason).toBe('auth_required');
@@ -202,5 +215,33 @@ describe('render audit with the builder\'s session', () => {
     const session = { ...client, viewerSession: async () => 'tok123', editingVersionName: async () => 'v2' };
     await verifyPageRenderTool(session, () => 'http://viewer.test', f.driver).handler({ app_id: 'app1' });
     expect((f.context as any).addCookies).not.toHaveBeenCalled();
+  });
+});
+
+describe('render audit static assets', () => {
+  // A dev frontend's unminified bundles are tens of megabytes: fetching and fulfilling them killed Chrome two
+  // seconds into every audit of the local viewer (2026-10-12), so the viewer's own static files pass through.
+  it.each(['script', 'stylesheet', 'image', 'font'])('lets a same-origin %s through without refetching it', async resourceType => {
+    const f = browserFixture({ resource: 'http://viewer.test/main.js', resourceType });
+    const [report] = await auditPages(target, {}, f.driver);
+    expect(f.route.continue).toHaveBeenCalledOnce();
+    expect(f.route.fetch).not.toHaveBeenCalled();
+    expect(report.findings).toEqual([]);
+  });
+
+  it('still refetches documents and API calls, so redirects and query runs stay checked', async () => {
+    for (const [resource, resourceType] of [['http://viewer.test/applications/app1/home', 'document'], ['http://viewer.test/api/apps/app1', 'fetch']]) {
+      const f = browserFixture({ resource, resourceType });
+      await auditPages(target, {}, f.driver);
+      expect(f.route.continue).not.toHaveBeenCalled();
+      expect(f.route.fetch).toHaveBeenCalled();
+    }
+  });
+
+  it('never passes an off-origin script through', async () => {
+    const f = browserFixture({ resource: 'http://cdn.elsewhere.test/lib.js', resourceType: 'script' });
+    await auditPages(target, {}, f.driver);
+    expect(f.route.continue).not.toHaveBeenCalled();
+    expect(f.route.abort).toHaveBeenCalled();
   });
 });
