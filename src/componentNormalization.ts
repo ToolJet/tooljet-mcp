@@ -346,6 +346,18 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
           );
           return { ...entry, isDateSelectionEnabled: true };
         }
+        // A read-only date column in the shadcn look authored in a machine format (YYYY-MM-DD) showed 2026-10-12; it parses
+        // with that format and displays a readable date. Editable columns keep what the author typed into.
+        if (
+          shadcnLook && column && typeof column === 'object' && !Array.isArray(column) &&
+          (column as Record<string, unknown>).columnType === 'datepicker' &&
+          !isTruthy((column as Record<string, unknown>).isEditable) &&
+          /^Y{4}[-/]MM[-/]DD$/.test(String((column as Record<string, unknown>).dateFormat ?? '').trim())
+        ) {
+          changedColumns = true;
+          const entry = column as Record<string, unknown>;
+          column = { ...entry, parseDateFormat: entry.parseDateFormat ?? entry.dateFormat, dateFormat: 'MMM D, YYYY' };
+        }
         // A state (one severity, status or stage per row) drawn as a read-only multi-select showed "Select.." on every
         // row: the multi-select reads an array and the value was one string. A single select shows it.
         if (

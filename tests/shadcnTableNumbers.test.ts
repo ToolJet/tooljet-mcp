@@ -206,3 +206,23 @@ describe('shadcn-look Table people', () => {
     expect(cols([{ id: 'a', key: 'owner', name: 'Owner' }], 'default')[0]!.displayAvatar).toBeUndefined();
   });
 });
+
+describe('shadcn-look Table dates', () => {
+  const cols = (result: ReturnType<typeof normalizeComponentSpec>) =>
+    (result.component.properties?.columns as { value: Record<string, unknown>[] }).value;
+  it('shows a date column authored in a machine format as a readable date, parsing with that format (clinic showed 2026-10-12)', () => {
+    const [c] = cols(normalizeComponentSpec(table('shadcn', [{ id: 'd', key: 'day', name: 'Data', columnType: 'datepicker', dateFormat: 'YYYY-MM-DD' }])));
+    expect(c.dateFormat).toBe('MMM D, YYYY');
+    expect(c.parseDateFormat).toBe('YYYY-MM-DD');
+  });
+  it('keeps an explicit parse format, a readable display format, editable columns and the ToolJet look', () => {
+    const [a] = cols(normalizeComponentSpec(table('shadcn', [{ id: 'd', key: 'day', columnType: 'datepicker', dateFormat: 'YYYY-MM-DD', parseDateFormat: 'DD/MM/YYYY' }])));
+    expect(a.parseDateFormat).toBe('DD/MM/YYYY');
+    const [b] = cols(normalizeComponentSpec(table('shadcn', [{ id: 'd', key: 'day', columnType: 'datepicker', dateFormat: 'DD MMM YYYY' }])));
+    expect(b.dateFormat).toBe('DD MMM YYYY');
+    const [e] = cols(normalizeComponentSpec(table('shadcn', [{ id: 'd', key: 'day', columnType: 'datepicker', dateFormat: 'YYYY-MM-DD', isEditable: true }])));
+    expect(e.dateFormat).toBe('YYYY-MM-DD');
+    const [t] = cols(normalizeComponentSpec(table(undefined, [{ id: 'd', key: 'day', columnType: 'datepicker', dateFormat: 'YYYY-MM-DD' }])));
+    expect(t.dateFormat).toBe('YYYY-MM-DD');
+  });
+});
