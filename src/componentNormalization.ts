@@ -476,13 +476,26 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
   // A money KPI bound to a number shows it as currency: "Revenue this week 947.37" read like a count. A binding that
   // formats its own text ('$' + ..., toLocaleString, toFixed) or a typed figure is left as written, and so is an
   // explicit valueFormat. The Stat shows text unchanged, so a binding that returns text is unaffected anyway.
-  if (component.type === 'ShadStat' && propValue(properties, 'valueFormat') === undefined) {
+  // "auto" is the agent's way of not choosing, so it counts as unset. A binding that ends by formatting its own number
+  // without a currency (".toLocaleString('en-US', { minimumFractionDigits: 2 })", ".toFixed(2)") showed "822.54" for
+  // a month's spend: the trailing call is dropped so the Stat formats the number as currency.
+  const statFormat = propValue(properties, 'valueFormat');
+  if (component.type === 'ShadStat' && (statFormat === undefined || statFormat === 'auto')) {
     const label = String(propValue(properties, 'label') ?? '');
-    const value = propValue(properties, 'value');
+    let value = propValue(properties, 'value');
+    const moneyLabel = MONEY_WORDS.test(label.replace(/[_-]+/g, ' ')) && !COUNT_WORDS.test(label);
+    const trailingFormat = /\.(?:toLocaleString\((?:[^()]|\([^()]*\))*\)|toFixed\(\s*\d*\s*\))\s*\}\}\s*$/;
+    if (
+      moneyLabel && typeof value === 'string' && trailingFormat.test(value) &&
+      !/[$€£₹¥]|Intl\.|currency/i.test(value)
+    ) {
+      value = value.replace(trailingFormat, '}}');
+      setProperty('value', value);
+    }
     if (
       typeof value === 'string' && /^\s*\{\{[\s\S]*\}\}\s*$/.test(value) &&
       !/[$€£₹¥]|toLocaleString|toFixed|Intl\.|currency/i.test(value) &&
-      MONEY_WORDS.test(label.replace(/[_-]+/g, ' ')) && !COUNT_WORDS.test(label)
+      moneyLabel
     ) {
       setProperty('valueFormat', 'currency');
     }
