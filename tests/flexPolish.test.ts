@@ -30,7 +30,9 @@ describe('polishFlexRows: rows of labelled fields', () => {
       child('count', 'ShadBadge', 'filters', { text: { value: '300 planned flights' } }),
     ];
     const { components, warnings } = polishFlexRows(input);
-    expect(prop(components, 'filters', 'alignItems')).toBe('last baseline');
+    // Bottom-aligned: every field box ends on one line whatever its label or value (baselines differed by 6px between
+    // a text input and a select, so their labels and boxes sat at different heights).
+    expect(prop(components, 'filters', 'alignItems')).toBe('flex-end');
     expect(warnings.join(' ')).toMatch(/filters/);
   });
 
@@ -41,7 +43,7 @@ describe('polishFlexRows: rows of labelled fields', () => {
       child('note', 'ShadText', 'filters', { text: { value: '5 confirmed meetings' } }),
       child('refresh', 'ShadButton', 'filters', { text: { value: 'Refresh' } }),
     ]);
-    expect(prop(components, 'filters', 'alignItems')).toBe('last baseline');
+    expect(prop(components, 'filters', 'alignItems')).toBe('flex-end');
   });
 
   it('leaves rows of unlabelled controls, and rows holding containers, alone', () => {
@@ -90,13 +92,13 @@ describe('polishFlexRows: rows of cards', () => {
     expect(prop(polishFlexRows(input).components, 'content', 'alignItems')).toBe('stretch');
   });
 
-  it('respects an explicit centre or end alignment, and rows with a single card', () => {
+  it('stretches even an explicitly centred row of cards (unequal heights side by side read as broken), not a single card', () => {
     const centred = polishFlexRows([
       row('content', { alignItems: { value: 'center' } }),
       child('a', 'FlexContainer', 'content', { cardStyle: { value: 'shadcnCard' } }),
       child('b', 'FlexContainer', 'content', { cardStyle: { value: 'shadcnCard' } }),
     ]);
-    expect(prop(centred.components, 'content', 'alignItems')).toBe('center');
+    expect(prop(centred.components, 'content', 'alignItems')).toBe('stretch');
     const single = polishFlexRows([row('content'), child('a', 'FlexContainer', 'content', { cardStyle: { value: 'shadcnCard' } })]);
     expect(prop(single.components, 'content', 'alignItems')).toBeUndefined();
   });
@@ -491,5 +493,45 @@ describe('polishFlexRows: a row of only buttons placed at its end', () => {
       { ...child('b', 'ShadButton', 'pair', { text: { value: 'Two' } }), layout: { top: 0, left: 0, width: 9, height: 36 } },
     ]);
     expect((components.find((c) => c.clientRef === 'a')!.layout as Record<string, unknown>).fillWidth).toBeUndefined();
+  });
+});
+
+describe('polishFlexRows: cards fit their content and share a row height', () => {
+  const card = (ref: string, parentRef: string, height: number, extra: Record<string, unknown> = {}) =>
+    ({
+      ...child(ref, 'FlexContainer', parentRef, { cardStyle: { value: 'shadcnCard' }, direction: { value: 'column' }, padding: { value: 20 }, gap: { value: 6 }, ...extra }),
+      layout: { top: 0, left: 0, width: 10, height },
+    }) as ComponentSpec;
+  const leaf = (ref: string, type: string, parentRef: string, height: number) =>
+    ({ ...child(ref, type, parentRef), layout: { top: 0, left: 0, width: 10, height } }) as ComponentSpec;
+  const h = (components: ComponentSpec[], ref: string) => components.find((c) => c.clientRef === ref)!.layout!.height;
+
+  it('trims a card drawn taller than its content (85px empty under a KPI figure)', () => {
+    const { components, warnings } = polishFlexRows([
+      row('kpis', { gap: { value: 16 } }),
+      card('today', 'kpis', 170),
+      leaf('todayLabel', 'ShadText', 'today', 26),
+      leaf('todayValue', 'ShadHeading', 'today', 56),
+    ]);
+    // 26 + 6 + 56 content, 20px padding each side, 6px chrome
+    expect(h(components, 'today')).toBe(134);
+    expect(warnings.join(' ')).toMatch(/today/);
+  });
+
+  it('keeps a card that fits, a card with unmeasured children, and a card title band', () => {
+    const fits = polishFlexRows([row('r'), card('a', 'r', 140), leaf('x', 'ShadText', 'a', 26), leaf('y', 'ShadHeading', 'a', 56)]);
+    expect(h(fits.components, 'a')).toBe(140);
+    const titled = polishFlexRows([row('r'), card('a', 'r', 200, { cardTitle: { value: 'Revenue' }, cardExtra: { value: 'This week' } }), leaf('y', 'ShadHeading', 'a', 56)]);
+    // 56 content + 40 padding + 6 chrome + 70 title band
+    expect(h(titled.components, 'a')).toBe(172);
+  });
+
+  it('stretches a row of cards to one height whatever alignment the build gave it', () => {
+    const { components } = polishFlexRows([
+      row('kpis', { alignItems: { value: 'center' } }),
+      card('a', 'kpis', 120),
+      card('b', 'kpis', 140),
+    ]);
+    expect(prop(components, 'kpis', 'alignItems')).toBe('stretch');
   });
 });

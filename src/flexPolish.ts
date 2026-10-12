@@ -137,6 +137,45 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
     setProp(root, 'dynamicHeight', '{{true}}'); // silent: it changes nothing the model must reconsider
   }
 
+  // A card drawn taller than its content is trimmed to fit it: a row is as tall as its tallest card and stretches the
+  // rest, so one generous guess left an empty band under every KPI figure in the row (85px under each, a clinic home).
+  // Deepest cards first, so a card holding cards sees their fitted heights. Only cards whose children all have a
+  // drawn height are measured; a card is never grown here.
+  const depth = (c: ComponentSpec): number => {
+    let d = 0;
+    let p = c.parentRef;
+    while (p && d < 20) {
+      d += 1;
+      p = components.find((x) => x && refOf(x) === p)?.parentRef;
+    }
+    return d;
+  };
+  const heightOf = (c: ComponentSpec): number => Number(c.layout?.height ?? c.layouts?.desktop?.height ?? NaN);
+  const cards = components.filter((c) => c && isSurface(c) && c.parentRef).sort((a, b) => depth(b) - depth(a));
+  for (const card of cards) {
+    const inner = childrenOf(refOf(card) ?? '');
+    const heights = inner.map(heightOf);
+    if (!inner.length || heights.some((h) => !Number.isFinite(h))) continue;
+    const rawGap = text(prop(card, 'gap'));
+    const gap = rawGap === '' ? 8 : Number(rawGap) || 0;
+    const rawPad = text(prop(card, 'padding'));
+    const pad = rawPad === '' ? 12 : Number(rawPad) || 0;
+    const content = isRow(card) ? Math.max(...heights) : heights.reduce((a, b) => a + b, 0) + gap * (inner.length - 1);
+    const title = text(prop(card, 'cardTitle'));
+    const extra = text(prop(card, 'cardExtra'));
+    const band = text(prop(card, 'cardStyle')) === 'antCard' ? (title || extra ? 56 : 0) : extra ? 70 : title ? 48 : 0;
+    const needed = Math.ceil(content + pad * 2 + 6 + band);
+    const rects = [card.layout, card.layouts?.desktop].filter(
+      (rect): rect is NonNullable<ComponentSpec['layout']> => !!rect && typeof rect.height === 'number'
+    );
+    if (!rects.length || rects.every((rect) => (rect.height as number) <= needed + 12)) continue;
+    const was = rects[0]!.height;
+    rects.forEach((rect) => {
+      rect.height = needed;
+    });
+    warnings.push(`Card "${card.name}" was ${was}px tall for ${needed}px of content; it now fits its content.`);
+  }
+
   for (const container of components) {
     if (!container || !isRow(container)) continue;
     const ref = refOf(container);
@@ -326,17 +365,21 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
       children.every((child) => INLINE_TYPES.has(child.type)) &&
       children.some(isLabelledField) &&
       children.some((child) => !isLabelledField(child)) &&
-      align !== 'last baseline'
+      align !== 'flex-end'
     ) {
-      setProp(container, 'alignItems', 'last baseline');
+      // Bottom-aligned, every field box ends on one line whatever its label, and a button beside them lines up with
+      // the boxes. On "last baseline" a text input and a select sat 6px apart (their value baselines differ).
+      setProp(container, 'alignItems', 'flex-end');
       warnings.push(
-        `Row "${label}" has labelled fields beside other controls; its alignItems is now "last baseline" so their ` +
-          "text lines up with the fields' values instead of centring on label and field."
+        `Row "${label}" has labelled fields beside other controls; its alignItems is now "flex-end" so the field boxes ` +
+          'and the controls beside them line up along the bottom.'
       );
     }
 
     // 2. A row of cards shares one height.
-    if (children.length >= 2 && children.every(isSurface) && (align === '' || align === 'flex-start')) {
+    // Whatever alignment the build gave the row: centred or bottom-aligned cards of different content came out at
+    // different heights side by side.
+    if (children.length >= 2 && children.every(isSurface) && align !== 'stretch') {
       setProp(container, 'alignItems', 'stretch');
       warnings.push(`Row "${label}" holds ${children.length} cards; its alignItems is now stretch so they share one height.`);
     }
