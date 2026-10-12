@@ -10,6 +10,7 @@
    - A header row whose action buttons come before the title: the actions move after the title block (to the right). */
 import type { ComponentSpec } from './tooljetClient.js';
 import { unifyChartAccents } from './chartAccentLint.js';
+import { packTableLook } from './packTableLook.js';
 
 const FIELD_TYPES = new Set([
   'ShadInput',
@@ -658,5 +659,7 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
   }
   // Charts on the page in one accent (chartAccentLint.ts): an odd hand-set colour takes the page's most common one.
   const accents = unifyChartAccents(components);
-  return { components: accents.components, warnings: [...warnings, ...accents.warnings] };
+  // Tables among pack widgets draw in the pack's look (packTableLook.ts).
+  const tables = packTableLook(accents.components);
+  return { components: tables.components, warnings: [...warnings, ...accents.warnings, ...tables.warnings] };
 }
