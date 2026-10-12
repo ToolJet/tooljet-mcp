@@ -1692,6 +1692,9 @@
     "avatarField": {
      "value": "owner"
     },
+    "detailsField": {
+     "value": ""
+    },
     "density": {
      "value": "comfortable"
     },
@@ -2932,6 +2935,98 @@
     }
    }
   },
+  "ShadRecordList": {
+   "properties": {
+    "data": {
+     "value": "{{[{ id: 1, customer: 'Harbor Bistro', contact: 'Maya Chen', due: '2026-10-14', status: 'Paid', total: 1240 }, { id: 2, customer: 'Northwind Florists', contact: 'Owen Hart', due: '2026-10-16', status: 'Pending', total: 386.5 }, { id: 3, customer: 'Juniper Dental', contact: 'Priya Nair', due: '2026-10-09', status: 'Overdue', total: 2915 }, { id: 4, customer: 'Copper Kettle Cafe', contact: 'Leo Martins', due: '2026-10-21', status: 'Draft', total: 742 }]}}"
+    },
+    "titleField": {
+     "value": "customer"
+    },
+    "avatarField": {
+     "value": ""
+    },
+    "metaFields": {
+     "value": "contact, due|date:Due {}"
+    },
+    "statusField": {
+     "value": "status"
+    },
+    "valueField": {
+     "value": "total"
+    },
+    "valueFormat": {
+     "value": "currency"
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "idField": {
+     "value": "id"
+    },
+    "showAvatar": {
+     "value": "{{true}}"
+    },
+    "avatarShape": {
+     "value": "circle"
+    },
+    "density": {
+     "value": "default"
+    },
+    "showDividers": {
+     "value": "{{true}}"
+    },
+    "listStyle": {
+     "value": "card"
+    },
+    "highlightSelected": {
+     "value": "{{true}}"
+    },
+    "emptyText": {
+     "value": "Nothing here yet"
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "loadingIndicator": {
+     "value": "spinner"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "collapseWhenHidden": {
+     "value": "{{false}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    },
+    "titleFontFamily": {
+     "value": "theme"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
   "ShadSelect": {
    "properties": {
     "label": {
@@ -3390,6 +3485,71 @@
    "styles": {
     "boxShadow": {
      "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadSummaryStrip": {
+   "properties": {
+    "items": {
+     "value": "{{[{ label: 'Revenue', value: 48210, delta: 12.4, caption: 'vs last month' }, { label: 'Orders', value: 1284, format: 'number', delta: 5.1, caption: 'vs last month' }, { label: 'Average order', value: 37.55, delta: -2.3, caption: 'vs last month' }, { label: 'Refund rate', value: 2.1, format: 'percent', delta: -0.4, deltaFormat: 'number', lowerIsBetter: true, caption: 'points' }]}}"
+    },
+    "valueFormat": {
+     "value": "currency"
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "deltaFormat": {
+     "value": "percent"
+    },
+    "appearance": {
+     "value": "panel"
+    },
+    "size": {
+     "value": "default"
+    },
+    "align": {
+     "value": "left"
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "loadingIndicator": {
+     "value": "spinner"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "collapseWhenHidden": {
+     "value": "{{false}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    },
+    "valueFontFamily": {
+     "value": "theme"
     }
    },
    "others": {

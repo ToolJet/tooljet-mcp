@@ -72,13 +72,15 @@ function resolveCatalogType(requestedType: string): {
 /** Names models reach for from shadcn/ui and other kits, mapped to the pack's types (or how to compose them). */
 const PACK_CONCEPTS: Array<[RegExp, string[]]> = [
   [/table|grid|datatable/i, ['ShadTable']],
-  [/metric|stat|kpi/i, ['ShadStat', 'ShadSparkline']],
+  [/metric|stat|kpi/i, ['ShadStat', 'ShadSparkline', 'ShadSummaryStrip']],
+  [/summary|figures|totals|strip|headline/i, ['ShadSummaryStrip']],
+  [/recent|activity|feed|records?|orders|people|contacts|inbox/i, ['ShadRecordList']],
   [/card|panel|surface/i, ['FlexContainer (cardStyle "shadcnCard")', 'ShadCardGrid']],
   [/gallery|tiles?|catalog|products?|cards|grid/i, ['ShadCardGrid']],
   [/hero|header|masthead|jumbotron|cover|welcome/i, ['ShadHero']],
   [/modal|dialog|sheet|drawer/i, ['ShadDialog']],
   [/dropdown|menu/i, ['ShadDropdownMenu', 'ShadSelect', 'ShadCombobox']],
-  [/list/i, ['ShadListView', 'ShadKeyValue']],
+  [/list/i, ['ShadListView', 'ShadRecordList', 'ShadKeyValue']],
   [/chart|graph/i, ['ShadBarChart', 'ShadLineChart', 'ShadAreaChart', 'ShadPieChart', 'ShadComboChart', 'ShadScatterChart', 'ShadFunnelChart', 'ShadHeatmapChart']],
   [/funnel|conversion/i, ['ShadFunnelChart']],
   [/scatter|bubble|correlation/i, ['ShadScatterChart']],
