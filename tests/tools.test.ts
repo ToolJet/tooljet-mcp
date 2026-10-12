@@ -99,7 +99,7 @@ describe('create_app tool', () => {
     expect(client.updateAppSettings).toHaveBeenCalledWith(
       expect.objectContaining({ appId: 'app1', versionId: 'v1', globalSettings: { theme: expect.objectContaining({ id: 'theme-std' }) } })
     );
-    expect(textOf(result)).toEqual({ ...createdApp, theme: { mode: 'standard', id: 'theme-std', name: 'ToolJet Modern' } });
+    expect(textOf(result)).toEqual({ ...createdApp, theme: { mode: 'standard', id: 'theme-std', name: 'ToolJet Modern', accent_note: expect.stringMatching(/stock blue/) } });
     expect(result.isError).toBeUndefined();
   });
 
@@ -112,7 +112,7 @@ describe('create_app tool', () => {
     const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'My App' });
 
     expect(client.createAppTheme).not.toHaveBeenCalled();
-    expect(textOf(result).theme).toEqual({ mode: 'standard', id: 'theme-std', name: 'ToolJet Modern' });
+    expect(textOf(result).theme).toEqual({ mode: 'standard', id: 'theme-std', name: 'ToolJet Modern', accent_note: expect.stringMatching(/stock blue/) });
   });
 
   it('leaves the workspace default untouched when theme is "workspace_default"', async () => {
@@ -200,7 +200,8 @@ describe('create_app tool', () => {
     expect(client.updateAppSettings).toHaveBeenCalledWith(
       expect.objectContaining({ globalSettings: { theme: expect.objectContaining({ id: 'theme-dark' }), appMode: 'dark' } })
     );
-    expect(textOf(result).theme).toEqual({ mode: 'derived', id: 'theme-dark', name: 'Relay console dark', app_mode: 'dark' });
+    // The standard theme's stock-blue primary also earns the accent note.
+    expect(textOf(result).theme).toEqual({ mode: 'derived', id: 'theme-dark', name: 'Relay console dark', app_mode: 'dark', accent_note: expect.stringMatching(/stock blue/) });
   });
 
   it('rejects font-only and incomplete derived palettes before creating any resources', async () => {

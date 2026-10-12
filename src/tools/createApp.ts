@@ -5,6 +5,10 @@ import { z } from 'zod';
 import type { AppTheme, CreateAppResult, ToolJetClient } from '../tooljetClient.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { themeDefinition } from './manageTheme.js';
+import { accentWarning } from '../themeAccent.js';
+
+// The standard theme's primary, for the accent note (a stock blue reads plain).
+const STANDARD_PRIMARY = { brand: { colors: { primary: { light: '#2563EB' } } } };
 
 interface StandardThemeFile {
   name: string;
@@ -49,6 +53,8 @@ export interface CreateAppToolResult extends CreateAppResult {
     app_mode?: 'light' | 'dark';
     /** Set when the requested theme could not be applied; the app still exists and uses the workspace default. */
     warning?: string;
+    /** Set when the theme's primary is near-black, grey or the stock blue: names the accent menu. */
+    accent_note?: string;
   };
 }
 
@@ -132,7 +138,8 @@ export function createAppTool(client: ToolJetClient): ToolDef {
             globalSettings: { theme, ...(appMode ? { appMode } : {}) },
           });
           const mode = choice === 'standard' ? 'standard' : typeof choice === 'object' ? 'derived' : 'named';
-          result.theme = { mode, id: theme.id, name: theme.name, ...(appMode ? { app_mode: appMode } : {}) };
+          const accentNote = mode === 'standard' ? accentWarning(STANDARD_PRIMARY) : mode === 'derived' ? accentWarning((choice as DerivedTheme).definition) : null;
+          result.theme = { mode, id: theme.id, name: theme.name, ...(appMode ? { app_mode: appMode } : {}), ...(accentNote ? { accent_note: accentNote } : {}) };
         } catch (themeErr) {
           result.theme = {
             mode: 'workspace_default',

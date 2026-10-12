@@ -7,6 +7,7 @@ export const THEME_LICENCE_USER_MESSAGE =
   'Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.';
 import { fail, ok, type ToolDef } from './types.js';
 import { paintsDarkCanvasInLightMode } from './createApp.js';
+import { accentWarning } from '../themeAccent.js';
 
 const colorPair = z.object({
   light: z.string().trim().min(1).max(100).describe('Color used in light mode; hex is recommended.'),
@@ -168,7 +169,8 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
               isDefault: args.is_default ?? false,
             });
             const applied = await applyToApp(client, created, args, args.definition);
-            return ok({ theme: created, ...(applied ? { applied } : {}) });
+            const accent = accentWarning(args.definition);
+            return ok({ theme: created, ...(applied ? { applied } : {}), ...(accent ? { warnings: [accent] } : {}) });
           } catch (error) {
             // Custom themes are a licensed feature; Community Edition answers 451. That is a fact about
             // the customer's plan, not a mistake in the call, so it must not read as an error the model
@@ -200,7 +202,8 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
 
         if (args.action === 'update_definition') {
           await client.updateAppThemeDefinition(themeId, requireValue(args.definition, 'definition'));
-          return ok({ theme: await readTheme(client, themeId) });
+          const accent = accentWarning(args.definition);
+          return ok({ theme: await readTheme(client, themeId), ...(accent ? { warnings: [accent] } : {}) });
         }
 
         if (args.action === 'rename') {

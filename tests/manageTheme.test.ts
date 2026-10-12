@@ -106,3 +106,18 @@ describe('manage_theme create applied to an app in the same call', () => {
     expect(c.updateAppSettings).not.toHaveBeenCalled();
   });
 });
+
+describe('manage_theme accent note', () => {
+  it('warns when a created theme has a near-black primary, and stays quiet for a menu accent', async () => {
+    const client = {
+      listAppThemes: vi.fn().mockResolvedValue([]),
+      createAppTheme: vi.fn().mockImplementation(async ({ name }) => ({ id: 't1', name })),
+    } as unknown as ToolJetClient;
+    const dark = { ...definition, brand: { colors: { primary: { light: '#111827', dark: '#F9FAFB' } } } };
+    const flagged = textOf(await manageThemeTool(client).handler({ action: 'create', name: 'Ink theme', definition: dark } as never));
+    expect(flagged.warnings.join(' ')).toMatch(/near-black/);
+    const violet = { ...definition, brand: { colors: { primary: { light: '#7C3AED', dark: '#A78BFA' } } } };
+    const quiet = textOf(await manageThemeTool(client).handler({ action: 'create', name: 'Violet theme', definition: violet } as never));
+    expect(quiet.warnings).toBeUndefined();
+  });
+});
