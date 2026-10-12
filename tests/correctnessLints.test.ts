@@ -3,6 +3,7 @@ import { lintUnformattedNumbers } from '../src/numberFormatLint.js';
 import { lintCopiedCards } from '../src/repeatedCardsLint.js';
 import { lintTallContainers } from '../src/containerExtentLint.js';
 import { lintUniformSeedMetrics } from '../src/seedVarietyLint.js';
+import { lintChartAccents } from '../src/chartAccentLint.js';
 import { lintComponents } from '../src/lint.js';
 import { lintPlannedApp } from '../src/appSpecLint.js';
 
@@ -181,5 +182,32 @@ describe('uniform seed metrics', () => {
     const half = Array.from({ length: 4 }, (_, i) => ({ id: i + 1, score: 70 }));
     const r = lintPlannedApp({ seedData: [{ tableName: 'reviews', rows: half }, { tableName: 'reviews', rows: half.map((row) => ({ ...row, id: row.id + 4 })) }] } as never);
     expect(r.warnings.some((w) => /"score" is 70 in all 8 rows/.test(w))).toBe(true);
+  });
+});
+
+describe('charts in different accents on one page', () => {
+  const chart = (name: string, chartColor?: string, type = 'ShadBarChart') => ({
+    type, name, properties: {}, styles: chartColor === undefined ? {} : { chartColor: v(chartColor) },
+  });
+
+  it('flags a blue chart among teal ones (AC repair dashboard, cbee8d6f)', () => {
+    const w = lintChartAccents([chart('tech_week_chart', '#0F766E'), chart('revenue_chart', '#0F766E', 'ShadAreaChart'), chart('jobs_type_chart', '#2563EB')]);
+    expect(w).toHaveLength(1);
+    expect(w[0]).toMatch(/2 different accents \("tech_week_chart", "revenue_chart" use #0f766e; "jobs_type_chart" use #2563eb\)/);
+  });
+
+  it('counts an unset chartColor as the theme primary', () => {
+    expect(lintChartAccents([chart('a'), chart('b', '#2563EB', 'ShadLineChart')])[0]).toMatch(/"a" follow the theme primary; "b" use #2563eb/);
+  });
+
+  it('stays quiet for one accent, all unset, the theme token or a single chart', () => {
+    expect(lintChartAccents([chart('a', '#0F766E'), chart('b', '#0f766eff', 'ShadPieChart')])).toEqual([]);
+    expect(lintChartAccents([chart('a'), chart('b', 'var(--cc-primary-brand)'), chart('s', undefined, 'ShadSparkline')])).toEqual([]);
+    expect(lintChartAccents([chart('a', '#2563EB'), { type: 'ShadButton', name: 'x', styles: { chartColor: v('#000000') } }])).toEqual([]);
+  });
+
+  it('reaches the page lint', () => {
+    const r = lintComponents([chart('a', '#0F766E'), chart('b', '#2563EB')].map((c, i) => ({ ...c, layouts: { desktop: { top: i * 320, left: 2, width: 39, height: 300 } } })));
+    expect(r.warnings.some((w) => /different accents/.test(w))).toBe(true);
   });
 });

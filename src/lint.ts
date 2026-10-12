@@ -41,6 +41,7 @@ import { isModalV2Type } from './modalTypes.js';
 import { lintUnformattedNumbers } from './numberFormatLint.js';
 import { lintCopiedCards } from './repeatedCardsLint.js';
 import { lintTallContainers } from './containerExtentLint.js';
+import { lintChartAccents } from './chartAccentLint.js';
 
 export interface LintResult {
   errors: string[];
@@ -3227,6 +3228,7 @@ export function lintComponents(components: LintComponent[], options: { canvasCol
   warnings.push(...lintEmptyTabs(components)); // a partial add may create the parent before its children
   warnings.push(...lintCopiedCards(components));
   warnings.push(...lintTallContainers(components));
+  warnings.push(...lintChartAccents(components));
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));
