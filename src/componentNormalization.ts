@@ -319,9 +319,17 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
         (lookEntry && typeof lookEntry === 'object' ? (lookEntry as { value?: unknown }).value : lookEntry) === 'shadcn';
       // Rows of one line in the shadcn look: long subjects wrapped into uneven two-line rows, which reviewers marked as
       // unfinished; the look ends long text in an ellipsis instead.
-      if (shadcnLook && stylesValue.contentWrap !== false && (stylesValue.contentWrap as { value?: unknown } | undefined)?.value !== false) {
-        setStyle('contentWrap', false);
-      }
+      // A column that draws more than a line (html, long text, json, an image) needs rows that grow: at one line a
+      // two-line html reservation overlapped the row below. Such a table keeps wrapping, turned back on if it was off.
+      const wrapNow = (stylesValue.contentWrap as { value?: unknown } | undefined)?.value ?? stylesValue.contentWrap;
+      const multiLine = columns.some(
+        (c) =>
+          c && typeof c === 'object' && !Array.isArray(c) &&
+          (c as Record<string, unknown>).columnVisibility !== false &&
+          ['html', 'text', 'json', 'image', 'markdown'].includes(String((c as Record<string, unknown>).columnType))
+      );
+      if (shadcnLook && multiLine && wrapNow === false) setStyle('contentWrap', true);
+      else if (shadcnLook && !multiLine && wrapNow !== false) setStyle('contentWrap', false);
       let changedColumns = false;
       const repairedColumns = columns.map((column) => {
         if (options.stripUnknownKeys && column && typeof column === 'object' && !Array.isArray(column) &&

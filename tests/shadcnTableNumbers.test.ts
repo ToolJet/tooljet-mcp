@@ -238,3 +238,18 @@ describe('shadcn-look Table rows', () => {
     expect(style(normalizeComponentSpec(table(undefined, [{ id: 'a', key: 'subject', columnType: 'string' }])))).toBeUndefined();
   });
 });
+
+describe('shadcn-look Table rows with multi-line cells', () => {
+  const style = (result: ReturnType<typeof normalizeComponentSpec>) =>
+    (result.component.styles?.contentWrap as { value?: unknown } | undefined)?.value;
+  it('keep wrapping when a column draws html, text or json (two-line html reservations overlapped at one line)', () => {
+    for (const columnType of ['html', 'text', 'json', 'image', 'markdown']) {
+      const t = table('shadcn', [{ id: 'a', key: 'subject', columnType: 'string' }, { id: 'b', key: 'r', columnType }]);
+      expect(style(normalizeComponentSpec(t)), columnType).not.toBe(false);
+    }
+  });
+  it('a hidden html column does not count', () => {
+    const t = table('shadcn', [{ id: 'a', key: 'subject', columnType: 'string' }, { id: 'b', key: 'r', columnType: 'html', columnVisibility: false }]);
+    expect(style(normalizeComponentSpec(t))).toBe(false);
+  });
+});
