@@ -453,6 +453,11 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
             for (const meta of mixed) {
               const own = metaWidth(meta);
               if (own === null) continue;
+              // Right-aligned in its box: a bound line's width is an estimate, and left-aligned the slack fell between
+              // the line and the button.
+              if (meta.type === 'ShadText' && ['', 'left'].includes(styleText(meta, 'textAlign'))) {
+                meta.styles = { ...(meta.styles ?? {}), textAlign: { value: 'right' } };
+              }
               [meta.layout, meta.layouts?.desktop].forEach((rect) => {
                 if (!rect) return;
                 (rect as FlexRect).fillWidth = false;

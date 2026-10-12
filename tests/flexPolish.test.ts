@@ -692,6 +692,8 @@ describe('polishFlexRows: a header action group with a status line', () => {
     const status = rect(components.find((c) => c.clientRef === 'statusSummary'));
     expect(status.fillWidth).toBe(false);
     expect(status.widthPx).toBeGreaterThan(40);
+    const statusSpec = components.find((c) => c.clientRef === 'statusSummary')!;
+    expect((statusSpec.styles?.textAlign as { value?: string } | undefined)?.value).toBe('right');
     expect(rect(components.find((c) => c.clientRef === 'welcome')).fillWidth).toBe(true);
     expect(warnings.join(' ')).toMatch(/topBarActions/);
   });
