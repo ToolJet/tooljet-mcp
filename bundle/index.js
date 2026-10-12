@@ -128,14 +128,14 @@ var require_content_type = __commonJS({
       return header;
     }
     function qstring(val) {
-      var str2 = String(val);
-      if (TOKEN_REGEXP.test(str2)) {
-        return str2;
+      var str3 = String(val);
+      if (TOKEN_REGEXP.test(str3)) {
+        return str3;
       }
-      if (str2.length > 0 && !TEXT_REGEXP.test(str2)) {
+      if (str3.length > 0 && !TEXT_REGEXP.test(str3)) {
         throw new TypeError("invalid parameter value");
       }
-      return '"' + str2.replace(QUOTE_REGEXP, "\\$1") + '"';
+      return '"' + str3.replace(QUOTE_REGEXP, "\\$1") + '"';
     }
     function ContentType(type) {
       this.parameters = /* @__PURE__ */ Object.create(null);
@@ -212,7 +212,7 @@ var require_code = __commonJS({
     }
     exports._ = _;
     var plus = new _Code("+");
-    function str2(strs, ...args) {
+    function str3(strs, ...args) {
       const expr = [safeStringify(strs[0])];
       let i = 0;
       while (i < args.length) {
@@ -223,7 +223,7 @@ var require_code = __commonJS({
       optimize(expr);
       return new _Code(expr);
     }
-    exports.str = str2;
+    exports.str = str3;
     function addCodeArg(code, arg) {
       if (arg instanceof _Code)
         code.push(...arg._items);
@@ -266,7 +266,7 @@ var require_code = __commonJS({
       return;
     }
     function strConcat(c1, c2) {
-      return c2.emptyStr() ? c1 : c1.emptyStr() ? c2 : str2`${c1}${c2}`;
+      return c2.emptyStr() ? c1 : c1.emptyStr() ? c2 : str3`${c1}${c2}`;
     }
     exports.strConcat = strConcat;
     function interpolate(x) {
@@ -563,9 +563,9 @@ var require_codegen = __commonJS({
       }
     };
     var Label = class extends Node {
-      constructor(label2) {
+      constructor(label3) {
         super();
-        this.label = label2;
+        this.label = label3;
         this.names = {};
       }
       render({ _n }) {
@@ -573,14 +573,14 @@ var require_codegen = __commonJS({
       }
     };
     var Break = class extends Node {
-      constructor(label2) {
+      constructor(label3) {
         super();
-        this.label = label2;
+        this.label = label3;
         this.names = {};
       }
       render({ _n }) {
-        const label2 = this.label ? ` ${this.label}` : "";
-        return `break${label2};` + _n;
+        const label3 = this.label ? ` ${this.label}` : "";
+        return `break${label3};` + _n;
       }
     };
     var Throw = class extends Node {
@@ -992,12 +992,12 @@ var require_codegen = __commonJS({
         return this._endBlockNode(For);
       }
       // `label` statement
-      label(label2) {
-        return this._leafNode(new Label(label2));
+      label(label3) {
+        return this._leafNode(new Label(label3));
       }
       // `break` statement
-      break(label2) {
-        return this._leafNode(new Break(label2));
+      break(label3) {
+        return this._leafNode(new Break(label3));
       }
       // `return` statement
       return(value2) {
@@ -1228,22 +1228,22 @@ var require_util = __commonJS({
       return (0, codegen_1._)`${topSchemaRef}${schemaPath}${(0, codegen_1.getProperty)(keyword)}`;
     }
     exports.schemaRefOrVal = schemaRefOrVal;
-    function unescapeFragment(str2) {
-      return unescapeJsonPointer(decodeURIComponent(str2));
+    function unescapeFragment(str3) {
+      return unescapeJsonPointer(decodeURIComponent(str3));
     }
     exports.unescapeFragment = unescapeFragment;
-    function escapeFragment(str2) {
-      return encodeURIComponent(escapeJsonPointer(str2));
+    function escapeFragment(str3) {
+      return encodeURIComponent(escapeJsonPointer(str3));
     }
     exports.escapeFragment = escapeFragment;
-    function escapeJsonPointer(str2) {
-      if (typeof str2 == "number")
-        return `${str2}`;
-      return str2.replace(/~/g, "~0").replace(/\//g, "~1");
+    function escapeJsonPointer(str3) {
+      if (typeof str3 == "number")
+        return `${str3}`;
+      return str3.replace(/~/g, "~0").replace(/\//g, "~1");
     }
     exports.escapeJsonPointer = escapeJsonPointer;
-    function unescapeJsonPointer(str2) {
-      return str2.replace(/~1/g, "/").replace(/~0/g, "~");
+    function unescapeJsonPointer(str3) {
+      return str3.replace(/~1/g, "/").replace(/~0/g, "~");
     }
     exports.unescapeJsonPointer = unescapeJsonPointer;
     function eachItem(xs, f) {
@@ -2268,8 +2268,8 @@ var require_json_schema_traverse = __commonJS({
         post(schema, jsonPtr, rootSchema, parentJsonPtr, parentKeyword, parentSchema, keyIndex);
       }
     }
-    function escapeJsonPtr(str2) {
-      return str2.replace(/~/g, "~0").replace(/\//g, "~1");
+    function escapeJsonPtr(str3) {
+      return str3.replace(/~/g, "~0").replace(/\//g, "~1");
     }
   }
 });
@@ -3333,10 +3333,10 @@ var require_utils = __commonJS({
         return { host, isIPV6: false };
       }
     }
-    function findToken(str2, token) {
+    function findToken(str3, token) {
       let ind = 0;
-      for (let i = 0; i < str2.length; i++) {
-        if (str2[i] === token) ind++;
+      for (let i = 0; i < str3.length; i++) {
+        if (str3[i] === token) ind++;
       }
       return ind;
     }
@@ -4099,7 +4099,7 @@ var require_core = __commonJS({
     var util_1 = require_util();
     var $dataRefSchema = require_data();
     var uri_1 = require_uri();
-    var defaultRegExp = (str2, flags) => new RegExp(str2, flags);
+    var defaultRegExp = (str3, flags) => new RegExp(str3, flags);
     defaultRegExp.code = "new RegExp";
     var META_IGNORE_OPTIONS = ["removeAdditional", "useDefaults", "coerceTypes"];
     var EXT_SCOPE_NAMES = /* @__PURE__ */ new Set([
@@ -4894,16 +4894,16 @@ var require_ucs2length = __commonJS({
   "node_modules/ajv/dist/runtime/ucs2length.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    function ucs2length(str2) {
-      const len = str2.length;
+    function ucs2length(str3) {
+      const len = str3.length;
       let length = 0;
       let pos = 0;
       let value2;
       while (pos < len) {
         length++;
-        value2 = str2.charCodeAt(pos++);
+        value2 = str3.charCodeAt(pos++);
         if (value2 >= 55296 && value2 <= 56319 && pos < len) {
-          value2 = str2.charCodeAt(pos);
+          value2 = str3.charCodeAt(pos);
           if ((value2 & 64512) === 56320)
             pos++;
         }
@@ -6786,8 +6786,8 @@ var require_formats = __commonJS({
     }
     var DATE = /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
     var DAYS = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    function date5(str2) {
-      const matches2 = DATE.exec(str2);
+    function date5(str3) {
+      const matches2 = DATE.exec(str3);
       if (!matches2)
         return false;
       const year = +matches2[1];
@@ -6806,8 +6806,8 @@ var require_formats = __commonJS({
     }
     var TIME = /^(\d\d):(\d\d):(\d\d(?:\.\d+)?)(z|([+-])(\d\d)(?::?(\d\d))?)?$/i;
     function getTime(strictTimeZone) {
-      return function time3(str2) {
-        const matches2 = TIME.exec(str2);
+      return function time3(str3) {
+        const matches2 = TIME.exec(str3);
         if (!matches2)
           return false;
         const hr = +matches2[1];
@@ -6853,8 +6853,8 @@ var require_formats = __commonJS({
     var DATE_TIME_SEPARATOR = /t|\s/i;
     function getDateTime(strictTimeZone) {
       const time3 = getTime(strictTimeZone);
-      return function date_time(str2) {
-        const dateTime = str2.split(DATE_TIME_SEPARATOR);
+      return function date_time(str3) {
+        const dateTime = str3.split(DATE_TIME_SEPARATOR);
         return dateTime.length === 2 && date5(dateTime[0]) && time3(dateTime[1]);
       };
     }
@@ -6879,13 +6879,13 @@ var require_formats = __commonJS({
     }
     var NOT_URI_FRAGMENT = /\/|:/;
     var URI = /^(?:[a-z][a-z0-9+\-.]*:)(?:\/?\/(?:(?:[a-z0-9\-._~!$&'()*+,;=:]|%[0-9a-f]{2})*@)?(?:\[(?:(?:(?:(?:[0-9a-f]{1,4}:){6}|::(?:[0-9a-f]{1,4}:){5}|(?:[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){4}|(?:(?:[0-9a-f]{1,4}:){0,1}[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){3}|(?:(?:[0-9a-f]{1,4}:){0,2}[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){2}|(?:(?:[0-9a-f]{1,4}:){0,3}[0-9a-f]{1,4})?::[0-9a-f]{1,4}:|(?:(?:[0-9a-f]{1,4}:){0,4}[0-9a-f]{1,4})?::)(?:[0-9a-f]{1,4}:[0-9a-f]{1,4}|(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?))|(?:(?:[0-9a-f]{1,4}:){0,5}[0-9a-f]{1,4})?::[0-9a-f]{1,4}|(?:(?:[0-9a-f]{1,4}:){0,6}[0-9a-f]{1,4})?::)|[Vv][0-9a-f]+\.[a-z0-9\-._~!$&'()*+,;=:]+)\]|(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)|(?:[a-z0-9\-._~!$&'()*+,;=]|%[0-9a-f]{2})*)(?::\d*)?(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*|\/(?:(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})+(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*)?|(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})+(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*)(?:\?(?:[a-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9a-f]{2})*)?(?:#(?:[a-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9a-f]{2})*)?$/i;
-    function uri(str2) {
-      return NOT_URI_FRAGMENT.test(str2) && URI.test(str2);
+    function uri(str3) {
+      return NOT_URI_FRAGMENT.test(str3) && URI.test(str3);
     }
     var BYTE = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/gm;
-    function byte(str2) {
+    function byte(str3) {
       BYTE.lastIndex = 0;
-      return BYTE.test(str2);
+      return BYTE.test(str3);
     }
     var MIN_INT32 = -(2 ** 31);
     var MAX_INT32 = 2 ** 31 - 1;
@@ -6899,11 +6899,11 @@ var require_formats = __commonJS({
       return true;
     }
     var Z_ANCHOR = /[^\\]\\Z/;
-    function regex(str2) {
-      if (Z_ANCHOR.test(str2))
+    function regex(str3) {
+      if (Z_ANCHOR.test(str3))
         return false;
       try {
-        new RegExp(str2);
+        new RegExp(str3);
         return true;
       } catch (e) {
         return false;
@@ -7934,7 +7934,7 @@ var require_lib = __commonJS({
     var prefix = true;
     var postfix = true;
     var ExportedTokenType = class {
-      constructor(label2, conf = {}) {
+      constructor(label3, conf = {}) {
         this.label = void 0;
         this.keyword = void 0;
         this.beforeExpr = void 0;
@@ -7945,7 +7945,7 @@ var require_lib = __commonJS({
         this.prefix = void 0;
         this.postfix = void 0;
         this.binop = void 0;
-        this.label = label2;
+        this.label = label3;
         this.keyword = conf.keyword;
         this.beforeExpr = !!conf.beforeExpr;
         this.startsExpr = !!conf.startsExpr;
@@ -9049,10 +9049,10 @@ var require_lib = __commonJS({
           return this.finishNode(node2, "DeclareExportDeclaration");
         } else {
           if (this.match(75) || this.isLet() || (this.isContextual(130) || this.isContextual(129)) && !insideModule) {
-            const label2 = this.state.value;
+            const label3 = this.state.value;
             throw this.raise(FlowErrors.UnsupportedDeclareExportKind, this.state.startLoc, {
-              unsupportedExportKind: label2,
-              suggestion: exportSuggestions[label2]
+              unsupportedExportKind: label3,
+              suggestion: exportSuggestions[label3]
             });
           }
           if (this.match(74) || this.match(68) || this.match(80) || this.isContextual(131)) {
@@ -9805,9 +9805,9 @@ var require_lib = __commonJS({
             return this.flowParseTypeofType();
           default:
             if (tokenIsKeyword(this.state.type)) {
-              const label2 = tokenLabelName(this.state.type);
+              const label3 = tokenLabelName(this.state.type);
               this.next();
-              return super.createIdentifier(node2, label2);
+              return super.createIdentifier(node2, label3);
             } else if (tokenIsIdentifier(this.state.type)) {
               if (this.isContextual(129)) {
                 return this.flowParseInterfaceType();
@@ -13357,9 +13357,9 @@ var require_lib = __commonJS({
         });
       }
       finishOp(type, size2) {
-        const str2 = this.input.slice(this.state.pos, this.state.pos + size2);
+        const str3 = this.input.slice(this.state.pos, this.state.pos + size2);
         this.state.pos += size2;
-        this.finishToken(type, str2);
+        this.finishToken(type, str3);
       }
       readRegexp() {
         const startLoc = this.state.startLoc;
@@ -13453,8 +13453,8 @@ var require_lib = __commonJS({
           throw this.raise(Errors.NumberIdentifier, this.state.curPosition());
         }
         if (isBigInt) {
-          const str2 = this.input.slice(start, this.state.pos).replace(/[_n]/g, "");
-          this.finishToken(136, str2);
+          const str3 = this.input.slice(start, this.state.pos).replace(/[_n]/g, "");
+          this.finishToken(136, str3);
           return;
         }
         this.finishToken(135, val);
@@ -13518,16 +13518,16 @@ var require_lib = __commonJS({
         if (isIdentifierStart(this.codePointAtPos(this.state.pos))) {
           throw this.raise(Errors.NumberIdentifier, this.state.curPosition());
         }
-        const str2 = this.input.slice(start, this.state.pos).replace(/[_mn]/g, "");
+        const str3 = this.input.slice(start, this.state.pos).replace(/[_mn]/g, "");
         if (isBigInt) {
-          this.finishToken(136, str2);
+          this.finishToken(136, str3);
           return;
         }
         if (isDecimal) {
-          this.finishToken(137, str2);
+          this.finishToken(137, str3);
           return;
         }
-        const val = isOctal ? parseInt(str2, 8) : parseFloat(str2);
+        const val = isOctal ? parseInt(str3, 8) : parseFloat(str3);
         this.finishToken(135, val);
       }
       readCodePoint(throwOnInvalid) {
@@ -13540,7 +13540,7 @@ var require_lib = __commonJS({
       }
       readString(quote2) {
         const {
-          str: str2,
+          str: str3,
           pos,
           curLine,
           lineStart
@@ -13548,7 +13548,7 @@ var require_lib = __commonJS({
         this.state.pos = pos + 1;
         this.state.lineStart = lineStart;
         this.state.curLine = curLine;
-        this.finishToken(134, str2);
+        this.finishToken(134, str3);
       }
       readTemplateContinuation() {
         if (!this.match(8)) {
@@ -13560,7 +13560,7 @@ var require_lib = __commonJS({
       readTemplateToken() {
         const opening = this.input[this.state.pos];
         const {
-          str: str2,
+          str: str3,
           firstInvalidLoc,
           pos,
           curLine,
@@ -13573,10 +13573,10 @@ var require_lib = __commonJS({
           this.state.firstInvalidTemplateEscapePos = new Position(firstInvalidLoc.curLine, firstInvalidLoc.pos - firstInvalidLoc.lineStart, this.sourceToOffsetPos(firstInvalidLoc.pos));
         }
         if (this.input.codePointAt(pos) === 96) {
-          this.finishToken(24, firstInvalidLoc ? null : opening + str2 + "`");
+          this.finishToken(24, firstInvalidLoc ? null : opening + str3 + "`");
         } else {
           this.state.pos++;
-          this.finishToken(25, firstInvalidLoc ? null : opening + str2 + "${");
+          this.finishToken(25, firstInvalidLoc ? null : opening + str3 + "${");
         }
       }
       recordStrictModeErrors(toParseError, at) {
@@ -15346,7 +15346,7 @@ var require_lib = __commonJS({
           startLoc
         } = this.state;
         let labeled;
-        let label2;
+        let label3;
         let optional2;
         let type;
         const isWord = tokenIsKeywordOrIdentifier(this.state.type);
@@ -15354,7 +15354,7 @@ var require_lib = __commonJS({
         if (chAfterWord === 58) {
           labeled = true;
           optional2 = false;
-          label2 = this.parseIdentifier(true);
+          label3 = this.parseIdentifier(true);
           this.expect(14);
           type = this.tsParseType();
         } else if (chAfterWord === 63) {
@@ -15363,7 +15363,7 @@ var require_lib = __commonJS({
           const typeOrLabel = this.tsParseNonArrayType();
           if (this.lookaheadCharCode() === 58) {
             labeled = true;
-            label2 = this.createIdentifier(this.startNodeAt(startLoc), wordName);
+            label3 = this.createIdentifier(this.startNodeAt(startLoc), wordName);
             this.expect(17);
             this.expect(14);
             type = this.tsParseType();
@@ -15379,10 +15379,10 @@ var require_lib = __commonJS({
         }
         if (labeled) {
           let labeledNode;
-          if (label2) {
+          if (label3) {
             labeledNode = this.startNodeAt(startLoc);
             labeledNode.optional = optional2;
-            labeledNode.label = label2;
+            labeledNode.label = label3;
             labeledNode.elementType = type;
             if (this.eat(17)) {
               labeledNode.optional = true;
@@ -20281,8 +20281,8 @@ var require_lib = __commonJS({
         return this.finishNode(node2, "EmptyStatement");
       }
       parseLabeledStatement(node2, maybeName, expr, flags) {
-        for (const label2 of this.state.labels) {
-          if (label2.name === maybeName) {
+        for (const label3 of this.state.labels) {
+          if (label3.name === maybeName) {
             this.raise(Errors.LabelRedeclaration, expr, {
               labelName: maybeName
             });
@@ -20290,10 +20290,10 @@ var require_lib = __commonJS({
         }
         const kind = tokenIsLoop(this.state.type) ? 1 : this.match(71) ? 2 : null;
         for (let i = this.state.labels.length - 1; i >= 0; i--) {
-          const label2 = this.state.labels[i];
-          if (label2.statementStart === node2.start) {
-            label2.statementStart = this.sourceToOffsetPos(this.state.start);
-            label2.kind = kind;
+          const label3 = this.state.labels[i];
+          if (label3.statementStart === node2.start) {
+            label3.statementStart = this.sourceToOffsetPos(this.state.start);
+            label3.kind = kind;
           } else {
             break;
           }
@@ -22558,13 +22558,13 @@ var require_Collection = __commonJS({
 var require_stringifyComment = __commonJS({
   "node_modules/yaml/dist/stringify/stringifyComment.js"(exports) {
     "use strict";
-    var stringifyComment = (str2) => str2.replace(/^(?!$)(?: $)?/gm, "#");
+    var stringifyComment = (str3) => str3.replace(/^(?!$)(?: $)?/gm, "#");
     function indentComment(comment, indent) {
       if (/^\n+$/.test(comment))
         return comment.substring(1);
       return indent ? comment.replace(/^(?! *$)/gm, indent) : comment;
     }
-    var lineComment = (str2, indent, comment) => str2.endsWith("\n") ? indentComment(comment, indent) : comment.includes("\n") ? "\n" + indentComment(comment, indent) : (str2.endsWith(" ") ? "" : " ") + comment;
+    var lineComment = (str3, indent, comment) => str3.endsWith("\n") ? indentComment(comment, indent) : comment.includes("\n") ? "\n" + indentComment(comment, indent) : (str3.endsWith(" ") ? "" : " ") + comment;
     exports.indentComment = indentComment;
     exports.lineComment = lineComment;
     exports.stringifyComment = stringifyComment;
@@ -22718,16 +22718,16 @@ var require_stringifyString = __commonJS({
       lineWidth: ctx.options.lineWidth,
       minContentWidth: ctx.options.minContentWidth
     });
-    var containsDocumentMarker = (str2) => /^(%|---|\.\.\.)/m.test(str2);
-    function lineLengthOverLimit(str2, lineWidth, indentLength) {
+    var containsDocumentMarker = (str3) => /^(%|---|\.\.\.)/m.test(str3);
+    function lineLengthOverLimit(str3, lineWidth, indentLength) {
       if (!lineWidth || lineWidth < 0)
         return false;
       const limit = lineWidth - indentLength;
-      const strLen = str2.length;
+      const strLen = str3.length;
       if (strLen <= limit)
         return false;
       for (let i = 0, start = 0; i < strLen; ++i) {
-        if (str2[i] === "\n") {
+        if (str3[i] === "\n") {
           if (i - start > limit)
             return true;
           start = i + 1;
@@ -22744,11 +22744,11 @@ var require_stringifyString = __commonJS({
       const { implicitKey } = ctx;
       const minMultiLineLength = ctx.options.doubleQuotedMinMultiLineLength;
       const indent = ctx.indent || (containsDocumentMarker(value2) ? "  " : "");
-      let str2 = "";
+      let str3 = "";
       let start = 0;
       for (let i = 0, ch = json3[i]; ch; ch = json3[++i]) {
         if (ch === " " && json3[i + 1] === "\\" && json3[i + 2] === "n") {
-          str2 += json3.slice(start, i) + "\\ ";
+          str3 += json3.slice(start, i) + "\\ ";
           i += 1;
           start = i;
           ch = "\\";
@@ -22757,38 +22757,38 @@ var require_stringifyString = __commonJS({
           switch (json3[i + 1]) {
             case "u":
               {
-                str2 += json3.slice(start, i);
+                str3 += json3.slice(start, i);
                 const code = json3.substr(i + 2, 4);
                 switch (code) {
                   case "0000":
-                    str2 += "\\0";
+                    str3 += "\\0";
                     break;
                   case "0007":
-                    str2 += "\\a";
+                    str3 += "\\a";
                     break;
                   case "000b":
-                    str2 += "\\v";
+                    str3 += "\\v";
                     break;
                   case "001b":
-                    str2 += "\\e";
+                    str3 += "\\e";
                     break;
                   case "0085":
-                    str2 += "\\N";
+                    str3 += "\\N";
                     break;
                   case "00a0":
-                    str2 += "\\_";
+                    str3 += "\\_";
                     break;
                   case "2028":
-                    str2 += "\\L";
+                    str3 += "\\L";
                     break;
                   case "2029":
-                    str2 += "\\P";
+                    str3 += "\\P";
                     break;
                   default:
                     if (code.substr(0, 2) === "00")
-                      str2 += "\\x" + code.substr(2);
+                      str3 += "\\x" + code.substr(2);
                     else
-                      str2 += json3.substr(i, 6);
+                      str3 += json3.substr(i, 6);
                 }
                 i += 5;
                 start = i + 1;
@@ -22798,14 +22798,14 @@ var require_stringifyString = __commonJS({
               if (implicitKey || json3[i + 2] === '"' || json3.length < minMultiLineLength) {
                 i += 1;
               } else {
-                str2 += json3.slice(start, i) + "\n\n";
+                str3 += json3.slice(start, i) + "\n\n";
                 while (json3[i + 2] === "\\" && json3[i + 3] === "n" && json3[i + 4] !== '"') {
-                  str2 += "\n";
+                  str3 += "\n";
                   i += 2;
                 }
-                str2 += indent;
+                str3 += indent;
                 if (json3[i + 2] === " ")
-                  str2 += "\\";
+                  str3 += "\\";
                 i += 1;
                 start = i + 1;
               }
@@ -22814,8 +22814,8 @@ var require_stringifyString = __commonJS({
               i += 1;
           }
       }
-      str2 = start ? str2 + json3.slice(start) : json3;
-      return implicitKey ? str2 : foldFlowLines.foldFlowLines(str2, indent, foldFlowLines.FOLD_QUOTED, getFoldOptions(ctx, false));
+      str3 = start ? str3 + json3.slice(start) : json3;
+      return implicitKey ? str3 : foldFlowLines.foldFlowLines(str3, indent, foldFlowLines.FOLD_QUOTED, getFoldOptions(ctx, false));
     }
     function singleQuotedString(value2, ctx) {
       if (ctx.options.singleQuote === false || ctx.implicitKey && value2.includes("\n") || /[ \t]\n|\n[ \t]/.test(value2))
@@ -22943,15 +22943,15 @@ ${indent}${start}${value2}${end}`;
           return quotedString(value2, ctx);
         }
       }
-      const str2 = value2.replace(/\n+/g, `$&
+      const str3 = value2.replace(/\n+/g, `$&
 ${indent}`);
       if (actualString) {
-        const test = (tag) => tag.default && tag.tag !== "tag:yaml.org,2002:str" && tag.test?.test(str2);
+        const test = (tag) => tag.default && tag.tag !== "tag:yaml.org,2002:str" && tag.test?.test(str3);
         const { compat, tags } = ctx.doc.schema;
         if (tags.some(test) || compat?.some(test))
           return quotedString(value2, ctx);
       }
-      return implicitKey ? str2 : foldFlowLines.foldFlowLines(str2, indent, foldFlowLines.FOLD_FLOW, getFoldOptions(ctx, false));
+      return implicitKey ? str3 : foldFlowLines.foldFlowLines(str3, indent, foldFlowLines.FOLD_FLOW, getFoldOptions(ctx, false));
     }
     function stringifyString(item, ctx, onComment, onChompKeep) {
       const { implicitKey, inFlow } = ctx;
@@ -23103,11 +23103,11 @@ var require_stringify = __commonJS({
       const props2 = stringifyProps(node2, tagObj, ctx);
       if (props2.length > 0)
         ctx.indentAtStart = (ctx.indentAtStart ?? 0) + props2.length + 1;
-      const str2 = typeof tagObj.stringify === "function" ? tagObj.stringify(node2, ctx, onComment, onChompKeep) : identity.isScalar(node2) ? stringifyString.stringifyString(node2, ctx, onComment, onChompKeep) : node2.toString(ctx, onComment, onChompKeep);
+      const str3 = typeof tagObj.stringify === "function" ? tagObj.stringify(node2, ctx, onComment, onChompKeep) : identity.isScalar(node2) ? stringifyString.stringifyString(node2, ctx, onComment, onChompKeep) : node2.toString(ctx, onComment, onChompKeep);
       if (!props2)
-        return str2;
-      return identity.isScalar(node2) || str2[0] === "{" || str2[0] === "[" ? `${props2} ${str2}` : `${props2}
-${ctx.indent}${str2}`;
+        return str3;
+      return identity.isScalar(node2) || str3[0] === "{" || str3[0] === "[" ? `${props2} ${str3}` : `${props2}
+${ctx.indent}${str3}`;
     }
     exports.createStringifyContext = createStringifyContext;
     exports.stringify = stringify;
@@ -23142,8 +23142,8 @@ var require_stringifyPair = __commonJS({
       });
       let keyCommentDone = false;
       let chompKeep = false;
-      let str2 = stringify.stringify(key4, ctx, () => keyCommentDone = true, () => chompKeep = true);
-      if (!explicitKey && !ctx.inFlow && str2.length > 1024) {
+      let str3 = stringify.stringify(key4, ctx, () => keyCommentDone = true, () => chompKeep = true);
+      if (!explicitKey && !ctx.inFlow && str3.length > 1024) {
         if (simpleKeys)
           throw new Error("With simple keys, single line scalar must not span more than 1024 characters");
         explicitKey = true;
@@ -23152,27 +23152,27 @@ var require_stringifyPair = __commonJS({
         if (allNullValues || value2 == null) {
           if (keyCommentDone && onComment)
             onComment();
-          return str2 === "" ? "?" : explicitKey ? `? ${str2}` : str2;
+          return str3 === "" ? "?" : explicitKey ? `? ${str3}` : str3;
         }
       } else if (allNullValues && !simpleKeys || value2 == null && explicitKey) {
-        str2 = `? ${str2}`;
+        str3 = `? ${str3}`;
         if (keyComment && !keyCommentDone) {
-          str2 += stringifyComment.lineComment(str2, ctx.indent, commentString(keyComment));
+          str3 += stringifyComment.lineComment(str3, ctx.indent, commentString(keyComment));
         } else if (chompKeep && onChompKeep)
           onChompKeep();
-        return str2;
+        return str3;
       }
       if (keyCommentDone)
         keyComment = null;
       if (explicitKey) {
         if (keyComment)
-          str2 += stringifyComment.lineComment(str2, ctx.indent, commentString(keyComment));
-        str2 = `? ${str2}
+          str3 += stringifyComment.lineComment(str3, ctx.indent, commentString(keyComment));
+        str3 = `? ${str3}
 ${indent}:`;
       } else {
-        str2 = `${str2}:`;
+        str3 = `${str3}:`;
         if (keyComment)
-          str2 += stringifyComment.lineComment(str2, ctx.indent, commentString(keyComment));
+          str3 += stringifyComment.lineComment(str3, ctx.indent, commentString(keyComment));
       }
       let vsb, vcb, valueComment;
       if (identity.isNode(value2)) {
@@ -23188,7 +23188,7 @@ ${indent}:`;
       }
       ctx.implicitKey = false;
       if (!explicitKey && !keyComment && identity.isScalar(value2))
-        ctx.indentAtStart = str2.length + 1;
+        ctx.indentAtStart = str3.length + 1;
       chompKeep = false;
       if (!indentSeq && indentStep.length >= 2 && !ctx.inFlow && !explicitKey && identity.isSeq(value2) && !value2.flow && !value2.tag && !value2.anchor) {
         ctx.indent = ctx.indent.substring(2);
@@ -23232,16 +23232,16 @@ ${ctx.indent}`;
       } else if (valueStr === "" || valueStr[0] === "\n") {
         ws = "";
       }
-      str2 += ws + valueStr;
+      str3 += ws + valueStr;
       if (ctx.inFlow) {
         if (valueCommentDone && onComment)
           onComment();
       } else if (valueComment && !valueCommentDone) {
-        str2 += stringifyComment.lineComment(str2, ctx.indent, commentString(valueComment));
+        str3 += stringifyComment.lineComment(str3, ctx.indent, commentString(valueComment));
       } else if (chompKeep && onChompKeep) {
         onChompKeep();
       }
-      return str2;
+      return str3;
     }
     exports.stringifyPair = stringifyPair;
   }
@@ -23468,31 +23468,31 @@ var require_stringifyCollection = __commonJS({
           }
         }
         chompKeep = false;
-        let str3 = stringify.stringify(item, itemCtx, () => comment2 = null, () => chompKeep = true);
+        let str4 = stringify.stringify(item, itemCtx, () => comment2 = null, () => chompKeep = true);
         if (comment2)
-          str3 += stringifyComment.lineComment(str3, itemIndent, commentString(comment2));
+          str4 += stringifyComment.lineComment(str4, itemIndent, commentString(comment2));
         if (chompKeep && comment2)
           chompKeep = false;
-        lines.push(blockItemPrefix + str3);
+        lines.push(blockItemPrefix + str4);
       }
-      let str2;
+      let str3;
       if (lines.length === 0) {
-        str2 = flowChars.start + flowChars.end;
+        str3 = flowChars.start + flowChars.end;
       } else {
-        str2 = lines[0];
+        str3 = lines[0];
         for (let i = 1; i < lines.length; ++i) {
           const line = lines[i];
-          str2 += line ? `
+          str3 += line ? `
 ${indent}${line}` : "\n";
         }
       }
       if (comment) {
-        str2 += "\n" + stringifyComment.indentComment(commentString(comment), indent);
+        str3 += "\n" + stringifyComment.indentComment(commentString(comment), indent);
         if (onComment)
           onComment();
       } else if (chompKeep && onChompKeep)
         onChompKeep();
-      return str2;
+      return str3;
     }
     function stringifyFlowCollection({ items }, ctx, { flowChars, itemIndent }) {
       const { indent, indentStep, flowCollectionPadding: fcPadding, options: { commentString } } = ctx;
@@ -23535,21 +23535,21 @@ ${indent}${line}` : "\n";
         }
         if (comment)
           reqNewline = true;
-        let str2 = stringify.stringify(item, itemCtx, () => comment = null);
-        reqNewline || (reqNewline = lines.length > linesAtValue || str2.includes("\n"));
+        let str3 = stringify.stringify(item, itemCtx, () => comment = null);
+        reqNewline || (reqNewline = lines.length > linesAtValue || str3.includes("\n"));
         if (i < items.length - 1) {
-          str2 += ",";
+          str3 += ",";
         } else if (ctx.options.trailingComma) {
           if (ctx.options.lineWidth > 0) {
-            reqNewline || (reqNewline = lines.reduce((sum, line) => sum + line.length + 2, 2) + (str2.length + 2) > ctx.options.lineWidth);
+            reqNewline || (reqNewline = lines.reduce((sum, line) => sum + line.length + 2, 2) + (str3.length + 2) > ctx.options.lineWidth);
           }
           if (reqNewline) {
-            str2 += ",";
+            str3 += ",";
           }
         }
         if (comment)
-          str2 += stringifyComment.lineComment(str2, itemIndent, commentString(comment));
-        lines.push(str2);
+          str3 += stringifyComment.lineComment(str3, itemIndent, commentString(comment));
+        lines.push(str3);
         linesAtValue = lines.length;
       }
       const { start, end } = flowChars;
@@ -23561,11 +23561,11 @@ ${indent}${line}` : "\n";
           reqNewline = ctx.options.lineWidth > 0 && len > ctx.options.lineWidth;
         }
         if (reqNewline) {
-          let str2 = start;
+          let str3 = start;
           for (const line of lines)
-            str2 += line ? `
+            str3 += line ? `
 ${indentStep}${indent}${line}` : "\n";
-          return `${str2}
+          return `${str3}
 ${indent}${end}`;
         } else {
           return `${start}${fcPadding}${lines.join(" ")}${fcPadding}${end}`;
@@ -23897,7 +23897,7 @@ var require_string = __commonJS({
       identify: (value2) => typeof value2 === "string",
       default: true,
       tag: "tag:yaml.org,2002:str",
-      resolve: (str2) => str2,
+      resolve: (str3) => str3,
       stringify(item, ctx, onComment, onChompKeep) {
         ctx = Object.assign({ actualString: true }, ctx);
         return stringifyString.stringifyString(item, ctx, onComment, onChompKeep);
@@ -23935,7 +23935,7 @@ var require_bool = __commonJS({
       default: true,
       tag: "tag:yaml.org,2002:bool",
       test: /^(?:[Tt]rue|TRUE|[Ff]alse|FALSE)$/,
-      resolve: (str2) => new Scalar.Scalar(str2[0] === "t" || str2[0] === "T"),
+      resolve: (str3) => new Scalar.Scalar(str3[0] === "t" || str3[0] === "T"),
       stringify({ source: source2, value: value2 }, ctx) {
         if (source2 && boolTag.test.test(source2)) {
           const sv = source2[0] === "t" || source2[0] === "T";
@@ -23956,9 +23956,9 @@ var require_stringifyNumber = __commonJS({
     function stringifyNumber({ format, minFractionDigits, tag, value: value2 }) {
       if (typeof value2 === "bigint")
         return String(value2);
-      const num2 = typeof value2 === "number" ? value2 : Number(value2);
-      if (!isFinite(num2))
-        return isNaN(num2) ? ".nan" : num2 < 0 ? "-.inf" : ".inf";
+      const num3 = typeof value2 === "number" ? value2 : Number(value2);
+      if (!isFinite(num3))
+        return isNaN(num3) ? ".nan" : num3 < 0 ? "-.inf" : ".inf";
       let n = Object.is(value2, -0) ? "-0" : JSON.stringify(value2);
       if (!format && minFractionDigits && (!tag || tag === "tag:yaml.org,2002:float") && /^-?\d/.test(n) && !n.includes("e")) {
         let i = n.indexOf(".");
@@ -23987,7 +23987,7 @@ var require_float = __commonJS({
       default: true,
       tag: "tag:yaml.org,2002:float",
       test: /^(?:[-+]?\.(?:inf|Inf|INF)|\.nan|\.NaN|\.NAN)$/,
-      resolve: (str2) => str2.slice(-3).toLowerCase() === "nan" ? NaN : str2[0] === "-" ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY,
+      resolve: (str3) => str3.slice(-3).toLowerCase() === "nan" ? NaN : str3[0] === "-" ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY,
       stringify: stringifyNumber.stringifyNumber
     };
     var floatExp = {
@@ -23996,10 +23996,10 @@ var require_float = __commonJS({
       tag: "tag:yaml.org,2002:float",
       format: "EXP",
       test: /^[-+]?(?:\.[0-9]+|[0-9]+(?:\.[0-9]*)?)[eE][-+]?[0-9]+$/,
-      resolve: (str2) => parseFloat(str2),
+      resolve: (str3) => parseFloat(str3),
       stringify(node2) {
-        const num2 = Number(node2.value);
-        return isFinite(num2) ? num2.toExponential() : stringifyNumber.stringifyNumber(node2);
+        const num3 = Number(node2.value);
+        return isFinite(num3) ? num3.toExponential() : stringifyNumber.stringifyNumber(node2);
       }
     };
     var float = {
@@ -24007,11 +24007,11 @@ var require_float = __commonJS({
       default: true,
       tag: "tag:yaml.org,2002:float",
       test: /^[-+]?(?:\.[0-9]+|[0-9]+\.[0-9]*)$/,
-      resolve(str2) {
-        const node2 = new Scalar.Scalar(parseFloat(str2));
-        const dot = str2.indexOf(".");
-        if (dot !== -1 && str2[str2.length - 1] === "0")
-          node2.minFractionDigits = str2.length - dot - 1;
+      resolve(str3) {
+        const node2 = new Scalar.Scalar(parseFloat(str3));
+        const dot = str3.indexOf(".");
+        if (dot !== -1 && str3[str3.length - 1] === "0")
+          node2.minFractionDigits = str3.length - dot - 1;
         return node2;
       },
       stringify: stringifyNumber.stringifyNumber
@@ -24028,7 +24028,7 @@ var require_int = __commonJS({
     "use strict";
     var stringifyNumber = require_stringifyNumber();
     var intIdentify = (value2) => typeof value2 === "bigint" || Number.isInteger(value2);
-    var intResolve = (str2, offset, radix, { intAsBigInt }) => intAsBigInt ? BigInt(str2) : parseInt(str2.substring(offset), radix);
+    var intResolve = (str3, offset, radix, { intAsBigInt }) => intAsBigInt ? BigInt(str3) : parseInt(str3.substring(offset), radix);
     function intStringify(node2, radix, prefix) {
       const { value: value2 } = node2;
       if (intIdentify(value2) && value2 >= 0)
@@ -24041,7 +24041,7 @@ var require_int = __commonJS({
       tag: "tag:yaml.org,2002:int",
       format: "OCT",
       test: /^0o[0-7]+$/,
-      resolve: (str2, _onError, opt) => intResolve(str2, 2, 8, opt),
+      resolve: (str3, _onError, opt) => intResolve(str3, 2, 8, opt),
       stringify: (node2) => intStringify(node2, 8, "0o")
     };
     var int2 = {
@@ -24049,7 +24049,7 @@ var require_int = __commonJS({
       default: true,
       tag: "tag:yaml.org,2002:int",
       test: /^[-+]?[0-9]+$/,
-      resolve: (str2, _onError, opt) => intResolve(str2, 0, 10, opt),
+      resolve: (str3, _onError, opt) => intResolve(str3, 0, 10, opt),
       stringify: stringifyNumber.stringifyNumber
     };
     var intHex = {
@@ -24058,7 +24058,7 @@ var require_int = __commonJS({
       tag: "tag:yaml.org,2002:int",
       format: "HEX",
       test: /^0x[0-9a-fA-F]+$/,
-      resolve: (str2, _onError, opt) => intResolve(str2, 2, 16, opt),
+      resolve: (str3, _onError, opt) => intResolve(str3, 2, 16, opt),
       stringify: (node2) => intStringify(node2, 16, "0x")
     };
     exports.int = int2;
@@ -24111,7 +24111,7 @@ var require_schema2 = __commonJS({
         identify: (value2) => typeof value2 === "string",
         default: true,
         tag: "tag:yaml.org,2002:str",
-        resolve: (str2) => str2,
+        resolve: (str3) => str3,
         stringify: stringifyJSON
       },
       {
@@ -24128,7 +24128,7 @@ var require_schema2 = __commonJS({
         default: true,
         tag: "tag:yaml.org,2002:bool",
         test: /^true$|^false$/,
-        resolve: (str2) => str2 === "true",
+        resolve: (str3) => str3 === "true",
         stringify: stringifyJSON
       },
       {
@@ -24136,7 +24136,7 @@ var require_schema2 = __commonJS({
         default: true,
         tag: "tag:yaml.org,2002:int",
         test: /^-?(?:0|[1-9][0-9]*)$/,
-        resolve: (str2, _onError, { intAsBigInt }) => intAsBigInt ? BigInt(str2) : parseInt(str2, 10),
+        resolve: (str3, _onError, { intAsBigInt }) => intAsBigInt ? BigInt(str3) : parseInt(str3, 10),
         stringify: ({ value: value2 }) => intIdentify(value2) ? value2.toString() : JSON.stringify(value2)
       },
       {
@@ -24144,7 +24144,7 @@ var require_schema2 = __commonJS({
         default: true,
         tag: "tag:yaml.org,2002:float",
         test: /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]*)?(?:[eE][-+]?[0-9]+)?$/,
-        resolve: (str2) => parseFloat(str2),
+        resolve: (str3) => parseFloat(str3),
         stringify: stringifyJSON
       }
     ];
@@ -24152,9 +24152,9 @@ var require_schema2 = __commonJS({
       default: true,
       tag: "",
       test: /^/,
-      resolve(str2, onError) {
-        onError(`Unresolved plain scalar ${JSON.stringify(str2)}`);
-        return str2;
+      resolve(str3, onError) {
+        onError(`Unresolved plain scalar ${JSON.stringify(str3)}`);
+        return str3;
       }
     };
     var schema = [map2.map, seq.seq].concat(jsonScalars, jsonError);
@@ -24186,10 +24186,10 @@ var require_binary = __commonJS({
         if (typeof node_buffer.Buffer === "function") {
           return node_buffer.Buffer.from(src, "base64");
         } else if (typeof atob === "function") {
-          const str2 = atob(src.replace(/[\n\r]/g, ""));
-          const buffer = new Uint8Array(str2.length);
-          for (let i = 0; i < str2.length; ++i)
-            buffer[i] = str2.charCodeAt(i);
+          const str3 = atob(src.replace(/[\n\r]/g, ""));
+          const buffer = new Uint8Array(str3.length);
+          for (let i = 0; i < str3.length; ++i)
+            buffer[i] = str3.charCodeAt(i);
           return buffer;
         } else {
           onError("This environment does not support reading binary tags; either Buffer or atob is required");
@@ -24200,28 +24200,28 @@ var require_binary = __commonJS({
         if (!value2)
           return "";
         const buf = value2;
-        let str2;
+        let str3;
         if (typeof node_buffer.Buffer === "function") {
-          str2 = buf instanceof node_buffer.Buffer ? buf.toString("base64") : node_buffer.Buffer.from(buf.buffer).toString("base64");
+          str3 = buf instanceof node_buffer.Buffer ? buf.toString("base64") : node_buffer.Buffer.from(buf.buffer).toString("base64");
         } else if (typeof btoa === "function") {
           let s = "";
           for (let i = 0; i < buf.length; ++i)
             s += String.fromCharCode(buf[i]);
-          str2 = btoa(s);
+          str3 = btoa(s);
         } else {
           throw new Error("This environment does not support writing binary tags; either Buffer or btoa is required");
         }
         type ?? (type = Scalar.Scalar.BLOCK_LITERAL);
         if (type !== Scalar.Scalar.QUOTE_DOUBLE) {
           const lineWidth = Math.max(ctx.options.lineWidth - ctx.indent.length, ctx.options.minContentWidth);
-          const n = Math.ceil(str2.length / lineWidth);
+          const n = Math.ceil(str3.length / lineWidth);
           const lines = new Array(n);
           for (let i = 0, o = 0; i < n; ++i, o += lineWidth) {
-            lines[i] = str2.substr(o, lineWidth);
+            lines[i] = str3.substr(o, lineWidth);
           }
-          str2 = lines.join(type === Scalar.Scalar.BLOCK_LITERAL ? "\n" : " ");
+          str3 = lines.join(type === Scalar.Scalar.BLOCK_LITERAL ? "\n" : " ");
         }
-        return stringifyString.stringifyString({ comment, type, value: str2 }, ctx, onComment, onChompKeep);
+        return stringifyString.stringifyString({ comment, type, value: str3 }, ctx, onComment, onChompKeep);
       }
     };
     exports.binary = binary;
@@ -24427,7 +24427,7 @@ var require_float2 = __commonJS({
       default: true,
       tag: "tag:yaml.org,2002:float",
       test: /^(?:[-+]?\.(?:inf|Inf|INF)|\.nan|\.NaN|\.NAN)$/,
-      resolve: (str2) => str2.slice(-3).toLowerCase() === "nan" ? NaN : str2[0] === "-" ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY,
+      resolve: (str3) => str3.slice(-3).toLowerCase() === "nan" ? NaN : str3[0] === "-" ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY,
       stringify: stringifyNumber.stringifyNumber
     };
     var floatExp = {
@@ -24436,10 +24436,10 @@ var require_float2 = __commonJS({
       tag: "tag:yaml.org,2002:float",
       format: "EXP",
       test: /^[-+]?(?:[0-9][0-9_]*)?(?:\.[0-9_]*)?[eE][-+]?[0-9]+$/,
-      resolve: (str2) => parseFloat(str2.replace(/_/g, "")),
+      resolve: (str3) => parseFloat(str3.replace(/_/g, "")),
       stringify(node2) {
-        const num2 = Number(node2.value);
-        return isFinite(num2) ? num2.toExponential() : stringifyNumber.stringifyNumber(node2);
+        const num3 = Number(node2.value);
+        return isFinite(num3) ? num3.toExponential() : stringifyNumber.stringifyNumber(node2);
       }
     };
     var float = {
@@ -24447,11 +24447,11 @@ var require_float2 = __commonJS({
       default: true,
       tag: "tag:yaml.org,2002:float",
       test: /^[-+]?(?:[0-9][0-9_]*)?\.[0-9_]*$/,
-      resolve(str2) {
-        const node2 = new Scalar.Scalar(parseFloat(str2.replace(/_/g, "")));
-        const dot = str2.indexOf(".");
+      resolve(str3) {
+        const node2 = new Scalar.Scalar(parseFloat(str3.replace(/_/g, "")));
+        const dot = str3.indexOf(".");
         if (dot !== -1) {
-          const f = str2.substring(dot + 1).replace(/_/g, "");
+          const f = str3.substring(dot + 1).replace(/_/g, "");
           if (f[f.length - 1] === "0")
             node2.minFractionDigits = f.length;
         }
@@ -24471,34 +24471,34 @@ var require_int2 = __commonJS({
     "use strict";
     var stringifyNumber = require_stringifyNumber();
     var intIdentify = (value2) => typeof value2 === "bigint" || Number.isInteger(value2);
-    function intResolve(str2, offset, radix, { intAsBigInt }) {
-      const sign = str2[0];
+    function intResolve(str3, offset, radix, { intAsBigInt }) {
+      const sign = str3[0];
       if (sign === "-" || sign === "+")
         offset += 1;
-      str2 = str2.substring(offset).replace(/_/g, "");
+      str3 = str3.substring(offset).replace(/_/g, "");
       if (intAsBigInt) {
         switch (radix) {
           case 2:
-            str2 = `0b${str2}`;
+            str3 = `0b${str3}`;
             break;
           case 8:
-            str2 = `0o${str2}`;
+            str3 = `0o${str3}`;
             break;
           case 16:
-            str2 = `0x${str2}`;
+            str3 = `0x${str3}`;
             break;
         }
-        const n2 = BigInt(str2);
+        const n2 = BigInt(str3);
         return sign === "-" ? BigInt(-1) * n2 : n2;
       }
-      const n = parseInt(str2, radix);
+      const n = parseInt(str3, radix);
       return sign === "-" ? -1 * n : n;
     }
     function intStringify(node2, radix, prefix) {
       const { value: value2 } = node2;
       if (intIdentify(value2)) {
-        const str2 = value2.toString(radix);
-        return value2 < 0 ? "-" + prefix + str2.substr(1) : prefix + str2;
+        const str3 = value2.toString(radix);
+        return value2 < 0 ? "-" + prefix + str3.substr(1) : prefix + str3;
       }
       return stringifyNumber.stringifyNumber(node2);
     }
@@ -24508,7 +24508,7 @@ var require_int2 = __commonJS({
       tag: "tag:yaml.org,2002:int",
       format: "BIN",
       test: /^[-+]?0b[0-1_]+$/,
-      resolve: (str2, _onError, opt) => intResolve(str2, 2, 2, opt),
+      resolve: (str3, _onError, opt) => intResolve(str3, 2, 2, opt),
       stringify: (node2) => intStringify(node2, 2, "0b")
     };
     var intOct = {
@@ -24517,7 +24517,7 @@ var require_int2 = __commonJS({
       tag: "tag:yaml.org,2002:int",
       format: "OCT",
       test: /^[-+]?0[0-7_]+$/,
-      resolve: (str2, _onError, opt) => intResolve(str2, 1, 8, opt),
+      resolve: (str3, _onError, opt) => intResolve(str3, 1, 8, opt),
       stringify: (node2) => intStringify(node2, 8, "0")
     };
     var int2 = {
@@ -24525,7 +24525,7 @@ var require_int2 = __commonJS({
       default: true,
       tag: "tag:yaml.org,2002:int",
       test: /^[-+]?[0-9][0-9_]*$/,
-      resolve: (str2, _onError, opt) => intResolve(str2, 0, 10, opt),
+      resolve: (str3, _onError, opt) => intResolve(str3, 0, 10, opt),
       stringify: stringifyNumber.stringifyNumber
     };
     var intHex = {
@@ -24534,7 +24534,7 @@ var require_int2 = __commonJS({
       tag: "tag:yaml.org,2002:int",
       format: "HEX",
       test: /^[-+]?0x[0-9a-fA-F_]+$/,
-      resolve: (str2, _onError, opt) => intResolve(str2, 2, 16, opt),
+      resolve: (str3, _onError, opt) => intResolve(str3, 2, 16, opt),
       stringify: (node2) => intStringify(node2, 16, "0x")
     };
     exports.int = int2;
@@ -24638,26 +24638,26 @@ var require_timestamp = __commonJS({
   "node_modules/yaml/dist/schema/yaml-1.1/timestamp.js"(exports) {
     "use strict";
     var stringifyNumber = require_stringifyNumber();
-    function parseSexagesimal(str2, asBigInt) {
-      const sign = str2[0];
-      const parts = sign === "-" || sign === "+" ? str2.substring(1) : str2;
-      const num2 = (n) => asBigInt ? BigInt(n) : Number(n);
-      const res = parts.replace(/_/g, "").split(":").reduce((res2, p) => res2 * num2(60) + num2(p), num2(0));
-      return sign === "-" ? num2(-1) * res : res;
+    function parseSexagesimal(str3, asBigInt) {
+      const sign = str3[0];
+      const parts = sign === "-" || sign === "+" ? str3.substring(1) : str3;
+      const num3 = (n) => asBigInt ? BigInt(n) : Number(n);
+      const res = parts.replace(/_/g, "").split(":").reduce((res2, p) => res2 * num3(60) + num3(p), num3(0));
+      return sign === "-" ? num3(-1) * res : res;
     }
     function stringifySexagesimal(node2) {
       let { value: value2 } = node2;
-      let num2 = (n) => n;
+      let num3 = (n) => n;
       if (typeof value2 === "bigint")
-        num2 = (n) => BigInt(n);
+        num3 = (n) => BigInt(n);
       else if (isNaN(value2) || !isFinite(value2))
         return stringifyNumber.stringifyNumber(node2);
       let sign = "";
       if (value2 < 0) {
         sign = "-";
-        value2 *= num2(-1);
+        value2 *= num3(-1);
       }
-      const _60 = num2(60);
+      const _60 = num3(60);
       const parts = [value2 % _60];
       if (value2 < 60) {
         parts.unshift(0);
@@ -24677,7 +24677,7 @@ var require_timestamp = __commonJS({
       tag: "tag:yaml.org,2002:int",
       format: "TIME",
       test: /^[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+$/,
-      resolve: (str2, _onError, { intAsBigInt }) => parseSexagesimal(str2, intAsBigInt),
+      resolve: (str3, _onError, { intAsBigInt }) => parseSexagesimal(str3, intAsBigInt),
       stringify: stringifySexagesimal
     };
     var floatTime = {
@@ -24686,7 +24686,7 @@ var require_timestamp = __commonJS({
       tag: "tag:yaml.org,2002:float",
       format: "TIME",
       test: /^[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+\.[0-9_]*$/,
-      resolve: (str2) => parseSexagesimal(str2, false),
+      resolve: (str3) => parseSexagesimal(str3, false),
       stringify: stringifySexagesimal
     };
     var timestamp = {
@@ -24697,8 +24697,8 @@ var require_timestamp = __commonJS({
       // may be omitted altogether, resulting in a date format. In such a case, the time part is
       // assumed to be 00:00:00Z (start of day, UTC).
       test: RegExp("^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})(?:(?:t|T|[ \\t]+)([0-9]{1,2}):([0-9]{1,2}):([0-9]{1,2}(\\.[0-9]+)?)(?:[ \\t]*(Z|[-+][012]?[0-9](?::[0-9]{2})?))?)?$"),
-      resolve(str2) {
-        const match = str2.match(timestamp.test);
+      resolve(str3) {
+        const match = str3.match(timestamp.test);
         if (!match)
           throw new Error("!!timestamp expects a date, starting with yyyy-mm-dd");
         const [, year, month, day, hour, minute, second] = match.map(Number);
@@ -33992,7 +33992,7 @@ var require_moment = __commonJS({
           return this.as(alias);
         };
       }
-      var asMilliseconds = makeAs("ms"), asSeconds = makeAs("s"), asMinutes = makeAs("m"), asHours = makeAs("h"), asDays = makeAs("d"), asWeeks = makeAs("w"), asMonths = makeAs("M"), asQuarters = makeAs("Q"), asYears = makeAs("y"), valueOf3 = asMilliseconds;
+      var asMilliseconds = makeAs("ms"), asSeconds = makeAs("s"), asMinutes = makeAs("m"), asHours = makeAs("h"), asDays = makeAs("d"), asWeeks = makeAs("w"), asMonths = makeAs("M"), asQuarters = makeAs("Q"), asYears = makeAs("y"), valueOf9 = asMilliseconds;
       function clone2() {
         return createDuration(this);
       }
@@ -34133,7 +34133,7 @@ var require_moment = __commonJS({
       proto.asMonths = asMonths;
       proto.asQuarters = asQuarters;
       proto.asYears = asYears;
-      proto.valueOf = valueOf3;
+      proto.valueOf = valueOf9;
       proto._bubble = bubble;
       proto.clone = clone2;
       proto.get = get;
@@ -35012,14 +35012,14 @@ function promiseAllObject(promisesObj) {
 }
 function randomString(length = 10) {
   const chars = "abcdefghijklmnopqrstuvwxyz";
-  let str2 = "";
+  let str3 = "";
   for (let i = 0; i < length; i++) {
-    str2 += chars[Math.floor(Math.random() * chars.length)];
+    str3 += chars[Math.floor(Math.random() * chars.length)];
   }
-  return str2;
+  return str3;
 }
-function esc(str2) {
-  return JSON.stringify(str2);
+function esc(str3) {
+  return JSON.stringify(str3);
 }
 function slugify(input) {
   return input.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "");
@@ -35133,8 +35133,8 @@ var primitiveTypes = /* @__PURE__ */ new Set([
   "symbol",
   "undefined"
 ]);
-function escapeRegex(str2) {
-  return str2.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function escapeRegex(str3) {
+  return str3.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 function clone(inst, def, params) {
   const cl = new inst._zod.constr(def ?? inst._zod.def);
@@ -60935,14 +60935,14 @@ var specSchema = external_exports.object({
   remove_edge_ids: external_exports.array(external_exports.string()).default([]),
   test_parameters: external_exports.record(external_exports.string(), external_exports.unknown()).optional()
 }).strict();
-function assertWorkflowJavaScript(code, label2) {
+function assertWorkflowJavaScript(code, label3) {
   if (typeof code !== "string" || !code.trim())
-    throw new Error(`Missing JavaScript code in ${label2}.`);
+    throw new Error(`Missing JavaScript code in ${label3}.`);
   try {
     new Script(`(async function() {${code}
 })`);
   } catch {
-    throw new Error(`Invalid JavaScript syntax in ${label2}.`);
+    throw new Error(`Invalid JavaScript syntax in ${label3}.`);
   }
 }
 function isAttachmentEdge(edge) {
@@ -61246,9 +61246,9 @@ var nodeCatalog = {
 
 // dist/workflowClient.js
 var record2 = (x) => x && typeof x === "object" && !Array.isArray(x) ? x : {};
-var required2 = (x, label2) => {
+var required2 = (x, label3) => {
   if (typeof x !== "string" || !x)
-    throw new Error(`Workflow response missing ${label2}.`);
+    throw new Error(`Workflow response missing ${label3}.`);
   return x;
 };
 function createWorkflowClient(auth, config2, queries) {
@@ -61419,8 +61419,8 @@ function pageIconError(value2) {
     return void 0;
   const suggestions = typeof value2 === "string" && value2.length <= 128 ? aliases.get(normalizedName(value2))?.slice(0, 3) : void 0;
   const correction = suggestions?.length ? ` Use ${suggestions.map((name2) => JSON.stringify(name2)).join(" or ")}.` : ' Use an exact exported Tabler name such as "IconLayoutDashboard", "IconUsers" or "IconChartBar".';
-  const label2 = typeof value2 === "string" ? JSON.stringify(value2.slice(0, 128)) : String(value2);
-  return `Invalid page icon ${label2}: not in the ToolJet @tabler/icons-react@${catalog.version} catalog.` + correction + " Invalid names render a generic fallback icon; names are case-sensitive, not kebab-case. If the deployment uses newer icons, refresh the catalog from its frontend dependencies.";
+  const label3 = typeof value2 === "string" ? JSON.stringify(value2.slice(0, 128)) : String(value2);
+  return `Invalid page icon ${label3}: not in the ToolJet @tabler/icons-react@${catalog.version} catalog.` + correction + " Invalid names render a generic fallback icon; names are case-sensitive, not kebab-case. If the deployment uses newer icons, refresh the catalog from its frontend dependencies.";
 }
 function assertPageIcon(value2, context) {
   const error51 = pageIconError(value2);
@@ -61963,10 +61963,10 @@ function estimateHtmlHeight(rawHtml, widthPx) {
     return null;
   const root = parseHtml(html);
   const ctx = { fontSize: DEFAULT_FONT_SIZE, lineHeight: DEFAULT_FONT_SIZE * LINE_HEIGHT_FACTOR, width: Math.max(40, widthPx) };
-  const height = rootHeight(root, ctx);
-  if (!Number.isFinite(height) || height <= 0)
+  const height2 = rootHeight(root, ctx);
+  if (!Number.isFinite(height2) || height2 <= 0)
     return null;
-  return { height: Math.round(height), lowerBound: repeats };
+  return { height: Math.round(height2), lowerBound: repeats };
 }
 
 // dist/renderReadiness.js
@@ -62152,17 +62152,17 @@ function suggestedHtmlHeight(c) {
   if (typeof raw !== "string" || !raw.trim())
     return null;
   const rect2 = c.layouts?.desktop ?? c.layout;
-  const height = typeof rect2?.height === "number" ? rect2.height : void 0;
+  const height2 = typeof rect2?.height === "number" ? rect2.height : void 0;
   const width = typeof rect2?.width === "number" ? rect2.width : 39;
-  if (height === void 0)
+  if (height2 === void 0)
     return null;
   const estimate = estimateHtmlHeight(raw, width * HTML_PX_PER_COLUMN);
   if (!estimate)
     return null;
-  const overflow = estimate.height - (height - HTML_WIDGET_HEIGHT_LOSS);
+  const overflow = estimate.height - (height2 - HTML_WIDGET_HEIGHT_LOSS);
   if (overflow <= HTML_HEIGHT_TOLERANCE)
     return null;
-  return { from: height, to: Math.ceil((estimate.height + HTML_WIDGET_HEIGHT_LOSS + 8) / 10) * 10, needed: estimate.height };
+  return { from: height2, to: Math.ceil((estimate.height + HTML_WIDGET_HEIGHT_LOSS + 8) / 10) * 10, needed: estimate.height };
 }
 var SELECTION_READ = /components(?:\.[A-Za-z_$][\w$]*|\[\s*['"][^'"]+['"]\s*\])\??\.(?:selectedRow|selectedRows\s*\[\s*0\s*\])\??\.[A-Za-z_$][\w$]*/;
 function lintUnguardedSelectionText(c) {
@@ -62197,20 +62197,20 @@ function lintHtmlContentHeight(c) {
   if (typeof raw !== "string" || !raw.trim())
     return [];
   const rect2 = c.layouts?.desktop ?? c.layout;
-  const height = typeof rect2?.height === "number" ? rect2.height : void 0;
+  const height2 = typeof rect2?.height === "number" ? rect2.height : void 0;
   const width = typeof rect2?.width === "number" ? rect2.width : 39;
-  if (height === void 0)
+  if (height2 === void 0)
     return [];
   const estimate = estimateHtmlHeight(raw, width * HTML_PX_PER_COLUMN);
   if (!estimate)
     return [];
-  const usable = height - HTML_WIDGET_HEIGHT_LOSS;
+  const usable = height2 - HTML_WIDGET_HEIGHT_LOSS;
   const overflow = estimate.height - usable;
   if (overflow <= HTML_HEIGHT_TOLERANCE)
     return [];
   const suggested = Math.ceil((estimate.height + HTML_WIDGET_HEIGHT_LOSS + 8) / 10) * 10;
   return [
-    `Html "${label(c)}": its markup needs about ${estimate.height}px${estimate.lowerBound ? " at least (a .map() repeats rows)" : ""} (paddings, margins, font sizes \xD7 1.5 line height and wrapped lines, summed from its inline CSS) but desktop height is ${height}px and the widget renders ${HTML_WIDGET_HEIGHT_LOSS}px shorter than authored. The bottom ${overflow}px is cut off behind a hidden scrollbar. Set height to ${suggested}px, or trim the padding and font sizes to fit the height you have. An Html block never grows to its content.`
+    `Html "${label(c)}": its markup needs about ${estimate.height}px${estimate.lowerBound ? " at least (a .map() repeats rows)" : ""} (paddings, margins, font sizes \xD7 1.5 line height and wrapped lines, summed from its inline CSS) but desktop height is ${height2}px and the widget renders ${HTML_WIDGET_HEIGHT_LOSS}px shorter than authored. The bottom ${overflow}px is cut off behind a hidden scrollbar. Set height to ${suggested}px, or trim the padding and font sizes to fit the height you have. An Html block never grows to its content.`
   ];
 }
 var SURFACE_TOKENS = /var\(--cc-(appBackground|surface1|surface2)-surface\)/;
@@ -65775,11 +65775,11 @@ function bindingUndeclaredNames(expression2) {
 ${expression2}
 ); })`, BINDING_KNOWN_NAMES);
 }
-function lintBindingNames(value2, label2, path = "") {
+function lintBindingNames(value2, label3, path = "") {
   if (Array.isArray(value2))
-    return value2.flatMap((child, i) => lintBindingNames(child, label2, `${path}[${i}]`));
+    return value2.flatMap((child, i) => lintBindingNames(child, label3, `${path}[${i}]`));
   if (value2 && typeof value2 === "object") {
-    return Object.entries(value2).flatMap(([key4, child]) => lintBindingNames(child, label2, path ? `${path}.${key4}` : key4));
+    return Object.entries(value2).flatMap(([key4, child]) => lintBindingNames(child, label3, path ? `${path}.${key4}` : key4));
   }
   if (typeof value2 !== "string" || !value2.includes("{{"))
     return [];
@@ -65787,7 +65787,7 @@ function lintBindingNames(value2, label2, path = "") {
   if (!names.length)
     return [];
   const hints = names.map((n) => /^[a-z_$][\w$]*$/i.test(n) && n.length > 2 && !["row", "item", "r", "x", "d", "e"].includes(n) ? `\`${n}\` (a query is read as queries.${n})` : `\`${n}\``);
-  return [`${label2}${path ? ` ${path}` : ""}: the binding reads ${hints.join(", ")}, which nothing declares there, so it throws and the component shows nothing. Declare it (a callback needs its parameter: \`rows.filter(r => r.status === "Open")\`), or use ToolJet's names: components, queries, variables, globals, page, constants, and in a table column rowData/cellValue, in a list view listItem, on a Kanban card cardData.`];
+  return [`${label3}${path ? ` ${path}` : ""}: the binding reads ${hints.join(", ")}, which nothing declares there, so it throws and the component shows nothing. Declare it (a callback needs its parameter: \`rows.filter(r => r.status === "Open")\`), or use ToolJet's names: components, queries, variables, globals, page, constants, and in a table column rowData/cellValue, in a list view listItem, on a Kanban card cardData.`];
 }
 var BINDING_KNOWN_NAMES = /* @__PURE__ */ new Set([
   ...RUNJS_KNOWN_NAMES,
@@ -66431,11 +66431,11 @@ function walk2(n, visit) {
     if (!["loc", "extra", "comments"].includes(key4))
       walk2(value2, visit);
 }
-function lintUntrackedReactiveBindings(value2, label2) {
+function lintUntrackedReactiveBindings(value2, label3) {
   if (Array.isArray(value2))
-    return value2.flatMap((v) => lintUntrackedReactiveBindings(v, label2));
+    return value2.flatMap((v) => lintUntrackedReactiveBindings(v, label3));
   if (value2 && typeof value2 === "object")
-    return Object.values(value2).flatMap((v) => lintUntrackedReactiveBindings(v, label2));
+    return Object.values(value2).flatMap((v) => lintUntrackedReactiveBindings(v, label3));
   if (typeof value2 !== "string")
     return [];
   const match = value2.trim().match(/^\{\{([\s\S]*)\}\}$/);
@@ -66465,13 +66465,13 @@ function lintUntrackedReactiveBindings(value2, label2) {
   });
   if (shadowed)
     return [];
-  return [...suspects].filter((ref2) => !tracked.has(ref2)).map((ref2) => `${label2}: a logical fallback wraps ${ref2} before its exposed value is read. ToolJet cannot track this dependency, so filters/prefill may stay stale. Keep a complete optional chain, e.g. ${ref2}?.value (use the actual exposed property). Valid JavaScript alone does not guarantee reactive updates. No expression was rewritten.`);
+  return [...suspects].filter((ref2) => !tracked.has(ref2)).map((ref2) => `${label3}: a logical fallback wraps ${ref2} before its exposed value is read. ToolJet cannot track this dependency, so filters/prefill may stay stale. Keep a complete optional chain, e.g. ${ref2}?.value (use the actual exposed property). Valid JavaScript alone does not guarantee reactive updates. No expression was rewritten.`);
 }
-function lintQueryArrayMutations(value2, label2) {
+function lintQueryArrayMutations(value2, label3) {
   if (Array.isArray(value2))
-    return value2.flatMap((v) => lintQueryArrayMutations(v, label2));
+    return value2.flatMap((v) => lintQueryArrayMutations(v, label3));
   if (value2 && typeof value2 === "object")
-    return Object.values(value2).flatMap((v) => lintQueryArrayMutations(v, label2));
+    return Object.values(value2).flatMap((v) => lintQueryArrayMutations(v, label3));
   if (typeof value2 !== "string")
     return [];
   const match = value2.trim().match(/^\{\{([\s\S]*)\}\}$/);
@@ -66502,7 +66502,7 @@ function lintQueryArrayMutations(value2, label2) {
   });
   if (shadowed)
     return [];
-  return [...mutations].map((ref2) => `${label2}: ${ref2}() mutates the shared query array inside a display binding. ToolJet state can be frozen, so this may throw and render an empty table even when the query has rows. Copy first with slice() or a spread, then sort/reverse the copy; a prior map/filter already creates a new array. No expression was rewritten.`);
+  return [...mutations].map((ref2) => `${label3}: ${ref2}() mutates the shared query array inside a display binding. ToolJet state can be frozen, so this may throw and render an empty table even when the query has rows. Copy first with slice() or a spread, then sort/reverse the copy; a prior map/filter already creates a new array. No expression was rewritten.`);
 }
 
 // dist/selectedRowProjection.js
@@ -66607,15 +66607,15 @@ function lintSelectedRowProjections(components, extraSources = []) {
     aliases.clear();
   const warnings = /* @__PURE__ */ new Set();
   const aliasOmissions = /* @__PURE__ */ new Map();
-  function inspect(value2, label2) {
+  function inspect(value2, label3) {
     if (Array.isArray(value2)) {
       for (const v of value2)
-        inspect(v, label2);
+        inspect(v, label3);
       return;
     }
     if (node(value2)) {
       for (const v of Object.values(node(value2)))
-        inspect(v, label2);
+        inspect(v, label3);
       return;
     }
     const root = expression(value2);
@@ -66651,15 +66651,15 @@ function lintSelectedRowProjections(components, extraSources = []) {
       const name2 = key2(table), keys = name2 ? tables.get(name2) : void 0;
       if (!name2 || !keys || keys.has(field) || ["toString", "valueOf", "constructor", "hasOwnProperty", "__proto__", "isPrototypeOf", "propertyIsEnumerable", "toLocaleString"].includes(field))
         return;
-      warnings.add(`${label2}: reads components.${name2}.selectedRow.${field}, but Table "${name2}" has a closed map projection that omits "${field}". Preserve the raw field in the row (hide its column if needed), or look up the source record by its stable id. Check edit/review prefill and avoid overwriting omitted values with blanks. If the missing-field fallback is intentional, no change is required.`);
+      warnings.add(`${label3}: reads components.${name2}.selectedRow.${field}, but Table "${name2}" has a closed map projection that omits "${field}". Preserve the raw field in the row (hide its column if needed), or look up the source record by its stable id. Check edit/review prefill and avoid overwriting omitted values with blanks. If the missing-field fallback is intentional, no change is required.`);
     });
   }
   for (const c of components) {
-    const value2 = { p: c.properties, s: c.styles }, label2 = `Component "${c.name ?? c.id ?? "?"}"`;
-    inspect(value2, label2);
-    for (const warning of lintUntrackedReactiveBindings(value2, label2))
+    const value2 = { p: c.properties, s: c.styles }, label3 = `Component "${c.name ?? c.id ?? "?"}"`;
+    inspect(value2, label3);
+    for (const warning of lintUntrackedReactiveBindings(value2, label3))
       warnings.add(warning);
-    for (const warning of lintQueryArrayMutations(value2, label2))
+    for (const warning of lintQueryArrayMutations(value2, label3))
       warnings.add(warning);
   }
   for (const source2 of extraSources)
@@ -66789,7 +66789,7 @@ function dropdownSelfDefaultWarning(value2, name2) {
   list(root);
   return self ? [`DropdownV2 "${name2}": option.default reads this dropdown's own value. This does not initialize it from an existing record and can leave edit fields blank or stale when switching records. For record editing compare option.value with the raw record/draft field, preserving ID types and null; or verify explicit initialization/reset events before every edit. A missing selection must not silently clear a stored relationship. Advisory only: intentional event-driven initialization is not verified.`] : [];
 }
-function dropdownDefaultVisibilityWarning(value2, label2) {
+function dropdownDefaultVisibilityWarning(value2, label3) {
   let missing = false;
   if (Array.isArray(value2)) {
     missing = value2.some((option) => option && typeof option === "object" && option.default === true && !Object.prototype.hasOwnProperty.call(option, "visible"));
@@ -66826,7 +66826,7 @@ function dropdownDefaultVisibilityWarning(value2, label2) {
         option(callback.body);
     }
   }
-  return missing ? [`DropdownV2 "${label2}": an option declares a default but omits visible. ToolJet's default lookup requires visible:true even though the menu displays options with omitted visibility. Set visible:true on selectable default options; preserve intentional hidden options. Otherwise edit preselection can appear blank. This is advisory; unknown dynamic option sources are not verified.`] : [];
+  return missing ? [`DropdownV2 "${label3}": an option declares a default but omits visible. ToolJet's default lookup requires visible:true even though the menu displays options with omitted visibility. Set visible:true on selectable default options; preserve intentional hidden options. Otherwise edit preselection can appear blank. This is advisory; unknown dynamic option sources are not verified.`] : [];
 }
 
 // dist/catalog.js
@@ -66924,6 +66924,379 @@ var SAFE_GENERATED_FORM_FIELD_TYPE_SET = new Set(SAFE_GENERATED_FORM_FIELD_TYPES
 // dist/modalTypes.js
 var MODAL_V2_TYPES = /* @__PURE__ */ new Set(["ModalV2", "ShadDialog"]);
 var isModalV2Type = (type) => MODAL_V2_TYPES.has(type ?? "");
+
+// dist/numberFormatLint.js
+var valueOf = (props2, key4) => {
+  const entry = props2?.[key4];
+  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+};
+var str2 = (value2) => typeof value2 === "string" ? value2 : "";
+var STRONG_MONEY_WORD = /\b(prices?|amounts?|costs?|revenue|balance|fees?|salary|salaries|payments?|subtotal|refunds?|mrr|arr|payout|takings)\b/i;
+var MONEY_WORD = /\b(sales|spend|spent|budget|income|profit|invoiced?|earnings|gross|net|bill|total)\b/i;
+var COUNT_WORD = /\b(count|qty|quantity|items?|tasks?|hours?|days?|orders?|tickets?|people|users?|hires?|visits?|guests?|covers?|seats?|steps?|points?)\b/i;
+var PERCENT_WORD = /(%|\bpercent|\bpct\b|\brate\b|\bratio\b|\bshare\b|\bmargin\b|\bconversion\b|\butili[sz]ation\b|\bcompletion\b|\boccupancy\b)/i;
+var LOCALE_FORMAT = /toLocaleString|Intl\.NumberFormat|formatCurrency|numeral\(/;
+var SYMBOL = "[$\u20AC\xA3\u20B9\xA5]";
+var words = (value2) => value2.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_.-]+/g, " ");
+var MONEY_QUALIFIER = /\b(methods?|status|types?|terms|dates?|modes?|plans?|tiers?|centers?|centres?|codes?|names?|ids?|frequency|schedule|currency|categor(y|ies))\b/i;
+var isMoneyName = (value2) => {
+  const w = words(value2);
+  if (MONEY_QUALIFIER.test(w))
+    return false;
+  return STRONG_MONEY_WORD.test(w) || MONEY_WORD.test(w) && !COUNT_WORD.test(w);
+};
+var namesMoney = (code) => (code.match(/[A-Za-z_][A-Za-z0-9_]*/g) ?? []).some(isMoneyName);
+function bindingProblems(value2, context) {
+  const problems = [];
+  const spans = bindingSpans(value2);
+  if (!spans.length)
+    return problems;
+  const outside = spans.reduceRight((text2, span) => text2.slice(0, span.start) + " " + text2.slice(span.end), value2);
+  const bodies = spans.map((span) => span.body);
+  const percentText = /%/.test(outside) || bodies.some((body) => /['"`]\s*%|%['"`]/.test(body));
+  const money = !percentText && (isMoneyName(context) || isMoneyName(outside) || bodies.some(namesMoney));
+  const formatted = bodies.some((body) => LOCALE_FORMAT.test(body));
+  const signed = bodies.some((body) => /Math\.abs|<\s*0/.test(body));
+  const symbolBefore = new RegExp(`${SYMBOL}\\s*\\{\\{`).test(value2) || bodies.some((body) => new RegExp(`['"\`]\\s*${SYMBOL}\\s*['"]\\s*\\+|${SYMBOL}\\$\\{`).test(body));
+  if (symbolBefore && !signed) {
+    problems.push('joins a currency sign in front of the number, so a negative amount reads "$-12,034" and the digits are not grouped');
+  } else if (money && !formatted && bodies.some((body) => /\.toFixed\(/.test(body))) {
+    problems.push('formats money with toFixed, so it shows "16864.00": no currency sign and no thousands separator');
+  } else if (money && !formatted && bodies.length === 1 && outside.trim() === "" && /^\s*[\w$.?[\]'"]+\s*$/.test(bodies[0]) && isMoneyName(bodies[0].split(/[.?[\]'"]+/).filter(Boolean).pop() ?? "")) {
+    problems.push('shows a money field as a bare number ("7.5"), with no currency sign or two decimals');
+  }
+  if (percentText && bodies.some((body) => /\*\s*100\b/.test(body)) && !bodies.some((body) => /toFixed|Math\.round|toLocaleString|Intl\.NumberFormat/.test(body))) {
+    problems.push('multiplies a fraction by 100 without rounding, so it can read "61.53846153846154%"');
+  }
+  return problems;
+}
+var LOCALE_HINT = "Format it in the request's currency and locale with two decimals, the minus sign before the symbol: Number(x).toLocaleString('en-US', { style: 'currency', currency: 'USD' }) gives -$12,034.00";
+function lintUnformattedNumbers(spec) {
+  const label3 = `${spec.type} "${spec.name ?? "?"}"`;
+  const props2 = spec.properties;
+  const out = [];
+  if (["ShadText", "ShadHeading", "Text", "ShadBadge"].includes(spec.type ?? "")) {
+    const text2 = str2(valueOf(props2, "text"));
+    for (const problem of bindingProblems(text2, spec.name ?? "")) {
+      out.push(`${label3}: ${problem}. ${problem.includes("100") ? "Round it to one decimal: (x * 100).toFixed(1) + '%'." : `${LOCALE_HINT}.`}`);
+    }
+  }
+  if (spec.type === "ShadStat") {
+    const value2 = valueOf(props2, "value");
+    const text2 = typeof value2 === "number" ? String(value2) : str2(value2);
+    const format = str2(valueOf(props2, "valueFormat")) || "auto";
+    const named = `${str2(valueOf(props2, "label"))} ${spec.name ?? ""}`;
+    const bodies = bindingSpans(text2).map((span) => span.body).join(" ");
+    const fraction = /[^/*]\/[^/*]/.test(bodies) && !/\*\s*100+\b/.test(bodies);
+    if (isMoneyName(named) && format !== "currency" && !LOCALE_FORMAT.test(text2) && !new RegExp(SYMBOL).test(text2)) {
+      out.push(`${label3}: shows money ${/toFixed/.test(text2) ? 'as toFixed text ("16864.00")' : "as a plain number"}, with no currency sign. Bind the number and set valueFormat "currency" with currency set to the request's ISO code (USD, EUR, GBP, INR): the Stat groups the digits, shows two decimals and puts the minus sign before the symbol.`);
+    } else if (format === "percent" && fraction) {
+      out.push(`${label3}: valueFormat "percent" shows the number as written (42.5 shows 42.5%), so a fraction bound here reads "0.6%". Multiply it by 100 and round to one decimal.`);
+    } else if (PERCENT_WORD.test(words(named)) && format !== "percent" && fraction && !/%/.test(text2)) {
+      out.push(`${label3}: shows a rate as a raw fraction ("0.615"). Bind it times 100, rounded to one decimal, and set valueFormat "percent".`);
+    } else {
+      const problems = bindingProblems(text2, named).filter((problem) => format !== "currency" || problem.includes("sign in front"));
+      for (const problem of problems) {
+        out.push(`${label3}: ${problem}. ${problem.includes("100") ? 'Round it to one decimal and set valueFormat "percent".' : 'Bind the number and set valueFormat "currency".'}`);
+      }
+    }
+  }
+  if (spec.type === "ShadCardGrid") {
+    const data = str2(valueOf(props2, "data"));
+    const fields = ["titleField", "subtitleField", "descriptionField", "badgeField"].map((key4) => str2(valueOf(props2, key4))).concat(str2(valueOf(props2, "metaFields")).split(",").map((part) => part.split(":")[0].trim())).filter((field) => field && isMoneyName(field));
+    const raw = fields.filter((field) => !LOCALE_FORMAT.test(data) || !new RegExp(`\\b${field}\\b`).test(data));
+    if (raw.length) {
+      out.push(`${label3}: ${raw.map((f) => `"${f}"`).join(", ")} ${raw.length > 1 ? "are" : "is"} money shown as the raw number ("Amount 7.5"). Map the rows in data to a formatted string for the card, e.g. {{(queries.q.data || []).map(r => ({ ...r, ${raw[0]}: Number(r.${raw[0]}).toLocaleString('en-US', { style: 'currency', currency: 'USD' }) }))}}, in the request's currency and locale.`);
+    }
+    for (const problem of bindingProblems(data, spec.name ?? ""))
+      out.push(`${label3}: its data ${problem}. ${LOCALE_HINT}.`);
+  }
+  return out;
+}
+
+// dist/repeatedCardsLint.js
+var CONTAINER_TYPES = /* @__PURE__ */ new Set(["FlexContainer", "Container"]);
+var MIN_COPIES = 4;
+var MIN_COPIES_WITHOUT_POSITION = 6;
+var POSITIONAL_READ = /\.data\s*(\|\|\s*\[\s*\]\s*\))?\s*\[\s*\d+\s*\]|\)\s*\[\s*\d+\s*\]|\[\s*\d+\s*\]\s*\?\.|\[\s*\d+\s*\]\s*\./;
+function parentOf(c) {
+  if (c.parentRef)
+    return c.parentRef;
+  return c.parent ? decodeComponentParent(c.parent).parentId : void 0;
+}
+function lintCopiedCards(components) {
+  const byParent = /* @__PURE__ */ new Map();
+  for (const c of components) {
+    const parent = parentOf(c);
+    if (parent)
+      byParent.set(parent, [...byParent.get(parent) ?? [], c]);
+  }
+  const childrenOf = (c) => {
+    const seen = /* @__PURE__ */ new Set();
+    for (const ref2 of [c.clientRef, c.id, c.name])
+      for (const child of ref2 ? byParent.get(ref2) ?? [] : [])
+        seen.add(child);
+    return [...seen];
+  };
+  const descendants = (c, depth = 0) => depth > 20 ? [] : childrenOf(c).flatMap((child) => [child, ...descendants(child, depth + 1)]);
+  const groups = /* @__PURE__ */ new Map();
+  for (const c of components) {
+    if (!CONTAINER_TYPES.has(c.type ?? ""))
+      continue;
+    const match = /^(.*?[A-Za-z_])(\d+)$/.exec(c.name ?? c.clientRef ?? "");
+    if (!match)
+      continue;
+    const key4 = `${c.type}:${match[1].toLowerCase()}`;
+    groups.set(key4, [...groups.get(key4) ?? [], { spec: c, n: Number(match[2]) }]);
+  }
+  const flagged = /* @__PURE__ */ new Set();
+  const warnings = [];
+  const ordered = [...groups.values()].sort((a, b) => descendants(b[0].spec).length - descendants(a[0].spec).length);
+  for (const group of ordered) {
+    if (group.length < MIN_COPIES)
+      continue;
+    if (group.some(({ spec }) => [...flagged].some((outer) => descendants(outer).includes(spec))))
+      continue;
+    const signature = (spec) => descendants(spec).map((d) => d.type ?? "?").sort().join(",");
+    const bySignature = /* @__PURE__ */ new Map();
+    for (const member5 of group) {
+      const sig2 = signature(member5.spec);
+      if (sig2)
+        bySignature.set(sig2, [...bySignature.get(sig2) ?? [], member5]);
+    }
+    const [sig, copies] = [...bySignature.entries()].sort((a, b) => b[1].length - a[1].length)[0] ?? [];
+    if (!sig || !copies || copies.length < MIN_COPIES)
+      continue;
+    const positional = copies.some(({ spec }) => [spec, ...descendants(spec)].some((d) => POSITIONAL_READ.test(JSON.stringify(d.properties ?? {}))));
+    if (!positional && copies.length < MIN_COPIES_WITHOUT_POSITION)
+      continue;
+    copies.forEach(({ spec }) => flagged.add(spec));
+    const sorted = [...copies].sort((a, b) => a.n - b.n);
+    const first = sorted[0].spec;
+    const last = sorted[sorted.length - 1].spec;
+    const counts = /* @__PURE__ */ new Map();
+    for (const type2 of sig.split(","))
+      counts.set(type2, (counts.get(type2) ?? 0) + 1);
+    const holds = [...counts.entries()].map(([type2, n]) => n > 1 ? `${n} ${type2}` : type2).join(", ");
+    const type = first.type ?? "container";
+    warnings.push(`${copies.length} ${type}s "${first.name ?? first.clientRef}" to "${last.name ?? last.clientRef}" are one card copied ${copies.length} times (each holds ${holds})${positional ? " and read their rows by position (data[n])" : ""}. Copies show a fixed number of records and hide the rest, and every change has to be made to each. Draw the records with one component bound to the query: ShadCardGrid (a card per row: title, subtitle, badge, description and meta fields; onCardClick and selectedItem for the detail), or ShadListView with one item canvas whose children bind {{listItem.<field>}}. Keep separate cards only for figures that are not rows of one query.`);
+  }
+  return warnings;
+}
+
+// dist/containerExtentLint.js
+var valueOf2 = (props2, key4) => {
+  const entry = props2?.[key4];
+  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+};
+var num2 = (value2, fallback) => {
+  const text2 = typeof value2 === "string" ? value2.replace(/[{}\s]/g, "").replace(/px$/, "") : value2;
+  const n = typeof text2 === "number" ? text2 : typeof text2 === "string" && text2 !== "" ? Number(text2) : NaN;
+  return Number.isFinite(n) ? n : fallback;
+};
+var flag = (value2) => {
+  if (value2 === true || value2 === false)
+    return value2;
+  const text2 = typeof value2 === "string" ? value2.replace(/[{}\s]/g, "") : "";
+  return text2 === "true" ? true : text2 === "false" ? false : void 0;
+};
+var height = (c) => (c.layouts?.desktop ?? c.layout)?.height ?? 0;
+var isCard = (c) => ["antCard", "shadcnCard"].includes(String(valueOf2(c.properties, "cardStyle") ?? ""));
+var OVERLAYS = /* @__PURE__ */ new Set(["ModalV2", "Modal", "ShadDialog"]);
+var CARD_HEADER_PX = 56;
+var GRID_COLUMNS2 = 43;
+var MIN_EMPTY_PX = 160;
+var MIN_RATIO = 1.2;
+function parentOf2(c) {
+  if (c.parentRef)
+    return c.parentRef;
+  return c.parent ? decodeComponentParent(c.parent).parentId : void 0;
+}
+function lintTallContainers(components) {
+  const byParent = /* @__PURE__ */ new Map();
+  for (const c of components) {
+    const parent = parentOf2(c);
+    if (!parent || OVERLAYS.has(c.type ?? ""))
+      continue;
+    byParent.set(parent, [...byParent.get(parent) ?? [], c]);
+  }
+  const childrenOf = (c) => {
+    const seen = /* @__PURE__ */ new Set();
+    for (const ref2 of [c.clientRef, c.id, c.name])
+      for (const child of ref2 ? byParent.get(ref2) ?? [] : [])
+        seen.add(child);
+    return [...seen];
+  };
+  const lines = (c, children) => {
+    if (!flag(valueOf2(c.properties, "flexWrap")))
+      return [children];
+    const packed = [];
+    let used = GRID_COLUMNS2 + 1;
+    for (const child of children) {
+      const width = (child.layouts?.desktop ?? child.layout)?.width ?? GRID_COLUMNS2;
+      if (used + width > GRID_COLUMNS2) {
+        packed.push([]);
+        used = 0;
+      }
+      packed[packed.length - 1].push(child);
+      used += width;
+    }
+    return packed;
+  };
+  const fitted = (c, depth = 0) => {
+    const children = depth > 20 ? [] : childrenOf(c);
+    if (!children.length)
+      return height(c);
+    if (c.type === "Container") {
+      return Math.max(...children.map((child) => ((child.layouts?.desktop ?? child.layout)?.top ?? 0) + fitted(child, depth + 1))) + 10;
+    }
+    if (c.type !== "FlexContainer")
+      return height(c);
+    const props2 = c.properties;
+    const padding = num2(valueOf2(props2, "padding"), 12);
+    const gap = num2(valueOf2(props2, "gap"), 12);
+    const row = String(valueOf2(props2, "direction") ?? "column") === "row";
+    const heights = children.map((child) => fitted(child, depth + 1));
+    const content = row ? lines(c, children).reduce((sum, line, i) => sum + (i ? gap : 0) + Math.max(...line.map((child) => heights[children.indexOf(child)])), 0) : heights.reduce((sum, h) => sum + h, 0) + gap * (children.length - 1);
+    const header = isCard(c) && (valueOf2(props2, "cardTitle") || valueOf2(props2, "cardDescription")) ? CARD_HEADER_PX : 0;
+    return Math.ceil(content + 2 * padding + header);
+  };
+  const warnings = [];
+  for (const c of components) {
+    if (c.type !== "FlexContainer" && c.type !== "Container")
+      continue;
+    if (c.type === "FlexContainer" && isCard(c))
+      continue;
+    const props2 = c.properties;
+    const dynamic = flag(valueOf2(props2, "dynamicHeight"));
+    if (c.type === "Container" && dynamic)
+      continue;
+    if (!childrenOf(c).length)
+      continue;
+    if (c.type === "FlexContainer" && String(valueOf2(props2, "direction") ?? "column") === "row" && lines(c, childrenOf(c)).length > 1)
+      continue;
+    const authored = height(c);
+    const content = fitted(c);
+    if (authored - content < MIN_EMPTY_PX || authored < content * MIN_RATIO)
+      continue;
+    const target2 = Math.ceil(content / 10) * 10;
+    warnings.push(`${c.type} "${c.name ?? c.clientRef ?? c.id ?? "?"}": ${authored}px tall, but its children need about ${content}px, so it draws about ${authored - content}px of empty space below them. ` + (c.type === "FlexContainer" ? "A container that is not a card keeps its authored height as its minimum even with dynamic height on. " : "") + `Set its height to about ${target2}px` + (dynamic === false || c.type === "Container" && !dynamic ? " and dynamicHeight to {{true}} so it still grows with its content." : "; dynamic height still lets it grow."));
+  }
+  return warnings;
+}
+
+// dist/chartAccentLint.js
+var THEME = "theme primary";
+var isChart = (type) => /^Shad\w*Chart$/.test(type ?? "") || type === "ShadSparkline";
+var valueOf3 = (props2, key4) => {
+  const entry = props2?.[key4];
+  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+};
+var singleSeriesColor = (chart) => {
+  const colors = valueOf3(chart.properties, "colors");
+  const series = valueOf3(chart.properties, "yFields");
+  if (!Array.isArray(colors) || colors.length !== 1 || typeof colors[0] !== "string")
+    return void 0;
+  if (Array.isArray(series) && series.length > 1)
+    return void 0;
+  return colors[0];
+};
+function accent(chart) {
+  const raw = valueOf3(chart.styles, "chartColor") ?? valueOf3(chart.properties, "chartColor") ?? singleSeriesColor(chart);
+  const text2 = typeof raw === "string" ? raw.replace(/^\{\{\s*['"]?|['"]?\s*\}\}$/g, "").trim().toLowerCase() : "";
+  if (!text2 || /--cc-primary-brand/.test(text2))
+    return THEME;
+  return /^#[0-9a-f]{8}$/.test(text2) && text2.endsWith("ff") ? text2.slice(0, 7) : text2;
+}
+function lintChartAccents(components) {
+  const charts = components.filter((c) => isChart(c.type));
+  if (charts.length < 2)
+    return [];
+  const byAccent = /* @__PURE__ */ new Map();
+  for (const chart of charts) {
+    const key4 = accent(chart);
+    byAccent.set(key4, [...byAccent.get(key4) ?? [], `"${chart.name ?? chart.type}"`]);
+  }
+  if (byAccent.size < 2)
+    return [];
+  const groups = [...byAccent.entries()].map(([key4, names]) => `${names.join(", ")} ${key4 === THEME ? "follow the theme primary" : `use ${key4}`}`);
+  return [
+    `Charts on this page use ${byAccent.size} different accents (${groups.join("; ")}), so one chart reads as from another palette. Leave chartColor unset on every chart (they follow the theme primary), or give them all the same accent; keep categoryColors for colours that mean something.`
+  ];
+}
+function unifyChartAccents(components) {
+  const handSet = components.filter((c) => isChart(c.type) && accent(c) !== THEME);
+  const counts = /* @__PURE__ */ new Map();
+  for (const c of handSet)
+    counts.set(accent(c), (counts.get(accent(c)) ?? 0) + 1);
+  if (counts.size < 2)
+    return { components, warnings: [] };
+  let majority = accent(handSet[0]);
+  for (const [key4, n] of counts)
+    if (n > (counts.get(majority) ?? 0))
+      majority = key4;
+  const pick2 = handSet.find((c) => accent(c) === majority);
+  const original = valueOf3(pick2.styles, "chartColor") ?? valueOf3(pick2.properties, "chartColor") ?? singleSeriesColor(pick2);
+  const warnings = [];
+  const out = components.map((c) => {
+    if (!handSet.includes(c) || accent(c) === majority)
+      return c;
+    const next = { ...c, properties: { ...c.properties ?? {} }, styles: { ...c.styles ?? {} } };
+    if (valueOf3(c.styles, "chartColor") !== void 0)
+      next.styles.chartColor = { value: original };
+    else if (valueOf3(c.properties, "chartColor") !== void 0)
+      next.properties.chartColor = { value: original };
+    else
+      next.properties.colors = { value: [original] };
+    warnings.push(`Chart "${c.name ?? c.type}" used ${accent(c)} beside charts in ${majority}; it now uses ${majority} too.`);
+    return next;
+  });
+  return { components: out, warnings };
+}
+
+// dist/kpiGridLint.js
+var FIGURE_FIELD = /^(value|values|metric|amount|total|count|kpi|figure|stat|number|current)$/i;
+var DELTA_FIELD = /(delta|change|comparison|compare|trend|vs|diff)/i;
+var KPI_NAME = /(kpi|metric|stat|figure|summary|scorecard|headline)/i;
+var valueOf4 = (props2, key4) => {
+  const entry = props2?.[key4];
+  const v = entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+  return typeof v === "string" ? v.trim() : "";
+};
+function lintKpiCardGrids(components) {
+  return components.filter((c) => c.type === "ShadCardGrid").filter((c) => {
+    const p = c.properties;
+    const figure = ["titleField", "subtitleField", "descriptionField"].some((k) => FIGURE_FIELD.test(valueOf4(p, k)));
+    const delta = DELTA_FIELD.test(valueOf4(p, "badgeField"));
+    return figure && (delta || !valueOf4(p, "imageField")) || KPI_NAME.test(c.name ?? "") && !valueOf4(p, "imageField");
+  }).map((c) => `Card grid "${c.name ?? "ShadCardGrid"}" draws figures: a card grid is for records with a face, its badge sits beside the title (a long delta is cut off) and its subtitle is small body text, not a headline number. Draw KPIs as a row of ShadStat (value, valueFormat, change, changeLabel) or one ShadSummaryStrip (items).`);
+}
+
+// dist/cardGridPhotoLint.js
+var SUBJECTS = [
+  ["food", /(recipe|dish|meal|menu|food|cuisine|bake|snack|drink)/i],
+  ["rooms and offices", /(room|office|suite|venue|listing|propert|apartment|hotel)/i],
+  ["boats", /(boat|yacht|vessel|charter|marina)/i],
+  ["pets", /(pet|dog|animal|puppy|kitten)/i]
+];
+var valueOf5 = (props2, key4) => {
+  const entry = props2?.[key4];
+  const v = entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+  return typeof v === "string" ? v.trim() : "";
+};
+function lintPhotolessCardGrids(components) {
+  const warnings = [];
+  for (const c of components) {
+    if (c.type !== "ShadCardGrid" || valueOf5(c.properties, "imageField"))
+      continue;
+    const words2 = [c.name ?? "", valueOf5(c.properties, "titleField"), valueOf5(c.properties, "subtitleField")].join(" ");
+    const subject = SUBJECTS.find(([, pattern]) => pattern.test(words2))?.[0];
+    if (!subject)
+      continue;
+    warnings.push(`Card grid "${c.name ?? "ShadCardGrid"}" shows ${subject} without pictures: cards of things with a face read as finished with a photo. Seed an image column from get_component_catalog's authoringHints.photos ("${subject}", a different URL per row) and set imageField to it.`);
+  }
+  return warnings;
+}
 
 // dist/lint.js
 var STYLE_KEYS_IN_PROPERTIES = /* @__PURE__ */ new Set([
@@ -67438,8 +67811,8 @@ function renderedHeight(component, rect2) {
   if (propVal2(component.styles, "alignment") !== "top")
     return authored;
   const labelType = propVal2(component.properties, "labelType");
-  const label2 = propVal2(component.properties, "label");
-  const hasRenderedLabel = labelType === void 0 || labelType === "auto" || label2 === void 0 || (typeof label2 === "string" ? label2.trim().length > 0 : Boolean(label2));
+  const label3 = propVal2(component.properties, "label");
+  const hasRenderedLabel = labelType === void 0 || labelType === "auto" || label3 === void 0 || (typeof label3 === "string" ? label3.trim().length > 0 : Boolean(label3));
   return authored + (hasRenderedLabel ? TOP_ALIGNMENT_HEIGHT_INCREMENT : 0);
 }
 function lintStandardSingleLineInputHeight(component) {
@@ -67454,13 +67827,13 @@ function lintStandardSingleLineInputHeight(component) {
     layouts.push(["desktop", component.layouts.desktop]);
   if (component.layouts?.mobile)
     layouts.push(["mobile", component.layouts.mobile]);
-  const label2 = component.name ?? component.type ?? "component";
+  const label3 = component.name ?? component.type ?? "component";
   return layouts.flatMap(([layoutName, layout]) => {
     const authoredHeight = layout.height;
     if (authoredHeight === void 0 || authoredHeight <= defaultHeight)
       return [];
     return [
-      `${component.type} "${label2}": ${layoutName} authored height ${authoredHeight}px exceeds the standard single-line height ${defaultHeight}px. Oversizing does not enlarge the value text. Keep height at ${defaultHeight}px; a top-aligned label renders ${TOP_ALIGNMENT_HEIGHT_INCREMENT}px outside the authored box, so move the following row down instead of increasing this field's height.`
+      `${component.type} "${label3}": ${layoutName} authored height ${authoredHeight}px exceeds the standard single-line height ${defaultHeight}px. Oversizing does not enlarge the value text. Keep height at ${defaultHeight}px; a top-aligned label renders ${TOP_ALIGNMENT_HEIGHT_INCREMENT}px outside the authored box, so move the following row down instead of increasing this field's height.`
     ];
   });
 }
@@ -67578,11 +67951,11 @@ function lintShadKanbanCards(components) {
       continue;
     const custom2 = propVal2(board.properties, "cardLayout") === "custom";
     const children = components.filter((component) => parentPlacement(component)?.parentId === key4);
-    const label2 = `ShadKanban "${board.name ?? board.id ?? "ShadKanban"}"`;
+    const label3 = `ShadKanban "${board.name ?? board.id ?? "ShadKanban"}"`;
     if (children.length && !custom2) {
-      warnings.push(`${label2} has ${children.length} card child component(s), but its cardLayout is not "custom", so they are never shown. Set properties.cardLayout to "custom" (and cardHeight to the card content height), or remove the children and map fields instead.`);
+      warnings.push(`${label3} has ${children.length} card child component(s), but its cardLayout is not "custom", so they are never shown. Set properties.cardLayout to "custom" (and cardHeight to the card content height), or remove the children and map fields instead.`);
     } else if (!children.length && custom2) {
-      warnings.push(`${label2} uses cardLayout "custom" but has no card child components, so every card renders blank. Add children with parent_ref to the board, laid out on the card canvas and bound to {{cardData.<field>}}, or use the default Fields content.`);
+      warnings.push(`${label3} uses cardLayout "custom" but has no card child components, so every card renders blank. Add children with parent_ref to the board, laid out on the card canvas and bound to {{cardData.<field>}}, or use the default Fields content.`);
     }
   }
   return warnings;
@@ -67870,11 +68243,43 @@ function lintPlainStateColumns(spec) {
   const columns = propVal2(spec.properties, "columns");
   if (!Array.isArray(columns))
     return [];
-  const plain = columns.filter((c) => !!c && typeof c === "object").filter((c) => c.columnVisibility !== false && ["string", "text", void 0].includes(c.columnType)).filter((c) => /^(status|stage|state|priority|severity|availability|health|risk)$/i.test(String(c.key ?? "").replace(/[_\s-]+/g, "")) || /^(status|stage|state|priority|severity|availability|health|risk)$/i.test(String(c.name ?? "").trim()));
+  const plain = columns.filter((c) => !!c && typeof c === "object").filter((c) => c.columnVisibility !== false && c.displayAsChip === void 0 && ["string", "text", void 0].includes(c.columnType)).filter((c) => /^(status|stage|state|priority|severity|availability|health|risk)$/i.test(String(c.key ?? "").replace(/[_\s-]+/g, "")) || /^(status|stage|state|priority|severity|availability|health|risk)$/i.test(String(c.name ?? "").trim()));
   if (!plain.length)
     return [];
   return [
-    `Table "${spec.name ?? "?"}": ${plain.map((c) => `"${c.name ?? c.key}"`).join(", ")} show a state as plain text. Draw it as a chip so it reads at a glance: an html column whose data maps each value to <span class="tj-chip tj-chip-success|warning|danger|info|neutral">Value</span> (theme-aware in light and dark).`
+    `Table "${spec.name ?? "?"}": ${plain.map((c) => `"${c.name ?? c.key}"`).join(", ")} show a state as plain text. Draw it as a chip so it reads at a glance: displayAsChip: true on the string column ("Show as status chip", the tone read from the value: Paid green, Pending amber, Overdue red), or for tones of your own an html column whose data maps each value to <span class="tj-chip tj-chip-success|warning|danger|info|neutral">Value</span> (theme-aware in light and dark).`
+  ];
+}
+function lintBareMoneyColumns(spec) {
+  if (spec.type !== "Table")
+    return [];
+  if (propVal2(spec.styles, "tableLook") !== "shadcn")
+    return [];
+  const columns = propVal2(spec.properties, "columns");
+  if (!Array.isArray(columns))
+    return [];
+  const bare = columns.filter((c) => !!c && typeof c === "object").filter((c) => c.columnVisibility !== false && c.columnType === "number" && !c.prefix && !c.suffix).filter((c) => /\b(price|amount|cost|total|revenue|balance|fees?|spend|spent|salary|budget|payment|subtotal|refund|mrr|arr)\b/i.test(`${String(c.key ?? "")} ${String(c.name ?? "")}`.replace(/[_-]+/g, " ")));
+  if (!bare.length)
+    return [];
+  return [
+    `Table "${spec.name ?? "?"}": ${bare.map((c) => `"${c.name ?? c.key}"`).join(", ")} show money without a currency sign. Set the number column's prefix to the sign the request uses ("$", "\u20AC", "\xA3", "\u20B9"); decimalPlaces 2 is applied for you.`
+  ];
+}
+function lintListDrawnAsText(spec) {
+  if (!["ShadText", "Text", "ShadHeading"].includes(spec.type ?? ""))
+    return [];
+  const value2 = propVal2(spec.properties ?? {}, "text");
+  if (typeof value2 !== "string" || !value2.includes("{{"))
+    return [];
+  const mapped = /\.map\(\s*\(?\s*(\w+)[^=]*=>([\s\S]*?)\)\s*\.join\(/.exec(value2);
+  if (!mapped)
+    return [];
+  const item = mapped[1];
+  const fields = new Set([...mapped[2].matchAll(new RegExp(`\\b${item}\\.(\\w+)`, "g"))].map((m) => m[1] ?? ""));
+  if (fields.size < 3)
+    return [];
+  return [
+    `${spec.type} "${spec.name ?? "?"}": joins each record's ${fields.size} fields into one string, so a list reads as a run-on line of text. Draw records as items: ShadListView (one row per record with its title, details and a badge), or ShadKanban for a board grouped by a field (a column per technician, stage or day).`
   ];
 }
 function lintUnboundEmptyState(spec) {
@@ -67906,8 +68311,8 @@ function lintEmptyTabs(components) {
     });
     if (children.length)
       continue;
-    const height = (tabs.layouts?.desktop ?? tabs.layout)?.height;
-    errors.push(`Tabs "${tabs.name ?? tabs.id ?? "Tabs"}" has no child components, so it renders its tab strip over an empty ${height ?? ""}px box. Give every tab its content (Text, Html, Table) as children with parent_ref and the tab's slot, or replace the Tabs with a plain panel.`);
+    const height2 = (tabs.layouts?.desktop ?? tabs.layout)?.height;
+    errors.push(`Tabs "${tabs.name ?? tabs.id ?? "Tabs"}" has no child components, so it renders its tab strip over an empty ${height2 ?? ""}px box. Give every tab its content (Text, Html, Table) as children with parent_ref and the tab's slot, or replace the Tabs with a plain panel.`);
   }
   return errors;
 }
@@ -67915,8 +68320,8 @@ var LABELLED_INPUT_TYPES = /* @__PURE__ */ new Set(["TextInput", "NumberInput", 
 function lintDefaultInputLabel(spec) {
   if (!LABELLED_INPUT_TYPES.has(spec.type ?? ""))
     return [];
-  const label2 = propVal2(spec.properties ?? {}, "label");
-  const text2 = typeof label2 === "string" ? label2.trim() : label2;
+  const label3 = propVal2(spec.properties ?? {}, "label");
+  const text2 = typeof label3 === "string" ? label3.trim() : label3;
   if (text2 !== void 0 && text2 !== "" && text2 !== "Label")
     return [];
   return [
@@ -68040,18 +68445,18 @@ var RENDERED_TEXT_KEYS = ["text", "rawHtml", "label", "title", "placeholder", "d
 var CONTAINER_ITEMS = { Tabs: "tabs", Steps: "steps", Timeline: "data" };
 function lintRenderedText(spec) {
   const errors = [];
-  const label2 = spec.name ?? spec.type ?? "component";
+  const label3 = spec.name ?? spec.type ?? "component";
   const props2 = spec.properties ?? {};
   for (const key4 of RENDERED_TEXT_KEYS) {
     const value2 = propVal2(props2, key4);
     if (typeof value2 !== "string" || !value2)
       continue;
     if (value2.replace(/\{\{[\s\S]*?\}\}/g, "").includes("\\n")) {
-      errors.push(`Component "${label2}".properties.${key4} contains a literal backslash-n; ToolJet prints it as the two characters "\\n". Use a real line break, <br> in Html, or separate components.`);
+      errors.push(`Component "${label3}".properties.${key4} contains a literal backslash-n; ToolJet prints it as the two characters "\\n". Use a real line break, <br> in Html, or separate components.`);
     }
     const outside = expressionOutsideBinding(value2);
     if (outside) {
-      errors.push(`Component "${label2}".properties.${key4} has JavaScript outside a {{ }} binding (${outside}); it renders as source text. Wrap the whole expression in one {{ }} or move it into a query.`);
+      errors.push(`Component "${label3}".properties.${key4} has JavaScript outside a {{ }} binding (${outside}); it renders as source text. Wrap the whole expression in one {{ }} or move it into a query.`);
     }
   }
   if (TABS_TYPES.has(spec.type ?? "")) {
@@ -68061,10 +68466,10 @@ function lintRenderedText(spec) {
     const titles = Array.isArray(tabItems) ? tabItems.map((item) => String(item?.title ?? "")) : [];
     const authoredItems = titles.length > 0 && !titles.every((title) => /^Tab \d+$/.test(title)) && !(spec.type === "ShadTabs" && titles.join("|") === SHAD_TABS_DEFAULT_TITLES.join("|"));
     if (dynamic && (tabs === void 0 || tabs === null || tabs === "")) {
-      errors.push(`Tabs "${label2}": useDynamicOptions is on but properties.tabs is empty, so nothing renders. Bind tabs to an array of {id, title}.`);
+      errors.push(`Tabs "${label3}": useDynamicOptions is on but properties.tabs is empty, so nothing renders. Bind tabs to an array of {id, title}.`);
     } else if (!dynamic && !authoredItems) {
       const placeholder = spec.type === "ShadTabs" ? SHAD_TABS_DEFAULT_TITLES.join(" / ") : "Tab 1 / Tab 2 / Tab 3";
-      errors.push(`${spec.type} "${label2}": it renders properties.tabItems (default "${placeholder}") unless useDynamicOptions is true; ` + (tabs !== void 0 ? "the authored properties.tabs is ignored. " : "") + 'Either set properties.useDynamicOptions to "{{true}}" and keep tabs as [{id, title}], or author properties.tabItems with the real titles.');
+      errors.push(`${spec.type} "${label3}": it renders properties.tabItems (default "${placeholder}") unless useDynamicOptions is true; ` + (tabs !== void 0 ? "the authored properties.tabs is ignored. " : "") + 'Either set properties.useDynamicOptions to "{{true}}" and keep tabs as [{id, title}], or author properties.tabItems with the real titles.');
     }
   }
   const itemsKey = TABS_TYPES.has(spec.type ?? "") ? void 0 : CONTAINER_ITEMS[spec.type ?? ""];
@@ -68073,7 +68478,7 @@ function lintRenderedText(spec) {
     const items = dynamicSchema ?? propVal2(props2, itemsKey);
     const authored = Array.isArray(items) ? items.length > 0 : typeof items === "string" && items.includes("{{");
     if (!authored) {
-      errors.push(`${spec.type} "${label2}" has no properties.${itemsKey}: it renders ToolJet's placeholder items ("Tab 1 / Tab 2 / Tab 3"). Author ${itemsKey} with the real titles, or use a different component.`);
+      errors.push(`${spec.type} "${label3}" has no properties.${itemsKey}: it renders ToolJet's placeholder items ("Tab 1 / Tab 2 / Tab 3"). Author ${itemsKey} with the real titles, or use a different component.`);
     }
   }
   return errors;
@@ -68121,23 +68526,23 @@ var CHART_PADDING_MAX_PX = 24;
 function lintChartHouseStyle(spec, warnings = []) {
   if (spec.type !== "Chart")
     return [];
-  const label2 = spec.name ?? spec.type;
+  const label3 = spec.name ?? spec.type;
   const props2 = spec.properties ?? {};
   const fromJson = propVal2(props2, "plotFromJson");
   if (!isTrueBinding(fromJson)) {
     const kind = String(propVal2(props2, "type") ?? "bar");
-    warnings.push(`Chart "${label2}": native type "${kind}" renders Plotly's defaults (Verdana labels, grey grid, flat unlabeled bars, the rainbow pie). Set properties.plotFromJson to "{{true}}" and write properties.jsonDescription as the house chart from references/ui-layout.md for finer control, or retain native rendering when its themed presentation is verified.`);
+    warnings.push(`Chart "${label3}": native type "${kind}" renders Plotly's defaults (Verdana labels, grey grid, flat unlabeled bars, the rainbow pie). Set properties.plotFromJson to "{{true}}" and write properties.jsonDescription as the house chart from references/ui-layout.md for finer control, or retain native rendering when its themed presentation is verified.`);
     return [];
   }
   const raw = propVal2(props2, "jsonDescription");
   const description = typeof raw === "string" ? raw : raw && typeof raw === "object" ? JSON.stringify(raw) : "";
   if (!description.trim()) {
-    return [`Chart "${label2}": plotFromJson is on but properties.jsonDescription is empty, so nothing renders.`];
+    return [`Chart "${label3}": plotFromJson is on but properties.jsonDescription is empty, so nothing renders.`];
   }
   const padding = propVal2(spec.styles ?? {}, "padding");
   const paddingPx = typeof padding === "number" ? padding : typeof padding === "string" && /^\s*\d+\s*$/.test(padding) ? Number(padding) : void 0;
   if (paddingPx === void 0 || paddingPx > CHART_PADDING_MAX_PX) {
-    warnings.push(`Chart "${label2}": styles.padding ${padding === void 0 ? "is unset (catalog default 50)" : `is ${JSON.stringify(padding)}`}; the wrapper uses it as the Plotly margin on all four sides and ignores layout.margin, which can shrink the plot. Start with styles.padding 16 (usually at most ${CHART_PADDING_MAX_PX}); the axes add their own room for tick labels. Keep a larger margin only when labels need it and verify the rendered plot.`);
+    warnings.push(`Chart "${label3}": styles.padding ${padding === void 0 ? "is unset (catalog default 50)" : `is ${JSON.stringify(padding)}`}; the wrapper uses it as the Plotly margin on all four sides and ignores layout.margin, which can shrink the plot. Start with styles.padding 16 (usually at most ${CHART_PADDING_MAX_PX}); the axes add their own room for tick labels. Keep a larger margin only when labels need it and verify the rendered plot.`);
   }
   if (!description.includes("layout") && /^\s*\{\{[\s\S]*\}\}\s*$/.test(description) && !description.includes("data"))
     return [];
@@ -68145,17 +68550,17 @@ function lintChartHouseStyle(spec, warnings = []) {
     return [];
   if (/\bdata\s*:\s*\(?\s*queries\.[\w.$]+\.data\b[^,;]*?\)?\s*\.map\(/.test(description)) {
     return [
-      `Chart "${label2}": jsonDescription sets data to rows.map(r => ({x, y})), a list of points, so Plotly draws empty axes. data is a list of traces: [{ type: 'bar', x: rows.map(r => r.label), y: rows.map(r => r.value), ... }].`
+      `Chart "${label3}": jsonDescription sets data to rows.map(r => ({x, y})), a list of points, so Plotly draws empty axes. data is a list of traces: [{ type: 'bar', x: rows.map(r => r.label), y: rows.map(r => r.value), ... }].`
     ];
   }
   if (/textposition\s*:\s*['"]outside['"]/.test(description) && !/cliponaxis\s*:\s*false/.test(description)) {
     return [
-      `Chart "${label2}": a bar trace uses textposition 'outside' without cliponaxis:false, so the tallest bar's value label is cut in half by the plot area. Add cliponaxis:false to every bar trace that places its text outside.`
+      `Chart "${label3}": a bar trace uses textposition 'outside' without cliponaxis:false, so the tallest bar's value label is cut in half by the plot area. Add cliponaxis:false to every bar trace that places its text outside.`
     ];
   }
   const missing = CHART_HOUSE_LAYOUT_KEYS.filter((key4) => !description.includes(key4));
   if (missing.length) {
-    warnings.push(`Chart "${label2}": jsonDescription has no layout.${missing.join(", layout.")}; without the house layout the chart falls back to Plotly defaults. Prefer explicit theme typography; retain inherited defaults only after verifying the result.`);
+    warnings.push(`Chart "${label3}": jsonDescription has no layout.${missing.join(", layout.")}; without the house layout the chart falls back to Plotly defaults. Prefer explicit theme typography; retain inherited defaults only after verifying the result.`);
   }
   if (!description.includes("{{")) {
     try {
@@ -68171,7 +68576,7 @@ function lintChartHouseStyle(spec, warnings = []) {
       });
       if (dataless.length) {
         return [
-          `Chart "${label2}": ${dataless.length} of ${traces.length} trace(s) carry no data (no x/y, values or z arrays), so the chart draws empty axes. Put the arrays in the trace, or build the whole { data, layout } object in a JavaScript query and bind jsonDescription to it.`
+          `Chart "${label3}": ${dataless.length} of ${traces.length} trace(s) carry no data (no x/y, values or z arrays), so the chart draws empty axes. Put the arrays in the trace, or build the whole { data, layout } object in a JavaScript query and bind jsonDescription to it.`
         ];
       }
     } catch {
@@ -68187,34 +68592,34 @@ function lintComponentSpec(spec, context = {}) {
   const errors = [];
   const warnings = [];
   const props2 = spec.properties ?? {};
-  const label2 = spec.name ?? spec.type ?? "component";
+  const label3 = spec.name ?? spec.type ?? "component";
   if (spec.type === "Text" && propVal2(props2, "text") === void 0) {
-    warnings.push(`Text "${label2}" has no properties.text and will render ToolJet's default greeting. Supply the intended text or binding; use an explicit empty string if this display is intentionally blank. Do not invent replacement copy or change its layout.`);
+    warnings.push(`Text "${label3}" has no properties.text and will render ToolJet's default greeting. Supply the intended text or binding; use an explicit empty string if this display is intentionally blank. Do not invent replacement copy or change its layout.`);
   }
   for (const key4 of Object.keys(props2)) {
     const value2 = propVal2(props2, key4);
     if (typeof value2 === "string" && hasUnclosedBinding(value2)) {
-      errors.push(`Component "${label2}".properties.${key4} opens a {{ binding that never closes, so ToolJet shows the expression as text. End it with "}}" (an array or object literal needs its own closing bracket and brace before the final "}}").`);
+      errors.push(`Component "${label3}".properties.${key4} opens a {{ binding that never closes, so ToolJet shows the expression as text. End it with "}}" (an array or object literal needs its own closing bracket and brace before the final "}}").`);
     }
     if (typeof value2 === "string" && hasNestedBinding(value2)) {
-      errors.push(`Component "${label2}".properties.${key4} nests a {{ }} binding inside another; ToolJet ends the outer binding at the first "}}", so the value breaks. ` + (spec.type === "ShadTable" ? "For per-row styling use the column's conditionalStyles ([{ condition, value, textColor, backgroundColor }]) and a button's disabledWhen / hiddenWhen ({ key, condition, value }) instead of bindings." : "Compute the inner value in the outer expression, or in a JavaScript query."));
+      errors.push(`Component "${label3}".properties.${key4} nests a {{ }} binding inside another; ToolJet ends the outer binding at the first "}}", so the value breaks. ` + (spec.type === "ShadTable" ? "For per-row styling use the column's conditionalStyles ([{ condition, value, textColor, backgroundColor }]) and a button's disabledWhen / hiddenWhen ({ key, condition, value }) instead of bindings." : "Compute the inner value in the outer expression, or in a JavaScript query."));
     }
   }
   if (spec.type === "ShadTable") {
-    warnings.push(`ShadTable "${label2}" is superseded: for a new table use type "Table" with styles.tableLook "shadcn" (ToolJet's own Table in the shadcn/ui look, with its columns, row action buttons, events and inspector).`);
+    warnings.push(`ShadTable "${label3}" is superseded: for a new table use type "Table" with styles.tableLook "shadcn" (ToolJet's own Table in the shadcn/ui look, with its columns, row action buttons, events and inspector).`);
   }
   if (spec.type === "ShadTable" && isFalseBinding(propVal2(props2, "dynamicHeight"))) {
-    const height = Number(spec.layout?.height);
+    const height2 = Number(spec.layout?.height);
     const paginated = !isFalseBinding(propVal2(props2, "enablePagination"));
     const rows = Number(String(propVal2(props2, "rowsPerPage") ?? "10").replace(/[{}\s]/g, "")) || 10;
-    if (paginated && Number.isFinite(height) && height > 0) {
+    if (paginated && Number.isFinite(height2) && height2 > 0) {
       const off = (key4) => isFalseBinding(propVal2(props2, key4));
       const on = (key4) => isTrueBinding(propVal2(props2, key4));
       const toolbar = !off("displaySearchBox") || !off("showFilterButton") || !on("hideColumnSelectorButton") || on("showDownloadButton") || on("showRefreshButton");
       const rowHeight2 = { condensed: 36, spacious: 56 }[String(propVal2(props2, "cellSize"))] ?? 44;
       const needed = (toolbar ? 56 : 0) + 52 + 41 + rows * rowHeight2;
-      if (height < needed) {
-        errors.push(`ShadTable "${label2}" has dynamicHeight off and height ${height}px, but ${rows} rows per page needs at least ${needed}px, so rows are cut off inside it. Remove dynamicHeight:false (the table then fits its rows), raise the height to ${needed}, or lower rowsPerPage.`);
+      if (height2 < needed) {
+        errors.push(`ShadTable "${label3}" has dynamicHeight off and height ${height2}px, but ${rows} rows per page needs at least ${needed}px, so rows are cut off inside it. Remove dynamicHeight:false (the table then fits its rows), raise the height to ${needed}, or lower rowsPerPage.`);
       }
     }
   }
@@ -68225,16 +68630,16 @@ function lintComponentSpec(spec, context = {}) {
       const timed = columns.filter((c) => c && typeof c === "object" && c.columnType === "datepicker" && (isTrueBinding(c.isTimeChecked) || hasClockFormat(c)) && c.columnVisibility !== false && c.columnVisibility !== "{{false}}");
       const local = timed.filter((c) => !c.timeZoneDisplay);
       if (local.length)
-        warnings.push(`Table "${label2}" time columns ${local.map((c) => JSON.stringify(c.key ?? c.name)).join(", ")} have no timeZoneDisplay, so times follow the viewer's browser timezone. For a location-bound schedule, set the business IANA timeZoneDisplay and appropriate source timeZoneValue; keep viewer-local time only when intended and labelled. Do not infer a timezone from locale or currency.`);
+        warnings.push(`Table "${label3}" time columns ${local.map((c) => JSON.stringify(c.key ?? c.name)).join(", ")} have no timeZoneDisplay, so times follow the viewer's browser timezone. For a location-bound schedule, set the business IANA timeZoneDisplay and appropriate source timeZoneValue; keep viewer-local time only when intended and labelled. Do not infer a timezone from locale or currency.`);
       const doubled = timed.filter((c) => isTrueBinding(c.isTimeChecked) && hasClockFormat(c));
       if (doubled.length)
-        warnings.push(`Table "${label2}" time columns ${doubled.map((c) => JSON.stringify(c.key ?? c.name)).join(", ")} include time tokens in dateFormat while isTimeChecked is on. The renderer appends time itself; use a date-only dateFormat and isTwentyFourHrFormatEnabled for 24-hour time to avoid displaying the time twice.`);
+        warnings.push(`Table "${label3}" time columns ${doubled.map((c) => JSON.stringify(c.key ?? c.name)).join(", ")} include time tokens in dateFormat while isTimeChecked is on. The renderer appends time itself; use a date-only dateFormat and isTwentyFourHrFormatEnabled for 24-hour time to avoid displaying the time twice.`);
     }
   }
   if (spec.type === "Button" && propVal2(spec.styles ?? {}, "type") === "outline") {
     const textColor = propVal2(spec.styles ?? {}, "textColor") ?? getComponentSchema("Button")?.styles.find((style) => style.key === "textColor")?.default;
     if (textColor === "var(--cc-surface1-surface)") {
-      warnings.push(`Button "${label2}": outline background is transparent even when backgroundColor is set. Surface-colored text can disappear against the page or card. Set textColor to a contrasting token such as var(--cc-primary-text), and check iconColor/loaderColor against the actual parent; retain surface-colored text only when the parent provides sufficient contrast.`);
+      warnings.push(`Button "${label3}": outline background is transparent even when backgroundColor is set. Surface-colored text can disappear against the page or card. Set textColor to a contrasting token such as var(--cc-primary-text), and check iconColor/loaderColor against the actual parent; retain surface-colored text only when the parent provides sufficient contrast.`);
     }
   }
   if (spec.type === "NumberInput") {
@@ -68242,79 +68647,79 @@ function lintComponentSpec(spec, context = {}) {
       const value2 = propVal2(props2, key4);
       if (value2 == null || typeof value2 === "string" && value2.trim() === "")
         continue;
-      errors.push(`NumberInput "${label2}": properties.${key4} is ignored by the renderer. Move the limit to top-level validation.${key4}: {value: ...} and clear the legacy property. Gate standalone submit actions on field validity and the intended numeric range; truthiness accepts negative values.`);
+      errors.push(`NumberInput "${label3}": properties.${key4} is ignored by the renderer. Move the limit to top-level validation.${key4}: {value: ...} and clear the legacy property. Gate standalone submit actions on field validity and the intended numeric range; truthiness accepts negative values.`);
     }
   }
-  errors.push(...lintBindingSyntax(props2, `Component "${label2}".properties`));
-  errors.push(...lintBindingSyntax(spec.styles, `Component "${label2}".styles`));
+  errors.push(...lintBindingSyntax(props2, `Component "${label3}".properties`));
+  errors.push(...lintBindingSyntax(spec.styles, `Component "${label3}".styles`));
   errors.push(...lintRenderedText(spec));
   errors.push(...lintChartHouseStyle(spec, warnings));
   if (spec.type === "Text") {
     const text2 = propVal2(props2, "text");
-    const height = (spec.layouts?.desktop ?? spec.layout)?.height;
-    if (typeof text2 === "string" && typeof height === "number") {
+    const height2 = (spec.layouts?.desktop ?? spec.layout)?.height;
+    if (typeof text2 === "string" && typeof height2 === "number") {
       const needed = estimateTextHeight(text2, optionalStaticNumber(propVal2(spec.styles, "textSize")) ?? 14);
-      if (needed.lines > 1 && needed.px > height + 6) {
-        errors.push(`Text "${label2}": its ${needed.lines}${needed.dynamic ? " static" : ""} lines (font sizes ${needed.sizes.join("/")}px) need about ${needed.px}px but the widget is ${height}px tall, so the last line is cut off. Set height to at least ${Math.ceil(needed.px / 10) * 10}, or split the lines into separate Text widgets.`);
+      if (needed.lines > 1 && needed.px > height2 + 6) {
+        errors.push(`Text "${label3}": its ${needed.lines}${needed.dynamic ? " static" : ""} lines (font sizes ${needed.sizes.join("/")}px) need about ${needed.px}px but the widget is ${height2}px tall, so the last line is cut off. Set height to at least ${Math.ceil(needed.px / 10) * 10}, or split the lines into separate Text widgets.`);
       } else if (needed.dynamic) {
         const likely = estimateTextHeight(text2, optionalStaticNumber(propVal2(spec.styles, "textSize")) ?? 14, { bindingLines: true });
-        if (likely.lines > 1 && likely.px > height + 6) {
-          warnings.push(`Text "${label2}": with one line for each binding between its line breaks, its ${likely.lines} lines need about ${likely.px}px but the widget is ${height}px tall, so the last line is likely cut off. Set height to at least ${Math.ceil(likely.px / 10) * 10}, or turn on dynamicHeight.`);
+        if (likely.lines > 1 && likely.px > height2 + 6) {
+          warnings.push(`Text "${label3}": with one line for each binding between its line breaks, its ${likely.lines} lines need about ${likely.px}px but the widget is ${height2}px tall, so the last line is likely cut off. Set height to at least ${Math.ceil(likely.px / 10) * 10}, or turn on dynamicHeight.`);
         }
       }
     }
   }
   if (isModalV2Type(spec.type) && !isFalseBinding(propVal2(props2, "useDefaultButton"))) {
     const top = (spec.layouts?.desktop ?? spec.layout)?.top;
-    errors.push(`${spec.type} "${label2}": properties.useDefaultButton is on (the catalog default), so ToolJet renders a "Launch Modal" trigger button at the modal's own coordinates${typeof top === "number" ? ` (top ${top})` : ""} as a stray block on the page. Set properties.useDefaultButton to false and open the modal from your own Button with a show-modal event.`);
+    errors.push(`${spec.type} "${label3}": properties.useDefaultButton is on (the catalog default), so ToolJet renders a "Launch Modal" trigger button at the modal's own coordinates${typeof top === "number" ? ` (top ${top})` : ""} as a stray block on the page. Set properties.useDefaultButton to false and open the modal from your own Button with a show-modal event.`);
   }
   if ((spec.type === "DropdownV2" || spec.type === "MultiselectV2") && !differsFromCatalogDefault(spec.type, "placeholder", propVal2(props2, "placeholder"))) {
     const labelText = propVal2(props2, "label");
     if (typeof labelText === "string" && labelText.trim()) {
-      warnings.push(`${spec.type} "${label2}": placeholder is the catalog default, so the control reads "Select" until a value is chosen. Set properties.placeholder to the neutral choice for "${labelText.trim()}" (for example "All ${labelText.trim().toLowerCase()}") or give it a default value.`);
+      warnings.push(`${spec.type} "${label3}": placeholder is the catalog default, so the control reads "Select" until a value is chosen. Set properties.placeholder to the neutral choice for "${labelText.trim()}" (for example "All ${labelText.trim().toLowerCase()}") or give it a default value.`);
     }
   }
   for (const key4 of ["disabledState", "loadingState", "visibility", "collapseWhenHidden"]) {
-    const path = `Component "${label2}".properties.${key4}`;
+    const path = `Component "${label3}".properties.${key4}`;
     for (const error51 of lintBindingSyntax(props2[key4], path, true)) {
       if (!errors.includes(error51))
         errors.push(error51);
     }
   }
   if (["DropdownV2", "MultiselectV2"].includes(spec.type ?? "") && isTruthyBinding(propVal2(props2, "advanced"))) {
-    for (const error51 of lintBindingSyntax(props2.schema, `Component "${label2}".properties.schema`, true)) {
+    for (const error51 of lintBindingSyntax(props2.schema, `Component "${label3}".properties.schema`, true)) {
       if (!errors.includes(error51))
         errors.push(error51);
     }
   }
   if (spec.slotName !== void 0) {
     if (!isComponentSlotName(spec.slotName)) {
-      errors.push(`Component "${label2}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, Kanban modal, or a Tabs tab (tab-t0, tab-t1, ...).`);
+      errors.push(`Component "${label3}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, Kanban modal, or a Tabs tab (tab-t0, tab-t1, ...).`);
     }
     if (!spec.parentRef && !spec.parent) {
-      errors.push(`Component "${label2}": slot_name requires parent_ref or parent.`);
+      errors.push(`Component "${label3}": slot_name requires parent_ref or parent.`);
     }
   }
   const misplaced = Object.keys(props2).filter((k) => isMisplacedStyleKey(spec.type, k));
   if (misplaced.length) {
-    errors.push(`Component "${label2}": style keys ${JSON.stringify(misplaced)} are under \`properties\`, where ToolJet ignores them \u2014 move them to the top-level \`styles\` object.`);
+    errors.push(`Component "${label3}": style keys ${JSON.stringify(misplaced)} are under \`properties\`, where ToolJet ignores them \u2014 move them to the top-level \`styles\` object.`);
   }
   const rects = [spec.layout, spec.layouts?.desktop, spec.layouts?.mobile].filter(Boolean);
   for (const r of rects) {
     if ((r.width ?? 0) <= 0 || (r.height ?? 0) <= 0) {
-      errors.push(`Component "${label2}": layout has non-positive size (${r.width}\xD7${r.height}) \u2014 it may be invisible.`);
+      errors.push(`Component "${label3}": layout has non-positive size (${r.width}\xD7${r.height}) \u2014 it may be invisible.`);
     }
   }
   const componentSchema = spec.type ? getComponentSchema(spec.type) : null;
   if (!spec.type) {
-    errors.push(`Component "${label2}": type is required.`);
+    errors.push(`Component "${label3}": type is required.`);
   } else if (!componentSchema) {
     const suggestion = nearestCatalogKey(spec.type, getCatalog().map((entry) => entry.type));
-    errors.push(`Component "${label2}": unknown component type "${spec.type}"; ToolJet may persist an unusable component.` + (suggestion ? ` Did you mean "${suggestion}"?` : " Call get_component_catalog with no type to list supported types."));
+    errors.push(`Component "${label3}": unknown component type "${spec.type}"; ToolJet may persist an unusable component.` + (suggestion ? ` Did you mean "${suggestion}"?` : " Call get_component_catalog with no type to list supported types."));
   } else {
     const replacement = getLegacyComponentReplacement(spec.type);
     if (replacement) {
-      warnings.push(`Component "${label2}": "${spec.type}" is legacy. Keep it only when repairing an existing app; use "${replacement}" for new components.`);
+      warnings.push(`Component "${label3}": "${spec.type}" is legacy. Keep it only when repairing an existing app; use "${replacement}" for new components.`);
     }
   }
   for (const [sectionName, authored, entries] of [
@@ -68335,9 +68740,9 @@ function lintComponentSpec(spec, context = {}) {
       const alias = aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget)) ? aliasTarget : void 0;
       const suggestion = alias ?? nearestCatalogKey(key4, knownKeys);
       if (suggestion) {
-        errors.push(`Component "${label2}": "${key4}" is not a valid ${sectionName} key for ${spec.type} and is silently ignored \u2014 use "${suggestion}" instead.`);
+        errors.push(`Component "${label3}": "${key4}" is not a valid ${sectionName} key for ${spec.type} and is silently ignored \u2014 use "${suggestion}" instead.`);
       } else {
-        warnings.push(`Component "${label2}": unknown ${sectionName} key "${key4}" for ${spec.type}; ToolJet may silently ignore it. Check get_component_catalog before authoring this key.`);
+        warnings.push(`Component "${label3}": unknown ${sectionName} key "${key4}" for ${spec.type}; ToolJet may silently ignore it. Check get_component_catalog before authoring this key.`);
       }
     }
     for (const entry of entries) {
@@ -68349,78 +68754,78 @@ function lintComponentSpec(spec, context = {}) {
       if (value2 === void 0 || isDynamicBinding2(value2))
         continue;
       if (!entry.allowedValues.some((allowed) => Object.is(allowed, value2))) {
-        errors.push(`Component "${label2}": unsupported ${sectionName} value ${JSON.stringify(value2)} for "${entry.key}"; allowed values are ${entry.allowedValues.map((allowed) => JSON.stringify(allowed)).join(", ")}. ToolJet silently ignores unsupported enum values.`);
+        errors.push(`Component "${label3}": unsupported ${sectionName} value ${JSON.stringify(value2)} for "${entry.key}"; allowed values are ${entry.allowedValues.map((allowed) => JSON.stringify(allowed)).join(", ")}. ToolJet silently ignores unsupported enum values.`);
       }
     }
   }
   if (spec.type === "Chart") {
     const title = propVal2(props2, "title");
     if (title === void 0) {
-      warnings.push(`Chart "${label2}": native title defaults to a non-empty string that clips at common sizes \u2014 set properties.title.value = "" and put a separate Text heading above the chart.`);
+      warnings.push(`Chart "${label3}": native title defaults to a non-empty string that clips at common sizes \u2014 set properties.title.value = "" and put a separate Text heading above the chart.`);
     } else if (typeof title === "string" && title.trim() !== "") {
-      warnings.push(`Chart "${label2}": native title "${title}" can clip at dashboard sizes \u2014 prefer properties.title.value = "" + a separate Text heading (enable a native title only after visual verification).`);
+      warnings.push(`Chart "${label3}": native title "${title}" can clip at dashboard sizes \u2014 prefer properties.title.value = "" + a separate Text heading (enable a native title only after visual verification).`);
     }
     const plotFromJson = propVal2(props2, "plotFromJson");
     const jsonDescription = propVal2(props2, "jsonDescription");
     if (isTruthyBinding(plotFromJson)) {
       if (jsonDescription === void 0) {
-        errors.push(`Chart "${label2}": plotFromJson is enabled without an explicit jsonDescription, so ToolJet falls back to demo data. Provide a static Plotly object/string, or prefer the proven simple type + data mode.`);
+        errors.push(`Chart "${label3}": plotFromJson is enabled without an explicit jsonDescription, so ToolJet falls back to demo data. Provide a static Plotly object/string, or prefer the proven simple type + data mode.`);
       } else if (isDynamicBinding2(jsonDescription)) {
-        warnings.push(`Chart "${label2}": dynamic plotFromJson/jsonDescription cannot be evaluated statically. This is a verification gap, not evidence of a broken chart. Preserve the authored chart configuration; browser-verify that the evaluated chart has at least one trace. Without runtime evidence, report the gap rather than switching chart modes just to clear this warning.`);
+        warnings.push(`Chart "${label3}": dynamic plotFromJson/jsonDescription cannot be evaluated statically. This is a verification gap, not evidence of a broken chart. Preserve the authored chart configuration; browser-verify that the evaluated chart has at least one trace. Without runtime evidence, report the gap rather than switching chart modes just to clear this warning.`);
       } else {
         let parsed = jsonDescription;
         if (typeof jsonDescription === "string") {
           try {
             parsed = JSON.parse(jsonDescription);
           } catch {
-            errors.push(`Chart "${label2}": plotFromJson requires jsonDescription to be valid JSON with a non-empty data array; ToolJet silently renders an empty chart for invalid JSON.`);
+            errors.push(`Chart "${label3}": plotFromJson requires jsonDescription to be valid JSON with a non-empty data array; ToolJet silently renders an empty chart for invalid JSON.`);
             parsed = void 0;
           }
         }
         if (parsed !== void 0) {
           const description = recordValue(parsed);
           if (!description || !Array.isArray(description.data) || description.data.length === 0) {
-            errors.push(`Chart "${label2}": plotFromJson jsonDescription must contain a non-empty data array. Use simple type + data mode when an advanced Plotly object is not required.`);
+            errors.push(`Chart "${label3}": plotFromJson jsonDescription must contain a non-empty data array. Use simple type + data mode when an advanced Plotly object is not required.`);
           }
         }
       }
     }
   }
   if (spec.type === "Html" && nestedMapInValue(propVal2(props2, "rawHtml"))) {
-    warnings.push(`Html "${label2}": rawHtml contains .map() inside another .map(); ToolJet's Html expression evaluator can throw and render the component completely blank before an || fallback runs. Flatten to one filter().map() chain, or pre-shape the nested data in a datasource/RunJS query and bind the simple result. Do not generalize this warning to Table data bindings, where lookup joins such as filter(...)[0] inside map() are supported.`);
+    warnings.push(`Html "${label3}": rawHtml contains .map() inside another .map(); ToolJet's Html expression evaluator can throw and render the component completely blank before an || fallback runs. Flatten to one filter().map() chain, or pre-shape the nested data in a datasource/RunJS query and bind the simple result. Do not generalize this warning to Table data bindings, where lookup joins such as filter(...)[0] inside map() are supported.`);
   }
   if (unsafeEmptyArrayFirstRowFallback(spec.properties) || unsafeEmptyArrayFirstRowFallback(spec.styles)) {
-    warnings.push(`Component "${label2}": a binding uses (data || [{}])[0].field as a first-row fallback, but an empty array is truthy, so zero rows still produce undefined.field and can blank the component. Use (data || [])[0]?.field or data?.[0]?.field instead.`);
+    warnings.push(`Component "${label3}": a binding uses (data || [{}])[0].field as a first-row fallback, but an empty array is truthy, so zero rows still produce undefined.field and can blank the component. Use (data || [])[0]?.field or data?.[0]?.field instead.`);
   }
   if (spec.type === "Statistics") {
     const secondaryValue = propVal2(props2, "secondaryValue");
     if (typeof secondaryValue === "string" && !secondaryValue.includes("{{") && /[A-Za-z]/.test(secondaryValue)) {
-      warnings.push(`Statistics "${label2}": secondaryValue "${secondaryValue}" is prose, but ToolJet renders it in a narrow delta slot that can wrap letter-by-letter. Put prose in secondaryValueLabel and leave secondaryValue empty; reserve the value for a number or percentage.`);
+      warnings.push(`Statistics "${label3}": secondaryValue "${secondaryValue}" is prose, but ToolJet renders it in a narrow delta slot that can wrap letter-by-letter. Put prose in secondaryValueLabel and leave secondaryValue empty; reserve the value for a number or percentage.`);
     }
     const width = (spec.layouts?.desktop ?? spec.layout)?.width;
     const secondaryHidden = isTruthyBinding(propVal2(props2, "hideSecondary"));
     const minimumWidth = secondaryHidden ? STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS : STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS;
     if (typeof width === "number" && width < minimumWidth) {
-      warnings.push(`Statistics "${label2}": desktop width ${width} columns is too narrow; ${secondaryHidden ? "a value-only tile" : "a tile with visible secondary content"} needs at least ${minimumWidth} columns to keep labels and values readable. ${secondaryHidden ? "Use no more than four tiles per content row." : `Use a two-column KPI grid, or set hideSecondary:true and use at least ${STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS} columns.`}`);
+      warnings.push(`Statistics "${label3}": desktop width ${width} columns is too narrow; ${secondaryHidden ? "a value-only tile" : "a tile with visible secondary content"} needs at least ${minimumWidth} columns to keep labels and values readable. ${secondaryHidden ? "Use no more than four tiles per content row." : `Use a two-column KPI grid, or set hideSecondary:true and use at least ${STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS} columns.`}`);
     }
     const iconName = catalogValue("Statistics", props2, "icon");
     const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propVal2(props2, "iconVisibility") !== false && propVal2(props2, "iconVisibility") !== "{{false}}";
     const valueFontPx = optionalStaticNumber(catalogValue("Statistics", spec.styles, "primaryValueSize", "styles"));
     const largeValueFont = valueFontPx === void 0 || valueFontPx > STATISTICS_SAFE_VALUE_FONT_PX;
     if (secondaryHidden && iconVisible && largeValueFont && typeof width === "number" && width < STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS) {
-      errors.push(`Statistics "${label2}": a value-only tile with an icon at ${width} columns clips its value \u2014 the default ~34px value font plus the icon leaves too little room, so a currency/large number renders truncated (e.g. "$3" for $37,781.64). Fix any one: widen to at least ${STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS} columns, set primaryValueSize to ${STATISTICS_SAFE_VALUE_FONT_PX} or less, or remove the icon.`);
+      errors.push(`Statistics "${label3}": a value-only tile with an icon at ${width} columns clips its value \u2014 the default ~34px value font plus the icon leaves too little room, so a currency/large number renders truncated (e.g. "$3" for $37,781.64). Fix any one: widen to at least ${STATISTICS_VALUE_ONLY_WITH_ICON_MIN_WIDTH_COLS} columns, set primaryValueSize to ${STATISTICS_SAFE_VALUE_FONT_PX} or less, or remove the icon.`);
     }
     const primaryLabel = catalogValue("Statistics", props2, "primaryValueLabel");
     if (secondaryHidden && typeof width === "number" && width >= STATISTICS_VALUE_ONLY_MIN_WIDTH_COLS && width < STATISTICS_WITH_SECONDARY_MIN_WIDTH_COLS && typeof primaryLabel === "string" && !primaryLabel.includes("{{") && // About 25px a column at laptop widths and 7-8px a label character: two characters a column stay on one
     // line (a 13-column tile is ~325px; the old 12-character limit flagged "Arrived / waiting", vet n1).
     primaryLabel.trim().length > width * 2) {
-      warnings.push(`Statistics "${label2}": value-only width ${width} columns fits a label of about ${width * 2} characters, but "${primaryLabel}" can wrap vertically and hide the value in the viewer. Shorten the label, use at least 18 columns, or browser-verify the exact viewer width.`);
+      warnings.push(`Statistics "${label3}": value-only width ${width} columns fits a label of about ${width * 2} characters, but "${primaryLabel}" can wrap vertically and hide the value in the viewer. Shorten the label, use at least 18 columns, or browser-verify the exact viewer width.`);
     }
   }
   if (spec.type === "DropdownV2") {
     for (const key4 of ["value", "defaultValue"]) {
       if (Object.prototype.hasOwnProperty.call(props2, key4)) {
-        errors.push(`DropdownV2 "${label2}": properties.${key4} is not a supported preselection property. Set visible:true and default:true on the matching option; for an edit form use advanced:true and a schema binding whose option.default compares its value with the raw selected record ID/field. Preserve ID types. Remove this unsupported property after wiring the selection; silently dropping it can clear saved relationships.`);
+        errors.push(`DropdownV2 "${label3}": properties.${key4} is not a supported preselection property. Set visible:true and default:true on the matching option; for an edit form use advanced:true and a schema binding whose option.default compares its value with the raw selected record ID/field. Preserve ID types. Remove this unsupported property after wiring the selection; silently dropping it can clear saved relationships.`);
       }
     }
     const advanced = propVal2(props2, "advanced");
@@ -68429,30 +68834,30 @@ function lintComponentSpec(spec, context = {}) {
     const customSchema = differsFromCatalogDefault("DropdownV2", "schema", schema);
     const customOptions = differsFromCatalogDefault("DropdownV2", "options", options2);
     if (isTruthyBinding(advanced)) {
-      warnings.push(...dropdownDefaultVisibilityWarning(schema, label2));
+      warnings.push(...dropdownDefaultVisibilityWarning(schema, label3));
       if (spec.name)
         warnings.push(...dropdownSelfDefaultWarning(schema, spec.name));
     } else if (advanced === void 0 || isFalseBinding(advanced))
-      warnings.push(...dropdownDefaultVisibilityWarning(options2, label2));
+      warnings.push(...dropdownDefaultVisibilityWarning(options2, label3));
     if (customOptions && !Array.isArray(options2)) {
-      errors.push(`DropdownV2 "${label2}": properties.options is static-array-only, but received ${typeof options2 === "string" && isDynamicBinding2(options2) ? "a dynamic {{ }} binding" : typeof options2}. ToolJet can silently split a binding string into character objects. Use properties.schema with properties.advanced.value="{{true}}" for dynamic options, or pass a literal options array.`);
+      errors.push(`DropdownV2 "${label3}": properties.options is static-array-only, but received ${typeof options2 === "string" && isDynamicBinding2(options2) ? "a dynamic {{ }} binding" : typeof options2}. ToolJet can silently split a binding string into character objects. Use properties.schema with properties.advanced.value="{{true}}" for dynamic options, or pass a literal options array.`);
     } else if (Array.isArray(options2)) {
       const malformedIndexes = options2.flatMap((option, index) => {
         const entry = recordValue(option);
         return entry && "label" in entry && "value" in entry ? [] : [index];
       });
       if (malformedIndexes.length) {
-        errors.push(`DropdownV2 "${label2}": properties.options contains malformed entries at indexes ${malformedIndexes.join(", ")}; each static option must be an object with label and value. This can indicate a previously shredded dynamic binding; replace it with properties.schema + advanced="{{true}}".`);
+        errors.push(`DropdownV2 "${label3}": properties.options contains malformed entries at indexes ${malformedIndexes.join(", ")}; each static option must be an object with label and value. This can indicate a previously shredded dynamic binding; replace it with properties.schema + advanced="{{true}}".`);
       }
     }
     if (customSchema && customOptions) {
-      warnings.push(`DropdownV2 "${label2}": custom \`schema\` and custom \`options\` are both present, but the modes are mutually exclusive. Use schema with properties.advanced.value="{{true}}", or options with advanced="{{false}}".`);
+      warnings.push(`DropdownV2 "${label3}": custom \`schema\` and custom \`options\` are both present, but the modes are mutually exclusive. Use schema with properties.advanced.value="{{true}}", or options with advanced="{{false}}".`);
     }
     if (customSchema && (advanced === void 0 || isFalseBinding(advanced))) {
-      warnings.push(`DropdownV2 "${label2}": custom \`schema\` is silently ignored unless properties.advanced.value="{{true}}"; ToolJet will render the static options instead.`);
+      warnings.push(`DropdownV2 "${label3}": custom \`schema\` is silently ignored unless properties.advanced.value="{{true}}"; ToolJet will render the static options instead.`);
     }
     if (customOptions && isTruthyBinding(advanced)) {
-      warnings.push(`DropdownV2 "${label2}": custom \`options\` are silently ignored while properties.advanced is true; use \`schema\` for dynamic mode or set advanced="{{false}}".`);
+      warnings.push(`DropdownV2 "${label3}": custom \`options\` are silently ignored while properties.advanced is true; use \`schema\` for dynamic mode or set advanced="{{false}}".`);
     }
   }
   if (spec.type === "DatePickerV2") {
@@ -68461,17 +68866,17 @@ function lintComponentSpec(spec, context = {}) {
     const literal3 = typeof defaultValue === "string" ? defaultValue.trim().replace(/^\{\{\s*(['"])([^'"]+)\1\s*\}\}$/, "$2") : void 0;
     const yearLastFormat = typeof dateFormat === "string" && /^(?:D{1,2}[^A-Za-z]+M{1,4}|M{1,4}[^A-Za-z]+D{1,2})[^A-Za-z]+Y{2,4}$/.test(dateFormat);
     if (literal3 && /^\d{4}-\d{2}-\d{2}$/.test(literal3) && yearLastFormat) {
-      errors.push(`DatePickerV2 "${label2}": ISO defaultValue "${literal3}" does not match dateFormat "${dateFormat}". ToolJet parses the default with dateFormat, not as ISO automatically. Use dateFormat:"YYYY-MM-DD" or format the default into the selected display format; otherwise the initial day can silently change.`);
+      errors.push(`DatePickerV2 "${label3}": ISO defaultValue "${literal3}" does not match dateFormat "${dateFormat}". ToolJet parses the default with dateFormat, not as ISO automatically. Use dateFormat:"YYYY-MM-DD" or format the default into the selected display format; otherwise the initial day can silently change.`);
     }
     if (typeof defaultValue === "string" && defaultValue.includes("{{") && typeof dateFormat === "string" && !dateFormat.includes("{{")) {
       const formats = [...defaultValue.matchAll(/\.format\(\s*(['"])([^'"]+)\1\s*\)/g)].map((m) => m[2]);
       if (formats.length === 1 && formats[0] !== dateFormat) {
-        warnings.push(`DatePickerV2 "${label2}": defaultValue formats as "${formats[0]}" but dateFormat is "${dateFormat}". Check the evaluated default: the parser and display share dateFormat. Match them before authoring dependent queries.`);
+        warnings.push(`DatePickerV2 "${label3}": defaultValue formats as "${formats[0]}" but dateFormat is "${dateFormat}". Check the evaluated default: the parser and display share dateFormat. Match them before authoring dependent queries.`);
       }
     }
     const demoDefault = getComponentSchema("DatePickerV2")?.properties.find((property3) => property3.key === "defaultValue")?.default;
     if (defaultValue === void 0 || JSON.stringify(defaultValue) === JSON.stringify(demoDefault)) {
-      warnings.push(`DatePickerV2 "${label2}": the untouched default renders ToolJet's 01/01/2022 demo date. Set properties.defaultValue.value="{{null}}" for an empty/create field, or bind an explicit date for edit/filter state.`);
+      warnings.push(`DatePickerV2 "${label3}": the untouched default renders ToolJet's 01/01/2022 demo date. Set properties.defaultValue.value="{{null}}" for an empty/create field, or bind an explicit date for edit/filter state.`);
     }
   }
   if (spec.type === "KeyValuePair") {
@@ -68485,7 +68890,7 @@ function lintComponentSpec(spec, context = {}) {
       const staticData = recordValue(data);
       const undeclaredKeys = staticData ? Object.keys(staticData).filter((key4) => !declaredKeys.has(key4)) : [];
       if (undeclaredKeys.length > 0 || !staticData && !explicitlyProjectsObjectData(data)) {
-        warnings.push(`KeyValuePair "${label2}": explicit fields do not suppress undeclared data keys; ToolJet appends them as visible rows. ` + (undeclaredKeys.length > 0 ? `Undeclared keys: ${undeclaredKeys.join(", ")}. ` : "") + "Project data to a new object containing only the intended field keys; object spreads are not safe projections.");
+        warnings.push(`KeyValuePair "${label3}": explicit fields do not suppress undeclared data keys; ToolJet appends them as visible rows. ` + (undeclaredKeys.length > 0 ? `Undeclared keys: ${undeclaredKeys.join(", ")}. ` : "") + "Project data to a new object containing only the intended field keys; object spreads are not safe projections.");
       }
     }
     if (Array.isArray(fields) && fields.length > 0) {
@@ -68511,12 +68916,12 @@ function lintComponentSpec(spec, context = {}) {
         return key4 && deletionHistory.has(key4) ? [key4] : [];
       }) : [];
       if (contradictoryDemoKeys.length) {
-        warnings.push(`KeyValuePair "${label2}": persisted catalog demo fields (${[...new Set(contradictoryDemoKeys)].join(", ")}) are still present even though fieldDeletionHistory marks them deleted. Deletion history does not remove already-persisted rows; replace properties.fields with the complete intended array in one update.`);
+        warnings.push(`KeyValuePair "${label3}": persisted catalog demo fields (${[...new Set(contradictoryDemoKeys)].join(", ")}) are still present even though fieldDeletionHistory marks them deleted. Deletion history does not remove already-persisted rows; replace properties.fields with the complete intended array in one update.`);
       }
       fields.forEach((field, index) => {
         const entry = recordValue(field);
         if (entry?.fieldType === "string" && (looksDateLikeField(entry.key) || looksDateLikeField(entry.name))) {
-          warnings.push(`KeyValuePair "${label2}" field[${index}] "${String(entry.key ?? entry.name)}" looks date/time-like but uses fieldType:"string", which can expose a raw ISO timestamp. Use fieldType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
+          warnings.push(`KeyValuePair "${label3}" field[${index}] "${String(entry.key ?? entry.name)}" looks date/time-like but uses fieldType:"string", which can expose a raw ISO timestamp. Use fieldType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
         }
       });
     }
@@ -68546,9 +68951,9 @@ function lintComponentSpec(spec, context = {}) {
     const serverSide = catalogValue("Table", props2, "serverSidePagination");
     const rowsPerPage = optionalStaticNumber(isTruthyBinding(serverSide) ? catalogValue("Table", props2, "serverSideRowsPerPage") : catalogValue("Table", props2, "rowsPerPage"));
     if (functionStyleTableMap(data)) {
-      errors.push(`Table "${label2}": the projection checker cannot certify a function-style .map() callback. Rewrite map(function(row) { return {id:row.id}; }) as map(row => ({id:row.id})), keeping the same explicit keys. Do not remove columns or disable autogenerateColumns to work around this; use the expression-body arrow or pre-shape complex logic in a query.`);
+      errors.push(`Table "${label3}": the projection checker cannot certify a function-style .map() callback. Rewrite map(function(row) { return {id:row.id}; }) as map(row => ({id:row.id})), keeping the same explicit keys. Do not remove columns or disable autogenerateColumns to work around this; use the expression-body arrow or pre-shape complex logic in a query.`);
     } else if (statementBodyMapInValue(data) && typeof data === "string" && data.trim().slice(2, -2).includes("}}")) {
-      errors.push(`Table "${label2}": data uses a statement-body .map() callback whose code contains \`}}\`, which ends the binding early, so the table shows no data. Put a space between the braces (} }), use an expression body such as map(row => ({...})), or pre-shape the rows in a RunJS query.`);
+      errors.push(`Table "${label3}": data uses a statement-body .map() callback whose code contains \`}}\`, which ends the binding early, so the table shows no data. Put a space between the braces (} }), use an expression body such as map(row => ({...})), or pre-shape the rows in a RunJS query.`);
     }
     if (typeof desktopHeight === "number" && rowsPerPage !== void 0 && rowsPerPage > 0 && isTruthyBinding(paginationEnabled) && !isTruthyBinding(dynamicHeight) && !isTruthyBinding(expandableRows)) {
       const cellSize = catalogValue("Table", spec.styles, "cellSize", "styles");
@@ -68564,19 +68969,19 @@ function lintComponentSpec(spec, context = {}) {
       const minimumHeight = chromeHeight + rowsPerPage * baseRowHeight;
       const estimatedHeight = chromeHeight + rowsPerPage * rowHeight2;
       if (desktopHeight < chromeHeight + baseRowHeight) {
-        errors.push(`Table "${label2}": desktop height ${desktopHeight}px cannot show even one data row; use at least ${chromeHeight + baseRowHeight}px.`);
+        errors.push(`Table "${label3}": desktop height ${desktopHeight}px cannot show even one data row; use at least ${chromeHeight + baseRowHeight}px.`);
       } else if (desktopHeight < minimumHeight) {
-        warnings.push(`Table "${label2}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ${cellSize === "condensed" ? "condensed" : "regular"} rows without an inner scrollbar; use about ${estimatedHeight}px, reduce rowsPerPage, or enable dynamicHeight. This is an estimate; wrapped rows vary. Deliberate inner scrolling is valid when the rows and actions remain usable.`);
+        warnings.push(`Table "${label3}": desktop height ${desktopHeight}px is too short to show ${rowsPerPage} ${cellSize === "condensed" ? "condensed" : "regular"} rows without an inner scrollbar; use about ${estimatedHeight}px, reduce rowsPerPage, or enable dynamicHeight. This is an estimate; wrapped rows vary. Deliberate inner scrolling is valid when the rows and actions remain usable.`);
       }
     }
     if (data !== void 0 && selector !== "rawJson") {
-      warnings.push(`Table "${label2}": binds \`data\` but dataSourceSelector is not "rawJson" \u2014 it may render blank. Set properties.dataSourceSelector.value = "rawJson".`);
+      warnings.push(`Table "${label3}": binds \`data\` but dataSourceSelector is not "rawJson" \u2014 it may render blank. Set properties.dataSourceSelector.value = "rawJson".`);
     }
     if (data !== void 0 && !isTruthyBinding(autogen) && !hasColumns) {
-      warnings.push(`Table "${label2}": binds \`data\` with neither autogenerateColumns:true nor an explicit columns array \u2014 columns may not render.`);
+      warnings.push(`Table "${label3}": binds \`data\` with neither autogenerateColumns:true nor an explicit columns array \u2014 columns may not render.`);
     }
     if (data !== void 0 && !hasColumns && !projectsDataKeys && (autogen === void 0 || isTruthyBinding(autogen))) {
-      errors.push(`Table "${label2}": bound straight to the query's rows with no authored columns, so ToolJet generates one column per database field and labels each with the raw field name ("flight_number", "delay_code"). Project the data to the keys you want (.map(r => ({...}))) and author the columns array, each {name,key,id,columnType,columnSize,autogenerated:false} with a readable name.`);
+      errors.push(`Table "${label3}": bound straight to the query's rows with no authored columns, so ToolJet generates one column per database field and labels each with the raw field name ("flight_number", "delay_code"). Project the data to the keys you want (.map(r => ({...}))) and author the columns array, each {name,key,id,columnType,columnSize,autogenerated:false} with a readable name.`);
     }
     if (hasColumns) {
       const columnKeys = /* @__PURE__ */ new Map();
@@ -68590,24 +68995,24 @@ function lintComponentSpec(spec, context = {}) {
       });
       for (const [key4, indexes] of columnKeys) {
         if (indexes.length > 1) {
-          errors.push(`Table "${label2}": duplicate column key "${key4}" at indexes ${indexes.join(", ")} \u2014 ToolJet silently keeps the last column. Use unique keys.`);
+          errors.push(`Table "${label3}": duplicate column key "${key4}" at indexes ${indexes.join(", ")} \u2014 ToolJet silently keeps the last column. Use unique keys.`);
         }
       }
       if (isTruthyBinding(autogen) && projectedDataKeys) {
         const undeclaredKeys = projectedDataKeys.filter((key4) => !columnKeys.has(key4));
         if (undeclaredKeys.length) {
-          warnings.push(`Table "${label2}": projected data keys ${undeclaredKeys.join(", ")} have no matching explicit column while autogenerateColumns is true, so ToolJet will append them as visible columns. Add matching columns with columnVisibility:false when the data is still needed (for example an id used by row actions), or remove the keys from the projection.`);
+          warnings.push(`Table "${label3}": projected data keys ${undeclaredKeys.join(", ")} have no matching explicit column while autogenerateColumns is true, so ToolJet will append them as visible columns. Add matching columns with columnVisibility:false when the data is still needed (for example an id used by row actions), or remove the keys from the projection.`);
         }
       }
       if (isTruthyBinding(autogen) && !projectsDataKeys && data !== void 0) {
-        errors.push(`Table "${label2}": has an explicit columns array but autogenerateColumns is still true \u2014 ToolJet will append undeclared datasource fields (often technical IDs) as raw snake_case columns. Project the Table data binding to a new object with only intended keys (.map(r => ({...}))); identity maps and object spreads are not safe projections. This is safer than disabling autogeneration, which can crash some ToolJet Table versions.`);
+        errors.push(`Table "${label3}": has an explicit columns array but autogenerateColumns is still true \u2014 ToolJet will append undeclared datasource fields (often technical IDs) as raw snake_case columns. Project the Table data binding to a new object with only intended keys (.map(r => ({...}))); identity maps and object spreads are not safe projections. This is safer than disabling autogeneration, which can crash some ToolJet Table versions.`);
       }
       const authoredColumns = columns.filter((col) => {
         const c = col;
         return c != null && c.autogenerated !== true && c.autogenerated !== "true";
       });
       if (data !== void 0 && authoredColumns.length === 0 && !projectsDataKeys && (autogen === void 0 || isTruthyBinding(autogen))) {
-        errors.push(`Table "${label2}": bound straight to the query's rows with only columns ToolJet generated for itself, so every header is the raw field name ("flight_number", "delay_code"). Project the data to the keys you want (.map(r => ({...}))) and author the columns array, each {name,key,id,columnType,columnSize,autogenerated:false} with a readable name.`);
+        errors.push(`Table "${label3}": bound straight to the query's rows with only columns ToolJet generated for itself, so every header is the raw field name ("flight_number", "delay_code"). Project the data to the keys you want (.map(r => ({...}))) and author the columns array, each {name,key,id,columnType,columnSize,autogenerated:false} with a readable name.`);
       }
       const visibleColumnCount = columns.filter((col) => {
         const c = col;
@@ -68629,60 +69034,60 @@ function lintComponentSpec(spec, context = {}) {
         }
         const neededPx = sizedPx + unsized * TABLE_UNSIZED_COLUMN_MIN_PX;
         if (neededPx > widthPx + 8) {
-          errors.push(`Table "${label2}": its ${visibleColumnCount} visible columns need about ${neededPx}px (the columnSize values plus ${TABLE_UNSIZED_COLUMN_MIN_PX}px per unsized column) but the table is ${tableWidth} columns wide, about ${widthPx}px on a laptop, so the last columns are cut off at the right edge. Show fewer columns (detail belongs in a side panel or modal), shrink the columnSize values, or widen the table.`);
+          errors.push(`Table "${label3}": its ${visibleColumnCount} visible columns need about ${neededPx}px (the columnSize values plus ${TABLE_UNSIZED_COLUMN_MIN_PX}px per unsized column) but the table is ${tableWidth} columns wide, about ${widthPx}px on a laptop, so the last columns are cut off at the right edge. Show fewer columns (detail belongs in a side panel or modal), shrink the columnSize values, or widen the table.`);
         }
       }
       if (visibleColumnCount >= WRAP_REQUIRED_COLUMNS && !isTrueBinding(propVal2(spec.styles, "contentWrap"))) {
-        errors.push(`Table "${label2}" has ${visibleColumnCount} columns and styles.contentWrap off (the catalog default), so any value wider than its cell (an email, a description, a timestamp) is cut mid word with no ellipsis. Set styles.contentWrap to true (rows grow to fit) and keep long text columns at columnSize 180 or more.`);
+        errors.push(`Table "${label3}" has ${visibleColumnCount} columns and styles.contentWrap off (the catalog default), so any value wider than its cell (an email, a description, a timestamp) is cut mid word with no ellipsis. Set styles.contentWrap to true (rows grow to fit) and keep long text columns at columnSize 180 or more.`);
       }
       columns.forEach((col, i) => {
         const c = col;
         for (const req of ["name", "key"]) {
           if (c == null || c[req] === void 0) {
-            warnings.push(`Table "${label2}" column[${i}]: missing \`${req}\` \u2014 explicit columns should be {name,key,id,columnType,columnSize,autogenerated:false}.`);
+            warnings.push(`Table "${label3}" column[${i}]: missing \`${req}\` \u2014 explicit columns should be {name,key,id,columnType,columnSize,autogenerated:false}.`);
           }
         }
         const deprecatedReplacement = typeof c?.columnType === "string" ? DEPRECATED_TABLE_COLUMN_TYPES[c.columnType] : void 0;
         if (c && c.columnVisibility !== false && c.columnVisibility !== "{{false}}" && typeof c.header === "string" && c.header.trim() && !c.header.includes("{{") && c.header !== c.name) {
-          errors.push(`Table "${label2}" column[${i}] "${String(c.key ?? c.name ?? "")}": header is ignored by ToolJet. Put the intended display label in name, keep the source field in key, and remove header.`);
+          errors.push(`Table "${label3}" column[${i}] "${String(c.key ?? c.name ?? "")}": header is ignored by ToolJet. Put the intended display label in name, keep the source field in key, and remove header.`);
         }
         if (c && c.columnVisibility !== false && c.columnVisibility !== "{{false}}" && typeof c.columnSize === "number" && c.columnSize > 0 && c.columnSize < 16 && ["string", "text", "number", "datepicker", "button"].includes(String(c.columnType))) {
-          errors.push(`Table "${label2}" column[${i}] "${String(c.key ?? c.name)}": columnSize ${c.columnSize} is in pixels, not proportional weights or grid columns. Use a readable pixel width (for example 240 for a name, 140 for a date), or omit columnSize for the default.`);
+          errors.push(`Table "${label3}" column[${i}] "${String(c.key ?? c.name)}": columnSize ${c.columnSize} is in pixels, not proportional weights or grid columns. Use a readable pixel width (for example 240 for a name, 140 for a date), or omit columnSize for the default.`);
         } else if (c && c.columnVisibility !== false && c.columnVisibility !== "{{false}}" && typeof c.columnSize === "number" && c.columnSize > 0) {
           const type = String(c.columnType ?? "string");
           const heading = columnWords(`${String(c.name ?? "")} ${String(c.key ?? "")}`);
           const base2 = TABLE_COLUMN_MIN_PX[type] ?? 100;
           const minimum = ["string", "text", "html", "number"].includes(type) ? Math.max(base2, MONEY_COLUMN_NAME.test(heading) ? TABLE_COLUMN_MONEY_MIN_PX : 0, NAME_COLUMN_NAME.test(heading) ? TABLE_COLUMN_NAME_MIN_PX : 0) : base2;
           if (c.columnSize < minimum) {
-            warnings.push(`Table "${label2}" column[${i}] "${String(c.key ?? c.name)}": columnSize ${c.columnSize} is below the readable minimum of ${minimum}px for a ${type} column (possible mid-word wrapping or clipped values). Size for the actual content; deliberate compact columns are valid after visual verification.`);
+            warnings.push(`Table "${label3}" column[${i}] "${String(c.key ?? c.name)}": columnSize ${c.columnSize} is below the readable minimum of ${minimum}px for a ${type} column (possible mid-word wrapping or clipped values). Size for the actual content; deliberate compact columns are valid after visual verification.`);
           }
         }
         if (deprecatedReplacement) {
-          errors.push(`Table "${label2}" column[${i}] "${String(c?.key ?? c?.name ?? "")}" uses deprecated columnType:"${String(c?.columnType)}". ToolJet marks it deprecated in the inspector and some deprecated types render an empty cell. Use columnType:"${deprecatedReplacement}" instead.`);
+          errors.push(`Table "${label3}" column[${i}] "${String(c?.key ?? c?.name ?? "")}" uses deprecated columnType:"${String(c?.columnType)}". ToolJet marks it deprecated in the inspector and some deprecated types render an empty cell. Use columnType:"${deprecatedReplacement}" instead.`);
         }
         if (typeof c?.columnType === "string" && !c.columnType.startsWith("{{") && !deprecatedReplacement && !VALID_TABLE_COLUMN_TYPES.has(c.columnType)) {
-          errors.push(`Table "${label2}" column[${i}] "${String(c.key ?? c.name)}" has unsupported columnType:"${c.columnType}". ` + (c.columnType === "date" || c.columnType === "datetime" ? 'Use columnType:"datepicker" with explicit dateFormat/parseDateFormat matching the source; unknown types fall back to raw text.' : `Use a supported type: ${[...VALID_TABLE_COLUMN_TYPES].join(", ")}.`));
+          errors.push(`Table "${label3}" column[${i}] "${String(c.key ?? c.name)}" has unsupported columnType:"${c.columnType}". ` + (c.columnType === "date" || c.columnType === "datetime" ? 'Use columnType:"datepicker" with explicit dateFormat/parseDateFormat matching the source; unknown types fall back to raw text.' : `Use a supported type: ${[...VALID_TABLE_COLUMN_TYPES].join(", ")}.`));
         }
         if (c && c.headerCasing !== void 0 && !VALID_HEADER_CASING.has(c.headerCasing)) {
-          warnings.push(`Table "${label2}" column[${i}]: headerCasing "${String(c.headerCasing)}" is invalid \u2014 use "none" (as typed) or "uppercase".`);
+          warnings.push(`Table "${label3}" column[${i}]: headerCasing "${String(c.headerCasing)}" is invalid \u2014 use "none" (as typed) or "uppercase".`);
         }
         if (c?.columnType === "string" && // Hidden raw fields preserve selectedRow data; they do not display timestamp cells.
         c.columnVisibility !== false && c.columnVisibility !== "{{false}}" && // The key says what the cell holds; a header alone ("Due" over due_display) is not evidence of a raw timestamp.
         (typeof c.key === "string" && c.key ? looksDateLikeField(c.key) : looksDateLikeField(c.name)) && !authorComputesKey(props2?.data, c.key)) {
-          warnings.push(`Table "${label2}" column[${i}] "${String(c.key ?? c.name)}" looks date/time-like but uses columnType:"string", which can expose a raw ISO timestamp. Use columnType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
+          warnings.push(`Table "${label3}" column[${i}] "${String(c.key ?? c.name)}" looks date/time-like but uses columnType:"string", which can expose a raw ISO timestamp. Use columnType:"datepicker" with explicit dateFormat/parseDateFormat matching the source, unless the raw timestamp is intentional.`);
         }
         if (c?.columnType === "button") {
           const buttons = c.buttons;
           if (!Array.isArray(buttons) || buttons.length === 0) {
-            warnings.push(`Table "${label2}" column[${i}]: button column needs a non-empty \`buttons\` array; read get_component_catalog({type:"Table",sections:["authoringHints"]}).`);
+            warnings.push(`Table "${label3}" column[${i}]: button column needs a non-empty \`buttons\` array; read get_component_catalog({type:"Table",sections:["authoringHints"]}).`);
           } else {
             const ids = /* @__PURE__ */ new Set();
             buttons.forEach((button, buttonIndex) => {
               const id = button?.id;
               if (typeof id !== "string" || id.length === 0) {
-                warnings.push(`Table "${label2}" column[${i}] button[${buttonIndex}]: missing string \`id\`; its event ref must be <column key or name>::<button id>.`);
+                warnings.push(`Table "${label3}" column[${i}] button[${buttonIndex}]: missing string \`id\`; its event ref must be <column key or name>::<button id>.`);
               } else if (ids.has(id)) {
-                warnings.push(`Table "${label2}" column[${i}]: duplicate button id "${id}" makes event refs ambiguous.`);
+                warnings.push(`Table "${label3}" column[${i}]: duplicate button id "${id}" makes event refs ambiguous.`);
               } else {
                 ids.add(id);
               }
@@ -68693,22 +69098,22 @@ function lintComponentSpec(spec, context = {}) {
       const visibleColumns = columns.map((column) => column).filter((column) => column && column.columnVisibility !== false && column.columnVisibility !== "{{false}}");
       const rawHeaderColumns = visibleColumns.map((column) => String(column.name ?? column.key ?? "").trim()).filter((header) => header && (looksRawFieldHeader(header) || looksInternalIdField(header)));
       if (rawHeaderColumns.length) {
-        warnings.push(`Table "${label2}": visible columns ${rawHeaderColumns.map((header) => `"${header}"`).join(", ")} expose raw database field names or internal IDs as user-facing headers. Give them human-readable \`name\` labels, or hide internal IDs with columnVisibility:false.`);
+        warnings.push(`Table "${label3}": visible columns ${rawHeaderColumns.map((header) => `"${header}"`).join(", ")} expose raw database field names or internal IDs as user-facing headers. Give them human-readable \`name\` labels, or hide internal IDs with columnVisibility:false.`);
       }
       if (visibleColumns.length > TABLE_VISIBLE_COLUMN_WARN) {
-        warnings.push(`Table "${label2}": ${visibleColumns.length} visible columns likely overflow the viewport width and force horizontal scrolling. Show only the most useful columns (about ${TABLE_VISIBLE_COLUMN_WARN} or fewer) and hide the rest with columnVisibility:false.`);
+        warnings.push(`Table "${label3}": ${visibleColumns.length} visible columns likely overflow the viewport width and force horizontal scrolling. Show only the most useful columns (about ${TABLE_VISIBLE_COLUMN_WARN} or fewer) and hide the rest with columnVisibility:false.`);
       }
     }
     const legacyActions = propVal2(props2, "actions");
     if (Array.isArray(legacyActions) && legacyActions.length > 0) {
-      warnings.push(`Table "${label2}": properties.actions is the deprecated row-action surface and can render without a reachable event. Use a columnType:"button" column plus table_column onClick events.`);
+      warnings.push(`Table "${label3}": properties.actions is the deprecated row-action surface and can render without a reachable event. Use a columnType:"button" column plus table_column onClick events.`);
     }
     if (isTruthyBinding(propVal2(props2, "serverSidePagination"))) {
       if (propVal2(props2, "serverSideRowsPerPage") === void 0) {
-        warnings.push(`Table "${label2}": server-side pagination needs serverSideRowsPerPage bound to the query page size.`);
+        warnings.push(`Table "${label3}": server-side pagination needs serverSideRowsPerPage bound to the query page size.`);
       }
       if (propVal2(props2, "totalRecords") === void 0) {
-        warnings.push(`Table "${label2}": server-side pagination needs totalRecords bound to a separate count/metadata query.`);
+        warnings.push(`Table "${label3}": server-side pagination needs totalRecords bound to a separate count/metadata query.`);
       }
     }
   }
@@ -68716,10 +69121,10 @@ function lintComponentSpec(spec, context = {}) {
     const mode = propVal2(props2, "generateFormFrom");
     const schemaValue = propVal2(props2, "newJsonSchema");
     if (mode === "jsonSchema" && schemaValue === void 0) {
-      warnings.push(`Form "${label2}": generateFormFrom is "jsonSchema" but newJsonSchema is missing.`);
+      warnings.push(`Form "${label3}": generateFormFrom is "jsonSchema" but newJsonSchema is missing.`);
     }
     if (mode === "rawJson" && propVal2(props2, "JSONData") === void 0) {
-      warnings.push(`Form "${label2}": generateFormFrom is "rawJson" but JSONData is missing.`);
+      warnings.push(`Form "${label3}": generateFormFrom is "rawJson" but JSONData is missing.`);
     }
     const fields = recordValue(recordValue(schemaValue)?.properties);
     if (mode === "jsonSchema" && fields) {
@@ -68730,21 +69135,21 @@ function lintComponentSpec(spec, context = {}) {
           continue;
         const type = field.type;
         if (typeof type !== "string" || !FORM_SCHEMA_FIELD_TYPE_SET.has(type)) {
-          errors.push(`Form "${label2}" field "${fieldName}": unsupported type "${String(type)}". Use the authoritative Form field-type list; aliases such as email/star/file do not work.`);
+          errors.push(`Form "${label3}" field "${fieldName}": unsupported type "${String(type)}". Use the authoritative Form field-type list; aliases such as email/star/file do not work.`);
           continue;
         }
         if (type === "filepicker") {
-          errors.push(`Form "${label2}" field "${fieldName}": type "filepicker" crashes the entire Form. Use a standalone FilePicker component and read components.<picker>.file instead.`);
+          errors.push(`Form "${label3}" field "${fieldName}": type "filepicker" crashes the entire Form. Use a standalone FilePicker component and read components.<picker>.file instead.`);
         }
         if (type === "datepicker" && (field.value === null || field.value === void 0)) {
-          warnings.push(`Form "${label2}" field "${fieldName}": a null/omitted datepicker value renders ToolJet's 01/01/2022 demo date. Set value to "{{null}}" for an empty create field.`);
+          warnings.push(`Form "${label3}" field "${fieldName}": a null/omitted datepicker value renders ToolJet's 01/01/2022 demo date. Set value to "{{null}}" for an empty create field.`);
         }
         if (["dropdown", "multiselect"].includes(type)) {
           if ("options" in field) {
-            errors.push(`Form "${label2}" field "${fieldName}": ${type} uses "values" and "displayValues", not "options".`);
+            errors.push(`Form "${label3}" field "${fieldName}": ${type} uses "values" and "displayValues", not "options".`);
           }
           if (!("values" in field) || !("displayValues" in field)) {
-            warnings.push(`Form "${label2}" field "${fieldName}": ${type} should define both "values" and "displayValues".`);
+            warnings.push(`Form "${label3}" field "${fieldName}": ${type} should define both "values" and "displayValues".`);
           }
         }
         if (type !== "filepicker" && !SAFE_GENERATED_FORM_FIELD_TYPE_SET.has(type)) {
@@ -68752,11 +69157,11 @@ function lintComponentSpec(spec, context = {}) {
         }
         const validation = recordValue(field.validation);
         if ("required" in field || validation?.required !== void 0) {
-          warnings.push(`Form "${label2}" field "${fieldName}": "required" is not a supported Form schema validator. Use validation.minLength or validation.customRule.`);
+          warnings.push(`Form "${label3}" field "${fieldName}": "required" is not a supported Form schema validator. Use validation.minLength or validation.customRule.`);
         }
       }
       if (standaloneRequiredFields.length > 0) {
-        errors.push(`Form "${label2}": generated fields ${standaloneRequiredFields.join(", ")} are not layout-safe. FormUtils cannot pass alignment through consistently; Dropdown/Multiselect labels become misaligned and TextArea retains a literal "Label". Build the entire form from standalone components with styles.alignment.value="top"; use a consistent two-column grid and full-width TextArea fields.`);
+        errors.push(`Form "${label3}": generated fields ${standaloneRequiredFields.join(", ")} are not layout-safe. FormUtils cannot pass alignment through consistently; Dropdown/Multiselect labels become misaligned and TextArea retains a literal "Label". Build the entire form from standalone components with styles.alignment.value="top"; use a consistent two-column grid and full-width TextArea fields.`);
       }
     }
   }
@@ -68764,7 +69169,7 @@ function lintComponentSpec(spec, context = {}) {
     const align = propVal2(spec.styles, "alignment");
     const width = (spec.layouts?.desktop ?? spec.layout)?.width;
     if ((align === void 0 || align === "side") && typeof width === "number" && width <= NARROW_SIDE_LABEL_COLS) {
-      warnings.push(`${spec.type} "${label2}": narrow (${width} cols) with a SIDE-aligned label (the default) \u2014 the label eats the input width. Set styles.alignment.value = "top" (label above the control), especially in forms/modals.`);
+      warnings.push(`${spec.type} "${label3}": narrow (${width} cols) with a SIDE-aligned label (the default) \u2014 the label eats the input width. Set styles.alignment.value = "top" (label above the control), especially in forms/modals.`);
     }
   }
   return { errors, warnings };
@@ -68917,9 +69322,9 @@ function lintModalChildren(components) {
     const key4 = componentKey(component);
     return key4 ? [[key4, component]] : [];
   }));
-  const parentOf = (component) => refs2.get(parentPlacement(component)?.parentId ?? "");
+  const parentOf3 = (component) => refs2.get(parentPlacement(component)?.parentId ?? "");
   const modalChildren = components.filter((component) => {
-    const parent = parentOf(component);
+    const parent = parentOf3(component);
     return isModalV2Type(parent?.type) || parent?.type === "Modal";
   });
   const bodyChildren = modalChildren.filter((component) => parentPlacement(component)?.slotName === "body");
@@ -69097,16 +69502,16 @@ function lintUnrenderableHeights(components) {
   for (const c of components) {
     if (!c.type || THIN_BY_DESIGN.has(c.type))
       continue;
-    const height = c.layouts?.desktop?.height;
-    if (typeof height !== "number" || height >= MIN_RENDERABLE_HEIGHT)
+    const height2 = c.layouts?.desktop?.height;
+    if (typeof height2 !== "number" || height2 >= MIN_RENDERABLE_HEIGHT)
       continue;
-    errors.push(`${c.type} "${c.name ?? c.id ?? "?"}": desktop height ${height}px cannot render its content; heights are pixels on a 10px grid, not row units. Use at least ${MIN_RENDERABLE_HEIGHT}px (inputs 40, headers 60+, KPI strips 120+, tables 300+).`);
+    errors.push(`${c.type} "${c.name ?? c.id ?? "?"}": desktop height ${height2}px cannot render its content; heights are pixels on a 10px grid, not row units. Use at least ${MIN_RENDERABLE_HEIGHT}px (inputs 40, headers 60+, KPI strips 120+, tables 300+).`);
   }
   return errors;
 }
 function lintWidgetContracts(c) {
   const errors = [];
-  const label2 = `${c.type} "${c.name ?? c.id ?? c.type}"`;
+  const label3 = `${c.type} "${c.name ?? c.id ?? c.type}"`;
   const props2 = c.properties;
   const rect2 = c.layouts?.desktop ?? c.layout;
   const nested = Boolean(c.parentRef ?? c.parent);
@@ -69114,7 +69519,7 @@ function lintWidgetContracts(c) {
   if (c.type === "RadioButtonV2" && !isTruthyBinding(propVal2(props2, "advanced"))) {
     const options2 = propVal2(props2, "options");
     if (Array.isArray(options2) && options2.some((o) => wrappedTrue(o?.default))) {
-      errors.push(`${label2}: a static option marked default:{value:true} is never preselected (RadioButtonV2 checks default === true). Set advanced to "{{true}}" and give schema as [{label, value, default: true, visible: true}] with plain booleans.`);
+      errors.push(`${label3}: a static option marked default:{value:true} is never preselected (RadioButtonV2 checks default === true). Set advanced to "{{true}}" and give schema as [{label, value, default: true, visible: true}] with plain booleans.`);
     }
   }
   if (c.type === "TreeSelect" && !isTruthyBinding(propVal2(props2, "advanced"))) {
@@ -69124,7 +69529,7 @@ function lintWidgetContracts(c) {
     });
     const options2 = propVal2(props2, "options");
     if (Array.isArray(options2) && options2.some((o) => hasWrapped(o?.children))) {
-      errors.push(`${label2}: nested options keep their flags wrapped as {value}, and a wrapped false is truthy (a hidden child shows, an unselected one counts as checked). Set advanced to "{{true}}" and give data with plain boolean flags.`);
+      errors.push(`${label3}: nested options keep their flags wrapped as {value}, and a wrapped false is truthy (a hidden child shows, an unselected one counts as checked). Set advanced to "{{true}}" and give data with plain boolean flags.`);
     }
   }
   if (c.type === "Navigation") {
@@ -69134,26 +69539,26 @@ function lintWidgetContracts(c) {
       return f === true || f === "true" || f === "{{true}}" || shownAsTrue(o.children);
     });
     if (shownAsTrue(propVal2(props2, "menuItems"))) {
-      errors.push(`${label2}: an item with visible true is HIDDEN (Navigation stores "hidden" under visible). Write visible:{value:"{{false}}"} for an item that shows, and {value:"{{true}}"} only to hide one.`);
+      errors.push(`${label3}: an item with visible true is HIDDEN (Navigation stores "hidden" under visible). Write visible:{value:"{{false}}"} for an item that shows, and {value:"{{true}}"} only to hide one.`);
     }
   }
   if (c.type === "Timer" && propVal2(props2, "type") === "countDown" && /^[0:]*$/.test(String(propVal2(props2, "value") ?? ""))) {
-    errors.push(`${label2}: a countDown timer starting at zero fires onCountDownFinish as the page opens; set value to its start, e.g. "00:05:00:000".`);
+    errors.push(`${label3}: a countDown timer starting at zero fires onCountDownFinish as the page opens; set value to its start, e.g. "00:05:00:000".`);
   }
   const pages = propVal2(props2, "numberOfPages");
   if (c.type === "Pagination" && typeof pages === "string" && !pages.includes("{{")) {
-    errors.push(`${label2}: numberOfPages "${pages}" is text, so the last page never matches and next stays enabled; write "{{${pages}}}".`);
+    errors.push(`${label3}: numberOfPages "${pages}" is text, so the last page never matches and next stays enabled; write "{{${pages}}}".`);
   }
   const twoHandle = propVal2(props2, "enableTwoHandle");
   if (c.type === "RangeSliderV2" && twoHandle !== void 0 && !["slider", "rangeSlider"].includes(String(twoHandle))) {
-    errors.push(`${label2}: enableTwoHandle is "slider" or "rangeSlider" (two handles read startValue/endValue), not ${JSON.stringify(twoHandle)}.`);
+    errors.push(`${label3}: enableTwoHandle is "slider" or "rangeSlider" (two handles read startValue/endValue), not ${JSON.stringify(twoHandle)}.`);
   }
-  const height = rect2?.height;
+  const height2 = rect2?.height;
   const width = rect2?.width;
-  if (typeof height === "number") {
+  if (typeof height2 === "number") {
     const min = c.type === "QrScanner" ? nested || typeof width !== "number" ? 200 : Math.round(width * 28 * 0.9) : c.type === "Camera" ? 300 : c.type === "FilePicker" ? 176 : 0;
-    if (height < min) {
-      errors.push(`${label2}: height ${height} cuts it off; use at least ${min} (` + (c.type === "QrScanner" ? "its reader is square, as tall as it is wide" : c.type === "Camera" ? "the preview and its buttons" : "the drop zone and the chosen file") + ").");
+    if (height2 < min) {
+      errors.push(`${label3}: height ${height2} cuts it off; use at least ${min} (` + (c.type === "QrScanner" ? "its reader is square, as tall as it is wide" : c.type === "Camera" ? "the preview and its buttons" : "the drop zone and the chosen file") + ").");
     }
   }
   return errors;
@@ -69188,7 +69593,10 @@ function lintComponents(components, options2 = {}) {
     errors.push(...lintStandardSingleLineInputHeight(c));
     errors.push(...lintButtonLabelWidth(c));
     warnings.push(...lintUnboundEmptyState(c));
+    warnings.push(...lintListDrawnAsText(c));
     warnings.push(...lintPlainStateColumns(c));
+    warnings.push(...lintBareMoneyColumns(c));
+    warnings.push(...lintUnformattedNumbers(c));
     errors.push(...lintTableProjectionRender(c, warnings));
     errors.push(...lintStaticDisabledSurface(c));
     errors.push(...lintDefaultInputLabel(c));
@@ -69202,6 +69610,11 @@ function lintComponents(components, options2 = {}) {
   warnings.push(...lintStageTables(components));
   warnings.push(...lintStatisticsRows(components));
   warnings.push(...lintEmptyTabs(components));
+  warnings.push(...lintCopiedCards(components));
+  warnings.push(...lintTallContainers(components));
+  warnings.push(...lintChartAccents(components));
+  warnings.push(...lintKpiCardGrids(components));
+  warnings.push(...lintPhotolessCardGrids(components));
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));
@@ -69236,16 +69649,16 @@ function lintStatTileConsistency(summary) {
     for (const component of page.components) {
       if (component.parent)
         continue;
-      const height = (component.layouts?.desktop ?? component.layout)?.height;
+      const height2 = (component.layouts?.desktop ?? component.layout)?.height;
       if (component.type === "Statistics") {
         tiles.push({
           page: pageName,
-          height: typeof height === "number" ? height : void 0,
+          height: typeof height2 === "number" ? height2 : void 0,
           valueSize: optionalStaticNumber(catalogValue("Statistics", component.styles, "primaryValueSize", "styles")),
           labelSize: optionalStaticNumber(catalogValue("Statistics", component.styles, "primaryLabelSize", "styles"))
         });
-      } else if (component.type === "Html" && typeof height === "number" && isHtmlKpiStrip(propVal2(component.properties, "rawHtml"))) {
-        stripPages.set(pageName, [...stripPages.get(pageName) ?? [], height]);
+      } else if (component.type === "Html" && typeof height2 === "number" && isHtmlKpiStrip(propVal2(component.properties, "rawHtml"))) {
+        stripPages.set(pageName, [...stripPages.get(pageName) ?? [], height2]);
       }
     }
   }
@@ -69663,11 +70076,33 @@ import { readFileSync as readFileSync4 } from "node:fs";
 import { dirname as dirname4, resolve as resolve3 } from "node:path";
 import { fileURLToPath as fileURLToPath3 } from "node:url";
 var cached4;
+var SAMPLE_BLANKS = {
+  ShadHero: { eyebrow: "", subtitle: "", meta: "{{[]}}", actionLabel: "" },
+  ShadCardGrid: { badgeField: "", descriptionField: "", metaFields: "" },
+  ShadRecordList: { metaFields: "", valueField: "", valueFormat: "auto" },
+  // 'auto' reads money from a figure's label; the 'currency' default showed counts of rooms as dollars.
+  ShadSummaryStrip: { valueFormat: "auto" },
+  ShadTags: { tags: "{{[]}}", tagColors: "{{{}}}" },
+  ShadAvatar: { names: "" },
+  ShadLink: { linkTarget: "" },
+  ShadCombobox: { searchPlaceholder: "Search..." },
+  ShadMultiselect: { searchPlaceholder: "Search..." },
+  ShadTagsInput: { suggestions: "{{[]}}" }
+};
 function packDefaultDefinition(type) {
   if (!cached4) {
     try {
       const path = resolve3(dirname4(fileURLToPath3(import.meta.url)), "../data/pack-default-definitions.json");
       cached4 = JSON.parse(readFileSync4(path, "utf8")).definitions ?? {};
+      for (const [type2, blanks] of Object.entries(SAMPLE_BLANKS)) {
+        const def = cached4[type2];
+        if (!def?.properties)
+          continue;
+        for (const [key4, value2] of Object.entries(blanks)) {
+          if (key4 in def.properties)
+            def.properties[key4] = { ...def.properties[key4], value: value2 };
+        }
+      }
     } catch {
       cached4 = {};
     }
@@ -71069,13 +71504,13 @@ function createClient(auth, config2) {
     if (failures.length)
       throw new PartialWriteError("createPages", completed, failures);
     return completed;
-    async function persistFieldForPage(pageId, field, value2, label2) {
+    async function persistFieldForPage(pageId, field, value2, label3) {
       const r = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pageId, diff: { [field]: value2 } })
       });
-      await assertOk(r, label2);
+      await assertOk(r, label3);
     }
   }
   async function createPage(params) {
@@ -71633,6 +72068,13 @@ function createClient(auth, config2) {
         throw new Error(`createComponents: duplicate clientRef "${e.spec.clientRef}".`);
       }
       refToId.set(e.spec.clientRef, e.id);
+    }
+    const nameCounts = /* @__PURE__ */ new Map();
+    for (const e of entries)
+      nameCounts.set(e.spec.name, (nameCounts.get(e.spec.name) ?? 0) + 1);
+    for (const e of entries) {
+      if (!refToId.has(e.spec.name) && nameCounts.get(e.spec.name) === 1)
+        refToId.set(e.spec.name, e.id);
     }
     const diff = {};
     for (const e of entries) {
@@ -72412,6 +72854,48 @@ import { existsSync, readFileSync as readFileSync5 } from "node:fs";
 import { dirname as dirname5, resolve as resolve4 } from "node:path";
 import { fileURLToPath as fileURLToPath4 } from "node:url";
 
+// dist/themeAccent.js
+var ACCENT_MENU = [
+  { name: "Indigo", hex: "#4F46E5", fits: "software, analytics, internal tools" },
+  { name: "Violet", hex: "#7C3AED", fits: "creative, education, product teams" },
+  { name: "Fuchsia", hex: "#C026D3", fits: "consumer, beauty, events" },
+  { name: "Rose", hex: "#E11D48", fits: "hospitality, retail, food" },
+  { name: "Coral", hex: "#EA580C", fits: "logistics, field service, sports" },
+  { name: "Amber", hex: "#B45309", fits: "manufacturing, construction, real estate" },
+  { name: "Emerald", hex: "#059669", fits: "finance, sustainability, health" },
+  { name: "Teal", hex: "#0D9488", fits: "healthcare, travel, operations" },
+  { name: "Sky", hex: "#0284C7", fits: "support, IT, aviation, marine" }
+];
+var MENU_TEXT = ACCENT_MENU.map((a) => `${a.name} ${a.hex} (${a.fits})`).join(", ");
+var hsl = (hex3) => {
+  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(hex3.trim());
+  if (!m)
+    return null;
+  const full = m[1].length === 3 ? m[1].replace(/./g, (c) => c + c) : m[1];
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d === 0)
+    return { h: 0, s: 0, l };
+  const s = d / (1 - Math.abs(2 * l - 1));
+  const h = max === r ? (g - b) / d % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return { h: (h * 60 + 360) % 360, s, l };
+};
+var accentWarning = (definition2) => {
+  const light = definition2?.brand?.colors?.primary?.light;
+  if (typeof light !== "string")
+    return null;
+  const c = hsl(light);
+  if (!c)
+    return null;
+  const kind = c.l < 0.22 ? "near-black" : c.s < 0.2 ? "grey" : c.h >= 212 && c.h <= 226 && c.s > 0.75 && c.l >= 0.45 && c.l <= 0.66 ? "the stock blue" : null;
+  if (!kind)
+    return null;
+  return `The theme's primary ${light} is ${kind}, which reads plain. Unless the request names this colour or the brand uses it, pick an accent from the menu by the request's brand, industry or mood: ${MENU_TEXT}. Keep the canvas and neutrals light and lightly tinted toward it.`;
+};
+
 // dist/tools/manageTheme.js
 var THEME_LICENCE_USER_MESSAGE = "Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.";
 var colorPair = external_exports.object({
@@ -72473,9 +72957,9 @@ async function applyToApp(client, theme, args, definition2) {
   });
   return { app_id: args.app_id, version_id: args.version_id, ...mode ? { app_mode: mode } : {} };
 }
-function requireValue(value2, label2) {
+function requireValue(value2, label3) {
   if (value2 === void 0)
-    throw new Error(`manage_theme requires ${label2} for this action.`);
+    throw new Error(`manage_theme requires ${label3} for this action.`);
   return value2;
 }
 async function readTheme(client, themeId) {
@@ -72547,7 +73031,8 @@ function manageThemeTool(client) {
               isDefault: args.is_default ?? false
             });
             const applied = await applyToApp(client, created, args, args.definition);
-            return ok({ theme: created, ...applied ? { applied } : {} });
+            const accent2 = accentWarning(args.definition);
+            return ok({ theme: created, ...applied ? { applied } : {}, ...accent2 ? { warnings: [accent2] } : {} });
           } catch (error51) {
             if (error51 instanceof ToolJetHttpError && error51.status === 451) {
               return ok({
@@ -72570,7 +73055,8 @@ function manageThemeTool(client) {
         }
         if (args.action === "update_definition") {
           await client.updateAppThemeDefinition(themeId, requireValue(args.definition, "definition"));
-          return ok({ theme: await readTheme(client, themeId) });
+          const accent2 = accentWarning(args.definition);
+          return ok({ theme: await readTheme(client, themeId), ...accent2 ? { warnings: [accent2] } : {} });
         }
         if (args.action === "rename") {
           await client.renameAppTheme(themeId, requireValue(args.name, "name"));
@@ -72589,6 +73075,7 @@ function manageThemeTool(client) {
 }
 
 // dist/tools/createApp.js
+var STANDARD_PRIMARY = { brand: { colors: { primary: { light: "#2563EB" } } } };
 var here = dirname5(fileURLToPath4(import.meta.url));
 var standardThemeCandidates = [
   resolve4(here, "../../data/default-theme.json"),
@@ -72660,7 +73147,7 @@ function createAppTool(client) {
         const result = { ...created, theme: { mode: "workspace_default" } };
         if (choice === "workspace_default")
           return ok(result);
-        const label2 = typeof choice === "object" ? choice.name : choice;
+        const label3 = typeof choice === "object" ? choice.name : choice;
         try {
           const theme = await resolveTheme(client, choice);
           const appMode = args.app_mode ?? (typeof choice === "object" && paintsDarkCanvasInLightMode(choice.definition) ? "dark" : void 0);
@@ -72670,11 +73157,12 @@ function createAppTool(client) {
             globalSettings: { theme, ...appMode ? { appMode } : {} }
           });
           const mode = choice === "standard" ? "standard" : typeof choice === "object" ? "derived" : "named";
-          result.theme = { mode, id: theme.id, name: theme.name, ...appMode ? { app_mode: appMode } : {} };
+          const accentNote = mode === "standard" ? accentWarning(STANDARD_PRIMARY) : mode === "derived" ? accentWarning(choice.definition) : null;
+          result.theme = { mode, id: theme.id, name: theme.name, ...appMode ? { app_mode: appMode } : {}, ...accentNote ? { accent_note: accentNote } : {} };
         } catch (themeErr) {
           result.theme = {
             mode: "workspace_default",
-            warning: `Could not apply theme "${label2}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
+            warning: `Could not apply theme "${label3}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
           };
         }
         return ok(result);
@@ -72941,9 +73429,9 @@ function persistenceMismatches(args, snapshot2) {
   const global2 = snapshot2.global_settings;
   const page = pageSettingProperties(snapshot2);
   const mismatches = [];
-  const expectEqual = (label2, actual, expected) => {
+  const expectEqual = (label3, actual, expected) => {
     if (actual !== expected)
-      mismatches.push(`${label2} did not persist (expected ${JSON.stringify(expected)}, read back ${JSON.stringify(actual)})`);
+      mismatches.push(`${label3} did not persist (expected ${JSON.stringify(expected)}, read back ${JSON.stringify(actual)})`);
   };
   if (args.canvas_background_color !== void 0)
     expectEqual("canvas_background_color", global2.canvasBackgroundColor, args.canvas_background_color);
@@ -73398,6 +73886,46 @@ function insertRowsTool(client) {
   };
 }
 
+// dist/seedPictureLint.js
+var PICTURE_COLUMN = /image|photo|picture|cover|avatar|thumbnail|thumb|img|logo/i;
+var PICTURE_URL = /\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i;
+var PICTURE_HOST = /(^|\.)(images\.unsplash\.com|images\.pexels\.com|cdn\.pixabay\.com)$/i;
+var isPicture = (column, value2) => {
+  if (typeof value2 !== "string")
+    return false;
+  const v = value2.trim();
+  if (/^data:image\//i.test(v))
+    return true;
+  if (!/^https?:\/\//i.test(v))
+    return false;
+  try {
+    const url2 = new URL(v);
+    return PICTURE_HOST.test(url2.hostname) || PICTURE_URL.test(url2.pathname) || PICTURE_COLUMN.test(column);
+  } catch {
+    return false;
+  }
+};
+function seedPictureWarnings(tables) {
+  const warnings = [];
+  for (const { table_name: table, rows } of tables) {
+    const columns = new Set(rows.flatMap((row) => Object.keys(row ?? {})));
+    for (const column of columns) {
+      const pictures = rows.map((row) => row?.[column]).filter((value2) => isPicture(column, value2));
+      if (!pictures.length)
+        continue;
+      if (pictures.some((p) => /^data:image\//i.test(p.trim()))) {
+        warnings.push(`${table}.${column} holds drawn data: images; use real photo URLs from the component's authoringHints.photos (a different one per row), or leave the picture out.`);
+        continue;
+      }
+      const distinct2 = new Set(pictures.map((p) => p.trim())).size;
+      if (pictures.length >= 4 && distinct2 * 3 <= pictures.length) {
+        warnings.push(`${table}.${column}: ${pictures.length} rows share ${distinct2} picture${distinct2 === 1 ? "" : "s"}; give each row its own photo (cycle through authoringHints.photos for the rows' subject).`);
+      }
+    }
+  }
+  return warnings;
+}
+
 // dist/tools/insertRowsBatch.js
 var seedSchema = external_exports.object({
   table_name: external_exports.string(),
@@ -73420,9 +73948,11 @@ function insertRowsBatchTool(client) {
         const results = await client.insertRowsBatch({
           tables: args.tables.map((table) => ({ tableName: table.table_name, rows: table.rows }))
         });
+        const warnings = seedPictureWarnings(args.tables);
         return ok({
           tables: results,
-          processed_rows: results.reduce((total, result) => total + result.processed_rows, 0)
+          processed_rows: results.reduce((total, result) => total + result.processed_rows, 0),
+          ...warnings.length ? { warnings } : {}
         });
       } catch (error51) {
         return fail(error51);
@@ -73483,16 +74013,20 @@ function resolveCatalogType(requestedType) {
 }
 var PACK_CONCEPTS = [
   [/table|grid|datatable/i, ["ShadTable"]],
-  [/metric|stat|kpi/i, ["ShadStat", "ShadSparkline"]],
-  [/card|panel|surface/i, ['FlexContainer (cardStyle "shadcnCard")']],
+  [/metric|stat|kpi/i, ["ShadStat", "ShadSparkline", "ShadSummaryStrip"]],
+  [/summary|figures|totals|strip|headline/i, ["ShadSummaryStrip"]],
+  [/recent|activity|feed|records?|orders|people|contacts|inbox/i, ["ShadRecordList"]],
+  [/card|panel|surface/i, ['FlexContainer (cardStyle "shadcnCard")', "ShadCardGrid"]],
+  [/gallery|tiles?|catalog|products?|cards|grid/i, ["ShadCardGrid"]],
+  [/hero|header|masthead|jumbotron|cover|welcome/i, ["ShadHero"]],
   [/modal|dialog|sheet|drawer/i, ["ShadDialog"]],
   [/dropdown|menu/i, ["ShadDropdownMenu", "ShadSelect", "ShadCombobox"]],
-  [/list/i, ["ShadListView", "ShadKeyValue"]],
+  [/list/i, ["ShadListView", "ShadRecordList", "ShadKeyValue"]],
   [/chart|graph/i, ["ShadBarChart", "ShadLineChart", "ShadAreaChart", "ShadPieChart", "ShadComboChart", "ShadScatterChart", "ShadFunnelChart", "ShadHeatmapChart"]],
   [/funnel|conversion/i, ["ShadFunnelChart"]],
   [/scatter|bubble|correlation/i, ["ShadScatterChart"]],
   [/heat|matrix|grid|calendar/i, ["ShadHeatmapChart"]],
-  [/board|kanban|pipeline|stage|trello/i, ["ShadKanban"]],
+  [/board|kanban|pipeline|stage|trello|dispatch|grouped by/i, ["ShadKanban"]],
   [/combo|composed|mixed|dual/i, ["ShadComboChart"]],
   [/label|title|typography/i, ["ShadHeading", "ShadText"]],
   [/date/i, ["ShadDatePicker", "ShadDateTimePicker", "ShadCalendar"]],
@@ -73506,8 +74040,8 @@ function packSuggestions(requestedType) {
   return [...new Set(PACK_CONCEPTS.filter(([pattern]) => pattern.test(rest)).flatMap(([, types]) => types))];
 }
 function nearbyTypes(requestedType) {
-  const words = requestedType.split(/(?=[A-Z])|[\s_-]+/).map((word) => word.toLowerCase()).filter((word) => word.length >= 4);
-  return getCatalog().map((entry) => entry.type).filter((type) => words.some((word) => type.toLowerCase().includes(word))).slice(0, 6);
+  const words2 = requestedType.split(/(?=[A-Z])|[\s_-]+/).map((word) => word.toLowerCase()).filter((word) => word.length >= 4);
+  return getCatalog().map((entry) => entry.type).filter((type) => words2.some((word) => type.toLowerCase().includes(word))).slice(0, 6);
 }
 function selectEntries(entries, keys, detail) {
   const selected = keys?.length ? entries.filter((entry) => keys.includes(entry.key)) : entries;
@@ -74166,9 +74700,9 @@ var DIALECTS = {
   bigquery: { quote: "backtick", limit: "limit" },
   oracledb: { quote: "double", limit: "fetch" }
 };
-function assertIdentifier(identifier, label2) {
+function assertIdentifier(identifier, label3) {
   if (!identifier.trim() || identifier.length > 256 || /[\0-\x1f\x7f;`"\[\]\\]/.test(identifier)) {
-    throw new Error(`${label2} contains unsupported or unsafe identifier characters.`);
+    throw new Error(`${label3} contains unsupported or unsafe identifier characters.`);
   }
 }
 function quote(kind, identifier) {
@@ -74813,15 +75347,15 @@ var STRUCTURE_COMPONENT_FIELDS = ["id", "name", "type", "layouts.desktop", "pare
 var STRUCTURE_QUERY_FIELDS = ["id", "name", "kind", "data_source_id"];
 var STRUCTURE_EVENT_FIELDS = ["id", "name", "sourceId", "target"];
 var UNSAFE_PATH_SEGMENTS = /* @__PURE__ */ new Set(["__proto__", "prototype", "constructor"]);
-function validatePaths(paths, roots, label2) {
+function validatePaths(paths, roots, label3) {
   const allowedRoots = new Set(roots);
   for (const path of paths) {
     const segments = path.split(".");
     if (!path || segments.some((segment) => !segment || UNSAFE_PATH_SEGMENTS.has(segment))) {
-      throw new Error(`${label2} contains an invalid path: "${path}".`);
+      throw new Error(`${label3} contains an invalid path: "${path}".`);
     }
     if (!allowedRoots.has(segments[0])) {
-      throw new Error(`${label2} path "${path}" must start with one of: ${roots.join(", ")}.`);
+      throw new Error(`${label3} path "${path}" must start with one of: ${roots.join(", ")}.`);
     }
   }
 }
@@ -75051,14 +75585,14 @@ function getComponentTool(client) {
 }
 
 // dist/htmlColumns.js
-var valueOf = (prop3) => prop3 && typeof prop3 === "object" && "value" in prop3 ? prop3.value : prop3;
+var valueOf6 = (prop3) => prop3 && typeof prop3 === "object" && "value" in prop3 ? prop3.value : prop3;
 function htmlFedTextColumns(table, queries) {
   if (table.type !== "Table")
     return [];
-  const columns = valueOf(table.properties?.columns);
+  const columns = valueOf6(table.properties?.columns);
   if (!Array.isArray(columns))
     return [];
-  const data = String(valueOf(table.properties?.data) ?? "");
+  const data = String(valueOf6(table.properties?.data) ?? "");
   const read = new Set([...data.matchAll(/queries\.(\w+)/g)].map((m) => m[1]));
   const code = queries.filter((q) => q.kind === "runjs" && read.has(String(q.name))).map((q) => String(q.options?.code ?? "")).join("\n");
   if (!code)
@@ -75426,65 +75960,65 @@ function validateEvents(summary, events, options2 = {}) {
     return void 0;
   };
   events.forEach((event, index) => {
-    const label2 = event.name ? `Event "${event.name}"` : `Event[${index}]`;
-    errors.push(...lintComponentStateBindings(event.action, [...components.values()], label2));
+    const label3 = event.name ? `Event "${event.name}"` : `Event[${index}]`;
+    errors.push(...lintComponentStateBindings(event.action, [...components.values()], label3));
     if (event.sourceType === "component") {
       const source2 = components.get(event.sourceId);
       for (const ref2 of new Set([event.ref, event.action.ref].filter((ref3) => ref3 != null && ref3 !== ""))) {
         if (source2?.type !== "Navigation" || event.trigger !== "onClick") {
-          (options2.savedRefs?.has(event) ? warnings : errors).push(`${label2}: ordinary component events cannot use ref; use name to label the handler. Only Navigation onClick item refs and Table Button-column refs have component sub-element scopes.`);
+          (options2.savedRefs?.has(event) ? warnings : errors).push(`${label3}: ordinary component events cannot use ref; use name to label the handler. Only Navigation onClick item refs and Table Button-column refs have component sub-element scopes.`);
         } else if (!nonEmptyString(ref2) || ref2.includes("{{")) {
-          errors.push(`${label2}: Navigation onClick ref must be a literal non-empty item id.`);
+          errors.push(`${label3}: Navigation onClick ref must be a literal non-empty item id.`);
         } else {
           const membership = navigationItemRef(source2, ref2);
           if (membership === "invalid")
-            errors.push(`${label2}: Navigation ref "${ref2}" does not identify a non-group menu item.`);
+            errors.push(`${label3}: Navigation ref "${ref2}" does not identify a non-group menu item.`);
           if (membership === "unknown")
-            warnings.push(`${label2}: Navigation ref "${ref2}" membership cannot be verified because menuItems are unresolved/dynamic. Verify the runtime item id; no item membership was inferred.`);
+            warnings.push(`${label3}: Navigation ref "${ref2}" membership cannot be verified because menuItems are unresolved/dynamic. Verify the runtime item id; no item membership was inferred.`);
         }
       }
       if (!source2)
-        errors.push(`${label2}: component source "${event.sourceId}" does not exist.`);
+        errors.push(`${label3}: component source "${event.sourceId}" does not exist.`);
       else if (source2.type) {
         const schema = getComponentSchema(source2.type);
         const validTriggers = schema?.events?.map((item) => item.id) ?? [];
         if (schema && !validTriggers.includes(event.trigger)) {
-          errors.push(`${label2}: trigger "${event.trigger}" is not valid for ${source2.type}. Valid triggers: ${validTriggers.join(", ") || "none"}.`);
+          errors.push(`${label3}: trigger "${event.trigger}" is not valid for ${source2.type}. Valid triggers: ${validTriggers.join(", ") || "none"}.`);
         }
         if (source2.type === "Kanban" && event.trigger === "onCardSelected" && isFalseBinding2(propVal3(source2.properties, "openModalOnCardClick"))) {
-          errors.push(`${label2}: Kanban onCardSelected cannot fire while openModalOnCardClick is false; ToolJet returns before it sets lastSelectedCard or fires the event. Enable the native card modal AND populate it with children parented to the Kanban using slot_name:"modal", or remove this handler and use a separate supported detail flow.`);
+          errors.push(`${label3}: Kanban onCardSelected cannot fire while openModalOnCardClick is false; ToolJet returns before it sets lastSelectedCard or fires the event. Enable the native card modal AND populate it with children parented to the Kanban using slot_name:"modal", or remove this handler and use a separate supported detail flow.`);
         }
       }
     } else if (event.sourceType === "data_query") {
       if (!queries.has(event.sourceId))
-        errors.push(`${label2}: query source "${event.sourceId}" does not exist.`);
+        errors.push(`${label3}: query source "${event.sourceId}" does not exist.`);
       if (!["onDataQuerySuccess", "onDataQueryFailure"].includes(event.trigger)) {
-        errors.push(`${label2}: query trigger must be onDataQuerySuccess or onDataQueryFailure, not "${event.trigger}".`);
+        errors.push(`${label3}: query trigger must be onDataQuerySuccess or onDataQueryFailure, not "${event.trigger}".`);
       }
     } else if (event.sourceType === "page") {
       if (!pages.has(event.sourceId))
-        errors.push(`${label2}: page source "${event.sourceId}" does not exist.`);
+        errors.push(`${label3}: page source "${event.sourceId}" does not exist.`);
       if (event.trigger !== "onPageLoad")
-        errors.push(`${label2}: page trigger must be onPageLoad, not "${event.trigger}".`);
+        errors.push(`${label3}: page trigger must be onPageLoad, not "${event.trigger}".`);
     } else if (event.sourceType === "table_column") {
       const source2 = components.get(event.sourceId);
       if (!source2)
-        errors.push(`${label2}: Table source "${event.sourceId}" does not exist.`);
+        errors.push(`${label3}: Table source "${event.sourceId}" does not exist.`);
       else if (source2.type !== "Table")
-        errors.push(`${label2}: table_column source must be a Table, not ${source2.type ?? "unknown"}.`);
+        errors.push(`${label3}: table_column source must be a Table, not ${source2.type ?? "unknown"}.`);
       else {
         if (event.trigger !== "onClick")
-          errors.push(`${label2}: Table Button-column trigger must be onClick.`);
+          errors.push(`${label3}: Table Button-column trigger must be onClick.`);
         const refError = validateTableColumnRef(source2, event.ref);
         if (refError)
-          errors.push(`${label2}: ${refError}`);
+          errors.push(`${label3}: ${refError}`);
       }
     } else if (event.sourceType === "table_action") {
-      errors.push(`${label2}: deprecated table_action handlers are not authored reliably. Use a columnType:"button" column with source_type:"table_column".`);
+      errors.push(`${label3}: deprecated table_action handlers are not authored reliably. Use a columnType:"button" column with source_type:"table_column".`);
     }
     const actionId = event.action.actionId;
     if (typeof actionId !== "string" || !ACTION_IDS.has(actionId)) {
-      errors.push(`${label2}: unknown actionId "${String(actionId)}"; ToolJet silently ignores invalid action ids.`);
+      errors.push(`${label3}: unknown actionId "${String(actionId)}"; ToolJet silently ignores invalid action ids.`);
       return;
     }
     const targetId = pageScopedTarget(event.action);
@@ -75493,13 +76027,13 @@ function validateEvents(summary, events, options2 = {}) {
       const targetLabel = `${components.get(targetId)?.type ?? "component"} "${components.get(targetId)?.name ?? targetId}" on page "${pageName.get(targetPage)}"`;
       const sourcePage = event.sourceType === "page" ? event.sourceId : event.sourceType === "component" || event.sourceType === "table_column" ? pageOfComponent.get(event.sourceId) : void 0;
       if (sourcePage && sourcePage !== targetPage) {
-        errors.push(`${label2}: ${actionId} targets ${targetLabel} from page "${pageName.get(sourcePage)}". A page-scoped action only reaches components on the page that is open; on another page the target is not mounted and the action fails at runtime. Put this handler on page "${pageName.get(targetPage)}" (its onPageLoad, or a component there), or drop it: switch-page mounts that page fresh.`);
+        errors.push(`${label3}: ${actionId} targets ${targetLabel} from page "${pageName.get(sourcePage)}". A page-scoped action only reaches components on the page that is open; on another page the target is not mounted and the action fails at runtime. Put this handler on page "${pageName.get(targetPage)}" (its onPageLoad, or a component there), or drop it: switch-page mounts that page fresh.`);
       } else if (event.sourceType === "data_query") {
         const triggerPages = queryTriggerPages.get(event.sourceId);
         const elsewhere = triggerPages ? [...triggerPages].filter((page) => page !== targetPage) : [];
         if (elsewhere.length) {
           const where = elsewhere.includes("*") ? "on every page load (runOnPageLoad)" : `from page "${elsewhere.map((p) => pageName.get(p) ?? p).join('", "')}"`;
-          errors.push(`${label2}: ${actionId} targets ${targetLabel}, but query "${queryById.get(event.sourceId)?.name ?? event.sourceId}" runs ${where}, where that component is not mounted, so the success handler fails at runtime. Move the action to page "${pageName.get(targetPage)}" (its onPageLoad, or the filter's own event there), or run the query only from that page.`);
+          errors.push(`${label3}: ${actionId} targets ${targetLabel}, but query "${queryById.get(event.sourceId)?.name ?? event.sourceId}" runs ${where}, where that component is not mounted, so the success handler fails at runtime. Move the action to page "${pageName.get(targetPage)}" (its onPageLoad, or the filter's own event there), or run the query only from that page.`);
         }
       }
     }
@@ -75509,14 +76043,14 @@ function validateEvents(summary, events, options2 = {}) {
         const resolution = resolveRef2(summary.queries, queryId, "Query", "in this app");
         if (resolution.ok) {
           if (resolution.warning)
-            warnings.push(`${label2}: ${resolution.warning}`);
+            warnings.push(`${label3}: ${resolution.warning}`);
           queryId = resolution.target.id;
           event.action.queryId = queryId;
         }
       }
       if (typeof queryId !== "string" || !queries.has(queryId)) {
         const available = summary.queries.map((q) => `${q.name ?? "(unnamed)"}=${q.id}`).join(", ");
-        errors.push(`${label2}: no query with id or name "${String(queryId)}" in this app. Do not re-read \u2014 the app currently has: ${available || "(no queries)"}.`);
+        errors.push(`${label3}: no query with id or name "${String(queryId)}" in this app. Do not re-read \u2014 the app currently has: ${available || "(no queries)"}.`);
       } else if (event.sourceType === "component" && event.trigger === "onClick") {
         const source2 = components.get(event.sourceId);
         const query2 = queryById.get(queryId);
@@ -75533,47 +76067,47 @@ function validateEvents(summary, events, options2 = {}) {
     if (actionId === "switch-page") {
       const pageId = event.action.pageId;
       if (typeof pageId !== "string" || !pages.has(pageId)) {
-        errors.push(`${label2}: switch-page target "${String(pageId)}" does not exist.`);
+        errors.push(`${label3}: switch-page target "${String(pageId)}" does not exist.`);
       }
     }
     if (["show-modal", "close-modal"].includes(actionId)) {
       const modal = event.action.modal;
       const target2 = typeof modal === "string" ? components.get(modal) : void 0;
       if (!target2) {
-        errors.push(`${label2}: ${actionId} modal target "${String(modal)}" does not exist.`);
+        errors.push(`${label3}: ${actionId} modal target "${String(modal)}" does not exist.`);
       } else if (target2.type !== "Modal" && !isModalV2Type(target2.type)) {
-        errors.push(`${label2}: ${actionId} target must be a Modal, ModalV2 or ShadDialog, not ${target2.type ?? "unknown"} "${target2.name ?? target2.id}".`);
+        errors.push(`${label3}: ${actionId} target must be a Modal, ModalV2 or ShadDialog, not ${target2.type ?? "unknown"} "${target2.name ?? target2.id}".`);
       }
     }
     if (actionId === "control-component") {
       const componentId = event.action.componentId;
       const target2 = typeof componentId === "string" ? components.get(componentId) : void 0;
       if (!target2) {
-        errors.push(`${label2}: control-component target "${String(componentId)}" does not exist.`);
+        errors.push(`${label3}: control-component target "${String(componentId)}" does not exist.`);
       } else {
         const handle = event.action.componentSpecificActionHandle;
         const schema = target2.type ? getComponentSchema(target2.type) : null;
         const componentAction = typeof handle === "string" ? schema?.actions?.find((candidate) => candidate.handle === handle) : void 0;
         if (!nonEmptyString(handle)) {
-          errors.push(`${label2}: control-component requires componentSpecificActionHandle.`);
+          errors.push(`${label3}: control-component requires componentSpecificActionHandle.`);
         } else if (!componentAction) {
-          errors.push(`${label2}: control-component action "${handle}" is not valid for ${target2.type ?? "unknown"} "${target2.name ?? target2.id}". Valid actions: ${schema?.actions?.map((candidate) => candidate.handle).join(", ") || "none"}.`);
+          errors.push(`${label3}: control-component action "${handle}" is not valid for ${target2.type ?? "unknown"} "${target2.name ?? target2.id}". Valid actions: ${schema?.actions?.map((candidate) => candidate.handle).join(", ") || "none"}.`);
         } else {
           const params = event.action.componentSpecificActionParams;
           if (params !== void 0 && !Array.isArray(params)) {
-            errors.push(`${label2}: componentSpecificActionParams must be an array.`);
+            errors.push(`${label3}: componentSpecificActionParams must be an array.`);
           } else if (Array.isArray(params)) {
             const supplied = new Set(params.flatMap((param) => isRecord(param) && nonEmptyString(param.handle) ? [param.handle] : []));
             if (params.some((param) => !isRecord(param) || !nonEmptyString(param.handle))) {
-              errors.push(`${label2}: every componentSpecificActionParams entry requires a string handle.`);
+              errors.push(`${label3}: every componentSpecificActionParams entry requires a string handle.`);
             }
             const requiredHandles = (componentAction.params ?? []).flatMap((param) => nonEmptyString(param.handle) ? [param.handle] : []);
             const missing = requiredHandles.filter((required4) => !supplied.has(required4));
             if (missing.length) {
-              errors.push(`${label2}: control-component action "${handle}" is missing parameter handles: ${missing.join(", ")}.`);
+              errors.push(`${label3}: control-component action "${handle}" is missing parameter handles: ${missing.join(", ")}.`);
             }
           } else if ((componentAction.params?.length ?? 0) > 0) {
-            errors.push(`${label2}: control-component action "${handle}" requires componentSpecificActionParams for ${componentAction.params.map((param) => String(param.handle)).join(", ")}.`);
+            errors.push(`${label3}: control-component action "${handle}" requires componentSpecificActionParams for ${componentAction.params.map((param) => String(param.handle)).join(", ")}.`);
           }
         }
       }
@@ -75581,48 +76115,48 @@ function validateEvents(summary, events, options2 = {}) {
     if (actionId === "scroll-component-into-view") {
       const componentId = event.action.componentId;
       if (typeof componentId !== "string" || !components.has(componentId)) {
-        errors.push(`${label2}: scroll-component-into-view target "${String(componentId)}" does not exist.`);
+        errors.push(`${label3}: scroll-component-into-view target "${String(componentId)}" does not exist.`);
       }
     }
     if (actionId === "show-alert") {
       if (!nonEmptyString(event.action.message))
-        errors.push(`${label2}: show-alert requires a non-empty message.`);
+        errors.push(`${label3}: show-alert requires a non-empty message.`);
       if (!["success", "info", "warning", "error"].includes(String(event.action.alertType))) {
-        errors.push(`${label2}: show-alert alertType must be success, info, warning, or error.`);
+        errors.push(`${label3}: show-alert alertType must be success, info, warning, or error.`);
       }
     }
     if (["set-custom-variable", "set-page-variable", "set-localstorage-value"].includes(actionId)) {
       if (!nonEmptyString(event.action.key))
-        errors.push(`${label2}: ${actionId} requires a non-empty key.`);
+        errors.push(`${label3}: ${actionId} requires a non-empty key.`);
       if (!Object.prototype.hasOwnProperty.call(event.action, "value"))
-        errors.push(`${label2}: ${actionId} requires value.`);
+        errors.push(`${label3}: ${actionId} requires value.`);
     }
     if (actionId === "unset-custom-variable" && !nonEmptyString(event.action.key)) {
-      errors.push(`${label2}: unset-custom-variable requires a non-empty key.`);
+      errors.push(`${label3}: unset-custom-variable requires a non-empty key.`);
     }
     if (actionId === "open-webpage" && !nonEmptyString(event.action.url)) {
-      errors.push(`${label2}: open-webpage requires a non-empty url.`);
+      errors.push(`${label3}: open-webpage requires a non-empty url.`);
     }
     if (actionId === "copy-to-clipboard" && !Object.prototype.hasOwnProperty.call(event.action, "contentToCopy")) {
-      errors.push(`${label2}: copy-to-clipboard requires contentToCopy.`);
+      errors.push(`${label3}: copy-to-clipboard requires contentToCopy.`);
     }
     if (actionId === "set-table-page") {
       const tableId = event.action.table;
       const table = typeof tableId === "string" ? components.get(tableId) : void 0;
       if (!table) {
-        errors.push(`${label2}: set-table-page Table target "${String(tableId)}" does not exist.`);
+        errors.push(`${label3}: set-table-page Table target "${String(tableId)}" does not exist.`);
       } else if (table.type !== "Table") {
-        errors.push(`${label2}: set-table-page target must be a Table, not ${table.type ?? "unknown"}.`);
+        errors.push(`${label3}: set-table-page target must be a Table, not ${table.type ?? "unknown"}.`);
       }
       const pageIndex = event.action.pageIndex;
       if (!["string", "number"].includes(typeof pageIndex) || String(pageIndex).trim() === "") {
-        errors.push(`${label2}: set-table-page requires a numeric value or binding in pageIndex.`);
+        errors.push(`${label3}: set-table-page requires a numeric value or binding in pageIndex.`);
       }
     }
     if (actionId === "generate-file") {
       const format = ["fileType", "type", "format", "extension"].map((key4) => event.action[key4]).find((value2) => typeof value2 === "string");
       if (format && /\bpdf\b/i.test(format)) {
-        warnings.push(`${label2}: generate-file PDF is a pass-through and expects pre-formed PDF bytes; it does not convert text/HTML/data into a PDF. Use CSV/plaintext, or supply and browser-verify real PDF bytes.`);
+        warnings.push(`${label3}: generate-file PDF is a pass-through and expects pre-formed PDF bytes; it does not convert text/HTML/data into a PDF. Use CSV/plaintext, or supply and browser-verify real PDF bytes.`);
       }
     }
   });
@@ -75684,8 +76218,8 @@ function validateEvents(summary, events, options2 = {}) {
     if (options2.navigationMovedLast && navigation.persisted && afterNavigation.every((item) => !item.persisted && item.event.action.actionId !== "switch-page"))
       continue;
     const later = chain.slice(navigationIndex + 1).map(({ event }) => String(event.action.actionId)).join(", ");
-    const label2 = navigation.event.name ? `${navigation.persisted ? "Persisted event" : "Event"} "${navigation.event.name}"` : `${navigation.persisted ? "Persisted event" : "Event"}[${navigation.index}]`;
-    errors.push(`${label2}: switch-page must be the LAST handler for the same source and trigger; ToolJet does not run later handlers (${later}). Put state updates and run-query actions before navigation.`);
+    const label3 = navigation.event.name ? `${navigation.persisted ? "Persisted event" : "Event"} "${navigation.event.name}"` : `${navigation.persisted ? "Persisted event" : "Event"}[${navigation.index}]`;
+    errors.push(`${label3}: switch-page must be the LAST handler for the same source and trigger; ToolJet does not run later handlers (${later}). Put state updates and run-query actions before navigation.`);
   }
   errors.push(...queryEventCycleErrors(summary, events, options2.includePersistedChains === false ? [] : persistedEventSpecs(summary)));
   const persistedMode = options2.includePersistedChains === false;
@@ -75819,14 +76353,14 @@ function validatePersistedAppSummary(summary, options2 = {}) {
     }
   }
   for (const query2 of summary.queries) {
-    const label2 = `Query "${query2.name ?? query2.id}"`;
+    const label3 = `Query "${query2.name ?? query2.id}"`;
     if (!query2.kind || !query2.options || typeof query2.options !== "object" || Array.isArray(query2.options)) {
-      warnings.push(`${label2}: kind/options are unavailable, so its datasource contract was not validated.`);
+      warnings.push(`${label3}: kind/options are unavailable, so its datasource contract was not validated.`);
       continue;
     }
     const validation = validateQueryOptions(query2.kind, query2.options);
-    errors.push(...issueMessages(validation.errors, label2));
-    warnings.push(...issueMessages(validation.warnings, label2));
+    errors.push(...issueMessages(validation.errors, label3));
+    warnings.push(...issueMessages(validation.warnings, label3));
   }
   return {
     ok: errors.length === 0,
@@ -76120,6 +76654,7 @@ async function loadPlaywright() {
     return null;
   }
 }
+var STATIC_RESOURCES = /* @__PURE__ */ new Set(["script", "stylesheet", "image", "font"]);
 var pathOf = (url2) => {
   try {
     return new URL(url2).pathname;
@@ -76157,11 +76692,14 @@ async function auditPages(pages, options2 = {}, driver = loadPlaywright) {
     let ctx;
     let blocked;
     const blocks = [];
+    const blockFindings = [];
     const block = (finding, where) => {
       blocked ??= finding;
       const line = `${finding.reason}: ${where}`;
       if (blocks.length < 4 && !blocks.includes(line))
         blocks.push(line);
+      if (blockFindings.length < 4 && !blockFindings.some((f) => f.reason === finding.reason && f.detail === finding.detail))
+        blockFindings.push(finding);
     };
     try {
       ctx = await browser.newContext({ viewport: { width: 1600, height: 900 }, serviceWorkers: "block" });
@@ -76194,6 +76732,10 @@ async function auditPages(pages, options2 = {}, driver = loadPlaywright) {
               detail: `${policy.detail} (${request.method()} ${pathOf(url2)})`
             }, `${request.method()} ${pathOf(url2)}`);
             await route.abort();
+            return;
+          }
+          if (request.method() === "GET" && STATIC_RESOURCES.has(request.resourceType?.())) {
+            await route.continue();
             return;
           }
           const response2 = await route.fetch({
@@ -76244,7 +76786,7 @@ async function auditPages(pages, options2 = {}, driver = loadPlaywright) {
         return;
       }
       const result = await page.evaluate(auditScript);
-      reports[index] = result.widgets === 0 && blocked ? { page: p.page, url: p.url, widgets: 0, findings: [{ ...blocked, detail: `${blocked.detail}; the page then showed no widgets. Blocked: ${blocks.join("; ")}` }] } : result.widgets === 0 ? unreachable(p, "no_widgets", "No ToolJet widgets were found; the page may be empty, unauthenticated, or not loaded") : { page: p.page, url: p.url, widgets: result.widgets, findings: [...result.findings, ...blocked ? [blocked] : []] };
+      reports[index] = result.widgets === 0 && blocked ? { page: p.page, url: p.url, widgets: 0, findings: [{ ...blocked, detail: `${blocked.detail}; the page then showed no widgets. Blocked: ${blocks.join("; ")}` }] } : result.widgets === 0 ? unreachable(p, "no_widgets", "No ToolJet widgets were found; the page may be empty, unauthenticated, or not loaded") : { page: p.page, url: p.url, widgets: result.widgets, findings: [...result.findings, ...blockFindings] };
     } catch (err) {
       const why = String(err?.message ?? err).split("\n")[0].slice(0, 200);
       reports[index] = blocked ? { ...p, widgets: 0, findings: [{ ...blocked, detail: `${blocked.detail}; the audit then stopped: ${why}. Blocked: ${blocks.join("; ")}` }] } : unreachable(p, "navigation_failed", `Could not load or inspect the viewer page: ${why}`);
@@ -76308,6 +76850,40 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
   };
 }
 
+// dist/datasourceNameMatch.js
+var BUILT_IN_DB = /^tool\s*jet\s*(db|data\s*base)$/i;
+function matchDatasourceByName(sources, name2) {
+  if (!name2)
+    return null;
+  const exact = sources.filter((s) => s.name === name2);
+  if (exact.length === 1)
+    return { id: exact[0].id, note: null };
+  if (BUILT_IN_DB.test(name2.trim())) {
+    const db = sources.filter((s) => s.kind === "tooljetdb");
+    if (db.length === 1)
+      return { id: db[0].id, note: `datasource_name "${name2}" is ToolJet's built-in database, "${db[0].name}" in this version.` };
+  }
+  return null;
+}
+
+// dist/packTableLook.js
+var lookOf = (c) => {
+  const entry = c.styles?.tableLook;
+  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+};
+function packTableLook(components) {
+  if (!components.some((c) => /^Shad[A-Z]/.test(c.type ?? "")))
+    return { components, warnings: [] };
+  const warnings = [];
+  const out = components.map((c) => {
+    if (c.type !== "Table" || lookOf(c) !== void 0)
+      return c;
+    warnings.push(`Table "${c.name ?? "Table"}" sits among shadcn/ui pack widgets; it now draws in the pack's look (styles.tableLook "shadcn").`);
+    return { ...c, styles: { ...c.styles ?? {}, tableLook: { value: "shadcn" } } };
+  });
+  return { components: out, warnings };
+}
+
 // dist/flexPolish.js
 var FIELD_TYPES = /* @__PURE__ */ new Set([
   "ShadInput",
@@ -76339,9 +76915,9 @@ var INLINE_TYPES = /* @__PURE__ */ new Set([
   "ShadTags",
   "ShadSpinner"
 ]);
-var valueOf2 = (entry) => entry && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry.value : entry;
+var valueOf7 = (entry) => entry && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry.value : entry;
 var text = (entry) => {
-  const v = valueOf2(entry);
+  const v = valueOf7(entry);
   return typeof v === "string" ? v.trim() : typeof v === "number" ? String(v) : "";
 };
 var props = (component) => component.properties && typeof component.properties === "object" ? component.properties : {};
@@ -76376,6 +76952,13 @@ var headingLineWidth = (component) => {
 };
 var fixedRects = (component) => [component.layout, component.layouts?.desktop].filter((rect2) => !!rect2 && rect2.fillWidth === false && typeof rect2.widthPx === "number");
 var META_TYPES = /* @__PURE__ */ new Set(["ShadText", "ShadBadge", "ShadTags"]);
+var shownText = (raw) => raw.replace(/\{\{([\s\S]*?)\}\}/g, (_, code) => {
+  const words2 = [...code.matchAll(/'([^']*)'|"([^"]*)"|`([^`$]*)`/g)].map((m) => m[1] ?? m[2] ?? m[3] ?? "");
+  if (!words2.length)
+    return "0000";
+  const values = code.split(/'[^']*'|"[^"]*"|`[^`$]*`/).filter((part) => /[A-Za-z0-9_)\]]/.test(part)).length;
+  return words2.join("") + "00".repeat(Math.max(1, values));
+});
 function polishFlexRows(input) {
   const warnings = [];
   if (!Array.isArray(input) || !input.length)
@@ -76392,6 +76975,35 @@ function polishFlexRows(input) {
     } : {}
   } : component);
   const childrenOf = (ref2) => components.filter((component) => component && component.parentRef === ref2 && !component.slotName);
+  const DIALOG_TYPES2 = /* @__PURE__ */ new Set(["ShadDialog", "ModalV2", "Modal"]);
+  const isRootLevel = (c) => !c.parentRef && !c.parent;
+  const topOf = (c) => Number(c.layout?.top ?? c.layouts?.desktop?.top);
+  for (const host of [...components]) {
+    if (!host || host.type !== "FlexContainer" || !isRootLevel(host))
+      continue;
+    const ref2 = refOf(host);
+    const inner = components.filter((c) => c && c.parentRef === ref2);
+    if (!inner.length || !inner.every((c) => DIALOG_TYPES2.has(c.type)))
+      continue;
+    inner.forEach((dialog) => {
+      delete dialog.parentRef;
+      delete dialog.slotName;
+    });
+    components.splice(components.indexOf(host), 1);
+    const hostTop = topOf(host);
+    const below = components.filter((c) => c && isRootLevel(c) && !DIALOG_TYPES2.has(c.type) && topOf(c) > hostTop);
+    const nextTop = below.length ? Math.min(...below.map(topOf)) : NaN;
+    const lift = Number.isFinite(hostTop) && Number.isFinite(nextTop) ? nextTop - hostTop : 0;
+    if (lift > 0) {
+      below.forEach((c) => {
+        [c.layout, c.layouts?.desktop].forEach((rect2) => {
+          if (rect2 && typeof rect2.top === "number")
+            rect2.top -= lift;
+        });
+      });
+    }
+    warnings.push(`"${host.name}" held only dialogs, which draw nothing until opened, so it showed as an empty band; the dialogs now sit at the page root, the container is gone${lift > 0 ? ` and the sections below moved up ${lift}px` : ""}.`);
+  }
   for (const root of components) {
     if (!root || root.type !== "FlexContainer" || root.parentRef || root.parent)
       continue;
@@ -76399,6 +77011,87 @@ function polishFlexRows(input) {
     if (dynamic === "true")
       continue;
     setProp(root, "dynamicHeight", "{{true}}");
+  }
+  const depth = (c) => {
+    let d = 0;
+    let p = c.parentRef;
+    while (p && d < 20) {
+      d += 1;
+      p = components.find((x) => x && refOf(x) === p)?.parentRef;
+    }
+    return d;
+  };
+  const heightOf = (c) => Number(c.layout?.height ?? c.layouts?.desktop?.height ?? NaN);
+  const cards = components.filter((c) => c && isSurface(c) && c.parentRef).sort((a, b) => depth(b) - depth(a));
+  for (const card of cards) {
+    const inner = childrenOf(refOf(card) ?? "");
+    const heights = inner.map(heightOf);
+    if (!inner.length || heights.some((h) => !Number.isFinite(h)))
+      continue;
+    const rawGap = text(prop2(card, "gap"));
+    const gap = rawGap === "" ? 8 : Number(rawGap) || 0;
+    const rawPad = text(prop2(card, "padding"));
+    const pad = rawPad === "" ? 12 : Number(rawPad) || 0;
+    const content = isRow(card) ? Math.max(...heights) : heights.reduce((a, b) => a + b, 0) + gap * (inner.length - 1);
+    const title = text(prop2(card, "cardTitle"));
+    const extra = text(prop2(card, "cardExtra"));
+    const band = text(prop2(card, "cardStyle")) === "antCard" ? title || extra ? 56 : 0 : extra ? 70 : title ? 48 : 0;
+    const needed = Math.ceil(content + pad * 2 + 6 + band);
+    const rects = [card.layout, card.layouts?.desktop].filter((rect2) => !!rect2 && typeof rect2.height === "number");
+    if (!rects.length || rects.every((rect2) => rect2.height <= needed + 12))
+      continue;
+    const was = rects[0].height;
+    rects.forEach((rect2) => {
+      rect2.height = needed;
+    });
+    warnings.push(`Card "${card.name}" was ${was}px tall for ${needed}px of content; it now fits its content.`);
+  }
+  {
+    const gridCards = components.filter((c) => c && !c.parentRef && !c.parent && (isSurface(c) || c.type === "ShadStat") && Number.isFinite(heightOf(c)));
+    const lines = /* @__PURE__ */ new Map();
+    for (const c of gridCards) {
+      const top = Number(c.layout?.top ?? c.layouts?.desktop?.top);
+      if (!Number.isFinite(top))
+        continue;
+      const key4 = [...lines.keys()].find((t) => Math.abs(t - top) <= 10) ?? top;
+      lines.set(key4, [...lines.get(key4) ?? [], c]);
+    }
+    for (const line of lines.values()) {
+      if (line.length < 2)
+        continue;
+      const tallest = Math.max(...line.map(heightOf));
+      if (line.every((c) => heightOf(c) === tallest))
+        continue;
+      for (const c of line) {
+        [c.layout, c.layouts?.desktop].forEach((rect2) => {
+          if (rect2 && typeof rect2.height === "number")
+            rect2.height = tallest;
+        });
+      }
+      warnings.push(`Cards ${line.map((c) => `"${c.name}"`).join(", ")} sit side by side; they now share one height (${tallest}px).`);
+    }
+  }
+  for (const sheet of components) {
+    if (!sheet || sheet.type !== "ShadDialog" || text(prop2(sheet, "variant")) !== "sheet")
+      continue;
+    if (["xl", "fullscreen"].includes(text(prop2(sheet, "size"))))
+      continue;
+    const descendants = [];
+    const queue = [refOf(sheet)];
+    while (queue.length && descendants.length < 400) {
+      const parent = queue.shift();
+      for (const c of components) {
+        if (c && parent && c.parentRef === parent) {
+          descendants.push(c);
+          queue.push(refOf(c));
+        }
+      }
+    }
+    const pairRow = descendants.find((c) => isRow(c) && components.filter((x) => x && x.parentRef === refOf(c) && FIELD_TYPES.has(x.type)).length >= 2);
+    if (!pairRow)
+      continue;
+    setProp(sheet, "size", "xl");
+    warnings.push(`Sheet "${sheet.name}" holds fields side by side ("${pairRow.name}"); it now opens at the wide size (xl, 640px).`);
   }
   for (const container of components) {
     if (!container || !isRow(container))
@@ -76418,7 +77111,7 @@ function polishFlexRows(input) {
       if (next2.type === "FlexContainer" || ACTION_TYPES.has(next2.type))
         return;
       next2.parentRef = cardRef;
-      const order = valueOf2(prop2(container, "childOrder"));
+      const order = valueOf7(prop2(container, "childOrder"));
       if (Array.isArray(order)) {
         setProp(container, "childOrder", order.filter((entry) => entry !== refOf(next2) && entry !== next2.name));
       }
@@ -76438,6 +77131,20 @@ function polishFlexRows(input) {
         warnings.push(`Row "${label0}" was shorter than its tallest child; its height is now ${needed}.`);
       }
     }
+    const lone = children.length === 1 ? children[0] : void 0;
+    if (lone && lone.type === "ShadButton" && ["flex-end", "end", "center"].includes(text(prop2(container, "justifyContent")))) {
+      const rects = [lone.layout, lone.layouts?.desktop].filter((rect2) => !!rect2 && rect2.fillWidth !== false);
+      if (rects.length) {
+        const caption = text(prop2(lone, "text")) || text(prop2(lone, "label"));
+        const own2 = rects.map((rect2) => rect2.widthPx).find((w) => typeof w === "number" && w > 0);
+        const width = own2 ?? Math.max(96, Math.ceil(caption.length * 8 + (text(prop2(lone, "icon")) ? 64 : 40)));
+        rects.forEach((rect2) => {
+          rect2.fillWidth = false;
+          rect2.widthPx = width;
+        });
+        warnings.push(`"${lone.name}" filled row "${label0}" and drew at its left; it now keeps its own width (${width}px).`);
+      }
+    }
     if (children.length < 2)
       continue;
     const fullWidth = children.filter((child) => {
@@ -76453,7 +77160,8 @@ function polishFlexRows(input) {
       });
       warnings.push(`Row "${label0}": ${fullWidth.length} children were each drawn full-width; they now share the row.`);
     }
-    if (children.some((child) => !ACTION_TYPES.has(child.type))) {
+    const placed = ["flex-end", "end", "center", "space-between", "space-around", "space-evenly"].includes(text(prop2(container, "justifyContent")));
+    if (placed || children.some((child) => !ACTION_TYPES.has(child.type))) {
       const hasTitle = children.some((c) => isTitle(c, childrenOf));
       for (const child of children) {
         const inline = child.type === "ShadButton" || hasTitle && ["ShadBadge", "ShadTags", "ShadLink"].includes(child.type);
@@ -76473,15 +77181,121 @@ function polishFlexRows(input) {
         warnings.push(`"${child.name}" in row "${label0}" filled the row's width; it now keeps its own (${width}px).`);
       }
     }
-    const align = text(prop2(container, "alignItems"));
-    const label2 = container.name ?? ref2;
-    if (children.every((child) => INLINE_TYPES.has(child.type)) && children.some(isLabelledField) && children.some((child) => !isLabelledField(child)) && align !== "last baseline") {
-      setProp(container, "alignItems", "last baseline");
-      warnings.push(`Row "${label2}" has labelled fields beside other controls; its alignItems is now "last baseline" so their text lines up with the fields' values instead of centring on label and field.`);
+    if (children.some((c) => isTitle(c, childrenOf))) {
+      const buttonWidth = (button) => {
+        const own2 = [button.layout, button.layouts?.desktop].map((rect2) => rect2?.widthPx).find((w) => typeof w === "number" && w > 0);
+        if (own2)
+          return own2;
+        const caption = text(prop2(button, "text")) || text(prop2(button, "label"));
+        return Math.max(96, Math.ceil(caption.length * 8 + (text(prop2(button, "icon")) ? 64 : 40)));
+      };
+      const actionGroup = (c) => {
+        if (c.type !== "FlexContainer" || isSurface(c))
+          return null;
+        const inner = childrenOf(refOf(c) ?? "");
+        return inner.length && inner.every((b) => ACTION_TYPES.has(b.type)) ? inner : null;
+      };
+      const metaWidth = (c) => {
+        if (c.type !== "ShadText" && c.type !== "ShadBadge")
+          return null;
+        const shown = shownText(text(prop2(c, "text")));
+        return shown.length <= 40 ? Math.min(320, Math.max(48, Math.ceil(shown.length * 7 + 28))) : null;
+      };
+      const metaActionGroup = (c) => {
+        if (c.type !== "FlexContainer" || isSurface(c) || !isRow(c))
+          return null;
+        const inner = childrenOf(refOf(c) ?? "");
+        return inner.some((b) => ACTION_TYPES.has(b.type)) && inner.some((b) => !ACTION_TYPES.has(b.type)) && inner.every((b) => ACTION_TYPES.has(b.type) || metaWidth(b) !== null) ? inner : null;
+      };
+      for (const c of children) {
+        const inner = actionGroup(c);
+        if (inner && inner.length >= 2 && props(c).flexWrap === void 0)
+          setProp(c, "flexWrap", "{{false}}");
+        if (!inner || inner.length < 2 || isRow(c))
+          continue;
+        setProp(c, "direction", "row");
+        if (text(prop2(c, "gap")) === "")
+          setProp(c, "gap", 8);
+        warnings.push(`"${c.name}" stacked its ${inner.length} buttons beside a title; it now lays them out in a row.`);
+      }
+      const [first, ...rest] = children;
+      if (first && rest.length && isTitle(first, childrenOf) && text(prop2(container, "justifyContent")) === "space-between") {
+        const fills = (c) => [c.layout, c.layouts?.desktop].filter((rect2) => !!rect2 && rect2.fillWidth !== false);
+        for (const c of rest) {
+          const rects = fills(c);
+          if (!rects.length)
+            continue;
+          let width = null;
+          const inner = actionGroup(c);
+          const mixed = inner ? null : metaActionGroup(c);
+          if (mixed) {
+            const rawGap = text(prop2(c, "gap"));
+            const gap = rawGap === "" ? 8 : Number(rawGap) || 0;
+            const rawPad = text(prop2(c, "padding"));
+            const pad = rawPad === "" ? 12 : Number(rawPad) || 0;
+            width = mixed.reduce((sum, b) => sum + (ACTION_TYPES.has(b.type) ? buttonWidth(b) : metaWidth(b) ?? 0), 0) + gap * (mixed.length - 1) + pad * 2 + 4;
+            for (const meta3 of mixed) {
+              const own3 = metaWidth(meta3);
+              if (own3 === null)
+                continue;
+              if (meta3.type === "ShadText" && ["", "left"].includes(styleText(meta3, "textAlign"))) {
+                meta3.styles = { ...meta3.styles ?? {}, textAlign: { value: "right" } };
+              }
+              [meta3.layout, meta3.layouts?.desktop].forEach((rect2) => {
+                if (!rect2)
+                  return;
+                rect2.fillWidth = false;
+                rect2.widthPx = own3;
+              });
+            }
+          } else if (inner) {
+            const rawGap = text(prop2(c, "gap"));
+            const gap = rawGap === "" ? 8 : Number(rawGap) || 0;
+            const rawPad = text(prop2(c, "padding"));
+            const pad = rawPad === "" ? 12 : Number(rawPad) || 0;
+            width = inner.reduce((sum, b) => sum + buttonWidth(b), 0) + gap * (inner.length - 1) + pad * 2 + 4;
+          } else if (c.type === "ShadText") {
+            const shown = shownText(text(prop2(c, "text")));
+            if (shown.length <= 40)
+              width = Math.min(320, Math.max(48, Math.ceil(shown.length * 7 + 28)));
+          }
+          if (width === null)
+            continue;
+          const own2 = width;
+          rects.forEach((rect2) => {
+            rect2.fillWidth = false;
+            rect2.widthPx = own2;
+          });
+          warnings.push(`"${c.name}" in header "${label0}" filled half the header; it now keeps its own width (${own2}px).`);
+        }
+        const titleRects = [first.layout, first.layouts?.desktop].filter(
+          // A title the build sized itself (fillWidth:false) keeps its width; space-between still puts the rest right.
+          (rect2) => !!rect2 && rect2.fillWidth === void 0
+        );
+        if (titleRects.length && rest.every((c) => !fills(c).length)) {
+          titleRects.forEach((rect2) => {
+            rect2.fillWidth = true;
+          });
+        }
+      }
     }
-    if (children.length >= 2 && children.every(isSurface) && (align === "" || align === "flex-start")) {
+    const align = text(prop2(container, "alignItems"));
+    const label3 = container.name ?? ref2;
+    if (children.every((child) => INLINE_TYPES.has(child.type)) && children.some(isLabelledField) && children.some((child) => !isLabelledField(child)) && align !== "flex-end") {
+      setProp(container, "alignItems", "flex-end");
+      warnings.push(`Row "${label3}" has labelled fields beside other controls; its alignItems is now "flex-end" so the field boxes and the controls beside them line up along the bottom.`);
+    }
+    if (children.length >= 2 && children.every(isLabelledField) && text(prop2(container, "alignItems")) !== "flex-end") {
+      setProp(container, "alignItems", "flex-end");
+      warnings.push(`Row "${label3}" holds only labelled fields; its alignItems is now "flex-end" so the field boxes line up along the bottom.`);
+    }
+    if (children.some(isLabelledField) && children.some((child) => ACTION_TYPES.has(child.type)) && !children.every((child) => INLINE_TYPES.has(child.type)) && align !== "flex-end") {
+      setProp(container, "alignItems", "flex-end");
+      warnings.push(`Row "${label3}" has a labelled field beside buttons; its alignItems is now "flex-end" so the buttons line up with the field box.`);
+    }
+    if (children.length >= 2 && children.every(isSurface) && align !== "stretch") {
       setProp(container, "alignItems", "stretch");
-      warnings.push(`Row "${label2}" holds ${children.length} cards; its alignItems is now stretch so they share one height.`);
+      warnings.push(`Row "${label3}" holds ${children.length} cards; its alignItems is now stretch so they share one height.`);
     }
     if (children.length >= 2 && children.every(isSurface) && text(prop2(container, "alignItems")) === "stretch") {
       const contentOf = (card) => {
@@ -76495,29 +77309,32 @@ function polishFlexRows(input) {
       };
       const contents = children.map(contentOf);
       const tallest = Math.max(...contents.map((c) => Number.isFinite(c.height) ? c.height : 0));
-      contents.forEach(({ height, last }) => {
-        if (!last || !Number.isFinite(height) || tallest - height < 24 || !/Chart$/.test(last.type))
+      contents.forEach(({ height: height2, last }) => {
+        if (!last || !Number.isFinite(height2) || tallest - height2 < 24 || !/Chart$/.test(last.type))
           return;
-        const grow = tallest - height;
+        const grow = tallest - height2;
         [last.layout, last.layouts?.desktop].forEach((rect2) => {
           if (rect2 && typeof rect2.height === "number")
             rect2.height += grow;
         });
-        warnings.push(`Chart "${last.name}" grows by ${grow}px to fill its card, which is stretched to the tallest card in row "${label2}".`);
+        warnings.push(`Chart "${last.name}" grows by ${grow}px to fill its card, which is stretched to the tallest card in row "${label3}".`);
       });
     }
-    if (children.length >= 2 && children.every(isSurface)) {
+    if (children.length >= 2 && children.some(isSurface)) {
       const rawGap = text(prop2(container, "gap"));
       const gap = rawGap === "" ? 16 : Number(rawGap) || 0;
       const share = Math.floor((1280 - gap * (children.length - 1)) / children.length);
       for (const card of children) {
+        if (!isSurface(card))
+          continue;
         const rawPad = text(prop2(card, "padding"));
         const pad = rawPad === "" ? 12 : Number(rawPad) || 0;
-        const available = share - pad * 2 - 4;
+        const own2 = fixedRects(card).map((rect2) => rect2.widthPx).find((w) => typeof w === "number" && w > 0);
+        const available = (own2 ?? share) - pad * 2 - 4;
         for (const table of childrenOf(refOf(card) ?? "")) {
           if (table.type !== "Table")
             continue;
-          const columns = valueOf2(prop2(table, "columns"));
+          const columns = valueOf7(prop2(table, "columns"));
           if (!Array.isArray(columns))
             continue;
           const visible = columns.filter((c) => !!c && typeof c === "object" && c.columnVisibility !== false);
@@ -76525,6 +77342,10 @@ function polishFlexRows(input) {
           const total = visible.reduce((sum, c) => sum + size2(c), 0);
           if (!visible.length || total <= available)
             continue;
+          if (available / visible.length < 80) {
+            warnings.push(`Table "${table.name}" shows ${visible.length} columns (${total}px) in a card about ${available}px wide; show fewer columns there (the 3 or 4 this card is about), or give the card more of the row.`);
+            continue;
+          }
           const factor = available / total;
           setProp(table, "columns", columns.map((c) => visible.includes(c) ? {
             ...c,
@@ -76547,11 +77368,11 @@ function polishFlexRows(input) {
       rects.forEach((rect2) => {
         rect2.widthPx = Math.max(rect2.widthPx ?? 0, needed);
       });
-      warnings.push(`Heading "${child.name}" in row "${label2}" was too narrow for one line of its text; its widthPx is now ${needed}.`);
+      warnings.push(`Heading "${child.name}" in row "${label3}" was too narrow for one line of its text; its widthPx is now ${needed}.`);
     }
     if (children.some((child) => child.type === "ShadHeading") && children.some((child) => META_TYPES.has(child.type)) && children.every((child) => child.type === "ShadHeading" || META_TYPES.has(child.type)) && ["", "center", "flex-start"].includes(align)) {
       setProp(container, "alignItems", "last baseline");
-      warnings.push(`Row "${label2}" pairs a heading with meta text; its alignItems is now "last baseline" so they share a baseline.`);
+      warnings.push(`Row "${label3}" pairs a heading with meta text; its alignItems is now "last baseline" so they share a baseline.`);
     }
     if (text(prop2(container, "justifyContent")) === "space-between" && children.length >= 3) {
       const first = children[0];
@@ -76561,11 +77382,11 @@ function polishFlexRows(input) {
           rects.forEach((rect2) => {
             rect2.fillWidth = true;
           });
-          warnings.push(`Row "${label2}": the title now takes the free space, so the items after it sit together at the right of the header.`);
+          warnings.push(`Row "${label3}": the title now takes the free space, so the items after it sit together at the right of the header.`);
         }
       }
     }
-    const authored = valueOf2(prop2(container, "childOrder"));
+    const authored = valueOf7(prop2(container, "childOrder"));
     const authoredOrder = Array.isArray(authored) ? authored.filter((entry) => typeof entry === "string") : null;
     const ordered = authoredOrder?.length ? [
       ...authoredOrder.map((name2) => children.find((child) => refOf(child) === name2 || child.name === name2)).filter((child) => !!child),
@@ -76591,9 +77412,197 @@ function polishFlexRows(input) {
         components[slot] = next[i];
       });
     }
-    warnings.push(`Row "${label2}": ${leadingActions.map((child) => `"${child.name}"`).join(", ")} came before the title; moved after it so the page action sits at the right of the header.`);
+    warnings.push(`Row "${label3}": ${leadingActions.map((child) => `"${child.name}"`).join(", ")} came before the title; moved after it so the page action sits at the right of the header.`);
   }
-  return { components, warnings };
+  const firstOf = (parent) => {
+    const inner = childrenOf(refOf(parent) ?? "");
+    const authored = valueOf7(prop2(parent, "childOrder"));
+    const first = Array.isArray(authored) && typeof authored[0] === "string" ? inner.find((c) => refOf(c) === authored[0] || c.name === authored[0] || c.id === authored[0]) : void 0;
+    return first ?? inner[0];
+  };
+  for (const card of components) {
+    if (!card || !isSurface(card))
+      continue;
+    const title = text(prop2(card, "cardTitle"));
+    if (!title)
+      continue;
+    let node2 = firstOf(card);
+    for (let depth2 = 0; node2 && node2.type === "FlexContainer" && !isSurface(node2) && depth2 < 2; depth2++)
+      node2 = firstOf(node2);
+    if (node2?.type !== "ShadHeading")
+      continue;
+    warnings.push(`Card "${card.name}" is already titled "${title}" and opens with heading "${text(prop2(node2, "text"))}": two section titles stacked read as a card in a card. Keep one: drop the heading (and its caption) or clear cardTitle and cardExtra.`);
+  }
+  const accents = unifyChartAccents(components);
+  const tables = packTableLook(accents.components);
+  return { components: tables.components, warnings: [...warnings, ...accents.warnings, ...tables.warnings] };
+}
+
+// dist/archetypeLint.js
+var PAGE_ARCHETYPES = ["catalog", "personal-overview", "register", "queue-board", "other"];
+var MAIN_SURFACE = {
+  catalog: { types: /* @__PURE__ */ new Set(["ShadCardGrid"]), label: "a photo card grid (ShadCardGrid)" },
+  "personal-overview": {
+    types: /* @__PURE__ */ new Set(["ShadSummaryStrip", "ShadStat", "ShadProgress", "ShadCircularProgress"]),
+    label: "the period figures (ShadSummaryStrip, then progress tiles)"
+  },
+  register: { types: /* @__PURE__ */ new Set(["Table", "ShadTable"]), label: 'the records table (Table with tableLook "shadcn")' },
+  "queue-board": {
+    types: /* @__PURE__ */ new Set(["ShadRecordList", "Table", "ShadTable", "ShadKanban", "ShadCardGrid"]),
+    label: "the work itself (a needs-attention ShadRecordList, the queue table or a ShadKanban)"
+  }
+};
+var FILTER_TYPES = /* @__PURE__ */ new Set(["ShadInput", "ShadToggleGroup", "ShadSelect", "ShadTabs", "ShadCombobox", "ShadMultiselect"]);
+var DIALOG_TYPES = /* @__PURE__ */ new Set(["ShadDialog", "Modal", "ModalV2"]);
+var SHORT_LIST_MAX = 36;
+var isChart2 = (type) => /^Shad\w*Chart$/.test(type ?? "");
+var valueOf8 = (bag, key4) => {
+  const entry = bag?.[key4];
+  return entry && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry.value : entry;
+};
+var textOf = (bag, key4) => {
+  const v = valueOf8(bag, key4);
+  return typeof v === "string" ? v.trim() : typeof v === "number" ? String(v) : "";
+};
+var refOf2 = (c) => c.clientRef ?? c.name ?? "";
+var label2 = (c) => `"${c.name ?? c.clientRef ?? c.type}"`;
+function readingOrder(components) {
+  const refs2 = new Set(components.map(refOf2).filter(Boolean));
+  const parentOf3 = (c) => {
+    const p = c.parentRef ?? c.parent;
+    return p && refs2.has(p) ? p : void 0;
+  };
+  const children = /* @__PURE__ */ new Map();
+  for (const c of components) {
+    const p = parentOf3(c);
+    if (p)
+      children.set(p, [...children.get(p) ?? [], c]);
+  }
+  const out = [];
+  const seen = /* @__PURE__ */ new Set();
+  const visit = (c) => {
+    if (seen.has(c) || DIALOG_TYPES.has(c.type ?? ""))
+      return;
+    seen.add(c);
+    out.push(c);
+    for (const child of children.get(refOf2(c)) ?? [])
+      visit(child);
+  };
+  for (const c of components)
+    if (!parentOf3(c))
+      visit(c);
+  return out;
+}
+function chartColourWarnings(chart) {
+  const series = valueOf8(chart.properties, "yFields");
+  const parts = chart.type === "ShadPieChart" || chart.type === "ShadFunnelChart" ? "slice" : Array.isArray(series) && series.length > 1 ? "series" : null;
+  if (!parts)
+    return [];
+  const colors = valueOf8(chart.properties, "colors");
+  const literal3 = Array.isArray(colors) ? colors : null;
+  const bound = typeof colors === "string" && colors.includes("{{") && !/^\{\{\s*\[\s*\]\s*\}\}$/.test(colors.trim());
+  if (bound)
+    return [];
+  if (!literal3 || literal3.length === 0) {
+    return [
+      `Chart ${label2(chart)} draws each ${parts} in the default palette: set colors to explicit, distinct hues that sit with the theme (one family, clearly different lightness or hue per ` + parts + "), so no pair clashes and no slice disappears."
+    ];
+  }
+  const norm = literal3.map((c) => String(c).trim().toLowerCase());
+  if (new Set(norm).size < norm.length) {
+    return [`Chart ${label2(chart)} repeats a colour in colors (${literal3.join(", ")}): give each ${parts} its own hue.`];
+  }
+  return [];
+}
+function headerActionWarnings(order, components) {
+  const first = order.find((c) => c.type === "ShadHero" || c.type === "ShadHeading");
+  if (!first)
+    return [];
+  if (first.type === "ShadHero") {
+    const primary = textOf(first.properties, "actionLabel");
+    const secondary = textOf(first.properties, "secondaryActionLabel");
+    return primary && secondary ? [`Header ${label2(first)} offers two actions ("${primary}", "${secondary}"): keep the one the page is for; move the other into the page (a card's action, a filter or the nav).`] : [];
+  }
+  const byRef = new Map(components.map((c) => [refOf2(c), c]));
+  let row;
+  let at = first;
+  for (let i = 0; i < 2 && at; i++) {
+    at = byRef.get(at.parentRef ?? at.parent ?? "");
+    if (at?.type === "FlexContainer" && textOf(at.properties, "direction") === "row") {
+      row = at;
+      break;
+    }
+  }
+  if (!row)
+    return [];
+  const inRow = /* @__PURE__ */ new Set([refOf2(row)]);
+  const buttons = [];
+  for (const c of order) {
+    const p = c.parentRef ?? c.parent ?? "";
+    if (!inRow.has(p))
+      continue;
+    inRow.add(refOf2(c));
+    if (c.type === "ShadButton")
+      buttons.push(c);
+  }
+  return buttons.length > 1 ? [`Header row ${label2(row)} holds ${buttons.length} buttons (${buttons.map(label2).join(", ")}): keep one primary action in the header; the rest belong in the page or the nav.`] : [];
+}
+function lintPageArchetype(archetype, components) {
+  const kind = (archetype ?? "").trim();
+  if (!kind)
+    return [];
+  if (!PAGE_ARCHETYPES.includes(kind)) {
+    return [`Archetype "${kind}" is not one of ${PAGE_ARCHETYPES.join(", ")}; use "other" for a page that is none of them.`];
+  }
+  if (kind === "other")
+    return [];
+  const prefix = `Archetype "${kind}": `;
+  const order = readingOrder(components);
+  const warnings = [];
+  const main2 = MAIN_SURFACE[kind];
+  const mainAt = order.findIndex((c) => main2.types.has(c.type ?? ""));
+  const chartAt = order.findIndex((c) => isChart2(c.type));
+  if (mainAt < 0) {
+    warnings.push(`the page is built around ${main2.label}, and this plan has none.`);
+  } else if (chartAt >= 0 && chartAt < mainAt) {
+    warnings.push(`chart ${label2(order[chartAt])} comes before ${label2(order[mainAt])}: the main surface opens the page; a chart, if it earns a place, sits beside or below it, never as the first thing under the header.`);
+  }
+  const has = (type) => order.some((c) => c.type === type);
+  const filterBefore = (index) => order.slice(0, Math.max(index, 0)).some((c) => FILTER_TYPES.has(c.type ?? ""));
+  const hasDialog = components.some((c) => DIALOG_TYPES.has(c.type ?? ""));
+  if (kind === "catalog" && mainAt >= 0) {
+    const grid = order[mainAt];
+    if (!textOf(grid.properties, "imageField")) {
+      warnings.push(`card grid ${label2(grid)} has no imageField: a catalog shows each record's photo. Seed an image column (a different URL per row from get_component_catalog's authoringHints.photos) and set imageField.`);
+    }
+    if (!filterBefore(mainAt))
+      warnings.push(`no search or filter bar above ${label2(grid)}: put a search input and a course/kind toggle in a row between the hero and the grid.`);
+    if (!hasDialog)
+      warnings.push('no detail sheet: a card click opens a ShadDialog (variant "sheet") with the photo and the full record.');
+  }
+  if (kind === "register" && mainAt >= 0) {
+    if (!filterBefore(mainAt))
+      warnings.push(`no filter row above ${label2(order[mainAt])}: a register is read through a period or status toggle and a select.`);
+    if (!hasDialog)
+      warnings.push('no detail sheet: a row click opens a ShadDialog (variant "sheet") with the record and its actions.');
+  }
+  if (kind === "personal-overview") {
+    if (!has("ShadSummaryStrip"))
+      warnings.push("no ShadSummaryStrip under the hero: the period's four key figures go in one strip.");
+    const progress = order.some((c) => c.type === "ShadProgress" || c.type === "ShadCircularProgress" || c.type === "ShadStat" && valueOf8(c.properties, "progress") !== void 0);
+    if (!progress)
+      warnings.push("no progress grid: show each goal or budget as a ShadStat with progress (or ShadProgress) against its limit.");
+  }
+  if (kind === "queue-board" && !has("ShadSummaryStrip")) {
+    warnings.push("no ShadSummaryStrip: a queue opens with its counts (open, overdue, unassigned, done this week) in one strip.");
+  }
+  for (const chart of order.filter((c) => isChart2(c.type)))
+    warnings.push(...chartColourWarnings(chart));
+  warnings.push(...headerActionWarnings(order, components));
+  if (order.length > SHORT_LIST_MAX) {
+    warnings.push(`${order.length} components outside dialogs: a ${kind} page reads best with a short list (the blueprint has about 10 to 20); merge repeated tiles into one bound component and drop sections the page does not need.`);
+  }
+  return warnings.map((w) => prefix + w);
 }
 
 // dist/defaultChildren.js
@@ -76808,12 +77817,12 @@ function alertEvent(queryId, queryName, trigger, alert, defaultType) {
     name: trigger === "onDataQuerySuccess" ? `Confirm ${queryName}` : `${queryName} failed`
   };
 }
-function unique(values, label2, sourceName, warnings) {
+function unique(values, label3, sourceName, warnings) {
   const seen = /* @__PURE__ */ new Set();
   const result = [];
   for (const value2 of values) {
     if (seen.has(value2)) {
-      warnings.push(`Query "${sourceName}" lifecycle listed ${label2} "${value2}" more than once; duplicate ignored.`);
+      warnings.push(`Query "${sourceName}" lifecycle listed ${label3} "${value2}" more than once; duplicate ignored.`);
       continue;
     }
     seen.add(value2);
@@ -76835,6 +77844,65 @@ function invalidPlannedGeneratedPrimaryKeySeeds(columns, rows) {
     }
   }
   return errors;
+}
+
+// dist/seedVarietyLint.js
+var MIN_ROWS = 6;
+var METRIC = /(progress|complet|percent|pct|score|rating|health|satisfaction|nps|readiness|utili[sz]ation|occupancy|amount|price|cost|total|revenue|balance|spend|budget|salary|value|hours|minutes|duration|days|stock|quantity|qty|count|tickets|visits|sales|margin|rate)/i;
+var NOT_METRIC = /(^id$|_id$|^id_|uuid|key$|^sort|order$|position|rank|index|^year$|^is_|^has_|date|_at$|zip|phone|code$)/i;
+var MEASURED = /(progress|complet|percent|pct|score|health|satisfaction|nps|readiness|utili[sz]ation|occupancy)/i;
+var asNumber = (value2) => {
+  if (typeof value2 === "number" && Number.isFinite(value2))
+    return value2;
+  if (typeof value2 === "string" && /^-?\d+(\.\d+)?$/.test(value2.trim()))
+    return Number(value2);
+  return void 0;
+};
+function lintUniformSeedMetrics(tableName, rows) {
+  if (rows.length < MIN_ROWS)
+    return [];
+  const columns = [...new Set(rows.flatMap((row) => Object.keys(row)))];
+  const warnings = [];
+  for (const column of columns) {
+    if (!METRIC.test(column) || NOT_METRIC.test(column))
+      continue;
+    const values = rows.map((row) => asNumber(row[column]));
+    const present = values.filter((v) => v !== void 0);
+    if (present.length < MIN_ROWS || present.length < rows.length * 0.8)
+      continue;
+    const distinct2 = new Set(present);
+    if (distinct2.size === 1) {
+      warnings.push(`Seed data for table "${tableName}": column "${column}" is ${present[0]} in all ${present.length} rows, so every record shows the same figure. Vary it across rows the way real records differ.`);
+      continue;
+    }
+    if (!MEASURED.test(column))
+      continue;
+    for (const by of columns) {
+      if (by === column || NOT_METRIC.test(by))
+        continue;
+      const groups = /* @__PURE__ */ new Map();
+      const sizes = /* @__PURE__ */ new Map();
+      let usable = true;
+      rows.forEach((row, index) => {
+        const group = row[by];
+        const value2 = values[index];
+        if (typeof group !== "string" || value2 === void 0) {
+          usable = false;
+          return;
+        }
+        groups.set(group, (groups.get(group) ?? /* @__PURE__ */ new Set()).add(value2));
+        sizes.set(group, (sizes.get(group) ?? 0) + 1);
+      });
+      if (!usable || groups.size < 3 || groups.size > 8 || [...sizes.values()].some((n) => n < 2))
+        continue;
+      if ([...groups.values()].some((set2) => set2.size > 1))
+        continue;
+      const examples = [...groups.entries()].slice(0, 3).map(([group, set2]) => `${group} ${[...set2][0]}`).join(", ");
+      warnings.push(`Seed data for table "${tableName}": column "${column}" is one value per ${by} (${examples}), so every record in a ${by} shows the same ${column}. Vary it within each ${by} the way real records differ, and compute it from the record's own data (tasks done of tasks due, for example) rather than a fixed number per stage.`);
+      break;
+    }
+  }
+  return warnings;
 }
 
 // dist/bindingBraces.js
@@ -76964,6 +78032,11 @@ function isTruthy(value2) {
 function catalogDefault(type, key4, fallback) {
   return getComponentSchema(type)?.properties.find((property3) => property3.key === key4)?.default ?? fallback;
 }
+var MONEY_WORDS = /\b(price|amount|cost|total|revenue|balance|fee|fees|spend|spent|salary|budget|paid|payment|invoice|subtotal|tax|refund|value|mrr|arr)\b/i;
+var PERSON_WORDS = /\b(customer|client|requester|requestor|owner|assignee|assigned to|contact|lead|member|patient|guest|organi[sz]er|employee|technician|tech|agent|rep|student|author|reporter|host|driver|candidate|applicant|tenant|buyer|seller|manager|person|attendee|trainer|coach|instructor|doctor|vet|veterinarian|nurse|resident|full name|customer name|contact name)\b/i;
+var UNIT_WORDS = /\b(min|mins|minutes?|hours?|hrs?|days?|weeks?|time|count|qty|quantity|servings?|units?|items?|points?|score|percent|pct|kg|lbs?|reps?|sets?|seats?|guests?|nights?|orders?|tickets?|visits?)\b/i;
+var COUNT_WORDS = /\b(min|mins|minutes?|hours?|hrs?|count|qty|quantity|servings?|units?|items?|points?|score|percent|pct|kg|lbs?|reps?|sets?|seats?|guests?|nights?|orders?|tickets?|visits?|jobs?|rate)\b/i;
+var STATE_WORDS = /\b(status|stage|state|priority|severity|availability|health|risk|condition)\b/i;
 var CLIENT_SERVER_BOOLEAN_KEYS = /* @__PURE__ */ new Set([
   "serverSidePagination",
   "serverSideSearch",
@@ -77087,7 +78160,7 @@ function normalizeComponentSpec(component, options2 = {}) {
   if (component.type === "Table") {
     const lookEntry0 = stylesValue.tableLook;
     const look0 = lookEntry0 && typeof lookEntry0 === "object" ? lookEntry0.value : lookEntry0;
-    const height = (component.layouts?.desktop ?? component.layout)?.height;
+    const height2 = (component.layouts?.desktop ?? component.layout)?.height;
     const staticNumber2 = (v) => {
       const m = typeof v === "number" ? String(v) : typeof v === "string" ? /^\s*(?:\{\{\s*)?(\d+)\s*(?:\}\})?\s*$/.exec(v)?.[1] : void 0;
       return m !== void 0 ? Number(m) : void 0;
@@ -77096,17 +78169,17 @@ function normalizeComponentSpec(component, options2 = {}) {
     if (look0 === "shadcn" && properties.dynamicHeight === void 0) {
       setProperty("dynamicHeight", "{{true}}");
     }
-    if (look0 === "shadcn" && typeof height === "number" && !isTruthy(propValue(properties, "dynamicHeight")) && !isTruthy(propValue(properties, "serverSidePagination")) && !isFalse(propValue(properties, "enablePagination"))) {
+    if (look0 === "shadcn" && typeof height2 === "number" && !isTruthy(propValue(properties, "dynamicHeight")) && !isTruthy(propValue(properties, "serverSidePagination")) && !isFalse(propValue(properties, "enablePagination"))) {
       const rowsPerPage = staticNumber2(propValue(properties, "rowsPerPage")) ?? 10;
       const toolbar = isFalse(propValue(properties, "displaySearchBox")) ? 0 : 64;
-      const fit = Math.floor((height - toolbar - 40 - 58) / 45);
+      const fit = Math.floor((height2 - toolbar - 40 - 58) / 45);
       if (fit < rowsPerPage) {
         if (fit >= 3) {
           setProperty("rowsPerPage", `{{${fit}}}`);
-          warnings.push(`Table "${component.name}": height ${height}px fits ${fit} rows; rowsPerPage is now ${fit} so no row is cut off.`);
+          warnings.push(`Table "${component.name}": height ${height2}px fits ${fit} rows; rowsPerPage is now ${fit} so no row is cut off.`);
         } else {
           setProperty("dynamicHeight", "{{true}}");
-          warnings.push(`Table "${component.name}": height ${height}px fits fewer than 3 rows; dynamicHeight is on so the table fits its rows.`);
+          warnings.push(`Table "${component.name}": height ${height2}px fits fewer than 3 rows; dynamicHeight is on so the table fits its rows.`);
         }
       }
     }
@@ -77134,6 +78207,12 @@ function normalizeComponentSpec(component, options2 = {}) {
     if (Array.isArray(columns)) {
       const lookEntry = stylesValue.tableLook;
       const shadcnLook = (lookEntry && typeof lookEntry === "object" ? lookEntry.value : lookEntry) === "shadcn";
+      const wrapNow = stylesValue.contentWrap?.value ?? stylesValue.contentWrap;
+      const multiLine = columns.some((c) => c && typeof c === "object" && !Array.isArray(c) && c.columnVisibility !== false && ["html", "text", "json", "image", "markdown"].includes(String(c.columnType)));
+      if (shadcnLook && multiLine && wrapNow === false)
+        setStyle("contentWrap", true);
+      else if (shadcnLook && !multiLine && wrapNow !== false)
+        setStyle("contentWrap", false);
       let changedColumns = false;
       const repairedColumns = columns.map((column) => {
         if (options2.stripUnknownKeys && column && typeof column === "object" && !Array.isArray(column) && column.columnType === "button" && Array.isArray(column.buttons)) {
@@ -77143,10 +78222,10 @@ function normalizeComponentSpec(component, options2 = {}) {
             const b = button;
             if (typeof b.label !== "string" || b.buttonLabel !== void 0)
               return button;
-            const { label: label2, ...rest } = b;
+            const { label: label3, ...rest } = b;
             changedColumns = true;
             warnings.push(`Table "${component.name}" action "${b.id}": moved label to buttonLabel, where the renderer reads the caption.`);
-            return { ...rest, buttonLabel: label2 };
+            return { ...rest, buttonLabel: label3 };
           });
           column = { ...column, buttons };
         }
@@ -77155,6 +78234,11 @@ function normalizeComponentSpec(component, options2 = {}) {
           const entry = column;
           warnings.push(`Table "${component.name}" date column "${entry.name ?? entry.key}": enabled date selection \u2014 a datepicker column with both date selection and time disabled renders blank regardless of the data.`);
           return { ...entry, isDateSelectionEnabled: true };
+        }
+        if (shadcnLook && column && typeof column === "object" && !Array.isArray(column) && column.columnType === "datepicker" && !isTruthy(column.isEditable) && /^Y{4}[-/]MM[-/]DD$/.test(String(column.dateFormat ?? "").trim())) {
+          changedColumns = true;
+          const entry = column;
+          column = { ...entry, parseDateFormat: entry.parseDateFormat ?? entry.dateFormat, dateFormat: "MMM D, YYYY" };
         }
         if (column && typeof column === "object" && !Array.isArray(column) && column.columnType === "newMultiSelect" && !isTruthy(column.isEditable) && /^(status|severity|priority|stage|state|level|risk)$/i.test(String(column.key ?? column.name ?? "").replace(/[_\s-]+/g, ""))) {
           changedColumns = true;
@@ -77165,16 +78249,97 @@ function normalizeComponentSpec(component, options2 = {}) {
         if (shadcnLook && column && typeof column === "object" && !Array.isArray(column) && column.columnType === "number" && (column.horizontalAlignment === void 0 || column.thousandSeparator === void 0)) {
           changedColumns = true;
           const entry = column;
-          return {
+          column = {
             ...entry,
             horizontalAlignment: entry.horizontalAlignment ?? "right",
             thousandSeparator: entry.thousandSeparator ?? true
           };
         }
+        if (shadcnLook && column && typeof column === "object" && !Array.isArray(column)) {
+          const entry = column;
+          const words2 = `${String(entry.key ?? "")} ${String(entry.name ?? "")}`.replace(/[_-]+/g, " ");
+          const next = { ...entry };
+          if (entry.columnType === "number" && entry.decimalPlaces === void 0 && MONEY_WORDS.test(words2) && !UNIT_WORDS.test(words2)) {
+            next.decimalPlaces = 2;
+          }
+          if (["string", void 0].includes(entry.columnType) && entry.displayAsChip === void 0 && !isTruthy(entry.isEditable) && STATE_WORDS.test(words2)) {
+            next.displayAsChip = true;
+          }
+          const size2 = Number(entry.columnSize);
+          const label3 = String(entry.name ?? entry.key ?? "");
+          if (Number.isFinite(size2) && size2 > 0 && label3) {
+            const email3 = /\be ?mail\b/i.test(words2) ? 240 : 0;
+            const chip = next.displayAsChip === true || entry.displayAsChip === true ? 140 : 0;
+            const needed = Math.max(email3, chip, Math.ceil(label3.length * 7.5) + 32 + (isTruthy(entry.isEditable) ? 18 : 0));
+            if (size2 < needed)
+              next.columnSize = needed;
+          }
+          if (entry.columnType === "button" && Array.isArray(entry.buttons)) {
+            const buttons = entry.buttons.map((button) => {
+              if (!button || typeof button !== "object" || Array.isArray(button))
+                return button;
+              const b = button;
+              const bg = b.buttonBackgroundColor;
+              const defaultBg = bg === void 0 || ["#4368E3", "#4368e3", "var(--cc-primary-brand)"].includes(String(bg));
+              return (b.buttonType === void 0 || b.buttonType === "solid") && defaultBg ? { ...b, buttonType: "outline" } : button;
+            });
+            if (buttons.some((b, i) => b !== entry.buttons[i]))
+              next.buttons = buttons;
+          }
+          if (Object.keys(next).some((k) => next[k] !== entry[k])) {
+            changedColumns = true;
+            column = next;
+          }
+        }
         return column;
       });
+      if (shadcnLook) {
+        const visible = repairedColumns.filter((c) => !!c && typeof c === "object" && !Array.isArray(c) && c.columnVisibility !== false);
+        const width = (c) => Number(c.columnSize) > 0 ? Number(c.columnSize) : 120;
+        const total = visible.reduce((sum, c) => sum + width(c), 0);
+        if (visible.length > 1 && total > 1240) {
+          const factor = 1240 / total;
+          const floor = (c) => c.columnType === "button" ? 110 : Math.max(/\be ?mail\b/i.test(`${String(c.key ?? "")} ${String(c.name ?? "")}`.replace(/[_-]+/g, " ")) ? 240 : 64, Math.ceil(String(c.name ?? c.key ?? "").length * 7.5) + 32);
+          for (let i = 0; i < repairedColumns.length; i++) {
+            const c = repairedColumns[i];
+            if (!visible.includes(c))
+              continue;
+            repairedColumns[i] = { ...c, columnSize: Math.max(floor(c), Math.floor(width(c) * factor)) };
+          }
+          changedColumns = true;
+          warnings.push(`Table "${component.name}": its visible columns (${total}px) were wider than a page; they now scale to fit about 1240px.`);
+        }
+      }
+      if (shadcnLook) {
+        const index = repairedColumns.findIndex((c) => {
+          if (!c || typeof c !== "object" || Array.isArray(c))
+            return false;
+          const entry2 = c;
+          const words2 = `${String(entry2.key ?? "")} ${String(entry2.name ?? "")}`.replace(/[_-]+/g, " ");
+          return entry2.columnVisibility !== false && ["string", void 0].includes(entry2.columnType) && PERSON_WORDS.test(words2) && !/\b(e ?mail|id|phone|count|type|notes?)\b/i.test(words2);
+        });
+        const entry = index >= 0 ? repairedColumns[index] : void 0;
+        if (entry && entry.displayAvatar === void 0 && entry.displayAsChip === void 0 && !isTruthy(entry.isEditable)) {
+          repairedColumns[index] = { ...entry, displayAvatar: true };
+          changedColumns = true;
+        }
+      }
       if (changedColumns)
         setProperty("columns", repairedColumns);
+    }
+  }
+  const statFormat = propValue(properties, "valueFormat");
+  if (component.type === "ShadStat" && (statFormat === void 0 || statFormat === "auto")) {
+    const label3 = String(propValue(properties, "label") ?? "");
+    let value2 = propValue(properties, "value");
+    const moneyLabel = MONEY_WORDS.test(label3.replace(/[_-]+/g, " ")) && !COUNT_WORDS.test(label3);
+    const trailingFormat = /\.(?:toLocaleString\((?:[^()]|\([^()]*\))*\)|toFixed\(\s*\d*\s*\))\s*\}\}\s*$/;
+    if (moneyLabel && typeof value2 === "string" && trailingFormat.test(value2) && !/[$€£₹¥]|Intl\.|currency/i.test(value2)) {
+      value2 = value2.replace(trailingFormat, "}}");
+      setProperty("value", value2);
+    }
+    if (typeof value2 === "string" && /^\s*\{\{[\s\S]*\}\}\s*$/.test(value2) && !/[$€£₹¥]|toLocaleString|toFixed|Intl\.|currency/i.test(value2) && moneyLabel) {
+      setProperty("valueFormat", "currency");
     }
   }
   if (component.type === "KeyValuePair") {
@@ -77320,7 +78485,7 @@ function normalizeComponentSpec(component, options2 = {}) {
 // dist/layoutNormalization.js
 function normalizePlannedLayouts(component) {
   const warnings = [];
-  const label2 = `${component.type ?? "component"} "${component.name ?? "?"}"`;
+  const label3 = `${component.type ?? "component"} "${component.name ?? "?"}"`;
   const targets = [];
   if (component.layout)
     targets.push(["layout", component.layout]);
@@ -77339,10 +78504,10 @@ function normalizePlannedLayouts(component) {
       continue;
     if (textMinimum !== void 0 && rect2.height < textMinimum) {
       fixed.set(name2, { ...rect2, height: textMinimum });
-      warnings.push(`${label2}: raised ${name2} height ${rect2.height}px to ${textMinimum}px so one line of text renders.`);
+      warnings.push(`${label3}: raised ${name2} height ${rect2.height}px to ${textMinimum}px so one line of text renders.`);
     } else if (compactHeight !== void 0 && rect2.height > compactHeight) {
       fixed.set(name2, { ...rect2, height: compactHeight });
-      warnings.push(`${label2}: lowered ${name2} height ${rect2.height}px to the standard single-line ${compactHeight}px (oversizing does not enlarge the value text; a top label renders outside the box).`);
+      warnings.push(`${label3}: lowered ${name2} height ${rect2.height}px to the standard single-line ${compactHeight}px (oversizing does not enlarge the value text; a top label renders outside the box).`);
     }
   }
   if (!fixed.size)
@@ -77404,17 +78569,17 @@ function lintQueryFedCharts(components, queries) {
     if (query2.kind !== "runjs")
       continue;
     const code = String(query2.options?.code ?? "");
-    const label2 = component.name ?? "Chart";
+    const label3 = component.name ?? "Chart";
     if (!code.trim()) {
-      errors.push(`Chart "${label2}" is bound to query "${query2.name}", which has no JavaScript code to build the chart object.`);
+      errors.push(`Chart "${label3}" is bound to query "${query2.name}", which has no JavaScript code to build the chart object.`);
       continue;
     }
     if (/textposition\s*:\s*['"]outside['"]/.test(code) && !/cliponaxis\s*:\s*false/.test(code)) {
-      errors.push(`Chart "${label2}" is bound to query "${query2.name}", whose bar trace places its text outside without cliponaxis:false, so the tallest bar's value label is cut in half by the plot area. Add cliponaxis:false to the trace.`);
+      errors.push(`Chart "${label3}" is bound to query "${query2.name}", whose bar trace places its text outside without cliponaxis:false, so the tallest bar's value label is cut in half by the plot area. Add cliponaxis:false to the trace.`);
     }
     const missing = ["data", "layout"].filter((key4) => !code.includes(key4));
     if (missing.length) {
-      errors.push(`Chart "${label2}" is bound to query "${query2.name}", whose code never mentions ${missing.join(", ")}: a query feeding a chart must return the whole { data: [trace], layout: { font, xaxis, yaxis, ... } } object from references/ui-layout.md. A bare array of points draws empty axes in Plotly's default font.`);
+      errors.push(`Chart "${label3}" is bound to query "${query2.name}", whose code never mentions ${missing.join(", ")}: a query feeding a chart must return the whole { data: [trace], layout: { font, xaxis, yaxis, ... } } object from references/ui-layout.md. A bare array of points draws empty axes in Plotly's default font.`);
     }
   }
   return errors;
@@ -77592,6 +78757,11 @@ function lintPlannedApp(spec, existingSummary, options2 = {}) {
         }
       }
     }
+    const rowsByTable = /* @__PURE__ */ new Map();
+    for (const seed of seedData)
+      rowsByTable.set(seed.tableName, [...rowsByTable.get(seed.tableName) ?? [], ...seed.rows]);
+    for (const [tableName, rows] of rowsByTable)
+      warnings.push(...lintUniformSeedMetrics(tableName, rows));
   }
   const queryRefs = /* @__PURE__ */ new Map();
   const queryIds = /* @__PURE__ */ new Map();
@@ -77696,6 +78866,7 @@ function lintPlannedApp(spec, existingSummary, options2 = {}) {
     errors.push(...componentLint.errors.map((message) => `Page "${plannedPage.name}": ${message}`));
     errors.push(...lintQueryFedCharts(expansion.components, spec.queries ?? []).map((message) => `Page "${plannedPage.name}": ${message}`));
     warnings.push(...componentLint.warnings.map((message) => `Page "${plannedPage.name}": ${message}`));
+    warnings.push(...lintPageArchetype(plannedPage.archetype, expansion.components).map((message) => `Page "${plannedPage.name}": ${message}`));
     const localRefs = /* @__PURE__ */ new Map();
     for (const component of existingPage?.components ?? []) {
       if (component.name)
@@ -77897,23 +79068,23 @@ function sourceMap(sourceType, components, queries, pages) {
     return pages;
   return components;
 }
-function resolveAction(raw, queries, pages, components, errors, label2) {
+function resolveAction(raw, queries, pages, components, errors, label3) {
   const { target_ref: explicitRef, ...action } = raw;
   const targetRef = explicitRef ?? (action.actionId === "run-query" ? action.queryId ?? action.queryName : void 0);
   if (Object.values(action).some((value2) => typeof value2 === "string" && /^planned-(query|page|component):/.test(value2))) {
-    errors.push(`${label2}: synthetic planned ids cannot be saved. Use action.target_ref with the logical client_ref or name.`);
+    errors.push(`${label3}: synthetic planned ids cannot be saved. Use action.target_ref with the logical client_ref or name.`);
     return action;
   }
   if (targetRef === void 0)
     return action;
   if (typeof targetRef !== "string") {
-    errors.push(`${label2} target_ref must be a string.`);
+    errors.push(`${label3} target_ref must be a string.`);
     return action;
   }
   const actionId = action.actionId;
   const target2 = actionId === "run-query" ? queries.get(targetRef) : actionId === "switch-page" ? pages.get(targetRef) : ["show-modal", "close-modal", "control-component", "set-table-page", "scroll-component-into-view"].includes(String(actionId)) ? components.get(targetRef) : void 0;
   if (!target2) {
-    errors.push(`${label2} action "${String(actionId)}" has unknown or unsupported target_ref "${targetRef}".`);
+    errors.push(`${label3} action "${String(actionId)}" has unknown or unsupported target_ref "${targetRef}".`);
     return action;
   }
   if (actionId === "run-query")
@@ -77929,22 +79100,22 @@ function resolveAction(raw, queries, pages, components, errors, label2) {
     return { ...action, table: target2.id };
   return action;
 }
-function resolveRefs(refs2, map2, errors, label2) {
+function resolveRefs(refs2, map2, errors, label3) {
   return refs2?.flatMap((ref2) => {
     const value2 = map2.get(ref2);
     if (!value2) {
-      errors.push(`${label2} ref "${ref2}" does not exist.`);
+      errors.push(`${label3} ref "${ref2}" does not exist.`);
       return [];
     }
     return [value2.id];
   });
 }
-function resolveRef3(ref2, map2, errors, label2) {
+function resolveRef3(ref2, map2, errors, label3) {
   if (!ref2)
     return void 0;
   const value2 = map2.get(ref2);
   if (!value2) {
-    errors.push(`${label2} ref "${ref2}" does not exist.`);
+    errors.push(`${label3} ref "${ref2}" does not exist.`);
     return void 0;
   }
   return value2.id;
@@ -78090,6 +79261,7 @@ var plannedPageSchema = external_exports.object({
   hidden: external_exports.boolean().optional(),
   /** The existing page of this name is replaced whole: see pageReplace.ts. */
   replace: external_exports.boolean().optional().describe("true: the existing page of this name ends up holding exactly this plan's components and the events on them (needs app_id). It is written as a difference: a component the plan leaves as it is is not rewritten, one that only moved is moved, and one that changed keeps its id. Queries of that page the plan defines again are updated in place, keeping their ids. Refused when another page, event or query reads a component the plan drops. Not atomic: use it on draft or otherwise recoverable pages."),
+  archetype: external_exports.string().optional().describe("The page's archetype: catalog (records with a face: photo cards, search, detail sheet), personal-overview (one person's period at a glance: hero, figures, progress, recent), register (a filtered table of records with a detail sheet), queue-board (work to act on: counts, needs-attention list, queue) or other. Lint checks the page against it."),
   components: external_exports.array(componentInputSchema).optional()
 });
 var plannedEventSchema = external_exports.object({
@@ -78586,8 +79758,8 @@ function restatedQueryNames(summary, queries, tables, datasources) {
     if (held.length !== 1)
       continue;
     const existing = held[0];
-    const named = query2.datasource_name !== void 0 ? datasources.filter((source2) => source2.name === query2.datasource_name) : [];
-    const datasource = query2.datasource_id !== void 0 ? datasources.find((source2) => source2.id === query2.datasource_id) : named.length === 1 ? named[0] : void 0;
+    const matched = query2.datasource_id === void 0 ? matchDatasourceByName(datasources, query2.datasource_name) : null;
+    const datasource = query2.datasource_id !== void 0 ? datasources.find((source2) => source2.id === query2.datasource_id) : matched ? datasources.find((source2) => source2.id === matched.id) : void 0;
     if (!datasource || datasource.id !== existing.data_source_id)
       continue;
     const options2 = structuredClone(query2.options ?? {});
@@ -78819,10 +79991,14 @@ function lintAppSpecTool(client) {
             preflightErrors.push(`Query "${query2.name}" must provide exactly one of datasource_id or datasource_name.`);
           } else if (hasName) {
             const matches2 = datasources.filter((source2) => source2.name === query2.datasource_name);
-            if (!query2.datasource_name || matches2.length !== 1) {
+            const matched = matchDatasourceByName(datasources, query2.datasource_name);
+            if (!matched) {
               preflightErrors.push(`Query "${query2.name}" datasource_name "${query2.datasource_name}" must match exactly one source in this version (found ${matches2.length}). Use the exact name or id returned by list_datasources(version_id).`);
-            } else
-              datasourceId = matches2[0].id;
+            } else {
+              datasourceId = matched.id;
+              if (matched.note)
+                preflightWarnings.push(`Query "${query2.name}": ${matched.note}`);
+            }
           }
           const datasourceKind = datasourceKinds.get(datasourceId ?? "");
           if (args.version_id && !datasourceKind) {
@@ -78923,6 +80099,7 @@ function lintAppSpecTool(client) {
             name: page.name,
             icon: page.icon,
             hidden: page.hidden,
+            archetype: page.archetype,
             components: page.components?.map((component) => ({
               name: component.name,
               type: component.type,
@@ -79002,10 +80179,10 @@ function autoFitHtmlHeights(args) {
         continue;
       const delta = fix.to - fix.from;
       const oldBottom = rect2.top + fix.from;
-      const parentOf = (c) => c.parent_ref ?? c.parent ?? "";
+      const parentOf3 = (c) => c.parent_ref ?? c.parent ?? "";
       const moved = [];
       for (const sibling of components) {
-        if (sibling === component || parentOf(sibling) !== parentOf(component))
+        if (sibling === component || parentOf3(sibling) !== parentOf3(component))
           continue;
         for (const r of [sibling.layout, sibling.layouts?.desktop, sibling.layouts?.mobile]) {
           if (r && typeof r.top === "number" && r.top >= oldBottom - 4)
@@ -79713,20 +80890,20 @@ function resolveAction2(raw, pages, queries, components) {
     return { ...action, table: target2.id };
   return action;
 }
-function refs(values, targets, label2) {
+function refs(values, targets, label3) {
   return values?.map((ref2) => {
     const target2 = targets.get(ref2);
     if (!target2)
-      throw new Error(`${label2} ref "${ref2}" does not exist.`);
+      throw new Error(`${label3} ref "${ref2}" does not exist.`);
     return target2.id;
   });
 }
-function oneRef(value2, targets, label2) {
+function oneRef(value2, targets, label3) {
   if (!value2)
     return void 0;
   const target2 = targets.get(value2);
   if (!target2)
-    throw new Error(`${label2} ref "${value2}" does not exist.`);
+    throw new Error(`${label3} ref "${value2}" does not exist.`);
   return target2.id;
 }
 function appliedSummary(applied) {
@@ -81880,9 +83057,9 @@ function getRuntimeInfoTool(runtime) {
 }
 
 // dist/tools/manageAppPermissions.js
-function requireValue2(value2, label2) {
+function requireValue2(value2, label3) {
   if (value2 === void 0)
-    throw new Error(`${label2} is required for this action.`);
+    throw new Error(`${label3} is required for this action.`);
   return value2;
 }
 function findResource(summary, resourceType, resourceId) {
@@ -82053,9 +83230,9 @@ function listWorkspaceUsersTool(client) {
     }
   };
 }
-function required3(value2, label2) {
+function required3(value2, label3) {
   if (!value2)
-    throw new Error(`${label2} is required for this action.`);
+    throw new Error(`${label3} is required for this action.`);
   return value2;
 }
 function manageWorkspaceUsersTool(client) {
@@ -82391,9 +83568,9 @@ async function prepare(client, workflowId, versionId, spec, ids) {
       throw new Error(`Query ${oldQuery.id} is shared by multiple nodes. Shared query editing is unsupported.`);
     const input = item.role === "workflow-node" ? item.spec : void 0;
     const datasource = item.role === "agent-model" ? datasources.find((d) => d.id === item.datasource_id) : input.type === "javascript" || input.type === "loop" ? datasources.find((d) => d.kind === "runjs") : datasources.find((d) => d.id === input.datasource_id);
-    const label2 = item.role === "agent-model" ? "Agent model" : `node ${input.ref}`;
+    const label3 = item.role === "agent-model" ? "Agent model" : `node ${input.ref}`;
     if (!datasource)
-      throw new Error(`Datasource unavailable for ${label2}.`);
+      throw new Error(`Datasource unavailable for ${label3}.`);
     if (item.role === "agent-model" && !AI_DATASOURCE_KINDS.has(datasource.kind))
       throw new Error(`Datasource ${datasource.id} is not an AI model datasource.`);
     const kind = datasource.kind;
@@ -82409,7 +83586,7 @@ async function prepare(client, workflowId, versionId, spec, ids) {
     const requestedOptions = item.role === "agent-model" ? item.options : input.type === "javascript" || input.type === "loop" ? { ...oldQuery?.options ?? {}, code: input.code } : input.options;
     const options2 = item.role === "agent-model" ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
     if (item.role === "workflow-node" && kind === "runjs")
-      assertWorkflowJavaScript(options2.code, label2);
+      assertWorkflowJavaScript(options2.code, label3);
     if (item.role === "workflow-node") {
       const validation2 = validateQueryOptions(kind, options2, "workflow");
       if (validation2.errors.length)
