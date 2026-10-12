@@ -9,6 +9,7 @@
    - A row of two or more cards (surfaced FlexContainers): alignItems stretch, so the cards share one height.
    - A header row whose action buttons come before the title: the actions move after the title block (to the right). */
 import type { ComponentSpec } from './tooljetClient.js';
+import { unifyChartAccents } from './chartAccentLint.js';
 
 const FIELD_TYPES = new Set([
   'ShadInput',
@@ -646,5 +647,7 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
         'moved after it so the page action sits at the right of the header.'
     );
   }
-  return { components, warnings };
+  // Charts on the page in one accent (chartAccentLint.ts): an odd hand-set colour takes the page's most common one.
+  const accents = unifyChartAccents(components);
+  return { components: accents.components, warnings: [...warnings, ...accents.warnings] };
 }
