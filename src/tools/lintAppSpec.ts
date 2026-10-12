@@ -419,6 +419,7 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
             name: page.name,
             icon: page.icon,
             hidden: page.hidden,
+            archetype: page.archetype,
             components: page.components?.map((component) => ({
               name: component.name,
               type: component.type,

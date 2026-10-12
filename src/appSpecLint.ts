@@ -1,4 +1,5 @@
 import { polishFlexRows } from './flexPolish.js';
+import { lintPageArchetype } from './archetypeLint.js';
 import { materializeRequiredDefaultChildren } from './defaultChildren.js';
 import { matchPlannedPage } from './pageMatch.js';
 import { validateEvents } from './eventValidation.js';
@@ -34,6 +35,8 @@ export interface PlannedPage {
   name: string;
   icon: string;
   hidden?: boolean;
+  /** The page's archetype (archetypeLint.ts): checked against its blueprint's choices. */
+  archetype?: string;
   components?: ComponentSpec[];
 }
 
@@ -458,6 +461,7 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     errors.push(...componentLint.errors.map((message) => `Page "${plannedPage.name}": ${message}`));
     errors.push(...lintQueryFedCharts(expansion.components, spec.queries ?? []).map((message) => `Page "${plannedPage.name}": ${message}`));
     warnings.push(...componentLint.warnings.map((message) => `Page "${plannedPage.name}": ${message}`));
+    warnings.push(...lintPageArchetype(plannedPage.archetype, expansion.components).map((message) => `Page "${plannedPage.name}": ${message}`));
 
     const localRefs = new Map<string, string>();
     for (const component of existingPage?.components ?? []) {

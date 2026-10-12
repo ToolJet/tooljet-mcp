@@ -58,6 +58,12 @@ export const plannedPageSchema = z.object({
       'in place, keeping their ids. Refused when another page, event or query reads a component the plan drops. Not ' +
       'atomic: use it on draft or otherwise recoverable pages.'
   ),
+  archetype: z.string().optional().describe(
+    'The page\'s archetype: catalog (records with a face: photo cards, search, detail sheet), personal-overview (one ' +
+      'person\'s period at a glance: hero, figures, progress, recent), register (a filtered table of records with a ' +
+      'detail sheet), queue-board (work to act on: counts, needs-attention list, queue) or other. Lint checks the page ' +
+      'against it.'
+  ),
   components: z.array(componentInputSchema).optional(),
 });
 export const plannedEventSchema = z.object({
