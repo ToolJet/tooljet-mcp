@@ -13,7 +13,9 @@ let cached: Record<string, PackDefinition> | undefined;
 const SAMPLE_BLANKS: Record<string, Record<string, unknown>> = {
   ShadHero: { eyebrow: '', subtitle: '', meta: '{{[]}}', actionLabel: '' },
   ShadCardGrid: { badgeField: '', descriptionField: '', metaFields: '' },
-  ShadRecordList: { metaFields: '', valueField: '' },
+  ShadRecordList: { metaFields: '', valueField: '', valueFormat: 'auto' },
+  // 'auto' reads money from a figure's label; the 'currency' default showed counts of rooms as dollars.
+  ShadSummaryStrip: { valueFormat: 'auto' },
   ShadTags: { tags: '{{[]}}', tagColors: '{{{}}}' },
   ShadAvatar: { names: '' },
   ShadLink: { linkTarget: '' },
