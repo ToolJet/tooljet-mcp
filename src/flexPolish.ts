@@ -463,6 +463,22 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
       );
     }
 
+    // 1b. A labelled field beside buttons in a row that also holds other blocks (a header's title stack): rule 1 skips
+    //     such rows, and centred, a "Reserve a room" button sat 20px above the date box beside it (the field is taller
+    //     by its label). Bottom-aligned, the button meets the field box and the title block sits on the same line.
+    if (
+      children.some(isLabelledField) &&
+      children.some((child) => ACTION_TYPES.has(child.type)) &&
+      !children.every((child) => INLINE_TYPES.has(child.type)) &&
+      align !== 'flex-end'
+    ) {
+      setProp(container, 'alignItems', 'flex-end');
+      warnings.push(
+        `Row "${label}" has a labelled field beside buttons; its alignItems is now "flex-end" so the buttons line up ` +
+          'with the field box.'
+      );
+    }
+
     // 2. A row of cards shares one height.
     // Whatever alignment the build gave the row: centred or bottom-aligned cards of different content came out at
     // different heights side by side.

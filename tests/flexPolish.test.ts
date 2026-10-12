@@ -625,3 +625,27 @@ describe('polishFlexRows: header buttons stay on one line', () => {
     expect(prop(components, 'cards', 'flexWrap')).toBeUndefined();
   });
 });
+
+describe('polishFlexRows: a labelled field beside a button in a header', () => {
+  it('bottom-aligns the row so the button lines up with the field box (a header with a title block left it 20px high)', () => {
+    const input = [
+      row('pageHeader', { alignItems: { value: 'center' }, justifyContent: { value: 'space-between' } }),
+      row('titleStack', { direction: { value: 'column' } }, { parentRef: 'pageHeader' }),
+      child('pageTitle', 'ShadHeading', 'titleStack', { text: { value: 'Room bookings' } }),
+      child('dayFilter', 'ShadDatePicker', 'pageHeader', { label: { value: 'Schedule date' } }),
+      child('newBooking', 'ShadButton', 'pageHeader', { text: { value: 'Reserve a room' } }),
+    ];
+    const { components } = polishFlexRows(input as ComponentSpec[]);
+    expect(prop(components, 'pageHeader', 'alignItems')).toBe('flex-end');
+  });
+
+  it('leaves a header with only a title and buttons centred', () => {
+    const input = [
+      row('header', { alignItems: { value: 'center' }, justifyContent: { value: 'space-between' } }),
+      child('title', 'ShadHeading', 'header', { text: { value: 'Rooms' } }),
+      child('add', 'ShadButton', 'header', { text: { value: 'Add room' } }),
+    ];
+    const { components } = polishFlexRows(input as ComponentSpec[]);
+    expect(prop(components, 'header', 'alignItems')).toBe('center');
+  });
+});
