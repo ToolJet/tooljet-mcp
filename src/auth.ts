@@ -3,6 +3,15 @@ import { recordHttpResponse } from './telemetry.js';
 
 const COOKIE_PREFIX = 'tj_auth_token=';
 
+/** Separate browser-only credential; never a normal session or API delegation. */
+export interface OAuthViewerSession {
+  cookieName: 'tj_oauth_viewer';
+  token: string;
+  origin: string;
+  expiresAt: number;
+}
+export type ViewerSession = string | OAuthViewerSession;
+
 export interface Workspace {
   id: string;
   name: string;
@@ -23,7 +32,7 @@ export interface Auth {
   /** Switch the ACTIVE workspace for all subsequent calls; re-issues the session cookie. */
   switchWorkspace(workspaceId: string): Promise<Workspace>;
   /** The current session token (logging in first), for the render audit's viewer browser. */
-  viewerSession?(): Promise<string | undefined>;
+  viewerSession?(appId?: string): Promise<ViewerSession | undefined>;
 }
 
 export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Auth {
@@ -55,6 +64,9 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
        is nothing to exchange — the credential IS the session. */
     if (config.sessionToken) {
       if (suppliedSessionUsed) {
+        if (config.isOAuthDelegation) {
+          throw new Error('The OAuth connection expired or lost access. Reconnect the MCP client to ToolJet.');
+        }
         throw new Error(
           'The ToolJet session for this build is no longer valid (expired, or its token was revoked). ' +
             'It is minted per build and cannot be renewed from here — start a new build.'
@@ -105,9 +117,21 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
   // workspace helpers so switching/listing during login() doesn't recurse.
   async function rawFetch(path: string, init?: RequestInit): Promise<Response> {
     const headers = new Headers(init?.headers);
-    headers.set('Cookie', `tj_auth_token=${token}`);
+    if (config.isOAuthDelegation) {
+      // Delegation must not become a browser session or be accompanied by another identity.
+      headers.delete('Cookie');
+      headers.delete('Authorization');
+      headers.delete('tj_auth_token');
+      headers.set('x-tooljet-delegation', token!);
+    } else {
+      headers.set('Cookie', `tj_auth_token=${token}`);
+    }
     if (workspaceId) headers.set('tj-workspace-id', workspaceId);
-    const response = await fetchImpl(`${config.apiUrl}${path}`, { ...init, headers });
+    const response = await fetchImpl(`${config.apiUrl}${path}`, {
+      ...init,
+      headers,
+      ...(config.isOAuthDelegation ? { redirect: 'error' as const } : {}),
+    });
     recordHttpResponse(response);
     return response;
   }
@@ -188,7 +212,9 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
     if (id !== current.id) {
       throw new Error(
         `This server is scoped to workspace "${current.slug}" (${current.id}) and cannot switch to ${id}. ` +
-          (config.sessionToken
+          (config.isOAuthDelegation
+            ? 'Connect your MCP client to the target workspace URL and authorize that workspace.'
+            : config.sessionToken
             ? 'Its session was minted for that workspace; start a build from the workspace you want to act on.'
             : 'Issue a personal access token in the target workspace and set TOOLJET_PAT to it.')
       );
@@ -196,7 +222,22 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
     return current;
   }
 
-  async function viewerSession(): Promise<string | undefined> {
+  async function viewerSession(appId?: string): Promise<ViewerSession | undefined> {
+    if (config.isOAuthDelegation) {
+      if (!appId || !/^[A-Za-z0-9_-]+$/.test(appId)) throw new Error('An app is required for OAuth render verification');
+      const response = await authedFetch('/api/mcp-oauth/viewer', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ app_id: appId }),
+      });
+      if (!response.ok) throw new Error(`OAuth viewer authorization failed (HTTP ${response.status}); rendering remains unverified`);
+      const body = await response.json() as Record<string, unknown>;
+      if (typeof body.access_token !== 'string' || !body.access_token || body.access_token === token ||
+          body.token_type !== 'Bearer' || body.app_id !== appId || body.organization_id !== workspaceId ||
+          typeof body.expires_in !== 'number' || !Number.isInteger(body.expires_in) || body.expires_in <= 0 || body.expires_in > 120) {
+        throw new Error('Invalid scoped OAuth viewer credential');
+      }
+      return { cookieName: 'tj_oauth_viewer', token: body.access_token,
+        origin: new URL(config.appUrl).origin, expiresAt: Math.floor(Date.now() / 1000) + body.expires_in };
+    }
     if (!token) await login();
     return token;
   }

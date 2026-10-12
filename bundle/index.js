@@ -34221,7 +34221,7 @@ var require_moment = __commonJS({
 });
 
 // dist/index.js
-import { createServer } from "node:http";
+import { createServer as createServer2 } from "node:http";
 import { realpathSync } from "node:fs";
 import { fileURLToPath as fileURLToPath7 } from "node:url";
 
@@ -60524,13 +60524,15 @@ function loadConfig(identity) {
   const staticApiUrl = explicitApiUrl ?? explicitAppUrl ?? "http://localhost:3000";
   if (identity) {
     const apiUrl2 = identity.apiUrl ?? staticApiUrl;
-    const appUrl2 = explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? "http://localhost:8082";
+    const appUrl2 = identity.appUrl ?? explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? "http://localhost:8082";
     if (identity.pat)
       return { apiUrl: apiUrl2, appUrl: appUrl2, pat: identity.pat };
     return {
       apiUrl: apiUrl2,
       appUrl: appUrl2,
       sessionToken: identity.sessionToken,
+      isOAuthDelegation: identity.isOAuthDelegation,
+      oauthGrantId: identity.oauthGrantId,
       workspaceId: identity.workspaceId,
       workspaceSlug: identity.workspaceSlug
     };
@@ -60618,6 +60620,9 @@ function createAuth(config2, fetchImpl = fetch) {
   async function login() {
     if (config2.sessionToken) {
       if (suppliedSessionUsed) {
+        if (config2.isOAuthDelegation) {
+          throw new Error("The OAuth connection expired or lost access. Reconnect the MCP client to ToolJet.");
+        }
         throw new Error("The ToolJet session for this build is no longer valid (expired, or its token was revoked). It is minted per build and cannot be renewed from here \u2014 start a new build.");
       }
       suppliedSessionUsed = true;
@@ -60647,10 +60652,21 @@ function createAuth(config2, fetchImpl = fetch) {
   }
   async function rawFetch(path, init) {
     const headers = new Headers(init?.headers);
-    headers.set("Cookie", `tj_auth_token=${token}`);
+    if (config2.isOAuthDelegation) {
+      headers.delete("Cookie");
+      headers.delete("Authorization");
+      headers.delete("tj_auth_token");
+      headers.set("x-tooljet-delegation", token);
+    } else {
+      headers.set("Cookie", `tj_auth_token=${token}`);
+    }
     if (workspaceId)
       headers.set("tj-workspace-id", workspaceId);
-    const response = await fetchImpl(`${config2.apiUrl}${path}`, { ...init, headers });
+    const response = await fetchImpl(`${config2.apiUrl}${path}`, {
+      ...init,
+      headers,
+      ...config2.isOAuthDelegation ? { redirect: "error" } : {}
+    });
     recordHttpResponse(response);
     return response;
   }
@@ -60723,11 +60739,32 @@ function createAuth(config2, fetchImpl = fetch) {
       await login();
     const current = (await fetchWorkspaceList())[0];
     if (id !== current.id) {
-      throw new Error(`This server is scoped to workspace "${current.slug}" (${current.id}) and cannot switch to ${id}. ` + (config2.sessionToken ? "Its session was minted for that workspace; start a build from the workspace you want to act on." : "Issue a personal access token in the target workspace and set TOOLJET_PAT to it."));
+      throw new Error(`This server is scoped to workspace "${current.slug}" (${current.id}) and cannot switch to ${id}. ` + (config2.isOAuthDelegation ? "Connect your MCP client to the target workspace URL and authorize that workspace." : config2.sessionToken ? "Its session was minted for that workspace; start a build from the workspace you want to act on." : "Issue a personal access token in the target workspace and set TOOLJET_PAT to it."));
     }
     return current;
   }
-  async function viewerSession() {
+  async function viewerSession(appId) {
+    if (config2.isOAuthDelegation) {
+      if (!appId || !/^[A-Za-z0-9_-]+$/.test(appId))
+        throw new Error("An app is required for OAuth render verification");
+      const response = await authedFetch("/api/mcp-oauth/viewer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ app_id: appId })
+      });
+      if (!response.ok)
+        throw new Error(`OAuth viewer authorization failed (HTTP ${response.status}); rendering remains unverified`);
+      const body = await response.json();
+      if (typeof body.access_token !== "string" || !body.access_token || body.access_token === token || body.token_type !== "Bearer" || body.app_id !== appId || body.organization_id !== workspaceId || typeof body.expires_in !== "number" || !Number.isInteger(body.expires_in) || body.expires_in <= 0 || body.expires_in > 120) {
+        throw new Error("Invalid scoped OAuth viewer credential");
+      }
+      return {
+        cookieName: "tj_oauth_viewer",
+        token: body.access_token,
+        origin: new URL(config2.appUrl).origin,
+        expiresAt: Math.floor(Date.now() / 1e3) + body.expires_in
+      };
+    }
     if (!token)
       await login();
     return token;
@@ -61319,7 +61356,10 @@ function createWorkflowClient(auth, config2, queries) {
     ...queries,
     workspaceId: () => auth.getOrganizationId(),
     async planScope() {
-      return createHash("sha256").update(JSON.stringify([config2.apiUrl, config2.sessionToken ?? config2.pat, await auth.getOrganizationId()])).digest("hex");
+      if (config2.isOAuthDelegation && !config2.oauthGrantId)
+        throw new Error("OAuth workflow plans require a trusted grant identifier.");
+      const identity = config2.isOAuthDelegation ? ["oauth", config2.oauthGrantId] : config2.sessionToken ?? config2.pat;
+      return createHash("sha256").update(JSON.stringify([config2.apiUrl, identity, await auth.getOrganizationId()])).digest("hex");
     },
     async list(page = 1, search = "") {
       return request(`/api/apps?${new URLSearchParams({ type: "workflow", page: String(page), searchKey: search })}`);
@@ -71619,7 +71659,8 @@ function createClient(auth, config2) {
     deletePage,
     createEvents,
     hasGoogleMapsKey,
-    viewerSession: () => auth.viewerSession?.() ?? Promise.resolve(void 0),
+    viewerSession: (appId) => auth.viewerSession?.(appId) ?? Promise.resolve(void 0),
+    browserRenderOrigin: config2.isOAuthDelegation ? new URL(config2.appUrl).origin : void 0,
     editingVersionName: async (appId) => (await getApp(appId))?.editing_version?.name ?? void 0,
     getDevelopmentEnvironmentId,
     listDatasources,
@@ -71750,7 +71791,7 @@ function listWorkspaceGroupsTool(client) {
     name: "list_workspace_groups",
     title: "List Workspace Groups",
     annotations: { readOnlyHint: true, openWorldHint: true },
-    description: "List groups in the current PAT-pinned workspace. Supply group_id to list its non-archived members with group_user_id (membership id, distinct from user_id and organization_user_id). Use include_permissions:true with group_id to read permission switches and granular access rules. Use resource_type (app/module/workflow/data_source) to discover selectable resources and their names/IDs. Use exact returned ids for group changes. Requires ToolJet admin permissions.",
+    description: "List groups in the workspace pinned to the current connection. OAuth connections require the workspace_users scope. Supply group_id to list its non-archived members with group_user_id (membership id, distinct from user_id and organization_user_id). Use include_permissions:true with group_id to read permission switches and granular access rules. Use resource_type (app/module/workflow/data_source) to discover selectable resources and their names/IDs. Use exact returned ids for group changes. Requires ToolJet admin permissions.",
     inputSchema: schema.shape,
     async handler(input) {
       try {
@@ -71806,7 +71847,7 @@ function manageWorkspaceGroupsTool(client) {
     title: "Manage Workspace Groups",
     strictInput: true,
     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
-    description: "Create, rename, delete custom groups or remove a member in the current PAT-pinned workspace. All actions require confirm:true after reviewing the exact change. create needs name; rename needs group_id and name; delete needs group_id; remove_member needs group_id and group_user_id from list_workspace_groups. Removing membership does not delete the workspace user. Deleting a group removes its memberships and permissions. duplicate needs group_id and at least one true copy flag (permissions/members/apps/modules/workflows/data_sources; omitted flags false); ToolJet assigns the copy name. update_permissions needs group_id and permissions (only supplied switches change). create_access needs group_id, resource_type and access {name,is_all,actions,resource_ids}; update_access needs group_id, rule_id and access (only supplied fields change); delete_access needs group_id and rule_id. For update/delete access, optional resource_type must match the existing rule. Read include_permissions:true first to resolve rule IDs; resource_type discovers selectable resource IDs. On update_access, use access.add_resource_ids/remove_resource_ids to change only those resources and preserve the rest. access.resource_ids is only for an explicitly requested replacement of the entire rule selection; do not combine it with add/remove_resource_ids. Resource additions/removals require a selected-resource rule; is_all:true applies to ALL current and future resources of its type. On create_access, omitted action switches are disabled. App actions: canEdit/canView/hideFromDashboard/canAccessDevelopment/canAccessStaging/canAccessProduction/canAccessReleased. Module actions: canEdit/canView/hideFromDashboard. Workflow actions: canEdit/canView. Data source actions: canConfigure/canUse. canEdit/canView and canConfigure/canUse are exclusive pairs: enabling one disables the other, including on partial updates. Disabled groups and read_only rules are not editable under the current license/plan. allow_role_change is only for permission updates and access updates, and only with explicit consent to change affected member roles. Admin permissions cannot be changed; default group names/memberships cannot be changed here. To add members use manage_workspace_users with group_ids. ToolJet admin and license checks apply.",
+    description: "Create, rename, delete custom groups or remove a member in the workspace pinned to the current connection. OAuth connections require the workspace_users scope. All actions require confirm:true after reviewing the exact change. create needs name; rename needs group_id and name; delete needs group_id; remove_member needs group_id and group_user_id from list_workspace_groups. Removing membership does not delete the workspace user. Deleting a group removes its memberships and permissions. duplicate needs group_id and at least one true copy flag (permissions/members/apps/modules/workflows/data_sources; omitted flags false); ToolJet assigns the copy name. update_permissions needs group_id and permissions (only supplied switches change). create_access needs group_id, resource_type and access {name,is_all,actions,resource_ids}; update_access needs group_id, rule_id and access (only supplied fields change); delete_access needs group_id and rule_id. For update/delete access, optional resource_type must match the existing rule. Read include_permissions:true first to resolve rule IDs; resource_type discovers selectable resource IDs. On update_access, use access.add_resource_ids/remove_resource_ids to change only those resources and preserve the rest. access.resource_ids is only for an explicitly requested replacement of the entire rule selection; do not combine it with add/remove_resource_ids. Resource additions/removals require a selected-resource rule; is_all:true applies to ALL current and future resources of its type. On create_access, omitted action switches are disabled. App actions: canEdit/canView/hideFromDashboard/canAccessDevelopment/canAccessStaging/canAccessProduction/canAccessReleased. Module actions: canEdit/canView/hideFromDashboard. Workflow actions: canEdit/canView. Data source actions: canConfigure/canUse. canEdit/canView and canConfigure/canUse are exclusive pairs: enabling one disables the other, including on partial updates. Disabled groups and read_only rules are not editable under the current license/plan. allow_role_change is only for permission updates and access updates, and only with explicit consent to change affected member roles. Admin permissions cannot be changed; default group names/memberships cannot be changed here. To add members use manage_workspace_users with group_ids. ToolJet admin and license checks apply.",
     inputSchema: schema.shape,
     async handler(input) {
       try {
@@ -71994,7 +72035,7 @@ function useWorkspaceTool(client) {
       readOnlyHint: true,
       openWorldHint: true
     },
-    description: "Confirm the ACTIVE workspace (organization). This server is scoped to a single workspace by its personal access token and cannot switch: passing that workspace id returns it, and any other id errors naming the one in use. Everything is created in that workspace, so there is nothing to select at setup \u2014 call list_workspaces if you need its id, name, slug or datasources_url.",
+    description: "Confirm the ACTIVE workspace (organization). This server is scoped to a single workspace by its connection credentials and cannot switch: passing that workspace id returns it, and any other id errors naming the one in use. Everything is created in that workspace, so there is nothing to select at setup \u2014 call list_workspaces if you need its id, name, slug or datasources_url.",
     inputSchema: {
       workspace_id: external_exports.string()
     },
@@ -75732,7 +75773,23 @@ async function auditPages(pages, options2 = {}, driver = loadPlaywright) {
         return;
       }
       if (options2.session) {
-        await ctx.addCookies([{ name: "tj_auth_token", value: options2.session, url: new URL(p.url).origin }]);
+        if (typeof options2.session === "string") {
+          await ctx.addCookies([{ name: "tj_auth_token", value: options2.session, url: new URL(p.url).origin }]);
+        } else {
+          if (new URL(p.url).origin !== options2.session.origin || options2.session.expiresAt <= Date.now() / 1e3) {
+            reports[index] = unreachable(p, "auth_required", "The scoped viewer credential does not authorize this page origin or has expired");
+            return;
+          }
+          await ctx.addCookies([{
+            name: "tj_oauth_viewer",
+            value: options2.session.token,
+            url: options2.session.origin,
+            httpOnly: true,
+            secure: options2.session.origin.startsWith("https:"),
+            sameSite: "Lax",
+            expires: options2.session.expiresAt
+          }]);
+        }
       }
       await ctx.routeWebSocket("**/*", (socket) => {
         block({ kind: "unreachable", component: "-", reason: "blocked_destination", detail: "A WebSocket dependency was blocked; live behavior was not verified" }, `WebSocket ${pathOf(socket.url?.() ?? "")}`);
@@ -75834,7 +75891,7 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
     name: "verify_page_render",
     title: "Verify Page Render",
     annotations: { readOnlyHint: true, openWorldHint: true },
-    description: `Render audit of one page or every page of an app in a headless browser at 1600x900, after the app is built. Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", "Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. Run it once per page before the handoff and review every finding; report unverified behavior explicitly. Opens the version being edited with the builder's own ToolJet session (limited to the viewer origin), so a private app is audited without being made public. Only saved, static, bounded read queries may run; writes, dynamic queries and queries requiring confirmation are blocked and reported as unverified. Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.`,
+    description: `Render audit of one page or every page of an app in a headless browser at 1600x900, after the app is built. Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", "Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. Run it once per page before the handoff and review every finding; report unverified behavior explicitly. Opens the version being edited with the builder's ToolJet session, or a separate app-scoped OAuth viewer credential (limited to the viewer origin), so a private app is audited without being made public. Only saved, static, bounded read queries may run; writes, dynamic queries and queries requiring confirmation are blocked and reported as unverified. Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.`,
     inputSchema: {
       app_id: external_exports.string().regex(/^[A-Za-z0-9_-]+$/),
       page_handle: external_exports.string().optional().describe("one page handle; omit to audit every page"),
@@ -75845,6 +75902,9 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
         if (!/^[A-Za-z0-9_-]+$/.test(args.app_id))
           return fail(new Error("Invalid app id"));
         const { base: base2, origins } = renderAuditBase(viewerBase(), args.viewer_url);
+        if (client.browserRenderOrigin && new URL(base2).origin !== client.browserRenderOrigin) {
+          return fail(new Error("OAuth render verification must use the configured ToolJet deployment origin"));
+        }
         const summary = await client.getAppSummary(args.app_id);
         const pages = summary.pages ?? [];
         const version2 = await client.editingVersionName?.(args.app_id).catch(() => void 0);
@@ -75858,7 +75918,7 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
           allowedOrigins: origins,
           savedQueries: summary,
           // MCP_RENDER_AUDIT_SESSION=off keeps the browser unauthenticated (private apps are then reported unverified).
-          session: process.env.MCP_RENDER_AUDIT_SESSION === "off" ? void 0 : await client.viewerSession?.().catch(() => void 0)
+          session: process.env.MCP_RENDER_AUDIT_SESSION === "off" ? void 0 : client.browserRenderOrigin ? await client.viewerSession?.(args.app_id) : await client.viewerSession?.(args.app_id).catch(() => void 0)
         };
         const reports = await auditPages(targets, options2, driver);
         const total = reports.reduce((n, r) => n + r.findings.length, 0);
@@ -81073,7 +81133,7 @@ function listWorkspaceAppsTool(client) {
       readOnlyHint: true,
       openWorldHint: true
     },
-    description: "List apps in the workspace pinned to the current ToolJet PAT. This cannot inspect or switch to another workspace.",
+    description: "List apps in the workspace pinned to the current ToolJet connection. This cannot inspect or switch to another workspace.",
     inputSchema: {
       page: external_exports.number().int().positive().optional(),
       search_text: external_exports.string().trim().max(100).optional()
@@ -81095,7 +81155,7 @@ function listWorkspaceUsersTool(client) {
       readOnlyHint: true,
       openWorldHint: true
     },
-    description: "List users in the workspace pinned to the current ToolJet PAT. Supports pagination, search, and status filtering.",
+    description: "List users in the workspace pinned to the current ToolJet connection. Supports pagination, search, and status filtering. OAuth connections require the workspace_users scope.",
     inputSchema: {
       page: external_exports.number().int().positive().optional(),
       search_text: external_exports.string().trim().max(100).optional(),
@@ -81142,7 +81202,7 @@ function manageWorkspaceUsersTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Manage users only in the workspace pinned to the current ToolJet PAT. Invite, update, archive, and unarchive require confirm:true. Updates can change role, add existing custom group_ids while preserving all other memberships, and merge supplied user_metadata keys while preserving other keys. Empty group_ids never removes groups. first_name/last_name are only supported for invitations: editing an existing name requires a Super Admin in ToolJet and is refused by this workspace-scoped tool before any mutation. Updates are read back before success is reported. Use manage_workspace_groups remove_member for explicit membership removal. Updates cannot change email or passwords. Changing a role to end-user also transfers any apps owned by that user to the acting admin under ToolJet's existing behavior; disclose this before confirmation. Invite accepts email, optional names/role/group_ids; archive/unarchive accepts only organization_user_id. Never substitute role or membership changes for a rejected name edit, or bypass the PAT owner's ToolJet permissions.",
+    description: "Manage users only in the workspace pinned to the current ToolJet connection. OAuth connections require the workspace_users scope. Invite, update, archive, and unarchive require confirm:true. Updates can change role, add existing custom group_ids while preserving all other memberships, and merge supplied user_metadata keys while preserving other keys. Empty group_ids never removes groups. first_name/last_name are only supported for invitations: editing an existing name requires a Super Admin in ToolJet and is refused by this workspace-scoped tool before any mutation. Updates are read back before success is reported. Use manage_workspace_groups remove_member for explicit membership removal. Updates cannot change email or passwords. Changing a role to end-user also transfers any apps owned by that user to the acting admin under ToolJet's existing behavior; disclose this before confirmation. Invite accepts email, optional names/role/group_ids; archive/unarchive accepts only organization_user_id. Never substitute role or membership changes for a rejected name edit, or bypass the connection owner's ToolJet permissions.",
     inputSchema: schema.shape,
     async handler(input) {
       try {
@@ -81988,6 +82048,209 @@ Fix the configuration and restart this server; no tools will work until then.` }
   return server;
 }
 
+// dist/oauthHttp.js
+import { createServer } from "node:http";
+var INITIAL_SCOPES = ["apps", "data", "workflows", "workspace_users"];
+var OAUTH_MAX_BODY_BYTES = 15 * 1024 * 1024;
+function checkedUrl(value2, name2) {
+  const url2 = new URL(value2);
+  const loopback = ["127.0.0.1", "[::1]", "localhost"].includes(url2.hostname);
+  if (url2.username || url2.password || url2.hash || url2.search || url2.protocol !== "https:" && !(url2.protocol === "http:" && loopback)) {
+    throw new Error(`${name2} must be HTTPS (HTTP is allowed only on loopback), without credentials, query or fragment`);
+  }
+  return url2.href.replace(/\/$/, "");
+}
+function oauthHttpOptionsFromEnv() {
+  if (process.env.MCP_OAUTH_ENABLED !== "true")
+    return void 0;
+  if (process.env.MCP_SHARED_TOKEN)
+    throw new Error("Run public OAuth and internal MCP gateway modes in separate processes");
+  const required4 = (name2) => {
+    const value2 = process.env[name2]?.trim();
+    if (!value2)
+      throw new Error(`${name2} is required for MCP OAuth`);
+    return value2;
+  };
+  return {
+    issuer: required4("MCP_OAUTH_ISSUER"),
+    resourceUrl: required4("MCP_OAUTH_RESOURCE_URL"),
+    exchangeSecret: required4("MCP_OAUTH_EXCHANGE_SECRET"),
+    apiUrl: process.env.TOOLJET_URL?.trim() || required4("TOOLJET_DEPLOYMENT_URL"),
+    appUrl: required4("TOOLJET_DEPLOYMENT_URL"),
+    allowedOrigins: (process.env.MCP_OAUTH_ALLOWED_ORIGINS || "").split(",").map((s) => s.trim()).filter(Boolean)
+  };
+}
+function sendOAuthJson(res, status, body) {
+  res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" });
+  res.end(JSON.stringify(body));
+}
+var BodyTooLarge = class extends Error {
+};
+async function readOAuthBody(req, maxBytes) {
+  const chunks = [];
+  let bytes = 0;
+  if (Number(req.headers["content-length"]) > maxBytes) {
+    req.resume();
+    throw new BodyTooLarge();
+  }
+  for await (const chunk of req.iterator({ destroyOnReturn: false })) {
+    const part = Buffer.from(chunk);
+    bytes += part.length;
+    if (bytes > maxBytes) {
+      req.resume();
+      throw new BodyTooLarge();
+    }
+    chunks.push(part);
+  }
+  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+}
+function createOAuthHttpServer(options2) {
+  const issuer = checkedUrl(options2.issuer, "issuer");
+  const resourceBase = checkedUrl(options2.resourceUrl, "resourceUrl");
+  const apiUrl = checkedUrl(options2.apiUrl, "apiUrl");
+  const appUrl = checkedUrl(options2.appUrl, "appUrl");
+  if (options2.exchangeSecret.length < 32)
+    throw new Error("OAuth exchange secret must contain at least 32 characters");
+  const resource = new URL(resourceBase);
+  const factory = options2.serverFactory ?? buildServer;
+  const fetchImpl = options2.fetchImpl ?? fetch;
+  const maxBodyBytes = options2.maxBodyBytes ?? OAUTH_MAX_BODY_BYTES;
+  if (!Number.isSafeInteger(maxBodyBytes) || maxBodyBytes <= 0)
+    throw new Error("Invalid OAuth request body limit");
+  const allowedOrigins = new Set((options2.allowedOrigins || []).map((origin) => {
+    const checked = checkedUrl(origin, "allowedOrigin");
+    if (new URL(checked).origin !== checked)
+      throw new Error("OAuth allowed origins must not include a path");
+    return checked;
+  }));
+  const resourcePath = resource.pathname.replace(/\/$/, "");
+  const metadataPrefix = `/.well-known/oauth-protected-resource${resourcePath}/`;
+  const pathPrefix = `${resourcePath}/`;
+  const httpServer = createServer((req, res) => {
+    void (async () => {
+      const url2 = new URL(req.url || "/", "http://localhost");
+      if (url2.pathname === "/health" && req.method === "GET") {
+        sendOAuthJson(res, 200, { status: "ok", transport: "streamable-http", authorization: "oauth" });
+        return;
+      }
+      const metadata = url2.pathname.startsWith(metadataPrefix);
+      const prefix = metadata ? metadataPrefix : pathPrefix;
+      const workspace = url2.pathname.startsWith(prefix) ? url2.pathname.slice(prefix.length) : "";
+      if (!/^[A-Za-z0-9_-]{1,128}$/.test(workspace)) {
+        sendOAuthJson(res, 404, { error: "not_found" });
+        return;
+      }
+      const canonicalResource = `${resourceBase}/${workspace}`;
+      const metadataUrl = `${resource.origin}${metadataPrefix}${workspace}`;
+      if (metadata && req.method === "GET") {
+        res.setHeader("access-control-allow-origin", "*");
+        sendOAuthJson(res, 200, {
+          resource: canonicalResource,
+          authorization_servers: [issuer],
+          scopes_supported: INITIAL_SCOPES,
+          bearer_methods_supported: ["header"],
+          resource_name: "ToolJet workspace"
+        });
+        return;
+      }
+      if (metadata) {
+        sendOAuthJson(res, 405, { error: "method_not_allowed" });
+        return;
+      }
+      const origin = req.headers.origin;
+      if (origin && !allowedOrigins.has(origin)) {
+        sendOAuthJson(res, 403, { error: "origin_not_allowed" });
+        return;
+      }
+      if (origin) {
+        res.setHeader("access-control-allow-origin", origin);
+        res.setHeader("vary", "Origin");
+        res.setHeader("access-control-expose-headers", "WWW-Authenticate, MCP-Session-Id, MCP-Protocol-Version");
+      }
+      if (req.method === "OPTIONS") {
+        res.setHeader("access-control-allow-methods", "POST, GET, DELETE, OPTIONS");
+        res.setHeader("access-control-allow-headers", "Authorization, Content-Type, MCP-Protocol-Version, MCP-Session-Id, Last-Event-ID");
+        res.writeHead(204).end();
+        return;
+      }
+      if (!["POST", "GET", "DELETE"].includes(req.method || "")) {
+        sendOAuthJson(res, 405, { error: "method_not_allowed" });
+        return;
+      }
+      const token = /^Bearer (tj_oauth_at_[A-Za-z0-9_-]+)$/i.exec(req.headers.authorization || "")?.[1];
+      const challenge = (error51) => res.setHeader("www-authenticate", `Bearer resource_metadata="${metadataUrl}", scope="${INITIAL_SCOPES.join(" ")}"` + (error51 ? `, error="${error51}"` : ""));
+      if (!token || url2.searchParams.has("access_token")) {
+        challenge(token ? "invalid_token" : void 0);
+        sendOAuthJson(res, 401, { error: "invalid_token" });
+        return;
+      }
+      const exchange = await fetchImpl(`${issuer}/exchange`, {
+        method: "POST",
+        redirect: "error",
+        signal: AbortSignal.timeout(1e4),
+        headers: { authorization: `Bearer ${options2.exchangeSecret}`, "content-type": "application/json" },
+        body: JSON.stringify({
+          grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
+          subject_token_type: "urn:ietf:params:oauth:token-type:access_token",
+          subject_token: token,
+          resource: canonicalResource
+        })
+      });
+      if (!exchange.ok) {
+        const unavailable = exchange.status >= 500 || exchange.status === 429;
+        if (!unavailable)
+          challenge("invalid_token");
+        sendOAuthJson(res, unavailable ? 503 : 401, { error: unavailable ? "temporarily_unavailable" : "invalid_token" });
+        return;
+      }
+      const credentials = await exchange.json();
+      if (typeof credentials.access_token !== "string" || typeof credentials.organization_id !== "string" || typeof credentials.grant_id !== "string" || !credentials.grant_id) {
+        throw new Error("Invalid delegation response");
+      }
+      let requestBody;
+      if (req.method === "POST") {
+        try {
+          requestBody = await readOAuthBody(req, maxBodyBytes);
+        } catch (error51) {
+          sendOAuthJson(res, error51 instanceof BodyTooLarge ? 413 : 400, {
+            error: error51 instanceof BodyTooLarge ? "request_too_large" : "invalid_request"
+          });
+          return;
+        }
+      }
+      const server = factory({
+        sessionToken: credentials.access_token,
+        isOAuthDelegation: true,
+        oauthGrantId: credentials.grant_id,
+        workspaceId: credentials.organization_id,
+        workspaceSlug: typeof credentials.organization_slug === "string" ? credentials.organization_slug : void 0,
+        apiUrl,
+        appUrl
+      });
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: void 0,
+        enableJsonResponse: true
+      });
+      res.once("close", () => {
+        void transport.close().catch(() => {
+        });
+        void server.close().catch(() => {
+        });
+      });
+      await server.connect(transport);
+      await transport.handleRequest(req, res, requestBody);
+    })().catch(() => {
+      if (!res.headersSent)
+        sendOAuthJson(res, 503, { error: "temporarily_unavailable" });
+      else
+        res.end();
+    });
+  });
+  httpServer.requestTimeout = 6e4;
+  httpServer.headersTimeout = 15e3;
+  return httpServer;
+}
+
 // dist/httpAuth.js
 import { timingSafeEqual } from "node:crypto";
 function checkBearerToken(authHeader, expectedToken) {
@@ -82089,6 +82352,9 @@ async function readJsonBody(req, maxBodyBytes) {
 // dist/index.js
 var MAX_REQUEST_BODY_BYTES = 64 * 1024 * 1024;
 function createGatewayHttpServer() {
+  const oauth = oauthHttpOptionsFromEnv();
+  if (oauth)
+    return { server: createOAuthHttpServer(oauth), gatewayMode: false };
   const sharedToken = process.env.MCP_SHARED_TOKEN;
   const gatewayMode = Boolean(sharedToken);
   const requireUserSession = gatewayMode && (/^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_USER_SESSION ?? "") || !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN));
@@ -82144,7 +82410,7 @@ function createGatewayHttpServer() {
     const minted = mintBuildToken(identity, ttlMs);
     json3(200, { token: minted.token, expires_at: new Date(minted.expiresAt).toISOString() });
   };
-  const httpServer = createServer(async (req, res) => {
+  const httpServer = createServer2(async (req, res) => {
     const requestPath = new URL(req.url ?? "/", "http://localhost").pathname;
     const bearer = bearerValue(req.headers.authorization);
     if (requestPath === "/build-token") {
@@ -82232,7 +82498,7 @@ async function serveHttp() {
     httpServer.once("error", reject);
     httpServer.listen(port, host, resolve6);
   });
-  console.error(`tooljet-mcp: listening on http://${host}:${port} (${gatewayMode ? "gateway" : "direct"} mode)`);
+  console.error(`tooljet-mcp: listening on http://${host}:${port} (${process.env.MCP_OAUTH_ENABLED === "true" ? "OAuth" : gatewayMode ? "gateway" : "direct"} mode)`);
 }
 async function main() {
   if (process.env.MCP_TRANSPORT === "http") {

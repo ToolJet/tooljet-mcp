@@ -14,6 +14,10 @@ export interface Config {
    *  whoever owns a shared token. Short-lived by design — it is not renewable from here, and a 401
    *  means the build outlived it. */
   sessionToken?: string;
+  /** Restricted API delegation, never a ToolJet browser session. Set only by the OAuth boundary. */
+  isOAuthDelegation?: boolean;
+  /** Stable approval identifier from the trusted token exchange, never a request header. */
+  oauthGrantId?: string;
   /** Workspace the session belongs to. Required with sessionToken, because a pre-minted session
    *  arrives without the exchange response that would otherwise carry it. */
   workspaceId?: string;
@@ -31,7 +35,11 @@ export interface Config {
  * caller, the session authorises the work.
  */
 export interface RequestIdentity {
+  /** Trusted browser base supplied by the public OAuth deployment, never a request header. */
+  appUrl?: string;
   sessionToken?: string;
+  isOAuthDelegation?: boolean;
+  oauthGrantId?: string;
   workspaceId?: string;
   workspaceSlug?: string;
   /** A ToolJet PAT belonging to the caller, sent per request rather than living in this process's
@@ -340,13 +348,15 @@ export function loadConfig(identity?: RequestIdentity): Config {
     // internal localhost:3000 default, which would make an unconfigured deployment's appUrl land on
     // the API's dev port instead of the UI's (localhost:8082) — the exact default the no-identity
     // branch below already gets right. Only a genuinely-set TOOLJET_URL should stand in for appUrl.
-    const appUrl = explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? 'http://localhost:8082';
+    const appUrl = identity.appUrl ?? explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? 'http://localhost:8082';
 
     if (identity.pat) return { apiUrl, appUrl, pat: identity.pat };
     return {
       apiUrl,
       appUrl,
       sessionToken: identity.sessionToken,
+      isOAuthDelegation: identity.isOAuthDelegation,
+      oauthGrantId: identity.oauthGrantId,
       workspaceId: identity.workspaceId,
       workspaceSlug: identity.workspaceSlug,
     };
