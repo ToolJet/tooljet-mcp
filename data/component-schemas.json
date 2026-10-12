@@ -37385,7 +37385,7 @@
   "ShadRecordList": {
     "type": "ShadRecordList",
     "name": "ShadRecordList",
-    "description": "shadcn/ui list of records as two-line rows, for a recent-orders, people, tickets or activity panel beside a chart or a table: an avatar (avatarField: an image URL, else the initials of that field's text, else of the title), the title (titleField), a meta line under it (metaFields, a comma list of field specs joined with ' · ': 'city', 'total|currency', 'due|date:Due {}' (value in a label), 'seats:Seats' (label first); formats number, currency, percent, compact, date, datetime), a status chip on the right (statusField, toned by its words: Paid green, Pending amber, Overdue red, Open blue) and a trailing value (valueField in valueFormat: currency in currency, date, number, ...). density compact, default or comfortable; showDividers; listStyle 'card' (bordered panel) or 'plain'; avatarShape circle or rounded. A click selects the row (selectedItem, selectedItemId; onRowClick). Draws 100 rows and a Show more button. Height: grows with its rows (about 60px a row at default density)",
+    "description": "shadcn/ui list of records as two-line rows, for a recent-orders, people, tickets or activity panel beside a chart or a table: an avatar (avatarField: an image URL, else the initials of that field's text, else of the title), the title (titleField), a meta line under it (metaFields, a comma list of field specs joined with ' · ': 'city', 'total|currency', 'due|date:Due {}' (value in a label), 'seats:Seats' (label first); formats number, currency, percent, compact, date, datetime), a status chip on the right (statusField, toned by its words: Paid green, Pending amber, Overdue red, Open blue) and a trailing value (valueField in valueFormat: currency in currency, date, number, ...). density compact, default or comfortable; showDividers; listStyle 'card' (bordered panel) or 'plain'; avatarShape circle or rounded. A click selects the row (selectedItem, selectedItemId; onRowClicked). Draws 100 rows and a Show more button. Height: grows with its rows (about 60px a row at default density)",
     "defaultSize": {
       "width": 20,
       "height": 340
@@ -37624,8 +37624,8 @@
     ],
     "events": [
       {
-        "id": "onRowClick",
-        "label": "On row click"
+        "id": "onRowClicked",
+        "label": "On row clicked"
       }
     ],
     "actions": [
@@ -37690,7 +37690,7 @@
     ],
     "authoringHints": {
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
-      "usage": "A short list of records as two-line rows beside a chart or a table, the 'recent orders', 'today's bookings', 'who is on shift' or 'latest tickets' panel: titleField, metaFields for the second line ('contact, due|date:Due {}'), statusField for a toned chip, valueField with valueFormat for an amount or a date on the right, avatarField for a photo or a person's initials. onRowClick with selectedItem opens details. Use ShadTable for long, sortable or editable data. About 60px per row plus 2."
+      "usage": "A short list of records as two-line rows beside a chart or a table, the 'recent orders', 'today's bookings', 'who is on shift' or 'latest tickets' panel: titleField, metaFields for the second line ('contact, due|date:Due {}'), statusField for a toned chip, valueField with valueFormat for an amount or a date on the right, avatarField for a photo or a person's initials. onRowClicked with selectedItem opens details. Use ShadTable for long, sortable or editable data. About 60px per row plus 2."
     }
   },
   "ShadTagsInput": {
