@@ -176,6 +176,32 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
     warnings.push(`Card "${card.name}" was ${was}px tall for ${needed}px of content; it now fits its content.`);
   }
 
+  // Cards placed side by side on the page grid (no FlexContainer row) share one height, the tallest card's: a
+  // dashboard drew its KPI cards at 200, 124 and 200px in one line.
+  {
+    const gridCards = components.filter(
+      (c) => c && !c.parentRef && !(c as { parent?: unknown }).parent && (isSurface(c) || c.type === 'ShadStat') && Number.isFinite(heightOf(c))
+    );
+    const lines = new Map<number, ComponentSpec[]>();
+    for (const c of gridCards) {
+      const top = Number(c.layout?.top ?? c.layouts?.desktop?.top);
+      if (!Number.isFinite(top)) continue;
+      const key = [...lines.keys()].find((t) => Math.abs(t - top) <= 10) ?? top;
+      lines.set(key, [...(lines.get(key) ?? []), c]);
+    }
+    for (const line of lines.values()) {
+      if (line.length < 2) continue;
+      const tallest = Math.max(...line.map(heightOf));
+      if (line.every((c) => heightOf(c) === tallest)) continue;
+      for (const c of line) {
+        [c.layout, c.layouts?.desktop].forEach((rect) => {
+          if (rect && typeof rect.height === 'number') rect.height = tallest;
+        });
+      }
+      warnings.push(`Cards ${line.map((c) => `"${c.name}"`).join(', ')} sit side by side; they now share one height (${tallest}px).`);
+    }
+  }
+
   // A side sheet holding a row of two or more fields opens at the wide sheet size (640px): at the default 480px two
   // fields side by side were cut off at the sheet's edge (a lead form, 2026-10-11).
   for (const sheet of components) {

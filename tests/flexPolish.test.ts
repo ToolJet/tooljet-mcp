@@ -561,3 +561,15 @@ describe('polishFlexRows: a side sheet holding a row of fields', () => {
     expect(prop(components, 's', 'size')).toBe('lg');
   });
 });
+
+describe('polishFlexRows: cards side by side on the page grid', () => {
+  it('gives cards that share a top on the grid one height (200 and 124px KPI cards side by side)', () => {
+    const tile = (ref: string, left: number, height: number) =>
+      ({ name: ref, type: 'FlexContainer', clientRef: ref, properties: { cardStyle: { value: 'shadcnCard' } }, layout: { top: 120, left, width: 8, height } }) as ComponentSpec;
+    const { components, warnings } = polishFlexRows([tile('a', 1, 200), tile('b', 9, 124), tile('c', 17, 200), tile('far', 1, 90)].map((c, i) => (i === 3 ? { ...c, layout: { ...c.layout!, top: 600 } } : c)));
+    const h = (ref: string) => components.find((c) => c.clientRef === ref)!.layout!.height;
+    expect([h('a'), h('b'), h('c')]).toEqual([200, 200, 200]);
+    expect(h('far')).toBe(90);
+    expect(warnings.join(' ')).toMatch(/one height/);
+  });
+});
