@@ -1,0 +1,141 @@
+{
+ "_note": "Checked 2026-10-12: each URL loads and shows its subject (Unsplash, free to use). For seed rows of things with a face; pick the closest subject, reuse within a subject when rows outnumber photos.",
+ "photos": {
+  "food": [
+   {
+    "subject": "mixed bowls and plates, overhead",
+    "url": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "salmon salad bowl",
+    "url": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "pizza",
+    "url": "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "vegetable bowl with avocado",
+    "url": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "green salad",
+    "url": "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "pancake stack",
+    "url": "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "berry layer cake",
+    "url": "https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "eggs and avocado toast",
+    "url": "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "french toast with berries",
+    "url": "https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "pasta salad",
+    "url": "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "ramen with egg",
+    "url": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "grilled skewers",
+    "url": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "tagliatelle with meat sauce",
+    "url": "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "grain bowl",
+    "url": "https://images.unsplash.com/photo-1547592180-85f173990554?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "seafood spaghetti",
+    "url": "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "breakfast spread with fruit",
+    "url": "https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=800&q=75&auto=format&fit=crop"
+   }
+  ],
+  "rooms and offices": [
+   {
+    "subject": "open office",
+    "url": "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "office with long meeting table",
+    "url": "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "lounge breakout space",
+    "url": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "boardroom with city view",
+    "url": "https://images.unsplash.com/photo-1517502884422-41eaead166d4?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "large conference room",
+    "url": "https://images.unsplash.com/photo-1431540015161-0bf868a2d407?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "desk workstation",
+    "url": "https://images.unsplash.com/photo-1497215842964-222b430dc094?w=800&q=75&auto=format&fit=crop"
+   }
+  ],
+  "boats": [
+   {
+    "subject": "superyacht at anchor",
+    "url": "https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "sailboat",
+    "url": "https://images.unsplash.com/photo-1540946485063-a40da27545f8?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "superyacht at sea",
+    "url": "https://images.unsplash.com/photo-1569263979104-865ab7cd8d13?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "motor yacht underway",
+    "url": "https://images.unsplash.com/photo-1605281317010-fe5ffe798166?w=800&q=75&auto=format&fit=crop"
+   }
+  ],
+  "pets": [
+   {
+    "subject": "beagle",
+    "url": "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "black and white cat",
+    "url": "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "border collie",
+    "url": "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "tabby cat",
+    "url": "https://images.unsplash.com/photo-1574158622682-e40e69881006?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "pug",
+    "url": "https://images.unsplash.com/photo-1517849845537-4d257902454a?w=800&q=75&auto=format&fit=crop"
+   },
+   {
+    "subject": "french bulldog",
+    "url": "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=800&q=75&auto=format&fit=crop"
+   }
+  ]
+ }
+}

@@ -27047,7 +27047,7 @@
       },
       {
         "name": "data",
-        "default": {}
+        "default": []
       },
       {
         "name": "children",
@@ -28976,7 +28976,145 @@
     ],
     "authoringHints": {
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
-      "usage": "slides [{ image, title?, description?, link? }]; height follows width and aspectRatio (+28 for dots, +52 for captions below); aspectRatio 'fill' fills a fixed height."
+      "usage": "slides [{ image, title?, description?, link? }]; height follows width and aspectRatio (+28 for dots, +52 for captions below); aspectRatio 'fill' fills a fixed height.",
+      "photos": {
+        "food": [
+          {
+            "subject": "mixed bowls and plates, overhead",
+            "url": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "salmon salad bowl",
+            "url": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "pizza",
+            "url": "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "vegetable bowl with avocado",
+            "url": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "green salad",
+            "url": "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "pancake stack",
+            "url": "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "berry layer cake",
+            "url": "https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "eggs and avocado toast",
+            "url": "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "french toast with berries",
+            "url": "https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "pasta salad",
+            "url": "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "ramen with egg",
+            "url": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "grilled skewers",
+            "url": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "tagliatelle with meat sauce",
+            "url": "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "grain bowl",
+            "url": "https://images.unsplash.com/photo-1547592180-85f173990554?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "seafood spaghetti",
+            "url": "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "breakfast spread with fruit",
+            "url": "https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=800&q=75&auto=format&fit=crop"
+          }
+        ],
+        "rooms and offices": [
+          {
+            "subject": "open office",
+            "url": "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "office with long meeting table",
+            "url": "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "lounge breakout space",
+            "url": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "boardroom with city view",
+            "url": "https://images.unsplash.com/photo-1517502884422-41eaead166d4?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "large conference room",
+            "url": "https://images.unsplash.com/photo-1431540015161-0bf868a2d407?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "desk workstation",
+            "url": "https://images.unsplash.com/photo-1497215842964-222b430dc094?w=800&q=75&auto=format&fit=crop"
+          }
+        ],
+        "boats": [
+          {
+            "subject": "superyacht at anchor",
+            "url": "https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "sailboat",
+            "url": "https://images.unsplash.com/photo-1540946485063-a40da27545f8?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "superyacht at sea",
+            "url": "https://images.unsplash.com/photo-1569263979104-865ab7cd8d13?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "motor yacht underway",
+            "url": "https://images.unsplash.com/photo-1605281317010-fe5ffe798166?w=800&q=75&auto=format&fit=crop"
+          }
+        ],
+        "pets": [
+          {
+            "subject": "beagle",
+            "url": "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "black and white cat",
+            "url": "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "border collie",
+            "url": "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "tabby cat",
+            "url": "https://images.unsplash.com/photo-1574158622682-e40e69881006?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "pug",
+            "url": "https://images.unsplash.com/photo-1517849845537-4d257902454a?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "french bulldog",
+            "url": "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=800&q=75&auto=format&fit=crop"
+          }
+        ]
+      }
     }
   },
   "ShadCircularProgress": {
@@ -37385,7 +37523,7 @@
   "ShadRecordList": {
     "type": "ShadRecordList",
     "name": "ShadRecordList",
-    "description": "shadcn/ui list of records as two-line rows, for a recent-orders, people, tickets or activity panel beside a chart or a table: an avatar (avatarField: an image URL, else the initials of that field's text, else of the title), the title (titleField), a meta line under it (metaFields, a comma list of field specs joined with ' · ': 'city', 'total|currency', 'due|date:Due {}' (value in a label), 'seats:Seats' (label first); formats number, currency, percent, compact, date, datetime), a status chip on the right (statusField, toned by its words: Paid green, Pending amber, Overdue red, Open blue) and a trailing value (valueField in valueFormat: currency in currency, date, number, ...). density compact, default or comfortable; showDividers; listStyle 'card' (bordered panel) or 'plain'; avatarShape circle or rounded. A click selects the row (selectedItem, selectedItemId; onRowClicked; the native List view's onRecordClicked, selectedRecord and selectedRecordId, the row's position in data). Draws 100 rows and a Show more button. Height: grows with its rows (about 60px a row at default density)",
+    "description": "shadcn/ui list of records as two-line rows, for a recent-orders, people, tickets or activity panel beside a chart or a table: an avatar (avatarField: an image URL, else the initials of that field's text, else of the title), the title (titleField), a meta line under it (metaFields, a comma list of field specs joined with ' · ': 'city', 'total|currency', 'due|date:Due {}' (value in a label), 'seats:Seats' (label first); formats number, currency, percent, compact, date, datetime), a status chip on the right (statusField, toned by its words: Paid green, Pending amber, Overdue red, Open blue) and a trailing value (valueField in valueFormat: currency in currency, date, number, ...). density compact, default or comfortable; showDividers; listStyle 'card' (bordered panel) or 'plain'; avatarShape circle or rounded. A click selects the row (selectedItem, selectedItemId; onRowClicked). Draws 100 rows and a Show more button. Height: grows with its rows (about 60px a row at default density)",
     "defaultSize": {
       "width": 20,
       "height": 340
@@ -37626,10 +37764,6 @@
       {
         "id": "onRowClicked",
         "label": "On row clicked"
-      },
-      {
-        "id": "onRecordClicked",
-        "label": "Record clicked"
       }
     ],
     "actions": [
@@ -37690,27 +37824,149 @@
       {
         "name": "selectedItemId",
         "default": null
-      },
-      {
-        "name": "selectedRecord",
-        "default": {}
-      },
-      {
-        "name": "selectedRecordId",
-        "default": null
-      },
-      {
-        "name": "selectedRow",
-        "default": {}
-      },
-      {
-        "name": "selectedRowId",
-        "default": null
       }
     ],
     "authoringHints": {
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
-      "usage": "A short list of records as two-line rows beside a chart or a table, the 'recent orders', 'today's bookings', 'who is on shift' or 'latest tickets' panel: titleField, metaFields for the second line ('contact, due|date:Due {}'), statusField for a toned chip, valueField with valueFormat for an amount or a date on the right, avatarField for a photo or a person's initials. onRowClicked with selectedItem opens details. Use ShadTable for long, sortable or editable data. About 60px per row plus 2."
+      "usage": "A short list of records as two-line rows beside a chart or a table, the 'recent orders', 'today's bookings', 'who is on shift' or 'latest tickets' panel: titleField, metaFields for the second line ('contact, due|date:Due {}'), statusField for a toned chip, valueField with valueFormat for an amount or a date on the right, avatarField for a photo or a person's initials. onRowClicked with selectedItem opens details. Use ShadTable for long, sortable or editable data. About 60px per row plus 2.",
+      "photos": {
+        "food": [
+          {
+            "subject": "mixed bowls and plates, overhead",
+            "url": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "salmon salad bowl",
+            "url": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "pizza",
+            "url": "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "vegetable bowl with avocado",
+            "url": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "green salad",
+            "url": "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "pancake stack",
+            "url": "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "berry layer cake",
+            "url": "https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "eggs and avocado toast",
+            "url": "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "french toast with berries",
+            "url": "https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "pasta salad",
+            "url": "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "ramen with egg",
+            "url": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "grilled skewers",
+            "url": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "tagliatelle with meat sauce",
+            "url": "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "grain bowl",
+            "url": "https://images.unsplash.com/photo-1547592180-85f173990554?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "seafood spaghetti",
+            "url": "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "breakfast spread with fruit",
+            "url": "https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=800&q=75&auto=format&fit=crop"
+          }
+        ],
+        "rooms and offices": [
+          {
+            "subject": "open office",
+            "url": "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "office with long meeting table",
+            "url": "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "lounge breakout space",
+            "url": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "boardroom with city view",
+            "url": "https://images.unsplash.com/photo-1517502884422-41eaead166d4?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "large conference room",
+            "url": "https://images.unsplash.com/photo-1431540015161-0bf868a2d407?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "desk workstation",
+            "url": "https://images.unsplash.com/photo-1497215842964-222b430dc094?w=800&q=75&auto=format&fit=crop"
+          }
+        ],
+        "boats": [
+          {
+            "subject": "superyacht at anchor",
+            "url": "https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "sailboat",
+            "url": "https://images.unsplash.com/photo-1540946485063-a40da27545f8?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "superyacht at sea",
+            "url": "https://images.unsplash.com/photo-1569263979104-865ab7cd8d13?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "motor yacht underway",
+            "url": "https://images.unsplash.com/photo-1605281317010-fe5ffe798166?w=800&q=75&auto=format&fit=crop"
+          }
+        ],
+        "pets": [
+          {
+            "subject": "beagle",
+            "url": "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "black and white cat",
+            "url": "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "border collie",
+            "url": "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "tabby cat",
+            "url": "https://images.unsplash.com/photo-1574158622682-e40e69881006?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "pug",
+            "url": "https://images.unsplash.com/photo-1517849845537-4d257902454a?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "french bulldog",
+            "url": "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=800&q=75&auto=format&fit=crop"
+          }
+        ]
+      }
     }
   },
   "ShadTagsInput": {
@@ -39502,7 +39758,145 @@
     ],
     "authoringHints": {
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
-      "usage": "The top of a page that should read as a product (a personal or customer-facing app, a dashboard home, a front desk): one hero in place of a heading and subtitle. background 'tint' or 'gradient' for a staff tool; 'image' with imageUrl, or 'dark', for a premium or consumer page; meta for the 2 or 3 facts that matter today; actionLabel for the page's main action (onActionClick). About 150px tall, 190 with actions."
+      "usage": "The top of a page that should read as a product (a personal or customer-facing app, a dashboard home, a front desk): one hero in place of a heading and subtitle. background 'tint' or 'gradient' for a staff tool; 'image' with imageUrl, or 'dark', for a premium or consumer page; meta for the 2 or 3 facts that matter today; actionLabel for the page's main action (onActionClick). About 150px tall, 190 with actions.",
+      "photos": {
+        "food": [
+          {
+            "subject": "mixed bowls and plates, overhead",
+            "url": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "salmon salad bowl",
+            "url": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "pizza",
+            "url": "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "vegetable bowl with avocado",
+            "url": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "green salad",
+            "url": "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "pancake stack",
+            "url": "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "berry layer cake",
+            "url": "https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "eggs and avocado toast",
+            "url": "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "french toast with berries",
+            "url": "https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "pasta salad",
+            "url": "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "ramen with egg",
+            "url": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "grilled skewers",
+            "url": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "tagliatelle with meat sauce",
+            "url": "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "grain bowl",
+            "url": "https://images.unsplash.com/photo-1547592180-85f173990554?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "seafood spaghetti",
+            "url": "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "breakfast spread with fruit",
+            "url": "https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=800&q=75&auto=format&fit=crop"
+          }
+        ],
+        "rooms and offices": [
+          {
+            "subject": "open office",
+            "url": "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "office with long meeting table",
+            "url": "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "lounge breakout space",
+            "url": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "boardroom with city view",
+            "url": "https://images.unsplash.com/photo-1517502884422-41eaead166d4?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "large conference room",
+            "url": "https://images.unsplash.com/photo-1431540015161-0bf868a2d407?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "desk workstation",
+            "url": "https://images.unsplash.com/photo-1497215842964-222b430dc094?w=800&q=75&auto=format&fit=crop"
+          }
+        ],
+        "boats": [
+          {
+            "subject": "superyacht at anchor",
+            "url": "https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "sailboat",
+            "url": "https://images.unsplash.com/photo-1540946485063-a40da27545f8?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "superyacht at sea",
+            "url": "https://images.unsplash.com/photo-1569263979104-865ab7cd8d13?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "motor yacht underway",
+            "url": "https://images.unsplash.com/photo-1605281317010-fe5ffe798166?w=800&q=75&auto=format&fit=crop"
+          }
+        ],
+        "pets": [
+          {
+            "subject": "beagle",
+            "url": "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "black and white cat",
+            "url": "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "border collie",
+            "url": "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "tabby cat",
+            "url": "https://images.unsplash.com/photo-1574158622682-e40e69881006?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "pug",
+            "url": "https://images.unsplash.com/photo-1517849845537-4d257902454a?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "french bulldog",
+            "url": "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=800&q=75&auto=format&fit=crop"
+          }
+        ]
+      }
     }
   },
   "ShadCardGrid": {
@@ -39795,7 +40189,145 @@
     ],
     "authoringHints": {
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
-      "usage": "Things with a face as cards instead of table rows: recipes, products, listings, rooms, people, tasks. imageField when rows have photos (else each card shows a tinted initials panel), badgeField for a state, descriptionField for a line of detail, metaFields for 2 or 3 facts ('prep:{} min, serves:Serves'). onCardClick with selectedItem opens details. About 300px per row with images, 150 without."
+      "usage": "Things with a face as cards instead of table rows: recipes, products, listings, rooms, people, tasks. imageField when rows have photos (without it the cards have no picture area; authoringHints.photos lists checked photo URLs by subject for seed data), badgeField for a state, descriptionField for a line of detail, metaFields for 2 or 3 facts ('prep:{} min, serves:Serves'). onCardClick with selectedItem opens details. About 300px per row with images, 150 without.",
+      "photos": {
+        "food": [
+          {
+            "subject": "mixed bowls and plates, overhead",
+            "url": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "salmon salad bowl",
+            "url": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "pizza",
+            "url": "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "vegetable bowl with avocado",
+            "url": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "green salad",
+            "url": "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "pancake stack",
+            "url": "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "berry layer cake",
+            "url": "https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "eggs and avocado toast",
+            "url": "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "french toast with berries",
+            "url": "https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "pasta salad",
+            "url": "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "ramen with egg",
+            "url": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "grilled skewers",
+            "url": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "tagliatelle with meat sauce",
+            "url": "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "grain bowl",
+            "url": "https://images.unsplash.com/photo-1547592180-85f173990554?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "seafood spaghetti",
+            "url": "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "breakfast spread with fruit",
+            "url": "https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=800&q=75&auto=format&fit=crop"
+          }
+        ],
+        "rooms and offices": [
+          {
+            "subject": "open office",
+            "url": "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "office with long meeting table",
+            "url": "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "lounge breakout space",
+            "url": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "boardroom with city view",
+            "url": "https://images.unsplash.com/photo-1517502884422-41eaead166d4?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "large conference room",
+            "url": "https://images.unsplash.com/photo-1431540015161-0bf868a2d407?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "desk workstation",
+            "url": "https://images.unsplash.com/photo-1497215842964-222b430dc094?w=800&q=75&auto=format&fit=crop"
+          }
+        ],
+        "boats": [
+          {
+            "subject": "superyacht at anchor",
+            "url": "https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "sailboat",
+            "url": "https://images.unsplash.com/photo-1540946485063-a40da27545f8?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "superyacht at sea",
+            "url": "https://images.unsplash.com/photo-1569263979104-865ab7cd8d13?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "motor yacht underway",
+            "url": "https://images.unsplash.com/photo-1605281317010-fe5ffe798166?w=800&q=75&auto=format&fit=crop"
+          }
+        ],
+        "pets": [
+          {
+            "subject": "beagle",
+            "url": "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "black and white cat",
+            "url": "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "border collie",
+            "url": "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "tabby cat",
+            "url": "https://images.unsplash.com/photo-1574158622682-e40e69881006?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "pug",
+            "url": "https://images.unsplash.com/photo-1517849845537-4d257902454a?w=800&q=75&auto=format&fit=crop"
+          },
+          {
+            "subject": "french bulldog",
+            "url": "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=800&q=75&auto=format&fit=crop"
+          }
+        ]
+      }
     }
   }
 }

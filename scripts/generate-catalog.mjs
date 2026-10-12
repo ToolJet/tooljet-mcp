@@ -902,7 +902,7 @@ const SHAD_USAGE = {
   ShadScatterChart: "Two measures per row: xField and yField; sizeField makes bubbles, groupField colours and a legend per value, nameField titles the tooltip; referenceX/referenceY split it into quadrants. 260 to 360px tall.",
   ShadFunnelChart: "Ordered stages [{ stage: 'Visited', count: 12480 }] with stageField and valueField; each stage shows its value and conversion from the one before (conversionBase 'first' for overall). About 44px per stage.",
   ShadHero: "The top of a page that should read as a product (a personal or customer-facing app, a dashboard home, a front desk): one hero in place of a heading and subtitle. background 'tint' or 'gradient' for a staff tool; 'image' with imageUrl, or 'dark', for a premium or consumer page; meta for the 2 or 3 facts that matter today; actionLabel for the page's main action (onActionClick). About 150px tall, 190 with actions.",
-  ShadCardGrid: "Things with a face as cards instead of table rows: recipes, products, listings, rooms, people, tasks. imageField when rows have photos (else each card shows a tinted initials panel), badgeField for a state, descriptionField for a line of detail, metaFields for 2 or 3 facts ('prep:{} min, serves:Serves'). onCardClick with selectedItem opens details. About 300px per row with images, 150 without.",
+  ShadCardGrid: "Things with a face as cards instead of table rows: recipes, products, listings, rooms, people, tasks. imageField when rows have photos (without it the cards have no picture area; authoringHints.photos lists checked photo URLs by subject for seed data), badgeField for a state, descriptionField for a line of detail, metaFields for 2 or 3 facts ('prep:{} min, serves:Serves'). onCardClick with selectedItem opens details. About 300px per row with images, 150 without.",
   ShadSummaryStrip: "Three to six headline figures in one row with hairline separators, above or beside a table or a chart, in place of a row of separate stat cards: items [{ label, value, delta, caption }] with valueFormat 'currency' (an item's own format overrides it), numeric deltas signed as percents, lowerIsBetter for churn or refunds. One strip per data view; use ShadStat when a figure needs a trend line or a progress bar. About 90px tall, 110 with captions.",
   ShadRecordList: "A short list of records as two-line rows beside a chart or a table, the 'recent orders', 'today's bookings', 'who is on shift' or 'latest tickets' panel: titleField, metaFields for the second line ('contact, due|date:Due {}'), statusField for a toned chip, valueField with valueFormat for an amount or a date on the right, avatarField for a photo or a person's initials. onRowClicked with selectedItem opens details. Use ShadTable for long, sortable or editable data. About 60px per row plus 2.",
   ShadHeatmapChart: "Two categories against each other shaded by a value: rows [{ day: 'Mon', hour: '09:00', tickets: 12 }] with yField (rows), xField (columns), valueField; yOrder/xOrder fix the order (weekdays, hours). About 32px per row plus 40.",
@@ -912,6 +912,13 @@ const SHAD_USAGE = {
 };
 for (const [type, usage] of Object.entries(SHAD_USAGE)) {
   if (schemas[type]) schemas[type].authoringHints = { ...schemas[type].authoringHints, usage };
+}
+
+// 2026-10-12: Lovable's recipe and listing apps lead with real photos; ours were text-only because a build had no
+// photo URLs it could trust. data/stock-photos.json holds checked ones by subject for seed rows.
+const STOCK_PHOTOS = JSON.parse(readFileSync(resolve(root, 'data/stock-photos.json'), 'utf8')).photos;
+for (const type of ['ShadCardGrid', 'ShadHero', 'ShadCarousel', 'ShadRecordList']) {
+  if (schemas[type]) schemas[type].authoringHints = { ...schemas[type].authoringHints, photos: STOCK_PHOTOS };
 }
 
 // 2026-10-10: the shadcn Dialog is ModalV2 in the pack's look: the same slots, close lifecycle and coordinate space.
@@ -960,6 +967,10 @@ if (schemas.Calendar) {
 }
 
 mkdirSync(resolve(root, 'data'), { recursive: true });
+// The Ant Design pack is parked (2026-10-10, 94c7cc5): ToolJet still registers its widgets so existing apps render,
+// but the catalog leaves them out so builds use the shadcn/ui pack. The widgets are harvested like any other, so they
+// are dropped here, or every regeneration brought all of them back.
+for (const type of Object.keys(schemas)) if (/^Ant[A-Z]/.test(type)) delete schemas[type];
 writeFileSync(resolve(root, 'data/component-schemas.json'), JSON.stringify(schemas, null, 2) + '\n');
 const total = Object.keys(schemas).length;
 const withProps = Object.values(schemas).filter((s) => s.properties.length).length;
