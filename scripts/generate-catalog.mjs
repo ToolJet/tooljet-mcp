@@ -933,7 +933,7 @@ if (schemas.ShadDialog && schemas.ModalV2) {
     ...schemas.ModalV2.authoringHints,
     ...schemas.ShadDialog.authoringHints,
     composition:
-      'Header: a ShadHeading (level "h4") with a muted ShadText description under it; body: the content or form; footer: ShadButtons, an outline Cancel then the primary action, right-aligned. Set useDefaultButton false and open it with show-modal from a ShadButton or a table row event. variant "sheet" (side "right") is a full-height side panel for record details and edit forms; "dialog" is centred for confirmations and short forms.',
+      'Header: a ShadHeading (level "h4") with a muted ShadText description under it; body: the content or form; footer: ShadButtons, an outline Cancel then the primary action, right-aligned. Set useDefaultButton false and open it with show-modal from a ShadButton or a table row event. variant "sheet" (side "right") is a full-height side panel for record details and edit forms; "dialog" is centred for confirmations and short forms. Body of a record-details sheet: one FlexContainer column holding, top to bottom, the headline figure or status (a ShadStat or a ShadBadge), one ShadKeyValue for the fields (data an array of { label, value, type } from the selected record, columns 2, layout "stacked"), then longer notes in a ShadText; never label and value ShadTexts placed by hand on a grid. Footer: every button inside one FlexContainer row (justifyContent "flex-end", gap 8), the outline or ghost action first, the primary last. Read the record as components.<table>?.selectedRow?.<field> ?? \'-\', or guard on components.<table>?.selectedRow?.id: a selection is {} when nothing is selected, which is truthy.',
   };
 }
 
