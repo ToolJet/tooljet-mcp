@@ -736,3 +736,17 @@ describe('polishFlexRows: a card titled twice', () => {
     expect([...untitled, ...later].join(' ')).not.toMatch(/titled twice|already titled/);
   });
 });
+
+describe('polishFlexRows: a bound count beside a heading', () => {
+  // Recipe build (2026-10-12): "{{queries.getRecipes.data.length + ' recipes in your book'}}" was measured as four
+  // characters, kept at 56px, and wrapped into a narrow column. Blind review: "squeezed into a narrow wrapping column".
+  it('is as wide as the words quoted in the binding', () => {
+    const { components } = polishFlexRows([
+      row('collectionRow', { justifyContent: { value: 'space-between' } }),
+      { ...child('heading', 'ShadHeading', 'collectionRow', { text: { value: 'Your recipes' } }), layout: { top: 0, left: 0, width: 20, height: 40 } },
+      { ...child('count', 'ShadText', 'collectionRow', { text: { value: "{{queries.getRecipes.data.length + ' recipes in your book'}}" } }), layout: { top: 0, left: 0, width: 20, height: 30 } },
+    ]);
+    const rect = components.find((c) => c.clientRef === 'count')!.layout as { widthPx?: number };
+    expect(rect.widthPx).toBeGreaterThanOrEqual(' recipes in your book'.length * 7);
+  });
+});

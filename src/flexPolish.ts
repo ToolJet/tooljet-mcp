@@ -467,7 +467,7 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
             width = inner.reduce((sum, b) => sum + buttonWidth(b), 0) + gap * (inner.length - 1) + pad * 2 + 4;
           } else if (c.type === 'ShadText') {
             // A binding counts as a few characters ("{{rows.length}} saved" reads "24 saved").
-            const shown = text(prop(c, 'text')).replace(/\{\{[\s\S]*?\}\}/g, '0000');
+            const shown = shownText(text(prop(c, 'text')));
             if (shown.length <= 40) width = Math.min(320, Math.max(48, Math.ceil(shown.length * 7 + 28)));
           }
           if (width === null) continue;
