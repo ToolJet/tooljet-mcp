@@ -36,6 +36,27 @@ describe('polishFlexRows: rows of labelled fields', () => {
     expect(warnings.join(' ')).toMatch(/filters/);
   });
 
+  it('bottom-aligns a row of labelled fields only, so a text input and selects share one line', () => {
+    // A filter row of a search input and three selects on "last baseline" sat the input 8px below the selects (their
+    // last text baselines differ), labels and boxes both (2026-10-12).
+    const { components, warnings } = polishFlexRows([
+      row('filtersRow', { alignItems: { value: 'last baseline' } }),
+      child('search', 'ShadInput', 'filtersRow', { label: { value: 'Search leads' } }),
+      child('stage', 'ShadSelect', 'filtersRow', { label: { value: 'Stage' } }),
+      child('followups', 'ShadSelect', 'filtersRow', { label: { value: 'Follow-ups' } }),
+    ]);
+    expect(prop(components, 'filtersRow', 'alignItems')).toBe('flex-end');
+    expect(warnings.join(' ')).toMatch(/filtersRow/);
+  });
+
+  it('leaves a single labelled field alone', () => {
+    const { components } = polishFlexRows([
+      row('one', { alignItems: { value: 'center' } }),
+      child('search', 'ShadInput', 'one', { label: { value: 'Search' } }),
+    ]);
+    expect(prop(components, 'one', 'alignItems')).toBe('center');
+  });
+
   it('also fixes a row left at the default alignment', () => {
     const { components } = polishFlexRows([
       row('filters'),

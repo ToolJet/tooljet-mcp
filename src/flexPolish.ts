@@ -464,6 +464,15 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
       );
     }
 
+    // 1a. A row of two or more labelled fields and nothing else: bottom-aligned too. On "last baseline" a search input sat
+    //     8px below the selects beside it, label and box, because their last text baselines differ (2026-10-12).
+    if (children.length >= 2 && children.every(isLabelledField) && text(prop(container, 'alignItems')) !== 'flex-end') {
+      setProp(container, 'alignItems', 'flex-end');
+      warnings.push(
+        `Row "${label}" holds only labelled fields; its alignItems is now "flex-end" so the field boxes line up along the bottom.`
+      );
+    }
+
     // 1b. A labelled field beside buttons in a row that also holds other blocks (a header's title stack): rule 1 skips
     //     such rows, and centred, a "Reserve a room" button sat 20px above the date box beside it (the field is taller
     //     by its label). Bottom-aligned, the button meets the field box and the title block sits on the same line.
