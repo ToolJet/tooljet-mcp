@@ -535,3 +535,29 @@ describe('polishFlexRows: cards fit their content and share a row height', () =>
     expect(prop(components, 'kpis', 'alignItems')).toBe('stretch');
   });
 });
+
+describe('polishFlexRows: a side sheet holding a row of fields', () => {
+  it('opens at the wide sheet size, so two fields side by side fit (480px cut the right column off)', () => {
+    const sheet = { name: 'newLeadDialog', type: 'ShadDialog', clientRef: 'sheet', properties: { variant: { value: 'sheet' }, size: { value: 'lg' } } } as ComponentSpec;
+    const form = { ...child('form', 'FlexContainer', 'sheet', { direction: { value: 'column' } }) } as ComponentSpec;
+    const { components, warnings } = polishFlexRows([
+      sheet,
+      form,
+      row('pair', {}, { parentRef: 'form' }),
+      child('name', 'ShadInput', 'pair', { label: { value: 'Name' } }),
+      child('company', 'ShadInput', 'pair', { label: { value: 'Company' } }),
+    ]);
+    expect(prop(components, 'sheet', 'size')).toBe('xl');
+    expect(warnings.join(' ')).toMatch(/newLeadDialog/);
+  });
+  it('leaves a centred dialog and a sheet of single fields alone', () => {
+    const dialog = { name: 'd', type: 'ShadDialog', clientRef: 'd', properties: { variant: { value: 'dialog' }, size: { value: 'lg' } } } as ComponentSpec;
+    const single = { name: 's', type: 'ShadDialog', clientRef: 's', properties: { variant: { value: 'sheet' }, size: { value: 'lg' } } } as ComponentSpec;
+    const { components } = polishFlexRows([
+      dialog, row('pair', {}, { parentRef: 'd' }), child('a', 'ShadInput', 'pair', { label: { value: 'A' } }), child('b', 'ShadInput', 'pair', { label: { value: 'B' } }),
+      single, child('c', 'ShadInput', 's', { label: { value: 'C' } }),
+    ]);
+    expect(prop(components, 'd', 'size')).toBe('lg');
+    expect(prop(components, 's', 'size')).toBe('lg');
+  });
+});

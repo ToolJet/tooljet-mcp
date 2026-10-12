@@ -176,6 +176,30 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
     warnings.push(`Card "${card.name}" was ${was}px tall for ${needed}px of content; it now fits its content.`);
   }
 
+  // A side sheet holding a row of two or more fields opens at the wide sheet size (640px): at the default 480px two
+  // fields side by side were cut off at the sheet's edge (a lead form, 2026-10-11).
+  for (const sheet of components) {
+    if (!sheet || sheet.type !== 'ShadDialog' || text(prop(sheet, 'variant')) !== 'sheet') continue;
+    if (['xl', 'fullscreen'].includes(text(prop(sheet, 'size')))) continue;
+    const descendants: ComponentSpec[] = [];
+    const queue = [refOf(sheet)];
+    while (queue.length && descendants.length < 400) {
+      const parent = queue.shift();
+      for (const c of components) {
+        if (c && parent && c.parentRef === parent) {
+          descendants.push(c);
+          queue.push(refOf(c));
+        }
+      }
+    }
+    const pairRow = descendants.find(
+      (c) => isRow(c) && components.filter((x) => x && x.parentRef === refOf(c) && FIELD_TYPES.has(x.type)).length >= 2
+    );
+    if (!pairRow) continue;
+    setProp(sheet, 'size', 'xl');
+    warnings.push(`Sheet "${sheet.name}" holds fields side by side ("${pairRow.name}"); it now opens at the wide size (xl, 640px).`);
+  }
+
   for (const container of components) {
     if (!container || !isRow(container)) continue;
     const ref = refOf(container);
