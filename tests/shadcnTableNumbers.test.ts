@@ -226,3 +226,15 @@ describe('shadcn-look Table dates', () => {
     expect(t.dateFormat).toBe('YYYY-MM-DD');
   });
 });
+
+describe('shadcn-look Table rows', () => {
+  const style = (result: ReturnType<typeof normalizeComponentSpec>) =>
+    (result.component.styles?.contentWrap as { value?: unknown } | undefined)?.value;
+  it('are one line each (long subjects wrapped into uneven two-line rows), and the ToolJet look is left alone', () => {
+    expect(style(normalizeComponentSpec(table('shadcn', [{ id: 'a', key: 'subject', columnType: 'string' }])))).toBe(false);
+    const t = table('shadcn', [{ id: 'a', key: 'subject', columnType: 'string' }]);
+    (t.styles as Record<string, unknown>).contentWrap = { value: true };
+    expect(style(normalizeComponentSpec(t))).toBe(false);
+    expect(style(normalizeComponentSpec(table(undefined, [{ id: 'a', key: 'subject', columnType: 'string' }])))).toBeUndefined();
+  });
+});

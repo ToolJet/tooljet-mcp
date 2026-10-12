@@ -317,6 +317,11 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
       const lookEntry = stylesValue.tableLook;
       const shadcnLook =
         (lookEntry && typeof lookEntry === 'object' ? (lookEntry as { value?: unknown }).value : lookEntry) === 'shadcn';
+      // Rows of one line in the shadcn look: long subjects wrapped into uneven two-line rows, which reviewers marked as
+      // unfinished; the look ends long text in an ellipsis instead.
+      if (shadcnLook && stylesValue.contentWrap !== false && (stylesValue.contentWrap as { value?: unknown } | undefined)?.value !== false) {
+        setStyle('contentWrap', false);
+      }
       let changedColumns = false;
       const repairedColumns = columns.map((column) => {
         if (options.stripUnknownKeys && column && typeof column === 'object' && !Array.isArray(column) &&
