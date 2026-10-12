@@ -599,3 +599,29 @@ describe('polishFlexRows: no empty band at the top of the page', () => {
     expect(components.find((c) => c.clientRef === 'host')!.layout!.top).toBe(0);
   });
 });
+
+describe('polishFlexRows: header buttons stay on one line', () => {
+  it('turns wrapping off for a group of buttons beside a title (the second button wrapped and was clipped to a strip)', () => {
+    const input = [
+      row('header', { justifyContent: { value: 'space-between' } }),
+      child('title', 'ShadHeading', 'header', { text: { value: "Today's dispatch" } }),
+      row('actions', { justifyContent: { value: 'flex-end' } }, { parentRef: 'header' }),
+      child('addCustomer', 'ShadButton', 'actions', { text: { value: 'Add customer' } }),
+      child('bookJob', 'ShadButton', 'actions', { text: { value: 'Book a job' } }),
+    ];
+    const { components } = polishFlexRows(input as ComponentSpec[]);
+    expect(prop(components, 'actions', 'flexWrap')).toBe('{{false}}');
+  });
+
+  it('leaves a row of cards free to wrap', () => {
+    const input = [
+      row('header', { justifyContent: { value: 'space-between' } }),
+      child('title', 'ShadHeading', 'header', { text: { value: 'Rooms' } }),
+      row('cards', {}, { parentRef: 'header' }),
+      child('a', 'ShadCard', 'cards'),
+      child('b', 'ShadCard', 'cards'),
+    ];
+    const { components } = polishFlexRows(input as ComponentSpec[]);
+    expect(prop(components, 'cards', 'flexWrap')).toBeUndefined();
+  });
+});

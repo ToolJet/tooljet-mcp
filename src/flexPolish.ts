@@ -394,6 +394,9 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
       };
       for (const c of children) {
         const inner = actionGroup(c);
+        // A group of buttons stays on one line: sized to its buttons, a few pixels of padding wrapped the last one onto
+        // a second line, where the group's fixed height clipped it to a coloured strip under the first.
+        if (inner && inner.length >= 2 && props(c).flexWrap === undefined) setProp(c, 'flexWrap', '{{false}}');
         if (!inner || inner.length < 2 || isRow(c)) continue;
         setProp(c, 'direction', 'row');
         if (text(prop(c, 'gap')) === '') setProp(c, 'gap', 8);
