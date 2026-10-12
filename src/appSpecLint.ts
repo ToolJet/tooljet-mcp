@@ -7,6 +7,7 @@ import { prepareQueryOptionsForWrite } from './queryPersistence.js';
 import { expandQueryLifecycles, type LifecycleAlert } from './queryLifecycle.js';
 import { validateTableBatch } from './tableValidation.js';
 import { invalidPlannedGeneratedPrimaryKeySeeds } from './seedGeneratedPrimaryKeyValidation.js';
+import { lintUniformSeedMetrics } from './seedVarietyLint.js';
 import { encodeComponentParent } from './componentParent.js';
 import { normalizeComponentSpec } from './componentNormalization.js';
 import { normalizePlannedLayouts } from './layoutNormalization.js';
@@ -340,6 +341,10 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
         }
       }
     }
+    // A table's rows may arrive in several batches: judge their variety together.
+    const rowsByTable = new Map<string, Array<Record<string, unknown>>>();
+    for (const seed of seedData) rowsByTable.set(seed.tableName, [...(rowsByTable.get(seed.tableName) ?? []), ...seed.rows]);
+    for (const [tableName, rows] of rowsByTable) warnings.push(...lintUniformSeedMetrics(tableName, rows));
   }
 
   const queryRefs = new Map<string, { id: string; name: string }>();
