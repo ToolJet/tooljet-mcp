@@ -14,6 +14,16 @@ const SAMPLE_BLANKS: Record<string, Record<string, unknown>> = {
   ShadHero: { eyebrow: '', subtitle: '', meta: '{{[]}}', actionLabel: '' },
   ShadCardGrid: { badgeField: '', descriptionField: '', metaFields: '' },
   ShadRecordList: { metaFields: '', valueField: '', valueFormat: 'auto' },
+  // The sample's budget fields (spent, budget, note, status) are not a build's data: the config's own names stand.
+  ShadProgressList: {
+    labelField: 'label',
+    valueField: 'value',
+    targetField: 'target',
+    captionField: '',
+    statusField: '',
+    valueFormat: 'auto',
+  },
+  ShadSchedule: { resourceField: 'resource', resourceTitle: '' },
   // 'auto' reads money from a figure's label; the 'currency' default showed counts of rooms as dollars.
   ShadSummaryStrip: { valueFormat: 'auto' },
   ShadTags: { tags: '{{[]}}', tagColors: '{{{}}}' },
