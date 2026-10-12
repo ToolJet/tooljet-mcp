@@ -1,4 +1,5 @@
 import type { ToolJetClient } from '../tooljetClient.js';
+import { matchDatasourceByName } from '../datasourceNameMatch.js';
 import { lintPlannedApp, pagesUsingQuery, type AppSpecLintResult } from '../appSpecLint.js';
 import { literalCanvasColor } from '../appSettings.js';
 import { appPlanSchema, type AppPlanInput } from '../appPlanSchema.js';
@@ -303,12 +304,16 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
             preflightErrors.push(`Query "${query.name}" must provide exactly one of datasource_id or datasource_name.`);
           } else if (hasName) {
             const matches = datasources.filter(source => source.name === query.datasource_name);
-            if (!query.datasource_name || matches.length !== 1) {
+            const matched = matchDatasourceByName(datasources, query.datasource_name);
+            if (!matched) {
               preflightErrors.push(
                 `Query "${query.name}" datasource_name "${query.datasource_name}" must match exactly one source in this version ` +
                 `(found ${matches.length}). Use the exact name or id returned by list_datasources(version_id).`
               );
-            } else datasourceId = matches[0]!.id;
+            } else {
+              datasourceId = matched.id;
+              if (matched.note) preflightWarnings.push(`Query "${query.name}": ${matched.note}`);
+            }
           }
           const datasourceKind = datasourceKinds.get(datasourceId ?? '');
           if (args.version_id && !datasourceKind) {
