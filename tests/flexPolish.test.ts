@@ -573,3 +573,29 @@ describe('polishFlexRows: cards side by side on the page grid', () => {
     expect(warnings.join(' ')).toMatch(/one height/);
   });
 });
+
+describe('polishFlexRows: no empty band at the top of the page', () => {
+  const at = (c: ComponentSpec, top: number, height: number): ComponentSpec => ({ ...c, layout: { top, left: 0, width: 43, height } });
+  it('takes dialogs out of a container that holds only them, and lifts the page into the space it left', () => {
+    const { components, warnings } = polishFlexRows([
+      at({ name: 'modalsHost', type: 'FlexContainer', clientRef: 'modalsHost', properties: {} } as ComponentSpec, 10, 80),
+      at({ name: 'recipeDialog', type: 'ShadDialog', clientRef: 'recipeDialog', parentRef: 'modalsHost', properties: {} } as ComponentSpec, 0, 60),
+      at({ name: 'title', type: 'ShadHeading', clientRef: 'title', parentRef: 'recipeDialog', slotName: 'header', properties: {} } as ComponentSpec, 12, 32),
+      at({ name: 'homeRoot', type: 'FlexContainer', clientRef: 'homeRoot', properties: { direction: { value: 'column' } } } as ComponentSpec, 110, 1500),
+    ]);
+    expect(components.find((c) => c.clientRef === 'modalsHost')).toBeUndefined();
+    expect(components.find((c) => c.clientRef === 'recipeDialog')!.parentRef).toBeUndefined();
+    expect(components.find((c) => c.clientRef === 'title')!.parentRef).toBe('recipeDialog');
+    expect(components.find((c) => c.clientRef === 'homeRoot')!.layout!.top).toBeLessThanOrEqual(10);
+    expect(warnings.join(' ')).toMatch(/modalsHost/);
+  });
+  it('leaves a page that starts at the top, and a container that holds more than dialogs', () => {
+    const { components } = polishFlexRows([
+      at({ name: 'host', type: 'FlexContainer', clientRef: 'host', properties: {} } as ComponentSpec, 0, 80),
+      at({ name: 'd', type: 'ShadDialog', clientRef: 'd', parentRef: 'host', properties: {} } as ComponentSpec, 0, 60),
+      at({ name: 'note', type: 'ShadText', clientRef: 'note', parentRef: 'host', properties: {} } as ComponentSpec, 0, 24),
+    ]);
+    expect(components.find((c) => c.clientRef === 'host')).toBeDefined();
+    expect(components.find((c) => c.clientRef === 'host')!.layout!.top).toBe(0);
+  });
+});

@@ -128,6 +128,40 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
   const childrenOf = (ref: string): ComponentSpec[] =>
     components.filter((component) => component && component.parentRef === ref && !component.slotName);
 
+  // A top-level container holding nothing but dialogs is an empty band: dialogs draw nothing until opened, so the
+  // container showed as blank space above the page (a recipe book's "modalsHost", 80px, pushed the page down to 110px).
+  // The dialogs move to the page root, where dialogs belong, the container goes, and the top-level sections below it
+  // move up into the space it held. Only that space: a batch may add to a page whose other sections are not in it.
+  const DIALOG_TYPES = new Set(['ShadDialog', 'ModalV2', 'Modal']);
+  const isRootLevel = (c: ComponentSpec) => !c.parentRef && !(c as { parent?: unknown }).parent;
+  const topOf = (c: ComponentSpec) => Number(c.layout?.top ?? c.layouts?.desktop?.top);
+  for (const host of [...components]) {
+    if (!host || host.type !== 'FlexContainer' || !isRootLevel(host)) continue;
+    const ref = refOf(host);
+    const inner = components.filter((c) => c && c.parentRef === ref);
+    if (!inner.length || !inner.every((c) => DIALOG_TYPES.has(c.type))) continue;
+    inner.forEach((dialog) => {
+      delete dialog.parentRef;
+      delete (dialog as { slotName?: string }).slotName;
+    });
+    components.splice(components.indexOf(host), 1);
+    const hostTop = topOf(host);
+    const below = components.filter((c) => c && isRootLevel(c) && !DIALOG_TYPES.has(c.type) && topOf(c) > hostTop);
+    const nextTop = below.length ? Math.min(...below.map(topOf)) : NaN;
+    const lift = Number.isFinite(hostTop) && Number.isFinite(nextTop) ? nextTop - hostTop : 0;
+    if (lift > 0) {
+      below.forEach((c) => {
+        [c.layout, c.layouts?.desktop].forEach((rect) => {
+          if (rect && typeof rect.top === 'number') rect.top -= lift;
+        });
+      });
+    }
+    warnings.push(
+      `"${host.name}" held only dialogs, which draw nothing until opened, so it showed as an empty band; the dialogs now ` +
+        `sit at the page root, the container is gone${lift > 0 ? ` and the sections below moved up ${lift}px` : ''}.`
+    );
+  }
+
   // A page's top-level FlexContainer grows with its content: a gym page's root fixed at 710px with dynamic height off
   // clipped both cards and the table under them.
   for (const root of components) {
