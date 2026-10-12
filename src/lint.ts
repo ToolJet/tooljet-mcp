@@ -42,6 +42,7 @@ import { lintUnformattedNumbers } from './numberFormatLint.js';
 import { lintCopiedCards } from './repeatedCardsLint.js';
 import { lintTallContainers } from './containerExtentLint.js';
 import { lintChartAccents } from './chartAccentLint.js';
+import { lintKpiCardGrids } from './kpiGridLint.js';
 
 export interface LintResult {
   errors: string[];
@@ -3229,6 +3230,7 @@ export function lintComponents(components: LintComponent[], options: { canvasCol
   warnings.push(...lintCopiedCards(components));
   warnings.push(...lintTallContainers(components));
   warnings.push(...lintChartAccents(components));
+  warnings.push(...lintKpiCardGrids(components));
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));
