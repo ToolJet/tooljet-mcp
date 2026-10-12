@@ -670,3 +670,69 @@ describe('polishFlexRows: a labelled field beside a button in a header', () => {
     expect(prop(components, 'header', 'alignItems')).toBe('center');
   });
 });
+
+describe('polishFlexRows: a header action group with a status line', () => {
+  const rect = (c: ComponentSpec | undefined) => (c?.layout ?? {}) as { fillWidth?: boolean; widthPx?: number };
+  const withLayout = (c: ComponentSpec): ComponentSpec => ({ ...c, layout: { top: 0, left: 0, width: 43, height: 40, fillWidth: true } as ComponentSpec['layout'] });
+
+  // To-do build (2026-10-12): "21 active · 7 finished" and "New task" sat in an actions group that filled half the header,
+  // and the status line, filling the group, started mid-page. Blind review: "the summary text floats mid-header".
+  it('keeps the group and its status line at their own widths, so both sit at the right beside the action', () => {
+    const { components, warnings } = polishFlexRows([
+      row('topBar', { justifyContent: { value: 'space-between' } }),
+      withLayout({ ...child('welcome', 'FlexContainer', 'topBar', { direction: { value: 'column' } }) }),
+      child('welcomeTitle', 'ShadHeading', 'welcome', { text: { value: 'A little progress, every day.' } }),
+      withLayout(row('topBarActions', { justifyContent: { value: 'flex-end' } }, { parentRef: 'topBar' })),
+      withLayout(child('statusSummary', 'ShadText', 'topBarActions', { text: { value: "{{rows.filter(r => r.open).length + ' active · ' + done + ' finished'}}" } })),
+      withLayout(child('newTask', 'ShadButton', 'topBarActions', { text: { value: 'New task' } })),
+    ]);
+    const group = rect(components.find((c) => c.clientRef === 'topBarActions'));
+    expect(group.fillWidth).toBe(false);
+    expect(group.widthPx).toBeGreaterThan(200);
+    const status = rect(components.find((c) => c.clientRef === 'statusSummary'));
+    expect(status.fillWidth).toBe(false);
+    expect(status.widthPx).toBeGreaterThan(40);
+    expect(rect(components.find((c) => c.clientRef === 'welcome')).fillWidth).toBe(true);
+    expect(warnings.join(' ')).toMatch(/topBarActions/);
+  });
+
+  it('leaves a group of long prose alone', () => {
+    const long = 'A long explanation of what this page is for and how the numbers on it are worked out each week.';
+    const { components } = polishFlexRows([
+      row('topBar', { justifyContent: { value: 'space-between' } }),
+      withLayout(child('title', 'ShadHeading', 'topBar', { text: { value: 'Ledger' } })),
+      withLayout(row('aside', {}, { parentRef: 'topBar' })),
+      withLayout(child('note', 'ShadText', 'aside', { text: { value: long } })),
+      withLayout(child('go', 'ShadButton', 'aside', { text: { value: 'Go' } })),
+    ]);
+    expect(rect(components.find((c) => c.clientRef === 'aside')).fillWidth).toBe(true);
+  });
+});
+
+describe('polishFlexRows: a card titled twice', () => {
+  // To-do build (2026-10-12): a card titled "Your tasks / Keep the next step in view" opened with a heading "The list" and
+  // its own caption. Blind review: "the doubled section headers nest a card in a card".
+  it('warns when a titled card opens with a heading of its own', () => {
+    const { warnings } = polishFlexRows([
+      { ...child('tasksPanel', 'FlexContainer', '', { direction: { value: 'column' }, cardStyle: { value: 'shadcnCard' }, cardTitle: { value: 'Your tasks' } }), parentRef: undefined },
+      { ...child('toolbar', 'FlexContainer', 'tasksPanel', { direction: { value: 'row' } }) },
+      { ...child('intro', 'FlexContainer', 'toolbar', { direction: { value: 'column' } }) },
+      child('heading', 'ShadHeading', 'intro', { text: { value: 'The list' } }),
+      child('grid', 'ShadCardGrid', 'tasksPanel'),
+    ]);
+    expect(warnings.join(' ')).toMatch(/"tasksPanel".*"Your tasks".*"The list"/);
+  });
+
+  it('says nothing for an untitled card, or a heading further down the card', () => {
+    const untitled = polishFlexRows([
+      { ...child('panel', 'FlexContainer', '', { direction: { value: 'column' }, cardStyle: { value: 'shadcnCard' } }), parentRef: undefined },
+      child('heading', 'ShadHeading', 'panel', { text: { value: 'The list' } }),
+    ]).warnings;
+    const later = polishFlexRows([
+      { ...child('panel', 'FlexContainer', '', { direction: { value: 'column' }, cardStyle: { value: 'shadcnCard' }, cardTitle: { value: 'Tasks' } }), parentRef: undefined },
+      child('grid', 'ShadCardGrid', 'panel'),
+      child('heading', 'ShadHeading', 'panel', { text: { value: 'Archive' } }),
+    ]).warnings;
+    expect([...untitled, ...later].join(' ')).not.toMatch(/titled twice|already titled/);
+  });
+});

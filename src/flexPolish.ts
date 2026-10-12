@@ -99,6 +99,15 @@ const fixedRects = (component: ComponentSpec): FlexRect[] =>
       !!rect && (rect as FlexRect).fillWidth === false && typeof (rect as FlexRect).widthPx === 'number'
   ) as FlexRect[];
 const META_TYPES = new Set(['ShadText', 'ShadBadge', 'ShadTags']);
+/** Text as it will read: a binding becomes the words quoted in it plus a short number for each value it computes
+ *  ("{{open + ' active · ' + done + ' finished'}}" reads "00 active · 00 finished"), or four characters without words. */
+const shownText = (raw: string): string =>
+  raw.replace(/\{\{([\s\S]*?)\}\}/g, (_, code: string) => {
+    const words = [...code.matchAll(/'([^']*)'|"([^"]*)"|`([^`$]*)`/g)].map((m) => m[1] ?? m[2] ?? m[3] ?? '');
+    if (!words.length) return '0000';
+    const values = code.split(/'[^']*'|"[^"]*"|`[^`$]*`/).filter((part) => /[A-Za-z0-9_)\]]/.test(part)).length;
+    return words.join('') + '00'.repeat(Math.max(1, values));
+  });
 
 export interface FlexPolishResult {
   components: ComponentSpec[];
@@ -394,6 +403,23 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
         const inner = childrenOf(refOf(c) ?? '');
         return inner.length && inner.every((b) => ACTION_TYPES.has(b.type)) ? inner : null;
       };
+      // A short status line or badge, at the width of its text (a binding reads as a few characters).
+      const metaWidth = (c: ComponentSpec): number | null => {
+        if (c.type !== 'ShadText' && c.type !== 'ShadBadge') return null;
+        const shown = shownText(text(prop(c, 'text')));
+        return shown.length <= 40 ? Math.min(320, Math.max(48, Math.ceil(shown.length * 7 + 28))) : null;
+      };
+      // An actions group that also carries a short status line ("21 active · 7 finished" beside "New task"): the
+      // to-do build's group filled half the header and its status line, filling the group, started mid-page.
+      const metaActionGroup = (c: ComponentSpec): ComponentSpec[] | null => {
+        if (c.type !== 'FlexContainer' || isSurface(c) || !isRow(c)) return null;
+        const inner = childrenOf(refOf(c) ?? '');
+        return inner.some((b) => ACTION_TYPES.has(b.type)) &&
+          inner.some((b) => !ACTION_TYPES.has(b.type)) &&
+          inner.every((b) => ACTION_TYPES.has(b.type) || metaWidth(b) !== null)
+          ? inner
+          : null;
+      };
       for (const c of children) {
         const inner = actionGroup(c);
         // A group of buttons stays on one line: sized to its buttons, a few pixels of padding wrapped the last one onto
@@ -415,7 +441,25 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
           if (!rects.length) continue;
           let width: number | null = null;
           const inner = actionGroup(c);
-          if (inner) {
+          const mixed = inner ? null : metaActionGroup(c);
+          if (mixed) {
+            const rawGap = text(prop(c, 'gap'));
+            const gap = rawGap === '' ? 8 : Number(rawGap) || 0;
+            const rawPad = text(prop(c, 'padding'));
+            const pad = rawPad === '' ? 12 : Number(rawPad) || 0;
+            width =
+              mixed.reduce((sum, b) => sum + (ACTION_TYPES.has(b.type) ? buttonWidth(b) : metaWidth(b) ?? 0), 0) +
+              gap * (mixed.length - 1) + pad * 2 + 4;
+            for (const meta of mixed) {
+              const own = metaWidth(meta);
+              if (own === null) continue;
+              [meta.layout, meta.layouts?.desktop].forEach((rect) => {
+                if (!rect) return;
+                (rect as FlexRect).fillWidth = false;
+                (rect as FlexRect).widthPx = own;
+              });
+            }
+          } else if (inner) {
             const rawGap = text(prop(c, 'gap'));
             const gap = rawGap === '' ? 8 : Number(rawGap) || 0;
             const rawPad = text(prop(c, 'padding'));
@@ -657,6 +701,30 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
         'moved after it so the page action sits at the right of the header.'
     );
   }
+  // A titled card that opens with a heading of its own reads as two section titles stacked (to-do build, 2026-10-12:
+  // "Your tasks / Keep the next step in view" over "The list / Open work comes first"; blind review: "doubled section
+  // headers nest a card in a card"). Its first child, or the first child of a first row or column, is looked at.
+  const firstOf = (parent: ComponentSpec): ComponentSpec | undefined => {
+    const inner = childrenOf(refOf(parent) ?? '');
+    const authored = valueOf(prop(parent, 'childOrder'));
+    const first = Array.isArray(authored) && typeof authored[0] === 'string'
+      ? inner.find((c) => refOf(c) === authored[0] || c.name === authored[0] || (c as { id?: string }).id === authored[0])
+      : undefined;
+    return first ?? inner[0];
+  };
+  for (const card of components) {
+    if (!card || !isSurface(card)) continue;
+    const title = text(prop(card, 'cardTitle'));
+    if (!title) continue;
+    let node = firstOf(card);
+    for (let depth = 0; node && node.type === 'FlexContainer' && !isSurface(node) && depth < 2; depth++) node = firstOf(node);
+    if (node?.type !== 'ShadHeading') continue;
+    warnings.push(
+      `Card "${card.name}" is already titled "${title}" and opens with heading "${text(prop(node, 'text'))}": two section ` +
+        'titles stacked read as a card in a card. Keep one: drop the heading (and its caption) or clear cardTitle and cardExtra.'
+    );
+  }
+
   // Charts on the page in one accent (chartAccentLint.ts): an odd hand-set colour takes the page's most common one.
   const accents = unifyChartAccents(components);
   // Tables among pack widgets draw in the pack's look (packTableLook.ts).
