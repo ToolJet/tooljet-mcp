@@ -40580,7 +40580,7 @@
       },
       {
         "key": "imageUrl",
-        "label": "Background image URL (background image)",
+        "label": "Background image URL (when Background is Image)",
         "valueType": "string",
         "default": ""
       },
@@ -40676,7 +40676,7 @@
       },
       {
         "key": "backgroundColor",
-        "label": "Panel background (overrides the background style)",
+        "label": "Panel background color (replaces the Background choice)",
         "valueType": "string"
       },
       {
