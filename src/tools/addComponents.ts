@@ -6,6 +6,7 @@ import { lintRenderedGeometryBlocking, lintRenderedGeometryAdvisory, type LintCo
 import { introducedLintFindings } from '../lint.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
 import { literalCanvasColor } from '../appSettings.js';
+import { resolveParentRef } from '../componentParent.js';
 import { COMPONENT_FX_GUIDANCE } from '../componentFxGuidance.js';
 
 export function addComponentsTool(client: ToolJetClient): ToolDef {
@@ -64,6 +65,18 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
       }
       if (summary) pageWarnings.push(...normalizePlanBindingAliases({ pages: [{ components: inputs }] }, summary));
       const existingPage = summary?.pages.find((candidate) => candidate.id === args.page_id);
+      // A parent named by its component name is stored as that component's id; a parent that matches nothing on the
+      // page is refused rather than stored detached (the component would never render).
+      if (existingPage) {
+        const parentErrors: string[] = [];
+        for (const input of inputs as Array<ComponentInput & { parent?: string; name?: string }>) {
+          if (typeof input.parent !== 'string' || !input.parent) continue;
+          const resolved = resolveParentRef(existingPage.components, input.parent);
+          if (resolved.ok) input.parent = resolved.parent;
+          else parentErrors.push(`Component "${input.name ?? '?'}": ${resolved.error}`);
+        }
+        if (parentErrors.length) return fail(new Error(parentErrors.join(' ')));
+      }
       const prepared = prepareComponentBatch(inputs, {
         canvasColor: await literalCanvasColor(client, args.app_id, summary?.version_id ?? args.version_id),
         flexContainerIds: existingPage?.components.filter((component) => component.type === 'FlexContainer').map((component) => component.id),

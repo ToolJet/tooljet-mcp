@@ -13,7 +13,7 @@ import {
   lintUnusableTextGeometry,
   type LintComponent,
 } from '../lint.js';
-import { COMPONENT_SLOT_NAMES, componentSlotSchema, decodeComponentParent, encodeComponentParent } from '../componentParent.js';
+import { COMPONENT_SLOT_NAMES, componentSlotSchema, decodeComponentParent, encodeComponentParent, resolveParentRef } from '../componentParent.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { normalizeComponentSpec } from '../componentNormalization.js';
 import { resolveRef } from '../refResolution.js';
@@ -165,6 +165,15 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             continue;
           }
           let parent = update.parent;
+          if (typeof parent === 'string' && parent) {
+            // A parent named by its component name moves the component under that component's id.
+            const resolvedParent = resolveParentRef(page.components, parent);
+            if (!resolvedParent.ok) {
+              errors.push(`Component "${update.component_id}": ${resolvedParent.error}`);
+              continue;
+            }
+            parent = resolvedParent.parent;
+          }
           let slotName = update.slot_name;
           if (slotName !== undefined) {
             parent ??= current.parent ? decodeComponentParent(current.parent).parentId : undefined;
