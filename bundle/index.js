@@ -69113,7 +69113,9 @@ function lintComponentSpec(spec, context = {}) {
           errors.push(`Table "${label3}": its ${visibleColumnCount} visible columns need about ${neededPx}px (the columnSize values plus ${TABLE_UNSIZED_COLUMN_MIN_PX}px per unsized column) but the table is ${tableWidth} columns wide, about ${widthPx}px on a laptop, so the last columns are cut off at the right edge. Show fewer columns (detail belongs in a side panel or modal), shrink the columnSize values, or widen the table.`);
         }
       }
-      if (visibleColumnCount >= WRAP_REQUIRED_COLUMNS && !isTrueBinding(propVal2(spec.styles, "contentWrap"))) {
+      const tableLook = propVal2(spec.styles, "tableLook");
+      const uiTwoLook = (tableLook && typeof tableLook === "object" ? tableLook.value : tableLook) === "shadcn";
+      if (visibleColumnCount >= WRAP_REQUIRED_COLUMNS && !uiTwoLook && !isTrueBinding(propVal2(spec.styles, "contentWrap"))) {
         errors.push(`Table "${label3}" has ${visibleColumnCount} columns and styles.contentWrap off (the catalog default), so any value wider than its cell (an email, a description, a timestamp) is cut mid word with no ellipsis. Set styles.contentWrap to true (rows grow to fit) and keep long text columns at columnSize 180 or more.`);
       }
       columns.forEach((col, i) => {
