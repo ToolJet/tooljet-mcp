@@ -81,6 +81,8 @@ const PACK_CONCEPTS: Array<[RegExp, string[]]> = [
   [/modal|dialog|sheet|drawer/i, ['ShadDialog']],
   [/dropdown|menu/i, ['ShadDropdownMenu', 'ShadSelect', 'ShadCombobox']],
   [/list/i, ['ShadListView', 'ShadRecordList', 'ShadKeyValue']],
+  [/chat|message|assistant|conversation|copilot|bot|thread/i, ['ShadChat']],
+  [/question|survey|quiz|onboarding|intake|wizard|poll|triage|form/i, ['ShadQuestionnaire']],
   [/chart|graph/i, ['ShadBarChart', 'ShadLineChart', 'ShadAreaChart', 'ShadPieChart', 'ShadComboChart', 'ShadScatterChart', 'ShadFunnelChart', 'ShadHeatmapChart']],
   [/funnel|conversion/i, ['ShadFunnelChart']],
   [/scatter|bubble|correlation/i, ['ShadScatterChart']],

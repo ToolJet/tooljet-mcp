@@ -34,6 +34,10 @@ const SAMPLE_BLANKS: Record<string, Record<string, unknown>> = {
   ShadCombobox: { searchPlaceholder: 'Search...' },
   ShadMultiselect: { searchPlaceholder: 'Search...' },
   ShadTagsInput: { suggestions: '{{[]}}' },
+  // The sample greeting talks about orders, invoices and deliveries; a build's chat starts from its own history.
+  ShadChat: { initialChat: '{{[]}}' },
+  // The sample's 'set up your workspace' line is not a build's; completeTitle alone reads fine.
+  ShadQuestionnaire: { completeText: '' },
 };
 
 /** The default definition of a component-pack widget (data/pack-default-definitions.json, generated from the

@@ -2251,6 +2251,151 @@
     }
    }
   },
+  "ShadChat": {
+   "properties": {
+    "chatTitle": {
+     "value": "Chat"
+    },
+    "initialChat": {
+     "value": "{{[{ message: 'Hi! Ask me anything about your orders, invoices or deliveries.', messageId: 'welcome-1', timestamp: 'new Date().toISOString()', name: 'Assistant', avatar: '', type: 'response' }]}}"
+    },
+    "userName": {
+     "value": "{{globals.currentUser.firstName}}"
+    },
+    "userAvatar": {
+     "value": ""
+    },
+    "respondentName": {
+     "value": "Assistant"
+    },
+    "respondentAvatar": {
+     "value": ""
+    },
+    "placeholder": {
+     "value": "Ask me anything!"
+    },
+    "emptyText": {
+     "value": "Start the conversation"
+    },
+    "disableInput": {
+     "value": "{{false}}"
+    },
+    "loadingHistory": {
+     "value": "{{false}}"
+    },
+    "loadingResponse": {
+     "value": "{{false}}"
+    },
+    "enableClearHistoryButton": {
+     "value": "{{true}}"
+    },
+    "enableDownloadHistoryButton": {
+     "value": "{{true}}"
+    },
+    "showAvatars": {
+     "value": "{{true}}"
+    },
+    "showTimestamps": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "collapseWhenHidden": {
+     "value": "{{false}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadQuestionnaire": {
+   "properties": {
+    "items": {
+     "value": "{{[\n  { name: 'role', prompt: 'What best describes your role?', required: true, type: 'single', choices: [{ label: 'Operations', description: 'Run day-to-day work' }, { label: 'Finance' }, { label: 'Engineering' }], other: true },\n  { name: 'goals', prompt: 'What do you want to get done first?', description: 'Pick all that apply.', type: 'multiple', choices: ['Track orders', 'Approve requests', 'Report on spend'] },\n  { name: 'notes', prompt: 'Anything else we should know?', type: 'text', placeholder: 'Optional' }\n]}}"
+    },
+    "defaultAnswers": {
+     "value": "{{{}}}"
+    },
+    "shortcuts": {
+     "value": "letters"
+    },
+    "showProgress": {
+     "value": "{{true}}"
+    },
+    "submitLabel": {
+     "value": "Submit"
+    },
+    "completeTitle": {
+     "value": "Thanks for your answers"
+    },
+    "completeText": {
+     "value": "We will use them to set up your workspace."
+    },
+    "surface": {
+     "value": "card"
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "collapseWhenHidden": {
+     "value": "{{false}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    },
+    "titleFontFamily": {
+     "value": "theme"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
   "ShadMultiselect": {
    "properties": {
     "label": {
