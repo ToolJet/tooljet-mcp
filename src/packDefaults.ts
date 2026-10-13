@@ -24,6 +24,8 @@ const SAMPLE_BLANKS: Record<string, Record<string, unknown>> = {
     valueFormat: 'auto',
   },
   ShadSchedule: { resourceField: 'resource', resourceTitle: '' },
+  // The sample's delivery stops (customer, address, eta, driver) are not a build's data: no rows, generic fields.
+  ShadMap: { data: '{{[]}}', titleField: 'name', subtitleField: '', popupFields: '' },
   // 'auto' reads money from a figure's label; the 'currency' default showed counts of rooms as dollars.
   ShadSummaryStrip: { valueFormat: 'auto' },
   ShadTags: { tags: '{{[]}}', tagColors: '{{{}}}' },
