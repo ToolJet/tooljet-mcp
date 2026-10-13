@@ -161,14 +161,8 @@ export function lintPageArchetype(archetype: string | undefined, components: Spe
   const hasDialog = components.some((c) => DIALOG_TYPES.has(c.type ?? ''));
   if (kind === 'catalog' && mainAt >= 0) {
     const grid = order[mainAt];
-    if (!textOf(grid.properties, 'imageField')) {
-      warnings.push(
-        `card grid ${label(grid)} has no imageField: a catalog shows each record's photo. Seed an image column (a different ` +
-          "URL per row from get_component_catalog's authoringHints.photos) and set imageField."
-      );
-    }
     if (!filterBefore(mainAt)) warnings.push(`no search or filter bar above ${label(grid)}: put a search input and a course/kind toggle in a row between the hero and the grid.`);
-    if (!hasDialog) warnings.push('no detail sheet: a card click opens a ShadDialog (variant "sheet") with the photo and the full record.');
+    if (!hasDialog) warnings.push('no detail sheet: a card click opens a ShadDialog (variant "sheet") with the full record.');
   }
   if (kind === 'register' && mainAt >= 0) {
     if (!filterBefore(mainAt)) warnings.push(`no filter row above ${label(order[mainAt])}: a register is read through a period or status toggle and a select.`);

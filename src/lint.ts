@@ -43,7 +43,6 @@ import { lintCopiedCards } from './repeatedCardsLint.js';
 import { lintTallContainers } from './containerExtentLint.js';
 import { lintChartAccents } from './chartAccentLint.js';
 import { lintKpiCardGrids } from './kpiGridLint.js';
-import { lintPhotolessCardGrids } from './cardGridPhotoLint.js';
 import { lintTruthySelectionGuards } from './selectionGuardLint.js';
 
 export interface LintResult {
@@ -3238,7 +3237,6 @@ export function lintComponents(components: LintComponent[], options: { canvasCol
   warnings.push(...lintTallContainers(components));
   warnings.push(...lintChartAccents(components));
   warnings.push(...lintKpiCardGrids(components));
-  warnings.push(...lintPhotolessCardGrids(components));
   errors.push(...lintTruthySelectionGuards(components));
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
