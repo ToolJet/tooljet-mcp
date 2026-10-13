@@ -31245,7 +31245,7 @@
         "key": "yAxisFormat",
         "label": "Value format",
         "valueType": "string",
-        "default": "currency",
+        "default": "number",
         "allowedValues": [
           "number",
           "currency",
@@ -39091,7 +39091,7 @@
         "key": "yAxisFormat",
         "label": "Value format",
         "valueType": "string",
-        "default": "currency",
+        "default": "number",
         "allowedValues": [
           "number",
           "currency",
