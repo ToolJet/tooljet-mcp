@@ -2424,7 +2424,12 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
           );
         }
       }
-      if (visibleColumnCount >= WRAP_REQUIRED_COLUMNS && !isTrueBinding(propVal(spec.styles, 'contentWrap'))) {
+      // The ToolJet UI 2.0 look (tableLook "shadcn") ends long text in an ellipsis on one-line rows, and normalization sets
+      // its contentWrap off: demanding wrap there refused every write to such a table (a deal tracker's two registers,
+      // twenty refusals, then rebuilt without Tables).
+      const tableLook = propVal(spec.styles, 'tableLook');
+      const uiTwoLook = (tableLook && typeof tableLook === 'object' ? (tableLook as { value?: unknown }).value : tableLook) === 'shadcn';
+      if (visibleColumnCount >= WRAP_REQUIRED_COLUMNS && !uiTwoLook && !isTrueBinding(propVal(spec.styles, 'contentWrap'))) {
         errors.push(
           `Table "${label}" has ${visibleColumnCount} columns and styles.contentWrap off (the catalog default), so any value wider than its ` +
             'cell (an email, a description, a timestamp) is cut mid word with no ellipsis. Set styles.contentWrap to true ' +
