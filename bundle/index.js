@@ -66942,6 +66942,27 @@ function decodeComponentParent(parentId) {
     return { parentId: parentId.slice(0, -tab[0].length), slotName: `tab-${tab[1]}` };
   return { parentId, slotName: "body" };
 }
+function resolveParentRef(pageComponents, parent) {
+  const byId = (id) => pageComponents.some((component) => component.id === id);
+  if (byId(parent) || byId(decodeComponentParent(parent).parentId))
+    return { ok: true, parent, renamed: false };
+  const named = (name2) => pageComponents.filter((component) => component.name === name2);
+  const whole = named(parent);
+  if (whole.length === 1)
+    return { ok: true, parent: whole[0].id, renamed: true };
+  const decoded = decodeComponentParent(parent);
+  const base2 = named(decoded.parentId);
+  if (whole.length === 0 && base2.length === 1) {
+    return { ok: true, parent: encodeComponentParent(base2[0].id, decoded.slotName), renamed: true };
+  }
+  if (whole.length > 1 || base2.length > 1) {
+    return { ok: false, error: `parent "${parent}" names more than one component on this page; pass the parent's id.` };
+  }
+  return {
+    ok: false,
+    error: `parent "${parent}" is not a component on this page (by id or name), so the component would be stored detached and never render. Pass an existing container id or name, or create the parent in the same batch with client_ref/parent_ref.`
+  };
+}
 
 // dist/formFieldTypes.js
 var FORM_SCHEMA_FIELD_TYPES = [
@@ -82115,6 +82136,20 @@ function addComponentsTool(client) {
       if (summary)
         pageWarnings.push(...normalizePlanBindingAliases({ pages: [{ components: inputs }] }, summary));
       const existingPage = summary?.pages.find((candidate) => candidate.id === args.page_id);
+      if (existingPage) {
+        const parentErrors = [];
+        for (const input of inputs) {
+          if (typeof input.parent !== "string" || !input.parent)
+            continue;
+          const resolved = resolveParentRef(existingPage.components, input.parent);
+          if (resolved.ok)
+            input.parent = resolved.parent;
+          else
+            parentErrors.push(`Component "${input.name ?? "?"}": ${resolved.error}`);
+        }
+        if (parentErrors.length)
+          return fail(new Error(parentErrors.join(" ")));
+      }
       const prepared = prepareComponentBatch(inputs, {
         canvasColor: await literalCanvasColor(client, args.app_id, summary?.version_id ?? args.version_id),
         flexContainerIds: existingPage?.components.filter((component) => component.type === "FlexContainer").map((component) => component.id)
@@ -82199,6 +82234,23 @@ function addComponentBatchesTool(client) {
         }
       }
       const pageComponentsOf = (pageId) => summary?.pages.find((page) => page.id === pageId)?.components;
+      const parentErrors = [];
+      for (const page of pages) {
+        const existing = pageComponentsOf(page.page_id);
+        if (!existing)
+          continue;
+        for (const component of page.components) {
+          if (typeof component.parent !== "string" || !component.parent)
+            continue;
+          const resolved = resolveParentRef(existing, component.parent);
+          if (resolved.ok)
+            component.parent = resolved.parent;
+          else
+            parentErrors.push(`Page ${page.page_id}: Component "${component.name ?? "?"}": ${resolved.error}`);
+        }
+      }
+      if (parentErrors.length)
+        return fail(new Error(`${parentErrors.join(" ")} (Nothing was saved: refused before any write.)`));
       const canvasColor = await literalCanvasColor(client, args.app_id, args.version_id);
       const prepared = pages.map((page) => ({
         ...page,
@@ -82318,6 +82370,14 @@ function updateComponentsTool(client) {
             continue;
           }
           let parent = update.parent;
+          if (typeof parent === "string" && parent) {
+            const resolvedParent = resolveParentRef(page.components, parent);
+            if (!resolvedParent.ok) {
+              errors.push(`Component "${update.component_id}": ${resolvedParent.error}`);
+              continue;
+            }
+            parent = resolvedParent.parent;
+          }
           let slotName = update.slot_name;
           if (slotName !== void 0) {
             parent ??= current.parent ? decodeComponentParent(current.parent).parentId : void 0;
