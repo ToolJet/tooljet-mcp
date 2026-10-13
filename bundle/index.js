@@ -77473,6 +77473,16 @@ function polishFlexRows(input) {
       continue;
     warnings.push(`Card "${card.name}" is already titled "${title}" and opens with heading "${text(prop2(node2, "text"))}": two section titles stacked read as a card in a card. Keep one: drop the heading (and its caption) or clear cardTitle and cardExtra.`);
   }
+  const dialogRefs = new Set(components.filter((c) => c && (c.type === "ShadDialog" || c.type === "ModalV2")).map((c) => refOf(c)).filter(Boolean));
+  for (const heading of components) {
+    if (!heading || heading.type !== "ShadHeading" || heading.slotName !== "header" || !dialogRefs.has(heading.parentRef))
+      continue;
+    const level = text(prop2(heading, "level")) || "h2";
+    if (level !== "h1" && level !== "h2")
+      continue;
+    setProp(heading, "level", "h3");
+    warnings.push(`Heading "${heading.name}" in a dialog header was ${level}; it is now h3, so a long title fits the header.`);
+  }
   const DIALOGS = /* @__PURE__ */ new Set(["ShadDialog", "ModalV2"]);
   for (const dialog of [...components]) {
     if (!dialog || !DIALOGS.has(dialog.type))
