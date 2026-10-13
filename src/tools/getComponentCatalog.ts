@@ -93,7 +93,7 @@ const PACK_CONCEPTS: Array<[RegExp, string[]]> = [
   [/divider/i, ['ShadSeparator']],
   [/schedule|scheduler|booking|reservation|roster|rota|shift|on.?call|resource|timeline.?view|gantt|availability|rooms?/i, ['ShadSchedule']],
   [/progress|goal|budget|quota|target|onboarding|checklist|capacity|completion/i, ['ShadProgressList', 'ShadProgress']],
-  [/map|geo|location|pins?$|markers?|route|locator|spatial|leaflet|places/i, ['ShadMap']],
+  [/map|geo|location|pins?$|markers?|route|locator|spatial|leaflet|places|zones?$|territor|geofence|dispatch|fleet/i, ['ShadMap']],
 ];
 function packSuggestions(requestedType: string): string[] {
   if (!/^Shad[A-Z]/.test(requestedType)) return [];

@@ -42,6 +42,26 @@ describe('maps in the ToolJet UI 2.0 catalog', () => {
     expect(map.authoringHints.usage).toMatch(/no API key|key-free/);
   });
 
+  it('has the options real map apps needed: routes, areas, labels and icons, a legend, picking and search, heat, controls', async () => {
+    const map = await read('ShadMap', ['authoringHints', 'properties', 'events', 'actions', 'exposedVariables']);
+    expect(keys(map)).toEqual(
+      expect.arrayContaining([
+        'statusColors', 'labelField', 'iconField', 'showLegend', 'connectMarkers', 'routeField', 'routeOrderField', 'routeStart',
+        'routes', 'routeColors', 'areas', 'areaShapeField', 'areaTitleField', 'areaStatusField', 'areaRadiusField', 'display',
+        'heatField', 'pickLocation', 'defaultPickedLocation', 'showSearch', 'geocoderUrl', 'reverseGeocoderUrl', 'mapStyle',
+        'showStyleSwitch', 'showFullscreen', 'scrollWheelZoom',
+      ])
+    );
+    for (const e of ['onShapeClick', 'onLocationPick']) expect(JSON.stringify(map.events)).toContain(e);
+    for (const a of ['setPickedLocation', 'clearPickedLocation', 'setMapStyle']) expect(JSON.stringify(map.actions)).toContain(a);
+    expect(JSON.stringify(map.exposedVariables)).toMatch(/pickedLocation/);
+    const usage = map.authoringHints.usage;
+    expect(usage).toMatch(/connectMarkers true with routeField/);
+    expect(usage).toMatch(/pickLocation true and showSearch true/);
+    expect(usage).toMatch(/statusColors/);
+    expect(usage).toMatch(/labelField/);
+  });
+
   it("tells a build the Google Map's UI 2.0 look and when to pick it", async () => {
     const google = await read('Map', ['authoringHints', 'styles']);
     expect(google.authoringHints.look).toMatch(/mapLook/);
@@ -50,7 +70,7 @@ describe('maps in the ToolJet UI 2.0 catalog', () => {
   });
 
   it('sends a guessed name to the Map', async () => {
-    for (const guess of ['ShadGeoMap', 'ShadLocationMap', 'ShadMarkers', 'ShadDeliveryRoute', 'ShadStoreLocator']) {
+    for (const guess of ['ShadGeoMap', 'ShadLocationMap', 'ShadMarkers', 'ShadDeliveryRoute', 'ShadStoreLocator', 'ShadServiceZones', 'ShadGeofence']) {
       expect((await read(guess, ['overview'])).did_you_mean).toContain('ShadMap');
     }
   });

@@ -2104,8 +2104,17 @@
     "statusField": {
      "value": "status"
     },
+    "statusColors": {
+     "value": "{{{}}}"
+    },
     "idField": {
      "value": "id"
+    },
+    "labelField": {
+     "value": ""
+    },
+    "iconField": {
+     "value": ""
     },
     "popupFields": {
      "value": "eta:ETA {}, driver"
@@ -2113,8 +2122,71 @@
     "showPopup": {
      "value": "{{true}}"
     },
+    "showLegend": {
+     "value": "{{true}}"
+    },
     "clusterMarkers": {
      "value": "{{true}}"
+    },
+    "connectMarkers": {
+     "value": "{{false}}"
+    },
+    "routeField": {
+     "value": ""
+    },
+    "routeOrderField": {
+     "value": ""
+    },
+    "routeStart": {
+     "value": ""
+    },
+    "routes": {
+     "value": "{{[]}}"
+    },
+    "routeColors": {
+     "value": "{{{}}}"
+    },
+    "areas": {
+     "value": "{{[]}}"
+    },
+    "areaShapeField": {
+     "value": "outline"
+    },
+    "areaTitleField": {
+     "value": "name"
+    },
+    "areaStatusField": {
+     "value": "status"
+    },
+    "areaRadiusField": {
+     "value": "radius"
+    },
+    "display": {
+     "value": "markers"
+    },
+    "heatField": {
+     "value": ""
+    },
+    "heatRadius": {
+     "value": "{{28}}"
+    },
+    "pickLocation": {
+     "value": "{{false}}"
+    },
+    "defaultPickedLocation": {
+     "value": ""
+    },
+    "showSearch": {
+     "value": "{{false}}"
+    },
+    "searchPlaceholder": {
+     "value": "Search for an address"
+    },
+    "geocoderUrl": {
+     "value": ""
+    },
+    "reverseGeocoderUrl": {
+     "value": ""
     },
     "fitToMarkers": {
      "value": "{{true}}"
@@ -2124,6 +2196,18 @@
     },
     "defaultZoom": {
      "value": "{{12}}"
+    },
+    "mapStyle": {
+     "value": "streets"
+    },
+    "showStyleSwitch": {
+     "value": "{{false}}"
+    },
+    "showFullscreen": {
+     "value": "{{true}}"
+    },
+    "scrollWheelZoom": {
+     "value": "{{false}}"
     },
     "emptyText": {
      "value": "No locations to show"
