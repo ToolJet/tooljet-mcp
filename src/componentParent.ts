@@ -51,3 +51,33 @@ export function decodeComponentParent(parentId: string): {
   if (tab) return { parentId: parentId.slice(0, -tab[0].length), slotName: `tab-${tab[1]}` as TabSlotName };
   return { parentId, slotName: 'body' };
 }
+
+/**
+ * A `parent` naming an existing component on the page by its name instead of its id, resolved to the id (with any
+ * slot kept). A deepseek build added four cards with parent "rowTrend" (2026-10-13): stored as written, the name
+ * matched no component, ToolJet left the cards unattached and the page showed two empty rows.
+ */
+export function resolveParentRef(
+  pageComponents: readonly { id: string; name?: string }[],
+  parent: string
+): { ok: true; parent: string; renamed: boolean } | { ok: false; error: string } {
+  const byId = (id: string) => pageComponents.some((component) => component.id === id);
+  if (byId(parent) || byId(decodeComponentParent(parent).parentId)) return { ok: true, parent, renamed: false };
+  const named = (name: string) => pageComponents.filter((component) => component.name === name);
+  const whole = named(parent);
+  if (whole.length === 1) return { ok: true, parent: whole[0].id, renamed: true };
+  const decoded = decodeComponentParent(parent);
+  const base = named(decoded.parentId);
+  if (whole.length === 0 && base.length === 1) {
+    return { ok: true, parent: encodeComponentParent(base[0].id, decoded.slotName), renamed: true };
+  }
+  if (whole.length > 1 || base.length > 1) {
+    return { ok: false, error: `parent "${parent}" names more than one component on this page; pass the parent's id.` };
+  }
+  return {
+    ok: false,
+    error:
+      `parent "${parent}" is not a component on this page (by id or name), so the component would be stored detached ` +
+      'and never render. Pass an existing container id or name, or create the parent in the same batch with client_ref/parent_ref.',
+  };
+}

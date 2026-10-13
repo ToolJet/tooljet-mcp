@@ -2,6 +2,7 @@ import { mapKeyRefusal } from '../mapKeyGuard.js';
 import { z } from 'zod';
 import type { AppSummary, ToolJetClient } from '../tooljetClient.js';
 import { componentInputSchema, prepareComponentBatch, type ComponentInput } from '../componentBatch.js';
+import { resolveParentRef } from '../componentParent.js';
 import { fail, ok, type ToolDef } from './types.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
 import { literalCanvasColor } from '../appSettings.js';
@@ -59,6 +60,20 @@ export function addComponentBatchesTool(client: ToolJetClient): ToolDef {
         }
       }
       const pageComponentsOf = (pageId: string) => summary?.pages.find((page) => page.id === pageId)?.components;
+      // A parent named by its component name is stored as that component's id; one matching nothing on the page is
+      // refused rather than stored detached (add_components does the same).
+      const parentErrors: string[] = [];
+      for (const page of pages) {
+        const existing = pageComponentsOf(page.page_id);
+        if (!existing) continue;
+        for (const component of page.components as Array<{ parent?: string; name?: string }>) {
+          if (typeof component.parent !== 'string' || !component.parent) continue;
+          const resolved = resolveParentRef(existing, component.parent);
+          if (resolved.ok) component.parent = resolved.parent;
+          else parentErrors.push(`Page ${page.page_id}: Component "${component.name ?? '?'}": ${resolved.error}`);
+        }
+      }
+      if (parentErrors.length) return fail(new Error(`${parentErrors.join(' ')} (Nothing was saved: refused before any write.)`));
       const canvasColor = await literalCanvasColor(client, args.app_id, args.version_id);
       const prepared = pages.map((page) => ({
         ...page,
