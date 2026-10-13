@@ -22,7 +22,9 @@ export function resolveComponentLibrary(
   globalSettings: unknown,
   componentTypes: Iterable<unknown>,
 ): ResolvedComponentLibrary {
-  const saved = (globalSettings as { componentLibrary?: unknown } | undefined)?.componentLibrary;
+  // GET /api/apps/:id snake-cases free-form settings keys; the version endpoint keeps them camelCase.
+  const settings = globalSettings as { componentLibrary?: unknown; component_library?: unknown } | undefined;
+  const saved = settings?.componentLibrary ?? settings?.component_library;
   if (saved === 'ui1' || saved === 'ui2') return { library: saved, source: 'saved' };
   for (const type of componentTypes) if (isUi2Type(type)) return { library: 'ui2', source: 'inferred' };
   return { library: 'ui1', source: 'inferred' };

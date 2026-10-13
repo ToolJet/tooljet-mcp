@@ -19,6 +19,10 @@ describe('resolveComponentLibrary', () => {
     expect(resolveComponentLibrary(undefined, ['Table', 'FlexContainer', 'Shadow'])).toEqual({ library: 'ui1', source: 'inferred' });
     expect(resolveComponentLibrary({ componentLibrary: 'shadcn' }, [])).toEqual({ library: 'ui1', source: 'inferred' });
   });
+
+  it('reads the snake-cased key GET /api/apps/:id returns', () => {
+    expect(resolveComponentLibrary({ component_library: 'ui2' }, [])).toEqual({ library: 'ui2', source: 'saved' });
+  });
 });
 
 describe('componentLibraryWarnings', () => {

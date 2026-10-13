@@ -69,6 +69,25 @@ describe('app settings tools', () => {
     expect(JSON.stringify(result.javascript_runtime)).not.toMatch(/not-a-url|hidden/);
   });
 
+  it('saves and reads back the component library', async () => {
+    const after = { ...before, global_settings: { ...before.global_settings, componentLibrary: 'ui2' } };
+    const client = {
+      getAppSettings: vi.fn().mockResolvedValueOnce(before).mockResolvedValueOnce(after),
+      updateAppSettings: vi.fn().mockResolvedValue(undefined),
+    } as unknown as ToolJetClient;
+    const result = textOf(await updateAppSettingsTool(client).handler({ app_id: 'app1', version_id: versionId, component_library: 'ui2' }));
+    expect(client.updateAppSettings).toHaveBeenCalledWith({ appId: 'app1', versionId, globalSettings: { componentLibrary: 'ui2' } });
+    expect(result.settings.component_library).toBe('ui2');
+
+    const lost = {
+      getAppSettings: vi.fn().mockResolvedValue(before),
+      updateAppSettings: vi.fn().mockResolvedValue(undefined),
+    } as unknown as ToolJetClient;
+    const failed = await updateAppSettingsTool(lost).handler({ app_id: 'app1', version_id: versionId, component_library: 'ui1' });
+    expect(failed.isError).toBe(true);
+    expect(failed.content[0]!.text).toMatch(/component_library did not persist/);
+  });
+
   it('distinguishes the app header, whole navigation menu, and individual page visibility', () => {
     const tool = updateAppSettingsTool({} as ToolJetClient);
     expect(tool.description).toMatch(/hide_header controls the app header\/banner/i);
