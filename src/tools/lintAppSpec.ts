@@ -16,6 +16,7 @@ import { restatedQueryNames } from '../restatedQueries.js';
 import { COMPONENT_FX_GUIDANCE } from '../componentFxGuidance.js';
 import { frozenAppRefusal } from '../frozenApp.js';
 import { mapKeyRefusal } from '../mapKeyGuard.js';
+import { componentLibraryWarnings, resolveComponentLibrary } from '../componentLibrary.js';
 const TABLE_NAME_MAX = 31; // ToolJet DB table names are at most 31 characters
 
 function unique(values: string[]): string[] {
@@ -82,6 +83,15 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
         // A promoted (frozen) version refuses writes: say so before the plan is linted, not part-way through an apply.
         const frozen = frozenAppRefusal(fetchedSummary);
         if (frozen) return fail(new Error(frozen));
+        // Widgets from the other library than the app's (a plan without app_id is taken to be for a new, UI 2.0 app).
+        preflightWarnings.push(...componentLibraryWarnings(
+          fetchedSummary
+            ? fetchedSummary.component_library
+              ?? resolveComponentLibrary(undefined, fetchedSummary.pages.flatMap((page) => page.components.map((c) => c.type)))
+            : { library: 'ui2', source: 'new' },
+          args.pages,
+          args.component_library_request,
+        ));
         // Resolve names once, before collision renames or existing-table seed checks. A planned
         // name takes precedence over an existing namesake; all references must follow it together.
         const plannedNames = new Map<string, string>();

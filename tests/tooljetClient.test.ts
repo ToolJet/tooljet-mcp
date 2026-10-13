@@ -517,6 +517,17 @@ describe('createClient', () => {
       expect(auth.authedFetch).toHaveBeenCalledWith('/api/v2/apps/app1/versions/ver2?mode=edit');
     });
 
+    it('reports the saved component library from the version\'s global settings', async () => {
+      const response = structuredClone(rawAppResponse) as any;
+      response.editing_version.global_settings = { appMode: 'light', componentLibrary: 'ui2' };
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: response }));
+      const client = createClient(auth, config);
+
+      await expect(client.getAppSummary('app1')).resolves.toMatchObject({
+        component_library: { library: 'ui2', source: 'saved' },
+      });
+    });
+
     it('rejects an exact-version read when the response identifies another version', async () => {
       auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: rawAppResponse }));
       const client = createClient(auth, config);
@@ -533,6 +544,8 @@ describe('createClient', () => {
         app_id: 'app1',
         name: 'My App',
         version_id: 'ver1',
+        // No saved library and no Shad* widget: an app from before the setting, built in ToolJet UI 1.0.
+        component_library: { library: 'ui1', source: 'inferred' },
         pages: [
           {
             id: 'page-home',
