@@ -28,8 +28,8 @@ export function seedPictureWarnings(tables: Array<{ table_name: string; rows: Ar
       if (!pictures.length) continue;
       if (pictures.some((p) => /^data:image\//i.test(p.trim()))) {
         warnings.push(
-          `${table}.${column} holds drawn data: images; use real photo URLs from the component's authoringHints.photos ` +
-            '(a different one per row), or leave the picture out.'
+          `${table}.${column} holds drawn data: images, which read as placeholder art; use the records' own picture ` +
+            'URLs, or leave the picture out.'
         );
         continue;
       }
@@ -37,8 +37,7 @@ export function seedPictureWarnings(tables: Array<{ table_name: string; rows: Ar
       if (pictures.length >= 4 && distinct * 3 <= pictures.length) {
         warnings.push(
           `${table}.${column}: ${pictures.length} rows share ${distinct} picture${distinct === 1 ? '' : 's'}; ` +
-            'give each row its own photo ' +
-            "(cycle through authoringHints.photos for the rows' subject)."
+            'a picture repeated across records reads as placeholder art: give each row its own, or leave the picture out.'
         );
       }
     }

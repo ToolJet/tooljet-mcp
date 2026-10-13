@@ -11,7 +11,8 @@ describe('seedPictureWarnings', () => {
     const svg = 'data:image/svg+xml;charset=utf-8,%3Csvg%3E%3C/svg%3E';
     const warnings = seedPictureWarnings(table([{ name: 'a', cover_image: svg }, { name: 'b', cover_image: svg }]));
     expect(warnings.join(' ')).toMatch(/recipes\.cover_image/);
-    expect(warnings.join(' ')).toMatch(/authoringHints\.photos/);
+    expect(warnings.join(' ')).toMatch(/leave the picture out/);
+    expect(warnings.join(' ')).not.toMatch(/authoringHints/);
   });
 
   it('names a column where most rows share a few photos', () => {

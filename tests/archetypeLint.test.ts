@@ -44,10 +44,10 @@ describe('lintPageArchetype', () => {
     expect(w.some((m) => m.includes('chart "byCourse" comes before "grid"'))).toBe(true);
   });
 
-  it('asks a catalog for photos, a filter bar and a detail sheet', () => {
+  it('asks a catalog for a filter bar and a detail sheet, never for photos (no fixed photo library, 2026-10-13)', () => {
     const page = [c('page', 'FlexContainer'), c('grid', 'ShadCardGrid', 'page', { titleField: 'name' })];
     const w = lintPageArchetype('catalog', page).join('\n');
-    expect(w).toContain('no imageField');
+    expect(w).not.toContain('imageField');
     expect(w).toContain('no search or filter bar');
     expect(w).toContain('no detail sheet');
   });
@@ -125,6 +125,6 @@ describe('lintPlannedApp with a page archetype', () => {
         },
       ],
     });
-    expect(result.warnings.some((w) => w.startsWith('Page "Recipes": Archetype "catalog": card grid "grid" has no imageField'))).toBe(true);
+    expect(result.warnings.some((w) => w.startsWith('Page "Recipes": Archetype "catalog": no search or filter bar'))).toBe(true);
   });
 });
