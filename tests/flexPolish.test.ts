@@ -801,3 +801,26 @@ describe('polishFlexRows: a heading in a dialog header', () => {
     expect(prop(components, 'bodyTitle', 'level')).toBe('h2');
   });
 });
+
+describe('polishFlexRows: a page-wide root container keeps a page margin', () => {
+  const root = (padding: unknown, layout = { top: 0, left: 0, width: 43, height: 1400 }) =>
+    row('pageRoot', { direction: { value: 'column' }, ...(padding === undefined ? {} : { padding: { value: padding } }) }, {
+      layout,
+    });
+
+  it('pads a root column that spans the canvas edge to edge with no padding', () => {
+    const { components } = polishFlexRows([root(0), child('hero', 'ShadHero', 'pageRoot')]);
+    expect(prop(components, 'pageRoot', 'padding')).toBe(24);
+  });
+
+  it('lifts the default 12px padding to the page margin', () => {
+    expect(prop(polishFlexRows([root(undefined)]).components, 'pageRoot', 'padding')).toBe(24);
+  });
+
+  it('keeps a wider padding, a root inside the gutter, and nested containers as they are', () => {
+    expect(prop(polishFlexRows([root(32)]).components, 'pageRoot', 'padding')).toBe(32);
+    expect(prop(polishFlexRows([root(0, { top: 0, left: 2, width: 39, height: 900 })]).components, 'pageRoot', 'padding')).toBe(0);
+    const nested = polishFlexRows([root(32), row('card', { padding: { value: 0 } }, { parentRef: 'pageRoot', layout: { top: 0, left: 0, width: 43, height: 200 } })]);
+    expect(prop(nested.components, 'card', 'padding')).toBe(0);
+  });
+});

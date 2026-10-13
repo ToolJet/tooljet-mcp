@@ -116,6 +116,9 @@ export interface FlexPolishResult {
 
 /** The polish pass over one page's planned components (same-batch children, parented by parentRef). Never throws;
  *  returns a new array (components it changes are copied). */
+/** The padding a page-wide root container keeps on every side, so content never runs to the window's edge. */
+const PAGE_MARGIN = 24;
+
 export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
   const warnings: string[] = [];
   if (!Array.isArray(input) || !input.length) return { components: Array.isArray(input) ? [...input] : [], warnings };
@@ -180,6 +183,22 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
     const dynamic = text(prop(root, 'dynamicHeight')).replace(/[{}\s]/g, '');
     if (dynamic === 'true') continue;
     setProp(root, 'dynamicHeight', '{{true}}'); // silent: it changes nothing the model must reconsider
+  }
+
+  // A page's top-level FlexContainer that spans the canvas keeps a page margin. Pages built as one root column at
+  // left 0, width 43 with padding 0 ran their hero, cards and tables flush against the navigation and the window (an
+  // expenses overview); the side-gutter lint judges only pages of three or more roots, so it never saw them.
+  for (const root of components) {
+    if (!root || root.type !== 'FlexContainer' || root.parentRef || (root as { parent?: unknown }).parent) continue;
+    const rect = root.layouts?.desktop ?? root.layout;
+    if (!rect || typeof rect.left !== 'number' || typeof rect.width !== 'number') continue;
+    // Page-wide (most of the 43 columns) and touching an edge; a small row at the edge is not a page's frame.
+    if (rect.width < 39 || (rect.left >= 2 && rect.left + rect.width <= 41)) continue;
+    // An unset padding is the FlexContainer's default, 12px.
+    const raw = text(prop(root, 'padding'));
+    const padding = raw === '' ? 12 : Number(raw) || 0;
+    if (padding >= PAGE_MARGIN) continue;
+    setProp(root, 'padding', PAGE_MARGIN); // silent: a margin, nothing the model must reconsider
   }
 
   // A card drawn taller than its content is trimmed to fit it: a row is as tall as its tallest card and stretches the
