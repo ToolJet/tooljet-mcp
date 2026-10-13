@@ -60735,6 +60735,55 @@ function createAuth(config2, fetchImpl = fetch) {
   return { authedFetch, getOrganizationId, getOrganizationSlug, listWorkspaces, switchWorkspace, viewerSession };
 }
 
+// dist/componentLibrary.js
+var COMPONENT_LIBRARY_NAMES = {
+  ui1: "ToolJet UI 1.0",
+  ui2: "ToolJet UI 2.0"
+};
+var isUi2Type = (type) => typeof type === "string" && /^Shad[A-Z]/.test(type);
+function resolveComponentLibrary(globalSettings, componentTypes) {
+  const settings = globalSettings;
+  const saved = settings?.componentLibrary ?? settings?.component_library;
+  if (saved === "ui1" || saved === "ui2")
+    return { library: saved, source: "saved" };
+  for (const type of componentTypes)
+    if (isUi2Type(type))
+      return { library: "ui2", source: "inferred" };
+  return { library: "ui1", source: "inferred" };
+}
+var styleValue = (styles, key4) => {
+  const entry = styles?.[key4];
+  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+};
+function nativeFitsUi2(component) {
+  if (component.type === "FlexContainer" || component.type === "Map")
+    return true;
+  return component.type === "Table" && styleValue(component.styles, "tableLook") !== "default";
+}
+function componentLibraryWarnings(library, pages, request) {
+  if (request?.trim())
+    return [];
+  const off = /* @__PURE__ */ new Map();
+  for (const page of pages ?? []) {
+    for (const component of page.components ?? []) {
+      const type = String(component.type ?? "");
+      const mismatch = library.library === "ui1" ? isUi2Type(type) : !isUi2Type(type) && !nativeFitsUi2(component);
+      if (!mismatch)
+        continue;
+      off.set(type, [...off.get(type) ?? [], component.name ?? type]);
+    }
+  }
+  if (!off.size)
+    return [];
+  const listed = [...off].map(([type, names]) => `${type} (${names.slice(0, 3).join(", ")}${names.length > 3 ? ", ..." : ""})`).join("; ");
+  const how = library.source === "saved" ? "its saved library" : library.source === "inferred" ? "the library its widgets imply" : "new apps are; pass app_id to check the plan against an existing app";
+  const appName = COMPONENT_LIBRARY_NAMES[library.library];
+  const fix = library.library === "ui1" ? "Build with the native ToolJet types instead (Table, Chart, TextInput, DropdownV2, ModalV2, Container, ...)." : `Build with the UI 2.0 types instead: types whose names start with Shad, laid out in FlexContainers; ShadDialog for dialogs and side sheets; for tables ToolJet's Table (styles.tableLook "shadcn").`;
+  return [
+    `This app is built in ${appName} (${how}), and the plan adds widgets from the other library: ${listed}. ${fix} If the user asked for the other library in this request, keep the plan and put their words in component_library_request.`
+  ];
+}
+
 // dist/appVersionLifecycle.js
 function createAppVersionLifecycle(auth, getApp) {
   const enc = encodeURIComponent;
@@ -68633,7 +68682,7 @@ function lintComponentSpec(spec, context = {}) {
     }
   }
   if (spec.type === "ShadTable") {
-    warnings.push(`ShadTable "${label3}" is superseded: for a new table use type "Table" with styles.tableLook "shadcn" (ToolJet's own Table in the shadcn/ui look, with its columns, row action buttons, events and inspector).`);
+    warnings.push(`ShadTable "${label3}" is superseded: for a new table use type "Table" with styles.tableLook "shadcn" (ToolJet's own Table in the ToolJet UI 2.0 look, with its columns, row action buttons, events and inspector).`);
   }
   if (spec.type === "ShadTable" && isFalseBinding(propVal2(props2, "dynamicHeight"))) {
     const height2 = Number(spec.layout?.height);
@@ -70118,6 +70167,8 @@ var SAMPLE_BLANKS = {
     valueFormat: "auto"
   },
   ShadSchedule: { resourceField: "resource", resourceTitle: "" },
+  // The sample's delivery stops (customer, address, eta, driver) are not a build's data: no rows, generic fields.
+  ShadMap: { data: "{{[]}}", titleField: "name", subtitleField: "", popupFields: "" },
   // 'auto' reads money from a figure's label; the 'currency' default showed counts of rooms as dollars.
   ShadSummaryStrip: { valueFormat: "auto" },
   ShadTags: { tags: "{{[]}}", tagColors: "{{{}}}" },
@@ -70125,7 +70176,11 @@ var SAMPLE_BLANKS = {
   ShadLink: { linkTarget: "" },
   ShadCombobox: { searchPlaceholder: "Search..." },
   ShadMultiselect: { searchPlaceholder: "Search..." },
-  ShadTagsInput: { suggestions: "{{[]}}" }
+  ShadTagsInput: { suggestions: "{{[]}}" },
+  // The sample greeting talks about orders, invoices and deliveries; a build's chat starts from its own history.
+  ShadChat: { initialChat: "{{[]}}" },
+  // The sample's 'set up your workspace' line is not a build's; completeTitle alone reads fine.
+  ShadQuestionnaire: { completeText: "" }
 };
 function packDefaultDefinition(type) {
   if (!cached4) {
@@ -71081,10 +71136,13 @@ function createClient(auth, config2) {
       event: e.event,
       ...typeof e.index === "number" ? { index: e.index } : {}
     }));
+    const globalSettings = full.editing_version?.global_settings ?? full.editing_version?.globalSettings ?? full.editingVersion?.globalSettings ?? full.global_settings ?? full.globalSettings;
+    const componentLibrary = resolveComponentLibrary(globalSettings, pages.flatMap((page) => page.components.map((component) => component.type)));
     return {
       app_id: full.id,
       name: full.name,
       version_id: full.editing_version?.id,
+      component_library: componentLibrary,
       ...full.should_freeze_editor === true ? { editor_frozen: true } : {},
       ...typeof full.editorEnvironment?.name === "string" ? { environment: full.editorEnvironment.name } : {},
       pages,
@@ -73170,21 +73228,32 @@ function createAppTool(client) {
       destructiveHint: false,
       openWorldHint: true
     },
-    description: 'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, app_url (a backward-compatible alias for editor_url), and the theme that was applied. Honor explicit or selected themes first. Otherwise derive a theme from a brand, industry or customer type (see references/themes.md) and pass theme:{name, definition}; include complete brand, text, border, systemStatus and surface tokens with light/dark values, not a font-only or partial definition. It is created once per workspace by name and applied. Otherwise the app gets the standard theme ("ToolJet Modern": neutral greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. If a theme cannot be created (for example a licence gate) the app is still created and the result carries a theme warning.',
+    description: 'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, app_url (a backward-compatible alias for editor_url), and the theme that was applied. Honor explicit or selected themes first. Otherwise derive a theme from a brand, industry or customer type (see references/themes.md) and pass theme:{name, definition}; include complete brand, text, border, systemStatus and surface tokens with light/dark values, not a font-only or partial definition. It is created once per workspace by name and applied. Otherwise the app gets the standard theme ("ToolJet Modern": neutral greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. If a theme cannot be created (for example a licence gate) the app is still created and the result carries a theme warning. New apps are built in ToolJet UI 2.0 (component_library "ui2": types starting with Shad, laid out in FlexContainers); pass component_library "ui1" only when the user asks for the classic ToolJet widgets.',
     inputSchema: {
       name: external_exports.string().min(1),
       theme: external_exports.union([external_exports.string().min(1), derivedThemeSchema]).optional(),
-      app_mode: external_exports.enum(["light", "dark"]).optional().describe("Open the app in this mode. Pass 'dark' when the request asks for a dark app, so the theme's dark values paint every surface; never paint dark backgrounds by hand on a light-mode app.")
+      app_mode: external_exports.enum(["light", "dark"]).optional().describe("Open the app in this mode. Pass 'dark' when the request asks for a dark app, so the theme's dark values paint every surface; never paint dark backgrounds by hand on a light-mode app."),
+      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in, saved on the app (the components panel lists it). Default "ui2", ToolJet UI 2.0; "ui1" (ToolJet UI 1.0, the native widgets) only when the user asks for it.')
     },
     async handler(args) {
       try {
         if (typeof args.theme === "object")
           derivedThemeSchema.parse(args.theme);
         const created = await client.createApp(args.name);
+        const componentLibrary = args.component_library ?? "ui2";
         const choice = args.theme ?? "standard";
-        const result = { ...created, theme: { mode: "workspace_default" } };
-        if (choice === "workspace_default")
+        const result = { ...created, component_library: componentLibrary, theme: { mode: "workspace_default" } };
+        const saveLibrary = () => Promise.resolve().then(() => client.updateAppSettings({
+          appId: created.app_id,
+          versionId: created.version_id,
+          globalSettings: { componentLibrary }
+        })).catch((libraryErr) => {
+          result.component_library_warning = `Could not save component_library "${componentLibrary}": ${libraryErr instanceof Error ? libraryErr.message : String(libraryErr)}. Build in it anyway.`;
+        });
+        if (choice === "workspace_default") {
+          await saveLibrary();
           return ok(result);
+        }
         const label3 = typeof choice === "object" ? choice.name : choice;
         try {
           const theme = await resolveTheme(client, choice);
@@ -73192,12 +73261,13 @@ function createAppTool(client) {
           await client.updateAppSettings({
             appId: created.app_id,
             versionId: created.version_id,
-            globalSettings: { theme, ...appMode ? { appMode } : {} }
+            globalSettings: { theme, componentLibrary, ...appMode ? { appMode } : {} }
           });
           const mode = choice === "standard" ? "standard" : typeof choice === "object" ? "derived" : "named";
           const accentNote = mode === "standard" ? accentWarning(STANDARD_PRIMARY) : mode === "derived" ? accentWarning(choice.definition) : null;
           result.theme = { mode, id: theme.id, name: theme.name, ...appMode ? { app_mode: appMode } : {}, ...accentNote ? { accent_note: accentNote } : {} };
         } catch (themeErr) {
+          await saveLibrary();
           result.theme = {
             mode: "workspace_default",
             warning: `Could not apply theme "${label3}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
@@ -73325,6 +73395,8 @@ function projectAppSettings(snapshot2) {
       mode: global2.appMode
     },
     theme: compactTheme(theme),
+    // The saved component library (ToolJet UI 1.0 or 2.0); absent on apps from before the setting.
+    component_library: global2.componentLibrary,
     header: {
       hidden: properties.hideHeader,
       logo_hidden: properties.hideLogo,
@@ -73461,7 +73533,8 @@ var SETTING_KEYS = [
   "navigation_hidden",
   "navigation_position",
   "navigation_style",
-  "navigation_collapsible"
+  "navigation_collapsible",
+  "component_library"
 ];
 function persistenceMismatches(args, snapshot2) {
   const global2 = snapshot2.global_settings;
@@ -73479,6 +73552,8 @@ function persistenceMismatches(args, snapshot2) {
   }
   if (args.app_mode !== void 0)
     expectEqual("app_mode", global2.appMode, args.app_mode);
+  if (args.component_library !== void 0)
+    expectEqual("component_library", global2.componentLibrary, args.component_library);
   if (args.theme_id !== void 0) {
     const theme = global2.theme;
     expectEqual("theme_id", theme?.id, args.theme_id);
@@ -73527,7 +73602,8 @@ function updateAppSettingsTool(client) {
       navigation_hidden: external_exports.boolean().optional().describe("Hide or show the entire generated page-navigation menu, whether it is positioned on the side or top. To hide only one non-Home page from the menu, use update_pages.hidden."),
       navigation_position: external_exports.enum(["side", "top"]).optional(),
       navigation_style: external_exports.enum(["texticon", "text", "icon"]).optional(),
-      navigation_collapsible: external_exports.boolean().optional()
+      navigation_collapsible: external_exports.boolean().optional(),
+      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in: "ui1" ToolJet UI 1.0 (native widgets) or "ui2" ToolJet UI 2.0 (Shad* types). Change it only when the user asks to move the app to the other library.')
     },
     async handler(args) {
       try {
@@ -73558,7 +73634,8 @@ function updateAppSettingsTool(client) {
           ...args.canvas_background_color !== void 0 ? { canvasBackgroundColor: args.canvas_background_color } : {},
           ...args.canvas_max_width !== void 0 ? { canvasMaxWidth: args.canvas_max_width.value, canvasMaxWidthType: args.canvas_max_width.unit } : {},
           ...args.app_mode !== void 0 ? { appMode: args.app_mode } : {},
-          ...theme ? { theme } : {}
+          ...theme ? { theme } : {},
+          ...args.component_library !== void 0 ? { componentLibrary: args.component_library } : {}
         };
         const properties = {
           ...args.hide_header !== void 0 ? { hideHeader: args.hide_header } : {},
@@ -74060,6 +74137,8 @@ var PACK_CONCEPTS = [
   [/modal|dialog|sheet|drawer/i, ["ShadDialog"]],
   [/dropdown|menu/i, ["ShadDropdownMenu", "ShadSelect", "ShadCombobox"]],
   [/list/i, ["ShadListView", "ShadRecordList", "ShadKeyValue"]],
+  [/chat|message|assistant|conversation|copilot|bot|thread/i, ["ShadChat"]],
+  [/question|survey|quiz|onboarding|intake|wizard|poll|triage|form/i, ["ShadQuestionnaire"]],
   [/chart|graph/i, ["ShadBarChart", "ShadLineChart", "ShadAreaChart", "ShadPieChart", "ShadComboChart", "ShadScatterChart", "ShadFunnelChart", "ShadHeatmapChart"]],
   [/funnel|conversion/i, ["ShadFunnelChart"]],
   [/scatter|bubble|correlation/i, ["ShadScatterChart"]],
@@ -74071,7 +74150,8 @@ var PACK_CONCEPTS = [
   [/toast|notification|banner/i, ["ShadAlert"]],
   [/divider/i, ["ShadSeparator"]],
   [/schedule|scheduler|booking|reservation|roster|rota|shift|on.?call|resource|timeline.?view|gantt|availability|rooms?/i, ["ShadSchedule"]],
-  [/progress|goal|budget|quota|target|onboarding|checklist|capacity|completion/i, ["ShadProgressList", "ShadProgress"]]
+  [/progress|goal|budget|quota|target|onboarding|checklist|capacity|completion/i, ["ShadProgressList", "ShadProgress"]],
+  [/map|geo|location|pins?$|markers?|route|locator|spatial|leaflet|places|zones?$|territor|geofence|dispatch|fleet/i, ["ShadMap"]]
 ];
 function packSuggestions(requestedType) {
   if (!/^Shad[A-Z]/.test(requestedType))
@@ -75368,7 +75448,7 @@ function getAppTool(client) {
 }
 
 // dist/appSummarySelection.js
-var APP_FIELDS = ["app_id", "name", "version_id", "editor_frozen", "environment"];
+var APP_FIELDS = ["app_id", "name", "version_id", "editor_frozen", "environment", "component_library"];
 var PAGE_FIELDS = ["id", "name", "handle", "icon", "hidden", "index", "is_page_group", "page_group_id"];
 var COMPONENT_FIELDS = [
   "id",
@@ -75506,7 +75586,7 @@ function getAppSummaryTool(client) {
       readOnlyHint: true,
       openWorldHint: true
     },
-    description: `Selective, bounded inspection of an app \u2014 use this instead of get_app. Pass version_id after create_app_version to inspect that exact version instead of the server's default editing version. By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. Field roots: app(app_id/name/version_id), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component(id/name/type/layouts/properties/styles/validation/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.`,
+    description: `Selective, bounded inspection of an app \u2014 use this instead of get_app. Pass version_id after create_app_version to inspect that exact version instead of the server's default editing version. By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. component_library says which library the app is built in: {library:"ui1"} is ToolJet UI 1.0 (the native widgets), {library:"ui2"} is ToolJet UI 2.0 (types starting with Shad, laid out in FlexContainers); source "saved" is the app's setting, "inferred" is read from its widgets. Build in that library unless the user asks for the other. Field roots: app(app_id/name/version_id/component_library), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component(id/name/type/layouts/properties/styles/validation/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.`,
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string().min(1).optional(),
@@ -76918,7 +76998,7 @@ function packTableLook(components) {
   const out = components.map((c) => {
     if (c.type !== "Table" || lookOf(c) !== void 0)
       return c;
-    warnings.push(`Table "${c.name ?? "Table"}" sits among shadcn/ui pack widgets; it now draws in the pack's look (styles.tableLook "shadcn").`);
+    warnings.push(`Table "${c.name ?? "Table"}" sits among ToolJet UI 2.0 widgets; it now draws in the UI 2.0 look (styles.tableLook "shadcn").`);
     return { ...c, styles: { ...c.styles ?? {}, tableLook: { value: "shadcn" } } };
   });
   return { components: out, warnings };
@@ -76999,6 +77079,7 @@ var shownText = (raw) => raw.replace(/\{\{([\s\S]*?)\}\}/g, (_, code) => {
   const values = code.split(/'[^']*'|"[^"]*"|`[^`$]*`/).filter((part) => /[A-Za-z0-9_)\]]/.test(part)).length;
   return words2.join("") + "00".repeat(Math.max(1, values));
 });
+var PAGE_MARGIN = 24;
 function polishFlexRows(input) {
   const warnings = [];
   if (!Array.isArray(input) || !input.length)
@@ -77051,6 +77132,20 @@ function polishFlexRows(input) {
     if (dynamic === "true")
       continue;
     setProp(root, "dynamicHeight", "{{true}}");
+  }
+  for (const root of components) {
+    if (!root || root.type !== "FlexContainer" || root.parentRef || root.parent)
+      continue;
+    const rect2 = root.layouts?.desktop ?? root.layout;
+    if (!rect2 || typeof rect2.left !== "number" || typeof rect2.width !== "number")
+      continue;
+    if (rect2.width < 39 || rect2.left >= 2 && rect2.left + rect2.width <= 41)
+      continue;
+    const raw = text(prop2(root, "padding"));
+    const padding = raw === "" ? 12 : Number(raw) || 0;
+    if (padding >= PAGE_MARGIN)
+      continue;
+    setProp(root, "padding", PAGE_MARGIN);
   }
   const depth = (c) => {
     let d = 0;
@@ -79393,6 +79488,8 @@ var appPlanSchema = external_exports.object({
   version_id: external_exports.string().optional(),
   /** Rename the target app as part of the same governed phase. */
   app_name: external_exports.string().trim().min(1).max(100).optional(),
+  /** The user's words asking for the other component library than the app's: see componentLibrary.ts. */
+  component_library_request: external_exports.string().trim().min(1).max(300).optional().describe('Only when the user asked in this request for the other component library than the app is built in (for example "use UI 2.0" or "use the new components" in a UI 1.0 app): their words. Without it, lint warns when the plan adds widgets from the other library.'),
   tables: external_exports.array(plannedTableSchema).max(50).optional(),
   seed_data: external_exports.array(plannedSeedSchema).max(50).optional(),
   queries: external_exports.array(plannedQuerySchema).max(200).optional(),
@@ -79932,6 +80029,7 @@ function lintAppSpecTool(client) {
         const frozen = frozenAppRefusal(fetchedSummary);
         if (frozen)
           return fail(new Error(frozen));
+        preflightWarnings.push(...componentLibraryWarnings(fetchedSummary ? fetchedSummary.component_library ?? resolveComponentLibrary(void 0, fetchedSummary.pages.flatMap((page) => page.components.map((c) => c.type))) : { library: "ui2", source: "new" }, args.pages, args.component_library_request));
         const plannedNames = /* @__PURE__ */ new Map();
         for (const table of args.tables ?? []) {
           const key4 = table.table_name.toLowerCase();
