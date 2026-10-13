@@ -730,6 +730,19 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
     );
   }
 
+  // A heading in a dialog's header is at most h3 (recipe sheet, 2026-10-12: an h2 bound to a recipe name wrapped onto two
+  // lines and covered the description under it; the composition hint asks for h4 there).
+  const dialogRefs = new Set(
+    components.filter((c) => c && (c.type === 'ShadDialog' || c.type === 'ModalV2')).map((c) => refOf(c)).filter(Boolean)
+  );
+  for (const heading of components) {
+    if (!heading || heading.type !== 'ShadHeading' || heading.slotName !== 'header' || !dialogRefs.has(heading.parentRef)) continue;
+    const level = text(prop(heading, 'level')) || 'h2';
+    if (level !== 'h1' && level !== 'h2') continue;
+    setProp(heading, 'level', 'h3');
+    warnings.push(`Heading "${heading.name}" in a dialog header was ${level}; it is now h3, so a long title fits the header.`);
+  }
+
   // Buttons placed straight in a dialog's footer slot (expense build, 2026-10-12: Close, Reject and Approve at left 2, 16
   // and 29, uneven gaps) are gathered into one FlexContainer row at the right, in their left-to-right order, each at the
   // width of its label.

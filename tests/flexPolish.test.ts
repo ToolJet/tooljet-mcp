@@ -780,3 +780,24 @@ describe('polishFlexRows: dialog footer buttons placed by hand', () => {
     expect(one.components.some((c) => c.type === 'FlexContainer')).toBe(false);
   });
 });
+
+describe('polishFlexRows: a heading in a dialog header', () => {
+  // Recipe sheet (2026-10-12): an h2 title for a bound recipe name wrapped onto two lines in the sheet header and
+  // covered the description under it. The composition hint asks for h4 in a dialog header; h1 and h2 become h3.
+  const head = (ref: string, level: string, slot = 'header'): ComponentSpec => ({
+    name: ref, type: 'ShadHeading', clientRef: ref, parentRef: 'sheet', slotName: slot,
+    properties: { text: { value: '{{selected.name}}' }, level: { value: level } }, layout: { top: 0, left: 0, width: 43, height: 44 },
+  });
+  it('steps an h1 or h2 in the header down to h3', () => {
+    const { components, warnings } = polishFlexRows([{ name: 'sheet', type: 'ShadDialog', clientRef: 'sheet', properties: {} }, head('title', 'h2')]);
+    expect(prop(components, 'title', 'level')).toBe('h3');
+    expect(warnings.join(' ')).toMatch(/title/);
+  });
+  it('leaves an h3 or h4, and headings in the body, alone', () => {
+    const { components } = polishFlexRows([
+      { name: 'sheet', type: 'ShadDialog', clientRef: 'sheet', properties: {} }, head('small', 'h4'), head('bodyTitle', 'h2', 'body'),
+    ]);
+    expect(prop(components, 'small', 'level')).toBe('h4');
+    expect(prop(components, 'bodyTitle', 'level')).toBe('h2');
+  });
+});
