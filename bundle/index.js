@@ -33992,7 +33992,7 @@ var require_moment = __commonJS({
           return this.as(alias);
         };
       }
-      var asMilliseconds = makeAs("ms"), asSeconds = makeAs("s"), asMinutes = makeAs("m"), asHours = makeAs("h"), asDays = makeAs("d"), asWeeks = makeAs("w"), asMonths = makeAs("M"), asQuarters = makeAs("Q"), asYears = makeAs("y"), valueOf9 = asMilliseconds;
+      var asMilliseconds = makeAs("ms"), asSeconds = makeAs("s"), asMinutes = makeAs("m"), asHours = makeAs("h"), asDays = makeAs("d"), asWeeks = makeAs("w"), asMonths = makeAs("M"), asQuarters = makeAs("Q"), asYears = makeAs("y"), valueOf8 = asMilliseconds;
       function clone2() {
         return createDuration(this);
       }
@@ -34133,7 +34133,7 @@ var require_moment = __commonJS({
       proto.asMonths = asMonths;
       proto.asQuarters = asQuarters;
       proto.asYears = asYears;
-      proto.valueOf = valueOf9;
+      proto.valueOf = valueOf8;
       proto._bubble = bubble;
       proto.clone = clone2;
       proto.get = get;
@@ -67342,32 +67342,6 @@ function lintKpiCardGrids(components) {
   }).map((c) => `Card grid "${c.name ?? "ShadCardGrid"}" draws figures: a card grid is for records with a face, its badge sits beside the title (a long delta is cut off) and its subtitle is small body text, not a headline number. Draw KPIs as a row of ShadStat (value, valueFormat, change, changeLabel) or one ShadSummaryStrip (items).`);
 }
 
-// dist/cardGridPhotoLint.js
-var SUBJECTS = [
-  ["food", /(recipe|dish|meal|menu|food|cuisine|bake|snack|drink)/i],
-  ["rooms and offices", /(room|office|suite|venue|listing|propert|apartment|hotel)/i],
-  ["boats", /(boat|yacht|vessel|charter|marina)/i],
-  ["pets", /(pet|dog|animal|puppy|kitten)/i]
-];
-var valueOf5 = (props2, key4) => {
-  const entry = props2?.[key4];
-  const v = entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
-  return typeof v === "string" ? v.trim() : "";
-};
-function lintPhotolessCardGrids(components) {
-  const warnings = [];
-  for (const c of components) {
-    if (c.type !== "ShadCardGrid" || valueOf5(c.properties, "imageField"))
-      continue;
-    const words2 = [c.name ?? "", valueOf5(c.properties, "titleField"), valueOf5(c.properties, "subtitleField")].join(" ");
-    const subject = SUBJECTS.find(([, pattern]) => pattern.test(words2))?.[0];
-    if (!subject)
-      continue;
-    warnings.push(`Card grid "${c.name ?? "ShadCardGrid"}" shows ${subject} without pictures: cards of things with a face read as finished with a photo. Seed an image column from get_component_catalog's authoringHints.photos ("${subject}", a different URL per row) and set imageField to it.`);
-  }
-  return warnings;
-}
-
 // dist/selectionGuardLint.js
 var OBJECT_GUARD = /components\??\.(\w+)\??\.(selectedRow|selectedItem|selectedBooking)\s*(\?(?![.?])|&&)/g;
 var strings = (value2, out = []) => {
@@ -69713,7 +69687,6 @@ function lintComponents(components, options2 = {}) {
   warnings.push(...lintTallContainers(components));
   warnings.push(...lintChartAccents(components));
   warnings.push(...lintKpiCardGrids(components));
-  warnings.push(...lintPhotolessCardGrids(components));
   errors.push(...lintTruthySelectionGuards(components));
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
@@ -74052,12 +74025,12 @@ function seedPictureWarnings(tables) {
       if (!pictures.length)
         continue;
       if (pictures.some((p) => /^data:image\//i.test(p.trim()))) {
-        warnings.push(`${table}.${column} holds drawn data: images; use real photo URLs from the component's authoringHints.photos (a different one per row), or leave the picture out.`);
+        warnings.push(`${table}.${column} holds drawn data: images, which read as placeholder art; use the records' own picture URLs, or leave the picture out.`);
         continue;
       }
       const distinct2 = new Set(pictures.map((p) => p.trim())).size;
       if (pictures.length >= 4 && distinct2 * 3 <= pictures.length) {
-        warnings.push(`${table}.${column}: ${pictures.length} rows share ${distinct2} picture${distinct2 === 1 ? "" : "s"}; give each row its own photo (cycle through authoringHints.photos for the rows' subject).`);
+        warnings.push(`${table}.${column}: ${pictures.length} rows share ${distinct2} picture${distinct2 === 1 ? "" : "s"}; a picture repeated across records reads as placeholder art: give each row its own, or leave the picture out.`);
       }
     }
   }
@@ -75728,14 +75701,14 @@ function getComponentTool(client) {
 }
 
 // dist/htmlColumns.js
-var valueOf6 = (prop3) => prop3 && typeof prop3 === "object" && "value" in prop3 ? prop3.value : prop3;
+var valueOf5 = (prop3) => prop3 && typeof prop3 === "object" && "value" in prop3 ? prop3.value : prop3;
 function htmlFedTextColumns(table, queries) {
   if (table.type !== "Table")
     return [];
-  const columns = valueOf6(table.properties?.columns);
+  const columns = valueOf5(table.properties?.columns);
   if (!Array.isArray(columns))
     return [];
-  const data = String(valueOf6(table.properties?.data) ?? "");
+  const data = String(valueOf5(table.properties?.data) ?? "");
   const read = new Set([...data.matchAll(/queries\.(\w+)/g)].map((m) => m[1]));
   const code = queries.filter((q) => q.kind === "runjs" && read.has(String(q.name))).map((q) => String(q.options?.code ?? "")).join("\n");
   if (!code)
@@ -77058,9 +77031,9 @@ var INLINE_TYPES = /* @__PURE__ */ new Set([
   "ShadTags",
   "ShadSpinner"
 ]);
-var valueOf7 = (entry) => entry && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry.value : entry;
+var valueOf6 = (entry) => entry && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry.value : entry;
 var text = (entry) => {
-  const v = valueOf7(entry);
+  const v = valueOf6(entry);
   return typeof v === "string" ? v.trim() : typeof v === "number" ? String(v) : "";
 };
 var props = (component) => component.properties && typeof component.properties === "object" ? component.properties : {};
@@ -77269,7 +77242,7 @@ function polishFlexRows(input) {
       if (next2.type === "FlexContainer" || ACTION_TYPES.has(next2.type))
         return;
       next2.parentRef = cardRef;
-      const order = valueOf7(prop2(container, "childOrder"));
+      const order = valueOf6(prop2(container, "childOrder"));
       if (Array.isArray(order)) {
         setProp(container, "childOrder", order.filter((entry) => entry !== refOf(next2) && entry !== next2.name));
       }
@@ -77492,7 +77465,7 @@ function polishFlexRows(input) {
         for (const table of childrenOf(refOf(card) ?? "")) {
           if (table.type !== "Table")
             continue;
-          const columns = valueOf7(prop2(table, "columns"));
+          const columns = valueOf6(prop2(table, "columns"));
           if (!Array.isArray(columns))
             continue;
           const visible = columns.filter((c) => !!c && typeof c === "object" && c.columnVisibility !== false);
@@ -77544,7 +77517,7 @@ function polishFlexRows(input) {
         }
       }
     }
-    const authored = valueOf7(prop2(container, "childOrder"));
+    const authored = valueOf6(prop2(container, "childOrder"));
     const authoredOrder = Array.isArray(authored) ? authored.filter((entry) => typeof entry === "string") : null;
     const ordered = authoredOrder?.length ? [
       ...authoredOrder.map((name2) => children.find((child) => refOf(child) === name2 || child.name === name2)).filter((child) => !!child),
@@ -77574,7 +77547,7 @@ function polishFlexRows(input) {
   }
   const firstOf = (parent) => {
     const inner = childrenOf(refOf(parent) ?? "");
-    const authored = valueOf7(prop2(parent, "childOrder"));
+    const authored = valueOf6(prop2(parent, "childOrder"));
     const first = Array.isArray(authored) && typeof authored[0] === "string" ? inner.find((c) => refOf(c) === authored[0] || c.name === authored[0] || c.id === authored[0]) : void 0;
     return first ?? inner[0];
   };
@@ -77674,12 +77647,12 @@ var FILTER_TYPES = /* @__PURE__ */ new Set(["ShadInput", "ShadToggleGroup", "Sha
 var DIALOG_TYPES = /* @__PURE__ */ new Set(["ShadDialog", "Modal", "ModalV2"]);
 var SHORT_LIST_MAX = 36;
 var isChart2 = (type) => /^Shad\w*Chart$/.test(type ?? "");
-var valueOf8 = (bag, key4) => {
+var valueOf7 = (bag, key4) => {
   const entry = bag?.[key4];
   return entry && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry.value : entry;
 };
 var textOf = (bag, key4) => {
-  const v = valueOf8(bag, key4);
+  const v = valueOf7(bag, key4);
   return typeof v === "string" ? v.trim() : typeof v === "number" ? String(v) : "";
 };
 var refOf2 = (c) => c.clientRef ?? c.name ?? "";
@@ -77712,11 +77685,11 @@ function readingOrder(components) {
   return out;
 }
 function chartColourWarnings(chart) {
-  const series = valueOf8(chart.properties, "yFields");
+  const series = valueOf7(chart.properties, "yFields");
   const parts = chart.type === "ShadPieChart" || chart.type === "ShadFunnelChart" ? "slice" : Array.isArray(series) && series.length > 1 ? "series" : null;
   if (!parts)
     return [];
-  const colors = valueOf8(chart.properties, "colors");
+  const colors = valueOf7(chart.properties, "colors");
   const literal3 = Array.isArray(colors) ? colors : null;
   const bound = typeof colors === "string" && colors.includes("{{") && !/^\{\{\s*\[\s*\]\s*\}\}$/.test(colors.trim());
   if (bound)
@@ -77790,13 +77763,10 @@ function lintPageArchetype(archetype, components) {
   const hasDialog = components.some((c) => DIALOG_TYPES.has(c.type ?? ""));
   if (kind === "catalog" && mainAt >= 0) {
     const grid = order[mainAt];
-    if (!textOf(grid.properties, "imageField")) {
-      warnings.push(`card grid ${label2(grid)} has no imageField: a catalog shows each record's photo. Seed an image column (a different URL per row from get_component_catalog's authoringHints.photos) and set imageField.`);
-    }
     if (!filterBefore(mainAt))
       warnings.push(`no search or filter bar above ${label2(grid)}: put a search input and a course/kind toggle in a row between the hero and the grid.`);
     if (!hasDialog)
-      warnings.push('no detail sheet: a card click opens a ShadDialog (variant "sheet") with the photo and the full record.');
+      warnings.push('no detail sheet: a card click opens a ShadDialog (variant "sheet") with the full record.');
   }
   if (kind === "register" && mainAt >= 0) {
     if (!filterBefore(mainAt))
@@ -77807,7 +77777,7 @@ function lintPageArchetype(archetype, components) {
   if (kind === "personal-overview") {
     if (!has("ShadSummaryStrip"))
       warnings.push("no ShadSummaryStrip under the hero: the period's four key figures go in one strip.");
-    const progress = order.some((c) => c.type === "ShadProgress" || c.type === "ShadCircularProgress" || c.type === "ShadStat" && valueOf8(c.properties, "progress") !== void 0);
+    const progress = order.some((c) => c.type === "ShadProgress" || c.type === "ShadCircularProgress" || c.type === "ShadStat" && valueOf7(c.properties, "progress") !== void 0);
     if (!progress)
       warnings.push("no progress grid: show each goal or budget as a ShadStat with progress (or ShadProgress) against its limit.");
   }
