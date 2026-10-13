@@ -15,6 +15,14 @@ ToolJet's value is **visually-editable, governed low-code config**: a built-in c
 
 The full built-in palette (every `type` + purpose) is in **`references/components.md`**; pick from built-ins first. Once you've selected the current page's components, batch the complex/unfamiliar types with `get_component_catalog({ types:[...] })` (or use `type` for one) and request their exact needed sections — including `renderingHints` for `Text`/`Chart`/`Statistics`. Configure precisely; don't guess property names.
 
+### Component library — build in the app's: ToolJet UI 1.0 or ToolJet UI 2.0
+
+Every app is built in one component library, saved on the app (the visual builder's components panel lists it):
+- **ToolJet UI 2.0** (`component_library: "ui2"`): component types whose names start with `Shad`; compose the layout with `FlexContainer`s; use `ShadDialog` for dialogs and side sheets; for tables ToolJet's `Table` with `styles.tableLook: "shadcn"`; no other ToolJet component types.
+- **ToolJet UI 1.0** (`component_library: "ui1"`): the native ToolJet types only (`Table`, `Chart`, `TextInput`, `DropdownV2`, `ModalV2`, `Container`, ...), no `Shad*` types.
+
+`get_app_summary` returns the app's `component_library` (`source: "saved"`, or `"inferred"` from its widgets for apps made before the setting existed); edit an app in that library. `create_app` makes new apps in ToolJet UI 2.0; pass `component_library: "ui1"` only when the user asks for the classic widgets. An explicit request wins for that build ("use UI 2.0", "use the new components", "use the classic widgets"): honour it and put the user's words in the plan's `component_library_request`, or `lint_app_spec` warns about widgets from the other library. In replies, call the libraries ToolJet UI 1.0 and ToolJet UI 2.0.
+
 ## Canvas & grid mechanics (FACTS — you must respect these to position components)
 
 ToolJet's canvas is a fixed grid. Components are **absolutely positioned** — they do NOT reflow or auto-stack. If you don't compute positions correctly, components **overlap**.

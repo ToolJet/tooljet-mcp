@@ -1,3 +1,4 @@
+import { resolveComponentLibrary, type ResolvedComponentLibrary } from './componentLibrary.js';
 import { createAppVersionLifecycle } from './appVersionLifecycle.js';
 import { createWorkflowClient, type WorkflowClient } from './workflowClient.js';
 import { TableQuotaError, tableQuotaError } from './tableQuotaError.js';
@@ -556,6 +557,8 @@ export interface AppSummary {
   editor_frozen?: boolean;
   /** The editing version's environment (development, staging, production). */
   environment?: string;
+  /** The library the app is built in (ToolJet UI 1.0 or 2.0): its saved setting, else inferred from its widgets. */
+  component_library?: ResolvedComponentLibrary;
   pages: Array<{
     id: string;
     name?: string;
@@ -1221,8 +1224,15 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       event: e.event,
       ...(typeof e.index === 'number' ? { index: e.index } : {}),
     }));
+    const globalSettings = full.editing_version?.global_settings ?? full.editing_version?.globalSettings
+      ?? full.editingVersion?.globalSettings ?? full.global_settings ?? full.globalSettings;
+    const componentLibrary = resolveComponentLibrary(
+      globalSettings,
+      pages.flatMap((page: { components: ComponentSummary[] }) => page.components.map((component) => component.type)),
+    );
     return {
       app_id: full.id, name: full.name, version_id: full.editing_version?.id,
+      component_library: componentLibrary,
       ...(full.should_freeze_editor === true ? { editor_frozen: true } : {}),
       ...(typeof full.editorEnvironment?.name === 'string' ? { environment: full.editorEnvironment.name } : {}),
       pages, queries, events,

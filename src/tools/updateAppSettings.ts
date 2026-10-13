@@ -17,11 +17,13 @@ type Args = {
   navigation_position?: 'side' | 'top';
   navigation_style?: 'texticon' | 'text' | 'icon';
   navigation_collapsible?: boolean;
+  component_library?: 'ui1' | 'ui2';
 };
 
 const SETTING_KEYS: Array<keyof Omit<Args, 'app_id' | 'version_id'>> = [
   'canvas_background_color', 'canvas_max_width', 'app_mode', 'theme_id', 'hide_header', 'hide_logo',
   'header_title', 'navigation_hidden', 'navigation_position', 'navigation_style', 'navigation_collapsible',
+  'component_library',
 ];
 
 function persistenceMismatches(args: Args, snapshot: AppSettingsSnapshot): string[] {
@@ -37,6 +39,7 @@ function persistenceMismatches(args: Args, snapshot: AppSettingsSnapshot): strin
     expectEqual('canvas_max_width.unit', global.canvasMaxWidthType, args.canvas_max_width.unit);
   }
   if (args.app_mode !== undefined) expectEqual('app_mode', global.appMode, args.app_mode);
+  if (args.component_library !== undefined) expectEqual('component_library', global.componentLibrary, args.component_library);
   if (args.theme_id !== undefined) {
     const theme = global.theme as Record<string, unknown> | undefined;
     expectEqual('theme_id', theme?.id, args.theme_id);
@@ -93,6 +96,10 @@ export function updateAppSettingsTool(client: ToolJetClient): ToolDef {
       navigation_position: z.enum(['side', 'top']).optional(),
       navigation_style: z.enum(['texticon', 'text', 'icon']).optional(),
       navigation_collapsible: z.boolean().optional(),
+      component_library: z.enum(['ui1', 'ui2']).optional().describe(
+        'The component library the app is built in: "ui1" ToolJet UI 1.0 (native widgets) or "ui2" ToolJet UI 2.0 ' +
+          '(Shad* types). Change it only when the user asks to move the app to the other library.'
+      ),
     },
     async handler(args: Args) {
       try {
@@ -126,6 +133,7 @@ export function updateAppSettingsTool(client: ToolJetClient): ToolDef {
             : {}),
           ...(args.app_mode !== undefined ? { appMode: args.app_mode } : {}),
           ...(theme ? { theme } : {}),
+          ...(args.component_library !== undefined ? { componentLibrary: args.component_library } : {}),
         };
         const properties: Record<string, unknown> = {
           ...(args.hide_header !== undefined ? { hideHeader: args.hide_header } : {}),

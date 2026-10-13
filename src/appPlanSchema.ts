@@ -96,6 +96,12 @@ export const appPlanSchema = z.object({
   version_id: z.string().optional(),
   /** Rename the target app as part of the same governed phase. */
   app_name: z.string().trim().min(1).max(100).optional(),
+  /** The user's words asking for the other component library than the app's: see componentLibrary.ts. */
+  component_library_request: z.string().trim().min(1).max(300).optional().describe(
+    'Only when the user asked in this request for the other component library than the app is built in (for example ' +
+      '"use UI 2.0" or "use the new components" in a UI 1.0 app): their words. Without it, lint warns when the plan adds ' +
+      'widgets from the other library.'
+  ),
   tables: z.array(plannedTableSchema).max(50).optional(),
   seed_data: z.array(plannedSeedSchema).max(50).optional(),
   queries: z.array(plannedQuerySchema).max(200).optional(),

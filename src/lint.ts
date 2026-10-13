@@ -1678,7 +1678,7 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
   if (spec.type === 'ShadTable') {
     warnings.push(
       `ShadTable "${label}" is superseded: for a new table use type "Table" with styles.tableLook "shadcn" ` +
-        "(ToolJet's own Table in the shadcn/ui look, with its columns, row action buttons, events and inspector)."
+        "(ToolJet's own Table in the ToolJet UI 2.0 look, with its columns, row action buttons, events and inspector)."
     );
   }
 

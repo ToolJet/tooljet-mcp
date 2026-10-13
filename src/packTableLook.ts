@@ -14,7 +14,7 @@ export function packTableLook<T extends ComponentSpec>(components: T[]): { compo
   const warnings: string[] = [];
   const out = components.map((c) => {
     if (c.type !== 'Table' || lookOf(c) !== undefined) return c;
-    warnings.push(`Table "${c.name ?? 'Table'}" sits among shadcn/ui pack widgets; it now draws in the pack's look (styles.tableLook "shadcn").`);
+    warnings.push(`Table "${c.name ?? 'Table'}" sits among ToolJet UI 2.0 widgets; it now draws in the UI 2.0 look (styles.tableLook "shadcn").`);
     return { ...c, styles: { ...((c.styles as object) ?? {}), tableLook: { value: 'shadcn' } } } as T;
   });
   return { components: out, warnings };

@@ -97,9 +97,9 @@ describe('create_app tool', () => {
       expect.objectContaining({ name: 'ToolJet Modern', isDefault: false })
     );
     expect(client.updateAppSettings).toHaveBeenCalledWith(
-      expect.objectContaining({ appId: 'app1', versionId: 'v1', globalSettings: { theme: expect.objectContaining({ id: 'theme-std' }) } })
+      expect.objectContaining({ appId: 'app1', versionId: 'v1', globalSettings: { theme: expect.objectContaining({ id: 'theme-std' }), componentLibrary: 'ui2' } })
     );
-    expect(textOf(result)).toEqual({ ...createdApp, theme: { mode: 'standard', id: 'theme-std', name: 'ToolJet Modern', accent_note: expect.stringMatching(/stock blue/) } });
+    expect(textOf(result)).toEqual({ ...createdApp, component_library: 'ui2', theme: { mode: 'standard', id: 'theme-std', name: 'ToolJet Modern', accent_note: expect.stringMatching(/stock blue/) } });
     expect(result.isError).toBeUndefined();
   });
 
@@ -122,8 +122,24 @@ describe('create_app tool', () => {
     const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'My App', theme: 'workspace_default' });
 
     expect(client.listAppThemes).not.toHaveBeenCalled();
-    expect(client.updateAppSettings).not.toHaveBeenCalled();
-    expect(textOf(result)).toEqual({ ...createdApp, theme: { mode: 'workspace_default' } });
+    // Only the component library is saved; the theme stays the workspace default.
+    expect(client.updateAppSettings).toHaveBeenCalledTimes(1);
+    expect(client.updateAppSettings).toHaveBeenCalledWith({ appId: 'app1', versionId: 'v1', globalSettings: { componentLibrary: 'ui2' } });
+    expect(textOf(result)).toEqual({ ...createdApp, component_library: 'ui2', theme: { mode: 'workspace_default' } });
+  });
+
+  it('saves ToolJet UI 1.0 on the new app only when the call asks for it', async () => {
+    const client = makeClient();
+    client.createApp.mockResolvedValue(createdApp);
+    client.listAppThemes.mockResolvedValue([{ id: 'theme-std', name: 'ToolJet Modern', definition: {} }]);
+    client.updateAppSettings.mockResolvedValue(undefined);
+
+    const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'My App', component_library: 'ui1' });
+
+    expect(client.updateAppSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ globalSettings: { theme: expect.objectContaining({ id: 'theme-std' }), componentLibrary: 'ui1' } })
+    );
+    expect(textOf(result).component_library).toBe('ui1');
   });
 
   it('applies an existing named theme when one is requested', async () => {
@@ -153,7 +169,7 @@ describe('create_app tool', () => {
 
     expect(client.createAppTheme).toHaveBeenCalledWith({ name: 'Bernal Fire Pizza theme', definition, isDefault: false });
     expect(client.updateAppSettings).toHaveBeenCalledWith(
-      expect.objectContaining({ globalSettings: { theme: expect.objectContaining({ id: 'theme-pizza' }) } })
+      expect.objectContaining({ globalSettings: { theme: expect.objectContaining({ id: 'theme-pizza' }), componentLibrary: 'ui2' } })
     );
     expect(textOf(result).theme).toEqual({ mode: 'derived', id: 'theme-pizza', name: 'Bernal Fire Pizza theme' });
 
@@ -177,7 +193,8 @@ describe('create_app tool', () => {
     const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'My App' });
 
     expect(result.isError).toBeUndefined();
-    expect(client.updateAppSettings).not.toHaveBeenCalled();
+    // The theme failed, the component library is still saved.
+    expect(client.updateAppSettings).toHaveBeenCalledWith({ appId: 'app1', versionId: 'v1', globalSettings: { componentLibrary: 'ui2' } });
     const body = textOf(result) as { app_id: string; theme: { mode: string; warning?: string } };
     expect(body.app_id).toBe('app1');
     expect(body.theme.mode).toBe('workspace_default');
@@ -198,7 +215,7 @@ describe('create_app tool', () => {
     const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'Console', theme: { name: 'Relay console dark', definition } });
 
     expect(client.updateAppSettings).toHaveBeenCalledWith(
-      expect.objectContaining({ globalSettings: { theme: expect.objectContaining({ id: 'theme-dark' }), appMode: 'dark' } })
+      expect.objectContaining({ globalSettings: { theme: expect.objectContaining({ id: 'theme-dark' }), componentLibrary: 'ui2', appMode: 'dark' } })
     );
     // The standard theme's stock-blue primary also earns the accent note.
     expect(textOf(result).theme).toEqual({ mode: 'derived', id: 'theme-dark', name: 'Relay console dark', app_mode: 'dark', accent_note: expect.stringMatching(/stock blue/) });

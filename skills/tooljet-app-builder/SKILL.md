@@ -28,6 +28,10 @@ For migration/clone/replacement requests, first read `references/migration.md`. 
 5. Verify each completed page/primary flow using `references/qa.md`. For detailed requests, reconcile a compact requirement-to-implementation ledger at these checkpoints (`references/workflows.md`); page count is not feature coverage. Static validation does not prove runtime query behavior, rendering, or event delivery.
 6. Share `editor_url` while authoring. After the first meaningful page works, open `viewer_url` in the built-in browser when available and reuse that tab. The final handoff is at most 120 words: both links, what works, one line of limitations.
 
+## Component library
+
+Build in the app's `component_library` from `get_app_summary`: `ui1` (ToolJet UI 1.0, native widgets) or `ui2` (ToolJet UI 2.0, `Shad*` types in `FlexContainer`s). New apps are UI 2.0; an explicit request for the other wins (`references/ui-layout.md`).
+
 ## Design quality — required outcomes, flexible composition
 
 Build a polished, contemporary 2026 product UI even from a short prompt: legible hierarchy, coherent theme surfaces, intentional density, clear actions and complete states. "Modern" is a quality bar, not a demand for gradients, glass, oversized cards or a fixed template. Do not claim production readiness from appearance.

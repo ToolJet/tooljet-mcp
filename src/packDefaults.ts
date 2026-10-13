@@ -24,6 +24,8 @@ const SAMPLE_BLANKS: Record<string, Record<string, unknown>> = {
     valueFormat: 'auto',
   },
   ShadSchedule: { resourceField: 'resource', resourceTitle: '' },
+  // The sample's delivery stops (customer, address, eta, driver) are not a build's data: no rows, generic fields.
+  ShadMap: { data: '{{[]}}', titleField: 'name', subtitleField: '', popupFields: '' },
   // 'auto' reads money from a figure's label; the 'currency' default showed counts of rooms as dollars.
   ShadSummaryStrip: { valueFormat: 'auto' },
   ShadTags: { tags: '{{[]}}', tagColors: '{{{}}}' },
@@ -32,6 +34,10 @@ const SAMPLE_BLANKS: Record<string, Record<string, unknown>> = {
   ShadCombobox: { searchPlaceholder: 'Search...' },
   ShadMultiselect: { searchPlaceholder: 'Search...' },
   ShadTagsInput: { suggestions: '{{[]}}' },
+  // The sample greeting talks about orders, invoices and deliveries; a build's chat starts from its own history.
+  ShadChat: { initialChat: '{{[]}}' },
+  // The sample's 'set up your workspace' line is not a build's; completeTitle alone reads fine.
+  ShadQuestionnaire: { completeText: '' },
 };
 
 /** The default definition of a component-pack widget (data/pack-default-definitions.json, generated from the
