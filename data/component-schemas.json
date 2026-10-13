@@ -34864,7 +34864,7 @@
         "key": "valueFormat",
         "label": "Value format",
         "valueType": "string",
-        "default": "currency",
+        "default": "auto",
         "allowedValues": [
           "auto",
           "number",
