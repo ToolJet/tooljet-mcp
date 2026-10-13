@@ -118,6 +118,9 @@ export interface FlexPolishResult {
  *  returns a new array (components it changes are copied). */
 /** The padding a page-wide root container keeps on every side, so content never runs to the window's edge. */
 const PAGE_MARGIN = 24;
+/** UI 2.0 fields that draw their label above the box, inside their own height. */
+const LABELLED_FIELD_TYPES = new Set(['ShadInput', 'ShadSelect', 'ShadMultiSelect', 'ShadCombobox', 'ShadCurrencyInput',
+  'ShadNumberInput', 'ShadDatePicker', 'ShadDateRangePicker', 'ShadTimePicker', 'ShadPhoneInput', 'ShadEmailInput', 'ShadPasswordInput']);
 
 export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
   const warnings: string[] = [];
@@ -813,6 +816,35 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
       `Dialog "${dialog.name}": its ${ordered.length} footer buttons were placed by hand with uneven gaps; they now sit in one ` +
         `row "${rowRef}" at the right, in their order (${ordered.map((c) => `"${c.name}"`).join(', ')}).`
     );
+  }
+
+  // A grid-placed button beside labelled UI 2.0 fields, authored at the fields' top, floats above their boxes (a repair
+  // form's "Create ticket", 2026-10-13). Measured: a labelled Shad field's box runs 24 to 60px down its widget and a
+  // ShadButton's box is its height less 4px, so the button moves 22px down at 40px tall and its box meets the fields'.
+  // FlexContainer rows are handled above (alignItems flex-end).
+  const flexRefs = new Set(components.filter((c) => c?.type === 'FlexContainer').map((c) => refOf(c)));
+  const rectOf = (c: ComponentSpec) => c.layouts?.desktop ?? c.layout;
+  const placeOf = (c: ComponentSpec) => String(c.parentRef ?? (c as { parent?: unknown }).parent ?? '') + '|' + String(c.slotName ?? '');
+  const labelled = components.filter((c) => {
+    const label = (props(c).label as { value?: unknown } | undefined)?.value;
+    return c && LABELLED_FIELD_TYPES.has(c.type) && typeof label === 'string' && label.trim() !== '' && rectOf(c) && !flexRefs.has(String(c.parentRef ?? ''));
+  });
+  for (const button of components) {
+    if (!button || button.type !== 'ShadButton' || flexRefs.has(String(button.parentRef ?? ''))) continue;
+    const b = rectOf(button);
+    if (!b || typeof b.top !== 'number' || (b.height ?? 0) > 44) continue;
+    const field = labelled.find((f) => {
+      const r = rectOf(f)!;
+      if (placeOf(f) !== placeOf(button) || typeof r.top !== 'number') return false;
+      const sameRow = b.top! >= r.top - 4 && b.top! < r.top + 18;
+      const apart = (b.left ?? 0) >= (r.left ?? 0) + (r.width ?? 0) || (r.left ?? 0) >= (b.left ?? 0) + (b.width ?? 0);
+      return sameRow && apart;
+    });
+    if (!field) continue;
+    const top = rectOf(field)!.top! + 22;
+    b.top = top;
+    b.height = 40;
+    warnings.push(`Button "${button.name}" sat at the top of a row of labelled fields; it now sits at ${top} (40px tall) so it lines up with the field boxes, not the labels.`);
   }
 
   // Charts on the page in one accent (chartAccentLint.ts): an odd hand-set colour takes the page's most common one.
