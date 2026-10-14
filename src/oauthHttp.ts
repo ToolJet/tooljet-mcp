@@ -198,6 +198,9 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
       ) {
         throw new Error('Invalid delegation response');
       }
+      const browserUrl = typeof credentials.browser_url === 'string'
+        ? checkedUrl(credentials.browser_url, 'browser_url')
+        : appUrl;
       let requestBody: unknown;
       if (req.method === 'POST') {
         try {
@@ -217,7 +220,8 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
         workspaceSlug:
           typeof credentials.organization_slug === 'string' ? credentials.organization_slug : undefined,
         apiUrl,
-        appUrl,
+        appUrl: browserUrl,
+        viewerUrl: appUrl,
       });
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,

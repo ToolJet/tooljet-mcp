@@ -48,9 +48,21 @@ Proxy these paths to the MCP server:
 
 If the resource URL uses a longer path, include the entire resource path after `/.well-known/oauth-protected-resource`. The metadata lives at the origin root. Also proxy the authorization-server metadata path to ToolJet: `/.well-known/oauth-authorization-server/api/mcp-oauth` (with the issuer's complete path if it uses a subpath).
 
+Treat discovery as a deployment gate, not only process health. Fetch the exact authorization-server and protected-resource URLs through the public proxy and require a JSON `content-type`; a `200 text/html` response is a broken frontend fallback, not healthy OAuth. Verify that the advertised issuer, authorization/token endpoints, protected resource and the unauthenticated MCP `WWW-Authenticate` `resource_metadata` URL exactly match the two configured public addresses. Then complete one browser authorization and MCP `initialize` request. This catches proxy, cookie and subpath failures that `/health` cannot detect.
+
+The ToolJet public proxy must also keep the browser-facing `/<subpath>/api/mcp-oauth/authorize`, `interactions/*`, `token`, `revoke`, `exchange`, `viewer`, and `connections/*` routes on the configured issuer host. Do not route the well-known path to the frontend catch-all. In a split frontend/backend deployment, custom domains must proxy the same `/<subpath>/api` path to the trusted ToolJet backend so consent cookies remain first-party; broad CORS or third-party-cookie exceptions are not a substitute.
+
+## Workspace custom domains
+
+A workspace custom domain changes only human browser navigation and links. It does not change `MCP_OAUTH_ISSUER`, `MCP_OAUTH_RESOURCE_URL`, the API target receiving delegation credentials, or the canonical origin used by restricted render verification. Existing grants therefore remain usable when a browser domain is replaced or removed.
+
+The custom domain must be active, TLS-ready, currently owned by the workspace, and available under its current license when authorization starts and completes. A change during the flow invalidates the unfinished interaction and the user must restart from the AI client. Disconnect accepts the canonical browser origin or that workspace's current approved custom origin, never another workspace's or a removed domain.
+
+Password, LDAP, OIDC and SAML login run on the workspace domain. Register the exact custom-domain OIDC callback and SAML ACS URL with the customer's identity provider before enabling it; ToolJet cannot update an external provider configuration. Google and GitHub continue to use the canonical callback registered for the ToolJet deployment and return to the same server-bound interaction. The short-lived custom-domain bootstrap is interaction/workspace/origin bound and does not transfer a general login session.
+
 For MCP clients that make requests from a browser origin, list exact trusted origins in `MCP_OAUTH_ALLOWED_ORIGINS`, comma-separated. Server-side/desktop clients normally send no Origin. The server rejects unlisted browser origins.
 
-Browser render verification also needs `playwright-core` and Chrome on the MCP host. If the package is outside normal module resolution, set `MCP_RENDER_AUDIT_PLAYWRIGHT` to its local package directory and `MCP_RENDER_AUDIT_CHROME` to the Chrome executable. These are deployment settings, not client-supplied paths. For a frontend that calls a separate API origin, include that exact trusted API origin in `MCP_RENDER_AUDIT_ALLOWED_ORIGINS`; otherwise the browser audit blocks its bootstrap requests. OAuth viewer navigation remains fixed to `TOOLJET_DEPLOYMENT_URL`.
+Browser render verification also needs `playwright-core` and Chrome on the MCP host. If the package is outside normal module resolution, set `MCP_RENDER_AUDIT_PLAYWRIGHT` to its local package directory and `MCP_RENDER_AUDIT_CHROME` to the Chrome executable. These are deployment settings, not client-supplied paths. For a frontend that calls a separate API origin, include that exact trusted API origin in `MCP_RENDER_AUDIT_ALLOWED_ORIGINS`; otherwise the browser audit blocks its bootstrap requests. OAuth viewer navigation remains fixed to `TOOLJET_DEPLOYMENT_URL`; custom-domain human links never move the restricted viewer credential.
 
 Cloud and self-hosted deployments use this same configuration contract. One process targets one trusted ToolJet installation and can serve its workspace URLs. The implementation does not require self-hosted installations to use a ToolJet-hosted authentication service.
 

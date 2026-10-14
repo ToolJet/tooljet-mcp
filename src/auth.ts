@@ -236,7 +236,7 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
         throw new Error('Invalid scoped OAuth viewer credential');
       }
       return { cookieName: 'tj_oauth_viewer', token: body.access_token,
-        origin: new URL(config.appUrl).origin, expiresAt: Math.floor(Date.now() / 1000) + body.expires_in };
+        origin: new URL(config.viewerUrl || config.appUrl).origin, expiresAt: Math.floor(Date.now() / 1000) + body.expires_in };
     }
     if (!token) await login();
     return token;

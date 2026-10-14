@@ -37,13 +37,14 @@ const headers = {
   'content-type': 'application/json',
   accept: 'application/json, text/event-stream',
 };
-const success = () =>
+const success = (browserUrl?: string) =>
   new Response(
     JSON.stringify({
       access_token: 'synthetic-internal-delegation',
       organization_id: 'garden-workspace',
       organization_slug: 'garden',
       grant_id: 'garden-grant',
+      ...(browserUrl ? { browser_url: browserUrl } : {}),
     }),
     { headers: { 'content-type': 'application/json' } },
   );
@@ -76,7 +77,8 @@ describe('public MCP OAuth HTTP boundary', () => {
     expect(exchange).not.toHaveBeenCalled();
   });
   it('exchanges credentials using configured endpoints and ignores injected identity/target headers', async () => {
-    const exchange = vi.fn().mockImplementation(success);
+    const customBrowser = 'https://garden.synthetic.example/tools';
+    const exchange = vi.fn().mockImplementation(() => success(customBrowser));
     const factory = vi.fn(() => new McpServer({ name: 'synthetic', version: '1' }));
     const base = await listen(
       createOAuthHttpServer({ ...options, fetchImpl: exchange, serverFactory: factory }),
@@ -98,7 +100,8 @@ describe('public MCP OAuth HTTP boundary', () => {
     expect(factory).toHaveBeenCalledWith(
       expect.objectContaining({
         apiUrl: options.apiUrl,
-        appUrl: options.appUrl,
+        appUrl: customBrowser,
+        viewerUrl: options.appUrl,
         sessionToken: 'synthetic-internal-delegation',
         isOAuthDelegation: true,
         oauthGrantId: 'garden-grant',
@@ -106,6 +109,11 @@ describe('public MCP OAuth HTTP boundary', () => {
       }),
     );
     expect(loadConfig(factory.mock.calls[0][0]).oauthGrantId).toBe('garden-grant');
+    expect(loadConfig(factory.mock.calls[0][0])).toMatchObject({
+      apiUrl: options.apiUrl,
+      appUrl: customBrowser,
+      viewerUrl: options.appUrl,
+    });
   });
   it.each(['GET', 'POST', 'DELETE'])(
     'authenticates %s even when a caller supplies an MCP session id',
@@ -252,7 +260,8 @@ describe('public MCP OAuth HTTP boundary', () => {
       organization_id: 'garden-id', app_id: 'synthetic-app',
     })));
     const config = {
-      apiUrl: options.apiUrl, appUrl: options.appUrl, sessionToken: 'synthetic-delegation',
+      apiUrl: options.apiUrl, appUrl: 'https://garden.synthetic.example', viewerUrl: options.appUrl,
+      sessionToken: 'synthetic-delegation',
       workspaceId: 'garden-id', isOAuthDelegation: true,
     };
     const auth = createAuth(config, fetchImpl);

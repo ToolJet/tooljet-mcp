@@ -60525,11 +60525,13 @@ function loadConfig(identity) {
   if (identity) {
     const apiUrl2 = identity.apiUrl ?? staticApiUrl;
     const appUrl2 = identity.appUrl ?? explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? "http://localhost:8082";
+    const viewerUrl = identity.viewerUrl ?? appUrl2;
     if (identity.pat)
-      return { apiUrl: apiUrl2, appUrl: appUrl2, pat: identity.pat };
+      return { apiUrl: apiUrl2, appUrl: appUrl2, viewerUrl, pat: identity.pat };
     return {
       apiUrl: apiUrl2,
       appUrl: appUrl2,
+      viewerUrl,
       sessionToken: identity.sessionToken,
       isOAuthDelegation: identity.isOAuthDelegation,
       oauthGrantId: identity.oauthGrantId,
@@ -60551,6 +60553,7 @@ function loadConfig(identity) {
   return {
     apiUrl,
     appUrl,
+    viewerUrl: appUrl,
     pat,
     sessionToken,
     workspaceId,
@@ -60761,7 +60764,7 @@ function createAuth(config2, fetchImpl = fetch) {
       return {
         cookieName: "tj_oauth_viewer",
         token: body.access_token,
-        origin: new URL(config2.appUrl).origin,
+        origin: new URL(config2.viewerUrl || config2.appUrl).origin,
         expiresAt: Math.floor(Date.now() / 1e3) + body.expires_in
       };
     }
@@ -71660,7 +71663,7 @@ function createClient(auth, config2) {
     createEvents,
     hasGoogleMapsKey,
     viewerSession: (appId) => auth.viewerSession?.(appId) ?? Promise.resolve(void 0),
-    browserRenderOrigin: config2.isOAuthDelegation ? new URL(config2.appUrl).origin : void 0,
+    browserRenderOrigin: config2.isOAuthDelegation ? new URL(config2.viewerUrl || config2.appUrl).origin : void 0,
     editingVersionName: async (appId) => (await getApp(appId))?.editing_version?.name ?? void 0,
     getDevelopmentEnvironmentId,
     listDatasources,
@@ -82207,6 +82210,7 @@ function createOAuthHttpServer(options2) {
       if (typeof credentials.access_token !== "string" || typeof credentials.organization_id !== "string" || typeof credentials.grant_id !== "string" || !credentials.grant_id) {
         throw new Error("Invalid delegation response");
       }
+      const browserUrl = typeof credentials.browser_url === "string" ? checkedUrl(credentials.browser_url, "browser_url") : appUrl;
       let requestBody;
       if (req.method === "POST") {
         try {
@@ -82225,7 +82229,8 @@ function createOAuthHttpServer(options2) {
         workspaceId: credentials.organization_id,
         workspaceSlug: typeof credentials.organization_slug === "string" ? credentials.organization_slug : void 0,
         apiUrl,
-        appUrl
+        appUrl: browserUrl,
+        viewerUrl: appUrl
       });
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: void 0,

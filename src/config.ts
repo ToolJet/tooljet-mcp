@@ -4,6 +4,9 @@ export interface Config {
    *  settings page, an app's editor/viewer URL). Most self-hosted instances serve the API and the UI
    *  from the same origin, so this defaults to `apiUrl` rather than requiring a second setting. */
   appUrl: string;
+  /** Fixed canonical origin used only by the restricted automated viewer.
+   * OAuth human links may use a workspace custom domain; viewer credentials do not. */
+  viewerUrl?: string;
   /** Personal access token. Scoped, revocable, and works on SSO-only instances. The token also
    *  determines the workspace: a PAT session is pinned to the workspace the token was issued in and
    *  can reach no other. Used when this server is run standalone (a developer's MCP client). */
@@ -37,6 +40,7 @@ export interface Config {
 export interface RequestIdentity {
   /** Trusted browser base supplied by the public OAuth deployment, never a request header. */
   appUrl?: string;
+  viewerUrl?: string;
   sessionToken?: string;
   isOAuthDelegation?: boolean;
   oauthGrantId?: string;
@@ -350,10 +354,12 @@ export function loadConfig(identity?: RequestIdentity): Config {
     // branch below already gets right. Only a genuinely-set TOOLJET_URL should stand in for appUrl.
     const appUrl = identity.appUrl ?? explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? 'http://localhost:8082';
 
-    if (identity.pat) return { apiUrl, appUrl, pat: identity.pat };
+    const viewerUrl = identity.viewerUrl ?? appUrl;
+    if (identity.pat) return { apiUrl, appUrl, viewerUrl, pat: identity.pat };
     return {
       apiUrl,
       appUrl,
+      viewerUrl,
       sessionToken: identity.sessionToken,
       isOAuthDelegation: identity.isOAuthDelegation,
       oauthGrantId: identity.oauthGrantId,
@@ -385,6 +391,7 @@ export function loadConfig(identity?: RequestIdentity): Config {
   return {
     apiUrl,
     appUrl,
+    viewerUrl: appUrl,
     pat,
     sessionToken,
     workspaceId,

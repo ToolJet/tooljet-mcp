@@ -2971,7 +2971,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     createEvents,
     hasGoogleMapsKey,
     viewerSession: (appId?: string) => auth.viewerSession?.(appId) ?? Promise.resolve(undefined),
-    browserRenderOrigin: config.isOAuthDelegation ? new URL(config.appUrl).origin : undefined,
+    browserRenderOrigin: config.isOAuthDelegation ? new URL(config.viewerUrl || config.appUrl).origin : undefined,
     editingVersionName: async (appId: string) => ((await getApp(appId))?.editing_version?.name as string | undefined) ?? undefined,
     getDevelopmentEnvironmentId,
     listDatasources,
