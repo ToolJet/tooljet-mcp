@@ -69,6 +69,7 @@ Rebuild the bundle after every pull: a stale bundle silently runs old tools.
 - **`x-tooljet-url` must be https**, so plain-http targets only work through the static `TOOLJET_URL` (`validateApiUrl`).
 - **`src/http.ts` has no bearer gate:** keep it on loopback; use `MCP_TRANSPORT=http` + `MCP_SHARED_TOKEN` for anything off-box.
 - **HTTP port default** (`TOOLJET_MCP_HTTP_PORT`, falls back to `PORT`) can clash with other local services; set it explicitly.
+- **Tracing:** `ENABLE_OTEL=true` + `OTEL_*` (`src/otel.ts`, spans in `src/tracing.ts`). stdout is the stdio channel: OTel logs go to stderr only; `build-plugin` probes the bundle with tracing on to keep it that way.
 
 ## 7. See also
 

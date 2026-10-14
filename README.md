@@ -253,6 +253,25 @@ rolling deployment). The resource list carries both in each entry's `_meta`, so 
 | `tooljet://catalog/datasources` | Query contract of every datasource kind (`data/datasource-schemas.json`) |
 | `tooljet://catalog/page-icons` | Page icon package, version and names (`data/page-icons.json`) |
 
+## Tracing (OpenTelemetry)
+
+Off by default. `ENABLE_OTEL=true` exports traces over OTLP/HTTP; the standard `OTEL_*` variables configure it:
+
+```bash
+ENABLE_OTEL=true
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318   # collector; /v1/traces is appended
+OTEL_RESOURCE_ATTRIBUTES=deployment.environment.name=development
+OTEL_LOG_LEVEL=info                                  # optional; OTel logs go to stderr, never stdout
+```
+
+tooljet-agent passes its environment to the stdio child, so setting these on the agent is enough. Per tool call you get:
+
+- a `tools/call <tool>` SERVER span, parented on `traceparent` / `tracestate` / `baggage` in the request's `params._meta` (SEP-414);
+- a CLIENT span per ToolJet API call, which carries `traceparent` and `baggage` headers and `User-Agent: tooljet-mcp/<version>`. Trace context is sent only to the ToolJet origin; other outbound requests get none;
+- the baggage entries `tooljet.origin` and `gen_ai.conversation.id` copied onto spans.
+
+Tool arguments, results and credentials are never recorded. Pending spans are flushed on stdin close, SIGTERM and SIGINT; the process then exits 143 (SIGTERM) or 130 (SIGINT).
+
 ## Privacy Policy
 
 This connector is covered by ToolJet's privacy policy: [tooljet.com/privacy](https://tooljet.com/privacy).
