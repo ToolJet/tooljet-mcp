@@ -67001,6 +67001,7 @@ var valueOf = (props2, key4) => {
   return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
 };
 var str2 = (value2) => typeof value2 === "string" ? value2 : "";
+var metaFieldNames = (value2) => (Array.isArray(value2) ? value2.filter((part) => typeof part === "string") : str2(value2).split(",")).map((part) => part.split(":")[0].trim());
 var STRONG_MONEY_WORD = /\b(prices?|amounts?|costs?|revenue|balance|fees?|salary|salaries|payments?|subtotal|refunds?|mrr|arr|payout|takings)\b/i;
 var MONEY_WORD = /\b(sales|spend|spent|budget|income|profit|invoiced?|earnings|gross|net|bill|total)\b/i;
 var COUNT_WORD = /\b(count|qty|quantity|items?|tasks?|hours?|days?|orders?|tickets?|people|users?|hires?|visits?|guests?|covers?|seats?|steps?|points?)\b/i;
@@ -67009,6 +67010,7 @@ var LOCALE_FORMAT = /toLocaleString|Intl\.NumberFormat|formatCurrency|numeral\(/
 var SYMBOL = "[$\u20AC\xA3\u20B9\xA5]";
 var words = (value2) => value2.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_.-]+/g, " ");
 var MONEY_QUALIFIER = /\b(methods?|status|types?|terms|dates?|modes?|plans?|tiers?|centers?|centres?|codes?|names?|ids?|frequency|schedule|currency|categor(y|ies))\b/i;
+var FORMATTED_NAME = /\b(labels?|text|display|formatted|fmt|str)\b/i;
 var isMoneyName = (value2) => {
   const w = words(value2);
   if (MONEY_QUALIFIER.test(w))
@@ -67073,7 +67075,7 @@ function lintUnformattedNumbers(spec) {
   }
   if (spec.type === "ShadCardGrid") {
     const data = str2(valueOf(props2, "data"));
-    const fields = ["titleField", "subtitleField", "descriptionField", "badgeField"].map((key4) => str2(valueOf(props2, key4))).concat(str2(valueOf(props2, "metaFields")).split(",").map((part) => part.split(":")[0].trim())).filter((field) => field && isMoneyName(field));
+    const fields = ["titleField", "subtitleField", "descriptionField", "badgeField"].map((key4) => str2(valueOf(props2, key4))).concat(metaFieldNames(valueOf(props2, "metaFields"))).filter((field) => field && isMoneyName(field) && !FORMATTED_NAME.test(words(field)));
     const raw = fields.filter((field) => !LOCALE_FORMAT.test(data) || !new RegExp(`\\b${field}\\b`).test(data));
     if (raw.length) {
       out.push(`${label3}: ${raw.map((f) => `"${f}"`).join(", ")} ${raw.length > 1 ? "are" : "is"} money shown as the raw number ("Amount 7.5"). Map the rows in data to a formatted string for the card, e.g. {{(queries.q.data || []).map(r => ({ ...r, ${raw[0]}: Number(r.${raw[0]}).toLocaleString('en-US', { style: 'currency', currency: 'USD' }) }))}}, in the request's currency and locale.`);
@@ -74163,9 +74165,10 @@ function selectEntries(entries, keys, detail) {
   const selected = keys?.length ? entries.filter((entry) => keys.includes(entry.key)) : entries;
   if (detail === "full" || keys?.length)
     return selected;
-  return selected.map(({ key: key4, valueType, allowedValues, requires, mutuallyExclusiveWith }) => ({
+  return selected.map(({ key: key4, valueType, valueTypes, allowedValues, requires, mutuallyExclusiveWith }) => ({
     key: key4,
     ...valueType !== void 0 ? { valueType } : {},
+    ...valueTypes !== void 0 ? { valueTypes } : {},
     ...allowedValues !== void 0 ? { allowedValues } : {},
     ...requires !== void 0 ? { requires } : {},
     ...mutuallyExclusiveWith !== void 0 ? { mutuallyExclusiveWith } : {}
