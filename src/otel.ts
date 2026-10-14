@@ -88,6 +88,12 @@ export function startOtel(apiUrl?: string): void {
   });
   // RITM patches http on the next require; the bundle's ESM `import 'node:http'` never triggers it.
   createRequire(import.meta.url)('node:http');
+
+  // Loop is empty (stdin closed): flush, then exit even if a dead collector's retry timers linger.
+  process.once('beforeExit', () => void shutdownOtel().finally(() => process.exit()));
+  for (const [signal, code] of [['SIGTERM', 143], ['SIGINT', 130]] as const) {
+    process.once(signal, () => void shutdownOtel().finally(() => process.exit(code)));
+  }
 }
 
 /** Flush and stop. Bounded: a dead collector must not hold the process open. */

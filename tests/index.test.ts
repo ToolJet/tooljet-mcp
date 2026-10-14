@@ -323,3 +323,34 @@ describe('direct mode', () => {
     expect(res.status).not.toBe(401);
   });
 });
+
+/* Outbound trace context goes only to origins that passed validateApiUrl — never the raw x-tooljet-url. */
+describe('createGatewayHttpServer — otel origin trust', () => {
+  it('trusts a validated x-tooljet-url origin and never an unvalidated one', async () => {
+    const { vi } = await import('vitest');
+    const trustOtelOrigin = vi.fn();
+    vi.resetModules();
+    vi.doMock('../src/otel.js', () => ({ startOtel: vi.fn(), trustOtelOrigin }));
+    process.env.ENABLE_OTEL = 'true';
+    process.env.TOOLJET_PAT = 'pat';
+    process.env.MCP_ALLOWED_API_ORIGINS = 'https://allowed.example.com';
+    try {
+      const { createGatewayHttpServer: create } = await import('../src/index.js');
+      const { server } = create();
+      runningServers.push(server);
+      const base = await listen(server);
+      const post = (url: string) =>
+        fetch(base, { method: 'POST', headers: { ...jsonHeaders, 'x-tooljet-url': url }, body: initializeBody() });
+
+      expect((await post('https://evil.example.com')).status).toBe(400);
+      expect((await post('http://allowed.example.com')).status).toBe(400);
+      expect(trustOtelOrigin).not.toHaveBeenCalled();
+
+      expect((await post('https://allowed.example.com')).status).toBe(200);
+      expect(trustOtelOrigin).toHaveBeenCalledExactlyOnceWith('https://allowed.example.com');
+    } finally {
+      delete process.env.ENABLE_OTEL;
+      vi.doUnmock('../src/otel.js');
+    }
+  });
+});

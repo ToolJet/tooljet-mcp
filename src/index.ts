@@ -237,6 +237,10 @@ export function createGatewayHttpServer(): GatewayHttpServer {
     const readsResource = !!parsedBody && typeof parsedBody === 'object' && !Array.isArray(parsedBody) &&
       (parsedBody as { method?: unknown }).method === 'resources/read';
 
+    // identity.apiUrl passed validateApiUrl above; the raw header never reaches here.
+    if (identity?.apiUrl && process.env.ENABLE_OTEL === 'true') {
+      (await import('./otel.js')).trustOtelOrigin(identity.apiUrl);
+    }
     const server = buildServer(identity);
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: readsResource });
     res.on('close', () => {
@@ -283,6 +287,15 @@ async function serveHttp(): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  if (process.env.ENABLE_OTEL === 'true') {
+    try {
+      // Static TOOLJET_URL only; HTTP tenants are trusted per request once validated.
+      (await import('./otel.js')).startOtel(process.env.TOOLJET_URL || undefined);
+    } catch (err) {
+      // Tracing is optional; never let it stop the server.
+      console.error('tooljet-mcp: OpenTelemetry failed to start', err);
+    }
+  }
   if (process.env.MCP_TRANSPORT === 'http') {
     await serveHttp();
     return;
