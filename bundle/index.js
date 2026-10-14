@@ -78414,7 +78414,10 @@ function normalizeComponentSpec(component, options2 = {}) {
     if (look0 === "shadcn" && typeof height2 === "number" && !isTruthy(propValue(properties, "dynamicHeight")) && !isTruthy(propValue(properties, "serverSidePagination")) && !isFalse(propValue(properties, "enablePagination"))) {
       const rowsPerPage = staticNumber2(propValue(properties, "rowsPerPage")) ?? 10;
       const toolbar = isFalse(propValue(properties, "displaySearchBox")) ? 0 : 64;
-      const fit = Math.floor((height2 - toolbar - 40 - 58) / 45);
+      const cellEntry = stylesValue.cellSize;
+      const cellSize = cellEntry && typeof cellEntry === "object" ? cellEntry.value : cellEntry;
+      const rowPx = cellSize === "condensed" ? 40 : 46;
+      const fit = Math.floor((height2 - toolbar - 41 - 47) / rowPx);
       if (fit < rowsPerPage) {
         if (fit >= 3) {
           setProperty("rowsPerPage", `{{${fit}}}`);
