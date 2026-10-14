@@ -299,16 +299,16 @@ export async function identityFromHeaders(
   };
 }
 
+export function staticApiUrlFromEnv(): string {
+  return env('TOOLJET_URL') ?? env('TOOLJET_DEPLOYMENT_URL') ?? env('TOOLJET_APP_URL') ?? 'http://localhost:3000';
+}
+
 /**
  * Build the config for one request (HTTP) or one process (stdio).
  *
  * When `identity` is given it REPLACES this process's PAT rather than sitting alongside it, so a
  * shared server can never fall back to its own credential midway through acting as a user.
  */
-export function staticApiUrlFromEnv(): string {
-  return env('TOOLJET_URL') ?? env('TOOLJET_DEPLOYMENT_URL') ?? env('TOOLJET_APP_URL') ?? 'http://localhost:3000';
-}
-
 export function loadConfig(identity?: RequestIdentity): Config {
   // `??` is wrong here: a plugin host substitutes an unset ${VAR} as an empty string, which is not
   // nullish, so it would beat the default and every request would go to "". Treat blank as unset.
