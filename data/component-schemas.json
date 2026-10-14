@@ -29,7 +29,12 @@
       {
         "key": "value",
         "label": "Default value",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number",
+          "boolean"
+        ]
       },
       {
         "key": "schema",
@@ -242,18 +247,30 @@
         "key": "fieldBorderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -474,12 +491,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -686,12 +711,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -794,6 +827,10 @@
         "key": "defaultValue",
         "label": "Default value",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "array"
+        ],
         "default": "{{[\t{type: 'RECTANGLE',width: 40,height:24, x:41,y:62,text:'Car'},{type: 'RECTANGLE',width: 40,height:24, x:41,y:12,text:'Tree'}\t]}}"
       },
       {
@@ -964,6 +1001,10 @@
         "key": "textSize",
         "label": "Font size",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{14}}"
       },
       {
@@ -1012,18 +1053,30 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000090"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -1188,18 +1241,27 @@
         "key": "values",
         "label": "values",
         "valueType": "union",
+        "valueTypes": [
+          "array"
+        ],
         "default": "{{[1,2,3]}}"
       },
       {
         "key": "labels",
         "label": "Labels",
         "valueType": "union",
+        "valueTypes": [
+          "array"
+        ],
         "default": "{{[]}}"
       },
       {
         "key": "defaultSelected",
         "label": "Default selected",
         "valueType": "union",
+        "valueTypes": [
+          "array"
+        ],
         "default": "{{[1]}}"
       },
       {
@@ -1262,6 +1324,10 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -1509,6 +1575,10 @@
         "key": "textSize",
         "label": "Font size",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{14}}"
       },
       {
@@ -1569,12 +1639,20 @@
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -1916,12 +1994,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -2338,12 +2424,20 @@
         "key": "fieldBorderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -2361,12 +2455,20 @@
         "key": "menuCustomWidth",
         "label": "Custom menu width",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "256"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -2544,6 +2646,10 @@
         "key": "data",
         "label": "Data",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "array"
+        ],
         "default": "[\n    { \"x\": \"Jan\", \"y\": 100},\n    { \"x\": \"Feb\", \"y\": 80},\n    { \"x\": \"Mar\", \"y\": 40}\n  ]"
       },
       {
@@ -2574,6 +2680,11 @@
         "key": "type",
         "label": "Chart type",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "boolean",
+          "number"
+        ],
         "default": "line",
         "allowedValues": [
           "line",
@@ -2585,6 +2696,10 @@
         "key": "jsonDescription",
         "label": "Json Description",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "object"
+        ],
         "default": "{ \"data\": [ { \"x\": [ \"Jan\", \"Feb\",…"
       },
       {
@@ -2622,6 +2737,10 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "number",
+          "string"
+        ],
         "default": "50"
       },
       {
@@ -3133,6 +3252,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000090"
       },
       {
@@ -3149,6 +3272,10 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -3404,6 +3531,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -3726,18 +3857,30 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -3956,12 +4099,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -4086,13 +4237,21 @@
       {
         "key": "value",
         "label": "Default value",
-        "valueType": "number",
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0"
       },
       {
         "key": "decimalPlaces",
         "label": "Decimal places",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "2"
       },
       {
@@ -4221,18 +4380,30 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -4288,6 +4459,17 @@
           {
             "handle": "country",
             "displayName": "country",
+            "defaultValue": ""
+          }
+        ]
+      },
+      {
+        "handle": "setCountryCode",
+        "displayName": "Set country code",
+        "params": [
+          {
+            "handle": "countryCode",
+            "displayName": "Country code",
             "defaultValue": ""
           }
         ]
@@ -4411,6 +4593,10 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
@@ -4687,18 +4873,30 @@
         "key": "fieldBorderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -5060,18 +5258,30 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -5449,18 +5659,30 @@
         "key": "fieldBorderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -5781,12 +6003,20 @@
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -5834,6 +6064,11 @@
         "key": "value",
         "label": "Default value",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number",
+          "boolean"
+        ],
         "default": "{{2}}"
       },
       {
@@ -5865,6 +6100,10 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "number",
+          "string"
+        ],
         "default": "4"
       },
       {
@@ -6198,12 +6437,20 @@
         "key": "fieldBorderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -6221,12 +6468,20 @@
         "key": "menuCustomWidth",
         "label": "Custom menu width",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "256"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -6521,18 +6776,30 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -6760,6 +7027,10 @@
         "key": "labelSize",
         "label": "Label size",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "14"
       },
       {
@@ -6827,12 +7098,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -7116,18 +7395,30 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -7389,6 +7680,10 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -7591,12 +7886,20 @@
         "key": "gap",
         "label": "Gap (px)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "12"
       },
       {
         "key": "padding",
         "label": "Padding (px)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "12"
       },
       {
@@ -7678,12 +7981,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -7777,6 +8088,10 @@
         "key": "generateFormFrom",
         "label": "Generate form from",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "object"
+        ],
         "default": "",
         "allowedValues": [
           "rawJson",
@@ -7837,18 +8152,30 @@
         "key": "headerHeight",
         "label": "Header height",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": 60
       },
       {
         "key": "canvasHeight",
         "label": "Canvas height",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": 80
       },
       {
         "key": "footerHeight",
         "label": "Footer height",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": 60
       },
       {
@@ -7927,6 +8254,10 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
@@ -8172,9 +8503,19 @@
     ],
     "styles": [
       {
+        "key": "backgroundColor",
+        "label": "Background color",
+        "valueType": "string",
+        "default": ""
+      },
+      {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -8290,7 +8631,7 @@
         "key": "iconColor",
         "label": "Color",
         "valueType": "string",
-        "default": "#000"
+        "default": "var(--cc-default-icon)"
       },
       {
         "key": "iconAlign",
@@ -8302,6 +8643,10 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -8312,6 +8657,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -8435,6 +8784,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -8658,12 +9011,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{0}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -8680,6 +9041,10 @@
         "key": "customPadding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{0}}"
       },
       {
@@ -8762,6 +9127,10 @@
         "key": "value",
         "label": "Json",
         "valueType": "union",
+        "valueTypes": [
+          "array",
+          "object"
+        ],
         "default": "{{{ text : \"Hello World\", number : 64, boolean : true, nullValue : null, fruits : [ \"banana\", \"mango\", \"grape\" ], objectA : { value : \"…"
       },
       {
@@ -8846,12 +9215,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -8961,6 +9338,10 @@
         "key": "value",
         "label": "Json",
         "valueType": "union",
+        "valueTypes": [
+          "array",
+          "object"
+        ],
         "default": "{{{ text : \"Hello World\", number : 64, boolean : true, nullValue : null, fruits : [ \"banana\", \"mango\", \"grape\" ], objectA : { value : \"…"
       },
       {
@@ -9051,12 +9432,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -9582,6 +9971,10 @@
         "key": "dataSourceSelector",
         "label": "Data source",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "object"
+        ],
         "default": "rawJson",
         "allowedValues": [
           "rawJson"
@@ -9871,6 +10264,10 @@
         "key": "paddingInside",
         "label": "Padding inside",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "12"
       },
       {
@@ -9889,18 +10286,30 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -10062,6 +10471,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -10226,12 +10639,20 @@
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -10343,6 +10764,11 @@
         "key": "dataSourceSelector",
         "label": "Data source",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "array",
+          "object"
+        ],
         "default": "rawJson",
         "allowedValues": [
           "rawJson"
@@ -10352,6 +10778,9 @@
         "key": "data",
         "label": " ",
         "valueType": "union",
+        "valueTypes": [
+          "array"
+        ],
         "default": "{{[ { imageURL: 'https://www.svgrepo.com/show/34217/image.svg', text: 'Sample text 1', buttonText: 'Button 1' }, { imageURL: 'https://www.svgrepo.c…"
       },
       {
@@ -10468,6 +10897,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -10604,18 +11037,30 @@
         "key": "initialLocation",
         "label": "Initial location",
         "valueType": "union",
+        "valueTypes": [
+          "array",
+          "object"
+        ],
         "default": "{{ {\"lat\": 40.7128, \"lng\": -73.935242} }}"
       },
       {
         "key": "defaultMarkers",
         "label": "Default markers",
         "valueType": "union",
+        "valueTypes": [
+          "array",
+          "object"
+        ],
         "default": "{{ [{\"lat\": 40.7128, \"lng\": -73.935242}] }}"
       },
       {
         "key": "polygonPoints",
         "label": "Polygon points",
         "valueType": "union",
+        "valueTypes": [
+          "array",
+          "object"
+        ],
         "default": "{{[\n\t\t{\"lat\": 40.7032, \"lng\": -73.975242},\n\t\t{\"lat\": 40.7532, \"lng\": -73.943242},\n\t\t{\"lat\": 40.7032, \"lng\": -73.916242}\n]}}"
       },
       {
@@ -10972,6 +11417,10 @@
         "key": "modalHeight",
         "label": "Height",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{400}}"
       },
       {
@@ -11071,6 +11520,10 @@
         "key": "triggerButtonTextSize",
         "label": "Font size",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{14}}"
       },
       {
@@ -11402,6 +11855,10 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -11569,6 +12026,11 @@
         "key": "value",
         "label": "Default value",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number",
+          "boolean"
+        ],
         "description": "Inspector metadata, not the runtime initial-selection property: static mode reads values (an array). The exposed current selection is also .values, never .value."
       },
       {
@@ -11587,6 +12049,10 @@
         "key": "maxLimit",
         "label": "Max selection limit",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": ""
       },
       {
@@ -11811,18 +12277,30 @@
         "key": "fieldBorderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -12117,6 +12595,10 @@
         "key": "pillBorderRadius",
         "label": "Pill border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
@@ -12188,12 +12670,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "8"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "2"
       },
       {
@@ -12346,6 +12836,10 @@
         "key": "value",
         "label": "Default value",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0"
       },
       {
@@ -12502,18 +12996,30 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -12709,6 +13215,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -12950,18 +13460,30 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -13310,18 +13832,30 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -13444,6 +13978,10 @@
     "exposedVariables": [
       {
         "name": "value",
+        "default": ""
+      },
+      {
+        "name": "domesticNumber",
         "default": ""
       },
       {
@@ -13631,6 +14169,10 @@
         "key": "textSize",
         "label": "Font size",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{14}}"
       },
       {
@@ -13679,12 +14221,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -13702,6 +14252,10 @@
         "key": "menuCustomWidth",
         "label": "Custom menu width",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "256"
       },
       {
@@ -13916,6 +14470,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -14256,6 +14814,10 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -14382,6 +14944,11 @@
         "key": "value",
         "label": "Default value",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number",
+          "boolean"
+        ],
         "default": "{{true}}"
       },
       {
@@ -14477,6 +15044,10 @@
         "key": "value",
         "label": "Value",
         "valueType": "union",
+        "valueTypes": [
+          "array",
+          "number"
+        ],
         "default": "{{50}}"
       },
       {
@@ -14691,6 +15262,10 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -14910,6 +15485,10 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -15195,6 +15774,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -15416,6 +15999,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -15441,7 +16028,11 @@
       {
         "key": "borderRadius",
         "label": "Alert radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -15531,6 +16122,10 @@
         "key": "yFields",
         "label": "Series fields (one or many)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "array"
+        ],
         "default": "revenue"
       },
       {
@@ -15554,7 +16149,11 @@
       {
         "key": "seriesLabels",
         "label": "Series labels ({ field: label })",
-        "valueType": "object",
+        "valueType": "union",
+        "valueTypes": [
+          "object",
+          "array"
+        ],
         "default": "{{{} }}"
       },
       {
@@ -15649,6 +16248,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -15768,6 +16371,10 @@
         "key": "names",
         "label": "Names (one or many; or [{ name, src }])",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "array"
+        ],
         "default": "Ada Lovelace"
       },
       {
@@ -15844,6 +16451,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -16009,6 +16620,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -16029,7 +16644,11 @@
       {
         "key": "borderRadius",
         "label": "Badge radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -16119,6 +16738,10 @@
         "key": "yFields",
         "label": "Series fields (one or many)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "array"
+        ],
         "default": "revenue"
       },
       {
@@ -16142,7 +16765,11 @@
       {
         "key": "seriesLabels",
         "label": "Series labels ({ field: label })",
-        "valueType": "object",
+        "valueType": "union",
+        "valueTypes": [
+          "object",
+          "array"
+        ],
         "default": "{{{} }}"
       },
       {
@@ -16173,6 +16800,11 @@
         "key": "highlight",
         "label": "Highlight (category values, or first, last, max, min)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number",
+          "array"
+        ],
         "default": ""
       },
       {
@@ -16237,6 +16869,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -16424,6 +17060,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -16605,6 +17245,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -16630,7 +17274,11 @@
       {
         "key": "borderRadius",
         "label": "Button radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -16801,6 +17449,13 @@
         "key": "defaultValue",
         "label": "Default selected (value, or a list when multiple)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number",
+          "boolean",
+          "array",
+          "object"
+        ],
         "default": "week"
       },
       {
@@ -16900,6 +17555,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -16945,7 +17604,11 @@
       {
         "key": "borderRadius",
         "label": "Group radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -17083,6 +17746,13 @@
         "key": "defaultValue",
         "label": "Default value (YYYY-MM-DD, a list, or [start, end])",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number",
+          "boolean",
+          "array",
+          "object"
+        ],
         "default": ""
       },
       {
@@ -17223,6 +17893,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -17283,12 +17957,20 @@
       {
         "key": "borderRadius",
         "label": "Calendar radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cellSize",
         "label": "Day size (px)",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -17469,6 +18151,10 @@
         "key": "badgeFields",
         "label": "More badge fields (comma list, e.g. 'diet, spice')",
         "valueType": "union",
+        "valueTypes": [
+          "array",
+          "string"
+        ],
         "default": ""
       },
       {
@@ -17498,7 +18184,11 @@
       {
         "key": "metaFields",
         "label": "Meta fields (comma list; 'prep:{} min')",
-        "valueType": "string",
+        "valueType": "union",
+        "valueTypes": [
+          "array",
+          "string"
+        ],
         "default": "prep:{} min, serves:Serves"
       },
       {
@@ -17521,12 +18211,20 @@
         "key": "columns",
         "label": "Columns (a number or 'auto')",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{3}}"
       },
       {
         "key": "minCardWidth",
         "label": "Minimum card width (px)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{240}}"
       },
       {
@@ -17631,6 +18329,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -17661,7 +18363,11 @@
       {
         "key": "borderRadius",
         "label": "Card radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "titleFontFamily",
@@ -17914,6 +18620,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -17964,12 +18674,20 @@
       {
         "key": "borderRadius",
         "label": "Slide radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "gap",
         "label": "Gap between slides (px)",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -18220,6 +18938,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -18235,7 +18957,11 @@
       {
         "key": "borderRadius",
         "label": "Border radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "accentColorField",
@@ -18568,6 +19294,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -18838,6 +19568,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -19064,6 +19798,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -19104,7 +19842,11 @@
       {
         "key": "borderRadius",
         "label": "Field radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "menuBackgroundColor",
@@ -19272,18 +20014,30 @@
         "key": "barFields",
         "label": "Bar series (fields)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "array"
+        ],
         "default": "{{['revenue']}}"
       },
       {
         "key": "lineFields",
         "label": "Line series (fields)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "array"
+        ],
         "default": "{{['margin']}}"
       },
       {
         "key": "rightAxisFields",
         "label": "Right axis series (fields)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "array"
+        ],
         "default": "{{['margin']}}"
       },
       {
@@ -19313,6 +20067,10 @@
         "key": "strokeWidth",
         "label": "Line width (px)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{2}}"
       },
       {
@@ -19384,7 +20142,11 @@
       {
         "key": "seriesLabels",
         "label": "Series labels ({ field: label })",
-        "valueType": "object",
+        "valueType": "union",
+        "valueTypes": [
+          "object",
+          "array"
+        ],
         "default": "{{{ revenue: 'Revenue', margin: 'Margin' }}}"
       },
       {
@@ -19449,6 +20211,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -19629,6 +20395,13 @@
         "key": "defaultValue",
         "label": "Default value",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number",
+          "boolean",
+          "array",
+          "object"
+        ],
         "default": ""
       },
       {
@@ -19683,6 +20456,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -19728,7 +20505,11 @@
       {
         "key": "borderRadius",
         "label": "Field radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "menuBackgroundColor",
@@ -19912,6 +20693,10 @@
         "key": "defaultValue",
         "label": "Default value",
         "valueType": "union",
+        "valueTypes": [
+          "number",
+          "string"
+        ],
         "default": "{{1250}}"
       },
       {
@@ -19936,6 +20721,10 @@
         "key": "decimalPlaces",
         "label": "Decimal places (empty: the currency's own)",
         "valueType": "union",
+        "valueTypes": [
+          "number",
+          "string"
+        ],
         "default": ""
       },
       {
@@ -19995,6 +20784,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -20040,7 +20833,11 @@
       {
         "key": "borderRadius",
         "label": "Field radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "affixColor",
@@ -20262,6 +21059,13 @@
         "key": "defaultValue",
         "label": "Default (YYYY-MM-DD, or [start, end] for a range)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number",
+          "boolean",
+          "array",
+          "object"
+        ],
         "default": ""
       },
       {
@@ -20334,6 +21138,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -20379,7 +21187,11 @@
       {
         "key": "borderRadius",
         "label": "Field radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -20714,6 +21526,10 @@
         "key": "defaultValue",
         "label": "Default value (YYYY-MM-DD HH:mm)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": ""
       },
       {
@@ -20802,6 +21618,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -20847,7 +21667,11 @@
       {
         "key": "borderRadius",
         "label": "Field radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "iconColor",
@@ -21198,6 +22022,10 @@
         "key": "modalHeight",
         "label": "Height",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{400}}"
       },
       {
@@ -21317,6 +22145,10 @@
         "key": "triggerButtonTextSize",
         "label": "Font size",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{14}}"
       },
       {
@@ -21714,6 +22546,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -21739,7 +22575,11 @@
       {
         "key": "borderRadius",
         "label": "Trigger radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "menuBackgroundColor",
@@ -21784,12 +22624,20 @@
       {
         "key": "menuRadius",
         "label": "Menu radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "menuWidth",
         "label": "Menu width (px)",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -21967,6 +22815,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -21982,7 +22834,11 @@
       {
         "key": "borderRadius",
         "label": "Radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "iconBackgroundColor",
@@ -22121,18 +22977,30 @@
         "key": "maxFiles",
         "label": "Max files",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{5}}"
       },
       {
         "key": "maxSize",
         "label": "Max size (bytes, 0 for no limit)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{5242880}}"
       },
       {
         "key": "minSize",
         "label": "Min size (bytes)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{0}}"
       },
       {
@@ -22219,6 +23087,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -22284,7 +23156,11 @@
       {
         "key": "borderRadius",
         "label": "Radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -22578,6 +23454,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -22764,6 +23644,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -22807,7 +23691,11 @@
       {
         "key": "letterSpacing",
         "label": "Letter spacing (px, or em like 0.12em)",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "textTransform",
@@ -22824,7 +23712,11 @@
       {
         "key": "fontSize",
         "label": "Font size (px; default from the level)",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -22972,6 +23864,10 @@
         "key": "cellGap",
         "label": "Cell gap (px)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{3}}"
       },
       {
@@ -23072,6 +23968,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -23205,6 +24105,10 @@
         "key": "meta",
         "label": "Meta facts",
         "valueType": "union",
+        "valueTypes": [
+          "array",
+          "string"
+        ],
         "default": "{{['Sun, 11 Oct', '14 bookings', '3 need a reply']}}"
       },
       {
@@ -23223,6 +24127,11 @@
         "key": "asideValue",
         "label": "Aside: a figure, or a list of facts",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number",
+          "array"
+        ],
         "default": ""
       },
       {
@@ -23339,6 +24248,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -23364,7 +24277,11 @@
       {
         "key": "borderRadius",
         "label": "Panel radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "titleFontFamily",
@@ -23508,6 +24425,10 @@
         "key": "chipSize",
         "label": "Chip size (px, empty: icon x 2)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": ""
       },
       {
@@ -23566,6 +24487,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -23581,7 +24506,11 @@
       {
         "key": "chipRadius",
         "label": "Chip radius (square chip)",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "alignment",
@@ -23811,12 +24740,20 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "borderRadius",
         "label": "Image radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "borderColor",
@@ -24026,6 +24963,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -24071,7 +25012,11 @@
       {
         "key": "borderRadius",
         "label": "Field radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -24328,12 +25273,20 @@
         "key": "collapsedHeight",
         "label": "Collapsed card height (px, empty: show all)",
         "valueType": "union",
+        "valueTypes": [
+          "number",
+          "string"
+        ],
         "default": ""
       },
       {
         "key": "columnWidth",
         "label": "Column width (px, empty: fill the board)",
         "valueType": "union",
+        "valueTypes": [
+          "number",
+          "string"
+        ],
         "default": ""
       },
       {
@@ -24446,6 +25399,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -24481,12 +25438,20 @@
       {
         "key": "columnGap",
         "label": "Gap between columns",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "columnBorderRadius",
         "label": "Column radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cardBackgroundColor",
@@ -24516,7 +25481,11 @@
       {
         "key": "cardBorderRadius",
         "label": "Card radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cardShadow",
@@ -24770,6 +25739,10 @@
         "key": "data",
         "label": "Data (object or array)",
         "valueType": "union",
+        "valueTypes": [
+          "array",
+          "object"
+        ],
         "default": "{{[{ label: 'Customer', value: 'Ada Lovelace' }, { label: 'Email', value: 'ada@example.com', type: 'link' }, { label: 'Status', value: 'Active', type: 'badge…"
       },
       {
@@ -24798,6 +25771,10 @@
         "key": "labelWidth",
         "label": "Label width (side by side; px or %)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "40%"
       },
       {
@@ -24904,6 +25881,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -25028,6 +26009,10 @@
         "key": "yFields",
         "label": "Series fields (one or many)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "array"
+        ],
         "default": "{{['revenue', 'expenses']}}"
       },
       {
@@ -25051,18 +26036,30 @@
         "key": "strokeWidth",
         "label": "Line width (px)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{2}}"
       },
       {
         "key": "dashedFields",
         "label": "Dashed series (fields)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "array"
+        ],
         "default": ""
       },
       {
         "key": "referenceValue",
         "label": "Target line value",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": ""
       },
       {
@@ -25128,7 +26125,11 @@
       {
         "key": "seriesLabels",
         "label": "Series labels ({ field: label })",
-        "valueType": "object",
+        "valueType": "union",
+        "valueTypes": [
+          "object",
+          "array"
+        ],
         "default": "{{{} }}"
       },
       {
@@ -25193,6 +26194,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -25427,6 +26432,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -25558,14 +26567,14 @@
     "description": "List or grid: one canvas repeated per item of data; parent components to it and bind them to {{listItem.<field>}}. A click selects the item (selectedItem, onRowClicked); optional pagination (client or server side), dividers, hover and selected highlight. Items have a fixed height (rowHeight)",
     "defaultSize": {
       "width": 30,
-      "height": 400
+      "height": 260
     },
     "properties": [
       {
         "key": "data",
         "label": "List data",
         "valueType": "array",
-        "default": "{{[{ id: 1, name: 'Ada Lovelace', role: 'Engineering' }, { id: 2, name: 'Alan Turing', role: 'Research' }, { id: 3, name: 'Grace Hopper', role: 'Platform' }]}}"
+        "default": "{{[{ id: 1, name: 'Ada Lovelace', email: 'ada@example.com', role: 'Engineering' }, { id: 2, name: 'Alan Turing', email: 'alan@example.com', role: 'Research'…"
       },
       {
         "key": "mode",
@@ -25705,6 +26714,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -25745,7 +26758,21 @@
       {
         "key": "itemBorderRadius",
         "label": "Item radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
+      },
+      {
+        "key": "itemVariant",
+        "label": "Item look",
+        "valueType": "string",
+        "default": "outline",
+        "allowedValues": [
+          "plain",
+          "outline"
+        ]
       },
       {
         "key": "itemShadow",
@@ -25762,7 +26789,11 @@
       {
         "key": "padding",
         "label": "Padding around the list (px)",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "emptyTextColor",
@@ -25903,6 +26934,95 @@
         "default": 1
       }
     ],
+    "defaultChildren": [
+      {
+        "componentName": "ShadAvatar",
+        "layout": {
+          "top": 16,
+          "left": 1,
+          "height": 40,
+          "width": 3
+        },
+        "properties": [
+          "names",
+          "size"
+        ],
+        "accessorKey": "name",
+        "defaultValue": {
+          "size": "{{40}}"
+        }
+      },
+      {
+        "componentName": "ShadText",
+        "layout": {
+          "top": 14,
+          "left": 5,
+          "height": 22,
+          "width": 20
+        },
+        "properties": [
+          "text",
+          "tone"
+        ],
+        "accessorKey": "name",
+        "defaultValue": {
+          "tone": "small"
+        }
+      },
+      {
+        "componentName": "ShadText",
+        "layout": {
+          "top": 36,
+          "left": 5,
+          "height": 22,
+          "width": 20
+        },
+        "properties": [
+          "text",
+          "tone"
+        ],
+        "accessorKey": "email",
+        "defaultValue": {
+          "tone": "muted"
+        }
+      },
+      {
+        "componentName": "ShadBadge",
+        "layout": {
+          "top": 24,
+          "left": 27,
+          "height": 24,
+          "width": 7
+        },
+        "properties": [
+          "text",
+          "variant"
+        ],
+        "accessorKey": "role",
+        "defaultValue": {
+          "variant": "secondary"
+        }
+      },
+      {
+        "componentName": "ShadButton",
+        "layout": {
+          "top": 18,
+          "left": 35,
+          "height": 36,
+          "width": 7
+        },
+        "properties": [
+          "text",
+          "variant",
+          "size"
+        ],
+        "defaultValue": {
+          "text": "View",
+          "variant": "outline",
+          "size": "sm"
+        }
+      }
+    ],
     "authoringHints": {
       "list": {
         "content": "One canvas repeated per item: create the item components with parent_ref to the list (no slot) and bind them to {{listItem.<field>}}. Every item has the same height, properties.rowHeight in px: size it to the item content. mode \"grid\" with columns repeats items in a grid; each cell has its own 43-column canvas (a full-cell child is left 0, width 43).",
@@ -25985,7 +27105,11 @@
       {
         "key": "popupFields",
         "label": "Popup fields (comma list; 'eta:ETA {}', 'total|currency')",
-        "valueType": "string",
+        "valueType": "union",
+        "valueTypes": [
+          "array",
+          "string"
+        ],
         "default": "eta:ETA {}, driver"
       },
       {
@@ -26028,6 +27152,11 @@
         "key": "routeStart",
         "label": "Routes start at ({ lat, lng })",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "array",
+          "object"
+        ],
         "default": ""
       },
       {
@@ -26105,6 +27234,11 @@
         "key": "defaultPickedLocation",
         "label": "Picked location to start with ({ lat, lng })",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "array",
+          "object"
+        ],
         "default": ""
       },
       {
@@ -26141,6 +27275,11 @@
         "key": "defaultCenter",
         "label": "Default center ({ lat, lng })",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "array",
+          "object"
+        ],
         "default": ""
       },
       {
@@ -26241,6 +27380,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -26266,7 +27409,11 @@
       {
         "key": "borderRadius",
         "label": "Radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -26560,12 +27707,20 @@
         "key": "maxVisibleChips",
         "label": "Max visible chips (0 shows all)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{3}}"
       },
       {
         "key": "maxSelections",
         "label": "Max selections (0 for no limit)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{0}}"
       },
       {
@@ -26620,6 +27775,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -26665,7 +27824,11 @@
       {
         "key": "borderRadius",
         "label": "Field radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "chipBackgroundColor",
@@ -26858,6 +28021,13 @@
         "key": "defaultValue",
         "label": "Active item (value)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number",
+          "boolean",
+          "array",
+          "object"
+        ],
         "default": "dashboard"
       },
       {
@@ -26966,6 +28136,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -27026,7 +28200,11 @@
       {
         "key": "itemRadius",
         "label": "Item radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -27220,6 +28398,10 @@
         "key": "defaultValue",
         "label": "Default value",
         "valueType": "union",
+        "valueTypes": [
+          "number",
+          "string"
+        ],
         "default": "{{1}}"
       },
       {
@@ -27309,6 +28491,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -27354,7 +28540,11 @@
       {
         "key": "borderRadius",
         "label": "Field radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "stepperBackgroundColor",
@@ -27624,6 +28814,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -27669,7 +28863,11 @@
       {
         "key": "borderRadius",
         "label": "Field radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "separatorColor",
@@ -27679,7 +28877,11 @@
       {
         "key": "slotSize",
         "label": "Box size",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -27824,6 +29026,10 @@
         "key": "totalRecords",
         "label": "Total records (instead of pages)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": ""
       },
       {
@@ -27912,6 +29118,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -27942,7 +29152,11 @@
       {
         "key": "borderRadius",
         "label": "Button radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "alignment",
@@ -28129,6 +29343,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -28174,7 +29392,11 @@
       {
         "key": "borderRadius",
         "label": "Field radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "iconColor",
@@ -28428,6 +29650,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -28473,7 +29699,11 @@
       {
         "key": "borderRadius",
         "label": "Field radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "countryBackgroundColor",
@@ -28787,6 +30017,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -28981,6 +30215,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -29006,7 +30244,11 @@
       {
         "key": "barHeight",
         "label": "Bar height",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -29274,6 +30516,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -29309,7 +30555,11 @@
       {
         "key": "borderRadius",
         "label": "List radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "titleFontFamily",
@@ -29519,6 +30769,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -29549,7 +30803,11 @@
       {
         "key": "borderRadius",
         "label": "Radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "titleFontFamily",
@@ -29694,18 +30952,30 @@
         "key": "yFields",
         "label": "Series fields (one or many)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "array"
+        ],
         "default": "{{['alex', 'jordan']}}"
       },
       {
         "key": "maxValue",
         "label": "Max value (blank = auto)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{100}}"
       },
       {
         "key": "fillOpacity",
         "label": "Fill opacity (0 to 1)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{0.5}}"
       },
       {
@@ -29763,7 +31033,11 @@
       {
         "key": "seriesLabels",
         "label": "Series labels ({ field: label })",
-        "valueType": "object",
+        "valueType": "union",
+        "valueTypes": [
+          "object",
+          "array"
+        ],
         "default": "{{{} }}"
       },
       {
@@ -29828,6 +31102,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -29958,12 +31236,20 @@
         "key": "value",
         "label": "Value",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{72}}"
       },
       {
         "key": "maxValue",
         "label": "Max value",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{100}}"
       },
       {
@@ -30000,18 +31286,30 @@
         "key": "startAngle",
         "label": "Start angle",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{90}}"
       },
       {
         "key": "endAngle",
         "label": "End angle",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{-270}}"
       },
       {
         "key": "thickness",
         "label": "Ring thickness (px, blank = auto)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": ""
       },
       {
@@ -30118,6 +31416,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -30261,6 +31563,13 @@
         "key": "defaultValue",
         "label": "Default value",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number",
+          "boolean",
+          "array",
+          "object"
+        ],
         "default": "Standard"
       },
       {
@@ -30315,6 +31624,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -30479,12 +31792,20 @@
         "key": "defaultValue",
         "label": "Default value",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{4}}"
       },
       {
         "key": "max",
         "label": "Number of icons (1 to 10)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{5}}"
       },
       {
@@ -30591,6 +31912,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -30762,7 +32087,11 @@
       {
         "key": "metaFields",
         "label": "Meta fields (comma list; 'total|currency', 'due|date:Due {}')",
-        "valueType": "string",
+        "valueType": "union",
+        "valueTypes": [
+          "array",
+          "string"
+        ],
         "default": "contact, due|date:Due {}"
       },
       {
@@ -30927,6 +32256,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -30957,7 +32290,11 @@
       {
         "key": "borderRadius",
         "label": "List radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "titleFontFamily",
@@ -31160,24 +32497,40 @@
         "key": "referenceX",
         "label": "Vertical line at x",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": ""
       },
       {
         "key": "referenceY",
         "label": "Horizontal line at y",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": ""
       },
       {
         "key": "pointSize",
         "label": "Point size (px)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "fillOpacity",
         "label": "Fill opacity (0 to 1)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": ""
       },
       {
@@ -31278,6 +32631,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -31471,14 +32828,22 @@
       },
       {
         "key": "dayStart",
-        "label": "Day starts at (hour)",
-        "valueType": "number",
+        "label": "Day starts at (hour, or a time such as 09:00)",
+        "valueType": "union",
+        "valueTypes": [
+          "number",
+          "string"
+        ],
         "default": "{{8}}"
       },
       {
         "key": "dayEnd",
-        "label": "Day ends at (hour)",
-        "valueType": "number",
+        "label": "Day ends at (hour, or a time such as 18:00)",
+        "valueType": "union",
+        "valueTypes": [
+          "number",
+          "string"
+        ],
         "default": "{{18}}"
       },
       {
@@ -31601,6 +32966,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -31631,7 +33000,11 @@
       {
         "key": "borderRadius",
         "label": "Radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -31755,6 +33128,13 @@
         "key": "defaultValue",
         "label": "Default value",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number",
+          "boolean",
+          "array",
+          "object"
+        ],
         "default": ""
       },
       {
@@ -31803,6 +33183,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -31848,7 +33232,11 @@
       {
         "key": "borderRadius",
         "label": "Field radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -32043,6 +33431,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -32053,7 +33445,11 @@
       {
         "key": "thickness",
         "label": "Line thickness",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -32185,6 +33581,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -32298,6 +33698,10 @@
         "key": "defaultValue",
         "label": "Default value (number, or [start, end] for a range)",
         "valueType": "union",
+        "valueTypes": [
+          "number",
+          "array"
+        ],
         "default": "{{50}}"
       },
       {
@@ -32346,6 +33750,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -32515,6 +33923,10 @@
         "key": "strokeWidth",
         "label": "Line width (px)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{2}}"
       },
       {
@@ -32545,12 +33957,20 @@
         "key": "bandMin",
         "label": "Band from (blank = data min)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": ""
       },
       {
         "key": "bandMax",
         "label": "Band to (blank = data max)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": ""
       },
       {
@@ -32639,6 +34059,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -32765,6 +34189,10 @@
         "key": "size",
         "label": "Size (sm, default, lg or px)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default"
       },
       {
@@ -32829,6 +34257,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -32935,6 +34367,10 @@
         "key": "value",
         "label": "Value",
         "valueType": "union",
+        "valueTypes": [
+          "number",
+          "string"
+        ],
         "default": "$1,250.00"
       },
       {
@@ -33017,6 +34453,10 @@
         "key": "trendData",
         "label": "Trend data (numbers or [{ x, y }])",
         "valueType": "union",
+        "valueTypes": [
+          "array",
+          "string"
+        ],
         "default": ""
       },
       {
@@ -33033,6 +34473,10 @@
         "key": "progress",
         "label": "Progress (0 to 100)",
         "valueType": "union",
+        "valueTypes": [
+          "number",
+          "string"
+        ],
         "default": ""
       },
       {
@@ -33120,6 +34564,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -33135,7 +34583,11 @@
       {
         "key": "borderRadius",
         "label": "Card radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "labelColor",
@@ -33210,7 +34662,11 @@
       {
         "key": "labelLetterSpacing",
         "label": "Label letter spacing (px, or em like 0.12em)",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -33332,6 +34788,10 @@
         "key": "currentStep",
         "label": "Current step (id)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{2}}"
       },
       {
@@ -33422,6 +34882,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -33744,6 +35208,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -33779,7 +35247,11 @@
       {
         "key": "borderRadius",
         "label": "Panel radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "valueFontFamily",
@@ -33931,6 +35403,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -34336,6 +35812,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -34391,12 +35871,20 @@
       {
         "key": "borderRadius",
         "label": "Table radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "fontSize",
         "label": "Font size (px)",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "headerCasing",
@@ -34770,6 +36258,10 @@
         "key": "defaultTab",
         "label": "Default tab",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "t0"
       },
       {
@@ -34975,6 +36467,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -35020,12 +36516,20 @@
       {
         "key": "borderRadius",
         "label": "Radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "tabFontSize",
         "label": "Tab font size",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "showBorder",
@@ -35212,6 +36716,10 @@
         "key": "tags",
         "label": "Tags (array or comma-separated)",
         "valueType": "union",
+        "valueTypes": [
+          "array",
+          "string"
+        ],
         "default": "{{['Design', 'Frontend', 'Urgent']}}"
       },
       {
@@ -35320,6 +36828,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -35340,7 +36852,11 @@
       {
         "key": "borderRadius",
         "label": "Tag radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -35468,6 +36984,10 @@
         "key": "maxTags",
         "label": "Max tags (0 for no limit)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{0}}"
       },
       {
@@ -35552,6 +37072,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -35597,7 +37121,11 @@
       {
         "key": "borderRadius",
         "label": "Field radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "chipBackgroundColor",
@@ -35888,6 +37416,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -35931,7 +37463,11 @@
       {
         "key": "letterSpacing",
         "label": "Letter spacing (px, or em like 0.12em)",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "textTransform",
@@ -35948,7 +37484,11 @@
       {
         "key": "fontSize",
         "label": "Font size (px)",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -36120,6 +37660,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -36165,7 +37709,11 @@
       {
         "key": "borderRadius",
         "label": "Field radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -36428,6 +37976,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -36473,7 +38025,11 @@
       {
         "key": "borderRadius",
         "label": "Field radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "iconColor",
@@ -36803,6 +38359,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -36922,6 +38482,13 @@
         "key": "defaultValue",
         "label": "Default value",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number",
+          "boolean",
+          "array",
+          "object"
+        ],
         "default": "All"
       },
       {
@@ -36976,6 +38543,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -37001,7 +38572,11 @@
       {
         "key": "borderRadius",
         "label": "Group radius",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ]
       },
       {
         "key": "cssClass",
@@ -37297,12 +38872,20 @@
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -37622,12 +39205,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -37889,6 +39480,10 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -38055,6 +39650,11 @@
         "key": "dataSourceSelector",
         "label": "Data source",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "array",
+          "object"
+        ],
         "default": "rawJson",
         "allowedValues": [
           "rawJson"
@@ -38504,6 +40104,10 @@
         "key": "actionButtonRadius",
         "label": "Action button radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "boolean"
+        ],
         "default": "0"
       },
       {
@@ -38516,6 +40120,10 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
@@ -38528,12 +40136,20 @@
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000090"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -39052,6 +40668,10 @@
         "key": "defaultTab",
         "label": "Default tab",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0"
       },
       {
@@ -39254,6 +40874,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -39569,6 +41193,10 @@
         "key": "size",
         "label": "Size",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "small",
         "allowedValues": [
           "small",
@@ -39579,12 +41207,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "8"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -39595,6 +41231,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -39839,12 +41479,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -40101,18 +41749,30 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -40431,18 +42091,30 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -40663,6 +42335,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -40837,18 +42513,30 @@
         "key": "fieldBorderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -41259,12 +42947,20 @@
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000090"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -41692,12 +43388,20 @@
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -41882,12 +43586,20 @@
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",

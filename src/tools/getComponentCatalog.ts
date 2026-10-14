@@ -118,9 +118,10 @@ function selectEntries(
     ? entries.filter((entry) => keys.includes(entry.key))
     : entries;
   if (detail === 'full' || keys?.length) return selected;
-  return selected.map(({ key, valueType, allowedValues, requires, mutuallyExclusiveWith }) => ({
+  return selected.map(({ key, valueType, valueTypes, allowedValues, requires, mutuallyExclusiveWith }) => ({
     key,
     ...(valueType !== undefined ? { valueType } : {}),
+    ...(valueTypes !== undefined ? { valueTypes } : {}),
     ...(allowedValues !== undefined ? { allowedValues } : {}),
     ...(requires !== undefined ? { requires } : {}),
     ...(mutuallyExclusiveWith !== undefined ? { mutuallyExclusiveWith } : {}),

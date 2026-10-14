@@ -63,6 +63,14 @@ describe('numbers shown unformatted', () => {
     expect(lintUnformattedNumbers(paidBy)).toEqual([]);
   });
 
+  it('reads card grid metaFields written as an array, and leaves formatted fields alone', () => {
+    const grid = (metaFields: unknown) => ({ type: 'ShadCardGrid', name: 'menu_grid', properties: {
+      titleField: v('dish_name'), metaFields: v(metaFields), data: v('{{queries.get_menu.data || []}}') } });
+    expect(lintUnformattedNumbers(grid(['unit_price:Amount', 'serves']))[0]).toMatch(/"unit_price" is money/);
+    expect(lintUnformattedNumbers(grid(['revenue_label']))).toEqual([]);
+    expect(lintUnformattedNumbers(grid('price_text, serves'))).toEqual([]);
+  });
+
   it('reaches the page lint as a warning', () => {
     const r = lintComponents([{ ...text('bill_total', "{{total.toFixed(2) + ' amount'}}"), layouts: { desktop: { top: 0, left: 2, width: 20, height: 40 } } }]);
     expect(r.warnings.some((w) => /toFixed/.test(w))).toBe(true);

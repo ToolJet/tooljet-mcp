@@ -14,6 +14,10 @@ const valueOf = (props: Record<string, unknown> | undefined, key: string): unkno
   return entry && typeof entry === 'object' && 'value' in entry ? entry.value : entry;
 };
 const str = (value: unknown): string => (typeof value === 'string' ? value : '');
+// metaFields is a comma list ('price:{} €, serves') or an array of the same specs (['price:{} €', 'serves']).
+const metaFieldNames = (value: unknown): string[] =>
+  (Array.isArray(value) ? value.filter((part): part is string => typeof part === 'string') : str(value).split(','))
+    .map((part) => part.split(':')[0]!.trim());
 
 // Money whatever else the name says ("unit price", "price per item").
 const STRONG_MONEY_WORD = /\b(prices?|amounts?|costs?|revenue|balance|fees?|salary|salaries|payments?|subtotal|refunds?|mrr|arr|payout|takings)\b/i;
@@ -27,6 +31,8 @@ const SYMBOL = '[$€£₹¥]';
 const words = (value: string): string => value.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_.-]+/g, ' ');
 // "payment_method", "price_tier", "cost_center": about money, not an amount.
 const MONEY_QUALIFIER = /\b(methods?|status|types?|terms|dates?|modes?|plans?|tiers?|centers?|centres?|codes?|names?|ids?|frequency|schedule|currency|categor(y|ies))\b/i;
+// "revenue_label", "price_text", "total_display": the formatted string the card grid warning asks for.
+const FORMATTED_NAME = /\b(labels?|text|display|formatted|fmt|str)\b/i;
 const isMoneyName = (value: string): boolean => {
   const w = words(value);
   if (MONEY_QUALIFIER.test(w)) return false;
@@ -114,8 +120,8 @@ export function lintUnformattedNumbers(spec: Spec): string[] {
     const data = str(valueOf(props, 'data'));
     const fields = ['titleField', 'subtitleField', 'descriptionField', 'badgeField']
       .map((key) => str(valueOf(props, key)))
-      .concat(str(valueOf(props, 'metaFields')).split(',').map((part) => part.split(':')[0]!.trim()))
-      .filter((field) => field && isMoneyName(field));
+      .concat(metaFieldNames(valueOf(props, 'metaFields')))
+      .filter((field) => field && isMoneyName(field) && !FORMATTED_NAME.test(words(field)));
     const raw = fields.filter((field) => !LOCALE_FORMAT.test(data) || !new RegExp(`\\b${field}\\b`).test(data));
     if (raw.length) {
       out.push(`${label}: ${raw.map((f) => `"${f}"`).join(', ')} ${raw.length > 1 ? 'are' : 'is'} money shown as the raw number ` +

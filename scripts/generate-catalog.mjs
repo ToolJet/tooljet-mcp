@@ -76,6 +76,16 @@ function trimDefault(v) {
   return v;
 }
 
+// A union schema ({ type: 'union', schemas: [{ type: 'array' }, { type: 'string' }] }) accepts any of its members;
+// without them the catalog said only "union", and callers could not tell metaFields: ['a', 'b'] was allowed.
+function unionTypes(schema) {
+  if (strProp(schema, 'type') !== 'union') return undefined;
+  const members = prop(schema, 'schemas');
+  if (!members || members.type !== 'ArrayExpression') return undefined;
+  const types = members.elements.map((member) => (member?.type === 'ObjectExpression' ? strProp(member, 'type') : undefined));
+  return types.length && types.every(Boolean) ? [...new Set(types)] : undefined;
+}
+
 function allowedValues(definition) {
   // clientServerSwitch presents string labels internally, but persists a boolean binding.
   // Advertising those editor-only strings as valid component values causes agents to author
@@ -171,6 +181,7 @@ function extractProps(config, componentType) {
         key,
         label: strProp(def, 'displayName'),
         valueType: schema ? strProp(schema, 'type') : undefined,
+        valueTypes: schema ? unionTypes(schema) : undefined,
         default: validation ? trimDefault(literal(prop(validation, 'defaultValue'))) : undefined,
         allowedValues: allowedValues(def),
       };
@@ -212,6 +223,7 @@ function extractStyles(config) {
         key,
         label,
         valueType: schema ? strProp(schema, 'type') : undefined,
+        valueTypes: schema ? unionTypes(schema) : undefined,
         default: validation ? trimDefault(literal(prop(validation, 'defaultValue'))) : undefined,
         allowedValues: allowedValues(pr.value),
       };
