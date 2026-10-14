@@ -2,6 +2,10 @@
 
 An MCP server that lets a coding agent (Codex, Claude Code, …) build and maintain **ToolJet** apps through ToolJet's governed APIs: workspaces, apps/pages, datasource queries, ToolJet DB tables, components, layouts, and lifecycle events. It includes generated component and datasource catalogs so agents use first-party contracts instead of guessing configuration keys.
 
+## Browser OAuth connections
+
+For remote HTTP clients, [OAuth setup](docs/oauth.md) connects through the workspace's ToolJet login and consent flow without copying a PAT. It requires the companion ToolJet OAuth backend and migration. Existing local PAT plugins remain supported; the prerequisites below describe that local setup.
+
 ## Prerequisites
 
 - A ToolJet instance with personal access token support.

@@ -175,6 +175,25 @@ describe('render audit network boundary and honest results', () => {
 // session, scoped to the audit origins it may visit, and opens the version being edited (a released app's public URL
 // would show the old version).
 describe('render audit with the builder\'s session', () => {
+  it('uses a separate short-lived HttpOnly cookie for the app-pinned OAuth viewer', async () => {
+    const f = browserFixture();
+    (f.context as any).addCookies = vi.fn().mockResolvedValue(undefined);
+    const expiresAt = Math.floor(Date.now() / 1000) + 120;
+    const viewerSession = vi.fn().mockResolvedValue({ cookieName: 'tj_oauth_viewer', token: 'synthetic-viewer', origin: 'http://viewer.test', expiresAt });
+    const oauth = { ...client, browserRenderOrigin: 'http://viewer.test', viewerSession };
+    await verifyPageRenderTool(oauth, () => 'http://viewer.test', f.driver).handler({ app_id: 'app1' });
+    expect(viewerSession).toHaveBeenCalledWith('app1');
+    expect((f.context as any).addCookies).toHaveBeenCalledWith([{ name: 'tj_oauth_viewer', value: 'synthetic-viewer',
+      url: 'http://viewer.test', httpOnly: true, secure: false, sameSite: 'Lax', expires: expiresAt }]);
+  });
+  it.each(['https://other.test', 'http://viewer.test'])('rejects a viewer credential with wrong origin or expired lifetime: %s', async (origin) => {
+    const f = browserFixture();
+    (f.context as any).addCookies = vi.fn();
+    const [report] = await auditPages(target, { session: { cookieName: 'tj_oauth_viewer', token: 'synthetic-viewer', origin,
+      expiresAt: Math.floor(Date.now() / 1000) + (origin === 'http://viewer.test' ? -1 : 120) } }, f.driver);
+    expect(report.findings[0].reason).toBe('auth_required');
+    expect((f.context as any).addCookies).not.toHaveBeenCalled();
+  });
   it('adds the session cookie for the viewer origin only', async () => {
     const f = browserFixture();
     (f.context as any).addCookies = vi.fn().mockResolvedValue(undefined);

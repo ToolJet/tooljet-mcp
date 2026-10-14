@@ -7,6 +7,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { buildServer, buildUnconfiguredServer } from './server.js';
 import { readJsonBody } from './httpServer.js';
+import { createOAuthHttpServer, oauthHttpOptionsFromEnv } from './oauthHttp.js';
 import { bearerValue, checkBearerToken } from './httpAuth.js';
 import { isBuildToken, mintAuthorized, mintBuildToken, mintSecret, resolveBuildToken, revokeBuildToken } from './buildTokens.js';
 import {
@@ -35,6 +36,8 @@ export interface GatewayHttpServer {
  * the same way httpServer.ts's createHttpMcpServer is tested.
  */
 export function createGatewayHttpServer(): GatewayHttpServer {
+  const oauth = oauthHttpOptionsFromEnv();
+  if (oauth) return { server: createOAuthHttpServer(oauth), gatewayMode: false };
   const sharedToken = process.env.MCP_SHARED_TOKEN;
 
   /* Two deployment shapes, told apart by whether a shared token is configured.
@@ -278,7 +281,7 @@ async function serveHttp(): Promise<void> {
     httpServer.listen(port, host, resolve);
   });
   console.error(
-    `tooljet-mcp: listening on http://${host}:${port} (${gatewayMode ? 'gateway' : 'direct'} mode)`
+    `tooljet-mcp: listening on http://${host}:${port} (${process.env.MCP_OAUTH_ENABLED === 'true' ? 'OAuth' : gatewayMode ? 'gateway' : 'direct'} mode)`
   );
 }
 

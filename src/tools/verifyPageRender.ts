@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
+import type { ViewerSession } from '../auth.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { renderAuditBase, renderAuditOrigins, renderAuditUrlAllowed, renderAuditRequest, type RenderAuditQueries } from '../renderAuditPolicy.js';
 
@@ -204,7 +205,7 @@ export async function auditPages(
   pages: Array<{ page: string; url: string }>,
   options: { channel?: string; executablePath?: string; settleMs?: number; chartWaitMs?: number; concurrency?: number; allowedOrigins?: Set<string>;
     /** The builder's ToolJet session (tj_auth_token), set as a cookie for the viewer origin so a private app opens. */
-    session?: string; savedQueries?: RenderAuditQueries } = {},
+    session?: ViewerSession; savedQueries?: RenderAuditQueries } = {},
   driver: () => Promise<any | null> = loadPlaywright
 ): Promise<PageRenderReport[]> {
   const unreachable = (p: { page: string; url: string }, reason: RenderFinding['reason'], detail: string): PageRenderReport =>
@@ -249,7 +250,16 @@ export async function auditPages(
       // Audits are snapshots, not live subscriptions. No unaudited socket channel may bypass routing.
       if (options.session) {
         // Only the viewer's own origin gets the session, and every request to any other origin is aborted below.
-        await ctx.addCookies([{ name: 'tj_auth_token', value: options.session, url: new URL(p.url).origin }]);
+        if (typeof options.session === 'string') {
+          await ctx.addCookies([{ name: 'tj_auth_token', value: options.session, url: new URL(p.url).origin }]);
+        } else {
+          if (new URL(p.url).origin !== options.session.origin || options.session.expiresAt <= Date.now() / 1000) {
+            reports[index] = unreachable(p, 'auth_required', 'The scoped viewer credential does not authorize this page origin or has expired');
+            return;
+          }
+          await ctx.addCookies([{ name: 'tj_oauth_viewer', value: options.session.token, url: options.session.origin,
+            httpOnly: true, secure: options.session.origin.startsWith('https:'), sameSite: 'Lax', expires: options.session.expiresAt }]);
+        }
       }
       await ctx.routeWebSocket('**/*', (socket: any) => { block({ kind: 'unreachable', component: '-', reason: 'blocked_destination', detail: 'A WebSocket dependency was blocked; live behavior was not verified' }, `WebSocket ${pathOf(socket.url?.() ?? '')}`); socket.close(); });
       await ctx.route('**/*', async (route: any) => {
@@ -356,7 +366,7 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
       'expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", ' +
       '"Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. ' +
       'Run it once per page before the handoff and review every finding; report unverified behavior explicitly. ' +
-      'Opens the version being edited with the builder\'s own ToolJet session (limited to the viewer origin), so a private app is ' +
+      'Opens the version being edited with the builder\'s ToolJet session, or a separate app-scoped OAuth viewer credential (limited to the viewer origin), so a private app is ' +
       'audited without being made public. Only saved, static, bounded read queries may run; writes, dynamic queries ' +
       'and queries requiring confirmation are blocked and reported as unverified. ' +
       'Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.',
@@ -369,6 +379,9 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
       try {
         if (!/^[A-Za-z0-9_-]+$/.test(args.app_id)) return fail(new Error('Invalid app id'));
         const { base, origins } = renderAuditBase(viewerBase(), args.viewer_url);
+        if (client.browserRenderOrigin && new URL(base).origin !== client.browserRenderOrigin) {
+          return fail(new Error('OAuth render verification must use the configured ToolJet deployment origin'));
+        }
         const summary = await client.getAppSummary(args.app_id);
         const pages = (summary.pages ?? []) as Array<{ handle?: string; name?: string }>;
         // The version being edited (preview), not the released one: a build audits what it just changed.
@@ -384,7 +397,9 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
           allowedOrigins: origins,
           savedQueries: summary,
           // MCP_RENDER_AUDIT_SESSION=off keeps the browser unauthenticated (private apps are then reported unverified).
-          session: process.env.MCP_RENDER_AUDIT_SESSION === 'off' ? undefined : await client.viewerSession?.().catch(() => undefined),
+          session: process.env.MCP_RENDER_AUDIT_SESSION === 'off' ? undefined : client.browserRenderOrigin
+            ? await client.viewerSession?.(args.app_id)
+            : await client.viewerSession?.(args.app_id).catch(() => undefined),
         };
         const reports = await auditPages(targets, options, driver);
         // A private app redirects the headless browser to sign-in, and this audit will NOT publish it
