@@ -250,8 +250,12 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
     ) {
       const rowsPerPage = staticNumber(propValue(properties, 'rowsPerPage')) ?? 10;
       const toolbar = isFalse(propValue(properties, 'displaySearchBox')) ? 0 : 64;
-      // The look's measured chrome: toolbar, a 40px header, the footer and borders; rows are about 45px.
-      const fit = Math.floor((height - toolbar - 40 - 58) / 45);
+      // The look's measured chrome (2026-10-14, in the viewer): toolbar 64px, header 41px, footer and borders 47px; rows
+      // 46px, 40px condensed. A 45px estimate cut 8 condensed rows in 472px to 6 and left a band under them.
+      const cellEntry = stylesValue.cellSize;
+      const cellSize = cellEntry && typeof cellEntry === 'object' ? (cellEntry as { value?: unknown }).value : cellEntry;
+      const rowPx = cellSize === 'condensed' ? 40 : 46;
+      const fit = Math.floor((height - toolbar - 41 - 47) / rowPx);
       if (fit < rowsPerPage) {
         if (fit >= 3) {
           setProperty('rowsPerPage', `{{${fit}}}`);
