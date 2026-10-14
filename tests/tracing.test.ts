@@ -47,6 +47,30 @@ async function callTool(name: string, client: Partial<ToolJetClient>, meta?: Rec
 
 const toolSpans = () => exporter.getFinishedSpans().filter((span) => span.name.startsWith('tools/call '));
 
+describe('propagator tolerance', () => {
+  const restore = () => {
+    propagation.disable();
+    propagation.setGlobalPropagator(new CompositePropagator({ propagators: [new W3CTraceContextPropagator(), new W3CBaggagePropagator()] }));
+  };
+  afterEach(restore);
+
+  it('survives non-string baggage with a bare W3CBaggagePropagator', async () => {
+    propagation.disable();
+    propagation.setGlobalPropagator(new W3CBaggagePropagator());
+    const result = await callTool('get_runtime_info', {}, { baggage: 42 });
+    expect(result.isError).not.toBe(true);
+    expect(toolSpans()).toHaveLength(1);
+  });
+
+  it('falls back to the ambient context when the propagator throws', async () => {
+    propagation.disable();
+    propagation.setGlobalPropagator({ inject: () => {}, fields: () => [], extract: () => { throw new Error('boom'); } });
+    const result = await callTool('get_runtime_info', {}, { baggage: 42 });
+    expect(result.isError).not.toBe(true);
+    expect(toolSpans()).toHaveLength(1);
+  });
+});
+
 describe('tools/call server span', () => {
   it('parents the span on params._meta.traceparent and records MCP attributes', async () => {
     await callTool('get_runtime_info', {}, { traceparent: TRACEPARENT });

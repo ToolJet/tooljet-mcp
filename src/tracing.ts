@@ -24,7 +24,12 @@ export function withToolSpan(tool: string, extra: ToolExtra | undefined, run: ()
   const ambient = context.active();
   const ambientSpan = trace.getSpanContext(ambient);
   // SEP-414: unprefixed traceparent/tracestate/baggage in params._meta. Bad values are ignored by the W3C extractors.
-  const parent = propagation.extract(ambient, extra?._meta ?? {});
+  let parent = ambient;
+  try {
+    parent = propagation.extract(ambient, extra?._meta ?? {});
+  } catch {
+    // malformed propagation fields must never fail the tool call
+  }
   const parentSpan = trace.getSpanContext(parent);
   const links: Link[] = ambientSpan && parentSpan !== ambientSpan ? [{ context: ambientSpan }] : [];
 
