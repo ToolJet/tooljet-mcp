@@ -824,3 +824,18 @@ describe('polishFlexRows: a page-wide root container keeps a page margin', () =>
     expect(prop(nested.components, 'card', 'padding')).toBe(0);
   });
 });
+
+describe('polishFlexRows: buttons beside labelled fields match the field box', () => {
+  // DeepSeek's field service rerun (2026-10-13): "Assign a job" (36px, a 32px box) sat bottom-aligned beside the Day
+  // select's 36px field box, so their tops were 4px apart. A field box is 36px; a ShadButton's box is its height less 4.
+  it('raises a shorter button in a bottom-aligned field row to 40px', () => {
+    const input = [
+      row('bar'),
+      child('day', 'ShadSelect', 'bar', { label: { value: 'Day' } }),
+      { ...child('assign', 'ShadButton', 'bar', { text: { value: 'Assign a job' } }), layout: { top: 0, left: 0, width: 6, height: 36 } },
+    ];
+    const r = polishFlexRows(input);
+    expect(prop(r.components, 'bar', 'alignItems')).toBe('flex-end');
+    expect(r.components.find((c) => c.clientRef === 'assign')!.layout!.height).toBe(40);
+  });
+});

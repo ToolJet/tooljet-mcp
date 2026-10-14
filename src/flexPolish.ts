@@ -561,6 +561,20 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
       );
     }
 
+    // 1c. In a bottom-aligned row with a labelled UI 2.0 field, a shorter ShadButton's box ends level with the field box
+    //     but starts lower: a 36px "Assign a job" (32px box) sat 4px under a select's 36px box (2026-10-13). A ShadButton's
+    //     box is its height less 4px, so 40px matches the field box.
+    if (text(prop(container, 'alignItems')) === 'flex-end' && children.some(isLabelledField)) {
+      for (const button of children.filter((child) => child.type === 'ShadButton')) {
+        const rects = [button.layout, button.layouts?.desktop].filter((rect): rect is NonNullable<ComponentSpec['layout']> => !!rect);
+        if (!rects.length || !rects.some((rect) => typeof rect.height === 'number' && rect.height < 40)) continue;
+        rects.forEach((rect) => {
+          if (typeof rect.height === 'number' && rect.height < 40) rect.height = 40;
+        });
+        warnings.push(`"${button.name}" in row "${label}" is now 40px tall so its box matches the field box beside it.`);
+      }
+    }
+
     // 2. A row of cards shares one height.
     // Whatever alignment the build gave the row: centred or bottom-aligned cards of different content came out at
     // different heights side by side.
