@@ -17,7 +17,7 @@ const TRACEPARENT = `00-${TRACE_ID}-00f067aa0ba902b7-01`;
 const BAGGAGE = 'tooljet.origin=ai,gen_ai.conversation.id=thread-1,user.email=a%40b.c';
 
 type OtlpAttr = { key: string; value: { stringValue?: string } };
-type OtlpSpan = { name: string; traceId: string; spanId: string; parentSpanId?: string; attributes: OtlpAttr[] };
+type OtlpSpan = { name: string; kind: number; traceId: string; spanId: string; parentSpanId?: string; attributes: OtlpAttr[] };
 
 // One local server plays both the OTLP collector and the ToolJet API.
 const exported: { resource: OtlpAttr[]; spans: OtlpSpan[] }[] = [];
@@ -85,7 +85,8 @@ describe('OpenTelemetry bootstrap', () => {
     expect(result.isError).not.toBe(true);
     const login = apiRequests.find((r) => r.url === '/api/personal-access-tokens/session')!;
     expect(login.headers.traceparent).toMatch(new RegExp(`^00-${TRACE_ID}-[0-9a-f]{16}-01$`));
-    expect(login.headers.baggage).toContain('tooljet.origin=ai');
+    // Only allowlisted baggage leaves for ToolJet.
+    expect(login.headers.baggage?.split(',').sort()).toEqual(['gen_ai.conversation.id=thread-1', 'tooljet.origin=ai']);
     expect(login.headers['user-agent']).toBe(`tooljet-mcp/${TOOLJET_MCP_VERSION}`);
 
     // A request that does not name us (third-party URL) gets no context and no span.
@@ -105,6 +106,18 @@ describe('OpenTelemetry bootstrap', () => {
     expect(otherRequests[0].traceparent).toBeUndefined();
     expect(otherRequests[0].baggage).toBeUndefined();
 
+    // Query strings (searchText may be an email) stay off spans; disallowed origin and long ids are filtered outbound.
+    const search = trace.getTracer('test').startSpan('search');
+    const searchCtx = propagation.setBaggage(trace.setSpan(context.active(), search), propagation.createBaggage({
+      'tooljet.origin': { value: 'evil' },
+      'gen_ai.conversation.id': { value: 'x'.repeat(300) },
+      'user.email': { value: 'a@b.c' },
+    }));
+    await context.with(searchCtx, () => fetch(`${base}/api/users?searchText=a%40b.c`, { headers: { 'User-Agent': USER_AGENT } }));
+    search.end();
+    const searchReq = apiRequests.find((r) => r.url.startsWith('/api/users'))!;
+    expect(searchReq.headers.baggage).toBe(`gen_ai.conversation.id=${'x'.repeat(128)}`);
+
     await shutdownOtel(5000);
 
     const [batch] = exported;
@@ -115,6 +128,10 @@ describe('OpenTelemetry bootstrap', () => {
     });
     // No CLIENT span for the third-party request.
     expect(allSpans().some((s) => attrs(s.attributes)['url.full']?.includes('/third-party'))).toBe(false);
+    // CLIENT span only: the test server's own SERVER span (same process) is not the ToolJet call.
+    const searchSpan = allSpans().find((s) => s.kind === 3 && attrs(s.attributes)['url.path'] === '/api/users')!;
+    expect(attrs(searchSpan.attributes)['url.full']).toBe(`${base}/api/users`);
+    expect(attrs(searchSpan.attributes)).not.toHaveProperty('url.query');
     const toolSpan = allSpans().find((s) => s.name === 'tools/call list_workspaces')!;
     expect(toolSpan.traceId).toBe(TRACE_ID);
     // Allowlisted baggage only.

@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 import { randomUUID } from 'node:crypto';
-import { diag, DiagLogLevel, propagation, type Context, type DiagLogger } from '@opentelemetry/api';
+import { diag, DiagLogLevel, propagation, type Context, type DiagLogger, type TextMapSetter } from '@opentelemetry/api';
 import { CompositePropagator, W3CBaggagePropagator, W3CTraceContextPropagator } from '@opentelemetry/core';
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
 import { BatchSpanProcessor, type Span, type SpanProcessor, type ReadableSpan } from '@opentelemetry/sdk-trace-base';
@@ -21,20 +21,37 @@ const stderrLogger: DiagLogger = { error: toStderr, warn: toStderr, info: toStde
 const CONVERSATION_ID_MAX = 128;
 
 // Same allowlist as the ToolJet server: origin is exactly 'ai'; conversation id capped for attribute size.
+function allowedBaggage(ctx: Context): [string, string][] {
+  const baggage = propagation.getBaggage(ctx);
+  const entries: [string, string][] = [];
+  for (const key of BAGGAGE_ATTRIBUTE_KEYS) {
+    const value = baggage?.getEntry(key)?.value;
+    if (!value) continue;
+    if (key === 'tooljet.origin') {
+      if (value === 'ai') entries.push([key, value]);
+    } else entries.push([key, value.slice(0, CONVERSATION_ID_MAX)]);
+  }
+  return entries;
+}
+
 export class BaggageAttributeProcessor implements SpanProcessor {
   onStart(span: Span, parentContext: Context): void {
-    const baggage = propagation.getBaggage(parentContext);
-    for (const key of BAGGAGE_ATTRIBUTE_KEYS) {
-      const value = baggage?.getEntry(key)?.value;
-      if (!value) continue;
-      if (key === 'tooljet.origin') {
-        if (value === 'ai') span.setAttribute(key, value);
-      } else span.setAttribute(key, value.slice(0, CONVERSATION_ID_MAX));
-    }
+    for (const [key, value] of allowedBaggage(parentContext)) span.setAttribute(key, value);
   }
   onEnd(_span: ReadableSpan): void {}
   forceFlush(): Promise<void> { return Promise.resolve(); }
   shutdown(): Promise<void> { return Promise.resolve(); }
+}
+
+// Outbound (ToolJet) gets the allowlist only; inbound extraction stays the stock W3C one.
+class AllowlistBaggagePropagator extends W3CBaggagePropagator {
+  override inject(ctx: Context, carrier: unknown, setter: TextMapSetter): void {
+    const entries = allowedBaggage(ctx);
+    const filtered = entries.length
+      ? propagation.setBaggage(ctx, propagation.createBaggage(Object.fromEntries(entries.map(([k, value]) => [k, { value }]))))
+      : propagation.deleteBaggage(ctx);
+    super.inject(filtered, carrier, setter);
+  }
 }
 
 const trustedOrigins = new Set<string>();
@@ -75,13 +92,15 @@ export function startOtel(apiUrl?: string): void {
     ],
   });
   provider.register({
-    propagator: new CompositePropagator({ propagators: [new W3CTraceContextPropagator(), new W3CBaggagePropagator()] }),
+    propagator: new CompositePropagator({ propagators: [new W3CTraceContextPropagator(), new AllowlistBaggagePropagator()] }),
   });
   registerInstrumentations({
     instrumentations: [
       // Context only to ToolJet API requests: trusted origin AND our exact UA. Redirect hops re-send our UA, so origin matters.
       new UndiciInstrumentation({
         ignoreRequestHook: (request) => !trustedOrigins.has(request.origin) || userAgentOf(request.headers) !== USER_AGENT,
+        // Queries can carry PII (searchText=email): keep the path, drop the query.
+        startSpanHook: (request) => ({ 'url.full': `${request.origin}${request.path.split('?')[0]}`, 'url.query': undefined }),
       }),
       new HttpInstrumentation({ disableOutgoingRequestInstrumentation: true }),
     ],
@@ -89,7 +108,8 @@ export function startOtel(apiUrl?: string): void {
   // RITM patches http on the next require; the bundle's ESM `import 'node:http'` never triggers it.
   createRequire(import.meta.url)('node:http');
 
-  // Loop is empty (stdin closed): flush, then exit even if a dead collector's retry timers linger.
+  // Loop drained with nothing pending: flush, then exit even if retry timers linger. An in-flight export
+  // keeps the loop busy so this never fires; stdio covers that on stdin EOF (index.ts).
   process.once('beforeExit', () => void shutdownOtel().finally(() => process.exit()));
   for (const [signal, code] of [['SIGTERM', 143], ['SIGINT', 130]] as const) {
     process.once(signal, () => void shutdownOtel().finally(() => process.exit(code)));

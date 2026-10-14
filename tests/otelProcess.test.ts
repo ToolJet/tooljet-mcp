@@ -32,7 +32,7 @@ const messages = [
   { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'get_runtime_info', arguments: {}, _meta: { traceparent: TRACEPARENT } } },
 ];
 
-async function runStdio(env: Record<string, string>, end: 'stdin' | 'SIGTERM' = 'stdin') {
+async function runStdio(env: Record<string, string>, end: 'stdin' | 'SIGTERM' = 'stdin', settleMs = 0) {
   const child = spawn(process.execPath, ['--import', 'tsx', 'src/index.ts'], {
     env: { ...process.env, MCP_TRANSPORT: 'stdio', TOOLJET_URL: 'http://127.0.0.1:9', TOOLJET_PAT: 'unused', OTEL_LOG_LEVEL: 'all', ...env },
   });
@@ -46,6 +46,7 @@ async function runStdio(env: Record<string, string>, end: 'stdin' | 'SIGTERM' = 
     if (Date.now() - started > 15_000) throw new Error(`no tools/call reply. stderr: ${stderr}`);
     await new Promise((resolve) => setTimeout(resolve, 20));
   }
+  await new Promise((resolve) => setTimeout(resolve, settleMs));
   const ended = Date.now();
   if (end === 'stdin') child.stdin.end();
   else child.kill('SIGTERM');
@@ -78,6 +79,13 @@ describe('stdio process with ENABLE_OTEL', () => {
   it('still answers and exits within the flush bound when the collector is down', async () => {
     const run = await runStdio({ ENABLE_OTEL: 'true', OTEL_EXPORTER_OTLP_ENDPOINT: 'http://127.0.0.1:9' });
     expect(stdoutIsJsonRpc(run.stdout)).toBe(true);
+    expect(run.code).toBe(0);
+    expect(run.exitMs).toBeLessThan(3000);
+  }, 30_000);
+
+  it('exits within the flush bound after stdin closes while an export is stuck in flight', async () => {
+    // Unroutable: the export connects until its own timeout, which keeps beforeExit from ever firing.
+    const run = await runStdio({ ENABLE_OTEL: 'true', OTEL_EXPORTER_OTLP_ENDPOINT: 'http://10.255.255.1:4318', OTEL_BSP_SCHEDULE_DELAY: '50' }, 'stdin', 500);
     expect(run.code).toBe(0);
     expect(run.exitMs).toBeLessThan(3000);
   }, 30_000);

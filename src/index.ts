@@ -288,6 +288,7 @@ async function serveHttp(): Promise<void> {
 }
 
 let trustApiOrigin: ((url: string) => void) | undefined;
+let stopTracing: (() => Promise<void>) | undefined;
 
 /** Tracing is optional: a failed start leaves trustApiOrigin unset and the server running. */
 export async function startTracing(): Promise<void> {
@@ -295,6 +296,7 @@ export async function startTracing(): Promise<void> {
     const otel = await import('./otel.js');
     otel.startOtel(staticApiUrlFromEnv());
     trustApiOrigin = otel.trustOtelOrigin;
+    stopTracing = otel.shutdownOtel;
   } catch (err) {
     console.error('tooljet-mcp: OpenTelemetry failed to start', err);
   }
@@ -319,6 +321,9 @@ async function main(): Promise<void> {
     server = buildUnconfiguredServer(reason);
   }
   await server.connect(new StdioServerTransport());
+  // stdin EOF = client gone. An in-flight export would block beforeExit, so flush bounded and exit here.
+  const stop = stopTracing;
+  if (stop) process.stdin.once('end', () => void stop().finally(() => process.exit()));
 }
 
 /**
