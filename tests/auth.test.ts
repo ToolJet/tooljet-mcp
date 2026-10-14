@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createAuth } from '../src/auth.js';
 import type { Config } from '../src/config.js';
+import { TOOLJET_MCP_VERSION } from '../src/runtimeFreshness.js';
 
 const config: Config = {
   apiUrl: 'http://localhost:3000',
@@ -51,6 +52,18 @@ describe('createAuth (personal access token)', () => {
     const headers = (fetchImpl.mock.calls[1][1] as RequestInit).headers as Headers;
     expect(headers.get('Cookie')).toBe('tj_auth_token=TOKEN');
     expect(headers.get('tj-workspace-id')).toBe('org1');
+  });
+
+  it('names itself with a tooljet-mcp User-Agent on the exchange and on API calls', async () => {
+    fetchImpl
+      .mockResolvedValueOnce(sessionResponse())
+      .mockResolvedValueOnce(mockResponse({ json: { ok: true } }));
+
+    await createAuth(config, fetchImpl as unknown as typeof fetch).authedFetch('/api/some-resource');
+
+    const userAgent = `tooljet-mcp/${TOOLJET_MCP_VERSION}`;
+    expect((fetchImpl.mock.calls[0][1] as any).headers['User-Agent']).toBe(userAgent);
+    expect(((fetchImpl.mock.calls[1][1] as RequestInit).headers as Headers).get('user-agent')).toBe(userAgent);
   });
 
   it('re-exchanges exactly once on a 401 and retries', async () => {
