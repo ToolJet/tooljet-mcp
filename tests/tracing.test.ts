@@ -9,6 +9,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerTools } from '../src/tools/index.js';
 import { withToolSpan, type ToolExtra } from '../src/tracing.js';
 import type { ToolJetClient } from '../src/tooljetClient.js';
+import type { ToolResult } from '../src/tools/types.js';
 
 const TRACE_ID = '4bf92f3577b34da6a3ce929d0e0e4736';
 const PARENT_ID = '00f067aa0ba902b7';
@@ -115,6 +116,13 @@ describe('tools/call server span', () => {
       content: [{ type: 'text', text: '{"rows":[{"secret":"x"}]}' }],
       isError: true,
     }));
+    const [span] = toolSpans();
+    expect(span.status).toEqual({ code: SpanStatusCode.ERROR, message: undefined });
+  });
+
+  it('tolerates an isError result without content', async () => {
+    const result = await withToolSpan('get_app', undefined, async () => ({ isError: true }) as unknown as ToolResult);
+    expect(result.isError).toBe(true);
     const [span] = toolSpans();
     expect(span.status).toEqual({ code: SpanStatusCode.ERROR, message: undefined });
   });

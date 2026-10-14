@@ -15,7 +15,7 @@ const tracer = trace.getTracer('tooljet-mcp', TOOLJET_MCP_VERSION);
 
 // fail() writes "Error: <message>"; anything else is a result payload and stays off the span.
 function toolErrorMessage(result: ToolResult): string | undefined {
-  const text = result.content[0]?.text ?? '';
+  const text = result.content?.[0]?.text ?? '';
   return text.startsWith('Error: ') ? text.slice(7, 7 + STATUS_MESSAGE_MAX) : undefined;
 }
 
