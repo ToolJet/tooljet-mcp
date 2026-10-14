@@ -8635,7 +8635,7 @@ var init_runtimeFreshness = __esm({
 
 // dist/tracing.js
 function toolErrorMessage(result) {
-  const text = result.content[0]?.text ?? "";
+  const text = result.content?.[0]?.text ?? "";
   return text.startsWith("Error: ") ? text.slice(7, 7 + STATUS_MESSAGE_MAX) : void 0;
 }
 function withToolSpan(tool, extra, run) {
@@ -54317,6 +54317,21 @@ __export(otel_exports, {
 });
 import { createRequire } from "node:module";
 import { randomUUID as randomUUID6 } from "node:crypto";
+function allowedBaggage(ctx) {
+  const baggage = propagation.getBaggage(ctx);
+  const entries = [];
+  for (const key4 of BAGGAGE_ATTRIBUTE_KEYS) {
+    const value2 = baggage?.getEntry(key4)?.value;
+    if (!value2)
+      continue;
+    if (key4 === "tooljet.origin") {
+      if (value2 === "ai")
+        entries.push([key4, value2]);
+    } else
+      entries.push([key4, value2.slice(0, CONVERSATION_ID_MAX)]);
+  }
+  return entries;
+}
 function trustOtelOrigin(url2) {
   try {
     trustedOrigins.add(new URL(url2).origin);
@@ -54351,13 +54366,15 @@ function startOtel(apiUrl) {
     ]
   });
   provider.register({
-    propagator: new import_core13.CompositePropagator({ propagators: [new import_core13.W3CTraceContextPropagator(), new import_core13.W3CBaggagePropagator()] })
+    propagator: new import_core13.CompositePropagator({ propagators: [new import_core13.W3CTraceContextPropagator(), new AllowlistBaggagePropagator()] })
   });
   (0, import_instrumentation.registerInstrumentations)({
     instrumentations: [
       // Context only to ToolJet API requests: trusted origin AND our exact UA. Redirect hops re-send our UA, so origin matters.
       new import_instrumentation_undici.UndiciInstrumentation({
-        ignoreRequestHook: (request) => !trustedOrigins.has(request.origin) || userAgentOf(request.headers) !== USER_AGENT
+        ignoreRequestHook: (request) => !trustedOrigins.has(request.origin) || userAgentOf(request.headers) !== USER_AGENT,
+        // Queries can carry PII (searchText=email): keep the path, drop the query.
+        startSpanHook: (request) => ({ "url.full": `${request.origin}${request.path.split("?")[0]}`, "url.query": void 0 })
       }),
       new import_instrumentation_http.HttpInstrumentation({ disableOutgoingRequestInstrumentation: true })
     ]
@@ -54383,7 +54400,7 @@ async function shutdownOtel(timeoutMs = 1e3) {
   ]);
   clearTimeout(timer);
 }
-var import_core13, import_sdk_trace_node, import_sdk_trace_base, import_exporter_trace_otlp_http, import_resources, import_instrumentation, import_instrumentation_undici, import_instrumentation_http, toStderr, stderrLogger, CONVERSATION_ID_MAX, BaggageAttributeProcessor, trustedOrigins, provider;
+var import_core13, import_sdk_trace_node, import_sdk_trace_base, import_exporter_trace_otlp_http, import_resources, import_instrumentation, import_instrumentation_undici, import_instrumentation_http, toStderr, stderrLogger, CONVERSATION_ID_MAX, BaggageAttributeProcessor, AllowlistBaggagePropagator, trustedOrigins, provider;
 var init_otel = __esm({
   "dist/otel.js"() {
     "use strict";
@@ -54406,17 +54423,8 @@ var init_otel = __esm({
     CONVERSATION_ID_MAX = 128;
     BaggageAttributeProcessor = class {
       onStart(span, parentContext) {
-        const baggage = propagation.getBaggage(parentContext);
-        for (const key4 of BAGGAGE_ATTRIBUTE_KEYS) {
-          const value2 = baggage?.getEntry(key4)?.value;
-          if (!value2)
-            continue;
-          if (key4 === "tooljet.origin") {
-            if (value2 === "ai")
-              span.setAttribute(key4, value2);
-          } else
-            span.setAttribute(key4, value2.slice(0, CONVERSATION_ID_MAX));
-        }
+        for (const [key4, value2] of allowedBaggage(parentContext))
+          span.setAttribute(key4, value2);
       }
       onEnd(_span) {
       }
@@ -54425,6 +54433,13 @@ var init_otel = __esm({
       }
       shutdown() {
         return Promise.resolve();
+      }
+    };
+    AllowlistBaggagePropagator = class extends import_core13.W3CBaggagePropagator {
+      inject(ctx, carrier, setter) {
+        const entries = allowedBaggage(ctx);
+        const filtered = entries.length ? propagation.setBaggage(ctx, propagation.createBaggage(Object.fromEntries(entries.map(([k, value2]) => [k, { value: value2 }])))) : propagation.deleteBaggage(ctx);
+        super.inject(filtered, carrier, setter);
       }
     };
     trustedOrigins = /* @__PURE__ */ new Set();
@@ -102410,11 +102425,13 @@ async function serveHttp() {
   console.error(`tooljet-mcp: listening on http://${host}:${port} (${gatewayMode ? "gateway" : "direct"} mode)`);
 }
 var trustApiOrigin;
+var stopTracing;
 async function startTracing() {
   try {
     const otel = await Promise.resolve().then(() => (init_otel(), otel_exports));
     otel.startOtel(staticApiUrlFromEnv());
     trustApiOrigin = otel.trustOtelOrigin;
+    stopTracing = otel.shutdownOtel;
   } catch (err) {
     console.error("tooljet-mcp: OpenTelemetry failed to start", err);
   }
@@ -102435,6 +102452,9 @@ async function main() {
     server = buildUnconfiguredServer(reason);
   }
   await server.connect(new StdioServerTransport());
+  const stop = stopTracing;
+  if (stop)
+    process.stdin.once("end", () => void stop().finally(() => process.exit()));
 }
 function isEntrypoint() {
   const invoked = process.argv[1];
