@@ -14,6 +14,7 @@ import {
   ALLOWED_API_ORIGINS_VAR,
   BASE_URL_HEADER,
   identityFromHeaders,
+  staticApiUrlFromEnv,
   PAT_HEADER,
   SESSION_TOKEN_HEADER,
   type RequestIdentity,
@@ -238,8 +239,8 @@ export function createGatewayHttpServer(): GatewayHttpServer {
       (parsedBody as { method?: unknown }).method === 'resources/read';
 
     // identity.apiUrl passed validateApiUrl above; the raw header never reaches here.
-    if (identity?.apiUrl && process.env.ENABLE_OTEL === 'true') {
-      (await import('./otel.js')).trustOtelOrigin(identity.apiUrl);
+    if (identity?.apiUrl) {
+      try { trustApiOrigin?.(identity.apiUrl); } catch (err) { console.error('tooljet-mcp: otel trust failed', err); }
     }
     const server = buildServer(identity);
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: readsResource });
@@ -286,16 +287,21 @@ async function serveHttp(): Promise<void> {
   );
 }
 
-async function main(): Promise<void> {
-  if (process.env.ENABLE_OTEL === 'true') {
-    try {
-      // Static TOOLJET_URL only; HTTP tenants are trusted per request once validated.
-      (await import('./otel.js')).startOtel(process.env.TOOLJET_URL || undefined);
-    } catch (err) {
-      // Tracing is optional; never let it stop the server.
-      console.error('tooljet-mcp: OpenTelemetry failed to start', err);
-    }
+let trustApiOrigin: ((url: string) => void) | undefined;
+
+/** Tracing is optional: a failed start leaves trustApiOrigin unset and the server running. */
+export async function startTracing(): Promise<void> {
+  try {
+    const otel = await import('./otel.js');
+    otel.startOtel(staticApiUrlFromEnv());
+    trustApiOrigin = otel.trustOtelOrigin;
+  } catch (err) {
+    console.error('tooljet-mcp: OpenTelemetry failed to start', err);
   }
+}
+
+async function main(): Promise<void> {
+  if (process.env.ENABLE_OTEL === 'true') await startTracing();
   if (process.env.MCP_TRANSPORT === 'http') {
     await serveHttp();
     return;
