@@ -77076,6 +77076,20 @@ var shownText = (raw) => raw.replace(/\{\{([\s\S]*?)\}\}/g, (_, code) => {
   return words2.join("") + "00".repeat(Math.max(1, values));
 });
 var PAGE_MARGIN = 24;
+var LABELLED_FIELD_TYPES = /* @__PURE__ */ new Set([
+  "ShadInput",
+  "ShadSelect",
+  "ShadMultiSelect",
+  "ShadCombobox",
+  "ShadCurrencyInput",
+  "ShadNumberInput",
+  "ShadDatePicker",
+  "ShadDateRangePicker",
+  "ShadTimePicker",
+  "ShadPhoneInput",
+  "ShadEmailInput",
+  "ShadPasswordInput"
+]);
 function polishFlexRows(input) {
   const warnings = [];
   if (!Array.isArray(input) || !input.length)
@@ -77424,6 +77438,18 @@ function polishFlexRows(input) {
       setProp(container, "alignItems", "flex-end");
       warnings.push(`Row "${label3}" has a labelled field beside buttons; its alignItems is now "flex-end" so the buttons line up with the field box.`);
     }
+    if (text(prop2(container, "alignItems")) === "flex-end" && children.some(isLabelledField)) {
+      for (const button of children.filter((child) => child.type === "ShadButton")) {
+        const rects = [button.layout, button.layouts?.desktop].filter((rect2) => !!rect2);
+        if (!rects.length || !rects.some((rect2) => typeof rect2.height === "number" && rect2.height < 40))
+          continue;
+        rects.forEach((rect2) => {
+          if (typeof rect2.height === "number" && rect2.height < 40)
+            rect2.height = 40;
+        });
+        warnings.push(`"${button.name}" in row "${label3}" is now 40px tall so its box matches the field box beside it.`);
+      }
+    }
     if (children.length >= 2 && children.every(isSurface) && align !== "stretch") {
       setProp(container, "alignItems", "stretch");
       warnings.push(`Row "${label3}" holds ${children.length} cards; its alignItems is now stretch so they share one height.`);
@@ -77623,6 +77649,34 @@ function polishFlexRows(input) {
     rest.splice(Math.min(firstIndex, rest.length), 0, row, ...ordered);
     components.splice(0, components.length, ...rest);
     warnings.push(`Dialog "${dialog.name}": its ${ordered.length} footer buttons were placed by hand with uneven gaps; they now sit in one row "${rowRef}" at the right, in their order (${ordered.map((c) => `"${c.name}"`).join(", ")}).`);
+  }
+  const flexRefs = new Set(components.filter((c) => c?.type === "FlexContainer").map((c) => refOf(c)));
+  const rectOf = (c) => c.layouts?.desktop ?? c.layout;
+  const placeOf = (c) => String(c.parentRef ?? c.parent ?? "") + "|" + String(c.slotName ?? "");
+  const labelled = components.filter((c) => {
+    const label3 = props(c).label?.value;
+    return c && LABELLED_FIELD_TYPES.has(c.type) && typeof label3 === "string" && label3.trim() !== "" && rectOf(c) && !flexRefs.has(String(c.parentRef ?? ""));
+  });
+  for (const button of components) {
+    if (!button || button.type !== "ShadButton" || flexRefs.has(String(button.parentRef ?? "")))
+      continue;
+    const b = rectOf(button);
+    if (!b || typeof b.top !== "number" || (b.height ?? 0) > 44)
+      continue;
+    const field = labelled.find((f) => {
+      const r = rectOf(f);
+      if (placeOf(f) !== placeOf(button) || typeof r.top !== "number")
+        return false;
+      const sameRow = b.top >= r.top - 4 && b.top < r.top + 18;
+      const apart = (b.left ?? 0) >= (r.left ?? 0) + (r.width ?? 0) || (r.left ?? 0) >= (b.left ?? 0) + (b.width ?? 0);
+      return sameRow && apart;
+    });
+    if (!field)
+      continue;
+    const top = rectOf(field).top + 22;
+    b.top = top;
+    b.height = 40;
+    warnings.push(`Button "${button.name}" sat at the top of a row of labelled fields; it now sits at ${top} (40px tall) so it lines up with the field boxes, not the labels.`);
   }
   const accents = unifyChartAccents(components);
   const tables = packTableLook(accents.components);
@@ -78819,6 +78873,82 @@ function lintRunjsLoadOrder(spec) {
   }
   return { errors, warnings };
 }
+function lintCrossPageComponentReads(spec) {
+  const pages = spec.pages ?? [];
+  if (pages.length < 2)
+    return [];
+  const pageOf = /* @__PURE__ */ new Map();
+  for (const page of pages) {
+    for (const component of page.components ?? []) {
+      if (component.name)
+        pageOf.set(component.name, page.name);
+      if (component.clientRef)
+        pageOf.set(component.clientRef, page.name);
+    }
+    if (page.clientRef)
+      pageOf.set(page.clientRef, page.name);
+  }
+  const home = pages[0].name;
+  const queries = spec.queries ?? [];
+  const nameOf = /* @__PURE__ */ new Map();
+  for (const q of queries) {
+    nameOf.set(q.name, q.name);
+    if (q.clientRef)
+      nameOf.set(q.clientRef, q.name);
+  }
+  const startup = new Set(queries.filter((q) => isStaticTrue(q.options?.runOnPageLoad)).map((q) => q.name));
+  const runners = /* @__PURE__ */ new Map();
+  const add = (target2, entry) => {
+    const name2 = nameOf.get(target2) ?? target2;
+    runners.set(name2, [...runners.get(name2) ?? [], entry]);
+  };
+  for (const lifecycle of spec.lifecycles ?? []) {
+    const from = nameOf.get(lifecycle.queryRef) ?? lifecycle.queryRef;
+    for (const target2 of lifecycle.refreshQueryRefs ?? [])
+      add(target2, { why: `after "${from}"`, startupChain: from });
+  }
+  for (const event of spec.events ?? []) {
+    const action = event.action ?? {};
+    if (action.actionId !== "run-query")
+      continue;
+    const target2 = String(action.target_ref ?? action.queryName ?? action.queryId ?? "");
+    if (!target2)
+      continue;
+    if (event.sourceType === "data_query")
+      add(target2, { why: `after "${nameOf.get(event.sourceRef) ?? event.sourceRef}"`, startupChain: nameOf.get(event.sourceRef) ?? event.sourceRef });
+    else if (event.sourceType === "page")
+      add(target2, { why: `from page "${pageOf.get(event.sourceRef) ?? event.sourceRef}"`, page: pageOf.get(event.sourceRef) ?? event.sourceRef });
+    else if (event.sourceType === "component")
+      add(target2, { why: `from page "${pageOf.get(event.sourceRef) ?? "?"}"`, page: pageOf.get(event.sourceRef) });
+  }
+  const errors = [];
+  for (const query2 of queries) {
+    const text2 = JSON.stringify(query2.options ?? {});
+    const reads = /* @__PURE__ */ new Map();
+    for (const match of text2.matchAll(/components\.([A-Za-z_$][\w$]*)\.([A-Za-z_$][\w$]*)/g)) {
+      const page2 = pageOf.get(match[1]);
+      if (page2 && page2 !== home && !reads.has(match[1]))
+        reads.set(match[1], `${match[1]}.${match[2]}`);
+    }
+    if (!reads.size)
+      continue;
+    const [component, read] = [...reads.entries()][0];
+    const page = pageOf.get(component);
+    const closed = [];
+    if (startup.has(query2.name))
+      closed.push("at app start");
+    for (const runner of runners.get(query2.name) ?? []) {
+      if (runner.startupChain && startup.has(runner.startupChain))
+        closed.push(`${runner.why}, which runs at app start`);
+      else if (runner.page && runner.page !== page)
+        closed.push(runner.why);
+    }
+    if (!closed.length)
+      continue;
+    errors.push(`Query "${query2.name}" reads components.${read} (on page "${page}") but runs while "${page}" may be closed: ${[...new Set(closed)].join("; ")}. Only the open page's components exist, so it throws "Cannot read properties of undefined". Read them optionally with a default (components.${read.replace(".", "?.")} ?? ...), and run the query when "${page}" opens (a page onPageLoad run-query event).`);
+  }
+  return errors;
+}
 function lintChartNumericBindings(pages, queries) {
   const warnings = [];
   const sqlByName = /* @__PURE__ */ new Map();
@@ -78998,6 +79128,7 @@ function lintPlannedApp(spec, existingSummary, options2 = {}) {
   {
     const loadOrder = lintRunjsLoadOrder(spec);
     errors.push(...loadOrder.errors);
+    errors.push(...lintCrossPageComponentReads(spec));
     warnings.push(...loadOrder.warnings);
   }
   const pageRefs = /* @__PURE__ */ new Map();
