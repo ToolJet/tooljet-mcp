@@ -10,6 +10,7 @@ import { createClient } from '../src/tooljetClient.js';
 import { registerTools } from '../src/tools/index.js';
 import { BaggageAttributeProcessor, shutdownOtel, startOtel } from '../src/otel.js';
 import { TOOLJET_MCP_VERSION } from '../src/runtimeFreshness.js';
+import { USER_AGENT } from '../src/tracing.js';
 
 const TRACE_ID = '4bf92f3577b34da6a3ce929d0e0e4736';
 const TRACEPARENT = `00-${TRACE_ID}-00f067aa0ba902b7-01`;
@@ -23,6 +24,9 @@ const exported: { resource: OtlpAttr[]; spans: OtlpSpan[] }[] = [];
 const apiRequests: { url: string; headers: IncomingHttpHeaders }[] = [];
 let server: Server;
 let base: string;
+let other: string;
+let otherServer: Server;
+const otherRequests: IncomingHttpHeaders[] = [];
 
 const attrs = (list: OtlpAttr[]) => Object.fromEntries(list.map((a) => [a.key, a.value.stringValue]));
 const allSpans = () => exported.flatMap((batch) => batch.spans);
@@ -40,6 +44,7 @@ beforeAll(async () => {
         res.writeHead(200, { 'Content-Type': 'application/json' }).end('{}');
         return;
       }
+      if (req.url === '/redirect') { res.writeHead(302, { Location: `${other}/landed` }).end(); return; }
       apiRequests.push({ url: req.url ?? '', headers: req.headers });
       res.writeHead(201, { 'Content-Type': 'application/json' })
         .end(JSON.stringify({ authToken: 'TOKEN', organizationId: 'org1', organizationSlug: 'acme' }));
@@ -47,9 +52,12 @@ beforeAll(async () => {
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  otherServer = createServer((req, res) => { otherRequests.push(req.headers); res.end('{}'); });
+  await new Promise<void>((resolve) => otherServer.listen(0, '127.0.0.1', resolve));
+  other = `http://localhost:${(otherServer.address() as AddressInfo).port}`;
   process.env.OTEL_EXPORTER_OTLP_ENDPOINT = base;
   process.env.OTEL_RESOURCE_ATTRIBUTES = 'deployment.environment.name=development';
-  startOtel();
+  startOtel(base);
 });
 
 afterAll(async () => {
@@ -57,6 +65,7 @@ afterAll(async () => {
   delete process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
   delete process.env.OTEL_RESOURCE_ATTRIBUTES;
   await new Promise((resolve) => server.close(resolve));
+  await new Promise((resolve) => otherServer.close(resolve));
 });
 
 describe('OpenTelemetry bootstrap', () => {
@@ -83,7 +92,18 @@ describe('OpenTelemetry bootstrap', () => {
     const parent = trace.getTracer('test').startSpan('parent');
     await context.with(trace.setSpan(context.active(), parent), () => fetch(`${base}/third-party`));
     parent.end();
-    expect(apiRequests.find((r) => r.url === '/third-party')!.headers.traceparent).toBeUndefined();
+    const thirdParty = apiRequests.find((r) => r.url === '/third-party')!.headers;
+    expect(thirdParty.traceparent).toBeUndefined();
+    expect(thirdParty.baggage).toBeUndefined();
+
+    // A redirect off the ToolJet origin re-sends our UA but must not carry context.
+    const hop = trace.getTracer('test').startSpan('hop');
+    const hopCtx = propagation.setBaggage(trace.setSpan(context.active(), hop), propagation.createBaggage({ 'tooljet.origin': { value: 'ai' } }));
+    await context.with(hopCtx, () => fetch(`${base}/redirect`, { headers: { 'User-Agent': USER_AGENT } }));
+    hop.end();
+    expect(otherRequests).toHaveLength(1);
+    expect(otherRequests[0].traceparent).toBeUndefined();
+    expect(otherRequests[0].baggage).toBeUndefined();
 
     await shutdownOtel(5000);
 
@@ -93,6 +113,8 @@ describe('OpenTelemetry bootstrap', () => {
       'service.version': TOOLJET_MCP_VERSION,
       'deployment.environment.name': 'development',
     });
+    // No CLIENT span for the third-party request.
+    expect(allSpans().some((s) => attrs(s.attributes)['url.full']?.includes('/third-party'))).toBe(false);
     const toolSpan = allSpans().find((s) => s.name === 'tools/call list_workspaces')!;
     expect(toolSpan.traceId).toBe(TRACE_ID);
     // Allowlisted baggage only.

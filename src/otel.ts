@@ -10,7 +10,7 @@ import { registerInstrumentations } from '@opentelemetry/instrumentation';
 import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { TOOLJET_MCP_VERSION } from './runtimeFreshness.js';
-import { USER_AGENT } from './tracing.js';
+import { BAGGAGE_ATTRIBUTE_KEYS, USER_AGENT } from './tracing.js';
 
 // stdout is the stdio MCP channel: every OTel log line goes to stderr.
 const toStderr = (...args: unknown[]): void => {
@@ -20,23 +20,43 @@ const stderrLogger: DiagLogger = { error: toStderr, warn: toStderr, info: toStde
 
 const CONVERSATION_ID_MAX = 128;
 
-// Same allowlist as the ToolJet server: origin is exactly 'ai'; conversation id is a metrics label, so capped.
+// Same allowlist as the ToolJet server: origin is exactly 'ai'; conversation id capped for attribute size.
 export class BaggageAttributeProcessor implements SpanProcessor {
   onStart(span: Span, parentContext: Context): void {
     const baggage = propagation.getBaggage(parentContext);
-    const origin = baggage?.getEntry('tooljet.origin')?.value;
-    if (origin === 'ai') span.setAttribute('tooljet.origin', origin);
-    const conversationId = baggage?.getEntry('gen_ai.conversation.id')?.value;
-    if (conversationId) span.setAttribute('gen_ai.conversation.id', conversationId.slice(0, CONVERSATION_ID_MAX));
+    for (const key of BAGGAGE_ATTRIBUTE_KEYS) {
+      const value = baggage?.getEntry(key)?.value;
+      if (!value) continue;
+      if (key === 'tooljet.origin') {
+        if (value === 'ai') span.setAttribute(key, value);
+      } else span.setAttribute(key, value.slice(0, CONVERSATION_ID_MAX));
+    }
   }
   onEnd(_span: ReadableSpan): void {}
   forceFlush(): Promise<void> { return Promise.resolve(); }
   shutdown(): Promise<void> { return Promise.resolve(); }
 }
 
+const trustedOrigins = new Set<string>();
+
+/** Origins that may receive trace context (ToolJet API). HTTP transport calls this per tenant. */
+export function trustOtelOrigin(url: string): void {
+  try { trustedOrigins.add(new URL(url).origin); } catch { /* not a URL: nothing to trust */ }
+}
+
+// request.headers is a raw string ("k: v\r\n") or a flat [k, v, ...] array depending on undici version.
+function userAgentOf(headers: string | (string | string[])[] | undefined): string | undefined {
+  if (Array.isArray(headers)) {
+    for (let i = 0; i + 1 < headers.length; i += 2) if (String(headers[i]).toLowerCase() === 'user-agent') return String(headers[i + 1]);
+    return undefined;
+  }
+  return headers?.match(/^user-agent:[ \t]*(.*?)[ \t]*\r?$/im)?.[1];
+}
+
 let provider: NodeTracerProvider | undefined;
 
-export function startOtel(): void {
+export function startOtel(apiUrl?: string): void {
+  if (apiUrl) trustOtelOrigin(apiUrl);
   const level = process.env.OTEL_LOG_LEVEL?.toUpperCase();
   if (level) diag.setLogger(stderrLogger, DiagLogLevel[level as keyof typeof DiagLogLevel] ?? DiagLogLevel.INFO);
 
@@ -59,8 +79,10 @@ export function startOtel(): void {
   });
   registerInstrumentations({
     instrumentations: [
-      // Context only to callers that name us (ToolJet API); never to third-party URLs.
-      new UndiciInstrumentation({ ignoreRequestHook: (request) => !String(request.headers).includes(USER_AGENT) }),
+      // Context only to ToolJet API requests: trusted origin AND our exact UA. Redirect hops re-send our UA, so origin matters.
+      new UndiciInstrumentation({
+        ignoreRequestHook: (request) => !trustedOrigins.has(request.origin) || userAgentOf(request.headers) !== USER_AGENT,
+      }),
       new HttpInstrumentation({ disableOutgoingRequestInstrumentation: true }),
     ],
   });
