@@ -48,6 +48,7 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
         }
         const resolutionWarnings: string[] = [];
         let currentDatasourceId: string | undefined;
+        let originalDatasourceAvailable = false;
         let kind = args.kind;
         if (args.app_id || !input.query_id) {
           const queries = args.app_id
@@ -73,9 +74,9 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
               new Error(`Query "${args.query_id}" has no current datasource id in the app summary; refusing an unrollbackable repoint.`)
             );
           }
-          const datasource = (await client.listDatasources(args.version_id)).find(
-            (item) => item.id === args.datasource_id
-          );
+          const inventory = await client.listDatasources(args.version_id);
+          originalDatasourceAvailable = inventory.some(item => item.id === currentDatasourceId);
+          const datasource = inventory.find(item => item.id === args.datasource_id);
           if (!datasource) {
             return fail(new Error(`Datasource "${args.datasource_id}" is not available on version "${args.version_id}".`));
           }
@@ -108,6 +109,21 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
           });
         } catch (error) {
           if (args.datasource_id && currentDatasourceId && args.datasource_id !== currentDatasourceId) {
+            if (!originalDatasourceAvailable) {
+              try {
+                await client.assertDatasourceAllowed(currentDatasourceId, args.version_id);
+                originalDatasourceAvailable = true;
+              } catch {
+                // Never restore an excluded or unverifiable source, including Sample.
+              }
+            }
+            if (!originalDatasourceAvailable) {
+              throw new Error(
+                `Query options update failed after moving query ${args.query_id} to datasource ${args.datasource_id}. ` +
+                `The original datasource is unavailable to AI, so it was not restored. The query remains on the new ` +
+                `datasource with its previous options; repair those options before running it. ${String(error)}`
+              );
+            }
             try {
               await client.updateQueryDatasource({
                 queryId: args.query_id,

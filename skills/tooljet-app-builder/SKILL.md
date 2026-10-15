@@ -54,7 +54,9 @@ Detail: `references/qa.md`.
 
 ## Datasource repair handoff
 
-If a source is absent or a query fails, use its `datasources_url`, `settings_url`, or `recovery.url`. Open it in the built-in browser when available; otherwise send the link. Never enter credentials, authorize OAuth, test, or save the connection. If `list_datasources` marks it `connectable`, stop and hand off; if absent, report no connector and suggest REST API. Sample data only on request. See `references/datasources.md`.
+**Sample data source is forbidden for AI**, even on request: discovery, tests, reads, writes, queries. Use ToolJet Database; synthetic rows require user permission.
+
+If a source is absent or a query fails, use its `datasources_url`, `settings_url`, or `recovery.url`. Open it in the built-in browser when available; otherwise send the link. Never enter credentials, authorize OAuth, test, or save the connection. If `list_datasources` marks it `connectable`, stop and hand off; if absent, report no connector and suggest REST API. See `references/datasources.md`.
 
 ## Load only the references the phase needs
 

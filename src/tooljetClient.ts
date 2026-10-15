@@ -649,6 +649,7 @@ export interface ToolJetClient {
   getQueries(versionId: string): Promise<QuerySummary[]>;
   getQuery(queryId: string, versionId: string): Promise<QuerySummary>;
   runQuery(params: { queryId: string; versionId: string; environmentId?: string; resolvedOptions?: Record<string, unknown> }): Promise<RunQueryResult>;
+  assertDatasourceAllowed(dataSourceId: string, versionId?: string, environmentId?: string): Promise<void>;
   invokeDatasourceMethod(params: InvokeDatasourceMethodParams): Promise<RunQueryResult>;
   getDatasourceConnectionDetails(dataSourceId: string, environmentId?: string): Promise<DatasourceConnectionDetails>;
   getPluginSpec(pluginKind: string, specName: string): Promise<string>;
@@ -2076,17 +2077,22 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
 
   // Identity only, scoped to the authenticated workspace. Never retain connection options here.
   const datasourceIdentities = new Map<string, { name: string; kind: string; type?: unknown }>();
-  async function assertDatasourceAllowed(dataSourceId: string, environmentId?: string): Promise<void> {
+  async function assertDatasourceAllowed(dataSourceId: string, versionId?: string, environmentId?: string): Promise<void> {
     const key = `${await auth.getOrganizationId()}:${dataSourceId}`;
+    // App users can run a saved query without permission to inspect connection settings.
+    // Prefer the version inventory, which also includes sources already used by the app.
+    if (!datasourceIdentities.has(key) && versionId) await listDatasources(versionId);
     const known = datasourceIdentities.get(key);
     if (known) return assertAiDatasource(known);
+    // Legacy app-local sources may be absent from the global inventory. Verify their actual
+    // identity instead of treating every missing source as Sample.
     await getDatasourceConnectionDetails(dataSourceId, environmentId);
   }
 
   async function assertQueryDatasourceAllowed(queryId: string, versionId: string, environmentId?: string): Promise<void> {
     const query = await getQuery(queryId, versionId);
     if (!query.data_source_id) throw new Error('Cannot verify the saved query datasource; refusing AI access.');
-    await assertDatasourceAllowed(query.data_source_id, environmentId);
+    await assertDatasourceAllowed(query.data_source_id, versionId, environmentId);
   }
 
   async function listDatasources(versionId: string): Promise<Datasource[]> {
@@ -2448,7 +2454,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function createQueryUnqueued(params: CreateQueryParams): Promise<CreateQueryResult> {
     assertPersistableQueryToggles(params.options, `ToolJet createQuery refused query "${params.name}"`);
     const kind = params.kind ?? (await resolveDatasourceKind(params.versionId, params.dataSourceId));
-    await assertDatasourceAllowed(params.dataSourceId);
+    await assertDatasourceAllowed(params.dataSourceId, params.versionId);
     const res = await auth.authedFetch(
       `/api/data-queries/data-sources/${params.dataSourceId}/versions/${params.versionId}`,
       {
@@ -2715,7 +2721,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     dataSourceId: string;
   }): Promise<void> {
     // Repointing away from a sample source remains possible; only the destination is authorized.
-    await assertDatasourceAllowed(params.dataSourceId);
+    await assertDatasourceAllowed(params.dataSourceId, params.versionId);
     const res = await auth.authedFetch(
       `/api/data-queries/${params.queryId}/versions/${params.versionId}/data-source`,
       {
@@ -2796,7 +2802,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   async function invokeDatasourceMethod(params: InvokeDatasourceMethodParams): Promise<RunQueryResult> {
-    await assertDatasourceAllowed(params.dataSourceId, params.environmentId);
+    await assertDatasourceAllowed(params.dataSourceId, undefined, params.environmentId);
     const environmentId = params.environmentId ?? (await getDevelopmentEnvironmentId());
     const res = await auth.authedFetch(`/api/data-sources/${params.dataSourceId}/invoke`, {
       method: 'POST',
@@ -2874,7 +2880,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function testDatasourceConnection(
     params: TestDatasourceConnectionParams
   ): Promise<ConnectionTestResult> {
-    await assertDatasourceAllowed(params.dataSourceId, params.environmentId);
+    await assertDatasourceAllowed(params.dataSourceId, undefined, params.environmentId);
     const environmentId = params.environmentId ?? (await getDevelopmentEnvironmentId());
     const res = await auth.authedFetch(
       `/api/data-sources/${encodeURIComponent(params.dataSourceId)}/test-connection`,
@@ -2959,7 +2965,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
 
   return {
     appVersions: createAppVersionLifecycle(auth, getApp),
-    workflows: createWorkflowClient(auth, config, { getQueries, listDatasources, createQuery, updateQuery, deleteQuery, getDevelopmentEnvironmentId }),
+    workflows: createWorkflowClient(auth, config, { assertDatasourceAllowed, getQueries, listDatasources, createQuery, updateQuery, deleteQuery, getDevelopmentEnvironmentId }),
     listWorkspaces,
     useWorkspace,
     listWorkspaceApps,
@@ -3032,6 +3038,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     getQuery,
     hasRows,
     runQuery,
+    assertDatasourceAllowed,
     invokeDatasourceMethod,
     getDatasourceConnectionDetails,
     getPluginSpec,

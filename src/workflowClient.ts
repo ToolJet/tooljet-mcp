@@ -1,4 +1,3 @@
-import { SAMPLE_DATASOURCE_REFUSAL } from './datasourcePolicy.js';
 import { createHash } from 'node:crypto';
 import type { Auth } from './auth.js';
 import type { Config } from './config.js';
@@ -12,7 +11,7 @@ export interface WorkflowSnapshot {
 export type WorkflowClient = ReturnType<typeof createWorkflowClient>;
 const record = (x: unknown): Record<string, unknown> => x && typeof x === 'object' && !Array.isArray(x) ? x as Record<string, unknown> : {};
 const required = (x: unknown, label: string) => { if (typeof x !== 'string' || !x) throw new Error(`Workflow response missing ${label}.`); return x; };
-export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<ToolJetClient, 'getQueries' | 'listDatasources' | 'createQuery' | 'updateQuery' | 'deleteQuery' | 'getDevelopmentEnvironmentId'>) {
+export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<ToolJetClient, 'assertDatasourceAllowed' | 'getQueries' | 'listDatasources' | 'createQuery' | 'updateQuery' | 'deleteQuery' | 'getDevelopmentEnvironmentId'>) {
   async function request(path: string, body?: unknown, method = 'POST') {
     const mutation = body !== undefined;
     let response: Response;
@@ -71,6 +70,30 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
       definition: definition(rawVersion.definition),
     };
   }
+  async function assertWorkflowDatasources(versionId: string, environmentId: string, visited = new Set<string>()): Promise<void> {
+    if (visited.has(versionId)) return;
+    if (visited.size >= 50) throw new Error('Cannot verify all nested workflow datasources; refusing AI execution.');
+    visited.add(versionId);
+    const saved = await queries.getQueries(versionId);
+    if (saved.some(query => !query.data_source_id)) throw new Error('Cannot verify a workflow query datasource; refusing AI execution.');
+    if (saved.length) await queries.listDatasources(versionId);
+    await Promise.all([...new Set(saved.map(query => query.data_source_id!))]
+      .map(id => queries.assertDatasourceAllowed(id, versionId, environmentId)));
+    for (const query of saved) {
+      if (query.kind !== 'workflows') continue;
+      const options = record(query.options);
+      const workflowId = required(options.workflowId, 'nested workflow ID');
+      if (!/^[A-Za-z0-9_-]+$/.test(workflowId)) throw new Error('Cannot verify a dynamic nested workflow target.');
+      let childVersion = options.workflowVersionId;
+      if (!childVersion) {
+        const child = record(await request(`/api/apps/${encodeURIComponent(workflowId)}`));
+        childVersion = child.current_version_id ?? child.currentVersionId;
+      }
+      const childVersionId = required(childVersion, 'nested workflow version');
+      if (!/^[A-Za-z0-9_-]+$/.test(childVersionId)) throw new Error('Cannot verify a dynamic nested workflow version.');
+      await assertWorkflowDatasources(childVersionId, environmentId, visited);
+    }
+  }
   return {
     ...queries,
     workspaceId: () => auth.getOrganizationId(),
@@ -94,9 +117,7 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
       workflowId: string; versionId: string; name: string; kind: string;
       options: Record<string, unknown>; dataSourceId?: string;
     }) {
-      if (params.dataSourceId && !(await queries.listDatasources(params.versionId)).some(ds => ds.id === params.dataSourceId)) {
-        throw new Error(`Datasource unavailable to AI. ${SAMPLE_DATASOURCE_REFUSAL}`);
-      }
+      if (params.dataSourceId) await queries.assertDatasourceAllowed(params.dataSourceId, params.versionId);
       const body = record(await request('/api/data-queries/workflow-node', {
         app_id: params.workflowId,
         app_version_id: params.versionId,
@@ -111,10 +132,7 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
       const snapshot = await get(workflowId, versionId);
       if (snapshot.environment_id !== environmentId) throw new Error('Environment must match the selected workflow version.');
       if (!snapshot.enabled) throw new Error('Workflow is disabled. Enable it in ToolJet before running it.');
-      const allowed = new Set((await queries.listDatasources(versionId)).map(ds => ds.id));
-      if ((await queries.getQueries(versionId)).some(query => !query.data_source_id || !allowed.has(query.data_source_id))) {
-        throw new Error(`Workflow contains a datasource unavailable to AI. ${SAMPLE_DATASOURCE_REFUSAL}`);
-      }
+      await assertWorkflowDatasources(versionId, environmentId);
       return request('/api/workflow_executions', { executeUsing: 'version', appVersionId: versionId, appId: workflowId, environmentId, params });
     },
     async execution(id: string, page = 1, perPage = 20) {

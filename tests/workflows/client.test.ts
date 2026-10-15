@@ -8,7 +8,7 @@ function exported(value = app()) {
 }
 function setup(fetcher = vi.fn(async (path: string) => new Response(JSON.stringify(path === '/api/v2/resources/export' ? exported() : app())))) {
   const auth = { authedFetch: fetcher, getOrganizationId: async () => 'org', getOrganizationSlug: async () => 'workspace' } as unknown as Auth;
-  const queries = { getQueries: vi.fn().mockResolvedValue([]), listDatasources: vi.fn().mockResolvedValue([]), createQuery: vi.fn(), updateQuery: vi.fn(), deleteQuery: vi.fn(), getDevelopmentEnvironmentId: vi.fn() };
+  const queries = { assertDatasourceAllowed: vi.fn().mockResolvedValue(undefined), getQueries: vi.fn().mockResolvedValue([]), listDatasources: vi.fn().mockResolvedValue([]), createQuery: vi.fn(), updateQuery: vi.fn(), deleteQuery: vi.fn(), getDevelopmentEnvironmentId: vi.fn() };
   const client = createWorkflowClient(auth, { apiUrl: 'http://localhost:3000', appUrl: 'http://localhost:3000', sessionToken: 'test-session', workspaceId: 'org' }, queries);
   return { client, fetcher, queries };
 }
@@ -61,15 +61,49 @@ describe('workflow HTTP adapter', () => {
   it('refuses a stored workflow query whose datasource is excluded from AI', async () => {
     const { client, fetcher, queries } = setup();
     queries.getQueries.mockResolvedValue([{ id: 'old-node', data_source_id: 'shared-sample' }]);
+    queries.assertDatasourceAllowed.mockRejectedValue(new Error('Sample data source is unavailable to AI.'));
     await expect(client.run('w', 'v', 'env', {})).rejects.toThrow('Sample data source');
     expect(fetcher.mock.calls.some(([path]) => path === '/api/workflow_executions')).toBe(false);
   });
   it('refuses a workflow-node create on a datasource excluded from AI', async () => {
-    const { client, fetcher } = setup();
+    const { client, fetcher, queries } = setup();
+    queries.assertDatasourceAllowed.mockRejectedValue(new Error('Sample data source is unavailable to AI.'));
     await expect(client.createWorkflowQuery({ workflowId: 'w', versionId: 'v', name: 'probe',
       kind: 'postgresql', dataSourceId: 'shared-sample', options: { query: 'SELECT 1' },
     })).rejects.toThrow('Sample data source');
     expect(fetcher).not.toHaveBeenCalled();
+  });
+  it('checks actual identities for legacy sources absent from the inventory', async () => {
+    const { client, queries } = setup();
+    queries.getQueries.mockResolvedValue([{ id: 'legacy-node', data_source_id: 'app-local' }]);
+    await client.run('w', 'v', 'env', {});
+    expect(queries.assertDatasourceAllowed).toHaveBeenCalledWith('app-local', 'v', 'env');
+  });
+  it('refuses a parent workflow when a nested workflow uses Sample', async () => {
+    const { client, fetcher, queries } = setup();
+    queries.getQueries.mockImplementation(async version => version === 'v'
+      ? [{ id: 'child-call', data_source_id: 'workflow-static', kind: 'workflows', options: { workflowId: 'child', workflowVersionId: 'child-v' } }]
+      : [{ id: 'child-read', data_source_id: 'shared-sample', kind: 'postgresql' }]);
+    queries.assertDatasourceAllowed.mockImplementation(async id => {
+      if (id === 'shared-sample') throw new Error('Sample data source is unavailable to AI.');
+    });
+    await expect(client.run('w', 'v', 'env', {})).rejects.toThrow('Sample data source');
+    expect(queries.getQueries).toHaveBeenCalledWith('child-v');
+    expect(fetcher.mock.calls.some(([path]) => path === '/api/workflow_executions')).toBe(false);
+  });
+  it('checks each version once when workflow references form a cycle', async () => {
+    const { client, queries } = setup();
+    queries.getQueries.mockResolvedValue([{ id: 'self-call', data_source_id: 'workflow-static', kind: 'workflows',
+      options: { workflowId: 'w', workflowVersionId: 'v' } }]);
+    await client.run('w', 'v', 'env', {});
+    expect(queries.getQueries).toHaveBeenCalledExactlyOnceWith('v');
+  });
+  it('does not execute a nested workflow whose target cannot be resolved', async () => {
+    const { client, fetcher, queries } = setup();
+    queries.getQueries.mockResolvedValue([{ id: 'child-call', data_source_id: 'workflow-static', kind: 'workflows',
+      options: { workflowId: '{{startTrigger.params.target}}' } }]);
+    await expect(client.run('w', 'v', 'env', {})).rejects.toThrow('dynamic nested workflow target');
+    expect(fetcher.mock.calls.some(([path]) => path === '/api/workflow_executions')).toBe(false);
   });
   it('never retries ambiguous execution requests', async () => {
     const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify(app()))).mockResolvedValueOnce(new Response(JSON.stringify(exported()))).mockRejectedValueOnce(new Error('timeout'));
