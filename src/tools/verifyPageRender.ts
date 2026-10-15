@@ -378,6 +378,16 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
           .filter((p) => !args.page_handle || p.handle === args.page_handle)
           .map((p) => ({ page: p.handle ?? p.name ?? 'home', url: `${base}/applications/${args.app_id}/${encodeURIComponent(p.handle ?? 'home')}${preview}` }));
         if (!targets.length) return fail(new Error(`no page ${args.page_handle ?? ''} in app ${args.app_id}`));
+        // Page-load and event reads run in the browser, outside client.runQuery's guard.
+        if (summary.queries?.length) {
+          if (!summary.version_id) return fail(new Error('Cannot verify datasource eligibility without an app version.'));
+          if (summary.queries.some(query => !query.data_source_id)) {
+            return fail(new Error('Cannot verify an app query datasource; refusing browser verification.'));
+          }
+          await client.listDatasources(summary.version_id);
+          await Promise.all([...new Set(summary.queries.map(query => query.data_source_id!))]
+            .map(id => client.assertDatasourceAllowed(id, summary.version_id)));
+        }
         const options = {
           channel: process.env.MCP_RENDER_AUDIT_CHANNEL || 'chrome',
           executablePath: process.env.MCP_RENDER_AUDIT_CHROME || undefined,

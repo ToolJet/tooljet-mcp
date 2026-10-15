@@ -60735,6 +60735,16 @@ function createAuth(config2, fetchImpl = fetch) {
   return { authedFetch, getOrganizationId, getOrganizationSlug, listWorkspaces, switchWorkspace, viewerSession };
 }
 
+// dist/datasourcePolicy.js
+var SAMPLE_DATASOURCE_REFUSAL = "Sample data source is unavailable to AI. Do not inspect, test, read, write, or create queries on it. Use ToolJet Database for new app data, or another connected user-owned datasource.";
+function isSampleDatasource(source2) {
+  return String(source2.type ?? "").trim().toLowerCase() === "sample" || String(source2.name ?? "").toLowerCase().replace(/[\s_-]+/g, "") === "sampledatasource";
+}
+function assertAiDatasource(source2) {
+  if (isSampleDatasource(source2))
+    throw new Error(SAMPLE_DATASOURCE_REFUSAL);
+}
+
 // dist/appVersionLifecycle.js
 function createAppVersionLifecycle(auth, getApp) {
   const enc = encodeURIComponent;
@@ -61315,6 +61325,47 @@ function createWorkflowClient(auth, config2, queries) {
       definition: definition(rawVersion.definition)
     };
   }
+  async function assertWorkflowDatasources(versionId, environmentId, graph, visited = /* @__PURE__ */ new Set()) {
+    if (visited.has(versionId))
+      return;
+    if (visited.size >= 50)
+      throw new Error("Cannot verify all nested workflow datasources; refusing AI execution.");
+    visited.add(versionId);
+    const saved = await queries.getQueries(versionId);
+    const savedIds = new Set(saved.map((query2) => query2.id));
+    if (graph.queries.some((mapping) => !savedIds.has(mapping.id))) {
+      throw new Error("Workflow definition references a query outside its version; refusing AI execution.");
+    }
+    if (saved.some((query2) => !query2.data_source_id))
+      throw new Error("Cannot verify a workflow query datasource; refusing AI execution.");
+    if (saved.length)
+      await queries.listDatasources(versionId);
+    await Promise.all([...new Set(saved.map((query2) => query2.data_source_id))].map((id) => queries.assertDatasourceAllowed(id, versionId, environmentId)));
+    for (const query2 of saved) {
+      if (query2.kind !== "workflows")
+        continue;
+      const options2 = record2(query2.options);
+      const workflowId = required2(options2.workflowId, "nested workflow ID");
+      if (!/^[A-Za-z0-9_-]+$/.test(workflowId))
+        throw new Error("Cannot verify a dynamic nested workflow target.");
+      let childVersion = options2.workflowVersionId;
+      if (!childVersion) {
+        const child2 = record2(await request(`/api/apps/${encodeURIComponent(workflowId)}`));
+        childVersion = child2.current_version_id ?? child2.currentVersionId;
+      }
+      const childVersionId = required2(childVersion, "nested workflow version");
+      if (!/^[A-Za-z0-9_-]+$/.test(childVersionId))
+        throw new Error("Cannot verify a dynamic nested workflow version.");
+      if (visited.has(childVersionId))
+        continue;
+      const childApp = record2(await request(versionPath(workflowId, childVersionId)));
+      const child = record2(childApp.editing_version ?? childApp.editingVersion);
+      if (childApp.type !== "workflow" || childApp.id !== workflowId || child.id !== childVersionId || (childApp.organizationId ?? childApp.organization_id) !== await auth.getOrganizationId() || !Object.hasOwn(child, "definition")) {
+        throw new Error("Cannot verify the nested workflow version definition; refusing AI execution.");
+      }
+      await assertWorkflowDatasources(childVersionId, environmentId, definition(child.definition), visited);
+    }
+  }
   return {
     ...queries,
     workspaceId: () => auth.getOrganizationId(),
@@ -61342,6 +61393,8 @@ function createWorkflowClient(auth, config2, queries) {
     /** Workflow nodes use their own creation route. It supplies ToolJet's static RunJS source
      * when no datasource is needed, and carries workflow-specific guards/metadata. */
     async createWorkflowQuery(params) {
+      if (params.dataSourceId)
+        await queries.assertDatasourceAllowed(params.dataSourceId, params.versionId);
       const body = record2(await request("/api/data-queries/workflow-node", {
         app_id: params.workflowId,
         app_version_id: params.versionId,
@@ -61358,6 +61411,7 @@ function createWorkflowClient(auth, config2, queries) {
         throw new Error("Environment must match the selected workflow version.");
       if (!snapshot2.enabled)
         throw new Error("Workflow is disabled. Enable it in ToolJet before running it.");
+      await assertWorkflowDatasources(versionId, environmentId, snapshot2.definition);
       return request("/api/workflow_executions", { executeUsing: "version", appVersionId: versionId, appId: workflowId, environmentId, params });
     },
     async execution(id, page = 1, perPage = 20) {
@@ -70963,6 +71017,22 @@ function createClient(auth, config2) {
     }
     return developmentEnvironmentIdPromise;
   }
+  const datasourceIdentities = /* @__PURE__ */ new Map();
+  async function assertDatasourceAllowed(dataSourceId, versionId, environmentId) {
+    const key4 = `${await auth.getOrganizationId()}:${dataSourceId}`;
+    if (!datasourceIdentities.has(key4) && versionId)
+      await listDatasources(versionId);
+    const known = datasourceIdentities.get(key4);
+    if (known)
+      return assertAiDatasource(known);
+    await getDatasourceConnectionDetails(dataSourceId, environmentId);
+  }
+  async function assertQueryDatasourceAllowed(queryId, versionId, environmentId) {
+    const query2 = await getQuery(queryId, versionId);
+    if (!query2.data_source_id)
+      throw new Error("Cannot verify the saved query datasource; refusing AI access.");
+    await assertDatasourceAllowed(query2.data_source_id, versionId, environmentId);
+  }
   async function listDatasources(versionId) {
     const [orgId, orgSlug, envId] = await Promise.all([
       auth.getOrganizationId(),
@@ -70972,7 +71042,10 @@ function createClient(auth, config2) {
     const res = await auth.authedFetch(`/api/data-sources/${orgId}/environments/${envId}/versions/${versionId}`);
     await assertOk(res, "listDatasources");
     const body = await res.json();
-    return body.data_sources.map((d) => ({
+    for (const source2 of body.data_sources) {
+      datasourceIdentities.set(`${orgId}:${source2.id}`, { name: source2.name, kind: source2.kind, type: source2.type });
+    }
+    return body.data_sources.filter((source2) => !isSampleDatasource(source2)).map((d) => ({
       id: d.id,
       name: d.name,
       kind: d.kind,
@@ -71205,7 +71278,7 @@ function createClient(auth, config2) {
     return ds.kind;
   }
   const queryCreateTails = /* @__PURE__ */ new Map();
-  async function createQuery(params) {
+  async function createQuery(params, batchCheck) {
     const previous = queryCreateTails.get(params.versionId);
     let release;
     const tail = new Promise((resolve6) => {
@@ -71214,6 +71287,9 @@ function createClient(auth, config2) {
     queryCreateTails.set(params.versionId, tail);
     await previous;
     try {
+      const failedPreflight = await batchCheck;
+      if (failedPreflight)
+        throw failedPreflight.error;
       return await createQueryUnqueued(params);
     } finally {
       release();
@@ -71224,6 +71300,7 @@ function createClient(auth, config2) {
   async function createQueryUnqueued(params) {
     assertPersistableQueryToggles(params.options, `ToolJet createQuery refused query "${params.name}"`);
     const kind = params.kind ?? await resolveDatasourceKind(params.versionId, params.dataSourceId);
+    await assertDatasourceAllowed(params.dataSourceId, params.versionId);
     const res = await auth.authedFetch(`/api/data-queries/data-sources/${params.dataSourceId}/versions/${params.versionId}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -71234,16 +71311,18 @@ function createClient(auth, config2) {
     return { query_id: body.id, name: body.name };
   }
   async function createQueries(params) {
-    const needResolve = params.queries.some((q) => !q.kind);
-    const dsList = needResolve ? await listDatasources(params.versionId) : [];
-    const kindOf = (id) => dsList.find((d) => d.id === id)?.kind;
+    const batchCheck = (async () => {
+      await listDatasources(params.versionId);
+      await Promise.all(params.queries.map((q) => assertDatasourceAllowed(q.dataSourceId)));
+      return void 0;
+    })().catch((error51) => ({ error: error51 }));
     const settled = await Promise.allSettled(params.queries.map((q) => createQuery({
       versionId: params.versionId,
       dataSourceId: q.dataSourceId,
       name: q.name,
       options: q.options,
-      kind: q.kind ?? kindOf(q.dataSourceId)
-    })));
+      kind: q.kind
+    }, batchCheck)));
     const completed = settled.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
     const failures = settled.flatMap((result, index) => result.status === "rejected" ? [`${params.queries[index].name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []);
     if (failures.length)
@@ -71406,6 +71485,7 @@ function createClient(auth, config2) {
   }
   async function updateQuery(params) {
     assertPersistableQueryToggles(params.options, `ToolJet updateQuery refused query "${params.queryId}"`);
+    await assertQueryDatasourceAllowed(params.queryId, params.versionId);
     const body = { options: params.options };
     if (params.name !== void 0)
       body.name = params.name;
@@ -71418,6 +71498,7 @@ function createClient(auth, config2) {
     return { query_id: params.queryId };
   }
   async function updateQueryDatasource(params) {
+    await assertDatasourceAllowed(params.dataSourceId, params.versionId);
     const res = await auth.authedFetch(`/api/data-queries/${params.queryId}/versions/${params.versionId}/data-source`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -71459,6 +71540,7 @@ function createClient(auth, config2) {
     return query2;
   }
   async function runQuery(params) {
+    await assertQueryDatasourceAllowed(params.queryId, params.versionId, params.environmentId);
     const envId = params.environmentId ?? await getDevelopmentEnvironmentId();
     const res = await auth.authedFetch(`/api/data-queries/${params.queryId}/versions/${params.versionId}/run/${envId}`, {
       method: "POST",
@@ -71469,6 +71551,7 @@ function createClient(auth, config2) {
     return await res.json();
   }
   async function invokeDatasourceMethod(params) {
+    await assertDatasourceAllowed(params.dataSourceId, void 0, params.environmentId);
     const environmentId = params.environmentId ?? await getDevelopmentEnvironmentId();
     const res = await auth.authedFetch(`/api/data-sources/${params.dataSourceId}/invoke`, {
       method: "POST",
@@ -71510,6 +71593,15 @@ function createClient(auth, config2) {
     const res = await auth.authedFetch(`/api/data-sources/${encodeURIComponent(dataSourceId)}/environment/${encodeURIComponent(envId)}`);
     await assertOk(res, "getDatasourceConnectionDetails");
     const body = await res.json();
+    assertAiDatasource(body);
+    if (body.id !== dataSourceId || typeof body.name !== "string" || typeof body.kind !== "string") {
+      throw new Error("Cannot verify datasource identity; refusing AI access.");
+    }
+    datasourceIdentities.set(`${await auth.getOrganizationId()}:${dataSourceId}`, {
+      name: body.name,
+      kind: body.kind,
+      type: body.type
+    });
     const pluginId = body.pluginId ?? body.plugin_id ?? void 0;
     return {
       kind: body.kind,
@@ -71518,6 +71610,7 @@ function createClient(auth, config2) {
     };
   }
   async function testDatasourceConnection(params) {
+    await assertDatasourceAllowed(params.dataSourceId, void 0, params.environmentId);
     const environmentId = params.environmentId ?? await getDevelopmentEnvironmentId();
     const res = await auth.authedFetch(`/api/data-sources/${encodeURIComponent(params.dataSourceId)}/test-connection`, {
       method: "POST",
@@ -71573,7 +71666,7 @@ function createClient(auth, config2) {
   }
   return {
     appVersions: createAppVersionLifecycle(auth, getApp),
-    workflows: createWorkflowClient(auth, config2, { getQueries, listDatasources, createQuery, updateQuery, deleteQuery, getDevelopmentEnvironmentId }),
+    workflows: createWorkflowClient(auth, config2, { assertDatasourceAllowed, getQueries, listDatasources, createQuery, updateQuery, deleteQuery, getDevelopmentEnvironmentId }),
     listWorkspaces,
     useWorkspace,
     listWorkspaceApps,
@@ -71646,6 +71739,7 @@ function createClient(auth, config2) {
     getQuery,
     hasRows,
     runQuery,
+    assertDatasourceAllowed,
     invokeDatasourceMethod,
     getDatasourceConnectionDetails,
     getPluginSpec,
@@ -72674,7 +72768,7 @@ function listDatasourcesTool(client) {
       readOnlyHint: true,
       openWorldHint: true
     },
-    description: "List the workspace-connected datasources available to the current user/environment, including the built-in ToolJet-DB datasource (kind 'tooljetdb') to use as the datasource_id for add_query. These sources appear automatically in both existing and newly created apps; there is no per-app attach/link step. If an expected source is absent, check workspace, permissions, connection, and environment configuration. Each returned source includes settings_url for user-assisted connection repair; never enter credentials or save changes for the user. Returns {datasources, connectable}: `datasources` are the connected ones (use their id for add_queries), `connectable` names every source ToolJet CAN connect. A source the user named that is in `connectable` but not in `datasources` needs connecting; one in neither has no ToolJet connector and has to go through a REST API datasource pointed at its HTTP API. Pass the actual app version_id: for a new app, create_app must return it before this call.",
+    description: "List AI-eligible workspace-connected datasources. The shared Sample data source is excluded and must never be used by AI. Includes the built-in ToolJet-DB datasource (kind 'tooljetdb') to use as the datasource_id for add_query. These sources appear automatically in both existing and newly created apps; there is no per-app attach/link step. If an expected source is absent, check workspace, permissions, connection, and environment configuration. Each returned source includes settings_url for user-assisted connection repair; never enter credentials or save changes for the user. Returns {datasources, connectable}: `datasources` are the connected ones (use their id for add_queries), `connectable` names every source ToolJet CAN connect. A source the user named that is in `connectable` but not in `datasources` needs connecting; one in neither has no ToolJet connector and has to go through a REST API datasource pointed at its HTTP API. Pass the actual app version_id: for a new app, create_app must return it before this call.",
     inputSchema: {
       version_id: external_exports.string().trim().min(1, "version_id is required: call create_app first and use its version_id, or use the target app's.")
     },
@@ -75852,6 +75946,15 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
         const targets = pages.filter((p) => !args.page_handle || p.handle === args.page_handle).map((p) => ({ page: p.handle ?? p.name ?? "home", url: `${base2}/applications/${args.app_id}/${encodeURIComponent(p.handle ?? "home")}${preview}` }));
         if (!targets.length)
           return fail(new Error(`no page ${args.page_handle ?? ""} in app ${args.app_id}`));
+        if (summary.queries?.length) {
+          if (!summary.version_id)
+            return fail(new Error("Cannot verify datasource eligibility without an app version."));
+          if (summary.queries.some((query2) => !query2.data_source_id)) {
+            return fail(new Error("Cannot verify an app query datasource; refusing browser verification."));
+          }
+          await client.listDatasources(summary.version_id);
+          await Promise.all([...new Set(summary.queries.map((query2) => query2.data_source_id))].map((id) => client.assertDatasourceAllowed(id, summary.version_id)));
+        }
         const options2 = {
           channel: process.env.MCP_RENDER_AUDIT_CHANNEL || "chrome",
           executablePath: process.env.MCP_RENDER_AUDIT_CHROME || void 0,
@@ -80585,6 +80688,7 @@ function updateQueryTool(client) {
         }
         const resolutionWarnings = [];
         let currentDatasourceId;
+        let originalDatasourceAvailable = false;
         let kind = args.kind;
         if (args.app_id || !input.query_id) {
           const queries = args.app_id ? (await client.getAppSummary(args.app_id)).queries : await client.getQueries(args.version_id);
@@ -80603,7 +80707,9 @@ function updateQueryTool(client) {
           if (!currentDatasourceId) {
             return fail(new Error(`Query "${args.query_id}" has no current datasource id in the app summary; refusing an unrollbackable repoint.`));
           }
-          const datasource = (await client.listDatasources(args.version_id)).find((item) => item.id === args.datasource_id);
+          const inventory = await client.listDatasources(args.version_id);
+          originalDatasourceAvailable = inventory.some((item) => item.id === currentDatasourceId);
+          const datasource = inventory.find((item) => item.id === args.datasource_id);
           if (!datasource) {
             return fail(new Error(`Datasource "${args.datasource_id}" is not available on version "${args.version_id}".`));
           }
@@ -80634,6 +80740,16 @@ function updateQueryTool(client) {
           });
         } catch (error51) {
           if (args.datasource_id && currentDatasourceId && args.datasource_id !== currentDatasourceId) {
+            if (!originalDatasourceAvailable) {
+              try {
+                await client.assertDatasourceAllowed(currentDatasourceId, args.version_id);
+                originalDatasourceAvailable = true;
+              } catch {
+              }
+            }
+            if (!originalDatasourceAvailable) {
+              throw new Error(`Query options update failed after moving query ${args.query_id} to datasource ${args.datasource_id}. The original datasource is unavailable to AI, so it was not restored. The query remains on the new datasource with its previous options; repair those options before running it. ${String(error51)}`);
+            }
             try {
               await client.updateQueryDatasource({
                 queryId: args.query_id,
