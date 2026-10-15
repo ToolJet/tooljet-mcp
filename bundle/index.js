@@ -61325,13 +61325,17 @@ function createWorkflowClient(auth, config2, queries) {
       definition: definition(rawVersion.definition)
     };
   }
-  async function assertWorkflowDatasources(versionId, environmentId, visited = /* @__PURE__ */ new Set()) {
+  async function assertWorkflowDatasources(versionId, environmentId, graph, visited = /* @__PURE__ */ new Set()) {
     if (visited.has(versionId))
       return;
     if (visited.size >= 50)
       throw new Error("Cannot verify all nested workflow datasources; refusing AI execution.");
     visited.add(versionId);
     const saved = await queries.getQueries(versionId);
+    const savedIds = new Set(saved.map((query2) => query2.id));
+    if (graph.queries.some((mapping) => !savedIds.has(mapping.id))) {
+      throw new Error("Workflow definition references a query outside its version; refusing AI execution.");
+    }
     if (saved.some((query2) => !query2.data_source_id))
       throw new Error("Cannot verify a workflow query datasource; refusing AI execution.");
     if (saved.length)
@@ -61346,13 +61350,20 @@ function createWorkflowClient(auth, config2, queries) {
         throw new Error("Cannot verify a dynamic nested workflow target.");
       let childVersion = options2.workflowVersionId;
       if (!childVersion) {
-        const child = record2(await request(`/api/apps/${encodeURIComponent(workflowId)}`));
-        childVersion = child.current_version_id ?? child.currentVersionId;
+        const child2 = record2(await request(`/api/apps/${encodeURIComponent(workflowId)}`));
+        childVersion = child2.current_version_id ?? child2.currentVersionId;
       }
       const childVersionId = required2(childVersion, "nested workflow version");
       if (!/^[A-Za-z0-9_-]+$/.test(childVersionId))
         throw new Error("Cannot verify a dynamic nested workflow version.");
-      await assertWorkflowDatasources(childVersionId, environmentId, visited);
+      if (visited.has(childVersionId))
+        continue;
+      const childApp = record2(await request(versionPath(workflowId, childVersionId)));
+      const child = record2(childApp.editing_version ?? childApp.editingVersion);
+      if (childApp.type !== "workflow" || childApp.id !== workflowId || child.id !== childVersionId || (childApp.organizationId ?? childApp.organization_id) !== await auth.getOrganizationId() || !Object.hasOwn(child, "definition")) {
+        throw new Error("Cannot verify the nested workflow version definition; refusing AI execution.");
+      }
+      await assertWorkflowDatasources(childVersionId, environmentId, definition(child.definition), visited);
     }
   }
   return {
@@ -61400,7 +61411,7 @@ function createWorkflowClient(auth, config2, queries) {
         throw new Error("Environment must match the selected workflow version.");
       if (!snapshot2.enabled)
         throw new Error("Workflow is disabled. Enable it in ToolJet before running it.");
-      await assertWorkflowDatasources(versionId, environmentId);
+      await assertWorkflowDatasources(versionId, environmentId, snapshot2.definition);
       return request("/api/workflow_executions", { executeUsing: "version", appVersionId: versionId, appId: workflowId, environmentId, params });
     },
     async execution(id, page = 1, perPage = 20) {

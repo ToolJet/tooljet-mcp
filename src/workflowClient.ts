@@ -70,11 +70,17 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
       definition: definition(rawVersion.definition),
     };
   }
-  async function assertWorkflowDatasources(versionId: string, environmentId: string, visited = new Set<string>()): Promise<void> {
+  async function assertWorkflowDatasources(versionId: string, environmentId: string, graph: Definition, visited = new Set<string>()): Promise<void> {
     if (visited.has(versionId)) return;
     if (visited.size >= 50) throw new Error('Cannot verify all nested workflow datasources; refusing AI execution.');
     visited.add(versionId);
     const saved = await queries.getQueries(versionId);
+    const savedIds = new Set(saved.map(query => query.id));
+    // ToolJet executes definition mappings by bare query ID. Imported/copy leftovers
+    // must not reach an unchecked query belonging to another version.
+    if (graph.queries.some(mapping => !savedIds.has(mapping.id))) {
+      throw new Error('Workflow definition references a query outside its version; refusing AI execution.');
+    }
     if (saved.some(query => !query.data_source_id)) throw new Error('Cannot verify a workflow query datasource; refusing AI execution.');
     if (saved.length) await queries.listDatasources(versionId);
     await Promise.all([...new Set(saved.map(query => query.data_source_id!))]
@@ -91,7 +97,17 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
       }
       const childVersionId = required(childVersion, 'nested workflow version');
       if (!/^[A-Za-z0-9_-]+$/.test(childVersionId)) throw new Error('Cannot verify a dynamic nested workflow version.');
-      await assertWorkflowDatasources(childVersionId, environmentId, visited);
+      if (visited.has(childVersionId)) continue;
+      const childApp = record(await request(versionPath(workflowId, childVersionId)));
+      const child = record(childApp.editing_version ?? childApp.editingVersion);
+      if (childApp.type !== 'workflow' || childApp.id !== workflowId || child.id !== childVersionId ||
+          (childApp.organizationId ?? childApp.organization_id) !== await auth.getOrganizationId() ||
+          !Object.hasOwn(child, 'definition')) {
+        throw new Error('Cannot verify the nested workflow version definition; refusing AI execution.');
+      }
+      // Only query mapping IDs are inspected, so camel-casing of opaque definition
+      // content by the version endpoint cannot alter the authorization check.
+      await assertWorkflowDatasources(childVersionId, environmentId, definition(child.definition), visited);
     }
   }
   return {
@@ -132,7 +148,7 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
       const snapshot = await get(workflowId, versionId);
       if (snapshot.environment_id !== environmentId) throw new Error('Environment must match the selected workflow version.');
       if (!snapshot.enabled) throw new Error('Workflow is disabled. Enable it in ToolJet before running it.');
-      await assertWorkflowDatasources(versionId, environmentId);
+      await assertWorkflowDatasources(versionId, environmentId, snapshot.definition);
       return request('/api/workflow_executions', { executeUsing: 'version', appVersionId: versionId, appId: workflowId, environmentId, params });
     },
     async execution(id: string, page = 1, perPage = 20) {

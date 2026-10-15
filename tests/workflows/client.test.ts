@@ -2,11 +2,11 @@ import { describe, it, expect, vi } from 'vitest';
 import { createWorkflowClient } from '../../src/workflowClient.js';
 import type { Auth } from '../../src/auth.js';
 const version = 'v';
-const app = () => ({ id: 'w', type: 'workflow', organizationId: 'org', slug: 'my-workflow', isMaintenanceOn: true, editing_version: { id: version, status: 'DRAFT', currentEnvironmentId: 'env', definition: { nodes: [], edges: [], queries: [], customField: { snake_key: 42 } } } });
+const app = (id = 'w', versionId = version, queryIds: string[] = []) => ({ id, type: 'workflow', organizationId: 'org', slug: 'my-workflow', isMaintenanceOn: true, editing_version: { id: versionId, status: 'DRAFT', currentEnvironmentId: 'env', definition: { nodes: [], edges: [], queries: queryIds.map((id, index) => ({ id, idOnDefinition: `node-${index}` })), customField: { snake_key: 42 } } } });
 function exported(value = app()) {
   return { app: [{ definition: { appV2: { id: value.id, type: value.type, organizationId: value.organizationId, appVersions: [value.editing_version], dataSourceOptions: [{ secret: 'not-returned' }] } } }] };
 }
-function setup(fetcher = vi.fn(async (path: string) => new Response(JSON.stringify(path === '/api/v2/resources/export' ? exported() : app())))) {
+function setup(fetcher = vi.fn(async (path: string) => new Response(JSON.stringify(path === '/api/v2/resources/export' ? exported() : path.startsWith('/api/v2/apps/') ? app(path.split('/')[4], path.split('/')[6]) : app())))) {
   const auth = { authedFetch: fetcher, getOrganizationId: async () => 'org', getOrganizationSlug: async () => 'workspace' } as unknown as Auth;
   const queries = { assertDatasourceAllowed: vi.fn().mockResolvedValue(undefined), getQueries: vi.fn().mockResolvedValue([]), listDatasources: vi.fn().mockResolvedValue([]), createQuery: vi.fn(), updateQuery: vi.fn(), deleteQuery: vi.fn(), getDevelopmentEnvironmentId: vi.fn() };
   const client = createWorkflowClient(auth, { apiUrl: 'http://localhost:3000', appUrl: 'http://localhost:3000', sessionToken: 'test-session', workspaceId: 'org' }, queries);
@@ -97,6 +97,32 @@ describe('workflow HTTP adapter', () => {
       options: { workflowId: 'w', workflowVersionId: 'v' } }]);
     await client.run('w', 'v', 'env', {});
     expect(queries.getQueries).toHaveBeenCalledExactlyOnceWith('v');
+  });
+  it.each([false, true])('refuses foreign query mappings in a stored workflow (nested=%s)', async nested => {
+    const root = app('w', 'v', [nested ? 'child-call' : 'foreign-query']);
+    const child = app('child', 'child-v', ['foreign-query']);
+    const { client, queries, fetcher } = setup(vi.fn(async path => new Response(JSON.stringify(
+      path === '/api/v2/resources/export' ? exported(root)
+        : path.includes('/apps/child/') ? child : root))));
+    queries.getQueries.mockImplementation(async version => version === 'v' && nested
+      ? [{ id: 'child-call', data_source_id: 'workflow-static', kind: 'workflows', options: { workflowId: 'child', workflowVersionId: 'child-v' } }]
+      : []);
+    await expect(client.run('w', 'v', 'env', {})).rejects.toThrow('query outside its version');
+    expect(fetcher.mock.calls.some(([path]) => path === '/api/workflow_executions')).toBe(false);
+  });
+  it('checks a released child version and allows verified in-version mappings', async () => {
+    const root = app('w', 'v', ['child-call']);
+    const child = app('child', 'child-v', ['owned-read']);
+    const { client, queries, fetcher } = setup(vi.fn(async path => new Response(JSON.stringify(
+      path === '/api/v2/resources/export' ? exported(root)
+        : path === '/api/apps/child' ? { current_version_id: 'child-v' }
+          : path.includes('/apps/child/') ? child : root))));
+    queries.getQueries.mockImplementation(async version => version === 'v'
+      ? [{ id: 'child-call', data_source_id: 'workflow-static', kind: 'workflows', options: { workflowId: 'child' } }]
+      : [{ id: 'owned-read', data_source_id: 'owned', kind: 'postgresql' }]);
+    await client.run('w', 'v', 'env', {});
+    expect(queries.assertDatasourceAllowed).toHaveBeenCalledWith('owned', 'child-v', 'env');
+    expect(fetcher.mock.calls.at(-1)?.[0]).toBe('/api/workflow_executions');
   });
   it('does not execute a nested workflow whose target cannot be resolved', async () => {
     const { client, fetcher, queries } = setup();
