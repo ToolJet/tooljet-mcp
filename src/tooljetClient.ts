@@ -2429,14 +2429,15 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   // in this client, including overlapping single/batch calls. Other versions remain independent.
   // This is not a distributed lock; separate MCP processes can still contend.
   const queryCreateTails = new Map<string, Promise<void>>();
-  async function createQuery(params: CreateQueryParams, batchCheck?: Promise<void>): Promise<CreateQueryResult> {
+  async function createQuery(params: CreateQueryParams, batchCheck?: Promise<{ error: unknown } | undefined>): Promise<CreateQueryResult> {
     const previous = queryCreateTails.get(params.versionId);
     let release!: () => void;
     const tail = new Promise<void>(resolve => { release = resolve; });
     queryCreateTails.set(params.versionId, tail);
     await previous;
     try {
-      await batchCheck;
+      const failedPreflight = await batchCheck;
+      if (failedPreflight) throw failedPreflight.error;
       return await createQueryUnqueued(params);
     } finally {
       release();
@@ -2468,7 +2469,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const batchCheck = (async () => {
       await listDatasources(params.versionId);
       await Promise.all(params.queries.map(q => assertDatasourceAllowed(q.dataSourceId)));
-    })();
+      return undefined;
+    })().catch(error => ({ error })); // Handle rejection immediately, even while an earlier write holds the queue.
     const settled = await Promise.allSettled(
       params.queries.map((q) =>
         createQuery({

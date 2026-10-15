@@ -1752,6 +1752,26 @@ describe('createClient', () => {
       releases[3]!();
       await Promise.all([batch,same,other]);
     });
+    it('handles a failed batch preflight while an earlier write holds the version queue', async () => {
+      const client = createClient(auth, config);
+      await primeDatasourceIdentities(auth, client);
+      let release!: () => void;
+      const writing = new Promise<void>(resolve => { release = resolve; });
+      auth.authedFetch.mockImplementation(async (path: string) => {
+        if (path.startsWith('/api/data-sources/')) throw new Error('Datasource inventory unavailable');
+        await writing;
+        return mockResponse({ json: { id: 'first', name: 'first' } });
+      });
+      const query = { dataSourceId: 'ds1', kind: 'runjs', options: { code: 'return [];' } };
+      const first = client.createQuery({ versionId: 'ver1', name: 'first', ...query });
+      await vi.waitFor(() => expect(auth.authedFetch).toHaveBeenCalledTimes(1));
+      const batch = client.createQueries({ versionId: 'ver1', queries: [{ name: 'second', ...query }] });
+      await vi.waitFor(() => expect(auth.authedFetch).toHaveBeenCalledTimes(2));
+      release();
+      await first;
+      await expect(batch).rejects.toThrow('Datasource inventory unavailable');
+      expect(auth.authedFetch).toHaveBeenCalledTimes(2);
+    });
     it('continues after a failed write, reports partial success and does not automatically retry', async () => {
       const client = createClient(auth, config);
       await primeDatasourceIdentities(auth, client);

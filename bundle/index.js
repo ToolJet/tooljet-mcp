@@ -71248,7 +71248,9 @@ function createClient(auth, config2) {
     queryCreateTails.set(params.versionId, tail);
     await previous;
     try {
-      await batchCheck;
+      const failedPreflight = await batchCheck;
+      if (failedPreflight)
+        throw failedPreflight.error;
       return await createQueryUnqueued(params);
     } finally {
       release();
@@ -71273,7 +71275,8 @@ function createClient(auth, config2) {
     const batchCheck = (async () => {
       await listDatasources(params.versionId);
       await Promise.all(params.queries.map((q) => assertDatasourceAllowed(q.dataSourceId)));
-    })();
+      return void 0;
+    })().catch((error51) => ({ error: error51 }));
     const settled = await Promise.allSettled(params.queries.map((q) => createQuery({
       versionId: params.versionId,
       dataSourceId: q.dataSourceId,
