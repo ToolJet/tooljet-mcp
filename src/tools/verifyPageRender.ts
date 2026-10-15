@@ -1,3 +1,4 @@
+import { SAMPLE_DATASOURCE_REFUSAL } from '../datasourcePolicy.js';
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { ok, fail, type ToolDef } from './types.js';
@@ -378,6 +379,14 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
           .filter((p) => !args.page_handle || p.handle === args.page_handle)
           .map((p) => ({ page: p.handle ?? p.name ?? 'home', url: `${base}/applications/${args.app_id}/${encodeURIComponent(p.handle ?? 'home')}${preview}` }));
         if (!targets.length) return fail(new Error(`no page ${args.page_handle ?? ''} in app ${args.app_id}`));
+        // Page-load and event reads run in the browser, outside client.runQuery's guard.
+        if (summary.queries?.length) {
+          if (!summary.version_id) return fail(new Error('Cannot verify datasource eligibility without an app version.'));
+          const allowed = new Set((await client.listDatasources(summary.version_id)).map(ds => ds.id));
+          if (summary.queries.some(query => !query.data_source_id || !allowed.has(query.data_source_id))) {
+            return fail(new Error(`This app contains a datasource unavailable to AI. ${SAMPLE_DATASOURCE_REFUSAL}`));
+          }
+        }
         const options = {
           channel: process.env.MCP_RENDER_AUDIT_CHANNEL || 'chrome',
           executablePath: process.env.MCP_RENDER_AUDIT_CHROME || undefined,

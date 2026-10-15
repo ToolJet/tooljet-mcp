@@ -1,3 +1,4 @@
+import { SAMPLE_DATASOURCE_REFUSAL } from './datasourcePolicy.js';
 import { createHash } from 'node:crypto';
 import type { Auth } from './auth.js';
 import type { Config } from './config.js';
@@ -93,6 +94,9 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
       workflowId: string; versionId: string; name: string; kind: string;
       options: Record<string, unknown>; dataSourceId?: string;
     }) {
+      if (params.dataSourceId && !(await queries.listDatasources(params.versionId)).some(ds => ds.id === params.dataSourceId)) {
+        throw new Error(`Datasource unavailable to AI. ${SAMPLE_DATASOURCE_REFUSAL}`);
+      }
       const body = record(await request('/api/data-queries/workflow-node', {
         app_id: params.workflowId,
         app_version_id: params.versionId,
@@ -107,6 +111,10 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
       const snapshot = await get(workflowId, versionId);
       if (snapshot.environment_id !== environmentId) throw new Error('Environment must match the selected workflow version.');
       if (!snapshot.enabled) throw new Error('Workflow is disabled. Enable it in ToolJet before running it.');
+      const allowed = new Set((await queries.listDatasources(versionId)).map(ds => ds.id));
+      if ((await queries.getQueries(versionId)).some(query => !query.data_source_id || !allowed.has(query.data_source_id))) {
+        throw new Error(`Workflow contains a datasource unavailable to AI. ${SAMPLE_DATASOURCE_REFUSAL}`);
+      }
       return request('/api/workflow_executions', { executeUsing: 'version', appVersionId: versionId, appId: workflowId, environmentId, params });
     },
     async execution(id: string, page = 1, perPage = 20) {

@@ -8,9 +8,9 @@ function exported(value = app()) {
 }
 function setup(fetcher = vi.fn(async (path: string) => new Response(JSON.stringify(path === '/api/v2/resources/export' ? exported() : app())))) {
   const auth = { authedFetch: fetcher, getOrganizationId: async () => 'org', getOrganizationSlug: async () => 'workspace' } as unknown as Auth;
-  const queries = { getQueries: vi.fn(), listDatasources: vi.fn(), createQuery: vi.fn(), updateQuery: vi.fn(), deleteQuery: vi.fn(), getDevelopmentEnvironmentId: vi.fn() };
+  const queries = { getQueries: vi.fn().mockResolvedValue([]), listDatasources: vi.fn().mockResolvedValue([]), createQuery: vi.fn(), updateQuery: vi.fn(), deleteQuery: vi.fn(), getDevelopmentEnvironmentId: vi.fn() };
   const client = createWorkflowClient(auth, { apiUrl: 'http://localhost:3000', appUrl: 'http://localhost:3000', sessionToken: 'test-session', workspaceId: 'org' }, queries);
-  return { client, fetcher };
+  return { client, fetcher, queries };
 }
 describe('workflow HTTP adapter', () => {
   it('uses version metadata and lossless export definitions without exposing datasource options', async () => {
@@ -57,6 +57,19 @@ describe('workflow HTTP adapter', () => {
     const value = app(); value.isMaintenanceOn = false;
     const { client, fetcher } = setup(vi.fn(async path => new Response(JSON.stringify(path === '/api/v2/resources/export' ? exported(value) : value))));
     await expect(client.run('w', 'v', 'env', {})).rejects.toThrow('disabled'); expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+  it('refuses a stored workflow query whose datasource is excluded from AI', async () => {
+    const { client, fetcher, queries } = setup();
+    queries.getQueries.mockResolvedValue([{ id: 'old-node', data_source_id: 'shared-sample' }]);
+    await expect(client.run('w', 'v', 'env', {})).rejects.toThrow('Sample data source');
+    expect(fetcher.mock.calls.some(([path]) => path === '/api/workflow_executions')).toBe(false);
+  });
+  it('refuses a workflow-node create on a datasource excluded from AI', async () => {
+    const { client, fetcher } = setup();
+    await expect(client.createWorkflowQuery({ workflowId: 'w', versionId: 'v', name: 'probe',
+      kind: 'postgresql', dataSourceId: 'shared-sample', options: { query: 'SELECT 1' },
+    })).rejects.toThrow('Sample data source');
+    expect(fetcher).not.toHaveBeenCalled();
   });
   it('never retries ambiguous execution requests', async () => {
     const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify(app()))).mockResolvedValueOnce(new Response(JSON.stringify(exported()))).mockRejectedValueOnce(new Error('timeout'));

@@ -32,6 +32,18 @@ function makeAuth(): Auth & { authedFetch: ReturnType<typeof vi.fn>; getOrganiza
   };
 }
 
+async function primeDatasourceIdentities(auth: ReturnType<typeof makeAuth>, client: ReturnType<typeof createClient>) {
+  auth.authedFetch
+    .mockResolvedValueOnce(mockResponse({ json: { environments: [{ id: 'env-dev', name: 'development' }] } }))
+    .mockResolvedValueOnce(mockResponse({ json: { data_sources: ['ds1', 'ds2', 'ds', 'pg1'].map(id => ({
+      id, name: `Workshop ${id}`, kind: 'postgresql', type: 'default',
+    })) } }));
+  await client.listDatasources('ver1');
+  auth.authedFetch.mockClear();
+}
+const sourceInventory = () => mockResponse({ json: { data_sources: [{ id: 'ds1', name: 'Workshop', kind: 'runjs' }] } });
+const savedQuery = () => mockResponse({ json: { data_queries: [{ id: 'q1', data_source_id: 'ds1', kind: 'runjs' }] } });
+
 describe('createClient', () => {
   let auth: ReturnType<typeof makeAuth>;
 
@@ -743,11 +755,12 @@ describe('createClient', () => {
 
   describe('createQuery', () => {
     it('posts to the data-source-scoped query route with kind tooljetdb', async () => {
+      const client = createClient(auth, config);
+      await primeDatasourceIdentities(auth, client);
       auth.authedFetch.mockResolvedValueOnce(
         mockResponse({ status: 201, json: { id: 'query1', name: 'getUsers' } })
       );
 
-      const client = createClient(auth, config);
       const result = await client.createQuery({
         versionId: 'ver1',
         dataSourceId: 'ds1',
@@ -784,8 +797,9 @@ describe('createClient', () => {
     });
 
     it('throws when non-2xx', async () => {
-      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 422, text: 'invalid options' }));
       const client = createClient(auth, config);
+      await primeDatasourceIdentities(auth, client);
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 422, text: 'invalid options' }));
       await expect(
         client.createQuery({ versionId: 'ver1', dataSourceId: 'ds1', name: 'q', options: {}, kind: 'tooljetdb' })
       ).rejects.toThrow(/ToolJet createQuery failed \(422\): invalid options/);
@@ -1715,44 +1729,50 @@ describe('createClient', () => {
 
   describe('createQueries (batch)', () => {
     it('serializes overlapping single and batch writes per version but not across versions', async () => {
+      const client = createClient(auth, config);
+      await primeDatasourceIdentities(auth, client);
       const releases: Array<() => void> = [];
       const started: string[] = [];
       auth.authedFetch.mockImplementation(async (_path: string, init: RequestInit) => {
+        if (_path.startsWith('/api/data-sources/')) return sourceInventory();
         const { name } = JSON.parse(init.body as string);
         started.push(name);
         await new Promise<void>(resolve => releases.push(resolve));
         return mockResponse({status:201,json:{id:name,name}});
       });
-      const client = createClient(auth, config);
       const query = (name: string) => ({name,dataSourceId:'ds1',kind:'runjs',options:{code:'return [];'}});
       const batch = client.createQueries({versionId:'v1',queries:[query('a'),query('b')]});
       const same = client.createQuery({versionId:'v1',...query('c')});
       const other = client.createQuery({versionId:'v2',...query('d')});
-      await vi.waitFor(() => expect(started).toEqual(['a','d']));
+      await vi.waitFor(() => expect([...started].sort()).toEqual(['a','d']));
       releases[0]!(); releases[1]!();
-      await vi.waitFor(() => expect(started).toEqual(['a','d','b']));
+      await vi.waitFor(() => expect(started.slice(2)).toEqual(['b']));
       releases[2]!();
-      await vi.waitFor(() => expect(started).toEqual(['a','d','b','c']));
+      await vi.waitFor(() => expect(started.slice(2)).toEqual(['b','c']));
       releases[3]!();
       await Promise.all([batch,same,other]);
     });
     it('continues after a failed write, reports partial success and does not automatically retry', async () => {
+      const client = createClient(auth, config);
+      await primeDatasourceIdentities(auth, client);
       auth.authedFetch
+        .mockResolvedValueOnce(sourceInventory())
         .mockRejectedValueOnce(new Error('connection lost: outcome unknown'))
         .mockResolvedValueOnce(mockResponse({status:201,json:{id:'q2',name:'b'}}))
         .mockResolvedValueOnce(mockResponse({status:201,json:{id:'q3',name:'c'}}));
-      const client = createClient(auth, config);
       const query = (name: string) => ({name,dataSourceId:'ds1',kind:'runjs',options:{code:'return [];'}});
       await expect(client.createQueries({versionId:'v1',queries:[query('a'),query('b')]})).rejects.toMatchObject({completed:[{query_id:'q2',name:'b'}]});
       await expect(client.createQuery({versionId:'v1',...query('c')})).resolves.toEqual({query_id:'q3',name:'c'});
-      expect(auth.authedFetch).toHaveBeenCalledTimes(3);
+      expect(auth.authedFetch).toHaveBeenCalledTimes(4);
     });
     it('fans out to one create call per query and returns all results', async () => {
+      const client = createClient(auth, config);
+      await primeDatasourceIdentities(auth, client);
       auth.authedFetch
+        .mockResolvedValueOnce(sourceInventory())
         .mockResolvedValueOnce(mockResponse({ status: 201, json: { id: 'q1', name: 'a' } }))
         .mockResolvedValueOnce(mockResponse({ status: 201, json: { id: 'q2', name: 'b' } }));
 
-      const client = createClient(auth, config);
       const result = await client.createQueries({
         versionId: 'ver1',
         queries: [
@@ -1761,7 +1781,7 @@ describe('createClient', () => {
         ],
       });
 
-      expect(auth.authedFetch).toHaveBeenCalledTimes(2);
+      expect(auth.authedFetch).toHaveBeenCalledTimes(3);
       expect(result).toEqual([
         { query_id: 'q1', name: 'a' },
         { query_id: 'q2', name: 'b' },
@@ -1769,11 +1789,13 @@ describe('createClient', () => {
     });
 
     it('reports successful query ids when another query in the batch fails', async () => {
+      const client = createClient(auth, config);
+      await primeDatasourceIdentities(auth, client);
       auth.authedFetch
+        .mockResolvedValueOnce(sourceInventory())
         .mockResolvedValueOnce(mockResponse({ status: 201, json: { id: 'q1', name: 'a' } }))
         .mockResolvedValueOnce(mockResponse({ status: 422, text: 'invalid options' }));
 
-      const client = createClient(auth, config);
       let caught: unknown;
       try {
         await client.createQueries({
@@ -1908,10 +1930,12 @@ describe('createClient', () => {
 
   describe('updateQuery / deleteQuery', () => {
     it('PATCHes name+options (options replace wholesale)', async () => {
-      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {} }));
       const client = createClient(auth, config);
+      await primeDatasourceIdentities(auth, client);
+      auth.authedFetch.mockResolvedValueOnce(savedQuery());
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {} }));
       await client.updateQuery({ queryId: 'q1', versionId: 'ver1', name: 'q', options: { a: 1 } });
-      const [path, init] = auth.authedFetch.mock.calls[0];
+      const [path, init] = auth.authedFetch.mock.calls[1];
       expect(path).toBe('/api/data-queries/q1/versions/ver1');
       expect(init.method).toBe('PATCH');
       expect(JSON.parse(init.body)).toEqual({ options: { a: 1 }, name: 'q' });
@@ -1929,11 +1953,13 @@ describe('createClient', () => {
     });
 
     it('sends boolean and omitted toggles', async () => {
-      auth.authedFetch.mockResolvedValue(mockResponse({ status: 200, json: { id: 'q2', name: 'q' } }));
       const client = createClient(auth, config);
+      await primeDatasourceIdentities(auth, client);
+      auth.authedFetch.mockResolvedValueOnce(savedQuery());
+      auth.authedFetch.mockResolvedValue(mockResponse({ status: 200, json: { id: 'q2', name: 'q' } }));
       await client.updateQuery({ queryId: 'q1', versionId: 'ver1', options: { code: 'x', runOnPageLoad: false } });
       await client.createQuery({ versionId: 'ver1', dataSourceId: 'ds', kind: 'runjs', name: 'q', options: { code: 'x' } });
-      expect(auth.authedFetch).toHaveBeenCalledTimes(2);
+      expect(auth.authedFetch).toHaveBeenCalledTimes(3);
     });
 
     it('DELETEs a query with no body', async () => {
@@ -1946,8 +1972,9 @@ describe('createClient', () => {
     });
 
     it('repoints a query datasource through the dedicated route', async () => {
-      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {} }));
       const client = createClient(auth, config);
+      await primeDatasourceIdentities(auth, client);
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: {} }));
       await client.updateQueryDatasource({ queryId: 'q1', versionId: 'ver1', dataSourceId: 'ds2' });
       const [path, init] = auth.authedFetch.mock.calls[0];
       expect(path).toBe('/api/data-queries/q1/versions/ver1/data-source');
@@ -1990,10 +2017,11 @@ describe('createClient', () => {
 
   describe('runQuery', () => {
     it('resolves the dev env, POSTs to /run/:env with empty options, returns the result', async () => {
-      auth.authedFetch
-        .mockResolvedValueOnce(mockResponse({ status: 200, json: { environments: [{ id: 'env-dev', name: 'development' }] } }))
-        .mockResolvedValueOnce(mockResponse({ status: 200, json: { status: 'ok', data: [{ id: 1 }] } }));
       const client = createClient(auth, config);
+      await primeDatasourceIdentities(auth, client);
+      auth.authedFetch
+        .mockResolvedValueOnce(savedQuery())
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { status: 'ok', data: [{ id: 1 }] } }));
       const r = await client.runQuery({ queryId: 'q1', versionId: 'ver1' });
       const [path, init] = auth.authedFetch.mock.calls[1];
       expect(path).toBe('/api/data-queries/q1/versions/ver1/run/env-dev');
@@ -2003,10 +2031,11 @@ describe('createClient', () => {
     });
 
     it('invokes one datasource metadata method with explicit narrow args', async () => {
+      const client = createClient(auth, config);
+      await primeDatasourceIdentities(auth, client);
       auth.authedFetch.mockResolvedValueOnce(
         mockResponse({ status: 200, json: { status: 'ok', data: [{ value: 'public', label: 'public' }] } })
       );
-      const client = createClient(auth, config);
       const result = await client.invokeDatasourceMethod({
         dataSourceId: 'pg1',
         method: 'listTables',

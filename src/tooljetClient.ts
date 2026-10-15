@@ -1,3 +1,4 @@
+import { assertAiDatasource, isSampleDatasource } from './datasourcePolicy.js';
 import { createAppVersionLifecycle } from './appVersionLifecycle.js';
 import { createWorkflowClient, type WorkflowClient } from './workflowClient.js';
 import { TableQuotaError, tableQuotaError } from './tableQuotaError.js';
@@ -2073,6 +2074,21 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return developmentEnvironmentIdPromise;
   }
 
+  // Identity only, scoped to the authenticated workspace. Never retain connection options here.
+  const datasourceIdentities = new Map<string, { name: string; kind: string; type?: unknown }>();
+  async function assertDatasourceAllowed(dataSourceId: string, environmentId?: string): Promise<void> {
+    const key = `${await auth.getOrganizationId()}:${dataSourceId}`;
+    const known = datasourceIdentities.get(key);
+    if (known) return assertAiDatasource(known);
+    await getDatasourceConnectionDetails(dataSourceId, environmentId);
+  }
+
+  async function assertQueryDatasourceAllowed(queryId: string, versionId: string, environmentId?: string): Promise<void> {
+    const query = await getQuery(queryId, versionId);
+    if (!query.data_source_id) throw new Error('Cannot verify the saved query datasource; refusing AI access.');
+    await assertDatasourceAllowed(query.data_source_id, environmentId);
+  }
+
   async function listDatasources(versionId: string): Promise<Datasource[]> {
     const [orgId, orgSlug, envId] = await Promise.all([
       auth.getOrganizationId(),
@@ -2089,7 +2105,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     // typical app. The agent only needs identity + a repair URL; strip the rest at runtime (the TS type does
     // NOT strip fields on its own).
     const body = (await res.json()) as { data_sources: Array<Datasource & Record<string, unknown>> };
-    return body.data_sources.map((d) => ({
+    for (const source of body.data_sources) {
+      datasourceIdentities.set(`${orgId}:${source.id}`, { name: source.name, kind: source.kind, type: source.type });
+    }
+    return body.data_sources.filter((source) => !isSampleDatasource(source)).map((d) => ({
       id: d.id,
       name: d.name,
       kind: d.kind,
@@ -2410,13 +2429,14 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   // in this client, including overlapping single/batch calls. Other versions remain independent.
   // This is not a distributed lock; separate MCP processes can still contend.
   const queryCreateTails = new Map<string, Promise<void>>();
-  async function createQuery(params: CreateQueryParams): Promise<CreateQueryResult> {
+  async function createQuery(params: CreateQueryParams, batchCheck?: Promise<void>): Promise<CreateQueryResult> {
     const previous = queryCreateTails.get(params.versionId);
     let release!: () => void;
     const tail = new Promise<void>(resolve => { release = resolve; });
     queryCreateTails.set(params.versionId, tail);
     await previous;
     try {
+      await batchCheck;
       return await createQueryUnqueued(params);
     } finally {
       release();
@@ -2427,6 +2447,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function createQueryUnqueued(params: CreateQueryParams): Promise<CreateQueryResult> {
     assertPersistableQueryToggles(params.options, `ToolJet createQuery refused query "${params.name}"`);
     const kind = params.kind ?? (await resolveDatasourceKind(params.versionId, params.dataSourceId));
+    await assertDatasourceAllowed(params.dataSourceId);
     const res = await auth.authedFetch(
       `/api/data-queries/data-sources/${params.dataSourceId}/versions/${params.versionId}`,
       {
@@ -2443,10 +2464,11 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   // One model call, N ordered HTTP writes. Preserve partial-write reporting without replaying
   // successful or uncertain writes; serial execution avoids this client's own lock contention.
   async function createQueries(params: CreateQueriesParams): Promise<CreateQueryResult[]> {
-    // Resolve datasource kinds once; createQuery queues the writes per version.
-    const needResolve = params.queries.some((q) => !q.kind);
-    const dsList = needResolve ? await listDatasources(params.versionId) : [];
-    const kindOf = (id: string): string | undefined => dsList.find((d) => d.id === id)?.kind;
+    // Reserve the queues immediately, but verify the entire batch before its first write.
+    const batchCheck = (async () => {
+      await listDatasources(params.versionId);
+      await Promise.all(params.queries.map(q => assertDatasourceAllowed(q.dataSourceId)));
+    })();
     const settled = await Promise.allSettled(
       params.queries.map((q) =>
         createQuery({
@@ -2454,8 +2476,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
           dataSourceId: q.dataSourceId,
           name: q.name,
           options: q.options,
-          kind: q.kind ?? kindOf(q.dataSourceId),
-        })
+          kind: q.kind,
+        }, batchCheck)
       )
     );
     const completed = settled.flatMap((result) => result.status === 'fulfilled' ? [result.value] : []);
@@ -2670,6 +2692,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   // Update query = PATCH /:id/versions/:versionId. `options` REPLACES the stored options wholesale.
   async function updateQuery(params: UpdateQueryParams): Promise<{ query_id: string }> {
     assertPersistableQueryToggles(params.options, `ToolJet updateQuery refused query "${params.queryId}"`);
+    await assertQueryDatasourceAllowed(params.queryId, params.versionId);
     const body: Record<string, unknown> = { options: params.options };
     if (params.name !== undefined) body.name = params.name;
     const res = await auth.authedFetch(
@@ -2689,6 +2712,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     versionId: string;
     dataSourceId: string;
   }): Promise<void> {
+    // Repointing away from a sample source remains possible; only the destination is authorized.
+    await assertDatasourceAllowed(params.dataSourceId);
     const res = await auth.authedFetch(
       `/api/data-queries/${params.queryId}/versions/${params.versionId}/data-source`,
       {
@@ -2754,6 +2779,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     /** Values for the query's {{ }} bindings, keyed as ToolJet looks them up (see staticBindings.ts). */
     resolvedOptions?: Record<string, unknown>;
   }): Promise<RunQueryResult> {
+    await assertQueryDatasourceAllowed(params.queryId, params.versionId, params.environmentId);
     const envId = params.environmentId ?? (await getDevelopmentEnvironmentId());
     const res = await auth.authedFetch(
       `/api/data-queries/${params.queryId}/versions/${params.versionId}/run/${envId}`,
@@ -2768,6 +2794,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   async function invokeDatasourceMethod(params: InvokeDatasourceMethodParams): Promise<RunQueryResult> {
+    await assertDatasourceAllowed(params.dataSourceId, params.environmentId);
     const environmentId = params.environmentId ?? (await getDevelopmentEnvironmentId());
     const res = await auth.authedFetch(`/api/data-sources/${params.dataSourceId}/invoke`, {
       method: 'POST',
@@ -2824,6 +2851,13 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     );
     await assertOk(res, 'getDatasourceConnectionDetails');
     const body = (await res.json()) as Record<string, any>;
+    assertAiDatasource(body);
+    if (body.id !== dataSourceId || typeof body.name !== 'string' || typeof body.kind !== 'string') {
+      throw new Error('Cannot verify datasource identity; refusing AI access.');
+    }
+    datasourceIdentities.set(`${await auth.getOrganizationId()}:${dataSourceId}`, {
+      name: body.name, kind: body.kind, type: body.type,
+    });
     const pluginId = body.pluginId ?? body.plugin_id ?? undefined;
     return {
       kind: body.kind,
@@ -2838,6 +2872,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function testDatasourceConnection(
     params: TestDatasourceConnectionParams
   ): Promise<ConnectionTestResult> {
+    await assertDatasourceAllowed(params.dataSourceId, params.environmentId);
     const environmentId = params.environmentId ?? (await getDevelopmentEnvironmentId());
     const res = await auth.authedFetch(
       `/api/data-sources/${encodeURIComponent(params.dataSourceId)}/test-connection`,
