@@ -69,8 +69,6 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
         if (replacePages.length && !args.app_id) {
           preflightErrors.push(`pages ${replacePages.join(', ')}: replace needs app_id, so the plan is checked against the page it replaces.`);
         }
-        const mapRefusal = await mapKeyRefusal(client, (args.pages ?? []).flatMap((page) => (page.components ?? []).map((c) => String(c.type))));
-        if (mapRefusal) preflightErrors.push(mapRefusal);
         const needsTables = Boolean(
           args.tables?.length ||
           args.seed_data?.length ||
@@ -84,14 +82,15 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
         const frozen = frozenAppRefusal(fetchedSummary);
         if (frozen) return fail(new Error(frozen));
         // Widgets from the other library than the app's (a plan without app_id is taken to be for a new, UI 2.0 app).
-        preflightWarnings.push(...componentLibraryWarnings(
-          fetchedSummary
-            ? fetchedSummary.component_library
-              ?? resolveComponentLibrary(undefined, fetchedSummary.pages.flatMap((page) => page.components.map((c) => c.type)))
-            : { library: 'ui2', source: 'new' },
-          args.pages,
-          args.component_library_request,
-        ));
+        const appLibrary = fetchedSummary
+          ? fetchedSummary.component_library
+            ?? resolveComponentLibrary(undefined, fetchedSummary.pages.flatMap((page) => page.components.map((c) => c.type)))
+          : { library: 'ui2' as const, source: 'new' as const };
+        preflightWarnings.push(...componentLibraryWarnings(appLibrary, args.pages, args.component_library_request));
+        // A Google Map on an instance without the key; in a UI 2.0 app the refusal names the key-free UI 2.0 Map.
+        const mapRefusal = await mapKeyRefusal(client,
+          (args.pages ?? []).flatMap((page) => (page.components ?? []).map((c) => String(c.type))), appLibrary.library);
+        if (mapRefusal) preflightErrors.push(mapRefusal);
         // Resolve names once, before collision renames or existing-table seed checks. A planned
         // name takes precedence over an existing namesake; all references must follow it together.
         const plannedNames = new Map<string, string>();
