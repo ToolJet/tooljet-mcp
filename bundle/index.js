@@ -10800,12 +10800,12 @@ var require_lib = __commonJS({
         const endOfInit = () => this.match(12) || this.match(8);
         switch (this.state.type) {
           case 135: {
-            const literal3 = this.parseNumericLiteral(this.state.value);
+            const literal4 = this.parseNumericLiteral(this.state.value);
             if (endOfInit()) {
               return {
                 type: "number",
-                loc: literal3.loc.start,
-                value: literal3
+                loc: literal4.loc.start,
+                value: literal4
               };
             }
             return {
@@ -10814,12 +10814,12 @@ var require_lib = __commonJS({
             };
           }
           case 134: {
-            const literal3 = this.parseStringLiteral(this.state.value);
+            const literal4 = this.parseStringLiteral(this.state.value);
             if (endOfInit()) {
               return {
                 type: "string",
-                loc: literal3.loc.start,
-                value: literal3
+                loc: literal4.loc.start,
+                value: literal4
               };
             }
             return {
@@ -10829,12 +10829,12 @@ var require_lib = __commonJS({
           }
           case 85:
           case 86: {
-            const literal3 = this.parseBooleanLiteral(this.match(85));
+            const literal4 = this.parseBooleanLiteral(this.match(85));
             if (endOfInit()) {
               return {
                 type: "boolean",
-                loc: literal3.loc.start,
-                value: literal3
+                loc: literal4.loc.start,
+                value: literal4
               };
             }
             return {
@@ -22854,9 +22854,9 @@ ${indent}`) + "'";
         return quotedString(value2, ctx);
       }
       const indent = ctx.indent || (ctx.forceBlockIndent || containsDocumentMarker(value2) ? "  " : "");
-      const literal3 = blockQuote === "literal" ? true : blockQuote === "folded" || type === Scalar.Scalar.BLOCK_FOLDED ? false : type === Scalar.Scalar.BLOCK_LITERAL ? true : !lineLengthOverLimit(value2, lineWidth, indent.length);
+      const literal4 = blockQuote === "literal" ? true : blockQuote === "folded" || type === Scalar.Scalar.BLOCK_FOLDED ? false : type === Scalar.Scalar.BLOCK_LITERAL ? true : !lineLengthOverLimit(value2, lineWidth, indent.length);
       if (!value2)
-        return literal3 ? "|\n" : ">\n";
+        return literal4 ? "|\n" : ">\n";
       let chomp;
       let endStart;
       for (endStart = value2.length; endStart > 0; --endStart) {
@@ -22905,7 +22905,7 @@ ${indent}`) + "'";
         if (onComment)
           onComment();
       }
-      if (!literal3) {
+      if (!literal4) {
         const foldedValue = value2.replace(/\n+/g, "\n$&").replace(/(?:^|\n)([\t ].*)(?:([\n\t ]*)\n(?![\n\t ]))?/g, "$1$2").replace(/\n+/g, `$&${indent}`);
         let literalFallback = false;
         const foldOptions = getFoldOptions(ctx, true);
@@ -29169,15 +29169,15 @@ var require_parse = __commonJS({
             return newToken("punctuator", read());
           case "n":
             read();
-            literal3("ull");
+            literal4("ull");
             return newToken("null", null);
           case "t":
             read();
-            literal3("rue");
+            literal4("rue");
             return newToken("boolean", true);
           case "f":
             read();
-            literal3("alse");
+            literal4("alse");
             return newToken("boolean", false);
           case "-":
           case "+":
@@ -29208,11 +29208,11 @@ var require_parse = __commonJS({
             return;
           case "I":
             read();
-            literal3("nfinity");
+            literal4("nfinity");
             return newToken("numeric", Infinity);
           case "N":
             read();
-            literal3("aN");
+            literal4("aN");
             return newToken("numeric", NaN);
           case '"':
           case "'":
@@ -29306,11 +29306,11 @@ var require_parse = __commonJS({
             return;
           case "I":
             read();
-            literal3("nfinity");
+            literal4("nfinity");
             return newToken("numeric", sign * Infinity);
           case "N":
             read();
-            literal3("aN");
+            literal4("aN");
             return newToken("numeric", NaN);
         }
         throw invalidChar(read());
@@ -29543,7 +29543,7 @@ var require_parse = __commonJS({
         column
       };
     }
-    function literal3(s) {
+    function literal4(s) {
       for (const c2 of s) {
         const p = peek();
         if (p !== c2) {
@@ -30044,11 +30044,11 @@ var require_lib2 = __commonJS({
   "node_modules/json5/lib/index.js"(exports, module) {
     var parse5 = require_parse();
     var stringify = require_stringify2();
-    var JSON52 = {
+    var JSON53 = {
       parse: parse5,
       stringify
     };
-    module.exports = JSON52;
+    module.exports = JSON53;
   }
 });
 
@@ -33992,7 +33992,7 @@ var require_moment = __commonJS({
           return this.as(alias);
         };
       }
-      var asMilliseconds = makeAs("ms"), asSeconds = makeAs("s"), asMinutes = makeAs("m"), asHours = makeAs("h"), asDays = makeAs("d"), asWeeks = makeAs("w"), asMonths = makeAs("M"), asQuarters = makeAs("Q"), asYears = makeAs("y"), valueOf8 = asMilliseconds;
+      var asMilliseconds = makeAs("ms"), asSeconds = makeAs("s"), asMinutes = makeAs("m"), asHours = makeAs("h"), asDays = makeAs("d"), asWeeks = makeAs("w"), asMonths = makeAs("M"), asQuarters = makeAs("Q"), asYears = makeAs("y"), valueOf9 = asMilliseconds;
       function clone2() {
         return createDuration(this);
       }
@@ -34133,7 +34133,7 @@ var require_moment = __commonJS({
       proto.asMonths = asMonths;
       proto.asQuarters = asQuarters;
       proto.asYears = asYears;
-      proto.valueOf = valueOf8;
+      proto.valueOf = valueOf9;
       proto._bubble = bubble;
       proto.clone = clone2;
       proto.get = get;
@@ -51776,7 +51776,7 @@ data:
     const encoder = new TextEncoder();
     let streamController;
     let keepAliveTimer = void 0;
-    const readable = new ReadableStream({
+    const readable2 = new ReadableStream({
       start: (controller) => {
         streamController = controller;
       },
@@ -51813,7 +51813,7 @@ data:
       }
     });
     keepAliveTimer = this.startKeepAlive(streamController, encoder);
-    return new Response(readable, { headers });
+    return new Response(readable2, { headers });
   }
   /**
    * Replays events that would have been sent after the specified event ID
@@ -51851,7 +51851,7 @@ data:
       let keepAliveTimer = void 0;
       let replayedStreamId = void 0;
       let cancelled = false;
-      const readable = new ReadableStream({
+      const readable2 = new ReadableStream({
         start: (controller) => {
           streamController = controller;
         },
@@ -51905,7 +51905,7 @@ data:
       });
       this._resumableStreams.add(replayedStreamId);
       keepAliveTimer = this.startKeepAlive(streamController, encoder);
-      return new Response(readable, { headers });
+      return new Response(readable2, { headers });
     } catch (error51) {
       this.onerror?.(error51);
       return this.createJsonErrorResponse(500, -32e3, "Error replaying events");
@@ -52056,7 +52056,7 @@ data:
       const encoder = new TextEncoder();
       let streamController;
       let keepAliveTimer = void 0;
-      const readable = new ReadableStream({
+      const readable2 = new ReadableStream({
         start: (controller) => {
           streamController = controller;
         },
@@ -52125,7 +52125,7 @@ data:
       if (this._streamMapping.get(streamId)?.controller === streamController) {
         keepAliveTimer = this.startKeepAlive(streamController, encoder);
       }
-      return new Response(readable, { status: 200, headers });
+      return new Response(readable2, { status: 200, headers });
     } catch (error51) {
       this.onerror?.(error51);
       return this.createJsonErrorResponse(400, -32700, "Parse error", { data: String(error51) });
@@ -57018,8 +57018,8 @@ function parseStringDef(def, refs2) {
   }
   return res;
 }
-function escapeLiteralCheckValue(literal3, refs2) {
-  return refs2.patternStrategy === "escape" ? escapeNonAlphaNumeric(literal3) : literal3;
+function escapeLiteralCheckValue(literal4, refs2) {
+  return refs2.patternStrategy === "escape" ? escapeNonAlphaNumeric(literal4) : literal4;
 }
 var ALPHA_NUMERIC = new Set("ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvxyz0123456789");
 function escapeNonAlphaNumeric(source2) {
@@ -62067,8 +62067,8 @@ function lintTextFormat(c) {
   const effective = typeof format === "string" && format ? format : "html";
   if (effective === "markdown")
     return [];
-  const literal3 = text2.replace(/\{\{[\s\S]*?\}\}/g, " ");
-  if (!MARKDOWN_SIGNS.test(literal3))
+  const literal4 = text2.replace(/\{\{[\s\S]*?\}\}/g, " ");
+  if (!MARKDOWN_SIGNS.test(literal4))
     return [];
   return [
     `Text "${label(c)}": the text uses markdown (a "#" heading, **bold**, a list or a link) but textFormat is "${effective}", so it renders literally. Set properties.textFormat.value = "markdown", or write the heading as HTML / plain text.`
@@ -62800,8 +62800,8 @@ var positive = (v) => {
     return v > 0;
   if (typeof v !== "string")
     return false;
-  const literal3 = v.replace(/^\{\{\s*(\d*\.?\d+)\s*\}\}$/, "$1");
-  return /^\s*\d*\.?\d+(?:px|em|rem|%)?\s*$/.test(literal3) && parseFloat(literal3) > 0;
+  const literal4 = v.replace(/^\{\{\s*(\d*\.?\d+)\s*\}\}$/, "$1");
+  return /^\s*\d*\.?\d+(?:px|em|rem|%)?\s*$/.test(literal4) && parseFloat(literal4) > 0;
 };
 function horizontal2(style, key4) {
   const parts = (style[key4] ?? "").trim().split(/\s+/);
@@ -67457,6 +67457,113 @@ function lintKpiCardGrids(components) {
   }).map((c) => `Card grid "${c.name ?? "ShadCardGrid"}" draws figures: a card grid is for records with a face, its badge sits beside the title (a long delta is cut off) and its subtitle is small body text, not a headline number. Draw KPIs as a row of ShadStat (value, valueFormat, change, changeLabel) or one ShadSummaryStrip (items).`);
 }
 
+// dist/shadMapLint.js
+var import_json52 = __toESM(require_lib2(), 1);
+var FIELD_PROPS = [
+  "latField",
+  "lngField",
+  "idField",
+  "titleField",
+  "subtitleField",
+  "statusField",
+  "labelField",
+  "iconField",
+  "routeField",
+  "routeOrderField",
+  "heatField",
+  "areaShapeField",
+  "areaTitleField",
+  "areaStatusField",
+  "areaRadiusField"
+];
+var POINT_PROPS = ["defaultCenter", "routeStart", "defaultPickedLocation"];
+var NUMBER = /^\s*[+-]?(\d+(\.\d*)?|\.\d+)\s*$/;
+var LAT_LNG_TEXT = /^\s*[+-]?(\d+(\.\d*)?|\.\d+)\s*,\s*[+-]?(\d+(\.\d*)?|\.\d+)\s*$/;
+var valueOf5 = (props2, key4) => {
+  const entry = props2?.[key4];
+  return entry && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry.value : entry;
+};
+var bindingBody = (value2) => typeof value2 === "string" ? /^\s*\{\{([\s\S]*)\}\}\s*$/.exec(value2)?.[1]?.trim() : void 0;
+function literal2(value2) {
+  const body = bindingBody(value2);
+  if (body === void 0)
+    return typeof value2 === "string" && value2.includes("{{") ? void 0 : { value: value2 };
+  try {
+    return { value: import_json52.default.parse(body.replace(/^\(([\s\S]*)\)$/, "$1")) };
+  } catch {
+    return void 0;
+  }
+}
+var readable = (v) => typeof v === "number" && Number.isFinite(v) || typeof v === "string" && NUMBER.test(v);
+function readablePoint(v) {
+  if (v === void 0 || v === null || v === "")
+    return true;
+  if (typeof v === "string")
+    return LAT_LNG_TEXT.test(v);
+  if (Array.isArray(v))
+    return v.length >= 2 && readable(v[0]) && readable(v[1]);
+  if (typeof v === "object")
+    return readable(v.lat) && readable(v.lng);
+  return false;
+}
+function reshapedWithout(body, idKey) {
+  if (!/=>\s*\(\s*\{/.test(body) || /\.\.\./.test(body))
+    return false;
+  const key4 = idKey.replace(/[$]/g, "\\$&");
+  return !new RegExp(`(^|[{,\\s])["']?${key4}["']?\\s*(:|,|\\})`).test(body);
+}
+function lintShadMaps(components) {
+  const errors = [];
+  const warnings = [];
+  for (const c of components.filter((component) => component.type === "ShadMap")) {
+    const label3 = `ShadMap "${c.name ?? "ShadMap"}"`;
+    const props2 = c.properties;
+    const field = (key4, fallback) => {
+      const written = literal2(valueOf5(props2, key4));
+      return written && typeof written.value === "string" && written.value.trim() ? written.value.trim() : fallback;
+    };
+    const notNames = FIELD_PROPS.filter((key4) => {
+      const raw = valueOf5(props2, key4);
+      if (raw === void 0 || raw === null || raw === "")
+        return false;
+      const written = literal2(raw);
+      return !written || typeof written.value !== "string" || written.value.includes("{{");
+    });
+    if (notNames.length) {
+      errors.push(`${label3}: ${notNames.join(", ")} must each be a field name, the key each data row is read through (latField: "lat", idField: "stop_ref"), not a value or an expression. Put the rows in data and name their fields here.`);
+    }
+    const [latKey, lngKey, idKey] = [field("latField", "lat"), field("lngField", "lng"), field("idField", "id")];
+    const dataRaw = valueOf5(props2, "data");
+    const rows = literal2(dataRaw)?.value;
+    if (Array.isArray(rows)) {
+      const records = rows.filter((row) => !!row && typeof row === "object" && !Array.isArray(row));
+      const textual = records.filter((row) => [row[latKey], row[lngKey]].some((v) => v !== void 0 && v !== null && !readable(v)));
+      if (textual.length) {
+        const sample = textual[0];
+        errors.push(`${label3}: ${textual.length} row(s) give ${latKey} and ${lngKey} as text the map cannot read (${JSON.stringify(sample[latKey])}, ${JSON.stringify(sample[lngKey])}), so their markers are skipped. Give lat and lng as numbers in decimal degrees (51.5074, -0.1278).`);
+      }
+      const unkeyed = records.filter((row) => row[idKey] === void 0 || row[idKey] === null || row[idKey] === "");
+      if (unkeyed.length) {
+        warnings.push(`${label3}: ${unkeyed.length} row(s) have no ${idKey}, so a click on their marker leaves selectedMarkerId empty and selectMarker cannot find them. Give each row a unique ${idKey}, or name the key field with idField.`);
+      }
+    } else {
+      const body = bindingBody(dataRaw);
+      if (body && reshapedWithout(body, idKey)) {
+        warnings.push(`${label3}: data reshapes the rows without their ${idKey}, so a click on a marker leaves selectedMarkerId empty and selectMarker cannot find it. Keep the key in each row (${idKey}: r.${idKey}, or ...r), or name it with idField.`);
+      }
+    }
+    const badPoints = POINT_PROPS.filter((key4) => {
+      const raw = valueOf5(props2, key4);
+      const written = literal2(raw);
+      return written !== void 0 && !readablePoint(written.value);
+    });
+    if (badPoints.length) {
+      errors.push(`${label3}: ${badPoints.join(", ")} must be coordinates, { lat, lng } numbers or "lat, lng" text (51.5074, -0.1278), not a place name. Leave defaultCenter empty to open on the markers.`);
+    }
+  }
+  return { errors, warnings };
+}
+
 // dist/selectionGuardLint.js
 var OBJECT_GUARD = /components\??\.(\w+)\??\.(selectedRow|selectedItem|selectedBooking)\s*(\?(?![.?])|&&)/g;
 var strings = (value2, out = []) => {
@@ -69054,10 +69161,10 @@ function lintComponentSpec(spec, context = {}) {
   if (spec.type === "DatePickerV2") {
     const defaultValue = propVal2(props2, "defaultValue");
     const dateFormat = catalogValue("DatePickerV2", props2, "dateFormat");
-    const literal3 = typeof defaultValue === "string" ? defaultValue.trim().replace(/^\{\{\s*(['"])([^'"]+)\1\s*\}\}$/, "$2") : void 0;
+    const literal4 = typeof defaultValue === "string" ? defaultValue.trim().replace(/^\{\{\s*(['"])([^'"]+)\1\s*\}\}$/, "$2") : void 0;
     const yearLastFormat = typeof dateFormat === "string" && /^(?:D{1,2}[^A-Za-z]+M{1,4}|M{1,4}[^A-Za-z]+D{1,2})[^A-Za-z]+Y{2,4}$/.test(dateFormat);
-    if (literal3 && /^\d{4}-\d{2}-\d{2}$/.test(literal3) && yearLastFormat) {
-      errors.push(`DatePickerV2 "${label3}": ISO defaultValue "${literal3}" does not match dateFormat "${dateFormat}". ToolJet parses the default with dateFormat, not as ISO automatically. Use dateFormat:"YYYY-MM-DD" or format the default into the selected display format; otherwise the initial day can silently change.`);
+    if (literal4 && /^\d{4}-\d{2}-\d{2}$/.test(literal4) && yearLastFormat) {
+      errors.push(`DatePickerV2 "${label3}": ISO defaultValue "${literal4}" does not match dateFormat "${dateFormat}". ToolJet parses the default with dateFormat, not as ISO automatically. Use dateFormat:"YYYY-MM-DD" or format the default into the selected display format; otherwise the initial day can silently change.`);
     }
     if (typeof defaultValue === "string" && defaultValue.includes("{{") && typeof dateFormat === "string" && !dateFormat.includes("{{")) {
       const formats = [...defaultValue.matchAll(/\.format\(\s*(['"])([^'"]+)\1\s*\)/g)].map((m) => m[2]);
@@ -69474,15 +69581,15 @@ function modalTitleText(component) {
   let text2 = "";
   let from = 0;
   for (const span of bindingSpans(value2)) {
-    let literal3;
+    let literal4;
     try {
-      literal3 = (0, import_parser15.parseExpression)(`(${span.body})`);
+      literal4 = (0, import_parser15.parseExpression)(`(${span.body})`);
     } catch {
       return void 0;
     }
-    if (literal3.type !== "StringLiteral" && !(literal3.type === "TemplateLiteral" && literal3.expressions.length === 0))
+    if (literal4.type !== "StringLiteral" && !(literal4.type === "TemplateLiteral" && literal4.expressions.length === 0))
       return void 0;
-    text2 += value2.slice(from, span.start) + (literal3.type === "StringLiteral" ? literal3.value : literal3.quasis[0]?.value.cooked ?? "");
+    text2 += value2.slice(from, span.start) + (literal4.type === "StringLiteral" ? literal4.value : literal4.quasis[0]?.value.cooked ?? "");
     from = span.end;
   }
   text2 += value2.slice(from);
@@ -69805,6 +69912,9 @@ function lintComponents(components, options2 = {}) {
   warnings.push(...lintTallContainers(components));
   warnings.push(...lintChartAccents(components));
   warnings.push(...lintKpiCardGrids(components));
+  const maps = lintShadMaps(components);
+  errors.push(...maps.errors);
+  warnings.push(...maps.warnings);
   errors.push(...lintTruthySelectionGuards(components));
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
@@ -74191,7 +74301,7 @@ function insertRowsBatchTool(client) {
 }
 
 // dist/mapKeyGuard.js
-async function mapKeyRefusal(client, componentTypes) {
+async function mapKeyRefusal(client, componentTypes, library) {
   if (![...componentTypes].includes("Map") || typeof client?.hasGoogleMapsKey !== "function")
     return void 0;
   let hasKey;
@@ -74202,7 +74312,11 @@ async function mapKeyRefusal(client, componentTypes) {
   }
   if (hasKey !== false)
     return void 0;
-  return "This ToolJet instance has no Google Maps API key (GOOGLE_MAPS_API_KEY), so a Map component shows a Google error instead of a map. Show the locations in a Table (a link column to https://www.google.com/maps?q=<lat>,<lng> opens each one), and tell the user in your reply that an in-app map needs the Google Maps API key on the instance.";
+  const noKey = "This ToolJet instance has no Google Maps API key (GOOGLE_MAPS_API_KEY), so a Map component shows a Google error instead of a map.";
+  const ui2Map = "Use ShadMap, the ToolJet UI 2.0 Map: OpenStreetMap tiles, no key, one marker per data row read through latField, lngField and idField, with onMarkerClick and selectedMarker.";
+  if (library === "ui2")
+    return `${noKey} ${ui2Map}`;
+  return `${noKey} In a ToolJet UI 2.0 app: ${ui2Map} In a UI 1.0 app, show the locations in a Table (a link column to https://www.google.com/maps?q=<lat>,<lng> opens each one), and tell the user in your reply that an in-app map needs the Google Maps API key on the instance.`;
 }
 
 // dist/tools/getComponentCatalog.js
@@ -74949,7 +75063,7 @@ function quote(kind, identifier) {
     return `[${identifier}]`;
   return `"${identifier}"`;
 }
-function literal2(value2) {
+function literal3(value2) {
   return `'${value2.replaceAll("'", "''")}'`;
 }
 function source(kind, schema, table) {
@@ -74979,8 +75093,8 @@ function metadataSql(kind, purpose, schema, table) {
     throw new Error(`${purpose} discovery requires table.`);
   if (metadata !== "mysql" && !schema)
     throw new Error(`${purpose} discovery for ${kind} requires schema.`);
-  const schemaFilter = metadata === "mysql" && !schema ? "DATABASE()" : literal2(schema);
-  const tableFilter = table ? literal2(table) : void 0;
+  const schemaFilter = metadata === "mysql" && !schema ? "DATABASE()" : literal3(schema);
+  const tableFilter = table ? literal3(table) : void 0;
   if (metadata === "postgresql") {
     if (purpose === "primary_keys")
       return `SELECT kcu.column_name, kcu.ordinal_position, tc.constraint_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.ordinal_position`;
@@ -75820,14 +75934,14 @@ function getComponentTool(client) {
 }
 
 // dist/htmlColumns.js
-var valueOf5 = (prop3) => prop3 && typeof prop3 === "object" && "value" in prop3 ? prop3.value : prop3;
+var valueOf6 = (prop3) => prop3 && typeof prop3 === "object" && "value" in prop3 ? prop3.value : prop3;
 function htmlFedTextColumns(table, queries) {
   if (table.type !== "Table")
     return [];
-  const columns = valueOf5(table.properties?.columns);
+  const columns = valueOf6(table.properties?.columns);
   if (!Array.isArray(columns))
     return [];
-  const data = String(valueOf5(table.properties?.data) ?? "");
+  const data = String(valueOf6(table.properties?.data) ?? "");
   const read = new Set([...data.matchAll(/queries\.(\w+)/g)].map((m) => m[1]));
   const code = queries.filter((q) => q.kind === "runjs" && read.has(String(q.name))).map((q) => String(q.options?.code ?? "")).join("\n");
   if (!code)
@@ -77152,9 +77266,9 @@ var INLINE_TYPES = /* @__PURE__ */ new Set([
   "ShadTags",
   "ShadSpinner"
 ]);
-var valueOf6 = (entry) => entry && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry.value : entry;
+var valueOf7 = (entry) => entry && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry.value : entry;
 var text = (entry) => {
-  const v = valueOf6(entry);
+  const v = valueOf7(entry);
   return typeof v === "string" ? v.trim() : typeof v === "number" ? String(v) : "";
 };
 var props = (component) => component.properties && typeof component.properties === "object" ? component.properties : {};
@@ -77377,7 +77491,7 @@ function polishFlexRows(input) {
       if (next2.type === "FlexContainer" || ACTION_TYPES.has(next2.type))
         return;
       next2.parentRef = cardRef;
-      const order = valueOf6(prop2(container, "childOrder"));
+      const order = valueOf7(prop2(container, "childOrder"));
       if (Array.isArray(order)) {
         setProp(container, "childOrder", order.filter((entry) => entry !== refOf(next2) && entry !== next2.name));
       }
@@ -77612,7 +77726,7 @@ function polishFlexRows(input) {
         for (const table of childrenOf(refOf(card) ?? "")) {
           if (table.type !== "Table")
             continue;
-          const columns = valueOf6(prop2(table, "columns"));
+          const columns = valueOf7(prop2(table, "columns"));
           if (!Array.isArray(columns))
             continue;
           const visible = columns.filter((c) => !!c && typeof c === "object" && c.columnVisibility !== false);
@@ -77664,7 +77778,7 @@ function polishFlexRows(input) {
         }
       }
     }
-    const authored = valueOf6(prop2(container, "childOrder"));
+    const authored = valueOf7(prop2(container, "childOrder"));
     const authoredOrder = Array.isArray(authored) ? authored.filter((entry) => typeof entry === "string") : null;
     const ordered = authoredOrder?.length ? [
       ...authoredOrder.map((name2) => children.find((child) => refOf(child) === name2 || child.name === name2)).filter((child) => !!child),
@@ -77694,7 +77808,7 @@ function polishFlexRows(input) {
   }
   const firstOf = (parent) => {
     const inner = childrenOf(refOf(parent) ?? "");
-    const authored = valueOf6(prop2(parent, "childOrder"));
+    const authored = valueOf7(prop2(parent, "childOrder"));
     const first = Array.isArray(authored) && typeof authored[0] === "string" ? inner.find((c) => refOf(c) === authored[0] || c.name === authored[0] || c.id === authored[0]) : void 0;
     return first ?? inner[0];
   };
@@ -77822,12 +77936,12 @@ var FILTER_TYPES = /* @__PURE__ */ new Set(["ShadInput", "ShadToggleGroup", "Sha
 var DIALOG_TYPES = /* @__PURE__ */ new Set(["ShadDialog", "Modal", "ModalV2"]);
 var SHORT_LIST_MAX = 36;
 var isChart2 = (type) => /^Shad\w*Chart$/.test(type ?? "");
-var valueOf7 = (bag, key4) => {
+var valueOf8 = (bag, key4) => {
   const entry = bag?.[key4];
   return entry && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry.value : entry;
 };
 var textOf = (bag, key4) => {
-  const v = valueOf7(bag, key4);
+  const v = valueOf8(bag, key4);
   return typeof v === "string" ? v.trim() : typeof v === "number" ? String(v) : "";
 };
 var refOf2 = (c) => c.clientRef ?? c.name ?? "";
@@ -77860,23 +77974,23 @@ function readingOrder(components) {
   return out;
 }
 function chartColourWarnings(chart) {
-  const series = valueOf7(chart.properties, "yFields");
+  const series = valueOf8(chart.properties, "yFields");
   const parts = chart.type === "ShadPieChart" || chart.type === "ShadFunnelChart" ? "slice" : Array.isArray(series) && series.length > 1 ? "series" : null;
   if (!parts)
     return [];
-  const colors = valueOf7(chart.properties, "colors");
-  const literal3 = Array.isArray(colors) ? colors : null;
+  const colors = valueOf8(chart.properties, "colors");
+  const literal4 = Array.isArray(colors) ? colors : null;
   const bound = typeof colors === "string" && colors.includes("{{") && !/^\{\{\s*\[\s*\]\s*\}\}$/.test(colors.trim());
   if (bound)
     return [];
-  if (!literal3 || literal3.length === 0) {
+  if (!literal4 || literal4.length === 0) {
     return [
       `Chart ${label2(chart)} draws each ${parts} in the default palette: set colors to explicit, distinct hues that sit with the theme (one family, clearly different lightness or hue per ` + parts + "), so no pair clashes and no slice disappears."
     ];
   }
-  const norm = literal3.map((c) => String(c).trim().toLowerCase());
+  const norm = literal4.map((c) => String(c).trim().toLowerCase());
   if (new Set(norm).size < norm.length) {
-    return [`Chart ${label2(chart)} repeats a colour in colors (${literal3.join(", ")}): give each ${parts} its own hue.`];
+    return [`Chart ${label2(chart)} repeats a colour in colors (${literal4.join(", ")}): give each ${parts} its own hue.`];
   }
   return [];
 }
@@ -77952,7 +78066,7 @@ function lintPageArchetype(archetype, components) {
   if (kind === "personal-overview") {
     if (!has("ShadSummaryStrip"))
       warnings.push("no ShadSummaryStrip under the hero: the period's four key figures go in one strip.");
-    const progress = order.some((c) => c.type === "ShadProgress" || c.type === "ShadCircularProgress" || c.type === "ShadStat" && valueOf7(c.properties, "progress") !== void 0);
+    const progress = order.some((c) => c.type === "ShadProgress" || c.type === "ShadCircularProgress" || c.type === "ShadStat" && valueOf8(c.properties, "progress") !== void 0);
     if (!progress)
       warnings.push("no progress grid: show each goal or budget as a ShadStat with progress (or ShadProgress) against its limit.");
   }
@@ -80268,9 +80382,6 @@ function lintAppSpecTool(client) {
         if (replacePages.length && !args.app_id) {
           preflightErrors.push(`pages ${replacePages.join(", ")}: replace needs app_id, so the plan is checked against the page it replaces.`);
         }
-        const mapRefusal = await mapKeyRefusal(client, (args.pages ?? []).flatMap((page) => (page.components ?? []).map((c) => String(c.type))));
-        if (mapRefusal)
-          preflightErrors.push(mapRefusal);
         const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query2) => query2.table_ref || typeof query2.options?.table_id === "string"));
         const [existingTables, fetchedSummary] = await Promise.all([
           needsTables ? client.listTables() : Promise.resolve([]),
@@ -80279,7 +80390,11 @@ function lintAppSpecTool(client) {
         const frozen = frozenAppRefusal(fetchedSummary);
         if (frozen)
           return fail(new Error(frozen));
-        preflightWarnings.push(...componentLibraryWarnings(fetchedSummary ? fetchedSummary.component_library ?? resolveComponentLibrary(void 0, fetchedSummary.pages.flatMap((page) => page.components.map((c) => c.type))) : { library: "ui2", source: "new" }, args.pages, args.component_library_request));
+        const appLibrary = fetchedSummary ? fetchedSummary.component_library ?? resolveComponentLibrary(void 0, fetchedSummary.pages.flatMap((page) => page.components.map((c) => c.type))) : { library: "ui2", source: "new" };
+        preflightWarnings.push(...componentLibraryWarnings(appLibrary, args.pages, args.component_library_request));
+        const mapRefusal = await mapKeyRefusal(client, (args.pages ?? []).flatMap((page) => (page.components ?? []).map((c) => String(c.type))), appLibrary.library);
+        if (mapRefusal)
+          preflightErrors.push(mapRefusal);
         const plannedNames = /* @__PURE__ */ new Map();
         for (const table of args.tables ?? []) {
           const key4 = table.table_name.toLowerCase();
