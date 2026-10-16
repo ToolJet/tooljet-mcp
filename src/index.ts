@@ -6,6 +6,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { buildServer, buildUnconfiguredServer } from './server.js';
+import { toolCallsSettled } from './tracing.js';
 import { readJsonBody } from './httpServer.js';
 import { bearerValue, checkBearerToken } from './httpAuth.js';
 import { isBuildToken, mintAuthorized, mintBuildToken, mintSecret, resolveBuildToken, revokeBuildToken } from './buildTokens.js';
@@ -22,6 +23,9 @@ import {
 
 /** Upper bound on one MCP request body (a large lint_app_spec plan with seed rows stays far below it). */
 const MAX_REQUEST_BODY_BYTES = 64 * 1024 * 1024;
+
+/** stdio EOF: max wait for in-flight tool calls before flush + exit. */
+const EOF_TOOL_CALL_CAP_MS = 30_000;
 
 export interface GatewayHttpServer {
   server: Server;
@@ -321,9 +325,17 @@ async function main(): Promise<void> {
     server = buildUnconfiguredServer(reason);
   }
   await server.connect(new StdioServerTransport());
-  // stdin EOF = client gone. An in-flight export would block beforeExit, so flush bounded and exit here.
+  // stdin EOF: let in-flight tool calls reply (half-close clients), then bounded flush and exit.
+  // An in-flight export would block beforeExit, hence the explicit exit.
   const stop = stopTracing;
-  if (stop) process.stdin.once('end', () => void stop().finally(() => process.exit()));
+  if (stop) {
+    process.stdin.once('end', () => void (async () => {
+      await toolCallsSettled(EOF_TOOL_CALL_CAP_MS);
+      await new Promise<void>((resolve) => setImmediate(resolve)); // SDK sends the reply a few ticks after settle
+      await new Promise<void>((resolve) => process.stdout.write('', () => resolve()));
+      await stop();
+    })().finally(() => process.exit()));
+  }
 }
 
 /**

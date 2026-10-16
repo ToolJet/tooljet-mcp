@@ -8638,7 +8638,24 @@ function toolErrorMessage(result) {
   const text = result.content?.[0]?.text ?? "";
   return text.startsWith("Error: ") ? text.slice(7, 7 + STATUS_MESSAGE_MAX) : void 0;
 }
+async function toolCallsSettled(capMs) {
+  let timer;
+  await Promise.race([
+    Promise.allSettled([...inFlight]),
+    new Promise((resolve7) => {
+      timer = setTimeout(resolve7, capMs);
+    })
+  ]);
+  clearTimeout(timer);
+}
 function withToolSpan(tool, extra, run) {
+  const call = startToolSpan(tool, extra, run);
+  inFlight.add(call);
+  void call.catch(() => {
+  }).finally(() => inFlight.delete(call));
+  return call;
+}
+function startToolSpan(tool, extra, run) {
   const ambient = context.active();
   const ambientSpan = trace.getSpanContext(ambient);
   let parent = ambient;
@@ -8679,7 +8696,7 @@ function withToolSpan(tool, extra, run) {
     }
   });
 }
-var USER_AGENT, BAGGAGE_ATTRIBUTE_KEYS, STATUS_MESSAGE_MAX, tracer;
+var USER_AGENT, BAGGAGE_ATTRIBUTE_KEYS, STATUS_MESSAGE_MAX, tracer, inFlight;
 var init_tracing = __esm({
   "dist/tracing.js"() {
     "use strict";
@@ -8689,6 +8706,7 @@ var init_tracing = __esm({
     BAGGAGE_ATTRIBUTE_KEYS = /* @__PURE__ */ new Set(["tooljet.origin", "gen_ai.conversation.id"]);
     STATUS_MESSAGE_MAX = 256;
     tracer = trace.getTracer("tooljet-mcp", TOOLJET_MCP_VERSION);
+    inFlight = /* @__PURE__ */ new Set();
   }
 });
 
@@ -102171,6 +102189,9 @@ Fix the configuration and restart this server; no tools will work until then.` }
   return server;
 }
 
+// dist/index.js
+init_tracing();
+
 // dist/httpAuth.js
 import { timingSafeEqual } from "node:crypto";
 function checkBearerToken(authHeader, expectedToken) {
@@ -102271,6 +102292,7 @@ async function readJsonBody(req, maxBodyBytes) {
 
 // dist/index.js
 var MAX_REQUEST_BODY_BYTES = 64 * 1024 * 1024;
+var EOF_TOOL_CALL_CAP_MS = 3e4;
 function createGatewayHttpServer() {
   const sharedToken = process.env.MCP_SHARED_TOKEN;
   const gatewayMode = Boolean(sharedToken);
@@ -102453,8 +102475,14 @@ async function main() {
   }
   await server.connect(new StdioServerTransport());
   const stop = stopTracing;
-  if (stop)
-    process.stdin.once("end", () => void stop().finally(() => process.exit()));
+  if (stop) {
+    process.stdin.once("end", () => void (async () => {
+      await toolCallsSettled(EOF_TOOL_CALL_CAP_MS);
+      await new Promise((resolve7) => setImmediate(resolve7));
+      await new Promise((resolve7) => process.stdout.write("", () => resolve7()));
+      await stop();
+    })().finally(() => process.exit()));
+  }
 }
 function isEntrypoint() {
   const invoked = process.argv[1];

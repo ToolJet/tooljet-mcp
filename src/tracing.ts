@@ -19,8 +19,27 @@ function toolErrorMessage(result: ToolResult): string | undefined {
   return text.startsWith('Error: ') ? text.slice(7, 7 + STATUS_MESSAGE_MAX) : undefined;
 }
 
+const inFlight = new Set<Promise<unknown>>();
+
+/** Resolves once every in-flight tool call settles, or after capMs. */
+export async function toolCallsSettled(capMs: number): Promise<void> {
+  let timer: NodeJS.Timeout | undefined;
+  await Promise.race([
+    Promise.allSettled([...inFlight]),
+    new Promise<void>((resolve) => { timer = setTimeout(resolve, capMs); }),
+  ]);
+  clearTimeout(timer);
+}
+
 /** `tools/call {tool}` SERVER span. Parent: `_meta` context; ambient (HTTP) span becomes a link. */
 export function withToolSpan(tool: string, extra: ToolExtra | undefined, run: () => Promise<ToolResult>): Promise<ToolResult> {
+  const call = startToolSpan(tool, extra, run);
+  inFlight.add(call);
+  void call.catch(() => {}).finally(() => inFlight.delete(call));
+  return call;
+}
+
+function startToolSpan(tool: string, extra: ToolExtra | undefined, run: () => Promise<ToolResult>): Promise<ToolResult> {
   const ambient = context.active();
   const ambientSpan = trace.getSpanContext(ambient);
   // SEP-414: unprefixed traceparent/tracestate/baggage in params._meta. Bad values are ignored by the W3C extractors.

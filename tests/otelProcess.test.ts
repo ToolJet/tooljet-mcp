@@ -90,6 +90,35 @@ describe('stdio process with ENABLE_OTEL', () => {
     expect(run.exitMs).toBeLessThan(3000);
   }, 30_000);
 
+  it('answers an in-flight tool call when the client half-closes stdin', async () => {
+    const slowApi = createServer((_req, res) => {
+      setTimeout(() => res.writeHead(401, { 'Content-Type': 'application/json' }).end('{"message":"nope"}'), 2000);
+    });
+    await new Promise<void>((resolve) => slowApi.listen(0, '127.0.0.1', resolve));
+    try {
+      const child = spawn(process.execPath, ['--import', 'tsx', 'src/index.ts'], {
+        env: {
+          ...process.env, MCP_TRANSPORT: 'stdio', TOOLJET_PAT: 'unused', ENABLE_OTEL: 'true',
+          TOOLJET_URL: `http://127.0.0.1:${(slowApi.address() as AddressInfo).port}`,
+          OTEL_EXPORTER_OTLP_ENDPOINT: 'http://10.255.255.1:4318', OTEL_BSP_SCHEDULE_DELAY: '50',
+        },
+      });
+      let stdout = '';
+      child.stdout.on('data', (chunk) => { stdout += chunk; });
+      child.stderr.resume();
+      const call = { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'list_workspaces', arguments: {} } };
+      const started = Date.now();
+      child.stdin.end([messages[0], messages[1], call].map((m) => JSON.stringify(m)).join('\n') + '\n');
+      const [code] = await once(child, 'exit');
+      expect(code).toBe(0);
+      expect(stdoutIsJsonRpc(stdout)).toBe(true);
+      expect(stdout).toContain('"id":2');
+      expect(Date.now() - started).toBeLessThan(30_000);
+    } finally {
+      await new Promise((resolve) => slowApi.close(resolve));
+    }
+  }, 45_000);
+
   it('sends nothing and still works when ENABLE_OTEL is unset', async () => {
     received.length = 0;
     const run = await runStdio({ ENABLE_OTEL: '', OTEL_EXPORTER_OTLP_ENDPOINT: collectorUrl });
