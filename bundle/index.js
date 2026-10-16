@@ -62867,6 +62867,131 @@ function lintSurfaceInsets(c) {
 
 // dist/componentStateBindings.js
 var import_parser6 = __toESM(require_lib(), 1);
+
+// dist/catalog.js
+import { readFileSync as readFileSync2 } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname as dirname2, resolve } from "node:path";
+var dataPath = resolve(dirname2(fileURLToPath(import.meta.url)), "../data/component-schemas.json");
+var compatibilityPath = resolve(dirname2(fileURLToPath(import.meta.url)), "../data/component-compatibility.json");
+var cache = null;
+var legacyReplacements = null;
+function load() {
+  if (!cache)
+    cache = JSON.parse(readFileSync2(dataPath, "utf8"));
+  return cache;
+}
+function loadLegacyReplacements() {
+  if (!legacyReplacements) {
+    const compatibility = JSON.parse(readFileSync2(compatibilityPath, "utf8"));
+    legacyReplacements = compatibility.legacyReplacements ?? {};
+  }
+  return legacyReplacements;
+}
+function getCatalog() {
+  const legacy = loadLegacyReplacements();
+  return Object.values(load()).filter((c) => !legacy[c.type]).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
+}
+function getComponentSchema(type) {
+  return load()[type] ?? null;
+}
+function getLegacyComponentReplacement(type) {
+  return loadLegacyReplacements()[type] ?? null;
+}
+
+// dist/ui2LegacyNames.js
+var UI2_COMMON_RENAMES = {
+  actions: { visibility: "setVisibility", disable: "setDisable", loading: "setLoading" }
+};
+var CHART = { exposed: { clickedDatum: "clickedDataPoint" } };
+var PICKER = { events: { onChange: "onSelect" }, actions: { clear: "clearValue" } };
+var UI2_RENAMES = {
+  ShadAreaChart: CHART,
+  ShadBarChart: CHART,
+  ShadComboChart: CHART,
+  ShadFunnelChart: CHART,
+  ShadHeatmapChart: CHART,
+  ShadLineChart: CHART,
+  ShadPieChart: CHART,
+  ShadRadarChart: CHART,
+  ShadRadialChart: CHART,
+  ShadScatterChart: CHART,
+  ShadBreadcrumb: { events: { onItemClick: "onItemClicked" } },
+  ShadButtonGroup: { exposed: { values: "selected" } },
+  ShadCalendar: { events: { onMonthChange: "onMonthChanged" } },
+  ShadCardGrid: { events: { onCardClick: "onCardClicked" } },
+  ShadCarousel: { events: { onSlideChange: "onSlideChanged", onSlideClick: "onSlideClicked" } },
+  ShadCheckbox: { actions: { setChecked: "setValue" } },
+  ShadColorPicker: { exposed: { selectedColorHex: "value", rgb: "selectedColorRGB", rgba: "selectedColorRGBA" } },
+  ShadCombobox: { events: { onChange: "onSelect" } },
+  ShadDatePicker: {
+    events: { onChange: "onSelect" },
+    actions: { setDate: "setValue", clear: "clearValue" },
+    exposed: { selectedDate: "value" }
+  },
+  ShadDateTimePicker: { ...PICKER, actions: { setDate: "setValue", clear: "clearValue" } },
+  ShadEmpty: { events: { onAction: "onActionClicked" } },
+  ShadFileUpload: { actions: { clear: "clearFiles" }, exposed: { files: "file" } },
+  ShadHero: { events: { onActionClick: "onActionClicked", onSecondaryActionClick: "onSecondaryActionClicked" } },
+  ShadImage: { properties: { src: "source", alt: "alternativeText", fit: "imageFit" } },
+  ShadKanban: {
+    events: { onCardClicked: "onCardSelected" },
+    actions: { updateCard: "updateCardData" },
+    exposed: {
+      cards: "updatedCardData",
+      selectedCard: "lastSelectedCard",
+      lastMove: "lastCardMovement",
+      movedCard: "lastCardMovement.card"
+    }
+  },
+  ShadLink: { properties: { href: "linkTarget", text: "linkText", target: "targetType" } },
+  ShadListView: {
+    events: { onRowClicked: "onRecordClicked" },
+    exposed: { selectedRow: "selectedRecord", selectedRowId: "selectedRecordId" }
+  },
+  ShadMap: {
+    events: { onMapClick: "onMapClicked", onShapeClick: "onShapeClicked", onLocationPick: "onLocationPicked" }
+  },
+  ShadMultiselect: { events: { onChange: "onSelect" } },
+  ShadNavigation: { events: { onSelect: "onClick" }, actions: { setActive: "selectItem" }, exposed: { activeItem: "selectedItem" } },
+  ShadPhoneInput: { actions: { setCountry: "setCountryCode" } },
+  ShadNumberInput: { actions: { setValue: "setText" } },
+  ShadProgressList: { events: { onItemClick: "onItemClicked" } },
+  ShadQuestionnaire: { events: { onStepChange: "onStepChanged" } },
+  ShadRadioGroup: { events: { onChange: "onSelectionChange" } },
+  ShadRecordList: {
+    events: { onRowClicked: "onItemClicked", onRecordClicked: "onItemClicked" },
+    exposed: {
+      selectedRecord: "selectedItem",
+      selectedRow: "selectedItem",
+      selectedRecordId: "selectedItemId",
+      selectedRowId: "selectedItemId"
+    }
+  },
+  ShadSchedule: { events: { onBookingClick: "onBookingClicked", onSlotClick: "onSlotClicked" } },
+  ShadSelect: { events: { onChange: "onSelect" } },
+  ShadSteps: { actions: { setDisabled: "setDisable" }, properties: { schema: "steps" } },
+  ShadTable: { properties: { pageSize: "rowsPerPage" } },
+  ShadTags: { events: { onTagClick: "onTagClicked" } },
+  ShadTagsInput: {
+    events: { onTagRemoved: "onTagDeleted" },
+    exposed: { tags: "values", value: "values", selectedTags: "values" }
+  },
+  ShadTimePicker: { ...PICKER, actions: { setTime: "setValue", clear: "clearValue" } },
+  ShadTimeline: { events: { onItemClick: "onItemClicked" } },
+  ShadToggleGroup: { exposed: { selected: "value" } }
+};
+function retiredUi2Name(type, kind, name2) {
+  if (!type || !type.startsWith("Shad"))
+    return void 0;
+  const own2 = UI2_RENAMES[type]?.[kind];
+  if (own2 && Object.prototype.hasOwnProperty.call(own2, name2))
+    return own2[name2];
+  const common = UI2_COMMON_RENAMES[kind];
+  return common && Object.prototype.hasOwnProperty.call(common, name2) ? common[name2] : void 0;
+}
+
+// dist/componentStateBindings.js
 var isNode2 = (value2) => !!value2 && typeof value2 === "object" && typeof value2.type === "string";
 var isMember = (value2) => isNode2(value2) && ["MemberExpression", "OptionalMemberExpression"].includes(value2.type);
 function memberName(node2) {
@@ -62934,8 +63059,9 @@ function lintComponentStateBindings(value2, components, path) {
       if (isNode2(owner.object) && owner.object.type === "Identifier" && owner.object.name === "components") {
         const name2 = memberName(owner);
         const type = name2 ? components.find((c) => c.name === name2)?.type : void 0;
-        if (name2 && type && WRONG_ALIASES[type]?.[prop3])
+        if (name2 && type && (WRONG_ALIASES[type]?.[prop3] || retiredUi2Message(type, prop3, name2))) {
           wrongNames.add(`${name2}\0${type}\0${prop3}`);
+        }
       }
     }
     Object.values(node2).forEach(visit);
@@ -62943,8 +63069,26 @@ function lintComponentStateBindings(value2, components, path) {
   visit(root);
   return shadowed ? [] : [...wrongNames].map((key4) => {
     const [name2, type, prop3] = key4.split("\0");
-    return `${path}: ${WRONG_ALIASES[type][prop3](name2)}`;
+    return `${path}: ${WRONG_ALIASES[type]?.[prop3]?.(name2) ?? retiredUi2Message(type, prop3, name2)}`;
   });
+}
+function retiredUi2Message(type, prop3, name2) {
+  if (!type.startsWith("Shad"))
+    return void 0;
+  const schema = getComponentSchema(type);
+  if (schema?.exposedVariables?.some((variable) => variable.name === prop3))
+    return void 0;
+  if (schema?.actions?.some((action2) => action2.handle === prop3))
+    return void 0;
+  const exposed = retiredUi2Name(type, "exposed", prop3);
+  if (exposed) {
+    return `${type} "${name2}" exposes ${exposed}, not ${prop3} (renamed); read components.${name2}.${exposed}. The old name is undefined at runtime.`;
+  }
+  const action = retiredUi2Name(type, "actions", prop3);
+  if (action) {
+    return `${type} "${name2}" action ${prop3}() was renamed ${action}(); call components.${name2}.${action}(...). The old name is undefined at runtime.`;
+  }
+  return void 0;
 }
 var WRONG_ALIASES = {
   Kanban: {
@@ -63041,9 +63185,9 @@ function assertPersistableQueryToggles(options2, subject) {
 var import_parser11 = __toESM(require_lib(), 1);
 
 // dist/datasourceCatalog.js
-import { readFileSync as readFileSync2 } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname as dirname2, resolve } from "node:path";
+import { readFileSync as readFileSync3 } from "node:fs";
+import { fileURLToPath as fileURLToPath2 } from "node:url";
+import { dirname as dirname3, resolve as resolve2 } from "node:path";
 var COMMON_QUERY_OPTION_FIELDS = {
   runOnPageLoad: { path: "runOnPageLoad", type: "boolean|binding", description: "Run when the app first loads." },
   runOnDependencyChange: { path: "runOnDependencyChange", type: "boolean|binding" },
@@ -63064,21 +63208,21 @@ var COMMON_QUERY_OPTION_FIELDS = {
   compiledPaging: { path: "compiledPaging", type: "object", description: "Record of a generated server-paging query; leave as written." },
   disabledMessage: { path: "disabledMessage", type: "string|binding" }
 };
-var dataPath = resolve(dirname2(fileURLToPath(import.meta.url)), "../data/datasource-schemas.json");
-var cache = null;
-function load() {
-  if (!cache)
-    cache = JSON.parse(readFileSync2(dataPath, "utf8"));
-  return cache;
+var dataPath2 = resolve2(dirname3(fileURLToPath2(import.meta.url)), "../data/datasource-schemas.json");
+var cache2 = null;
+function load2() {
+  if (!cache2)
+    cache2 = JSON.parse(readFileSync3(dataPath2, "utf8"));
+  return cache2;
 }
 function getDatasourceCatalog() {
-  return Object.values(load()).map(({ kind, name: name2, type, operations }) => ({ kind, name: name2, type, operations }));
+  return Object.values(load2()).map(({ kind, name: name2, type, operations }) => ({ kind, name: name2, type, operations }));
 }
 function connectableDatasourceNames() {
-  return [...new Set(Object.values(load()).map(({ name: name2 }) => name2).filter(Boolean))].sort();
+  return [...new Set(Object.values(load2()).map(({ name: name2 }) => name2).filter(Boolean))].sort();
 }
 function getDatasourceQuerySchema(kind) {
-  return load()[kind] ?? null;
+  return load2()[kind] ?? null;
 }
 function operationSummary(contract) {
   const selectors = {};
@@ -66878,37 +67022,6 @@ function dropdownDefaultVisibilityWarning(value2, label3) {
   return missing ? [`DropdownV2 "${label3}": an option declares a default but omits visible. ToolJet's default lookup requires visible:true even though the menu displays options with omitted visibility. Set visible:true on selectable default options; preserve intentional hidden options. Otherwise edit preselection can appear blank. This is advisory; unknown dynamic option sources are not verified.`] : [];
 }
 
-// dist/catalog.js
-import { readFileSync as readFileSync3 } from "node:fs";
-import { fileURLToPath as fileURLToPath2 } from "node:url";
-import { dirname as dirname3, resolve as resolve2 } from "node:path";
-var dataPath2 = resolve2(dirname3(fileURLToPath2(import.meta.url)), "../data/component-schemas.json");
-var compatibilityPath = resolve2(dirname3(fileURLToPath2(import.meta.url)), "../data/component-compatibility.json");
-var cache2 = null;
-var legacyReplacements = null;
-function load2() {
-  if (!cache2)
-    cache2 = JSON.parse(readFileSync3(dataPath2, "utf8"));
-  return cache2;
-}
-function loadLegacyReplacements() {
-  if (!legacyReplacements) {
-    const compatibility = JSON.parse(readFileSync3(compatibilityPath, "utf8"));
-    legacyReplacements = compatibility.legacyReplacements ?? {};
-  }
-  return legacyReplacements;
-}
-function getCatalog() {
-  const legacy = loadLegacyReplacements();
-  return Object.values(load2()).filter((c) => !legacy[c.type]).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
-}
-function getComponentSchema(type) {
-  return load2()[type] ?? null;
-}
-function getLegacyComponentReplacement(type) {
-  return loadLegacyReplacements()[type] ?? null;
-}
-
 // dist/componentParent.js
 var COMPONENT_SLOT_NAMES = ["body", "header", "footer", "modal"];
 var TAB_SLOT = /^tab-(t\d+)$/;
@@ -67151,7 +67264,7 @@ function lintCopiedCards(components) {
       counts.set(type2, (counts.get(type2) ?? 0) + 1);
     const holds = [...counts.entries()].map(([type2, n]) => n > 1 ? `${n} ${type2}` : type2).join(", ");
     const type = first.type ?? "container";
-    warnings.push(`${copies.length} ${type}s "${first.name ?? first.clientRef}" to "${last.name ?? last.clientRef}" are one card copied ${copies.length} times (each holds ${holds})${positional ? " and read their rows by position (data[n])" : ""}. Copies show a fixed number of records and hide the rest, and every change has to be made to each. Draw the records with one component bound to the query: ShadCardGrid (a card per row: title, subtitle, badge, description and meta fields; onCardClick and selectedItem for the detail), or ShadListView with one item canvas whose children bind {{listItem.<field>}}. Keep separate cards only for figures that are not rows of one query.`);
+    warnings.push(`${copies.length} ${type}s "${first.name ?? first.clientRef}" to "${last.name ?? last.clientRef}" are one card copied ${copies.length} times (each holds ${holds})${positional ? " and read their rows by position (data[n])" : ""}. Copies show a fixed number of records and hide the rest, and every change has to be made to each. Draw the records with one component bound to the query: ShadCardGrid (a card per row: title, subtitle, badge, description and meta fields; onCardClicked and selectedItem for the detail), or ShadListView with one item canvas whose children bind {{listItem.<field>}}. Keep separate cards only for figures that are not rows of one query.`);
   }
   return warnings;
 }
@@ -67173,7 +67286,7 @@ var flag = (value2) => {
   return text2 === "true" ? true : text2 === "false" ? false : void 0;
 };
 var height = (c) => (c.layouts?.desktop ?? c.layout)?.height ?? 0;
-var isCard = (c) => ["antCard", "shadcnCard"].includes(String(valueOf2(c.properties, "cardStyle") ?? ""));
+var isCard = (c) => valueOf2(c.properties, "cardStyle") === "shadcnCard";
 var OVERLAYS = /* @__PURE__ */ new Set(["ModalV2", "Modal", "ShadDialog"]);
 var CARD_HEADER_PX = 56;
 var GRID_COLUMNS2 = 43;
@@ -68809,6 +68922,11 @@ function lintComponentSpec(spec, context = {}) {
         continue;
       if (sectionName === "property" && INSPECTOR_ONLY_PROPERTIES[spec.type ?? ""]?.includes(key4))
         continue;
+      const renamed = sectionName === "property" ? retiredUi2Name(spec.type, "properties", key4) : void 0;
+      if (renamed) {
+        errors.push(`Component "${label3}": ${spec.type} property "${key4}" was renamed "${renamed}"; the old key is ignored. Write properties.${renamed} instead.`);
+        continue;
+      }
       const aliasTarget = PROPERTY_KEY_ALIASES[key4.toLowerCase()];
       const alias = aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget)) ? aliasTarget : void 0;
       const suggestion = alias ?? nearestCatalogKey(key4, knownKeys);
@@ -69531,7 +69649,6 @@ function lintRenderedGeometryAdvisory(components) {
 function lintRenderedGeometry(components, context = {}) {
   return [...lintRenderedGeometryBlocking(components, context), ...lintRenderedGeometryAdvisory(components)];
 }
-var FLEX_ANT_CARD_HEADER_PX = 56;
 function flexNumber(value2, fallback) {
   const text2 = typeof value2 === "string" ? value2.replace(/[{}\s]/g, "").replace(/px$/, "") : value2;
   const n = typeof text2 === "number" ? text2 : typeof text2 === "string" && text2 !== "" ? Number(text2) : NaN;
@@ -69553,20 +69670,19 @@ function lintFlexContainerFit(components) {
     const dynamic = propVal2(props2, "dynamicHeight");
     if (dynamic === void 0 || isTruthyBinding(dynamic))
       continue;
-    if (["antCard", "shadcnCard"].includes(String(propVal2(props2, "cardStyle") ?? "")))
+    if (propVal2(props2, "cardStyle") === "shadcnCard")
       continue;
     const padding = flexNumber(propVal2(props2, "padding"), 12);
     const gap = flexNumber(propVal2(props2, "gap"), 12);
     const direction = String(propVal2(props2, "direction") ?? "column");
     if (direction === "row")
       continue;
-    const card = propVal2(props2, "cardStyle") === "antCard" && (Boolean(propVal2(props2, "cardTitle")) || Boolean(propVal2(props2, "cardExtra")));
     const heights = children.map((child) => renderedHeight(child, child.layouts?.desktop ?? child.layout));
     const content = direction === "column" ? heights.reduce((sum, h) => sum + h, 0) + gap * (children.length - 1) : Math.max(...heights);
-    const needed = Math.ceil(content + 2 * padding + (card ? FLEX_ANT_CARD_HEADER_PX : 0) + 2);
+    const needed = Math.ceil(content + 2 * padding + 2);
     if (needed <= rect2.height)
       continue;
-    warnings.push(`FlexContainer "${container.name ?? container.id ?? "?"}": its ${children.length} ${direction === "column" ? "stacked " : ""}children need about ${needed}px (heights${direction === "column" ? ` + ${gap}px gaps` : ""} + ${padding}px padding top and bottom${card ? ` + ${FLEX_ANT_CARD_HEADER_PX}px card header` : ""}) but the container is ${rect2.height}px tall, so the rest is cut off. Raise its height, or set properties.dynamicHeight to {{true}} so it grows in view mode (the editor still shows the authored height).`);
+    warnings.push(`FlexContainer "${container.name ?? container.id ?? "?"}": its ${children.length} ${direction === "column" ? "stacked " : ""}children need about ${needed}px (heights${direction === "column" ? ` + ${gap}px gaps` : ""} + ${padding}px padding top and bottom) but the container is ${rect2.height}px tall, so the rest is cut off. Raise its height, or set properties.dynamicHeight to {{true}} so it grows in view mode (the editor still shows the authored height).`);
   }
   return warnings;
 }
@@ -72133,7 +72249,7 @@ function createClient(auth, config2) {
       // A FlexContainer grows with its children unless the author fixes its height: with dynamic height off, a row or
       // card whose children grew scrolled inside or clipped them (Air India fleet build, 2026-10-09).
       properties: spec.type === "FlexContainer" ? { dynamicHeight: { value: "{{true}}" }, ...spec.properties ?? {} } : spec.properties,
-      // A FlexContainer is layout: invisible unless the author gives it a surface (cardStyle 'antCard', or a
+      // A FlexContainer is layout: invisible unless the author gives it a surface (cardStyle 'shadcnCard', or a
       // background or border). ToolJet's own default draws every row and column as a bordered box.
       styles: spec.type === "FlexContainer" ? { backgroundColor: { value: "transparent" }, borderColor: { value: "transparent" }, ...spec.styles ?? {} } : spec.styles ?? {},
       validation: spec.validation ?? {},
@@ -72141,7 +72257,7 @@ function createClient(auth, config2) {
       // not for types it has no defaults for, which then count as hidden on desktop.
       others: { showOnDesktop: { value: "{{true}}" }, showOnMobile: { value: "{{false}}" }, ...spec.others ?? {} },
       // The editor always sends these two sections. For a widget type the server has no defaults for (for example
-      // the Ant Design pack) an omitted section is stored as null, and one null section stops the page loading.
+      // the UI 2.0 widgets) an omitted section is stored as null, and one null section stops the page loading.
       general: {},
       generalStyles: { boxShadow: { value: "0px 0px 0px 0px #00000040" } }
     };
@@ -76102,7 +76218,8 @@ function validateEvents(summary, events, options2 = {}) {
         const schema = getComponentSchema(source2.type);
         const validTriggers = schema?.events?.map((item) => item.id) ?? [];
         if (schema && !validTriggers.includes(event.trigger)) {
-          errors.push(`${label3}: trigger "${event.trigger}" is not valid for ${source2.type}. Valid triggers: ${validTriggers.join(", ") || "none"}.`);
+          const renamed = retiredUi2Name(source2.type, "events", event.trigger);
+          errors.push(renamed ? `${label3}: ${source2.type} event "${event.trigger}" was renamed "${renamed}"; use trigger "${renamed}".` : `${label3}: trigger "${event.trigger}" is not valid for ${source2.type}. Valid triggers: ${validTriggers.join(", ") || "none"}.`);
         }
         if (source2.type === "Kanban" && event.trigger === "onCardSelected" && isFalseBinding2(propVal3(source2.properties, "openModalOnCardClick"))) {
           errors.push(`${label3}: Kanban onCardSelected cannot fire while openModalOnCardClick is false; ToolJet returns before it sets lastSelectedCard or fires the event. Enable the native card modal AND populate it with children parented to the Kanban using slot_name:"modal", or remove this handler and use a separate supported detail flow.`);
@@ -76210,7 +76327,8 @@ function validateEvents(summary, events, options2 = {}) {
         if (!nonEmptyString(handle)) {
           errors.push(`${label3}: control-component requires componentSpecificActionHandle.`);
         } else if (!componentAction) {
-          errors.push(`${label3}: control-component action "${handle}" is not valid for ${target2.type ?? "unknown"} "${target2.name ?? target2.id}". Valid actions: ${schema?.actions?.map((candidate) => candidate.handle).join(", ") || "none"}.`);
+          const renamed = retiredUi2Name(target2.type, "actions", handle);
+          errors.push(renamed ? `${label3}: ${target2.type} action "${handle}" was renamed "${renamed}"; use componentSpecificActionHandle "${renamed}".` : `${label3}: control-component action "${handle}" is not valid for ${target2.type ?? "unknown"} "${target2.name ?? target2.id}". Valid actions: ${schema?.actions?.map((candidate) => candidate.handle).join(", ") || "none"}.`);
         } else {
           const params = event.action.componentSpecificActionParams;
           if (params !== void 0 && !Array.isArray(params)) {
@@ -77055,7 +77173,7 @@ var isLabelledField = (component) => FIELD_TYPES.has(component.type) && text(pro
 var isSurface = (component) => {
   if (component.type !== "FlexContainer")
     return false;
-  if (["shadcnCard", "antCard"].includes(text(prop2(component, "cardStyle"))))
+  if (text(prop2(component, "cardStyle")) === "shadcnCard")
     return true;
   const background = styleText(component, "backgroundColor").toLowerCase();
   return background !== "" && background !== "transparent" && !/^#[0-9a-f]{6}00$/.test(background);
@@ -77183,7 +77301,7 @@ function polishFlexRows(input) {
     const content = isRow(card) ? Math.max(...heights) : heights.reduce((a, b) => a + b, 0) + gap * (inner.length - 1);
     const title = text(prop2(card, "cardTitle"));
     const extra = text(prop2(card, "cardExtra"));
-    const band = text(prop2(card, "cardStyle")) === "antCard" ? title || extra ? 56 : 0 : extra ? 70 : title ? 48 : 0;
+    const band = extra ? 70 : title ? 48 : 0;
     const needed = Math.ceil(content + pad * 2 + 6 + band);
     const rects = [card.layout, card.layouts?.desktop].filter((rect2) => !!rect2 && typeof rect2.height === "number");
     if (!rects.length || rects.every((rect2) => rect2.height <= needed + 12))
@@ -78292,6 +78410,8 @@ var STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS = 24;
 function isStrippableUnknownKey(type, section, key4, knownKeys) {
   if (knownKeys.includes(key4))
     return false;
+  if (section === "properties" && retiredUi2Name(type, "properties", key4))
+    return false;
   if (type === "DropdownV2" && section === "properties" && ["value", "defaultValue"].includes(key4))
     return false;
   if (section === "properties" && STYLE_KEYS_IN_PROPERTIES.has(key4))
@@ -78398,7 +78518,7 @@ function normalizeComponentSpec(component, options2 = {}) {
   }
   if (component.type === "FlexContainer") {
     const card = propValue(properties, "cardStyle");
-    if ((card === "shadcnCard" || card === "antCard") && !isTruthy(propValue(properties, "dynamicHeight"))) {
+    if (card === "shadcnCard" && !isTruthy(propValue(properties, "dynamicHeight"))) {
       setProperty("dynamicHeight", "{{true}}");
     }
   }
