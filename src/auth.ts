@@ -1,5 +1,6 @@
 import type { Config } from './config.js';
 import { recordHttpResponse } from './telemetry.js';
+import { USER_AGENT } from './tracing.js';
 
 const COOKIE_PREFIX = 'tj_auth_token=';
 
@@ -70,7 +71,7 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
 
     const res = await fetchImpl(`${config.apiUrl}/api/personal-access-tokens/session`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.pat}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.pat}`, 'User-Agent': USER_AGENT },
     });
     recordHttpResponse(res);
 
@@ -106,6 +107,7 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
   async function rawFetch(path: string, init?: RequestInit): Promise<Response> {
     const headers = new Headers(init?.headers);
     headers.set('Cookie', `tj_auth_token=${token}`);
+    headers.set('User-Agent', USER_AGENT);
     if (workspaceId) headers.set('tj-workspace-id', workspaceId);
     const response = await fetchImpl(`${config.apiUrl}${path}`, { ...init, headers });
     recordHttpResponse(response);

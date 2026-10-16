@@ -299,6 +299,10 @@ export async function identityFromHeaders(
   };
 }
 
+export function staticApiUrlFromEnv(): string {
+  return env('TOOLJET_URL') ?? env('TOOLJET_DEPLOYMENT_URL') ?? env('TOOLJET_APP_URL') ?? 'http://localhost:3000';
+}
+
 /**
  * Build the config for one request (HTTP) or one process (stdio).
  *
@@ -319,7 +323,7 @@ export function loadConfig(identity?: RequestIdentity): Config {
   // twice. Let TOOLJET_DEPLOYMENT_URL/TOOLJET_APP_URL double as the API origin when TOOLJET_URL
   // itself is unset, so a single-origin deployment only has to configure one of them. An explicit
   // TOOLJET_URL still always wins when both are set — same override precedence as explicitAppUrl.
-  const staticApiUrl = explicitApiUrl ?? explicitAppUrl ?? 'http://localhost:3000';
+  const staticApiUrl = staticApiUrlFromEnv();
 
   if (identity) {
     // The request's own apiUrl wins when present — same precedence as the session/PAT identity

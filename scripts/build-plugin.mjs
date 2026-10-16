@@ -74,7 +74,10 @@ for (const f of [
 // execute it. A dependency that only breaks once bundled — a CommonJS package whose require()
 // cannot be resolved in an ESM bundle, say — therefore passes every test and still fails at
 // startup for every user. Handshake with it here so that can never leave this script.
-{
+// Second pass boots the bundled OpenTelemetry path (dead collector, max logging): stdout must stay JSON-RPC.
+// Plain pass forces tracing off: an ambient ENABLE_OTEL/OTEL_* must not turn it into a second OTel pass.
+const baseEnv = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('OTEL_')));
+for (const otelEnv of [{ ENABLE_OTEL: '' }, { ENABLE_OTEL: 'true', OTEL_EXPORTER_OTLP_ENDPOINT: 'http://127.0.0.1:9', OTEL_LOG_LEVEL: 'all' }]) {
   const probe = spawnSync(process.execPath, [resolve(root, 'bundle/index.js')], {
     input: JSON.stringify({
       jsonrpc: '2.0', id: 1, method: 'initialize',
@@ -84,12 +87,18 @@ for (const f of [
     timeout: 30_000,
     // No TOOLJET_PAT: the server is expected to answer initialize and report the missing
     // credential in `instructions`. We are testing that it boots, not that it is configured.
-    env: { ...process.env, MCP_TRANSPORT: 'stdio', TOOLJET_PAT: '', TOOLJET_SESSION_TOKEN: '' },
+    env: { ...baseEnv, MCP_TRANSPORT: 'stdio', TOOLJET_PAT: '', TOOLJET_SESSION_TOKEN: '', ...otelEnv },
   });
   const reply = (probe.stdout ?? '').split('\n').find((line) => line.includes('"result"'));
-  if (!reply || !reply.includes('"serverInfo"')) {
+  const polluted = (probe.stdout ?? '').split('\n').filter((line) => {
+    if (!line.trim()) return false;
+    try { return JSON.parse(line).jsonrpc !== '2.0'; } catch { return true; }
+  });
+  // Must also exit cleanly on stdin EOF: a timeout (signal), spawn error or non-zero status is a failure.
+  if (probe.error || probe.signal || probe.status !== 0 || !reply || !reply.includes('"serverInfo"') || polluted.length) {
+    const how = probe.error ? String(probe.error) : probe.signal ? `killed by ${probe.signal}` : `exit ${probe.status}`;
     throw new Error(
-      `build-plugin: bundle/index.js does not start.\n${(probe.stderr || probe.stdout || '(no output)').slice(0, 1200)}`
+      `build-plugin: bundle/index.js does not start cleanly (${JSON.stringify(otelEnv)}, ${how}).\n${(probe.stderr || probe.stdout || '(no output)').slice(0, 1200)}`
     );
   }
 }

@@ -6,6 +6,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { buildServer, buildUnconfiguredServer } from './server.js';
+import { toolCallsSettled } from './tracing.js';
 import { readJsonBody } from './httpServer.js';
 import { bearerValue, checkBearerToken } from './httpAuth.js';
 import { isBuildToken, mintAuthorized, mintBuildToken, mintSecret, resolveBuildToken, revokeBuildToken } from './buildTokens.js';
@@ -14,6 +15,7 @@ import {
   ALLOWED_API_ORIGINS_VAR,
   BASE_URL_HEADER,
   identityFromHeaders,
+  staticApiUrlFromEnv,
   PAT_HEADER,
   SESSION_TOKEN_HEADER,
   type RequestIdentity,
@@ -21,6 +23,9 @@ import {
 
 /** Upper bound on one MCP request body (a large lint_app_spec plan with seed rows stays far below it). */
 const MAX_REQUEST_BODY_BYTES = 64 * 1024 * 1024;
+
+/** stdio EOF: max wait for in-flight tool calls before flush + exit. */
+const EOF_TOOL_CALL_CAP_MS = 30_000;
 
 export interface GatewayHttpServer {
   server: Server;
@@ -237,6 +242,10 @@ export function createGatewayHttpServer(): GatewayHttpServer {
     const readsResource = !!parsedBody && typeof parsedBody === 'object' && !Array.isArray(parsedBody) &&
       (parsedBody as { method?: unknown }).method === 'resources/read';
 
+    // identity.apiUrl passed validateApiUrl above; the raw header never reaches here.
+    if (identity?.apiUrl) {
+      try { trustApiOrigin?.(identity.apiUrl); } catch (err) { console.error('tooljet-mcp: otel trust failed', err); }
+    }
     const server = buildServer(identity);
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: readsResource });
     res.on('close', () => {
@@ -282,7 +291,23 @@ async function serveHttp(): Promise<void> {
   );
 }
 
+let trustApiOrigin: ((url: string) => void) | undefined;
+let stopTracing: (() => Promise<void>) | undefined;
+
+/** Tracing is optional: a failed start leaves trustApiOrigin unset and the server running. */
+export async function startTracing(): Promise<void> {
+  try {
+    const otel = await import('./otel.js');
+    otel.startOtel(staticApiUrlFromEnv());
+    trustApiOrigin = otel.trustOtelOrigin;
+    stopTracing = otel.shutdownOtel;
+  } catch (err) {
+    console.error('tooljet-mcp: OpenTelemetry failed to start', err);
+  }
+}
+
 async function main(): Promise<void> {
+  if (process.env.ENABLE_OTEL === 'true') await startTracing();
   if (process.env.MCP_TRANSPORT === 'http') {
     await serveHttp();
     return;
@@ -300,6 +325,17 @@ async function main(): Promise<void> {
     server = buildUnconfiguredServer(reason);
   }
   await server.connect(new StdioServerTransport());
+  // stdin EOF: let in-flight tool calls reply (half-close clients), then bounded flush and exit.
+  // An in-flight export would block beforeExit, hence the explicit exit.
+  const stop = stopTracing;
+  if (stop) {
+    process.stdin.once('end', () => void (async () => {
+      await toolCallsSettled(EOF_TOOL_CALL_CAP_MS);
+      await new Promise<void>((resolve) => setImmediate(resolve)); // SDK sends the reply a few ticks after settle
+      await new Promise<void>((resolve) => process.stdout.write('', () => resolve()));
+      await stop();
+    })().finally(() => process.exit()));
+  }
 }
 
 /**

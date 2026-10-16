@@ -59,6 +59,7 @@ import { listEventsTool } from './listEvents.js';
 import { updateEventsTool } from './updateEvents.js';
 import { deleteEventTool } from './deleteEvent.js';
 import { withToolTelemetry } from '../telemetry.js';
+import { withToolSpan, type ToolExtra } from '../tracing.js';
 import {
   runtimeFreshness,
   staleRuntimeResult,
@@ -192,13 +193,13 @@ export function registerTools(
         inputSchema: tool.strictInput ? z.object(tool.inputSchema).strict() : tool.inputSchema,
         annotations: tool.annotations,
       },
-      (args: any) => withToolTelemetry(tool.name, async () => {
+      (args: any, extra: ToolExtra) => withToolSpan(tool.name, extra, () => withToolTelemetry(tool.name, async () => {
         const status = runtime.status();
         if (status.restart_required && tool.name !== 'get_runtime_info') {
           return staleRuntimeResult(status);
         }
         return withRuntimeStatus(await tool.handler(args), status);
-      }) as any
+      })) as any
     );
   }
 }
