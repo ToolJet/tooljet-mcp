@@ -38,6 +38,7 @@ import {
   SAFE_GENERATED_FORM_FIELD_TYPE_SET,
 } from './formFieldTypes.js';
 import { isModalV2Type } from './modalTypes.js';
+import { retiredUi2Name } from './ui2LegacyNames.js';
 import { lintUnformattedNumbers } from './numberFormatLint.js';
 import { lintCopiedCards } from './repeatedCardsLint.js';
 import { lintTallContainers } from './containerExtentLint.js';
@@ -1875,6 +1876,14 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
       if (knownKeys.includes(key)) continue;
       if (sectionName === 'property' && STYLE_KEYS_IN_PROPERTIES.has(key)) continue;
       if (sectionName === 'property' && INSPECTOR_ONLY_PROPERTIES[spec.type ?? '']?.includes(key)) continue;
+      const renamed = sectionName === 'property' ? retiredUi2Name(spec.type, 'properties', key) : undefined;
+      if (renamed) {
+        errors.push(
+          `Component "${label}": ${spec.type} property "${key}" was renamed "${renamed}"; the old key is ignored. ` +
+            `Write properties.${renamed} instead.`
+        );
+        continue;
+      }
       const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
       const alias =
         aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget))
@@ -3042,9 +3051,6 @@ export function lintRenderedGeometry(components: LintComponent[], context: Geome
   return [...lintRenderedGeometryBlocking(components, context), ...lintRenderedGeometryAdvisory(components)];
 }
 
-/** FlexContainer's ant card header (FlexContainer.jsx): drawn only with a title or an extra. */
-const FLEX_ANT_CARD_HEADER_PX = 56;
-
 function flexNumber(value: unknown, fallback: number): number {
   const text = typeof value === 'string' ? value.replace(/[{}\s]/g, '').replace(/px$/, '') : value;
   const n = typeof text === 'number' ? text : typeof text === 'string' && text !== '' ? Number(text) : NaN;
@@ -3065,26 +3071,24 @@ export function lintFlexContainerFit(components: LintComponent[]): string[] {
     if (!children.length) continue;
     const props = container.properties;
     // Only a fixed height cuts content off: dynamic height is the create default (tooljetClient), and ToolJet always
-    // fits a card (antCard, shadcnCard) or a row to its content in the viewer (frontend dynamicHeightPolicy).
+    // fits a card (shadcnCard) or a row to its content in the viewer (frontend dynamicHeightPolicy).
     const dynamic = propVal(props, 'dynamicHeight');
     if (dynamic === undefined || isTruthyBinding(dynamic)) continue;
-    if (['antCard', 'shadcnCard'].includes(String(propVal(props, 'cardStyle') ?? ''))) continue;
+    if (propVal(props, 'cardStyle') === 'shadcnCard') continue;
     const padding = flexNumber(propVal(props, 'padding'), 12);
     const gap = flexNumber(propVal(props, 'gap'), 12);
     const direction = String(propVal(props, 'direction') ?? 'column');
     if (direction === 'row') continue;
-    const card = propVal(props, 'cardStyle') === 'antCard' &&
-      (Boolean(propVal(props, 'cardTitle')) || Boolean(propVal(props, 'cardExtra')));
     const heights = children.map((child) => renderedHeight(child, child.layouts?.desktop ?? child.layout));
     const content = direction === 'column'
       ? heights.reduce((sum, h) => sum + h, 0) + gap * (children.length - 1)
       : Math.max(...heights);
-    const needed = Math.ceil(content + 2 * padding + (card ? FLEX_ANT_CARD_HEADER_PX : 0) + 2);
+    const needed = Math.ceil(content + 2 * padding + 2);
     if (needed <= rect.height) continue;
     warnings.push(
       `FlexContainer "${container.name ?? container.id ?? '?'}": its ${children.length} ${direction === 'column' ? 'stacked ' : ''}children need about ` +
         `${needed}px (heights${direction === 'column' ? ` + ${gap}px gaps` : ''} + ${padding}px padding top and bottom` +
-        `${card ? ` + ${FLEX_ANT_CARD_HEADER_PX}px card header` : ''}) but the container is ${rect.height}px tall, so the rest is cut off. ` +
+        `) but the container is ${rect.height}px tall, so the rest is cut off. ` +
         'Raise its height, or set properties.dynamicHeight to {{true}} so it grows in view mode (the editor still shows the authored height).'
     );
   }

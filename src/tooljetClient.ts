@@ -2554,7 +2554,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       // card whose children grew scrolled inside or clipped them (Air India fleet build, 2026-10-09).
       properties:
         spec.type === 'FlexContainer' ? { dynamicHeight: { value: '{{true}}' }, ...(spec.properties ?? {}) } : spec.properties,
-      // A FlexContainer is layout: invisible unless the author gives it a surface (cardStyle 'antCard', or a
+      // A FlexContainer is layout: invisible unless the author gives it a surface (cardStyle 'shadcnCard', or a
       // background or border). ToolJet's own default draws every row and column as a bordered box.
       styles:
         spec.type === 'FlexContainer'
@@ -2565,7 +2565,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       // not for types it has no defaults for, which then count as hidden on desktop.
       others: { showOnDesktop: { value: '{{true}}' }, showOnMobile: { value: '{{false}}' }, ...(spec.others ?? {}) },
       // The editor always sends these two sections. For a widget type the server has no defaults for (for example
-      // the Ant Design pack) an omitted section is stored as null, and one null section stops the page loading.
+      // the UI 2.0 widgets) an omitted section is stored as null, and one null section stops the page loading.
       general: {},
       generalStyles: { boxShadow: { value: '0px 0px 0px 0px #00000040' } },
     };

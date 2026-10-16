@@ -5,7 +5,7 @@ metadata:
   generated_by: scripts/generate-skill.mjs
   sources:
     - Source-verified component binding rules (22 components)
-    - ToolJet WidgetManager catalog (101 built-in components)
+    - ToolJet WidgetManager catalog (150 built-in components)
     - ToolJet appCanvasConstants (grid mechanics)
 ---
 

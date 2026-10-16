@@ -1,7 +1,7 @@
 /* A section taller than what it holds (Restaurant POS, 2026-10-11: a 1500px row around two ~900px cards drew a tall
    empty panel under them). A FlexContainer that is not a card keeps its authored height as a floor in the viewer even
    with dynamic height on (FlexContainer.jsx: minHeight = height), so the band below its content never closes; a card
-   (antCard, shadcnCard) fits its content and is exempt. Advisory: children's heights are the authored estimates. */
+   (cardStyle shadcnCard) fits its content and is exempt. Advisory: children's heights are the authored estimates. */
 import { decodeComponentParent } from './componentParent.js';
 
 interface Rect { top?: number; width?: number; height?: number }
@@ -32,7 +32,7 @@ const flag = (value: unknown): boolean | undefined => {
   return text === 'true' ? true : text === 'false' ? false : undefined;
 };
 const height = (c: Spec): number => (c.layouts?.desktop ?? c.layout)?.height ?? 0;
-const isCard = (c: Spec): boolean => ['antCard', 'shadcnCard'].includes(String(valueOf(c.properties, 'cardStyle') ?? ''));
+const isCard = (c: Spec): boolean => valueOf(c.properties, 'cardStyle') === 'shadcnCard';
 // Overlays take no room in the page flow.
 const OVERLAYS = new Set(['ModalV2', 'Modal', 'ShadDialog']);
 const CARD_HEADER_PX = 56;

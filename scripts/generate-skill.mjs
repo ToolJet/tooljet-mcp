@@ -71,7 +71,7 @@ function readWidgetCatalog() {
   const items = [];
   for (const f of files) {
     const txt = readFileSync(resolve(dir, f), 'utf8');
-    // Hand-written configs use bare keys and single quotes; generated ones (the Ant Design pack) are JSON literals.
+    // Configs use bare keys and single quotes; a quoted key or a double-quoted value is accepted too.
     const field = (key) => txt.match(new RegExp(`(?:\\b${key}|"${key}"):\\s*(?:'([^']+)'|"([^"]+)")`))?.slice(1).find(Boolean);
     const name = field('name');
     const desc = field('description');

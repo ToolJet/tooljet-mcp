@@ -74,7 +74,7 @@ const isLabelledField = (component: ComponentSpec): boolean =>
   FIELD_TYPES.has(component.type) && text(prop(component, 'label')) !== '';
 const isSurface = (component: ComponentSpec): boolean => {
   if (component.type !== 'FlexContainer') return false;
-  if (['shadcnCard', 'antCard'].includes(text(prop(component, 'cardStyle')))) return true;
+  if (text(prop(component, 'cardStyle')) === 'shadcnCard') return true;
   const background = styleText(component, 'backgroundColor').toLowerCase();
   return background !== '' && background !== 'transparent' && !/^#[0-9a-f]{6}00$/.test(background);
 };
@@ -230,7 +230,7 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
     const content = isRow(card) ? Math.max(...heights) : heights.reduce((a, b) => a + b, 0) + gap * (inner.length - 1);
     const title = text(prop(card, 'cardTitle'));
     const extra = text(prop(card, 'cardExtra'));
-    const band = text(prop(card, 'cardStyle')) === 'antCard' ? (title || extra ? 56 : 0) : extra ? 70 : title ? 48 : 0;
+    const band = extra ? 70 : title ? 48 : 0;
     const needed = Math.ceil(content + pad * 2 + 6 + band);
     const rects = [card.layout, card.layouts?.desktop].filter(
       (rect): rect is NonNullable<ComponentSpec['layout']> => !!rect && typeof rect.height === 'number'

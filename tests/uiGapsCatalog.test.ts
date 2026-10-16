@@ -23,7 +23,7 @@ describe('ToolJet UI 2.0 component gaps in the catalog', () => {
     expect(keys(schedule)).toEqual(
       expect.arrayContaining(['resources', 'bookings', 'startField', 'endField', 'resourceField', 'titleField', 'statusField'])
     );
-    expect(schedule.authoringHints.usage).toMatch(/onSlotClick/);
+    expect(schedule.authoringHints.usage).toMatch(/onSlotClicked/);
     expect(schedule.authoringHints.usage).toMatch(/selectedSlot/);
   });
 

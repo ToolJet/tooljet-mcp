@@ -2,6 +2,7 @@ import { getComponentSchema } from './catalog.js';
 import { STYLE_KEYS_IN_PROPERTIES, PROPERTY_KEY_ALIASES, isMisplacedStyleKey, nearestCatalogKey } from './lint.js';
 import type { ComponentSpec } from './tooljetClient.js';
 import { separateAdjacentClosingBracesDeep } from './bindingBraces.js';
+import { retiredUi2Name } from './ui2LegacyNames.js';
 
 export interface ComponentNormalization<T extends ComponentSpec = ComponentSpec> {
   component: T;
@@ -81,6 +82,8 @@ function isStrippableUnknownKey(
   knownKeys: string[]
 ): boolean {
   if (knownKeys.includes(key)) return false;
+  // A UI 2.0 widget's retired property key (ShadImage src) is a mistake, not cruft: lint names its replacement.
+  if (section === 'properties' && retiredUi2Name(type, 'properties', key)) return false;
   // These are not harmless cruft: stripping an attempted edit preselection
   // silently opens a blank selector and can erase a foreign key on Save.
   if (type === 'DropdownV2' && section === 'properties' && ['value', 'defaultValue'].includes(key)) return false;
@@ -216,11 +219,11 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
     );
   }
 
-  // A pack card (cardStyle shadcnCard / antCard) fits its content; equal heights in a row come from the row's
+  // A UI 2.0 card (cardStyle shadcnCard) fits its content; equal heights in a row come from the row's
   // stretch. A churn card fixed at 780px with dynamicHeight off kept 140px under its table.
   if (component.type === 'FlexContainer') {
     const card = propValue(properties, 'cardStyle');
-    if ((card === 'shadcnCard' || card === 'antCard') && !isTruthy(propValue(properties, 'dynamicHeight'))) {
+    if (card === 'shadcnCard' && !isTruthy(propValue(properties, 'dynamicHeight'))) {
       setProperty('dynamicHeight', '{{true}}');
     }
   }

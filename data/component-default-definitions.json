@@ -1,6 +1,6 @@
 {
  "source": "ToolJet/ToolJet",
- "revision": "314c8ca22d9508bc9089281437f8c1251f5241fc",
+ "revision": "0e3fb963f4b856829e2a79d6a1a656e87917efc8",
  "definitions": {
   "Accordion": {
    "properties": {
@@ -3132,6 +3132,9 @@
     "cssClass": {
      "value": ""
     },
+    "backgroundColor": {
+     "value": ""
+    },
     "boxShadow": {
      "value": "0px 0px 0px 0px #00000040"
     }
@@ -3177,7 +3180,7 @@
      "value": ""
     },
     "iconColor": {
-     "value": "#000"
+     "value": "var(--cc-default-icon)"
     },
     "iconAlign": {
      "value": "center"

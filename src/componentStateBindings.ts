@@ -1,4 +1,6 @@
 import { parse, parseExpression } from '@babel/parser';
+import { getComponentSchema } from './catalog.js';
+import { retiredUi2Name } from './ui2LegacyNames.js';
 
 type Node = Record<string, unknown> & { type: string };
 type Component = { name?: string; type?: string };
@@ -63,7 +65,9 @@ export function lintComponentStateBindings(value: unknown, components: Component
       if (isNode(owner.object) && owner.object.type === 'Identifier' && owner.object.name === 'components') {
         const name = memberName(owner);
         const type = name ? components.find((c) => c.name === name)?.type : undefined;
-        if (name && type && WRONG_ALIASES[type]?.[prop]) wrongNames.add(`${name}\u0000${type}\u0000${prop}`);
+        if (name && type && (WRONG_ALIASES[type]?.[prop] || retiredUi2Message(type, prop, name))) {
+          wrongNames.add(`${name}\u0000${type}\u0000${prop}`);
+        }
       }
     }
     Object.values(node).forEach(visit);
@@ -71,8 +75,28 @@ export function lintComponentStateBindings(value: unknown, components: Component
   visit(root);
   return shadowed ? [] : [...wrongNames].map((key) => {
     const [name, type, prop] = key.split('\u0000') as [string, string, string];
-    return `${path}: ${WRONG_ALIASES[type]![prop]!(name)}`;
+    return `${path}: ${WRONG_ALIASES[type]?.[prop]?.(name) ?? retiredUi2Message(type, prop, name)}`;
   });
+}
+
+/** A UI 2.0 widget's retired exposed value or action (ui2LegacyNames.ts) read in a binding, unless the name is still
+ *  current for the type: the old name reads undefined. */
+function retiredUi2Message(type: string, prop: string, name: string): string | undefined {
+  if (!type.startsWith('Shad')) return undefined;
+  const schema = getComponentSchema(type);
+  if (schema?.exposedVariables?.some((variable) => variable.name === prop)) return undefined;
+  if (schema?.actions?.some((action) => action.handle === prop)) return undefined;
+  const exposed = retiredUi2Name(type, 'exposed', prop);
+  if (exposed) {
+    return `${type} "${name}" exposes ${exposed}, not ${prop} (renamed); read components.${name}.${exposed}. ` +
+      'The old name is undefined at runtime.';
+  }
+  const action = retiredUi2Name(type, 'actions', prop);
+  if (action) {
+    return `${type} "${name}" action ${prop}() was renamed ${action}(); call components.${name}.${action}(...). ` +
+      'The old name is undefined at runtime.';
+  }
+  return undefined;
 }
 
 /** Properties a binding reads that are proven wrong for that component type, with the message naming the right one. */

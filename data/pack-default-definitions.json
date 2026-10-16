@@ -584,6 +584,110 @@
     }
    }
   },
+  "ShadCardGrid": {
+   "properties": {
+    "data": {
+     "value": "{{[{ id: 1, name: 'Lemon herb roast chicken', cuisine: 'Dinner', prep: 20, serves: 4, note: 'Crisp skin, bright pan sauce' }, { id: 2, name: 'Miso glazed salmon', cuisine: 'Dinner', prep: 15, serves: 2, note: 'Sweet, salty, ten minutes under the grill' }, { id: 3, name: 'Blueberry oat pancakes', cuisine: 'Breakfast', prep: 10, serves: 3, note: 'Fluffy, no buttermilk needed' }]}}"
+    },
+    "titleField": {
+     "value": "name"
+    },
+    "subtitleField": {
+     "value": ""
+    },
+    "imageField": {
+     "value": ""
+    },
+    "badgeField": {
+     "value": "cuisine"
+    },
+    "badgeFields": {
+     "value": ""
+    },
+    "eyebrowField": {
+     "value": ""
+    },
+    "avatarField": {
+     "value": ""
+    },
+    "descriptionField": {
+     "value": "note"
+    },
+    "progressField": {
+     "value": ""
+    },
+    "metaFields": {
+     "value": "prep:{} min, serves:Serves"
+    },
+    "idField": {
+     "value": "id"
+    },
+    "layout": {
+     "value": "stacked"
+    },
+    "columns": {
+     "value": "{{3}}"
+    },
+    "minCardWidth": {
+     "value": "{{240}}"
+    },
+    "imageAspect": {
+     "value": "4/3"
+    },
+    "showImage": {
+     "value": "{{true}}"
+    },
+    "cardStyle": {
+     "value": "elevated"
+    },
+    "highlightSelected": {
+     "value": "{{true}}"
+    },
+    "emptyText": {
+     "value": "Nothing here yet"
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "loadingIndicator": {
+     "value": "spinner"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "collapseWhenHidden": {
+     "value": "{{false}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    },
+    "titleFontFamily": {
+     "value": "theme"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
   "ShadCarousel": {
    "properties": {
     "slides": {
@@ -630,6 +734,86 @@
     },
     "loadingIndicator": {
      "value": "spinner"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "collapseWhenHidden": {
+     "value": "{{false}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadChat": {
+   "properties": {
+    "chatTitle": {
+     "value": "Chat"
+    },
+    "initialChat": {
+     "value": "{{[{ message: 'Hi! Ask me anything about your orders, invoices or deliveries.', messageId: 'welcome-1', timestamp: 'new Date().toISOString()', name: 'Assistant', avatar: '', type: 'response' }]}}"
+    },
+    "userName": {
+     "value": "{{globals.currentUser.firstName}}"
+    },
+    "userAvatar": {
+     "value": ""
+    },
+    "respondentName": {
+     "value": "Assistant"
+    },
+    "respondentAvatar": {
+     "value": ""
+    },
+    "placeholder": {
+     "value": "Ask me anything!"
+    },
+    "emptyText": {
+     "value": "Start the conversation"
+    },
+    "disableInput": {
+     "value": "{{false}}"
+    },
+    "loadingHistory": {
+     "value": "{{false}}"
+    },
+    "loadingResponse": {
+     "value": "{{false}}"
+    },
+    "enableClearHistoryButton": {
+     "value": "{{true}}"
+    },
+    "enableDownloadHistoryButton": {
+     "value": "{{true}}"
+    },
+    "showAvatars": {
+     "value": "{{true}}"
+    },
+    "showTimestamps": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
     },
     "visibility": {
      "value": "{{true}}"
@@ -875,6 +1059,104 @@
     },
     "loadingState": {
      "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "collapseWhenHidden": {
+     "value": "{{false}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadComboChart": {
+   "properties": {
+    "data": {
+     "value": "{{[{ month: 'Jan', revenue: 42000, orders: 310, margin: 31 }, { month: 'Feb', revenue: 47500, orders: 342, margin: 33 }, { month: 'Mar', revenue: 45200, orders: 328, margin: 29 }, { month: 'Apr', revenue: 52800, orders: 371, margin: 34 }, { month: 'May', revenue: 58100, orders: 402, margin: 36 }, { month: 'Jun', revenue: 61400, orders: 425, margin: 35 }]}}"
+    },
+    "xField": {
+     "value": "month"
+    },
+    "barFields": {
+     "value": "{{['revenue']}}"
+    },
+    "lineFields": {
+     "value": "{{['margin']}}"
+    },
+    "rightAxisFields": {
+     "value": "{{['margin']}}"
+    },
+    "stackBars": {
+     "value": "{{false}}"
+    },
+    "curve": {
+     "value": "monotone"
+    },
+    "showDots": {
+     "value": "{{true}}"
+    },
+    "strokeWidth": {
+     "value": "{{2}}"
+    },
+    "yAxisFormat": {
+     "value": "number"
+    },
+    "rightAxisFormat": {
+     "value": "percent"
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "valuePrefix": {
+     "value": ""
+    },
+    "valueSuffix": {
+     "value": ""
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "animate": {
+     "value": "{{true}}"
+    },
+    "showGrid": {
+     "value": "{{true}}"
+    },
+    "showLegend": {
+     "value": "{{true}}"
+    },
+    "seriesLabels": {
+     "value": "{{{ revenue: 'Revenue', margin: 'Margin' }}}"
+    },
+    "colors": {
+     "value": "{{[]}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "loadingIndicator": {
+     "value": "spinner"
     },
     "visibility": {
      "value": "{{true}}"
@@ -1415,6 +1697,86 @@
     }
    }
   },
+  "ShadFunnelChart": {
+   "properties": {
+    "data": {
+     "value": "{{[{ stage: 'Visited', count: 12480 }, { stage: 'Signed up', count: 3920 }, { stage: 'Activated', count: 2210 }, { stage: 'Trial', count: 1180 }, { stage: 'Paid', count: 412 }]}}"
+    },
+    "stageField": {
+     "value": "stage"
+    },
+    "valueField": {
+     "value": "count"
+    },
+    "showConversion": {
+     "value": "{{true}}"
+    },
+    "conversionBase": {
+     "value": "previous"
+    },
+    "align": {
+     "value": "center"
+    },
+    "colorByStage": {
+     "value": "{{false}}"
+    },
+    "yAxisFormat": {
+     "value": "number"
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "valuePrefix": {
+     "value": ""
+    },
+    "valueSuffix": {
+     "value": ""
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "animate": {
+     "value": "{{true}}"
+    },
+    "colors": {
+     "value": "{{[]}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "loadingIndicator": {
+     "value": "spinner"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "collapseWhenHidden": {
+     "value": "{{false}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
   "ShadHeading": {
    "properties": {
     "text": {
@@ -1463,6 +1825,169 @@
     },
     "textTransform": {
      "value": "none"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadHeatmapChart": {
+   "properties": {
+    "data": {
+     "value": "{{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].flatMap((day, d) => ['08', '10', '12', '14', '16', '18'].map((hour, h) => ({ day, hour: hour + ':00', tickets: Math.round((d < 5 ? 10 : 4) * (1 + Math.sin((h + 1) / 2)) + d) })))}}"
+    },
+    "xField": {
+     "value": "hour"
+    },
+    "yField": {
+     "value": "day"
+    },
+    "valueField": {
+     "value": "tickets"
+    },
+    "xOrder": {
+     "value": "{{[]}}"
+    },
+    "yOrder": {
+     "value": "{{[]}}"
+    },
+    "showValues": {
+     "value": "{{false}}"
+    },
+    "cellGap": {
+     "value": "{{3}}"
+    },
+    "yAxisFormat": {
+     "value": "number"
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "valuePrefix": {
+     "value": ""
+    },
+    "valueSuffix": {
+     "value": ""
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "showLegend": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "loadingIndicator": {
+     "value": "spinner"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "collapseWhenHidden": {
+     "value": "{{false}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadHero": {
+   "properties": {
+    "eyebrow": {
+     "value": "Operations"
+    },
+    "title": {
+     "value": "Good morning, Ada"
+    },
+    "subtitle": {
+     "value": "Here is what needs you today."
+    },
+    "meta": {
+     "value": "{{['Sun, 11 Oct', '14 bookings', '3 need a reply']}}"
+    },
+    "actionLabel": {
+     "value": "New booking"
+    },
+    "secondaryActionLabel": {
+     "value": ""
+    },
+    "asideValue": {
+     "value": ""
+    },
+    "asideLabel": {
+     "value": ""
+    },
+    "icon": {
+     "value": ""
+    },
+    "background": {
+     "value": "tint"
+    },
+    "imageUrl": {
+     "value": ""
+    },
+    "align": {
+     "value": "left"
+    },
+    "size": {
+     "value": "default"
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "loadingIndicator": {
+     "value": "spinner"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "collapseWhenHidden": {
+     "value": "{{false}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    },
+    "titleFontFamily": {
+     "value": "theme"
     }
    },
    "others": {
@@ -1874,7 +2399,7 @@
      "value": ""
     },
     "yAxisFormat": {
-     "value": "currency"
+     "value": "number"
     },
     "currency": {
      "value": "USD"
@@ -2004,7 +2529,7 @@
   "ShadListView": {
    "properties": {
     "data": {
-     "value": "{{[{ id: 1, name: 'Ada Lovelace', role: 'Engineering' }, { id: 2, name: 'Alan Turing', role: 'Research' }, { id: 3, name: 'Grace Hopper', role: 'Platform' }]}}"
+     "value": "{{[{ id: 1, name: 'Ada Lovelace', email: 'ada@example.com', role: 'Engineering' }, { id: 2, name: 'Alan Turing', email: 'alan@example.com', role: 'Research' }, { id: 3, name: 'Grace Hopper', email: 'grace@example.com', role: 'Platform' }]}}"
     },
     "mode": {
      "value": "list"
@@ -2073,6 +2598,9 @@
     },
     "itemShadow": {
      "value": "none"
+    },
+    "itemVariant": {
+     "value": "outline"
     }
    },
    "others": {
@@ -2240,151 +2768,6 @@
    "styles": {
     "boxShadow": {
      "value": "0px 0px 0px 0px #00000040"
-    }
-   },
-   "others": {
-    "showOnDesktop": {
-     "value": "{{true}}"
-    },
-    "showOnMobile": {
-     "value": "{{false}}"
-    }
-   }
-  },
-  "ShadChat": {
-   "properties": {
-    "chatTitle": {
-     "value": "Chat"
-    },
-    "initialChat": {
-     "value": "{{[{ message: 'Hi! Ask me anything about your orders, invoices or deliveries.', messageId: 'welcome-1', timestamp: 'new Date().toISOString()', name: 'Assistant', avatar: '', type: 'response' }]}}"
-    },
-    "userName": {
-     "value": "{{globals.currentUser.firstName}}"
-    },
-    "userAvatar": {
-     "value": ""
-    },
-    "respondentName": {
-     "value": "Assistant"
-    },
-    "respondentAvatar": {
-     "value": ""
-    },
-    "placeholder": {
-     "value": "Ask me anything!"
-    },
-    "emptyText": {
-     "value": "Start the conversation"
-    },
-    "disableInput": {
-     "value": "{{false}}"
-    },
-    "loadingHistory": {
-     "value": "{{false}}"
-    },
-    "loadingResponse": {
-     "value": "{{false}}"
-    },
-    "enableClearHistoryButton": {
-     "value": "{{true}}"
-    },
-    "enableDownloadHistoryButton": {
-     "value": "{{true}}"
-    },
-    "showAvatars": {
-     "value": "{{true}}"
-    },
-    "showTimestamps": {
-     "value": "{{true}}"
-    },
-    "loadingState": {
-     "value": "{{false}}"
-    },
-    "visibility": {
-     "value": "{{true}}"
-    },
-    "collapseWhenHidden": {
-     "value": "{{false}}"
-    },
-    "disabledState": {
-     "value": "{{false}}"
-    },
-    "tooltipFormat": {
-     "value": "plainText"
-    },
-    "tooltip": {
-     "value": ""
-    }
-   },
-   "styles": {
-    "boxShadow": {
-     "value": "0px 0px 0px 0px #00000040"
-    }
-   },
-   "others": {
-    "showOnDesktop": {
-     "value": "{{true}}"
-    },
-    "showOnMobile": {
-     "value": "{{false}}"
-    }
-   }
-  },
-  "ShadQuestionnaire": {
-   "properties": {
-    "items": {
-     "value": "{{[\n  { name: 'role', prompt: 'What best describes your role?', required: true, type: 'single', choices: [{ label: 'Operations', description: 'Run day-to-day work' }, { label: 'Finance' }, { label: 'Engineering' }], other: true },\n  { name: 'goals', prompt: 'What do you want to get done first?', description: 'Pick all that apply.', type: 'multiple', choices: ['Track orders', 'Approve requests', 'Report on spend'] },\n  { name: 'notes', prompt: 'Anything else we should know?', type: 'text', placeholder: 'Optional' }\n]}}"
-    },
-    "defaultAnswers": {
-     "value": "{{{}}}"
-    },
-    "shortcuts": {
-     "value": "letters"
-    },
-    "showProgress": {
-     "value": "{{true}}"
-    },
-    "submitLabel": {
-     "value": "Submit"
-    },
-    "completeTitle": {
-     "value": "Thanks for your answers"
-    },
-    "completeText": {
-     "value": "We will use them to set up your workspace."
-    },
-    "surface": {
-     "value": "card"
-    },
-    "dynamicHeight": {
-     "value": "{{true}}"
-    },
-    "loadingState": {
-     "value": "{{false}}"
-    },
-    "visibility": {
-     "value": "{{true}}"
-    },
-    "collapseWhenHidden": {
-     "value": "{{false}}"
-    },
-    "disabledState": {
-     "value": "{{false}}"
-    },
-    "tooltipFormat": {
-     "value": "plainText"
-    },
-    "tooltip": {
-     "value": ""
-    }
-   },
-   "styles": {
-    "boxShadow": {
-     "value": "0px 0px 0px 0px #00000040"
-    },
-    "titleFontFamily": {
-     "value": "theme"
     }
    },
    "others": {
@@ -2948,6 +3331,163 @@
     }
    }
   },
+  "ShadProgressList": {
+   "properties": {
+    "data": {
+     "value": "{{[{ id: 1, label: 'Marketing', spent: 18400, budget: 25000, status: 'On track', note: '12 days left in the quarter' }, { id: 2, label: 'Engineering tools', spent: 9100, budget: 10000, status: 'At risk', note: 'Renewals due in November' }, { id: 3, label: 'Travel', spent: 7600, budget: 6000, status: 'Over budget', note: 'Over by $1,600' }, { id: 4, label: 'Training', spent: 1200, budget: 5000, status: '', note: 'Courses start in November' }]}}"
+    },
+    "labelField": {
+     "value": "label"
+    },
+    "valueField": {
+     "value": "spent"
+    },
+    "targetField": {
+     "value": "budget"
+    },
+    "percentField": {
+     "value": ""
+    },
+    "captionField": {
+     "value": "note"
+    },
+    "statusField": {
+     "value": "status"
+    },
+    "valueFormat": {
+     "value": "currency"
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "idField": {
+     "value": "id"
+    },
+    "autoTone": {
+     "value": "none"
+    },
+    "showValues": {
+     "value": "{{true}}"
+    },
+    "showPercent": {
+     "value": "{{true}}"
+    },
+    "barSize": {
+     "value": "default"
+    },
+    "listStyle": {
+     "value": "card"
+    },
+    "emptyText": {
+     "value": "Nothing to track yet"
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "loadingIndicator": {
+     "value": "spinner"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "collapseWhenHidden": {
+     "value": "{{false}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    },
+    "titleFontFamily": {
+     "value": "theme"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "ShadQuestionnaire": {
+   "properties": {
+    "items": {
+     "value": "{{[\n  { name: 'role', prompt: 'What best describes your role?', required: true, type: 'single', choices: [{ label: 'Operations', description: 'Run day-to-day work' }, { label: 'Finance' }, { label: 'Engineering' }], other: true },\n  { name: 'goals', prompt: 'What do you want to get done first?', description: 'Pick all that apply.', type: 'multiple', choices: ['Track orders', 'Approve requests', 'Report on spend'] },\n  { name: 'notes', prompt: 'Anything else we should know?', type: 'text', placeholder: 'Optional' }\n]}}"
+    },
+    "defaultAnswers": {
+     "value": "{{{}}}"
+    },
+    "shortcuts": {
+     "value": "letters"
+    },
+    "showProgress": {
+     "value": "{{true}}"
+    },
+    "submitLabel": {
+     "value": "Submit"
+    },
+    "completeTitle": {
+     "value": "Thanks for your answers"
+    },
+    "completeText": {
+     "value": "We will use them to set up your workspace."
+    },
+    "surface": {
+     "value": "card"
+    },
+    "dynamicHeight": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "collapseWhenHidden": {
+     "value": "{{false}}"
+    },
+    "disabledState": {
+     "value": "{{false}}"
+    },
+    "tooltipFormat": {
+     "value": "plainText"
+    },
+    "tooltip": {
+     "value": ""
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    },
+    "titleFontFamily": {
+     "value": "theme"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
   "ShadRadarChart": {
    "properties": {
     "data": {
@@ -3342,58 +3882,73 @@
     }
    }
   },
-  "ShadProgressList": {
+  "ShadScatterChart": {
    "properties": {
     "data": {
-     "value": "{{[{ id: 1, label: 'Marketing', spent: 18400, budget: 25000, status: 'On track', note: '12 days left in the quarter' }, { id: 2, label: 'Engineering tools', spent: 9100, budget: 10000, status: 'At risk', note: 'Renewals due in November' }, { id: 3, label: 'Travel', spent: 7600, budget: 6000, status: 'Over budget', note: 'Over by $1,600' }, { id: 4, label: 'Training', spent: 1200, budget: 5000, status: '', note: 'Courses start in November' }]}}"
+     "value": "{{[{ account: 'Northwind', spend: 12, revenue: 48, seats: 40, segment: 'Mid-market' }, { account: 'Globex', spend: 30, revenue: 95, seats: 120, segment: 'Enterprise' }, { account: 'Initech', spend: 8, revenue: 21, seats: 15, segment: 'SMB' }, { account: 'Umbrella', spend: 26, revenue: 61, seats: 90, segment: 'Enterprise' }, { account: 'Hooli', spend: 18, revenue: 70, seats: 55, segment: 'Mid-market' }, { account: 'Vandelay', spend: 5, revenue: 14, seats: 10, segment: 'SMB' }, { account: 'Stark', spend: 34, revenue: 128, seats: 150, segment: 'Enterprise' }, { account: 'Wonka', spend: 14, revenue: 33, seats: 30, segment: 'SMB' }]}}"
     },
-    "labelField": {
-     "value": "label"
+    "xField": {
+     "value": "spend"
     },
-    "valueField": {
-     "value": "spent"
+    "yField": {
+     "value": "revenue"
     },
-    "targetField": {
-     "value": "budget"
+    "sizeField": {
+     "value": "seats"
     },
-    "percentField": {
-     "value": ""
+    "groupField": {
+     "value": "segment"
     },
-    "captionField": {
-     "value": "note"
+    "nameField": {
+     "value": "account"
     },
-    "statusField": {
-     "value": "status"
+    "xLabel": {
+     "value": "Marketing spend ($k)"
     },
-    "valueFormat": {
-     "value": "currency"
+    "yLabel": {
+     "value": "Revenue ($k)"
+    },
+    "xAxisFormat": {
+     "value": "number"
+    },
+    "yAxisFormat": {
+     "value": "number"
     },
     "currency": {
      "value": "USD"
     },
-    "idField": {
-     "value": "id"
+    "referenceX": {
+     "value": ""
     },
-    "autoTone": {
-     "value": "none"
+    "referenceY": {
+     "value": ""
     },
-    "showValues": {
-     "value": "{{true}}"
+    "pointSize": {
+     "value": "{{6}}"
     },
-    "showPercent": {
-     "value": "{{true}}"
+    "fillOpacity": {
+     "value": ""
     },
-    "barSize": {
-     "value": "default"
+    "valuePrefix": {
+     "value": ""
     },
-    "listStyle": {
-     "value": "card"
+    "valueSuffix": {
+     "value": ""
     },
     "emptyText": {
-     "value": "Nothing to track yet"
+     "value": "No data"
     },
-    "dynamicHeight": {
+    "animate": {
      "value": "{{true}}"
+    },
+    "showGrid": {
+     "value": "{{true}}"
+    },
+    "showLegend": {
+     "value": "{{true}}"
+    },
+    "colors": {
+     "value": "{{[]}}"
     },
     "loadingState": {
      "value": "{{false}}"
@@ -3420,9 +3975,6 @@
    "styles": {
     "boxShadow": {
      "value": "0px 0px 0px 0px #00000040"
-    },
-    "titleFontFamily": {
-     "value": "theme"
     }
    },
    "others": {
@@ -4016,7 +4568,7 @@
      "value": "{{[{ label: 'Revenue', value: 48210, delta: 12.4, caption: 'vs last month' }, { label: 'Orders', value: 1284, format: 'number', delta: 5.1, caption: 'vs last month' }, { label: 'Average order', value: 37.55, delta: -2.3, caption: 'vs last month' }, { label: 'Refund rate', value: 2.1, format: 'percent', delta: -0.4, deltaFormat: 'number', lowerIsBetter: true, caption: 'points' }]}}"
     },
     "valueFormat": {
-     "value": "currency"
+     "value": "auto"
     },
     "currency": {
      "value": "USD"
@@ -4820,555 +5372,6 @@
    "styles": {
     "boxShadow": {
      "value": "0px 0px 0px 0px #00000040"
-    }
-   },
-   "others": {
-    "showOnDesktop": {
-     "value": "{{true}}"
-    },
-    "showOnMobile": {
-     "value": "{{false}}"
-    }
-   }
-  },
-  "ShadComboChart": {
-   "properties": {
-    "data": {
-     "value": "{{[{ month: 'Jan', revenue: 42000, orders: 310, margin: 31 }, { month: 'Feb', revenue: 47500, orders: 342, margin: 33 }, { month: 'Mar', revenue: 45200, orders: 328, margin: 29 }, { month: 'Apr', revenue: 52800, orders: 371, margin: 34 }, { month: 'May', revenue: 58100, orders: 402, margin: 36 }, { month: 'Jun', revenue: 61400, orders: 425, margin: 35 }]}}"
-    },
-    "xField": {
-     "value": "month"
-    },
-    "barFields": {
-     "value": "{{['revenue']}}"
-    },
-    "lineFields": {
-     "value": "{{['margin']}}"
-    },
-    "rightAxisFields": {
-     "value": "{{['margin']}}"
-    },
-    "stackBars": {
-     "value": "{{false}}"
-    },
-    "curve": {
-     "value": "monotone"
-    },
-    "showDots": {
-     "value": "{{true}}"
-    },
-    "strokeWidth": {
-     "value": "{{2}}"
-    },
-    "yAxisFormat": {
-     "value": "currency"
-    },
-    "rightAxisFormat": {
-     "value": "percent"
-    },
-    "currency": {
-     "value": "USD"
-    },
-    "valuePrefix": {
-     "value": ""
-    },
-    "valueSuffix": {
-     "value": ""
-    },
-    "emptyText": {
-     "value": "No data"
-    },
-    "animate": {
-     "value": "{{true}}"
-    },
-    "showGrid": {
-     "value": "{{true}}"
-    },
-    "showLegend": {
-     "value": "{{true}}"
-    },
-    "seriesLabels": {
-     "value": "{{{ revenue: 'Revenue', margin: 'Margin' }}}"
-    },
-    "colors": {
-     "value": "{{[]}}"
-    },
-    "loadingState": {
-     "value": "{{false}}"
-    },
-    "loadingIndicator": {
-     "value": "spinner"
-    },
-    "visibility": {
-     "value": "{{true}}"
-    },
-    "collapseWhenHidden": {
-     "value": "{{false}}"
-    },
-    "disabledState": {
-     "value": "{{false}}"
-    },
-    "tooltipFormat": {
-     "value": "plainText"
-    },
-    "tooltip": {
-     "value": ""
-    }
-   },
-   "styles": {
-    "boxShadow": {
-     "value": "0px 0px 0px 0px #00000040"
-    }
-   },
-   "others": {
-    "showOnDesktop": {
-     "value": "{{true}}"
-    },
-    "showOnMobile": {
-     "value": "{{false}}"
-    }
-   }
-  },
-  "ShadFunnelChart": {
-   "properties": {
-    "data": {
-     "value": "{{[{ stage: 'Visited', count: 12480 }, { stage: 'Signed up', count: 3920 }, { stage: 'Activated', count: 2210 }, { stage: 'Trial', count: 1180 }, { stage: 'Paid', count: 412 }]}}"
-    },
-    "stageField": {
-     "value": "stage"
-    },
-    "valueField": {
-     "value": "count"
-    },
-    "showConversion": {
-     "value": "{{true}}"
-    },
-    "conversionBase": {
-     "value": "previous"
-    },
-    "align": {
-     "value": "center"
-    },
-    "colorByStage": {
-     "value": "{{false}}"
-    },
-    "yAxisFormat": {
-     "value": "number"
-    },
-    "currency": {
-     "value": "USD"
-    },
-    "valuePrefix": {
-     "value": ""
-    },
-    "valueSuffix": {
-     "value": ""
-    },
-    "emptyText": {
-     "value": "No data"
-    },
-    "animate": {
-     "value": "{{true}}"
-    },
-    "colors": {
-     "value": "{{[]}}"
-    },
-    "loadingState": {
-     "value": "{{false}}"
-    },
-    "loadingIndicator": {
-     "value": "spinner"
-    },
-    "visibility": {
-     "value": "{{true}}"
-    },
-    "collapseWhenHidden": {
-     "value": "{{false}}"
-    },
-    "disabledState": {
-     "value": "{{false}}"
-    },
-    "tooltipFormat": {
-     "value": "plainText"
-    },
-    "tooltip": {
-     "value": ""
-    }
-   },
-   "styles": {
-    "boxShadow": {
-     "value": "0px 0px 0px 0px #00000040"
-    }
-   },
-   "others": {
-    "showOnDesktop": {
-     "value": "{{true}}"
-    },
-    "showOnMobile": {
-     "value": "{{false}}"
-    }
-   }
-  },
-  "ShadScatterChart": {
-   "properties": {
-    "data": {
-     "value": "{{[{ account: 'Northwind', spend: 12, revenue: 48, seats: 40, segment: 'Mid-market' }, { account: 'Globex', spend: 30, revenue: 95, seats: 120, segment: 'Enterprise' }, { account: 'Initech', spend: 8, revenue: 21, seats: 15, segment: 'SMB' }, { account: 'Umbrella', spend: 26, revenue: 61, seats: 90, segment: 'Enterprise' }, { account: 'Hooli', spend: 18, revenue: 70, seats: 55, segment: 'Mid-market' }, { account: 'Vandelay', spend: 5, revenue: 14, seats: 10, segment: 'SMB' }, { account: 'Stark', spend: 34, revenue: 128, seats: 150, segment: 'Enterprise' }, { account: 'Wonka', spend: 14, revenue: 33, seats: 30, segment: 'SMB' }]}}"
-    },
-    "xField": {
-     "value": "spend"
-    },
-    "yField": {
-     "value": "revenue"
-    },
-    "sizeField": {
-     "value": "seats"
-    },
-    "groupField": {
-     "value": "segment"
-    },
-    "nameField": {
-     "value": "account"
-    },
-    "xLabel": {
-     "value": "Marketing spend ($k)"
-    },
-    "yLabel": {
-     "value": "Revenue ($k)"
-    },
-    "xAxisFormat": {
-     "value": "number"
-    },
-    "yAxisFormat": {
-     "value": "number"
-    },
-    "currency": {
-     "value": "USD"
-    },
-    "referenceX": {
-     "value": ""
-    },
-    "referenceY": {
-     "value": ""
-    },
-    "pointSize": {
-     "value": "{{6}}"
-    },
-    "fillOpacity": {
-     "value": ""
-    },
-    "valuePrefix": {
-     "value": ""
-    },
-    "valueSuffix": {
-     "value": ""
-    },
-    "emptyText": {
-     "value": "No data"
-    },
-    "animate": {
-     "value": "{{true}}"
-    },
-    "showGrid": {
-     "value": "{{true}}"
-    },
-    "showLegend": {
-     "value": "{{true}}"
-    },
-    "colors": {
-     "value": "{{[]}}"
-    },
-    "loadingState": {
-     "value": "{{false}}"
-    },
-    "loadingIndicator": {
-     "value": "spinner"
-    },
-    "visibility": {
-     "value": "{{true}}"
-    },
-    "collapseWhenHidden": {
-     "value": "{{false}}"
-    },
-    "disabledState": {
-     "value": "{{false}}"
-    },
-    "tooltipFormat": {
-     "value": "plainText"
-    },
-    "tooltip": {
-     "value": ""
-    }
-   },
-   "styles": {
-    "boxShadow": {
-     "value": "0px 0px 0px 0px #00000040"
-    }
-   },
-   "others": {
-    "showOnDesktop": {
-     "value": "{{true}}"
-    },
-    "showOnMobile": {
-     "value": "{{false}}"
-    }
-   }
-  },
-  "ShadHeatmapChart": {
-   "properties": {
-    "data": {
-     "value": "{{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].flatMap((day, d) => ['08', '10', '12', '14', '16', '18'].map((hour, h) => ({ day, hour: hour + ':00', tickets: Math.round((d < 5 ? 10 : 4) * (1 + Math.sin((h + 1) / 2)) + d) })))}}"
-    },
-    "xField": {
-     "value": "hour"
-    },
-    "yField": {
-     "value": "day"
-    },
-    "valueField": {
-     "value": "tickets"
-    },
-    "xOrder": {
-     "value": "{{[]}}"
-    },
-    "yOrder": {
-     "value": "{{[]}}"
-    },
-    "showValues": {
-     "value": "{{false}}"
-    },
-    "cellGap": {
-     "value": "{{3}}"
-    },
-    "yAxisFormat": {
-     "value": "number"
-    },
-    "currency": {
-     "value": "USD"
-    },
-    "valuePrefix": {
-     "value": ""
-    },
-    "valueSuffix": {
-     "value": ""
-    },
-    "emptyText": {
-     "value": "No data"
-    },
-    "showLegend": {
-     "value": "{{true}}"
-    },
-    "loadingState": {
-     "value": "{{false}}"
-    },
-    "loadingIndicator": {
-     "value": "spinner"
-    },
-    "visibility": {
-     "value": "{{true}}"
-    },
-    "collapseWhenHidden": {
-     "value": "{{false}}"
-    },
-    "disabledState": {
-     "value": "{{false}}"
-    },
-    "tooltipFormat": {
-     "value": "plainText"
-    },
-    "tooltip": {
-     "value": ""
-    }
-   },
-   "styles": {
-    "boxShadow": {
-     "value": "0px 0px 0px 0px #00000040"
-    }
-   },
-   "others": {
-    "showOnDesktop": {
-     "value": "{{true}}"
-    },
-    "showOnMobile": {
-     "value": "{{false}}"
-    }
-   }
-  },
-  "ShadHero": {
-   "properties": {
-    "eyebrow": {
-     "value": "Operations"
-    },
-    "title": {
-     "value": "Good morning, Ada"
-    },
-    "subtitle": {
-     "value": "Here is what needs you today."
-    },
-    "meta": {
-     "value": "{{['Sun, 11 Oct', '14 bookings', '3 need a reply']}}"
-    },
-    "actionLabel": {
-     "value": "New booking"
-    },
-    "secondaryActionLabel": {
-     "value": ""
-    },
-    "asideValue": {
-     "value": ""
-    },
-    "asideLabel": {
-     "value": ""
-    },
-    "icon": {
-     "value": ""
-    },
-    "background": {
-     "value": "tint"
-    },
-    "imageUrl": {
-     "value": ""
-    },
-    "align": {
-     "value": "left"
-    },
-    "size": {
-     "value": "default"
-    },
-    "dynamicHeight": {
-     "value": "{{true}}"
-    },
-    "loadingState": {
-     "value": "{{false}}"
-    },
-    "loadingIndicator": {
-     "value": "spinner"
-    },
-    "visibility": {
-     "value": "{{true}}"
-    },
-    "collapseWhenHidden": {
-     "value": "{{false}}"
-    },
-    "disabledState": {
-     "value": "{{false}}"
-    },
-    "tooltipFormat": {
-     "value": "plainText"
-    },
-    "tooltip": {
-     "value": ""
-    }
-   },
-   "styles": {
-    "boxShadow": {
-     "value": "0px 0px 0px 0px #00000040"
-    },
-    "titleFontFamily": {
-     "value": "theme"
-    }
-   },
-   "others": {
-    "showOnDesktop": {
-     "value": "{{true}}"
-    },
-    "showOnMobile": {
-     "value": "{{false}}"
-    }
-   }
-  },
-  "ShadCardGrid": {
-   "properties": {
-    "data": {
-     "value": "{{[{ id: 1, name: 'Lemon herb roast chicken', cuisine: 'Dinner', prep: 20, serves: 4, note: 'Crisp skin, bright pan sauce' }, { id: 2, name: 'Miso glazed salmon', cuisine: 'Dinner', prep: 15, serves: 2, note: 'Sweet, salty, ten minutes under the grill' }, { id: 3, name: 'Blueberry oat pancakes', cuisine: 'Breakfast', prep: 10, serves: 3, note: 'Fluffy, no buttermilk needed' }]}}"
-    },
-    "titleField": {
-     "value": "name"
-    },
-    "subtitleField": {
-     "value": ""
-    },
-    "imageField": {
-     "value": ""
-    },
-    "badgeField": {
-     "value": "cuisine"
-    },
-    "badgeFields": {
-     "value": ""
-    },
-    "eyebrowField": {
-     "value": ""
-    },
-    "avatarField": {
-     "value": ""
-    },
-    "descriptionField": {
-     "value": "note"
-    },
-    "progressField": {
-     "value": ""
-    },
-    "metaFields": {
-     "value": "prep:{} min, serves:Serves"
-    },
-    "idField": {
-     "value": "id"
-    },
-    "layout": {
-     "value": "stacked"
-    },
-    "columns": {
-     "value": "{{3}}"
-    },
-    "minCardWidth": {
-     "value": "{{240}}"
-    },
-    "imageAspect": {
-     "value": "4/3"
-    },
-    "showImage": {
-     "value": "{{true}}"
-    },
-    "cardStyle": {
-     "value": "elevated"
-    },
-    "highlightSelected": {
-     "value": "{{true}}"
-    },
-    "emptyText": {
-     "value": "Nothing here yet"
-    },
-    "dynamicHeight": {
-     "value": "{{true}}"
-    },
-    "loadingState": {
-     "value": "{{false}}"
-    },
-    "loadingIndicator": {
-     "value": "spinner"
-    },
-    "visibility": {
-     "value": "{{true}}"
-    },
-    "collapseWhenHidden": {
-     "value": "{{false}}"
-    },
-    "disabledState": {
-     "value": "{{false}}"
-    },
-    "tooltipFormat": {
-     "value": "plainText"
-    },
-    "tooltip": {
-     "value": ""
-    }
-   },
-   "styles": {
-    "boxShadow": {
-     "value": "0px 0px 0px 0px #00000040"
-    },
-    "titleFontFamily": {
-     "value": "theme"
     }
    },
    "others": {

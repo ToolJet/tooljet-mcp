@@ -79,7 +79,7 @@ export function lintCopiedCards(components: Spec[]): string[] {
         `${copies.length} times (each holds ${holds})${positional ? ' and read their rows by position (data[n])' : ''}. ` +
         'Copies show a fixed number of records and hide the rest, and every change has to be made to each. Draw the records ' +
         'with one component bound to the query: ShadCardGrid (a card per row: title, subtitle, badge, description and meta ' +
-        'fields; onCardClick and selectedItem for the detail), or ShadListView with one item canvas whose children bind ' +
+        'fields; onCardClicked and selectedItem for the detail), or ShadListView with one item canvas whose children bind ' +
         '{{listItem.<field>}}. Keep separate cards only for figures that are not rows of one query.'
     );
   }

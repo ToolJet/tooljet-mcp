@@ -6,6 +6,7 @@ import { requiredMutationGuardWarnings } from './requiredMutationGuard.js';
 import { queryEventCycleErrors } from './queryEventCycles.js';
 import type { AppSummary, EventSpec, EventSourceType } from './tooljetClient.js';
 import { isModalV2Type } from './modalTypes.js';
+import { retiredUi2Name } from './ui2LegacyNames.js';
 
 export interface EventValidationResult {
   errors: string[];
@@ -211,8 +212,11 @@ export function validateEvents(
         const schema = getComponentSchema(source.type);
         const validTriggers = schema?.events?.map((item) => item.id) ?? [];
         if (schema && !validTriggers.includes(event.trigger)) {
+          const renamed = retiredUi2Name(source.type, 'events', event.trigger);
           errors.push(
-            `${label}: trigger "${event.trigger}" is not valid for ${source.type}. Valid triggers: ${validTriggers.join(', ') || 'none'}.`
+            renamed
+              ? `${label}: ${source.type} event "${event.trigger}" was renamed "${renamed}"; use trigger "${renamed}".`
+              : `${label}: trigger "${event.trigger}" is not valid for ${source.type}. Valid triggers: ${validTriggers.join(', ') || 'none'}.`
           );
         }
         if (
@@ -362,9 +366,12 @@ export function validateEvents(
         if (!nonEmptyString(handle)) {
           errors.push(`${label}: control-component requires componentSpecificActionHandle.`);
         } else if (!componentAction) {
+          const renamed = retiredUi2Name(target.type, 'actions', handle);
           errors.push(
-            `${label}: control-component action "${handle}" is not valid for ${target.type ?? 'unknown'} ` +
-              `"${target.name ?? target.id}". Valid actions: ${schema?.actions?.map((candidate) => candidate.handle).join(', ') || 'none'}.`
+            renamed
+              ? `${label}: ${target.type} action "${handle}" was renamed "${renamed}"; use componentSpecificActionHandle "${renamed}".`
+              : `${label}: control-component action "${handle}" is not valid for ${target.type ?? 'unknown'} ` +
+                  `"${target.name ?? target.id}". Valid actions: ${schema?.actions?.map((candidate) => candidate.handle).join(', ') || 'none'}.`
           );
         } else {
           const params = event.action.componentSpecificActionParams;

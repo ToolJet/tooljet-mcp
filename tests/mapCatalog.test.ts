@@ -32,7 +32,7 @@ describe('maps in the ToolJet UI 2.0 catalog', () => {
       ])
     );
     expect(JSON.stringify(map.events)).toMatch(/onMarkerClick/);
-    expect(JSON.stringify(map.events)).toMatch(/onMapClick/);
+    expect(JSON.stringify(map.events)).toMatch(/onMapClicked/);
     expect(JSON.stringify(map.events)).toMatch(/onBoundsChange/);
     for (const action of ['setCenter', 'setZoom', 'fitBounds', 'selectMarker', 'clearSelection']) {
       expect(JSON.stringify(map.actions)).toContain(action);
@@ -52,7 +52,7 @@ describe('maps in the ToolJet UI 2.0 catalog', () => {
         'showStyleSwitch', 'showFullscreen', 'scrollWheelZoom',
       ])
     );
-    for (const e of ['onShapeClick', 'onLocationPick']) expect(JSON.stringify(map.events)).toContain(e);
+    for (const e of ['onShapeClicked', 'onLocationPicked']) expect(JSON.stringify(map.events)).toContain(e);
     for (const a of ['setPickedLocation', 'clearPickedLocation', 'setMapStyle']) expect(JSON.stringify(map.actions)).toContain(a);
     expect(JSON.stringify(map.exposedVariables)).toMatch(/pickedLocation/);
     const usage = map.authoringHints.usage;

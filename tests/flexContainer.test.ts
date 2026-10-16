@@ -376,14 +376,13 @@ describe('FlexContainer child widths (bug 4)', () => {
   });
 });
 
-describe('Ant Design pack and FlexContainer catalog', () => {
+describe('Removed Ant Design pack and FlexContainer catalog', () => {
   const antTypes = ['AntButton', 'AntInput', 'AntSelect', 'AntDatePicker', 'AntRangePicker', 'AntTable', 'AntList', 'AntCard', 'AntTag',
     'AntStatistic', 'AntTitle', 'AntText', 'AntDescriptions', 'AntBadge', 'AntAvatar', 'AntProgress', 'AntTimeline', 'AntEmpty',
     'AntTextArea', 'AntInputNumber', 'AntCheckbox', 'AntSwitch', 'AntSegmented', 'AntAlert', 'AntSteps', 'AntBreadcrumb', 'AntDivider'];
 
-  // The Ant Design pack is parked (2026-10-10): its widgets stay registered in ToolJet so existing apps render, but
-  // the catalog no longer offers them, so builds use the shadcn/ui pack.
-  it('keeps the parked Ant Design pack out of the palette', () => {
+  // ToolJet removed the Ant Design pack (2026-10-15); builds use the ToolJet UI 2.0 widgets.
+  it('has no Ant Design widgets in the palette', () => {
     const palette = new Set(getCatalog().map((entry) => entry.type));
     for (const type of antTypes) expect(palette.has(type), type).toBe(false);
     expect(palette.has('ShadButton')).toBe(true);
@@ -391,14 +390,15 @@ describe('Ant Design pack and FlexContainer catalog', () => {
 
   it('serves FlexContainer card properties and authoring hints', async () => {
     const schema = getComponentSchema('FlexContainer')!;
-    expect(schema.properties.find((p) => p.key === 'cardStyle')?.allowedValues).toEqual(['none', 'antCard', 'shadcnCard']);
+    expect(schema.properties.find((p) => p.key === 'cardStyle')?.allowedValues).toEqual(['none', 'shadcnCard']);
     expect(schema.properties.map((p) => p.key)).toEqual(expect.arrayContaining(['cardTitle', 'cardExtra', 'padding', 'childOrder']));
     const result = await getComponentCatalogTool(undefined as never).handler({ type: 'FlexContainer', sections: ['renderingHints', 'authoringHints'] });
     const text = (result.content[0] as { text: string }).text;
     expect(text).toMatch(/childOrder/);
     expect(text).toMatch(/widthPx/);
     expect(text).toMatch(/dynamicHeight/);
-    expect(text).toMatch(/antCard/);
+    expect(text).toMatch(/shadcnCard/);
+    expect(text).not.toMatch(/antCard/);
   });
 });
 

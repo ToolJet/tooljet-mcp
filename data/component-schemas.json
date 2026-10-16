@@ -7831,7 +7831,6 @@
         "default": "none",
         "allowedValues": [
           "none",
-          "antCard",
           "shadcnCard"
         ]
       },
@@ -7843,7 +7842,7 @@
       },
       {
         "key": "cardExtra",
-        "label": "Card extra (Ant: top right; UI 2.0: description)",
+        "label": "Card description",
         "valueType": "string",
         "default": ""
       },
@@ -8045,7 +8044,6 @@
       "childWidth": "A child fills the free main-axis width by default (layouts.desktop.fillWidth true). Fill children in a row share the line: equally by default, or by layouts.desktop.grow (grow 2 beside grow 1 takes two thirds). layouts.desktop.minWidthPx is the narrowest a fill child may get; in a row with properties.flexWrap {{true}} a child that would go narrower wraps to the next line (a responsive card grid). For a fixed width set fillWidth=false and widthPx=<pixels>. The grid width/left are still required by the API but do not change the rendered width.",
       "childHeight": "A child is its authored layout height in px. Only a child with its own dynamicHeight on grows to its content (in view mode). In a row with properties.alignItems \"stretch\", child FlexContainers (cards) fill the line's height so sibling cards share one height; other children keep their own height. alignItems \"last baseline\" lines up the last text line of each child (a labelled field's value, a badge, a button label).",
       "containerHeight": "With properties.dynamicHeight {{true}} the container grows to fit its children in view mode; the editor keeps the authored height. Without it, children beyond the authored height (padding included) are cut off.",
-      "antCard": "cardStyle 'antCard' (Ant Design pack, parked: use shadcnCard) draws an Ant Design card: a light surface with an 8px radius and a 1px border, plus a 56px header with cardTitle on the left and cardExtra on the right. The header appears only when cardTitle or cardExtra is set and takes its 56px from the body. In that mode backgroundColor, borderColor and borderRadius styles are ignored.",
       "shadcnCard": "cardStyle 'shadcnCard' draws a ToolJet UI 2.0 card: a light surface with a 14px radius, a 1px border and a faint shadow, plus a header with cardTitle (semibold) and cardExtra as a muted description beneath it. The header takes 48px with a title only and 70px with a description, from the body. Pair it with the Shad* widgets.",
       "spacing": "padding and gap are properties in px, not styles.",
       "surface": "A FlexContainer is pure layout and is created transparent (no background, no border) unless you give it a surface: cardStyle 'shadcnCard' (a ToolJet UI 2.0 card with optional cardTitle/cardExtra header) or your own backgroundColor/borderColor. Add a surface only where you want one; rows and columns used for layout stay invisible."
@@ -16346,10 +16344,6 @@
         "default": false
       },
       {
-        "name": "clickedDatum",
-        "default": {}
-      },
-      {
         "name": "clickedDataPoint",
         "default": {}
       }
@@ -16977,10 +16971,6 @@
         "default": false
       },
       {
-        "name": "clickedDatum",
-        "default": {}
-      },
-      {
         "name": "clickedDataPoint",
         "default": {}
       }
@@ -17089,8 +17079,8 @@
     ],
     "events": [
       {
-        "id": "onItemClick",
-        "label": "On item click"
+        "id": "onItemClicked",
+        "label": "On item clicked"
       }
     ],
     "actions": [
@@ -17313,42 +17303,6 @@
         ]
       },
       {
-        "handle": "disable",
-        "displayName": "Disable",
-        "params": [
-          {
-            "handle": "disable",
-            "displayName": "Value",
-            "defaultValue": "{{false}}",
-            "type": "toggle"
-          }
-        ]
-      },
-      {
-        "handle": "visibility",
-        "displayName": "Visibility",
-        "params": [
-          {
-            "handle": "visible",
-            "displayName": "Value",
-            "defaultValue": "{{true}}",
-            "type": "toggle"
-          }
-        ]
-      },
-      {
-        "handle": "loading",
-        "displayName": "Loading",
-        "params": [
-          {
-            "handle": "loading",
-            "displayName": "Value",
-            "defaultValue": "{{false}}",
-            "type": "toggle"
-          }
-        ]
-      },
-      {
         "handle": "setVisibility",
         "displayName": "Set visibility",
         "params": [
@@ -17410,7 +17364,7 @@
   "ShadButtonGroup": {
     "type": "ShadButtonGroup",
     "name": "ShadButtonGroup",
-    "description": "Button group (attached buttons) from buttons [{ label, value, icon?: 'IconBolt', disabled?, variant? }] (label '' with an icon = icon-only). mode: 'actions' (each click fires onClick, exposed lastClicked), 'single' or 'multiple' (a segmented selection: exposed value, values, selected; onChange). Height 36px (sm 32px, lg 40px); add 22px for a label",
+    "description": "Button group (attached buttons) from buttons [{ label, value, icon?: 'IconBolt', disabled?, variant? }] (label '' with an icon = icon-only). mode: 'actions' (each click fires onClick, exposed lastClicked), 'single' or 'multiple' (a segmented selection: exposed value, selected; onChange). Height 36px (sm 32px, lg 40px); add 22px for a label",
     "defaultSize": {
       "width": 10,
       "height": 36
@@ -17697,10 +17651,6 @@
         "default": ""
       },
       {
-        "name": "values",
-        "default": []
-      },
-      {
         "name": "selected",
         "default": []
       },
@@ -17725,7 +17675,7 @@
   "ShadCalendar": {
     "type": "ShadCalendar",
     "name": "ShadCalendar",
-    "description": "Inline month calendar. mode single, multiple or range; defaultValue 'YYYY-MM-DD' (a list for multiple, [start, end] for range); markers [{ date, label?, color? }] draw dots under days (label on hover); minDate, maxDate, disabledDates, disabledDays ([0, 6] = weekends). Exposed value, selectedDate, selectedDates, startDate, endDate, visibleMonth ('YYYY-MM'), visibleStart, visibleEnd; events onSelect, onMonthChange. One month is about 300px tall and 250px wide (fullWidth stretches the days)",
+    "description": "Inline month calendar. mode single, multiple or range; defaultValue 'YYYY-MM-DD' (a list for multiple, [start, end] for range); markers [{ date, label?, color? }] draw dots under days (label on hover); minDate, maxDate, disabledDates, disabledDays ([0, 6] = weekends). Exposed value, selectedDate, selectedDates, startDate, endDate, visibleMonth ('YYYY-MM'), visibleStart, visibleEnd; events onSelect, onMonthChanged. One month is about 300px tall and 250px wide (fullWidth stretches the days)",
     "defaultSize": {
       "width": 10,
       "height": 300
@@ -17984,8 +17934,8 @@
         "label": "On select"
       },
       {
-        "id": "onMonthChange",
-        "label": "On month change"
+        "id": "onMonthChanged",
+        "label": "On month changed"
       }
     ],
     "actions": [
@@ -18111,7 +18061,7 @@
   "ShadCardGrid": {
     "type": "ShadCardGrid",
     "name": "ShadCardGrid",
-    "description": "Grid of cards from data, for things with a face (recipes, products, listings, people, rooms, projects): each card shows an image when imageField is mapped (a row without a picture gets a tinted panel with the title's initials; no imageField, no picture area), an eyebrow (eyebrowField: a small caps line above the title, such as a category or a code), an avatar beside the title (avatarField: an image URL, else the initials of that field's text; for people and owners), title, subtitle, badges (badgeField, plus badgeFields for more: 'cuisine, diet', at most 4; each toned by its words: Available green, Low stock amber, Sold out red), a description (two lines), a progress bar (progressField: a percentage 0 to 100, as 42 or '42%') and a meta line (metaFields, a comma list; 'prep:{} min' puts the value in a label, 'serves:Serves' puts the label first). layout 'stacked' (image on top) or 'row' (image left, text right: listings, people, a compact catalogue). columns (a number, or 'auto' to fit cards of minCardWidth), imageAspect ('16/9', '4/3', '1/1'; stacked only), cardStyle 'elevated', 'outline' or 'flat'. A click selects the card (selectedItem, selectedItemId; onCardClick). Height: grows with its rows (about 300px per row stacked with an image, 150px without or in rows)",
+    "description": "Grid of cards from data, for things with a face (recipes, products, listings, people, rooms, projects): each card shows an image when imageField is mapped (a row without a picture gets a tinted panel with the title's initials; no imageField, no picture area), an eyebrow (eyebrowField: a small caps line above the title, such as a category or a code), an avatar beside the title (avatarField: an image URL, else the initials of that field's text; for people and owners), title, subtitle, badges (badgeField, plus badgeFields for more: 'cuisine, diet', at most 4; each toned by its words: Available green, Low stock amber, Sold out red), a description (two lines), a progress bar (progressField: a percentage 0 to 100, as 42 or '42%') and a meta line (metaFields, a comma list; 'prep:{} min' puts the value in a label, 'serves:Serves' puts the label first). layout 'stacked' (image on top) or 'row' (image left, text right: listings, people, a compact catalogue). columns (a number, or 'auto' to fit cards of minCardWidth), imageAspect ('16/9', '4/3', '1/1'; stacked only), cardStyle 'elevated', 'outline' or 'flat'. A click selects the card (selectedItem, selectedItemId; onCardClicked). Height: grows with its rows (about 300px per row stacked with an image, 150px without or in rows)",
     "defaultSize": {
       "width": 43,
       "height": 620
@@ -18390,8 +18340,8 @@
     ],
     "events": [
       {
-        "id": "onCardClick",
-        "label": "On card click"
+        "id": "onCardClicked",
+        "label": "On card clicked"
       }
     ],
     "actions": [
@@ -18456,13 +18406,13 @@
     ],
     "authoringHints": {
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
-      "usage": "Things with a face as cards instead of table rows: recipes, products, listings, rooms, people, tasks. imageField when rows have photos (without it the cards have no picture area; never draw an SVG or data: image as a picture), badgeField for a state, descriptionField for a line of detail, metaFields for 2 or 3 facts ('prep:{} min, serves:Serves'). More on a card: badgeFields for extra chips ('diet, spice', up to 4 with badgeField), eyebrowField for a small caps line above the title (a category, a city, a team, a code), avatarField for an owner or host (a photo URL, else initials), progressField for a percentage bar (a project, a goal, a course). layout 'row' puts the image left of the text: listings, people and a compact catalogue in two columns. onCardClick with selectedItem opens details. About 300px per row with images, 150 without or in rows."
+      "usage": "Things with a face as cards instead of table rows: recipes, products, listings, rooms, people, tasks. imageField when rows have photos (without it the cards have no picture area; never draw an SVG or data: image as a picture), badgeField for a state, descriptionField for a line of detail, metaFields for 2 or 3 facts ('prep:{} min, serves:Serves'). More on a card: badgeFields for extra chips ('diet, spice', up to 4 with badgeField), eyebrowField for a small caps line above the title (a category, a city, a team, a code), avatarField for an owner or host (a photo URL, else initials), progressField for a percentage bar (a project, a goal, a course). layout 'row' puts the image left of the text: listings, people and a compact catalogue in two columns. onCardClicked with selectedItem opens details. About 300px per row with images, 150 without or in rows."
     }
   },
   "ShadCarousel": {
     "type": "ShadCarousel",
     "name": "ShadCarousel",
-    "description": "Carousel of slides [{ image, title?, description?, link? }] (or image URLs) with arrows and dots, loop, autoplay (interval ms, pauses on hover), slidesPerView 1 to 4, aspectRatio ('16/9', '4/3', '1/1', '21/9' or 'fill' to fill the widget's height), imageFit cover or contain, captions as an overlay or below. Exposed currentIndex, currentSlide and clickedSlide (with its index); events onSlideChange, onSlideClick (a slide's link also opens in a new tab); actions next, previous, goTo(index). Height follows the width and ratio (+28px for dots, +52px for captions below)",
+    "description": "Carousel of slides [{ image, title?, description?, link? }] (or image URLs) with arrows and dots, loop, autoplay (interval ms, pauses on hover), slidesPerView 1 to 4, aspectRatio ('16/9', '4/3', '1/1', '21/9' or 'fill' to fill the widget's height), imageFit cover or contain, captions as an overlay or below. Exposed currentIndex, currentSlide and clickedSlide (with its index); events onSlideChanged, onSlideClicked (a slide's link also opens in a new tab); actions next, previous, goTo(index). Height follows the width and ratio (+28px for dots, +52px for captions below)",
     "defaultSize": {
       "width": 20,
       "height": 410
@@ -18697,12 +18647,12 @@
     ],
     "events": [
       {
-        "id": "onSlideChange",
-        "label": "On slide change"
+        "id": "onSlideChanged",
+        "label": "On slide changed"
       },
       {
-        "id": "onSlideClick",
-        "label": "On slide click"
+        "id": "onSlideClicked",
+        "label": "On slide clicked"
       }
     ],
     "actions": [
@@ -19363,18 +19313,6 @@
         ]
       },
       {
-        "handle": "setChecked",
-        "displayName": "Set checked",
-        "params": [
-          {
-            "handle": "status",
-            "displayName": "Checked",
-            "defaultValue": "{{true}}",
-            "type": "toggle"
-          }
-        ]
-      },
-      {
         "handle": "setVisibility",
         "displayName": "Set visibility",
         "params": [
@@ -19682,7 +19620,7 @@
   "ShadColorPicker": {
     "type": "ShadColorPicker",
     "name": "ShadColorPicker",
-    "description": "Color picker: a swatch-and-hex field opening a popover with a saturation/hue picker, a hex input and preset swatches (array of hex). Exposes value (#rrggbb, or #rrggbbaa with allowAlpha), rgb and rgba. Height: 64px with a label, 36px without",
+    "description": "Color picker: a swatch-and-hex field opening a popover with a saturation/hue picker, a hex input and preset swatches (array of hex). Exposes value (#rrggbb, or #rrggbbaa with allowAlpha), selectedColorRGB and selectedColorRGBA. Height: 64px with a label, 36px without",
     "defaultSize": {
       "width": 8,
       "height": 64
@@ -19948,18 +19886,6 @@
         "default": ""
       },
       {
-        "name": "rgb",
-        "default": ""
-      },
-      {
-        "name": "rgba",
-        "default": ""
-      },
-      {
-        "name": "selectedColorHex",
-        "default": ""
-      },
-      {
         "name": "selectedColorRGB",
         "default": ""
       },
@@ -19992,7 +19918,7 @@
   "ShadComboChart": {
     "type": "ShadComboChart",
     "name": "ShadComboChart",
-    "description": "Bar and line chart on one axis pair: data [{ month: 'Jan', revenue: 42000, margin: 31 }], xField 'month', barFields 'revenue' (bars), lineFields 'margin' (lines), rightAxisFields 'margin' (those series on a second, right axis with its own rightAxisFormat, e.g. percent); stackBars, curve, dots, yAxisFormat number/currency/percent/compact. Height 240-340 px; clicking sets clickedDatum and fires onClick.",
+    "description": "Bar and line chart on one axis pair: data [{ month: 'Jan', revenue: 42000, margin: 31 }], xField 'month', barFields 'revenue' (bars), lineFields 'margin' (lines), rightAxisFields 'margin' (those series on a second, right axis with its own rightAxisFormat, e.g. percent); stackBars, curve, dots, yAxisFormat number/currency/percent/compact. Height 240-340 px; clicking sets clickedDataPoint and fires onClick.",
     "defaultSize": {
       "width": 20,
       "height": 300
@@ -20309,10 +20235,6 @@
         "default": false
       },
       {
-        "name": "clickedDatum",
-        "default": {}
-      },
-      {
         "name": "clickedDataPoint",
         "default": {}
       }
@@ -20536,10 +20458,6 @@
       {
         "id": "onSelect",
         "label": "On select"
-      },
-      {
-        "id": "onChange",
-        "label": "On change"
       },
       {
         "id": "onSearchTextChanged",
@@ -21201,10 +21119,6 @@
     ],
     "events": [
       {
-        "id": "onChange",
-        "label": "On change"
-      },
-      {
         "id": "onSelect",
         "label": "On select"
       },
@@ -21219,31 +21133,11 @@
     ],
     "actions": [
       {
-        "handle": "clear",
-        "displayName": "Clear"
-      },
-      {
         "handle": "setValue",
         "displayName": "Set value",
         "params": [
           {
             "handle": "value",
-            "displayName": "Date",
-            "defaultValue": ""
-          },
-          {
-            "handle": "format",
-            "displayName": "Format",
-            "defaultValue": "YYYY-MM-DD"
-          }
-        ]
-      },
-      {
-        "handle": "setDate",
-        "displayName": "Set date",
-        "params": [
-          {
-            "handle": "date",
             "displayName": "Date",
             "defaultValue": ""
           },
@@ -21447,10 +21341,6 @@
       },
       {
         "name": "endDate",
-        "default": ""
-      },
-      {
-        "name": "selectedDate",
         "default": ""
       },
       {
@@ -21706,10 +21596,6 @@
     ],
     "events": [
       {
-        "id": "onChange",
-        "label": "On change"
-      },
-      {
         "id": "onSelect",
         "label": "On select"
       },
@@ -21723,22 +21609,6 @@
       }
     ],
     "actions": [
-      {
-        "handle": "setDate",
-        "displayName": "Set date and time",
-        "params": [
-          {
-            "handle": "value",
-            "displayName": "Date and time (YYYY-MM-DD HH:mm)",
-            "defaultValue": ""
-          },
-          {
-            "handle": "format",
-            "displayName": "Format (optional)",
-            "defaultValue": ""
-          }
-        ]
-      },
       {
         "handle": "setValue",
         "displayName": "Set value",
@@ -21781,10 +21651,6 @@
             "defaultValue": ""
           }
         ]
-      },
-      {
-        "handle": "clear",
-        "displayName": "Clear"
       },
       {
         "handle": "clearValue",
@@ -22868,8 +22734,8 @@
     ],
     "events": [
       {
-        "id": "onAction",
-        "label": "On action"
+        "id": "onActionClicked",
+        "label": "On action clicked"
       }
     ],
     "actions": [
@@ -22931,7 +22797,7 @@
   "ShadFileUpload": {
     "type": "ShadFileUpload",
     "name": "ShadFileUpload",
-    "description": "File upload: a dashed dropzone (drag and drop or click to browse) with a file list. accept is a MIME or extension list like 'image/*,.pdf'; maxSize and minSize in bytes. Exposes files [{ name, type, size, content (text), base64Data, dataURL, parsedData }] like the native File picker. Height: about 160px for the dropzone, 180px with a label; the list adds about 66px per file (dynamic height)",
+    "description": "File upload: a dashed dropzone (drag and drop or click to browse) with a file list. accept is a MIME or extension list like 'image/*,.pdf'; maxSize and minSize in bytes. Exposes file [{ name, type, size, content (text), base64Data, dataURL, parsedData }] like the native File picker. Height: about 160px for the dropzone, 180px with a label; the list adds about 66px per file (dynamic height)",
     "defaultSize": {
       "width": 12,
       "height": 180
@@ -23188,10 +23054,6 @@
         "displayName": "Clear files"
       },
       {
-        "handle": "clear",
-        "displayName": "Clear"
-      },
-      {
         "handle": "setFileName",
         "displayName": "Set file name",
         "params": [
@@ -23266,10 +23128,6 @@
         "default": false
       },
       {
-        "name": "files",
-        "default": []
-      },
-      {
         "name": "file",
         "default": []
       },
@@ -23288,13 +23146,13 @@
     ],
     "authoringHints": {
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
-      "usage": "files [{ name, type, size, content (text), base64Data, dataURL, parsedData? }]: upload base64Data. About 160px tall (180 with a label) plus about 66px per listed file."
+      "usage": "file [{ name, type, size, content (text), base64Data, dataURL, parsedData? }]: upload base64Data. About 160px tall (180 with a label) plus about 66px per listed file."
     }
   },
   "ShadFunnelChart": {
     "type": "ShadFunnelChart",
     "name": "ShadFunnelChart",
-    "description": "Funnel of stages in order: data [{ stage: 'Visited', count: 12480 }, { stage: 'Paid', count: 412 }], stageField 'stage', valueField 'count'; one bar per stage sized to the widest, its value, and its conversion % from the stage before (conversionBase 'previous') or from the first ('first'); align center/left, colorByStage (palette per stage, else one colour fading down), yAxisFormat for values. About 44 px per stage; clicking a stage sets clickedDatum to its row and fires onClick.",
+    "description": "Funnel of stages in order: data [{ stage: 'Visited', count: 12480 }, { stage: 'Paid', count: 412 }], stageField 'stage', valueField 'count'; one bar per stage sized to the widest, its value, and its conversion % from the stage before (conversionBase 'previous') or from the first ('first'); align center/left, colorByStage (palette per stage, else one colour fading down), yAxisFormat for values. About 44 px per stage; clicking a stage sets clickedDataPoint to its row and fires onClick.",
     "defaultSize": {
       "width": 16,
       "height": 240
@@ -23540,10 +23398,6 @@
       {
         "name": "isDisabled",
         "default": false
-      },
-      {
-        "name": "clickedDatum",
-        "default": {}
       },
       {
         "name": "clickedDataPoint",
@@ -23812,7 +23666,7 @@
   "ShadHeatmapChart": {
     "type": "ShadHeatmapChart",
     "name": "ShadHeatmapChart",
-    "description": "Heatmap: a grid of cells shaded by value, for two categories against each other (weekday by hour, region by month). data [{ day: 'Mon', hour: '09:00', tickets: 12 }], yField 'day' (rows), xField 'hour' (columns), valueField 'tickets' (rows landing in the same cell are summed); xOrder / yOrder fix the order (else first appearance); showValues prints each value; a min-to-max legend. Height about 32 px per row plus 40; clicking a cell sets clickedDatum and fires onClick.",
+    "description": "Heatmap: a grid of cells shaded by value, for two categories against each other (weekday by hour, region by month). data [{ day: 'Mon', hour: '09:00', tickets: 12 }], yField 'day' (rows), xField 'hour' (columns), valueField 'tickets' (rows landing in the same cell are summed); xOrder / yOrder fix the order (else first appearance); showValues prints each value; a min-to-max legend. Height about 32 px per row plus 40; clicking a cell sets clickedDataPoint and fires onClick.",
     "defaultSize": {
       "width": 24,
       "height": 280
@@ -24061,10 +23915,6 @@
         "default": false
       },
       {
-        "name": "clickedDatum",
-        "default": {}
-      },
-      {
         "name": "clickedDataPoint",
         "default": {}
       }
@@ -24077,7 +23927,7 @@
   "ShadHero": {
     "type": "ShadHero",
     "name": "ShadHero",
-    "description": "Page hero at the top of a page: eyebrow (small caps line above), title, subtitle, meta facts (['Sun, 11 Oct', '14 bookings'] or [{ label, value }]), an aside on the right and up to two actions (actionLabel, secondaryActionLabel; onActionClick, onSecondaryActionClick). The aside is one headline figure (asideValue 12480 or '$12,480', asideLabel 'Revenue today' above it) or a short list of facts (asideValue [{ label: 'Open', value: 14 }, { label: 'Due today', value: 3 }], up to 4, asideLabel as their heading). Greetings and header facts belong in the hero itself: 'Good morning, Ada' as the title, one line of what needs attention as the subtitle, today's date and counts as meta chips, the one number that matters in the aside; never a separate Text or Stat floating beside or over the header. With an aside, the actions sit under the text. background 'plain' (no panel), 'tint' (a soft panel in the accent), 'gradient' (accent wash), 'image' (imageUrl behind a dark overlay, white text) or 'dark' (deep accent panel, white text); icon (lucide name) in a rounded tile beside the title; align left or center (the aside goes under the text); size compact, default or large. Styles accentColor (else the theme's primary), titleFontFamily ('serif', 'display', ...). Height: grows with its content (about 150px default, 120px compact, 220px large; add 40px for actions under the text)",
+    "description": "Page hero at the top of a page: eyebrow (small caps line above), title, subtitle, meta facts (['Sun, 11 Oct', '14 bookings'] or [{ label, value }]), an aside on the right and up to two actions (actionLabel, secondaryActionLabel; onActionClicked, onSecondaryActionClicked). The aside is one headline figure (asideValue 12480 or '$12,480', asideLabel 'Revenue today' above it) or a short list of facts (asideValue [{ label: 'Open', value: 14 }, { label: 'Due today', value: 3 }], up to 4, asideLabel as their heading). Greetings and header facts belong in the hero itself: 'Good morning, Ada' as the title, one line of what needs attention as the subtitle, today's date and counts as meta chips, the one number that matters in the aside; never a separate Text or Stat floating beside or over the header. With an aside, the actions sit under the text. background 'plain' (no panel), 'tint' (a soft panel in the accent), 'gradient' (accent wash), 'image' (imageUrl behind a dark overlay, white text) or 'dark' (deep accent panel, white text); icon (lucide name) in a rounded tile beside the title; align left or center (the aside goes under the text); size compact, default or large. Styles accentColor (else the theme's primary), titleFontFamily ('serif', 'display', ...). Height: grows with its content (about 150px default, 120px compact, 220px large; add 40px for actions under the text)",
     "defaultSize": {
       "width": 43,
       "height": 200
@@ -24304,12 +24154,12 @@
     ],
     "events": [
       {
-        "id": "onActionClick",
-        "label": "On primary action click"
+        "id": "onActionClicked",
+        "label": "On action clicked"
       },
       {
-        "id": "onSecondaryActionClick",
-        "label": "On secondary action click"
+        "id": "onSecondaryActionClicked",
+        "label": "On secondary action clicked"
       }
     ],
     "actions": [
@@ -24366,7 +24216,7 @@
     ],
     "authoringHints": {
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
-      "usage": "The top of a page that should read as a product (a personal or customer-facing app, a dashboard home, a front desk): one hero in place of a heading and subtitle. background 'tint' or 'gradient' for a staff tool; 'image' with imageUrl, or 'dark', for a premium or consumer page; meta for the 2 or 3 facts that matter today; actionLabel for the page's main action (onActionClick). A greeting is the hero's own title ('Good morning, Ada') with one subtitle line of what needs attention; the one number that matters goes in the aside (asideValue '$12,480' or 12480, asideLabel 'Revenue today' above it), or up to four header facts as asideValue [{ label: 'Open', value: 14 }] with asideLabel as their heading. Never float a separate Text, Stat or status line beside or over the hero: put it in subtitle, meta or the aside. With an aside the actions sit under the text; a hero narrower than 560px stacks text, aside, actions. About 150px tall, 190 with actions."
+      "usage": "The top of a page that should read as a product (a personal or customer-facing app, a dashboard home, a front desk): one hero in place of a heading and subtitle. background 'tint' or 'gradient' for a staff tool; 'image' with imageUrl, or 'dark', for a premium or consumer page; meta for the 2 or 3 facts that matter today; actionLabel for the page's main action (onActionClicked). A greeting is the hero's own title ('Good morning, Ada') with one subtitle line of what needs attention; the one number that matters goes in the aside (asideValue '$12,480' or 12480, asideLabel 'Revenue today' above it), or up to four header facts as asideValue [{ label: 'Open', value: 14 }] with asideLabel as their heading. Never float a separate Text, Stat or status line beside or over the hero: put it in subtitle, meta or the aside. With an aside the actions sit under the text; a hero narrower than 560px stacks text, aside, actions. About 150px tall, 190 with actions."
     }
   },
   "ShadIcon": {
@@ -25067,30 +24917,6 @@
         "displayName": "Set blur"
       },
       {
-        "handle": "disable",
-        "displayName": "Disable",
-        "params": [
-          {
-            "handle": "disable",
-            "displayName": "Value",
-            "defaultValue": "{{false}}",
-            "type": "toggle"
-          }
-        ]
-      },
-      {
-        "handle": "visibility",
-        "displayName": "Visibility",
-        "params": [
-          {
-            "handle": "visible",
-            "displayName": "Value",
-            "defaultValue": "{{true}}",
-            "type": "toggle"
-          }
-        ]
-      },
-      {
         "handle": "setVisibility",
         "displayName": "Set visibility",
         "params": [
@@ -25165,7 +24991,7 @@
   "ShadKanban": {
     "type": "ShadKanban",
     "name": "ShadKanban",
-    "description": "Kanban board from data: columns are values of a status field; cards show the fields you map (title, description, badge, tags, progress, meta, avatar), or, with Card content Custom, child components laid out on the card and bound to {{cardData.<field>}}. Drag to move, optional add and delete buttons, and addCard/updateCard/deleteCard/moveCard actions; save changes with queries on the card events (components.<name>.movedCard, lastAddedCard, lastRemovedCard, lastUpdatedCard, cards)",
+    "description": "Kanban board from data: columns are values of a status field; cards show the fields you map (title, description, badge, tags, progress, meta, avatar), or, with Card content Custom, child components laid out on the card and bound to {{cardData.<field>}}. Drag to move, optional add and delete buttons, and addCard/updateCardData/deleteCard/moveCard actions; save changes with queries on the card events (components.<name>.lastCardMovement, lastAddedCard, lastRemovedCard, lastUpdatedCard, updatedCardData)",
     "defaultSize": {
       "width": 43,
       "height": 420
@@ -25507,10 +25333,6 @@
     ],
     "events": [
       {
-        "id": "onCardClicked",
-        "label": "On card clicked"
-      },
-      {
         "id": "onCardMoved",
         "label": "On card moved"
       },
@@ -25553,22 +25375,6 @@
             "handle": "columnId",
             "displayName": "Column id (optional)",
             "defaultValue": ""
-          }
-        ]
-      },
-      {
-        "handle": "updateCard",
-        "displayName": "Update card",
-        "params": [
-          {
-            "handle": "id",
-            "displayName": "Card id",
-            "defaultValue": ""
-          },
-          {
-            "handle": "values",
-            "displayName": "Values",
-            "defaultValue": "{{{ title: 'Renamed' }}}"
           }
         ]
       },
@@ -25666,27 +25472,11 @@
         "default": false
       },
       {
-        "name": "cards",
-        "default": []
-      },
-      {
         "name": "updatedCardData",
         "default": []
       },
       {
-        "name": "selectedCard",
-        "default": {}
-      },
-      {
         "name": "lastSelectedCard",
-        "default": {}
-      },
-      {
-        "name": "movedCard",
-        "default": {}
-      },
-      {
-        "name": "lastMove",
         "default": {}
       },
       {
@@ -25719,7 +25509,7 @@
         "customCards": "For card content the fields cannot express (buttons on a card, a custom layout), set cardLayout \"custom\" and cardHeight (px, the same for every card), then add child components with parent_ref to the board (no slot_name, or \"body\"). They are laid out on the card canvas: 43 grid columns across the card width (about 7px each on a 3-column board), top in px from the card top. Bind them to {{cardData.<field>}}; every card renders the same children with its own row. A button on a card can act on that card with cardData.id. Children of a board left on Fields content are never shown. Prefer Fields when the mapped fields fit: they need no layout and look right by default.",
         "sizing": "collapsedHeight (px of card content): taller cards show only that top part with a Show more toggle; put what must always be visible above it (title, owner, status) and details below. Empty shows every card whole; the Show more toggle appears on hover. Columns fold to a narrow strip from a chevron in their header (collapsibleColumns, on by default) and still take dropped cards; collapsedColumns lists column ids folded at start (e.g. a Done or Closed column on a long-running board); components.<name>.collapsedColumns is the current list. columnWidth (px) fixes every column, and the board scrolls sideways when they do not fit; empty shares the board width (at least 240px each).",
         "content": "A card shows only the fields you map: titleField, descriptionField, badgeField (priority words colour the badge), tagsField (an array or a comma list), progressField (0 to 100), metaField (a short date or count), avatarField (a name, shown as initials). Map what the job needs; leave the rest empty. density \"compact\" for long boards.",
-        "saving": "Every change shows on the board at once and fires an event with its payload: onCardMoved (movedCard, lastMove), onCardAdded (lastAddedCard), onCardUpdated (lastUpdatedCard), onCardRemoved (lastRemovedCard); components.<name>.cards is the whole board. Save in that event handler with a query. The actions (addCard, updateCard, moveCard, deleteCard) fire the same events, so either call an action and save in its event, or save with a query and refresh the data; never both, or the save runs twice. Keep allowDrag on when a column is something a card can change (stage, status, owner, assignee): dragging is how people expect to change it, so save the move in onCardMoved. Turn it off only when columns are fixed facts (a date, a site).",
+        "saving": "Every change shows on the board at once and fires an event with its payload: onCardMoved (lastCardMovement { cardId, card, from, to, toIndex }: card is the moved row, to its new column), onCardAdded (lastAddedCard), onCardUpdated (lastUpdatedCard), onCardRemoved (lastRemovedCard); components.<name>.updatedCardData is the whole board. A card click fires onCardSelected with lastSelectedCard. Save in that event handler with a query. The actions (addCard, updateCardData, moveCard, deleteCard) fire the same events, so either call an action and save in its event, or save with a query and refresh the data; never both, or the save runs twice. Keep allowDrag on when a column is something a card can change (stage, status, owner, assignee): dragging is how people expect to change it, so save the move in onCardMoved. Turn it off only when columns are fixed facts (a date, a site).",
         "addFlow": "allowAdd shows an Add card button under each column: it sets addCardColumn and fires onAddCardClick. Open a modal form there; on submit run the insert with status components.<name>.addCardColumn, then refresh the data query (or call addCard without a separate insert).",
         "deleteFlow": "allowDelete shows a delete button on card hover: the card leaves the board and onCardRemoved fires with lastRemovedCard; delete the row in that handler.",
         "styles": "Every colour falls back to the app theme, so set only what the design needs to blend in: accentColor (selection outline, progress bars, drop line, hover borders); columns: columnBackgroundColor, columnBorderColor, columnBorderRadius (px), columnTitleColor, columnCountBackgroundColor, columnCountTextColor, columnGap (px); cards: cardBackgroundColor, cardBorderColor, cardBorderRadius (px), cardShadow (\"none\" | \"sm\" | \"md\" | \"lg\", default \"sm\"), cardTitleColor, cardTextColor (description, meta, progress label), progressColor (progress bars; else the accent). properties.badgeColors maps badge values to colours, e.g. { High: \"#dc2626\", Low: \"#16a34a\" } (tinted chip, coloured text); unnamed values keep the built-in colours. Take colours from the app theme or brand, never the defaults of another product."
@@ -25987,7 +25777,7 @@
   "ShadLineChart": {
     "type": "ShadLineChart",
     "name": "ShadLineChart",
-    "description": "Line chart for trends: data [{ month: 'Jan', revenue: 18600, expenses: 8000 }], xField 'month', yFields 'revenue,expenses' (one line each); curve monotone/linear/step, dots, strokeWidth, dashedFields, an optional target line (referenceValue, referenceLabel) and yAxisFormat number/currency/percent/compact. Height 200-320 px; clicking a point sets clickedDatum and fires onClick.",
+    "description": "Line chart for trends: data [{ month: 'Jan', revenue: 18600, expenses: 8000 }], xField 'month', yFields 'revenue,expenses' (one line each); curve monotone/linear/step, dots, strokeWidth, dashedFields, an optional target line (referenceValue, referenceLabel) and yAxisFormat number/currency/percent/compact. Height 200-320 px; clicking a point sets clickedDataPoint and fires onClick.",
     "defaultSize": {
       "width": 20,
       "height": 280
@@ -26297,10 +26087,6 @@
         "default": false
       },
       {
-        "name": "clickedDatum",
-        "default": {}
-      },
-      {
         "name": "clickedDataPoint",
         "default": {}
       }
@@ -26564,7 +26350,7 @@
   "ShadListView": {
     "type": "ShadListView",
     "name": "ShadListView",
-    "description": "List or grid: one canvas repeated per item of data; parent components to it and bind them to {{listItem.<field>}}. A click selects the item (selectedItem, onRowClicked); optional pagination (client or server side), dividers, hover and selected highlight. Items have a fixed height (rowHeight)",
+    "description": "List or grid: one canvas repeated per item of data; parent components to it and bind them to {{listItem.<field>}}. A click selects the item (selectedItem, selectedRecord; onRecordClicked); optional pagination (client or server side), dividers, hover and selected highlight. Items have a fixed height (rowHeight)",
     "defaultSize": {
       "width": 30,
       "height": 260
@@ -26808,10 +26594,6 @@
     ],
     "events": [
       {
-        "id": "onRowClicked",
-        "label": "Row clicked"
-      },
-      {
         "id": "onRecordClicked",
         "label": "Record clicked"
       },
@@ -26922,14 +26704,6 @@
         "default": null
       },
       {
-        "name": "selectedRow",
-        "default": {}
-      },
-      {
-        "name": "selectedRowId",
-        "default": null
-      },
-      {
         "name": "pageIndex",
         "default": 1
       }
@@ -27026,7 +26800,7 @@
     "authoringHints": {
       "list": {
         "content": "One canvas repeated per item: create the item components with parent_ref to the list (no slot) and bind them to {{listItem.<field>}}. Every item has the same height, properties.rowHeight in px: size it to the item content. mode \"grid\" with columns repeats items in a grid; each cell has its own 43-column canvas (a full-cell child is left 0, width 43).",
-        "selection": "A click selects the item: selectedItem (the data item) and selectedItemId (its idField value); selectedRecord / selectedRecordId / selectedRow / selectedRowId keep the native Listview meaning (the row's component values and its index). Events onRowClicked and onRecordClicked. A button in an item acts on that item through listItem.",
+        "selection": "A click selects the item and fires onRecordClicked: selectedItem (the data item) and selectedItemId (its idField value); selectedRecord / selectedRecordId keep the native Listview meaning (the item's component values and its index). selectItem(id) selects from an action. A button in an item acts on that item through listItem.",
         "paging": "enablePagination with rowsPerPage slices the data client side. With serverSidePagination the data is the current page: bind the query to components.<list>.pageIndex (1-based), set totalRecords for page numbers, and refetch on onPageChanged (fired by the pager, not by setPage).",
         "styles": "Item background, hover, selected, border, radius and shadow, dividers (showBorder, list mode), list background and padding, accent: each falls back to the theme."
       },
@@ -27036,7 +26810,7 @@
   "ShadMap": {
     "type": "ShadMap",
     "name": "ShadMap",
-    "description": "Map with markers from rows, on open map tiles (no API key): delivery stops and routes, field jobs and service zones, stores, sites, listings, incidents. data: rows read through latField and lngField (numbers or numeric text; rows without valid coordinates, or at exactly 0, 0, are skipped and counted in a footnote), titleField, subtitleField (a second line: the address), statusField and idField. Pins are coloured by status: by its words (Delivered or Done green, Delayed or Pending amber, Failed or Overdue red, Open, Scheduled or In transit blue; or a tone name success | warning | danger | info), or by statusColors ({ 'Under offer': '#d97706', Open: 'warning' }); showLegend (on) lists the colours with counts. labelField puts a short value in the pin (a stop number) or, longer, a price pill ('€450k'); iconField puts a lucide icon in the pin ('snowflake', 'droplets', 'zap'). Routes: connectMarkers draws a line through the markers in routeOrderField order, one per routeField value (a driver, a van), from routeStart (a depot { lat, lng }) when given; routes (a second dataset) draws lines from rows { name, path: [[lat, lng], ...] or a GeoJSON LineString, color or status }; routeColors names each line's colour. Areas (zones, territories, geofences): areas rows with an outline (areaShapeField: [[lat, lng], ...], a GeoJSON Polygon or its JSON text) or a circle (lat, lng and areaRadiusField in metres), titled by areaTitleField and filled by areaStatusField's tone (or the row's color). A click on a marker selects it (selectedMarker: its row, selectedMarkerId), opens a popup with the title, status and popupFields (a comma list of field specs as the Record list's metaFields: 'driver', 'eta:ETA {}', 'total|currency'; showPopup off for none) and fires onMarkerClick; a click on a line or area exposes selectedShape (its row) and selectedShapeType ('route' | 'area') and fires onShapeClick; a click on the map clears the selection, exposes clickedLocation { lat, lng } and fires onMapClick. pickLocation lets the user click (or drag a pin) to choose a spot: pickedLocation { lat, lng, address } and onLocationPick (defaultPickedLocation starts it); showSearch adds an address search box (OpenStreetMap Nominatim by default, rate-limited; geocoderUrl and reverseGeocoderUrl, with {query} or {lat} and {lng}, point it at another geocoder). display 'heat' (or 'both') draws density instead of pins, weighted by heatField. clusterMarkers groups crowded pins into counts (on by default; keeps thousands of rows smooth). fitToMarkers (on by default) opens on everything drawn and refits when data changes; off, the map opens on defaultCenter ({ lat, lng }, [lat, lng] or 'lat, lng') at defaultZoom (1 to 18; 12 is a city, 15 a street). scrollWheelZoom is off by default (the page scrolls past the map; Ctrl or Cmd with the wheel zooms); showFullscreen adds a fullscreen button; mapStyle 'satellite' shows imagery and showStyleSwitch a Map | Satellite toggle. Exposes center, zoom and bounds after every move; onBoundsChange fires when the user pans or zooms. Actions: setCenter(lat, lng, zoom), setZoom, fitBounds, selectMarker(id), clearSelection, setPickedLocation(lat, lng), clearPickedLocation, setMapStyle('streets' | 'satellite'). Height: fixed (the map fills it); give it 320 to 640px",
+    "description": "Map with markers from rows, on open map tiles (no API key): delivery stops and routes, field jobs and service zones, stores, sites, listings, incidents. data: rows read through latField and lngField (numbers or numeric text; rows without valid coordinates, or at exactly 0, 0, are skipped and counted in a footnote), titleField, subtitleField (a second line: the address), statusField and idField. Pins are coloured by status: by its words (Delivered or Done green, Delayed or Pending amber, Failed or Overdue red, Open, Scheduled or In transit blue; or a tone name success | warning | danger | info), or by statusColors ({ 'Under offer': '#d97706', Open: 'warning' }); showLegend (on) lists the colours with counts. labelField puts a short value in the pin (a stop number) or, longer, a price pill ('€450k'); iconField puts a lucide icon in the pin ('snowflake', 'droplets', 'zap'). Routes: connectMarkers draws a line through the markers in routeOrderField order, one per routeField value (a driver, a van), from routeStart (a depot { lat, lng }) when given; routes (a second dataset) draws lines from rows { name, path: [[lat, lng], ...] or a GeoJSON LineString, color or status }; routeColors names each line's colour. Areas (zones, territories, geofences): areas rows with an outline (areaShapeField: [[lat, lng], ...], a GeoJSON Polygon or its JSON text) or a circle (lat, lng and areaRadiusField in metres), titled by areaTitleField and filled by areaStatusField's tone (or the row's color). A click on a marker selects it (selectedMarker: its row, selectedMarkerId), opens a popup with the title, status and popupFields (a comma list of field specs as the Record list's metaFields: 'driver', 'eta:ETA {}', 'total|currency'; showPopup off for none) and fires onMarkerClick; a click on a line or area exposes selectedShape (its row) and selectedShapeType ('route' | 'area') and fires onShapeClicked; a click on the map clears the selection, exposes clickedLocation { lat, lng } and fires onMapClicked. pickLocation lets the user click (or drag a pin) to choose a spot: pickedLocation { lat, lng, address } and onLocationPicked (defaultPickedLocation starts it); showSearch adds an address search box (OpenStreetMap Nominatim by default, rate-limited; geocoderUrl and reverseGeocoderUrl, with {query} or {lat} and {lng}, point it at another geocoder). display 'heat' (or 'both') draws density instead of pins, weighted by heatField. clusterMarkers groups crowded pins into counts (on by default; keeps thousands of rows smooth). fitToMarkers (on by default) opens on everything drawn and refits when data changes; off, the map opens on defaultCenter ({ lat, lng }, [lat, lng] or 'lat, lng') at defaultZoom (1 to 18; 12 is a city, 15 a street). scrollWheelZoom is off by default (the page scrolls past the map; Ctrl or Cmd with the wheel zooms); showFullscreen adds a fullscreen button; mapStyle 'satellite' shows imagery and showStyleSwitch a Map | Satellite toggle. Exposes center, zoom and bounds after every move; onBoundsChange fires when the user pans or zooms. Actions: setCenter(lat, lng, zoom), setZoom, fitBounds, selectMarker(id), clearSelection, setPickedLocation(lat, lng), clearPickedLocation, setMapStyle('streets' | 'satellite'). Height: fixed (the map fills it); give it 320 to 640px",
     "defaultSize": {
       "width": 20,
       "height": 420
@@ -27427,16 +27201,16 @@
         "label": "On marker click"
       },
       {
-        "id": "onMapClick",
-        "label": "On map click"
+        "id": "onMapClicked",
+        "label": "On map clicked"
       },
       {
-        "id": "onShapeClick",
-        "label": "On route or area click"
+        "id": "onShapeClicked",
+        "label": "On shape clicked"
       },
       {
-        "id": "onLocationPick",
-        "label": "On location pick"
+        "id": "onLocationPicked",
+        "label": "On location picked"
       },
       {
         "id": "onBoundsChange",
@@ -27619,7 +27393,7 @@
     ],
     "authoringHints": {
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
-      "usage": "Places on a map, key-free (open tiles that follow the light or dark theme): delivery stops and routes, field jobs and service zones, stores, sites, technicians, listings, incidents, in place of a table of addresses when where matters. data rows with latField and lngField (numbers or numeric text; rows without valid coordinates are skipped and counted in a footnote, so geocode addresses in the query first), titleField, subtitleField (the address), statusField and idField. Pin colours: statusField's words (Delivered or Done green, Delayed, Pending or Under offer amber, Failed, Overdue or Overloaded red, Open, Scheduled or In transit blue, Sold grey); when two states would share a colour (Open and Scheduled are both blue), set statusColors { Open: 'warning', Scheduled: 'info', Reserved: '#7c3aed' }; showLegend (on) explains the colours with counts. labelField: a stop number inside the pin (dispatch) or a price pill ('€450k'; map the rows to a formatted label first) for listings; iconField: a lucide icon per row ('snowflake', 'droplets', 'zap', 'wrench'). Routes: connectMarkers true with routeField (the driver or van: one line each, its own colour, in the legend), routeOrderField (the stop number) and routeStart (the depot { lat, lng }); or routes, a second dataset of lines { name, path: [[lat, lng], ...] or a GeoJSON LineString, status or color }; routeColors names a colour per line. Areas (service zones, territories, geofences, delivery radius): areas rows with an outline ([[lat, lng], ...], a GeoJSON Polygon or JSON text in areaShapeField) or a circle (lat, lng and a radius in metres), named by areaTitleField and filled by areaStatusField's tone (Busy amber, Overloaded red) or the row's color. popupFields lists what the popup shows under the title ('eta:ETA {}, driver, total|currency'). Wire onMarkerClick to a details sheet or a side panel from components.<map>.selectedMarker (the row) and selectedMarkerId; a list beside the map calls selectMarker(id) on its row click to bring the pin into view and open its popup. onShapeClick with selectedShape (the route or area row) and selectedShapeType. To choose a place in a form (a new job, a new site), a ShadMap with pickLocation true and showSearch true (data '{{[]}}', defaultCenter and defaultZoom 11 on the city, fitToMarkers false, about 260px tall): the user searches an address or clicks; save components.<map>.pickedLocation.lat / .lng and .address, and react in onLocationPick; defaultPickedLocation shows the saved spot when editing. display 'heat' (or 'both') shows density, weighted by heatField. fitToMarkers (on) opens on everything drawn and refits when data changes; off, defaultCenter at defaultZoom (12 a city, 15 a street). clusterMarkers (on) keeps thousands of rows smooth; set it off for under about 50 pins that should all show, and with numbered stops. Page scroll is never taken by the map (scrollWheelZoom off; Ctrl or Cmd with the wheel zooms); showFullscreen (on) adds a button; mapStyle 'satellite' or showStyleSwitch for site work. onBoundsChange with components.<map>.bounds { northEast, southWest } can drive a 'what is in view' query; onMapClick exposes clickedLocation. Never put coordinates in an Html widget or an iframe map. Fixed height: 320 to 640px, a page column beside a ShadRecordList or ShadCardGrid of the same rows; not in a fit-to-content container."
+      "usage": "Places on a map, key-free (open tiles that follow the light or dark theme): delivery stops and routes, field jobs and service zones, stores, sites, technicians, listings, incidents, in place of a table of addresses when where matters. data rows with latField and lngField (numbers or numeric text; rows without valid coordinates are skipped and counted in a footnote, so geocode addresses in the query first), titleField, subtitleField (the address), statusField and idField. Pin colours: statusField's words (Delivered or Done green, Delayed, Pending or Under offer amber, Failed, Overdue or Overloaded red, Open, Scheduled or In transit blue, Sold grey); when two states would share a colour (Open and Scheduled are both blue), set statusColors { Open: 'warning', Scheduled: 'info', Reserved: '#7c3aed' }; showLegend (on) explains the colours with counts. labelField: a stop number inside the pin (dispatch) or a price pill ('€450k'; map the rows to a formatted label first) for listings; iconField: a lucide icon per row ('snowflake', 'droplets', 'zap', 'wrench'). Routes: connectMarkers true with routeField (the driver or van: one line each, its own colour, in the legend), routeOrderField (the stop number) and routeStart (the depot { lat, lng }); or routes, a second dataset of lines { name, path: [[lat, lng], ...] or a GeoJSON LineString, status or color }; routeColors names a colour per line. Areas (service zones, territories, geofences, delivery radius): areas rows with an outline ([[lat, lng], ...], a GeoJSON Polygon or JSON text in areaShapeField) or a circle (lat, lng and a radius in metres), named by areaTitleField and filled by areaStatusField's tone (Busy amber, Overloaded red) or the row's color. popupFields lists what the popup shows under the title ('eta:ETA {}, driver, total|currency'). Wire onMarkerClick to a details sheet or a side panel from components.<map>.selectedMarker (the row) and selectedMarkerId; a list beside the map calls selectMarker(id) on its row click to bring the pin into view and open its popup. onShapeClicked with selectedShape (the route or area row) and selectedShapeType. To choose a place in a form (a new job, a new site), a ShadMap with pickLocation true and showSearch true (data '{{[]}}', defaultCenter and defaultZoom 11 on the city, fitToMarkers false, about 260px tall): the user searches an address or clicks; save components.<map>.pickedLocation.lat / .lng and .address, and react in onLocationPicked; defaultPickedLocation shows the saved spot when editing. display 'heat' (or 'both') shows density, weighted by heatField. fitToMarkers (on) opens on everything drawn and refits when data changes; off, defaultCenter at defaultZoom (12 a city, 15 a street). clusterMarkers (on) keeps thousands of rows smooth; set it off for under about 50 pins that should all show, and with numbered stops. Page scroll is never taken by the map (scrollWheelZoom off; Ctrl or Cmd with the wheel zooms); showFullscreen (on) adds a button; mapStyle 'satellite' or showStyleSwitch for site work. onBoundsChange with components.<map>.bounds { northEast, southWest } can drive a 'what is in view' query; onMapClicked exposes clickedLocation. Never put coordinates in an Html widget or an iframe map. Fixed height: 320 to 640px, a page column beside a ShadRecordList or ShadCardGrid of the same rows; not in a fit-to-content container."
     }
   },
   "ShadMultiselect": {
@@ -27867,10 +27641,6 @@
         "label": "On select"
       },
       {
-        "id": "onChange",
-        "label": "On change"
-      },
-      {
         "id": "onSearchTextChanged",
         "label": "On search text changed"
       },
@@ -28005,7 +27775,7 @@
   "ShadNavigation": {
     "type": "ShadNavigation",
     "name": "ShadNavigation",
-    "description": "App navigation: a vertical sidebar list or a horizontal top bar from items [{ label, value, icon?: 'IconHome', badge?, disabled?, group? (sidebar heading), children?: [{ label, value }] }] (children open as a dropdown in the top bar, a nested list in the sidebar). variant pills, underline or ghost; defaultValue is the active item; onSelect fires on click with exposed value and activeItem { label, value, parentLabel, parentValue } (wire page switches here); setActive(value). Item height 36px; a top bar is 40px tall, a sidebar fills the widget's height",
+    "description": "App navigation: a vertical sidebar list or a horizontal top bar from items [{ label, value, icon?: 'IconHome', badge?, disabled?, group? (sidebar heading), children?: [{ label, value }] }] (children open as a dropdown in the top bar, a nested list in the sidebar). variant pills, underline or ghost; defaultValue is the active item; onClick fires on click with exposed value and selectedItem { label, value, parentLabel, parentValue } (wire page switches here); selectItem(value). Item height 36px; a top bar is 40px tall, a sidebar fills the widget's height",
     "defaultSize": {
       "width": 9,
       "height": 320
@@ -28214,26 +27984,11 @@
     ],
     "events": [
       {
-        "id": "onSelect",
-        "label": "On select"
-      },
-      {
         "id": "onClick",
         "label": "On click"
       }
     ],
     "actions": [
-      {
-        "handle": "setActive",
-        "displayName": "Set active item",
-        "params": [
-          {
-            "handle": "value",
-            "displayName": "Value",
-            "defaultValue": ""
-          }
-        ]
-      },
       {
         "handle": "selectItem",
         "displayName": "Select item",
@@ -28346,10 +28101,6 @@
         "default": ""
       },
       {
-        "name": "activeItem",
-        "default": null
-      },
-      {
         "name": "selectedItem",
         "default": null
       },
@@ -28364,7 +28115,7 @@
     ],
     "authoringHints": {
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
-      "usage": "A vertical sidebar fills its height; a horizontal top bar is 40px. Wire onSelect to switch-page on components.<name>.value; setActive on page load does not fire onSelect."
+      "usage": "A vertical sidebar fills its height; a horizontal top bar is 40px. Wire onClick to switch-page on components.<name>.value (selectedItem is the clicked item); selectItem on page load does not fire onClick."
     }
   },
   "ShadNumberInput": {
@@ -28591,17 +28342,6 @@
       }
     ],
     "actions": [
-      {
-        "handle": "setValue",
-        "displayName": "Set value",
-        "params": [
-          {
-            "handle": "value",
-            "displayName": "Value",
-            "defaultValue": ""
-          }
-        ]
-      },
       {
         "handle": "setText",
         "displayName": "Set text",
@@ -29777,17 +29517,6 @@
         ]
       },
       {
-        "handle": "setCountry",
-        "displayName": "Set country",
-        "params": [
-          {
-            "handle": "country",
-            "displayName": "Country (ISO code or +calling code)",
-            "defaultValue": "US"
-          }
-        ]
-      },
-      {
         "handle": "setCountryCode",
         "displayName": "Set country code",
         "params": [
@@ -30120,10 +29849,6 @@
         "default": false
       },
       {
-        "name": "clickedDatum",
-        "default": {}
-      },
-      {
         "name": "clickedDataPoint",
         "default": {}
       }
@@ -30331,7 +30056,7 @@
   "ShadProgressList": {
     "type": "ShadProgressList",
     "name": "ShadProgressList",
-    "description": "List of progress rows from data, for goals, budgets, quotas, onboarding steps and capacity: each row has a label (labelField), its value against a target ('$18,400 of $25,000': valueField, targetField, in valueFormat: auto, number, currency in currency, percent, compact), a progress bar, an optional status (statusField: a chip toned by its words, On track green, At risk amber, Over budget or Behind red; a status that only names a tone, success, warning, danger, info or neutral, colours the bar without a chip) and an optional trailing caption under the bar ('12 days left': captionField). The percentage is percentField when the data has one (0 to 100), else value / target; a row with a value and no target reads the value as the percentage. autoTone colours bars from their percentage when the row has no status: 'goal' green at 100%, 'limit' (budgets, quotas, storage) amber from 80% and red over 100%. showValues and showPercent pick the figures shown; barSize thin, default or thick; listStyle 'card' (bordered panel) or 'plain'. A click on a row exposes selectedItem and selectedItemId and fires onItemClick (rows look clickable only when it is handled). Use a Stat or a Summary strip for one headline figure, a Progress for a single bar. Height: grows with its rows (about 64px a row, 76px with captions)",
+    "description": "List of progress rows from data, for goals, budgets, quotas, onboarding steps and capacity: each row has a label (labelField), its value against a target ('$18,400 of $25,000': valueField, targetField, in valueFormat: auto, number, currency in currency, percent, compact), a progress bar, an optional status (statusField: a chip toned by its words, On track green, At risk amber, Over budget or Behind red; a status that only names a tone, success, warning, danger, info or neutral, colours the bar without a chip) and an optional trailing caption under the bar ('12 days left': captionField). The percentage is percentField when the data has one (0 to 100), else value / target; a row with a value and no target reads the value as the percentage. autoTone colours bars from their percentage when the row has no status: 'goal' green at 100%, 'limit' (budgets, quotas, storage) amber from 80% and red over 100%. showValues and showPercent pick the figures shown; barSize thin, default or thick; listStyle 'card' (bordered panel) or 'plain'. A click on a row exposes selectedItem and selectedItemId and fires onItemClicked (rows look clickable only when it is handled). Use a Stat or a Summary strip for one headline figure, a Progress for a single bar. Height: grows with its rows (about 64px a row, 76px with captions)",
     "defaultSize": {
       "width": 20,
       "height": 330
@@ -30582,8 +30307,8 @@
     ],
     "events": [
       {
-        "id": "onItemClick",
-        "label": "On item click"
+        "id": "onItemClicked",
+        "label": "On item clicked"
       }
     ],
     "actions": [
@@ -30648,13 +30373,13 @@
     ],
     "authoringHints": {
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
-      "usage": "Goals, budgets, quotas, capacity and onboarding steps as rows of label, 'value of target' and a bar, in place of a table of percentages or a stack of ShadProgress widgets: data rows with labelField, valueField and targetField (or percentField 0 to 100 when the data already has a percentage; a value with no target is read as the percentage), valueFormat 'currency' (with currency) for budgets and 'number' for counts. statusField chips tone the bar by their words (On track green, At risk amber, Over budget or Behind red; a bare tone name success, warning, danger or info colours the bar with no chip); without a status, autoTone 'limit' turns budgets and quotas amber from 80% and red over 100%, 'goal' turns a target green at 100%. captionField is a short line under the bar ('12 days left', 'Renewals due in November'). listStyle 'plain' inside a card, 'card' on its own; barSize 'thin' for a dense side panel. onItemClick with selectedItem opens details. About 64px per row, 76 with captions."
+      "usage": "Goals, budgets, quotas, capacity and onboarding steps as rows of label, 'value of target' and a bar, in place of a table of percentages or a stack of ShadProgress widgets: data rows with labelField, valueField and targetField (or percentField 0 to 100 when the data already has a percentage; a value with no target is read as the percentage), valueFormat 'currency' (with currency) for budgets and 'number' for counts. statusField chips tone the bar by their words (On track green, At risk amber, Over budget or Behind red; a bare tone name success, warning, danger or info colours the bar with no chip); without a status, autoTone 'limit' turns budgets and quotas amber from 80% and red over 100%, 'goal' turns a target green at 100%. captionField is a short line under the bar ('12 days left', 'Renewals due in November'). listStyle 'plain' inside a card, 'card' on its own; barSize 'thin' for a dense side panel. onItemClicked with selectedItem opens details. About 64px per row, 76 with captions."
     }
   },
   "ShadQuestionnaire": {
     "type": "ShadQuestionnaire",
     "name": "ShadQuestionnaire",
-    "description": "ToolJet UI 2.0 multi-step questionnaire, one question at a time: a 'Question 2 of 5' progress bar, the prompt and description, answer cards with a letter (or number) shortcut, and Previous, Skip (optional questions), Next and Submit. items: [{ name, prompt, description, required, type: 'single' | 'multiple' | 'text', choices: ['Label'] or [{ label, value, description }], other: true or { label, placeholder } (a free-text Other answer), placeholder (text), multiline: false (a one-line text answer: a name, an email) }]. A required question blocks Next with an error until answered. Exposes answers ({ [name]: value, multiple as an array, Other as its text }), currentIndex, currentItem and isComplete; onStepChange on every move, onSubmit with the answers (run the save query there). After submit it shows completeTitle and completeText. Actions reset() and goTo(index or name). defaultAnswers restores saved answers. Height: grows with the question (about 440px for four choices, 160px plus 58px per choice)",
+    "description": "ToolJet UI 2.0 multi-step questionnaire, one question at a time: a 'Question 2 of 5' progress bar, the prompt and description, answer cards with a letter (or number) shortcut, and Previous, Skip (optional questions), Next and Submit. items: [{ name, prompt, description, required, type: 'single' | 'multiple' | 'text', choices: ['Label'] or [{ label, value, description }], other: true or { label, placeholder } (a free-text Other answer), placeholder (text), multiline: false (a one-line text answer: a name, an email) }]. A required question blocks Next with an error until answered. Exposes answers ({ [name]: value, multiple as an array, Other as its text }), currentIndex, currentItem and isComplete; onStepChanged on every move, onSubmit with the answers (run the save query there). After submit it shows completeTitle and completeText. Actions reset() and goTo(index or name). defaultAnswers restores saved answers. Height: grows with the question (about 440px for four choices, 160px plus 58px per choice)",
     "defaultSize": {
       "width": 20,
       "height": 480
@@ -30830,8 +30555,8 @@
     ],
     "events": [
       {
-        "id": "onStepChange",
-        "label": "On step change"
+        "id": "onStepChanged",
+        "label": "On step changed"
       },
       {
         "id": "onSubmit",
@@ -30924,13 +30649,13 @@
     ],
     "authoringHints": {
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
-      "usage": "A step-by-step questionnaire: intake, onboarding, a survey, a triage or an assessment, one question at a time with progress, Previous, Skip (optional questions, not the last) and Next, in place of a long Form or a Tabs wizard. items is the question list: [{ name, prompt, description, required, type 'single' | 'multiple' | 'text', choices: ['Label'] or [{ label, value, description }], other: true or { label, placeholder } for a typed 'Other' answer, placeholder, multiline: false for a one-line text answer (a name, an email) }]. A required question blocks Next until answered (an Other picked but left empty does too). components.<q>.answers is keyed by item name: single gives the choice's value (or the typed Other text), multiple an array (Other text last: join it, [].concat(a.equipment || []).join(', '), for a text column), text a string. Run the save query on onSubmit, reading the answers there; the widget then shows completeTitle and completeText (completeTitle can bind to an answer: 'You are all set, ' + components.<q>.answers.preferred_name), with an 'Edit answers' link back. onStepChange with currentIndex and currentItem.name can drive a side panel ('Why we ask'); the reset action starts a new response (a 'Start another' button shown while isComplete), goTo jumps. defaultAnswers restores saved answers. Write prompts as questions and choices as short labels with a one-line description. It draws its own card (surface 'card'; 'plain' inside a card or a dialog) and fits each question's height (dynamicHeight, on by default): give it the height of a typical question (about 160px plus 58px per choice) and nothing pinned right under it that would be pushed down."
+      "usage": "A step-by-step questionnaire: intake, onboarding, a survey, a triage or an assessment, one question at a time with progress, Previous, Skip (optional questions, not the last) and Next, in place of a long Form or a Tabs wizard. items is the question list: [{ name, prompt, description, required, type 'single' | 'multiple' | 'text', choices: ['Label'] or [{ label, value, description }], other: true or { label, placeholder } for a typed 'Other' answer, placeholder, multiline: false for a one-line text answer (a name, an email) }]. A required question blocks Next until answered (an Other picked but left empty does too). components.<q>.answers is keyed by item name: single gives the choice's value (or the typed Other text), multiple an array (Other text last: join it, [].concat(a.equipment || []).join(', '), for a text column), text a string. Run the save query on onSubmit, reading the answers there; the widget then shows completeTitle and completeText (completeTitle can bind to an answer: 'You are all set, ' + components.<q>.answers.preferred_name), with an 'Edit answers' link back. onStepChanged with currentIndex and currentItem.name can drive a side panel ('Why we ask'); the reset action starts a new response (a 'Start another' button shown while isComplete), goTo jumps. defaultAnswers restores saved answers. Write prompts as questions and choices as short labels with a one-line description. It draws its own card (surface 'card'; 'plain' inside a card or a dialog) and fits each question's height (dynamicHeight, on by default): give it the height of a typical question (about 160px plus 58px per choice) and nothing pinned right under it that would be pushed down."
     }
   },
   "ShadRadarChart": {
     "type": "ShadRadarChart",
     "name": "ShadRadarChart",
-    "description": "Radar (spider) chart comparing scores across categories: data [{ skill: 'Speed', alex: 86, jordan: 65 }], categoryField 'skill' (one spoke per row), yFields 'alex,jordan' (one filled polygon each); fillOpacity, gridShape polygon/circle, dots, legend, maxValue (blank = auto). Best square, 240-320 px; clicking sets clickedDatum and fires onClick.",
+    "description": "Radar (spider) chart comparing scores across categories: data [{ skill: 'Speed', alex: 86, jordan: 65 }], categoryField 'skill' (one spoke per row), yFields 'alex,jordan' (one filled polygon each); fillOpacity, gridShape polygon/circle, dots, legend, maxValue (blank = auto). Best square, 240-320 px; clicking sets clickedDataPoint and fires onClick.",
     "defaultSize": {
       "width": 12,
       "height": 300
@@ -31198,10 +30923,6 @@
       {
         "name": "isDisabled",
         "default": false
-      },
-      {
-        "name": "clickedDatum",
-        "default": {}
       },
       {
         "name": "clickedDataPoint",
@@ -31519,10 +31240,6 @@
         "default": false
       },
       {
-        "name": "clickedDatum",
-        "default": {}
-      },
-      {
         "name": "clickedDataPoint",
         "default": {}
       }
@@ -31662,10 +31379,6 @@
       }
     ],
     "events": [
-      {
-        "id": "onChange",
-        "label": "On change"
-      },
       {
         "id": "onSelectionChange",
         "label": "On selection change"
@@ -32060,7 +31773,7 @@
   "ShadRecordList": {
     "type": "ShadRecordList",
     "name": "ShadRecordList",
-    "description": "List of records as two-line rows, for a recent-orders, people, tickets or activity panel beside a chart or a table: an avatar (avatarField: an image URL, else the initials of that field's text, else of the title), the title (titleField), a meta line under it (metaFields, a comma list of field specs joined with ' · ': 'city', 'total|currency', 'due|date:Due {}' (value in a label), 'seats:Seats' (label first); formats number, currency, percent, compact, date, datetime), a progress bar under the meta line (progressField: a percentage 0 to 100, as 42 or '42%'; onboarding, a project's completion), a status chip on the right (statusField, toned by its words: Paid green, Pending amber, Overdue red, Open blue) and a trailing value (valueField in valueFormat: currency in currency, date, number, ...). density compact, default or comfortable; showDividers; listStyle 'card' (bordered panel) or 'plain'; avatarShape circle or rounded. A click selects the row (selectedItem, selectedItemId; onRowClicked; the native List view's onRecordClicked, selectedRecord and selectedRecordId, the row's position in data). Draws 100 rows and a Show more button. Height: grows with its rows (about 60px a row at default density)",
+    "description": "List of records as two-line rows, for a recent-orders, people, tickets or activity panel beside a chart or a table: an avatar (avatarField: an image URL, else the initials of that field's text, else of the title), the title (titleField), a meta line under it (metaFields, a comma list of field specs joined with ' · ': 'city', 'total|currency', 'due|date:Due {}' (value in a label), 'seats:Seats' (label first); formats number, currency, percent, compact, date, datetime), a progress bar under the meta line (progressField: a percentage 0 to 100, as 42 or '42%'; onboarding, a project's completion), a status chip on the right (statusField, toned by its words: Paid green, Pending amber, Overdue red, Open blue) and a trailing value (valueField in valueFormat: currency in currency, date, number, ...). density compact, default or comfortable; showDividers; listStyle 'card' (bordered panel) or 'plain'; avatarShape circle or rounded. A click selects the row (selectedItem, selectedItemId; onItemClicked). Draws 100 rows and a Show more button. Height: grows with its rows (about 60px a row at default density)",
     "defaultSize": {
       "width": 20,
       "height": 340
@@ -32317,12 +32030,8 @@
     ],
     "events": [
       {
-        "id": "onRowClicked",
-        "label": "On row clicked"
-      },
-      {
-        "id": "onRecordClicked",
-        "label": "Record clicked"
+        "id": "onItemClicked",
+        "label": "On item clicked"
       }
     ],
     "actions": [
@@ -32383,33 +32092,17 @@
       {
         "name": "selectedItemId",
         "default": null
-      },
-      {
-        "name": "selectedRecord",
-        "default": {}
-      },
-      {
-        "name": "selectedRecordId",
-        "default": null
-      },
-      {
-        "name": "selectedRow",
-        "default": {}
-      },
-      {
-        "name": "selectedRowId",
-        "default": null
       }
     ],
     "authoringHints": {
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
-      "usage": "A short list of records as two-line rows beside a chart or a table, the 'recent orders', 'today's bookings', 'who is on shift' or 'latest tickets' panel: titleField, metaFields for the second line ('contact, due|date:Due {}'), statusField for a toned chip, valueField with valueFormat for an amount or a date on the right, avatarField for a photo or a person's initials, progressField for a percentage bar under the meta line (onboarding, a project's completion). onRowClicked with selectedItem opens details. Use ShadTable for long, sortable or editable data. About 60px per row plus 2."
+      "usage": "A short list of records as two-line rows beside a chart or a table, the 'recent orders', 'today's bookings', 'who is on shift' or 'latest tickets' panel: titleField, metaFields for the second line ('contact, due|date:Due {}'), statusField for a toned chip, valueField with valueFormat for an amount or a date on the right, avatarField for a photo or a person's initials, progressField for a percentage bar under the meta line (onboarding, a project's completion). onItemClicked with selectedItem opens details. Use ShadTable for long, sortable or editable data. About 60px per row plus 2."
     }
   },
   "ShadScatterChart": {
     "type": "ShadScatterChart",
     "name": "ShadScatterChart",
-    "description": "Scatter or bubble chart relating two measures: data [{ account: 'Globex', spend: 30, revenue: 95, seats: 120, segment: 'Enterprise' }], xField 'spend', yField 'revenue', optional sizeField (bubbles), groupField (one colour and legend entry per value), nameField (tooltip title), xLabel/yLabel axis titles, referenceX/referenceY dashed quadrant lines, x and y formats. Height 260-360 px; clicking a point sets clickedDatum to its row and fires onClick.",
+    "description": "Scatter or bubble chart relating two measures: data [{ account: 'Globex', spend: 30, revenue: 95, seats: 120, segment: 'Enterprise' }], xField 'spend', yField 'revenue', optional sizeField (bubbles), groupField (one colour and legend entry per value), nameField (tooltip title), xLabel/yLabel axis titles, referenceX/referenceY dashed quadrant lines, x and y formats. Height 260-360 px; clicking a point sets clickedDataPoint to its row and fires onClick.",
     "defaultSize": {
       "width": 16,
       "height": 320
@@ -32734,10 +32427,6 @@
         "default": false
       },
       {
-        "name": "clickedDatum",
-        "default": {}
-      },
-      {
         "name": "clickedDataPoint",
         "default": {}
       }
@@ -32750,7 +32439,7 @@
   "ShadSchedule": {
     "type": "ShadSchedule",
     "name": "ShadSchedule",
-    "description": "Resource schedule: resources down the side (rooms, desks, people on shift or on call, vehicles, equipment) and time across, with bookings drawn as blocks. scale 'hours' shows one day (date, empty for today) from dayStart to dayEnd (hours, 0 to 24) with empty slots of slotMinutes; scale 'days' shows `days` days from date (a week of shifts, an on-call rota). resources: ['Atlas', 'Cove'] or [{ id, name, caption, avatar }] (empty: the distinct values of the bookings' resourceField). bookings: rows read through startField and endField (an ISO date-time, 'YYYY-MM-DD HH:mm', 'HH:mm' for a time on the shown day, or 'YYYY-MM-DD' for a whole day; no end lasts an hour), resourceField (a resource's id or name), titleField, subtitleField (a second line: the host, the person) and statusField (toned by its words: Confirmed green, Tentative or Pending amber, Cancelled red, Booked blue; or a tone name). Overlapping bookings of one resource stack in lanes. A now-line marks the current time on today (showNowLine). A click on a booking exposes selectedBooking (its row) and selectedBookingId and fires onBookingClick; a click on an empty slot exposes selectedSlot { resourceId, resource, start, end (ISO), date, startTime, endTime, label } and fires onSlotClick (open a booking form from it). hourFormat 12h or 24h; resourceTitle heads the resource column. Scrolls sideways when the hours do not fit. Height: grows with its rows (40px header plus rowHeight, default 56, per resource; more where bookings overlap)",
+    "description": "Resource schedule: resources down the side (rooms, desks, people on shift or on call, vehicles, equipment) and time across, with bookings drawn as blocks. scale 'hours' shows one day (date, empty for today) from dayStart to dayEnd (hours, 0 to 24) with empty slots of slotMinutes; scale 'days' shows `days` days from date (a week of shifts, an on-call rota). resources: ['Atlas', 'Cove'] or [{ id, name, caption, avatar }] (empty: the distinct values of the bookings' resourceField). bookings: rows read through startField and endField (an ISO date-time, 'YYYY-MM-DD HH:mm', 'HH:mm' for a time on the shown day, or 'YYYY-MM-DD' for a whole day; no end lasts an hour), resourceField (a resource's id or name), titleField, subtitleField (a second line: the host, the person) and statusField (toned by its words: Confirmed green, Tentative or Pending amber, Cancelled red, Booked blue; or a tone name). Overlapping bookings of one resource stack in lanes. A now-line marks the current time on today (showNowLine). A click on a booking exposes selectedBooking (its row) and selectedBookingId and fires onBookingClicked; a click on an empty slot exposes selectedSlot { resourceId, resource, start, end (ISO), date, startTime, endTime, label } and fires onSlotClicked (open a booking form from it). hourFormat 12h or 24h; resourceTitle heads the resource column. Scrolls sideways when the hours do not fit. Height: grows with its rows (40px header plus rowHeight, default 56, per resource; more where bookings overlap)",
     "defaultSize": {
       "width": 43,
       "height": 300
@@ -33014,12 +32703,12 @@
     ],
     "events": [
       {
-        "id": "onBookingClick",
-        "label": "On booking click"
+        "id": "onBookingClicked",
+        "label": "On booking clicked"
       },
       {
-        "id": "onSlotClick",
-        "label": "On empty slot click"
+        "id": "onSlotClicked",
+        "label": "On slot clicked"
       }
     ],
     "actions": [
@@ -33088,7 +32777,7 @@
     ],
     "authoringHints": {
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
-      "usage": "Rooms, desks, shifts, on-call rotas, vehicles, equipment and appointments: resources down the side, time across, bookings as blocks, in place of a table of start and end times or a Calendar when the question is who or what is free when. scale 'hours' is one day (date, empty for today; dayStart and dayEnd in hours; slotMinutes for empty slots), scale 'days' is a run of days (days 7 for a week, 14 for a rota). resources [{ id, name, caption }] (caption: seats, role, plate); bookings rows mapped through resourceField (a resource id or name), startField and endField (ISO date-times, 'YYYY-MM-DD HH:mm', 'HH:mm' on the shown day, or 'YYYY-MM-DD' for whole days), titleField, subtitleField (who), statusField (Confirmed green, Tentative or Pending amber, Cancelled red and struck through). Wire onSlotClick to open a booking form prefilled from components.<name>.selectedSlot { resourceId, resource, start, end, date, startTime, endTime }, and onBookingClick to a details sheet from selectedBooking; after saving, refresh the bookings query. resourceTitle names the column ('Room', 'Engineer'). Full width; about 40px plus 56px per resource."
+      "usage": "Rooms, desks, shifts, on-call rotas, vehicles, equipment and appointments: resources down the side, time across, bookings as blocks, in place of a table of start and end times or a Calendar when the question is who or what is free when. scale 'hours' is one day (date, empty for today; dayStart and dayEnd in hours; slotMinutes for empty slots), scale 'days' is a run of days (days 7 for a week, 14 for a rota). resources [{ id, name, caption }] (caption: seats, role, plate); bookings rows mapped through resourceField (a resource id or name), startField and endField (ISO date-times, 'YYYY-MM-DD HH:mm', 'HH:mm' on the shown day, or 'YYYY-MM-DD' for whole days), titleField, subtitleField (who), statusField (Confirmed green, Tentative or Pending amber, Cancelled red and struck through). Wire onSlotClicked to open a booking form prefilled from components.<name>.selectedSlot { resourceId, resource, start, end, date, startTime, endTime }, and onBookingClicked to a details sheet from selectedBooking; after saving, refresh the bookings query. resourceTitle names the column ('Room', 'Engineer'). Full width; about 40px plus 56px per resource."
     }
   },
   "ShadSelect": {
@@ -33245,10 +32934,6 @@
       }
     ],
     "events": [
-      {
-        "id": "onChange",
-        "label": "On change"
-      },
       {
         "id": "onSelect",
         "label": "On select"
@@ -34990,18 +34675,6 @@
         ]
       },
       {
-        "handle": "setDisabled",
-        "displayName": "Set disabled",
-        "params": [
-          {
-            "handle": "disable",
-            "displayName": "Disabled",
-            "defaultValue": "{{true}}",
-            "type": "toggle"
-          }
-        ]
-      },
-      {
         "handle": "setVisibility",
         "displayName": "Set visibility",
         "params": [
@@ -36706,7 +36379,7 @@
   "ShadTags": {
     "type": "ShadTags",
     "name": "ShadTags",
-    "description": "Read-only tag chips: tags is an array or a comma-separated string; tagColors maps a value to a colour ({ Paid: '#16a34a' }: tinted chip, light background and strong text of that hue); variant ('soft', 'outline', 'solid'), size ('sm', 'default', 'lg'), overflow ('wrap', or 'single' for one line with +N), pill. Clicking a tag sets lastClickedTag and fires onTagClick. Height: 24px per line",
+    "description": "Read-only tag chips: tags is an array or a comma-separated string; tagColors maps a value to a colour ({ Paid: '#16a34a' }: tinted chip, light background and strong text of that hue); variant ('soft', 'outline', 'solid'), size ('sm', 'default', 'lg'), overflow ('wrap', or 'single' for one line with +N), pill. Clicking a tag sets lastClickedTag and fires onTagClicked. Height: 24px per line",
     "defaultSize": {
       "width": 12,
       "height": 24
@@ -36866,8 +36539,8 @@
     ],
     "events": [
       {
-        "id": "onTagClick",
-        "label": "On tag click"
+        "id": "onTagClicked",
+        "label": "On tag clicked"
       }
     ],
     "actions": [
@@ -36938,7 +36611,7 @@
   "ShadTagsInput": {
     "type": "ShadTagsInput",
     "name": "ShadTagsInput",
-    "description": "Tags input: free-form tags typed in the field (Enter or comma adds, Backspace removes the last, x removes one), with optional suggestions, maxTags, duplicate check and a per-tag pattern. Exposes tags (array of text) and value (the same). Height: 64px with a label, 36px without (one row; grows with dynamic height)",
+    "description": "Tags input: free-form tags typed in the field (Enter or comma adds, Backspace removes the last, x removes one), with optional suggestions, maxTags, duplicate check and a per-tag pattern. Exposes values (array of text). Height: 64px with a label, 36px without (one row; grows with dynamic height)",
     "defaultSize": {
       "width": 10,
       "height": 64
@@ -37168,10 +36841,6 @@
         "label": "On tag added"
       },
       {
-        "id": "onTagRemoved",
-        "label": "On tag removed"
-      },
-      {
         "id": "onTagDeleted",
         "label": "On tag deleted"
       },
@@ -37289,19 +36958,7 @@
         "default": false
       },
       {
-        "name": "tags",
-        "default": []
-      },
-      {
-        "name": "value",
-        "default": []
-      },
-      {
         "name": "values",
-        "default": []
-      },
-      {
-        "name": "selectedTags",
         "default": []
       },
       {
@@ -37323,7 +36980,7 @@
     ],
     "authoringHints": {
       "styles": "Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query's isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.",
-      "usage": "defaultValue is an array of text; exposes tags. Height 64 with a label; it grows as tags wrap."
+      "usage": "defaultValue is an array of text; exposes values (the array). Height 64 with a label; it grows as tags wrap."
     }
   },
   "ShadText": {
@@ -37764,30 +37421,6 @@
         "displayName": "Set blur"
       },
       {
-        "handle": "disable",
-        "displayName": "Disable",
-        "params": [
-          {
-            "handle": "disable",
-            "displayName": "Value",
-            "defaultValue": "{{false}}",
-            "type": "toggle"
-          }
-        ]
-      },
-      {
-        "handle": "visibility",
-        "displayName": "Visibility",
-        "params": [
-          {
-            "handle": "visible",
-            "displayName": "Value",
-            "defaultValue": "{{true}}",
-            "type": "toggle"
-          }
-        ]
-      },
-      {
         "handle": "setVisibility",
         "displayName": "Set visibility",
         "params": [
@@ -38064,10 +37697,6 @@
     ],
     "events": [
       {
-        "id": "onChange",
-        "label": "On change"
-      },
-      {
         "id": "onSelect",
         "label": "On select"
       },
@@ -38081,17 +37710,6 @@
       }
     ],
     "actions": [
-      {
-        "handle": "setTime",
-        "displayName": "Set time",
-        "params": [
-          {
-            "handle": "value",
-            "displayName": "Time (HH:mm)",
-            "defaultValue": ""
-          }
-        ]
-      },
       {
         "handle": "setValue",
         "displayName": "Set value",
@@ -38107,10 +37725,6 @@
             "defaultValue": "HH:mm"
           }
         ]
-      },
-      {
-        "handle": "clear",
-        "displayName": "Clear"
       },
       {
         "handle": "clearValue",
@@ -38237,7 +37851,7 @@
   "ShadTimeline": {
     "type": "ShadTimeline",
     "name": "ShadTimeline",
-    "description": "Vertical timeline / activity feed: items [{ title, description, time, status or color, icon? }] (status words such as done, active, pending, failed take theme colours; statusColors maps your own); marker ('dot' or 'icon' with lucide names); density ('comfortable', 'compact'); newestFirst; timePosition ('right', 'top'); dateFormat for ISO times. Clicking an item sets lastClickedItem and fires onItemClick. Height: about 66px per item with a description (44px without), 50px compact",
+    "description": "Vertical timeline / activity feed: items [{ title, description, time, status or color, icon? }] (status words such as done, active, pending, failed take theme colours; statusColors maps your own); marker ('dot' or 'icon' with lucide names); density ('comfortable', 'compact'); newestFirst; timePosition ('right', 'top'); dateFormat for ISO times. Clicking an item sets lastClickedItem and fires onItemClicked. Height: about 66px per item with a description (44px without), 50px compact",
     "defaultSize": {
       "width": 14,
       "height": 224
@@ -38398,8 +38012,8 @@
     ],
     "events": [
       {
-        "id": "onItemClick",
-        "label": "On item click"
+        "id": "onItemClicked",
+        "label": "On item clicked"
       }
     ],
     "actions": [
@@ -38658,10 +38272,6 @@
       },
       {
         "name": "value",
-        "default": ""
-      },
-      {
-        "name": "selected",
         "default": ""
       }
     ],
