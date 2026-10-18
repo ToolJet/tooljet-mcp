@@ -139,3 +139,21 @@ const WRONG_ALIASES: Record<string, Record<string, (name: string) => string>> = 
       'the incorrect alias is undefined, even with optional chaining or a fallback. An empty selection is [].',
   },
 };
+
+/** Date and time pickers whose value is '' while nothing is picked. */
+const DATE_PICKERS = new Set(['ShadDatePicker', 'ShadDateTimePicker', 'ShadTimePicker', 'Datepicker', 'DatePickerV2', 'DatetimePickerV2', 'TimePicker']);
+
+/** A ToolJet DB create_row or update_rows column written straight from a date or time picker's value. An empty picker
+ *  publishes '' and a date or timestamp column rejects it, so the whole save fails whenever the field is left blank
+ *  (an intake form's optional incident date, 2026-10-18). A fallback (`|| null`, a ternary) passes. */
+export function lintEmptyDateWrites(value: unknown, components: Component[], path: string): string[] {
+  if (Array.isArray(value)) return value.flatMap((child, i) => lintEmptyDateWrites(child, components, `${path}[${i}]`));
+  if (value && typeof value === 'object') return Object.entries(value).flatMap(([key, child]) =>
+    lintEmptyDateWrites(child, components, `${path}.${key}`));
+  if (typeof value !== 'string' || !/\.(create_row|update_rows\.columns)\.[^.]+\.value$/.test(path)) return [];
+  const read = value.trim().match(/^\{\{\s*components\??\.([A-Za-z_$][\w$]*)\??\.value\s*\}\}$/);
+  const picker = read ? components.find((c) => c.name === read[1]) : undefined;
+  if (!picker?.type || !DATE_PICKERS.has(picker.type)) return [];
+  return [`${path}: ${picker.type} "${picker.name}" is '' while no date is picked, and a date or timestamp column ` +
+    `rejects '', so the save fails whenever it is left blank. Write {{ components.${picker.name}.value || null }}.`];
+}

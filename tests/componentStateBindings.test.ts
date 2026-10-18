@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lintComponentStateBindings } from '../src/componentStateBindings.js';
+import { lintComponentStateBindings, lintEmptyDateWrites } from '../src/componentStateBindings.js';
 import { validateEvents } from '../src/eventValidation.js';
 import { validateAppStructure } from '../src/lint.js';
 import { getComponentSchema } from '../src/catalog.js';
@@ -226,5 +226,42 @@ describe('a UI 2.0 widget read through a name it does not publish', () => {
 
   it('leaves native widgets alone: their catalog is not a complete list of what they publish', () => {
     expect(lintComponentStateBindings('{{ components.nativeBox.checked }}', ui2, 'p')).toEqual([]);
+  });
+});
+
+// An empty date or time picker publishes '' and a date or timestamp column rejects it, so the whole save failed
+// whenever an optional date was left blank (intake form rebuild, 2026-10-18).
+describe('a ToolJet DB write of a date picker that may be empty', () => {
+  const comps = [
+    { id: 'd', name: 'incident_date', type: 'ShadDatePicker' },
+    { id: 't', name: 'consultation', type: 'ShadDateTimePicker' },
+    { id: 'n', name: 'nativeDate', type: 'DatePickerV2' },
+    { id: 'i', name: 'full_name', type: 'ShadInput' },
+  ];
+  const write = (value: string) => ({ operation: 'create_row', create_row: { '0': { column: 'incident_date', value } } });
+
+  it.each(['{{ components.incident_date?.value }}', '{{components.consultation.value}}', '{{ components.nativeDate.value }}'])(
+    'asks for a null fallback: %s', (value) => {
+      const errors = lintEmptyDateWrites(write(value), comps, 'Query "submit"');
+      expect(errors).toHaveLength(1);
+      expect(errors[0]).toMatch(/Query "submit"\.create_row\.0\.value: .* '' .*\|\| null/);
+    });
+
+  it('checks update_rows columns too', () => {
+    const options = { operation: 'update_rows', update_rows: { columns: { '0': { column: 'when', value: '{{ components.incident_date.value }}' } } } };
+    expect(lintEmptyDateWrites(options, comps, 'Query "save"')).toHaveLength(1);
+  });
+
+  it.each([
+    '{{ components.incident_date?.value || null }}',
+    '{{ components.incident_date.value ? components.incident_date.value : null }}',
+    '{{ components.full_name.value }}',
+    '{{ components.incident_date.selectedDate }}',
+  ])('accepts %s', (value) => {
+    expect(lintEmptyDateWrites(write(value), comps, 'Query "submit"')).toEqual([]);
+  });
+
+  it('ignores the same binding outside a ToolJet DB write', () => {
+    expect(lintEmptyDateWrites({ list_rows: { '0': { value: '{{ components.incident_date.value }}' } } }, comps, 'Query "q"')).toEqual([]);
   });
 });

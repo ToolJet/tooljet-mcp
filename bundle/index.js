@@ -63119,6 +63119,20 @@ var WRONG_ALIASES = {
     value: (name2) => `MultiselectV2 "${name2}" does not expose value. Use components.${name2}.values for the selected option values; the incorrect alias is undefined, even with optional chaining or a fallback. An empty selection is [].`
   }
 };
+var DATE_PICKERS = /* @__PURE__ */ new Set(["ShadDatePicker", "ShadDateTimePicker", "ShadTimePicker", "Datepicker", "DatePickerV2", "DatetimePickerV2", "TimePicker"]);
+function lintEmptyDateWrites(value2, components, path) {
+  if (Array.isArray(value2))
+    return value2.flatMap((child, i) => lintEmptyDateWrites(child, components, `${path}[${i}]`));
+  if (value2 && typeof value2 === "object")
+    return Object.entries(value2).flatMap(([key4, child]) => lintEmptyDateWrites(child, components, `${path}.${key4}`));
+  if (typeof value2 !== "string" || !/\.(create_row|update_rows\.columns)\.[^.]+\.value$/.test(path))
+    return [];
+  const read = value2.trim().match(/^\{\{\s*components\??\.([A-Za-z_$][\w$]*)\??\.value\s*\}\}$/);
+  const picker = read ? components.find((c) => c.name === read[1]) : void 0;
+  if (!picker?.type || !DATE_PICKERS.has(picker.type))
+    return [];
+  return [`${path}: ${picker.type} "${picker.name}" is '' while no date is picked, and a date or timestamp column rejects '', so the save fails whenever it is left blank. Write {{ components.${picker.name}.value || null }}.`];
+}
 
 // dist/queryToggles.js
 var QUERY_TOGGLES = ["runOnPageLoad", "runOnDependencyChange", "requestConfirmation", "showSuccessNotification"];
@@ -70221,6 +70235,8 @@ function validateAppStructure(summary, options2 = {}) {
   warnings.push(...lintSelectedRowProjections(allComponents, bindingSources.filter((s) => !s.label.startsWith("Component "))));
   for (const source2 of bindingSources) {
     errors.push(...lintComponentStateBindings(source2.value, allComponents, source2.label));
+    if (source2.label.startsWith("Query "))
+      errors.push(...lintEmptyDateWrites(source2.value, allComponents, source2.label));
     if (!source2.label.startsWith("Query "))
       errors.push(...lintBindingNames(source2.value, source2.label));
     const seen = /* @__PURE__ */ new Set();
