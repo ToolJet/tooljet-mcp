@@ -63054,6 +63054,18 @@ function lintComponentStateBindings(value2, components, path) {
     if (node2.type === "VariableDeclarator" && bindsComponents(node2.id) || /^(Function|Class)(Declaration|Expression)$/.test(node2.type) && bindsComponents(node2.id) || Array.isArray(node2.params) && node2.params.some(bindsComponents) || node2.type === "CatchClause" && bindsComponents(node2.param) || node2.type === "WithStatement" || node2.type === "CallExpression" && isNode2(node2.callee) && node2.callee.type === "Identifier" && node2.callee.name === "eval")
       shadowed = true;
     const prop3 = isMember(node2) ? memberName(node2) : void 0;
+    if (prop3 && isMember(node2.object) && isMember(node2.object.object)) {
+      const value3 = node2.object;
+      const owner = value3.object;
+      if (isNode2(owner.object) && owner.object.type === "Identifier" && owner.object.name === "components") {
+        const name2 = memberName(owner);
+        const variable = memberName(value3);
+        const type = name2 ? components.find((c) => c.name === name2)?.type : void 0;
+        if (name2 && variable && type && missingMember(type, variable, prop3)) {
+          wrongNames.add(`${name2}\0${type}\0${variable}.${prop3}`);
+        }
+      }
+    }
     if (prop3 && isMember(node2.object)) {
       const owner = node2.object;
       if (isNode2(owner.object) && owner.object.type === "Identifier" && owner.object.name === "components") {
@@ -63069,6 +63081,10 @@ function lintComponentStateBindings(value2, components, path) {
   visit(root);
   return shadowed ? [] : [...wrongNames].map((key4) => {
     const [name2, type, prop3] = key4.split("\0");
+    if (prop3.includes(".")) {
+      const [variable, member5] = prop3.split(".");
+      return `${path}: ${type} "${name2}" ${variable} has no ${member5}; it reads undefined at runtime. It has ${missingMember(type, variable, member5).join(", ")}.`;
+    }
     return `${path}: ${WRONG_ALIASES[type]?.[prop3]?.(name2) ?? retiredUi2Message(type, prop3, name2)}`;
   });
 }
@@ -63132,6 +63148,18 @@ function lintEmptyDateWrites(value2, components, path) {
   if (!picker?.type || !DATE_PICKERS.has(picker.type))
     return [];
   return [`${path}: ${picker.type} "${picker.name}" is '' while no date is picked, and a date or timestamp column rejects '', so the save fails whenever it is left blank. Write {{ components.${picker.name}.value || null }}.`];
+}
+function missingMember(type, variable, member5) {
+  if (!type.startsWith("Shad"))
+    return void 0;
+  const entry = getComponentSchema(type)?.exposedVariables?.find((v) => v.name === variable);
+  const shape = entry?.shape;
+  if (!shape || typeof shape !== "object" || Array.isArray(shape))
+    return void 0;
+  const members = Object.keys(shape);
+  if (members.includes("...") || members.includes(member5))
+    return void 0;
+  return members;
 }
 
 // dist/queryToggles.js
