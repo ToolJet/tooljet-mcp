@@ -20615,7 +20615,7 @@
           "number",
           "string"
         ],
-        "default": "{{1250}}"
+        "default": ""
       },
       {
         "key": "currency",
@@ -21388,7 +21388,7 @@
   "ShadDateTimePicker": {
     "type": "ShadDateTimePicker",
     "name": "ShadDateTimePicker",
-    "description": "Date and time picker: a field opening a calendar with a time row (hour, minute every minuteStep, AM/PM). Exposes value as 'YYYY-MM-DDTHH:mm' (local time, '' when empty), selectedDate 'YYYY-MM-DD', selectedTime 'HH:mm', unixTimestamp (ms) and displayValue (dateFormat plus the time). defaultValue takes ISO text, 'YYYY-MM-DD HH:mm' or a unix timestamp; minDate/maxDate ('YYYY-MM-DD') and disabledDates (array) block days. Height: 64px with a label (label above the control), 36px without; add 24px for help text or a validation message",
+    "description": "Date and time picker: a field opening a calendar with a time row (hour, minute, AM/PM; a time every minuteStep minutes from midnight). Exposes value as 'YYYY-MM-DDTHH:mm' (local time, '' when empty), selectedDate 'YYYY-MM-DD', selectedTime 'HH:mm', unixTimestamp (ms) and displayValue (dateFormat plus the time). defaultValue takes ISO text, 'YYYY-MM-DD HH:mm' or a unix timestamp; minDate/maxDate ('YYYY-MM-DD') and disabledDates (array) block days. Height: 64px with a label (label above the control), 36px without; add 24px for help text or a validation message",
     "defaultSize": {
       "width": 12,
       "height": 64
@@ -22197,7 +22197,8 @@
         "slotName": "footer",
         "layout": {
           "top": 16,
-          "left": 26,
+          "left": 27,
+          "width": 7,
           "height": 36
         },
         "displayName": "DialogCancel",
@@ -22215,7 +22216,8 @@
         "slotName": "footer",
         "layout": {
           "top": 16,
-          "left": 34,
+          "left": 35,
+          "width": 7,
           "height": 36
         },
         "displayName": "DialogConfirm",
@@ -22797,7 +22799,7 @@
   "ShadFileUpload": {
     "type": "ShadFileUpload",
     "name": "ShadFileUpload",
-    "description": "File upload: a dashed dropzone (drag and drop or click to browse) with a file list. accept is a MIME or extension list like 'image/*,.pdf'; maxSize and minSize in bytes. Exposes file [{ name, type, size, content (text), base64Data, dataURL, parsedData }] like the native File picker. Height: about 160px for the dropzone, 180px with a label; the list adds about 66px per file (dynamic height)",
+    "description": "File upload: a dashed dropzone (drag and drop or click to browse) with a file list. accept is a MIME or extension list like 'image/*,.pdf'; maxSize and minSize in bytes. Exposes file [{ name, type, size, content (text), base64Data, dataURL, parsedData, parseError }] like the native File picker, with parseError naming why parsing failed ('' when it did not). Height: about 160px for the dropzone, 180px with a label; the list adds about 66px per file (dynamic height)",
     "defaultSize": {
       "width": 12,
       "height": 180
@@ -24991,7 +24993,7 @@
   "ShadKanban": {
     "type": "ShadKanban",
     "name": "ShadKanban",
-    "description": "Kanban board from data: columns are values of a status field; cards show the fields you map (title, description, badge, tags, progress, meta, avatar), or, with Card content Custom, child components laid out on the card and bound to {{cardData.<field>}}. Drag to move, optional add and delete buttons, and addCard/updateCardData/deleteCard/moveCard actions; save changes with queries on the card events (components.<name>.lastCardMovement, lastAddedCard, lastRemovedCard, lastUpdatedCard, updatedCardData)",
+    "description": "Kanban board from data: columns are values of a status field; cards show the fields you map (title, description, badge, tags, progress, meta, avatar), or, with Card content Custom, child components laid out on the card and bound to {{cardData.<field>}}. Drag to move, optional add and delete buttons, and addCard/updateCardData/deleteCard/moveCard actions; save changes with queries on the card events (components.<name>.lastCardMovement, lastAddedCard, lastRemovedCard, lastUpdatedCard, updatedCardData). lastCardMovement is {cardId, card, from, to, toIndex}: a move saves with lastCardMovement.cardId and .to (the native names cardDetails, originColumnId, destinationColumnId, originCardIndex and destinationIndex also work)",
     "defaultSize": {
       "width": 43,
       "height": 420
@@ -30059,7 +30061,7 @@
     "description": "List of progress rows from data, for goals, budgets, quotas, onboarding steps and capacity: each row has a label (labelField), its value against a target ('$18,400 of $25,000': valueField, targetField, in valueFormat: auto, number, currency in currency, percent, compact), a progress bar, an optional status (statusField: a chip toned by its words, On track green, At risk amber, Over budget or Behind red; a status that only names a tone, success, warning, danger, info or neutral, colours the bar without a chip) and an optional trailing caption under the bar ('12 days left': captionField). The percentage is percentField when the data has one (0 to 100), else value / target; a row with a value and no target reads the value as the percentage. autoTone colours bars from their percentage when the row has no status: 'goal' green at 100%, 'limit' (budgets, quotas, storage) amber from 80% and red over 100%. showValues and showPercent pick the figures shown; barSize thin, default or thick; listStyle 'card' (bordered panel) or 'plain'. A click on a row exposes selectedItem and selectedItemId and fires onItemClicked (rows look clickable only when it is handled). Use a Stat or a Summary strip for one headline figure, a Progress for a single bar. Height: grows with its rows (about 64px a row, 76px with captions)",
     "defaultSize": {
       "width": 20,
-      "height": 330
+      "height": 360
     },
     "properties": [
       {
@@ -34748,7 +34750,7 @@
     "description": "Strip of 3 to 6 headline figures in one row with hairline separators (no card per figure), to sit above or beside a table or a chart: items [{ label, value, format, delta, deltaFormat, tone, lowerIsBetter, caption }] (at most 6 shown). value formats in the item's format, else valueFormat (auto: currency for money labels such as Revenue or Average order, a grouped number otherwise; number, currency in currency, percent, compact, date). delta: a number is signed and shown in deltaFormat (percent: 12.5 shows +12.5%; number; currency), text shows as written ('+3 this week'); its colour is the item's tone (positive, negative, neutral), else its sign (up green, down red; lowerIsBetter flips it for churn, refunds, wait times). caption is a small line under the figure ('vs last month'). appearance 'panel' (one bordered panel) or 'plain'; size sm, default or lg; align left or center. Narrow widths wrap figures into rows. Height: about 90px (sm 70px, lg 110px) a row, plus 18px with captions",
     "defaultSize": {
       "width": 43,
-      "height": 100
+      "height": 110
     },
     "properties": [
       {
@@ -36639,7 +36641,7 @@
         "key": "defaultValue",
         "label": "Default tags",
         "valueType": "array",
-        "default": "{{['react', 'typescript']}}"
+        "default": "{{[]}}"
       },
       {
         "key": "suggestions",
@@ -37495,7 +37497,7 @@
   "ShadTimePicker": {
     "type": "ShadTimePicker",
     "name": "ShadTimePicker",
-    "description": "Time picker: a field opening hour, minute (every minuteStep) and AM/PM columns, or (pickerStyle list) one list of times. Exposes value as 'HH:mm' in 24-hour time ('' when empty) and formattedValue as shown ('2:30 PM' or '14:30'); defaultValue, minTime and maxTime take '14:30' or '2:30 PM'. Height: 64px with a label (label above the control), 36px without; add 24px for help text or a validation message",
+    "description": "Time picker: a field opening hour, minute and AM/PM columns, or (pickerStyle list) one list of times; both offer a time every minuteStep minutes from midnight (with 45: 09:00, 09:45, 10:30). Exposes value as 'HH:mm' in 24-hour time ('' when empty) and formattedValue as shown ('2:30 PM' or '14:30'); defaultValue, minTime and maxTime take '14:30' or '2:30 PM'. Height: 64px with a label (label above the control), 36px without; add 24px for help text or a validation message",
     "defaultSize": {
       "width": 10,
       "height": 64

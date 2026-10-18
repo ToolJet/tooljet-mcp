@@ -186,3 +186,45 @@ describe('a RunJS query reading a known wrong alias', () => {
     expect(lintComponentStateBindings({ note: 'components.typeFilter.label' }, radios, 'q')).toEqual([]);
   });
 });
+
+// A UI 2.0 widget publishes exactly its catalogued values and actions, so any other name reads undefined. Luna builds
+// (2026-10-18): an intake form's submit check read consent.checked and could never pass; a job count read a record
+// list's data property and always showed 0.
+describe('a UI 2.0 widget read through a name it does not publish', () => {
+  const ui2 = [
+    { id: 'c', name: 'consent', type: 'ShadCheckbox' },
+    { id: 'g', name: 'courseCards', type: 'ShadCardGrid' },
+    { id: 'r', name: 'dispatchList', type: 'ShadRecordList' },
+    { id: 'n', name: 'nativeBox', type: 'Checkbox' },
+  ];
+
+  it('rejects the unpublished name and names what the widget publishes', () => {
+    const [error, ...rest] = lintComponentStateBindings('{{ components.consent?.checked && true }}', ui2, 'submit');
+    expect(rest).toEqual([]);
+    expect(error).toContain('submit: ShadCheckbox "consent" has no checked');
+    expect(error).toContain('components.consent.value');
+  });
+
+  it.each([
+    ['{{ components.courseCards?.selectedCard }}', 'components.courseCards.selectedItem'],
+    ['{{ (components.dispatchList.data || []).length }}', 'selectedItem'],
+  ])('rejects %s', (value, hint) => {
+    const errors = lintComponentStateBindings(value, ui2, 'p');
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain(hint);
+  });
+
+  it('accepts published values, actions and the id every component has', () => {
+    for (const value of [
+      '{{ components.consent.value }}',
+      '{{ components.consent.isValid && components.consent.label }}',
+      '{{ components.consent.id }}',
+      '{{ components.courseCards.selectedItem.title }}',
+    ]) expect(lintComponentStateBindings(value, ui2, 'p')).toEqual([]);
+    expect(lintComponentStateBindings({ code: 'await components.consent.setValue(true);' }, ui2, 'q')).toEqual([]);
+  });
+
+  it('leaves native widgets alone: their catalog is not a complete list of what they publish', () => {
+    expect(lintComponentStateBindings('{{ components.nativeBox.checked }}', ui2, 'p')).toEqual([]);
+  });
+});
