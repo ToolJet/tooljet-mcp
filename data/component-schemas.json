@@ -25483,7 +25483,25 @@
       },
       {
         "name": "lastCardMovement",
-        "default": {}
+        "default": {},
+        "valueType": "object",
+        "shape": {
+          "cardId": "moved card id (idField value)",
+          "card": {
+            "...": "the moved card row, with its new status"
+          },
+          "from": "origin column id",
+          "to": "destination column id",
+          "toIndex": "number",
+          "cardDetails": {
+            "...": "the moved card row (native name)"
+          },
+          "originColumnId": "origin column id (native name)",
+          "destinationColumnId": "destination column id (native name)",
+          "originCardIndex": "number (native name)",
+          "destinationIndex": "number (native name)"
+        },
+        "semantics": "Published for onCardMoved. Save a move with lastCardMovement.cardId and .to; the native names cardDetails.id and destinationColumnId also work."
       },
       {
         "name": "addCardColumn",
