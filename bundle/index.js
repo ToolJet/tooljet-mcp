@@ -70255,6 +70255,20 @@ function validateAppStructure(summary, options2 = {}) {
       errors.push(`Event "${name2}" runs a query (${ev.queryId}) that no longer exists.`);
     }
   }
+  for (const e of summary.events) {
+    const ev = e.event ?? {};
+    if (ev.eventId !== "onCardMoved" || ev.actionId !== "run-query")
+      continue;
+    const board = allComponents.find((c) => c.id === e.sourceId);
+    if (!board?.name || !["ShadKanban", "Kanban"].includes(String(board.type)))
+      continue;
+    const query2 = summary.queries.find((q) => q.id === ev.queryId || ev.queryName && q.name === ev.queryName);
+    const reads = new RegExp(`components\\??\\.${board.name.replace(/[$]/g, "\\$")}\\??\\.lastSelectedCard\\b`);
+    if (!query2 || !reads.test(JSON.stringify(query2.options ?? {})))
+      continue;
+    const move = board.type === "ShadKanban" ? `components.${board.name}.lastCardMovement.cardId and .to` : `components.${board.name}.lastCardMovement.cardDetails.id and .destinationColumnId`;
+    errors.push(`Query "${query2.name ?? query2.id}" runs on ${board.name} onCardMoved but reads ${board.name}.lastSelectedCard, the card last clicked, which a drag does not change. Save the move with ${move}.`);
+  }
   const bindingSources = [
     ...allComponents.map((c) => ({ label: `Component "${c.name ?? c.id}"`, value: { p: c.properties, s: c.styles, v: c.validation, o: c.others } })),
     ...summary.queries.map((q) => ({ label: `Query "${q.name ?? q.id}"`, value: q.options })),

@@ -3668,6 +3668,23 @@ export function validateAppStructure(summary: AppSummary, options: { canvasColor
     }
   }
 
+  // A board move is in lastCardMovement; lastSelectedCard is the card last clicked, which a drag does not change. A
+  // staging build (2026-10-18) saved drags with lastSelectedCard.status and .id: nothing was written, or the clicked
+  // card's old status was written back to it.
+  for (const e of summary.events) {
+    const ev = (e.event ?? {}) as Record<string, unknown>;
+    if (ev.eventId !== 'onCardMoved' || ev.actionId !== 'run-query') continue;
+    const board = allComponents.find((c) => c.id === e.sourceId);
+    if (!board?.name || !['ShadKanban', 'Kanban'].includes(String(board.type))) continue;
+    const query = summary.queries.find((q) => q.id === ev.queryId || (ev.queryName && q.name === ev.queryName));
+    const reads = new RegExp(`components\\??\\.${board.name.replace(/[$]/g, '\\$')}\\??\\.lastSelectedCard\\b`);
+    if (!query || !reads.test(JSON.stringify(query.options ?? {}))) continue;
+    const move = board.type === 'ShadKanban' ? `components.${board.name}.lastCardMovement.cardId and .to` :
+      `components.${board.name}.lastCardMovement.cardDetails.id and .destinationColumnId`;
+    errors.push(`Query "${query.name ?? query.id}" runs on ${board.name} onCardMoved but reads ${board.name}.lastSelectedCard, ` +
+      `the card last clicked, which a drag does not change. Save the move with ${move}.`);
+  }
+
   // Bindings to non-existent queries/components + re-run per-component render lints.
   const bindingSources = [
     ...allComponents.map((c) => ({ label: `Component "${c.name ?? c.id}"`, value: { p: c.properties, s: c.styles, v: c.validation, o: c.others } })),
