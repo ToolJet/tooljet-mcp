@@ -468,6 +468,19 @@ if (schemas.ShadKanban) {
     semantics: 'Published for onCardMoved. Save a move with lastCardMovement.cardId and .to; the native names cardDetails.id and destinationColumnId also work.',
   });
 }
+// The UI 2.0 Schedule's slot (Schedule/scheduleModel.ts). A build read an invented selectedSlot.start_time and fell back
+// to startTime, 'HH:mm' text that parses as an invalid date (2026-10-18).
+if (schemas.ShadSchedule) {
+  const slot = schemas.ShadSchedule.exposedVariables.find((variable) => variable.name === 'selectedSlot');
+  if (slot) Object.assign(slot, {
+    valueType: 'object',
+    shape: {
+      resourceId: 'the resource id', resource: 'the resource name', start: 'ISO date-time (prefill a date-time field from this)',
+      end: 'ISO date-time', date: "'YYYY-MM-DD'", startTime: "'HH:mm' text, not a date", endTime: "'HH:mm' text, not a date",
+      label: 'a readable label for the slot',
+    },
+  });
+}
 if (schemas.Table) {
   const tableVariables = new Map(schemas.Table.exposedVariables.map((variable) => [variable.name, variable]));
   Object.assign(tableVariables.get('pageIndex') ?? {}, {
