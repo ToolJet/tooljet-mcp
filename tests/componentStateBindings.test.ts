@@ -297,3 +297,30 @@ describe('a member a UI 2.0 value does not have', () => {
     expect(lintComponentStateBindings(value, comps, 'p')).toEqual([]);
   });
 });
+
+// A board's onCardMoved save must read the move, not the card last clicked: a staging build (2026-10-18) saved a drag
+// with lastSelectedCard.status and lastSelectedCard.id, which writes nothing, or the clicked card's old status to it.
+describe('a board move saved from the card last clicked', () => {
+  const app = (value: string, trigger = 'onCardMoved'): AppSummary => ({
+    app_id: 'test', pages: [{ id: 'home', components: [{ id: 'b1', name: 'board', type: 'ShadKanban' }] }],
+    queries: [{ id: 'q1', name: 'move_ticket', options: { operation: 'update_rows', update_rows: {
+      columns: { '0': { column: 'status', value } },
+      where_filters: { '0': { column: 'id', operator: 'eq', value: '{{ components.board?.lastSelectedCard.id }}' } },
+    } } }],
+    events: [{ id: 'e1', name: 'save move', sourceId: 'b1', target: 'component',
+      event: { eventId: trigger, actionId: 'run-query', queryId: 'q1', queryName: 'move_ticket' } }],
+  });
+  const moveErrors = (summary: AppSummary) =>
+    validateAppStructure(summary).errors.filter((error) => error.includes('lastSelectedCard'));
+
+  it('refuses it and names the move', () => {
+    const errors = moveErrors(app('{{ components.board?.lastSelectedCard.status }}'));
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain('Query "move_ticket" runs on board onCardMoved');
+    expect(errors[0]).toContain('components.board.lastCardMovement.cardId');
+  });
+
+  it('leaves a save on onCardSelected alone', () => {
+    expect(moveErrors(app('{{ components.board?.lastSelectedCard.status }}', 'onCardSelected'))).toEqual([]);
+  });
+});
