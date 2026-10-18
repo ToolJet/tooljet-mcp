@@ -452,6 +452,22 @@ if (schemas.Kanban) {
     semantics: 'Published for onCardMoved. Use cardDetails.id and destinationColumnId in persistence queries; cardId, sourceColumn and destinationColumn are not exposed members.',
   });
 }
+// The UI 2.0 board publishes its own names and the native Kanban's for a move (kanbanBoard.ts moveCard). The lint
+// refuses any other member: a build saved a move with lastCardMovement.toColumn (2026-10-18).
+if (schemas.ShadKanban) {
+  const movement = schemas.ShadKanban.exposedVariables.find((variable) => variable.name === 'lastCardMovement');
+  if (movement) Object.assign(movement, {
+    valueType: 'object',
+    shape: {
+      cardId: 'moved card id (idField value)', card: { '...': 'the moved card row, with its new status' },
+      from: 'origin column id', to: 'destination column id', toIndex: 'number',
+      cardDetails: { '...': 'the moved card row (native name)' }, originColumnId: 'origin column id (native name)',
+      destinationColumnId: 'destination column id (native name)', originCardIndex: 'number (native name)',
+      destinationIndex: 'number (native name)',
+    },
+    semantics: 'Published for onCardMoved. Save a move with lastCardMovement.cardId and .to; the native names cardDetails.id and destinationColumnId also work.',
+  });
+}
 if (schemas.Table) {
   const tableVariables = new Map(schemas.Table.exposedVariables.map((variable) => [variable.name, variable]));
   Object.assign(tableVariables.get('pageIndex') ?? {}, {

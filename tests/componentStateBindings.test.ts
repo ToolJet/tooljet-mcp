@@ -265,3 +265,35 @@ describe('a ToolJet DB write of a date picker that may be empty', () => {
     expect(lintEmptyDateWrites({ list_rows: { '0': { value: '{{ components.incident_date.value }}' } } }, comps, 'Query "q"')).toEqual([]);
   });
 });
+
+// A UI 2.0 value with a documented shape: a member it does not have reads undefined. A staging build (2026-10-18) saved
+// a board move with lastCardMovement.toColumn, which would have written an empty status and dropped the card from
+// every column.
+describe('a member a UI 2.0 value does not have', () => {
+  const comps = [{ id: 'b', name: 'board', type: 'ShadKanban' }, { id: 'k', name: 'nativeBoard', type: 'Kanban' }];
+
+  it('catalogs the UI 2.0 move with its members, the native names included', () => {
+    const movement = getComponentSchema('ShadKanban')!.exposedVariables!.find((variable) => variable.name === 'lastCardMovement')!;
+    expect(Object.keys((movement as { shape: Record<string, unknown> }).shape)).toEqual(
+      expect.arrayContaining(['cardId', 'card', 'from', 'to', 'toIndex', 'cardDetails', 'destinationColumnId', 'originColumnId']),
+    );
+  });
+
+  it('rejects an invented member and names the real ones', () => {
+    const errors = lintComponentStateBindings('{{ components.board.lastCardMovement.toColumn }}', comps, 'Query "move".value');
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain('ShadKanban "board" lastCardMovement has no toColumn');
+    expect(errors[0]).toContain('to');
+  });
+
+  it.each([
+    '{{ components.board.lastCardMovement.to }}',
+    '{{ components.board?.lastCardMovement?.cardId }}',
+    '{{ components.board.lastCardMovement.destinationColumnId }}',
+    '{{ components.board.lastCardMovement.cardDetails.id }}',
+    '{{ components.board.lastCardMovement.card.status }}',
+    '{{ components.nativeBoard.lastCardMovement.whatever }}',
+  ])('accepts %s', (value) => {
+    expect(lintComponentStateBindings(value, comps, 'p')).toEqual([]);
+  });
+});

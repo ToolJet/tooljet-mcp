@@ -60,6 +60,19 @@ export function lintComponentStateBindings(value: unknown, components: Component
       (node.type === 'CallExpression' && isNode(node.callee) && node.callee.type === 'Identifier' && node.callee.name === 'eval')
     ) shadowed = true;
     const prop = isMember(node) ? memberName(node) : undefined;
+    // components.<name>.<value>.<member>: a UI 2.0 value with a catalogued shape has only those members.
+    if (prop && isMember(node.object) && isMember(node.object.object)) {
+      const value = node.object as Node;
+      const owner = value.object as Node;
+      if (isNode(owner.object) && owner.object.type === 'Identifier' && owner.object.name === 'components') {
+        const name = memberName(owner);
+        const variable = memberName(value);
+        const type = name ? components.find((c) => c.name === name)?.type : undefined;
+        if (name && variable && type && missingMember(type, variable, prop)) {
+          wrongNames.add(`${name}\u0000${type}\u0000${variable}.${prop}`);
+        }
+      }
+    }
     if (prop && isMember(node.object)) {
       const owner = node.object;
       if (isNode(owner.object) && owner.object.type === 'Identifier' && owner.object.name === 'components') {
@@ -75,6 +88,11 @@ export function lintComponentStateBindings(value: unknown, components: Component
   visit(root);
   return shadowed ? [] : [...wrongNames].map((key) => {
     const [name, type, prop] = key.split('\u0000') as [string, string, string];
+    if (prop.includes('.')) {
+      const [variable, member] = prop.split('.') as [string, string];
+      return `${path}: ${type} "${name}" ${variable} has no ${member}; it reads undefined at runtime. ` +
+        `It has ${missingMember(type, variable, member)!.join(', ')}.`;
+    }
     return `${path}: ${WRONG_ALIASES[type]?.[prop]?.(name) ?? retiredUi2Message(type, prop, name)}`;
   });
 }
@@ -156,4 +174,16 @@ export function lintEmptyDateWrites(value: unknown, components: Component[], pat
   if (!picker?.type || !DATE_PICKERS.has(picker.type)) return [];
   return [`${path}: ${picker.type} "${picker.name}" is '' while no date is picked, and a date or timestamp column ` +
     `rejects '', so the save fails whenever it is left blank. Write {{ components.${picker.name}.value || null }}.`];
+}
+
+/** The members a UI 2.0 widget's exposed value has, when its catalog entry lists them and `member` is not one;
+ *  undefined when the value has no listed shape or the member exists. */
+function missingMember(type: string, variable: string, member: string): string[] | undefined {
+  if (!type.startsWith('Shad')) return undefined;
+  const entry = getComponentSchema(type)?.exposedVariables?.find((v) => v.name === variable) as { shape?: unknown } | undefined;
+  const shape = entry?.shape;
+  if (!shape || typeof shape !== 'object' || Array.isArray(shape)) return undefined;
+  const members = Object.keys(shape as Record<string, unknown>);
+  if (members.includes('...') || members.includes(member)) return undefined;
+  return members;
 }
