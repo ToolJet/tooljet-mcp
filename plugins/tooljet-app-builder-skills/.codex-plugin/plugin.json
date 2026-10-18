@@ -1,0 +1,34 @@
+{
+  "name": "tooljet-app-builder-skills",
+  "version": "0.8.0",
+  "description": "App-building guidance for an existing ToolJet MCP connection, including remote OAuth. No bundled MCP server.",
+  "author": {
+    "name": "ToolJet"
+  },
+  "homepage": "https://github.com/ToolJet/tooljet-mcp",
+  "repository": "https://github.com/ToolJet/tooljet-mcp",
+  "license": "ISC",
+  "keywords": [
+    "tooljet",
+    "app-builder",
+    "skills",
+    "oauth"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "ToolJet App Builder Skills",
+    "shortDescription": "Build apps using your ToolJet MCP connection.",
+    "longDescription": "App-building guidance for an existing ToolJet MCP connection, including remote OAuth. No bundled MCP server.",
+    "developerName": "ToolJet",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Build an inventory management app in ToolJet.",
+      "Create a dashboard from my connected datasource.",
+      "Update this ToolJet app and verify the result."
+    ]
+  }
+}

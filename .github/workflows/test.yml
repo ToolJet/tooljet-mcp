@@ -15,9 +15,11 @@ jobs:
           cache: npm
       - run: npm ci
       # Uses the pinned source snapshot; no ToolJet checkout or credentials required.
-      - run: npm run generate:skill
+      - run: npm run build:skill-plugin
       - name: Verify generated Markdown is current
-        run: git diff --exit-code -- skill skills
+        run: git diff --exit-code -- skill skills plugins
+      - name: Verify generated skill plugin has no untracked files
+        run: test -z "$(git ls-files --others --exclude-standard -- plugins)"
       - run: npm test
       - name: Build shipped bundle and verify MCP initialization
         run: npm run build:plugin
