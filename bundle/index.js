@@ -63088,8 +63088,20 @@ function retiredUi2Message(type, prop3, name2) {
   if (action) {
     return `${type} "${name2}" action ${prop3}() was renamed ${action}(); call components.${name2}.${action}(...). The old name is undefined at runtime.`;
   }
-  return void 0;
+  const published = schema?.exposedVariables?.map((variable) => variable.name) ?? [];
+  if (prop3 === "id" || !published.length)
+    return void 0;
+  const meant = UI2_MEANT[prop3]?.find((candidate) => published.includes(candidate));
+  return `${type} "${name2}" has no ${prop3}; it reads undefined at runtime. ` + (meant ? `Read components.${name2}.${meant}. ` : "") + `It publishes ${published.join(", ")}.`;
 }
+var UI2_MEANT = {
+  checked: ["value"],
+  selected: ["value", "selectedItem"],
+  selectedValue: ["value"],
+  text: ["value"],
+  selectedCard: ["selectedItem", "lastSelectedCard"],
+  selectedRow: ["selectedItem", "selectedRow"]
+};
 var WRONG_ALIASES = {
   Kanban: {
     selectedCard: (name2) => `Kanban "${name2}" does not expose selectedCard. Use components.${name2}.lastSelectedCard after onCardSelected; the incorrect alias is undefined and opens an empty detail form. Keep the selected record id and raw fields for edits.`

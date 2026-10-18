@@ -96,8 +96,26 @@ function retiredUi2Message(type: string, prop: string, name: string): string | u
     return `${type} "${name}" action ${prop}() was renamed ${action}(); call components.${name}.${action}(...). ` +
       'The old name is undefined at runtime.';
   }
-  return undefined;
+  // A UI 2.0 widget publishes exactly its catalogued values and actions (the catalog is built from its definition),
+  // plus the id every component has, so any other name reads undefined. Luna builds (2026-10-18): an intake form's
+  // submit check read consent.checked and could never pass; a job count read a record list's data and showed 0.
+  const published = schema?.exposedVariables?.map((variable) => variable.name) ?? [];
+  if (prop === 'id' || !published.length) return undefined;
+  const meant = UI2_MEANT[prop]?.find((candidate) => published.includes(candidate));
+  return `${type} "${name}" has no ${prop}; it reads undefined at runtime. ` +
+    (meant ? `Read components.${name}.${meant}. ` : '') +
+    `It publishes ${published.join(', ')}.`;
 }
+
+/** What a binding most likely meant by a name UI 2.0 widgets do not publish, in order of preference. */
+const UI2_MEANT: Record<string, string[]> = {
+  checked: ['value'],
+  selected: ['value', 'selectedItem'],
+  selectedValue: ['value'],
+  text: ['value'],
+  selectedCard: ['selectedItem', 'lastSelectedCard'],
+  selectedRow: ['selectedItem', 'selectedRow'],
+};
 
 /** Properties a binding reads that are proven wrong for that component type, with the message naming the right one. */
 const WRONG_ALIASES: Record<string, Record<string, (name: string) => string>> = {
