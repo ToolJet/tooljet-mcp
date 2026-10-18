@@ -324,3 +324,18 @@ describe('a board move saved from the card last clicked', () => {
     expect(moveErrors(app('{{ components.board?.lastSelectedCard.status }}', 'onCardSelected'))).toEqual([]);
   });
 });
+
+// The Schedule's slot: start/end are ISO date-times, startTime/endTime are 'HH:mm' text. A build read an invented
+// selectedSlot.start_time and fell back to startTime, which parses as an invalid date (2026-10-18).
+describe('the Schedule slot members', () => {
+  const comps = [{ id: 's', name: 'schedule', type: 'ShadSchedule' }];
+  it('catalogs selectedSlot with its members and their formats', () => {
+    const slot = getComponentSchema('ShadSchedule')!.exposedVariables!.find((variable) => variable.name === 'selectedSlot') as { shape: Record<string, string> };
+    expect(Object.keys(slot.shape)).toEqual(['resourceId', 'resource', 'start', 'end', 'date', 'startTime', 'endTime', 'label']);
+    expect(slot.shape.startTime).toMatch(/HH:mm/);
+  });
+  it('refuses an invented member and accepts the real ones', () => {
+    expect(lintComponentStateBindings('{{ components.schedule.selectedSlot.start_time }}', comps, 'p')[0]).toContain('has no start_time');
+    expect(lintComponentStateBindings('{{ components.schedule.selectedSlot.start }}', comps, 'p')).toEqual([]);
+  });
+});
