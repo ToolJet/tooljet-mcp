@@ -1384,7 +1384,7 @@
       },
       {
         "key": "advanced",
-        "label": "Mapped button",
+        "label": "Mapped buttons",
         "valueType": "boolean",
         "default": "{{false}}"
       },
@@ -7880,6 +7880,12 @@
           "stretch",
           "last baseline"
         ]
+      },
+      {
+        "key": "equalHeights",
+        "label": "Equal heights in a row",
+        "valueType": "boolean",
+        "default": "{{true}}"
       },
       {
         "key": "gap",
