@@ -17,7 +17,7 @@ import {
   lintTextFormat,
   lintUntriggeredDataQueries, lintAutomaticWrites,
 } from './renderReadiness.js';
-import { bindingReferences } from './bindingReferences.js';
+import { bindingReferences, dynamicBindingNamespaces } from './bindingReferences.js';
 import { bindingSpans } from './bindingSpans.js';
 import { componentNameError } from './componentName.js';
 import { lintEditPrefill, lintUninitializedWriteSelections } from './editPrefillContract.js';
@@ -3692,10 +3692,15 @@ export function validateAppStructure(summary: AppSummary, options: { canvasColor
     errors.push(...lintComponentStateBindings(source.value, allComponents, source.label));
     if (source.label.startsWith('Query ')) errors.push(...lintEmptyDateWrites(source.value, allComponents, source.label));
     if (!source.label.startsWith('Query ')) errors.push(...lintBindingNames(source.value, source.label));
+    for (const namespace of dynamicBindingNamespaces(source.value)) {
+      const kind = namespace === 'components' ? 'component' : 'query';
+      errors.push(`${source.label} builds a ${kind} name at runtime (${namespace}["a" + b]). ToolJet resolves only literal ` +
+        `names in {{ }}, so the read is always empty. Write ${namespace}.name or ${namespace}["exact name"].`);
+    }
     const seen = new Set<string>();
     for (const ref of bindingReferences(source.value)) {
       const names = ref.namespace === 'components' ? componentNames : queryNames;
-      // ToolJet saves references by id (components["<id>"]) and shows names on load: an id that belongs to
+      // ToolJet saves references by id (components.<id>) and shows names on load: an id that belongs to
       // an existing entity is valid (merch m9's clean apply failed validation on exactly this).
       const ids = ref.namespace === 'components' ? componentIds : queryIds;
       const key = `${ref.namespace}.${ref.name}`;

@@ -1,4 +1,4 @@
-import { namespaceReads } from './runjsReferences.js';
+import { dynamicNamespaceReads, namespaceReads } from './runjsReferences.js';
 import { bindingSpans } from './bindingSpans.js';
 
 /** Read literal namespace references anywhere in a binding, not only immediately after {{.
@@ -15,4 +15,14 @@ export function bindingReferences(value: unknown): Array<{ namespace: 'component
     refs.push(...reads.sort((a, b) => a.start - b.start).map(({ namespace, name }) => ({ namespace, name })));
   }
   return refs;
+}
+
+/** The namespaces a binding reads by a name it builds at runtime (components["a" + b]): ToolJet resolves only literal
+ *  names inside {{ }}, so the read is always empty. */
+export function dynamicBindingNamespaces(value: unknown): Array<'components' | 'queries'> {
+  if (Array.isArray(value)) return [...new Set(value.flatMap(dynamicBindingNamespaces))];
+  if (value && typeof value === 'object') return [...new Set(Object.values(value).flatMap(dynamicBindingNamespaces))];
+  if (typeof value !== 'string') return [];
+  return (['components', 'queries'] as const).filter(namespace =>
+    bindingSpans(value).some(binding => dynamicNamespaceReads(`(${binding.body})`, namespace) > 0));
 }

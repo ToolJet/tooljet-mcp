@@ -27,13 +27,38 @@ function bindsNamespace(value: unknown, namespace: Namespace): boolean {
  * left to their respective runtime/syntax checks. Comments and string examples aren't reads.
  */
 export function namespaceReads(code: string, namespace: Namespace): Array<{ name: string; start: number; end: number; optional: boolean }> {
+  const { source, ids } = maskSavedIds(code);
+  return namespaceAccesses(source, namespace).flatMap(read =>
+    read.name === undefined ? [] : [{ ...read, name: ids.get(read.name) ?? read.name }]);
+}
+
+/** Reads of a ToolJet namespace whose name is built at runtime (components["a" + b]). ToolJet resolves only literal
+ *  names in a {{ }} binding, so such a read finds nothing. */
+export function dynamicNamespaceReads(code: string, namespace: Namespace): number {
+  return namespaceAccesses(maskSavedIds(code).source, namespace).filter(read => read.name === undefined).length;
+}
+
+/** ToolJet saves references by id (components.d9ccffce-ad5a-...), which JS reads as a subtraction. Swap each id for a
+ *  placeholder identifier of the same length, so offsets still point into the original code, and map it back. */
+const SAVED_ID = /\b(components|queries)(\??\.)([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\b/gi;
+function maskSavedIds(code: string): { source: string; ids: Map<string, string> } {
+  const ids = new Map<string, string>();
+  const source = code.replace(SAVED_ID, (_m, ns: string, dot: string, id: string) => {
+    const placeholder = `$${id.slice(1).replace(/-/g, '_')}`;
+    ids.set(placeholder, id);
+    return `${ns}${dot}${placeholder}`;
+  });
+  return { source, ids };
+}
+
+function namespaceAccesses(code: string, namespace: Namespace): Array<{ name: string | undefined; start: number; end: number; optional: boolean }> {
   let root: unknown;
   try {
     root = parse(code, { sourceType: 'script', allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true });
   } catch {
     return [];
   }
-  const reads: Array<{ name: string; start: number; end: number; optional: boolean }> = [];
+  const reads: Array<{ name: string | undefined; start: number; end: number; optional: boolean }> = [];
   let shadowed = false;
   const visit = (value: unknown): void => {
     if (Array.isArray(value)) { value.forEach(visit); return; }
@@ -53,8 +78,9 @@ export function namespaceReads(code: string, namespace: Namespace): Array<{ name
     ) {
       const name = !value.computed && value.property.type === 'Identifier' ? value.property.name
         : value.computed && value.property.type === 'StringLiteral' ? value.property.value : undefined;
-      if (typeof name === 'string' && typeof value.start === 'number' && typeof value.end === 'number') {
-        reads.push({ name, start: value.start, end: value.end, optional: value.optional === true });
+      const dynamic = value.computed && !/^(StringLiteral|NumericLiteral|TemplateLiteral)$/.test(String(value.property.type));
+      if ((typeof name === 'string' || dynamic) && typeof value.start === 'number' && typeof value.end === 'number') {
+        reads.push({ name: typeof name === 'string' ? name : undefined, start: value.start, end: value.end, optional: value.optional === true });
       }
     }
     for (const child of Object.values(value)) visit(child);
