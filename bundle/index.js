@@ -62510,6 +62510,23 @@ function bindsNamespace(value2, namespace) {
   return false;
 }
 function namespaceReads(code, namespace) {
+  const { source: source2, ids } = maskSavedIds(code);
+  return namespaceAccesses(source2, namespace).flatMap((read) => read.name === void 0 ? [] : [{ ...read, name: ids.get(read.name) ?? read.name }]);
+}
+function dynamicNamespaceReads(code, namespace) {
+  return namespaceAccesses(maskSavedIds(code).source, namespace).filter((read) => read.name === void 0).length;
+}
+var SAVED_ID = /\b(components|queries)(\??\.)([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\b/gi;
+function maskSavedIds(code) {
+  const ids = /* @__PURE__ */ new Map();
+  const source2 = code.replace(SAVED_ID, (_m, ns, dot, id) => {
+    const placeholder = `$${id.slice(1).replace(/-/g, "_")}`;
+    ids.set(placeholder, id);
+    return `${ns}${dot}${placeholder}`;
+  });
+  return { source: source2, ids };
+}
+function namespaceAccesses(code, namespace) {
   let root;
   try {
     root = (0, import_parser.parse)(code, { sourceType: "script", allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true });
@@ -62529,8 +62546,9 @@ function namespaceReads(code, namespace) {
       shadowed = true;
     if ((value2.type === "MemberExpression" || value2.type === "OptionalMemberExpression") && isNode(value2.object) && value2.object.type === "Identifier" && value2.object.name === namespace && isNode(value2.property)) {
       const name2 = !value2.computed && value2.property.type === "Identifier" ? value2.property.name : value2.computed && value2.property.type === "StringLiteral" ? value2.property.value : void 0;
-      if (typeof name2 === "string" && typeof value2.start === "number" && typeof value2.end === "number") {
-        reads.push({ name: name2, start: value2.start, end: value2.end, optional: value2.optional === true });
+      const dynamic = value2.computed && !/^(StringLiteral|NumericLiteral|TemplateLiteral)$/.test(String(value2.property.type));
+      if ((typeof name2 === "string" || dynamic) && typeof value2.start === "number" && typeof value2.end === "number") {
+        reads.push({ name: typeof name2 === "string" ? name2 : void 0, start: value2.start, end: value2.end, optional: value2.optional === true });
       }
     }
     for (const child of Object.values(value2))
@@ -62589,6 +62607,15 @@ function bindingReferences(value2) {
     refs2.push(...reads.sort((a, b) => a.start - b.start).map(({ namespace, name: name2 }) => ({ namespace, name: name2 })));
   }
   return refs2;
+}
+function dynamicBindingNamespaces(value2) {
+  if (Array.isArray(value2))
+    return [...new Set(value2.flatMap(dynamicBindingNamespaces))];
+  if (value2 && typeof value2 === "object")
+    return [...new Set(Object.values(value2).flatMap(dynamicBindingNamespaces))];
+  if (typeof value2 !== "string")
+    return [];
+  return ["components", "queries"].filter((namespace) => bindingSpans(value2).some((binding) => dynamicNamespaceReads(`(${binding.body})`, namespace) > 0));
 }
 
 // dist/componentName.js
@@ -70171,6 +70198,10 @@ function validateAppStructure(summary, options2 = {}) {
       errors.push(...lintEmptyDateWrites(source2.value, allComponents, source2.label));
     if (!source2.label.startsWith("Query "))
       errors.push(...lintBindingNames(source2.value, source2.label));
+    for (const namespace of dynamicBindingNamespaces(source2.value)) {
+      const kind = namespace === "components" ? "component" : "query";
+      errors.push(`${source2.label} builds a ${kind} name at runtime (${namespace}["a" + b]). ToolJet resolves only literal names in {{ }}, so the read is always empty. Write ${namespace}.name or ${namespace}["exact name"].`);
+    }
     const seen = /* @__PURE__ */ new Set();
     for (const ref2 of bindingReferences(source2.value)) {
       const names = ref2.namespace === "components" ? componentNames : queryNames;
