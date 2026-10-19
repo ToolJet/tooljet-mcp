@@ -110,6 +110,11 @@ const EXACT_PROPERTY_DEFAULTS = new Set([
   'DropdownV2:schema',
 ]);
 
+// Definition defaults ToolJet writes itself and an author never sets: the catalog leaves them out. A FlexContainer's
+// layoutVersion picks its layout (the MCP writes '2' on create, src/tooljetClient.ts); setting it on an existing
+// container would change how a saved app lays out.
+const INTERNAL_DEFINITION_PROPERTIES = new Set(['FlexContainer:layoutVersion']);
+
 // Find the exported config ObjectExpression (has a `name` string prop).
 function findConfig(ast) {
   const objs = [];
@@ -193,6 +198,7 @@ function extractProps(config, componentType) {
     for (const pr of defProps.properties) {
       if (pr.type !== 'ObjectProperty' || pr.value.type !== 'ObjectExpression') continue;
       const key = keyName(pr);
+      if (INTERNAL_DEFINITION_PROPERTIES.has(`${componentType}:${key}`)) continue;
       const rawValue = literal(prop(pr.value, 'value'));
       const val = EXACT_PROPERTY_DEFAULTS.has(`${componentType}:${key}`) ? rawValue : trimDefault(rawValue);
       if (!meta[key]) {

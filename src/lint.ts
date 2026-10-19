@@ -1631,10 +1631,12 @@ export function lintChartHouseStyle(spec: LintComponent, warnings: string[] = []
   return [];
 }
 
-/** Properties the inspector stores and the widget reads that the catalog does not list. */
+/** Properties the inspector stores and the widget reads that the catalog does not list. A FlexContainer's
+ *  layoutVersion picks its layout: ToolJet and the MCP write it on create, an author never sets it. */
 const INSPECTOR_ONLY_PROPERTIES: Record<string, string[]> = {
   PhoneInput: ['defaultCountry'],
   CurrencyInput: ['defaultCountry'],
+  FlexContainer: ['layoutVersion'],
 };
 
 export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?: string } = {}): LintResult {

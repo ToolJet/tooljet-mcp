@@ -421,6 +421,42 @@ describe('FlexContainer create defaults and slots', () => {
     expect(byName.fixed!.properties.dynamicHeight).toEqual({ value: '{{false}}' });
   });
 
+  // ToolJet gives a FlexContainer the UI 2.0 layout only when it carries layoutVersion '2' (its default definition
+  // writes it, with Equal heights on); the server adds no defaults on create, so the MCP writes both.
+  it('creates a FlexContainer with the UI 2.0 layout and Equal heights on, the author still winning', async () => {
+    const auth = makeAuth();
+    const client = createClient(auth, config);
+    await client.createComponents({
+      appId: 'app1', versionId: 'v1', pageId: 'p1',
+      components: [
+        { name: 'row', type: 'FlexContainer', properties: { direction: { value: 'row' } }, layout: rect(0, 200) },
+        { name: 'uneven', type: 'FlexContainer', properties: { equalHeights: { value: '{{false}}' } }, layout: rect(220, 200) },
+        { name: 'label', type: 'ShadText', properties: { text: { value: 'x' } }, layout: rect(440, 40) },
+      ],
+    });
+    const created = Object.values(bodies(auth, 'POST')[0]!.diff) as Array<{ name: string; properties: Record<string, unknown> }>;
+    const byName = Object.fromEntries(created.map((c) => [c.name, c]));
+    expect(byName.row!.properties).toMatchObject({ layoutVersion: { value: '2' }, equalHeights: { value: '{{true}}' } });
+    expect(byName.uneven!.properties).toMatchObject({ layoutVersion: { value: '2' }, equalHeights: { value: '{{false}}' } });
+    expect(byName.label!.properties).not.toHaveProperty('layoutVersion');
+    expect(byName.label!.properties).not.toHaveProperty('equalHeights');
+  });
+
+  it('documents Equal heights but not the internal layout version', () => {
+    const keys = getComponentSchema('FlexContainer')!.properties.map((p) => p.key);
+    expect(keys).toContain('equalHeights');
+    expect(keys).not.toContain('layoutVersion');
+  });
+
+  it('does not warn about the layout version on a container read back from the app', () => {
+    const { errors, warnings } = lintComponentSpec({
+      name: 'row',
+      type: 'FlexContainer',
+      properties: { direction: { value: 'row' }, layoutVersion: { value: '2' }, equalHeights: { value: '{{true}}' } },
+    } as never);
+    expect([...errors, ...warnings].filter((m) => /layoutVersion|equalHeights/.test(m))).toEqual([]);
+  });
+
   it('accepts slot_name "body" for a FlexContainer child and still refuses a header slot there', async () => {
     const { lintComponentSlots } = await import('../src/lint.js');
     const child = (slotName: string) => lintComponentSlots([
