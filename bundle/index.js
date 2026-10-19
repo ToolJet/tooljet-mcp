@@ -68853,7 +68853,8 @@ function lintChartHouseStyle(spec, warnings = []) {
 }
 var INSPECTOR_ONLY_PROPERTIES = {
   PhoneInput: ["defaultCountry"],
-  CurrencyInput: ["defaultCountry"]
+  CurrencyInput: ["defaultCountry"],
+  FlexContainer: ["layoutVersion"]
 };
 function lintComponentSpec(spec, context = {}) {
   const errors = [];
@@ -72349,7 +72350,14 @@ function createClient(auth, config2) {
       type: spec.type,
       // A FlexContainer grows with its children unless the author fixes its height: with dynamic height off, a row or
       // card whose children grew scrolled inside or clipped them (Air India fleet build, 2026-10-09).
-      properties: spec.type === "FlexContainer" ? { dynamicHeight: { value: "{{true}}" }, ...spec.properties ?? {} } : spec.properties,
+      // ToolJet gives a FlexContainer the UI 2.0 layout only when it carries layoutVersion '2', and the server adds no
+      // defaults on create, so the MCP writes it, with Equal heights on, as the widget's default definition does.
+      properties: spec.type === "FlexContainer" ? {
+        dynamicHeight: { value: "{{true}}" },
+        layoutVersion: { value: "2" },
+        equalHeights: { value: "{{true}}" },
+        ...spec.properties ?? {}
+      } : spec.properties,
       // A FlexContainer is layout: invisible unless the author gives it a surface (cardStyle 'shadcnCard', or a
       // background or border). ToolJet's own default draws every row and column as a bordered box.
       styles: spec.type === "FlexContainer" ? { backgroundColor: { value: "transparent" }, borderColor: { value: "transparent" }, ...spec.styles ?? {} } : spec.styles ?? {},
