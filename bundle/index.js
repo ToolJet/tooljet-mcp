@@ -73931,7 +73931,7 @@ function updateAppSettingsTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Patch app-wide visual settings on the current editing version in one version update, then read them back. Supports canvas background/width/mode, a theme selected from list_app_themes, header/logo/title, and navigation visibility/layout. hide_header controls the app header/banner. The separate generated page-navigation menu can be positioned on the side or top; navigation_hidden hides that entire menu in either position. To hide only one non-Home page from that menu, use update_pages.hidden. Omitted fields are preserved. Every requested field is read back; the tool returns an error instead of success if any field did not persist.",
+    description: "Patch app-wide visual settings on the current editing version in one version update, then read them back. Supports canvas background/width/mode, a theme selected from list_app_themes, header/logo/title, and navigation visibility/layout. hide_header controls the app header/banner. The separate generated page-navigation menu can be positioned on the side or top; navigation_hidden hides that entire menu in either position. navigation_hidden:true also hides the app header and its logo (the app brings its own navigation and header), unless hide_header or hide_logo is passed as false. To hide only one non-Home page from that menu, use update_pages.hidden. Omitted fields are preserved. Every requested field is read back; the tool returns an error instead of success if any field did not persist.",
     inputSchema: {
       app_id: external_exports.string().min(1),
       version_id: external_exports.string().min(1),
@@ -73945,14 +73945,16 @@ function updateAppSettingsTool(client) {
       hide_header: external_exports.boolean().optional().describe("Hide or show the app header/banner. This is separate from the generated page-navigation menu."),
       hide_logo: external_exports.boolean().optional(),
       header_title: external_exports.string().trim().min(1).max(32).optional(),
-      navigation_hidden: external_exports.boolean().optional().describe("Hide or show the entire generated page-navigation menu, whether it is positioned on the side or top. To hide only one non-Home page from the menu, use update_pages.hidden."),
+      navigation_hidden: external_exports.boolean().optional().describe("Hide or show the entire generated page-navigation menu, whether it is positioned on the side or top. true also hides the app header and logo unless hide_header or hide_logo is false. To hide only one non-Home page from the menu, use update_pages.hidden."),
       navigation_position: external_exports.enum(["side", "top"]).optional(),
       navigation_style: external_exports.enum(["texticon", "text", "icon"]).optional(),
       navigation_collapsible: external_exports.boolean().optional(),
       component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in: "ui1" ToolJet UI 1.0 (native widgets) or "ui2" ToolJet UI 2.0 (Shad* types). Change it only when the user asks to move the app to the other library.')
     },
-    async handler(args) {
+    async handler(requested) {
       try {
+        const headerFollowsMenu = requested.navigation_hidden === true && (requested.hide_header === void 0 || requested.hide_logo === void 0);
+        const args = requested.navigation_hidden === true ? { ...requested, hide_header: requested.hide_header ?? true, hide_logo: requested.hide_logo ?? true } : requested;
         const changed = SETTING_KEYS.filter((key4) => args[key4] !== void 0);
         if (!changed.length)
           throw new Error("update_app_settings requires at least one setting field.");
@@ -74006,7 +74008,8 @@ function updateAppSettingsTool(client) {
         return ok({
           updated_fields: changed.length,
           settings: projectAppSettings(persisted),
-          warnings: []
+          warnings: [],
+          ...headerFollowsMenu ? { note: "The page menu is hidden, so the app header and logo were hidden with it." } : {}
         });
       } catch (error51) {
         return fail(error51);

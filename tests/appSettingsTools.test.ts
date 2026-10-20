@@ -156,6 +156,36 @@ describe('app settings tools', () => {
     expect(textOf(result)).toMatchObject({ updated_fields: 8, warnings: [] });
   });
 
+  it('hides the app header and logo with the page menu unless told to keep them', async () => {
+    const hidden = { ...before, page_settings: { properties: { ...((before.page_settings as any).properties),
+      hideHeader: true, hideLogo: true, disableMenu: { value: '{{true}}', fxActive: false } } } };
+    const client = {
+      getAppSettings: vi.fn().mockResolvedValueOnce(before).mockResolvedValueOnce(hidden),
+      updateAppSettings: vi.fn().mockResolvedValue(undefined),
+    } as unknown as ToolJetClient;
+    const result = textOf(await updateAppSettingsTool(client).handler({ app_id: 'app1', version_id: versionId, navigation_hidden: true }));
+    expect(client.updateAppSettings).toHaveBeenCalledWith({ appId: 'app1', versionId, pageSettings: { properties: {
+      hideHeader: true, hideLogo: true, disableMenu: { value: '{{true}}', fxActive: false } } } });
+    expect(result.note).toMatch(/header and logo were hidden/);
+
+    const kept = { ...before, page_settings: { properties: { ...((before.page_settings as any).properties),
+      hideHeader: false, hideLogo: true, disableMenu: { value: '{{true}}', fxActive: false } } } };
+    const keep = {
+      getAppSettings: vi.fn().mockResolvedValueOnce(before).mockResolvedValueOnce(kept),
+      updateAppSettings: vi.fn().mockResolvedValue(undefined),
+    } as unknown as ToolJetClient;
+    await updateAppSettingsTool(keep).handler({ app_id: 'app1', version_id: versionId, navigation_hidden: true, hide_header: false });
+    expect((keep.updateAppSettings as any).mock.calls[0][0].pageSettings.properties).toMatchObject({ hideHeader: false, hideLogo: true });
+
+    const shown = {
+      getAppSettings: vi.fn().mockResolvedValue(before),
+      updateAppSettings: vi.fn().mockResolvedValue(undefined),
+    } as unknown as ToolJetClient;
+    const plain = textOf(await updateAppSettingsTool(shown).handler({ app_id: 'app1', version_id: versionId, navigation_hidden: false }));
+    expect((shown.updateAppSettings as any).mock.calls[0][0].pageSettings.properties).toEqual({ disableMenu: { value: '{{false}}', fxActive: false } });
+    expect(plain).not.toHaveProperty('note');
+  });
+
   it('fails when a setting is silently ignored on readback', async () => {
     const client = {
       getAppSettings: vi.fn().mockResolvedValueOnce(before).mockResolvedValueOnce(before),

@@ -71,6 +71,8 @@ export function updateAppSettingsTool(client: ToolJetClient): ToolDef {
       'Supports canvas background/width/mode, a theme selected from list_app_themes, header/logo/title, and ' +
       'navigation visibility/layout. hide_header controls the app header/banner. The separate generated page-navigation ' +
       'menu can be positioned on the side or top; navigation_hidden hides that entire menu in either position. ' +
+      'navigation_hidden:true also hides the app header and its logo (the app brings its own navigation and header), ' +
+      'unless hide_header or hide_logo is passed as false. ' +
       'To hide only one non-Home page from that menu, use update_pages.hidden. ' +
       'Omitted fields are preserved. Every requested field is read back; the tool returns an error instead of ' +
       'success if any field did not persist.',
@@ -91,6 +93,7 @@ export function updateAppSettingsTool(client: ToolJetClient): ToolDef {
       header_title: z.string().trim().min(1).max(32).optional(),
       navigation_hidden: z.boolean().optional().describe(
         'Hide or show the entire generated page-navigation menu, whether it is positioned on the side or top. ' +
+        'true also hides the app header and logo unless hide_header or hide_logo is false. ' +
         'To hide only one non-Home page from the menu, use update_pages.hidden.'
       ),
       navigation_position: z.enum(['side', 'top']).optional(),
@@ -101,8 +104,15 @@ export function updateAppSettingsTool(client: ToolJetClient): ToolDef {
           '(Shad* types). Change it only when the user asks to move the app to the other library.'
       ),
     },
-    async handler(args: Args) {
+    async handler(requested: Args) {
       try {
+        // An app that hides the generated menu brings its own navigation bar and header, so the app header above it
+        // only repeats the app's name and ToolJet's mark (SkyLine Ops, 2026-10-20). Explicit false values win.
+        const headerFollowsMenu = requested.navigation_hidden === true &&
+          (requested.hide_header === undefined || requested.hide_logo === undefined);
+        const args: Args = requested.navigation_hidden === true
+          ? { ...requested, hide_header: requested.hide_header ?? true, hide_logo: requested.hide_logo ?? true }
+          : requested;
         const changed = SETTING_KEYS.filter((key) => args[key] !== undefined);
         if (!changed.length) throw new Error('update_app_settings requires at least one setting field.');
         if (args.canvas_max_width?.unit === '%' && args.canvas_max_width.value > 100) {
@@ -165,6 +175,7 @@ export function updateAppSettingsTool(client: ToolJetClient): ToolDef {
           updated_fields: changed.length,
           settings: projectAppSettings(persisted),
           warnings: [],
+          ...(headerFollowsMenu ? { note: 'The page menu is hidden, so the app header and logo were hidden with it.' } : {}),
         });
       } catch (error) {
         return fail(error);
