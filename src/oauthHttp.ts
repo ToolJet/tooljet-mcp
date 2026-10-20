@@ -3,6 +3,8 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { buildServer } from './server.js';
 import type { RequestIdentity } from './config.js';
+import { analyticsIdentity, postHogFromEnv } from './posthog.js';
+import { observeToolTelemetry } from './telemetry.js';
 
 // Match the capability ceiling of a workspace PAT; current user permissions still apply.
 const INITIAL_SCOPES = ['apps', 'data', 'workflows', 'workspace_users'];
@@ -84,7 +86,10 @@ async function readOAuthBody(req: IncomingMessage, maxBytes: number): Promise<un
 
 /** Both HTTP entry points use this same stateless, authenticated transport in OAuth mode.
  * A new server per request also means an MCP session ID can never substitute for a credential. */
-export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
+export function createOAuthHttpServer(options: OAuthHttpOptions): Server & {
+  shutdownAnalytics: () => Promise<void>;
+  closeGracefully: () => Promise<void>;
+} {
   const issuer = checkedUrl(options.issuer, 'issuer');
   const resourceBase = checkedUrl(options.resourceUrl, 'resourceUrl');
   const apiUrl = checkedUrl(options.apiUrl, 'apiUrl');
@@ -104,6 +109,7 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
   const resourcePath = resource.pathname.replace(/\/$/, '');
   const metadataPrefix = `/.well-known/oauth-protected-resource${resourcePath}/`;
   const pathPrefix = `${resourcePath}/`;
+  const analytics = postHogFromEnv();
   const httpServer = createServer((req, res) => {
     void (async () => {
       const url = new URL(req.url || '/', 'http://localhost');
@@ -232,7 +238,21 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
         void server.close().catch(() => {});
       });
       await server.connect(transport);
-      await transport.handleRequest(req, res, requestBody);
+      // Only the trusted exchange response may identify a user. Missing user metadata
+      // skips analytics without blocking MCP or substituting a connection for a person.
+      if (analytics && typeof credentials.user_id === 'string' && credentials.user_id.trim()) {
+        const identity = analyticsIdentity(issuer, credentials.user_id, credentials.grant_id, credentials.organization_id);
+        await observeToolTelemetry(
+          (metrics) => analytics.toolCompleted(identity, metrics),
+          () => transport.handleRequest(req, res, requestBody),
+        );
+        const initializedClient = server.server.getClientVersion();
+        if (initializedClient && res.statusCode === 200) {
+          analytics.initialized(identity, initializedClient.name);
+        }
+      } else {
+        await transport.handleRequest(req, res, requestBody);
+      }
     })().catch(() => {
       // Do not log request objects, bearer tokens, exchange payloads or credential responses.
       if (!res.headersSent) sendOAuthJson(res, 503, { error: 'temporarily_unavailable' });
@@ -241,5 +261,23 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
   });
   httpServer.requestTimeout = 60_000;
   httpServer.headersTimeout = 15_000;
-  return httpServer;
+  const shutdownAnalytics = () => analytics?.shutdown() ?? Promise.resolve();
+  httpServer.once('close', () => void shutdownAnalytics());
+  let closing: Promise<void> | undefined;
+  const closeGracefully = (): Promise<void> => closing ??= (async () => {
+    // Open SSE streams must not prevent deployment shutdown and analytics draining.
+    const deadline = setTimeout(() => httpServer.closeAllConnections(), 2000);
+    deadline.unref();
+    try {
+      if (httpServer.listening) {
+        await new Promise<void>((resolve, reject) => {
+          httpServer.close((error) => error ? reject(error) : resolve());
+        });
+      }
+    } finally {
+      clearTimeout(deadline);
+      await shutdownAnalytics();
+    }
+  })();
+  return Object.assign(httpServer, { shutdownAnalytics, closeGracefully });
 }

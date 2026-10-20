@@ -19,6 +19,12 @@ interface ToolTelemetryContext {
 }
 
 const storage = new AsyncLocalStorage<ToolTelemetryContext>();
+const observers = new AsyncLocalStorage<(metrics: ToolTelemetryMetrics) => void>();
+
+/** Install an observer only for this authenticated request and its asynchronous tool calls. */
+export function observeToolTelemetry<T>(observer: (metrics: ToolTelemetryMetrics) => void, handler: () => T): T {
+  return observers.run(observer, handler);
+}
 
 /** Attribute a ToolJet HTTP response to the currently running MCP tool without consuming its body. */
 export function recordHttpResponse(response: Response): void {
@@ -58,16 +64,27 @@ export async function withToolTelemetry(
 ): Promise<ToolResult> {
   const context: ToolTelemetryContext = { httpRequests: 0, upstreamResponseBytes: 0 };
   const started = performance.now();
-  const result = await storage.run(context, handler);
-  const metrics: ToolTelemetryMetrics = {
-    tool,
-    duration_ms: Math.round((performance.now() - started) * 10) / 10,
-    http_requests: context.httpRequests,
-    upstream_response_bytes: context.upstreamResponseBytes,
-    result_bytes: Buffer.byteLength(result.content.map((item) => item.text).join(''), 'utf8'),
-    warnings: countWarnings(result),
-    error: result.isError === true,
+  const finish = async (result?: ToolResult): Promise<ToolTelemetryMetrics> => {
+    const metrics: ToolTelemetryMetrics = {
+      tool,
+      duration_ms: Math.round((performance.now() - started) * 10) / 10,
+      http_requests: context.httpRequests,
+      upstream_response_bytes: context.upstreamResponseBytes,
+      result_bytes: result ? Buffer.byteLength(result.content.map((item) => item.text).join(''), 'utf8') : 0,
+      warnings: result ? countWarnings(result) : 0,
+      error: !result || result.isError === true,
+    };
+    try { observers.getStore()?.(metrics); } catch { /* Analytics must not affect tool execution. */ }
+    await optionallyLog(metrics);
+    return metrics;
   };
-  await optionallyLog(metrics);
+  let result: ToolResult;
+  try {
+    result = await storage.run(context, handler);
+  } catch (error) {
+    await finish();
+    throw error;
+  }
+  const metrics = await finish(result);
   return { ...result, _meta: { ...(result._meta ?? {}), tooljet_metrics: metrics } };
 }

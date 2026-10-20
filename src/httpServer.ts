@@ -101,10 +101,7 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
     return {
       server,
       sessionCount: () => 0,
-      close: () => new Promise<void>((resolve, reject) => {
-        if (!server.listening) return resolve();
-        server.close((error) => error ? reject(error) : resolve());
-      }),
+      close: server.closeGracefully,
     };
   }
   const serverFactory = options.serverFactory ?? buildServer;

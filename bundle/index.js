@@ -60566,6 +60566,10 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { appendFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 var storage = new AsyncLocalStorage();
+var observers = new AsyncLocalStorage();
+function observeToolTelemetry(observer, handler) {
+  return observers.run(observer, handler);
+}
 function recordHttpResponse(response) {
   const context = storage.getStore();
   if (!context)
@@ -60598,17 +60602,31 @@ async function optionallyLog(metrics) {
 async function withToolTelemetry(tool, handler) {
   const context = { httpRequests: 0, upstreamResponseBytes: 0 };
   const started = performance.now();
-  const result = await storage.run(context, handler);
-  const metrics = {
-    tool,
-    duration_ms: Math.round((performance.now() - started) * 10) / 10,
-    http_requests: context.httpRequests,
-    upstream_response_bytes: context.upstreamResponseBytes,
-    result_bytes: Buffer.byteLength(result.content.map((item) => item.text).join(""), "utf8"),
-    warnings: countWarnings(result),
-    error: result.isError === true
+  const finish = async (result2) => {
+    const metrics2 = {
+      tool,
+      duration_ms: Math.round((performance.now() - started) * 10) / 10,
+      http_requests: context.httpRequests,
+      upstream_response_bytes: context.upstreamResponseBytes,
+      result_bytes: result2 ? Buffer.byteLength(result2.content.map((item) => item.text).join(""), "utf8") : 0,
+      warnings: result2 ? countWarnings(result2) : 0,
+      error: !result2 || result2.isError === true
+    };
+    try {
+      observers.getStore()?.(metrics2);
+    } catch {
+    }
+    await optionallyLog(metrics2);
+    return metrics2;
   };
-  await optionallyLog(metrics);
+  let result;
+  try {
+    result = await storage.run(context, handler);
+  } catch (error51) {
+    await finish();
+    throw error51;
+  }
+  const metrics = await finish(result);
   return { ...result, _meta: { ...result._meta ?? {}, tooljet_metrics: metrics } };
 }
 
@@ -82053,6 +82071,222 @@ Fix the configuration and restart this server; no tools will work until then.` }
 
 // dist/oauthHttp.js
 import { createServer } from "node:http";
+
+// dist/posthog.js
+import { createHash as createHash4, randomUUID as randomUUID6 } from "node:crypto";
+var BATCH_SIZE = 20;
+var MAX_QUEUE_SIZE = 1e3;
+var FLUSH_INTERVAL_MS = 5e3;
+var REQUEST_TIMEOUT_MS = 2e3;
+var MAX_ATTEMPTS = 3;
+var WARNING_INTERVAL_MS = 10 * 6e4;
+function analyticsIdentity(issuer, userId, grantId, workspaceId) {
+  const hash2 = (kind, value2) => createHash4("sha256").update(JSON.stringify([issuer, kind, value2])).digest("hex");
+  return {
+    userId: `mcp_user_${hash2("user", userId)}`,
+    connectionId: `mcp_connection_${hash2("grant", grantId)}`,
+    workspaceId: `mcp_workspace_${hash2("workspace", workspaceId)}`
+  };
+}
+function clientFamily(name2) {
+  for (const family of ["claude", "codex", "cursor", "grok", "windsurf"]) {
+    if (new RegExp(`\\b${family}\\b`, "i").test(name2))
+      return family;
+  }
+  if (/\b(vscode|visual studio code)\b/i.test(name2))
+    return "vscode";
+  return "other";
+}
+var PostHogAnalytics = class {
+  token;
+  host;
+  environment;
+  fetchImpl;
+  queue = [];
+  timer;
+  inFlight;
+  shutdownPromise;
+  shutdownDeadline;
+  warningTimes = /* @__PURE__ */ new Map();
+  retryAt = 0;
+  consecutiveFailures = 0;
+  constructor(token, host, environment2, fetchImpl = fetch) {
+    this.token = token;
+    this.host = host;
+    this.environment = environment2;
+    this.fetchImpl = fetchImpl;
+  }
+  capture(identity, event, properties) {
+    if (this.shutdownPromise)
+      return;
+    if (this.queue.length >= MAX_QUEUE_SIZE) {
+      this.warn("queue full");
+      return;
+    }
+    this.queue.push({
+      attempts: 0,
+      event: {
+        uuid: randomUUID6(),
+        event,
+        distinct_id: identity.userId,
+        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+        properties: {
+          ...properties,
+          connection_id: identity.connectionId,
+          workspace_id: identity.workspaceId,
+          environment: this.environment,
+          transport: "oauth_http",
+          mcp_version: TOOLJET_MCP_VERSION,
+          $process_person_profile: false,
+          $geoip_disable: true
+        }
+      }
+    });
+    if (this.queue.length >= BATCH_SIZE)
+      void this.flush();
+    else
+      this.schedule();
+  }
+  initialized(identity, clientName) {
+    this.capture(identity, "mcp_client_initialized", { client_family: clientFamily(clientName) });
+  }
+  toolCompleted(identity, metrics) {
+    this.capture(identity, "mcp_tool_completed", {
+      tool_name: metrics.tool,
+      duration_ms: metrics.duration_ms,
+      http_requests: metrics.http_requests,
+      upstream_response_bytes: metrics.upstream_response_bytes,
+      result_bytes: metrics.result_bytes,
+      warnings: metrics.warnings,
+      error: metrics.error
+    });
+  }
+  warn(category) {
+    const now = Date.now();
+    const previous = this.warningTimes.get(category);
+    if (previous !== void 0 && now - previous < WARNING_INTERVAL_MS)
+      return;
+    this.warningTimes.set(category, now);
+    console.error(`tooljet-mcp: some PostHog events could not be delivered (${category}); MCP requests are unaffected.`);
+  }
+  schedule() {
+    if (this.timer || this.shutdownPromise || this.inFlight)
+      return;
+    this.timer = setTimeout(() => {
+      this.timer = void 0;
+      void this.flush();
+    }, Math.min(2147483647, Math.max(FLUSH_INTERVAL_MS, this.retryAt - Date.now())));
+    this.timer.unref();
+  }
+  /** Exposed for explicit draining and deterministic collector tests. */
+  flush() {
+    if (this.inFlight)
+      return this.inFlight;
+    if (this.retryAt > Date.now()) {
+      this.schedule();
+      return Promise.resolve();
+    }
+    if (this.timer)
+      clearTimeout(this.timer);
+    this.timer = void 0;
+    if (!this.queue.length)
+      return Promise.resolve();
+    this.inFlight = this.drainFullBatches().finally(() => {
+      this.inFlight = void 0;
+      if (this.queue.length)
+        this.schedule();
+    });
+    return this.inFlight;
+  }
+  async drainFullBatches() {
+    do {
+      if (!await this.sendBatch())
+        return;
+    } while (this.queue.length >= BATCH_SIZE && (!this.shutdownDeadline || Date.now() < this.shutdownDeadline));
+  }
+  async sendBatch() {
+    const batch = this.queue.splice(0, BATCH_SIZE);
+    let retry = false;
+    let retryAfterMs = 0;
+    let warning = "network error";
+    try {
+      const timeout = this.shutdownDeadline ? Math.max(1, Math.min(REQUEST_TIMEOUT_MS, this.shutdownDeadline - Date.now())) : REQUEST_TIMEOUT_MS;
+      const response = await this.fetchImpl(`${this.host}/batch/`, {
+        method: "POST",
+        redirect: "error",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ api_key: this.token, batch: batch.map(({ event }) => event) }),
+        signal: AbortSignal.timeout(timeout)
+      });
+      await response.body?.cancel();
+      if (response.ok) {
+        this.consecutiveFailures = 0;
+        this.retryAt = 0;
+        return true;
+      }
+      warning = `HTTP ${response.status}`;
+      retry = response.status === 429 || response.status >= 500;
+      const retryAfter = response.headers.get("retry-after")?.trim();
+      if (retry && retryAfter) {
+        const delay = /^\d+(?:\.\d+)?$/.test(retryAfter) ? Number(retryAfter) * 1e3 : Date.parse(retryAfter) - Date.now();
+        if (Number.isFinite(delay))
+          retryAfterMs = Math.max(0, delay);
+      }
+    } catch {
+      retry = true;
+    }
+    this.warn(warning);
+    if (retry) {
+      this.consecutiveFailures++;
+      const backoff = Math.min(6e4, FLUSH_INTERVAL_MS * 2 ** Math.min(this.consecutiveFailures - 1, 4));
+      this.retryAt = Date.now() + Math.max(backoff, retryAfterMs);
+    }
+    if (retry && (!this.shutdownDeadline || Date.now() < this.shutdownDeadline)) {
+      const retryable = batch.filter((item) => ++item.attempts < MAX_ATTEMPTS);
+      this.queue.push(...retryable.slice(0, Math.max(0, MAX_QUEUE_SIZE - this.queue.length)));
+    }
+    return false;
+  }
+  shutdown() {
+    if (!this.shutdownPromise) {
+      this.shutdownDeadline = Date.now() + 5e3;
+      if (this.timer)
+        clearTimeout(this.timer);
+      this.timer = void 0;
+      this.shutdownPromise = (async () => {
+        await this.inFlight;
+        while (this.queue.length && Date.now() < this.shutdownDeadline) {
+          const delay = this.retryAt - Date.now();
+          if (delay > 0) {
+            if (this.retryAt >= this.shutdownDeadline)
+              break;
+            await new Promise((resolve6) => setTimeout(resolve6, delay));
+          }
+          await this.flush();
+        }
+        this.queue = [];
+      })();
+    }
+    return this.shutdownPromise;
+  }
+};
+function postHogFromEnv() {
+  const token = process.env.POSTHOG_PROJECT_TOKEN?.trim();
+  if (!token)
+    return void 0;
+  try {
+    const host = new URL(process.env.POSTHOG_HOST?.trim() || "");
+    const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(host.hostname);
+    if (host.username || host.password || host.search || host.hash || host.protocol !== "https:" && !(host.protocol === "http:" && loopback))
+      throw new Error();
+    return new PostHogAnalytics(token, host.href.replace(/\/$/, ""), process.env.POSTHOG_ENVIRONMENT?.trim() || "unspecified");
+  } catch {
+    console.error("tooljet-mcp: PostHog disabled; set POSTHOG_HOST to the project ingestion URL.");
+    return void 0;
+  }
+}
+
+// dist/oauthHttp.js
 var INITIAL_SCOPES = ["apps", "data", "workflows", "workspace_users"];
 var OAUTH_MAX_BODY_BYTES = 15 * 1024 * 1024;
 function checkedUrl(value2, name2) {
@@ -82129,6 +82363,7 @@ function createOAuthHttpServer(options2) {
   const resourcePath = resource.pathname.replace(/\/$/, "");
   const metadataPrefix = `/.well-known/oauth-protected-resource${resourcePath}/`;
   const pathPrefix = `${resourcePath}/`;
+  const analytics = postHogFromEnv();
   const httpServer = createServer((req, res) => {
     void (async () => {
       const url2 = new URL(req.url || "/", "http://localhost");
@@ -82243,7 +82478,16 @@ function createOAuthHttpServer(options2) {
         });
       });
       await server.connect(transport);
-      await transport.handleRequest(req, res, requestBody);
+      if (analytics && typeof credentials.user_id === "string" && credentials.user_id.trim()) {
+        const identity = analyticsIdentity(issuer, credentials.user_id, credentials.grant_id, credentials.organization_id);
+        await observeToolTelemetry((metrics) => analytics.toolCompleted(identity, metrics), () => transport.handleRequest(req, res, requestBody));
+        const initializedClient = server.server.getClientVersion();
+        if (initializedClient && res.statusCode === 200) {
+          analytics.initialized(identity, initializedClient.name);
+        }
+      } else {
+        await transport.handleRequest(req, res, requestBody);
+      }
     })().catch(() => {
       if (!res.headersSent)
         sendOAuthJson(res, 503, { error: "temporarily_unavailable" });
@@ -82253,7 +82497,24 @@ function createOAuthHttpServer(options2) {
   });
   httpServer.requestTimeout = 6e4;
   httpServer.headersTimeout = 15e3;
-  return httpServer;
+  const shutdownAnalytics = () => analytics?.shutdown() ?? Promise.resolve();
+  httpServer.once("close", () => void shutdownAnalytics());
+  let closing;
+  const closeGracefully = () => closing ??= (async () => {
+    const deadline = setTimeout(() => httpServer.closeAllConnections(), 2e3);
+    deadline.unref();
+    try {
+      if (httpServer.listening) {
+        await new Promise((resolve6, reject) => {
+          httpServer.close((error51) => error51 ? reject(error51) : resolve6());
+        });
+      }
+    } finally {
+      clearTimeout(deadline);
+      await shutdownAnalytics();
+    }
+  })();
+  return Object.assign(httpServer, { shutdownAnalytics, closeGracefully });
 }
 
 // dist/httpAuth.js
@@ -82358,8 +82619,15 @@ async function readJsonBody(req, maxBodyBytes) {
 var MAX_REQUEST_BODY_BYTES = 64 * 1024 * 1024;
 function createGatewayHttpServer() {
   const oauth = oauthHttpOptionsFromEnv();
-  if (oauth)
-    return { server: createOAuthHttpServer(oauth), gatewayMode: false };
+  if (oauth) {
+    const server = createOAuthHttpServer(oauth);
+    return {
+      server,
+      gatewayMode: false,
+      shutdownAnalytics: server.shutdownAnalytics,
+      closeGracefully: server.closeGracefully
+    };
+  }
   const sharedToken = process.env.MCP_SHARED_TOKEN;
   const gatewayMode = Boolean(sharedToken);
   const requireUserSession = gatewayMode && (/^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_USER_SESSION ?? "") || !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN));
@@ -82497,13 +82765,30 @@ async function serveHttp() {
     const reason = err instanceof Error ? err.message : String(err);
     throw new Error(`tooljet-mcp: invalid ${ALLOWED_API_ORIGINS_VAR}: ${reason}`);
   }
-  const { server: httpServer, gatewayMode } = createGatewayHttpServer();
+  const { server: httpServer, gatewayMode, closeGracefully } = createGatewayHttpServer();
   const host = process.env.MCP_HTTP_HOST ?? (gatewayMode ? "0.0.0.0" : "127.0.0.1");
   await new Promise((resolve6, reject) => {
     httpServer.once("error", reject);
     httpServer.listen(port, host, resolve6);
   });
   console.error(`tooljet-mcp: listening on http://${host}:${port} (${process.env.MCP_OAUTH_ENABLED === "true" ? "OAuth" : gatewayMode ? "gateway" : "direct"} mode)`);
+  let shuttingDown = false;
+  const shutdown = async () => {
+    if (shuttingDown)
+      return;
+    shuttingDown = true;
+    if (closeGracefully) {
+      await closeGracefully();
+      process.exit(0);
+    }
+    const deadline = setTimeout(() => httpServer.closeAllConnections(), 5e3);
+    deadline.unref();
+    await new Promise((resolve6) => httpServer.close(() => resolve6()));
+    clearTimeout(deadline);
+    process.exit(0);
+  };
+  process.once("SIGINT", () => void shutdown());
+  process.once("SIGTERM", () => void shutdown());
 }
 async function main() {
   if (process.env.MCP_TRANSPORT === "http") {

@@ -52,6 +52,41 @@ Treat discovery as a deployment gate, not only process health. Fetch the exact a
 
 The ToolJet public proxy must also keep the browser-facing `/<subpath>/api/mcp-oauth/authorize`, `interactions/*`, `token`, `revoke`, `exchange`, `viewer`, and `connections/*` routes on the configured issuer host. Do not route the well-known path to the frontend catch-all. In a split frontend/backend deployment, custom domains must proxy the same `/<subpath>/api` path to the trusted ToolJet backend so consent cookies remain first-party; broad CORS or third-party-cookie exceptions are not a substitute.
 
+## Optional hosted MCP analytics
+
+Set these variables on the **OAuth MCP service**, then restart it:
+
+```dotenv
+POSTHOG_PROJECT_TOKEN=phc_your_project_token
+POSTHOG_HOST=https://us.i.posthog.com
+POSTHOG_ENVIRONMENT=production
+```
+
+Use the project token from PostHog project settings, not a personal API key. Use `https://eu.i.posthog.com` for an EU project, or your own HTTPS ingestion host. `POSTHOG_ENVIRONMENT` is optional and defaults to `unspecified`. Without a project token, tracking is disabled. A missing or invalid host disables tracking with a generic startup warning. These settings do not enable tracking for stdio plugins, PAT HTTP, or the internal AI gateway.
+
+The service sends two events through PostHog's [batch capture API](https://posthog.com/docs/api/capture):
+
+| Event | Properties |
+|---|---|
+| `mcp_client_initialized` | Successful authenticated initialization; recognized client family (`claude`, `codex`, `cursor`, `grok`, `windsurf`, `vscode`, or `other`). The family comes from client-supplied metadata and is not a verified identity. |
+| `mcp_tool_completed` | Tool name, duration in milliseconds, ToolJet HTTP request count, upstream response bytes reported by Content-Length, result bytes, warning count, and an error boolean. Errors returned or thrown by an executed tool handler are counted. SDK rejections before handler execution, such as unknown tools or invalid arguments, are excluded. |
+
+Both include a timestamp, event UUID, environment, MCP version, `oauth_http` transport, hashed workspace ID (`workspace_id`), and hashed OAuth approval ID (`connection_id`). PostHog's `distinct_id` is a hash of the verified ToolJet **user ID** returned by the trusted OAuth exchange. The same user retains that ID across token refreshes, new approvals, clients, and workspaces under the same issuer; different user accounts and issuers have different IDs. The connection ID distinguishes separate approvals by the same user. This counts ToolJet accounts, not necessarily individual people sharing an account.
+
+Hashes are scoped to the configured issuer and are **pseudonymous, not anonymous**: someone with the issuer URL and a raw ID can recompute its hash. No client-provided header or tool argument can choose the analytics user. If the exchange omits a nonempty user ID, analytics are skipped while MCP continues working. Person profiles remain disabled; use event `distinct_id` to group users rather than expecting named People profiles. Previously captured connection-based IDs are not retroactively merged into user IDs.
+
+Completed reinitializations are counted separately; initialize notifications without a request ID do not count. Browser login, consent, token exchange, SDK validation rejections, and unauthenticated calls are not tracked here.
+
+Events use an explicit metadata allowlist. Prompts, tool arguments/results, error messages, raw client names, credentials, email addresses, callback URLs, and raw user/workspace/approval IDs are not sent. Person-profile processing and GeoIP enrichment are disabled. No database schema changes are needed.
+
+Delivery is best effort and never awaited by tool execution. The in-memory queue holds up to 1,000 pending events, sends batches of up to 20 every five seconds or when full, and gives each request a two-second timeout. After a successful send, remaining full batches drain immediately; a partial batch waits for the next flush. Network errors, HTTP 429 and server errors get at most three attempts with stable event UUIDs. Retry delays grow from five seconds to a one-minute cap, honoring a longer `Retry-After` value; incoming events cannot bypass that delay. Other HTTP errors are dropped. Each safe warning category is logged at most once every ten minutes, so persistent delivery failures remain visible.
+
+Both HTTP entry points allow up to two seconds for connections to close, including open event streams, followed by up to five seconds to drain analytics (seven seconds total). Shutdown respects retry delays and drops pending events when the remaining delay exceeds the drain budget. A full queue, sustained outage, or forced process termination can lose events; this is usage analytics, not an audit log. Collector response bodies and event contents are never logged.
+
+To validate without a PostHog account, run `npx vitest run tests/posthog.test.ts tests/posthogHttp.test.ts tests/telemetry.test.ts`. The integration tests use an ephemeral loopback HTTP collector and synthetic credentials; no PostHog traffic is sent. A loopback HTTP host is accepted for local testing only.
+
+For a live check, configure a separate test environment value, connect an OAuth MCP client to the workspace endpoint, and call a read-only tool such as `list_workspaces`. In PostHog's event explorer, filter by that environment and look for both events after the five-second flush plus ingestion time. Reconnect with a new approval using the same ToolJet account: `distinct_id` should stay the same and `connection_id` should change. Authorize with a different ToolJet account: `distinct_id` must differ. For a shared workspace, `workspace_id` should stay the same. Revoke test approvals after testing.
+
 ## Workspace custom domains
 
 A workspace custom domain changes only human browser navigation and links. It does not change `MCP_OAUTH_ISSUER`, `MCP_OAUTH_RESOURCE_URL`, the API target receiving delegation credentials, or the canonical origin used by restricted render verification. Existing grants therefore remain usable when a browser domain is replaced or removed.

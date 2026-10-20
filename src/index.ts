@@ -25,6 +25,8 @@ const MAX_REQUEST_BODY_BYTES = 64 * 1024 * 1024;
 
 export interface GatewayHttpServer {
   server: Server;
+  shutdownAnalytics?: () => Promise<void>;
+  closeGracefully?: () => Promise<void>;
   /** Whether this instance came up in gateway mode (MCP_SHARED_TOKEN set) or direct mode. */
   gatewayMode: boolean;
 }
@@ -37,7 +39,13 @@ export interface GatewayHttpServer {
  */
 export function createGatewayHttpServer(): GatewayHttpServer {
   const oauth = oauthHttpOptionsFromEnv();
-  if (oauth) return { server: createOAuthHttpServer(oauth), gatewayMode: false };
+  if (oauth) {
+    const server = createOAuthHttpServer(oauth);
+    return {
+      server, gatewayMode: false, shutdownAnalytics: server.shutdownAnalytics,
+      closeGracefully: server.closeGracefully,
+    };
+  }
   const sharedToken = process.env.MCP_SHARED_TOKEN;
 
   /* Two deployment shapes, told apart by whether a shared token is configured.
@@ -273,7 +281,7 @@ async function serveHttp(): Promise<void> {
     throw new Error(`tooljet-mcp: invalid ${ALLOWED_API_ORIGINS_VAR}: ${reason}`);
   }
 
-  const { server: httpServer, gatewayMode } = createGatewayHttpServer();
+  const { server: httpServer, gatewayMode, closeGracefully } = createGatewayHttpServer();
   const host = process.env.MCP_HTTP_HOST ?? (gatewayMode ? '0.0.0.0' : '127.0.0.1');
 
   await new Promise<void>((resolve, reject) => {
@@ -283,6 +291,23 @@ async function serveHttp(): Promise<void> {
   console.error(
     `tooljet-mcp: listening on http://${host}:${port} (${process.env.MCP_OAUTH_ENABLED === 'true' ? 'OAuth' : gatewayMode ? 'gateway' : 'direct'} mode)`
   );
+
+  let shuttingDown = false;
+  const shutdown = async (): Promise<void> => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    if (closeGracefully) {
+      await closeGracefully();
+      process.exit(0);
+    }
+    const deadline = setTimeout(() => httpServer.closeAllConnections(), 5000);
+    deadline.unref();
+    await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+    clearTimeout(deadline);
+    process.exit(0);
+  };
+  process.once('SIGINT', () => void shutdown());
+  process.once('SIGTERM', () => void shutdown());
 }
 
 async function main(): Promise<void> {
