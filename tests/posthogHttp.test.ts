@@ -45,7 +45,7 @@ async function collector() {
 function exchangeResponse() {
   return new Response(JSON.stringify({
     access_token: 'synthetic-internal-delegation', organization_id: 'orchard-workspace',
-    organization_slug: 'orchard', grant_id: 'orchard-grant',
+    organization_slug: 'orchard', grant_id: 'orchard-grant', user_id: 'orchard-user',
   }), { headers: { 'content-type': 'application/json' } });
 }
 const initialize = { jsonrpc: '2.0', id: 1, method: 'initialize', params: {
@@ -88,7 +88,7 @@ describe('OAuth MCP with a local PostHog collector', () => {
     vi.stubEnv('POSTHOG_HOST', collector);
     const exchange = vi.fn().mockImplementation(async () => new Response(JSON.stringify({
       access_token: 'synthetic-internal-delegation', organization_id: 'orchard-workspace',
-      organization_slug: 'orchard', grant_id: 'orchard-grant',
+      organization_slug: 'orchard', grant_id: 'orchard-grant', user_id: 'orchard-user',
     }), { headers: { 'content-type': 'application/json' } }));
     const factory = () => {
       const server = new McpServer({ name: 'synthetic', version: '1' });
@@ -149,12 +149,82 @@ describe('OAuth MCP with a local PostHog collector', () => {
     expect(events[1].properties).toMatchObject({
       tool_name: 'orchard_status', http_requests: 1, upstream_response_bytes: 23, warnings: 1,
     });
-    const expectedIdentity = analyticsIdentity(options.issuer, 'orchard-grant', 'orchard-workspace');
+    const expectedIdentity = analyticsIdentity(options.issuer, 'orchard-user', 'orchard-grant', 'orchard-workspace');
     for (const event of events) {
-      expect(event.distinct_id).toBe(expectedIdentity.connectionId);
+      expect(event.distinct_id).toBe(expectedIdentity.userId);
+      expect(event.properties.connection_id).toBe(expectedIdentity.connectionId);
       expect(event.properties.workspace_id).toBe(expectedIdentity.workspaceId);
     }
-    expect(JSON.stringify(events)).not.toMatch(/private|synthetic_analytics_token|synthetic-internal-delegation|orchard-grant|orchard-workspace|tooljet.synthetic/);
+    expect(JSON.stringify(events)).not.toMatch(/private|synthetic_analytics_token|synthetic-internal-delegation|orchard-user|orchard-grant|orchard-workspace|tooljet.synthetic/);
+  });
+
+  it('groups multiple approvals by verified user and ignores caller-supplied identity', async () => {
+    const batches = await collector();
+    const approvals = [
+      { user_id: 'orchard-user', grant_id: 'orchard-first-approval' },
+      { user_id: 'orchard-user', grant_id: 'orchard-second-approval' },
+      { user_id: 'another-user', grant_id: 'another-approval' },
+    ];
+    let exchangeIndex = 0;
+    const server = createOAuthHttpServer({
+      ...options,
+      fetchImpl: async () => new Response(JSON.stringify({
+        access_token: 'synthetic-delegation', organization_id: 'orchard-workspace',
+        ...approvals[Math.floor(exchangeIndex++ / 2)],
+      })),
+      serverFactory: () => {
+        const server = new McpServer({ name: 'synthetic', version: '1' });
+        server.registerTool('orchard_status', { inputSchema: {} }, async () =>
+          withToolTelemetry('orchard_status', async () => ok({ healthy: true })));
+        return server;
+      },
+    });
+    analyticsServers.push(server);
+    const base = await listen(server);
+    for (const approval of approvals) {
+      for (const body of [initialize, {
+        jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'orchard_status', arguments: {} },
+      }]) {
+        const response = await fetch(`${base}/mcp/orchard`, {
+          method: 'POST', headers: { ...headers, 'x-tooljet-user-id': 'spoofed-user', 'x-posthog-distinct-id': 'spoofed-user' },
+          body: JSON.stringify(body),
+        });
+        expect(response.status).toBe(200);
+      }
+    }
+    await server.shutdownAnalytics();
+    const events = batches.flatMap(batch => batch.batch);
+    expect(events).toHaveLength(6);
+    for (let i = 0; i < approvals.length; i++) {
+      const approval = approvals[i]!;
+      const identity = analyticsIdentity(options.issuer, approval.user_id, approval.grant_id, 'orchard-workspace');
+      for (const event of events.slice(i * 2, i * 2 + 2)) {
+        expect(event.distinct_id).toBe(identity.userId);
+        expect(event.properties.connection_id).toBe(identity.connectionId);
+      }
+    }
+    expect(new Set(events.map(event => event.distinct_id)).size).toBe(2);
+    expect(new Set(events.map(event => event.properties.connection_id)).size).toBe(3);
+    expect(JSON.stringify(events)).not.toMatch(/orchard-user|another-user|spoofed-user/);
+  });
+
+  it.each([undefined, null, '', ' ', 42])('skips analytics without a verified user ID (%s) while serving MCP', async (userId) => {
+    const batches = await collector();
+    const server = createOAuthHttpServer({
+      ...options,
+      fetchImpl: async () => new Response(JSON.stringify({
+        ...await exchangeResponse().json(), user_id: userId,
+      })),
+      serverFactory: () => new McpServer({ name: 'synthetic', version: '1' }),
+    });
+    analyticsServers.push(server);
+    const base = await listen(server);
+    const response = await fetch(`${base}/mcp/orchard`, {
+      method: 'POST', headers: { ...headers, 'x-tooljet-user-id': 'spoofed-user' }, body: JSON.stringify(initialize),
+    });
+    expect(response.status).toBe(200);
+    await server.shutdownAnalytics();
+    expect(batches).toEqual([]);
   });
 
   it('counts completed handshakes, excluding notifications and including a single-item batch', async () => {

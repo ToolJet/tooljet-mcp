@@ -238,8 +238,10 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server & {
         void server.close().catch(() => {});
       });
       await server.connect(transport);
-      if (analytics) {
-        const identity = analyticsIdentity(issuer, credentials.grant_id, credentials.organization_id);
+      // Only the trusted exchange response may identify a user. Missing user metadata
+      // skips analytics without blocking MCP or substituting a connection for a person.
+      if (analytics && typeof credentials.user_id === 'string' && credentials.user_id.trim()) {
+        const identity = analyticsIdentity(issuer, credentials.user_id, credentials.grant_id, credentials.organization_id);
         await observeToolTelemetry(
           (metrics) => analytics.toolCompleted(identity, metrics),
           () => transport.handleRequest(req, res, requestBody),

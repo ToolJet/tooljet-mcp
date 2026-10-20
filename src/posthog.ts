@@ -18,15 +18,17 @@ type Event = {
 };
 type PendingEvent = { event: Event; attempts: number };
 export interface AnalyticsIdentity {
+  userId: string;
   connectionId: string;
   workspaceId: string;
 }
 
 /** Hash only server-verified identifiers; never derive analytics identity from credentials. */
-export function analyticsIdentity(issuer: string, grantId: string, workspaceId: string): AnalyticsIdentity {
+export function analyticsIdentity(issuer: string, userId: string, grantId: string, workspaceId: string): AnalyticsIdentity {
   const hash = (kind: string, value: string) =>
     createHash('sha256').update(JSON.stringify([issuer, kind, value])).digest('hex');
   return {
+    userId: `mcp_user_${hash('user', userId)}`,
     connectionId: `mcp_connection_${hash('grant', grantId)}`,
     workspaceId: `mcp_workspace_${hash('workspace', workspaceId)}`,
   };
@@ -70,10 +72,11 @@ export class PostHogAnalytics {
       event: {
         uuid: randomUUID(),
         event,
-        distinct_id: identity.connectionId,
+        distinct_id: identity.userId,
         timestamp: new Date().toISOString(),
         properties: {
           ...properties,
+          connection_id: identity.connectionId,
           workspace_id: identity.workspaceId,
           environment: this.environment,
           transport: 'oauth_http',

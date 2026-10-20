@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { analyticsIdentity, PostHogAnalytics, postHogFromEnv } from '../src/posthog.js';
 import type { ToolTelemetryMetrics } from '../src/telemetry.js';
 
-const identity = analyticsIdentity('https://issuer.example', 'orchard-grant', 'orchard-workspace');
+const identity = analyticsIdentity('https://issuer.example', 'orchard-user', 'orchard-grant', 'orchard-workspace');
 const metrics: ToolTelemetryMetrics = {
   tool: 'orchard_status', duration_ms: 12, http_requests: 2,
   upstream_response_bytes: 42, result_bytes: 80, warnings: 1, error: false,
@@ -61,12 +61,19 @@ describe('hosted MCP PostHog analytics', () => {
     }
   });
 
-  it('uses stable connection/workspace hashes, separating grants and installations', () => {
-    expect(analyticsIdentity('https://issuer.example', 'orchard-grant', 'orchard-workspace')).toEqual(identity);
-    expect(analyticsIdentity('https://issuer.example', 'another-grant', 'orchard-workspace')).toEqual({
-      connectionId: expect.not.stringMatching(identity.connectionId), workspaceId: identity.workspaceId,
+  it('recognizes users across approvals and workspaces while separating users and installations', () => {
+    expect(analyticsIdentity('https://issuer.example', 'orchard-user', 'orchard-grant', 'orchard-workspace')).toEqual(identity);
+    expect(analyticsIdentity('https://issuer.example', 'orchard-user', 'another-grant', 'orchard-workspace')).toEqual({
+      userId: identity.userId, connectionId: expect.not.stringMatching(identity.connectionId), workspaceId: identity.workspaceId,
     });
-    const anotherIssuer = analyticsIdentity('https://another.example', 'orchard-grant', 'orchard-workspace');
+    const anotherWorkspace = analyticsIdentity('https://issuer.example', 'orchard-user', 'new-grant', 'another-workspace');
+    expect(anotherWorkspace.userId).toBe(identity.userId);
+    expect(anotherWorkspace.workspaceId).not.toBe(identity.workspaceId);
+    const anotherUser = analyticsIdentity('https://issuer.example', 'another-user', 'another-grant', 'orchard-workspace');
+    expect(anotherUser.userId).not.toBe(identity.userId);
+    expect(anotherUser.workspaceId).toBe(identity.workspaceId);
+    const anotherIssuer = analyticsIdentity('https://another.example', 'orchard-user', 'orchard-grant', 'orchard-workspace');
+    expect(anotherIssuer.userId).not.toBe(identity.userId);
     expect(anotherIssuer.connectionId).not.toBe(identity.connectionId);
     expect(anotherIssuer.workspaceId).not.toBe(identity.workspaceId);
     expect(JSON.stringify(identity)).not.toMatch(/orchard|issuer/);
@@ -84,18 +91,18 @@ describe('hosted MCP PostHog analytics', () => {
     expect(body.api_key).toBe('synthetic-project-token');
     expect(body.batch).toHaveLength(2);
     expect(body.batch[0]).toMatchObject({
-      event: 'mcp_client_initialized', distinct_id: identity.connectionId,
+      event: 'mcp_client_initialized', distinct_id: identity.userId,
       uuid: expect.any(String), timestamp: expect.any(String),
-      properties: { client_family: 'other', workspace_id: identity.workspaceId, environment: 'test',
+      properties: { client_family: 'other', connection_id: identity.connectionId, workspace_id: identity.workspaceId, environment: 'test',
         transport: 'oauth_http', $process_person_profile: false, $geoip_disable: true },
     });
     expect(body.batch[1].properties).toEqual({
       tool_name: metrics.tool, duration_ms: 12, http_requests: 2, upstream_response_bytes: 42,
-      result_bytes: 80, warnings: 1, error: false, workspace_id: identity.workspaceId,
+      result_bytes: 80, warnings: 1, error: false, connection_id: identity.connectionId, workspace_id: identity.workspaceId,
       environment: 'test', transport: 'oauth_http', mcp_version: expect.any(String),
       $process_person_profile: false, $geoip_disable: true,
     });
-    expect(JSON.stringify(body.batch)).not.toMatch(/Private Orchard|owner@|private input|private output|orchard-grant|orchard-workspace/);
+    expect(JSON.stringify(body.batch)).not.toMatch(/Private Orchard|owner@|private input|private output|orchard-user|orchard-grant|orchard-workspace/);
   });
 
   it('buckets known client names without passing arbitrary metadata through', async () => {

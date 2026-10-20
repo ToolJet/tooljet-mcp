@@ -82080,9 +82080,10 @@ var FLUSH_INTERVAL_MS = 5e3;
 var REQUEST_TIMEOUT_MS = 2e3;
 var MAX_ATTEMPTS = 3;
 var WARNING_INTERVAL_MS = 10 * 6e4;
-function analyticsIdentity(issuer, grantId, workspaceId) {
+function analyticsIdentity(issuer, userId, grantId, workspaceId) {
   const hash2 = (kind, value2) => createHash4("sha256").update(JSON.stringify([issuer, kind, value2])).digest("hex");
   return {
+    userId: `mcp_user_${hash2("user", userId)}`,
     connectionId: `mcp_connection_${hash2("grant", grantId)}`,
     workspaceId: `mcp_workspace_${hash2("workspace", workspaceId)}`
   };
@@ -82127,10 +82128,11 @@ var PostHogAnalytics = class {
       event: {
         uuid: randomUUID6(),
         event,
-        distinct_id: identity.connectionId,
+        distinct_id: identity.userId,
         timestamp: (/* @__PURE__ */ new Date()).toISOString(),
         properties: {
           ...properties,
+          connection_id: identity.connectionId,
           workspace_id: identity.workspaceId,
           environment: this.environment,
           transport: "oauth_http",
@@ -82476,8 +82478,8 @@ function createOAuthHttpServer(options2) {
         });
       });
       await server.connect(transport);
-      if (analytics) {
-        const identity = analyticsIdentity(issuer, credentials.grant_id, credentials.organization_id);
+      if (analytics && typeof credentials.user_id === "string" && credentials.user_id.trim()) {
+        const identity = analyticsIdentity(issuer, credentials.user_id, credentials.grant_id, credentials.organization_id);
         await observeToolTelemetry((metrics) => analytics.toolCompleted(identity, metrics), () => transport.handleRequest(req, res, requestBody));
         const initializedClient = server.server.getClientVersion();
         if (initializedClient && res.statusCode === 200) {
