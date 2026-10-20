@@ -68334,6 +68334,17 @@ function lintShadKanbanCards(components) {
   }
   return warnings;
 }
+function lintShadScheduleScale(components) {
+  const warnings = [];
+  const unwrap4 = (value2) => String(value2 ?? "").trim().replace(/^\{\{\s*['"]?(.*?)['"]?\s*\}\}$/, "$1");
+  for (const schedule of components.filter((component) => component.type === "ShadSchedule")) {
+    const days = unwrap4(propVal2(schedule.properties, "days"));
+    if (unwrap4(propVal2(schedule.properties, "scale")) !== "days" || !/^\d+$/.test(days) || Number(days) > 1)
+      continue;
+    warnings.push(`ShadSchedule "${schedule.name ?? schedule.id ?? "ShadSchedule"}" uses scale "days" with days ${days}. A one-day room or resource board is scale "hours" with dayStart and dayEnd (and slotMinutes); scale "days" is the multi-day overview, a column a day.`);
+  }
+  return warnings;
+}
 function hasUnclosedBinding(value2) {
   let at = value2.indexOf("{{");
   while (at !== -1) {
@@ -69987,6 +69998,7 @@ function lintComponents(components, options2 = {}) {
   errors.push(...lintFormSubmitButtons(components));
   warnings.push(...lintKanbanCardChildren(components));
   warnings.push(...lintShadKanbanCards(components));
+  warnings.push(...lintShadScheduleScale(components));
   warnings.push(...lintStageTables(components));
   warnings.push(...lintStatisticsRows(components));
   warnings.push(...lintEmptyTabs(components));
@@ -70418,6 +70430,7 @@ function validateAppStructure(summary, options2 = {}) {
     warnings.push(...lintRenderedGeometryAdvisory(p.components));
     warnings.push(...lintKanbanInteractions(p.components));
     warnings.push(...lintShadKanbanCards(p.components));
+    warnings.push(...lintShadScheduleScale(p.components));
     warnings.push(...lintStageTables(p.components));
   }
   warnings.push(...lintInnerPageBands(summary));
@@ -82932,6 +82945,7 @@ function updateComponentsTool(client) {
         warnings.push(...lintRenderedGeometry(allComponents));
         warnings.push(...lintKanbanInteractions(allComponents));
         warnings.push(...lintShadKanbanCards(allComponents));
+        warnings.push(...lintShadScheduleScale(allComponents));
         const result = await client.updateComponents({
           appId: args.app_id,
           versionId: args.version_id,

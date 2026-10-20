@@ -828,6 +828,23 @@ export function lintShadKanbanCards(components: LintComponent[]): string[] {
   return warnings;
 }
 
+/** One day on a Schedule's days scale is a single column, every booking a bar across the whole width (the widget now
+ *  draws it by its hours, but the build should say what it means): a one-day room board is scale "hours". Scale
+ *  "hours" ignores days, and the catalogue default sets days 7, so that pairing is not a finding. */
+export function lintShadScheduleScale(components: LintComponent[]): string[] {
+  const warnings: string[] = [];
+  const unwrap = (value: unknown) => String(value ?? '').trim().replace(/^\{\{\s*['"]?(.*?)['"]?\s*\}\}$/, '$1');
+  for (const schedule of components.filter((component) => component.type === 'ShadSchedule')) {
+    const days = unwrap(propVal(schedule.properties, 'days'));
+    if (unwrap(propVal(schedule.properties, 'scale')) !== 'days' || !/^\d+$/.test(days) || Number(days) > 1) continue;
+    warnings.push(
+      `ShadSchedule "${schedule.name ?? schedule.id ?? 'ShadSchedule'}" uses scale "days" with days ${days}. A one-day room or ` +
+        'resource board is scale "hours" with dayStart and dayEnd (and slotMinutes); scale "days" is the multi-day overview, a column a day.'
+    );
+  }
+  return warnings;
+}
+
 /** Whether a string opens a {{ binding that no }} closes: ToolJet then shows the whole expression as text. */
 export function hasUnclosedBinding(value: string): boolean {
   let at = value.indexOf('{{');
@@ -3237,6 +3254,7 @@ export function lintComponents(components: LintComponent[], options: { canvasCol
   errors.push(...lintFormSubmitButtons(components));
   warnings.push(...lintKanbanCardChildren(components));
   warnings.push(...lintShadKanbanCards(components));
+  warnings.push(...lintShadScheduleScale(components));
   warnings.push(...lintStageTables(components));
   warnings.push(...lintStatisticsRows(components));
   warnings.push(...lintEmptyTabs(components)); // a partial add may create the parent before its children
@@ -3822,6 +3840,7 @@ export function validateAppStructure(summary: AppSummary, options: { canvasColor
     warnings.push(...lintRenderedGeometryAdvisory(p.components as LintComponent[]));
     warnings.push(...lintKanbanInteractions(p.components as LintComponent[]));
     warnings.push(...lintShadKanbanCards(p.components as LintComponent[]));
+    warnings.push(...lintShadScheduleScale(p.components as LintComponent[]));
     warnings.push(...lintStageTables(p.components as LintComponent[]));
   }
   warnings.push(...lintInnerPageBands(summary));
