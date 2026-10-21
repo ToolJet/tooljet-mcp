@@ -1,6 +1,6 @@
 # Connect through OAuth
 
-OAuth mode lets a remote MCP client open ToolJet in the browser and ask the user to authorize one workspace. The user does not create or paste a PAT. It requires an upgraded ToolJet backend with MCP OAuth enabled and all three additive database migrations applied.
+OAuth mode lets a remote MCP client open ToolJet in the browser and ask the user to authorize one workspace. The user does not create or paste a PAT. This release is Cloud-only. It requires a ToolJet backend configured with `TOOLJET_EDITION=cloud`, `MCP_OAUTH_ENABLED=true`, and all four OAuth database migrations applied. CE and self-hosted EE do not enable these OAuth endpoints, even when the feature flag is set.
 
 ## Apply the database migrations
 
@@ -11,10 +11,11 @@ Apply these ToolJet migrations in timestamp order before enabling this backend v
 | `1789416000000-AddMcpOAuth.ts` | Creates `mcp_oauth_clients`, `mcp_oauth_grants` and `mcp_oauth_artifacts`, their primary/foreign keys and checks, and four secondary indexes. Existing PAT tables are unchanged. |
 | `1791290000000-AddMcpOAuthRevocationHooks.ts` | Adds two database functions, nine triggers and two partial indexes to make selected local security changes durably revoke grants. |
 | `1791763200000-AddMcpOAuthClientAuthentication.ts` | Adds `token_endpoint_auth_method`, `client_secret_hash` and nullable `first_authorized_at` to `mcp_oauth_clients`, plus one check constraint requiring a consistent method/hash pair. No new tables, indexes, triggers or functions. |
+| `1792540800000-ReduceMcpOAuthPolicyContention.ts` | Replaces policy functions and narrows security triggers; independent security changes share the lock while new approvals take it exclusively. No new tables, columns, indexes or constraints. |
 
 The second migration's hooks cover user status; workspace status, slug and login restrictions; membership; workspace bans; client disabling; SSO settings; OIDC group-sync settings; and selected instance login settings. The ninth trigger coordinates new grant creation with policy changes. They prevent disable/re-enable or policy change/restore from reviving an old grant. They do not observe offboarding changes that an external IdP has not communicated to ToolJet.
 
-The third migration gives existing client rows `none`, preserving their public-client behavior. This database default differs from the DCR default for new requests described below. It also backfills every existing row's `first_authorized_at` from `created_at`: the old schema cannot prove historical consent, so this preserves cached legacy registrations without creating or restoring a user grant. New DCR rows start with a null timestamp; only successful consent sets it. Rolling back disables confidential clients before removing the columns and constraint; it does not silently turn them into public clients. Applying code or setting `MCP_OAUTH_ENABLED` does not apply migrations. Check that all three migrations have been applied to the intended deployment before rollout.
+The third migration gives existing client rows `none`, preserving their public-client behavior. This database default differs from the DCR default for new requests described below. It also backfills every existing row's `first_authorized_at` from `created_at`: the old schema cannot prove historical consent, so this preserves cached legacy registrations without creating or restoring a user grant. New DCR rows start with a null timestamp; only successful consent sets it. Rolling back disables confidential clients before removing the columns and constraint; it does not silently turn them into public clients. Applying code or setting `MCP_OAUTH_ENABLED` does not apply migrations. Check that all four migrations have been applied to the intended deployment before rollout.
 
 ## Run the OAuth MCP service
 
@@ -64,7 +65,7 @@ For MCP clients that make requests from a browser origin, list exact trusted ori
 
 Browser render verification also needs `playwright-core` and Chrome on the MCP host. If the package is outside normal module resolution, set `MCP_RENDER_AUDIT_PLAYWRIGHT` to its local package directory and `MCP_RENDER_AUDIT_CHROME` to the Chrome executable. These are deployment settings, not client-supplied paths. For a frontend that calls a separate API origin, include that exact trusted API origin in `MCP_RENDER_AUDIT_ALLOWED_ORIGINS`; otherwise the browser audit blocks its bootstrap requests. OAuth viewer navigation remains fixed to `TOOLJET_DEPLOYMENT_URL`; custom-domain human links never move the restricted viewer credential.
 
-Cloud and self-hosted deployments use this same configuration contract. One process targets one trusted ToolJet installation and can serve its workspace URLs. The implementation does not require self-hosted installations to use a ToolJet-hosted authentication service.
+The public OAuth MCP process targets one trusted ToolJet Cloud installation and can serve its workspace URLs. Self-hosted OAuth support is outside this release; existing PAT and internal MCP integrations remain available.
 
 ## Connect an AI client
 
@@ -126,7 +127,7 @@ PAT-based stdio plugins and explicitly configured legacy HTTP processes keep the
 
 The companion ToolJet deployment must enable MCP OAuth. Each workspace keeps the login providers and features available under its current plan. This change does not unlock paid SSO providers or implement the built-in AI Builder in Community Edition.
 
-Private self-hosted services must be reachable by the client (for example over a desktop VPN). Hosted AI clients need an appropriate reachable MCP endpoint. OAuth itself does not provide network connectivity.
+Cloud MCP endpoints must be reachable by the configured AI client. OAuth itself does not provide network connectivity.
 
 This implementation retains the installed MCP SDK's `2025-11-25` protocol and earlier supported versions. It does not claim the newer `2026-07-28` transport semantics. Client metadata document URLs, `private_key_jwt` client assertions and enterprise-managed identity assertion grants are not implemented. Use a supported DCR method or a previously registered client with matching credentials and redirect. Adding confidential-client support removes the earlier public-only limitation; it does not prove Microsoft or any other hosted client works end to end. Validate each supported client, refresh/reconnect behavior and real SSO provider in the target deployment.
 
