@@ -73078,6 +73078,10 @@ var LEGACY_SINGULAR_CREATE_TOOL_NAMES = /* @__PURE__ */ new Set([
 function includeLegacySingularCreateTools() {
   return /^(1|true|yes)$/i.test(process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS ?? "");
 }
+var RENDER_SESSION_TOOL_NAME = "create_render_session";
+function includeRenderSessionTool() {
+  return /^(1|true|yes)$/i.test(process.env.TOOLJET_ENABLE_RENDER_SESSION ?? "");
+}
 function registerTools(server, client, runtime = runtimeFreshness) {
   const tools = [
     getRuntimeInfoTool(runtime),
@@ -73141,7 +73145,7 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     deleteEventTool(client),
     manageThemeTool(client)
   ];
-  const exposedTools = includeLegacySingularCreateTools() ? tools : tools.filter((tool) => !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name));
+  const exposedTools = tools.filter((tool) => (includeLegacySingularCreateTools() || !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name)) && (includeRenderSessionTool() || tool.name !== RENDER_SESSION_TOOL_NAME));
   for (const tool of exposedTools) {
     server.registerTool(tool.name, {
       title: tool.title,

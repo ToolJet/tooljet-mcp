@@ -36,7 +36,8 @@ tooljet-mcp ──POST /internal/mcp/verify-origin──► ai-api-gateway   (on
   fails closed and caches verdicts, so a revoked customer stays allowed until the cache TTL expires
   (`GATEWAY_CACHE_TTL_MS`).
 - **Tools:** `src/tools/index.ts` `registerTools`. Singular create tools are hidden unless
-  `TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS=1`; agents get the batch versions.
+  `TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS=1`; agents get the batch versions. `create_render_session` is
+  hidden unless `TOOLJET_ENABLE_RENDER_SESSION=1` (set by the ToolJet agent): its result is a live token.
 
 ## 4. Run & test
 

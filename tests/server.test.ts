@@ -6,6 +6,7 @@ beforeAll(() => {
 
 afterEach(() => {
   delete process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS;
+  delete process.env.TOOLJET_ENABLE_RENDER_SESSION;
 });
 
 describe('buildServer', () => {
@@ -67,5 +68,20 @@ describe('buildServer', () => {
     for (const legacy of ['create_table', 'insert_rows', 'add_page', 'add_query', 'add_component']) {
       expect(names).toContain(legacy);
     }
+  });
+
+  it('hides create_render_session by default: its result is a live session token', async () => {
+    const { buildServer } = await import('../src/server.js');
+    const names = Object.keys((buildServer() as any)._registeredTools ?? {});
+
+    expect(names).not.toContain('create_render_session');
+  });
+
+  it('exposes create_render_session when the ToolJet agent opts in', async () => {
+    process.env.TOOLJET_ENABLE_RENDER_SESSION = '1';
+    const { buildServer } = await import('../src/server.js');
+    const names = Object.keys((buildServer() as any)._registeredTools ?? {});
+
+    expect(names).toContain('create_render_session');
   });
 });

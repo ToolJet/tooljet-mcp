@@ -82,6 +82,14 @@ function includeLegacySingularCreateTools(): boolean {
   return /^(1|true|yes)$/i.test(process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS ?? '');
 }
 
+export const RENDER_SESSION_TOOL_NAME = 'create_render_session';
+
+// Its result is a live session token. Only the ToolJet agent, which calls it without showing the
+// result to a model, opts in; other clients would put the token in the model's context.
+function includeRenderSessionTool(): boolean {
+  return /^(1|true|yes)$/i.test(process.env.TOOLJET_ENABLE_RENDER_SESSION ?? '');
+}
+
 export function registerTools(
   server: McpServer,
   client: ToolJetClient,
@@ -150,9 +158,11 @@ export function registerTools(
     manageThemeTool(client),
   ];
 
-  const exposedTools = includeLegacySingularCreateTools()
-    ? tools
-    : tools.filter((tool) => !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name));
+  const exposedTools = tools.filter(
+    (tool) =>
+      (includeLegacySingularCreateTools() || !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name)) &&
+      (includeRenderSessionTool() || tool.name !== RENDER_SESSION_TOOL_NAME)
+  );
 
   for (const tool of exposedTools) {
     server.registerTool(

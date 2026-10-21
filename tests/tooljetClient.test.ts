@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PartialWriteError, createClient } from '../src/tooljetClient.js';
 import type { Config } from '../src/config.js';
 import type { Auth } from '../src/auth.js';
@@ -1825,6 +1825,64 @@ describe('createClient', () => {
         headers: { 'Content-Type': 'application/json' },
         body: '{}',
       });
+    });
+  });
+
+  describe('createAppScopedSession', () => {
+    const patConfig: Config = { ...config, pat: 'tj_pat_x' };
+    let fetchMock: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+      fetchMock = vi.fn();
+      vi.stubGlobal('fetch', fetchMock);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('refuses without a PAT and never calls ToolJet', async () => {
+      const client = createClient(auth, config);
+
+      await expect(client.createAppScopedSession('app1')).rejects.toThrow(/needs a personal access token/);
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('explains a 404 as an app outside the token workspace or an older ToolJet', async () => {
+      fetchMock.mockResolvedValueOnce(mockResponse({ status: 404, text: 'Not Found' }));
+      const client = createClient(auth, patConfig);
+
+      await expect(client.createAppScopedSession('app1')).rejects.toThrow(
+        /404 — the app is not in this token's workspace/
+      );
+    });
+
+    it('exchanges the PAT for a session on the editor URL and passes the expiry through', async () => {
+      fetchMock.mockResolvedValueOnce(
+        mockResponse({ json: { authToken: 'session-1', expiresAt: '2026-10-21T10:00:00.000Z' } })
+      );
+      const client = createClient(auth, patConfig);
+
+      await expect(client.createAppScopedSession('app1')).resolves.toEqual({
+        token: 'session-1',
+        url: 'http://localhost:8082/myworkspace/apps/app1',
+        expires_at: '2026-10-21T10:00:00.000Z',
+      });
+      expect(fetchMock).toHaveBeenCalledWith('http://localhost:3000/api/personal-access-tokens/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer tj_pat_x' },
+        body: JSON.stringify({ appId: 'app1' }),
+      });
+    });
+
+    it('reports no expiry when an older ToolJet sends none, and fails without a token', async () => {
+      fetchMock
+        .mockResolvedValueOnce(mockResponse({ json: { authToken: 'session-1' } }))
+        .mockResolvedValueOnce(mockResponse({ json: {} }));
+      const client = createClient(auth, patConfig);
+
+      expect(await client.createAppScopedSession('app1')).not.toHaveProperty('expires_at');
+      await expect(client.createAppScopedSession('app1')).rejects.toThrow(/no authToken/);
     });
   });
 });

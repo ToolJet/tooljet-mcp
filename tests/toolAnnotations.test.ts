@@ -12,12 +12,15 @@ interface Registered {
 }
 
 /**
- * Every tool the server actually exposes, including the legacy singular aliases, which are off by
- * default but still reach clients that opt in — and would still be reviewed.
+ * Every tool the server actually exposes, including the legacy singular aliases and
+ * create_render_session, which are off by default but still reach clients that opt in — and would
+ * still be reviewed.
  */
 function registeredTools(): Registered[] {
   const previous = process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS;
+  const previousRenderSession = process.env.TOOLJET_ENABLE_RENDER_SESSION;
   process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS = 'true';
+  process.env.TOOLJET_ENABLE_RENDER_SESSION = 'true';
   try {
     const captured: Registered[] = [];
     const server = {
@@ -30,6 +33,8 @@ function registeredTools(): Registered[] {
   } finally {
     if (previous === undefined) delete process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS;
     else process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS = previous;
+    if (previousRenderSession === undefined) delete process.env.TOOLJET_ENABLE_RENDER_SESSION;
+    else process.env.TOOLJET_ENABLE_RENDER_SESSION = previousRenderSession;
   }
 }
 
