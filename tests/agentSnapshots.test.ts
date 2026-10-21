@@ -90,6 +90,33 @@ describe('snapshots before agent writes', () => {
     expect(await snapshotBeforeWrite(client, 'update_components', { app_id: app, version_id: version })).toBeUndefined();
   });
 
+  it('keeps one tenant\'s entries apart from another\'s, and a refused app starts no timer', async () => {
+    const taken2: VersionSnapshotResult = { ok: true, id: 'snapB', reused: false, seeChangesUrl: 'uB' };
+    const refusedApp: VersionSnapshotResult = { ok: false, status: 404, reason: 'unavailable', upgradeUrl: 'x', detail: '' };
+    const a = clientWith(taken);
+    (a.client as any).tenantKey = () => 'tenant-a';
+    const b = clientWith(refusedApp, taken2);
+    (b.client as any).tenantKey = () => 'tenant-b';
+    let clock = 0;
+    expect(await snapshotBeforeWrite(a.client, 'update_components', { app_id: app, version_id: version }, () => clock)).toMatchObject({ id: 'snap1' });
+    // Tenant B names tenant A's app: the server refuses, and nothing about A's app is recorded or returned.
+    clock += 1000;
+    expect(await snapshotBeforeWrite(b.client, 'update_components', { app_id: app, version_id: version }, () => clock)).toBeUndefined();
+    // Tenant B's own app gets its own snapshot, under its own key.
+    expect(await snapshotBeforeWrite(b.client, 'update_components', { app_id: app, version_id: version }, () => clock)).toMatchObject({ id: 'snapB' });
+    expect(b.createVersionSnapshot).toHaveBeenCalledTimes(2);
+    // Tenant A's timer was untouched by B: within the idle window it still takes no new snapshot.
+    expect(await snapshotBeforeWrite(a.client, 'update_components', { app_id: app, version_id: version }, () => clock)).toBeUndefined();
+    expect(a.createVersionSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  it('tries again on the next write after a failed call', async () => {
+    const { client, createVersionSnapshot } = clientWith(new Error('network'), taken);
+    expect(await snapshotBeforeWrite(client, 'update_components', { app_id: app, version_id: version })).toBeUndefined();
+    expect(await snapshotBeforeWrite(client, 'update_components', { app_id: app, version_id: version })).toMatchObject({ id: 'snap1' });
+    expect(createVersionSnapshot).toHaveBeenCalledTimes(2);
+  });
+
   it('works with a client that cannot snapshot', async () => {
     expect(await snapshotBeforeWrite({} as ToolJetClient, 'update_components', { app_id: app, version_id: version })).toBeUndefined();
   });

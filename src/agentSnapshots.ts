@@ -41,8 +41,9 @@ interface Tracked {
   planNoted?: boolean;
 }
 
-// Module level: the gateway builds a server per request, so per-server state would forget every call.
-// Keyed by app and version ids, which are unique across workspaces.
+// Module level: the gateway builds a server per request, so per-server state would forget every call. Keyed by the
+// caller's tenant as well as the app and version: on the shared HTTP server one tenant must not be able to read,
+// reset or suppress another's entry by naming its app id (the server refuses the call, but the timer would move).
 const tracked = new Map<string, Tracked>();
 
 export function clearAgentSnapshotsForTests(): void {
@@ -84,7 +85,7 @@ export async function snapshotBeforeWrite(
   const versionId = appId ? versionOf(toolName, input) : undefined;
   if (!appId || !versionId) return undefined;
 
-  const key = `${appId}:${versionId}`;
+  const key = `${client.tenantKey?.() ?? 'local'}:${appId}:${versionId}`;
   const previous = tracked.get(key);
   const at = now();
   if (previous && at - previous.lastWriteAt < SNAPSHOT_IDLE_MS) {
@@ -96,7 +97,7 @@ export async function snapshotBeforeWrite(
   try {
     result = await client.createVersionSnapshot(appId, versionId, 'Before agent edits');
   } catch {
-    remember(key, { ...previous, lastWriteAt: at });
+    // A failed call (network, server) leaves the timer alone, so the next write tries again.
     return undefined;
   }
   if (result.ok) {
@@ -111,8 +112,11 @@ export async function snapshotBeforeWrite(
       note: 'ToolJet kept a copy of this version before your edits. When the change is done, give the user see_changes_url: it opens the compare view on what you changed, with undo.',
     };
   }
+  // Only the plan refusal is this tenant's own answer about its own app (the server checked the app first); a
+  // refused or missing app records nothing, so a wrong id cannot start or reset a timer.
+  if (result.reason !== 'not_in_plan') return undefined;
   remember(key, { ...previous, lastWriteAt: at, planNoted: true });
-  if (result.reason !== 'not_in_plan' || previous?.planNoted) return undefined;
+  if (previous?.planNoted) return undefined;
   return {
     status: 'not_in_plan',
     feature: 'Compare versions and undo changes',

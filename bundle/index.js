@@ -61441,7 +61441,7 @@ function tableQuotaError(error51) {
 }
 
 // dist/tooljetClient.js
-import { randomUUID as randomUUID2 } from "node:crypto";
+import { createHash as createHash2, randomUUID as randomUUID2 } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 
 // dist/pageIcons.js
@@ -72925,6 +72925,7 @@ function createClient(auth, config2) {
     // The in-product AI chat (a ToolJet session, not a PAT) keeps its own copy before every turn and has its own
     // See what changed; snapshots here are for coding agents. TOOLJET_MCP_AGENT_SNAPSHOTS=off turns them off.
     ...config2.sessionToken || /^(0|off|false|no)$/i.test(process.env.TOOLJET_MCP_AGENT_SNAPSHOTS ?? "") ? {} : { createVersionSnapshot },
+    tenantKey: () => createHash2("sha256").update(`${config2.apiUrl}|${config2.workspaceId ?? ""}|${config2.pat ?? ""}|${config2.sessionToken ?? ""}`).digest("hex").slice(0, 24),
     getDevelopmentEnvironmentId,
     listDatasources,
     listTables,
@@ -73353,7 +73354,7 @@ async function snapshotBeforeWrite(client, toolName, args, now = Date.now) {
   const versionId = appId ? versionOf(toolName, input) : void 0;
   if (!appId || !versionId)
     return void 0;
-  const key4 = `${appId}:${versionId}`;
+  const key4 = `${client.tenantKey?.() ?? "local"}:${appId}:${versionId}`;
   const previous = tracked.get(key4);
   const at = now();
   if (previous && at - previous.lastWriteAt < SNAPSHOT_IDLE_MS) {
@@ -73364,7 +73365,6 @@ async function snapshotBeforeWrite(client, toolName, args, now = Date.now) {
   try {
     result = await client.createVersionSnapshot(appId, versionId, "Before agent edits");
   } catch {
-    remember(key4, { ...previous, lastWriteAt: at });
     return void 0;
   }
   if (result.ok) {
@@ -73379,8 +73379,10 @@ async function snapshotBeforeWrite(client, toolName, args, now = Date.now) {
       note: "ToolJet kept a copy of this version before your edits. When the change is done, give the user see_changes_url: it opens the compare view on what you changed, with undo."
     };
   }
+  if (result.reason !== "not_in_plan")
+    return void 0;
   remember(key4, { ...previous, lastWriteAt: at, planNoted: true });
-  if (result.reason !== "not_in_plan" || previous?.planNoted)
+  if (previous?.planNoted)
     return void 0;
   return {
     status: "not_in_plan",
@@ -83869,7 +83871,7 @@ function deleteEventTool(client) {
 }
 
 // dist/runtimeFreshness.js
-import { createHash as createHash2 } from "node:crypto";
+import { createHash as createHash3 } from "node:crypto";
 import { statSync } from "node:fs";
 import { fileURLToPath as fileURLToPath6 } from "node:url";
 var TOOLJET_MCP_VERSION = "0.8.0";
@@ -83878,7 +83880,7 @@ function snapshot(path) {
     const stat = statSync(path);
     const source2 = `${Math.round(stat.mtimeMs * 1e3)}:${stat.size}`;
     return {
-      buildId: createHash2("sha256").update(source2).digest("hex").slice(0, 12),
+      buildId: createHash3("sha256").update(source2).digest("hex").slice(0, 12),
       modifiedMs: stat.mtimeMs,
       size: stat.size
     };
@@ -84865,7 +84867,7 @@ function registerTools(server, client, runtime = runtimeFreshness) {
 }
 
 // dist/catalogResources.js
-import { createHash as createHash3 } from "node:crypto";
+import { createHash as createHash4 } from "node:crypto";
 import { readFileSync as readFileSync7 } from "node:fs";
 import { dirname as dirname7, resolve as resolve6 } from "node:path";
 import { fileURLToPath as fileURLToPath7 } from "node:url";
@@ -84905,12 +84907,12 @@ var versions = /* @__PURE__ */ new Map();
 var payloads = /* @__PURE__ */ new Map();
 function readData(resource) {
   const bytes = readFileSync7(resolve6(dataDir, resource.file));
-  const dataVersion = createHash3("sha256").update(bytes).digest("hex").slice(0, 12);
+  const dataVersion = createHash4("sha256").update(bytes).digest("hex").slice(0, 12);
   versions.set(resource.file, dataVersion);
   return { bytes, dataVersion };
 }
 function catalogVersionOf(parts) {
-  const hash2 = createHash3("sha256");
+  const hash2 = createHash4("sha256");
   for (const part of parts) {
     hash2.update(`${part.file}
 ${part.bytes.length}

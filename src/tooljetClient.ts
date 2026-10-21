@@ -2,7 +2,7 @@ import { resolveComponentLibrary, type ResolvedComponentLibrary } from './compon
 import { createAppVersionLifecycle } from './appVersionLifecycle.js';
 import { createWorkflowClient, type WorkflowClient } from './workflowClient.js';
 import { TableQuotaError, tableQuotaError } from './tableQuotaError.js';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { assertPageIcon } from './pageIcons.js';
 import type { Auth, Workspace } from './auth.js';
@@ -691,6 +691,9 @@ export interface ToolJetClient {
   editingVersionName?(appId: string): Promise<string | undefined>;
   /** Keeps a copy of a version for the compare view and undo (EE, trial and Pro and above). Never throws for a refusal. */
   createVersionSnapshot?(appId: string, versionId: string, label?: string): Promise<VersionSnapshotResult>;
+  /** Who this client acts for, as an opaque key: the shared HTTP server serves many tenants from one process, and
+   *  per-tenant state (agentSnapshots.ts) must never be shared or reset across them. */
+  tenantKey?(): string;
 }
 
 export type VersionSnapshotResult =
@@ -3159,6 +3162,11 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     ...(config.sessionToken || /^(0|off|false|no)$/i.test(process.env.TOOLJET_MCP_AGENT_SNAPSHOTS ?? '')
       ? {}
       : { createVersionSnapshot }),
+    tenantKey: () =>
+      createHash('sha256')
+        .update(`${config.apiUrl}|${config.workspaceId ?? ''}|${config.pat ?? ''}|${config.sessionToken ?? ''}`)
+        .digest('hex')
+        .slice(0, 24),
     getDevelopmentEnvironmentId,
     listDatasources,
     listTables,
