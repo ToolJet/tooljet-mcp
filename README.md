@@ -4,7 +4,7 @@ An MCP server that lets a coding agent (Codex, Claude Code, …) build and maint
 
 ## Browser OAuth connections
 
-For remote HTTP clients, [OAuth setup](docs/oauth.md) connects through the workspace's ToolJet login and consent flow without copying a PAT. It requires the companion ToolJet OAuth backend and migration. Existing local PAT plugins remain supported; the prerequisites below describe that local setup.
+For remote HTTP clients, [OAuth setup](docs/oauth.md) connects through the workspace's ToolJet login and consent flow without copying a PAT. OAuth is Cloud-only in this release and requires the companion ToolJet Cloud backend with `MCP_OAUTH_ENABLED=true` and all four OAuth migrations. Existing local PAT plugins remain supported; the prerequisites below describe that local setup.
 
 ## Prerequisites
 
