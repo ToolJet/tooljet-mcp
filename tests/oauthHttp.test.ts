@@ -481,3 +481,50 @@ describe('public MCP OAuth HTTP boundary', () => {
     expect(redirectedRequest).not.toHaveBeenCalled();
   });
 });
+
+describe('exchange admission', () => {
+  it('rejects excess requests before backend exchange even with rotating junk tokens', async () => {
+    vi.stubEnv('MCP_OAUTH_EXCHANGE_RATE_LIMIT', '2');
+    const exchange = vi.fn(async () => new Response('{"error":"invalid_token"}', { status: 401 }));
+    const base = await listen(createOAuthHttpServer({ ...options, fetchImpl: exchange }));
+    for (let i = 0; i < 3; i++) {
+      const response = await fetch(`${base}/mcp/garden`, { method: 'POST',
+        headers: { ...headers, authorization: `Bearer tj_oauth_at_synthetic_junk_${i}` }, body: '{}' });
+      expect(response.status).toBe(i < 2 ? 401 : 429);
+      if (i === 2) {
+        expect(response.headers.get('retry-after')).toBeTruthy();
+        expect(response.headers.get('www-authenticate')).toBeNull();
+      }
+    }
+    expect(exchange).toHaveBeenCalledTimes(2);
+  });
+});
+
+it('successful exchanges sharing an IP do not consume the failed-token budget', async () => {
+  vi.stubEnv('MCP_OAUTH_EXCHANGE_RATE_LIMIT', '2');
+  const exchange = vi.fn(async () => success());
+  const base = await listen(createOAuthHttpServer({ ...options, fetchImpl: exchange,
+    serverFactory: () => new McpServer({ name: 'synthetic-shared-ip', version: '1.0.0' }) }));
+  for (let i = 0; i < 10; i++) {
+    const response = await fetch(`${base}/mcp/garden`, { method: 'POST', headers, body: JSON.stringify(initialize) });
+    expect(response.status).toBe(200);
+  }
+  expect(exchange).toHaveBeenCalledTimes(10);
+});
+it('caps concurrent exchanges before calling the backend and releases capacity afterward', async () => {
+  let release: () => void;
+  const hold = new Promise<void>(resolve => { release = resolve; });
+  const exchange = vi.fn(async () => { await hold; return new Response('{"error":"invalid_token"}', { status: 401 }); });
+  const base = await listen(createOAuthHttpServer({ ...options, fetchImpl: exchange }));
+  const pending = Array.from({ length: 64 }, () => fetch(`${base}/mcp/garden`, { method: 'POST', headers, body: '{}' }));
+  try {
+    await vi.waitFor(() => expect(exchange).toHaveBeenCalledTimes(64));
+    const excess = await fetch(`${base}/mcp/garden`, { method: 'POST', headers, body: '{}' });
+    expect(excess.status).toBe(503);
+    expect(excess.headers.get('retry-after')).toBe('1');
+    expect(exchange).toHaveBeenCalledTimes(64);
+  } finally { release!(); await Promise.all(pending); }
+  const next = await fetch(`${base}/mcp/garden`, { method: 'POST', headers, body: '{}' });
+  expect(next.status).toBe(401);
+  expect(exchange).toHaveBeenCalledTimes(65);
+});

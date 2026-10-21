@@ -666,6 +666,7 @@ export interface ToolJetClient {
   viewerSession?(appId?: string): Promise<ViewerSession | undefined>;
   /** OAuth viewer credentials are pinned to the configured deployment, never a tool-supplied origin. */
   browserRenderOrigin?: string;
+  renderAuditGrant?: string;
   /** The name of the version being edited (the preview's version= parameter). */
   editingVersionName?(appId: string): Promise<string | undefined>;
 }
@@ -2971,6 +2972,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     createEvents,
     hasGoogleMapsKey,
     viewerSession: (appId?: string) => auth.viewerSession?.(appId) ?? Promise.resolve(undefined),
+    renderAuditGrant: config.isOAuthDelegation ? `${config.apiUrl}\0${config.oauthGrantId}` : undefined,
     browserRenderOrigin: config.isOAuthDelegation ? new URL(config.viewerUrl || config.appUrl).origin : undefined,
     editingVersionName: async (appId: string) => ((await getApp(appId))?.editing_version?.name as string | undefined) ?? undefined,
     getDevelopmentEnvironmentId,

@@ -223,3 +223,37 @@ describe('render audit with the builder\'s session', () => {
     expect((f.context as any).addCookies).not.toHaveBeenCalled();
   });
 });
+
+it('releases browser admission after a failed audit so the same grant can retry', async () => {
+  const failing = { ...client, renderAuditGrant: 'synthetic-limits-grant', getAppSummary: vi.fn().mockRejectedValueOnce(new Error('Synthetic unavailable summary')).mockResolvedValue({ pages: [{ handle: 'home' }] }) };
+  const f = browserFixture();
+  const tool = verifyPageRenderTool(failing as any, () => 'http://viewer.test', f.driver);
+  expect((await tool.handler({ app_id: 'app1' }) as any).isError).toBe(true);
+  expect(JSON.stringify(await tool.handler({ app_id: 'app1' }))).not.toContain('busy');
+  expect(f.browser.close).toHaveBeenCalledOnce();
+});
+it('enables the Chromium sandbox and disables non-proxied WebRTC', async () => {
+  const f = browserFixture();
+  const launch = vi.fn().mockResolvedValue(f.browser);
+  await auditPages(target, {}, async () => ({ chromium: { launch } }));
+  expect(launch).toHaveBeenCalledWith(expect.objectContaining({ chromiumSandbox: true, args: ['--force-webrtc-ip-handling-policy=disable_non_proxied_udp'] }));
+});
+it('shares per-grant admission across separate MCP tool instances before loading app data', async () => {
+  vi.stubEnv('MCP_RENDER_AUDIT_MAX_BROWSERS', '2');
+  let entered!: () => void; let release!: () => void;
+  const started = new Promise<void>(resolve => { entered = resolve; });
+  const resume = new Promise<void>(resolve => { release = resolve; });
+  const firstClient = { renderAuditGrant: 'synthetic-shared-grant', getAppSummary: async () => {
+    entered(); await resume; return { pages: [{ handle: 'home' }] };
+  } } as any;
+  const otherClient = { ...client, renderAuditGrant: firstClient.renderAuditGrant, getAppSummary: vi.fn(client.getAppSummary) } as any;
+  const f = browserFixture();
+  const first = verifyPageRenderTool(firstClient, () => 'http://viewer.test', f.driver).handler({ app_id: 'app1' });
+  try {
+    await started;
+    const rejected = await verifyPageRenderTool(otherClient, () => 'http://viewer.test', f.driver).handler({ app_id: 'app1' });
+    expect(JSON.stringify(rejected)).toContain('Render verification is busy');
+    expect(otherClient.getAppSummary).not.toHaveBeenCalled();
+  } finally { release(); await first; }
+  expect(JSON.stringify(await verifyPageRenderTool(otherClient, () => 'http://viewer.test', f.driver).handler({ app_id: 'app1' }))).not.toContain('busy');
+});

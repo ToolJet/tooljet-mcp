@@ -1,3 +1,4 @@
+import { createExchangeLimiter } from './oauthExchangeLimiter.js';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -104,6 +105,9 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
   const resourcePath = resource.pathname.replace(/\/$/, '');
   const metadataPrefix = `/.well-known/oauth-protected-resource${resourcePath}/`;
   const pathPrefix = `${resourcePath}/`;
+  const exchangeLimit = createExchangeLimiter(Number(process.env.MCP_OAUTH_EXCHANGE_RATE_LIMIT ?? 300),
+    Number(process.env.MCP_OAUTH_TRUST_PROXY_HOPS ?? 0));
+  let exchangesInFlight = 0;
   const httpServer = createServer((req, res) => {
     let exchangeFailure: 'exchange_request_failed' | 'invalid_delegation_response' | undefined;
     void (async () => {
@@ -173,9 +177,24 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
         sendOAuthJson(res, 401, { error: 'invalid_token' });
         return;
       }
+      const retryAfter = exchangeLimit.retryAfter(req);
+      if (retryAfter) {
+        res.setHeader('retry-after', String(retryAfter));
+        sendOAuthJson(res, 429, { error: 'temporarily_unavailable' });
+        return;
+      }
+      if (exchangesInFlight >= 64) {
+        res.setHeader('retry-after', '1');
+        sendOAuthJson(res, 503, { error: 'temporarily_unavailable' });
+        return;
+      }
       // Configured backend only. Never use caller-supplied x-tooljet-url, PAT, or session headers.
       exchangeFailure = 'exchange_request_failed';
-      const exchange = await fetchImpl(`${issuer}/exchange`, {
+      exchangesInFlight++;
+      let exchange: Response;
+      let exchangeBody: any;
+      try {
+        exchange = await fetchImpl(`${issuer}/exchange`, {
         method: 'POST',
         redirect: 'error',
         signal: AbortSignal.timeout(10000),
@@ -187,10 +206,12 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
           resource: canonicalResource,
         }),
       });
-      exchangeFailure = 'invalid_delegation_response';
+        exchangeFailure = 'invalid_delegation_response';
+        exchangeBody = await exchange.json().catch(() => undefined);
+      } finally { exchangesInFlight--; }
       if (!exchange.ok) {
         // A token bound to another resource is invalid here; requesting more scopes cannot repair it.
-        const errorCode: unknown = await exchange.json().then((body) => body?.error).catch(() => undefined);
+        const errorCode: unknown = exchangeBody?.error;
         const invalidToken = [400, 401, 403].includes(exchange.status) &&
           typeof errorCode === 'string' && ['invalid_token', 'invalid_grant', 'invalid_target'].includes(errorCode);
         const unavailable = !invalidToken;
@@ -200,13 +221,16 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
             .find((code) => code === errorCode) ?? 'unexpected_response';
           console.error('[mcp-oauth] Credential exchange unavailable', { status: exchange.status, error: safeCode });
         }
-        if (!unavailable) challenge('invalid_token');
+        if (invalidToken) {
+          exchangeLimit.failed(req);
+          challenge('invalid_token');
+        }
         sendOAuthJson(res, unavailable ? 503 : 401, { error: unavailable ? 'temporarily_unavailable' : 'invalid_token' });
         return;
       }
-      const credentials = (await exchange.json()) as Record<string, unknown>;
+      const credentials = exchangeBody as Record<string, unknown>;
       if (
-        typeof credentials.access_token !== 'string' ||
+        !credentials || typeof credentials.access_token !== 'string' ||
         typeof credentials.organization_id !== 'string' ||
         typeof credentials.grant_id !== 'string' || !credentials.grant_id
       ) {

@@ -8,6 +8,8 @@ COPY --chown=node:node bundle/ ./bundle/
 COPY --chown=node:node data/ ./data/
 USER node
 
+# This minimal image has no Playwright/Chrome; omit the render tool and use manual checks.
+ENV MCP_RENDER_AUDIT_ENABLED=false
 ENV MCP_TRANSPORT=http
 ENV PORT=8787
 EXPOSE 8787

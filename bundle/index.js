@@ -521,11 +521,11 @@ var require_codegen = __commonJS({
         const rhs = this.rhs === void 0 ? "" : ` = ${this.rhs}`;
         return `${varKind} ${this.name}${rhs};` + _n;
       }
-      optimizeNames(names, constants2) {
+      optimizeNames(names, constants3) {
         if (!names[this.name.str])
           return;
         if (this.rhs)
-          this.rhs = optimizeExpr(this.rhs, names, constants2);
+          this.rhs = optimizeExpr(this.rhs, names, constants3);
         return this;
       }
       get names() {
@@ -542,10 +542,10 @@ var require_codegen = __commonJS({
       render({ _n }) {
         return `${this.lhs} = ${this.rhs};` + _n;
       }
-      optimizeNames(names, constants2) {
+      optimizeNames(names, constants3) {
         if (this.lhs instanceof code_1.Name && !names[this.lhs.str] && !this.sideEffects)
           return;
-        this.rhs = optimizeExpr(this.rhs, names, constants2);
+        this.rhs = optimizeExpr(this.rhs, names, constants3);
         return this;
       }
       get names() {
@@ -606,8 +606,8 @@ var require_codegen = __commonJS({
       optimizeNodes() {
         return `${this.code}` ? this : void 0;
       }
-      optimizeNames(names, constants2) {
-        this.code = optimizeExpr(this.code, names, constants2);
+      optimizeNames(names, constants3) {
+        this.code = optimizeExpr(this.code, names, constants3);
         return this;
       }
       get names() {
@@ -636,12 +636,12 @@ var require_codegen = __commonJS({
         }
         return nodes.length > 0 ? this : void 0;
       }
-      optimizeNames(names, constants2) {
+      optimizeNames(names, constants3) {
         const { nodes } = this;
         let i = nodes.length;
         while (i--) {
           const n = nodes[i];
-          if (n.optimizeNames(names, constants2))
+          if (n.optimizeNames(names, constants3))
             continue;
           subtractNames(names, n.names);
           nodes.splice(i, 1);
@@ -694,12 +694,12 @@ var require_codegen = __commonJS({
           return void 0;
         return this;
       }
-      optimizeNames(names, constants2) {
+      optimizeNames(names, constants3) {
         var _a3;
-        this.else = (_a3 = this.else) === null || _a3 === void 0 ? void 0 : _a3.optimizeNames(names, constants2);
-        if (!(super.optimizeNames(names, constants2) || this.else))
+        this.else = (_a3 = this.else) === null || _a3 === void 0 ? void 0 : _a3.optimizeNames(names, constants3);
+        if (!(super.optimizeNames(names, constants3) || this.else))
           return;
-        this.condition = optimizeExpr(this.condition, names, constants2);
+        this.condition = optimizeExpr(this.condition, names, constants3);
         return this;
       }
       get names() {
@@ -722,10 +722,10 @@ var require_codegen = __commonJS({
       render(opts) {
         return `for(${this.iteration})` + super.render(opts);
       }
-      optimizeNames(names, constants2) {
-        if (!super.optimizeNames(names, constants2))
+      optimizeNames(names, constants3) {
+        if (!super.optimizeNames(names, constants3))
           return;
-        this.iteration = optimizeExpr(this.iteration, names, constants2);
+        this.iteration = optimizeExpr(this.iteration, names, constants3);
         return this;
       }
       get names() {
@@ -761,10 +761,10 @@ var require_codegen = __commonJS({
       render(opts) {
         return `for(${this.varKind} ${this.name} ${this.loop} ${this.iterable})` + super.render(opts);
       }
-      optimizeNames(names, constants2) {
-        if (!super.optimizeNames(names, constants2))
+      optimizeNames(names, constants3) {
+        if (!super.optimizeNames(names, constants3))
           return;
-        this.iterable = optimizeExpr(this.iterable, names, constants2);
+        this.iterable = optimizeExpr(this.iterable, names, constants3);
         return this;
       }
       get names() {
@@ -806,11 +806,11 @@ var require_codegen = __commonJS({
         (_b = this.finally) === null || _b === void 0 ? void 0 : _b.optimizeNodes();
         return this;
       }
-      optimizeNames(names, constants2) {
+      optimizeNames(names, constants3) {
         var _a3, _b;
-        super.optimizeNames(names, constants2);
-        (_a3 = this.catch) === null || _a3 === void 0 ? void 0 : _a3.optimizeNames(names, constants2);
-        (_b = this.finally) === null || _b === void 0 ? void 0 : _b.optimizeNames(names, constants2);
+        super.optimizeNames(names, constants3);
+        (_a3 = this.catch) === null || _a3 === void 0 ? void 0 : _a3.optimizeNames(names, constants3);
+        (_b = this.finally) === null || _b === void 0 ? void 0 : _b.optimizeNames(names, constants3);
         return this;
       }
       get names() {
@@ -1111,7 +1111,7 @@ var require_codegen = __commonJS({
     function addExprNames(names, from) {
       return from instanceof code_1._CodeOrName ? addNames(names, from.names) : names;
     }
-    function optimizeExpr(expr, names, constants2) {
+    function optimizeExpr(expr, names, constants3) {
       if (expr instanceof code_1.Name)
         return replaceName(expr);
       if (!canOptimize(expr))
@@ -1126,14 +1126,14 @@ var require_codegen = __commonJS({
         return items;
       }, []));
       function replaceName(n) {
-        const c = constants2[n.str];
+        const c = constants3[n.str];
         if (c === void 0 || names[n.str] !== 1)
           return n;
         delete names[n.str];
         return c;
       }
       function canOptimize(e) {
-        return e instanceof code_1._Code && e._items.some((c) => c instanceof code_1.Name && names[c.str] === 1 && constants2[c.str] !== void 0);
+        return e instanceof code_1._Code && e._items.some((c) => c instanceof code_1.Name && names[c.str] === 1 && constants3[c.str] !== void 0);
       }
     }
     function subtractNames(names, from) {
@@ -3418,8 +3418,8 @@ var require_utils = __commonJS({
     var HOST_DELIMS = { "@": "%40", "/": "%2F", "?": "%3F", "#": "%23", ":": "%3A" };
     var HOST_DELIM_RE = /[@/?#:]/g;
     var HOST_DELIM_NO_COLON_RE = /[@/?#]/g;
-    function reescapeHostDelimiters(host, isIP) {
-      const re = isIP ? HOST_DELIM_NO_COLON_RE : HOST_DELIM_RE;
+    function reescapeHostDelimiters(host, isIP2) {
+      const re = isIP2 ? HOST_DELIM_NO_COLON_RE : HOST_DELIM_RE;
       re.lastIndex = 0;
       return host.replace(re, (ch) => HOST_DELIMS[ch]);
     }
@@ -3908,7 +3908,7 @@ var require_fast_uri = __commonJS({
         fragment: void 0
       };
       let malformedAuthorityOrPort = false;
-      let isIP = false;
+      let isIP2 = false;
       if (options2.reference === "suffix") {
         if (options2.scheme) {
           uri = options2.scheme + ":" + uri;
@@ -3957,9 +3957,9 @@ var require_fast_uri = __commonJS({
           if (ipv4result === false) {
             const ipv6result = normalizeIPv6(parsed.host);
             parsed.host = ipv6result.host.toLowerCase();
-            isIP = ipv6result.isIPV6;
+            isIP2 = ipv6result.isIPV6;
           } else {
-            isIP = true;
+            isIP2 = true;
           }
         }
         if (parsed.scheme === void 0 && parsed.userinfo === void 0 && parsed.host === void 0 && parsed.port === void 0 && parsed.query === void 0 && !parsed.path) {
@@ -3976,7 +3976,7 @@ var require_fast_uri = __commonJS({
         }
         const schemeHandler = getSchemeHandler(options2.scheme || parsed.scheme);
         if (!options2.unicodeSupport && (!schemeHandler || !schemeHandler.unicodeSupport)) {
-          if (parsed.host && (options2.domainHost || schemeHandler && schemeHandler.domainHost) && isIP === false && nonSimpleDomain(parsed.host)) {
+          if (parsed.host && (options2.domainHost || schemeHandler && schemeHandler.domainHost) && isIP2 === false && nonSimpleDomain(parsed.host)) {
             try {
               parsed.host = new URL("http://" + parsed.host).hostname;
             } catch (e) {
@@ -3990,7 +3990,7 @@ var require_fast_uri = __commonJS({
               parsed.scheme = unescape(parsed.scheme);
             }
             if (parsed.host !== void 0) {
-              parsed.host = reescapeHostDelimiters(unescape(parsed.host), isIP);
+              parsed.host = reescapeHostDelimiters(unescape(parsed.host), isIP2);
             }
           }
           if (parsed.path) {
@@ -71663,6 +71663,7 @@ function createClient(auth, config2) {
     createEvents,
     hasGoogleMapsKey,
     viewerSession: (appId) => auth.viewerSession?.(appId) ?? Promise.resolve(void 0),
+    renderAuditGrant: config2.isOAuthDelegation ? `${config2.apiUrl}\0${config2.oauthGrantId}` : void 0,
     browserRenderOrigin: config2.isOAuthDelegation ? new URL(config2.viewerUrl || config2.appUrl).origin : void 0,
     editingVersionName: async (appId) => (await getApp(appId))?.editing_version?.name ?? void 0,
     getDevelopmentEnvironmentId,
@@ -71704,6 +71705,37 @@ function pageOrderIndex(page) {
   if (typeof page?.pageGroupIndex === "number" && Number.isFinite(page.pageGroupIndex))
     return page.pageGroupIndex;
   return typeof page?.index === "number" ? page.index : void 0;
+}
+
+// dist/renderAuditAvailability.js
+import { accessSync, constants as constants2 } from "node:fs";
+import { createRequire } from "node:module";
+import { join } from "node:path";
+function renderAuditAvailable() {
+  if (process.env.MCP_RENDER_AUDIT_ENABLED === "false")
+    return false;
+  try {
+    const require2 = createRequire(import.meta.url);
+    try {
+      require2.resolve(process.env.MCP_RENDER_AUDIT_PLAYWRIGHT || "playwright-core");
+    } catch {
+      require2.resolve("playwright-core");
+    }
+    const channel = process.env.MCP_RENDER_AUDIT_CHANNEL || "chrome";
+    if (!process.env.MCP_RENDER_AUDIT_CHROME && channel !== "chrome")
+      return true;
+    const candidates = process.env.MCP_RENDER_AUDIT_CHROME ? [process.env.MCP_RENDER_AUDIT_CHROME] : channel === "chrome" ? process.platform === "darwin" ? ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"] : process.platform === "win32" ? [process.env.PROGRAMFILES, process.env["PROGRAMFILES(X86)"], process.env.LOCALAPPDATA].filter((path) => !!path).map((path) => join(path, "Google/Chrome/Application/chrome.exe")) : ["/opt/google/chrome/chrome", "/usr/bin/google-chrome"] : [];
+    return candidates.some((path) => {
+      try {
+        accessSync(path, constants2.X_OK);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+  } catch {
+    return false;
+  }
 }
 
 // dist/tools/types.js
@@ -75480,6 +75512,28 @@ function validateAppTool(client) {
   };
 }
 
+// dist/renderAuditCapacity.js
+var running = 0;
+var grants = /* @__PURE__ */ new Set();
+function reserveRenderAudit(grant) {
+  const configured = Number(process.env.MCP_RENDER_AUDIT_MAX_BROWSERS ?? 2);
+  const limit = Number.isInteger(configured) && configured >= 1 && configured <= 32 ? configured : 2;
+  if (running >= limit || grant && grants.has(grant))
+    return void 0;
+  running++;
+  if (grant)
+    grants.add(grant);
+  let released = false;
+  return () => {
+    if (released)
+      return;
+    released = true;
+    running--;
+    if (grant)
+      grants.delete(grant);
+  };
+}
+
 // dist/renderAuditPolicy.js
 function httpUrl2(value2) {
   const url2 = new URL(value2);
@@ -75713,8 +75767,8 @@ async function loadPlaywright() {
   if (explicit) {
     try {
       const { pathToFileURL } = await import("node:url");
-      const { createRequire } = await import("node:module");
-      const req = createRequire(pathToFileURL(explicit.replace(/\/?$/, "/")).href);
+      const { createRequire: createRequire2 } = await import("node:module");
+      const req = createRequire2(pathToFileURL(explicit.replace(/\/?$/, "/")).href);
       return req(explicit);
     } catch {
     }
@@ -75745,7 +75799,11 @@ async function auditPages(pages, options2 = {}, driver = loadPlaywright) {
   if (!pw) {
     return pages.map((p) => unreachable(p, "browser_unavailable", "playwright-core is not installed on the MCP host; the render audit cannot run"));
   }
-  const launch = { headless: true };
+  const launch = {
+    headless: true,
+    chromiumSandbox: true,
+    args: ["--force-webrtc-ip-handling-policy=disable_non_proxied_udp"]
+  };
   if (options2.executablePath)
     launch.executablePath = options2.executablePath;
   else
@@ -75901,6 +75959,9 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
       viewer_url: external_exports.string().optional().describe("canonical viewer base URL; alternate origins require host configuration in MCP_RENDER_AUDIT_ALLOWED_ORIGINS")
     },
     async handler(args) {
+      const release = reserveRenderAudit(client.renderAuditGrant);
+      if (!release)
+        return fail(new Error("Render verification is busy; rendering remains unverified. Retry shortly."));
       try {
         if (!/^[A-Za-z0-9_-]+$/.test(args.app_id))
           return fail(new Error("Invalid app id"));
@@ -75928,6 +75989,8 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
         return ok({ pages: reports, ok: total === 0, findings: total });
       } catch (err) {
         return fail(err);
+      } finally {
+        release();
       }
     }
   };
@@ -81909,7 +81972,10 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     manageThemeTool(client)
   ];
   const exposedTools = includeLegacySingularCreateTools() ? tools : tools.filter((tool) => !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name));
+  const canRender = renderAuditAvailable();
   for (const tool of exposedTools) {
+    if (tool.name === "verify_page_render" && !canRender)
+      continue;
     server.registerTool(tool.name, {
       title: tool.title,
       description: tool.description,
@@ -82051,6 +82117,50 @@ Fix the configuration and restart this server; no tools will work until then.` }
   return server;
 }
 
+// dist/oauthExchangeLimiter.js
+import { isIP } from "node:net";
+function createExchangeLimiter(limit = 300, trustedProxyHops = 0) {
+  if (!Number.isInteger(limit) || limit < 1 || limit > 1e4 || !Number.isInteger(trustedProxyHops) || trustedProxyHops < 0 || trustedProxyHops > 10) {
+    throw new Error("Invalid MCP OAuth exchange rate limit or trusted proxy hop count");
+  }
+  const buckets = /* @__PURE__ */ new Map();
+  let nextSweep = 0;
+  const address = (req) => {
+    let ip = req.socket.remoteAddress || "unknown";
+    const forwarded = req.headers["x-forwarded-for"];
+    if (trustedProxyHops && typeof forwarded === "string") {
+      const chain = [...forwarded.split(",").map((value2) => value2.trim()), ip];
+      const candidate = chain[chain.length - 1 - trustedProxyHops];
+      if (candidate && isIP(candidate))
+        ip = candidate;
+    }
+    return ip;
+  };
+  return {
+    retryAfter(req, now = Date.now()) {
+      const bucket = buckets.get(address(req));
+      return bucket && bucket.reset > now && bucket.count >= limit ? Math.max(1, Math.ceil((bucket.reset - now) / 1e3)) : 0;
+    },
+    failed(req, now = Date.now()) {
+      if (now >= nextSweep) {
+        for (const [key4, bucket2] of buckets)
+          if (bucket2.reset <= now)
+            buckets.delete(key4);
+        nextSweep = now + 6e4;
+      }
+      const ip = address(req);
+      let bucket = buckets.get(ip);
+      if (!bucket || bucket.reset <= now) {
+        if (buckets.size >= 1e4)
+          buckets.delete(buckets.keys().next().value);
+        bucket = { count: 0, reset: now + 6e4 };
+        buckets.set(ip, bucket);
+      }
+      bucket.count++;
+    }
+  };
+}
+
 // dist/oauthHttp.js
 import { createServer } from "node:http";
 var INITIAL_SCOPES = ["apps", "data", "workflows", "workspace_users"];
@@ -82129,6 +82239,8 @@ function createOAuthHttpServer(options2) {
   const resourcePath = resource.pathname.replace(/\/$/, "");
   const metadataPrefix = `/.well-known/oauth-protected-resource${resourcePath}/`;
   const pathPrefix = `${resourcePath}/`;
+  const exchangeLimit = createExchangeLimiter(Number(process.env.MCP_OAUTH_EXCHANGE_RATE_LIMIT ?? 300), Number(process.env.MCP_OAUTH_TRUST_PROXY_HOPS ?? 0));
+  let exchangesInFlight = 0;
   const httpServer = createServer((req, res) => {
     let exchangeFailure;
     void (async () => {
@@ -82189,35 +82301,56 @@ function createOAuthHttpServer(options2) {
         sendOAuthJson(res, 401, { error: "invalid_token" });
         return;
       }
+      const retryAfter = exchangeLimit.retryAfter(req);
+      if (retryAfter) {
+        res.setHeader("retry-after", String(retryAfter));
+        sendOAuthJson(res, 429, { error: "temporarily_unavailable" });
+        return;
+      }
+      if (exchangesInFlight >= 64) {
+        res.setHeader("retry-after", "1");
+        sendOAuthJson(res, 503, { error: "temporarily_unavailable" });
+        return;
+      }
       exchangeFailure = "exchange_request_failed";
-      const exchange = await fetchImpl(`${issuer}/exchange`, {
-        method: "POST",
-        redirect: "error",
-        signal: AbortSignal.timeout(1e4),
-        headers: { authorization: `Bearer ${options2.exchangeSecret}`, "content-type": "application/json" },
-        body: JSON.stringify({
-          grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
-          subject_token_type: "urn:ietf:params:oauth:token-type:access_token",
-          subject_token: token,
-          resource: canonicalResource
-        })
-      });
-      exchangeFailure = "invalid_delegation_response";
+      exchangesInFlight++;
+      let exchange;
+      let exchangeBody;
+      try {
+        exchange = await fetchImpl(`${issuer}/exchange`, {
+          method: "POST",
+          redirect: "error",
+          signal: AbortSignal.timeout(1e4),
+          headers: { authorization: `Bearer ${options2.exchangeSecret}`, "content-type": "application/json" },
+          body: JSON.stringify({
+            grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
+            subject_token_type: "urn:ietf:params:oauth:token-type:access_token",
+            subject_token: token,
+            resource: canonicalResource
+          })
+        });
+        exchangeFailure = "invalid_delegation_response";
+        exchangeBody = await exchange.json().catch(() => void 0);
+      } finally {
+        exchangesInFlight--;
+      }
       if (!exchange.ok) {
-        const errorCode = await exchange.json().then((body) => body?.error).catch(() => void 0);
+        const errorCode = exchangeBody?.error;
         const invalidToken = [400, 401, 403].includes(exchange.status) && typeof errorCode === "string" && ["invalid_token", "invalid_grant", "invalid_target"].includes(errorCode);
         const unavailable = !invalidToken;
         if (unavailable) {
           const safeCode = ["invalid_client", "invalid_request", "server_error", "temporarily_unavailable"].find((code) => code === errorCode) ?? "unexpected_response";
           console.error("[mcp-oauth] Credential exchange unavailable", { status: exchange.status, error: safeCode });
         }
-        if (!unavailable)
+        if (invalidToken) {
+          exchangeLimit.failed(req);
           challenge("invalid_token");
+        }
         sendOAuthJson(res, unavailable ? 503 : 401, { error: unavailable ? "temporarily_unavailable" : "invalid_token" });
         return;
       }
-      const credentials = await exchange.json();
-      if (typeof credentials.access_token !== "string" || typeof credentials.organization_id !== "string" || typeof credentials.grant_id !== "string" || !credentials.grant_id) {
+      const credentials = exchangeBody;
+      if (!credentials || typeof credentials.access_token !== "string" || typeof credentials.organization_id !== "string" || typeof credentials.grant_id !== "string" || !credentials.grant_id) {
         throw new Error("Invalid delegation response");
       }
       const browserUrl = typeof credentials.browser_url === "string" ? checkedUrl(credentials.browser_url, "browser_url") : appUrl;

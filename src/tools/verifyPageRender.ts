@@ -1,3 +1,4 @@
+import { reserveRenderAudit } from '../renderAuditCapacity.js';
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import type { ViewerSession } from '../auth.js';
@@ -220,7 +221,8 @@ export async function auditPages(
   if (!pw) {
     return pages.map((p) => unreachable(p, 'browser_unavailable', 'playwright-core is not installed on the MCP host; the render audit cannot run'));
   }
-  const launch: Record<string, unknown> = { headless: true };
+  const launch: Record<string, unknown> = { headless: true, chromiumSandbox: true,
+    args: ['--force-webrtc-ip-handling-policy=disable_non_proxied_udp'] };
   if (options.executablePath) launch.executablePath = options.executablePath;
   else launch.channel = options.channel ?? 'chrome';
   let browser: any;
@@ -376,6 +378,8 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
       viewer_url: z.string().optional().describe('canonical viewer base URL; alternate origins require host configuration in MCP_RENDER_AUDIT_ALLOWED_ORIGINS'),
     },
     async handler(args: { app_id: string; page_handle?: string; viewer_url?: string }) {
+      const release = reserveRenderAudit(client.renderAuditGrant);
+      if (!release) return fail(new Error('Render verification is busy; rendering remains unverified. Retry shortly.'));
       try {
         if (!/^[A-Za-z0-9_-]+$/.test(args.app_id)) return fail(new Error('Invalid app id'));
         const { base, origins } = renderAuditBase(viewerBase(), args.viewer_url);
@@ -411,7 +415,7 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
         return ok({ pages: reports, ok: total === 0, findings: total });
       } catch (err) {
         return fail(err);
-      }
+      } finally { release(); }
     },
   };
 }
