@@ -82130,6 +82130,7 @@ function createOAuthHttpServer(options2) {
   const metadataPrefix = `/.well-known/oauth-protected-resource${resourcePath}/`;
   const pathPrefix = `${resourcePath}/`;
   const httpServer = createServer((req, res) => {
+    let exchangeFailure;
     void (async () => {
       const url2 = new URL(req.url || "/", "http://localhost");
       if (url2.pathname === "/health" && req.method === "GET") {
@@ -82171,22 +82172,24 @@ function createOAuthHttpServer(options2) {
         res.setHeader("access-control-expose-headers", "WWW-Authenticate, MCP-Session-Id, MCP-Protocol-Version");
       }
       if (req.method === "OPTIONS") {
-        res.setHeader("access-control-allow-methods", "POST, GET, DELETE, OPTIONS");
+        res.setHeader("access-control-allow-methods", "POST, OPTIONS");
         res.setHeader("access-control-allow-headers", "Authorization, Content-Type, MCP-Protocol-Version, MCP-Session-Id, Last-Event-ID");
         res.writeHead(204).end();
         return;
       }
-      if (!["POST", "GET", "DELETE"].includes(req.method || "")) {
+      if (req.method !== "POST") {
+        res.setHeader("allow", "POST, OPTIONS");
         sendOAuthJson(res, 405, { error: "method_not_allowed" });
         return;
       }
       const token = /^Bearer (tj_oauth_at_[A-Za-z0-9_-]+)$/i.exec(req.headers.authorization || "")?.[1];
       const challenge = (error51) => res.setHeader("www-authenticate", `Bearer resource_metadata="${metadataUrl}", scope="${INITIAL_SCOPES.join(" ")}"` + (error51 ? `, error="${error51}"` : ""));
-      if (!token || url2.searchParams.has("access_token")) {
+      if (!token || token.length > 4096 || url2.searchParams.has("access_token")) {
         challenge(token ? "invalid_token" : void 0);
         sendOAuthJson(res, 401, { error: "invalid_token" });
         return;
       }
+      exchangeFailure = "exchange_request_failed";
       const exchange = await fetchImpl(`${issuer}/exchange`, {
         method: "POST",
         redirect: "error",
@@ -82199,8 +82202,15 @@ function createOAuthHttpServer(options2) {
           resource: canonicalResource
         })
       });
+      exchangeFailure = "invalid_delegation_response";
       if (!exchange.ok) {
-        const unavailable = exchange.status >= 500 || exchange.status === 429;
+        const errorCode = await exchange.json().then((body) => body?.error).catch(() => void 0);
+        const invalidToken = [400, 401, 403].includes(exchange.status) && typeof errorCode === "string" && ["invalid_token", "invalid_grant", "invalid_target"].includes(errorCode);
+        const unavailable = !invalidToken;
+        if (unavailable) {
+          const safeCode = ["invalid_client", "invalid_request", "server_error", "temporarily_unavailable"].find((code) => code === errorCode) ?? "unexpected_response";
+          console.error("[mcp-oauth] Credential exchange unavailable", { status: exchange.status, error: safeCode });
+        }
         if (!unavailable)
           challenge("invalid_token");
         sendOAuthJson(res, unavailable ? 503 : 401, { error: unavailable ? "temporarily_unavailable" : "invalid_token" });
@@ -82211,6 +82221,7 @@ function createOAuthHttpServer(options2) {
         throw new Error("Invalid delegation response");
       }
       const browserUrl = typeof credentials.browser_url === "string" ? checkedUrl(credentials.browser_url, "browser_url") : appUrl;
+      exchangeFailure = void 0;
       let requestBody;
       if (req.method === "POST") {
         try {
@@ -82245,6 +82256,8 @@ function createOAuthHttpServer(options2) {
       await server.connect(transport);
       await transport.handleRequest(req, res, requestBody);
     })().catch(() => {
+      if (exchangeFailure)
+        console.error("[mcp-oauth] Credential exchange unavailable", { error: exchangeFailure });
       if (!res.headersSent)
         sendOAuthJson(res, 503, { error: "temporarily_unavailable" });
       else

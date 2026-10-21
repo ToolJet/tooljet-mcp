@@ -105,6 +105,7 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
   const metadataPrefix = `/.well-known/oauth-protected-resource${resourcePath}/`;
   const pathPrefix = `${resourcePath}/`;
   const httpServer = createServer((req, res) => {
+    let exchangeFailure: 'exchange_request_failed' | 'invalid_delegation_response' | undefined;
     void (async () => {
       const url = new URL(req.url || '/', 'http://localhost');
       if (url.pathname === '/health' && req.method === 'GET') {
@@ -149,7 +150,7 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
         );
       }
       if (req.method === 'OPTIONS') {
-        res.setHeader('access-control-allow-methods', 'POST, GET, DELETE, OPTIONS');
+        res.setHeader('access-control-allow-methods', 'POST, OPTIONS');
         res.setHeader(
           'access-control-allow-headers',
           'Authorization, Content-Type, MCP-Protocol-Version, MCP-Session-Id, Last-Event-ID',
@@ -157,7 +158,8 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
         res.writeHead(204).end();
         return;
       }
-      if (!['POST', 'GET', 'DELETE'].includes(req.method || '')) {
+      if (req.method !== 'POST') {
+        res.setHeader('allow', 'POST, OPTIONS');
         sendOAuthJson(res, 405, { error: 'method_not_allowed' });
         return;
       }
@@ -165,12 +167,14 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
       const challenge = (error?: string) => res.setHeader('www-authenticate',
         `Bearer resource_metadata="${metadataUrl}", scope="${INITIAL_SCOPES.join(' ')}"` +
         (error ? `, error="${error}"` : ''));
-      if (!token || url.searchParams.has('access_token')) {
+      // Match the backend stringParam ceiling without sending oversized junk to exchange.
+      if (!token || token.length > 4096 || url.searchParams.has('access_token')) {
         challenge(token ? 'invalid_token' : undefined);
         sendOAuthJson(res, 401, { error: 'invalid_token' });
         return;
       }
       // Configured backend only. Never use caller-supplied x-tooljet-url, PAT, or session headers.
+      exchangeFailure = 'exchange_request_failed';
       const exchange = await fetchImpl(`${issuer}/exchange`, {
         method: 'POST',
         redirect: 'error',
@@ -183,9 +187,19 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
           resource: canonicalResource,
         }),
       });
+      exchangeFailure = 'invalid_delegation_response';
       if (!exchange.ok) {
         // A token bound to another resource is invalid here; requesting more scopes cannot repair it.
-        const unavailable = exchange.status >= 500 || exchange.status === 429;
+        const errorCode: unknown = await exchange.json().then((body) => body?.error).catch(() => undefined);
+        const invalidToken = [400, 401, 403].includes(exchange.status) &&
+          typeof errorCode === 'string' && ['invalid_token', 'invalid_grant', 'invalid_target'].includes(errorCode);
+        const unavailable = !invalidToken;
+        if (unavailable) {
+          // Only log fixed diagnostic codes. Backend bodies may contain credentials or private details.
+          const safeCode = ['invalid_client', 'invalid_request', 'server_error', 'temporarily_unavailable']
+            .find((code) => code === errorCode) ?? 'unexpected_response';
+          console.error('[mcp-oauth] Credential exchange unavailable', { status: exchange.status, error: safeCode });
+        }
         if (!unavailable) challenge('invalid_token');
         sendOAuthJson(res, unavailable ? 503 : 401, { error: unavailable ? 'temporarily_unavailable' : 'invalid_token' });
         return;
@@ -201,6 +215,7 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
       const browserUrl = typeof credentials.browser_url === 'string'
         ? checkedUrl(credentials.browser_url, 'browser_url')
         : appUrl;
+      exchangeFailure = undefined;
       let requestBody: unknown;
       if (req.method === 'POST') {
         try {
@@ -234,7 +249,8 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
       await server.connect(transport);
       await transport.handleRequest(req, res, requestBody);
     })().catch(() => {
-      // Do not log request objects, bearer tokens, exchange payloads or credential responses.
+      // Fixed categories only: fetch errors and malformed successes can contain private details.
+      if (exchangeFailure) console.error('[mcp-oauth] Credential exchange unavailable', { error: exchangeFailure });
       if (!res.headersSent) sendOAuthJson(res, 503, { error: 'temporarily_unavailable' });
       else res.end();
     });

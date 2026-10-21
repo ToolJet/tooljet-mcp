@@ -106,7 +106,9 @@ Daily cleanup deletes expired grants and credentials but preserves approved clie
 
 Registration remains capped at 10,000 clients per ToolJet installation, with existing rate limiting. Collecting abandoned new registrations limits idle accumulation; approved and migrated legacy registrations still occupy capacity. Monitor the quota and retain deployment controls against sustained registration abuse. No registration-management or secret-rotation dashboard is included.
 
-The OAuth service uses stateless MCP HTTP requests: every POST, GET and DELETE is authenticated. An MCP session ID never provides access. Existing tool implementations run with a separate constrained ToolJet delegation, and the backend rechecks live access and scope restrictions.
+The OAuth service uses stateless MCP HTTP requests: every POST is authenticated. The workspace endpoint accepts POST and OPTIONS; GET and DELETE return 405 before credential exchange because there are no server-initiated streams or persistent sessions. Resource metadata remains available through GET on the well-known endpoint. An MCP session ID never provides access. Existing tool implementations run with a separate constrained ToolJet delegation, and the backend rechecks live access and scope restrictions.
+
+An invalid or expired user token returns 401 with an OAuth challenge. Exchange-service configuration failures (including mismatched `MCP_OAUTH_EXCHANGE_SECRET` values) return 503 `temporarily_unavailable` without asking the user to log in again. Check the service diagnostic status/code and matching deployment secrets; diagnostic logs never include tokens or backend response bodies.
 
 Workflow lint/apply plans remain in the MCP process's memory for up to 30 minutes. OAuth plans belong to the same approval, API target and workspace across token renewal. Route lint and apply to the same replica; a process restart or a different replica requires linting again. The plan does not bypass the backend's current permissions or revocation checks.
 

@@ -55,6 +55,7 @@ async function listen(server: Server) {
 }
 afterEach(async () => {
   vi.unstubAllEnvs();
+  vi.restoreAllMocks();
   await Promise.all(
     servers.splice(0).map((server) => new Promise<void>((resolve) => server.close(() => resolve()))),
   );
@@ -115,10 +116,10 @@ describe('public MCP OAuth HTTP boundary', () => {
       viewerUrl: options.appUrl,
     });
   });
-  it.each(['GET', 'POST', 'DELETE'])(
+  it.each(['POST'])(
     'authenticates %s even when a caller supplies an MCP session id',
     async (method) => {
-      const exchange = vi.fn().mockResolvedValue(new Response('', { status: 401 }));
+      const exchange = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'invalid_token' }), { status: 401 }));
       const factory = vi.fn();
       const base = await listen(
         createOAuthHttpServer({ ...options, fetchImpl: exchange, serverFactory: factory }),
@@ -137,9 +138,86 @@ describe('public MCP OAuth HTTP boundary', () => {
       expect(factory).not.toHaveBeenCalled();
     },
   );
+  it.each(['GET', 'DELETE', 'PUT'])('rejects unsupported %s before exchanging credentials or creating a server', async (method) => {
+    const exchange = vi.fn();
+    const factory = vi.fn();
+    const base = await listen(createOAuthHttpServer({ ...options, fetchImpl: exchange, serverFactory: factory }));
+    for (const requestHeaders of [{}, headers]) {
+      const response = await fetch(`${base}/mcp/garden`, { method, headers: requestHeaders });
+      expect(response.status).toBe(405);
+      expect(response.headers.get('allow')).toBe('POST, OPTIONS');
+      expect(response.headers.get('www-authenticate')).toBeNull();
+      expect(await response.json()).toEqual({ error: 'method_not_allowed' });
+    }
+    expect(exchange).not.toHaveBeenCalled();
+    expect(factory).not.toHaveBeenCalled();
+  });
+  it.each([
+    [401, 'private deployment detail', 'unexpected_response'],
+    [401, JSON.stringify({ error: 'invalid_client', error_description: 'private deployment detail' }), 'invalid_client'],
+    [503, JSON.stringify({ error: 'temporarily_unavailable', error_description: 'private deployment detail' }), 'temporarily_unavailable'],
+    [429, JSON.stringify({ error: 'private deployment detail' }), 'unexpected_response'],
+  ])('reports exchange service failure %s without a login challenge or sensitive logs', async (status, body, expectedCode) => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const exchange = vi.fn().mockResolvedValue(new Response(body as string, { status: status as number }));
+    const factory = vi.fn();
+    const base = await listen(createOAuthHttpServer({ ...options, fetchImpl: exchange, serverFactory: factory }));
+    const response = await fetch(`${base}/mcp/garden`, { method: 'POST', headers });
+    expect(response.status).toBe(503);
+    expect(response.headers.get('www-authenticate')).toBeNull();
+    expect(await response.json()).toEqual({ error: 'temporarily_unavailable' });
+    expect(log).toHaveBeenCalledWith('[mcp-oauth] Credential exchange unavailable', {
+      status, error: expectedCode,
+    });
+    const logged = JSON.stringify(log.mock.calls);
+    for (const value of ['private deployment detail', accessToken, options.exchangeSecret]) expect(logged).not.toContain(value);
+    expect(factory).not.toHaveBeenCalled();
+  });
+  it('rejects oversized tokens before exchange without logging private credentials', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const exchange = vi.fn();
+    const factory = vi.fn();
+    const base = await listen(createOAuthHttpServer({ ...options, fetchImpl: exchange, serverFactory: factory }));
+    const response = await fetch(`${base}/mcp/garden`, {
+      method: 'POST', headers: { authorization: `Bearer tj_oauth_at_${'x'.repeat(4096)}` },
+    });
+    expect(response.status).toBe(401);
+    expect(response.headers.get('www-authenticate')).toContain('invalid_token');
+    expect(await response.json()).toEqual({ error: 'invalid_token' });
+    expect(exchange).not.toHaveBeenCalled();
+    expect(factory).not.toHaveBeenCalled();
+    expect(log).not.toHaveBeenCalled();
+  });
+  it.each([
+    ['network', 'exchange_request_failed'],
+    ['non-json', 'invalid_delegation_response'],
+    ['missing-credential', 'invalid_delegation_response'],
+    ['invalid-browser-url', 'invalid_delegation_response'],
+  ])('logs only a fixed category for %s exchange failures', async (failure, expectedCode) => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const privateDetail = `private backend detail ${accessToken} ${options.exchangeSecret}`;
+    const exchange = vi.fn(async () => {
+      if (failure === 'network') throw new Error(privateDetail);
+      if (failure === 'non-json') return new Response(privateDetail);
+      if (failure === 'missing-credential') return new Response(JSON.stringify({ privateDetail }));
+      return success('http://private-backend.example');
+    });
+    const factory = vi.fn();
+    const base = await listen(createOAuthHttpServer({ ...options, fetchImpl: exchange, serverFactory: factory }));
+    const response = await fetch(`${base}/mcp/garden`, { method: 'POST', headers });
+    expect(response.status).toBe(503);
+    expect(response.headers.get('www-authenticate')).toBeNull();
+    expect(await response.json()).toEqual({ error: 'temporarily_unavailable' });
+    expect(log).toHaveBeenCalledExactlyOnceWith('[mcp-oauth] Credential exchange unavailable', { error: expectedCode });
+    const logged = JSON.stringify(log.mock.calls);
+    for (const value of ['private backend detail', 'private-backend.example', accessToken, options.exchangeSecret]) {
+      expect(logged).not.toContain(value);
+    }
+    expect(factory).not.toHaveBeenCalled();
+  });
   it('supports tool discovery and calls after initialization while rechecking every request', async () => {
     let active = true;
-    const exchange = vi.fn(() => Promise.resolve(active ? success() : new Response('', { status: 401 })));
+    const exchange = vi.fn(() => Promise.resolve(active ? success() : new Response(JSON.stringify({ error: 'invalid_token' }), { status: 401 })));
     const factory = () => {
       const server = new McpServer({ name: 'synthetic', version: '1' });
       server.registerTool('garden_status', { inputSchema: {} }, async () => ({
@@ -199,6 +277,7 @@ describe('public MCP OAuth HTTP boundary', () => {
       headers: { origin: 'https://client.synthetic.example' },
     });
     expect(allowed.status).toBe(204);
+    expect(allowed.headers.get('access-control-allow-methods')).toBe('POST, OPTIONS');
     expect(allowed.headers.get('access-control-expose-headers')).toContain('WWW-Authenticate');
     expect(exchange).not.toHaveBeenCalled();
   });
@@ -253,6 +332,29 @@ describe('public MCP OAuth HTTP boundary', () => {
     const oversized = await fetch(`${base}/mcp/garden`, { method: 'POST', headers, body: 'x'.repeat(OAUTH_MAX_BODY_BYTES + 1) });
     expect(oversized.status).toBe(413);
     expect(await oversized.json()).toEqual({ error: 'request_too_large' });
+  });
+  it('rejects a streamed body over the byte limit without Content-Length', async () => {
+    const factory = vi.fn();
+    const server = createOAuthHttpServer({ ...options, maxBodyBytes: 1024,
+      fetchImpl: vi.fn().mockImplementation(success), serverFactory: factory });
+    let receivedHeaders: import('node:http').IncomingHttpHeaders | undefined;
+    server.once('request', (request) => { receivedHeaders = request.headers; });
+    const base = await listen(server);
+    const body = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('x'.repeat(600)));
+        controller.enqueue(new TextEncoder().encode('y'.repeat(600)));
+        controller.close();
+      },
+    });
+    const response = await fetch(`${base}/mcp/garden`, {
+      method: 'POST', headers, body, duplex: 'half',
+    } as RequestInit & { duplex: 'half' });
+    expect(receivedHeaders?.['content-length']).toBeUndefined();
+    expect(receivedHeaders?.['transfer-encoding']).toBe('chunked');
+    expect(response.status).toBe(413);
+    expect(await response.json()).toEqual({ error: 'request_too_large' });
+    expect(factory).not.toHaveBeenCalled();
   });
   it('mints only a separate app-pinned viewer credential with the fixed OAuth identity', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify({
@@ -310,7 +412,7 @@ describe('public MCP OAuth HTTP boundary', () => {
     expect(driver).not.toHaveBeenCalled();
   });
   it('does not retry a revoked delegation as a fallback PAT or carry another identity', async () => {
-    const fetchImpl = vi.fn().mockResolvedValue(new Response('', { status: 401 }));
+    const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'invalid_token' }), { status: 401 }));
     const auth = createAuth({
       apiUrl: options.apiUrl, appUrl: options.appUrl, sessionToken: 'synthetic-delegation',
       workspaceId: 'garden-id', isOAuthDelegation: true, pat: 'tj_pat_synthetic_fallback',
