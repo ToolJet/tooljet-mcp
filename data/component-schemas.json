@@ -18067,7 +18067,7 @@
   "ShadCardGrid": {
     "type": "ShadCardGrid",
     "name": "ShadCardGrid",
-    "description": "Grid of cards from data, for things with a face (recipes, products, listings, people, rooms, projects): each card shows an image when imageField is mapped (a row without a picture gets a tinted panel with the title's initials; no imageField, no picture area), an eyebrow (eyebrowField: a small caps line above the title, such as a category or a code), an avatar beside the title (avatarField: an image URL, else the initials of that field's text; for people and owners), title, subtitle, badges (badgeField, plus badgeFields for more: 'cuisine, diet', at most 4; each toned by its words: Available green, Low stock amber, Sold out red), a description (two lines), a progress bar (progressField: a percentage 0 to 100, as 42 or '42%') and a meta line (metaFields, a comma list; 'prep:{} min' puts the value in a label, 'serves:Serves' puts the label first). layout 'stacked' (image on top) or 'row' (image left, text right: listings, people, a compact catalogue). columns (a number, or 'auto' to fit cards of minCardWidth), imageAspect ('16/9', '4/3', '1/1'; stacked only), cardStyle 'elevated', 'outline' or 'flat'. A click selects the card (selectedItem, selectedItemId; onCardClicked). Height: grows with its rows (about 300px per row stacked with an image, 150px without or in rows)",
+    "description": "Grid of cards from data, for things with a face (recipes, products, listings, people, rooms, projects): each card shows an image when imageField is mapped (a row without a picture gets a tinted panel with the title's initials; no imageField, no picture area), an eyebrow (eyebrowField: a small caps line above the title, such as a category or a code), an avatar beside the title (avatarField: an image URL, else the initials of that field's text; for people and owners), title, subtitle, badges (badgeField, plus badgeFields for more: 'cuisine, diet', at most 4; each toned by its words: Available green, Low stock amber, Sold out red), a description (two lines), a progress bar (progressField: a percentage 0 to 100, as 42 or '42%') and a meta line (metaFields, a comma list; 'prep:{} min' puts the value in a label, 'serves:Serves' puts the label first). layout 'stacked' (image on top) or 'row' (image left, text right: listings, people, a compact catalogue). columns (a number, or 'auto' to fit cards of minCardWidth), imageAspect ('16/9', '4/3', '1/1'; stacked only), cardStyle 'elevated', 'outline' or 'flat'. A click selects the card (selectedItem, selectedItemId, selectedItemIndex; onCardClicked). Height: grows with its rows (about 300px per row stacked with an image, 150px without or in rows)",
     "defaultSize": {
       "width": 43,
       "height": 620
@@ -18407,6 +18407,10 @@
       },
       {
         "name": "selectedItemId",
+        "default": null
+      },
+      {
+        "name": "selectedItemIndex",
         "default": null
       }
     ],
@@ -30424,6 +30428,10 @@
       {
         "name": "selectedItemId",
         "default": null
+      },
+      {
+        "name": "selectedItemIndex",
+        "default": null
       }
     ],
     "authoringHints": {
@@ -31828,7 +31836,7 @@
   "ShadRecordList": {
     "type": "ShadRecordList",
     "name": "ShadRecordList",
-    "description": "List of records as two-line rows, for a recent-orders, people, tickets or activity panel beside a chart or a table: an avatar (avatarField: an image URL, else the initials of that field's text, else of the title), the title (titleField), a meta line under it (metaFields, a comma list of field specs joined with ' · ': 'city', 'total|currency', 'due|date:Due {}' (value in a label), 'seats:Seats' (label first); formats number, currency, percent, compact, date, datetime), a progress bar under the meta line (progressField: a percentage 0 to 100, as 42 or '42%'; onboarding, a project's completion), a status chip on the right (statusField, toned by its words: Paid green, Pending amber, Overdue red, Open blue) and a trailing value (valueField in valueFormat: currency in currency, date, number, ...). density compact, default or comfortable; showDividers; listStyle 'card' (bordered panel) or 'plain'; avatarShape circle or rounded. A click selects the row (selectedItem, selectedItemId; onItemClicked). Draws 100 rows and a Show more button. Height: grows with its rows (about 60px a row at default density)",
+    "description": "List of records as two-line rows, for a recent-orders, people, tickets or activity panel beside a chart or a table: an avatar (avatarField: an image URL, else the initials of that field's text, else of the title), the title (titleField), a meta line under it (metaFields, a comma list of field specs joined with ' · ': 'city', 'total|currency', 'due|date:Due {}' (value in a label), 'seats:Seats' (label first); formats number, currency, percent, compact, date, datetime), a progress bar under the meta line (progressField: a percentage 0 to 100, as 42 or '42%'; onboarding, a project's completion), a status chip on the right (statusField, toned by its words: Paid green, Pending amber, Overdue red, Open blue) and a trailing value (valueField in valueFormat: currency in currency, date, number, ...). density compact, default or comfortable; showDividers; listStyle 'card' (bordered panel) or 'plain'; avatarShape circle or rounded. A click selects the row (selectedItem, selectedItemId, selectedItemIndex; onItemClicked). Draws 100 rows and a Show more button. Height: grows with its rows (about 60px a row at default density)",
     "defaultSize": {
       "width": 20,
       "height": 340
@@ -32146,6 +32154,10 @@
       },
       {
         "name": "selectedItemId",
+        "default": null
+      },
+      {
+        "name": "selectedItemIndex",
         "default": null
       }
     ],
@@ -34148,6 +34160,17 @@
         "label": "Change (e.g. +12.5%)",
         "valueType": "string",
         "default": ""
+      },
+      {
+        "key": "changeFormat",
+        "label": "Change format",
+        "valueType": "string",
+        "default": "number",
+        "allowedValues": [
+          "percent",
+          "number",
+          "currency"
+        ]
       },
       {
         "key": "trend",
