@@ -82118,6 +82118,7 @@ Fix the configuration and restart this server; no tools will work until then.` }
 }
 
 // dist/oauthExchangeLimiter.js
+import { createHash as createHash4 } from "node:crypto";
 import { isIP } from "node:net";
 function createExchangeLimiter(limit = 300, trustedProxyHops = 0) {
   if (!Number.isInteger(limit) || limit < 1 || limit > 1e4 || !Number.isInteger(trustedProxyHops) || trustedProxyHops < 0 || trustedProxyHops > 10) {
@@ -82157,6 +82158,30 @@ function createExchangeLimiter(limit = 300, trustedProxyHops = 0) {
         buckets.set(ip, bucket);
       }
       bucket.count++;
+    }
+  };
+}
+function createVerifiedExchangeCache(ttlMs = 6e4, capacity = 1e4) {
+  const verified = /* @__PURE__ */ new Map();
+  const key4 = (token, resource) => createHash4("sha256").update(resource).update("\0").update(token).digest("hex");
+  return {
+    has(token, resource, now = Date.now()) {
+      const id = key4(token, resource);
+      const expires = verified.get(id);
+      if (expires !== void 0 && expires > now)
+        return true;
+      verified.delete(id);
+      return false;
+    },
+    remember(token, resource, now = Date.now()) {
+      const id = key4(token, resource);
+      verified.delete(id);
+      if (verified.size >= capacity)
+        verified.delete(verified.keys().next().value);
+      verified.set(id, now + ttlMs);
+    },
+    forget(token, resource) {
+      verified.delete(key4(token, resource));
     }
   };
 }
@@ -82240,6 +82265,7 @@ function createOAuthHttpServer(options2) {
   const metadataPrefix = `/.well-known/oauth-protected-resource${resourcePath}/`;
   const pathPrefix = `${resourcePath}/`;
   const exchangeLimit = createExchangeLimiter(Number(process.env.MCP_OAUTH_EXCHANGE_RATE_LIMIT ?? 300), Number(process.env.MCP_OAUTH_TRUST_PROXY_HOPS ?? 0));
+  const verifiedExchanges = createVerifiedExchangeCache();
   let exchangesInFlight = 0;
   const httpServer = createServer((req, res) => {
     let exchangeFailure;
@@ -82301,7 +82327,7 @@ function createOAuthHttpServer(options2) {
         sendOAuthJson(res, 401, { error: "invalid_token" });
         return;
       }
-      const retryAfter = exchangeLimit.retryAfter(req);
+      const retryAfter = verifiedExchanges.has(token, canonicalResource) ? 0 : exchangeLimit.retryAfter(req);
       if (retryAfter) {
         res.setHeader("retry-after", String(retryAfter));
         sendOAuthJson(res, 429, { error: "temporarily_unavailable" });
@@ -82343,6 +82369,7 @@ function createOAuthHttpServer(options2) {
           console.error("[mcp-oauth] Credential exchange unavailable", { status: exchange.status, error: safeCode });
         }
         if (invalidToken) {
+          verifiedExchanges.forget(token, canonicalResource);
           exchangeLimit.failed(req);
           challenge("invalid_token");
         }
@@ -82354,6 +82381,7 @@ function createOAuthHttpServer(options2) {
         throw new Error("Invalid delegation response");
       }
       const browserUrl = typeof credentials.browser_url === "string" ? checkedUrl(credentials.browser_url, "browser_url") : appUrl;
+      verifiedExchanges.remember(token, canonicalResource);
       exchangeFailure = void 0;
       let requestBody;
       if (req.method === "POST") {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createExchangeLimiter } from '../src/oauthExchangeLimiter.js';
+import { createExchangeLimiter, createVerifiedExchangeCache } from '../src/oauthExchangeLimiter.js';
 const request = (ip: string, forwarded?: string) => ({ socket: { remoteAddress: ip }, headers: { 'x-forwarded-for': forwarded } }) as any;
 describe('exchange IP limits', () => {
   it('isolates addresses, ignores untrusted forwarded headers and expires buckets', () => {
@@ -20,4 +20,19 @@ describe('exchange IP limits', () => {
   it.each([[0, 0], [NaN, 0], [300, -1], [300, 11]])('rejects unsafe configuration %s/%s', (limit, hops) => {
     expect(() => createExchangeLimiter(limit, hops)).toThrow('Invalid');
   });
+});
+
+it('verified admission hints are resource-bound, short-lived, removable and capacity bounded', () => {
+  const cache = createVerifiedExchangeCache(60, 2);
+  cache.remember('token-a', 'garden-a', 0);
+  expect(cache.has('token-a', 'garden-a', 1)).toBe(true);
+  expect(cache.has('token-a', 'garden-b', 1)).toBe(false);
+  expect(cache.has('token-a', 'garden-a', 60)).toBe(false);
+  cache.remember('token-a', 'garden-a', 61);
+  cache.remember('token-b', 'garden-a', 61);
+  cache.remember('token-c', 'garden-a', 61);
+  expect(cache.has('token-a', 'garden-a', 62)).toBe(false);
+  expect(cache.has('token-b', 'garden-a', 62)).toBe(true);
+  cache.forget('token-b', 'garden-a');
+  expect(cache.has('token-b', 'garden-a', 62)).toBe(false);
 });

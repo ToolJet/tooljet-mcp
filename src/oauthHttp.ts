@@ -1,4 +1,4 @@
-import { createExchangeLimiter } from './oauthExchangeLimiter.js';
+import { createExchangeLimiter, createVerifiedExchangeCache } from './oauthExchangeLimiter.js';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -107,6 +107,7 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
   const pathPrefix = `${resourcePath}/`;
   const exchangeLimit = createExchangeLimiter(Number(process.env.MCP_OAUTH_EXCHANGE_RATE_LIMIT ?? 300),
     Number(process.env.MCP_OAUTH_TRUST_PROXY_HOPS ?? 0));
+  const verifiedExchanges = createVerifiedExchangeCache();
   let exchangesInFlight = 0;
   const httpServer = createServer((req, res) => {
     let exchangeFailure: 'exchange_request_failed' | 'invalid_delegation_response' | undefined;
@@ -177,7 +178,7 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
         sendOAuthJson(res, 401, { error: 'invalid_token' });
         return;
       }
-      const retryAfter = exchangeLimit.retryAfter(req);
+      const retryAfter = verifiedExchanges.has(token, canonicalResource) ? 0 : exchangeLimit.retryAfter(req);
       if (retryAfter) {
         res.setHeader('retry-after', String(retryAfter));
         sendOAuthJson(res, 429, { error: 'temporarily_unavailable' });
@@ -222,6 +223,7 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
           console.error('[mcp-oauth] Credential exchange unavailable', { status: exchange.status, error: safeCode });
         }
         if (invalidToken) {
+          verifiedExchanges.forget(token, canonicalResource);
           exchangeLimit.failed(req);
           challenge('invalid_token');
         }
@@ -239,6 +241,7 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
       const browserUrl = typeof credentials.browser_url === 'string'
         ? checkedUrl(credentials.browser_url, 'browser_url')
         : appUrl;
+      verifiedExchanges.remember(token, canonicalResource);
       exchangeFailure = undefined;
       let requestBody: unknown;
       if (req.method === 'POST') {

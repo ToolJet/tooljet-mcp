@@ -528,3 +528,28 @@ it('caps concurrent exchanges before calling the backend and releases capacity a
   expect(next.status).toBe(401);
   expect(exchange).toHaveBeenCalledTimes(65);
 });
+
+it('previously verified tokens survive a shared-IP junk budget but still recheck revocation', async () => {
+  vi.stubEnv('MCP_OAUTH_EXCHANGE_RATE_LIMIT', '2');
+  let revoked = false;
+  const exchange = vi.fn(async (_url, init) => {
+    const body = JSON.parse(init.body);
+    return body.subject_token === accessToken && !revoked ? success()
+      : new Response('{"error":"invalid_token"}', { status: 401 });
+  });
+  const base = await listen(createOAuthHttpServer({ ...options, fetchImpl: exchange,
+    serverFactory: () => new McpServer({ name: 'synthetic-shared-ingress', version: '1.0.0' }) }));
+  const send = (token = accessToken, workspace = 'garden') => fetch(`${base}/mcp/${workspace}`, { method: 'POST',
+    headers: { ...headers, authorization: `Bearer ${token}` }, body: JSON.stringify(initialize) });
+  expect((await send()).status).toBe(200);
+  expect((await send('tj_oauth_at_junk_one')).status).toBe(401);
+  expect((await send('tj_oauth_at_junk_two')).status).toBe(401);
+  expect((await send('tj_oauth_at_junk_three')).status).toBe(429);
+  expect((await send(accessToken, 'other-garden')).status).toBe(429);
+  expect((await send()).status).toBe(200);
+  expect(exchange).toHaveBeenCalledTimes(4);
+  revoked = true;
+  expect((await send()).status).toBe(401);
+  expect((await send()).status).toBe(429);
+  expect(exchange).toHaveBeenCalledTimes(5);
+});
