@@ -689,7 +689,13 @@ export interface ToolJetClient {
   viewerSession?(): Promise<string | undefined>;
   /** The name of the version being edited (the preview's version= parameter). */
   editingVersionName?(appId: string): Promise<string | undefined>;
+  /** Keeps a copy of a version for the compare view and undo (EE, trial and Pro and above). Never throws for a refusal. */
+  createVersionSnapshot?(appId: string, versionId: string, label?: string): Promise<VersionSnapshotResult>;
 }
+
+export type VersionSnapshotResult =
+  | { ok: true; id: string; reused: boolean; reason?: string; createdAt?: string; seeChangesUrl: string }
+  | { ok: false; status: number; reason: 'not_in_plan' | 'no_access' | 'unavailable'; upgradeUrl: string; detail: string };
 
 /** A single component definition-or-rename update. Set EITHER `definition` (property/style edits,
  *  deep-merged; array values like Table columns / DropdownV2 options are REPLACED) OR name/parent — not
@@ -1178,6 +1184,26 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       ...(persistedParent ? { parent: persistedParent } : {}),
       ...(decodedParent && decodedParent.slotName !== 'body' ? { slot_name: decodedParent.slotName } : {}),
     };
+  }
+
+  // POST /api/v2/apps/:id/versions/:versionId/snapshots (ee-server). The plan gate answers 451, a missing edit
+  // permission 403, and a server without the route (CE, or older) 404.
+  async function createVersionSnapshot(appId: string, versionId: string, label?: string): Promise<VersionSnapshotResult> {
+    const res = await auth.authedFetch(
+      `/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}/snapshots`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(label ? { label } : {}) }
+    );
+    const editor = `${config.appUrl}/${encodeURIComponent(await auth.getOrganizationSlug())}/apps/${encodeURIComponent(appId)}`;
+    if (res.ok) {
+      const body = (await res.json()) as { id: string; reused?: boolean; reason?: string; createdAt?: string };
+      return {
+        ok: true, id: body.id, reused: !!body.reused, reason: body.reason, createdAt: body.createdAt,
+        seeChangesUrl: `${editor}?compare=snapshot:${body.id}`,
+      };
+    }
+    const detail = (await res.text()).slice(0, 300);
+    const reason = res.status === 451 ? 'not_in_plan' : res.status === 403 || res.status === 401 ? 'no_access' : 'unavailable';
+    return { ok: false, status: res.status, reason, upgradeUrl: `${editor}?compare=upgrade`, detail };
   }
 
   async function getAppSummary(appId: string, versionId?: string): Promise<AppSummary> {
@@ -3128,6 +3154,11 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     hasGoogleMapsKey,
     viewerSession: () => auth.viewerSession?.() ?? Promise.resolve(undefined),
     editingVersionName: async (appId: string) => ((await getApp(appId))?.editing_version?.name as string | undefined) ?? undefined,
+    // The in-product AI chat (a ToolJet session, not a PAT) keeps its own copy before every turn and has its own
+    // See what changed; snapshots here are for coding agents. TOOLJET_MCP_AGENT_SNAPSHOTS=off turns them off.
+    ...(config.sessionToken || /^(0|off|false|no)$/i.test(process.env.TOOLJET_MCP_AGENT_SNAPSHOTS ?? '')
+      ? {}
+      : { createVersionSnapshot }),
     getDevelopmentEnvironmentId,
     listDatasources,
     listTables,

@@ -200,6 +200,7 @@ Plan the phase, work out what it needs, ask once, write once.
 - Give each component a `name`; bind data by query name: `{{queries.<name>.data}}`.
 - Use the grid mechanics above to lay components out without overlap. Design the layout yourself — make it clean and enterprise-grade.
 - Repeat the clickable `viewer_url` and `editor_url` in the final handoff even when you already opened the viewer in the built-in browser. `app_url` is only a compatibility alias for the editor.
+- When a write returned `snapshot.see_changes_url` (ToolJet keeps a copy of the version before an agent's first write of a change), add it to the final handoff as "See what changed": it opens the compare view with undo. When it returned `snapshot.status: "not_in_plan"`, add one line in the final handoff only, never mid-build, that on Pro every change gets a see-what-changed view and one-click undo, with `upgrade_url`. Say it once.
 - **Close the loop with an efficiency note.** After building (and after each phase), tell the user roughly **how many MCP tool calls it took** — you can count your own calls, and fewer round-trips is the goal (batch with `add_components`/`add_queries`). Include **token usage only if your runtime actually surfaces it** to you; never fabricate a token number you don't have. Keep it to one line.
 
 ---
