@@ -12,11 +12,8 @@ import { ok, fail, type ToolDef } from './types.js';
  * a session that reaches /api/authorize and the handful of modules the editor needs to paint, while
  * being confined to that ONE app.
  *
- * NOT read-only, despite how this used to be described. PatScopeInterceptor bars non-GET requests
- * but exempts BOTH data-query run routes without inspecting what the query does, so loading a page
- * executes its page-load queries for real — writes included. Nothing on the client can prevent that;
- * the fix is a server-side render execution policy. Until it exists, treat opening an app with this
- * session as capable of side effects. It is
+ * Read-only: the session's PAT scopes withhold the data-query run routes, so loading a page runs
+ * none of its queries. Older ToolJet servers without that scope still run page-load queries. It is
  * minted from the workspace PAT this server already holds, so it carries no authority the server
  * did not already have, and it cannot be widened by asking for a different app.
  *
@@ -41,9 +38,9 @@ export function createRenderSessionTool(client: ToolJetClient): ToolDef {
       'to check how it rendered. Returns { token, url, expires_at } — `expires_at` is the expiry ' +
       'ToolJet stamped on the session, not a requested one, and is absent on older ToolJets. ' +
       'Set `token` as the tj_auth_token cookie and ' +
-      'navigate to `url`. The token is scoped to this app alone and may only issue GET requests, ' +
-      'apart from running the app\'s own queries — which DO execute for real, including any that ' +
-      'write. Requires this server to ' +
+      'navigate to `url`. The token is scoped to this app alone and is read-only: ToolJet withholds ' +
+      'the data-query run routes from it, so opening the app runs none of its queries and ' +
+      'data-bound components render empty. Requires this server to ' +
       'be running on a personal access token; if it is on a pre-minted session the call fails and ' +
       'the caller should skip its render check rather than treat the app as broken. Not a ' +
       'general-purpose credential: do not persist it.',

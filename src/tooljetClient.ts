@@ -1318,7 +1318,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
        POST /api/personal-access-tokens/session {appId} returns a session pinned to that one app.
        ToolJet checks the app is in the token's workspace and stamps the session with the token's
        own kind plus the app id; PatScopeInterceptor then confines it to the render module list,
-       pins it to this app, and makes it read-only apart from running the app's queries.
+       pins it to this app, and makes it read-only, with the data-query run routes withheld.
 
        The session belongs to whoever owns the PAT. In-product that is the requesting user's own
        per-user service token, so the render is seen as they would see it. */

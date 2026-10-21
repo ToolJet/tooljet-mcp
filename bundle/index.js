@@ -65906,7 +65906,7 @@ function createRenderSessionTool(client) {
       idempotentHint: false,
       openWorldHint: true
     },
-    description: "Mint a short-lived browser session scoped to one app, for loading it in a headless browser to check how it rendered. Returns { token, url, expires_at } \u2014 `expires_at` is the expiry ToolJet stamped on the session, not a requested one, and is absent on older ToolJets. Set `token` as the tj_auth_token cookie and navigate to `url`. The token is scoped to this app alone and may only issue GET requests, apart from running the app's own queries \u2014 which DO execute for real, including any that write. Requires this server to be running on a personal access token; if it is on a pre-minted session the call fails and the caller should skip its render check rather than treat the app as broken. Not a general-purpose credential: do not persist it.",
+    description: "Mint a short-lived browser session scoped to one app, for loading it in a headless browser to check how it rendered. Returns { token, url, expires_at } \u2014 `expires_at` is the expiry ToolJet stamped on the session, not a requested one, and is absent on older ToolJets. Set `token` as the tj_auth_token cookie and navigate to `url`. The token is scoped to this app alone and is read-only: ToolJet withholds the data-query run routes from it, so opening the app runs none of its queries and data-bound components render empty. Requires this server to be running on a personal access token; if it is on a pre-minted session the call fails and the caller should skip its render check rather than treat the app as broken. Not a general-purpose credential: do not persist it.",
     inputSchema: {
       app_id: external_exports.string()
     },
