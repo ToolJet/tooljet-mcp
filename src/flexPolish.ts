@@ -11,6 +11,7 @@
 import type { ComponentSpec } from './tooljetClient.js';
 import { unifyChartAccents } from './chartAccentLint.js';
 import { packTableLook } from './packTableLook.js';
+import { fitFlexHeights } from './flexFit.js';
 
 const FIELD_TYPES = new Set([
   'ShadInput',
@@ -204,70 +205,7 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
     setProp(root, 'padding', PAGE_MARGIN); // silent: a margin, nothing the model must reconsider
   }
 
-  // A card drawn taller than its content is trimmed to fit it: a row is as tall as its tallest card and stretches the
-  // rest, so one generous guess left an empty band under every KPI figure in the row (85px under each, a clinic home).
-  // Deepest cards first, so a card holding cards sees their fitted heights. Only cards whose children all have a
-  // drawn height are measured; a card is never grown here.
-  const depth = (c: ComponentSpec): number => {
-    let d = 0;
-    let p = c.parentRef;
-    while (p && d < 20) {
-      d += 1;
-      p = components.find((x) => x && refOf(x) === p)?.parentRef;
-    }
-    return d;
-  };
   const heightOf = (c: ComponentSpec): number => Number(c.layout?.height ?? c.layouts?.desktop?.height ?? NaN);
-  const cards = components.filter((c) => c && isSurface(c) && c.parentRef).sort((a, b) => depth(b) - depth(a));
-  for (const card of cards) {
-    const inner = childrenOf(refOf(card) ?? '');
-    const heights = inner.map(heightOf);
-    if (!inner.length || heights.some((h) => !Number.isFinite(h))) continue;
-    const rawGap = text(prop(card, 'gap'));
-    const gap = rawGap === '' ? 8 : Number(rawGap) || 0;
-    const rawPad = text(prop(card, 'padding'));
-    const pad = rawPad === '' ? 12 : Number(rawPad) || 0;
-    const content = isRow(card) ? Math.max(...heights) : heights.reduce((a, b) => a + b, 0) + gap * (inner.length - 1);
-    const title = text(prop(card, 'cardTitle'));
-    const extra = text(prop(card, 'cardExtra'));
-    const band = extra ? 70 : title ? 48 : 0;
-    const needed = Math.ceil(content + pad * 2 + 6 + band);
-    const rects = [card.layout, card.layouts?.desktop].filter(
-      (rect): rect is NonNullable<ComponentSpec['layout']> => !!rect && typeof rect.height === 'number'
-    );
-    if (!rects.length || rects.every((rect) => (rect.height as number) <= needed + 12)) continue;
-    const was = rects[0]!.height;
-    rects.forEach((rect) => {
-      rect.height = needed;
-    });
-    warnings.push(`Card "${card.name}" was ${was}px tall for ${needed}px of content; it now fits its content.`);
-  }
-
-  // Cards placed side by side on the page grid (no FlexContainer row) share one height, the tallest card's: a
-  // dashboard drew its KPI cards at 200, 124 and 200px in one line.
-  {
-    const gridCards = components.filter(
-      (c) => c && !c.parentRef && !(c as { parent?: unknown }).parent && (isSurface(c) || c.type === 'ShadStat') && Number.isFinite(heightOf(c))
-    );
-    const lines = new Map<number, ComponentSpec[]>();
-    for (const c of gridCards) {
-      const top = Number(c.layout?.top ?? c.layouts?.desktop?.top);
-      if (!Number.isFinite(top)) continue;
-      const key = [...lines.keys()].find((t) => Math.abs(t - top) <= 10) ?? top;
-      lines.set(key, [...(lines.get(key) ?? []), c]);
-    }
-    for (const line of lines.values()) {
-      if (line.length < 2) continue;
-      const tallest = Math.max(...line.map(heightOf));
-      if (line.every((c) => heightOf(c) === tallest)) continue;
-      for (const c of line) {
-        [c.layout, c.layouts?.desktop].forEach((rect) => {
-          if (rect && typeof rect.height === 'number') rect.height = tallest;
-        });
-      }
-      warnings.push(`Cards ${line.map((c) => `"${c.name}"`).join(', ')} sit side by side; they now share one height (${tallest}px).`);
-    }
-  }
 
   // A side sheet holding a row of two or more fields opens at the wide sheet size (640px): at the default 480px two
   // fields side by side were cut off at the sheet's edge (a lead form, 2026-10-11).
@@ -830,6 +768,40 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
       `Dialog "${dialog.name}": its ${ordered.length} footer buttons were placed by hand with uneven gaps; they now sit in one ` +
         `row "${rowRef}" at the right, in their order (${ordered.map((c) => `"${c.name}"`).join(', ')}).`
     );
+  }
+
+  // Every FlexContainer is saved at the height the app draws it at (flexFit.ts). The editor draws a container at its
+  // saved height, while the app fits a card or a row to its content: a row saved at the 300px default around 150px of
+  // content showed an empty band in the editor only, and the section below it started that much lower there. A card
+  // drawn taller than its content was trimmed here before, but only nested cards and only past 12px; rows were only
+  // ever grown.
+  const fittedBoxes = fitFlexHeights(components, warnings);
+
+  // Cards placed side by side on the page grid (no FlexContainer row) share one height, the tallest card's: a
+  // dashboard drew its KPI cards at 200, 124 and 200px in one line. A card fitted to its content above keeps that
+  // height: the app draws it there whatever it is saved at.
+  {
+    const gridCards = components.filter(
+      (c) => c && !c.parentRef && !(c as { parent?: unknown }).parent && (isSurface(c) || c.type === 'ShadStat') && !fittedBoxes.has(c) && Number.isFinite(heightOf(c))
+    );
+    const lines = new Map<number, ComponentSpec[]>();
+    for (const c of gridCards) {
+      const top = Number(c.layout?.top ?? c.layouts?.desktop?.top);
+      if (!Number.isFinite(top)) continue;
+      const key = [...lines.keys()].find((t) => Math.abs(t - top) <= 10) ?? top;
+      lines.set(key, [...(lines.get(key) ?? []), c]);
+    }
+    for (const line of lines.values()) {
+      if (line.length < 2) continue;
+      const tallest = Math.max(...line.map(heightOf));
+      if (line.every((c) => heightOf(c) === tallest)) continue;
+      for (const c of line) {
+        [c.layout, c.layouts?.desktop].forEach((rect) => {
+          if (rect && typeof rect.height === 'number') rect.height = tallest;
+        });
+      }
+      warnings.push(`Cards ${line.map((c) => `"${c.name}"`).join(', ')} sit side by side; they now share one height (${tallest}px).`);
+    }
   }
 
   // A grid-placed button beside labelled UI 2.0 fields, authored at the fields' top, floats above their boxes (a repair

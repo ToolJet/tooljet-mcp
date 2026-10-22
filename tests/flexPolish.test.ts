@@ -243,17 +243,18 @@ describe('polishFlexRows: a plain row fits its tallest child', () => {
     expect(warnings.join(' ')).toMatch(/actions/);
   });
 
-  it('counts the row padding and leaves a tall enough row and a card alone', () => {
+  it('counts the row padding, and fits a taller row and a card to their content too', () => {
+    // The app draws a row and a card at their content's height whatever is saved (flexFit.ts): 36 + 8 x 2 + 6.
     const padded = polishFlexRows([
       row('bar', { padding: { value: 8 } }, { layout: { top: 0, left: 0, width: 10, height: 60 } }),
       { ...child('b', 'ShadButton', 'bar'), layout: { top: 0, left: 0, width: 6, height: 36 } },
     ]).components;
-    expect(h(padded, 'bar')).toBe(60);
+    expect(h(padded, 'bar')).toBe(58);
     const card = polishFlexRows([
       row('card', { cardStyle: { value: 'shadcnCard' }, padding: { value: 0 } }, { layout: { top: 0, left: 0, width: 10, height: 30 } }),
       { ...child('b', 'ShadButton', 'card'), layout: { top: 0, left: 0, width: 6, height: 36 } },
     ]).components;
-    expect(h(card, 'card')).toBe(30);
+    expect(h(card, 'card')).toBe(42);
   });
 });
 
@@ -540,8 +541,14 @@ describe('polishFlexRows: cards fit their content and share a row height', () =>
   });
 
   it('keeps a card that fits, a card with unmeasured children, and a card title band', () => {
-    const fits = polishFlexRows([row('r'), card('a', 'r', 140), leaf('x', 'ShadText', 'a', 26), leaf('y', 'ShadHeading', 'a', 56)]);
-    expect(h(fits.components, 'a')).toBe(140);
+    const fits = polishFlexRows([row('r'), card('a', 'r', 134), leaf('x', 'ShadText', 'a', 26), leaf('y', 'ShadHeading', 'a', 56)]);
+    expect(h(fits.components, 'a')).toBe(134);
+    expect(fits.warnings.join(' ')).not.toMatch(/"a"/);
+    // A few pixels over is fitted too: the editor would draw them as a band the app does not show.
+    const near = polishFlexRows([row('r'), card('a', 'r', 140), leaf('x', 'ShadText', 'a', 26), leaf('y', 'ShadHeading', 'a', 56)]);
+    expect(h(near.components, 'a')).toBe(134);
+    const unmeasured = polishFlexRows([row('r'), card('a', 'r', 300), { ...child('x', 'ShadText', 'a') } as ComponentSpec]);
+    expect(h(unmeasured.components, 'a')).toBe(300);
     const titled = polishFlexRows([row('r'), card('a', 'r', 200, { cardTitle: { value: 'Revenue' }, cardExtra: { value: 'This week' } }), leaf('y', 'ShadHeading', 'a', 56)]);
     // 56 content + 40 padding + 6 chrome + 70 title band
     expect(h(titled.components, 'a')).toBe(172);
