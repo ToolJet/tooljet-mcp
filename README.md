@@ -2,6 +2,10 @@
 
 An MCP server that lets a coding agent (Codex, Claude Code, …) build and maintain **ToolJet** apps through ToolJet's governed APIs: workspaces, apps/pages, datasource queries, ToolJet DB tables, components, layouts, and lifecycle events. It includes generated component and datasource catalogs so agents use first-party contracts instead of guessing configuration keys.
 
+## Browser OAuth connections
+
+For remote HTTP clients, [OAuth setup](docs/oauth.md) connects through the workspace's ToolJet login and consent flow without copying a PAT. OAuth is Cloud-only in this release and requires the companion ToolJet Cloud backend with `MCP_OAUTH_ENABLED=true` and all five OAuth migrations. Existing local PAT plugins remain supported; the prerequisites below describe that local setup.
+
 ## Prerequisites
 
 - A ToolJet instance with personal access token support.
@@ -147,6 +151,41 @@ is picked up here with no second copy. Set `TOOLJET_DEPLOYMENT_URL` and `TOOLJET
 environment the editor launches from (`TOOLJET_URL` too, only if the API is on a different origin
 than `TOOLJET_DEPLOYMENT_URL`); unset or blank values fall back to the server's own defaults, and a
 missing token is reported at handshake rather than killing the server.
+
+## Skill-only plugin for remote MCP connections
+
+Use `tooljet-app-builder-skills` when ToolJet is already connected through remote
+MCP/OAuth. It supplies the same app-builder skill, focused references, and browser audit
+helper as the combined plugin. Component contracts come from the connected MCP's
+`get_component_catalog` tool; generated offline catalog JSON is excluded. It registers no MCP
+server, requests no credentials, and does not start a second PAT connection.
+
+In Claude Code, add the marketplace and install the skill-only entry:
+
+```text
+/plugin marketplace add ToolJet/tooljet-mcp
+/plugin install tooljet-app-builder-skills@tooljet
+```
+
+Connect and authenticate the remote ToolJet MCP server separately. The skill uses
+the connection's exposed tool names, so the server does not need to be named
+`tooljet`. Use either this package or the combined `tooljet-app-builder` plugin in
+a session to avoid loading duplicate guidance. The Codex marketplace also exposes
+`tooljet-app-builder-skills` with its own skill-only manifest.
+
+Build the self-contained directory from the repository root:
+
+```bash
+npm run build:skill-plugin
+claude plugin validate ./plugins/tooljet-app-builder-skills
+claude --plugin-dir ./plugins/tooljet-app-builder-skills
+```
+
+The command regenerates the skill and references before packaging them in
+`plugins/tooljet-app-builder-skills/`. No server bundle, running ToolJet instance,
+TypeScript build, or credentials are needed to build it. Generated skill files are committed for installation
+from Git; edit `scripts/generate-skill.mjs` or its referenced sources, then rebuild.
+Package metadata comes from `scripts/build-skill-plugin.mjs` and `package.json`.
 
 ## Install as a Claude Code plugin
 

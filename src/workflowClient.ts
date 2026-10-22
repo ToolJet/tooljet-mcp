@@ -73,7 +73,12 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
   return {
     ...queries,
     workspaceId: () => auth.getOrganizationId(),
-    async planScope() { return createHash('sha256').update(JSON.stringify([config.apiUrl, config.sessionToken ?? config.pat, await auth.getOrganizationId()])).digest('hex'); },
+    async planScope() {
+      if (config.isOAuthDelegation && !config.oauthGrantId) throw new Error('OAuth workflow plans require a trusted grant identifier.');
+      // Delegation JWTs change per request; the same live approval must retain its linted plan.
+      const identity = config.isOAuthDelegation ? ['oauth', config.oauthGrantId] : config.sessionToken ?? config.pat;
+      return createHash('sha256').update(JSON.stringify([config.apiUrl, identity, await auth.getOrganizationId()])).digest('hex');
+    },
     async list(page = 1, search = '') { return request(`/api/apps?${new URLSearchParams({ type: 'workflow', page: String(page), searchKey: search })}`); },
     get,
     async create(name: string) {

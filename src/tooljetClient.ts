@@ -4,7 +4,7 @@ import { TableQuotaError, tableQuotaError } from './tableQuotaError.js';
 import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { assertPageIcon } from './pageIcons.js';
-import type { Auth, Workspace } from './auth.js';
+import type { Auth, Workspace, ViewerSession } from './auth.js';
 import type { Config } from './config.js';
 import { STYLE_KEYS_IN_PROPERTIES } from './lint.js';
 import { assertPersistableQueryToggles } from './queryToggles.js';
@@ -663,7 +663,10 @@ export interface ToolJetClient {
   /** Whether the instance has a Google Maps API key in its public config (the Map component needs it); undefined when unknown. */
   hasGoogleMapsKey?(): Promise<boolean | undefined>;
   /** The builder's session token, for the render audit's browser. */
-  viewerSession?(): Promise<string | undefined>;
+  viewerSession?(appId?: string): Promise<ViewerSession | undefined>;
+  /** OAuth viewer credentials are pinned to the configured deployment, never a tool-supplied origin. */
+  browserRenderOrigin?: string;
+  renderAuditGrant?: string;
   /** The name of the version being edited (the preview's version= parameter). */
   editingVersionName?(appId: string): Promise<string | undefined>;
 }
@@ -2968,7 +2971,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     deletePage,
     createEvents,
     hasGoogleMapsKey,
-    viewerSession: () => auth.viewerSession?.() ?? Promise.resolve(undefined),
+    viewerSession: (appId?: string) => auth.viewerSession?.(appId) ?? Promise.resolve(undefined),
+    renderAuditGrant: config.isOAuthDelegation ? `${config.apiUrl}\0${config.oauthGrantId}` : undefined,
+    browserRenderOrigin: config.isOAuthDelegation ? new URL(config.viewerUrl || config.appUrl).origin : undefined,
     editingVersionName: async (appId: string) => ((await getApp(appId))?.editing_version?.name as string | undefined) ?? undefined,
     getDevelopmentEnvironmentId,
     listDatasources,

@@ -43,6 +43,7 @@ tooljet-mcp ──POST /internal/mcp/verify-origin──► ai-api-gateway   (on
 ```bash
 npm install
 npm run build:plugin        # tsc -> dist/, esbuild -> bundle/index.js
+npm run build:skill-plugin  # guidance-only plugin for an existing MCP connection
 npm test
 npm run dev                 # stdio standalone (needs TOOLJET_URL + TOOLJET_PAT)
 ```

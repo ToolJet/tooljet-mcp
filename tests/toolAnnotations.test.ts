@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+vi.mock('../src/renderAuditAvailability.js', () => ({ renderAuditAvailable: () => true }));
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import type { ToolJetClient } from '../src/tooljetClient.js';
