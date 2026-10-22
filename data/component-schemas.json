@@ -15932,13 +15932,29 @@
         "default": ""
       },
       {
+        "key": "actionLabel",
+        "label": "Action label",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "dismissible",
+        "label": "Show close button",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "variant",
         "label": "Variant",
         "valueType": "string",
         "default": "default",
         "allowedValues": [
           "default",
-          "destructive"
+          "info",
+          "success",
+          "warning",
+          "destructive",
+          "custom"
         ]
       },
       {
@@ -16020,6 +16036,11 @@
         "valueType": "string"
       },
       {
+        "key": "accentColor",
+        "label": "Custom accent",
+        "valueType": "string"
+      },
+      {
         "key": "titleColor",
         "label": "Alert title color",
         "valueType": "string"
@@ -16044,8 +16065,50 @@
         "default": ""
       }
     ],
-    "events": [],
+    "events": [
+      {
+        "id": "onActionClicked",
+        "label": "On action clicked"
+      },
+      {
+        "id": "onClose",
+        "label": "On close"
+      }
+    ],
     "actions": [
+      {
+        "handle": "setTitle",
+        "displayName": "Set title",
+        "params": [
+          {
+            "handle": "title",
+            "displayName": "Title",
+            "defaultValue": "New title"
+          }
+        ]
+      },
+      {
+        "handle": "setDescription",
+        "displayName": "Set description",
+        "params": [
+          {
+            "handle": "description",
+            "displayName": "Description",
+            "defaultValue": "New description"
+          }
+        ]
+      },
+      {
+        "handle": "setVariant",
+        "displayName": "Set variant",
+        "params": [
+          {
+            "handle": "variant",
+            "displayName": "Variant (default, info, success, warning, destructive or custom)",
+            "defaultValue": "info"
+          }
+        ]
+      },
       {
         "handle": "setVisibility",
         "displayName": "Set visibility",
@@ -16084,6 +16147,18 @@
       }
     ],
     "exposedVariables": [
+      {
+        "name": "title",
+        "default": "Heads up"
+      },
+      {
+        "name": "description",
+        "default": ""
+      },
+      {
+        "name": "variant",
+        "default": "default"
+      },
       {
         "name": "isVisible",
         "default": true
@@ -17155,7 +17230,7 @@
     "description": "Button",
     "defaultSize": {
       "width": 6,
-      "height": 36
+      "height": 40
     },
     "properties": [
       {
@@ -17191,7 +17266,7 @@
       },
       {
         "key": "fullWidth",
-        "label": "Full width",
+        "label": "Stretch in flex container",
         "valueType": "boolean",
         "default": "{{false}}"
       },
