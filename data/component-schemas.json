@@ -34134,7 +34134,7 @@
           "number",
           "string"
         ],
-        "default": "$1,250.00"
+        "default": "{{1250}}"
       },
       {
         "key": "valueFormat",
@@ -34473,6 +34473,17 @@
         ]
       },
       {
+        "handle": "setTrend",
+        "displayName": "Set trend",
+        "params": [
+          {
+            "handle": "trend",
+            "displayName": "Trend (up, down or neutral)",
+            "defaultValue": "up"
+          }
+        ]
+      },
+      {
         "handle": "setVisibility",
         "displayName": "Set visibility",
         "params": [
@@ -34528,7 +34539,7 @@
       },
       {
         "name": "primaryValue",
-        "default": "$1,250.00"
+        "default": 1250
       },
       {
         "name": "secondaryLabel",
