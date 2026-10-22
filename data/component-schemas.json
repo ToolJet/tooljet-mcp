@@ -15916,7 +15916,7 @@
     "description": "Alert",
     "defaultSize": {
       "width": 20,
-      "height": 72
+      "height": 60
     },
     "properties": [
       {
