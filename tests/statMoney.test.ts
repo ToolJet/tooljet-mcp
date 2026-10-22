@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeComponentSpec } from '../src/componentNormalization.js';
+import { normalizeComponentSpec, plannedCurrency } from '../src/componentNormalization.js';
 
 const stat = (label: string, value: string, extra: Record<string, unknown> = {}) =>
   normalizeComponentSpec({ type: 'ShadStat', name: 's', properties: { label: { value: label }, value: { value }, ...extra } } as never)
@@ -33,5 +33,33 @@ describe('a money Stat that formats its own number without a currency', () => {
     expect(stat('Spend', styled).value?.value).toBe(styled);
     expect(stat('Entries this month', '{{rows.length.toFixed(0)}}').valueFormat).toBeUndefined();
     expect(stat('Revenue', '{{x.toFixed(2)}}', { valueFormat: { value: 'number' } }).valueFormat?.value).toBe('number');
+  });
+});
+
+describe('a total of things counted', () => {
+  it('is a count, in English, Portuguese and Spanish (a client total read "$26")', () => {
+    expect(stat('Total de Clientes', '{{queries.k.data.clientes}}').valueFormat).toBeUndefined();
+    expect(stat('Total customers', '{{queries.k.data.n}}').valueFormat).toBeUndefined();
+    expect(stat('Total de pacientes', '{{queries.k.data.n}}').valueFormat).toBeUndefined();
+    expect(stat('Inventory value', '{{queries.k.data.v}}').valueFormat?.value).toBe('currency');
+  });
+  it('stays money when another money word names it', () => {
+    expect(stat('Total revenue from customers', '{{queries.k.data.r}}').valueFormat?.value).toBe('currency');
+    expect(stat('Total spend per vendor', '{{queries.k.data.r}}').valueFormat?.value).toBe('currency');
+  });
+});
+
+describe('an inferred money Stat in a plan that names a currency', () => {
+  it('takes that currency instead of the USD default', () => {
+    const plan = [
+      { type: 'ShadStat', name: 'a', properties: { label: { value: 'Faturamento' }, value: { value: '{{x}}' }, valueFormat: { value: 'currency' }, currency: { value: 'BRL' } } },
+      { type: 'ShadStat', name: 'b', properties: { label: { value: 'Revenue this month' }, value: { value: '{{y}}' } } },
+    ];
+    const currency = plannedCurrency(plan);
+    expect(currency).toBe('BRL');
+    const b = normalizeComponentSpec({ ...plan[1] } as never, { currency }).component.properties as Record<string, { value: unknown }>;
+    expect(b.currency?.value).toBe('BRL');
+    const revenue = normalizeComponentSpec({ type: 'ShadStat', name: 'c', properties: { label: { value: 'Revenue' }, value: { value: '{{y}}' }, currency: { value: 'EUR' } } } as never, { currency }).component.properties as Record<string, { value: unknown }>;
+    expect(revenue.currency?.value).toBe('EUR');
   });
 });

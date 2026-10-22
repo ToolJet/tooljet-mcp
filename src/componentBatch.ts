@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { COMPONENT_SLOT_NAMES, componentSlotSchema } from './componentParent.js';
 import { materializeRequiredDefaultChildren } from './defaultChildren.js';
 import { lintComponents } from './lint.js';
-import { normalizeComponentSpec } from './componentNormalization.js';
+import { normalizeComponentSpec, plannedCurrency } from './componentNormalization.js';
 import { normalizePlannedLayouts } from './layoutNormalization.js';
 import type { ComponentSpec } from './tooljetClient.js';
 import { componentNameSchema } from './componentName.js';
@@ -67,8 +67,9 @@ export function prepareComponentBatch(
   }));
   // Same geometry fixes as lint_app_spec: a plan that linted clean must apply clean, so the stored plan
   // gets the identical height normalisation here (an earlier split let lint pass and apply reject).
+  const currency = plannedCurrency(requested);
   const normalized = requested.map((component) => {
-    const definition = normalizeComponentSpec(component, { stripUnknownKeys: true });
+    const definition = normalizeComponentSpec(component, { stripUnknownKeys: true, currency });
     const geometry = normalizePlannedLayouts(definition.component);
     return { ...definition, component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
   });

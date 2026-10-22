@@ -10,7 +10,7 @@ import { validateTableBatch } from './tableValidation.js';
 import { invalidPlannedGeneratedPrimaryKeySeeds } from './seedGeneratedPrimaryKeyValidation.js';
 import { lintUniformSeedMetrics } from './seedVarietyLint.js';
 import { encodeComponentParent } from './componentParent.js';
-import { normalizeComponentSpec } from './componentNormalization.js';
+import { normalizeComponentSpec, plannedCurrency } from './componentNormalization.js';
 import { normalizePlannedLayouts } from './layoutNormalization.js';
 import { containsNamedBinding } from './referenceSafety.js';
 import { pageIconError } from './pageIcons.js';
@@ -505,6 +505,7 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     }
   }
   let componentCount = 0;
+  const currency = plannedCurrency((spec.pages ?? []).flatMap((page) => page.components ?? []));
 
   (spec.pages ?? []).forEach((plannedPage, pageIndex) => {
     const pageRef = plannedPage.clientRef ?? plannedPage.name;
@@ -516,7 +517,7 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     if (iconError) errors.push(`Page "${plannedPage.name}": ${iconError}`);
 
     const normalized = (plannedPage.components ?? []).map((component) => {
-      const definition = normalizeComponentSpec(component, { stripUnknownKeys: true });
+      const definition = normalizeComponentSpec(component, { stripUnknownKeys: true, currency });
       const geometry = normalizePlannedLayouts(definition.component);
       return { component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
     });

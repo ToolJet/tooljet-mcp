@@ -60,6 +60,25 @@ const UNIT_WORDS = /\b(min|mins|minutes?|hours?|hrs?|days?|weeks?|time|count|qty
 // Counts a KPI label can name besides money; periods ("this week") are not among them.
 const COUNT_WORDS = /\b(min|mins|minutes?|hours?|hrs?|count|qty|quantity|servings?|units?|items?|points?|score|percent|pct|kg|lbs?|reps?|sets?|seats?|guests?|nights?|orders?|tickets?|visits?|jobs?|rate)\b/i;
 const STATE_WORDS = /\b(status|stage|state|priority|severity|availability|health|risk|condition)\b/i;
+// "Total" and "value" also head counts: "Total de Clientes" showed "$26". Next to one of these nouns (English,
+// Portuguese or Spanish, singular or plural) a label with no other money word is a count.
+const AMBIGUOUS_MONEY_WORDS = /\b(total|totals|value)\b/gi;
+const COUNTED_NOUNS = /\b(clients?|clientes?|customers?|users?|usu[aá]rios?|members?|membros?|miembros?|patients?|pacientes?|leads?|accounts?|contas?|cuentas?|vendors?|suppliers?|fornecedor(es)?|proveedor(es)?|employees?|funcion[aá]rios?|empleados?|staff|people|pessoas|personas|students?|alunos?|estudiantes?|contacts?|contatos?|contactos?|compan(y|ies)|empresas?|projects?|projetos?|proyectos?|tasks?|tarefas?|tareas?|bugs?|issues?|requests?|pedidos?|solicita[cç](ão|ões|ión|iones)|records?|registros?|rooms?|salas?|bookings?|reservations?|reservas?|appointments?|agendamentos?|consultas?|citas?|recipes?|receitas?|recetas?|ingredients?|ingredientes?|products?|produtos?|productos?|assets?|ativos?|devices?|dispositivos?|vehicles?|ve[ií]culos?|audits?|auditorias?|findings?|cases?|casos?|deals?|negócios?|events?|eventos?)\b/i;
+const countLabel = (label: string): boolean => {
+  if (COUNT_WORDS.test(label)) return true;
+  // Only total/value made it money, and a counted noun says what is totalled.
+  return !MONEY_WORDS.test(label.replace(AMBIGUOUS_MONEY_WORDS, ' ')) && COUNTED_NOUNS.test(label);
+};
+/** The currency a plan names on a money Stat, for the Stats whose currency is inferred: "Faturamento" in BRL and an
+ *  inferred revenue Stat next to it in USD read as two currencies. */
+export function plannedCurrency(components: Iterable<{ type?: string; properties?: unknown }>): string | undefined {
+  for (const component of components) {
+    if (component.type !== 'ShadStat') continue;
+    const currency = propValue((component.properties ?? {}) as Record<string, unknown>, 'currency');
+    if (typeof currency === 'string' && /^[A-Za-z]{3}$/.test(currency.trim())) return currency.trim().toUpperCase();
+  }
+  return undefined;
+}
 
 const CLIENT_SERVER_BOOLEAN_KEYS = new Set([
   'serverSidePagination',
@@ -100,7 +119,7 @@ function isStrippableUnknownKey(
  *  (e.g. dynamicHeight, collapseWhenHidden). Legacy in-place update paths do NOT pass this. */
 export function normalizeComponentSpec<T extends ComponentSpec>(
   component: T,
-  options: { stripUnknownKeys?: boolean } = {}
+  options: { stripUnknownKeys?: boolean; currency?: string } = {}
 ): ComponentNormalization<T> {
   const normalizedSections = Object.fromEntries(
     (['properties', 'styles', 'validation', 'others'] as DefinitionSection[]).map((section) => [
@@ -515,7 +534,7 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
   if (component.type === 'ShadStat' && (statFormat === undefined || statFormat === 'auto')) {
     const label = String(propValue(properties, 'label') ?? '');
     let value = propValue(properties, 'value');
-    const moneyLabel = MONEY_WORDS.test(label.replace(/[_-]+/g, ' ')) && !COUNT_WORDS.test(label);
+    const moneyLabel = MONEY_WORDS.test(label.replace(/[_-]+/g, ' ')) && !countLabel(label.replace(/[_-]+/g, ' '));
     const trailingFormat = /\.(?:toLocaleString\((?:[^()]|\([^()]*\))*\)|toFixed\(\s*\d*\s*\))\s*\}\}\s*$/;
     if (
       moneyLabel && typeof value === 'string' && trailingFormat.test(value) &&
@@ -530,6 +549,7 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
       moneyLabel
     ) {
       setProperty('valueFormat', 'currency');
+      if (options.currency && propValue(properties, 'currency') === undefined) setProperty('currency', options.currency);
     }
   }
 
