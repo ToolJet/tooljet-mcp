@@ -1984,6 +1984,12 @@ describe('lintUnrenderableHeights', () => {
       lintUnrenderableHeights([at('Divider', 'rule', 10), at('ModalV2', 'mdl', 1), at('Html', 'band', 96), at('Table', 'tbl', 300)])
     ).toEqual([]);
   });
+
+  it('accepts the UI 2.0 widgets the app draws under 24px, and nothing lower', () => {
+    // A small-tone text line is 18px and a checkbox row 20px in the viewer (packHeights.ts).
+    expect(lintUnrenderableHeights([at('ShadText', 'note', 18), at('ShadCheckbox', 'agree', 20)])).toEqual([]);
+    expect(lintUnrenderableHeights([at('ShadText', 'note', 14), at('ShadCheckbox', 'agree', 18), at('ShadBadge', 'b', 20)])).toHaveLength(3);
+  });
 });
 
 describe('keys ToolJet stores from the inspector only', () => {

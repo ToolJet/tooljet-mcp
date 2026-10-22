@@ -3118,6 +3118,8 @@ export function lintFlexContainerFit(components: LintComponent[]): string[] {
 // Widgets that are legitimately a few pixels tall, or whose authored box is not what renders.
 const THIN_BY_DESIGN = new Set(['Divider', 'VerticalDivider', 'Spacer', 'ModalV2', 'ShadDialog', 'Modal', 'Icon']);
 const MIN_RENDERABLE_HEIGHT = 24;
+/** UI 2.0 widgets the app draws under 24px (packHeights.ts): a small-tone text line is 18px, a checkbox row 20. */
+const LOWER_RENDERABLE_HEIGHT: Record<string, number> = { ShadText: 18, ShadCheckbox: 20 };
 
 /** A model that mistakes the pixel grid for row units authors 14px headers, 10px inputs and 1px
  *  modals; every other lint passes and the app renders as a row of slivers. Measured on one Grok 4.5
@@ -3128,7 +3130,7 @@ export function lintUnrenderableHeights(components: LintComponent[]): string[] {
   for (const c of components) {
     if (!c.type || THIN_BY_DESIGN.has(c.type)) continue;
     const height = c.layouts?.desktop?.height;
-    if (typeof height !== 'number' || height >= MIN_RENDERABLE_HEIGHT) continue;
+    if (typeof height !== 'number' || height >= (LOWER_RENDERABLE_HEIGHT[c.type] ?? MIN_RENDERABLE_HEIGHT)) continue;
     errors.push(
       `${c.type} "${c.name ?? c.id ?? '?'}": desktop height ${height}px cannot render its content; heights are ` +
         `pixels on a 10px grid, not row units. Use at least ${MIN_RENDERABLE_HEIGHT}px (inputs 40, headers 60+, ` +

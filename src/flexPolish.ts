@@ -12,6 +12,7 @@ import type { ComponentSpec } from './tooljetClient.js';
 import { unifyChartAccents } from './chartAccentLint.js';
 import { packTableLook } from './packTableLook.js';
 import { fitFlexHeights } from './flexFit.js';
+import { fitPackHeights, reportPackHeights } from './packFit.js';
 
 const FIELD_TYPES = new Set([
   'ShadInput',
@@ -775,7 +776,10 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
   // content showed an empty band in the editor only, and the section below it started that much lower there. A card
   // drawn taller than its content was trimmed here before, but only nested cards and only past 12px; rows were only
   // ever grown.
+  // The UI 2.0 widgets first, at the heights the app draws them (packFit.ts), so the containers fit what they hold.
+  const packNotes = fitPackHeights(components);
   const fittedBoxes = fitFlexHeights(components, warnings);
+  reportPackHeights(packNotes, warnings);
 
   // Cards placed side by side on the page grid (no FlexContainer row) share one height, the tallest card's: a
   // dashboard drew its KPI cards at 200, 124 and 200px in one line. A card fitted to its content above keeps that

@@ -58,6 +58,26 @@ const rectsOf = (c: ComponentSpec): Rect[] =>
 const heightOf = (c: ComponentSpec): number => Number((c.layouts?.desktop ?? c.layout)?.height ?? NaN);
 const setHeight = (c: ComponentSpec, height: number): void => rectsOf(c).forEach((r) => (r.height = height));
 
+/** Moves what sits below a grid-placed component, in the same canvas, by the change of its height (from `was` to `now`);
+ *  returns how many moved. Dialogs open apart and stay. */
+export function moveBelow(components: ComponentSpec[], box: ComponentSpec, was: number, now: number): number {
+  const placeOf = (c: ComponentSpec) => `${c.parentRef ?? (c as { parent?: unknown }).parent ?? ''}|${c.slotName ?? ''}`;
+  const top = (box.layouts?.desktop ?? box.layout)?.top;
+  if (typeof top !== 'number' || now === was) return 0;
+  const oldBottom = top + was;
+  let moved = 0;
+  for (const other of components) {
+    if (!other || other === box || placeOf(other) !== placeOf(box) || DIALOG_TYPES.has(other.type)) continue;
+    const otherRects = [other.layout, other.layouts?.desktop].filter(
+      (r, i, all): r is Rect => !!r && typeof r.top === 'number' && all.indexOf(r) === i
+    );
+    if (!otherRects.length || otherRects[0]!.top! < oldBottom - 1) continue;
+    otherRects.forEach((r) => (r.top = r.top! + now - was));
+    moved += 1;
+  }
+  return moved;
+}
+
 /** Fits the batch's FlexContainers (mutating their layouts) and returns the ones whose height it set. */
 export function fitFlexHeights(components: ComponentSpec[], warnings: string[]): Set<ComponentSpec> {
   const fitted = new Set<ComponentSpec>();
@@ -145,6 +165,15 @@ export function fitFlexHeights(components: ComponentSpec[], warnings: string[]):
           if (line.length < 2) continue;
           const tallest = Math.max(...line.map(heightOf));
           for (const c of line) if (isCard(c) && heightOf(c) < tallest) setHeight(c, tallest);
+          // Equal heights stretches a UI 2.0 stat card too (in the app, where it fits its content: dynamicHeightPolicy
+          // stretchesInRow), so it is saved at the line's height as well.
+          if (bool(prop(box, 'equalHeights'), true)) {
+            for (const c of line) {
+              if (c.type === 'ShadStat' && bool(prop(c, 'card'), true) && bool(prop(c, 'dynamicHeight'), true) && heightOf(c) < tallest) {
+                setHeight(c, tallest);
+              }
+            }
+          }
         }
       }
     }
@@ -163,24 +192,7 @@ export function fitFlexHeights(components: ComponentSpec[], warnings: string[]):
 
     // What sits below a grid-placed container moves with its bottom; in a flex parent the browser lays it out.
     const parent = box.parentRef ? byRef.get(box.parentRef) : undefined;
-    let moved = 0;
-    if (parent?.type !== 'FlexContainer') {
-      const placeOf = (c: ComponentSpec) => `${c.parentRef ?? (c as { parent?: unknown }).parent ?? ''}|${c.slotName ?? ''}`;
-      const top = (box.layouts?.desktop ?? box.layout)?.top;
-      if (typeof top === 'number') {
-        const oldBottom = top + was;
-        const dy = target - was;
-        for (const other of components) {
-          if (!other || other === box || placeOf(other) !== placeOf(box) || DIALOG_TYPES.has(other.type)) continue;
-          const otherRects = [other.layout, other.layouts?.desktop].filter(
-            (r, i, all): r is Rect => !!r && typeof r.top === 'number' && all.indexOf(r) === i
-          );
-          if (!otherRects.length || otherRects[0]!.top! < oldBottom - 1) continue;
-          otherRects.forEach((r) => (r.top = r.top! + dy));
-          moved += 1;
-        }
-      }
-    }
+    const moved = parent?.type === 'FlexContainer' ? 0 : moveBelow(components, box, was, target);
     notes.push({ box, kind: card ? 'Card' : row ? 'Row' : 'Container', moved });
   }
   // Reported by the height each container ends at: a card fitted on its own may be stretched back to its row's line.

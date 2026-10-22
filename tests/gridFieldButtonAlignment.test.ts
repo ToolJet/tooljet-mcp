@@ -28,7 +28,8 @@ describe('polishFlexRows: grid buttons beside labelled UI 2.0 fields', () => {
     const aligned = polishFlexRows([at('q', 'ShadInput', 100, 2, 9, 64, { label: { value: 'Find' } }), at('go', 'ShadButton', 122, 12, 6, 40)]);
     expect(desk(aligned.components, 'go')).toMatchObject({ top: 122 });
     const below = polishFlexRows([at('q', 'ShadInput', 100, 2, 9, 64, { label: { value: 'Find' } }), at('go', 'ShadButton', 200, 2, 6, 36)]);
-    expect(desk(below.components, 'go')).toMatchObject({ top: 200, height: 36 });
+    // Not aligned to the field; it only moves up with the field, which is saved at its drawn 62px (packFit.ts).
+    expect(desk(below.components, 'go')).toMatchObject({ top: 198, height: 36 });
     expect(aligned.warnings.concat(unlabelled.warnings, below.warnings).join(' ')).not.toMatch(/field boxes/);
   });
 });
