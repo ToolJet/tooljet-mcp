@@ -40,7 +40,7 @@ export interface InstalledLibrary {
   id: string;
   name: string;
   correlationId: string;
-  manifest: { manifestVersion?: number; pack?: string; components?: Record<string, ManifestComponent> } | null;
+  manifest: { manifestVersion?: number; pack?: string; surface?: Record<string, unknown>; components?: Record<string, ManifestComponent> } | null;
   revisions?: Array<{ version: string }>;
 }
 
@@ -95,6 +95,7 @@ export function packFromLibrary(lib: InstalledLibrary): { pack: LibraryPack; sch
         ...(entry.roleActions ? { roleActions: entry.roleActions } : {}),
         ...(entry.roleValues ? { roleValues: entry.roleValues } : {}),
         slots: entry.slots ?? [],
+        ...(manifest.surface ? { surface: manifest.surface } : {}),
       },
       description: [
         `${entry.displayName ?? words(name)} from the ${lib.name} pack.`,
