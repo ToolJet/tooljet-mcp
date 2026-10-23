@@ -52426,6 +52426,308 @@ var StreamableHTTPServerTransport = class {
   }
 };
 
+// dist/catalog.js
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
+var dataPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-schemas.json");
+var compatibilityPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-compatibility.json");
+var cache = null;
+var legacyReplacements = null;
+function load() {
+  if (!cache)
+    cache = JSON.parse(readFileSync(dataPath, "utf8"));
+  return cache;
+}
+function loadLegacyReplacements() {
+  if (!legacyReplacements) {
+    const compatibility = JSON.parse(readFileSync(compatibilityPath, "utf8"));
+    legacyReplacements = compatibility.legacyReplacements ?? {};
+  }
+  return legacyReplacements;
+}
+function allComponentSchemas() {
+  return load();
+}
+function registerComponentSchemas(extra) {
+  const all = load();
+  for (const key4 of Object.keys(all))
+    if (/^Lib_[a-z0-9]+_/.test(key4) && !(key4 in extra))
+      delete all[key4];
+  Object.assign(all, extra);
+}
+function getCatalog() {
+  const legacy = loadLegacyReplacements();
+  return Object.values(load()).filter((c) => !legacy[c.type]).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
+}
+function getComponentSchema(type) {
+  return load()[type] ?? null;
+}
+function getLegacyComponentReplacement(type) {
+  return loadLegacyReplacements()[type] ?? null;
+}
+
+// dist/packDefaults.js
+import { readFileSync as readFileSync2 } from "node:fs";
+import { dirname as dirname2, resolve as resolve2 } from "node:path";
+import { fileURLToPath as fileURLToPath2 } from "node:url";
+var cached2;
+var SAMPLE_BLANKS = {
+  ShadHero: { eyebrow: "", subtitle: "", meta: "{{[]}}", actionLabel: "" },
+  ShadCardGrid: { badgeField: "", descriptionField: "", metaFields: "" },
+  ShadRecordList: { metaFields: "", valueField: "", valueFormat: "auto" },
+  // The sample's budget fields (spent, budget, note, status) are not a build's data: the config's own names stand.
+  ShadProgressList: {
+    labelField: "label",
+    valueField: "value",
+    targetField: "target",
+    captionField: "",
+    statusField: "",
+    valueFormat: "auto"
+  },
+  ShadSchedule: { resourceField: "resource", resourceTitle: "" },
+  // The sample's delivery stops (customer, address, eta, driver) are not a build's data: no rows, generic fields.
+  ShadMap: { data: "{{[]}}", titleField: "name", subtitleField: "", popupFields: "" },
+  // 'auto' reads money from a figure's label; the 'currency' default showed counts of rooms as dollars.
+  ShadSummaryStrip: { valueFormat: "auto" },
+  ShadTags: { tags: "{{[]}}", tagColors: "{{{}}}" },
+  ShadAvatar: { names: "" },
+  ShadLink: { linkTarget: "" },
+  ShadCombobox: { searchPlaceholder: "Search..." },
+  ShadMultiselect: { searchPlaceholder: "Search..." },
+  ShadTagsInput: { suggestions: "{{[]}}" },
+  // The sample greeting talks about orders, invoices and deliveries; a build's chat starts from its own history.
+  ShadChat: { initialChat: "{{[]}}" },
+  // The sample's 'set up your workspace' line is not a build's; completeTitle alone reads fine.
+  ShadQuestionnaire: { completeText: "" }
+};
+function registerPackDefinitions(extra) {
+  packDefaultDefinition("");
+  Object.assign(cached2 ?? (cached2 = {}), extra);
+}
+function packDefaultDefinition(type) {
+  if (!cached2) {
+    try {
+      const path = resolve2(dirname2(fileURLToPath2(import.meta.url)), "../data/pack-default-definitions.json");
+      cached2 = JSON.parse(readFileSync2(path, "utf8")).definitions ?? {};
+      for (const [type2, blanks] of Object.entries(SAMPLE_BLANKS)) {
+        const def = cached2[type2];
+        if (!def?.properties)
+          continue;
+        for (const [key4, value2] of Object.entries(blanks)) {
+          if (key4 in def.properties)
+            def.properties[key4] = { ...def.properties[key4], value: value2 };
+        }
+      }
+    } catch {
+      cached2 = {};
+    }
+  }
+  return cached2[type];
+}
+
+// dist/libraryPack.js
+import { readFileSync as readFileSync3 } from "node:fs";
+import { dirname as dirname3, resolve as resolve3 } from "node:path";
+import { fileURLToPath as fileURLToPath3 } from "node:url";
+var discovered = null;
+var offline;
+function libraryPacksAll() {
+  if (discovered)
+    return discovered;
+  if (offline === void 0) {
+    try {
+      const path = resolve3(dirname3(fileURLToPath3(import.meta.url)), "../data/library-pack.json");
+      offline = JSON.parse(readFileSync3(path, "utf8"));
+    } catch {
+      offline = null;
+    }
+  }
+  return offline ? [offline] : [];
+}
+function registerLibraryPacks(packs) {
+  discovered = packs;
+}
+function libraryPack() {
+  return libraryPacksAll()[0] ?? null;
+}
+var packOfType = (type) => typeof type === "string" ? libraryPacksAll().find((p) => type.startsWith(p.prefix)) : void 0;
+var isLibraryPackType = (type) => !!packOfType(type);
+function libraryPins() {
+  const packs = libraryPacksAll();
+  return packs.length ? Object.fromEntries(packs.map((p) => [p.correlationId.replace(/-/g, ""), p.version])) : void 0;
+}
+function toLibraryComponent(spec) {
+  const pack = packOfType(spec.type);
+  if (!pack)
+    return spec;
+  const componentName = spec.type.slice(pack.prefix.length);
+  return {
+    ...spec,
+    type: "LibraryComponent",
+    properties: {
+      ...spec.properties ?? {},
+      libraryId: { value: pack.libraryId },
+      correlationId: { value: pack.correlationId },
+      libraryName: { value: pack.libraryName },
+      componentName: { value: componentName }
+    }
+  };
+}
+function libraryTypeOf(component) {
+  if (component.type !== "LibraryComponent")
+    return void 0;
+  const value2 = (key4) => {
+    const entry = component.properties?.[key4];
+    return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+  };
+  const pack = libraryPacksAll().find((p) => p.correlationId === value2("correlationId"));
+  const name2 = value2("componentName");
+  return pack && typeof name2 === "string" && pack.components[name2] ? `${pack.prefix}${name2}` : void 0;
+}
+var FLEX_DOWNGRADE = {
+  alignItems: { stretch: "flex-start", "last baseline": "flex-start" },
+  justifyContent: { "space-between": "flex-start" }
+};
+function downgradeFlexForLibrary(spec) {
+  if (process.env.TOOLJET_FLEX_V1 !== "1" || !libraryPack() || spec.type !== "FlexContainer" || !spec.properties)
+    return spec;
+  const properties = { ...spec.properties };
+  for (const [key4, map2] of Object.entries(FLEX_DOWNGRADE)) {
+    const entry = properties[key4];
+    const value2 = entry && typeof entry === "object" ? entry.value : entry;
+    if (typeof value2 === "string" && map2[value2])
+      properties[key4] = { value: map2[value2] };
+  }
+  return { ...spec, properties };
+}
+
+// dist/packCatalog.js
+var words = (s) => s.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
+var eventLabel = (s) => words(s).replace(/ (\w)/g, (_, c) => ` ${c.toLowerCase()}`);
+var VALUE_TYPE = { string: "string", number: "number", boolean: "boolean", array: "array", object: "object", enumeration: "string" };
+var stamp = (p) => {
+  if (p.default === void 0)
+    return p.type === "boolean" ? "{{false}}" : "";
+  if (p.type === "boolean")
+    return `{{${p.default}}}`;
+  if (p.type === "enumeration" || p.type === "string")
+    return String(p.default);
+  return `{{${JSON.stringify(p.default)}}}`;
+};
+var SAMPLE_TEXT = /^(eyebrow|subtitle|description|meta|actionLabel|secondaryActionLabel|asideValue|asideLabel|changeLabel|change)$/;
+function packFromLibrary(lib) {
+  const manifest = lib.manifest;
+  if (!manifest || manifest.manifestVersion !== 2 || !manifest.components)
+    return null;
+  const packId = (manifest.pack || lib.name).toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const prefix = `Lib_${packId}_`;
+  const version2 = lib.revisions?.[0]?.version ?? "";
+  const schemas = {};
+  const definitions = {};
+  const components = {};
+  for (const [name2, entry] of Object.entries(manifest.components)) {
+    const type = `${prefix}${name2}`;
+    const props2 = entry.props ?? [];
+    const fits = entry.fit === true;
+    components[name2] = {
+      type,
+      props: props2.map((p) => p.name),
+      events: (entry.events ?? []).map((e) => e.name),
+      styles: (entry.styles ?? []).map((s) => s.name),
+      actions: (entry.actions ?? []).map((a) => a.name),
+      fit: fits,
+      ...entry.role ? { role: entry.role } : {},
+      ...entry.roleProps ? { roleProps: entry.roleProps } : {},
+      ...entry.roleEvents ? { roleEvents: entry.roleEvents } : {},
+      ...entry.roleActions ? { roleActions: entry.roleActions } : {}
+    };
+    schemas[type] = {
+      type,
+      name: type,
+      // Read by the AI compiler, which plans in roles and resolves a role to this pack's component (libSwap.ts).
+      pack: {
+        id: packId,
+        component: name2,
+        ...entry.role ? { role: entry.role } : {},
+        ...entry.roleProps ? { roleProps: entry.roleProps } : {},
+        ...entry.roleEvents ? { roleEvents: entry.roleEvents } : {},
+        ...entry.roleActions ? { roleActions: entry.roleActions } : {},
+        ...entry.roleValues ? { roleValues: entry.roleValues } : {},
+        slots: entry.slots ?? []
+      },
+      description: [
+        `${entry.displayName ?? words(name2)} from the ${lib.name} pack.`,
+        entry.usage,
+        fits ? "Sizes to its content in the app (Dynamic height on)." : "Drawn at the height you give it."
+      ].filter(Boolean).join(" "),
+      defaultSize: { width: entry.defaultWidth ?? 6, height: (entry.defaultHeight ?? 4) * 10 },
+      properties: [
+        ...props2.map((p) => ({
+          key: p.name,
+          label: p.label ?? words(p.name),
+          valueType: VALUE_TYPE[p.type] ?? "string",
+          ...p.default !== void 0 ? { default: stamp(p) } : {},
+          ...p.enumValues ? { allowedValues: p.enumValues } : {},
+          ...p.description ? { description: p.description } : {}
+        })),
+        { key: "visibility", label: "Visibility", valueType: "boolean", default: "{{true}}" },
+        { key: "loadingState", label: "Loading state", valueType: "boolean", default: "{{false}}" },
+        { key: "disabledState", label: "Disable", valueType: "boolean", default: "{{false}}" },
+        { key: "dynamicHeight", label: "Dynamic height", valueType: "boolean", default: fits ? "{{true}}" : "{{false}}" }
+      ],
+      styles: [
+        ...(entry.styles ?? []).map((s) => ({ key: s.name, label: s.label ?? words(s.name), valueType: VALUE_TYPE[s.type] ?? "string" })),
+        { key: "boxShadow", label: "Box shadow", valueType: "string" }
+      ],
+      events: (entry.events ?? []).map((e) => ({ id: e.name, label: e.displayName ?? eventLabel(e.name) })),
+      actions: [
+        ...(entry.actions ?? []).map((a) => ({
+          handle: a.name,
+          displayName: a.displayName ?? words(a.name),
+          ...a.params?.length ? { params: a.params.map((p) => ({ handle: p.handle, displayName: p.displayName ?? words(p.handle) })) } : {}
+        })),
+        { handle: "setVisibility", displayName: "Set visibility", params: [{ handle: "visibility", displayName: "Value", defaultValue: "{{false}}" }] },
+        { handle: "setLoading", displayName: "Set loading", params: [{ handle: "loading", displayName: "Value", defaultValue: "{{false}}" }] },
+        { handle: "setDisable", displayName: "Set disable", params: [{ handle: "disable", displayName: "Value", defaultValue: "{{false}}" }] }
+      ],
+      exposedVariables: [
+        ...props2.map((p) => ({ name: p.name, ...p.default !== void 0 ? { default: p.default } : {} })),
+        { name: "isVisible", default: true },
+        { name: "isLoading", default: false },
+        { name: "isDisabled", default: false },
+        ...entry.validation ? [{ name: "isValid", default: true }, { name: "isMandatory", default: false }] : []
+      ]
+    };
+    definitions[type] = {
+      properties: {
+        ...Object.fromEntries(props2.map((p) => [p.name, { value: SAMPLE_TEXT.test(p.name) && p.type !== "boolean" ? p.type === "array" ? "{{[]}}" : "" : stamp(p) }])),
+        visibility: { value: "{{true}}" },
+        loadingState: { value: "{{false}}" },
+        disabledState: { value: "{{false}}" },
+        dynamicHeight: { value: fits ? "{{true}}" : "{{false}}" }
+      },
+      styles: { boxShadow: { value: "0px 0px 0px 0px #00000040" } },
+      others: { showOnDesktop: { value: "{{true}}" }, showOnMobile: { value: "{{false}}" } }
+    };
+  }
+  return {
+    pack: { pack: packId, prefix, libraryId: lib.id, correlationId: lib.correlationId, libraryName: lib.name, version: version2, components },
+    schemas,
+    definitions
+  };
+}
+async function loadInstalledPacks(listLibraries) {
+  const libraries = await listLibraries();
+  const packs = libraries.map(packFromLibrary).filter((p) => !!p);
+  if (!packs.length)
+    return [];
+  registerComponentSchemas(Object.assign({}, ...packs.map((p) => p.schemas)));
+  registerPackDefinitions(Object.assign({}, ...packs.map((p) => p.definitions)));
+  registerLibraryPacks(packs.map((p) => p.pack));
+  return packs.map((p) => `${p.pack.libraryName} ${p.pack.version}`);
+}
+
 // node_modules/zod/v3/helpers/util.js
 var util;
 (function(util2) {
@@ -60400,9 +60702,9 @@ var gatewayOriginCache = /* @__PURE__ */ new Map();
 var GATEWAY_CACHE_TTL_MS = 6e4;
 async function checkOriginWithGateway(customerId, origin) {
   const cacheKey2 = `${customerId} ${origin}`;
-  const cached6 = gatewayOriginCache.get(cacheKey2);
-  if (cached6 && cached6.expiresAt > Date.now())
-    return cached6.allowed;
+  const cached5 = gatewayOriginCache.get(cacheKey2);
+  if (cached5 && cached5.expiresAt > Date.now())
+    return cached5.allowed;
   const gatewayUrl = env(GATEWAY_URL_VAR);
   const gatewayToken = env(GATEWAY_TOKEN_VAR);
   if (!gatewayUrl || !gatewayToken)
@@ -60427,9 +60729,9 @@ async function checkOriginWithGateway(customerId, origin) {
 }
 var gatewayResolveCache = /* @__PURE__ */ new Map();
 async function resolveApiUrlFromGateway(customerId) {
-  const cached6 = gatewayResolveCache.get(customerId);
-  if (cached6 && cached6.expiresAt > Date.now())
-    return cached6.result;
+  const cached5 = gatewayResolveCache.get(customerId);
+  if (cached5 && cached5.expiresAt > Date.now())
+    return cached5.result;
   const gatewayUrl = env(GATEWAY_URL_VAR);
   const gatewayToken = env(GATEWAY_TOKEN_VAR);
   let result = { url: void 0, verified: false };
@@ -60559,7 +60861,7 @@ function loadConfig(identity) {
 // dist/telemetry.js
 import { AsyncLocalStorage } from "node:async_hooks";
 import { appendFile, mkdir } from "node:fs/promises";
-import { dirname } from "node:path";
+import { dirname as dirname4 } from "node:path";
 var storage = new AsyncLocalStorage();
 function recordHttpResponse(response) {
   const context = storage.getStore();
@@ -60584,7 +60886,7 @@ async function optionallyLog(metrics) {
   if (!path)
     return;
   try {
-    await mkdir(dirname(path), { recursive: true });
+    await mkdir(dirname4(path), { recursive: true });
     await appendFile(path, `${JSON.stringify({ ts: (/* @__PURE__ */ new Date()).toISOString(), ...metrics })}
 `, "utf8");
   } catch {
@@ -61445,13 +61747,13 @@ import { createHash as createHash2, randomUUID as randomUUID2 } from "node:crypt
 import { isDeepStrictEqual } from "node:util";
 
 // dist/pageIcons.js
-import { readFileSync } from "node:fs";
-var cached2;
+import { readFileSync as readFileSync4 } from "node:fs";
+var cached3;
 var normalizedName = (value2) => value2.trim().replace(/^icon/i, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
 function icons() {
-  if (cached2)
-    return cached2;
-  const catalog = JSON.parse(readFileSync(new URL("../data/page-icons.json", import.meta.url), "utf8"));
+  if (cached3)
+    return cached3;
+  const catalog = JSON.parse(readFileSync4(new URL("../data/page-icons.json", import.meta.url), "utf8"));
   if (catalog.package !== "@tabler/icons-react" || !catalog.version || !Array.isArray(catalog.names) || !catalog.names.length || !catalog.names.every((name2) => typeof name2 === "string" && /^Icon[A-Za-z0-9]+$/.test(name2))) {
     throw new Error("Invalid page icon catalog; regenerate data/page-icons.json from ToolJet frontend dependencies.");
   }
@@ -61460,7 +61762,7 @@ function icons() {
     const key4 = normalizedName(name2);
     aliases.set(key4, [...aliases.get(key4) ?? [], name2]);
   }
-  return cached2 = { catalog, names: new Set(catalog.names), aliases };
+  return cached3 = { catalog, names: new Set(catalog.names), aliases };
 }
 function pageIconError(value2) {
   const { catalog, names, aliases } = icons();
@@ -61481,77 +61783,6 @@ var pageIconSchema = external_exports.string().min(1).superRefine((value2, ctx) 
   if (error51)
     ctx.addIssue({ code: "custom", message: error51 });
 }).describe("Exact case-sensitive Tabler React export, e.g. IconLayoutDashboard, IconUsers, IconChartLine. Not layout-dashboard/users/chart-line.");
-
-// dist/libraryPack.js
-import { readFileSync as readFileSync2 } from "node:fs";
-import { dirname as dirname2, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-var cached3;
-function libraryPack() {
-  if (cached3 === void 0) {
-    try {
-      const path = resolve(dirname2(fileURLToPath(import.meta.url)), "../data/library-pack.json");
-      cached3 = JSON.parse(readFileSync2(path, "utf8"));
-    } catch {
-      cached3 = null;
-    }
-  }
-  return cached3;
-}
-var isLibraryPackType = (type) => {
-  const pack = libraryPack();
-  return !!pack && typeof type === "string" && type.startsWith(pack.prefix);
-};
-function libraryPins() {
-  const pack = libraryPack();
-  return pack ? { [pack.correlationId.replace(/-/g, "")]: pack.version } : void 0;
-}
-function toLibraryComponent(spec) {
-  const pack = libraryPack();
-  if (!pack || !isLibraryPackType(spec.type))
-    return spec;
-  const componentName = spec.type.slice(pack.prefix.length);
-  return {
-    ...spec,
-    type: "LibraryComponent",
-    properties: {
-      ...spec.properties ?? {},
-      libraryId: { value: pack.libraryId },
-      correlationId: { value: pack.correlationId },
-      libraryName: { value: pack.libraryName },
-      componentName: { value: componentName }
-    }
-  };
-}
-function libraryTypeOf(component) {
-  const pack = libraryPack();
-  if (!pack || component.type !== "LibraryComponent")
-    return void 0;
-  const value2 = (key4) => {
-    const entry = component.properties?.[key4];
-    return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
-  };
-  if (value2("correlationId") !== pack.correlationId)
-    return void 0;
-  const name2 = value2("componentName");
-  return typeof name2 === "string" && pack.components[name2] ? `${pack.prefix}${name2}` : void 0;
-}
-var FLEX_DOWNGRADE = {
-  alignItems: { stretch: "flex-start", "last baseline": "flex-start" },
-  justifyContent: { "space-between": "flex-start" }
-};
-function downgradeFlexForLibrary(spec) {
-  if (process.env.TOOLJET_FLEX_V1 !== "1" || !libraryPack() || spec.type !== "FlexContainer" || !spec.properties)
-    return spec;
-  const properties = { ...spec.properties };
-  for (const [key4, map2] of Object.entries(FLEX_DOWNGRADE)) {
-    const entry = properties[key4];
-    const value2 = entry && typeof entry === "object" ? entry.value : entry;
-    if (typeof value2 === "string" && map2[value2])
-      properties[key4] = { value: map2[value2] };
-  }
-  return { ...spec, properties };
-}
 
 // dist/lint.js
 var import_parser15 = __toESM(require_lib(), 1);
@@ -62966,37 +63197,6 @@ function lintSurfaceInsets(c) {
 // dist/componentStateBindings.js
 var import_parser6 = __toESM(require_lib(), 1);
 
-// dist/catalog.js
-import { readFileSync as readFileSync3 } from "node:fs";
-import { fileURLToPath as fileURLToPath2 } from "node:url";
-import { dirname as dirname3, resolve as resolve2 } from "node:path";
-var dataPath = resolve2(dirname3(fileURLToPath2(import.meta.url)), "../data/component-schemas.json");
-var compatibilityPath = resolve2(dirname3(fileURLToPath2(import.meta.url)), "../data/component-compatibility.json");
-var cache = null;
-var legacyReplacements = null;
-function load() {
-  if (!cache)
-    cache = JSON.parse(readFileSync3(dataPath, "utf8"));
-  return cache;
-}
-function loadLegacyReplacements() {
-  if (!legacyReplacements) {
-    const compatibility = JSON.parse(readFileSync3(compatibilityPath, "utf8"));
-    legacyReplacements = compatibility.legacyReplacements ?? {};
-  }
-  return legacyReplacements;
-}
-function getCatalog() {
-  const legacy = loadLegacyReplacements();
-  return Object.values(load()).filter((c) => !legacy[c.type]).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
-}
-function getComponentSchema(type) {
-  return load()[type] ?? null;
-}
-function getLegacyComponentReplacement(type) {
-  return loadLegacyReplacements()[type] ?? null;
-}
-
 // dist/ui2LegacyNames.js
 var UI2_COMMON_RENAMES = {
   actions: { visibility: "setVisibility", disable: "setDisable", loading: "setLoading" }
@@ -63337,9 +63537,9 @@ function assertPersistableQueryToggles(options2, subject) {
 var import_parser11 = __toESM(require_lib(), 1);
 
 // dist/datasourceCatalog.js
-import { readFileSync as readFileSync4 } from "node:fs";
-import { fileURLToPath as fileURLToPath3 } from "node:url";
-import { dirname as dirname4, resolve as resolve3 } from "node:path";
+import { readFileSync as readFileSync5 } from "node:fs";
+import { fileURLToPath as fileURLToPath4 } from "node:url";
+import { dirname as dirname5, resolve as resolve4 } from "node:path";
 var COMMON_QUERY_OPTION_FIELDS = {
   runOnPageLoad: { path: "runOnPageLoad", type: "boolean|binding", description: "Run when the app first loads." },
   runOnDependencyChange: { path: "runOnDependencyChange", type: "boolean|binding" },
@@ -63360,11 +63560,11 @@ var COMMON_QUERY_OPTION_FIELDS = {
   compiledPaging: { path: "compiledPaging", type: "object", description: "Record of a generated server-paging query; leave as written." },
   disabledMessage: { path: "disabledMessage", type: "string|binding" }
 };
-var dataPath2 = resolve3(dirname4(fileURLToPath3(import.meta.url)), "../data/datasource-schemas.json");
+var dataPath2 = resolve4(dirname5(fileURLToPath4(import.meta.url)), "../data/datasource-schemas.json");
 var cache2 = null;
 function load2() {
   if (!cache2)
-    cache2 = JSON.parse(readFileSync4(dataPath2, "utf8"));
+    cache2 = JSON.parse(readFileSync5(dataPath2, "utf8"));
   return cache2;
 }
 function getDatasourceCatalog() {
@@ -67278,11 +67478,11 @@ var COUNT_WORD = /\b(count|qty|quantity|items?|tasks?|hours?|days?|orders?|ticke
 var PERCENT_WORD = /(%|\bpercent|\bpct\b|\brate\b|\bratio\b|\bshare\b|\bmargin\b|\bconversion\b|\butili[sz]ation\b|\bcompletion\b|\boccupancy\b)/i;
 var LOCALE_FORMAT = /toLocaleString|Intl\.NumberFormat|formatCurrency|numeral\(/;
 var SYMBOL = "[$\u20AC\xA3\u20B9\xA5]";
-var words = (value2) => value2.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_.-]+/g, " ");
+var words2 = (value2) => value2.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_.-]+/g, " ");
 var MONEY_QUALIFIER = /\b(methods?|status|types?|terms|dates?|modes?|plans?|tiers?|centers?|centres?|codes?|names?|ids?|frequency|schedule|currency|categor(y|ies))\b/i;
 var FORMATTED_NAME = /\b(labels?|text|display|formatted|fmt|str)\b/i;
 var isMoneyName = (value2) => {
-  const w = words(value2);
+  const w = words2(value2);
   if (MONEY_QUALIFIER.test(w))
     return false;
   return STRONG_MONEY_WORD.test(w) || MONEY_WORD.test(w) && !COUNT_WORD.test(w);
@@ -67334,7 +67534,7 @@ function lintUnformattedNumbers(spec) {
       out.push(`${label3}: shows money ${/toFixed/.test(text3) ? 'as toFixed text ("16864.00")' : "as a plain number"}, with no currency sign. Bind the number and set valueFormat "currency" with currency set to the request's ISO code (USD, EUR, GBP, INR): the Stat groups the digits, shows two decimals and puts the minus sign before the symbol.`);
     } else if (format === "percent" && fraction) {
       out.push(`${label3}: valueFormat "percent" shows the number as written (42.5 shows 42.5%), so a fraction bound here reads "0.6%". Multiply it by 100 and round to one decimal.`);
-    } else if (PERCENT_WORD.test(words(named)) && format !== "percent" && fraction && !/%/.test(text3)) {
+    } else if (PERCENT_WORD.test(words2(named)) && format !== "percent" && fraction && !/%/.test(text3)) {
       out.push(`${label3}: shows a rate as a raw fraction ("0.615"). Bind it times 100, rounded to one decimal, and set valueFormat "percent".`);
     } else {
       const problems = bindingProblems(text3, named).filter((problem) => format !== "currency" || problem.includes("sign in front"));
@@ -67345,7 +67545,7 @@ function lintUnformattedNumbers(spec) {
   }
   if (spec.type === "ShadCardGrid") {
     const data = str2(valueOf(props2, "data"));
-    const fields = ["titleField", "subtitleField", "descriptionField", "badgeField"].map((key4) => str2(valueOf(props2, key4))).concat(metaFieldNames(valueOf(props2, "metaFields"))).filter((field) => field && isMoneyName(field) && !FORMATTED_NAME.test(words(field)));
+    const fields = ["titleField", "subtitleField", "descriptionField", "badgeField"].map((key4) => str2(valueOf(props2, key4))).concat(metaFieldNames(valueOf(props2, "metaFields"))).filter((field) => field && isMoneyName(field) && !FORMATTED_NAME.test(words2(field)));
     const raw = fields.filter((field) => !LOCALE_FORMAT.test(data) || !new RegExp(`\\b${field}\\b`).test(data));
     if (raw.length) {
       out.push(`${label3}: ${raw.map((f) => `"${f}"`).join(", ")} ${raw.length > 1 ? "are" : "is"} money shown as the raw number ("Amount 7.5"). Map the rows in data to a formatted string for the card, e.g. {{(queries.q.data || []).map(r => ({ ...r, ${raw[0]}: Number(r.${raw[0]}).toLocaleString('en-US', { style: 'currency', currency: 'USD' }) }))}}, in the request's currency and locale.`);
@@ -70564,61 +70764,6 @@ function lintInnerPageBands(summary) {
   return warnings;
 }
 
-// dist/packDefaults.js
-import { readFileSync as readFileSync5 } from "node:fs";
-import { dirname as dirname5, resolve as resolve4 } from "node:path";
-import { fileURLToPath as fileURLToPath4 } from "node:url";
-var cached5;
-var SAMPLE_BLANKS = {
-  ShadHero: { eyebrow: "", subtitle: "", meta: "{{[]}}", actionLabel: "" },
-  ShadCardGrid: { badgeField: "", descriptionField: "", metaFields: "" },
-  ShadRecordList: { metaFields: "", valueField: "", valueFormat: "auto" },
-  // The sample's budget fields (spent, budget, note, status) are not a build's data: the config's own names stand.
-  ShadProgressList: {
-    labelField: "label",
-    valueField: "value",
-    targetField: "target",
-    captionField: "",
-    statusField: "",
-    valueFormat: "auto"
-  },
-  ShadSchedule: { resourceField: "resource", resourceTitle: "" },
-  // The sample's delivery stops (customer, address, eta, driver) are not a build's data: no rows, generic fields.
-  ShadMap: { data: "{{[]}}", titleField: "name", subtitleField: "", popupFields: "" },
-  // 'auto' reads money from a figure's label; the 'currency' default showed counts of rooms as dollars.
-  ShadSummaryStrip: { valueFormat: "auto" },
-  ShadTags: { tags: "{{[]}}", tagColors: "{{{}}}" },
-  ShadAvatar: { names: "" },
-  ShadLink: { linkTarget: "" },
-  ShadCombobox: { searchPlaceholder: "Search..." },
-  ShadMultiselect: { searchPlaceholder: "Search..." },
-  ShadTagsInput: { suggestions: "{{[]}}" },
-  // The sample greeting talks about orders, invoices and deliveries; a build's chat starts from its own history.
-  ShadChat: { initialChat: "{{[]}}" },
-  // The sample's 'set up your workspace' line is not a build's; completeTitle alone reads fine.
-  ShadQuestionnaire: { completeText: "" }
-};
-function packDefaultDefinition(type) {
-  if (!cached5) {
-    try {
-      const path = resolve4(dirname5(fileURLToPath4(import.meta.url)), "../data/pack-default-definitions.json");
-      cached5 = JSON.parse(readFileSync5(path, "utf8")).definitions ?? {};
-      for (const [type2, blanks] of Object.entries(SAMPLE_BLANKS)) {
-        const def = cached5[type2];
-        if (!def?.properties)
-          continue;
-        for (const [key4, value2] of Object.entries(blanks)) {
-          if (key4 in def.properties)
-            def.properties[key4] = { ...def.properties[key4], value: value2 };
-        }
-      }
-    } catch {
-      cached5 = {};
-    }
-  }
-  return cached5[type];
-}
-
 // dist/strictEntry.js
 function strictEntry(shape, describeUnknown) {
   return external_exports.strictObject(shape, {
@@ -72773,6 +72918,12 @@ function createClient(auth, config2) {
     await assertOk(res, "updateComponents");
     return { updated: params.updates.length };
   }
+  async function listComponentLibraries() {
+    const res = await auth.authedFetch("/api/custom-component-libraries");
+    await assertOk(res, "listComponentLibraries");
+    const body = await res.json();
+    return Array.isArray(body) ? body : body?.libraries ?? [];
+  }
   async function deleteComponents(params) {
     const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/components`, {
       method: "DELETE",
@@ -73051,6 +73202,7 @@ function createClient(auth, config2) {
     createComponents,
     updateComponents,
     deleteComponents,
+    listComponentLibraries,
     updateLayouts,
     updateQuery,
     updateQueryDatasource,
@@ -74817,8 +74969,8 @@ function packSuggestions(requestedType) {
   return [...new Set(PACK_CONCEPTS.filter(([pattern]) => pattern.test(rest)).flatMap(([, types]) => types))];
 }
 function nearbyTypes(requestedType) {
-  const words2 = requestedType.split(/(?=[A-Z])|[\s_-]+/).map((word) => word.toLowerCase()).filter((word) => word.length >= 4);
-  return getCatalog().map((entry) => entry.type).filter((type) => words2.some((word) => type.toLowerCase().includes(word))).slice(0, 6);
+  const words3 = requestedType.split(/(?=[A-Z])|[\s_-]+/).map((word) => word.toLowerCase()).filter((word) => word.length >= 4);
+  return getCatalog().map((entry) => entry.type).filter((type) => words3.some((word) => type.toLowerCase().includes(word))).slice(0, 6);
 }
 function selectEntries(entries, keys, detail) {
   const selected = keys?.length ? entries.filter((entry) => keys.includes(entry.key)) : entries;
@@ -78274,11 +78426,11 @@ var headingLineWidth = (component) => {
 var fixedRects = (component) => [component.layout, component.layouts?.desktop].filter((rect2) => !!rect2 && rect2.fillWidth === false && typeof rect2.widthPx === "number");
 var META_TYPES = /* @__PURE__ */ new Set(["ShadText", "ShadBadge", "ShadTags"]);
 var shownText = (raw) => raw.replace(/\{\{([\s\S]*?)\}\}/g, (_, code) => {
-  const words2 = [...code.matchAll(/'([^']*)'|"([^"]*)"|`([^`$]*)`/g)].map((m) => m[1] ?? m[2] ?? m[3] ?? "");
-  if (!words2.length)
+  const words3 = [...code.matchAll(/'([^']*)'|"([^"]*)"|`([^`$]*)`/g)].map((m) => m[1] ?? m[2] ?? m[3] ?? "");
+  if (!words3.length)
     return "0000";
   const values = code.split(/'[^']*'|"[^"]*"|`[^`$]*`/).filter((part) => /[A-Za-z0-9_)\]]/.test(part)).length;
-  return words2.join("") + "00".repeat(Math.max(1, values));
+  return words3.join("") + "00".repeat(Math.max(1, values));
 });
 var PAGE_MARGIN = 24;
 var LABELLED_FIELD_TYPES = /* @__PURE__ */ new Set([
@@ -79696,18 +79848,18 @@ function normalizeComponentSpec(component, options2 = {}) {
         }
         if (shadcnLook && column && typeof column === "object" && !Array.isArray(column)) {
           const entry = column;
-          const words2 = `${String(entry.key ?? "")} ${String(entry.name ?? "")}`.replace(/[_-]+/g, " ");
+          const words3 = `${String(entry.key ?? "")} ${String(entry.name ?? "")}`.replace(/[_-]+/g, " ");
           const next = { ...entry };
-          if (entry.columnType === "number" && entry.decimalPlaces === void 0 && MONEY_WORDS.test(words2) && !UNIT_WORDS.test(words2)) {
+          if (entry.columnType === "number" && entry.decimalPlaces === void 0 && MONEY_WORDS.test(words3) && !UNIT_WORDS.test(words3)) {
             next.decimalPlaces = 2;
           }
-          if (["string", void 0].includes(entry.columnType) && entry.displayAsChip === void 0 && !isTruthy(entry.isEditable) && STATE_WORDS.test(words2)) {
+          if (["string", void 0].includes(entry.columnType) && entry.displayAsChip === void 0 && !isTruthy(entry.isEditable) && STATE_WORDS.test(words3)) {
             next.displayAsChip = true;
           }
           const size2 = Number(entry.columnSize);
           const label3 = String(entry.name ?? entry.key ?? "");
           if (Number.isFinite(size2) && size2 > 0 && label3) {
-            const email3 = /\be ?mail\b/i.test(words2) ? 240 : 0;
+            const email3 = /\be ?mail\b/i.test(words3) ? 240 : 0;
             const chip = next.displayAsChip === true || entry.displayAsChip === true ? 140 : 0;
             const needed = Math.max(email3, chip, Math.ceil(label3.length * 7.5) + 32 + (isTruthy(entry.isEditable) ? 18 : 0));
             if (size2 < needed)
@@ -79754,8 +79906,8 @@ function normalizeComponentSpec(component, options2 = {}) {
           if (!c || typeof c !== "object" || Array.isArray(c))
             return false;
           const entry2 = c;
-          const words2 = `${String(entry2.key ?? "")} ${String(entry2.name ?? "")}`.replace(/[_-]+/g, " ");
-          return entry2.columnVisibility !== false && ["string", void 0].includes(entry2.columnType) && PERSON_WORDS.test(words2) && !/\b(e ?mail|id|phone|count|type|notes?)\b/i.test(words2);
+          const words3 = `${String(entry2.key ?? "")} ${String(entry2.name ?? "")}`.replace(/[_-]+/g, " ");
+          return entry2.columnVisibility !== false && ["string", void 0].includes(entry2.columnType) && PERSON_WORDS.test(words3) && !/\b(e ?mail|id|phone|count|type|notes?)\b/i.test(words3);
         });
         const entry = index >= 0 ? repairedColumns[index] : void 0;
         if (entry && entry.displayAvatar === void 0 && entry.displayAsChip === void 0 && !isTruthy(entry.isEditable)) {
@@ -85547,8 +85699,9 @@ var CATALOG_RESOURCES = [
 var dataDir = resolve7(dirname8(fileURLToPath8(import.meta.url)), "../data");
 var versions = /* @__PURE__ */ new Map();
 var payloads = /* @__PURE__ */ new Map();
+var readPart = (file2) => file2 === "component-schemas.json" ? Buffer.from(JSON.stringify(allComponentSchemas())) : readFileSync8(resolve7(dataDir, file2));
 function readData(resource) {
-  const bytes = readFileSync8(resolve7(dataDir, resource.file));
+  const bytes = readPart(resource.file);
   const dataVersion = createHash4("sha256").update(bytes).digest("hex").slice(0, 12);
   versions.set(resource.file, dataVersion);
   return { bytes, dataVersion };
@@ -85567,7 +85720,7 @@ var catalogVersionCache;
 function catalogVersion() {
   catalogVersionCache ??= catalogVersionOf(CATALOG_RESOURCES.map((resource) => ({
     file: resource.file,
-    bytes: readFileSync8(resolve7(dataDir, resource.file))
+    bytes: readPart(resource.file)
   })));
   return catalogVersionCache;
 }
@@ -85595,26 +85748,50 @@ function payload(resource) {
   }
   return text3;
 }
+var metadataOf = (resource, catalog) => {
+  const dataVersion = listedVersion(resource);
+  return {
+    title: resource.title,
+    description: resource.description,
+    mimeType: "application/json",
+    ...dataVersion ? { _meta: { data_version: dataVersion, ...catalog ? { catalog_version: catalog } : {} } } : {}
+  };
+};
+var registered = [];
+function refreshCatalogResources() {
+  versions.clear();
+  payloads.clear();
+  catalogVersionCache = void 0;
+  const catalog = listedCatalogVersion();
+  for (const { resource, handle } of registered)
+    handle.update({ metadata: metadataOf(resource, catalog) });
+}
 function registerCatalogResources(server) {
   const catalog = listedCatalogVersion();
   for (const resource of CATALOG_RESOURCES) {
-    const dataVersion = listedVersion(resource);
-    server.registerResource(resource.name, resource.uri, {
-      title: resource.title,
-      description: resource.description,
-      mimeType: "application/json",
-      ...dataVersion ? { _meta: { data_version: dataVersion, ...catalog ? { catalog_version: catalog } : {} } } : {}
-    }, async () => ({
+    const handle = server.registerResource(resource.name, resource.uri, metadataOf(resource, catalog), async () => ({
       contents: [{ uri: resource.uri, mimeType: "application/json", text: payload(resource) }]
     }));
+    registered.push({ resource, handle });
   }
 }
 
 // dist/server.js
+var packsReady = Promise.resolve([]);
 function buildServer(identity) {
   const config2 = loadConfig(identity);
   const auth = createAuth(config2);
   const client = createClient(auth, config2);
+  packsReady = loadInstalledPacks(() => client.listComponentLibraries()).then((packs) => {
+    if (packs.length) {
+      refreshCatalogResources();
+      console.error(`tooljet-mcp: component packs: ${packs.join(", ")}`);
+    }
+    return packs;
+  }).catch((err) => {
+    console.error(`tooljet-mcp: component packs not read: ${err instanceof Error ? err.message : String(err)}`);
+    return [];
+  });
   const server = new McpServer({ name: "tooljet-mcp", version: TOOLJET_MCP_VERSION });
   registerTools(server, client);
   registerCatalogResources(server);
@@ -85893,6 +86070,7 @@ async function main() {
     console.error(`tooljet-mcp: ${reason}`);
     server = buildUnconfiguredServer(reason);
   }
+  await Promise.race([packsReady, new Promise((r) => setTimeout(r, 8e3))]);
   await server.connect(new StdioServerTransport());
 }
 function isEntrypoint() {

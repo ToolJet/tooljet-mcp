@@ -43,6 +43,12 @@ const SAMPLE_BLANKS: Record<string, Record<string, unknown>> = {
 /** The default definition of a component-pack widget (data/pack-default-definitions.json, generated from the
  *  frontend's pack configs), or undefined for any other type. The server merges no defaults over pack types, so a
  *  pack component is stored with these filled in, as the editor's drag and drop does. */
+/** Adds default definitions discovered at run time (the workspace's component packs, packCatalog.ts). */
+export function registerPackDefinitions(extra: Record<string, unknown>): void {
+  packDefaultDefinition('');
+  Object.assign(cached ?? (cached = {}), extra as Record<string, PackDefinition>);
+}
+
 export function packDefaultDefinition(type: string): PackDefinition | undefined {
   if (!cached) {
     try {

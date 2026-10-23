@@ -665,6 +665,8 @@ export interface ToolJetClient {
   createComponents(params: CreateComponentsParams): Promise<Array<CreateComponentResult & { name: string }>>;
   updateComponents(params: UpdateComponentsParams): Promise<{ updated: number }>;
   deleteComponents(params: DeleteComponentsParams): Promise<{ deleted: number }>;
+  /** The workspace's custom-component libraries with their latest manifests (component packs, packCatalog.ts). */
+  listComponentLibraries(): Promise<import('./packCatalog.js').InstalledLibrary[]>;
   updateLayouts(params: UpdateLayoutsParams): Promise<{ updated: number }>;
   updateQuery(params: UpdateQueryParams): Promise<{ query_id: string }>;
   updateQueryDatasource(params: { queryId: string; versionId: string; dataSourceId: string }): Promise<void>;
@@ -2844,6 +2846,13 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   // Delete = DELETE /components with a JSON body whose `diff` is a bare array of component ids.
+  async function listComponentLibraries() {
+    const res = await auth.authedFetch('/api/custom-component-libraries');
+    await assertOk(res, 'listComponentLibraries');
+    const body = (await res.json()) as unknown;
+    return (Array.isArray(body) ? body : ((body as { libraries?: unknown[] })?.libraries ?? [])) as import('./packCatalog.js').InstalledLibrary[];
+  }
+
   async function deleteComponents(params: DeleteComponentsParams): Promise<{ deleted: number }> {
     const res = await auth.authedFetch(
       `/api/v2/apps/${params.appId}/versions/${params.versionId}/components`,
@@ -3224,6 +3233,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     createComponents,
     updateComponents,
     deleteComponents,
+    listComponentLibraries,
     updateLayouts,
     updateQuery,
     updateQueryDatasource,

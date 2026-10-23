@@ -7,47 +7,60 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-interface LibraryPack {
+export interface LibraryPack {
   pack: string;
   prefix: string;
   libraryId: string;
   correlationId: string;
   libraryName: string;
   version: string;
-  components: Record<string, { type: string; props: string[]; events: string[] }>;
+  components: Record<string, { type: string; props: string[]; events: string[]; [key: string]: unknown }>;
 }
 
-let cached: LibraryPack | null | undefined;
+let discovered: LibraryPack[] | null = null;
+let offline: LibraryPack | null | undefined;
 
-export function libraryPack(): LibraryPack | null {
-  if (cached === undefined) {
+/** The packs this server knows: those discovered in the workspace at start-up (packCatalog.ts), else the offline
+ *  data/library-pack.json. */
+export function libraryPacksAll(): LibraryPack[] {
+  if (discovered) return discovered;
+  if (offline === undefined) {
     try {
       const path = resolve(dirname(fileURLToPath(import.meta.url)), '../data/library-pack.json');
-      cached = JSON.parse(readFileSync(path, 'utf8')) as LibraryPack;
+      offline = JSON.parse(readFileSync(path, 'utf8')) as LibraryPack;
     } catch {
-      cached = null;
+      offline = null;
     }
   }
-  return cached;
+  return offline ? [offline] : [];
 }
 
-export const isLibraryPackType = (type: unknown): type is string => {
-  const pack = libraryPack();
-  return !!pack && typeof type === 'string' && type.startsWith(pack.prefix);
-};
+export function registerLibraryPacks(packs: LibraryPack[]): void {
+  discovered = packs;
+}
 
-/** The globalSettings entry that pins the library for an app version. */
+/** The first known pack (callers that need any pack at all). */
+export function libraryPack(): LibraryPack | null {
+  return libraryPacksAll()[0] ?? null;
+}
+
+const packOfType = (type: unknown): LibraryPack | undefined =>
+  typeof type === 'string' ? libraryPacksAll().find((p) => type.startsWith(p.prefix)) : undefined;
+
+export const isLibraryPackType = (type: unknown): type is string => !!packOfType(type);
+
+/** The globalSettings entry that pins every known pack for an app version. */
 export function libraryPins(): Record<string, string> | undefined {
-  const pack = libraryPack();
-  return pack ? { [pack.correlationId.replace(/-/g, '')]: pack.version } : undefined;
+  const packs = libraryPacksAll();
+  return packs.length ? Object.fromEntries(packs.map((p) => [p.correlationId.replace(/-/g, ''), p.version])) : undefined;
 }
 
 type Section = Record<string, unknown>;
 
 /** A `Lib_*` component as ToolJet stores it: LibraryComponent, the library identity in its properties. */
 export function toLibraryComponent<T extends { type: string; properties?: Section }>(spec: T): T {
-  const pack = libraryPack();
-  if (!pack || !isLibraryPackType(spec.type)) return spec;
+  const pack = packOfType(spec.type);
+  if (!pack) return spec;
   const componentName = spec.type.slice(pack.prefix.length);
   return {
     ...spec,
@@ -64,15 +77,14 @@ export function toLibraryComponent<T extends { type: string; properties?: Sectio
 
 /** The `Lib_*` type of a stored LibraryComponent of this library, for reads (summaries, lint of the saved app). */
 export function libraryTypeOf(component: { type?: string; properties?: Section }): string | undefined {
-  const pack = libraryPack();
-  if (!pack || component.type !== 'LibraryComponent') return undefined;
+  if (component.type !== 'LibraryComponent') return undefined;
   const value = (key: string) => {
     const entry = component.properties?.[key] as { value?: unknown } | unknown;
     return entry && typeof entry === 'object' && 'value' in (entry as object) ? (entry as { value?: unknown }).value : entry;
   };
-  if (value('correlationId') !== pack.correlationId) return undefined;
+  const pack = libraryPacksAll().find((p) => p.correlationId === value('correlationId'));
   const name = value('componentName');
-  return typeof name === 'string' && pack.components[name] ? `${pack.prefix}${name}` : undefined;
+  return pack && typeof name === 'string' && pack.components[name] ? `${pack.prefix}${name}` : undefined;
 }
 
 // The FlexContainer of a ToolJet without UI 2.0's layout (the team branch): its schema has no stretch or baseline
