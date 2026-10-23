@@ -835,6 +835,8 @@ Nested \`Text\` clips to a single line. For multi-line title/description content
 
 \`add_queries\` works on **any ALREADY-CONNECTED datasource** — ToolJet DB, PostgreSQL, MySQL, MongoDB, ServiceNow, RunJS, etc. The query **kind is taken from the datasource automatically** (you don't pass it; call \`list_datasources\` to see each datasource's \`kind\`). Only the \`options\` differ per kind:
 
+**AI datasource restriction:** Never use the shared **Sample data source**, even when explicitly requested or when another connection fails. Do not offer, inspect, test, read, write, or save queries on it. For new app data, use **ToolJet Database**. If a requested external connection fails, offer repair or a clearly labelled ToolJet Database alternative; never substitute the Sample data source. This restriction concerns the connection, not synthetic sample rows in ToolJet Database.
+
 Workspace-connected datasources available to the current user and selected environment are automatically available to both existing and newly created apps. Do **not** look for or invent a per-app datasource linking step: after \`create_app\`, call \`list_datasources(version_id)\` and pass the returned \`id\` to \`add_queries\`. An expected source missing from \`datasources\` but present in \`connectable\` indicates the wrong workspace, insufficient permission, an unconnected source, or missing environment configuration—not a missing app attachment. A source missing from **both** is one ToolJet has no connector for: say that plainly rather than asking them to connect something that cannot be connected, and name a REST API datasource pointed at its HTTP API as the supported route. Use the returned workspace \`datasources_url\` or datasource \`settings_url\` for a user-owned repair handoff; never configure credentials or OAuth yourself.
 
 > **You can only use datasources that are already connected — these tools cannot create or connect a new datasource or third-party integration** (e.g. Strava, Stripe, a new REST API, a Google Sheet). If the user asks to build on a source that isn't in \`list_datasources\`:
@@ -1147,7 +1149,9 @@ Detail: \`references/qa.md\`.
 
 ## Datasource repair handoff
 
-If a source is absent or a query fails, use its \`datasources_url\`, \`settings_url\`, or \`recovery.url\`. Open it in the built-in browser when available; otherwise send the link. Never enter credentials, authorize OAuth, test, or save the connection. If \`list_datasources\` marks it \`connectable\`, stop and hand off; if absent, report no connector and suggest REST API. Sample data only on request. See \`references/datasources.md\`.
+**Sample data source is forbidden for AI**, even on request. Use ToolJet Database; synthetic rows are allowed.
+
+For absent/failing sources, use \`datasources_url\`, \`settings_url\`, or \`recovery.url\`. Open it in the built-in browser when available; otherwise send the link. Never enter credentials, authorize OAuth, test, or save connections. For \`connectable\` sources, stop and hand off; if absent, report no connector and suggest REST API. See \`references/datasources.md\`.
 
 ## Load only the references the phase needs
 

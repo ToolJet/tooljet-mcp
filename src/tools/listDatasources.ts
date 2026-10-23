@@ -12,7 +12,7 @@ export function listDatasourcesTool(client: ToolJetClient): ToolDef {
       openWorldHint: true,
     },
     description:
-      "List the workspace-connected datasources available to the current user/environment, including the built-in " +
+      "List AI-eligible workspace-connected datasources. The shared Sample data source is excluded and must never be used by AI. Includes the built-in " +
       "ToolJet-DB datasource (kind 'tooljetdb') to use as the datasource_id for add_query. These sources appear " +
       'automatically in both existing and newly created apps; there is no per-app attach/link step. If an expected ' +
       'source is absent, check workspace, permissions, connection, and environment configuration. Each returned ' +
