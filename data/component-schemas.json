@@ -7835,6 +7835,17 @@
         ]
       },
       {
+        "key": "cardLook",
+        "label": "Card look",
+        "valueType": "string",
+        "allowedValues": [
+          "theme",
+          "own"
+        ],
+        "default": "theme",
+        "description": "Set by the compiler for a card on a component pack's own surface: 'own' draws the card's written background, border, radius and shadow."
+      },
+      {
         "key": "cardTitle",
         "label": "Card title",
         "valueType": "string",
