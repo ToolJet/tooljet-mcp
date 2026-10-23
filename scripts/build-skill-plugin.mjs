@@ -67,5 +67,15 @@ writeJson('.codex-plugin/plugin.json', {
     longDescription: description,
   },
 });
+// Keep published discovery metadata aligned with the generated package version.
+for (const path of ['.claude-plugin/marketplace.json', '.agents/plugins/marketplace.json']) {
+  const marketplace = readJson(path);
+  const entry = marketplace.plugins.find(plugin => plugin.name === name);
+  if (!entry) throw new Error(`Missing ${name} entry in ${path}`);
+  if (Object.hasOwn(entry, 'version')) {
+    entry.version = version;
+    writeFileSync(resolve(root, path), JSON.stringify(marketplace, null, 2) + '\n');
+  }
+}
 verifyTree(output);
 console.log(`Built plugins/${name}: skill, references, and manifests; no MCP server.`);
