@@ -7846,6 +7846,13 @@
         "description": "Set by the compiler for a card on a component pack's own surface: 'own' draws the card's written background, border, radius and shadow."
       },
       {
+        "key": "cardHeaderDivider",
+        "label": "Header divider",
+        "valueType": "boolean",
+        "default": "{{false}}",
+        "description": "Set by the compiler for a component pack whose card header is a divided strip (Ant): title left, description right."
+      },
+      {
         "key": "cardTitle",
         "label": "Card title",
         "valueType": "string",
