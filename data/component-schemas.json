@@ -16445,7 +16445,7 @@
     "description": "Avatar or avatar group: names is one name, a comma-separated list, or an array of names or { name, src } (a photo per person); the first maxVisible show, the rest as a +N chip",
     "defaultSize": {
       "width": 6,
-      "height": 36
+      "height": 40
     },
     "properties": [
       {
@@ -16622,7 +16622,7 @@
     "description": "Badge",
     "defaultSize": {
       "width": 4,
-      "height": 24
+      "height": 30
     },
     "properties": [
       {
@@ -17078,7 +17078,7 @@
     "description": "Breadcrumb",
     "defaultSize": {
       "width": 14,
-      "height": 24
+      "height": 30
     },
     "properties": [
       {
@@ -17460,14 +17460,14 @@
     "description": "Button group (attached buttons) from buttons [{ label, value, icon?: 'IconBolt', disabled?, variant? }] (label '' with an icon = icon-only). mode: 'actions' (each click fires onClick, exposed lastClicked), 'single' or 'multiple' (a segmented selection: exposed value, selected; onChange). Height 36px (sm 32px, lg 40px); add 22px for a label",
     "defaultSize": {
       "width": 10,
-      "height": 36
+      "height": 70
     },
     "properties": [
       {
         "key": "label",
         "label": "Label",
         "valueType": "string",
-        "default": ""
+        "default": "Label"
       },
       {
         "key": "description",
@@ -19274,7 +19274,7 @@
     "description": "Checkbox with label",
     "defaultSize": {
       "width": 8,
-      "height": 24
+      "height": 20
     },
     "properties": [
       {
@@ -19487,7 +19487,7 @@
     "description": "Circular progress ring: value 0 to 100 (clamped), size and thickness (px), lineCap ('round', 'flat'), centerText ('value' shows 63%, 'custom' shows text, 'none') with an optional label under it; barColor (default: the primary), trackColor, textColor, labelColor styles. Height: the size (96px by default)",
     "defaultSize": {
       "width": 5,
-      "height": 104
+      "height": 100
     },
     "properties": [
       {
@@ -19720,7 +19720,7 @@
     "description": "Color picker: a swatch-and-hex field opening a popover with a saturation/hue picker, a hex input and preset swatches (array of hex). Exposes value (#rrggbb, or #rrggbbaa with allowAlpha), selectedColorRGB and selectedColorRGBA. Height: 64px with a label, 36px without",
     "defaultSize": {
       "width": 8,
-      "height": 64
+      "height": 70
     },
     "properties": [
       {
@@ -20353,7 +20353,7 @@
     "description": "Combobox: a searchable single select (popover with a search box). options: plain values or [{ label, value, description?, icon? (Tabler name like IconUser, image URL or emoji), group?, disabled? }]; exposes value, selectedOption, searchText. Height: 64px with a label, 36px without; add 24px for help text",
     "defaultSize": {
       "width": 10,
-      "height": 64
+      "height": 70
     },
     "properties": [
       {
@@ -20689,7 +20689,7 @@
     "description": "Currency amount input: the currency sign inside the box, the amount formatted for the locale with Intl (1,250.00 in en-US, 1.250,00 in de-DE). Exposes value (a number, null when empty), formattedValue ('$1,250.00') and currency ('USD'). currency is an ISO code; currencyOptions (['USD', 'EUR', 'GBP']) adds a currency picker at the start of the box; decimalPlaces empty uses the currency's own (JPY 0). Height: 64px with a label (label above the control), 36px without; add 24px for help text or a validation message",
     "defaultSize": {
       "width": 10,
-      "height": 64
+      "height": 70
     },
     "properties": [
       {
@@ -21045,7 +21045,7 @@
     "description": "Date picker (popover calendar), single date or range. Height: 64px with a label (label above the control), 36px without; add 24px for help text",
     "defaultSize": {
       "width": 10,
-      "height": 64
+      "height": 70
     },
     "properties": [
       {
@@ -21494,7 +21494,7 @@
     "description": "Date and time picker: a field opening a calendar with a time row (hour, minute, AM/PM; a time every minuteStep minutes from midnight). Exposes value as 'YYYY-MM-DDTHH:mm' (local time, '' when empty), selectedDate 'YYYY-MM-DD', selectedTime 'HH:mm', unixTimestamp (ms) and displayValue (dateFormat plus the time). defaultValue takes ISO text, 'YYYY-MM-DD HH:mm' or a unix timestamp; minDate/maxDate ('YYYY-MM-DD') and disabledDates (array) block days. Height: 64px with a label (label above the control), 36px without; add 24px for help text or a validation message",
     "defaultSize": {
       "width": 12,
-      "height": 64
+      "height": 70
     },
     "properties": [
       {
@@ -22368,7 +22368,7 @@
     "description": "Dropdown menu: a trigger button (label + variant, or an icon-only '...' trigger) opening a menu of items [{ label, value, icon?: 'IconPencil', description?, shortcut?: '⌘E', disabled?, visible?, destructive?, separator? (line above), group? (heading) }]. On select fires onSelect with lastClickedOption { label, value, description }. Height 36px (sm 32px, lg 40px)",
     "defaultSize": {
       "width": 6,
-      "height": 36
+      "height": 40
     },
     "properties": [
       {
@@ -23526,7 +23526,7 @@
     "description": "Heading (h1 to h4). Typeface styles: fontFamily ('theme', 'sans', 'serif', 'display' or 'mono'), fontWeight (400 to 800), fontSize (px), letterSpacing (px or em) and textTransform ('uppercase' for an eyebrow)",
     "defaultSize": {
       "width": 16,
-      "height": 36
+      "height": 40
     },
     "properties": [
       {
@@ -24844,7 +24844,7 @@
     "description": "Text input with label. Height: 64px with a label (label above the control), 36px without; add 24px for help text",
     "defaultSize": {
       "width": 10,
-      "height": 64
+      "height": 70
     },
     "properties": [
       {
@@ -25657,7 +25657,7 @@
     "description": "Description list for a record's details: data is an object ({ Status: 'Active', Owner: 'Ada' }) or an array of { label, value, type?, format? } with type text, number, currency, date, badge, link or boolean (format: a date format or { currency, decimalPlaces, prefix, suffix }); columns 1 to 4; layout 'inline' (label beside the value, labelWidth) or 'stacked'; dividers; emptyText for blanks; currency, dateFormat and badgeColors defaults; allowCopy. Height: about 41px per row inline, 69px stacked (per column when columns > 1)",
     "defaultSize": {
       "width": 14,
-      "height": 248
+      "height": 260
     },
     "properties": [
       {
@@ -26243,7 +26243,7 @@
     "description": "Text link (native Link names): linkText, linkTarget (URL; empty makes it act as a button), targetType ('new' or 'same' tab), underline ('underline', 'on-hover', 'no-underline'), showIcon (external-link icon), fontSize (px), fontWeight (normal, medium, semibold, bold); textColor and hoverColor styles (default: the primary). onClick fires as well as navigating; onHover. Height: 24px at 14px",
     "defaultSize": {
       "width": 6,
-      "height": 24
+      "height": 30
     },
     "properties": [
       {
@@ -27572,7 +27572,7 @@
     "description": "Multi-select combobox: picked options show as removable chips in the field (+N past maxVisibleChips), with search and select all. options like the Combobox; defaultValue is an array of values; exposes values (array) and selectedOptions. Height: 64px with a label, 36px without (one row of chips; grows with dynamic height)",
     "defaultSize": {
       "width": 10,
-      "height": 64
+      "height": 70
     },
     "properties": [
       {
@@ -28294,7 +28294,7 @@
     "description": "Number input: value is a number (null when empty), rounded to decimalPlaces; step buttons (stepper: split -/+ at both ends, stacked arrows at the right, or none) and ArrowUp/ArrowDown move by step and stop at the Min/Max value validation; optional prefix/suffix text inside the box (e.g. '$', 'kg') and thousands separators. Height: 64px with a label (label above the control), 36px without; add 24px for help text or a validation message",
     "defaultSize": {
       "width": 10,
-      "height": 64
+      "height": 70
     },
     "properties": [
       {
@@ -28613,7 +28613,7 @@
     "description": "One-time code input: length (4 to 8) character boxes, numeric or alphanumeric (upper-cased), typing moves to the next box, Backspace goes back, pasting a whole code fills it ('123-456' works). Optional separator in the middle and masked dots. Exposes value and isComplete; onComplete fires when the last box is filled (verify there). Boxes are 36px (slotSize style); height 64px with a label, 36px without",
     "defaultSize": {
       "width": 10,
-      "height": 64
+      "height": 70
     },
     "properties": [
       {
@@ -28923,7 +28923,7 @@
     "description": "Pagination (native Pagination names): numberOfPages, or totalRecords with pageSize; defaultPageIndex (1-based); Previous / page numbers with ellipsis / Next (showLabels), optional first and last buttons (showFirstLast), siblingCount, size 'sm' or 'default'. onPageChange; action setPage(page); exposed currentPageIndex (1-based) and totalPages. Bind a query offset to (currentPageIndex - 1) * pageSize. Height: 36px (32px small)",
     "defaultSize": {
       "width": 16,
-      "height": 36
+      "height": 40
     },
     "properties": [
       {
@@ -29168,7 +29168,7 @@
     "description": "Password input with a show/hide eye button (showToggle) and an optional strength meter (showStrength: a three-part weak/fair/strong bar under the box, exposed as strength = '' | 'weak' | 'fair' | 'strong'). Validate with the text rules (mandatory, regex, min length). Height: 64px with a label (label above the control), 36px without; add 24px for help text or a validation message; the strength meter adds 16px",
     "defaultSize": {
       "width": 10,
-      "height": 64
+      "height": 70
     },
     "properties": [
       {
@@ -29463,7 +29463,7 @@
     "description": "Phone number input: a country picker (flag and calling code; searchable list) attached to the number box, which formats as you type. Exposes value (E.164, e.g. '+14155550123', '' when empty), country ('US'), countryCode ('+1'), formattedValue ('+1 415 555 0123') and isValidNumber; isValid is false for an invalid number. defaultCountry is an ISO code; onlyCountries limits the list (['US', 'CA']). Height: 64px with a label (label above the control), 36px without; add 24px for help text or a validation message",
     "defaultSize": {
       "width": 10,
-      "height": 64
+      "height": 70
     },
     "properties": [
       {
@@ -30039,7 +30039,7 @@
     "description": "Progress bar with optional label",
     "defaultSize": {
       "width": 12,
-      "height": 36
+      "height": 40
     },
     "properties": [
       {
@@ -31447,14 +31447,14 @@
     "description": "Radio group. A label adds 22px above and help text 24px below",
     "defaultSize": {
       "width": 10,
-      "height": 112
+      "height": 110
     },
     "properties": [
       {
         "key": "label",
         "label": "Label",
         "valueType": "string",
-        "default": ""
+        "default": "Label"
       },
       {
         "key": "description",
@@ -31662,7 +31662,7 @@
       },
       {
         "name": "label",
-        "default": ""
+        "default": "Label"
       },
       {
         "name": "selectedOption",
@@ -31684,14 +31684,14 @@
     "description": "Rating: a row of 1 to 10 icons (star, heart or circle) with optional half steps and read-only mode; keyboard accessible. Exposes value (number, 0 for none). Height: 24px for the default size (32px for lg), plus 22px with a label",
     "defaultSize": {
       "width": 6,
-      "height": 24
+      "height": 50
     },
     "properties": [
       {
         "key": "label",
         "label": "Label",
         "valueType": "string",
-        "default": ""
+        "default": "Rating"
       },
       {
         "key": "description",
@@ -31960,7 +31960,7 @@
       },
       {
         "name": "label",
-        "default": ""
+        "default": "Rating"
       }
     ],
     "authoringHints": {
@@ -33005,7 +33005,7 @@
     "description": "Select. Height: 64px with a label (label above the control), 36px without; add 24px for help text",
     "defaultSize": {
       "width": 10,
-      "height": 64
+      "height": 70
     },
     "properties": [
       {
@@ -33282,7 +33282,7 @@
     "description": "Separator",
     "defaultSize": {
       "width": 20,
-      "height": 24
+      "height": 30
     },
     "properties": [
       {
@@ -33571,14 +33571,14 @@
     "description": "Slider, single value or range. Height: 64px with a label (label above the control), 36px without; add 24px for help text",
     "defaultSize": {
       "width": 14,
-      "height": 64
+      "height": 60
     },
     "properties": [
       {
         "key": "label",
         "label": "Label",
         "valueType": "string",
-        "default": ""
+        "default": "Label"
       },
       {
         "key": "description",
@@ -33792,7 +33792,7 @@
       },
       {
         "name": "label",
-        "default": ""
+        "default": "Label"
       }
     ],
     "authoringHints": {
@@ -34088,7 +34088,7 @@
     "description": "Loading spinner: variant ('ring', 'dots'), size ('sm' 16px, 'default' 24px, 'lg' 32px, or px), optional label with labelPosition ('right' beside, 'bottom' below); spinnerColor style (default: the primary). Height: 24px with the label beside (32px for lg), 52px with it below",
     "defaultSize": {
       "width": 6,
-      "height": 32
+      "height": 30
     },
     "properties": [
       {
@@ -35262,7 +35262,7 @@
     "description": "Switch with label",
     "defaultSize": {
       "width": 8,
-      "height": 24
+      "height": 30
     },
     "properties": [
       {
@@ -36635,7 +36635,7 @@
     "description": "Read-only tag chips: tags is an array or a comma-separated string; tagColors maps a value to a colour ({ Paid: '#16a34a' }: tinted chip, light background and strong text of that hue); variant ('soft', 'outline', 'solid'), size ('sm', 'default', 'lg'), overflow ('wrap', or 'single' for one line with +N), pill. Clicking a tag sets lastClickedTag and fires onTagClicked. Height: 24px per line",
     "defaultSize": {
       "width": 12,
-      "height": 24
+      "height": 30
     },
     "properties": [
       {
@@ -36867,7 +36867,7 @@
     "description": "Tags input: free-form tags typed in the field (Enter or comma adds, Backspace removes the last, x removes one), with optional suggestions, maxTags, duplicate check and a per-tag pattern. Exposes values (array of text). Height: 64px with a label, 36px without (one row; grows with dynamic height)",
     "defaultSize": {
       "width": 10,
-      "height": 64
+      "height": 70
     },
     "properties": [
       {
@@ -37242,7 +37242,7 @@
     "description": "Paragraph, lead, muted or small text. Typeface styles: fontFamily ('theme', 'sans', 'serif', 'display' or 'mono'), fontWeight, fontSize (px), letterSpacing (px or em) and textTransform (a small uppercase eyebrow: tone small, textTransform 'uppercase', letterSpacing '0.12em')",
     "defaultSize": {
       "width": 16,
-      "height": 32
+      "height": 40
     },
     "properties": [
       {
@@ -37751,7 +37751,7 @@
     "description": "Time picker: a field opening hour, minute and AM/PM columns, or (pickerStyle list) one list of times; both offer a time every minuteStep minutes from midnight (with 45: 09:00, 09:45, 10:30). Exposes value as 'HH:mm' in 24-hour time ('' when empty) and formattedValue as shown ('2:30 PM' or '14:30'); defaultValue, minTime and maxTime take '14:30' or '2:30 PM'. Height: 64px with a label (label above the control), 36px without; add 24px for help text or a validation message",
     "defaultSize": {
       "width": 10,
-      "height": 64
+      "height": 70
     },
     "properties": [
       {
@@ -38107,7 +38107,7 @@
     "description": "Vertical timeline / activity feed: items [{ title, description, time, status or color, icon? }] (status words such as done, active, pending, failed take theme colours; statusColors maps your own); marker ('dot' or 'icon' with lucide names); density ('comfortable', 'compact'); newestFirst; timePosition ('right', 'top'); dateFormat for ISO times. Clicking an item sets lastClickedItem and fires onItemClicked. Height: about 66px per item with a description (44px without), 50px compact",
     "defaultSize": {
       "width": 14,
-      "height": 224
+      "height": 230
     },
     "properties": [
       {
@@ -38336,7 +38336,7 @@
     "description": "Segmented toggle (filters, views), like a tabs list",
     "defaultSize": {
       "width": 14,
-      "height": 36
+      "height": 40
     },
     "properties": [
       {
