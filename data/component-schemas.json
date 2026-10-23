@@ -19788,6 +19788,12 @@
         "default": "{{true}}"
       },
       {
+        "key": "showClearBtn",
+        "label": "Show clear button",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "loadingState",
         "label": "Loading state",
         "valueType": "boolean",
@@ -20760,6 +20766,12 @@
         ]
       },
       {
+        "key": "showClearBtn",
+        "label": "Show clear button",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "loadingState",
         "label": "Loading state",
         "valueType": "boolean",
@@ -21112,6 +21124,12 @@
         "label": "Disabled dates",
         "valueType": "array",
         "default": "{{[]}}"
+      },
+      {
+        "key": "showClearBtn",
+        "label": "Show clear button",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "loadingState",
@@ -21564,6 +21582,12 @@
         "label": "Disabled dates",
         "valueType": "array",
         "default": "{{[]}}"
+      },
+      {
+        "key": "showClearBtn",
+        "label": "Show clear button",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "loadingState",
@@ -24879,10 +24903,17 @@
         "allowedValues": [
           "text",
           "email",
+          "url",
           "number",
           "password",
           "search"
         ]
+      },
+      {
+        "key": "showClearBtn",
+        "label": "Show clear button",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "loadingState",
@@ -28291,7 +28322,7 @@
   "ShadNumberInput": {
     "type": "ShadNumberInput",
     "name": "ShadNumberInput",
-    "description": "Number input: value is a number (null when empty), rounded to decimalPlaces; step buttons (stepper: split -/+ at both ends, stacked arrows at the right, or none) and ArrowUp/ArrowDown move by step and stop at the Min/Max value validation; optional prefix/suffix text inside the box (e.g. '$', 'kg') and thousands separators. Height: 64px with a label (label above the control), 36px without; add 24px for help text or a validation message",
+    "description": "Number input: value is a number (null when empty), rounded to decimalPlaces (0 to 10); step buttons (stepper: split -/+ at both ends, stacked arrows at the right, or none) and ArrowUp/ArrowDown move by step and stop at the Min/Max value validation; optional prefix/suffix text inside the box (e.g. '$', 'kg') and thousands separators. Height: 64px with a label (label above the control), 36px without; add 24px for help text or a validation message",
     "defaultSize": {
       "width": 10,
       "height": 70
@@ -28365,6 +28396,12 @@
         "label": "Thousands separators",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "showClearBtn",
+        "label": "Show clear button",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "loadingState",
@@ -29513,6 +29550,12 @@
         "label": "Show country flag",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "showClearBtn",
+        "label": "Show clear button",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "loadingState",
@@ -37815,6 +37858,12 @@
         "label": "Latest time (HH:mm)",
         "valueType": "string",
         "default": ""
+      },
+      {
+        "key": "showClearBtn",
+        "label": "Show clear button",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "loadingState",
