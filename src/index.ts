@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { buildServer, buildUnconfiguredServer } from './server.js';
+import { buildServer, buildUnconfiguredServer, packsReady } from './server.js';
 import { readJsonBody } from './httpServer.js';
 import { bearerValue, checkBearerToken } from './httpAuth.js';
 import { isBuildToken, mintAuthorized, mintBuildToken, mintSecret, resolveBuildToken, revokeBuildToken } from './buildTokens.js';
@@ -299,6 +299,9 @@ async function main(): Promise<void> {
     console.error(`tooljet-mcp: ${reason}`);
     server = buildUnconfiguredServer(reason);
   }
+  // The catalogue includes the workspace's component packs before the first tool call (bounded: a slow server must
+  // not stall the handshake; the offline catalogue stands in).
+  await Promise.race([packsReady, new Promise((r) => setTimeout(r, 8000))]);
   await server.connect(new StdioServerTransport());
 }
 

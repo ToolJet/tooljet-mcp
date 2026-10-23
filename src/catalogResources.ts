@@ -1,3 +1,4 @@
+import { allComponentSchemas } from './catalog.js';
 /**
  * Read-only MCP resources carrying the catalog data this server validates plans against, for clients that
  * validate or build plans locally and must agree with the server they talk to (a client pinned to one catalog
@@ -73,8 +74,13 @@ const dataDir = resolve(dirname(fileURLToPath(import.meta.url)), '../data');
 const versions = new Map<string, string>();
 const payloads = new Map<string, string>();
 
+// The components part is the live catalogue: the data file plus the workspace's component packs (packCatalog.ts),
+// which are read before the first request, so the compiler plans with the packs this workspace has.
+const readPart = (file: string): Buffer =>
+  file === 'component-schemas.json' ? Buffer.from(JSON.stringify(allComponentSchemas())) : readFileSync(resolve(dataDir, file));
+
 function readData(resource: CatalogResource): { bytes: Buffer; dataVersion: string } {
-  const bytes = readFileSync(resolve(dataDir, resource.file));
+  const bytes = readPart(resource.file);
   const dataVersion = createHash('sha256').update(bytes).digest('hex').slice(0, 12);
   versions.set(resource.file, dataVersion);
   return { bytes, dataVersion };
@@ -97,7 +103,7 @@ let catalogVersionCache: string | undefined;
  *  describe the whole catalog. */
 function catalogVersion(): string {
   catalogVersionCache ??= catalogVersionOf(CATALOG_RESOURCES.map((resource) => ({
-    file: resource.file, bytes: readFileSync(resolve(dataDir, resource.file)),
+    file: resource.file, bytes: readPart(resource.file),
   })));
   return catalogVersionCache;
 }
@@ -130,22 +136,37 @@ function payload(resource: CatalogResource): string {
   return text;
 }
 
+const metadataOf = (resource: CatalogResource, catalog: string | undefined) => {
+  const dataVersion = listedVersion(resource);
+  return {
+    title: resource.title,
+    description: resource.description,
+    mimeType: 'application/json',
+    ...(dataVersion ? { _meta: { data_version: dataVersion, ...(catalog ? { catalog_version: catalog } : {}) } } : {}),
+  };
+};
+const registered: Array<{ resource: CatalogResource; handle: { update: (u: { metadata: Record<string, unknown> }) => void } }> = [];
+
+/** The packs joined the components part after registration: drop the cached versions and payloads and re-list. */
+export function refreshCatalogResources(): void {
+  versions.clear();
+  payloads.clear();
+  catalogVersionCache = undefined;
+  const catalog = listedCatalogVersion();
+  for (const { resource, handle } of registered) handle.update({ metadata: metadataOf(resource, catalog) });
+}
+
 export function registerCatalogResources(server: McpServer): void {
   const catalog = listedCatalogVersion();
   for (const resource of CATALOG_RESOURCES) {
-    const dataVersion = listedVersion(resource);
-    server.registerResource(
+    const handle = server.registerResource(
       resource.name,
       resource.uri,
-      {
-        title: resource.title,
-        description: resource.description,
-        mimeType: 'application/json',
-        ...(dataVersion ? { _meta: { data_version: dataVersion, ...(catalog ? { catalog_version: catalog } : {}) } } : {}),
-      },
+      metadataOf(resource, catalog),
       async () => ({
         contents: [{ uri: resource.uri, mimeType: 'application/json', text: payload(resource) }],
       })
     );
+    registered.push({ resource, handle });
   }
 }
