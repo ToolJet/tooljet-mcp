@@ -11446,6 +11446,30 @@
         "default": "{{400}}"
       },
       {
+        "key": "variant",
+        "label": "Kind",
+        "valueType": "string",
+        "default": "dialog",
+        "allowedValues": [
+          "dialog",
+          "sheet"
+        ],
+        "description": "'dialog' opens centred. 'sheet' slides in against one edge (side): a right or left sheet takes the full height at the Width's size (sm 360px, lg 480px, xl 640px) and suits detail panels; a top or bottom one takes the full width at the modal's Height. Header, body, footer, close behaviour and actions work the same."
+      },
+      {
+        "key": "side",
+        "label": "Sheet side",
+        "valueType": "string",
+        "default": "right",
+        "allowedValues": [
+          "right",
+          "left",
+          "top",
+          "bottom"
+        ],
+        "description": "The edge a sheet opens against; used only when variant is 'sheet'."
+      },
+      {
         "key": "hideOnEsc",
         "label": "Close on escape key",
         "default": "{{true}}"
