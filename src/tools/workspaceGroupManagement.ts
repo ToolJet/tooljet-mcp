@@ -10,7 +10,7 @@ export function listWorkspaceGroupsTool(client: ToolJetClient): ToolDef {
     title: 'List Workspace Groups',
     annotations: { readOnlyHint: true, openWorldHint: true },
     description:
-      'List groups in the current PAT-pinned workspace. Supply group_id to list its non-archived members ' +
+      'List groups in the workspace pinned to the current connection. OAuth connections require the workspace_users scope. Supply group_id to list its non-archived members ' +
       'with group_user_id (membership id, distinct from user_id and organization_user_id). ' +
       'Use include_permissions:true with group_id to read permission switches and granular access rules. ' +
       'Use resource_type (app/module/workflow/data_source) to discover selectable resources and their names/IDs. ' +
@@ -57,7 +57,7 @@ export function manageWorkspaceGroupsTool(client: ToolJetClient): ToolDef {
     strictInput: true,
     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
     description:
-      'Create, rename, delete custom groups or remove a member in the current PAT-pinned workspace. ' +
+      'Create, rename, delete custom groups or remove a member in the workspace pinned to the current connection. OAuth connections require the workspace_users scope. ' +
       'All actions require confirm:true after reviewing the exact change. create needs name; rename needs ' +
       'group_id and name; delete needs group_id; remove_member needs group_id and group_user_id from ' +
       'list_workspace_groups. Removing membership does not delete the workspace user. Deleting a group ' +

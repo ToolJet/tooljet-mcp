@@ -5,13 +5,13 @@
     "name": "ToolJet",
     "url": "https://github.com/ToolJet"
   },
-  "description": "Official ToolJet plugin.",
+  "description": "Official ToolJet plugins.",
   "plugins": [
     {
       "name": "tooljet-app-builder",
       "source": "./",
       "description": "Build ToolJet apps end-to-end via governed MCP tools and an app-builder skill.",
-      "version": "0.8.0",
+      "version": "0.9.0",
       "author": {
         "name": "ToolJet"
       },
@@ -21,6 +21,22 @@
         "low-code",
         "app-builder",
         "mcp"
+      ]
+    },
+    {
+      "name": "tooljet-app-builder-skills",
+      "source": "./plugins/tooljet-app-builder-skills",
+      "description": "App-building guidance for an existing ToolJet MCP connection, including remote OAuth. No bundled MCP server.",
+      "version": "0.8.0",
+      "author": {
+        "name": "ToolJet"
+      },
+      "category": "productivity",
+      "keywords": [
+        "tooljet",
+        "app-builder",
+        "skills",
+        "oauth"
       ]
     }
   ]

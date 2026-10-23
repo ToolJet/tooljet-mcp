@@ -1,3 +1,4 @@
+import { renderAuditAvailable } from '../renderAuditAvailability.js';
 import { appVersionLifecycleTools } from './appVersionLifecycle.js';
 import { listWorkspaceGroupsTool, manageWorkspaceGroupsTool } from './workspaceGroupManagement.js';
 import { z } from 'zod';
@@ -183,7 +184,9 @@ export function registerTools(
     ? tools
     : tools.filter((tool) => !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name));
 
+  const canRender = renderAuditAvailable();
   for (const tool of exposedTools) {
+    if (tool.name === 'verify_page_render' && !canRender) continue;
     server.registerTool(
       tool.name,
       {

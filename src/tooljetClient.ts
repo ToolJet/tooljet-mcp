@@ -5,7 +5,7 @@ import { TableQuotaError, tableQuotaError } from './tableQuotaError.js';
 import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { assertPageIcon } from './pageIcons.js';
-import type { Auth, Workspace } from './auth.js';
+import type { Auth, Workspace, ViewerSession } from './auth.js';
 import type { Config } from './config.js';
 import { STYLE_KEYS_IN_PROPERTIES } from './lint.js';
 import { assertPersistableQueryToggles } from './queryToggles.js';
@@ -665,7 +665,10 @@ export interface ToolJetClient {
   /** Whether the instance has a Google Maps API key in its public config (the Map component needs it); undefined when unknown. */
   hasGoogleMapsKey?(): Promise<boolean | undefined>;
   /** The builder's session token, for the render audit's browser. */
-  viewerSession?(): Promise<string | undefined>;
+  viewerSession?(appId?: string): Promise<ViewerSession | undefined>;
+  /** OAuth viewer credentials are pinned to the configured deployment, never a tool-supplied origin. */
+  browserRenderOrigin?: string;
+  renderAuditGrant?: string;
   /** The name of the version being edited (the preview's version= parameter). */
   editingVersionName?(appId: string): Promise<string | undefined>;
 }
@@ -1753,8 +1756,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const startIndex = Math.max(highestPersistedIndex, existingPages.length) + 1;
     const handleOf = (name: string): string =>
       name
+        .normalize('NFKC')
         .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/[^\p{L}\p{N}]+/gu, '-')
         .replace(/^-+|-+$/g, '')
         .slice(0, 50) || 'page';
     const existingNames = new Set((app.pages ?? []).map((page: any) => String(page.name).toLowerCase()));
@@ -1763,12 +1767,14 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const seenHandles = new Set<string>();
     const entries = params.pages.map((page, offset) => {
       const nameKey = page.name.toLowerCase();
-      const handle = handleOf(page.name);
       if (existingNames.has(nameKey) || seenNames.has(nameKey)) {
         throw new Error(`ToolJet createPages failed: duplicate page name "${page.name}".`);
       }
-      if (existingHandles.has(handle) || seenHandles.has(handle)) {
-        throw new Error(`ToolJet createPages failed: page "${page.name}" resolves to duplicate handle "${handle}".`);
+      const base = handleOf(page.name);
+      let handle = base;
+      for (let suffix = 2; existingHandles.has(handle) || seenHandles.has(handle); suffix++) {
+        const tail = `-${suffix}`;
+        handle = `${base.slice(0, 50 - tail.length)}${tail}`;
       }
       seenNames.add(nameKey);
       seenHandles.add(handle);
@@ -3011,7 +3017,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     deletePage,
     createEvents,
     hasGoogleMapsKey,
-    viewerSession: () => auth.viewerSession?.() ?? Promise.resolve(undefined),
+    viewerSession: (appId?: string) => auth.viewerSession?.(appId) ?? Promise.resolve(undefined),
+    renderAuditGrant: config.isOAuthDelegation ? `${config.apiUrl}\0${config.oauthGrantId}` : undefined,
+    browserRenderOrigin: config.isOAuthDelegation ? new URL(config.viewerUrl || config.appUrl).origin : undefined,
     editingVersionName: async (appId: string) => ((await getApp(appId))?.editing_version?.name as string | undefined) ?? undefined,
     getDevelopmentEnvironmentId,
     listDatasources,
