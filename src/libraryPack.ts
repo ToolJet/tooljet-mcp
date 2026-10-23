@@ -84,7 +84,8 @@ const FLEX_DOWNGRADE: Record<string, Record<string, string>> = {
 };
 
 export function downgradeFlexForLibrary<T extends { type: string; properties?: Section }>(spec: T): T {
-  if (!libraryPack() || spec.type !== 'FlexContainer' || !spec.properties) return spec;
+  // Only for a ToolJet without UI 2.0's layout (TOOLJET_FLEX_V1=1, the team branch before the core port).
+  if (process.env.TOOLJET_FLEX_V1 !== '1' || !libraryPack() || spec.type !== 'FlexContainer' || !spec.properties) return spec;
   const properties = { ...spec.properties };
   for (const [key, map] of Object.entries(FLEX_DOWNGRADE)) {
     const entry = properties[key] as { value?: unknown } | undefined;

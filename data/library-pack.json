@@ -4,8 +4,217 @@
   "libraryId": "29e28000-2ade-4a6f-89be-1d49ec6a3dd6",
   "correlationId": "30c2ae01-c2c0-4a96-bca0-4c9f1247c8f9",
   "libraryName": "shadcn UI",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "components": {
+    "Accordion": {
+      "type": "Lib_shadcn_Accordion",
+      "props": [
+        "items",
+        "value"
+      ],
+      "events": [
+        "onChange"
+      ],
+      "styles": [
+        "textColor",
+        "borderColor"
+      ],
+      "actions": [
+        "open",
+        "collapseAll"
+      ],
+      "fit": true,
+      "role": "accordion"
+    },
+    "AccordionContainer": {
+      "type": "Lib_shadcn_AccordionContainer",
+      "props": [
+        "sections",
+        "openSections",
+        "allowMultiple"
+      ],
+      "events": [
+        "onToggle"
+      ],
+      "styles": [
+        "panelHeight",
+        "headerColor",
+        "backgroundColor",
+        "borderRadius",
+        "padding"
+      ],
+      "actions": [
+        "openSection",
+        "collapseAll"
+      ],
+      "fit": false,
+      "role": "accordion-container",
+      "slots": [
+        {
+          "name": "section_general",
+          "kind": "slot"
+        },
+        {
+          "name": "section_billing",
+          "kind": "slot"
+        },
+        {
+          "name": "section_advanced",
+          "kind": "slot"
+        }
+      ]
+    },
+    "Alert": {
+      "type": "Lib_shadcn_Alert",
+      "props": [
+        "title",
+        "description",
+        "variant",
+        "showIcon",
+        "dismissible",
+        "dismissed"
+      ],
+      "events": [
+        "onDismiss"
+      ],
+      "styles": [
+        "backgroundColor",
+        "textColor",
+        "borderColor"
+      ],
+      "actions": [
+        "show",
+        "setTitle",
+        "setDescription",
+        "setVariant",
+        "dismiss"
+      ],
+      "fit": true,
+      "role": "alert"
+    },
+    "AreaChart": {
+      "type": "Lib_shadcn_AreaChart",
+      "props": [
+        "data",
+        "xField",
+        "yFields",
+        "stack",
+        "lineOnly",
+        "curve",
+        "valuePrefix",
+        "valueSuffix",
+        "showLegend",
+        "seriesLabels",
+        "colors",
+        "emptyText",
+        "clickedDataPoint"
+      ],
+      "events": [
+        "onClick",
+        "onDoubleClick"
+      ],
+      "styles": [
+        "chartColor",
+        "gridColor",
+        "axisTextColor"
+      ],
+      "actions": [
+        "clearClickedPoint"
+      ],
+      "fit": false,
+      "role": "areachart"
+    },
+    "Avatar": {
+      "type": "Lib_shadcn_Avatar",
+      "props": [
+        "imageUrl",
+        "name",
+        "subtitle",
+        "showDetails",
+        "size",
+        "shape"
+      ],
+      "events": [
+        "onClick"
+      ],
+      "styles": [
+        "fallbackColor",
+        "textColor"
+      ],
+      "actions": [],
+      "fit": false,
+      "role": "avatar"
+    },
+    "Badge": {
+      "type": "Lib_shadcn_Badge",
+      "props": [
+        "text",
+        "variant",
+        "align"
+      ],
+      "events": [
+        "onClick"
+      ],
+      "styles": [
+        "backgroundColor",
+        "textColor"
+      ],
+      "actions": [],
+      "fit": false,
+      "role": "badge"
+    },
+    "BarChart": {
+      "type": "Lib_shadcn_BarChart",
+      "props": [
+        "data",
+        "xField",
+        "yFields",
+        "horizontal",
+        "stack",
+        "highlight",
+        "categoryColors",
+        "valuePrefix",
+        "valueSuffix",
+        "showLegend",
+        "seriesLabels",
+        "colors",
+        "emptyText",
+        "clickedDataPoint"
+      ],
+      "events": [
+        "onClick",
+        "onDoubleClick"
+      ],
+      "styles": [
+        "chartColor",
+        "gridColor",
+        "axisTextColor",
+        "mutedColor",
+        "barRadius"
+      ],
+      "actions": [
+        "clearClickedPoint"
+      ],
+      "fit": false,
+      "role": "barchart"
+    },
+    "Breadcrumb": {
+      "type": "Lib_shadcn_Breadcrumb",
+      "props": [
+        "items",
+        "lastClickedItem"
+      ],
+      "events": [
+        "onItemClicked"
+      ],
+      "styles": [
+        "textColor",
+        "currentColor"
+      ],
+      "actions": [],
+      "fit": false,
+      "role": "breadcrumb"
+    },
     "Button": {
       "type": "Lib_shadcn_Button",
       "props": [
@@ -25,86 +234,210 @@
       ],
       "actions": [
         "click"
-      ]
+      ],
+      "fit": false,
+      "role": "button"
     },
-    "Input": {
-      "type": "Lib_shadcn_Input",
+    "ButtonGroup": {
+      "type": "Lib_shadcn_ButtonGroup",
       "props": [
         "label",
-        "placeholder",
-        "value",
         "description",
-        "inputType",
-        "disabled"
+        "buttons",
+        "mode",
+        "value",
+        "selected",
+        "allowDeselect",
+        "variant",
+        "size",
+        "orientation",
+        "fullWidth",
+        "disabled",
+        "lastClicked"
       ],
       "events": [
-        "onChange",
-        "onEnterPressed",
-        "onFocus",
-        "onBlur"
-      ],
-      "styles": [
-        "backgroundColor",
-        "textColor",
-        "borderColor",
-        "accentColor",
-        "borderRadius"
-      ],
-      "actions": [
-        "setValue",
-        "clear",
-        "focus"
-      ]
-    },
-    "Textarea": {
-      "type": "Lib_shadcn_Textarea",
-      "props": [
-        "label",
-        "placeholder",
-        "value",
-        "description",
-        "disabled"
-      ],
-      "events": [
+        "onClick",
         "onChange"
       ],
       "styles": [
-        "backgroundColor",
-        "textColor",
+        "selectedBackgroundColor",
+        "selectedTextColor",
         "borderColor",
-        "accentColor",
         "borderRadius"
       ],
       "actions": [
-        "setValue",
+        "setSelected",
         "clear"
-      ]
+      ],
+      "fit": true,
+      "role": "buttongroup"
     },
-    "Select": {
-      "type": "Lib_shadcn_Select",
+    "Calendar": {
+      "type": "Lib_shadcn_Calendar",
       "props": [
-        "label",
-        "placeholder",
-        "options",
-        "value",
-        "selectedLabel",
-        "description",
-        "disabled"
+        "mode",
+        "selectedDate",
+        "selectedDates",
+        "startDate",
+        "endDate",
+        "markers",
+        "minDate",
+        "maxDate",
+        "disabledDates",
+        "disabledDays",
+        "weekStartsOn",
+        "numberOfMonths",
+        "showOutsideDays",
+        "showBorder",
+        "visibleMonth"
       ],
       "events": [
-        "onSelect"
+        "onSelect",
+        "onMonthChanged"
       ],
       "styles": [
+        "accentColor",
         "backgroundColor",
         "textColor",
-        "borderColor",
+        "markerColor"
+      ],
+      "actions": [
+        "selectDate",
+        "clear",
+        "setMonth"
+      ],
+      "fit": false,
+      "role": "calendar"
+    },
+    "Card": {
+      "type": "Lib_shadcn_Card",
+      "props": [
+        "title",
+        "description"
+      ],
+      "events": [],
+      "styles": [
+        "backgroundColor",
         "accentColor",
+        "borderRadius",
+        "padding"
+      ],
+      "actions": [],
+      "fit": false,
+      "role": "card",
+      "slots": [
+        {
+          "name": "body",
+          "kind": "slot"
+        }
+      ]
+    },
+    "CardGrid": {
+      "type": "Lib_shadcn_CardGrid",
+      "props": [
+        "data",
+        "titleField",
+        "subtitleField",
+        "imageField",
+        "badgeField",
+        "descriptionField",
+        "progressField",
+        "metaFields",
+        "idField",
+        "minCardWidth",
+        "imageAspect",
+        "showImage",
+        "cardStyle",
+        "highlightSelected",
+        "emptyText",
+        "selectedItemId",
+        "selectedItem",
+        "selectedItemIndex"
+      ],
+      "events": [
+        "onCardClicked"
+      ],
+      "styles": [
+        "accentColor",
+        "cardBackground",
+        "borderRadius"
+      ],
+      "actions": [],
+      "fit": true,
+      "role": "cardgrid"
+    },
+    "Carousel": {
+      "type": "Lib_shadcn_Carousel",
+      "props": [
+        "slides",
+        "currentIndex",
+        "imageFit",
+        "captionPosition",
+        "showArrows",
+        "showDots",
+        "loop",
+        "autoplay",
+        "interval",
+        "pauseOnHover",
+        "currentSlide",
+        "clickedSlide"
+      ],
+      "events": [
+        "onSlideChanged",
+        "onSlideClicked"
+      ],
+      "styles": [
+        "activeDotColor",
         "borderRadius"
       ],
       "actions": [
-        "setValue",
-        "clear"
-      ]
+        "next",
+        "previous",
+        "goTo"
+      ],
+      "fit": false,
+      "role": "carousel"
+    },
+    "Chat": {
+      "type": "Lib_shadcn_Chat",
+      "props": [
+        "chatTitle",
+        "history",
+        "userName",
+        "respondentName",
+        "placeholder",
+        "emptyText",
+        "isInputDisabled",
+        "isResponseLoading",
+        "enableClearHistoryButton",
+        "enableDownloadHistoryButton",
+        "showAvatars",
+        "showTimestamps",
+        "lastMessage",
+        "lastResponse"
+      ],
+      "events": [
+        "onMessageSent",
+        "onClearHistory"
+      ],
+      "styles": [
+        "accentColor",
+        "responseBubbleColor",
+        "containerBackgroundColor",
+        "borderRadius"
+      ],
+      "actions": [
+        "sendMessage",
+        "appendHistory",
+        "setHistory",
+        "clearHistory",
+        "setResponseLoading",
+        "setInputDisable",
+        "setError",
+        "downloadChat"
+      ],
+      "fit": false,
+      "role": "chat"
     },
     "Checkbox": {
       "type": "Lib_shadcn_Checkbox",
@@ -127,468 +460,118 @@
       "actions": [
         "setChecked",
         "toggle"
-      ]
+      ],
+      "fit": true,
+      "role": "checkbox"
     },
-    "Switch": {
-      "type": "Lib_shadcn_Switch",
+    "CircularProgress": {
+      "type": "Lib_shadcn_CircularProgress",
       "props": [
-        "label",
-        "description",
-        "checked",
-        "disabled"
-      ],
-      "events": [
-        "onChange"
-      ],
-      "styles": [
-        "accentColor",
-        "offColor",
-        "textColor"
-      ],
-      "actions": [
-        "setChecked",
-        "toggle"
-      ]
-    },
-    "RadioGroup": {
-      "type": "Lib_shadcn_RadioGroup",
-      "props": [
-        "label",
-        "options",
         "value",
-        "orientation",
-        "disabled"
-      ],
-      "events": [
-        "onChange"
-      ],
-      "styles": [
-        "accentColor",
-        "textColor",
-        "borderColor"
-      ],
-      "actions": [
-        "setValue"
-      ]
-    },
-    "Slider": {
-      "type": "Lib_shadcn_Slider",
-      "props": [
-        "label",
-        "value",
-        "min",
-        "max",
-        "step",
-        "showValue",
-        "disabled"
-      ],
-      "events": [
-        "onChange"
-      ],
-      "styles": [
-        "accentColor",
-        "trackColor"
-      ],
-      "actions": [
-        "setValue"
-      ]
-    },
-    "ToggleGroup": {
-      "type": "Lib_shadcn_ToggleGroup",
-      "props": [
-        "options",
-        "value",
-        "multiple",
-        "values",
-        "variant",
-        "disabled"
-      ],
-      "events": [
-        "onChange"
-      ],
-      "styles": [
-        "backgroundColor",
-        "selectedColor",
-        "textColor",
-        "borderColor",
-        "borderRadius"
-      ],
-      "actions": [
-        "setValue"
-      ]
-    },
-    "OtpInput": {
-      "type": "Lib_shadcn_OtpInput",
-      "props": [
-        "label",
-        "length",
-        "value",
-        "description",
-        "disabled",
-        "isComplete"
-      ],
-      "events": [
-        "onChange",
-        "onComplete"
-      ],
-      "styles": [
-        "backgroundColor",
-        "textColor",
-        "borderColor",
-        "accentColor",
-        "borderRadius"
-      ],
-      "actions": [
-        "clear",
-        "setValue"
-      ]
-    },
-    "Badge": {
-      "type": "Lib_shadcn_Badge",
-      "props": [
-        "text",
-        "variant",
-        "align"
-      ],
-      "events": [
-        "onClick"
-      ],
-      "styles": [
-        "backgroundColor",
-        "textColor"
-      ],
-      "actions": []
-    },
-    "Alert": {
-      "type": "Lib_shadcn_Alert",
-      "props": [
-        "title",
-        "description",
-        "variant",
-        "showIcon",
-        "dismissible",
-        "dismissed"
-      ],
-      "events": [
-        "onDismiss"
-      ],
-      "styles": [
-        "backgroundColor",
-        "textColor",
-        "borderColor"
-      ],
-      "actions": [
-        "show",
-        "dismiss"
-      ]
-    },
-    "Avatar": {
-      "type": "Lib_shadcn_Avatar",
-      "props": [
-        "imageUrl",
-        "name",
-        "subtitle",
-        "showDetails",
         "size",
-        "shape"
-      ],
-      "events": [
-        "onClick"
-      ],
-      "styles": [
-        "fallbackColor",
-        "textColor"
-      ],
-      "actions": []
-    },
-    "Progress": {
-      "type": "Lib_shadcn_Progress",
-      "props": [
-        "label",
-        "value",
-        "showValue",
-        "variant"
+        "thickness",
+        "lineCap",
+        "centerText",
+        "text",
+        "label"
       ],
       "events": [],
       "styles": [
-        "accentColor",
-        "trackColor"
+        "barColor",
+        "trackColor",
+        "textColor"
       ],
       "actions": [
         "setValue"
-      ]
-    },
-    "Skeleton": {
-      "type": "Lib_shadcn_Skeleton",
-      "props": [
-        "shape",
-        "lines"
       ],
-      "events": [],
-      "styles": [
-        "baseColor",
-        "backgroundColor",
-        "borderRadius"
-      ],
-      "actions": []
+      "fit": true,
+      "role": "circularprogress"
     },
-    "Stat": {
-      "type": "Lib_shadcn_Stat",
+    "ColorPicker": {
+      "type": "Lib_shadcn_ColorPicker",
       "props": [
         "label",
+        "description",
         "value",
-        "change",
-        "trend",
-        "changeLabel",
-        "icon"
+        "placeholder",
+        "swatches",
+        "showSwatches",
+        "showPicker",
+        "disabled",
+        "selectedColorRGB",
+        "selectedColorRGBA",
+        "isValid",
+        "label",
+        "description",
+        "value",
+        "placeholder",
+        "swatches",
+        "showSwatches",
+        "showPicker",
+        "disabled",
+        "selectedColorRGB",
+        "selectedColorRGBA",
+        "isValid"
       ],
       "events": [
-        "onClick"
+        "onChange",
+        "onFocus",
+        "onBlur",
+        "onChange",
+        "onFocus",
+        "onBlur"
       ],
       "styles": [
         "backgroundColor",
         "textColor",
         "borderColor",
+        "borderRadius",
+        "backgroundColor",
+        "textColor",
+        "borderColor",
         "borderRadius"
       ],
-      "actions": []
-    },
-    "Tabs": {
-      "type": "Lib_shadcn_Tabs",
-      "props": [
-        "tabs",
-        "value",
-        "variant"
-      ],
-      "events": [
-        "onChange"
-      ],
-      "styles": [
-        "listBackground",
-        "activeBackground",
-        "textColor",
-        "accentColor"
-      ],
       "actions": [
-        "setTab"
-      ]
+        "setColor"
+      ],
+      "fit": true,
+      "role": "colorpicker"
     },
-    "Accordion": {
-      "type": "Lib_shadcn_Accordion",
-      "props": [
-        "items",
-        "value"
-      ],
-      "events": [
-        "onChange"
-      ],
-      "styles": [
-        "textColor",
-        "borderColor"
-      ],
-      "actions": [
-        "open",
-        "collapseAll"
-      ]
-    },
-    "Dialog": {
-      "type": "Lib_shadcn_Dialog",
-      "props": [
-        "triggerText",
-        "triggerVariant",
-        "title",
-        "description",
-        "confirmText",
-        "cancelText",
-        "destructive",
-        "isOpen"
-      ],
-      "events": [
-        "onOpen",
-        "onConfirm",
-        "onCancel"
-      ],
-      "styles": [
-        "buttonColor",
-        "buttonTextColor",
-        "dialogBackground",
-        "dialogRadius"
-      ],
-      "actions": [
-        "open",
-        "close"
-      ]
-    },
-    "DropdownMenu": {
-      "type": "Lib_shadcn_DropdownMenu",
-      "props": [
-        "triggerText",
-        "triggerVariant",
-        "items",
-        "align",
-        "selectedItem"
-      ],
-      "events": [
-        "onSelect"
-      ],
-      "styles": [
-        "buttonColor",
-        "buttonTextColor",
-        "menuBackground"
-      ],
-      "actions": []
-    },
-    "Card": {
-      "type": "Lib_shadcn_Card",
-      "props": [
-        "title",
-        "description"
-      ],
-      "events": [],
-      "styles": [
-        "backgroundColor",
-        "accentColor",
-        "borderRadius",
-        "padding"
-      ],
-      "actions": []
-    },
-    "TabsContainer": {
-      "type": "Lib_shadcn_TabsContainer",
-      "props": [
-        "tabs",
-        "currentTab"
-      ],
-      "events": [
-        "onChange"
-      ],
-      "styles": [
-        "accentColor",
-        "backgroundColor",
-        "borderRadius",
-        "padding"
-      ],
-      "actions": []
-    },
-    "AccordionContainer": {
-      "type": "Lib_shadcn_AccordionContainer",
-      "props": [
-        "sections",
-        "openSections",
-        "allowMultiple"
-      ],
-      "events": [
-        "onToggle"
-      ],
-      "styles": [
-        "panelHeight",
-        "headerColor",
-        "backgroundColor",
-        "borderRadius",
-        "padding"
-      ],
-      "actions": [
-        "openSection",
-        "collapseAll"
-      ]
-    },
-    "Stepper": {
-      "type": "Lib_shadcn_Stepper",
-      "props": [
-        "steps",
-        "currentStep",
-        "finishLabel"
-      ],
-      "events": [
-        "onStepChange",
-        "onComplete"
-      ],
-      "styles": [
-        "accentColor",
-        "backgroundColor",
-        "borderRadius",
-        "padding"
-      ],
-      "actions": [
-        "next",
-        "back",
-        "goToStep"
-      ]
-    },
-    "SplitPane": {
-      "type": "Lib_shadcn_SplitPane",
-      "props": [
-        "direction",
-        "split",
-        "minPane"
-      ],
-      "events": [
-        "onResize"
-      ],
-      "styles": [
-        "dividerColor",
-        "gap",
-        "backgroundColor",
-        "borderRadius",
-        "padding"
-      ],
-      "actions": [
-        "setSplit"
-      ]
-    },
-    "Form": {
-      "type": "Lib_shadcn_Form",
-      "props": [
-        "title",
-        "fields",
-        "defaultValues",
-        "submitLabel",
-        "showReset",
-        "disabled",
-        "data",
-        "isValid",
-        "errors"
-      ],
-      "events": [
-        "onSubmit",
-        "onChange",
-        "onReset"
-      ],
-      "styles": [
-        "accentColor",
-        "fieldGap",
-        "labelPosition"
-      ],
-      "actions": [
-        "submit",
-        "reset",
-        "setValues"
-      ]
-    },
-    "DataTable": {
-      "type": "Lib_shadcn_DataTable",
+    "ComboChart": {
+      "type": "Lib_shadcn_ComboChart",
       "props": [
         "data",
-        "columns",
-        "searchable",
-        "pageSize",
-        "searchText",
-        "selectedRow",
-        "selectedRowIndex"
+        "xField",
+        "barFields",
+        "lineFields",
+        "rightAxisFields",
+        "stackBars",
+        "curve",
+        "showDots",
+        "yAxisFormat",
+        "rightAxisFormat",
+        "currency",
+        "showGrid",
+        "showLegend",
+        "seriesLabels",
+        "colors",
+        "emptyText",
+        "clickedDataPoint"
       ],
       "events": [
-        "onRowClick",
-        "onSearch"
+        "onClick",
+        "onDoubleClick"
       ],
       "styles": [
-        "headerBackground",
-        "striped",
-        "density"
+        "chartColor",
+        "gridColor",
+        "axisTextColor"
       ],
       "actions": [
-        "selectRow",
-        "clearSelection"
-      ]
+        "clearClickedPoint"
+      ],
+      "fit": false,
+      "role": "combochart"
     },
     "Combobox": {
       "type": "Lib_shadcn_Combobox",
@@ -598,70 +581,16 @@
         "options",
         "value",
         "selectedLabel",
-        "disabled"
-      ],
-      "events": [
-        "onSelect"
-      ],
-      "styles": [
-        "backgroundColor",
-        "textColor",
-        "borderColor",
-        "accentColor",
-        "borderRadius",
-        "backgroundColor",
-        "textColor",
-        "borderColor",
-        "accentColor",
-        "borderRadius"
-      ],
-      "actions": [
-        "setValue",
-        "clear"
-      ]
-    },
-    "MultiSelect": {
-      "type": "Lib_shadcn_MultiSelect",
-      "props": [
+        "disabled",
         "label",
         "placeholder",
         "options",
-        "values",
-        "maxSelected",
-        "disabled"
-      ],
-      "events": [
-        "onChange"
-      ],
-      "styles": [
-        "chipColor",
-        "backgroundColor",
-        "textColor",
-        "borderColor",
-        "accentColor",
-        "borderRadius",
-        "chipColor",
-        "backgroundColor",
-        "textColor",
-        "borderColor",
-        "accentColor",
-        "borderRadius"
-      ],
-      "actions": [
-        "setValues",
-        "clear"
-      ]
-    },
-    "DatePicker": {
-      "type": "Lib_shadcn_DatePicker",
-      "props": [
-        "label",
         "value",
-        "minDate",
-        "maxDate",
+        "selectedLabel",
         "disabled"
       ],
       "events": [
+        "onSelect",
         "onSelect"
       ],
       "styles": [
@@ -677,115 +606,11 @@
         "borderRadius"
       ],
       "actions": [
-        "setDate",
-        "clear"
-      ]
-    },
-    "Rating": {
-      "type": "Lib_shadcn_Rating",
-      "props": [
-        "label",
-        "value",
-        "max",
-        "readOnly"
-      ],
-      "events": [
-        "onChange"
-      ],
-      "styles": [
-        "starColor",
-        "starSize"
-      ],
-      "actions": [
-        "setValue"
-      ]
-    },
-    "Timeline": {
-      "type": "Lib_shadcn_Timeline",
-      "props": [
-        "items",
-        "selectedItem"
-      ],
-      "events": [
-        "onItemClick"
-      ],
-      "styles": [
-        "lineColor",
-        "accentColor"
-      ],
-      "actions": []
-    },
-    "NumberInput": {
-      "type": "Lib_shadcn_NumberInput",
-      "props": [
-        "label",
-        "description",
-        "placeholder",
-        "value",
-        "min",
-        "max",
-        "step",
-        "decimalPlaces",
-        "stepper",
-        "prefix",
-        "suffix",
-        "thousandSeparator",
-        "required",
-        "disabled",
-        "isValid"
-      ],
-      "events": [
-        "onChange",
-        "onEnterPressed",
-        "onFocus",
-        "onBlur"
-      ],
-      "styles": [
-        "backgroundColor",
-        "textColor",
-        "borderColor",
-        "accentColor",
-        "borderRadius"
-      ],
-      "actions": [
         "setValue",
-        "clear",
-        "focus"
-      ]
-    },
-    "PasswordInput": {
-      "type": "Lib_shadcn_PasswordInput",
-      "props": [
-        "label",
-        "description",
-        "placeholder",
-        "value",
-        "showToggle",
-        "showStrength",
-        "minLength",
-        "required",
-        "disabled",
-        "strength",
-        "isValid"
+        "clear"
       ],
-      "events": [
-        "onChange",
-        "onEnterPressed",
-        "onFocus",
-        "onBlur"
-      ],
-      "styles": [
-        "backgroundColor",
-        "textColor",
-        "borderColor",
-        "accentColor",
-        "borderRadius"
-      ],
-      "actions": [
-        "setText",
-        "clear",
-        "focus"
-      ]
+      "fit": true,
+      "role": "combobox"
     },
     "CurrencyInput": {
       "type": "Lib_shadcn_CurrencyInput",
@@ -822,122 +647,82 @@
         "setCurrency",
         "clear",
         "focus"
-      ]
+      ],
+      "fit": true,
+      "role": "currencyinput"
     },
-    "PhoneInput": {
-      "type": "Lib_shadcn_PhoneInput",
+    "DataTable": {
+      "type": "Lib_shadcn_DataTable",
       "props": [
-        "label",
-        "description",
-        "placeholder",
-        "value",
-        "country",
-        "onlyCountries",
-        "isCountryChangeEnabled",
-        "showFlag",
-        "required",
-        "disabled",
-        "countryCode",
-        "formattedValue",
-        "isValidNumber",
-        "isValid"
+        "data",
+        "columns",
+        "searchable",
+        "paginate",
+        "pageSize",
+        "searchText",
+        "selectedRow",
+        "selectedRowIndex"
       ],
       "events": [
-        "onChange",
-        "onEnterPressed",
-        "onFocus",
-        "onBlur"
+        "onRowClick",
+        "onSearch"
+      ],
+      "styles": [
+        "headerBackground",
+        "striped",
+        "density"
+      ],
+      "actions": [
+        "selectRow",
+        "clearSelection"
+      ],
+      "fit": true,
+      "role": "table"
+    },
+    "DatePicker": {
+      "type": "Lib_shadcn_DatePicker",
+      "props": [
+        "label",
+        "value",
+        "minDate",
+        "maxDate",
+        "description",
+        "disabled",
+        "label",
+        "value",
+        "minDate",
+        "maxDate",
+        "description",
+        "disabled"
+      ],
+      "events": [
+        "onSelect",
+        "onSelect"
       ],
       "styles": [
         "backgroundColor",
         "textColor",
         "borderColor",
         "accentColor",
-        "borderRadius"
-      ],
-      "actions": [
-        "setValue",
-        "setCountryCode",
-        "clear",
-        "focus"
-      ]
-    },
-    "TagsInput": {
-      "type": "Lib_shadcn_TagsInput",
-      "props": [
-        "label",
-        "description",
-        "placeholder",
-        "values",
-        "suggestions",
-        "allowCustomTags",
-        "maxTags",
-        "caseSensitive",
-        "tagPattern",
-        "addOnBlur",
-        "required",
-        "disabled",
-        "lastAddedTag",
-        "lastRemovedTag",
-        "isValid"
-      ],
-      "events": [
-        "onChange",
-        "onTagAdded",
-        "onTagDeleted",
-        "onFocus",
-        "onBlur"
-      ],
-      "styles": [
-        "backgroundColor",
-        "textColor",
-        "borderColor",
-        "accentColor",
-        "chipBackgroundColor",
-        "borderRadius"
-      ],
-      "actions": [
-        "setTags",
-        "clear",
-        "focus"
-      ]
-    },
-    "ColorPicker": {
-      "type": "Lib_shadcn_ColorPicker",
-      "props": [
-        "label",
-        "description",
-        "value",
-        "placeholder",
-        "swatches",
-        "showSwatches",
-        "showPicker",
-        "disabled",
-        "selectedColorRGB",
-        "selectedColorRGBA",
-        "isValid"
-      ],
-      "events": [
-        "onChange",
-        "onFocus",
-        "onBlur"
-      ],
-      "styles": [
-        "backgroundColor",
-        "textColor",
-        "borderColor",
         "borderRadius",
         "backgroundColor",
         "textColor",
         "borderColor",
+        "accentColor",
         "borderRadius"
       ],
       "actions": [
-        "setColor"
-      ]
+        "setDate",
+        "clear",
+        "setValue",
+        "clearValue"
+      ],
+      "fit": true,
+      "role": "datepicker",
+      "validation": "date"
     },
-    "TimePicker": {
-      "type": "Lib_shadcn_TimePicker",
+    "DateTimePicker": {
+      "type": "Lib_shadcn_DateTimePicker",
       "props": [
         "label",
         "description",
@@ -945,38 +730,16 @@
         "value",
         "timeFormat",
         "minuteStep",
-        "minTime",
-        "maxTime",
+        "minDate",
+        "maxDate",
+        "disabledDates",
         "required",
         "disabled",
-        "formattedValue",
-        "isValid"
-      ],
-      "events": [
-        "onSelect",
-        "onFocus",
-        "onBlur"
-      ],
-      "styles": [
-        "backgroundColor",
-        "textColor",
-        "borderColor",
-        "accentColor",
-        "borderRadius",
-        "backgroundColor",
-        "textColor",
-        "borderColor",
-        "accentColor",
-        "borderRadius"
-      ],
-      "actions": [
-        "setValue",
-        "clearValue"
-      ]
-    },
-    "DateTimePicker": {
-      "type": "Lib_shadcn_DateTimePicker",
-      "props": [
+        "selectedDate",
+        "selectedTime",
+        "unixTimestamp",
+        "displayValue",
+        "isValid",
         "label",
         "description",
         "placeholder",
@@ -997,6 +760,9 @@
       "events": [
         "onSelect",
         "onFocus",
+        "onBlur",
+        "onSelect",
+        "onFocus",
         "onBlur"
       ],
       "styles": [
@@ -1015,7 +781,110 @@
         "setValue",
         "setValueInTimestamp",
         "clearValue"
+      ],
+      "fit": true,
+      "role": "datetimepicker"
+    },
+    "Dialog": {
+      "type": "Lib_shadcn_Dialog",
+      "props": [
+        "triggerText",
+        "triggerVariant",
+        "title",
+        "description",
+        "confirmText",
+        "cancelText",
+        "destructive",
+        "isOpen",
+        "showBody",
+        "showFooter",
+        "bodyHeight",
+        "show",
+        "triggerText",
+        "triggerVariant",
+        "title",
+        "description",
+        "confirmText",
+        "cancelText",
+        "destructive",
+        "isOpen",
+        "showBody",
+        "showFooter",
+        "bodyHeight",
+        "show"
+      ],
+      "events": [
+        "onClose",
+        "onOpen",
+        "onConfirm",
+        "onCancel",
+        "onClose"
+      ],
+      "styles": [
+        "buttonColor",
+        "buttonTextColor",
+        "dialogBackground",
+        "dialogRadius"
+      ],
+      "actions": [
+        "open",
+        "close"
+      ],
+      "fit": false,
+      "role": "dialog",
+      "slots": [
+        {
+          "name": "body",
+          "kind": "popup"
+        }
       ]
+    },
+    "DropdownMenu": {
+      "type": "Lib_shadcn_DropdownMenu",
+      "props": [
+        "triggerText",
+        "triggerVariant",
+        "items",
+        "align",
+        "selectedItem",
+        "triggerText",
+        "triggerVariant",
+        "items",
+        "align",
+        "selectedItem"
+      ],
+      "events": [
+        "onSelect",
+        "onSelect"
+      ],
+      "styles": [
+        "buttonColor",
+        "buttonTextColor",
+        "menuBackground"
+      ],
+      "actions": [],
+      "fit": false,
+      "role": "dropdownmenu"
+    },
+    "Empty": {
+      "type": "Lib_shadcn_Empty",
+      "props": [
+        "title",
+        "description",
+        "icon",
+        "actionLabel"
+      ],
+      "events": [
+        "onActionClicked"
+      ],
+      "styles": [
+        "backgroundColor",
+        "borderColor",
+        "iconColor"
+      ],
+      "actions": [],
+      "fit": false,
+      "role": "empty"
     },
     "FileUpload": {
       "type": "Lib_shadcn_FileUpload",
@@ -1050,847 +919,40 @@
       ],
       "actions": [
         "clearFiles"
-      ]
+      ],
+      "fit": true,
+      "role": "fileupload"
     },
-    "ButtonGroup": {
-      "type": "Lib_shadcn_ButtonGroup",
+    "Form": {
+      "type": "Lib_shadcn_Form",
       "props": [
-        "label",
-        "description",
-        "buttons",
-        "mode",
-        "value",
-        "selected",
-        "allowDeselect",
-        "variant",
-        "size",
-        "orientation",
-        "fullWidth",
+        "title",
+        "fields",
+        "defaultValues",
+        "submitLabel",
+        "showReset",
         "disabled",
-        "lastClicked"
+        "data",
+        "isValid",
+        "errors"
       ],
       "events": [
-        "onClick",
-        "onChange"
-      ],
-      "styles": [
-        "selectedBackgroundColor",
-        "selectedTextColor",
-        "borderColor",
-        "borderRadius"
-      ],
-      "actions": [
-        "setSelected",
-        "clear"
-      ]
-    },
-    "Calendar": {
-      "type": "Lib_shadcn_Calendar",
-      "props": [
-        "mode",
-        "selectedDate",
-        "selectedDates",
-        "startDate",
-        "endDate",
-        "markers",
-        "minDate",
-        "maxDate",
-        "disabledDates",
-        "disabledDays",
-        "weekStartsOn",
-        "numberOfMonths",
-        "showOutsideDays",
-        "showBorder",
-        "visibleMonth"
-      ],
-      "events": [
-        "onSelect",
-        "onMonthChanged"
+        "onSubmit",
+        "onChange",
+        "onReset"
       ],
       "styles": [
         "accentColor",
-        "backgroundColor",
-        "textColor",
-        "markerColor"
-      ],
-      "actions": [
-        "selectDate",
-        "clear",
-        "setMonth"
-      ]
-    },
-    "Text": {
-      "type": "Lib_shadcn_Text",
-      "props": [
-        "text",
-        "tone"
-      ],
-      "events": [
-        "onClick",
-        "onHover"
-      ],
-      "styles": [
-        "textColor",
-        "textAlign",
-        "fontSize",
-        "fontWeight"
-      ],
-      "actions": [
-        "setText",
-        "clear"
-      ]
-    },
-    "Heading": {
-      "type": "Lib_shadcn_Heading",
-      "props": [
-        "text",
-        "level"
-      ],
-      "events": [
-        "onClick",
-        "onHover"
-      ],
-      "styles": [
-        "textColor",
-        "textAlign",
-        "letterSpacing",
-        "textTransform"
-      ],
-      "actions": [
-        "setText",
-        "clear"
-      ]
-    },
-    "Link": {
-      "type": "Lib_shadcn_Link",
-      "props": [
-        "linkText",
-        "linkTarget",
-        "targetType",
-        "underline",
-        "showIcon"
-      ],
-      "events": [
-        "onClick",
-        "onHover"
-      ],
-      "styles": [
-        "textColor",
-        "fontSize"
-      ],
-      "actions": [
-        "click",
-        "setLinkTarget",
-        "setLinkText"
-      ]
-    },
-    "Icon": {
-      "type": "Lib_shadcn_Icon",
-      "props": [
-        "icon",
-        "size",
-        "strokeWidth",
-        "tone",
-        "chip"
-      ],
-      "events": [
-        "onClick",
-        "onHover"
-      ],
-      "styles": [
-        "iconColor",
-        "alignment"
-      ],
-      "actions": [
-        "click"
-      ]
-    },
-    "Image": {
-      "type": "Lib_shadcn_Image",
-      "props": [
-        "source",
-        "alternativeText",
-        "imageFit",
-        "caption",
-        "fallbackText",
-        "showBorder",
-        "zoomOnClick",
-        "hasError"
-      ],
-      "events": [
-        "onClick"
-      ],
-      "styles": [
-        "borderRadius",
-        "backgroundColor",
-        "borderRadius",
-        "backgroundColor"
-      ],
-      "actions": [
-        "setImageURL",
-        "clearImage"
-      ]
-    },
-    "Separator": {
-      "type": "Lib_shadcn_Separator",
-      "props": [
-        "orientation",
-        "label"
-      ],
-      "events": [],
-      "styles": [
-        "lineColor",
-        "thickness"
-      ],
-      "actions": []
-    },
-    "Spinner": {
-      "type": "Lib_shadcn_Spinner",
-      "props": [
-        "variant",
-        "size",
-        "label",
+        "fieldGap",
         "labelPosition"
       ],
-      "events": [],
-      "styles": [
-        "spinnerColor",
-        "trackColor",
-        "alignment"
-      ],
-      "actions": []
-    },
-    "Empty": {
-      "type": "Lib_shadcn_Empty",
-      "props": [
-        "title",
-        "description",
-        "icon",
-        "actionLabel"
-      ],
-      "events": [
-        "onActionClicked"
-      ],
-      "styles": [
-        "backgroundColor",
-        "borderColor",
-        "iconColor"
-      ],
-      "actions": []
-    },
-    "Tags": {
-      "type": "Lib_shadcn_Tags",
-      "props": [
-        "tags",
-        "tagColors",
-        "variant",
-        "size",
-        "overflow",
-        "pill",
-        "lastClickedTag"
-      ],
-      "events": [
-        "onTagClicked"
-      ],
-      "styles": [
-        "backgroundColor"
-      ],
-      "actions": []
-    },
-    "Breadcrumb": {
-      "type": "Lib_shadcn_Breadcrumb",
-      "props": [
-        "items",
-        "lastClickedItem"
-      ],
-      "events": [
-        "onItemClicked"
-      ],
-      "styles": [
-        "textColor",
-        "currentColor"
-      ],
-      "actions": []
-    },
-    "Pagination": {
-      "type": "Lib_shadcn_Pagination",
-      "props": [
-        "numberOfPages",
-        "totalRecords",
-        "pageSize",
-        "currentPageIndex",
-        "siblingCount",
-        "showFirstLast",
-        "showLabels",
-        "totalPages"
-      ],
-      "events": [
-        "onPageChange"
-      ],
-      "styles": [
-        "activeBackgroundColor",
-        "borderRadius",
-        "alignment"
-      ],
       "actions": [
-        "setPage"
-      ]
-    },
-    "Navigation": {
-      "type": "Lib_shadcn_Navigation",
-      "props": [
-        "items",
-        "value",
-        "orientation",
-        "variant",
-        "collapsed",
-        "showCollapseButton",
-        "previousSelectedItem"
+        "submit",
+        "reset",
+        "setValues"
       ],
-      "events": [
-        "onClick"
-      ],
-      "styles": [
-        "backgroundColor",
-        "activeBackgroundColor",
-        "indicatorColor",
-        "textColor"
-      ],
-      "actions": [
-        "selectItem",
-        "setCollapsed"
-      ]
-    },
-    "Steps": {
-      "type": "Lib_shadcn_Steps",
-      "props": [
-        "steps",
-        "currentStepIndex",
-        "stepsSelectable",
-        "orientation",
-        "variant",
-        "currentStepId"
-      ],
-      "events": [
-        "onSelect"
-      ],
-      "styles": [
-        "completedAccent",
-        "incompletedAccent"
-      ],
-      "actions": [
-        "setStep",
-        "nextStep",
-        "previousStep",
-        "resetSteps"
-      ]
-    },
-    "KeyValue": {
-      "type": "Lib_shadcn_KeyValue",
-      "props": [
-        "data",
-        "columns",
-        "layout",
-        "labelWidth",
-        "dividers",
-        "emptyText",
-        "currency",
-        "allowCopy",
-        "lastClickedField"
-      ],
-      "events": [
-        "onFieldClick"
-      ],
-      "styles": [
-        "labelColor",
-        "valueColor",
-        "dividerColor"
-      ],
-      "actions": []
-    },
-    "CircularProgress": {
-      "type": "Lib_shadcn_CircularProgress",
-      "props": [
-        "value",
-        "size",
-        "thickness",
-        "lineCap",
-        "centerText",
-        "text",
-        "label"
-      ],
-      "events": [],
-      "styles": [
-        "barColor",
-        "trackColor",
-        "textColor"
-      ],
-      "actions": [
-        "setValue"
-      ]
-    },
-    "SummaryStrip": {
-      "type": "Lib_shadcn_SummaryStrip",
-      "props": [
-        "items",
-        "valueFormat",
-        "currency",
-        "appearance",
-        "align"
-      ],
-      "events": [],
-      "styles": [
-        "backgroundColor",
-        "borderColor",
-        "positiveColor",
-        "negativeColor"
-      ],
-      "actions": []
-    },
-    "Hero": {
-      "type": "Lib_shadcn_Hero",
-      "props": [
-        "eyebrow",
-        "title",
-        "subtitle",
-        "meta",
-        "actionLabel",
-        "secondaryActionLabel",
-        "asideValue",
-        "asideLabel",
-        "icon",
-        "background",
-        "imageUrl",
-        "align"
-      ],
-      "events": [
-        "onActionClicked",
-        "onSecondaryActionClicked"
-      ],
-      "styles": [
-        "accentColor",
-        "borderRadius"
-      ],
-      "actions": []
-    },
-    "ListView": {
-      "type": "Lib_shadcn_ListView",
-      "props": [
-        "data",
-        "titleField",
-        "subtitleField",
-        "metaField",
-        "imageField",
-        "idField",
-        "mode",
-        "columns",
-        "showBorder",
-        "highlightSelectedRow",
-        "enablePagination",
-        "rowsPerPage",
-        "emptyText",
-        "selectedItemId",
-        "selectedItem",
-        "pageIndex"
-      ],
-      "events": [
-        "onRecordClicked",
-        "onPageChanged"
-      ],
-      "styles": [
-        "accentColor",
-        "itemBackgroundColor",
-        "gap",
-        "itemBorderRadius"
-      ],
-      "actions": [
-        "selectItem",
-        "clearSelection",
-        "setPage"
-      ]
-    },
-    "CardGrid": {
-      "type": "Lib_shadcn_CardGrid",
-      "props": [
-        "data",
-        "titleField",
-        "subtitleField",
-        "imageField",
-        "badgeField",
-        "descriptionField",
-        "progressField",
-        "metaFields",
-        "idField",
-        "minCardWidth",
-        "imageAspect",
-        "showImage",
-        "cardStyle",
-        "highlightSelected",
-        "emptyText",
-        "selectedItemId",
-        "selectedItem",
-        "selectedItemIndex"
-      ],
-      "events": [
-        "onCardClicked"
-      ],
-      "styles": [
-        "accentColor",
-        "cardBackground",
-        "borderRadius"
-      ],
-      "actions": []
-    },
-    "RecordList": {
-      "type": "Lib_shadcn_RecordList",
-      "props": [
-        "data",
-        "titleField",
-        "metaFields",
-        "avatarField",
-        "statusField",
-        "progressField",
-        "valueField",
-        "valueFormat",
-        "currency",
-        "statusColors",
-        "idField",
-        "showAvatar",
-        "density",
-        "showDividers",
-        "listStyle",
-        "highlightSelected",
-        "emptyText",
-        "selectedItemId",
-        "selectedItem",
-        "selectedItemIndex"
-      ],
-      "events": [
-        "onItemClicked"
-      ],
-      "styles": [
-        "accentColor",
-        "backgroundColor",
-        "borderRadius"
-      ],
-      "actions": []
-    },
-    "ProgressList": {
-      "type": "Lib_shadcn_ProgressList",
-      "props": [
-        "data",
-        "labelField",
-        "valueField",
-        "targetField",
-        "captionField",
-        "valueFormat",
-        "currency",
-        "idField",
-        "autoTone",
-        "showValues",
-        "showPercent",
-        "listStyle",
-        "emptyText",
-        "selectedItem",
-        "selectedItemId"
-      ],
-      "events": [
-        "onItemClicked"
-      ],
-      "styles": [
-        "accentColor",
-        "trackColor",
-        "backgroundColor"
-      ],
-      "actions": []
-    },
-    "Carousel": {
-      "type": "Lib_shadcn_Carousel",
-      "props": [
-        "slides",
-        "currentIndex",
-        "imageFit",
-        "captionPosition",
-        "showArrows",
-        "showDots",
-        "loop",
-        "autoplay",
-        "interval",
-        "pauseOnHover",
-        "currentSlide",
-        "clickedSlide"
-      ],
-      "events": [
-        "onSlideChanged",
-        "onSlideClicked"
-      ],
-      "styles": [
-        "activeDotColor",
-        "borderRadius"
-      ],
-      "actions": [
-        "next",
-        "previous",
-        "goTo"
-      ]
-    },
-    "LineChart": {
-      "type": "Lib_shadcn_LineChart",
-      "props": [
-        "data",
-        "xField",
-        "yFields",
-        "curve",
-        "showDots",
-        "strokeWidth",
-        "dashedFields",
-        "referenceValue",
-        "referenceLabel",
-        "yAxisFormat",
-        "currency",
-        "showGrid",
-        "showLegend",
-        "animate",
-        "seriesLabels",
-        "colors",
-        "emptyText",
-        "clickedDataPoint"
-      ],
-      "events": [
-        "onClick",
-        "onDoubleClick"
-      ],
-      "styles": [
-        "chartColor",
-        "gridColor",
-        "axisTextColor",
-        "referenceLineColor"
-      ],
-      "actions": [
-        "clearClickedPoint"
-      ]
-    },
-    "AreaChart": {
-      "type": "Lib_shadcn_AreaChart",
-      "props": [
-        "data",
-        "xField",
-        "yFields",
-        "stack",
-        "lineOnly",
-        "curve",
-        "valuePrefix",
-        "valueSuffix",
-        "showLegend",
-        "seriesLabels",
-        "colors",
-        "emptyText",
-        "clickedDataPoint"
-      ],
-      "events": [
-        "onClick",
-        "onDoubleClick"
-      ],
-      "styles": [
-        "chartColor",
-        "gridColor",
-        "axisTextColor"
-      ],
-      "actions": [
-        "clearClickedPoint"
-      ]
-    },
-    "BarChart": {
-      "type": "Lib_shadcn_BarChart",
-      "props": [
-        "data",
-        "xField",
-        "yFields",
-        "horizontal",
-        "stack",
-        "highlight",
-        "categoryColors",
-        "valuePrefix",
-        "valueSuffix",
-        "showLegend",
-        "seriesLabels",
-        "colors",
-        "emptyText",
-        "clickedDataPoint"
-      ],
-      "events": [
-        "onClick",
-        "onDoubleClick"
-      ],
-      "styles": [
-        "chartColor",
-        "gridColor",
-        "axisTextColor",
-        "mutedColor",
-        "barRadius"
-      ],
-      "actions": [
-        "clearClickedPoint"
-      ]
-    },
-    "ComboChart": {
-      "type": "Lib_shadcn_ComboChart",
-      "props": [
-        "data",
-        "xField",
-        "barFields",
-        "lineFields",
-        "rightAxisFields",
-        "stackBars",
-        "curve",
-        "showDots",
-        "yAxisFormat",
-        "rightAxisFormat",
-        "currency",
-        "showGrid",
-        "showLegend",
-        "seriesLabels",
-        "colors",
-        "emptyText",
-        "clickedDataPoint"
-      ],
-      "events": [
-        "onClick",
-        "onDoubleClick"
-      ],
-      "styles": [
-        "chartColor",
-        "gridColor",
-        "axisTextColor"
-      ],
-      "actions": [
-        "clearClickedPoint"
-      ]
-    },
-    "PieChart": {
-      "type": "Lib_shadcn_PieChart",
-      "props": [
-        "data",
-        "categoryField",
-        "valueField",
-        "donut",
-        "centerValue",
-        "centerLabel",
-        "showLegend",
-        "colors",
-        "emptyText",
-        "clickedDataPoint"
-      ],
-      "events": [
-        "onClick",
-        "onDoubleClick"
-      ],
-      "styles": [
-        "chartColor",
-        "sliceBorderColor",
-        "centerValueColor"
-      ],
-      "actions": [
-        "clearClickedPoint"
-      ]
-    },
-    "RadarChart": {
-      "type": "Lib_shadcn_RadarChart",
-      "props": [
-        "data",
-        "categoryField",
-        "yFields",
-        "maxValue",
-        "fillOpacity",
-        "gridShape",
-        "showDots",
-        "valueSuffix",
-        "showLegend",
-        "seriesLabels",
-        "colors",
-        "emptyText",
-        "clickedDataPoint"
-      ],
-      "events": [
-        "onClick",
-        "onDoubleClick"
-      ],
-      "styles": [
-        "chartColor",
-        "gridColor",
-        "axisTextColor"
-      ],
-      "actions": [
-        "clearClickedPoint"
-      ]
-    },
-    "RadialChart": {
-      "type": "Lib_shadcn_RadialChart",
-      "props": [
-        "mode",
-        "value",
-        "maxValue",
-        "data",
-        "categoryField",
-        "valueField",
-        "centerValue",
-        "centerLabel",
-        "rounded",
-        "showTrack",
-        "showLegend",
-        "colors",
-        "emptyText",
-        "clickedDataPoint"
-      ],
-      "events": [
-        "onClick",
-        "onDoubleClick"
-      ],
-      "styles": [
-        "chartColor",
-        "trackColor",
-        "centerValueColor"
-      ],
-      "actions": [
-        "clearClickedPoint"
-      ]
-    },
-    "ScatterChart": {
-      "type": "Lib_shadcn_ScatterChart",
-      "props": [
-        "data",
-        "xField",
-        "yField",
-        "sizeField",
-        "groupField",
-        "nameField",
-        "xLabel",
-        "yLabel",
-        "xAxisFormat",
-        "yAxisFormat",
-        "currency",
-        "referenceX",
-        "referenceY",
-        "pointSize",
-        "showGrid",
-        "showLegend",
-        "colors",
-        "emptyText",
-        "clickedDataPoint"
-      ],
-      "events": [
-        "onClick",
-        "onDoubleClick"
-      ],
-      "styles": [
-        "chartColor",
-        "gridColor",
-        "axisTextColor",
-        "referenceLineColor"
-      ],
-      "actions": [
-        "clearClickedPoint"
-      ]
+      "fit": false,
+      "role": "form"
     },
     "FunnelChart": {
       "type": "Lib_shadcn_FunnelChart",
@@ -1917,7 +979,32 @@
       ],
       "actions": [
         "clearClickedPoint"
-      ]
+      ],
+      "fit": false,
+      "role": "funnelchart"
+    },
+    "Heading": {
+      "type": "Lib_shadcn_Heading",
+      "props": [
+        "text",
+        "level"
+      ],
+      "events": [
+        "onClick",
+        "onHover"
+      ],
+      "styles": [
+        "textColor",
+        "textAlign",
+        "letterSpacing",
+        "textTransform"
+      ],
+      "actions": [
+        "setText",
+        "clear"
+      ],
+      "fit": true,
+      "role": "heading"
     },
     "HeatmapChart": {
       "type": "Lib_shadcn_HeatmapChart",
@@ -1944,37 +1031,132 @@
       ],
       "actions": [
         "clearClickedPoint"
-      ]
+      ],
+      "fit": false,
+      "role": "heatmapchart"
     },
-    "Sparkline": {
-      "type": "Lib_shadcn_Sparkline",
+    "Hero": {
+      "type": "Lib_shadcn_Hero",
       "props": [
-        "data",
-        "type",
-        "curve",
+        "eyebrow",
+        "title",
+        "subtitle",
+        "meta",
+        "actionLabel",
+        "secondaryActionLabel",
+        "asideValue",
+        "asideLabel",
+        "icon",
+        "background",
+        "imageUrl",
+        "align"
+      ],
+      "events": [
+        "onActionClicked",
+        "onSecondaryActionClicked"
+      ],
+      "styles": [
+        "accentColor",
+        "borderRadius"
+      ],
+      "actions": [],
+      "fit": true,
+      "role": "hero"
+    },
+    "Icon": {
+      "type": "Lib_shadcn_Icon",
+      "props": [
+        "icon",
+        "size",
         "strokeWidth",
-        "showEndDot",
-        "colorByTrend",
-        "lowerIsBetter",
-        "showBand",
-        "bandMin",
-        "bandMax",
-        "showTooltip",
-        "emptyText",
-        "trend",
-        "lastValue"
+        "tone",
+        "chip"
       ],
       "events": [
         "onClick",
-        "onDoubleClick"
+        "onHover"
       ],
       "styles": [
-        "chartColor",
-        "positiveColor",
-        "negativeColor",
-        "bandColor"
+        "iconColor",
+        "alignment"
       ],
-      "actions": []
+      "actions": [
+        "click"
+      ],
+      "fit": false,
+      "role": "icon"
+    },
+    "Image": {
+      "type": "Lib_shadcn_Image",
+      "props": [
+        "source",
+        "alternativeText",
+        "imageFit",
+        "caption",
+        "fallbackText",
+        "showBorder",
+        "zoomOnClick",
+        "hasError",
+        "source",
+        "alternativeText",
+        "imageFit",
+        "caption",
+        "fallbackText",
+        "showBorder",
+        "zoomOnClick",
+        "hasError"
+      ],
+      "events": [
+        "onClick",
+        "onClick"
+      ],
+      "styles": [
+        "borderRadius",
+        "backgroundColor",
+        "borderRadius",
+        "backgroundColor"
+      ],
+      "actions": [
+        "setImageURL",
+        "clearImage"
+      ],
+      "fit": false,
+      "role": "image"
+    },
+    "Input": {
+      "type": "Lib_shadcn_Input",
+      "props": [
+        "label",
+        "placeholder",
+        "value",
+        "description",
+        "inputType",
+        "disabled"
+      ],
+      "events": [
+        "onChange",
+        "onEnterPressed",
+        "onFocus",
+        "onBlur"
+      ],
+      "styles": [
+        "backgroundColor",
+        "textColor",
+        "borderColor",
+        "accentColor",
+        "borderRadius"
+      ],
+      "actions": [
+        "setValue",
+        "clear",
+        "focus",
+        "setText",
+        "setFocus",
+        "setBlur"
+      ],
+      "fit": true,
+      "role": "input",
+      "validation": "text"
     },
     "Kanban": {
       "type": "Lib_shadcn_Kanban",
@@ -2024,112 +1206,143 @@
         "moveCard",
         "deleteCard",
         "updateCardData"
-      ]
+      ],
+      "fit": false,
+      "role": "kanban"
     },
-    "Chat": {
-      "type": "Lib_shadcn_Chat",
+    "KeyValue": {
+      "type": "Lib_shadcn_KeyValue",
       "props": [
-        "chatTitle",
-        "history",
-        "userName",
-        "respondentName",
-        "placeholder",
+        "data",
+        "columns",
+        "layout",
+        "labelWidth",
+        "dividers",
         "emptyText",
-        "isInputDisabled",
-        "isResponseLoading",
-        "enableClearHistoryButton",
-        "enableDownloadHistoryButton",
-        "showAvatars",
-        "showTimestamps",
-        "lastMessage",
-        "lastResponse"
+        "currency",
+        "allowCopy",
+        "lastClickedField"
       ],
       "events": [
-        "onMessageSent",
-        "onClearHistory"
+        "onFieldClick"
       ],
       "styles": [
-        "accentColor",
-        "responseBubbleColor",
-        "containerBackgroundColor",
-        "borderRadius"
+        "labelColor",
+        "valueColor",
+        "dividerColor"
       ],
-      "actions": [
-        "sendMessage",
-        "appendHistory",
-        "setHistory",
-        "clearHistory",
-        "setResponseLoading",
-        "setInputDisable",
-        "setError",
-        "downloadChat"
-      ]
+      "actions": [],
+      "fit": true,
+      "role": "keyvalue"
     },
-    "Questionnaire": {
-      "type": "Lib_shadcn_Questionnaire",
+    "LineChart": {
+      "type": "Lib_shadcn_LineChart",
       "props": [
-        "items",
-        "answers",
-        "currentIndex",
-        "isComplete",
-        "showProgress",
-        "submitLabel",
-        "completeTitle",
-        "completeText"
+        "data",
+        "xField",
+        "yFields",
+        "curve",
+        "showDots",
+        "strokeWidth",
+        "dashedFields",
+        "referenceValue",
+        "referenceLabel",
+        "yAxisFormat",
+        "currency",
+        "showGrid",
+        "showLegend",
+        "animate",
+        "seriesLabels",
+        "colors",
+        "emptyText",
+        "clickedDataPoint"
       ],
       "events": [
-        "onStepChanged",
-        "onSubmit"
+        "onClick",
+        "onDoubleClick"
       ],
       "styles": [
-        "accentColor",
-        "backgroundColor",
-        "borderRadius"
+        "chartColor",
+        "gridColor",
+        "axisTextColor",
+        "referenceLineColor"
       ],
       "actions": [
-        "reset",
-        "goTo"
-      ]
+        "clearClickedPoint"
+      ],
+      "fit": false,
+      "role": "linechart"
     },
-    "Schedule": {
-      "type": "Lib_shadcn_Schedule",
+    "Link": {
+      "type": "Lib_shadcn_Link",
       "props": [
-        "resources",
-        "bookings",
-        "resourceField",
-        "startField",
-        "endField",
+        "linkText",
+        "linkTarget",
+        "targetType",
+        "underline",
+        "showIcon"
+      ],
+      "events": [
+        "onClick",
+        "onHover"
+      ],
+      "styles": [
+        "textColor",
+        "fontSize"
+      ],
+      "actions": [
+        "click",
+        "setLinkTarget",
+        "setLinkText"
+      ],
+      "fit": false,
+      "role": "link"
+    },
+    "ListView": {
+      "type": "Lib_shadcn_ListView",
+      "props": [
+        "data",
         "titleField",
         "subtitleField",
-        "statusField",
+        "metaField",
+        "imageField",
         "idField",
-        "scale",
-        "date",
-        "dayStart",
-        "dayEnd",
-        "slotMinutes",
-        "days",
-        "hourFormat",
-        "resourceTitle",
-        "resourceWidth",
-        "rowHeight",
-        "showNowLine",
-        "statusColors",
+        "mode",
+        "columns",
+        "showBorder",
+        "highlightSelectedRow",
+        "enablePagination",
+        "rowsPerPage",
         "emptyText",
-        "selectedBookingId",
-        "selectedBooking",
-        "selectedSlot"
+        "itemContent",
+        "rowHeight",
+        "selectedItemId",
+        "selectedItem",
+        "pageIndex"
       ],
       "events": [
-        "onBookingClicked",
-        "onSlotClicked"
+        "onRecordClicked",
+        "onPageChanged"
       ],
       "styles": [
         "accentColor",
-        "nowColor",
-        "backgroundColor"
+        "itemBackgroundColor",
+        "gap",
+        "itemBorderRadius"
       ],
-      "actions": []
+      "actions": [
+        "selectItem",
+        "clearSelection",
+        "setPage"
+      ],
+      "fit": true,
+      "role": "listview",
+      "slots": [
+        {
+          "name": "row",
+          "kind": "rows"
+        }
+      ]
     },
     "Map": {
       "type": "Lib_shadcn_Map",
@@ -2176,7 +1389,1161 @@
         "selectMarker",
         "clearSelection",
         "setMapStyle"
+      ],
+      "fit": false,
+      "role": "map"
+    },
+    "MultiSelect": {
+      "type": "Lib_shadcn_MultiSelect",
+      "props": [
+        "label",
+        "placeholder",
+        "options",
+        "values",
+        "maxSelected",
+        "disabled",
+        "label",
+        "placeholder",
+        "options",
+        "values",
+        "maxSelected",
+        "disabled"
+      ],
+      "events": [
+        "onChange",
+        "onChange"
+      ],
+      "styles": [
+        "chipColor",
+        "backgroundColor",
+        "textColor",
+        "borderColor",
+        "accentColor",
+        "borderRadius",
+        "chipColor",
+        "backgroundColor",
+        "textColor",
+        "borderColor",
+        "accentColor",
+        "borderRadius"
+      ],
+      "actions": [
+        "setValues",
+        "clear"
+      ],
+      "fit": true,
+      "role": "multiselect"
+    },
+    "Navigation": {
+      "type": "Lib_shadcn_Navigation",
+      "props": [
+        "items",
+        "value",
+        "orientation",
+        "variant",
+        "collapsed",
+        "showCollapseButton",
+        "previousSelectedItem"
+      ],
+      "events": [
+        "onClick"
+      ],
+      "styles": [
+        "backgroundColor",
+        "activeBackgroundColor",
+        "indicatorColor",
+        "textColor"
+      ],
+      "actions": [
+        "selectItem",
+        "setCollapsed"
+      ],
+      "fit": false,
+      "role": "navigation"
+    },
+    "NumberInput": {
+      "type": "Lib_shadcn_NumberInput",
+      "props": [
+        "label",
+        "description",
+        "placeholder",
+        "value",
+        "min",
+        "max",
+        "step",
+        "decimalPlaces",
+        "stepper",
+        "prefix",
+        "suffix",
+        "thousandSeparator",
+        "required",
+        "disabled",
+        "isValid"
+      ],
+      "events": [
+        "onChange",
+        "onEnterPressed",
+        "onFocus",
+        "onBlur"
+      ],
+      "styles": [
+        "backgroundColor",
+        "textColor",
+        "borderColor",
+        "accentColor",
+        "borderRadius"
+      ],
+      "actions": [
+        "setValue",
+        "clear",
+        "focus"
+      ],
+      "fit": true,
+      "role": "numberinput"
+    },
+    "OtpInput": {
+      "type": "Lib_shadcn_OtpInput",
+      "props": [
+        "label",
+        "length",
+        "value",
+        "description",
+        "disabled",
+        "isComplete"
+      ],
+      "events": [
+        "onChange",
+        "onComplete"
+      ],
+      "styles": [
+        "backgroundColor",
+        "textColor",
+        "borderColor",
+        "accentColor",
+        "borderRadius"
+      ],
+      "actions": [
+        "clear",
+        "setValue"
+      ],
+      "fit": true,
+      "role": "otpinput"
+    },
+    "Pagination": {
+      "type": "Lib_shadcn_Pagination",
+      "props": [
+        "numberOfPages",
+        "totalRecords",
+        "pageSize",
+        "currentPageIndex",
+        "siblingCount",
+        "showFirstLast",
+        "showLabels",
+        "totalPages"
+      ],
+      "events": [
+        "onPageChange"
+      ],
+      "styles": [
+        "activeBackgroundColor",
+        "borderRadius",
+        "alignment"
+      ],
+      "actions": [
+        "setPage"
+      ],
+      "fit": false,
+      "role": "pagination"
+    },
+    "PasswordInput": {
+      "type": "Lib_shadcn_PasswordInput",
+      "props": [
+        "label",
+        "description",
+        "placeholder",
+        "value",
+        "showToggle",
+        "showStrength",
+        "minLength",
+        "required",
+        "disabled",
+        "strength",
+        "isValid"
+      ],
+      "events": [
+        "onChange",
+        "onEnterPressed",
+        "onFocus",
+        "onBlur"
+      ],
+      "styles": [
+        "backgroundColor",
+        "textColor",
+        "borderColor",
+        "accentColor",
+        "borderRadius"
+      ],
+      "actions": [
+        "setText",
+        "clear",
+        "focus"
+      ],
+      "fit": true,
+      "role": "passwordinput"
+    },
+    "PhoneInput": {
+      "type": "Lib_shadcn_PhoneInput",
+      "props": [
+        "label",
+        "description",
+        "placeholder",
+        "value",
+        "country",
+        "onlyCountries",
+        "isCountryChangeEnabled",
+        "showFlag",
+        "required",
+        "disabled",
+        "countryCode",
+        "formattedValue",
+        "isValidNumber",
+        "isValid"
+      ],
+      "events": [
+        "onChange",
+        "onEnterPressed",
+        "onFocus",
+        "onBlur"
+      ],
+      "styles": [
+        "backgroundColor",
+        "textColor",
+        "borderColor",
+        "accentColor",
+        "borderRadius"
+      ],
+      "actions": [
+        "setValue",
+        "setCountryCode",
+        "clear",
+        "focus"
+      ],
+      "fit": true,
+      "role": "phoneinput"
+    },
+    "PieChart": {
+      "type": "Lib_shadcn_PieChart",
+      "props": [
+        "data",
+        "categoryField",
+        "valueField",
+        "donut",
+        "centerValue",
+        "centerLabel",
+        "showLegend",
+        "colors",
+        "emptyText",
+        "clickedDataPoint"
+      ],
+      "events": [
+        "onClick",
+        "onDoubleClick"
+      ],
+      "styles": [
+        "chartColor",
+        "sliceBorderColor",
+        "centerValueColor"
+      ],
+      "actions": [
+        "clearClickedPoint"
+      ],
+      "fit": false,
+      "role": "piechart"
+    },
+    "Progress": {
+      "type": "Lib_shadcn_Progress",
+      "props": [
+        "label",
+        "value",
+        "showValue",
+        "variant"
+      ],
+      "events": [],
+      "styles": [
+        "accentColor",
+        "trackColor"
+      ],
+      "actions": [
+        "setValue"
+      ],
+      "fit": false,
+      "role": "progress"
+    },
+    "ProgressList": {
+      "type": "Lib_shadcn_ProgressList",
+      "props": [
+        "data",
+        "labelField",
+        "valueField",
+        "targetField",
+        "captionField",
+        "valueFormat",
+        "currency",
+        "idField",
+        "autoTone",
+        "showValues",
+        "showPercent",
+        "listStyle",
+        "emptyText",
+        "selectedItem",
+        "selectedItemId"
+      ],
+      "events": [
+        "onItemClicked"
+      ],
+      "styles": [
+        "accentColor",
+        "trackColor",
+        "backgroundColor"
+      ],
+      "actions": [],
+      "fit": true,
+      "role": "progresslist"
+    },
+    "Questionnaire": {
+      "type": "Lib_shadcn_Questionnaire",
+      "props": [
+        "items",
+        "answers",
+        "currentIndex",
+        "isComplete",
+        "showProgress",
+        "submitLabel",
+        "completeTitle",
+        "completeText"
+      ],
+      "events": [
+        "onStepChanged",
+        "onSubmit"
+      ],
+      "styles": [
+        "accentColor",
+        "backgroundColor",
+        "borderRadius"
+      ],
+      "actions": [
+        "reset",
+        "goTo"
+      ],
+      "fit": false,
+      "role": "questionnaire"
+    },
+    "RadarChart": {
+      "type": "Lib_shadcn_RadarChart",
+      "props": [
+        "data",
+        "categoryField",
+        "yFields",
+        "maxValue",
+        "fillOpacity",
+        "gridShape",
+        "showDots",
+        "valueSuffix",
+        "showLegend",
+        "seriesLabels",
+        "colors",
+        "emptyText",
+        "clickedDataPoint"
+      ],
+      "events": [
+        "onClick",
+        "onDoubleClick"
+      ],
+      "styles": [
+        "chartColor",
+        "gridColor",
+        "axisTextColor"
+      ],
+      "actions": [
+        "clearClickedPoint"
+      ],
+      "fit": false,
+      "role": "radarchart"
+    },
+    "RadialChart": {
+      "type": "Lib_shadcn_RadialChart",
+      "props": [
+        "mode",
+        "value",
+        "maxValue",
+        "data",
+        "categoryField",
+        "valueField",
+        "centerValue",
+        "centerLabel",
+        "rounded",
+        "showTrack",
+        "showLegend",
+        "colors",
+        "emptyText",
+        "clickedDataPoint"
+      ],
+      "events": [
+        "onClick",
+        "onDoubleClick"
+      ],
+      "styles": [
+        "chartColor",
+        "trackColor",
+        "centerValueColor"
+      ],
+      "actions": [
+        "clearClickedPoint"
+      ],
+      "fit": false,
+      "role": "radialchart"
+    },
+    "RadioGroup": {
+      "type": "Lib_shadcn_RadioGroup",
+      "props": [
+        "label",
+        "options",
+        "value",
+        "orientation",
+        "disabled"
+      ],
+      "events": [
+        "onChange"
+      ],
+      "styles": [
+        "accentColor",
+        "textColor",
+        "borderColor"
+      ],
+      "actions": [
+        "setValue"
+      ],
+      "fit": true,
+      "role": "radiogroup"
+    },
+    "Rating": {
+      "type": "Lib_shadcn_Rating",
+      "props": [
+        "label",
+        "value",
+        "max",
+        "readOnly"
+      ],
+      "events": [
+        "onChange"
+      ],
+      "styles": [
+        "starColor",
+        "starSize"
+      ],
+      "actions": [
+        "setValue"
+      ],
+      "fit": true,
+      "role": "rating"
+    },
+    "RecordList": {
+      "type": "Lib_shadcn_RecordList",
+      "props": [
+        "data",
+        "titleField",
+        "metaFields",
+        "avatarField",
+        "statusField",
+        "progressField",
+        "valueField",
+        "valueFormat",
+        "currency",
+        "statusColors",
+        "idField",
+        "showAvatar",
+        "density",
+        "showDividers",
+        "listStyle",
+        "highlightSelected",
+        "emptyText",
+        "selectedItemId",
+        "selectedItem",
+        "selectedItemIndex"
+      ],
+      "events": [
+        "onItemClicked"
+      ],
+      "styles": [
+        "accentColor",
+        "backgroundColor",
+        "borderRadius"
+      ],
+      "actions": [],
+      "fit": true,
+      "role": "recordlist"
+    },
+    "ScatterChart": {
+      "type": "Lib_shadcn_ScatterChart",
+      "props": [
+        "data",
+        "xField",
+        "yField",
+        "sizeField",
+        "groupField",
+        "nameField",
+        "xLabel",
+        "yLabel",
+        "xAxisFormat",
+        "yAxisFormat",
+        "currency",
+        "referenceX",
+        "referenceY",
+        "pointSize",
+        "showGrid",
+        "showLegend",
+        "colors",
+        "emptyText",
+        "clickedDataPoint"
+      ],
+      "events": [
+        "onClick",
+        "onDoubleClick"
+      ],
+      "styles": [
+        "chartColor",
+        "gridColor",
+        "axisTextColor",
+        "referenceLineColor"
+      ],
+      "actions": [
+        "clearClickedPoint"
+      ],
+      "fit": false,
+      "role": "scatterchart"
+    },
+    "Schedule": {
+      "type": "Lib_shadcn_Schedule",
+      "props": [
+        "resources",
+        "bookings",
+        "resourceField",
+        "startField",
+        "endField",
+        "titleField",
+        "subtitleField",
+        "statusField",
+        "idField",
+        "scale",
+        "date",
+        "dayStart",
+        "dayEnd",
+        "slotMinutes",
+        "days",
+        "hourFormat",
+        "resourceTitle",
+        "resourceWidth",
+        "rowHeight",
+        "showNowLine",
+        "statusColors",
+        "emptyText",
+        "selectedBookingId",
+        "selectedBooking",
+        "selectedSlot"
+      ],
+      "events": [
+        "onBookingClicked",
+        "onSlotClicked"
+      ],
+      "styles": [
+        "accentColor",
+        "nowColor",
+        "backgroundColor"
+      ],
+      "actions": [],
+      "fit": false,
+      "role": "schedule"
+    },
+    "Select": {
+      "type": "Lib_shadcn_Select",
+      "props": [
+        "label",
+        "placeholder",
+        "options",
+        "value",
+        "selectedLabel",
+        "description",
+        "disabled",
+        "label",
+        "placeholder",
+        "options",
+        "value",
+        "selectedLabel",
+        "description",
+        "disabled",
+        "selectedOption"
+      ],
+      "events": [
+        "onSelect",
+        "onSelect"
+      ],
+      "styles": [
+        "backgroundColor",
+        "textColor",
+        "borderColor",
+        "accentColor",
+        "borderRadius"
+      ],
+      "actions": [
+        "setValue",
+        "clear",
+        "selectOption"
+      ],
+      "fit": true,
+      "role": "select",
+      "validation": "choice"
+    },
+    "Separator": {
+      "type": "Lib_shadcn_Separator",
+      "props": [
+        "orientation",
+        "label"
+      ],
+      "events": [],
+      "styles": [
+        "lineColor",
+        "thickness"
+      ],
+      "actions": [],
+      "fit": false,
+      "role": "separator"
+    },
+    "Skeleton": {
+      "type": "Lib_shadcn_Skeleton",
+      "props": [
+        "shape",
+        "lines"
+      ],
+      "events": [],
+      "styles": [
+        "baseColor",
+        "backgroundColor",
+        "borderRadius"
+      ],
+      "actions": [],
+      "fit": false,
+      "role": "skeleton"
+    },
+    "Slider": {
+      "type": "Lib_shadcn_Slider",
+      "props": [
+        "label",
+        "value",
+        "min",
+        "max",
+        "step",
+        "showValue",
+        "disabled"
+      ],
+      "events": [
+        "onChange"
+      ],
+      "styles": [
+        "accentColor",
+        "trackColor"
+      ],
+      "actions": [
+        "setValue"
+      ],
+      "fit": true,
+      "role": "slider"
+    },
+    "Sparkline": {
+      "type": "Lib_shadcn_Sparkline",
+      "props": [
+        "data",
+        "type",
+        "curve",
+        "strokeWidth",
+        "showEndDot",
+        "colorByTrend",
+        "lowerIsBetter",
+        "showBand",
+        "bandMin",
+        "bandMax",
+        "showTooltip",
+        "emptyText",
+        "trend",
+        "lastValue"
+      ],
+      "events": [
+        "onClick",
+        "onDoubleClick"
+      ],
+      "styles": [
+        "chartColor",
+        "positiveColor",
+        "negativeColor",
+        "bandColor"
+      ],
+      "actions": [],
+      "fit": false,
+      "role": "sparkline"
+    },
+    "Spinner": {
+      "type": "Lib_shadcn_Spinner",
+      "props": [
+        "variant",
+        "size",
+        "label",
+        "labelPosition"
+      ],
+      "events": [],
+      "styles": [
+        "spinnerColor",
+        "trackColor",
+        "alignment"
+      ],
+      "actions": [],
+      "fit": false,
+      "role": "spinner"
+    },
+    "SplitPane": {
+      "type": "Lib_shadcn_SplitPane",
+      "props": [
+        "direction",
+        "split",
+        "minPane"
+      ],
+      "events": [
+        "onResize"
+      ],
+      "styles": [
+        "dividerColor",
+        "gap",
+        "backgroundColor",
+        "borderRadius",
+        "padding"
+      ],
+      "actions": [
+        "setSplit"
+      ],
+      "fit": false,
+      "role": "split-pane",
+      "slots": [
+        {
+          "name": "first",
+          "kind": "slot"
+        },
+        {
+          "name": "second",
+          "kind": "slot"
+        }
       ]
+    },
+    "Stat": {
+      "type": "Lib_shadcn_Stat",
+      "props": [
+        "label",
+        "value",
+        "change",
+        "valueFormat",
+        "currency",
+        "trend",
+        "changeLabel",
+        "icon"
+      ],
+      "events": [
+        "onClick"
+      ],
+      "styles": [
+        "backgroundColor",
+        "textColor",
+        "borderColor",
+        "borderRadius"
+      ],
+      "actions": [
+        "setPrimaryValue",
+        "setSecondaryValue",
+        "setTrend"
+      ],
+      "fit": true,
+      "role": "stat"
+    },
+    "Stepper": {
+      "type": "Lib_shadcn_Stepper",
+      "props": [
+        "steps",
+        "currentStep",
+        "finishLabel"
+      ],
+      "events": [
+        "onStepChange",
+        "onComplete"
+      ],
+      "styles": [
+        "accentColor",
+        "backgroundColor",
+        "borderRadius",
+        "padding"
+      ],
+      "actions": [
+        "next",
+        "back",
+        "goToStep"
+      ],
+      "fit": false,
+      "role": "stepper",
+      "slots": [
+        {
+          "name": "step_account",
+          "kind": "slot"
+        },
+        {
+          "name": "step_profile",
+          "kind": "slot"
+        },
+        {
+          "name": "step_review",
+          "kind": "slot"
+        }
+      ]
+    },
+    "Steps": {
+      "type": "Lib_shadcn_Steps",
+      "props": [
+        "steps",
+        "currentStepIndex",
+        "stepsSelectable",
+        "orientation",
+        "variant",
+        "currentStepId"
+      ],
+      "events": [
+        "onSelect"
+      ],
+      "styles": [
+        "completedAccent",
+        "incompletedAccent"
+      ],
+      "actions": [
+        "setStep",
+        "nextStep",
+        "previousStep",
+        "resetSteps"
+      ],
+      "fit": true,
+      "role": "steps"
+    },
+    "SummaryStrip": {
+      "type": "Lib_shadcn_SummaryStrip",
+      "props": [
+        "items",
+        "valueFormat",
+        "currency",
+        "appearance",
+        "align"
+      ],
+      "events": [],
+      "styles": [
+        "backgroundColor",
+        "borderColor",
+        "positiveColor",
+        "negativeColor"
+      ],
+      "actions": [],
+      "fit": true,
+      "role": "summarystrip"
+    },
+    "Switch": {
+      "type": "Lib_shadcn_Switch",
+      "props": [
+        "label",
+        "description",
+        "checked",
+        "disabled"
+      ],
+      "events": [
+        "onChange"
+      ],
+      "styles": [
+        "accentColor",
+        "offColor",
+        "textColor"
+      ],
+      "actions": [
+        "setChecked",
+        "toggle"
+      ],
+      "fit": true,
+      "role": "switch"
+    },
+    "Tabs": {
+      "type": "Lib_shadcn_Tabs",
+      "props": [
+        "tabs",
+        "value",
+        "variant"
+      ],
+      "events": [
+        "onChange"
+      ],
+      "styles": [
+        "listBackground",
+        "activeBackground",
+        "textColor",
+        "accentColor"
+      ],
+      "actions": [
+        "setTab"
+      ],
+      "fit": true,
+      "role": "tabs"
+    },
+    "TabsContainer": {
+      "type": "Lib_shadcn_TabsContainer",
+      "props": [
+        "tabs",
+        "currentTab",
+        "currentTabTitle"
+      ],
+      "events": [
+        "onChange",
+        "onTabSwitch"
+      ],
+      "styles": [
+        "accentColor",
+        "backgroundColor",
+        "borderRadius",
+        "padding"
+      ],
+      "actions": [
+        "setTab",
+        "nextTab",
+        "previousTab"
+      ],
+      "fit": false,
+      "role": "tabs",
+      "slots": [
+        {
+          "name": "tab_details",
+          "kind": "slot"
+        },
+        {
+          "name": "tab_activity",
+          "kind": "slot"
+        }
+      ]
+    },
+    "Tags": {
+      "type": "Lib_shadcn_Tags",
+      "props": [
+        "tags",
+        "tagColors",
+        "variant",
+        "size",
+        "overflow",
+        "pill",
+        "lastClickedTag"
+      ],
+      "events": [
+        "onTagClicked"
+      ],
+      "styles": [
+        "backgroundColor"
+      ],
+      "actions": [],
+      "fit": true,
+      "role": "tags"
+    },
+    "TagsInput": {
+      "type": "Lib_shadcn_TagsInput",
+      "props": [
+        "label",
+        "description",
+        "placeholder",
+        "values",
+        "suggestions",
+        "allowCustomTags",
+        "maxTags",
+        "caseSensitive",
+        "tagPattern",
+        "addOnBlur",
+        "required",
+        "disabled",
+        "lastAddedTag",
+        "lastRemovedTag",
+        "isValid"
+      ],
+      "events": [
+        "onChange",
+        "onTagAdded",
+        "onTagDeleted",
+        "onFocus",
+        "onBlur"
+      ],
+      "styles": [
+        "backgroundColor",
+        "textColor",
+        "borderColor",
+        "accentColor",
+        "chipBackgroundColor",
+        "borderRadius"
+      ],
+      "actions": [
+        "setTags",
+        "clear",
+        "focus"
+      ],
+      "fit": true,
+      "role": "tagsinput"
+    },
+    "Text": {
+      "type": "Lib_shadcn_Text",
+      "props": [
+        "text",
+        "tone"
+      ],
+      "events": [
+        "onClick",
+        "onHover"
+      ],
+      "styles": [
+        "textColor",
+        "textAlign",
+        "fontSize",
+        "fontWeight"
+      ],
+      "actions": [
+        "setText",
+        "clear"
+      ],
+      "fit": true,
+      "role": "text"
+    },
+    "Textarea": {
+      "type": "Lib_shadcn_Textarea",
+      "props": [
+        "label",
+        "placeholder",
+        "value",
+        "description",
+        "disabled"
+      ],
+      "events": [
+        "onChange"
+      ],
+      "styles": [
+        "backgroundColor",
+        "textColor",
+        "borderColor",
+        "accentColor",
+        "borderRadius"
+      ],
+      "actions": [
+        "setValue",
+        "clear"
+      ],
+      "fit": true,
+      "role": "textarea"
+    },
+    "TimePicker": {
+      "type": "Lib_shadcn_TimePicker",
+      "props": [
+        "label",
+        "description",
+        "placeholder",
+        "value",
+        "timeFormat",
+        "minuteStep",
+        "minTime",
+        "maxTime",
+        "required",
+        "disabled",
+        "formattedValue",
+        "isValid",
+        "label",
+        "description",
+        "placeholder",
+        "value",
+        "timeFormat",
+        "minuteStep",
+        "minTime",
+        "maxTime",
+        "required",
+        "disabled",
+        "formattedValue",
+        "isValid"
+      ],
+      "events": [
+        "onSelect",
+        "onFocus",
+        "onBlur",
+        "onSelect",
+        "onFocus",
+        "onBlur"
+      ],
+      "styles": [
+        "backgroundColor",
+        "textColor",
+        "borderColor",
+        "accentColor",
+        "borderRadius",
+        "backgroundColor",
+        "textColor",
+        "borderColor",
+        "accentColor",
+        "borderRadius"
+      ],
+      "actions": [
+        "setValue",
+        "clearValue"
+      ],
+      "fit": true,
+      "role": "timepicker"
+    },
+    "Timeline": {
+      "type": "Lib_shadcn_Timeline",
+      "props": [
+        "items",
+        "selectedItem"
+      ],
+      "events": [
+        "onItemClick"
+      ],
+      "styles": [
+        "lineColor",
+        "accentColor"
+      ],
+      "actions": [],
+      "fit": true,
+      "role": "timeline"
+    },
+    "ToggleGroup": {
+      "type": "Lib_shadcn_ToggleGroup",
+      "props": [
+        "options",
+        "value",
+        "multiple",
+        "values",
+        "variant",
+        "disabled"
+      ],
+      "events": [
+        "onChange"
+      ],
+      "styles": [
+        "backgroundColor",
+        "selectedColor",
+        "textColor",
+        "borderColor",
+        "borderRadius"
+      ],
+      "actions": [
+        "setValue"
+      ],
+      "fit": true,
+      "role": "togglegroup"
     }
   }
 }

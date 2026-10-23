@@ -36,15 +36,25 @@ const defaults = JSON.parse(readFileSync(defaultsPath, 'utf8'));
 for (const key of Object.keys(schemas)) if (key.startsWith(prefix)) delete schemas[key];
 for (const key of Object.keys(defaults.definitions)) if (key.startsWith(prefix)) delete defaults.definitions[key];
 
+// Palette samples an AI-built component should not show when the plan leaves the field out (as packDefaults.ts
+// blanks UI 2.0's): stamped empty at create; the palette's drag and drop still shows them.
+const SAMPLE_BLANKS = {
+  Hero: { meta: [], actionLabel: '', secondaryActionLabel: '', asideValue: '', asideLabel: '', eyebrow: '', subtitle: '' },
+  Alert: { description: '' },
+  CardGrid: { badgeField: '', descriptionField: '' },
+};
 const components = {};
 for (const [name, entry] of Object.entries(manifest.components)) {
   const type = `${prefix}${name}`;
   const props = entry.props ?? [];
-  components[name] = { type, props: props.map((p) => p.name), events: (entry.events ?? []).map((e) => e.name), styles: stylesOf[name] ?? [], actions: (entry.actions ?? []).map((a) => a.name) };
+  // A v2 manifest (packages/pack-tools) carries its styles; a v1 (the npm CLI) has none, so they come from styles.json.
+  const styleNames = entry.styles?.length ? entry.styles.map((s) => s.name) : stylesOf[name] ?? [];
+  const fits = entry.fit === true;
+  components[name] = { type, props: props.map((p) => p.name), events: (entry.events ?? []).map((e) => e.name), styles: styleNames, actions: (entry.actions ?? []).map((a) => a.name), fit: fits, ...(entry.role ? { role: entry.role } : {}), ...(entry.validation ? { validation: entry.validation } : {}), ...(entry.slots ? { slots: entry.slots } : {}) };
   schemas[type] = {
     type,
     name: type,
-    description: `${entry.displayName ?? words(name)} from the ${libraryName} component library (a custom component library published to this workspace).`,
+    description: [`${entry.displayName ?? words(name)} from the ${libraryName} component library.`, entry.usage, fits ? 'Sizes to its content in the app (Dynamic height on).' : 'Drawn at the height you give it.'].filter(Boolean).join(' '),
     defaultSize: { width: entry.defaultWidth ?? 6, height: (entry.defaultHeight ?? 4) * 10 },
     properties: [
       ...props.map((p) => ({
@@ -54,12 +64,16 @@ for (const [name, entry] of Object.entries(manifest.components)) {
         ...(p.default !== undefined ? { default: stamp(p) } : {}),
         ...(p.enumValues ? { allowedValues: p.enumValues } : {}),
         ...(p.description ? { description: p.description } : {}),
+        ...(p.min !== undefined ? { minimum: p.min } : {}),
+        ...(p.max !== undefined ? { maximum: p.max } : {}),
       })),
       { key: 'visibility', label: 'Visibility', valueType: 'boolean', default: '{{true}}' },
       { key: 'loadingState', label: 'Loading state', valueType: 'boolean', default: '{{false}}' },
+      { key: 'disabledState', label: 'Disable', valueType: 'boolean', default: '{{false}}' },
+      { key: 'dynamicHeight', label: 'Dynamic height', valueType: 'boolean', default: fits ? '{{true}}' : '{{false}}' },
     ],
-    styles: [...(stylesOf[name] ?? []).map((key) => ({ key, label: words(key), valueType: 'string' })), { key: 'boxShadow', label: 'Box shadow', valueType: 'string' }],
-    events: (entry.events ?? []).map((e) => ({ id: e.name, label: eventLabel(e.name) })),
+    styles: [...(entry.styles?.length ? entry.styles.map((s) => ({ key: s.name, label: s.label ?? words(s.name), valueType: VALUE_TYPE[s.type] ?? 'string' })) : styleNames.map((key) => ({ key, label: words(key), valueType: 'string' }))), { key: 'boxShadow', label: 'Box shadow', valueType: 'string' }],
+    events: (entry.events ?? []).map((e) => ({ id: e.name, label: e.displayName ?? eventLabel(e.name) })),
     actions: [
       ...(entry.actions ?? []).map((a) => ({
         handle: a.name,
@@ -68,15 +82,18 @@ for (const [name, entry] of Object.entries(manifest.components)) {
       })),
       { handle: 'setVisibility', displayName: 'Set visibility', params: [{ handle: 'visibility', displayName: 'Value', defaultValue: '{{false}}' }] },
       { handle: 'setLoading', displayName: 'Set loading', params: [{ handle: 'loading', displayName: 'Value', defaultValue: '{{false}}' }] },
+      { handle: 'setDisable', displayName: 'Set disable', params: [{ handle: 'disable', displayName: 'Value', defaultValue: '{{false}}' }] },
     ],
     // Every useStateX value is published under its own name.
-    exposedVariables: [...props.map((p) => ({ name: p.name, ...(p.default !== undefined ? { default: p.default } : {}) })), { name: 'isVisible', default: true }, { name: 'isLoading', default: false }],
+    exposedVariables: [...props.map((p) => ({ name: p.name, ...(p.default !== undefined ? { default: p.default } : {}) })), { name: 'isVisible', default: true }, { name: 'isLoading', default: false }, { name: 'isDisabled', default: false }, ...(entry.validation ? [{ name: 'isValid', default: true }, { name: 'isMandatory', default: false }] : [])],
   };
   defaults.definitions[type] = {
     properties: {
-      ...Object.fromEntries(props.map((p) => [p.name, { value: stamp(p) }])),
+      ...Object.fromEntries(props.map((p) => [p.name, { value: stamp(name in SAMPLE_BLANKS && p.name in SAMPLE_BLANKS[name] ? { ...p, default: SAMPLE_BLANKS[name][p.name] } : p) }])),
       visibility: { value: '{{true}}' },
       loadingState: { value: '{{false}}' },
+      disabledState: { value: '{{false}}' },
+      dynamicHeight: { value: fits ? '{{true}}' : '{{false}}' },
     },
     styles: { boxShadow: { value: '0px 0px 0px 0px #00000040' } },
     others: { showOnDesktop: { value: '{{true}}' }, showOnMobile: { value: '{{false}}' } },

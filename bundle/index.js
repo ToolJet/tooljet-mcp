@@ -61541,7 +61541,7 @@ var FLEX_DOWNGRADE = {
   justifyContent: { "space-between": "flex-start" }
 };
 function downgradeFlexForLibrary(spec) {
-  if (!libraryPack() || spec.type !== "FlexContainer" || !spec.properties)
+  if (process.env.TOOLJET_FLEX_V1 !== "1" || !libraryPack() || spec.type !== "FlexContainer" || !spec.properties)
     return spec;
   const properties = { ...spec.properties };
   for (const [key4, map2] of Object.entries(FLEX_DOWNGRADE)) {
