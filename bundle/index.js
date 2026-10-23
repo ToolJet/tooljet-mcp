@@ -70732,19 +70732,21 @@ function createClient(auth, config2) {
       return typeof index === "number" && Number.isFinite(index) ? Math.max(highest, index) : highest;
     }, 0);
     const startIndex = Math.max(highestPersistedIndex, existingPages.length) + 1;
-    const handleOf = (name2) => name2.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "page";
+    const handleOf = (name2) => name2.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "page";
     const existingNames = new Set((app.pages ?? []).map((page) => String(page.name).toLowerCase()));
     const existingHandles = new Set((app.pages ?? []).map((page) => String(page.handle).toLowerCase()));
     const seenNames = /* @__PURE__ */ new Set();
     const seenHandles = /* @__PURE__ */ new Set();
     const entries = params.pages.map((page, offset) => {
       const nameKey = page.name.toLowerCase();
-      const handle = handleOf(page.name);
       if (existingNames.has(nameKey) || seenNames.has(nameKey)) {
         throw new Error(`ToolJet createPages failed: duplicate page name "${page.name}".`);
       }
-      if (existingHandles.has(handle) || seenHandles.has(handle)) {
-        throw new Error(`ToolJet createPages failed: page "${page.name}" resolves to duplicate handle "${handle}".`);
+      const base2 = handleOf(page.name);
+      let handle = base2;
+      for (let suffix = 2; existingHandles.has(handle) || seenHandles.has(handle); suffix++) {
+        const tail = `-${suffix}`;
+        handle = `${base2.slice(0, 50 - tail.length)}${tail}`;
       }
       seenNames.add(nameKey);
       seenHandles.add(handle);
@@ -78011,7 +78013,7 @@ function lintAppSpecTool(client) {
         const seededExisting = [...new Set((args.seed_data ?? []).map((seed) => seed.table_name))].filter((name2) => tableIds.has(name2.toLowerCase()) && !plannedNew.has(name2.toLowerCase()));
         const withRows = await Promise.all(seededExisting.map(async (name2) => await client.hasRows?.(tableIds.get(name2.toLowerCase())).catch(() => void 0) === true ? name2 : void 0));
         for (const name2 of withRows.filter(Boolean)) {
-          preflightErrors.push(`Seed data targets "${name2}", which already has rows (seeded earlier), so they would be inserted again: leave that table out of seed_data.`);
+          preflightErrors.push(`Seed data targets "${name2}", which already has rows (seeded earlier), so they would be inserted again: leave that table out of seed_data. To add more rows to it, call insert_rows_batch with only the new rows.`);
         }
         for (const table of args.tables ?? []) {
           const key4 = table.table_name.toLowerCase();

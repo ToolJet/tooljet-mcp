@@ -1754,8 +1754,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const startIndex = Math.max(highestPersistedIndex, existingPages.length) + 1;
     const handleOf = (name: string): string =>
       name
+        .normalize('NFKC')
         .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/[^\p{L}\p{N}]+/gu, '-')
         .replace(/^-+|-+$/g, '')
         .slice(0, 50) || 'page';
     const existingNames = new Set((app.pages ?? []).map((page: any) => String(page.name).toLowerCase()));
@@ -1764,12 +1765,14 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const seenHandles = new Set<string>();
     const entries = params.pages.map((page, offset) => {
       const nameKey = page.name.toLowerCase();
-      const handle = handleOf(page.name);
       if (existingNames.has(nameKey) || seenNames.has(nameKey)) {
         throw new Error(`ToolJet createPages failed: duplicate page name "${page.name}".`);
       }
-      if (existingHandles.has(handle) || seenHandles.has(handle)) {
-        throw new Error(`ToolJet createPages failed: page "${page.name}" resolves to duplicate handle "${handle}".`);
+      const base = handleOf(page.name);
+      let handle = base;
+      for (let suffix = 2; existingHandles.has(handle) || seenHandles.has(handle); suffix++) {
+        const tail = `-${suffix}`;
+        handle = `${base.slice(0, 50 - tail.length)}${tail}`;
       }
       seenNames.add(nameKey);
       seenHandles.add(handle);
