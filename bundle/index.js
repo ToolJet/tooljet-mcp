@@ -73996,6 +73996,11 @@ var derivedThemeSchema = external_exports.object({
 }).strict();
 async function resolveTheme(client, choice) {
   const themes = await client.listAppThemes();
+  if (process.env.MCP_AGENT_PACK_LOOK === "own") {
+    const basic = themes.find((theme) => theme.isBasic && !theme.isDisabled);
+    if (basic)
+      return basic;
+  }
   const wanted = choice === "standard" ? loadStandardTheme() : typeof choice === "object" ? choice : void 0;
   if (wanted) {
     const existing = themes.find((theme) => theme.name === wanted.name && !theme.isDisabled);

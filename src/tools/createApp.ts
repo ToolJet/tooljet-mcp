@@ -70,6 +70,12 @@ export interface CreateAppToolResult extends CreateAppResult {
  */
 async function resolveTheme(client: ToolJetClient, choice: CreateAppThemeChoice): Promise<AppTheme> {
   const themes = await client.listAppThemes();
+  // Experiment (exp/packs-platform): an app built on a component pack in its own design system (Ant, MUI) keeps the
+  // basic theme, so the pack draws in its stock colours; any theme takes over its tokens (frontend LibraryComponent).
+  if (process.env.MCP_AGENT_PACK_LOOK === 'own') {
+    const basic = themes.find((theme) => theme.isBasic && !theme.isDisabled);
+    if (basic) return basic;
+  }
   const wanted: StandardThemeFile | DerivedTheme | undefined =
     choice === 'standard' ? loadStandardTheme() : typeof choice === 'object' ? choice : undefined;
   if (wanted) {
