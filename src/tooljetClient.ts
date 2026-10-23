@@ -2348,6 +2348,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   // A timed-out POST may already have committed. Bound the wait, but never replay an insert after
   // a transport failure or uncertain server response without server-side idempotency.
   const INSERT_ATTEMPT_TIMEOUT_MS = 45_000;
+  const BULK_INSERT_ROWS = 500;
   const UNKNOWN_INSERT_OUTCOME = 'Insert outcome unknown: the row may already have been inserted. ' +
     'Verify persisted rows before retrying; do not replay the whole batch.';
 
@@ -2362,7 +2363,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     }
   }
 
-  async function insertRowViaProxy(tableId: string, row: Record<string, unknown>): Promise<Response> {
+  async function insertRowViaProxy(tableId: string, row: Record<string, unknown> | Record<string, unknown>[]): Promise<Response> {
     let schemaWaits = 0;
     for (;;) {
       let res: Response;
@@ -2393,10 +2394,16 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       if (schemaWaits >= SCHEMA_CACHE_RETRY_DELAYS_MS.length) return res;
       const body = await res.clone().text().catch(() => '');
       if (!/PGRST205|schema cache/i.test(body)) return res; // a real error — let assertOk surface it
+      // A server without the proxy fix turns a list into column "0", which PostgREST also words as a schema-cache miss;
+      // waiting would not help (insertRows falls back to one row per request).
+      if (Array.isArray(row) && /['"]0['"] column|column ['"]0['"]/i.test(body)) return res;
       await new Promise((resolve) => setTimeout(resolve, SCHEMA_CACHE_RETRY_DELAYS_MS[schemaWaits]));
       schemaWaits += 1;
     }
   }
+
+  // Whether this server takes a list of rows in one insert (see insertRows); false after its first rejection.
+  let bulkInsertAccepted = true;
 
   async function insertRows(params: InsertRowsParams): Promise<{ processed_rows: number }> {
     if (!params.rows.length) return { processed_rows: 0 };
@@ -2419,12 +2426,35 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const table = (await listTables()).find((candidate) => candidate.table_name === params.tableName);
     if (!table) throw new Error(`insertRows: ToolJet DB table "${params.tableName}" was not found in the active workspace.`);
 
-    // ToolJet's PostgREST proxy object-spreads POST bodies while validating JSONB values, which
-    // turns an array payload into numeric column names. Send one ordinary INSERT per row instead.
-    // Unlike bulk-upload, this path does not upsert on primary-key conflicts, and omitted
-    // serial/generated keys use the table's real sequence.
+    // Rows go up to BULK_INSERT_ROWS per request, in order, so omitted serial keys still take the table's sequence
+    // in seed order. Unlike bulk-upload, this path does not upsert on primary-key conflicts. ToolJet's PostgREST proxy
+    // used to object-spread POST bodies while validating JSONB values, turning a list of rows into columns "0", "1",
+    // ...; a server without that fix rejects the list, PostgREST writes nothing for a rejected statement, and the
+    // rows then go one per request as before (one ~180 ms request a row was most of an apply, 2026-10-22).
     let processedRows = 0;
+    while (bulkInsertAccepted && rows.length - processedRows >= 2) {
+      const chunk = rows.slice(processedRows, processedRows + BULK_INSERT_ROWS);
+      let res: Response;
+      try {
+        res = await insertRowViaProxy(table.id, chunk);
+      } catch (error) {
+        if (!processedRows) throw error;
+        throw new PartialWriteError('insertRows', [{ processed_rows: processedRows }], [
+          `rows ${processedRows + 1}-${processedRows + chunk.length}/${rows.length}: ${error instanceof Error ? error.message : String(error)}`,
+        ]);
+      }
+      if (res.ok) {
+        processedRows += chunk.length;
+        continue;
+      }
+      // A rejected statement wrote nothing (a timeout or 5xx, whose outcome is unknown, threw above and is never retried
+      // row by row). The rest go one per request, which also names the row at fault. A server without the proxy fix
+      // rejects every list, so lists stop for this session.
+      if (/['"]0['"] column|column ['"]0['"]/i.test(await res.clone().text().catch(() => ''))) bulkInsertAccepted = false;
+      break;
+    }
     for (const [index, row] of rows.entries()) {
+      if (index < processedRows) continue;
       try {
         const res = await insertRowViaProxy(table.id, row);
         await assertOk(res, 'insertRows');
