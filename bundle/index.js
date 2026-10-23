@@ -52654,7 +52654,9 @@ function packFromLibrary(lib) {
         ...entry.roleEvents ? { roleEvents: entry.roleEvents } : {},
         ...entry.roleActions ? { roleActions: entry.roleActions } : {},
         ...entry.roleValues ? { roleValues: entry.roleValues } : {},
-        slots: entry.slots ?? []
+        slots: entry.slots ?? [],
+        ...manifest.surface ? { surface: manifest.surface } : {},
+        ...manifest.themeMode ? { themeMode: manifest.themeMode } : {}
       },
       description: [
         `${entry.displayName ?? words(name2)} from the ${lib.name} pack.`,
