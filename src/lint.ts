@@ -1,3 +1,4 @@
+import { isLibraryPackType } from './libraryPack.js';
 // Mechanical, catalog-independent checks that catch the render bugs the skill can only *advise*
 // against. Used by add_component(s) (component-level, pre-write) and validate_app (whole-app,
 // post-write). Errors block; warnings are surfaced to the agent but don't block.
@@ -778,7 +779,9 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
     const placement = parentPlacement(component);
     const parent = placement ? refs.get(placement.parentId) : undefined;
     // A FlexContainer has one canvas, its body: slot_name "body" there is the plain parent, as for a Container.
-    const validParent = slotName === 'modal' ? parent?.type === 'Kanban' : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? '') :
+    // A published library's container (libraryPack.ts) takes its own named slots (ToolJet.Slot, e.g. tab_details).
+    const validParent = isLibraryPackType(parent?.type) ? !['header', 'footer', 'modal'].includes(slotName) && !isTabSlot(slotName) :
+      slotName === 'modal' ? parent?.type === 'Kanban' : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? '') :
       SLOT_PARENT_TYPES.has(parent?.type ?? '') || (slotName === 'body' && ['Kanban', 'ShadKanban', 'FlexContainer'].includes(parent?.type ?? ''));
     // A child in a tab the Tabs does not have is saved but never shown (review 2026-09-25). Static tabItems only:
     // with useDynamicOptions the ids come from a binding.

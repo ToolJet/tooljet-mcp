@@ -5382,6 +5382,4056 @@
      "value": "{{false}}"
     }
    }
+  },
+  "Lib_shadcn_Button": {
+   "properties": {
+    "text": {
+     "value": "Button"
+    },
+    "variant": {
+     "value": "default"
+    },
+    "size": {
+     "value": "default"
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "loading": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Input": {
+   "properties": {
+    "label": {
+     "value": "Email"
+    },
+    "placeholder": {
+     "value": "you@example.com"
+    },
+    "value": {
+     "value": ""
+    },
+    "description": {
+     "value": ""
+    },
+    "inputType": {
+     "value": "email"
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Textarea": {
+   "properties": {
+    "label": {
+     "value": "Your message"
+    },
+    "placeholder": {
+     "value": "Type your message here."
+    },
+    "value": {
+     "value": ""
+    },
+    "description": {
+     "value": ""
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Select": {
+   "properties": {
+    "label": {
+     "value": "Fruit"
+    },
+    "placeholder": {
+     "value": "Select a fruit"
+    },
+    "options": {
+     "value": "{{[{\"label\":\"Apple\",\"value\":\"apple\"},{\"label\":\"Banana\",\"value\":\"banana\"},{\"label\":\"Blueberry\",\"value\":\"blueberry\"},{\"label\":\"Grapes\",\"value\":\"grapes\"},{\"label\":\"Pineapple\",\"value\":\"pineapple\"}]}}"
+    },
+    "value": {
+     "value": ""
+    },
+    "selectedLabel": {
+     "value": ""
+    },
+    "description": {
+     "value": ""
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Checkbox": {
+   "properties": {
+    "label": {
+     "value": "Accept terms and conditions"
+    },
+    "description": {
+     "value": ""
+    },
+    "checked": {
+     "value": "{{false}}"
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Switch": {
+   "properties": {
+    "label": {
+     "value": "Airplane mode"
+    },
+    "description": {
+     "value": ""
+    },
+    "checked": {
+     "value": "{{false}}"
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_RadioGroup": {
+   "properties": {
+    "label": {
+     "value": "Notify me about"
+    },
+    "options": {
+     "value": "{{[{\"label\":\"All new messages\",\"value\":\"all\"},{\"label\":\"Direct messages and mentions\",\"value\":\"mentions\"},{\"label\":\"Nothing\",\"value\":\"none\"}]}}"
+    },
+    "value": {
+     "value": "all"
+    },
+    "orientation": {
+     "value": "vertical"
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Slider": {
+   "properties": {
+    "label": {
+     "value": "Volume"
+    },
+    "value": {
+     "value": "{{50}}"
+    },
+    "min": {
+     "value": "{{0}}"
+    },
+    "max": {
+     "value": "{{100}}"
+    },
+    "step": {
+     "value": "{{1}}"
+    },
+    "showValue": {
+     "value": "{{true}}"
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_ToggleGroup": {
+   "properties": {
+    "options": {
+     "value": "{{[{\"label\":\"Day\",\"value\":\"day\"},{\"label\":\"Week\",\"value\":\"week\"},{\"label\":\"Month\",\"value\":\"month\"},{\"label\":\"Year\",\"value\":\"year\"}]}}"
+    },
+    "value": {
+     "value": "week"
+    },
+    "multiple": {
+     "value": "{{false}}"
+    },
+    "values": {
+     "value": "{{[]}}"
+    },
+    "variant": {
+     "value": "outline"
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_OtpInput": {
+   "properties": {
+    "label": {
+     "value": "Verification code"
+    },
+    "length": {
+     "value": "{{6}}"
+    },
+    "value": {
+     "value": ""
+    },
+    "description": {
+     "value": "Enter the code we sent to your phone."
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "isComplete": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Badge": {
+   "properties": {
+    "text": {
+     "value": "Badge"
+    },
+    "variant": {
+     "value": "default"
+    },
+    "align": {
+     "value": "flex-start"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Alert": {
+   "properties": {
+    "title": {
+     "value": "Heads up!"
+    },
+    "description": {
+     "value": "You can add components to your app using the ToolJet CLI."
+    },
+    "variant": {
+     "value": "default"
+    },
+    "showIcon": {
+     "value": "{{true}}"
+    },
+    "dismissible": {
+     "value": "{{false}}"
+    },
+    "dismissed": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Avatar": {
+   "properties": {
+    "imageUrl": {
+     "value": "https://github.com/shadcn.png"
+    },
+    "name": {
+     "value": "Jane Cooper"
+    },
+    "subtitle": {
+     "value": "jane@acme.com"
+    },
+    "showDetails": {
+     "value": "{{true}}"
+    },
+    "size": {
+     "value": "md"
+    },
+    "shape": {
+     "value": "circle"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Progress": {
+   "properties": {
+    "label": {
+     "value": "Storage used"
+    },
+    "value": {
+     "value": "{{66}}"
+    },
+    "showValue": {
+     "value": "{{true}}"
+    },
+    "variant": {
+     "value": "default"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Skeleton": {
+   "properties": {
+    "shape": {
+     "value": "profile"
+    },
+    "lines": {
+     "value": "{{3}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Stat": {
+   "properties": {
+    "label": {
+     "value": "Total revenue"
+    },
+    "value": {
+     "value": "$45,231.89"
+    },
+    "change": {
+     "value": "+20.1%"
+    },
+    "trend": {
+     "value": "up"
+    },
+    "changeLabel": {
+     "value": "from last month"
+    },
+    "icon": {
+     "value": "dollar"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Tabs": {
+   "properties": {
+    "tabs": {
+     "value": "{{[{\"value\":\"overview\",\"label\":\"Overview\",\"content\":\"Revenue is up 20% this quarter, driven by enterprise renewals.\"},{\"value\":\"analytics\",\"label\":\"Analytics\",\"content\":\"12,234 active users this week (+18%).\"},{\"value\":\"reports\",\"label\":\"Reports\",\"content\":\"Three reports are scheduled for Friday.\"}]}}"
+    },
+    "value": {
+     "value": "overview"
+    },
+    "variant": {
+     "value": "pill"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Accordion": {
+   "properties": {
+    "items": {
+     "value": "{{[{\"value\":\"item-1\",\"title\":\"Is it accessible?\",\"content\":\"Yes. It adheres to the WAI-ARIA design pattern.\"},{\"value\":\"item-2\",\"title\":\"Is it styled?\",\"content\":\"Yes. It follows your ToolJet app theme.\"},{\"value\":\"item-3\",\"title\":\"Is it animated?\",\"content\":\"Yes. It animates open and closed by default.\"}]}}"
+    },
+    "value": {
+     "value": "item-1"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Dialog": {
+   "properties": {
+    "triggerText": {
+     "value": "Delete account"
+    },
+    "triggerVariant": {
+     "value": "outline"
+    },
+    "title": {
+     "value": "Are you absolutely sure?"
+    },
+    "description": {
+     "value": "This action cannot be undone. This will permanently delete your account and remove your data."
+    },
+    "confirmText": {
+     "value": "Continue"
+    },
+    "cancelText": {
+     "value": "Cancel"
+    },
+    "destructive": {
+     "value": "{{true}}"
+    },
+    "isOpen": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_DropdownMenu": {
+   "properties": {
+    "triggerText": {
+     "value": "Options"
+    },
+    "triggerVariant": {
+     "value": "outline"
+    },
+    "items": {
+     "value": "{{[{\"heading\":\"My account\"},{\"label\":\"Profile\",\"value\":\"profile\"},{\"label\":\"Billing\",\"value\":\"billing\"},{\"label\":\"Settings\",\"value\":\"settings\"},{\"separator\":true},{\"label\":\"Log out\",\"value\":\"logout\",\"destructive\":true}]}}"
+    },
+    "align": {
+     "value": "start"
+    },
+    "selectedItem": {
+     "value": ""
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Card": {
+   "properties": {
+    "title": {
+     "value": "Card title"
+    },
+    "description": {
+     "value": "Drop components into the area below."
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_TabsContainer": {
+   "properties": {
+    "tabs": {
+     "value": "{{[{\"id\":\"details\",\"label\":\"Details\"},{\"id\":\"activity\",\"label\":\"Activity\"}]}}"
+    },
+    "currentTab": {
+     "value": "details"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_AccordionContainer": {
+   "properties": {
+    "sections": {
+     "value": "{{[{\"id\":\"general\",\"title\":\"General\"},{\"id\":\"billing\",\"title\":\"Billing\"},{\"id\":\"advanced\",\"title\":\"Advanced\"}]}}"
+    },
+    "openSections": {
+     "value": "{{[\"general\"]}}"
+    },
+    "allowMultiple": {
+     "value": "{{true}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Stepper": {
+   "properties": {
+    "steps": {
+     "value": "{{[{\"id\":\"account\",\"label\":\"Account\"},{\"id\":\"profile\",\"label\":\"Profile\"},{\"id\":\"review\",\"label\":\"Review\"}]}}"
+    },
+    "currentStep": {
+     "value": "account"
+    },
+    "finishLabel": {
+     "value": "Finish"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_SplitPane": {
+   "properties": {
+    "direction": {
+     "value": "horizontal"
+    },
+    "split": {
+     "value": "{{40}}"
+    },
+    "minPane": {
+     "value": "{{15}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Form": {
+   "properties": {
+    "title": {
+     "value": "Contact us"
+    },
+    "fields": {
+     "value": "{{[{\"name\":\"name\",\"label\":\"Name\",\"type\":\"text\",\"required\":true,\"placeholder\":\"Jane Doe\"},{\"name\":\"email\",\"label\":\"Email\",\"type\":\"email\",\"required\":true,\"placeholder\":\"jane@example.com\"},{\"name\":\"topic\",\"label\":\"Topic\",\"type\":\"select\",\"options\":[\"Sales\",\"Support\",\"Other\"]},{\"name\":\"message\",\"label\":\"Message\",\"type\":\"textarea\",\"placeholder\":\"How can we help?\"},{\"name\":\"subscribe\",\"label\":\"Subscribe to updates\",\"type\":\"checkbox\"}]}}"
+    },
+    "defaultValues": {
+     "value": "{{{}}}"
+    },
+    "submitLabel": {
+     "value": "Submit"
+    },
+    "showReset": {
+     "value": "{{true}}"
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "data": {
+     "value": "{{{}}}"
+    },
+    "isValid": {
+     "value": "{{false}}"
+    },
+    "errors": {
+     "value": "{{{}}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_DataTable": {
+   "properties": {
+    "data": {
+     "value": "{{[{\"id\":1,\"name\":\"Olivia Martin\",\"email\":\"olivia@example.com\",\"plan\":\"Pro\",\"amount\":1999},{\"id\":2,\"name\":\"Jackson Lee\",\"email\":\"jackson@example.com\",\"plan\":\"Free\",\"amount\":0},{\"id\":3,\"name\":\"Isabella Nguyen\",\"email\":\"isabella@example.com\",\"plan\":\"Team\",\"amount\":4900},{\"id\":4,\"name\":\"William Kim\",\"email\":\"will@example.com\",\"plan\":\"Pro\",\"amount\":1999},{\"id\":5,\"name\":\"Sofia Davis\",\"email\":\"sofia@example.com\",\"plan\":\"Enterprise\",\"amount\":12900},{\"id\":6,\"name\":\"Liam Johnson\",\"email\":\"liam@example.com\",\"plan\":\"Free\",\"amount\":0},{\"id\":7,\"name\":\"Emma Brown\",\"email\":\"emma@example.com\",\"plan\":\"Team\",\"amount\":4900}]}}"
+    },
+    "columns": {
+     "value": "{{[{\"key\":\"name\",\"label\":\"Name\"},{\"key\":\"email\",\"label\":\"Email\"},{\"key\":\"plan\",\"label\":\"Plan\"},{\"key\":\"amount\",\"label\":\"Amount\",\"align\":\"right\"}]}}"
+    },
+    "searchable": {
+     "value": "{{true}}"
+    },
+    "pageSize": {
+     "value": "{{5}}"
+    },
+    "searchText": {
+     "value": ""
+    },
+    "selectedRow": {
+     "value": "{{{}}}"
+    },
+    "selectedRowIndex": {
+     "value": "{{-1}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Combobox": {
+   "properties": {
+    "label": {
+     "value": "Framework"
+    },
+    "placeholder": {
+     "value": "Select framework…"
+    },
+    "options": {
+     "value": "{{[{\"label\":\"Next.js\",\"value\":\"next\"},{\"label\":\"SvelteKit\",\"value\":\"sveltekit\"},{\"label\":\"Nuxt\",\"value\":\"nuxt\"},{\"label\":\"Remix\",\"value\":\"remix\"},{\"label\":\"Astro\",\"value\":\"astro\"},{\"label\":\"Angular\",\"value\":\"angular\"}]}}"
+    },
+    "value": {
+     "value": ""
+    },
+    "selectedLabel": {
+     "value": ""
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_MultiSelect": {
+   "properties": {
+    "label": {
+     "value": "Skills"
+    },
+    "placeholder": {
+     "value": "Select skills"
+    },
+    "options": {
+     "value": "{{[\"React\",\"TypeScript\",\"Node.js\",\"PostgreSQL\",\"Docker\",\"GraphQL\",\"Python\"]}}"
+    },
+    "values": {
+     "value": "{{[\"React\",\"TypeScript\"]}}"
+    },
+    "maxSelected": {
+     "value": "{{0}}"
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_DatePicker": {
+   "properties": {
+    "label": {
+     "value": "Due date"
+    },
+    "value": {
+     "value": ""
+    },
+    "minDate": {
+     "value": ""
+    },
+    "maxDate": {
+     "value": ""
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Rating": {
+   "properties": {
+    "label": {
+     "value": "Rate your experience"
+    },
+    "value": {
+     "value": "{{3}}"
+    },
+    "max": {
+     "value": "{{5}}"
+    },
+    "readOnly": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Timeline": {
+   "properties": {
+    "items": {
+     "value": "{{[{\"title\":\"Order placed\",\"description\":\"Order #1042 was created.\",\"time\":\"09:12\",\"status\":\"done\"},{\"title\":\"Payment confirmed\",\"description\":\"Card ending 4242.\",\"time\":\"09:14\",\"status\":\"done\"},{\"title\":\"Packed\",\"description\":\"Warehouse B is packing the order.\",\"time\":\"11:30\",\"status\":\"current\"},{\"title\":\"Shipped\",\"description\":\"Waiting for pickup.\",\"time\":\"\",\"status\":\"upcoming\"}]}}"
+    },
+    "selectedItem": {
+     "value": "{{{}}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_NumberInput": {
+   "properties": {
+    "label": {
+     "value": "Quantity"
+    },
+    "description": {
+     "value": ""
+    },
+    "placeholder": {
+     "value": "0"
+    },
+    "value": {
+     "value": "{{1}}"
+    },
+    "min": {
+     "value": ""
+    },
+    "max": {
+     "value": ""
+    },
+    "step": {
+     "value": "{{1}}"
+    },
+    "decimalPlaces": {
+     "value": "{{2}}"
+    },
+    "stepper": {
+     "value": "split"
+    },
+    "prefix": {
+     "value": ""
+    },
+    "suffix": {
+     "value": ""
+    },
+    "thousandSeparator": {
+     "value": "{{true}}"
+    },
+    "required": {
+     "value": "{{false}}"
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "isValid": {
+     "value": "{{true}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_PasswordInput": {
+   "properties": {
+    "label": {
+     "value": "Password"
+    },
+    "description": {
+     "value": ""
+    },
+    "placeholder": {
+     "value": ""
+    },
+    "value": {
+     "value": ""
+    },
+    "showToggle": {
+     "value": "{{true}}"
+    },
+    "showStrength": {
+     "value": "{{false}}"
+    },
+    "minLength": {
+     "value": "{{0}}"
+    },
+    "required": {
+     "value": "{{false}}"
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "strength": {
+     "value": ""
+    },
+    "isValid": {
+     "value": "{{true}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_CurrencyInput": {
+   "properties": {
+    "label": {
+     "value": "Amount"
+    },
+    "description": {
+     "value": ""
+    },
+    "placeholder": {
+     "value": "0.00"
+    },
+    "value": {
+     "value": ""
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "currencyOptions": {
+     "value": "{{[]}}"
+    },
+    "locale": {
+     "value": "en-US"
+    },
+    "decimalPlaces": {
+     "value": "{{2}}"
+    },
+    "currencyDisplay": {
+     "value": "symbol"
+    },
+    "required": {
+     "value": "{{false}}"
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "formattedValue": {
+     "value": ""
+    },
+    "isValid": {
+     "value": "{{true}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_PhoneInput": {
+   "properties": {
+    "label": {
+     "value": "Phone number"
+    },
+    "description": {
+     "value": ""
+    },
+    "placeholder": {
+     "value": ""
+    },
+    "value": {
+     "value": ""
+    },
+    "country": {
+     "value": "US"
+    },
+    "onlyCountries": {
+     "value": "{{[]}}"
+    },
+    "isCountryChangeEnabled": {
+     "value": "{{true}}"
+    },
+    "showFlag": {
+     "value": "{{true}}"
+    },
+    "required": {
+     "value": "{{false}}"
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "countryCode": {
+     "value": "+1"
+    },
+    "formattedValue": {
+     "value": ""
+    },
+    "isValidNumber": {
+     "value": "{{false}}"
+    },
+    "isValid": {
+     "value": "{{true}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_TagsInput": {
+   "properties": {
+    "label": {
+     "value": "Tags"
+    },
+    "description": {
+     "value": ""
+    },
+    "placeholder": {
+     "value": "Add a tag..."
+    },
+    "values": {
+     "value": "{{[\"design\",\"frontend\"]}}"
+    },
+    "suggestions": {
+     "value": "{{[\"design\",\"frontend\",\"backend\",\"devops\",\"research\"]}}"
+    },
+    "allowCustomTags": {
+     "value": "{{true}}"
+    },
+    "maxTags": {
+     "value": "{{0}}"
+    },
+    "caseSensitive": {
+     "value": "{{false}}"
+    },
+    "tagPattern": {
+     "value": ""
+    },
+    "addOnBlur": {
+     "value": "{{false}}"
+    },
+    "required": {
+     "value": "{{false}}"
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "lastAddedTag": {
+     "value": ""
+    },
+    "lastRemovedTag": {
+     "value": ""
+    },
+    "isValid": {
+     "value": "{{true}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_ColorPicker": {
+   "properties": {
+    "label": {
+     "value": "Brand color"
+    },
+    "description": {
+     "value": ""
+    },
+    "value": {
+     "value": "#6366f1"
+    },
+    "placeholder": {
+     "value": "Pick a color"
+    },
+    "swatches": {
+     "value": "{{[]}}"
+    },
+    "showSwatches": {
+     "value": "{{true}}"
+    },
+    "showPicker": {
+     "value": "{{true}}"
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "selectedColorRGB": {
+     "value": ""
+    },
+    "selectedColorRGBA": {
+     "value": ""
+    },
+    "isValid": {
+     "value": "{{true}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_TimePicker": {
+   "properties": {
+    "label": {
+     "value": "Time"
+    },
+    "description": {
+     "value": ""
+    },
+    "placeholder": {
+     "value": "Pick a time"
+    },
+    "value": {
+     "value": ""
+    },
+    "timeFormat": {
+     "value": "12h"
+    },
+    "minuteStep": {
+     "value": "{{15}}"
+    },
+    "minTime": {
+     "value": ""
+    },
+    "maxTime": {
+     "value": ""
+    },
+    "required": {
+     "value": "{{false}}"
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "formattedValue": {
+     "value": ""
+    },
+    "isValid": {
+     "value": "{{true}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_DateTimePicker": {
+   "properties": {
+    "label": {
+     "value": "Date and time"
+    },
+    "description": {
+     "value": ""
+    },
+    "placeholder": {
+     "value": "Pick a date and time"
+    },
+    "value": {
+     "value": ""
+    },
+    "timeFormat": {
+     "value": "12h"
+    },
+    "minuteStep": {
+     "value": "{{5}}"
+    },
+    "minDate": {
+     "value": ""
+    },
+    "maxDate": {
+     "value": ""
+    },
+    "disabledDates": {
+     "value": "{{[]}}"
+    },
+    "required": {
+     "value": "{{false}}"
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "selectedDate": {
+     "value": ""
+    },
+    "selectedTime": {
+     "value": ""
+    },
+    "unixTimestamp": {
+     "value": "{{0}}"
+    },
+    "displayValue": {
+     "value": ""
+    },
+    "isValid": {
+     "value": "{{true}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_FileUpload": {
+   "properties": {
+    "label": {
+     "value": ""
+    },
+    "description": {
+     "value": ""
+    },
+    "title": {
+     "value": "Drag & drop files here"
+    },
+    "hint": {
+     "value": "or click to browse"
+    },
+    "accept": {
+     "value": ""
+    },
+    "multiple": {
+     "value": "{{true}}"
+    },
+    "maxFiles": {
+     "value": "{{5}}"
+    },
+    "maxSize": {
+     "value": "{{5242880}}"
+    },
+    "parseContent": {
+     "value": "{{false}}"
+    },
+    "parseFileType": {
+     "value": "auto-detect"
+    },
+    "delimiter": {
+     "value": ","
+    },
+    "required": {
+     "value": "{{false}}"
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "file": {
+     "value": "{{[]}}"
+    },
+    "isParsing": {
+     "value": "{{false}}"
+    },
+    "isValid": {
+     "value": "{{true}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_ButtonGroup": {
+   "properties": {
+    "label": {
+     "value": ""
+    },
+    "description": {
+     "value": ""
+    },
+    "buttons": {
+     "value": "{{[{\"label\":\"Day\",\"value\":\"day\"},{\"label\":\"Week\",\"value\":\"week\"},{\"label\":\"Month\",\"value\":\"month\"}]}}"
+    },
+    "mode": {
+     "value": "single"
+    },
+    "value": {
+     "value": "week"
+    },
+    "selected": {
+     "value": "{{[]}}"
+    },
+    "allowDeselect": {
+     "value": "{{false}}"
+    },
+    "variant": {
+     "value": "outline"
+    },
+    "size": {
+     "value": "default"
+    },
+    "orientation": {
+     "value": "horizontal"
+    },
+    "fullWidth": {
+     "value": "{{false}}"
+    },
+    "disabled": {
+     "value": "{{false}}"
+    },
+    "lastClicked": {
+     "value": ""
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Calendar": {
+   "properties": {
+    "mode": {
+     "value": "single"
+    },
+    "selectedDate": {
+     "value": ""
+    },
+    "selectedDates": {
+     "value": "{{[]}}"
+    },
+    "startDate": {
+     "value": ""
+    },
+    "endDate": {
+     "value": ""
+    },
+    "markers": {
+     "value": "{{[]}}"
+    },
+    "minDate": {
+     "value": ""
+    },
+    "maxDate": {
+     "value": ""
+    },
+    "disabledDates": {
+     "value": "{{[]}}"
+    },
+    "disabledDays": {
+     "value": "{{[]}}"
+    },
+    "weekStartsOn": {
+     "value": "sunday"
+    },
+    "numberOfMonths": {
+     "value": "{{1}}"
+    },
+    "showOutsideDays": {
+     "value": "{{true}}"
+    },
+    "showBorder": {
+     "value": "{{true}}"
+    },
+    "visibleMonth": {
+     "value": ""
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Text": {
+   "properties": {
+    "text": {
+     "value": "Text"
+    },
+    "tone": {
+     "value": "paragraph"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Heading": {
+   "properties": {
+    "text": {
+     "value": "Heading"
+    },
+    "level": {
+     "value": "h2"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Link": {
+   "properties": {
+    "linkText": {
+     "value": "View details"
+    },
+    "linkTarget": {
+     "value": "https://tooljet.com"
+    },
+    "targetType": {
+     "value": "new"
+    },
+    "underline": {
+     "value": "on-hover"
+    },
+    "showIcon": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Icon": {
+   "properties": {
+    "icon": {
+     "value": "trending-up"
+    },
+    "size": {
+     "value": "{{20}}"
+    },
+    "strokeWidth": {
+     "value": "{{2}}"
+    },
+    "tone": {
+     "value": "primary"
+    },
+    "chip": {
+     "value": "square"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Image": {
+   "properties": {
+    "source": {
+     "value": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800"
+    },
+    "alternativeText": {
+     "value": ""
+    },
+    "imageFit": {
+     "value": "cover"
+    },
+    "caption": {
+     "value": ""
+    },
+    "fallbackText": {
+     "value": "Image unavailable"
+    },
+    "showBorder": {
+     "value": "{{false}}"
+    },
+    "zoomOnClick": {
+     "value": "{{false}}"
+    },
+    "hasError": {
+     "value": "{{false}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Separator": {
+   "properties": {
+    "orientation": {
+     "value": "horizontal"
+    },
+    "label": {
+     "value": ""
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Spinner": {
+   "properties": {
+    "variant": {
+     "value": "ring"
+    },
+    "size": {
+     "value": "default"
+    },
+    "label": {
+     "value": ""
+    },
+    "labelPosition": {
+     "value": "right"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Empty": {
+   "properties": {
+    "title": {
+     "value": "No results"
+    },
+    "description": {
+     "value": "Try adjusting your filters or add a new record."
+    },
+    "icon": {
+     "value": "inbox"
+    },
+    "actionLabel": {
+     "value": "Add record"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Tags": {
+   "properties": {
+    "tags": {
+     "value": "{{[\"Design\",\"Engineering\",\"Q4\"]}}"
+    },
+    "tagColors": {
+     "value": "{{{}}}"
+    },
+    "variant": {
+     "value": "soft"
+    },
+    "size": {
+     "value": "default"
+    },
+    "overflow": {
+     "value": "wrap"
+    },
+    "pill": {
+     "value": "{{false}}"
+    },
+    "lastClickedTag": {
+     "value": ""
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Breadcrumb": {
+   "properties": {
+    "items": {
+     "value": "{{[\"Home\",\"Fleet\",\"Seraphine\"]}}"
+    },
+    "lastClickedItem": {
+     "value": "{{{}}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Pagination": {
+   "properties": {
+    "numberOfPages": {
+     "value": "{{10}}"
+    },
+    "totalRecords": {
+     "value": ""
+    },
+    "pageSize": {
+     "value": "{{10}}"
+    },
+    "currentPageIndex": {
+     "value": "{{1}}"
+    },
+    "siblingCount": {
+     "value": "{{1}}"
+    },
+    "showFirstLast": {
+     "value": "{{false}}"
+    },
+    "showLabels": {
+     "value": "{{true}}"
+    },
+    "totalPages": {
+     "value": "{{10}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Navigation": {
+   "properties": {
+    "items": {
+     "value": "{{[{\"label\":\"Dashboard\",\"value\":\"dashboard\",\"icon\":\"dashboard\",\"group\":\"Workspace\"},{\"label\":\"Orders\",\"value\":\"orders\",\"icon\":\"package\",\"badge\":\"12\",\"group\":\"Workspace\"},{\"label\":\"Customers\",\"value\":\"customers\",\"icon\":\"users\",\"group\":\"Workspace\"},{\"label\":\"Reports\",\"value\":\"reports\",\"icon\":\"bar-chart\",\"group\":\"Insights\"},{\"label\":\"Settings\",\"value\":\"settings\",\"icon\":\"settings\",\"group\":\"Insights\"}]}}"
+    },
+    "value": {
+     "value": "dashboard"
+    },
+    "orientation": {
+     "value": "vertical"
+    },
+    "variant": {
+     "value": "pills"
+    },
+    "collapsed": {
+     "value": "{{false}}"
+    },
+    "showCollapseButton": {
+     "value": "{{true}}"
+    },
+    "previousSelectedItem": {
+     "value": ""
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Steps": {
+   "properties": {
+    "steps": {
+     "value": "{{[{\"id\":\"cart\",\"label\":\"Cart\",\"description\":\"3 items\"},{\"id\":\"shipping\",\"label\":\"Shipping\",\"description\":\"Address\"},{\"id\":\"payment\",\"label\":\"Payment\",\"description\":\"Card\"},{\"id\":\"done\",\"label\":\"Confirm\"}]}}"
+    },
+    "currentStepIndex": {
+     "value": "{{1}}"
+    },
+    "stepsSelectable": {
+     "value": "{{true}}"
+    },
+    "orientation": {
+     "value": "horizontal"
+    },
+    "variant": {
+     "value": "numbers"
+    },
+    "currentStepId": {
+     "value": ""
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_KeyValue": {
+   "properties": {
+    "data": {
+     "value": "{{{\"Customer\":\"Acme Corp\",\"Plan\":\"Enterprise\",\"Seats\":48,\"Renewal date\":\"2026-12-01\",\"Owner\":\"Ada Lovelace\"}}}"
+    },
+    "columns": {
+     "value": "1"
+    },
+    "layout": {
+     "value": "inline"
+    },
+    "labelWidth": {
+     "value": "40%"
+    },
+    "dividers": {
+     "value": "{{true}}"
+    },
+    "emptyText": {
+     "value": "—"
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "allowCopy": {
+     "value": "{{false}}"
+    },
+    "lastClickedField": {
+     "value": "{{{}}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_CircularProgress": {
+   "properties": {
+    "value": {
+     "value": "{{63}}"
+    },
+    "size": {
+     "value": "{{96}}"
+    },
+    "thickness": {
+     "value": "{{8}}"
+    },
+    "lineCap": {
+     "value": "round"
+    },
+    "centerText": {
+     "value": "value"
+    },
+    "text": {
+     "value": ""
+    },
+    "label": {
+     "value": "Completed"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_SummaryStrip": {
+   "properties": {
+    "items": {
+     "value": "{{[{\"label\":\"Revenue\",\"value\":128400,\"delta\":12.4,\"format\":\"currency\"},{\"label\":\"Orders\",\"value\":1840,\"delta\":4.1},{\"label\":\"Refund rate\",\"value\":2.3,\"delta\":-0.4,\"format\":\"percent\",\"lowerIsBetter\":true},{\"label\":\"Avg. order\",\"value\":69.8,\"delta\":-1.2,\"format\":\"currency\"}]}}"
+    },
+    "valueFormat": {
+     "value": "auto"
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "appearance": {
+     "value": "panel"
+    },
+    "align": {
+     "value": "left"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Hero": {
+   "properties": {
+    "eyebrow": {
+     "value": "Operations"
+    },
+    "title": {
+     "value": "Good morning, Ada"
+    },
+    "subtitle": {
+     "value": "12 orders need attention and 3 shipments are delayed."
+    },
+    "meta": {
+     "value": "{{[\"Q4 2026\",\"EMEA\"]}}"
+    },
+    "actionLabel": {
+     "value": "Review orders"
+    },
+    "secondaryActionLabel": {
+     "value": "Export"
+    },
+    "asideValue": {
+     "value": "$128.4k"
+    },
+    "asideLabel": {
+     "value": "Revenue this month"
+    },
+    "icon": {
+     "value": "sparkles"
+    },
+    "background": {
+     "value": "tint"
+    },
+    "imageUrl": {
+     "value": ""
+    },
+    "align": {
+     "value": "left"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_ListView": {
+   "properties": {
+    "data": {
+     "value": "{{[{\"id\":1,\"title\":\"Northwind order #1042\",\"subtitle\":\"Acme Corp · 3 items\",\"meta\":\"$1,240\",\"image\":\"\"},{\"id\":2,\"title\":\"Northwind order #1043\",\"subtitle\":\"Globex · 1 item\",\"meta\":\"$320\",\"image\":\"\"},{\"id\":3,\"title\":\"Northwind order #1044\",\"subtitle\":\"Initech · 7 items\",\"meta\":\"$2,980\",\"image\":\"\"},{\"id\":4,\"title\":\"Northwind order #1045\",\"subtitle\":\"Umbrella · 2 items\",\"meta\":\"$615\",\"image\":\"\"}]}}"
+    },
+    "titleField": {
+     "value": "title"
+    },
+    "subtitleField": {
+     "value": "subtitle"
+    },
+    "metaField": {
+     "value": "meta"
+    },
+    "imageField": {
+     "value": "image"
+    },
+    "idField": {
+     "value": "id"
+    },
+    "mode": {
+     "value": "list"
+    },
+    "columns": {
+     "value": "{{3}}"
+    },
+    "showBorder": {
+     "value": "{{true}}"
+    },
+    "highlightSelectedRow": {
+     "value": "{{true}}"
+    },
+    "enablePagination": {
+     "value": "{{false}}"
+    },
+    "rowsPerPage": {
+     "value": "{{10}}"
+    },
+    "emptyText": {
+     "value": "No items"
+    },
+    "selectedItemId": {
+     "value": ""
+    },
+    "selectedItem": {
+     "value": "{{{}}}"
+    },
+    "pageIndex": {
+     "value": "{{0}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_CardGrid": {
+   "properties": {
+    "data": {
+     "value": "{{[{\"id\":1,\"name\":\"Seraphine\",\"role\":\"Cargo vessel\",\"status\":\"Active\",\"image\":\"https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=600\",\"progress\":72,\"description\":\"Rotterdam → Singapore\"},{\"id\":2,\"name\":\"Northwind\",\"role\":\"Tanker\",\"status\":\"Docked\",\"image\":\"https://images.unsplash.com/photo-1605745341112-85968b19335b?w=600\",\"progress\":100,\"description\":\"Port of Hamburg\"},{\"id\":3,\"name\":\"Calypso\",\"role\":\"Container ship\",\"status\":\"Delayed\",\"image\":\"https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=600\",\"progress\":38,\"description\":\"Suez Canal\"}]}}"
+    },
+    "titleField": {
+     "value": "name"
+    },
+    "subtitleField": {
+     "value": "role"
+    },
+    "imageField": {
+     "value": "image"
+    },
+    "badgeField": {
+     "value": "status"
+    },
+    "descriptionField": {
+     "value": "description"
+    },
+    "progressField": {
+     "value": "progress"
+    },
+    "metaFields": {
+     "value": ""
+    },
+    "idField": {
+     "value": "id"
+    },
+    "minCardWidth": {
+     "value": "{{220}}"
+    },
+    "imageAspect": {
+     "value": "16/9"
+    },
+    "showImage": {
+     "value": "{{true}}"
+    },
+    "cardStyle": {
+     "value": "elevated"
+    },
+    "highlightSelected": {
+     "value": "{{true}}"
+    },
+    "emptyText": {
+     "value": "Nothing here yet"
+    },
+    "selectedItemId": {
+     "value": ""
+    },
+    "selectedItem": {
+     "value": "{{{}}}"
+    },
+    "selectedItemIndex": {
+     "value": "{{-1}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_RecordList": {
+   "properties": {
+    "data": {
+     "value": "{{[{\"id\":1,\"customer\":\"Olivia Martin\",\"email\":\"olivia@example.com\",\"plan\":\"Pro\",\"status\":\"Paid\",\"amount\":1999},{\"id\":2,\"customer\":\"Jackson Lee\",\"email\":\"jackson@example.com\",\"plan\":\"Team\",\"status\":\"Pending\",\"amount\":39},{\"id\":3,\"customer\":\"Isabella Nguyen\",\"email\":\"isabella@example.com\",\"plan\":\"Pro\",\"status\":\"Paid\",\"amount\":299},{\"id\":4,\"customer\":\"William Kim\",\"email\":\"will@example.com\",\"plan\":\"Free\",\"status\":\"Refunded\",\"amount\":99}]}}"
+    },
+    "titleField": {
+     "value": "customer"
+    },
+    "metaFields": {
+     "value": "email, plan"
+    },
+    "avatarField": {
+     "value": ""
+    },
+    "statusField": {
+     "value": "status"
+    },
+    "progressField": {
+     "value": ""
+    },
+    "valueField": {
+     "value": "amount"
+    },
+    "valueFormat": {
+     "value": "currency"
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "statusColors": {
+     "value": "{{{\"Paid\":\"#16a34a\",\"Pending\":\"#d97706\",\"Refunded\":\"#dc2626\"}}}"
+    },
+    "idField": {
+     "value": "id"
+    },
+    "showAvatar": {
+     "value": "{{true}}"
+    },
+    "density": {
+     "value": "default"
+    },
+    "showDividers": {
+     "value": "{{true}}"
+    },
+    "listStyle": {
+     "value": "card"
+    },
+    "highlightSelected": {
+     "value": "{{true}}"
+    },
+    "emptyText": {
+     "value": "Nothing here yet"
+    },
+    "selectedItemId": {
+     "value": ""
+    },
+    "selectedItem": {
+     "value": "{{{}}}"
+    },
+    "selectedItemIndex": {
+     "value": "{{-1}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_ProgressList": {
+   "properties": {
+    "data": {
+     "value": "{{[{\"id\":1,\"label\":\"Marketing\",\"value\":42000,\"target\":50000,\"caption\":\"Q4 budget\"},{\"id\":2,\"label\":\"Engineering\",\"value\":118000,\"target\":120000,\"caption\":\"Q4 budget\"},{\"id\":3,\"label\":\"Sales\",\"value\":61000,\"target\":55000,\"caption\":\"Over target\"},{\"id\":4,\"label\":\"Support\",\"value\":9000,\"target\":30000,\"caption\":\"Q4 budget\"}]}}"
+    },
+    "labelField": {
+     "value": "label"
+    },
+    "valueField": {
+     "value": "value"
+    },
+    "targetField": {
+     "value": "target"
+    },
+    "captionField": {
+     "value": "caption"
+    },
+    "valueFormat": {
+     "value": "currency"
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "idField": {
+     "value": "id"
+    },
+    "autoTone": {
+     "value": "none"
+    },
+    "showValues": {
+     "value": "{{true}}"
+    },
+    "showPercent": {
+     "value": "{{true}}"
+    },
+    "listStyle": {
+     "value": "card"
+    },
+    "emptyText": {
+     "value": "Nothing to track yet"
+    },
+    "selectedItem": {
+     "value": "{{{}}}"
+    },
+    "selectedItemId": {
+     "value": ""
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Carousel": {
+   "properties": {
+    "slides": {
+     "value": "{{[{\"image\":\"https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1200\",\"title\":\"Coastal routes\",\"description\":\"Faster delivery across 12 ports\"},{\"image\":\"https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200\",\"title\":\"Mountain depots\",\"description\":\"New warehouses opening in Q1\"},{\"image\":\"https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200\",\"title\":\"Lakeside hubs\",\"description\":\"Cold-chain capacity doubled\"}]}}"
+    },
+    "currentIndex": {
+     "value": "{{0}}"
+    },
+    "imageFit": {
+     "value": "cover"
+    },
+    "captionPosition": {
+     "value": "overlay"
+    },
+    "showArrows": {
+     "value": "{{true}}"
+    },
+    "showDots": {
+     "value": "{{true}}"
+    },
+    "loop": {
+     "value": "{{true}}"
+    },
+    "autoplay": {
+     "value": "{{false}}"
+    },
+    "interval": {
+     "value": "{{5000}}"
+    },
+    "pauseOnHover": {
+     "value": "{{true}}"
+    },
+    "currentSlide": {
+     "value": "{{{}}}"
+    },
+    "clickedSlide": {
+     "value": "{{{}}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_LineChart": {
+   "properties": {
+    "data": {
+     "value": "{{[{\"month\":\"Jan\",\"revenue\":18600,\"cost\":8000,\"margin\":0.57},{\"month\":\"Feb\",\"revenue\":30500,\"cost\":20000,\"margin\":0.34},{\"month\":\"Mar\",\"revenue\":23700,\"cost\":12000,\"margin\":0.49},{\"month\":\"Apr\",\"revenue\":27300,\"cost\":19000,\"margin\":0.3},{\"month\":\"May\",\"revenue\":20900,\"cost\":13000,\"margin\":0.38},{\"month\":\"Jun\",\"revenue\":31400,\"cost\":14000,\"margin\":0.55}]}}"
+    },
+    "xField": {
+     "value": "month"
+    },
+    "yFields": {
+     "value": "revenue, cost"
+    },
+    "curve": {
+     "value": "monotone"
+    },
+    "showDots": {
+     "value": "{{false}}"
+    },
+    "strokeWidth": {
+     "value": "{{2}}"
+    },
+    "dashedFields": {
+     "value": ""
+    },
+    "referenceValue": {
+     "value": ""
+    },
+    "referenceLabel": {
+     "value": ""
+    },
+    "yAxisFormat": {
+     "value": "compact"
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "showGrid": {
+     "value": "{{true}}"
+    },
+    "showLegend": {
+     "value": "{{true}}"
+    },
+    "animate": {
+     "value": "{{true}}"
+    },
+    "seriesLabels": {
+     "value": "{{{}}}"
+    },
+    "colors": {
+     "value": "{{[]}}"
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "clickedDataPoint": {
+     "value": "{{{}}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_AreaChart": {
+   "properties": {
+    "data": {
+     "value": "{{[{\"month\":\"Jan\",\"revenue\":18600,\"cost\":8000,\"margin\":0.57},{\"month\":\"Feb\",\"revenue\":30500,\"cost\":20000,\"margin\":0.34},{\"month\":\"Mar\",\"revenue\":23700,\"cost\":12000,\"margin\":0.49},{\"month\":\"Apr\",\"revenue\":27300,\"cost\":19000,\"margin\":0.3},{\"month\":\"May\",\"revenue\":20900,\"cost\":13000,\"margin\":0.38},{\"month\":\"Jun\",\"revenue\":31400,\"cost\":14000,\"margin\":0.55}]}}"
+    },
+    "xField": {
+     "value": "month"
+    },
+    "yFields": {
+     "value": "revenue, cost"
+    },
+    "stack": {
+     "value": "{{false}}"
+    },
+    "lineOnly": {
+     "value": "{{false}}"
+    },
+    "curve": {
+     "value": "monotone"
+    },
+    "valuePrefix": {
+     "value": ""
+    },
+    "valueSuffix": {
+     "value": ""
+    },
+    "showLegend": {
+     "value": "{{true}}"
+    },
+    "seriesLabels": {
+     "value": "{{{}}}"
+    },
+    "colors": {
+     "value": "{{[]}}"
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "clickedDataPoint": {
+     "value": "{{{}}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_BarChart": {
+   "properties": {
+    "data": {
+     "value": "{{[{\"month\":\"Jan\",\"revenue\":18600,\"cost\":8000,\"margin\":0.57},{\"month\":\"Feb\",\"revenue\":30500,\"cost\":20000,\"margin\":0.34},{\"month\":\"Mar\",\"revenue\":23700,\"cost\":12000,\"margin\":0.49},{\"month\":\"Apr\",\"revenue\":27300,\"cost\":19000,\"margin\":0.3},{\"month\":\"May\",\"revenue\":20900,\"cost\":13000,\"margin\":0.38},{\"month\":\"Jun\",\"revenue\":31400,\"cost\":14000,\"margin\":0.55}]}}"
+    },
+    "xField": {
+     "value": "month"
+    },
+    "yFields": {
+     "value": "revenue"
+    },
+    "horizontal": {
+     "value": "{{false}}"
+    },
+    "stack": {
+     "value": "{{false}}"
+    },
+    "highlight": {
+     "value": ""
+    },
+    "categoryColors": {
+     "value": "{{{}}}"
+    },
+    "valuePrefix": {
+     "value": ""
+    },
+    "valueSuffix": {
+     "value": ""
+    },
+    "showLegend": {
+     "value": "{{false}}"
+    },
+    "seriesLabels": {
+     "value": "{{{}}}"
+    },
+    "colors": {
+     "value": "{{[]}}"
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "clickedDataPoint": {
+     "value": "{{{}}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_ComboChart": {
+   "properties": {
+    "data": {
+     "value": "{{[{\"month\":\"Jan\",\"revenue\":18600,\"cost\":8000,\"margin\":0.57},{\"month\":\"Feb\",\"revenue\":30500,\"cost\":20000,\"margin\":0.34},{\"month\":\"Mar\",\"revenue\":23700,\"cost\":12000,\"margin\":0.49},{\"month\":\"Apr\",\"revenue\":27300,\"cost\":19000,\"margin\":0.3},{\"month\":\"May\",\"revenue\":20900,\"cost\":13000,\"margin\":0.38},{\"month\":\"Jun\",\"revenue\":31400,\"cost\":14000,\"margin\":0.55}]}}"
+    },
+    "xField": {
+     "value": "month"
+    },
+    "barFields": {
+     "value": "revenue, cost"
+    },
+    "lineFields": {
+     "value": "margin"
+    },
+    "rightAxisFields": {
+     "value": "margin"
+    },
+    "stackBars": {
+     "value": "{{false}}"
+    },
+    "curve": {
+     "value": "monotone"
+    },
+    "showDots": {
+     "value": "{{true}}"
+    },
+    "yAxisFormat": {
+     "value": "compact"
+    },
+    "rightAxisFormat": {
+     "value": "percent"
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "showGrid": {
+     "value": "{{true}}"
+    },
+    "showLegend": {
+     "value": "{{true}}"
+    },
+    "seriesLabels": {
+     "value": "{{{}}}"
+    },
+    "colors": {
+     "value": "{{[]}}"
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "clickedDataPoint": {
+     "value": "{{{}}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_PieChart": {
+   "properties": {
+    "data": {
+     "value": "{{[{\"type\":\"Chrome\",\"value\":275},{\"type\":\"Safari\",\"value\":200},{\"type\":\"Firefox\",\"value\":187},{\"type\":\"Edge\",\"value\":173},{\"type\":\"Other\",\"value\":90}]}}"
+    },
+    "categoryField": {
+     "value": "type"
+    },
+    "valueField": {
+     "value": "value"
+    },
+    "donut": {
+     "value": "{{true}}"
+    },
+    "centerValue": {
+     "value": ""
+    },
+    "centerLabel": {
+     "value": "Visitors"
+    },
+    "showLegend": {
+     "value": "{{true}}"
+    },
+    "colors": {
+     "value": "{{[]}}"
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "clickedDataPoint": {
+     "value": "{{{}}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_RadarChart": {
+   "properties": {
+    "data": {
+     "value": "{{[{\"skill\":\"Design\",\"alex\":86,\"sam\":65},{\"skill\":\"Frontend\",\"alex\":92,\"sam\":70},{\"skill\":\"Backend\",\"alex\":60,\"sam\":90},{\"skill\":\"DevOps\",\"alex\":45,\"sam\":82},{\"skill\":\"Research\",\"alex\":78,\"sam\":58},{\"skill\":\"Writing\",\"alex\":70,\"sam\":66}]}}"
+    },
+    "categoryField": {
+     "value": "skill"
+    },
+    "yFields": {
+     "value": "alex, sam"
+    },
+    "maxValue": {
+     "value": ""
+    },
+    "fillOpacity": {
+     "value": "{{0.35}}"
+    },
+    "gridShape": {
+     "value": "polygon"
+    },
+    "showDots": {
+     "value": "{{false}}"
+    },
+    "valueSuffix": {
+     "value": ""
+    },
+    "showLegend": {
+     "value": "{{true}}"
+    },
+    "seriesLabels": {
+     "value": "{{{\"alex\":\"Alex\",\"sam\":\"Sam\"}}}"
+    },
+    "colors": {
+     "value": "{{[]}}"
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "clickedDataPoint": {
+     "value": "{{{}}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_RadialChart": {
+   "properties": {
+    "mode": {
+     "value": "progress"
+    },
+    "value": {
+     "value": "{{72}}"
+    },
+    "maxValue": {
+     "value": "{{100}}"
+    },
+    "data": {
+     "value": "{{[{\"channel\":\"Organic\",\"visitors\":420},{\"channel\":\"Paid\",\"visitors\":310},{\"channel\":\"Referral\",\"visitors\":190},{\"channel\":\"Social\",\"visitors\":120}]}}"
+    },
+    "categoryField": {
+     "value": "channel"
+    },
+    "valueField": {
+     "value": "visitors"
+    },
+    "centerValue": {
+     "value": ""
+    },
+    "centerLabel": {
+     "value": "Complete"
+    },
+    "rounded": {
+     "value": "{{true}}"
+    },
+    "showTrack": {
+     "value": "{{true}}"
+    },
+    "showLegend": {
+     "value": "{{true}}"
+    },
+    "colors": {
+     "value": "{{[]}}"
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "clickedDataPoint": {
+     "value": "{{{}}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_ScatterChart": {
+   "properties": {
+    "data": {
+     "value": "{{[{\"campaign\":\"Search\",\"spend\":4200,\"revenue\":18400,\"channel\":\"Paid\"},{\"campaign\":\"Display\",\"spend\":3100,\"revenue\":7600,\"channel\":\"Paid\"},{\"campaign\":\"Social\",\"spend\":2600,\"revenue\":9800,\"channel\":\"Paid\"},{\"campaign\":\"Newsletter\",\"spend\":600,\"revenue\":6400,\"channel\":\"Owned\"},{\"campaign\":\"Blog\",\"spend\":900,\"revenue\":5200,\"channel\":\"Owned\"},{\"campaign\":\"Partners\",\"spend\":1800,\"revenue\":11200,\"channel\":\"Earned\"}]}}"
+    },
+    "xField": {
+     "value": "spend"
+    },
+    "yField": {
+     "value": "revenue"
+    },
+    "sizeField": {
+     "value": ""
+    },
+    "groupField": {
+     "value": "channel"
+    },
+    "nameField": {
+     "value": "campaign"
+    },
+    "xLabel": {
+     "value": "Spend"
+    },
+    "yLabel": {
+     "value": "Revenue"
+    },
+    "xAxisFormat": {
+     "value": "compact"
+    },
+    "yAxisFormat": {
+     "value": "compact"
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "referenceX": {
+     "value": ""
+    },
+    "referenceY": {
+     "value": ""
+    },
+    "pointSize": {
+     "value": "{{8}}"
+    },
+    "showGrid": {
+     "value": "{{true}}"
+    },
+    "showLegend": {
+     "value": "{{true}}"
+    },
+    "colors": {
+     "value": "{{[]}}"
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "clickedDataPoint": {
+     "value": "{{{}}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_FunnelChart": {
+   "properties": {
+    "data": {
+     "value": "{{[{\"stage\":\"Visited\",\"count\":12400},{\"stage\":\"Signed up\",\"count\":4300},{\"stage\":\"Activated\",\"count\":2100},{\"stage\":\"Subscribed\",\"count\":640}]}}"
+    },
+    "stageField": {
+     "value": "stage"
+    },
+    "valueField": {
+     "value": "count"
+    },
+    "showConversion": {
+     "value": "{{true}}"
+    },
+    "conversionBase": {
+     "value": "previous"
+    },
+    "align": {
+     "value": "center"
+    },
+    "colorByStage": {
+     "value": "{{false}}"
+    },
+    "yAxisFormat": {
+     "value": "compact"
+    },
+    "currency": {
+     "value": "USD"
+    },
+    "colors": {
+     "value": "{{[]}}"
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "clickedDataPoint": {
+     "value": "{{{}}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_HeatmapChart": {
+   "properties": {
+    "data": {
+     "value": "{{[{\"day\":\"Mon\",\"hour\":\"9:00\",\"tickets\":10},{\"day\":\"Mon\",\"hour\":\"11:00\",\"tickets\":23},{\"day\":\"Mon\",\"hour\":\"13:00\",\"tickets\":13},{\"day\":\"Mon\",\"hour\":\"15:00\",\"tickets\":26},{\"day\":\"Mon\",\"hour\":\"17:00\",\"tickets\":16},{\"day\":\"Tue\",\"hour\":\"9:00\",\"tickets\":17},{\"day\":\"Tue\",\"hour\":\"11:00\",\"tickets\":30},{\"day\":\"Tue\",\"hour\":\"13:00\",\"tickets\":20},{\"day\":\"Tue\",\"hour\":\"15:00\",\"tickets\":10},{\"day\":\"Tue\",\"hour\":\"17:00\",\"tickets\":23},{\"day\":\"Wed\",\"hour\":\"9:00\",\"tickets\":24},{\"day\":\"Wed\",\"hour\":\"11:00\",\"tickets\":14},{\"day\":\"Wed\",\"hour\":\"13:00\",\"tickets\":27},{\"day\":\"Wed\",\"hour\":\"15:00\",\"tickets\":17},{\"day\":\"Wed\",\"hour\":\"17:00\",\"tickets\":30},{\"day\":\"Thu\",\"hour\":\"9:00\",\"tickets\":31},{\"day\":\"Thu\",\"hour\":\"11:00\",\"tickets\":21},{\"day\":\"Thu\",\"hour\":\"13:00\",\"tickets\":11},{\"day\":\"Thu\",\"hour\":\"15:00\",\"tickets\":24},{\"day\":\"Thu\",\"hour\":\"17:00\",\"tickets\":14},{\"day\":\"Fri\",\"hour\":\"9:00\",\"tickets\":15},{\"day\":\"Fri\",\"hour\":\"11:00\",\"tickets\":28},{\"day\":\"Fri\",\"hour\":\"13:00\",\"tickets\":18},{\"day\":\"Fri\",\"hour\":\"15:00\",\"tickets\":31},{\"day\":\"Fri\",\"hour\":\"17:00\",\"tickets\":21},{\"day\":\"Sat\",\"hour\":\"9:00\",\"tickets\":14},{\"day\":\"Sat\",\"hour\":\"11:00\",\"tickets\":4},{\"day\":\"Sat\",\"hour\":\"13:00\",\"tickets\":17},{\"day\":\"Sat\",\"hour\":\"15:00\",\"tickets\":7},{\"day\":\"Sat\",\"hour\":\"17:00\",\"tickets\":20},{\"day\":\"Sun\",\"hour\":\"9:00\",\"tickets\":21},{\"day\":\"Sun\",\"hour\":\"11:00\",\"tickets\":11},{\"day\":\"Sun\",\"hour\":\"13:00\",\"tickets\":24},{\"day\":\"Sun\",\"hour\":\"15:00\",\"tickets\":14},{\"day\":\"Sun\",\"hour\":\"17:00\",\"tickets\":4}]}}"
+    },
+    "xField": {
+     "value": "hour"
+    },
+    "yField": {
+     "value": "day"
+    },
+    "valueField": {
+     "value": "tickets"
+    },
+    "xOrder": {
+     "value": "{{[]}}"
+    },
+    "yOrder": {
+     "value": "{{[]}}"
+    },
+    "showValues": {
+     "value": "{{false}}"
+    },
+    "cellGap": {
+     "value": "{{3}}"
+    },
+    "showLegend": {
+     "value": "{{true}}"
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "clickedDataPoint": {
+     "value": "{{{}}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Sparkline": {
+   "properties": {
+    "data": {
+     "value": "{{[12,18,14,22,19,26,24,31]}}"
+    },
+    "type": {
+     "value": "area"
+    },
+    "curve": {
+     "value": "monotone"
+    },
+    "strokeWidth": {
+     "value": "{{2}}"
+    },
+    "showEndDot": {
+     "value": "{{true}}"
+    },
+    "colorByTrend": {
+     "value": "{{false}}"
+    },
+    "lowerIsBetter": {
+     "value": "{{false}}"
+    },
+    "showBand": {
+     "value": "{{false}}"
+    },
+    "bandMin": {
+     "value": ""
+    },
+    "bandMax": {
+     "value": ""
+    },
+    "showTooltip": {
+     "value": "{{false}}"
+    },
+    "emptyText": {
+     "value": "No data"
+    },
+    "trend": {
+     "value": ""
+    },
+    "lastValue": {
+     "value": "{{0}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Kanban": {
+   "properties": {
+    "data": {
+     "value": "{{[{\"id\":1,\"title\":\"Design onboarding flow\",\"description\":\"Wireframes for the 3-step signup\",\"status\":\"todo\",\"tags\":\"Design\",\"assignee\":\"Ada Lovelace\",\"progress\":0},{\"id\":2,\"title\":\"Billing webhooks\",\"description\":\"Retry failed Stripe events\",\"status\":\"in-progress\",\"tags\":\"Backend\",\"assignee\":\"Alan Turing\",\"progress\":60},{\"id\":3,\"title\":\"Audit log export\",\"description\":\"CSV export for admins\",\"status\":\"in-progress\",\"tags\":\"Backend\",\"assignee\":\"Grace Hopper\",\"progress\":30},{\"id\":4,\"title\":\"Dark mode QA\",\"description\":\"Check every page in dark theme\",\"status\":\"review\",\"tags\":\"QA\",\"assignee\":\"Linus T\",\"progress\":90},{\"id\":5,\"title\":\"Release notes\",\"description\":\"Draft for v3.2\",\"status\":\"done\",\"tags\":\"Docs\",\"assignee\":\"Ada Lovelace\",\"progress\":100}]}}"
+    },
+    "columns": {
+     "value": "{{[{\"id\":\"todo\",\"title\":\"To do\"},{\"id\":\"in-progress\",\"title\":\"In progress\",\"color\":\"#3b82f6\"},{\"id\":\"review\",\"title\":\"Review\",\"color\":\"#f59e0b\"},{\"id\":\"done\",\"title\":\"Done\",\"color\":\"#22c55e\"}]}}"
+    },
+    "statusField": {
+     "value": "status"
+    },
+    "idField": {
+     "value": "id"
+    },
+    "titleField": {
+     "value": "title"
+    },
+    "descriptionField": {
+     "value": "description"
+    },
+    "tagsField": {
+     "value": "tags"
+    },
+    "avatarField": {
+     "value": "assignee"
+    },
+    "progressField": {
+     "value": "progress"
+    },
+    "density": {
+     "value": "comfortable"
+    },
+    "columnWidth": {
+     "value": "{{260}}"
+    },
+    "showCount": {
+     "value": "{{true}}"
+    },
+    "collapsibleColumns": {
+     "value": "{{true}}"
+    },
+    "collapsedColumns": {
+     "value": "{{[]}}"
+    },
+    "allowDrag": {
+     "value": "{{true}}"
+    },
+    "allowAdd": {
+     "value": "{{true}}"
+    },
+    "allowDelete": {
+     "value": "{{false}}"
+    },
+    "emptyText": {
+     "value": "No cards"
+    },
+    "lastSelectedCard": {
+     "value": "{{{}}}"
+    },
+    "lastCardMovement": {
+     "value": "{{{}}}"
+    },
+    "addCardColumn": {
+     "value": ""
+    },
+    "lastAddedCard": {
+     "value": "{{{}}}"
+    },
+    "lastUpdatedCard": {
+     "value": "{{{}}}"
+    },
+    "lastRemovedCard": {
+     "value": "{{{}}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Chat": {
+   "properties": {
+    "chatTitle": {
+     "value": "Assistant"
+    },
+    "history": {
+     "value": "{{[{\"role\":\"assistant\",\"message\":\"Hi! How can I help you today?\",\"timestamp\":\"2026-10-22T09:00:00.000Z\"}]}}"
+    },
+    "userName": {
+     "value": "You"
+    },
+    "respondentName": {
+     "value": "Assistant"
+    },
+    "placeholder": {
+     "value": "Ask me anything!"
+    },
+    "emptyText": {
+     "value": "Start the conversation"
+    },
+    "isInputDisabled": {
+     "value": "{{false}}"
+    },
+    "isResponseLoading": {
+     "value": "{{false}}"
+    },
+    "enableClearHistoryButton": {
+     "value": "{{true}}"
+    },
+    "enableDownloadHistoryButton": {
+     "value": "{{true}}"
+    },
+    "showAvatars": {
+     "value": "{{true}}"
+    },
+    "showTimestamps": {
+     "value": "{{true}}"
+    },
+    "lastMessage": {
+     "value": ""
+    },
+    "lastResponse": {
+     "value": ""
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Questionnaire": {
+   "properties": {
+    "items": {
+     "value": "{{[{\"id\":\"role\",\"question\":\"What best describes your role?\",\"type\":\"choice\",\"options\":[\"Engineering\",\"Design\",\"Product\",\"Operations\"]},{\"id\":\"tools\",\"question\":\"Which tools do you use daily?\",\"type\":\"multi\",\"options\":[\"Slack\",\"Jira\",\"Figma\",\"Notion\",\"GitHub\"]},{\"id\":\"satisfaction\",\"question\":\"How satisfied are you with onboarding?\",\"type\":\"rating\"},{\"id\":\"feedback\",\"question\":\"Anything we could do better?\",\"type\":\"text\",\"required\":false}]}}"
+    },
+    "answers": {
+     "value": "{{{}}}"
+    },
+    "currentIndex": {
+     "value": "{{0}}"
+    },
+    "isComplete": {
+     "value": "{{false}}"
+    },
+    "showProgress": {
+     "value": "{{true}}"
+    },
+    "submitLabel": {
+     "value": "Submit"
+    },
+    "completeTitle": {
+     "value": "Thanks for your answers"
+    },
+    "completeText": {
+     "value": "We read every response."
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Schedule": {
+   "properties": {
+    "resources": {
+     "value": "{{[{\"id\":\"r1\",\"name\":\"Room Atlas\",\"subtitle\":\"8 seats\"},{\"id\":\"r2\",\"name\":\"Room Borealis\",\"subtitle\":\"4 seats\"},{\"id\":\"r3\",\"name\":\"Room Cygnus\",\"subtitle\":\"12 seats\"}]}}"
+    },
+    "bookings": {
+     "value": "{{[{\"id\":\"b1\",\"resource\":\"r1\",\"start\":\"2026-10-22T09:00\",\"end\":\"2026-10-22T10:30\",\"title\":\"Design review\",\"status\":\"confirmed\"},{\"id\":\"b2\",\"resource\":\"r1\",\"start\":\"2026-10-22T13:00\",\"end\":\"2026-10-22T14:00\",\"title\":\"Hiring sync\",\"status\":\"tentative\"},{\"id\":\"b3\",\"resource\":\"r2\",\"start\":\"2026-10-22T10:00\",\"end\":\"2026-10-22T12:00\",\"title\":\"Customer call\",\"subtitle\":\"Acme\",\"status\":\"confirmed\"},{\"id\":\"b4\",\"resource\":\"r3\",\"start\":\"2026-10-22T15:00\",\"end\":\"2026-10-22T17:00\",\"title\":\"All hands\",\"status\":\"done\"}]}}"
+    },
+    "resourceField": {
+     "value": "resource"
+    },
+    "startField": {
+     "value": "start"
+    },
+    "endField": {
+     "value": "end"
+    },
+    "titleField": {
+     "value": "title"
+    },
+    "subtitleField": {
+     "value": "subtitle"
+    },
+    "statusField": {
+     "value": "status"
+    },
+    "idField": {
+     "value": "id"
+    },
+    "scale": {
+     "value": "hours"
+    },
+    "date": {
+     "value": "2026-10-22"
+    },
+    "dayStart": {
+     "value": "{{8}}"
+    },
+    "dayEnd": {
+     "value": "{{18}}"
+    },
+    "slotMinutes": {
+     "value": "{{30}}"
+    },
+    "days": {
+     "value": "{{7}}"
+    },
+    "hourFormat": {
+     "value": "12h"
+    },
+    "resourceTitle": {
+     "value": "Rooms"
+    },
+    "resourceWidth": {
+     "value": "{{160}}"
+    },
+    "rowHeight": {
+     "value": "{{56}}"
+    },
+    "showNowLine": {
+     "value": "{{true}}"
+    },
+    "statusColors": {
+     "value": "{{{}}}"
+    },
+    "emptyText": {
+     "value": "No resources to schedule"
+    },
+    "selectedBookingId": {
+     "value": ""
+    },
+    "selectedBooking": {
+     "value": "{{{}}}"
+    },
+    "selectedSlot": {
+     "value": "{{{}}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
+  },
+  "Lib_shadcn_Map": {
+   "properties": {
+    "data": {
+     "value": "{{[{\"id\":1,\"name\":\"Rotterdam hub\",\"lat\":51.9244,\"lng\":4.4777,\"status\":\"active\",\"eta\":\"2h\"},{\"id\":2,\"name\":\"Antwerp depot\",\"lat\":51.2194,\"lng\":4.4025,\"status\":\"delayed\",\"eta\":\"5h\"},{\"id\":3,\"name\":\"Brussels office\",\"lat\":50.8503,\"lng\":4.3517,\"status\":\"active\",\"eta\":\"—\"},{\"id\":4,\"name\":\"Lille warehouse\",\"lat\":50.6292,\"lng\":3.0573,\"status\":\"offline\",\"eta\":\"—\"}]}}"
+    },
+    "latField": {
+     "value": "lat"
+    },
+    "lngField": {
+     "value": "lng"
+    },
+    "titleField": {
+     "value": "name"
+    },
+    "statusField": {
+     "value": "status"
+    },
+    "statusColors": {
+     "value": "{{{}}}"
+    },
+    "popupFields": {
+     "value": "status, eta"
+    },
+    "idField": {
+     "value": "id"
+    },
+    "showPopup": {
+     "value": "{{true}}"
+    },
+    "connectMarkers": {
+     "value": "{{false}}"
+    },
+    "fitToMarkers": {
+     "value": "{{true}}"
+    },
+    "defaultCenter": {
+     "value": "51.2, 4.0"
+    },
+    "defaultZoom": {
+     "value": "{{8}}"
+    },
+    "mapStyle": {
+     "value": "streets"
+    },
+    "tileUrl": {
+     "value": ""
+    },
+    "scrollWheelZoom": {
+     "value": "{{false}}"
+    },
+    "pickLocation": {
+     "value": "{{false}}"
+    },
+    "selectedMarker": {
+     "value": "{{{}}}"
+    },
+    "selectedMarkerId": {
+     "value": ""
+    },
+    "clickedLocation": {
+     "value": "{{{}}}"
+    },
+    "pickedLocation": {
+     "value": "{{{}}}"
+    },
+    "center": {
+     "value": "{{{}}}"
+    },
+    "zoom": {
+     "value": "{{8}}"
+    },
+    "bounds": {
+     "value": "{{{}}}"
+    },
+    "visibility": {
+     "value": "{{true}}"
+    },
+    "loadingState": {
+     "value": "{{false}}"
+    }
+   },
+   "styles": {
+    "boxShadow": {
+     "value": "0px 0px 0px 0px #00000040"
+    }
+   },
+   "others": {
+    "showOnDesktop": {
+     "value": "{{true}}"
+    },
+    "showOnMobile": {
+     "value": "{{false}}"
+    }
+   }
   }
  }
 }

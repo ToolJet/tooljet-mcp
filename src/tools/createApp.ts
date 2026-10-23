@@ -7,6 +7,7 @@ import { ok, fail, type ToolDef } from './types.js';
 import { themeDefinition } from './manageTheme.js';
 import { accentWarning } from '../themeAccent.js';
 import type { ComponentLibrary } from '../componentLibrary.js';
+import { libraryPins } from '../libraryPack.js';
 
 // The standard theme's primary, for the accent note (a stock blue reads plain).
 const STANDARD_PRIMARY = { brand: { colors: { primary: { light: '#2563EB' } } } };
@@ -134,13 +135,16 @@ export function createAppTool(client: ToolJetClient): ToolDef {
         const created = await client.createApp(args.name);
         const componentLibrary: ComponentLibrary = args.component_library ?? 'ui2';
         const choice: CreateAppThemeChoice = args.theme ?? 'standard';
+        // The published library this server exposes renders only where the version pins it (libraryPack.ts).
+        const pins = libraryPins();
+        const pinned = pins ? { customComponentLibraries: pins } : {};
         const result: CreateAppToolResult = { ...created, component_library: componentLibrary, theme: { mode: 'workspace_default' } };
         // Saved explicitly, not left to the server's default for new apps: older ToolJet servers create apps without it.
         // A failure never fails the call: the app exists, and a retried create_app would make a second one.
         const saveLibrary = () => Promise.resolve().then(() => client.updateAppSettings({
           appId: created.app_id,
           versionId: created.version_id,
-          globalSettings: { componentLibrary },
+          globalSettings: { componentLibrary, ...pinned },
         })).catch((libraryErr: unknown) => {
           result.component_library_warning = `Could not save component_library "${componentLibrary}": ` +
             `${libraryErr instanceof Error ? libraryErr.message : String(libraryErr)}. Build in it anyway.`;
@@ -158,7 +162,7 @@ export function createAppTool(client: ToolJetClient): ToolDef {
           await client.updateAppSettings({
             appId: created.app_id,
             versionId: created.version_id,
-            globalSettings: { theme, componentLibrary, ...(appMode ? { appMode } : {}) },
+            globalSettings: { theme, componentLibrary, ...pinned, ...(appMode ? { appMode } : {}) },
           });
           const mode = choice === 'standard' ? 'standard' : typeof choice === 'object' ? 'derived' : 'named';
           const accentNote = mode === 'standard' ? accentWarning(STANDARD_PRIMARY) : mode === 'derived' ? accentWarning((choice as DerivedTheme).definition) : null;
