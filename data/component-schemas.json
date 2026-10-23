@@ -16272,6 +16272,12 @@
         ]
       },
       {
+        "key": "highlightClicked",
+        "label": "Highlight clicked point",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "loadingState",
         "label": "Loading state",
         "valueType": "boolean",
@@ -16887,6 +16893,12 @@
         "label": "Category colors ({ category: color })",
         "valueType": "object",
         "default": "{{{} }}"
+      },
+      {
+        "key": "highlightClicked",
+        "label": "Highlight clicked point",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "loadingState",
@@ -20167,6 +20179,12 @@
         "default": "{{[]}}"
       },
       {
+        "key": "highlightClicked",
+        "label": "Highlight clicked point",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "loadingState",
         "label": "Loading state",
         "valueType": "boolean",
@@ -21034,7 +21052,7 @@
         "key": "label",
         "label": "Label",
         "valueType": "string",
-        "default": ""
+        "default": "Date"
       },
       {
         "key": "description",
@@ -23344,6 +23362,12 @@
         "default": "{{[]}}"
       },
       {
+        "key": "highlightClicked",
+        "label": "Highlight clicked point",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "loadingState",
         "label": "Loading state",
         "valueType": "boolean",
@@ -23852,6 +23876,12 @@
         "label": "Legend",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "highlightClicked",
+        "label": "Highlight clicked point",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "loadingState",
@@ -24821,7 +24851,7 @@
         "key": "label",
         "label": "Label",
         "valueType": "string",
-        "default": ""
+        "default": "Label"
       },
       {
         "key": "description",
@@ -24833,7 +24863,7 @@
         "key": "placeholder",
         "label": "Placeholder",
         "valueType": "string",
-        "default": ""
+        "default": "Enter text"
       },
       {
         "key": "defaultValue",
@@ -26032,6 +26062,12 @@
         "label": "Series colors (in order)",
         "valueType": "array",
         "default": "{{[]}}"
+      },
+      {
+        "key": "highlightClicked",
+        "label": "Highlight clicked point",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "loadingState",
@@ -29151,7 +29187,7 @@
         "key": "placeholder",
         "label": "Placeholder",
         "valueType": "string",
-        "default": ""
+        "default": "Enter password"
       },
       {
         "key": "defaultValue",
@@ -29446,7 +29482,7 @@
         "key": "placeholder",
         "label": "Placeholder",
         "valueType": "string",
-        "default": ""
+        "default": "Enter phone number"
       },
       {
         "key": "defaultValue",
@@ -29823,6 +29859,12 @@
         "label": "Series colors (in order)",
         "valueType": "array",
         "default": "{{[]}}"
+      },
+      {
+        "key": "highlightClicked",
+        "label": "Highlight clicked point",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "loadingState",
@@ -30910,6 +30952,12 @@
         "default": "{{[]}}"
       },
       {
+        "key": "highlightClicked",
+        "label": "Highlight clicked point",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "loadingState",
         "label": "Loading state",
         "valueType": "boolean",
@@ -31220,6 +31268,12 @@
         "default": "{{[]}}"
       },
       {
+        "key": "highlightClicked",
+        "label": "Highlight clicked point",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "loadingState",
         "label": "Loading state",
         "valueType": "boolean",
@@ -31426,6 +31480,12 @@
           "object"
         ],
         "default": "Standard"
+      },
+      {
+        "key": "allowDeselect",
+        "label": "Allow deselect",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "horizontal",
@@ -32411,6 +32471,12 @@
         "default": "{{[]}}"
       },
       {
+        "key": "highlightClicked",
+        "label": "Highlight clicked point",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "loadingState",
         "label": "Loading state",
         "valueType": "boolean",
@@ -32946,7 +33012,7 @@
         "key": "label",
         "label": "Label",
         "valueType": "string",
-        "default": ""
+        "default": "Label"
       },
       {
         "key": "description",
@@ -32961,10 +33027,16 @@
         "default": "{{[{ label: 'One', value: 1 }, { label: 'Two', value: 2 }]}}"
       },
       {
+        "key": "allowClear",
+        "label": "Allow clear",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
         "key": "placeholder",
         "label": "Placeholder",
         "valueType": "string",
-        "default": "Select"
+        "default": "Select an option"
       },
       {
         "key": "defaultValue",
@@ -33531,6 +33603,12 @@
         "label": "Step",
         "valueType": "number",
         "default": "{{1}}"
+      },
+      {
+        "key": "range",
+        "label": "Range",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "defaultValue",
@@ -37426,7 +37504,7 @@
         "key": "label",
         "label": "Label",
         "valueType": "string",
-        "default": ""
+        "default": "Label"
       },
       {
         "key": "description",
@@ -37438,7 +37516,7 @@
         "key": "placeholder",
         "label": "Placeholder",
         "valueType": "string",
-        "default": ""
+        "default": "Enter text"
       },
       {
         "key": "defaultValue",
