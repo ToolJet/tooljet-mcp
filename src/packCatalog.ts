@@ -31,6 +31,8 @@ interface ManifestComponent {
   role?: string;
   usage?: string;
   fit?: boolean;
+  /** 'upper': the component writes its label in capitals (MUI's Button). */
+  labelCase?: string;
   roleProps?: Record<string, string>;
   roleEvents?: Record<string, string>;
   roleActions?: Record<string, string>;
@@ -94,6 +96,7 @@ export function packFromLibrary(lib: InstalledLibrary): { pack: LibraryPack; sch
         ...(entry.roleEvents ? { roleEvents: entry.roleEvents } : {}),
         ...(entry.roleActions ? { roleActions: entry.roleActions } : {}),
         ...(entry.roleValues ? { roleValues: entry.roleValues } : {}),
+        ...(entry.labelCase ? { labelCase: entry.labelCase } : {}),
         slots: entry.slots ?? [],
         ...(manifest.surface ? { surface: manifest.surface } : {}),
         ...(manifest.themeMode ? { themeMode: manifest.themeMode } : {}),
