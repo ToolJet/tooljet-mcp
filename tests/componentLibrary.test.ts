@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { componentLibraryWarnings, resolveComponentLibrary } from '../src/componentLibrary.js';
+import { componentLibraryWarnings, resolveComponentLibrary, savedComponentLibrary } from '../src/componentLibrary.js';
 import { lintAppSpecTool } from '../src/tools/lintAppSpec.js';
+import { lintComponentSpec } from '../src/lint.js';
 import type { ToolJetClient } from '../src/tooljetClient.js';
 
 const page = (...types: string[]) => ({
@@ -18,6 +19,21 @@ describe('resolveComponentLibrary', () => {
     expect(resolveComponentLibrary({ appMode: 'light' }, ['Text', 'ShadStat'])).toEqual({ library: 'ui2', source: 'inferred' });
     expect(resolveComponentLibrary(undefined, ['Table', 'FlexContainer', 'Shadow'])).toEqual({ library: 'ui1', source: 'inferred' });
     expect(resolveComponentLibrary({ componentLibrary: 'shadcn' }, [])).toEqual({ library: 'ui1', source: 'inferred' });
+  });
+
+  it('reads a component pack picked in the components panel, and builds another custom library in UI 1.0', () => {
+    expect(resolveComponentLibrary({ componentLibrary: 'pack:antd' }, [])).toEqual({ library: 'ui2', source: 'saved', pack: 'antd' });
+    expect(resolveComponentLibrary({ componentLibrary: 'lib:1234' }, ['ShadButton'])).toEqual({ library: 'ui1', source: 'saved' });
+  });
+
+  it('saves a new UI 2.0 app with the default pack', () => {
+    const saved = process.env.MCP_AGENT_PACK;
+    process.env.MCP_AGENT_PACK = 'mui';
+    expect(savedComponentLibrary('ui2')).toBe('pack:mui');
+    expect(savedComponentLibrary('ui1')).toBe('ui1');
+    delete process.env.MCP_AGENT_PACK;
+    expect(savedComponentLibrary('ui2')).toBe('ui2');
+    if (saved !== undefined) process.env.MCP_AGENT_PACK = saved;
   });
 
   it('reads the snake-cased key GET /api/apps/:id returns', () => {
@@ -94,5 +110,31 @@ describe('lint_app_spec component library check', () => {
     const c = client(undefined);
     const native = { pages: [{ name: 'Orders', components: [{ client_ref: 'b', name: 'saveButton', type: 'Button', layout: { top: 0, left: 0, width: 10, height: 4 } }] }] };
     expect((await warningsOf(c, native)).some((w) => /built in ToolJet UI 2\.0 \(new apps are/.test(w))).toBe(true);
+  });
+});
+
+describe('component pack widgets', () => {
+  it('are UI 2.0 widgets: no other-library warning in a UI 2.0 app, and they imply UI 2.0', () => {
+    const pages = [{ name: 'P', components: [{ name: 't', type: 'Lib_shadcn_Text' }, { name: 'tb', type: 'Lib_shadcn_DataTable' }] }];
+    expect(componentLibraryWarnings({ library: 'ui2', source: 'saved' }, pages)).toEqual([]);
+    expect(componentLibraryWarnings({ library: 'ui1', source: 'saved' }, pages).length).toBe(1);
+    expect(resolveComponentLibrary(undefined, ['Lib_antd_Table']).library).toBe('ui2');
+  });
+});
+
+describe('a pack widget\'s library keys', () => {
+  it('are not reported as unknown properties (88 such lines cut a pack app\'s lint mid-JSON)', () => {
+    const spec = {
+      name: 'tb',
+      type: 'Lib_shadcn_DataTable',
+      properties: {
+        libraryId: { value: 'l' },
+        correlationId: { value: 'c' },
+        libraryName: { value: 'shadcn UI' },
+        componentName: { value: 'DataTable' },
+      },
+    };
+    const out = JSON.stringify(lintComponentSpec(spec as never, {} as never));
+    expect(out).not.toMatch(/libraryId|correlationId|libraryName|componentName/);
   });
 });

@@ -1,9 +1,10 @@
+import { loadInstalledPacks } from './packCatalog.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { loadConfig, type RequestIdentity } from './config.js';
 import { createAuth } from './auth.js';
 import { createClient } from './tooljetClient.js';
 import { registerTools } from './tools/index.js';
-import { registerCatalogResources } from './catalogResources.js';
+import { refreshCatalogResources, registerCatalogResources } from './catalogResources.js';
 import { TOOLJET_MCP_VERSION } from './runtimeFreshness.js';
 
 /**
@@ -13,10 +14,26 @@ import { TOOLJET_MCP_VERSION } from './runtimeFreshness.js';
  * builds a fresh server per request so no credential is ever reused across users. Omitted for stdio,
  * where the process itself belongs to one build and the credential comes from its environment.
  */
+/** Settles when the workspace's component packs are in the catalogue (or failed to load). */
+export let packsReady: Promise<string[]> = Promise.resolve([]);
+
 export function buildServer(identity?: RequestIdentity): McpServer {
   const config = loadConfig(identity);
   const auth = createAuth(config);
   const client = createClient(auth, config);
+  // The workspace's component packs join the catalogue once read (packCatalog.ts); index.ts waits for it.
+  packsReady = loadInstalledPacks(() => client.listComponentLibraries())
+    .then((packs) => {
+      if (packs.length) {
+        refreshCatalogResources();
+        console.error(`tooljet-mcp: component packs: ${packs.join(', ')}`);
+      }
+      return packs;
+    })
+    .catch((err) => {
+    console.error(`tooljet-mcp: component packs not read: ${err instanceof Error ? err.message : String(err)}`);
+    return [];
+  });
 
   const server = new McpServer({ name: 'tooljet-mcp', version: TOOLJET_MCP_VERSION });
 

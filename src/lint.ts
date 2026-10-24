@@ -1,3 +1,4 @@
+import { isLibraryPackType } from './libraryPack.js';
 // Mechanical, catalog-independent checks that catch the render bugs the skill can only *advise*
 // against. Used by add_component(s) (component-level, pre-write) and validate_app (whole-app,
 // post-write). Errors block; warnings are surfaced to the agent but don't block.
@@ -778,7 +779,9 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
     const placement = parentPlacement(component);
     const parent = placement ? refs.get(placement.parentId) : undefined;
     // A FlexContainer has one canvas, its body: slot_name "body" there is the plain parent, as for a Container.
-    const validParent = slotName === 'modal' ? parent?.type === 'Kanban' : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? '') :
+    // A published library's container (libraryPack.ts) takes its own named slots (ToolJet.Slot, e.g. tab_details).
+    const validParent = isLibraryPackType(parent?.type) ? !['header', 'footer', 'modal'].includes(slotName) && !isTabSlot(slotName) :
+      slotName === 'modal' ? parent?.type === 'Kanban' : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? '') :
       SLOT_PARENT_TYPES.has(parent?.type ?? '') || (slotName === 'body' && ['Kanban', 'ShadKanban', 'FlexContainer'].includes(parent?.type ?? ''));
     // A child in a tab the Tabs does not have is saved but never shown (review 2026-09-25). Static tabItems only:
     // with useDynamicOptions the ids come from a binding.
@@ -1433,6 +1436,9 @@ export function lintDesktopCanvasCoverage(components: LintComponent[]): string[]
 }
 
 /** Lint a single component spec (pre-write). */
+/** The keys ToolJet keeps on every library component: which library and component it draws. */
+const LIBRARY_HOST_KEYS = new Set(['libraryId', 'libraryName', 'componentName', 'correlationId']);
+
 /** Text-bearing property keys whose value the customer reads on screen. */
 const RENDERED_TEXT_KEYS = ['text', 'rawHtml', 'label', 'title', 'placeholder', 'description', 'subtitle', 'primaryValue', 'secondaryValue'];
 
@@ -1896,6 +1902,10 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
       if (knownKeys.includes(key)) continue;
       if (sectionName === 'property' && STYLE_KEYS_IN_PROPERTIES.has(key)) continue;
       if (sectionName === 'property' && INSPECTOR_ONLY_PROPERTIES[spec.type ?? '']?.includes(key)) continue;
+      // A pack widget (Lib_<pack>_<Component>) carries which library and component it draws: ToolJet's own keys, not
+      // the author's. Warned on, a pack app's lint ran to 88 such lines and was cut mid-JSON, so its pages were
+      // never applied (Together round, 2026-10-24).
+      if (sectionName === 'property' && spec.type?.startsWith('Lib_') && LIBRARY_HOST_KEYS.has(key)) continue;
       const renamed = sectionName === 'property' ? retiredUi2Name(spec.type, 'properties', key) : undefined;
       if (renamed) {
         errors.push(
