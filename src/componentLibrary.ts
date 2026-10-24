@@ -27,6 +27,8 @@ export const COMPONENT_LIBRARY_NAMES: Record<ComponentLibrary, string> = {
 };
 
 export const isUi2Type = (type: unknown): boolean => typeof type === 'string' && /^Shad[A-Z]/.test(type);
+/** A component pack's widget (Lib_<pack>_<Component>): a UI 2.0 widget drawn in the pack's look. */
+const isPackType = (type: unknown): boolean => typeof type === 'string' && /^Lib_[a-z0-9]+_/i.test(type);
 
 export function resolveComponentLibrary(
   globalSettings: unknown,
@@ -41,7 +43,7 @@ export function resolveComponentLibrary(
   if (typeof saved === 'string' && saved.startsWith('pack:') && saved.length > 5)
     return { library: 'ui2', source: 'saved', pack: saved.slice(5) };
   if (typeof saved === 'string' && saved.startsWith('lib:')) return { library: 'ui1', source: 'saved' };
-  for (const type of componentTypes) if (isUi2Type(type)) return { library: 'ui2', source: 'inferred' };
+  for (const type of componentTypes) if (isUi2Type(type) || isPackType(type)) return { library: 'ui2', source: 'inferred' };
   return { library: 'ui1', source: 'inferred' };
 }
 
@@ -79,7 +81,10 @@ export function componentLibraryWarnings(
   for (const page of pages ?? []) {
     for (const component of page.components ?? []) {
       const type = String(component.type ?? '');
-      const mismatch = library.library === 'ui1' ? isUi2Type(type) : !isUi2Type(type) && !nativeFitsUi2(component);
+      // A pack widget is a UI 2.0 widget in the pack's look: in a UI 2.0 app it is not from the other library (warned,
+      // a pack app's every lint said so; Together round, 2026-10-24).
+      const ui2Side = isUi2Type(type) || isPackType(type);
+      const mismatch = library.library === 'ui1' ? ui2Side : !ui2Side && !nativeFitsUi2(component);
       if (!mismatch) continue;
       off.set(type, [...(off.get(type) ?? []), component.name ?? type]);
     }
