@@ -9,7 +9,17 @@ export interface ResolvedComponentLibrary {
   library: ComponentLibrary;
   /** "saved": the app's own setting; "inferred": no setting, read from the widgets the app holds. */
   source: 'saved' | 'inferred';
+  /** The component pack the app is built with (saved as "pack:<id>", picked in the components panel): its UI 2.0
+   *  widgets draw as that pack's components. */
+  pack?: string;
 }
+
+/** The pack a new UI 2.0 app is built with: the agent's default (MCP_AGENT_PACK), until the user picks another. */
+export const defaultPack = (): string | undefined => process.env.MCP_AGENT_PACK?.trim().toLowerCase() || undefined;
+
+/** The globalSettings.componentLibrary a new app saves: a pack's "pack:<id>" for UI 2.0 when a pack is the default. */
+export const savedComponentLibrary = (library: ComponentLibrary): string =>
+  library === 'ui2' && defaultPack() ? `pack:${defaultPack()}` : library;
 
 export const COMPONENT_LIBRARY_NAMES: Record<ComponentLibrary, string> = {
   ui1: 'ToolJet UI 1.0',
@@ -26,6 +36,11 @@ export function resolveComponentLibrary(
   const settings = globalSettings as { componentLibrary?: unknown; component_library?: unknown } | undefined;
   const saved = settings?.componentLibrary ?? settings?.component_library;
   if (saved === 'ui1' || saved === 'ui2') return { library: saved, source: 'saved' };
+  // Picked in the components panel: a component pack draws the UI 2.0 widgets; another custom library (lib:<id>) is
+  // not one the AI builds with, so the app is built in UI 1.0.
+  if (typeof saved === 'string' && saved.startsWith('pack:') && saved.length > 5)
+    return { library: 'ui2', source: 'saved', pack: saved.slice(5) };
+  if (typeof saved === 'string' && saved.startsWith('lib:')) return { library: 'ui1', source: 'saved' };
   for (const type of componentTypes) if (isUi2Type(type)) return { library: 'ui2', source: 'inferred' };
   return { library: 'ui1', source: 'inferred' };
 }

@@ -6,7 +6,7 @@ import type { AppTheme, CreateAppResult, ToolJetClient } from '../tooljetClient.
 import { ok, fail, type ToolDef } from './types.js';
 import { themeDefinition } from './manageTheme.js';
 import { accentWarning } from '../themeAccent.js';
-import type { ComponentLibrary } from '../componentLibrary.js';
+import { defaultPack, savedComponentLibrary, type ComponentLibrary } from '../componentLibrary.js';
 import { libraryPins } from '../libraryPack.js';
 
 // The standard theme's primary, for the accent note (a stock blue reads plain).
@@ -48,6 +48,8 @@ export type CreateAppThemeChoice = 'standard' | 'workspace_default' | string | D
 export interface CreateAppToolResult extends CreateAppResult {
   /** The library the app is built in, saved on the app: "ui2" (ToolJet UI 2.0) unless the call asked for "ui1". */
   component_library: ComponentLibrary;
+  /** The component pack a UI 2.0 app is built with (its UI 2.0 widgets draw as that pack's). */
+  component_pack?: string;
   /** Set when the library could not be saved; the app still exists. */
   component_library_warning?: string;
   theme: {
@@ -144,13 +146,20 @@ export function createAppTool(client: ToolJetClient): ToolDef {
         // The published library this server exposes renders only where the version pins it (libraryPack.ts).
         const pins = libraryPins();
         const pinned = pins ? { customComponentLibraries: pins } : {};
-        const result: CreateAppToolResult = { ...created, component_library: componentLibrary, theme: { mode: 'workspace_default' } };
+        const result: CreateAppToolResult = {
+          ...created,
+          component_library: componentLibrary,
+          ...(componentLibrary === 'ui2' && defaultPack() ? { component_pack: defaultPack() } : {}),
+          theme: { mode: 'workspace_default' },
+        };
+        // What the app saves: a pack's "pack:<id>" for UI 2.0, so the components panel and later builds use that pack.
+        const savedLibrary = savedComponentLibrary(componentLibrary);
         // Saved explicitly, not left to the server's default for new apps: older ToolJet servers create apps without it.
         // A failure never fails the call: the app exists, and a retried create_app would make a second one.
         const saveLibrary = () => Promise.resolve().then(() => client.updateAppSettings({
           appId: created.app_id,
           versionId: created.version_id,
-          globalSettings: { componentLibrary, ...pinned },
+          globalSettings: { componentLibrary: savedLibrary, ...pinned },
         })).catch((libraryErr: unknown) => {
           result.component_library_warning = `Could not save component_library "${componentLibrary}": ` +
             `${libraryErr instanceof Error ? libraryErr.message : String(libraryErr)}. Build in it anyway.`;
@@ -168,7 +177,7 @@ export function createAppTool(client: ToolJetClient): ToolDef {
           await client.updateAppSettings({
             appId: created.app_id,
             versionId: created.version_id,
-            globalSettings: { theme, componentLibrary, ...pinned, ...(appMode ? { appMode } : {}) },
+            globalSettings: { theme, componentLibrary: savedLibrary, ...pinned, ...(appMode ? { appMode } : {}) },
           });
           const mode = choice === 'standard' ? 'standard' : typeof choice === 'object' ? 'derived' : 'named';
           const accentNote = mode === 'standard' ? accentWarning(STANDARD_PRIMARY) : mode === 'derived' ? accentWarning((choice as DerivedTheme).definition) : null;
