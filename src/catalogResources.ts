@@ -76,8 +76,13 @@ const payloads = new Map<string, string>();
 
 // The components part is the live catalogue: the data file plus the workspace's component packs (packCatalog.ts),
 // which are read before the first request, so the compiler plans with the packs this workspace has.
-const readPart = (file: string): Buffer =>
-  file === 'component-schemas.json' ? Buffer.from(JSON.stringify(allComponentSchemas())) : readFileSync(resolve(dataDir, file));
+// While the packs add nothing the file lacks it is the data file as it is, so the versions stay the file's.
+const readPart = (file: string): Buffer => {
+  const bytes = readFileSync(resolve(dataDir, file));
+  if (file !== 'component-schemas.json') return bytes;
+  const live = JSON.stringify(allComponentSchemas());
+  return live === JSON.stringify(JSON.parse(bytes.toString('utf8'))) ? bytes : Buffer.from(live);
+};
 
 function readData(resource: CatalogResource): { bytes: Buffer; dataVersion: string } {
   const bytes = readPart(resource.file);

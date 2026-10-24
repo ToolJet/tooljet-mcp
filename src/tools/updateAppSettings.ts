@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { pageSettingProperties, projectAppSettings } from '../appSettings.js';
 import type { AppSettingsSnapshot, ToolJetClient } from '../tooljetClient.js';
 import { fail, ok, type ToolDef } from './types.js';
+import { savedComponentLibrary } from '../componentLibrary.js';
 
 type Args = {
   app_id: string;
@@ -39,7 +40,8 @@ function persistenceMismatches(args: Args, snapshot: AppSettingsSnapshot): strin
     expectEqual('canvas_max_width.unit', global.canvasMaxWidthType, args.canvas_max_width.unit);
   }
   if (args.app_mode !== undefined) expectEqual('app_mode', global.appMode, args.app_mode);
-  if (args.component_library !== undefined) expectEqual('component_library', global.componentLibrary, args.component_library);
+  if (args.component_library !== undefined)
+    expectEqual('component_library', global.componentLibrary, savedComponentLibrary(args.component_library));
   if (args.theme_id !== undefined) {
     const theme = global.theme as Record<string, unknown> | undefined;
     expectEqual('theme_id', theme?.id, args.theme_id);
@@ -143,7 +145,8 @@ export function updateAppSettingsTool(client: ToolJetClient): ToolDef {
             : {}),
           ...(args.app_mode !== undefined ? { appMode: args.app_mode } : {}),
           ...(theme ? { theme } : {}),
-          ...(args.component_library !== undefined ? { componentLibrary: args.component_library } : {}),
+          // UI 2.0 is saved as the default pack ("pack:<id>"), as create_app does, so the panel shows that pack.
+          ...(args.component_library !== undefined ? { componentLibrary: savedComponentLibrary(args.component_library) } : {}),
         };
         const properties: Record<string, unknown> = {
           ...(args.hide_header !== undefined ? { hideHeader: args.hide_header } : {}),

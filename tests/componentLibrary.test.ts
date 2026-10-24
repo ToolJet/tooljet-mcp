@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { componentLibraryWarnings, resolveComponentLibrary } from '../src/componentLibrary.js';
+import { componentLibraryWarnings, resolveComponentLibrary, savedComponentLibrary } from '../src/componentLibrary.js';
 import { lintAppSpecTool } from '../src/tools/lintAppSpec.js';
 import type { ToolJetClient } from '../src/tooljetClient.js';
 
@@ -18,6 +18,21 @@ describe('resolveComponentLibrary', () => {
     expect(resolveComponentLibrary({ appMode: 'light' }, ['Text', 'ShadStat'])).toEqual({ library: 'ui2', source: 'inferred' });
     expect(resolveComponentLibrary(undefined, ['Table', 'FlexContainer', 'Shadow'])).toEqual({ library: 'ui1', source: 'inferred' });
     expect(resolveComponentLibrary({ componentLibrary: 'shadcn' }, [])).toEqual({ library: 'ui1', source: 'inferred' });
+  });
+
+  it('reads a component pack picked in the components panel, and builds another custom library in UI 1.0', () => {
+    expect(resolveComponentLibrary({ componentLibrary: 'pack:antd' }, [])).toEqual({ library: 'ui2', source: 'saved', pack: 'antd' });
+    expect(resolveComponentLibrary({ componentLibrary: 'lib:1234' }, ['ShadButton'])).toEqual({ library: 'ui1', source: 'saved' });
+  });
+
+  it('saves a new UI 2.0 app with the default pack', () => {
+    const saved = process.env.MCP_AGENT_PACK;
+    process.env.MCP_AGENT_PACK = 'mui';
+    expect(savedComponentLibrary('ui2')).toBe('pack:mui');
+    expect(savedComponentLibrary('ui1')).toBe('ui1');
+    delete process.env.MCP_AGENT_PACK;
+    expect(savedComponentLibrary('ui2')).toBe('ui2');
+    if (saved !== undefined) process.env.MCP_AGENT_PACK = saved;
   });
 
   it('reads the snake-cased key GET /api/apps/:id returns', () => {
