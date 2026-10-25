@@ -52654,6 +52654,7 @@ function packFromLibrary(lib) {
         ...entry.roleEvents ? { roleEvents: entry.roleEvents } : {},
         ...entry.roleActions ? { roleActions: entry.roleActions } : {},
         ...entry.roleValues ? { roleValues: entry.roleValues } : {},
+        ...entry.labelCase ? { labelCase: entry.labelCase } : {},
         slots: entry.slots ?? [],
         ...manifest.surface ? { surface: manifest.surface } : {},
         ...manifest.themeMode ? { themeMode: manifest.themeMode } : {}
@@ -61040,18 +61041,25 @@ function createAuth(config2, fetchImpl = fetch) {
 }
 
 // dist/componentLibrary.js
+var defaultPack = () => process.env.MCP_AGENT_PACK?.trim().toLowerCase() || void 0;
+var savedComponentLibrary = (library) => library === "ui2" && defaultPack() ? `pack:${defaultPack()}` : library;
 var COMPONENT_LIBRARY_NAMES = {
   ui1: "ToolJet UI 1.0",
   ui2: "ToolJet UI 2.0"
 };
 var isUi2Type = (type) => typeof type === "string" && /^Shad[A-Z]/.test(type);
+var isPackType = (type) => typeof type === "string" && /^Lib_[a-z0-9]+_/i.test(type);
 function resolveComponentLibrary(globalSettings, componentTypes) {
   const settings = globalSettings;
   const saved = settings?.componentLibrary ?? settings?.component_library;
   if (saved === "ui1" || saved === "ui2")
     return { library: saved, source: "saved" };
+  if (typeof saved === "string" && saved.startsWith("pack:") && saved.length > 5)
+    return { library: "ui2", source: "saved", pack: saved.slice(5) };
+  if (typeof saved === "string" && saved.startsWith("lib:"))
+    return { library: "ui1", source: "saved" };
   for (const type of componentTypes)
-    if (isUi2Type(type))
+    if (isUi2Type(type) || isPackType(type))
       return { library: "ui2", source: "inferred" };
   return { library: "ui1", source: "inferred" };
 }
@@ -61071,7 +61079,8 @@ function componentLibraryWarnings(library, pages, request) {
   for (const page of pages ?? []) {
     for (const component of page.components ?? []) {
       const type = String(component.type ?? "");
-      const mismatch = library.library === "ui1" ? isUi2Type(type) : !isUi2Type(type) && !nativeFitsUi2(component);
+      const ui2Side = isUi2Type(type) || isPackType(type);
+      const mismatch = library.library === "ui1" ? ui2Side : !ui2Side && !nativeFitsUi2(component);
       if (!mismatch)
         continue;
       off.set(type, [...off.get(type) ?? [], component.name ?? type]);
@@ -69104,6 +69113,7 @@ function lintDesktopCanvasCoverage(components) {
     `Desktop page content spans only columns ${left}-${right} of ToolJet's 43-column canvas despite having multiple operational/analytical surfaces. This often produces an accidental half-width app. Expand the main composition toward the standard columns 2-41, or browser-verify that the narrow rail is deliberate.`
   ];
 }
+var LIBRARY_HOST_KEYS = /* @__PURE__ */ new Set(["libraryId", "libraryName", "componentName", "correlationId"]);
 var RENDERED_TEXT_KEYS = ["text", "rawHtml", "label", "title", "placeholder", "description", "subtitle", "primaryValue", "secondaryValue"];
 var CONTAINER_ITEMS = { Tabs: "tabs", Steps: "steps", Timeline: "data" };
 function lintRenderedText(spec) {
@@ -69399,6 +69409,8 @@ function lintComponentSpec(spec, context = {}) {
       if (sectionName === "property" && STYLE_KEYS_IN_PROPERTIES.has(key4))
         continue;
       if (sectionName === "property" && INSPECTOR_ONLY_PROPERTIES[spec.type ?? ""]?.includes(key4))
+        continue;
+      if (sectionName === "property" && spec.type?.startsWith("Lib_") && LIBRARY_HOST_KEYS.has(key4))
         continue;
       const renamed = sectionName === "property" ? retiredUi2Name(spec.type, "properties", key4) : void 0;
       if (renamed) {
@@ -73996,7 +74008,7 @@ var derivedThemeSchema = external_exports.object({
 }).strict();
 async function resolveTheme(client, choice) {
   const themes = await client.listAppThemes();
-  if (process.env.MCP_AGENT_PACK_LOOK === "own") {
+  if (process.env.MCP_AGENT_PACK_LOOK === "own" && (choice === "standard" || choice === "workspace_default")) {
     const basic = themes.find((theme) => theme.isBasic && !theme.isDisabled);
     if (basic)
       return basic;
@@ -74051,11 +74063,17 @@ function createAppTool(client) {
         const choice = args.theme ?? "standard";
         const pins = libraryPins();
         const pinned = pins ? { customComponentLibraries: pins } : {};
-        const result = { ...created, component_library: componentLibrary, theme: { mode: "workspace_default" } };
+        const result = {
+          ...created,
+          component_library: componentLibrary,
+          ...componentLibrary === "ui2" && defaultPack() ? { component_pack: defaultPack() } : {},
+          theme: { mode: "workspace_default" }
+        };
+        const savedLibrary = savedComponentLibrary(componentLibrary);
         const saveLibrary = () => Promise.resolve().then(() => client.updateAppSettings({
           appId: created.app_id,
           versionId: created.version_id,
-          globalSettings: { componentLibrary, ...pinned }
+          globalSettings: { componentLibrary: savedLibrary, ...pinned }
         })).catch((libraryErr) => {
           result.component_library_warning = `Could not save component_library "${componentLibrary}": ${libraryErr instanceof Error ? libraryErr.message : String(libraryErr)}. Build in it anyway.`;
         });
@@ -74070,7 +74088,7 @@ function createAppTool(client) {
           await client.updateAppSettings({
             appId: created.app_id,
             versionId: created.version_id,
-            globalSettings: { theme, componentLibrary, ...pinned, ...appMode ? { appMode } : {} }
+            globalSettings: { theme, componentLibrary: savedLibrary, ...pinned, ...appMode ? { appMode } : {} }
           });
           const mode = choice === "standard" ? "standard" : typeof choice === "object" ? "derived" : "named";
           const accentNote = mode === "standard" ? accentWarning(STANDARD_PRIMARY) : mode === "derived" ? accentWarning(choice.definition) : null;
@@ -74362,7 +74380,7 @@ function persistenceMismatches(args, snapshot2) {
   if (args.app_mode !== void 0)
     expectEqual("app_mode", global2.appMode, args.app_mode);
   if (args.component_library !== void 0)
-    expectEqual("component_library", global2.componentLibrary, args.component_library);
+    expectEqual("component_library", global2.componentLibrary, savedComponentLibrary(args.component_library));
   if (args.theme_id !== void 0) {
     const theme = global2.theme;
     expectEqual("theme_id", theme?.id, args.theme_id);
@@ -74446,7 +74464,8 @@ function updateAppSettingsTool(client) {
           ...args.canvas_max_width !== void 0 ? { canvasMaxWidth: args.canvas_max_width.value, canvasMaxWidthType: args.canvas_max_width.unit } : {},
           ...args.app_mode !== void 0 ? { appMode: args.app_mode } : {},
           ...theme ? { theme } : {},
-          ...args.component_library !== void 0 ? { componentLibrary: args.component_library } : {}
+          // UI 2.0 is saved as the default pack ("pack:<id>"), as create_app does, so the panel shows that pack.
+          ...args.component_library !== void 0 ? { componentLibrary: savedComponentLibrary(args.component_library) } : {}
         };
         const properties = {
           ...args.hide_header !== void 0 ? { hideHeader: args.hide_header } : {},
@@ -85706,7 +85725,13 @@ var CATALOG_RESOURCES = [
 var dataDir = resolve7(dirname8(fileURLToPath8(import.meta.url)), "../data");
 var versions = /* @__PURE__ */ new Map();
 var payloads = /* @__PURE__ */ new Map();
-var readPart = (file2) => file2 === "component-schemas.json" ? Buffer.from(JSON.stringify(allComponentSchemas())) : readFileSync8(resolve7(dataDir, file2));
+var readPart = (file2) => {
+  const bytes = readFileSync8(resolve7(dataDir, file2));
+  if (file2 !== "component-schemas.json")
+    return bytes;
+  const live = JSON.stringify(allComponentSchemas());
+  return live === JSON.stringify(JSON.parse(bytes.toString("utf8"))) ? bytes : Buffer.from(live);
+};
 function readData(resource) {
   const bytes = readPart(resource.file);
   const dataVersion = createHash4("sha256").update(bytes).digest("hex").slice(0, 12);
