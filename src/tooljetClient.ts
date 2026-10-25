@@ -9,6 +9,7 @@ import type { Auth, Workspace } from './auth.js';
 import type { Config } from './config.js';
 import { isMisplacedStyleKey } from './lint.js';
 import { packDefaultDefinition } from './packDefaults.js';
+import { downgradeFlexForLibrary, libraryTypeOf, toLibraryComponent } from './libraryPack.js';
 import { assertPersistableQueryToggles } from './queryToggles.js';
 import { hasNonEmptyDefinition } from './strictEntry.js';
 import { decodeComponentParent, encodeComponentParent, type ComponentSlotName } from './componentParent.js';
@@ -664,6 +665,8 @@ export interface ToolJetClient {
   createComponents(params: CreateComponentsParams): Promise<Array<CreateComponentResult & { name: string }>>;
   updateComponents(params: UpdateComponentsParams): Promise<{ updated: number }>;
   deleteComponents(params: DeleteComponentsParams): Promise<{ deleted: number }>;
+  /** The workspace's custom-component libraries with their latest manifests (component packs, packCatalog.ts). */
+  listComponentLibraries(): Promise<import('./packCatalog.js').InstalledLibrary[]>;
   updateLayouts(params: UpdateLayoutsParams): Promise<{ updated: number }>;
   updateQuery(params: UpdateQueryParams): Promise<{ query_id: string }>;
   updateQueryDatasource(params: { queryId: string; versionId: string; dataSourceId: string }): Promise<void>;
@@ -1178,7 +1181,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return {
       id,
       name: c.name,
-      type: c.component,
+      // A component of the published library reads back as its Lib_* type, so the catalogue checks its events,
+      // actions and properties (libraryPack.ts).
+      type: libraryTypeOf({ type: c.component, properties: def.properties }) ?? c.component,
       layouts: entry?.layouts,
       properties: def.properties,
       styles: def.styles,
@@ -2606,6 +2611,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         others: { ...(pack.others ?? {}), ...(spec.others ?? {}) },
       };
     }
+    // A component of the published library (Lib_*): stored as LibraryComponent with the library named (libraryPack.ts).
+    spec = downgradeFlexForLibrary(toLibraryComponent(spec));
     const dto: Record<string, unknown> = {
       name: spec.name,
       type: spec.type,
@@ -2811,7 +2818,12 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         throw new Error(`updateComponents "${u.componentId}": slotName requires parent.`);
       }
       if (hasDef) {
-        diff[u.componentId] = { component: { definition: u.definition } };
+        // An update carries no type: only FlexContainer has these keys (libraryPack.ts downgradeFlexForLibrary).
+        const definition = u.definition as { properties?: Record<string, unknown> } | undefined;
+        const properties = definition?.properties
+          ? downgradeFlexForLibrary({ type: 'FlexContainer', properties: definition.properties as Record<string, unknown> }).properties
+          : undefined;
+        diff[u.componentId] = { component: { definition: properties ? { ...definition, properties } : u.definition } };
       } else {
         diff[u.componentId] = {
           component: {
@@ -2834,6 +2846,13 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   // Delete = DELETE /components with a JSON body whose `diff` is a bare array of component ids.
+  async function listComponentLibraries() {
+    const res = await auth.authedFetch('/api/custom-component-libraries');
+    await assertOk(res, 'listComponentLibraries');
+    const body = (await res.json()) as unknown;
+    return (Array.isArray(body) ? body : ((body as { libraries?: unknown[] })?.libraries ?? [])) as import('./packCatalog.js').InstalledLibrary[];
+  }
+
   async function deleteComponents(params: DeleteComponentsParams): Promise<{ deleted: number }> {
     const res = await auth.authedFetch(
       `/api/v2/apps/${params.appId}/versions/${params.versionId}/components`,
@@ -3214,6 +3233,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     createComponents,
     updateComponents,
     deleteComponents,
+    listComponentLibraries,
     updateLayouts,
     updateQuery,
     updateQueryDatasource,

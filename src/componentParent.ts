@@ -7,10 +7,15 @@ export type TabSlotName = `tab-t${number}`;
 export type ComponentSlotName = (typeof COMPONENT_SLOT_NAMES)[number] | TabSlotName;
 
 const TAB_SLOT = /^tab-(t\d+)$/;
+// A tab of a published library's tabs container (ToolJet.Slot `tab_<item id>`): stored as "<id>-tab_t0".
+const LIBRARY_TAB_SLOT = /^tab_[A-Za-z0-9_]+$/;
 const TAB_CANVAS_SUFFIX = /-(t\d+)$/;
 
 export function isComponentSlotName(value: unknown): value is ComponentSlotName {
-  return typeof value === 'string' && ((COMPONENT_SLOT_NAMES as readonly string[]).includes(value) || TAB_SLOT.test(value));
+  return (
+    typeof value === 'string' &&
+    ((COMPONENT_SLOT_NAMES as readonly string[]).includes(value) || TAB_SLOT.test(value) || LIBRARY_TAB_SLOT.test(value))
+  );
 }
 
 export function isTabSlot(value: unknown): value is TabSlotName {
@@ -18,7 +23,11 @@ export function isTabSlot(value: unknown): value is TabSlotName {
 }
 
 /** The slot_name a tool accepts: header, body, footer, Kanban modal, or a tab ("tab-t0"). */
-export const componentSlotSchema = z.union([z.enum(COMPONENT_SLOT_NAMES), z.string().regex(TAB_SLOT)]) as unknown as z.ZodType<ComponentSlotName>;
+export const componentSlotSchema = z.union([
+  z.enum(COMPONENT_SLOT_NAMES),
+  z.string().regex(TAB_SLOT),
+  z.string().regex(LIBRARY_TAB_SLOT),
+]) as unknown as z.ZodType<ComponentSlotName>;
 
 const ENCODED_SLOT_SUFFIXES = ['header', 'footer', 'modal'] as const;
 

@@ -97,7 +97,7 @@ describe('create_app tool', () => {
       expect.objectContaining({ name: 'ToolJet Modern', isDefault: false })
     );
     expect(client.updateAppSettings).toHaveBeenCalledWith(
-      expect.objectContaining({ appId: 'app1', versionId: 'v1', globalSettings: { theme: expect.objectContaining({ id: 'theme-std' }), componentLibrary: 'ui2' } })
+      expect.objectContaining({ appId: 'app1', versionId: 'v1', globalSettings: expect.objectContaining({ theme: expect.objectContaining({ id: 'theme-std' }), componentLibrary: 'ui2' }) })
     );
     expect(textOf(result)).toEqual({ ...createdApp, component_library: 'ui2', theme: { mode: 'standard', id: 'theme-std', name: 'ToolJet Modern', accent_note: expect.stringMatching(/stock blue/) } });
     expect(result.isError).toBeUndefined();
@@ -115,6 +115,21 @@ describe('create_app tool', () => {
     expect(textOf(result).theme).toEqual({ mode: 'standard', id: 'theme-std', name: 'ToolJet Modern', accent_note: expect.stringMatching(/stock blue/) });
   });
 
+  it('saves a new UI 2.0 app with the default component pack, so the panel and later builds use it', async () => {
+    const saved = process.env.MCP_AGENT_PACK;
+    process.env.MCP_AGENT_PACK = 'antd';
+    try {
+      const client = makeClient();
+      client.createApp.mockResolvedValue(createdApp);
+      const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'My App', theme: 'workspace_default' });
+      expect(client.updateAppSettings).toHaveBeenCalledWith({ appId: 'app1', versionId: 'v1', globalSettings: expect.objectContaining({ componentLibrary: 'pack:antd' }) });
+      expect(textOf(result)).toMatchObject({ component_library: 'ui2', component_pack: 'antd' });
+    } finally {
+      if (saved === undefined) delete process.env.MCP_AGENT_PACK;
+      else process.env.MCP_AGENT_PACK = saved;
+    }
+  });
+
   it('leaves the workspace default untouched when theme is "workspace_default"', async () => {
     const client = makeClient();
     client.createApp.mockResolvedValue(createdApp);
@@ -124,7 +139,7 @@ describe('create_app tool', () => {
     expect(client.listAppThemes).not.toHaveBeenCalled();
     // Only the component library is saved; the theme stays the workspace default.
     expect(client.updateAppSettings).toHaveBeenCalledTimes(1);
-    expect(client.updateAppSettings).toHaveBeenCalledWith({ appId: 'app1', versionId: 'v1', globalSettings: { componentLibrary: 'ui2' } });
+    expect(client.updateAppSettings).toHaveBeenCalledWith({ appId: 'app1', versionId: 'v1', globalSettings: expect.objectContaining({ componentLibrary: 'ui2' }) });
     expect(textOf(result)).toEqual({ ...createdApp, component_library: 'ui2', theme: { mode: 'workspace_default' } });
   });
 
@@ -137,7 +152,7 @@ describe('create_app tool', () => {
     const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'My App', component_library: 'ui1' });
 
     expect(client.updateAppSettings).toHaveBeenCalledWith(
-      expect.objectContaining({ globalSettings: { theme: expect.objectContaining({ id: 'theme-std' }), componentLibrary: 'ui1' } })
+      expect.objectContaining({ globalSettings: expect.objectContaining({ theme: expect.objectContaining({ id: 'theme-std' }), componentLibrary: 'ui1' }) })
     );
     expect(textOf(result).component_library).toBe('ui1');
   });
@@ -169,7 +184,7 @@ describe('create_app tool', () => {
 
     expect(client.createAppTheme).toHaveBeenCalledWith({ name: 'Bernal Fire Pizza theme', definition, isDefault: false });
     expect(client.updateAppSettings).toHaveBeenCalledWith(
-      expect.objectContaining({ globalSettings: { theme: expect.objectContaining({ id: 'theme-pizza' }), componentLibrary: 'ui2' } })
+      expect.objectContaining({ globalSettings: expect.objectContaining({ theme: expect.objectContaining({ id: 'theme-pizza' }), componentLibrary: 'ui2' }) })
     );
     expect(textOf(result).theme).toEqual({ mode: 'derived', id: 'theme-pizza', name: 'Bernal Fire Pizza theme' });
 
@@ -184,6 +199,28 @@ describe('create_app tool', () => {
     expect(textOf(again).theme).toEqual({ mode: 'derived', id: 'theme-pizza', name: 'Bernal Fire Pizza theme' });
   });
 
+  // A stock-look pack app (Ant, MUI) keeps the basic theme only when no theme was asked for: a derived theme passed
+  // to create_app still drew in stock blue.
+  it('keeps the basic theme for a stock-look pack app, but applies a requested derived theme', async () => {
+    const prev = process.env.MCP_AGENT_PACK_LOOK;
+    process.env.MCP_AGENT_PACK_LOOK = 'own';
+    try {
+      const client = makeClient();
+      client.createApp.mockResolvedValue(createdApp);
+      client.listAppThemes.mockResolvedValue([{ id: 'basic', name: 'ToolJet', definition: {}, isBasic: true }]);
+      client.createAppTheme.mockResolvedValue({ id: 'theme-heat', name: 'Forkline Heat', definition: {} });
+      client.updateAppSettings.mockResolvedValue(undefined);
+      const plain = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'Plain' });
+      expect(textOf(plain).theme).toMatchObject({ id: 'basic' });
+      const definition = { ...loadStandardTheme().definition, brand: { colors: { primary: { light: '#EA580C', dark: '#FB923C' } } } };
+      const themed = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'Prep', theme: { name: 'Forkline Heat', definition } });
+      expect(client.createAppTheme).toHaveBeenCalledWith({ name: 'Forkline Heat', definition, isDefault: false });
+      expect(textOf(themed).theme).toMatchObject({ mode: 'derived', id: 'theme-heat' });
+    } finally {
+      if (prev === undefined) delete process.env.MCP_AGENT_PACK_LOOK; else process.env.MCP_AGENT_PACK_LOOK = prev;
+    }
+  });
+
   it('still returns the created app with a warning when the theme cannot be created', async () => {
     const client = makeClient();
     client.createApp.mockResolvedValue(createdApp);
@@ -194,7 +231,7 @@ describe('create_app tool', () => {
 
     expect(result.isError).toBeUndefined();
     // The theme failed, the component library is still saved.
-    expect(client.updateAppSettings).toHaveBeenCalledWith({ appId: 'app1', versionId: 'v1', globalSettings: { componentLibrary: 'ui2' } });
+    expect(client.updateAppSettings).toHaveBeenCalledWith({ appId: 'app1', versionId: 'v1', globalSettings: expect.objectContaining({ componentLibrary: 'ui2' }) });
     const body = textOf(result) as { app_id: string; theme: { mode: string; warning?: string } };
     expect(body.app_id).toBe('app1');
     expect(body.theme.mode).toBe('workspace_default');
@@ -215,7 +252,7 @@ describe('create_app tool', () => {
     const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'Console', theme: { name: 'Relay console dark', definition } });
 
     expect(client.updateAppSettings).toHaveBeenCalledWith(
-      expect.objectContaining({ globalSettings: { theme: expect.objectContaining({ id: 'theme-dark' }), componentLibrary: 'ui2', appMode: 'dark' } })
+      expect.objectContaining({ globalSettings: expect.objectContaining({ theme: expect.objectContaining({ id: 'theme-dark' }), componentLibrary: 'ui2', appMode: 'dark' }) })
     );
     // The standard theme's stock-blue primary also earns the accent note.
     expect(textOf(result).theme).toEqual({ mode: 'derived', id: 'theme-dark', name: 'Relay console dark', app_mode: 'dark', accent_note: expect.stringMatching(/stock blue/) });
