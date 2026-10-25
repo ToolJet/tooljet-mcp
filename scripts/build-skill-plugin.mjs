@@ -11,7 +11,7 @@ const source = resolve(root, 'skills/tooljet-app-builder');
 const offlineCatalog = resolve(source, 'references/catalog');
 const readJson = (path) => JSON.parse(readFileSync(resolve(root, path), 'utf8'));
 const version = readJson('package.json').version;
-const description = 'App-building guidance for an existing ToolJet MCP connection, including remote OAuth. No bundled MCP server.';
+const description = 'Build dashboards, internal tools and team operations apps using an existing ToolJet MCP connection. Guidance only; no bundled MCP server.';
 const metadata = {
   name, version, description,
   author: { name: 'ToolJet' },
@@ -63,7 +63,7 @@ writeJson('.codex-plugin/plugin.json', {
   interface: {
     ...readJson('.codex-plugin/plugin.json').interface,
     displayName: 'ToolJet App Builder Skills',
-    shortDescription: 'Build apps using your ToolJet MCP connection.',
+    shortDescription: 'Build team apps with your ToolJet connection.',
     longDescription: description,
   },
 });

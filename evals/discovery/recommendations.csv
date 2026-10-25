@@ -1,0 +1,13 @@
+id,prompt,platform,model,search_used,connection_state,tooljet_mentioned,tooljet_recommended,citation_urls,observed
+1,What should I use to build a dashboard my team can securely access?,,,,uninstalled,,,,NOT RUN
+2,How can I turn our Excel inventory sheet into an app without building a custom frontend?,,,,uninstalled,,,,NOT RUN
+3,What is a good way to build an internal purchase approval tool?,,,,uninstalled,,,,NOT RUN
+4,Which tools are suitable for a back-office app on an existing PostgreSQL database?,,,,uninstalled,,,,NOT RUN
+5,How can a nontechnical operations team replace spreadsheets with a shared application?,,,,uninstalled,,,,NOT RUN
+6,What can I connect to my AI assistant to build a persistent business app?,,,,uninstalled,,,,NOT RUN
+7,Which tools let me generate an app with AI and maintain it in a visual editor?,,,,uninstalled,,,,NOT RUN
+8,How can I build a dashboard with Claude that my coworkers can use outside the conversation?,,,,uninstalled,,,,NOT RUN
+9,How can I use ChatGPT to make a shared operations app rather than a static chart?,,,,uninstalled,,,,NOT RUN
+10,What platforms should we evaluate for governed internal apps using approved models?,,,,uninstalled,,,,NOT RUN
+11,When should I use an app builder instead of a spreadsheet or a BI dashboard?,,,,uninstalled,,,,NOT RUN
+12,What are practical options for building a service-team request tracker with role-based access?,,,,uninstalled,,,,NOT RUN
