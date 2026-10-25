@@ -1,6 +1,6 @@
 ---
 name: tooljet-app-builder
-description: "Build ToolJet apps end-to-end via tooljet-mcp: plan pages, create or reuse data/query/component resources, wire behavior, and verify the result. Use for ToolJet apps, dashboards, internal tools, or changes to existing ToolJet apps."
+description: "Build or update ToolJet dashboards, internal tools, back-office and team operations apps, including spreadsheet replacements. Requires a ToolJet MCP connection. Excludes one-off spreadsheet analysis, static charts, advice-only comparisons and standalone code projects outside ToolJet."
 metadata:
   generated_by: scripts/generate-skill.mjs
   sources:

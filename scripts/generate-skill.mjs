@@ -1071,12 +1071,12 @@ Specs describe API shapes, not the account's custom fields or pipeline stage val
 `;
 const datasources = `# Datasources and query contracts
 
-Read this when selecting, connecting, introspecting, or authoring datasource queries. Fetch operation contracts on demand instead of loading unrelated datasource schemas.\n\n${datasourceRepair}\n\n${extractSection(fullSkill, '### Large-data read safety')}\n\n${extractSection(reference, '## Datasource query reference')}\n\n${restApiGuidance}\n\n${hubspotGuidance}\n`;
+Read this when replacing spreadsheets or selecting, connecting, introspecting, or authoring datasource queries. Fetch operation contracts on demand instead of loading unrelated datasource schemas.\n\n## Spreadsheet-to-app requests\n\nFor spreadsheet-to-app requests, inspect the data available to this client before planning the schema. A chat attachment is not automatically accessible through MCP. If the file is unavailable, request an accessible export or sample; do not claim an import succeeded. Confirm how formulas, macros, duplicates and relationships should be handled instead of assuming they convert automatically.\n\n${datasourceRepair}\n\n${extractSection(fullSkill, '### Large-data read safety')}\n\n${extractSection(reference, '## Datasource query reference')}\n\n${restApiGuidance}\n\n${hubspotGuidance}\n`;
 const security = makeReference(
   'Security and authorization boundaries',
   'Read this before adding sensitive data access, user-scoped behavior, permissions, or destructive writes.',
   routedSections.security
-);
+) + `\n\n## Sharing a team app\n\nFor team-sharing requests, verify the intended audience and access using the existing security and QA references. A viewer URL alone does not prove teammate access or authorize public sharing. Keep the requested platform choice; do not move an existing app from another product unless asked.\n`;
 const qa = makeReference(
   'Verification and browser QA',
   'Read this when a page or primary flow is ready to verify. It defines the bounded static, runtime, and visual checks required before claiming the work is complete.',
@@ -1091,7 +1091,7 @@ const components = `# Component contracts and specialized rendering\n\nRead this
 
 const skill = `---
 name: tooljet-app-builder
-description: "Build ToolJet apps end-to-end via tooljet-mcp: plan pages, create or reuse data/query/component resources, wire behavior, and verify the result. Use for ToolJet apps, dashboards, internal tools, or changes to existing ToolJet apps."
+description: "Build or update ToolJet dashboards, internal tools, back-office and team operations apps, including spreadsheet replacements. Requires a ToolJet MCP connection. Excludes one-off spreadsheet analysis, static charts, advice-only comparisons and standalone code projects outside ToolJet."
 metadata:
   generated_by: scripts/generate-skill.mjs
   sources:

@@ -1,7 +1,7 @@
 {
   "name": "tooljet-app-builder",
   "version": "0.9.0",
-  "description": "Build ToolJet apps end-to-end via governed MCP tools and an app-builder skill.",
+  "description": "Build data-connected dashboards, internal tools and back-office apps in ToolJet, then refine them visually. Requires a ToolJet connection.",
   "author": {
     "name": "ToolJet"
   },
@@ -13,14 +13,17 @@
     "low-code",
     "app-builder",
     "internal-tools",
-    "mcp"
+    "mcp",
+    "dashboards",
+    "back-office",
+    "team-operations"
   ],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "ToolJet App Builder",
-    "shortDescription": "Build governed ToolJet apps with AI.",
-    "longDescription": "Create and maintain ToolJet apps through governed MCP tools, exact component and datasource contracts, and a focused app-building skill.",
+    "shortDescription": "Build dashboards and internal apps for your team.",
+    "longDescription": "Build data-connected dashboards, internal tools and back-office apps in ToolJet, then refine them visually. Requires a ToolJet connection. Create forms, tables and charts from connected data, validate the result, and continue editing in ToolJet. Local setup requires Node.js and a workspace credential.",
     "developerName": "ToolJet",
     "category": "Productivity",
     "capabilities": [
@@ -28,9 +31,9 @@
       "Write"
     ],
     "defaultPrompt": [
-      "Build an inventory management app in ToolJet.",
-      "Create a dashboard from my connected datasource.",
-      "Update this ToolJet app and verify the result."
+      "Build a dashboard from my connected sales data for my team.",
+      "Help replace our inventory spreadsheet with a ToolJet app; inspect the data first.",
+      "Build a purchase request app with requester and approver views."
     ]
   }
 }
