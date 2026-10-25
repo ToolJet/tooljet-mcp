@@ -74,7 +74,9 @@ async function resolveTheme(client: ToolJetClient, choice: CreateAppThemeChoice)
   const themes = await client.listAppThemes();
   // Experiment (exp/packs-platform): an app built on a component pack in its own design system (Ant, MUI) keeps the
   // basic theme, so the pack draws in its stock colours; any theme takes over its tokens (frontend LibraryComponent).
-  if (process.env.MCP_AGENT_PACK_LOOK === 'own') {
+  // A theme the request asked for (a definition or a name) is still applied: forcing basic for those too dropped
+  // every Ant/MUI create_app.theme without a warning (a playful kitchen app's derived theme drew stock blue).
+  if (process.env.MCP_AGENT_PACK_LOOK === 'own' && (choice === 'standard' || choice === 'workspace_default')) {
     const basic = themes.find((theme) => theme.isBasic && !theme.isDisabled);
     if (basic) return basic;
   }

@@ -199,6 +199,28 @@ describe('create_app tool', () => {
     expect(textOf(again).theme).toEqual({ mode: 'derived', id: 'theme-pizza', name: 'Bernal Fire Pizza theme' });
   });
 
+  // A stock-look pack app (Ant, MUI) keeps the basic theme only when no theme was asked for: a derived theme passed
+  // to create_app still drew in stock blue.
+  it('keeps the basic theme for a stock-look pack app, but applies a requested derived theme', async () => {
+    const prev = process.env.MCP_AGENT_PACK_LOOK;
+    process.env.MCP_AGENT_PACK_LOOK = 'own';
+    try {
+      const client = makeClient();
+      client.createApp.mockResolvedValue(createdApp);
+      client.listAppThemes.mockResolvedValue([{ id: 'basic', name: 'ToolJet', definition: {}, isBasic: true }]);
+      client.createAppTheme.mockResolvedValue({ id: 'theme-heat', name: 'Forkline Heat', definition: {} });
+      client.updateAppSettings.mockResolvedValue(undefined);
+      const plain = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'Plain' });
+      expect(textOf(plain).theme).toMatchObject({ id: 'basic' });
+      const definition = { ...loadStandardTheme().definition, brand: { colors: { primary: { light: '#EA580C', dark: '#FB923C' } } } };
+      const themed = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'Prep', theme: { name: 'Forkline Heat', definition } });
+      expect(client.createAppTheme).toHaveBeenCalledWith({ name: 'Forkline Heat', definition, isDefault: false });
+      expect(textOf(themed).theme).toMatchObject({ mode: 'derived', id: 'theme-heat' });
+    } finally {
+      if (prev === undefined) delete process.env.MCP_AGENT_PACK_LOOK; else process.env.MCP_AGENT_PACK_LOOK = prev;
+    }
+  });
+
   it('still returns the created app with a warning when the theme cannot be created', async () => {
     const client = makeClient();
     client.createApp.mockResolvedValue(createdApp);
