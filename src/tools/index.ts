@@ -4,8 +4,6 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ToolJetClient } from '../tooljetClient.js';
 import type { ToolDef } from './types.js';
-import { snapshotBeforeWrite, withSnapshotNote } from '../agentSnapshots.js';
-import { createSnapshotTool } from './createSnapshot.js';
 import { listWorkspacesTool } from './listWorkspaces.js';
 import { useWorkspaceTool } from './useWorkspace.js';
 import { createAppTool } from './createApp.js';
@@ -129,7 +127,6 @@ export function registerTools(
     createAppVersionTool(client),
     ...appVersionLifecycleTools(client),
     switchAppVersionTool(client),
-    createSnapshotTool(client),
     releaseAppTool(client),
     getAppSettingsTool(client),
     listAppThemesTool(client),
@@ -200,9 +197,7 @@ export function registerTools(
         if (status.restart_required && tool.name !== 'get_runtime_info') {
           return staleRuntimeResult(status);
         }
-        // Before an agent's first write to a version, ToolJet keeps a copy for the compare view (agentSnapshots.ts).
-        const snapshot = await snapshotBeforeWrite(client, tool.name, args);
-        return withRuntimeStatus(withSnapshotNote(await tool.handler(args), snapshot), status);
+        return withRuntimeStatus(await tool.handler(args), status);
       }) as any
     );
   }
