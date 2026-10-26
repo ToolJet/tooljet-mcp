@@ -460,10 +460,10 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
       else localRefs.set(ref, id);
       registerRef(componentRefs, ref, { id, name: component.name, type: component.type }, 'component', errors);
       componentCount += 1;
-      return { component, id };
+      return { component, id, originalParentRef: expansion.components[componentIndex]!.parentRef };
     });
 
-    const plannedComponents = componentEntries.map(({ component, id }) => {
+    const plannedComponents = componentEntries.map(({ component, id, originalParentRef }) => {
       let parent: string | undefined;
       if (component.parentRef) {
         parent = localRefs.get(component.parentRef);
@@ -473,7 +473,7 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
           );
         }
       } else if (component.parent) {
-        warnings.push(
+        if (!originalParentRef) warnings.push(
           `Page "${plannedPage.name}" component "${component.name}" uses persisted parent id "${component.parent}"; ` +
             'its parent relationship cannot be verified in a pre-write plan. Prefer parent_ref.'
         );

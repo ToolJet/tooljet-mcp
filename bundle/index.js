@@ -60804,15 +60804,15 @@ function indexComponentReferences(components, existing = []) {
     names.add(component.name);
   }
   const resolved = components.map((component) => {
-    if (component.parentRef !== void 0 && component.parent !== void 0) {
+    if (component.parentRef && component.parent) {
       errors.push(`Component "${component.name}": set EITHER parent or parent_ref, not both.`);
     }
-    if (component.parentRef !== void 0 && !refs2.has(component.parentRef)) {
+    if (component.parentRef && !refs2.has(component.parentRef)) {
       const ids = persisted.get(component.parentRef);
-      if (ids?.size === 1 && component.parent === void 0) {
+      if (ids?.size === 1 && !component.parent) {
         return { ...component, parentRef: void 0, parent: [...ids][0] };
       }
-      errors.push(`Component "${component.name}": unknown parent_ref "${component.parentRef}". Use a same-batch client_ref (or name when no client_ref is set), or an unambiguous existing parent on this page.`);
+      errors.push(`Component "${component.name}": unknown parent_ref "${component.parentRef}". Use a same-batch client_ref (or name when no client_ref is set); for an existing component, use parent with its persisted id.`);
     }
     return component;
   });
@@ -77136,9 +77136,9 @@ function lintPlannedApp(spec, existingSummary, options2 = {}) {
         localRefs.set(ref2, id);
       registerRef(componentRefs, ref2, { id, name: component.name, type: component.type }, "component", errors);
       componentCount += 1;
-      return { component, id };
+      return { component, id, originalParentRef: expansion.components[componentIndex].parentRef };
     });
-    const plannedComponents = componentEntries.map(({ component, id }) => {
+    const plannedComponents = componentEntries.map(({ component, id, originalParentRef }) => {
       let parent;
       if (component.parentRef) {
         parent = localRefs.get(component.parentRef);
@@ -77146,7 +77146,8 @@ function lintPlannedApp(spec, existingSummary, options2 = {}) {
           errors.push(`Page "${plannedPage.name}" component "${component.name}" has unknown parent_ref "${component.parentRef}".`);
         }
       } else if (component.parent) {
-        warnings.push(`Page "${plannedPage.name}" component "${component.name}" uses persisted parent id "${component.parent}"; its parent relationship cannot be verified in a pre-write plan. Prefer parent_ref.`);
+        if (!originalParentRef)
+          warnings.push(`Page "${plannedPage.name}" component "${component.name}" uses persisted parent id "${component.parent}"; its parent relationship cannot be verified in a pre-write plan. Prefer parent_ref.`);
         parent = component.parent;
       }
       if (parent)

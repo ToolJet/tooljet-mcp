@@ -115,9 +115,22 @@ describe('component reference identity across preflight and writes', () => {
     ] });
     const spec = plan(); spec.pages![0]!.components!.shift();
     spec.pages![0]!.components![0]!.parent_ref = parentRef;
+    const linted = JSON.parse(text(await lintAppSpecTool(client).handler(spec)));
+    expect(linted.warnings.join(' ')).not.toMatch(/Prefer parent_ref/);
     const result = await apply(client, spec);
     expect(result.applied.pages).toBe(0);
     expect(state.pages[0]!.components.find(c => c.name === 'referenceInput')!.parent).toBe('saved-panel');
+  });
+
+  it.each([undefined, 'saved-panel'])('preserves empty parent_ref with parent %s', async (parent) => {
+    const { client, state } = appHarness();
+    state.pages.push({ id: 'catalog-page', name: 'Catalog', icon: 'IconBooks', components: [
+      { id: 'saved-panel', name: 'catalogPanel', type: 'Container', properties: {}, layouts: { desktop: rect(10, 220, 39) } },
+    ] });
+    await apply(client, { app_id: 'studio', version_id: 'draft', pages: [{ name: 'Catalog', icon: 'IconBooks', components: [
+      { name: 'shelfNote', type: 'Text', properties: { text: 'Shelf guide' }, parent_ref: '', parent, layout: rect(parent ? 20 : 270) },
+    ] }] });
+    expect(state.pages[0]!.components.find(c => c.name === 'shelfNote')!.parent).toBe(parent);
   });
 
   it.each([false, true])('resolves Form submit buttons and footer parents with explicit refs = %s', async (explicit) => {

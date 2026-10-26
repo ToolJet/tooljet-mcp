@@ -966,6 +966,16 @@ describe('createClient', () => {
       expect(body.diff['component-uuid-2'].parent).toBe('component-uuid-1');
     });
 
+    it.each([undefined, 'saved-panel'])('accepts empty parentRef with parent %s', async (parent) => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201 }));
+      await createClient(auth, config).createComponents({
+        appId: 'app1', versionId: 'ver1', pageId: 'page-home', components: [
+          { name: 'shelfNote', type: 'Text', parentRef: '', parent, properties: {} },
+        ],
+      });
+      expect(JSON.parse(auth.authedFetch.mock.calls[0][1].body).diff['component-uuid-1'].parent).toBe(parent);
+    });
+
     it('resolves a name-fallback parent even when the child is listed first', async () => {
       auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201 }));
       await createClient(auth, config).createComponents({

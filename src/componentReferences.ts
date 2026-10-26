@@ -44,16 +44,17 @@ export function indexComponentReferences<T extends ReferencedComponent>(
     names.add(component.name);
   }
   const resolved = components.map((component) => {
-    if (component.parentRef !== undefined && component.parent !== undefined) {
+    // Empty parent fields have historically meant "no parent" in both plans and direct tools.
+    if (component.parentRef && component.parent) {
       errors.push(`Component "${component.name}": set EITHER parent or parent_ref, not both.`);
     }
-    if (component.parentRef !== undefined && !refs.has(component.parentRef)) {
+    if (component.parentRef && !refs.has(component.parentRef)) {
       const ids = persisted.get(component.parentRef);
-      if (ids?.size === 1 && component.parent === undefined) {
+      if (ids?.size === 1 && !component.parent) {
         return { ...component, parentRef: undefined, parent: [...ids][0]! };
       }
       errors.push(`Component "${component.name}": unknown parent_ref "${component.parentRef}". ` +
-        'Use a same-batch client_ref (or name when no client_ref is set), or an unambiguous existing parent on this page.');
+        'Use a same-batch client_ref (or name when no client_ref is set); for an existing component, use parent with its persisted id.');
     }
     return component;
   });
