@@ -31,8 +31,12 @@ describe('resolveComponentLibrary', () => {
     process.env.MCP_AGENT_PACK = 'mui';
     expect(savedComponentLibrary('ui2')).toBe('pack:mui');
     expect(savedComponentLibrary('ui1')).toBe('ui1');
+    // Unset, the default is Rocket 2.0; an explicit empty value builds with no pack.
     delete process.env.MCP_AGENT_PACK;
+    expect(savedComponentLibrary('ui2')).toBe('pack:shadcn');
+    process.env.MCP_AGENT_PACK = '';
     expect(savedComponentLibrary('ui2')).toBe('ui2');
+    delete process.env.MCP_AGENT_PACK;
     if (saved !== undefined) process.env.MCP_AGENT_PACK = saved;
   });
 

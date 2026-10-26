@@ -70,14 +70,14 @@ describe('app settings tools', () => {
   });
 
   it('saves and reads back the component library', async () => {
-    const after = { ...before, global_settings: { ...before.global_settings, componentLibrary: 'ui2' } };
+    const after = { ...before, global_settings: { ...before.global_settings, componentLibrary: 'pack:shadcn' } };
     const client = {
       getAppSettings: vi.fn().mockResolvedValueOnce(before).mockResolvedValueOnce(after),
       updateAppSettings: vi.fn().mockResolvedValue(undefined),
     } as unknown as ToolJetClient;
     const result = textOf(await updateAppSettingsTool(client).handler({ app_id: 'app1', version_id: versionId, component_library: 'ui2' }));
-    expect(client.updateAppSettings).toHaveBeenCalledWith({ appId: 'app1', versionId, globalSettings: { componentLibrary: 'ui2' } });
-    expect(result.settings.component_library).toBe('ui2');
+    expect(client.updateAppSettings).toHaveBeenCalledWith({ appId: 'app1', versionId, globalSettings: { componentLibrary: 'pack:shadcn' } });
+    expect(result.settings.component_library).toBe('pack:shadcn');
 
     const lost = {
       getAppSettings: vi.fn().mockResolvedValue(before),

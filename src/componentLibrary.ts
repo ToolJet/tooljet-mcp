@@ -14,8 +14,13 @@ export interface ResolvedComponentLibrary {
   pack?: string;
 }
 
-/** The pack a new UI 2.0 app is built with: the agent's default (MCP_AGENT_PACK), until the user picks another. */
-export const defaultPack = (): string | undefined => process.env.MCP_AGENT_PACK?.trim().toLowerCase() || undefined;
+/** The pack a new UI 2.0 app is built with: the agent's default (MCP_AGENT_PACK), until the user picks another. Unset,
+ *  it is Rocket 2.0 (shadcn): ToolJet UI 2.0's own Shad* widgets do not ship on this branch, so a UI 2.0 plan always
+ *  draws in a pack. MCP_AGENT_PACK="" builds with no pack. */
+export const defaultPack = (): string | undefined => {
+  const raw = process.env.MCP_AGENT_PACK;
+  return (raw === undefined ? 'shadcn' : raw).trim().toLowerCase() || undefined;
+};
 
 /** The globalSettings.componentLibrary a new app saves: a pack's "pack:<id>" for UI 2.0 when a pack is the default. */
 export const savedComponentLibrary = (library: ComponentLibrary): string =>

@@ -61041,7 +61041,10 @@ function createAuth(config2, fetchImpl = fetch) {
 }
 
 // dist/componentLibrary.js
-var defaultPack = () => process.env.MCP_AGENT_PACK?.trim().toLowerCase() || void 0;
+var defaultPack = () => {
+  const raw = process.env.MCP_AGENT_PACK;
+  return (raw === void 0 ? "shadcn" : raw).trim().toLowerCase() || void 0;
+};
 var savedComponentLibrary = (library) => library === "ui2" && defaultPack() ? `pack:${defaultPack()}` : library;
 var COMPONENT_LIBRARY_NAMES = {
   ui1: "ToolJet UI 1.0",
