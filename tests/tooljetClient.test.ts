@@ -966,6 +966,33 @@ describe('createClient', () => {
       expect(body.diff['component-uuid-2'].parent).toBe('component-uuid-1');
     });
 
+    it('resolves a name-fallback parent even when the child is listed first', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201 }));
+      await createClient(auth, config).createComponents({
+        appId: 'app1', versionId: 'ver1', pageId: 'page-home', components: [
+          { name: 'shelfLabel', type: 'Text', parentRef: 'shelfPanel', properties: {} },
+          { name: 'shelfPanel', type: 'Container', properties: {} },
+        ],
+      });
+      expect(JSON.parse(auth.authedFetch.mock.calls[0][1].body).diff['component-uuid-1'].parent).toBe('component-uuid-2');
+    });
+
+    it.each([
+      [
+        { name: 'panel', type: 'Container', properties: {}, clientRef: 'panel-alias' },
+        { name: 'label', type: 'Text', properties: {}, parentRef: 'panel' },
+      ],
+      [
+        { name: 'panel', type: 'Container', properties: {} },
+        { name: 'label', type: 'Text', properties: {}, clientRef: 'panel' },
+      ],
+    ])('rejects inconsistent refs before HTTP: %j', async (...components) => {
+      await expect(createClient(auth, config).createComponents({
+        appId: 'app1', versionId: 'ver1', pageId: 'page-home', components,
+      })).rejects.toThrow(/unknown parent_ref|Duplicate component/);
+      expect(auth.authedFetch).not.toHaveBeenCalled();
+    });
+
     it('resolves a Form buttonToSubmit written as a same-batch Button ref to its id', async () => {
       // ToolJet matches buttonToSubmit against the clicked Button's component id (Form.jsx), and ids are made here.
       auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 201, json: { success: true } }));
