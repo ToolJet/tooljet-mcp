@@ -551,7 +551,7 @@ describe('apply of a replace fails safe', () => {
     const message = text(result);
     expect(result.isError).toBe(true);
     expect(message).not.toMatch(/nothing with content on it was auto-deleted/);
-    expect(message).toMatch(/already removed the old content of "Products"/);
+    expect(message).toContain('already deleted 1 component(s) and 0 event(s) from "Products"');
     expect(message).toMatch(/replace: true/);
     const newTitle = state.pages[0]!.components.find((c) => c.name === 'title')!.id;
     expect(state.events.find((e) => e.id === 'e9')!.event.componentId).toBe(newTitle);
