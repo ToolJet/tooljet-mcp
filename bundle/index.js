@@ -52628,7 +52628,9 @@ function packFromLibrary(lib) {
   const components = {};
   for (const [name2, entry] of Object.entries(manifest.components)) {
     const type = `${prefix}${name2}`;
-    const props2 = entry.props ?? [];
+    const allProps = entry.props ?? [];
+    const runtimeValue = (p) => p.name === "value" && p.inspector === "hidden" && allProps.some((q) => q.name === "defaultValue");
+    const props2 = allProps.filter((p) => !runtimeValue(p));
     const fits = entry.fit === true;
     components[name2] = {
       type,
@@ -52695,7 +52697,7 @@ function packFromLibrary(lib) {
         { handle: "setDisable", displayName: "Set disable", params: [{ handle: "disable", displayName: "Value", defaultValue: "{{false}}" }] }
       ],
       exposedVariables: [
-        ...props2.map((p) => ({ name: p.name, ...p.default !== void 0 ? { default: p.default } : {} })),
+        ...allProps.map((p) => ({ name: p.name, ...p.default !== void 0 ? { default: p.default } : {} })),
         { name: "isVisible", default: true },
         { name: "isLoading", default: false },
         { name: "isDisabled", default: false },
@@ -79481,15 +79483,34 @@ function isStrippableUnknownKey(type, section, key4, knownKeys) {
     return false;
   return true;
 }
+function packValueAsDefault(type, name2, properties) {
+  if (!properties || properties.value === void 0)
+    return { properties };
+  const schema = type ? getComponentSchema(type) : void 0;
+  const keys = new Set((schema?.properties ?? []).map((entry) => entry.key));
+  if (!schema?.pack || !keys.has("defaultValue") || keys.has("value"))
+    return { properties };
+  const { value: value2, ...rest } = properties;
+  if (rest.defaultValue !== void 0) {
+    return { properties: rest, warning: `${type} "${name2}": dropped properties.value, the input's runtime value; it starts from defaultValue.` };
+  }
+  return {
+    properties: { ...rest, defaultValue: value2 },
+    warning: `${type} "${name2}": moved properties.value to defaultValue, where the input takes its starting value from.`
+  };
+}
 function normalizeComponentSpec(component, options2 = {}) {
   const normalizedSections = Object.fromEntries(["properties", "styles", "validation", "others"].map((section) => [
     section,
     normalizeSection(component[section])
   ]));
-  const properties = { ...normalizedSections.properties.value ?? {} };
+  const warnings = [];
+  const packValue = packValueAsDefault(component.type, component.name, normalizedSections.properties.value);
+  if (packValue.warning)
+    warnings.push(packValue.warning);
+  const properties = { ...packValue.properties ?? {} };
   const propertyPatch = {};
   const stylePatch = {};
-  const warnings = [];
   const setProperty = (key4, value2) => {
     const current = properties[key4];
     const wrapped = current && typeof current === "object" && !Array.isArray(current) ? { ...current, value: value2 } : { value: value2 };
@@ -83698,6 +83719,11 @@ function updateComponentsTool(client) {
               ...update.definition,
               properties: { ...update.definition.properties, childOrder: childOrderProperty(resolved.order) }
             };
+          }
+          const packValue = packValueAsDefault(current.type, current.name ?? current.id, update.definition?.properties);
+          if (packValue.warning) {
+            warnings.push(packValue.warning);
+            update.definition = { ...update.definition, properties: packValue.properties };
           }
           const definition2 = update.definition;
           const next = {

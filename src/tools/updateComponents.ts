@@ -16,7 +16,7 @@ import {
 } from '../lint.js';
 import { COMPONENT_SLOT_NAMES, componentSlotSchema, decodeComponentParent, encodeComponentParent, resolveParentRef } from '../componentParent.js';
 import { ok, fail, type ToolDef } from './types.js';
-import { normalizeComponentSpec } from '../componentNormalization.js';
+import { normalizeComponentSpec, packValueAsDefault } from '../componentNormalization.js';
 import { resolveRef } from '../refResolution.js';
 import { hasNonEmptyDefinition, strictEntry } from '../strictEntry.js';
 import { componentNameError, componentNameSchema } from '../componentName.js';
@@ -215,6 +215,13 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
               ...update.definition,
               properties: { ...(update.definition!.properties as Record<string, unknown>), childOrder: childOrderProperty(resolved.order) },
             };
+          }
+          // Judged on what this update writes: the stored definition always carries defaultValue.
+          const packValue = packValueAsDefault(current.type, current.name ?? current.id,
+            update.definition?.properties as Record<string, unknown> | undefined);
+          if (packValue.warning) {
+            warnings.push(packValue.warning);
+            update.definition = { ...update.definition, properties: packValue.properties } as typeof update.definition;
           }
           const definition = update.definition as {
             properties?: Record<string, unknown>;

@@ -17,6 +17,8 @@ interface ManifestProp {
   description?: string;
   min?: number;
   max?: number;
+  /** 'hidden': kept off the editor's inspector. */
+  inspector?: string;
 }
 interface ManifestComponent {
   displayName?: string;
@@ -70,7 +72,13 @@ export function packFromLibrary(lib: InstalledLibrary): { pack: LibraryPack; sch
   const components: LibraryPack['components'] = {};
   for (const [name, entry] of Object.entries(manifest.components)) {
     const type = `${prefix}${name}`;
-    const props = entry.props ?? [];
+    const allProps = entry.props ?? [];
+    // An input's hidden `value` is what the user typed, which the widget sets itself: it starts from defaultValue.
+    // Offered as a setting, a build "cleared" a money field's default there and the field still opened at 1 (codex
+    // staging audit UI-05, 2026-10-26). It stays readable as an exposed value.
+    const runtimeValue = (p: ManifestProp) =>
+      p.name === 'value' && p.inspector === 'hidden' && allProps.some((q) => q.name === 'defaultValue');
+    const props = allProps.filter((p) => !runtimeValue(p));
     const fits = entry.fit === true;
     components[name] = {
       type,
@@ -137,7 +145,7 @@ export function packFromLibrary(lib: InstalledLibrary): { pack: LibraryPack; sch
         { handle: 'setDisable', displayName: 'Set disable', params: [{ handle: 'disable', displayName: 'Value', defaultValue: '{{false}}' }] },
       ],
       exposedVariables: [
-        ...props.map((p) => ({ name: p.name, ...(p.default !== undefined ? { default: p.default } : {}) })),
+        ...allProps.map((p) => ({ name: p.name, ...(p.default !== undefined ? { default: p.default } : {}) })),
         { name: 'isVisible', default: true },
         { name: 'isLoading', default: false },
         { name: 'isDisabled', default: false },

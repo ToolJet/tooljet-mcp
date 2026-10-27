@@ -117,6 +117,27 @@ function isStrippableUnknownKey(
  *  With `stripUnknownKeys` (new-component writes only — add_components / planned apply), unknown keys
  *  ToolJet would silently ignore are removed from the saved definition instead of persisted as cruft
  *  (e.g. dynamicHeight, collapseWhenHidden). Legacy in-place update paths do NOT pass this. */
+/** A pack input's settings with a written `value` (the widget's runtime state, see packCatalog) as its `defaultValue`,
+ *  or dropped beside one. The properties are returned unchanged for any other component. */
+export function packValueAsDefault(
+  type: string | undefined,
+  name: string | undefined,
+  properties: Record<string, unknown> | undefined
+): { properties: Record<string, unknown> | undefined; warning?: string } {
+  if (!properties || properties.value === undefined) return { properties };
+  const schema = type ? getComponentSchema(type) : undefined;
+  const keys = new Set((schema?.properties ?? []).map((entry) => entry.key));
+  if (!(schema as { pack?: unknown } | undefined)?.pack || !keys.has('defaultValue') || keys.has('value')) return { properties };
+  const { value, ...rest } = properties;
+  if (rest.defaultValue !== undefined) {
+    return { properties: rest, warning: `${type} "${name}": dropped properties.value, the input's runtime value; it starts from defaultValue.` };
+  }
+  return {
+    properties: { ...rest, defaultValue: value },
+    warning: `${type} "${name}": moved properties.value to defaultValue, where the input takes its starting value from.`,
+  };
+}
+
 export function normalizeComponentSpec<T extends ComponentSpec>(
   component: T,
   options: { stripUnknownKeys?: boolean; currency?: string } = {}
@@ -127,10 +148,12 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
       normalizeSection(component[section]),
     ])
   ) as Record<DefinitionSection, ReturnType<typeof normalizeSection>>;
-  const properties = { ...(normalizedSections.properties.value ?? {}) };
+  const warnings: string[] = [];
+  const packValue = packValueAsDefault(component.type, component.name, normalizedSections.properties.value);
+  if (packValue.warning) warnings.push(packValue.warning);
+  const properties = { ...(packValue.properties ?? {}) };
   const propertyPatch: Record<string, unknown> = {};
   const stylePatch: Record<string, unknown> = {};
-  const warnings: string[] = [];
   const setProperty = (key: string, value: unknown): void => {
     const current = properties[key];
     const wrapped = current && typeof current === 'object' && !Array.isArray(current)
