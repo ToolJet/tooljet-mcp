@@ -729,12 +729,12 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
             }).slice(0, 12000);
           } catch { /* Preserve the original failure if even the recovery read is unavailable. */ }
         }
-        // A replace removes the page's old components before creating the new ones; after that point the message
-        // must say so, and what is left to repair (it used to claim nothing had been deleted).
+        // A differential replace may delete only changed components. A failed write does not imply that retained
+        // components were also removed.
         const removedNote = applied.components_removed || applied.events_removed
-          ? `The replace had already removed the old content of ${replacedPageNames.map((name) => `"${name}"`).join(', ')} ` +
-            `(${applied.components_removed} component(s), ${applied.events_removed} event(s)); that page now holds only what this ` +
-            'phase created (listed below). Repair it by linting the whole page again with replace: true and applying that plan. ' +
+          ? `The replace had already deleted ${applied.components_removed} component(s) and ${applied.events_removed} event(s) ` +
+            `from ${replacedPageNames.map((name) => `"${name}"`).join(', ')}; unchanged components may remain alongside successful writes. ` +
+            'Use the persisted-resource listing when available; do not infer that the page is empty. Repair it by linting the whole page again with replace: true and applying that plan. ' +
             (notRetargeted === undefined && retargetPending.length
               ? `Events on other pages that pointed at its old components were not re-pointed: ${retargetPending.join(', ')}; they still hold the removed ids, so point them at the recreated components with update_events. `
               : notRetargeted?.length ? `Events on other pages still point at components that were not recreated: ${notRetargeted.join(', ')}; recreate those or change the events with update_events. ` : '')
