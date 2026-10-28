@@ -61467,6 +61467,49 @@ function createWorkflowClient(auth, config2, queries) {
   };
 }
 
+// dist/workflowQueryOptions.js
+var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function workflowQueryIssues(options2) {
+  const errors = [];
+  for (const [alias, field] of Object.entries({ workflow_id: "workflowId", workflow_version_id: "workflowVersionId", sync_execution: "syncExecution" })) {
+    if (alias in options2)
+      errors.push({
+        code: "invalid_workflow_option",
+        path: alias,
+        message: `Workflow queries use options.${field}, not ${alias}. Keep the complete options object when updating a query.`
+      });
+  }
+  for (const field of ["workflowId", "workflowVersionId"]) {
+    const value2 = options2[field];
+    if (field === "workflowVersionId" && (value2 === void 0 || value2 === null))
+      continue;
+    if (typeof value2 !== "string" || !UUID.test(value2))
+      errors.push({
+        code: "invalid_workflow_target",
+        path: field,
+        message: `Workflow query options.${field} must be a literal workflow ${field === "workflowId" ? "ID from list_workflows/get_workflow" : "version ID from list_app_versions/get_workflow"}. A query and its success/failure handlers do not establish the workflow mapping.`
+      });
+  }
+  if (options2.syncExecution !== void 0 && typeof options2.syncExecution !== "boolean") {
+    errors.push({ code: "invalid_workflow_option", path: "syncExecution", message: "Workflow query syncExecution must be a boolean." });
+  }
+  if (options2.params !== void 0 && (!Array.isArray(options2.params) || options2.params.some((param) => !param || typeof param !== "object" || Array.isArray(param) || typeof param.key !== "string" || !Object.hasOwn(param, "value")))) {
+    errors.push({ code: "invalid_workflow_option", path: "params", message: "Workflow query params must be an array of {key, value} entries; values may contain app bindings." });
+  }
+  return errors;
+}
+function assertWorkflowQueryOptions(options2) {
+  const errors = workflowQueryIssues(options2);
+  if (errors.length)
+    throw new Error(errors.map((error51) => error51.message).join(" "));
+}
+function workflowMappingMatches(expected, actual) {
+  if (!actual || typeof actual !== "object" || Array.isArray(actual))
+    return false;
+  const saved = actual;
+  return saved.workflowId === expected.workflowId && (saved.workflowVersionId ?? null) === (expected.workflowVersionId ?? null);
+}
+
 // dist/tableQuotaError.js
 var TableQuotaError = class extends Error {
   code = "TJDB_TABLE_LIMIT_REACHED";
@@ -66059,6 +66102,8 @@ var TARGET_FIELD = /(^|_)(table|table_name|table_id|collection|collection_name|s
 function validateQueryOptions(kind, options2, executionContext = "app") {
   const errors = [];
   errors.push(...queryToggleIssues(options2));
+  if (kind === "workflows")
+    errors.push(...workflowQueryIssues(options2));
   if (kind === "hubspot")
     errors.push(...hubspotQueryIssues(options2).map((issue3) => ({ code: "invalid_hubspot_query", ...issue3 })));
   errors.push(...apiEndpointQueryIssues(kind, options2).map((issue3) => ({ code: "invalid_api_endpoint_query", ...issue3 })));
@@ -71077,6 +71122,7 @@ function createClient(auth, config2) {
     if (!query2.data_source_id)
       throw new Error("Cannot verify the saved query datasource; refusing AI access.");
     await assertDatasourceAllowed(query2.data_source_id, versionId, environmentId);
+    return query2;
   }
   async function listDatasources(versionId) {
     const [orgId, orgSlug, envId] = await Promise.all([
@@ -71345,6 +71391,8 @@ function createClient(auth, config2) {
   async function createQueryUnqueued(params) {
     assertPersistableQueryToggles(params.options, `ToolJet createQuery refused query "${params.name}"`);
     const kind = params.kind ?? await resolveDatasourceKind(params.versionId, params.dataSourceId);
+    if (kind === "workflows")
+      assertWorkflowQueryOptions(params.options);
     await assertDatasourceAllowed(params.dataSourceId, params.versionId);
     const res = await auth.authedFetch(`/api/data-queries/data-sources/${params.dataSourceId}/versions/${params.versionId}`, {
       method: "POST",
@@ -71353,11 +71401,22 @@ function createClient(auth, config2) {
     });
     await assertOk(res, "createQuery");
     const body = await res.json();
+    if (kind === "workflows") {
+      try {
+        await verifyWorkflowMapping(body.id, params.versionId, params.options);
+      } catch (error51) {
+        throw new PartialWriteError("createQuery", [{ query_id: body.id, name: body.name }], [String(error51)]);
+      }
+    }
     return { query_id: body.id, name: body.name };
   }
   async function createQueries(params) {
     const batchCheck = (async () => {
-      await listDatasources(params.versionId);
+      const datasources = await listDatasources(params.versionId);
+      for (const query2 of params.queries) {
+        if (datasources.find((source2) => source2.id === query2.dataSourceId)?.kind === "workflows")
+          assertWorkflowQueryOptions(query2.options);
+      }
       await Promise.all(params.queries.map((q) => assertDatasourceAllowed(q.dataSourceId)));
       return void 0;
     })().catch((error51) => ({ error: error51 }));
@@ -71368,7 +71427,7 @@ function createClient(auth, config2) {
       options: q.options,
       kind: q.kind
     }, batchCheck)));
-    const completed = settled.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+    const completed = settled.flatMap((result) => result.status === "fulfilled" ? [result.value] : result.reason instanceof PartialWriteError ? result.reason.completed : []);
     const failures = settled.flatMap((result, index) => result.status === "rejected" ? [`${params.queries[index].name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []);
     if (failures.length)
       throw new PartialWriteError("createQueries", completed, failures);
@@ -71530,7 +71589,9 @@ function createClient(auth, config2) {
   }
   async function updateQuery(params) {
     assertPersistableQueryToggles(params.options, `ToolJet updateQuery refused query "${params.queryId}"`);
-    await assertQueryDatasourceAllowed(params.queryId, params.versionId);
+    const query2 = await assertQueryDatasourceAllowed(params.queryId, params.versionId);
+    if (query2.kind === "workflows")
+      assertWorkflowQueryOptions(params.options);
     const body = { options: params.options };
     if (params.name !== void 0)
       body.name = params.name;
@@ -71540,7 +71601,19 @@ function createClient(auth, config2) {
       body: JSON.stringify(body)
     });
     await assertOk(res, "updateQuery");
+    if (query2.kind === "workflows")
+      await verifyWorkflowMapping(params.queryId, params.versionId, params.options);
     return { query_id: params.queryId };
+  }
+  async function verifyWorkflowMapping(queryId, versionId, options2) {
+    try {
+      const saved = await getQuery(queryId, versionId);
+      if (saved.kind !== "workflows" || !workflowMappingMatches(options2, saved.options)) {
+        throw new Error("Saved workflow target differs from the requested mapping.");
+      }
+    } catch (error51) {
+      throw new Error(`Query ${queryId} was written, but its workflow mapping could not be verified. Inspect this query and repair it in place; do not recreate it. ${String(error51)}`);
+    }
   }
   async function updateQueryDatasource(params) {
     await assertDatasourceAllowed(params.dataSourceId, params.versionId);

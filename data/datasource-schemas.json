@@ -60181,6 +60181,74 @@
       }
     ]
   },
+  "workflows": {
+    "kind": "workflows",
+    "name": "Workflows",
+    "type": "static",
+    "description": "Invoke a ToolJet workflow from an app query. The workflow target is stored in this query, independently of event handlers.",
+    "defaults": {
+      "params": [],
+      "syncExecution": true
+    },
+    "operations": [],
+    "operationSelection": {
+      "mode": "single",
+      "description": "Use the default contract; workflowId is required. No operation selector."
+    },
+    "contracts": {
+      "default": {
+        "operation": "default",
+        "variants": [
+          {
+            "when": {},
+            "fields": {
+              "params": {
+                "path": "params",
+                "type": "array",
+                "description": "Native editor shape: [{key: \"parcelCount\", value: \"{{components.parcelCount.value}}\"}]. Use [] for no inputs."
+              },
+              "syncExecution": {
+                "path": "syncExecution",
+                "type": "boolean",
+                "description": "Use true when handlers/results must reflect workflow completion; false only waits for dispatch."
+              },
+              "workflowId": {
+                "path": "workflowId",
+                "type": "string",
+                "description": "Required literal workflow UUID from list_workflows/get_workflow. Use camelCase, not workflow_id or a dropdown option object."
+              },
+              "workflowVersionId": {
+                "path": "workflowVersionId",
+                "type": "string|null",
+                "description": "Optional literal workflow version UUID. Omit or use null to run the released version. A newly created draft is not automatically released."
+              }
+            },
+            "required": [
+              "workflowId"
+            ]
+          }
+        ],
+        "notes": [
+          "add_queries.version_id/update_query.version_id is the destination APP version, not the workflow version. Preserve the full options on update. Read the saved mapping and validate_app before declaring the workflow linked."
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "runtime-dependent",
+          "source": "ToolJet workflow query runtime",
+          "description": "Synchronous queries expose the workflow response as queries.<name>.data. Its shape depends on the workflow response node. Asynchronous dispatch does not prove workflow completion."
+        }
+      }
+    },
+    "properties": {},
+    "introspectionMethods": [],
+    "supportsTestConnection": false,
+    "sources": [
+      {
+        "collection": "static",
+        "package": "workflows"
+      }
+    ]
+  },
   "xero": {
     "kind": "xero",
     "name": "Xero",

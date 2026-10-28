@@ -14,6 +14,7 @@ import { LARGE_READ_ROW_THRESHOLD, assessQueryRead } from './queryExecutionSafet
 import { primitiveWriteBindingEntries } from './writeBindingShape.js';
 import { conditionalWriteWarning } from './arithmeticWriteContract.js';
 import { mongoArrayReplacementIssues } from './mongoWriteContract.js';
+import { workflowQueryIssues } from './workflowQueryOptions.js';
 
 export interface QueryValidationIssue {
   code: string;
@@ -548,6 +549,7 @@ const TARGET_FIELD = /(^|_)(table|table_name|table_id|collection|collection_name
 export function validateQueryOptions(kind: string, options: Record<string, unknown>, executionContext: 'app' | 'workflow' = 'app'): QueryValidationResult {
   const errors: QueryValidationIssue[] = [];
   errors.push(...queryToggleIssues(options));
+  if (kind === 'workflows') errors.push(...workflowQueryIssues(options));
   if (kind === 'hubspot') errors.push(...hubspotQueryIssues(options).map((issue) => ({ code: 'invalid_hubspot_query', ...issue })));
   errors.push(...apiEndpointQueryIssues(kind, options).map((issue) => ({ code: 'invalid_api_endpoint_query', ...issue })));
   if (kind === 'hubspot' && options.operation !== 'get' &&

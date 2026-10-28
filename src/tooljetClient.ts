@@ -1,6 +1,7 @@
 import { assertAiDatasource, isSampleDatasource } from './datasourcePolicy.js';
 import { createAppVersionLifecycle } from './appVersionLifecycle.js';
 import { createWorkflowClient, type WorkflowClient } from './workflowClient.js';
+import { assertWorkflowQueryOptions, workflowMappingMatches } from './workflowQueryOptions.js';
 import { TableQuotaError, tableQuotaError } from './tableQuotaError.js';
 import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
@@ -2095,10 +2096,11 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     await getDatasourceConnectionDetails(dataSourceId, environmentId);
   }
 
-  async function assertQueryDatasourceAllowed(queryId: string, versionId: string, environmentId?: string): Promise<void> {
+  async function assertQueryDatasourceAllowed(queryId: string, versionId: string, environmentId?: string): Promise<QuerySummary> {
     const query = await getQuery(queryId, versionId);
     if (!query.data_source_id) throw new Error('Cannot verify the saved query datasource; refusing AI access.');
     await assertDatasourceAllowed(query.data_source_id, versionId, environmentId);
+    return query;
   }
 
   async function listDatasources(versionId: string): Promise<Datasource[]> {
@@ -2460,6 +2462,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function createQueryUnqueued(params: CreateQueryParams): Promise<CreateQueryResult> {
     assertPersistableQueryToggles(params.options, `ToolJet createQuery refused query "${params.name}"`);
     const kind = params.kind ?? (await resolveDatasourceKind(params.versionId, params.dataSourceId));
+    if (kind === 'workflows') assertWorkflowQueryOptions(params.options);
     await assertDatasourceAllowed(params.dataSourceId, params.versionId);
     const res = await auth.authedFetch(
       `/api/data-queries/data-sources/${params.dataSourceId}/versions/${params.versionId}`,
@@ -2471,6 +2474,13 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     );
     await assertOk(res, 'createQuery');
     const body = (await res.json()) as { id: string; name: string };
+    if (kind === 'workflows') {
+      try {
+        await verifyWorkflowMapping(body.id, params.versionId, params.options);
+      } catch (error) {
+        throw new PartialWriteError('createQuery', [{ query_id: body.id, name: body.name }], [String(error)]);
+      }
+    }
     return { query_id: body.id, name: body.name };
   }
 
@@ -2479,7 +2489,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function createQueries(params: CreateQueriesParams): Promise<CreateQueryResult[]> {
     // Reserve the queues immediately, but verify the entire batch before its first write.
     const batchCheck = (async () => {
-      await listDatasources(params.versionId);
+      const datasources = await listDatasources(params.versionId);
+      for (const query of params.queries) {
+        if (datasources.find(source => source.id === query.dataSourceId)?.kind === 'workflows') assertWorkflowQueryOptions(query.options);
+      }
       await Promise.all(params.queries.map(q => assertDatasourceAllowed(q.dataSourceId)));
       return undefined;
     })().catch(error => ({ error })); // Handle rejection immediately, even while an earlier write holds the queue.
@@ -2494,7 +2507,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         }, batchCheck)
       )
     );
-    const completed = settled.flatMap((result) => result.status === 'fulfilled' ? [result.value] : []);
+    const completed = settled.flatMap((result) => result.status === 'fulfilled' ? [result.value] :
+      result.reason instanceof PartialWriteError ? result.reason.completed : []);
     const failures = settled.flatMap((result, index) => result.status === 'rejected'
       ? [`${params.queries[index]!.name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`]
       : []);
@@ -2706,7 +2720,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   // Update query = PATCH /:id/versions/:versionId. `options` REPLACES the stored options wholesale.
   async function updateQuery(params: UpdateQueryParams): Promise<{ query_id: string }> {
     assertPersistableQueryToggles(params.options, `ToolJet updateQuery refused query "${params.queryId}"`);
-    await assertQueryDatasourceAllowed(params.queryId, params.versionId);
+    const query = await assertQueryDatasourceAllowed(params.queryId, params.versionId);
+    if (query.kind === 'workflows') assertWorkflowQueryOptions(params.options);
     const body: Record<string, unknown> = { options: params.options };
     if (params.name !== undefined) body.name = params.name;
     const res = await auth.authedFetch(
@@ -2718,7 +2733,20 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       }
     );
     await assertOk(res, 'updateQuery');
+    if (query.kind === 'workflows') await verifyWorkflowMapping(params.queryId, params.versionId, params.options);
     return { query_id: params.queryId };
+  }
+
+  async function verifyWorkflowMapping(queryId: string, versionId: string, options: Record<string, unknown>): Promise<void> {
+    try {
+      const saved = await getQuery(queryId, versionId);
+      if (saved.kind !== 'workflows' || !workflowMappingMatches(options, saved.options)) {
+        throw new Error('Saved workflow target differs from the requested mapping.');
+      }
+    } catch (error) {
+      throw new Error(`Query ${queryId} was written, but its workflow mapping could not be verified. ` +
+        `Inspect this query and repair it in place; do not recreate it. ${String(error)}`);
+    }
   }
 
   async function updateQueryDatasource(params: {

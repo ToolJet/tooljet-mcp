@@ -6,6 +6,10 @@ Read this only when creating, editing, validating, or running a ToolJet automati
 
 ## ToolJet workflow authoring
 
+### Link an existing workflow to an app
+
+Discover the workflow with `list_workflows/get_workflow`, then fetch `get_datasource_query_schema({kind:"workflows"})`. Create or update a query using the destination app's `version_id` and its available Workflows datasource ID. Set `options.workflowId` to the workflow ID (camelCase, a literal UUID); `workflowVersionId` optionally selects a workflow version, otherwise execution uses the released version. A newly created workflow draft is not automatically released; do not publish it without authorization. Use native `params:[{key,value}]` and `syncExecution:true` when success/failure should reflect completion. Query event handlers do not establish the workflow mapping. Preserve the complete options on update, inspect the saved query's workflow/version IDs, and run `validate_app` before claiming the app is linked. Check each app/workflow pair separately.
+
 Use the workflow tools for a ToolJet automation graph, not for an app's page-level interaction flow. The supported authoring subset is Start, JavaScript, datasource query, Loop, condition, Agent, and response nodes.
 
 Use this capability-first sequence:
