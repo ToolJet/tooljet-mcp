@@ -252,6 +252,10 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           if (prepared.errors.length) throw new Error(`${prepared.errors.join(' ')} Nothing was written; lint the phase again.`);
           return { kind, options: prepared.options };
         });
+        // Resolve workflow targets before creating resources or moving an existing query's datasource.
+        for (const query of preparedQueryOptions) {
+          if (query.kind === 'workflows') await client.assertWorkflowQueryTarget(query.options);
+        }
 
         const plannedPageMatches = new Map<string, AppSummary['pages'][number]>();
         const claimedPageIds = new Set<string>();

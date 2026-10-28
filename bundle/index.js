@@ -79362,6 +79362,10 @@ function applyAppPhaseTool(client) {
             throw new Error(`${prepared.errors.join(" ")} Nothing was written; lint the phase again.`);
           return { kind, options: prepared.options };
         });
+        for (const query2 of preparedQueryOptions) {
+          if (query2.kind === "workflows")
+            await client.assertWorkflowQueryTarget(query2.options);
+        }
         const plannedPageMatches = /* @__PURE__ */ new Map();
         const claimedPageIds = /* @__PURE__ */ new Set();
         const reusableHome = initialSummary.pages.length === 1 && initialSummary.pages[0]?.handle === "home" && initialSummary.pages[0].components.length === 0 ? initialSummary.pages[0] : void 0;

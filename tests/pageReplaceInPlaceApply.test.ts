@@ -170,6 +170,28 @@ describe('apply_app_phase checks the reads it wrote', () => {
 describe('apply_app_phase query update recovery', () => {
   beforeEach(() => clearAppPlansForTests());
 
+  it('refuses an inaccessible workflow before repointing a query or creating resources', async () => {
+    const state: State = { pages: [], events: [], queries: [{ id: 'existing-query', name: 'calculate', kind: 'runjs', data_source_id: 'ds-js', options: { code: 'return 1' } }] };
+    const client = {
+      ...fakeApp(state),
+      listDatasources: vi.fn().mockResolvedValue([{ id: 'ds-js', kind: 'runjs' }, { id: 'ds-workflow', name: 'Workflows', kind: 'workflows' }]),
+      assertWorkflowQueryTarget: vi.fn().mockRejectedValue(new Error('Workflow target returned HTTP 404')),
+      updateQueryDatasource: vi.fn(), updateQuery: vi.fn(),
+    };
+    const linted = JSON.parse(text(await lintAppSpecTool(client as never).handler({
+      app_id: 'app1', version_id: 'v1', pages: [{ name: 'Packing', icon: 'IconBox', components: [] }],
+      queries: [{ name: 'calculate', update: true, datasource_name: 'Workflows', options: { workflowId: 'a39ec04c-e491-4e97-9f81-a127997be4b1' } }],
+    } as never)));
+    expect(linted.plan_token, JSON.stringify(linted)).toEqual(expect.any(String));
+    const result = await applyAppPhaseTool(client as never).handler({ app_id: 'app1', version_id: 'v1', plan_token: linted.plan_token } as never);
+    expect(result.isError).toBe(true);
+    expect(text(result)).toContain('Workflow target returned HTTP 404');
+    expect(client.updateQueryDatasource).not.toHaveBeenCalled();
+    expect(client.updateQuery).not.toHaveBeenCalled();
+    expect(client.createPages).not.toHaveBeenCalled();
+    expect(client.createQueries).not.toHaveBeenCalled();
+  });
+
   it.each([false, true])('accounts for saved queries before an update verification failure (new query: %s)', async createNew => {
     const state: State = { pages: [], events: [], queries: [{ id: 'existing-query', name: 'calculate', kind: 'runjs', data_source_id: 'ds-js', options: { code: 'return 1' } }] };
     const client = {
