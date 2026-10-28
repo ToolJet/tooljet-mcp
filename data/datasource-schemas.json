@@ -60220,7 +60220,7 @@
               "workflowVersionId": {
                 "path": "workflowVersionId",
                 "type": "string|null",
-                "description": "Optional literal workflow version UUID. Omit or use null to run the released version. A newly created draft is not automatically released."
+                "description": "Optional literal workflow version UUID. Omit or use null to use the released version; the current backend falls back to the editing version for a never-released workflow. Linking does not release it."
               }
             },
             "required": [

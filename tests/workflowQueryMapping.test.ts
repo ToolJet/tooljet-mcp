@@ -4,6 +4,7 @@ import { prepareQueryOptionsForWrite } from '../src/queryPersistence.js';
 import { validatePersistedAppSummary } from '../src/appValidation.js';
 import { addQueriesTool } from '../src/tools/addQueries.js';
 import { updateQueryTool } from '../src/tools/updateQuery.js';
+import { validateAppTool } from '../src/tools/validateApp.js';
 import { createClient, PartialWriteError, type AppSummary, type ToolJetClient } from '../src/tooljetClient.js';
 import type { Auth } from '../src/auth.js';
 
@@ -36,7 +37,7 @@ describe('workflow query contract', () => {
       expect(result.errors.join(' ')).toContain('workflowId');
     });
 
-  it.each([{ workflow_id: workflowId }, { workflowId, workflow_version_id: workflowVersionId },
+  it.each([{ workflow_id: otherWorkflowId, workflowId }, { workflowId, workflowVersionId, workflow_version_id: otherWorkflowId },
     { workflowId, sync_execution: true }, { workflowId, workflowVersionId: '' }, { workflowId, syncExecution: 'false' },
     { workflowId, params: { boxes: [4, 7] } }, { workflowId, params: [null] }, { workflowId, params: [{ key: 'boxes' }] }])(
     'rejects unsupported selector/parameter shapes: %j', options => {
@@ -50,6 +51,35 @@ describe('workflow query contract', () => {
     expect(result.warnings).toEqual([]);
     expect(result.options).toEqual(options);
     expect(result.validation?.schemaFound).toBe(true);
+  });
+
+  it('normalizes equivalent legacy selectors without mutating the original options', () => {
+    const options = { ...toggles, workflow_id: workflowId, workflow_version_id: workflowVersionId, params: [] };
+    const prepared = prepareQueryOptionsForWrite('workflows', options);
+    expect(prepared.errors).toEqual([]);
+    expect(prepared.options).toEqual({ ...toggles, workflowId, workflowVersionId, params: [] });
+    expect(prepared.warnings.join(' ')).toContain('legacy workflow selectors');
+    expect(options).toHaveProperty('workflow_id', workflowId);
+    const saved = validatePersistedAppSummary(summary(options));
+    expect(saved.ok).toBe(true);
+    expect(saved.warnings.join(' ')).toContain('Legacy workflow');
+    expect(prepareQueryOptionsForWrite('workflows', { ...options, workflowId }).errors).toEqual([]);
+  });
+
+  it('does not revert a datasource after a persisted update with failed verification', async () => {
+    const current = summary(valid);
+    current.queries[0].kind = 'restapi';
+    current.queries[0].data_source_id = 'rest-source';
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue(current),
+      listDatasources: vi.fn().mockResolvedValue([{ id: 'rest-source', kind: 'restapi' }, { id: 'workflows-source', kind: 'workflows' }]),
+      updateQueryDatasource: vi.fn(),
+      updateQuery: vi.fn().mockRejectedValue(new PartialWriteError('updateQuery', [{ query_id: 'packing-query', datasource_id: 'workflows-source' }], ['readback unavailable'])),
+    };
+    const result = await updateQueryTool(client as unknown as ToolJetClient).handler({ app_id: 'packing-app', version_id: 'app-draft', query_id: 'packing-query', datasource_id: 'workflows-source', options: valid });
+    expect(result.isError).toBe(true);
+    expect(client.updateQueryDatasource).toHaveBeenCalledTimes(1);
+    expect(result.content[0].text).toContain('workflows-source');
   });
 
   it('does not mistake success/failure handlers for an established workflow mapping', () => {
@@ -79,10 +109,14 @@ describe('workflow query contract', () => {
   });
 });
 
-function persistenceFixture(readback?: Record<string, unknown> | 'unavailable') {
+function persistenceFixture(readback?: Record<string, unknown> | 'unavailable', targetOverrides: Record<string, unknown> = {}) {
   let saved = structuredClone(valid) as Record<string, unknown>;
   let wrote = false;
   const fetcher = vi.fn(async (path: string, init?: RequestInit) => {
+    if (path.startsWith('/api/apps/') || path.startsWith('/api/v2/apps/')) return Response.json({
+      id: path.split('/')[path.startsWith('/api/v2/') ? 4 : 3], type: 'workflow', organizationId: 'workspace',
+      editing_version: { id: workflowVersionId }, ...targetOverrides,
+    });
     if (path === '/api/app-environments') return Response.json({ environments: [{ id: 'dev', name: 'development' }] });
     if (path.startsWith('/api/data-sources/')) return Response.json({ data_sources: [{ id: 'workflows-source', name: 'Workflows', kind: 'workflows' }] });
     if (init?.method === 'POST' || init?.method === 'PATCH') {
@@ -101,6 +135,22 @@ function persistenceFixture(readback?: Record<string, unknown> | 'unavailable') 
 }
 
 describe('workflow mapping persistence', () => {
+  it.each([{ id: otherWorkflowId }, { type: 'front-end' }, { organizationId: 'another-workspace' }, { editing_version: { id: otherWorkflowId } }])(
+    'rejects inaccessible or mismatched workflow targets before writing: %j', async overrides => {
+      const { client, fetcher } = persistenceFixture(undefined, overrides);
+      await expect(client.createQuery({ versionId: 'app-draft', dataSourceId: 'workflows-source', name: 'calculatePacking', options: valid })).rejects.toThrow(/workflow/i);
+      expect(fetcher.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+    });
+
+  it('validates the saved workflow identity through validate_app, without execution', async () => {
+    const client = {
+      getAppSummary: vi.fn().mockResolvedValue(summary(valid)),
+      assertWorkflowQueryTarget: vi.fn().mockRejectedValue(new Error('Workflow was deleted')),
+    } as unknown as ToolJetClient;
+    const result = JSON.parse((await validateAppTool(client).handler({ app_id: 'packing-app' })).content[0].text);
+    expect(result.ok).toBe(false);
+    expect(result.errors.join(' ')).toContain('Workflow was deleted');
+  });
   it('blocks a bare-ID update even when the tool caller supplies no app or kind', async () => {
     const { client, fetcher } = persistenceFixture();
     const result = await updateQueryTool(client).handler({ query_id: 'packing-query', version_id: 'app-draft', options: toggles });

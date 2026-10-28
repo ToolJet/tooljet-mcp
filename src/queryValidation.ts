@@ -14,7 +14,7 @@ import { LARGE_READ_ROW_THRESHOLD, assessQueryRead } from './queryExecutionSafet
 import { primitiveWriteBindingEntries } from './writeBindingShape.js';
 import { conditionalWriteWarning } from './arithmeticWriteContract.js';
 import { mongoArrayReplacementIssues } from './mongoWriteContract.js';
-import { workflowQueryIssues } from './workflowQueryOptions.js';
+import { normalizeWorkflowQueryOptions, workflowQueryIssues } from './workflowQueryOptions.js';
 
 export interface QueryValidationIssue {
   code: string;
@@ -557,6 +557,11 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
     errors.push({ code: 'automatic_hubspot_write', message: 'HubSpot writes must run from an explicit user action, not on page load or dependency changes.' });
   }
   const warnings: QueryValidationIssue[] = tableStateWarnings(options);
+  if (kind === 'workflows') {
+    const normalized = normalizeWorkflowQueryOptions(options);
+    if (normalized !== options) warnings.push({ code: 'legacy_workflow_selector', message: 'Legacy workflow selector keys are equivalent to workflowId/workflowVersionId; writes use the native camelCase keys.' });
+    options = normalized;
+  }
   const conditionalWrite = conditionalWriteWarning(kind, options);
   if (conditionalWrite) warnings.push({ code: 'conditional_write_result', path: 'update_rows', message: conditionalWrite });
   if (kind === 'mongodb') errors.push(...mongoArrayReplacementIssues(options));
@@ -1024,6 +1029,7 @@ function normalizeWriteColumnMap(columns: unknown): Record<string, unknown> | nu
  * persisted query is never the silently-broken flat shape. */
 export function normalizeQueryOptions(kind: string, rawOptions: Record<string, unknown>): Record<string, unknown> {
   const options = normalizeQueryToggles(rawOptions);
+  if (kind === 'workflows') return normalizeWorkflowQueryOptions(options);
   if (kind === 'mongodb' && isObject(options)) {
     // The plugin's parseEJSON calls JSON5.parse, which receives "[object Object]" for objects.
     // Preserve string bindings and EJSON markers; only serialize already-structured literals.

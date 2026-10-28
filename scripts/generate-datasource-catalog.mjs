@@ -606,7 +606,7 @@ const staticSchemas = {
     contracts: { default: {
       ...oneVariant('default', [
         field('workflowId', 'string', { description: 'Required literal workflow UUID from list_workflows/get_workflow. Use camelCase, not workflow_id or a dropdown option object.' }),
-        field('workflowVersionId', 'string|null', { description: 'Optional literal workflow version UUID. Omit or use null to run the released version. A newly created draft is not automatically released.' }),
+        field('workflowVersionId', 'string|null', { description: 'Optional literal workflow version UUID. Omit or use null to use the released version; the current backend falls back to the editing version for a never-released workflow. Linking does not release it.' }),
         field('syncExecution', 'boolean', { description: 'Use true when handlers/results must reflect workflow completion; false only waits for dispatch.' }),
         field('params', 'array', { description: 'Native editor shape: [{key: "parcelCount", value: "{{components.parcelCount.value}}"}]. Use [] for no inputs.' }),
       ], ['workflowId']),
