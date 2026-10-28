@@ -1,6 +1,7 @@
 import { parse, parseExpression } from '@babel/parser';
 import { getComponentSchema } from './catalog.js';
 import { retiredUi2Name } from './ui2LegacyNames.js';
+import { isLibraryPackType } from './libraryPack.js';
 
 type Node = Record<string, unknown> & { type: string };
 type Component = { name?: string; type?: string };
@@ -100,7 +101,10 @@ export function lintComponentStateBindings(value: unknown, components: Component
 /** A UI 2.0 widget's retired exposed value or action (ui2LegacyNames.ts) read in a binding, unless the name is still
  *  current for the type: the old name reads undefined. */
 function retiredUi2Message(type: string, prop: string, name: string): string | undefined {
-  if (!type.startsWith('Shad')) return undefined;
+  // A pack component (Lib_<pack>_<Component>) publishes exactly its manifest's props too. An edit reads the app's
+  // widgets back as pack types, so a sheet bound to a card grid's invented selectedCardId always showed the first
+  // technician and validate_app passed (staging, 2026-10-28).
+  if (!type.startsWith('Shad') && !isLibraryPackType(type)) return undefined;
   const schema = getComponentSchema(type);
   if (schema?.exposedVariables?.some((variable) => variable.name === prop)) return undefined;
   if (schema?.actions?.some((action) => action.handle === prop)) return undefined;
@@ -132,6 +136,8 @@ const UI2_MEANT: Record<string, string[]> = {
   selectedValue: ['value'],
   text: ['value'],
   selectedCard: ['selectedItem', 'lastSelectedCard'],
+  selectedCardId: ['selectedItemId', 'selectedItem'],
+  selectedId: ['selectedItemId', 'selectedRowId'],
   selectedRow: ['selectedItem', 'selectedRow'],
 };
 
