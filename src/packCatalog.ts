@@ -2,7 +2,10 @@
    has a v2 manifest (manifestVersion 2, written by ToolJet's packages/pack-tools) is a pack, and each of its components
    becomes a catalogue type `Lib_<pack>_<Component>` with its properties, styles, events, actions, exposed values and
    usage, a default definition, and the identity libraryPack.ts stores it with. Libraries without a v2 manifest
-   (one-off custom components) stay out of the catalogue. scripts/generate-library-pack.mjs is the offline version. */
+   (one-off custom components) stay out of the catalogue. scripts/generate-library-pack.mjs is the offline version.
+   A ToolJet that ships its packs (builtin-packs module, PR #18746) lists them at GET /api/builtin-packs, each manifest
+   at /api/builtin-packs/<pack>/<hash>/manifest.json (written by `tooljet library build`, no manifestVersion). Those
+   packs win over installed libraries, and their components are stored as PackComponent (libraryPack.ts). */
 import type { ComponentSchema } from './catalog.js';
 import { registerComponentSchemas } from './catalog.js';
 import { registerPackDefinitions } from './packDefaults.js';
@@ -61,12 +64,50 @@ const stamp = (p: ManifestProp): string => {
 // Descriptive props whose palette sample an AI-built component should not show when the plan leaves them out.
 const SAMPLE_TEXT = /^(eyebrow|subtitle|description|meta|actionLabel|secondaryActionLabel|asideValue|asideLabel|changeLabel|change)$/;
 
-export function packFromLibrary(lib: InstalledLibrary): { pack: LibraryPack; schemas: Record<string, ComponentSchema>; definitions: Record<string, unknown> } | null {
+/** A pack that ships with ToolJet (GET /api/builtin-packs). */
+export interface BuiltinPackInfo {
+  pack: string;
+  displayName: string;
+  version: string;
+  hash: string;
+  hasCss?: boolean;
+}
+
+type PackManifest = NonNullable<InstalledLibrary['manifest']>;
+type PackResult = { pack: LibraryPack; schemas: Record<string, ComponentSchema>; definitions: Record<string, unknown> };
+
+export function packFromLibrary(lib: InstalledLibrary): PackResult | null {
   const manifest = lib.manifest;
   if (!manifest || manifest.manifestVersion !== 2 || !manifest.components) return null;
   const packId = (manifest.pack || lib.name).toLowerCase().replace(/[^a-z0-9]+/g, '');
+  return packFromManifest(packId, lib.name, lib.revisions?.[0]?.version ?? '', manifest, {
+    kind: 'library',
+    libraryId: lib.id,
+    correlationId: lib.correlationId,
+  });
+}
+
+/** A shipped pack: its manifest has no manifestVersion; the pack id is the server's folder name. */
+export function packFromBuiltin(info: BuiltinPackInfo, manifest: PackManifest | null): PackResult | null {
+  if (!manifest?.components) return null;
+  const packId = info.pack.toLowerCase().replace(/[^a-z0-9]+/g, '');
+  return packFromManifest(packId, info.displayName || info.pack, info.version ?? '', manifest, {
+    kind: 'builtin',
+    libraryId: '',
+    correlationId: '',
+  });
+}
+
+function packFromManifest(
+  packId: string,
+  libraryName: string,
+  version: string,
+  manifest: PackManifest,
+  identity: { kind: 'builtin' | 'library'; libraryId: string; correlationId: string },
+): PackResult | null {
+  if (!manifest.components) return null;
+  const lib = { name: libraryName };
   const prefix = `Lib_${packId}_`;
-  const version = lib.revisions?.[0]?.version ?? '';
   const schemas: Record<string, ComponentSchema> = {};
   const definitions: Record<string, unknown> = {};
   const components: LibraryPack['components'] = {};
@@ -165,16 +206,22 @@ export function packFromLibrary(lib: InstalledLibrary): { pack: LibraryPack; sch
     };
   }
   return {
-    pack: { pack: packId, prefix, libraryId: lib.id, correlationId: lib.correlationId, libraryName: lib.name, version, components },
+    pack: { pack: packId, prefix, ...identity, libraryName, version, components },
     schemas,
     definitions,
   };
 }
 
-/** Reads the workspace's packs and registers them; returns their ids. A failure leaves the offline catalogue. */
-export async function loadInstalledPacks(listLibraries: () => Promise<InstalledLibrary[]>): Promise<string[]> {
-  const libraries = await listLibraries();
-  const packs = libraries.map(packFromLibrary).filter((p): p is NonNullable<typeof p> => !!p);
+/** Reads the packs ToolJet ships, else the workspace's installed packs, and registers them; returns their ids. A
+ *  failure leaves the offline catalogue. `listBuiltin` resolves null on a server without the builtin-packs module. */
+export async function loadInstalledPacks(
+  listLibraries: () => Promise<InstalledLibrary[]>,
+  listBuiltin?: () => Promise<Array<{ info: BuiltinPackInfo; manifest: PackManifest | null }> | null>,
+): Promise<string[]> {
+  let packs: PackResult[] = [];
+  const builtin = listBuiltin ? await listBuiltin().catch(() => null) : null;
+  if (builtin?.length) packs = builtin.map((b) => packFromBuiltin(b.info, b.manifest)).filter((p): p is PackResult => !!p);
+  if (!packs.length) packs = (await listLibraries()).map(packFromLibrary).filter((p): p is PackResult => !!p);
   if (!packs.length) return [];
   registerComponentSchemas(Object.assign({}, ...packs.map((p) => p.schemas)));
   registerPackDefinitions(Object.assign({}, ...packs.map((p) => p.definitions)));

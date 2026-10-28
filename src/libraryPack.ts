@@ -2,7 +2,10 @@
    (`Lib_<pack>_<Component>`, data/library-pack.json, from scripts/generate-library-pack.mjs). ToolJet stores every
    library component as one type, LibraryComponent, with the library and component named in its properties, and an
    app renders it only while its version pins the library (globalSettings.customComponentLibraries, keyed by the
-   library's correlation id without dashes). This file is the translation between the two. */
+   library's correlation id without dashes). This file is the translation between the two.
+   A ToolJet that ships its packs (the builtin-packs module, PR #18746) stores a pack component as PackComponent with
+   only { pack, componentName } in its properties: no library identity and no version pin. A pack read from that
+   endpoint has kind 'builtin' and is written that way. */
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,6 +13,9 @@ import { fileURLToPath } from 'node:url';
 export interface LibraryPack {
   pack: string;
   prefix: string;
+  /** 'builtin': shipped with ToolJet (GET /api/builtin-packs), stored as PackComponent. Absent or 'library': an
+   *  installed custom-component library, stored as LibraryComponent with its identity and a version pin. */
+  kind?: 'builtin' | 'library';
   libraryId: string;
   correlationId: string;
   libraryName: string;
@@ -44,6 +50,8 @@ export function libraryPack(): LibraryPack | null {
   return libraryPacksAll()[0] ?? null;
 }
 
+const isBuiltin = (pack: LibraryPack): boolean => pack.kind === 'builtin';
+
 const packOfType = (type: unknown): LibraryPack | undefined =>
   typeof type === 'string' ? libraryPacksAll().find((p) => type.startsWith(p.prefix)) : undefined;
 
@@ -51,17 +59,30 @@ export const isLibraryPackType = (type: unknown): type is string => !!packOfType
 
 /** The globalSettings entry that pins every known pack for an app version. */
 export function libraryPins(): Record<string, string> | undefined {
-  const packs = libraryPacksAll();
+  // A shipped pack (PackComponent) needs no pin: it always draws the build the release ships.
+  const packs = libraryPacksAll().filter((p) => !isBuiltin(p));
   return packs.length ? Object.fromEntries(packs.map((p) => [p.correlationId.replace(/-/g, ''), p.version])) : undefined;
 }
 
 type Section = Record<string, unknown>;
 
-/** A `Lib_*` component as ToolJet stores it: LibraryComponent, the library identity in its properties. */
+/** A `Lib_*` component as ToolJet stores it: PackComponent naming its pack and component for a shipped pack, else
+ *  LibraryComponent with the library identity in its properties. */
 export function toLibraryComponent<T extends { type: string; properties?: Section }>(spec: T): T {
   const pack = packOfType(spec.type);
   if (!pack) return spec;
   const componentName = spec.type.slice(pack.prefix.length);
+  if (isBuiltin(pack)) {
+    return {
+      ...spec,
+      type: 'PackComponent',
+      properties: {
+        ...(spec.properties ?? {}),
+        pack: { value: pack.pack },
+        componentName: { value: componentName },
+      },
+    };
+  }
   return {
     ...spec,
     type: 'LibraryComponent',
@@ -75,13 +96,22 @@ export function toLibraryComponent<T extends { type: string; properties?: Sectio
   };
 }
 
-/** The `Lib_*` type of a stored LibraryComponent of this library, for reads (summaries, lint of the saved app). */
+/** The `Lib_*` type of a stored PackComponent or LibraryComponent of a known pack, for reads (summaries, lint of the
+ *  saved app). */
 export function libraryTypeOf(component: { type?: string; properties?: Section }): string | undefined {
-  if (component.type !== 'LibraryComponent') return undefined;
+  if (component.type !== 'LibraryComponent' && component.type !== 'PackComponent') return undefined;
   const value = (key: string) => {
     const entry = component.properties?.[key] as { value?: unknown } | unknown;
     return entry && typeof entry === 'object' && 'value' in (entry as object) ? (entry as { value?: unknown }).value : entry;
   };
+  if (component.type === 'PackComponent') {
+    const id = value('pack');
+    const name = value('componentName');
+    if (typeof id !== 'string' || typeof name !== 'string') return undefined;
+    const known = libraryPacksAll().find((p) => p.pack === id);
+    // A pack this server has not read still reads back as its Lib_* type, so the agent sees what is on the page.
+    return !known || known.components[name] ? `Lib_${id}_${name}` : undefined;
+  }
   const pack = libraryPacksAll().find((p) => p.correlationId === value('correlationId'));
   const name = value('componentName');
   return pack && typeof name === 'string' && pack.components[name] ? `${pack.prefix}${name}` : undefined;

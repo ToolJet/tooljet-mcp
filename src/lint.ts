@@ -1437,7 +1437,8 @@ export function lintDesktopCanvasCoverage(components: LintComponent[]): string[]
 
 /** Lint a single component spec (pre-write). */
 /** The keys ToolJet keeps on every library component: which library and component it draws. */
-const LIBRARY_HOST_KEYS = new Set(['libraryId', 'libraryName', 'componentName', 'correlationId']);
+// PackComponent (a shipped pack) carries `pack` and `componentName`; LibraryComponent the library identity.
+const LIBRARY_HOST_KEYS = new Set(['libraryId', 'libraryName', 'componentName', 'correlationId', 'pack']);
 
 /** Text-bearing property keys whose value the customer reads on screen. */
 const RENDERED_TEXT_KEYS = ['text', 'rawHtml', 'label', 'title', 'placeholder', 'description', 'subtitle', 'primaryValue', 'secondaryValue'];

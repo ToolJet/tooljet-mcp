@@ -667,6 +667,12 @@ export interface ToolJetClient {
   deleteComponents(params: DeleteComponentsParams): Promise<{ deleted: number }>;
   /** The workspace's custom-component libraries with their latest manifests (component packs, packCatalog.ts). */
   listComponentLibraries(): Promise<import('./packCatalog.js').InstalledLibrary[]>;
+  /** The packs this ToolJet ships (GET /api/builtin-packs) with their manifests; null when the server has no
+   *  builtin-packs module (it then serves packs as custom-component libraries). */
+  listBuiltinPacks(): Promise<Array<{
+    info: import('./packCatalog.js').BuiltinPackInfo;
+    manifest: import('./packCatalog.js').InstalledLibrary['manifest'];
+  }> | null>;
   updateLayouts(params: UpdateLayoutsParams): Promise<{ updated: number }>;
   updateQuery(params: UpdateQueryParams): Promise<{ query_id: string }>;
   updateQueryDatasource(params: { queryId: string; versionId: string; dataSourceId: string }): Promise<void>;
@@ -2824,6 +2830,24 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return (Array.isArray(body) ? body : ((body as { libraries?: unknown[] })?.libraries ?? [])) as import('./packCatalog.js').InstalledLibrary[];
   }
 
+  async function listBuiltinPacks() {
+    const res = await auth.authedFetch('/api/builtin-packs');
+    // An older server has no such route (404): its packs are custom-component libraries.
+    if (!res.ok) return null;
+    const body = (await res.json()) as unknown;
+    if (!Array.isArray(body)) return null;
+    const packs = body as import('./packCatalog.js').BuiltinPackInfo[];
+    return Promise.all(
+      packs.map(async (info) => {
+        const file = await auth.authedFetch(
+          `/api/builtin-packs/${encodeURIComponent(info.pack)}/${encodeURIComponent(info.hash)}/manifest.json`,
+        );
+        const manifest = file.ok ? ((await file.json()) as import('./packCatalog.js').InstalledLibrary['manifest']) : null;
+        return { info, manifest };
+      }),
+    );
+  }
+
   async function deleteComponents(params: DeleteComponentsParams): Promise<{ deleted: number }> {
     const res = await auth.authedFetch(
       `/api/v2/apps/${params.appId}/versions/${params.versionId}/components`,
@@ -3195,6 +3219,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     updateComponents,
     deleteComponents,
     listComponentLibraries,
+    listBuiltinPacks,
     updateLayouts,
     updateQuery,
     updateQueryDatasource,
