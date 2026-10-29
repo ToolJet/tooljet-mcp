@@ -97,3 +97,21 @@ Keep the existing internal gateway protected. Run the public OAuth service separ
 the configuration and proxy routes in `docs/oauth.md`. Its exact resource metadata must return
 JSON, and its unauthenticated MCP POST must advertise that metadata in the 401 challenge.
 Do not remove the internal gateway's bearer gate or give that service credential to an AI client.
+
+## Verified public OAuth host
+
+A later check on 29 October identified `https://mcp-oauth.tooljet.com` as the public OAuth
+service. Its workspace-specific protected-resource metadata under
+`/.well-known/oauth-protected-resource/mcp/<workspace-id>` returned JSON naming
+`https://mcp-oauth.tooljet.com/mcp/<workspace-id>` and authorization server
+`https://app.tooljet.ai/api/mcp-oauth`. Its `/health` returned
+`{"status":"ok","transport":"streamable-http","authorization":"oauth"}` in Chrome.
+The earlier `mcp.tooljet.com` observations concern a different host; they are not evidence that
+the public OAuth deployment is broken.
+
+Actual Antigravity CLI 1.4.10 loaded a workspace-only remote MCP configuration, reached
+`Auth Needed`, and obtained a browser authorization request with S256 PKCE, the four ToolJet
+scopes, and callback `https://antigravity.google/oauth-callback`. The browser flow reached
+ToolJet's required workspace reauthentication. These checks still do not establish a completed
+grant, token exchange/refresh, authenticated MCP tools or app creation. Final user consent
+and the subsequent client checks remain required before changing the package's auth default.
