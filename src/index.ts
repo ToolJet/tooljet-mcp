@@ -213,6 +213,19 @@ export function createGatewayHttpServer(): GatewayHttpServer {
       return;
     }
 
+    // Stateless means no session to stream notifications on or to delete, so only POST is served. A GET used to
+    // open an SSE stream that never ended, holding a whole server until the client hung up; clients open one per
+    // connection, and enough of them took the hosted server past its heap limit. 405 is the spec's answer for a
+    // server that offers no GET stream, and clients carry on without one.
+    if (req.method !== 'POST') {
+      res.writeHead(405, { 'Content-Type': 'application/json', Allow: 'POST' }).end(JSON.stringify({
+        jsonrpc: '2.0',
+        error: { code: -32000, message: 'Method not allowed: this server is stateless and serves POST only.' },
+        id: null,
+      }));
+      return;
+    }
+
     // Stateless: a fresh server+transport per request. A shared McpServer only tolerates
     // one `initialize` handshake for its whole lifetime — reusing one across independent
     // dev clients breaks every client after the first. It also means `identity` cannot leak
