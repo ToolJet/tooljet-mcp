@@ -62882,6 +62882,26 @@ function runjsQueryReferences(code) {
 function runjsComponentReferences(code) {
   return [...new Set(namespaceReads(code, "components").map((read) => read.name))];
 }
+function runjsReturnsNothing(code) {
+  let root;
+  try {
+    root = (0, import_parser.parse)(code, { sourceType: "script", allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true });
+  } catch {
+    return false;
+  }
+  const returns = (node2) => {
+    if (Array.isArray(node2))
+      return node2.some(returns);
+    if (!isNode(node2))
+      return false;
+    if (node2.type === "ReturnStatement")
+      return node2.argument != null;
+    if (/Function|Class/.test(node2.type))
+      return false;
+    return Object.entries(node2).some(([key4, child]) => !["leadingComments", "trailingComments", "innerComments", "loc"].includes(key4) && typeof child === "object" && returns(child));
+  };
+  return !returns(root.program);
+}
 
 // dist/bindingSpans.js
 var import_parser2 = __toESM(require_lib(), 1);
@@ -70456,6 +70476,17 @@ function validateAppStructure(summary, options2 = {}) {
     for (const name2 of runjsComponentReferences(code)) {
       if (!componentNames.has(name2))
         errors.push(`RunJS query "${query2.name ?? query2.id}" references components[${JSON.stringify(name2)}], but no component is named ${JSON.stringify(name2)}. Use the persisted component name exactly (bracket notation for spaces); a plan client_ref is not a runtime component name. A fallback can hide the missing reference and silently ignore user input.`);
+    }
+    if (query2.name && runjsReturnsNothing(code)) {
+      const name2 = query2.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const read = new RegExp(`queries\\s*(?:\\??\\.\\s*${name2}|\\[\\s*\\\\?['"\`]${name2}\\\\?['"\`]\\s*\\])\\s*\\??\\.\\s*data\\b`);
+      const elsewhere = JSON.stringify([
+        summary.pages.map((page) => page.components),
+        summary.queries.filter((other) => other.id !== query2.id).map((other) => other.options),
+        summary.events
+      ]);
+      if (read.test(elsewhere))
+        errors.push(`RunJS query "${query2.name}" never returns a value at the top level, but queries.${query2.name}.data is read. ToolJet uses the body's top-level return as the query's data, so it is always undefined and everything bound to it shows empty. Write the body as statements that end in \`return { ... }\`, not as an expression such as \`(() => { ... })()\`.`);
     }
     const referencedNames = runjsQueryReferences(code);
     for (const name2 of referencedNames) {
