@@ -61,8 +61,22 @@ OAuth failures using PAT credentials or register both transports as active by de
 
 The existing `tests/auth.test.ts` and `tests/oauthHttp.test.ts` passed all 53 tests locally.
 These cover ToolJet's auth boundaries, not Antigravity's deployed browser sign-in. The following
-remain unverified until a dedicated test workspace is supplied: DCR/client authentication,
-consent/callback handling, token refresh, reconnect, and real app creation/readback in Antigravity.
+remain unverified: DCR/client authentication, consent/callback handling, token refresh,
+reconnect, and real app creation/readback in Antigravity. A dedicated Cloud test workspace is
+now available, but its public MCP resource endpoint has not yet been identified.
 The packaged PAT path also still needs an authenticated Antigravity app test.
+
+Cloud authorization-server discovery was read successfully in Chrome at
+`https://app.tooljet.ai/.well-known/oauth-authorization-server/api/mcp-oauth`.
+It advertises issuer `https://app.tooljet.ai/api/mcp-oauth`, registration, authorization,
+token and revocation endpoints, S256 PKCE, code/refresh grants, all three documented client
+authentication methods, and the four ToolJet scopes. This proves metadata delivery only;
+it does not prove registration, login, consent or MCP tool calls work in Antigravity.
+
+The workspace-specific protected-resource path tried on `app.tooljet.ai` led to a frontend
+error page rather than resource metadata. Do not infer the MCP resource URL from the browser
+workspace URL or treat the authorization issuer as the MCP server. Obtain the deployed
+`MCP_OAUTH_RESOURCE_URL` value (not the exchange secret or a token), append the workspace ID,
+and verify that exact service's challenge and resource metadata before configuring the client.
 
 Reference: https://antigravity.google/docs/mcp#oauth
