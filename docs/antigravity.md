@@ -115,3 +115,10 @@ scopes, and callback `https://antigravity.google/oauth-callback`. The browser fl
 ToolJet's required workspace reauthentication. These checks still do not establish a completed
 grant, token exchange/refresh, authenticated MCP tools or app creation. Final user consent
 and the subsequent client checks remain required before changing the package's auth default.
+
+The first user-completed consent reached Antigravity's callback code page, but the actual CLI
+code exchange returned `invalid_grant` (`Invalid OAuth credential or request`). The cause is
+not established; do not claim expired codes or client incompatibility from that response alone.
+The code was not replayed. A fresh user-authorized attempt was opened and handed back for
+workspace reauthentication and final consent. Authenticated tool discovery, app writes,
+refresh and reconnect remain unverified.
