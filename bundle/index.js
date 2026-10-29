@@ -63446,7 +63446,7 @@ function lintComponentStateBindings(value2, components, path) {
   });
 }
 function retiredUi2Message(type, prop4, name2) {
-  if (!type.startsWith("Shad"))
+  if (!type.startsWith("Shad") && !isLibraryPackType(type))
     return void 0;
   const schema = getComponentSchema(type);
   if (schema?.exposedVariables?.some((variable) => variable.name === prop4))
@@ -63473,6 +63473,8 @@ var UI2_MEANT = {
   selectedValue: ["value"],
   text: ["value"],
   selectedCard: ["selectedItem", "lastSelectedCard"],
+  selectedCardId: ["selectedItemId", "selectedItem"],
+  selectedId: ["selectedItemId", "selectedRowId"],
   selectedRow: ["selectedItem", "selectedRow"]
 };
 var WRONG_ALIASES = {
