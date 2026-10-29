@@ -62,6 +62,30 @@ afterEach(async () => {
 });
 
 describe('public MCP OAuth HTTP boundary', () => {
+  it('discovers the shared resource and resolves its workspace only from verified credentials', async () => {
+    const exchange = vi.fn().mockImplementation(() => success());
+    const factory = vi.fn(() => new McpServer({ name: 'synthetic', version: '1' }));
+    const base = await listen(createOAuthHttpServer({ ...options, fetchImpl: exchange, serverFactory: factory }));
+    const challenge = await fetch(`${base}/mcp`, { method: 'POST' });
+    expect(challenge.status).toBe(401);
+    expect(challenge.headers.get('www-authenticate')).toContain('resource_metadata="https://mcp.synthetic.example/.well-known/oauth-protected-resource/mcp"');
+    const metadata = await (await fetch(`${base}/.well-known/oauth-protected-resource/mcp`)).json();
+    expect(metadata.resource).toBe(resourceBase);
+    expect(metadata.authorization_servers).toEqual([options.issuer]);
+    expect(exchange).not.toHaveBeenCalled();
+    const response = await fetch(`${base}/mcp`, {
+      method: 'POST', headers: { ...headers, 'x-tooljet-workspace-id': 'injected-workspace' }, body: JSON.stringify(initialize),
+    });
+    expect(response.status).toBe(200);
+    expect(JSON.parse(exchange.mock.calls[0][1].body).resource).toBe(resourceBase);
+    expect(factory).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: 'garden-workspace' }));
+  });
+  it.each(['/mcp/', '/mcp//garden', '/mcp/garden/extra', '/mcpx', '/.well-known/oauth-protected-resource/mcpx'])(
+    'does not widen routing to malformed resource %s', async (path) => {
+      const base = await listen(createOAuthHttpServer({ ...options, fetchImpl: vi.fn() }));
+      expect((await fetch(base + path, { method: 'POST' })).status).toBe(404);
+    },
+  );
   it('publishes resource metadata and challenges clients with its exact discovery URL', async () => {
     const exchange = vi.fn();
     const base = await listen(createOAuthHttpServer({ ...options, fetchImpl: exchange }));

@@ -50,6 +50,8 @@ For a container network with an HTTP-only internal ToolJet service, use the depl
 
 Proxy these paths to the MCP server:
 
+- `/mcp`: shared MCP requests; users choose a workspace during authorization.
+- `/.well-known/oauth-protected-resource/mcp`: shared resource metadata.
 - `/mcp/<workspace-id-or-slug>`: MCP requests.
 - `/.well-known/oauth-protected-resource/mcp/<workspace-id-or-slug>`: resource metadata.
 - `/health`: optional readiness check.
@@ -80,7 +82,17 @@ The public OAuth MCP process targets one trusted ToolJet Cloud installation and 
 
 ## Connect an AI client
 
-Add the workspace-specific URL in a client supporting HTTP MCP, OAuth Authorization Code with S256 PKCE, and a supported dynamic or previously registered client:
+Add the shared URL in a client supporting HTTP MCP, OAuth Authorization Code with S256 PKCE, and a supported dynamic or previously registered client:
+
+```text
+https://mcp.example.com/mcp
+```
+
+The browser offers ToolJet login followed by a workspace picker, or a workspace URL/ID/slug entry for users who need workspace-specific SSO. Only active memberships are listed. A sole workspace is preselected but still requires confirmation. Selecting a workspace creates a separate browser-bound consent request and consumes the picker; simultaneous selections cannot change an existing consent request. General login does not replace the selected workspace's existing authentication checks: a fresh workspace login is requested whenever the current evidence is missing, stale or does not satisfy that workspace's policy. Custom-domain bootstrap and SSO use the same existing flow.
+
+The shared resource identifier remains unchanged through authorization, token exchange and refresh. Each grant is bound to one immutable workspace ID; authenticated MCP requests resolve that workspace from the grant. Changing the active workspace in ToolJet does not change a connection. Connecting another workspace requires a new authorization. Existing grant/artifact storage is reused; this addition has no database migration.
+
+Existing workspace-specific URLs continue to skip the picker and use their current login and consent flow:
 
 ```text
 https://mcp.example.com/mcp/<workspace-id>
