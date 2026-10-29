@@ -323,3 +323,36 @@ describe('direct mode', () => {
     expect(res.status).not.toBe(401);
   });
 });
+
+/* Each request builds a whole server and keeps it until the response closes. A GET used to get an SSE stream that
+   never closed, so every client connection pinned one server for its lifetime; enough of them exhausted the hosted
+   server's heap. Only POST is served now. */
+describe('stateless transport serves POST only', () => {
+  for (const method of ['GET', 'DELETE']) {
+    it(`answers ${method} with 405 at once instead of holding the connection open`, async () => {
+      const { server } = createGatewayHttpServer();
+      runningServers.push(server);
+      const baseUrl = await listen(server);
+
+      const res = await fetch(new URL('/mcp', baseUrl), {
+        method,
+        headers: { accept: 'text/event-stream', authorization: 'Bearer tj_pat_caller' },
+        signal: AbortSignal.timeout(2_000),
+      });
+
+      expect(res.status).toBe(405);
+      expect(res.headers.get('allow')).toBe('POST');
+      expect(await res.json()).toMatchObject({ jsonrpc: '2.0', error: { code: -32000 } });
+    });
+  }
+
+  it('still checks the bearer gate before answering 405', async () => {
+    process.env.MCP_SHARED_TOKEN = 'shared-secret';
+    const { server } = createGatewayHttpServer();
+    runningServers.push(server);
+    const baseUrl = await listen(server);
+
+    const res = await fetch(new URL('/mcp', baseUrl), { method: 'GET', headers: { accept: 'text/event-stream' } });
+    expect(res.status).toBe(401);
+  });
+});
