@@ -1,3 +1,4 @@
+import { readCatalog, writeCatalog } from '../lib/catalogFiles.js';
 // Compile compact, operation-specific query contracts from ToolJet's core and marketplace plugins.
 // Connection manifests contribute public name/kind/type metadata only; credentials are never copied.
 // Raw operation metadata remains available for explicit diagnostic requests, while normal MCP calls use
@@ -706,11 +707,11 @@ if (missingSelection.length) {
 const selectedKind = process.argv.slice(2).find(arg => arg.startsWith('--kind='))?.slice('--kind='.length);
 if (selectedKind !== undefined && !Object.hasOwn(schemas, selectedKind)) throw new Error(`Unknown datasource kind: ${selectedKind}`);
 const sorted = sortedObject(selectedKind === undefined ? schemas : {
-  ...JSON.parse(readFileSync(resolve(root, 'data/datasource-schemas.json'), 'utf8')),
+  ...readCatalog(resolve(root, 'data/datasource-schemas.json')),
   [selectedKind]: schemas[selectedKind],
 });
 mkdirSync(resolve(root, 'data'), { recursive: true });
-writeFileSync(resolve(root, 'data/datasource-schemas.json'), JSON.stringify(sorted, null, 2) + '\n');
+writeCatalog(resolve(root, 'data/datasource-schemas.json'), sorted);
 const coverage = buildDatasourceCoverage(sorted);
 writeFileSync(resolve(root, 'data/datasource-coverage.json'), JSON.stringify(coverage, null, 2) + '\n');
 console.log(
