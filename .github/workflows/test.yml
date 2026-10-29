@@ -25,5 +25,9 @@ jobs:
         run: npm run build:plugin
       - name: Verify committed bundle is current
         run: git diff --exit-code -- bundle
+      - name: Verify new bundle modules are committed
+        run: test -z "$(git ls-files --others --exclude-standard -- bundle)"
+      - name: Enforce directory file-size and file-count limits
+        run: npm run check:plugin-package
       - name: Check published package contents
         run: npm pack --dry-run
