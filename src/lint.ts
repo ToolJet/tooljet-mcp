@@ -29,7 +29,7 @@ import { lintSurfaceInsets } from './surfaceInsets.js';
 import { lintComponentStateBindings, lintEmptyDateWrites } from './componentStateBindings.js';
 import { lintBindingNames } from './queryValidation.js';
 import { pageIconError } from './pageIcons.js';
-import { runjsComponentReferences, runjsQueryReferences } from './runjsReferences.js';
+import { runjsComponentReferences, runjsQueryReferences, runjsReturnsNothing } from './runjsReferences.js';
 import { lintBindingSyntax } from './bindingSyntax.js';
 import { lintSelectedRowProjections } from './selectedRowProjection.js';
 import { dropdownDefaultVisibilityWarning, dropdownSelfDefaultWarning } from './dropdownDefaultContract.js';
@@ -3509,6 +3509,23 @@ export function validateAppStructure(summary: AppSummary, options: { canvasColor
         `RunJS query "${query.name ?? query.id}" references components[${JSON.stringify(name)}], but no component is named ` +
           `${JSON.stringify(name)}. Use the persisted component name exactly (bracket notation for spaces); ` +
           'a plan client_ref is not a runtime component name. A fallback can hide the missing reference and silently ignore user input.'
+      );
+    }
+    // Its data is read (a binding, another query or an event) but the body never returns at the top level, so the
+    // data is always empty.
+    if (query.name && runjsReturnsNothing(code)) {
+      const name = query.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Searched in JSON text, so a bracket read's quotes arrive escaped.
+      const read = new RegExp(`queries\\s*(?:\\??\\.\\s*${name}|\\[\\s*\\\\?['"\`]${name}\\\\?['"\`]\\s*\\])\\s*\\??\\.\\s*data\\b`);
+      const elsewhere = JSON.stringify([
+        summary.pages.map((page) => page.components),
+        summary.queries.filter((other) => other.id !== query.id).map((other) => other.options),
+        summary.events,
+      ]);
+      if (read.test(elsewhere)) errors.push(
+        `RunJS query "${query.name}" never returns a value at the top level, but queries.${query.name}.data is read. ToolJet ` +
+          'uses the body\'s top-level return as the query\'s data, so it is always undefined and everything bound to it shows ' +
+          'empty. Write the body as statements that end in `return { ... }`, not as an expression such as `(() => { ... })()`.'
       );
     }
     const referencedNames = runjsQueryReferences(code);
