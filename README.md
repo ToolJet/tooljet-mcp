@@ -152,6 +152,29 @@ environment the editor launches from (`TOOLJET_URL` too, only if the API is on a
 than `TOOLJET_DEPLOYMENT_URL`); unset or blank values fall back to the server's own defaults, and a
 missing token is reported at handshake rather than killing the server.
 
+## Antigravity plugin
+
+Build a standalone Antigravity package from the same MCP server and shared skill:
+
+```bash
+npm ci
+npm run build:plugin
+npm run build:antigravity-plugin
+agy plugin validate --strict ./plugins/tooljet-antigravity
+agy plugin install ./plugins/tooljet-antigravity
+```
+
+The output includes a native Antigravity manifest, logo, starter prompts, bundled server,
+runtime catalogs and the shared app-builder skill. Enable ToolJet in Customizations > Installed
+(or `/plugin`) and complete the credential dialog. It asks for the deployment URL, API URL
+and a personal access token for the target workspace; use the same URL twice for a shared-origin
+deployment. Node.js 20+ must be on your PATH. Avoid enabling another ToolJet server/skill package
+in the same session. Credentials are user-supplied and never included in the generated package.
+
+This local installation path is available independently of marketplace review. It does not
+mean ToolJet is listed in the Antigravity Marketplace. See `docs/antigravity.md` for validation
+and submission notes.
+
 ## Skill-only plugin for remote MCP connections
 
 Use `tooljet-app-builder-skills` when ToolJet is already connected through remote
