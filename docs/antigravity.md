@@ -63,7 +63,7 @@ The existing `tests/auth.test.ts` and `tests/oauthHttp.test.ts` passed all 53 te
 These cover ToolJet's auth boundaries, not Antigravity's deployed browser sign-in. The following
 remain unverified: DCR/client authentication, consent/callback handling, token refresh,
 reconnect, and real app creation/readback in Antigravity. A dedicated Cloud test workspace is
-now available, but its public MCP resource endpoint has not yet been identified.
+now available, but its public MCP resource endpoint is not yet verified.
 The packaged PAT path also still needs an authenticated Antigravity app test.
 
 Cloud authorization-server discovery was read successfully in Chrome at
@@ -80,3 +80,20 @@ workspace URL or treat the authorization issuer as the MCP server. Obtain the de
 and verify that exact service's challenge and resource metadata before configuring the client.
 
 Reference: https://antigravity.google/docs/mcp#oauth
+
+## Deployment troubleshooting: discovery returns Unauthorized
+
+In the 29 October check, the supplied MCP host showed plain `Unauthorized` in Chrome for
+`/health` and both root-based and `/mcp`-based workspace protected-resource metadata paths.
+No response headers were captured from that browser observation, so this is not a verified
+OAuth discovery challenge. The deployed process and proxy configuration were not inspected.
+
+That body matches the internal gateway's shared-bearer rejection in `src/index.ts`; an upstream
+authentication gate could also produce it. The OAuth implementation in `src/oauthHttp.ts`
+serves JSON resource metadata without a user credential and refuses to start with
+`MCP_SHARED_TOKEN` configured. Verify which process the public host reaches before client QA.
+
+Keep the existing internal gateway protected. Run the public OAuth service separately, using
+the configuration and proxy routes in `docs/oauth.md`. Its exact resource metadata must return
+JSON, and its unauthenticated MCP POST must advertise that metadata in the 401 challenge.
+Do not remove the internal gateway's bearer gate or give that service credential to an AI client.
