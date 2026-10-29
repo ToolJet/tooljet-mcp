@@ -41,3 +41,28 @@ Google's partner intake is linked from https://antigravity.google/docs/marketpla
 A marketplace listing requires Google's review; local validation does not confer listing status.
 
 Logo: the existing ToolJet favicon from ToolJet/ToolJet, docs/static/img/tooljet-favicon.svg.
+
+## Authentication verification (29 October 2026)
+
+Antigravity CLI 1.4.10 accepts remote Streamable HTTP MCP configurations and local stdio
+configurations. Its published OAuth guide supports automatic discovery/DCR and manually
+registered clients. ToolJet's current OAuth service is Cloud-only and workspace-specific;
+repository support does not establish that an arbitrary Cloud instance has it enabled.
+
+A disposable plugin containing a remote OAuth connection and a disabled local PAT connection
+was strictly validated, installed and removed. Installation still disabled the entire plugin
+until the PAT variables were configured. A disabled PAT entry therefore does not provide a
+confirmed OAuth-first onboarding flow. No documented mutually-exclusive auth selector was found.
+
+Keep one active connection per ToolJet plugin/session. For a future OAuth-first marketplace
+package, validate the actual Cloud workspace MCP URL before replacing the current PAT connection.
+Document self-hosted PAT configuration as an explicit alternative; do not automatically retry
+OAuth failures using PAT credentials or register both transports as active by default.
+
+The existing `tests/auth.test.ts` and `tests/oauthHttp.test.ts` passed all 53 tests locally.
+These cover ToolJet's auth boundaries, not Antigravity's deployed browser sign-in. The following
+remain unverified until a dedicated test workspace is supplied: DCR/client authentication,
+consent/callback handling, token refresh, reconnect, and real app creation/readback in Antigravity.
+The packaged PAT path also still needs an authenticated Antigravity app test.
+
+Reference: https://antigravity.google/docs/mcp#oauth
