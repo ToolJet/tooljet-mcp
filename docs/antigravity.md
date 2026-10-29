@@ -1,124 +1,98 @@
 # Antigravity distribution
 
-The Antigravity package is generated separately so native Antigravity requirements do not
-change the existing Claude Code, Codex or Agent Plugins manifests.
+Generate this package separately so Antigravity requirements do not change the existing
+Claude Code, Codex or Agent Plugins manifests. The shared skill is copied unchanged.
 
-## Build and validate
+## Cloud OAuth package (experimental opt-in)
 
 ```sh
 npm ci
 npm run build:plugin
-npm run build:antigravity-plugin
+npm run build:antigravity-plugin -- --auth=oauth
 agy plugin validate --strict ./plugins/tooljet-antigravity
 agy plugin install ./plugins/tooljet-antigravity
-agy plugin list --json
 ```
 
-The output is ignored by Git. Rebuild it for each release so bundle, data catalogs, shared skill
-and manifest version agree. The source skill is copied unchanged; regenerate that source through
-its existing generator when changing guidance. No credentials or environment files are packaged.
-The package uses the repository's MIT LICENSE file.
+Enable ToolJet in Antigravity, enter the workspace UUID from the ToolJet Cloud workspace URL,
+and use Authenticate. Sign in to ToolJet and check the workspace, requested permissions and
+callback before approving. Enter any callback code only into Antigravity's authentication
+panel, not an agent prompt or support message. This connection needs no PAT or local Node.js
+MCP process. Current ToolJet OAuth support is Cloud-only.
 
-Antigravity CLI 1.4.10 validated and installed this package. Its native `mcp_config.json` declares
-one stdio server with user-prompted variables. The installed plugin stays disabled until configured.
-Node.js 20+ must be available on PATH. Supply the API and frontend origins separately when the
-ToolJet instance uses split-origin hosting; otherwise enter the deployment origin in both fields.
+The native `mcp_config.json` contains one remote server:
+`https://mcp-oauth.tooljet.com/mcp/${TOOLJET_WORKSPACE_ID}`. Antigravity keeps a plugin with
+unfilled variables disabled. Do not enable its config before completing setup.
 
-## Submission checks
+Cloud discovery:
 
-- Strict validation must report zero errors and warnings.
-- Install and confirm one shared skill and one MCP server are discovered.
-- Verify the packaged server starts from outside the source checkout.
-- Without credentials, initialization must explain the missing token and expose only its read-only
-  `tooljet_status` tool. This checks startup and safe failure; it is not an authenticated app test.
-- Before claiming end-to-end support, configure a dedicated ToolJet test workspace through the
-  Antigravity credential dialog. Build a small app, check saved components/queries, reopen it in
-  ToolJet and verify the main interactions. Never use a production customer's workspace for QA.
-- Include the README, bundled logo, version and public support URL. State any unverified behavior
-  in the marketplace application; do not imply the plugin is already listed.
+- Authorization metadata: `https://app.tooljet.ai/.well-known/oauth-authorization-server/api/mcp-oauth`
+- Issuer: `https://app.tooljet.ai/api/mcp-oauth`
+- Workspace resource: `https://mcp-oauth.tooljet.com/mcp/<workspace-id>`
+- Resource metadata: `https://mcp-oauth.tooljet.com/.well-known/oauth-protected-resource/mcp/<workspace-id>`
+
+Both metadata documents were read successfully in Chrome. The OAuth host's `/health`
+returned `status: ok`, `transport: streamable-http`, `authorization: oauth`.
+The separate `mcp.tooljet.com` host returned plain Unauthorized; do not substitute it for
+the public OAuth service or disable its internal gateway protection.
+
+## Default PAT package
+
+```sh
+npm run build:antigravity-plugin -- --auth=pat
+agy plugin validate --strict ./plugins/tooljet-antigravity
+```
+
+This replaces the generated directory with a single local stdio server configuration for the
+same plugin identity. PAT remains the default until the client refresh issue below is fixed.
+This is an alternative build, not a second marketplace listing or an
+automatic fallback. It needs Node.js 20+ and a ToolJet workspace PAT. Setup asks for the
+frontend deployment URL, API URL and PAT. Use the same URL for both when origins are shared;
+otherwise use the actual API origin separately. Supply tokens only in credential setup.
+Never include credentials in prompts, repositories, screenshots or support issues.
+
+Enable only one ToolJet server and shared app-builder skill per session. A disposable test
+containing an OAuth server plus a disabled PAT server still required the PAT variables before
+the plugin could be enabled; it did not provide a usable mutually exclusive auth chooser.
+Each supported build therefore declares exactly one connection and never downgrades auth.
+
+## Package validation and live QA
+
+Antigravity CLI 1.4.10 strictly validates both authentication variants. The generated package
+includes the native manifest, actual ToolJet logo, three starter prompts, unchanged shared
+skill, local bundle/catalogs for the PAT variant, README and repository MIT license. It reads
+no user credentials while building, refuses symlinks/credential files in copied trees, and
+leaves the other client manifests unchanged. Rebuild for every release so versions agree.
+Generated output is Git-ignored. Logo source: ToolJet/ToolJet `docs/static/img/tooljet-favicon.svg`.
+
+Verified on 29 October 2026:
+
+- The local PAT bundle starts outside the checkout and, without credentials, safely exposes
+  only `tooljet_status`. This is not an authenticated PAT app-building test.
+- Actual Antigravity CLI discovered the public OAuth service, registered a client, requested
+  S256 PKCE and the documented Google callback, and completed browser consent plus token exchange.
+- It connected as `[Authed]`, discovered 72 tools and made authenticated workspace/runtime reads
+  against a dedicated Cloud test workspace. The acting workspace matched and runtime was 0.10.0.
+- An earlier exchange returned `invalid_grant`; a fresh authorization attempt succeeded. The
+  first failure's cause was not established and the old code was not replayed.
+- Private QA app creation succeeded. Later live tool calls failed with OAuth `invalid_request`
+  during renewal; components/queries and interactions were not completed or verified.
+- A local synthetic fixture reproduced the client defect: code exchange includes `resource`
+  and body `client_id`; refresh omits both and sends HTTP Basic, despite DCR method `none`.
+  ToolJet requires the workspace resource on refresh and body client_id for that public method.
+  See `docs/antigravity-oauth-refresh-repro.md`. No security check or fallback was changed.
+- Browser rendering, successful refresh/reconnect and packaged variable onboarding remain
+  unverified. Keep the PR draft and the OAuth build opt-in until these release gates pass.
+
+All 56 targeted auth/OAuth/package-mode checks pass locally. These cover local
+behavior; they do not substitute for live browser consent and real MCP tool calls.
+Before marking ready, finish app creation/readback and main interactions, reconnect/refresh,
+and package onboarding. Use synthetic data only; never test against customer workspaces.
+
+## Marketplace submission
 
 Google's partner intake is linked from https://antigravity.google/docs/marketplace.
-A marketplace listing requires Google's review; local validation does not confer listing status.
-
-Logo: the existing ToolJet favicon from ToolJet/ToolJet, docs/static/img/tooljet-favicon.svg.
-
-## Authentication verification (29 October 2026)
-
-Antigravity CLI 1.4.10 accepts remote Streamable HTTP MCP configurations and local stdio
-configurations. Its published OAuth guide supports automatic discovery/DCR and manually
-registered clients. ToolJet's current OAuth service is Cloud-only and workspace-specific;
-repository support does not establish that an arbitrary Cloud instance has it enabled.
-
-A disposable plugin containing a remote OAuth connection and a disabled local PAT connection
-was strictly validated, installed and removed. Installation still disabled the entire plugin
-until the PAT variables were configured. A disabled PAT entry therefore does not provide a
-confirmed OAuth-first onboarding flow. No documented mutually-exclusive auth selector was found.
-
-Keep one active connection per ToolJet plugin/session. For a future OAuth-first marketplace
-package, validate the actual Cloud workspace MCP URL before replacing the current PAT connection.
-Document self-hosted PAT configuration as an explicit alternative; do not automatically retry
-OAuth failures using PAT credentials or register both transports as active by default.
-
-The existing `tests/auth.test.ts` and `tests/oauthHttp.test.ts` passed all 53 tests locally.
-These cover ToolJet's auth boundaries, not Antigravity's deployed browser sign-in. The following
-remain unverified: DCR/client authentication, consent/callback handling, token refresh,
-reconnect, and real app creation/readback in Antigravity. A dedicated Cloud test workspace is
-now available, but its public MCP resource endpoint is not yet verified.
-The packaged PAT path also still needs an authenticated Antigravity app test.
-
-Cloud authorization-server discovery was read successfully in Chrome at
-`https://app.tooljet.ai/.well-known/oauth-authorization-server/api/mcp-oauth`.
-It advertises issuer `https://app.tooljet.ai/api/mcp-oauth`, registration, authorization,
-token and revocation endpoints, S256 PKCE, code/refresh grants, all three documented client
-authentication methods, and the four ToolJet scopes. This proves metadata delivery only;
-it does not prove registration, login, consent or MCP tool calls work in Antigravity.
-
-The workspace-specific protected-resource path tried on `app.tooljet.ai` led to a frontend
-error page rather than resource metadata. Do not infer the MCP resource URL from the browser
-workspace URL or treat the authorization issuer as the MCP server. Obtain the deployed
-`MCP_OAUTH_RESOURCE_URL` value (not the exchange secret or a token), append the workspace ID,
-and verify that exact service's challenge and resource metadata before configuring the client.
+A listing requires Google's review; validation and local installation confer no listing status.
+The user retains final submission of the prepared application. Update the application to match
+the final package/auth mode before submitting; do not claim unverified functionality.
 
 Reference: https://antigravity.google/docs/mcp#oauth
-
-## Deployment troubleshooting: discovery returns Unauthorized
-
-In the 29 October check, the supplied MCP host showed plain `Unauthorized` in Chrome for
-`/health` and both root-based and `/mcp`-based workspace protected-resource metadata paths.
-No response headers were captured from that browser observation, so this is not a verified
-OAuth discovery challenge. The deployed process and proxy configuration were not inspected.
-
-That body matches the internal gateway's shared-bearer rejection in `src/index.ts`; an upstream
-authentication gate could also produce it. The OAuth implementation in `src/oauthHttp.ts`
-serves JSON resource metadata without a user credential and refuses to start with
-`MCP_SHARED_TOKEN` configured. Verify which process the public host reaches before client QA.
-
-Keep the existing internal gateway protected. Run the public OAuth service separately, using
-the configuration and proxy routes in `docs/oauth.md`. Its exact resource metadata must return
-JSON, and its unauthenticated MCP POST must advertise that metadata in the 401 challenge.
-Do not remove the internal gateway's bearer gate or give that service credential to an AI client.
-
-## Verified public OAuth host
-
-A later check on 29 October identified `https://mcp-oauth.tooljet.com` as the public OAuth
-service. Its workspace-specific protected-resource metadata under
-`/.well-known/oauth-protected-resource/mcp/<workspace-id>` returned JSON naming
-`https://mcp-oauth.tooljet.com/mcp/<workspace-id>` and authorization server
-`https://app.tooljet.ai/api/mcp-oauth`. Its `/health` returned
-`{"status":"ok","transport":"streamable-http","authorization":"oauth"}` in Chrome.
-The earlier `mcp.tooljet.com` observations concern a different host; they are not evidence that
-the public OAuth deployment is broken.
-
-Actual Antigravity CLI 1.4.10 loaded a workspace-only remote MCP configuration, reached
-`Auth Needed`, and obtained a browser authorization request with S256 PKCE, the four ToolJet
-scopes, and callback `https://antigravity.google/oauth-callback`. The browser flow reached
-ToolJet's required workspace reauthentication. These checks still do not establish a completed
-grant, token exchange/refresh, authenticated MCP tools or app creation. Final user consent
-and the subsequent client checks remain required before changing the package's auth default.
-
-The first user-completed consent reached Antigravity's callback code page, but the actual CLI
-code exchange returned `invalid_grant` (`Invalid OAuth credential or request`). The cause is
-not established; do not claim expired codes or client incompatibility from that response alone.
-The code was not replayed. A fresh user-authorized attempt was opened and handed back for
-workspace reauthentication and final consent. Authenticated tool discovery, app writes,
-refresh and reconnect remain unverified.

@@ -165,11 +165,21 @@ agy plugin install ./plugins/tooljet-antigravity
 ```
 
 The output includes a native Antigravity manifest, logo, starter prompts, bundled server,
-runtime catalogs and the shared app-builder skill. Enable ToolJet in Customizations > Installed
-(or `/plugin`) and complete the credential dialog. It asks for the deployment URL, API URL
-and a personal access token for the target workspace; use the same URL twice for a shared-origin
-deployment. Node.js 20+ must be on your PATH. Avoid enabling another ToolJet server/skill package
-in the same session. Credentials are user-supplied and never included in the generated package.
+runtime catalogs and the unchanged shared app-builder skill. The default package uses PAT:
+enable ToolJet and enter its deployment URL, API URL and workspace PAT in credential setup.
+Use the same URL twice on a shared-origin instance. Node.js 20+ is required.
+
+An explicit Cloud OAuth preview can be built with
+`npm run build:antigravity-plugin -- --auth=oauth`. It asks for the Cloud workspace UUID and
+connects to `mcp-oauth.tooljet.com`, without a local server or PAT. **It is not ready for
+production on Antigravity CLI 1.4.10:** initial login succeeded, but its refresh request omitted
+the workspace resource and changed public-client authentication, causing live renewal to fail.
+See `docs/antigravity-oauth-refresh-repro.md`. Keep the default PAT package until that client
+compatibility issue and remaining live QA gates are resolved.
+
+Both builds contain exactly one connection under the same plugin identity. They are alternative
+configurations, not two marketplace listings. There is no automatic OAuth-to-PAT fallback.
+Avoid duplicate ToolJet servers or skills. Credentials are never packaged.
 
 This local installation path is available independently of marketplace review. It does not
 mean ToolJet is listed in the Antigravity Marketplace. See `docs/antigravity.md` for validation
