@@ -253,6 +253,10 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           if (prepared.errors.length) throw new Error(`${prepared.errors.join(' ')} Nothing was written; lint the phase again.`);
           return { kind, options: prepared.options };
         });
+        // Resolve workflow targets before creating resources or moving an existing query's datasource.
+        for (const query of preparedQueryOptions) {
+          if (query.kind === 'workflows') await client.assertWorkflowQueryTarget(query.options);
+        }
 
         const plannedPageMatches = new Map<string, AppSummary['pages'][number]>();
         const claimedPageIds = new Set<string>();
@@ -483,17 +487,6 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
             ? client.createQueries({ versionId: args.version_id, queries: createInputs })
             : Promise.resolve([]),
         ]);
-        for (const query of updateInputs) {
-          const queryId = replacing!.queriesToUpdate.get(query.name)!;
-          // A redefinition on another datasource (ToolJet DB into RunJS) moves the query too; updating the options
-          // alone would leave the old datasource attached.
-          const current = initialSummary.queries.find((candidate) => candidate.id === queryId);
-          if (current && query.dataSourceId && current.data_source_id !== query.dataSourceId) {
-            await client.updateQueryDatasource({ queryId, versionId: args.version_id, dataSourceId: query.dataSourceId });
-          }
-          await client.updateQuery({ queryId, versionId: args.version_id, options: query.options });
-          applied.queries_updated += 1;
-        }
         const seedResults = seedWrite.status === 'fulfilled'
           ? seedWrite.value
           : completedPartialWrites<{ table_name: string; processed_rows: number }>(seedWrite.reason);
@@ -511,6 +504,22 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
             : []),
         ];
         if (dataFailures.length) throw new Error(dataFailures.join(' | '));
+        for (const query of updateInputs) {
+          const queryId = replacing!.queriesToUpdate.get(query.name)!;
+          // A redefinition on another datasource (ToolJet DB into RunJS) moves the query too; updating the options
+          // alone would leave the old datasource attached.
+          const current = initialSummary.queries.find((candidate) => candidate.id === queryId);
+          if (current && query.dataSourceId && current.data_source_id !== query.dataSourceId) {
+            await client.updateQueryDatasource({ queryId, versionId: args.version_id, dataSourceId: query.dataSourceId });
+          }
+          try {
+            await client.updateQuery({ queryId, versionId: args.version_id, options: query.options });
+            applied.queries_updated += 1;
+          } catch (error) {
+            applied.queries_updated += completedPartialWrites(error).length;
+            throw error;
+          }
+        }
         const queryTargets = persistedTargets(
           planSummary.queries.map((query) => ({ id: query.id, name: query.name ?? query.id }))
         );
@@ -710,7 +719,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         // recreates them under new names (Gemini Pro on an order-desk same-prompt run ended with nine pages, five
         // empty). Pages with nothing on them are safe to remove; created tables stay, since seed rows may
         // already be in them and the next plan can reuse them through table_ref.
-        const onlyFoundation = applied.components === 0 && applied.queries === 0 && applied.events === 0;
+        const onlyFoundation = applied.components === 0 && applied.queries === 0 && applied.queries_updated === 0 && applied.events === 0;
         if (onlyFoundation && createdPageIds.length) {
           const removed: string[] = [];
           for (const pageId of createdPageIds) {

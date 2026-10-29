@@ -3,7 +3,8 @@
 // Raw operation metadata remains available for explicit diagnostic requests, while normal MCP calls use
 // the much smaller normalized contracts. Static datasources are curated from first-party editors/runtime.
 //
-// Usage: node scripts/generate-datasource-catalog.mjs   (env: TOOLJET_ROOT)
+// Usage: node scripts/generate-datasource-catalog.mjs [--kind=workflows]   (env: TOOLJET_ROOT)
+// --kind updates one contract while preserving unrelated catalog entries from other source releases.
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve, dirname } from 'node:path';
@@ -597,6 +598,24 @@ const tooljetContracts = {
 };
 
 const staticSchemas = {
+  workflows: {
+    kind: 'workflows', name: 'Workflows', type: 'static',
+    description: 'Invoke a ToolJet workflow from an app query. The workflow target is stored in this query, independently of event handlers.',
+    defaults: { params: [], syncExecution: true }, operations: [],
+    operationSelection: { mode: 'single', description: 'Use the default contract; workflowId is required. No operation selector.' },
+    contracts: { default: {
+      ...oneVariant('default', [
+        field('workflowId', 'string', { description: 'Required literal workflow UUID from list_workflows/get_workflow. Use camelCase, not workflow_id or a dropdown option object.' }),
+        field('workflowVersionId', 'string|null', { description: 'Optional literal workflow version UUID. Omit or use null to use the released version; the current backend falls back to the editing version for a never-released workflow. Linking does not release it.' }),
+        field('syncExecution', 'boolean', { description: 'Use true when handlers/results must reflect workflow completion; false only waits for dispatch.' }),
+        field('params', 'array', { description: 'Native editor shape: [{key: "parcelCount", value: "{{components.parcelCount.value}}"}]. Use [] for no inputs.' }),
+      ], ['workflowId']),
+      notes: ['add_queries.version_id/update_query.version_id is the destination APP version, not the workflow version. Preserve the full options on update. Read the saved mapping and validate_app before declaring the workflow linked.'],
+      response: { type: 'unknown', status: 'runtime-dependent', source: 'ToolJet workflow query runtime', description: 'Synchronous queries expose the workflow response as queries.<name>.data. Its shape depends on the workflow response node. Asynchronous dispatch does not prove workflow completion.' },
+    } },
+    properties: {}, introspectionMethods: [], supportsTestConnection: false,
+    sources: [{ collection: 'static', package: 'workflows' }],
+  },
   restapi: {
     kind: 'restapi', name: 'REST API', type: 'api',
     description: 'Built-in HTTP query. Pagination is defined by the remote API, not ToolJet.',
@@ -684,7 +703,12 @@ if (missingSelection.length) {
   throw new Error(`operationSelection missing on: ${missingSelection.join(', ')}.`);
 }
 
-const sorted = sortedObject(schemas);
+const selectedKind = process.argv.slice(2).find(arg => arg.startsWith('--kind='))?.slice('--kind='.length);
+if (selectedKind !== undefined && !Object.hasOwn(schemas, selectedKind)) throw new Error(`Unknown datasource kind: ${selectedKind}`);
+const sorted = sortedObject(selectedKind === undefined ? schemas : {
+  ...JSON.parse(readFileSync(resolve(root, 'data/datasource-schemas.json'), 'utf8')),
+  [selectedKind]: schemas[selectedKind],
+});
 mkdirSync(resolve(root, 'data'), { recursive: true });
 writeFileSync(resolve(root, 'data/datasource-schemas.json'), JSON.stringify(sorted, null, 2) + '\n');
 const coverage = buildDatasourceCoverage(sorted);

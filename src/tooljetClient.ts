@@ -2,6 +2,7 @@ import { componentRef, indexComponentReferences } from './componentReferences.js
 import { assertAiDatasource, isSampleDatasource } from './datasourcePolicy.js';
 import { createAppVersionLifecycle } from './appVersionLifecycle.js';
 import { createWorkflowClient, type WorkflowClient } from './workflowClient.js';
+import { assertWorkflowQueryOptions, normalizeWorkflowQueryOptions, workflowMappingMatches } from './workflowQueryOptions.js';
 import { TableQuotaError, tableQuotaError } from './tableQuotaError.js';
 import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
@@ -569,6 +570,7 @@ export interface QuerySummary {
 export interface ToolJetClient {
   appVersions: ReturnType<typeof createAppVersionLifecycle>;
   workflows: WorkflowClient;
+  assertWorkflowQueryTarget(options: Record<string, unknown>): Promise<void>;
   listWorkspaces(): Promise<Workspace[]>;
   useWorkspace(workspaceId: string): Promise<Workspace>;
   listWorkspaceApps(params?: { page?: number; searchText?: string }): Promise<Record<string, unknown>>;
@@ -2096,10 +2098,11 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     await getDatasourceConnectionDetails(dataSourceId, environmentId);
   }
 
-  async function assertQueryDatasourceAllowed(queryId: string, versionId: string, environmentId?: string): Promise<void> {
+  async function assertQueryDatasourceAllowed(queryId: string, versionId: string, environmentId?: string): Promise<QuerySummary> {
     const query = await getQuery(queryId, versionId);
     if (!query.data_source_id) throw new Error('Cannot verify the saved query datasource; refusing AI access.');
     await assertDatasourceAllowed(query.data_source_id, versionId, environmentId);
+    return query;
   }
 
   async function listDatasources(versionId: string): Promise<Datasource[]> {
@@ -2461,6 +2464,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function createQueryUnqueued(params: CreateQueryParams): Promise<CreateQueryResult> {
     assertPersistableQueryToggles(params.options, `ToolJet createQuery refused query "${params.name}"`);
     const kind = params.kind ?? (await resolveDatasourceKind(params.versionId, params.dataSourceId));
+    if (kind === 'workflows') {
+      params = { ...params, options: normalizeWorkflowQueryOptions(params.options) };
+      await assertWorkflowQueryTarget(params.options);
+    }
     await assertDatasourceAllowed(params.dataSourceId, params.versionId);
     const res = await auth.authedFetch(
       `/api/data-queries/data-sources/${params.dataSourceId}/versions/${params.versionId}`,
@@ -2472,6 +2479,13 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     );
     await assertOk(res, 'createQuery');
     const body = (await res.json()) as { id: string; name: string };
+    if (kind === 'workflows') {
+      try {
+        await verifyWorkflowMapping(body.id, params.versionId, params.options);
+      } catch (error) {
+        throw new PartialWriteError('createQuery', [{ query_id: body.id, name: body.name }], [String(error)]);
+      }
+    }
     return { query_id: body.id, name: body.name };
   }
 
@@ -2480,7 +2494,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function createQueries(params: CreateQueriesParams): Promise<CreateQueryResult[]> {
     // Reserve the queues immediately, but verify the entire batch before its first write.
     const batchCheck = (async () => {
-      await listDatasources(params.versionId);
+      const datasources = await listDatasources(params.versionId);
+      for (const query of params.queries) {
+        if (datasources.find(source => source.id === query.dataSourceId)?.kind === 'workflows') await assertWorkflowQueryTarget(query.options);
+      }
       await Promise.all(params.queries.map(q => assertDatasourceAllowed(q.dataSourceId)));
       return undefined;
     })().catch(error => ({ error })); // Handle rejection immediately, even while an earlier write holds the queue.
@@ -2495,7 +2512,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         }, batchCheck)
       )
     );
-    const completed = settled.flatMap((result) => result.status === 'fulfilled' ? [result.value] : []);
+    const completed = settled.flatMap((result) => result.status === 'fulfilled' ? [result.value] :
+      result.reason instanceof PartialWriteError ? result.reason.completed : []);
     const failures = settled.flatMap((result, index) => result.status === 'rejected'
       ? [`${params.queries[index]!.name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`]
       : []);
@@ -2702,7 +2720,11 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   // Update query = PATCH /:id/versions/:versionId. `options` REPLACES the stored options wholesale.
   async function updateQuery(params: UpdateQueryParams): Promise<{ query_id: string }> {
     assertPersistableQueryToggles(params.options, `ToolJet updateQuery refused query "${params.queryId}"`);
-    await assertQueryDatasourceAllowed(params.queryId, params.versionId);
+    const query = await assertQueryDatasourceAllowed(params.queryId, params.versionId);
+    if (query.kind === 'workflows') {
+      params = { ...params, options: normalizeWorkflowQueryOptions(params.options) };
+      await assertWorkflowQueryTarget(params.options);
+    }
     const body: Record<string, unknown> = { options: params.options };
     if (params.name !== undefined) body.name = params.name;
     const res = await auth.authedFetch(
@@ -2714,7 +2736,42 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       }
     );
     await assertOk(res, 'updateQuery');
+    if (query.kind === 'workflows') {
+      try { await verifyWorkflowMapping(params.queryId, params.versionId, params.options); }
+      catch (error) { throw new PartialWriteError('updateQuery', [{ query_id: params.queryId, datasource_id: query.data_source_id }], [String(error)]); }
+    }
     return { query_id: params.queryId };
+  }
+
+  async function verifyWorkflowMapping(queryId: string, versionId: string, options: Record<string, unknown>): Promise<void> {
+    try {
+      const saved = await getQuery(queryId, versionId);
+      if (saved.kind !== 'workflows' || !workflowMappingMatches(options, saved.options)) {
+        throw new Error('Saved workflow target differs from the requested mapping.');
+      }
+    } catch (error) {
+      throw new Error(`Query ${queryId} was written, but its workflow mapping could not be verified. ` +
+        `Inspect this query and repair it in place; do not recreate it. ${String(error)}`);
+    }
+  }
+
+  async function assertWorkflowQueryTarget(raw: Record<string, unknown>): Promise<void> {
+    assertWorkflowQueryOptions(raw);
+    const options = normalizeWorkflowQueryOptions(raw);
+    const workflowId = options.workflowId as string;
+    const versionId = options.workflowVersionId as string | undefined;
+    const path = versionId ? `/api/v2/apps/${encodeURIComponent(workflowId)}/versions/${encodeURIComponent(versionId)}`
+      : `/api/apps/${encodeURIComponent(workflowId)}`;
+    const response = await auth.authedFetch(path);
+    await assertOk(response, 'verify workflow query target');
+    const app = await response.json();
+    if (app?.id !== workflowId || app.type !== 'workflow' ||
+        (app.organizationId ?? app.organization_id) !== await auth.getOrganizationId()) {
+      throw new Error('Workflow query target must be an accessible workflow in the active workspace.');
+    }
+    if (versionId && (app.editing_version ?? app.editingVersion)?.id !== versionId) {
+      throw new Error('Workflow query version does not belong to the selected workflow.');
+    }
   }
 
   async function updateQueryDatasource(params: {
@@ -2967,6 +3024,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
 
   return {
     appVersions: createAppVersionLifecycle(auth, getApp),
+    assertWorkflowQueryTarget,
     workflows: createWorkflowClient(auth, config, { assertDatasourceAllowed, getQueries, listDatasources, createQuery, updateQuery, deleteQuery, getDevelopmentEnvironmentId }),
     listWorkspaces,
     useWorkspace,
