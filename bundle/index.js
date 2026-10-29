@@ -52548,6 +52548,7 @@ function libraryPacksAll() {
 function registerLibraryPacks(packs) {
   discovered = packs;
 }
+var serverLibraryPacks = () => discovered ?? [];
 function libraryPack() {
   return libraryPacksAll()[0] ?? null;
 }
@@ -69440,6 +69441,10 @@ function lintComponentSpec(spec, context = {}) {
   } else if (!componentSchema) {
     const suggestion = nearestCatalogKey(spec.type, getCatalog().map((entry) => entry.type));
     errors.push(`Component "${label3}": unknown component type "${spec.type}"; ToolJet may persist an unusable component.` + (suggestion ? ` Did you mean "${suggestion}"?` : " Call get_component_catalog with no type to list supported types."));
+  } else if (/^Shad[A-Z]/.test(spec.type) && defaultPack() && serverLibraryPacks().length) {
+    const name2 = spec.type.slice(4);
+    const matches2 = serverLibraryPacks().filter((p) => p.components[name2]).map((p) => `${p.prefix}${name2}`);
+    errors.push(`Component "${label3}": "${spec.type}" is not available on this ToolJet; UI 2.0 widgets draw as the app's component pack. ` + (matches2.length ? `Write the app's pack component instead: ${matches2.join(" or ")} (the one matching the app's pack).` : "Call get_component_catalog for the pack components."));
   } else {
     const replacement = getLegacyComponentReplacement(spec.type);
     if (replacement) {
