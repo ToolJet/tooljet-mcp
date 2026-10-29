@@ -2,7 +2,7 @@
 // No minification, compression, eval, runtime downloads, or installed dependencies.
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { resolve, dirname, basename, posix } from 'node:path';
+import { resolve, dirname, basename, posix, win32 } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build, transform } from 'esbuild';
 import { rollup } from 'rollup';
@@ -11,6 +11,11 @@ import { parse } from '@babel/parser';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 export const MAX_FILE_BYTES = 256 * 1024;
+
+// Rollup checks resolved IDs too. Windows drive/UNC paths are local modules,
+// just like POSIX absolute paths; only bare package/builtin imports stay external.
+export const isExternalBundleImport = (id) =>
+  !id.startsWith('.') && !posix.isAbsolute(id) && !win32.isAbsolute(id);
 
 function dependencyNotices(inputs) {
   const packages = new Map();
@@ -148,7 +153,7 @@ export async function reviewableBundle(entry = './dist/index.js') {
   }
   const bundle = await rollup({
     input: resolve(root, 'bundle/index.js'),
-    external: (id) => !id.startsWith('.') && !id.startsWith('/'),
+    external: isExternalBundleImport,
     plugins: [{ name: 'in-memory-chunks', resolveId: (id, importer) =>
       id.startsWith('.') && importer ? resolve(dirname(importer), id) : files.has(id) ? id : null,
       load: (id) => files.get(id) ?? null }],
