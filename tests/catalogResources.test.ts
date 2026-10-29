@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readCatalogBytes } from '../lib/catalogFiles.js';
 import { resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -7,7 +7,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { CATALOG_RESOURCES, catalogVersionOf } from '../src/catalogResources.js';
 import { TOOLJET_MCP_VERSION } from '../src/runtimeFreshness.js';
 
-const dataFile = (file: string) => readFileSync(resolve(__dirname, '../data', file));
+const dataFile = (file: string) => readCatalogBytes(resolve(__dirname, '../data', file));
 const version = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex').slice(0, 12);
 /** The whole catalog as the files are on disk: every part, in resource order. */
 const allParts = () => CATALOG_RESOURCES.map((r) => ({ file: r.file, bytes: dataFile(r.file) }));

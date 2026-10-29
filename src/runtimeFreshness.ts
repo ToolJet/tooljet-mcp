@@ -1,9 +1,10 @@
 import { createHash } from 'node:crypto';
 import { statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { basename, dirname, resolve } from 'node:path';
 import type { ToolResult } from './tools/types.js';
 
-export const TOOLJET_MCP_VERSION = '0.10.0';
+export const TOOLJET_MCP_VERSION = '0.10.1';
 
 interface RuntimeSnapshot {
   buildId: string;
@@ -37,13 +38,19 @@ function snapshot(path: string): RuntimeSnapshot {
 /**
  * A Node process keeps already-imported MCP code after dist/bundle files are rebuilt.
  * Capture this module's emitted artifact at startup and compare it before every tool call.
- * In a bundled plugin import.meta.url is the bundle itself; under dist it is this emitted module.
+ * The modular bundle's entry imports content-hashed chunks, so it changes when any dependency
+ * changes. Watch that entry instead of just the chunk containing this monitor.
  */
+export function runtimeArtifactPath(moduleUrl: string): string {
+  const file = fileURLToPath(moduleUrl);
+  return basename(dirname(file)) === 'bundle' ? resolve(dirname(file), 'index.js') : file;
+}
+
 export class RuntimeFreshnessMonitor {
   private readonly loaded: RuntimeSnapshot;
   private readonly startedAt = new Date().toISOString();
 
-  constructor(private readonly artifactPath: string = fileURLToPath(import.meta.url)) {
+  constructor(private readonly artifactPath: string = runtimeArtifactPath(import.meta.url)) {
     this.loaded = snapshot(artifactPath);
   }
 

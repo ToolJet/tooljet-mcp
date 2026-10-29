@@ -1,3 +1,4 @@
+import { readCatalog } from '../lib/catalogFiles.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -123,7 +124,7 @@ function checkCoverage() {
   const schemaPath = resolve(root, 'data/datasource-schemas.json');
   const reportPath = resolve(root, 'data/datasource-coverage.json');
   const baselinePath = resolve(root, 'data/datasource-coverage-baseline.json');
-  const schemas = JSON.parse(readFileSync(schemaPath, 'utf8'));
+  const schemas = readCatalog(schemaPath);
   const coverage = buildDatasourceCoverage(schemas);
   const failures = [];
 

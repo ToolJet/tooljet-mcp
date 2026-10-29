@@ -5,7 +5,7 @@ Local whole-stack setup: ToolJet/tooljet-agent, `ai-stack/SETUP.md`.
 
 ## 1. Purpose
 
-The tool layer. `npm run build:plugin` produces `bundle/index.js`, a single-file stdio MCP server that
+The tool layer. `npm run build:plugin` produces `bundle/index.js`, a modular stdio MCP server with readable dependency chunks that
 `tooljet-agent` spawns per build; its tools call ToolJet's REST API with the PAT or session token the
 agent passes, so an agent changes a ToolJet app directly instead of emitting a spec. It also ships
 `skills/tooljet-app-builder/`, the skill (system prompt) the agent loads. The repo is also its own

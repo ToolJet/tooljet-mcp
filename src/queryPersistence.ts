@@ -38,7 +38,7 @@ export function prepareQueryOptionsForWrite(
   }
   const options = normalizeQueryOptions(kind, toggled);
   if (options !== toggled) {
-    warnings.push(line(kind === 'mongodb'
+    warnings.push(line(kind === 'workflows' ? 'normalized legacy workflow selectors to workflowId/workflowVersionId.' : kind === 'mongodb'
       ? 'serialized MongoDB document fields to the JSON text expected by the plugin.'
       : `rewrote the ${String(options.operation)} column map to ToolJet's {index: {column, value}} shape; ` +
         'the flat {column: value} form sends an empty body and fails at runtime.'));
