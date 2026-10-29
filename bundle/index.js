@@ -60775,6 +60775,50 @@ function createAuth(config2, fetchImpl = fetch) {
   return { authedFetch, getOrganizationId, getOrganizationSlug, listWorkspaces, switchWorkspace, viewerSession };
 }
 
+// dist/componentReferences.js
+function componentRef(component) {
+  return component.clientRef ?? component.name;
+}
+function indexComponentReferences(components, existing = []) {
+  const refs2 = /* @__PURE__ */ new Map();
+  const errors = [];
+  const names = /* @__PURE__ */ new Set();
+  const persisted = /* @__PURE__ */ new Map();
+  for (const component of existing) {
+    for (const ref2 of new Set([component.id, component.name].filter((key4) => Boolean(key4)))) {
+      const ids = persisted.get(ref2) ?? /* @__PURE__ */ new Set();
+      ids.add(component.id);
+      persisted.set(ref2, ids);
+    }
+  }
+  for (const component of components) {
+    const ref2 = componentRef(component);
+    if (!ref2.trim())
+      errors.push(`Component "${component.name}": client_ref must not be empty.`);
+    if (refs2.has(ref2) || persisted.has(ref2))
+      errors.push(`Duplicate component client_ref/name "${ref2}".`);
+    else
+      refs2.set(ref2, component);
+    if (names.has(component.name))
+      errors.push(`Duplicate component name "${component.name}" in batch.`);
+    names.add(component.name);
+  }
+  const resolved = components.map((component) => {
+    if (component.parentRef && component.parent) {
+      errors.push(`Component "${component.name}": set EITHER parent or parent_ref, not both.`);
+    }
+    if (component.parentRef && !refs2.has(component.parentRef)) {
+      const ids = persisted.get(component.parentRef);
+      if (ids?.size === 1 && !component.parent) {
+        return { ...component, parentRef: void 0, parent: [...ids][0] };
+      }
+      errors.push(`Component "${component.name}": unknown parent_ref "${component.parentRef}". Use a same-batch client_ref (or name when no client_ref is set); for an existing component, use parent with its persisted id.`);
+    }
+    return component;
+  });
+  return { refs: refs2, components: resolved, errors };
+}
+
 // dist/datasourcePolicy.js
 var SAMPLE_DATASOURCE_REFUSAL = "Sample data source is unavailable to AI. Do not inspect, test, read, write, or create queries on it. Use ToolJet Database for new app data, or another connected user-owned datasource.";
 function isSampleDatasource(source2) {
@@ -67610,7 +67654,7 @@ function lintTextGeometry(components) {
   return warnings;
 }
 function componentKey(component) {
-  return component.clientRef ?? component.id;
+  return component.clientRef ?? component.id ?? component.name;
 }
 function parentPlacement(component) {
   if (component.parentRef) {
@@ -71395,16 +71439,11 @@ function createClient(auth, config2) {
     return dto;
   }
   async function createComponents(params) {
+    const references = indexComponentReferences(params.components);
+    if (references.errors.length)
+      throw new Error(`createComponents: ${references.errors.join(" ")}`);
     const entries = params.components.map((spec) => ({ id: spec.id ?? randomUUID2(), spec }));
-    const refToId = /* @__PURE__ */ new Map();
-    for (const e of entries) {
-      if (!e.spec.clientRef)
-        continue;
-      if (refToId.has(e.spec.clientRef)) {
-        throw new Error(`createComponents: duplicate clientRef "${e.spec.clientRef}".`);
-      }
-      refToId.set(e.spec.clientRef, e.id);
-    }
+    const refToId = new Map(entries.map((entry) => [componentRef(entry.spec), entry.id]));
     const diff = {};
     for (const e of entries) {
       if (e.spec.parent && e.spec.parentRef) {
@@ -71421,7 +71460,7 @@ function createClient(auth, config2) {
       if (resolvedParent)
         dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName);
       const submit = e.spec.type === "Form" ? dto.properties?.buttonToSubmit : void 0;
-      const submitId = submit && typeof submit.value === "string" ? refToId.get(submit.value) ?? entries.find((other) => !other.spec.clientRef && other.spec.name === submit.value)?.id : void 0;
+      const submitId = submit && typeof submit.value === "string" ? refToId.get(submit.value) : void 0;
       if (submit && submitId) {
         dto.properties = { ...dto.properties, buttonToSubmit: { ...submit, value: submitId } };
       }
@@ -76127,33 +76166,24 @@ function childName(parentName, child, index) {
   const role = baseRole.charAt(0).toUpperCase() + baseRole.slice(1) + (cardField ? "" : index + 1);
   return `${parentName}Card${role}`;
 }
-function unusedInternalRef(used, index) {
-  let suffix = index + 1;
-  let ref2 = `__mcp_default_parent_${suffix}`;
-  while (used.has(ref2))
-    ref2 = `__mcp_default_parent_${++suffix}`;
-  used.add(ref2);
-  return ref2;
-}
 function materializeRequiredDefaultChildren(input) {
-  const usedRefs = new Set(input.flatMap((component) => component.clientRef ? [component.clientRef] : []));
   const explicitParentRefs = new Set(input.flatMap((component) => component.parentRef && (!component.slotName || component.slotName === "body") ? [component.parentRef] : []));
   const components = [];
   const warnings = [];
   let materializedChildren = 0;
-  input.forEach((original, componentIndex) => {
+  input.forEach((original) => {
     if (!AUTO_MATERIALIZE_DEFAULTS.has(original.type)) {
       components.push(original);
       return;
     }
     const schema = getComponentSchema(original.type);
     const defaults = schema?.defaultChildren ?? [];
-    if (!defaults.length || original.clientRef && explicitParentRefs.has(original.clientRef)) {
+    if (!defaults.length || explicitParentRefs.has(componentRef(original))) {
       components.push(original);
       return;
     }
-    const clientRef = original.clientRef ?? unusedInternalRef(usedRefs, componentIndex);
-    components.push({ ...original, clientRef });
+    const clientRef = componentRef(original);
+    components.push(original);
     defaults.forEach((child, childIndex) => {
       const defaultValue = child.defaultValue ?? {};
       components.push({
@@ -77091,14 +77121,11 @@ function lintPlannedApp(spec, existingSummary, options2 = {}) {
     errors.push(...componentLint.errors.map((message) => `Page "${plannedPage.name}": ${message}`));
     errors.push(...lintQueryFedCharts(expansion.components, spec.queries ?? []).map((message) => `Page "${plannedPage.name}": ${message}`));
     warnings.push(...componentLint.warnings.map((message) => `Page "${plannedPage.name}": ${message}`));
+    const references = indexComponentReferences(expansion.components, existingPage?.components);
+    errors.push(...references.errors.map((message) => `Page "${plannedPage.name}": ${message}`));
     const localRefs = /* @__PURE__ */ new Map();
-    for (const component of existingPage?.components ?? []) {
-      if (component.name)
-        localRefs.set(component.name, component.id);
-      localRefs.set(component.id, component.id);
-    }
-    const componentEntries = expansion.components.map((component, componentIndex) => {
-      const ref2 = component.clientRef ?? component.name;
+    const componentEntries = references.components.map((component, componentIndex) => {
+      const ref2 = componentRef(component);
       const id = `planned-component:${pageIndex}:${componentIndex}:${ref2}`;
       if ((existingPage?.components ?? []).some((candidate) => candidate.name === component.name)) {
         errors.push(`Page "${plannedPage.name}" already has a component named "${component.name}".`);
@@ -77109,9 +77136,9 @@ function lintPlannedApp(spec, existingSummary, options2 = {}) {
         localRefs.set(ref2, id);
       registerRef(componentRefs, ref2, { id, name: component.name, type: component.type }, "component", errors);
       componentCount += 1;
-      return { component, id };
+      return { component, id, originalParentRef: expansion.components[componentIndex].parentRef };
     });
-    const plannedComponents = componentEntries.map(({ component, id }) => {
+    const plannedComponents = componentEntries.map(({ component, id, originalParentRef }) => {
       let parent;
       if (component.parentRef) {
         parent = localRefs.get(component.parentRef);
@@ -77119,7 +77146,8 @@ function lintPlannedApp(spec, existingSummary, options2 = {}) {
           errors.push(`Page "${plannedPage.name}" component "${component.name}" has unknown parent_ref "${component.parentRef}".`);
         }
       } else if (component.parent) {
-        warnings.push(`Page "${plannedPage.name}" component "${component.name}" uses persisted parent id "${component.parent}"; its parent relationship cannot be verified in a pre-write plan. Prefer parent_ref.`);
+        if (!originalParentRef)
+          warnings.push(`Page "${plannedPage.name}" component "${component.name}" uses persisted parent id "${component.parent}"; its parent relationship cannot be verified in a pre-write plan. Prefer parent_ref.`);
         parent = component.parent;
       }
       if (parent)
@@ -77411,7 +77439,8 @@ function prepareComponentBatch(inputs, options2 = {}) {
     heightFixes.push(`Html "${component.name ?? "?"}" needed about ${fix.needed}px for its markup but was ${fix.from}px; saved at ${fix.to}px. Anything placed within ${fix.to - fix.from}px below it now overlaps; move it down.`);
   }
   const expanded = materializeRequiredDefaultChildren(normalized2.map((result) => result.component));
-  const lint2 = lintComponents(expanded.components, options2);
+  const references = indexComponentReferences(expanded.components, options2.existingComponents);
+  const lint2 = lintComponents(references.components, options2);
   const lateListviewChildWarnings = requested.flatMap((component) => component.parent && containsListItemBinding({
     properties: component.properties,
     styles: component.styles,
@@ -77421,8 +77450,8 @@ function prepareComponentBatch(inputs, options2 = {}) {
     `Component "${component.name}" is being added under an existing parent and reads listItem. ToolJet can mount late-added Listview children with empty repeated values. Create the Listview and all listItem-bound children atomically in one component batch using client_ref/parent_ref.`
   ] : []);
   return {
-    components: expanded.components,
-    errors: lint2.errors,
+    components: references.components,
+    errors: [...references.errors, ...lint2.errors],
     warnings: [
       ...normalized2.flatMap((item) => item.warnings),
       ...expanded.warnings,
@@ -78498,15 +78527,16 @@ var sameRect = (planned, stored) => {
   return RECT_KEYS.every((key4) => Number(stored[key4]) === Number(planned[key4]));
 };
 function diffPageInPlace(stored, planned, definitions = bundledDefinitions(), newId = randomUUID4) {
+  const references = indexComponentReferences(planned);
+  if (references.errors.length)
+    throw new Error(references.errors.join(" "));
   const storedByName = new Map(stored.filter((component) => component.name).map((component) => [component.name, component]));
   const ids = /* @__PURE__ */ new Map();
   const idOf = /* @__PURE__ */ new Map();
   for (const spec of planned) {
     const id = storedByName.get(spec.name)?.id ?? newId();
     idOf.set(spec, id);
-    ids.set(spec.name, id);
-    if (spec.clientRef)
-      ids.set(spec.clientRef, id);
+    ids.set(componentRef(spec), id);
   }
   const diff = { ids, keep: [], relayout: [], create: [], recreated: [], deleteIds: [], why: {} };
   const plannedNames = new Set(planned.map((spec) => spec.name));
@@ -79282,7 +79312,10 @@ function applyAppPhaseTool(client) {
         for (const page of spec.pages ?? []) {
           if (!page.components?.length)
             continue;
-          const prepared = prepareComponentBatch(page.components, { canvasColor });
+          const prepared = prepareComponentBatch(page.components, {
+            canvasColor,
+            existingComponents: plannedPageMatches.get(logicalRef(page))?.components
+          });
           if (prepared.errors.length)
             throw new Error(`Page "${page.name}": ${prepared.errors.join(" ")}`);
           preparedBatches.set(logicalRef(page), prepared);
@@ -79307,7 +79340,10 @@ function applyAppPhaseTool(client) {
           })));
           for (const prepared of preparedBatches.values()) {
             for (const component of prepared.components) {
-              components.set(component.clientRef ?? component.name, { id: `planned:${component.name}`, name: component.name, type: component.type });
+              const ref2 = componentRef(component);
+              if (components.has(ref2))
+                throw new Error(`Duplicate component client_ref/name "${ref2}" in planned app.`);
+              components.set(ref2, { id: `planned:${ref2}`, name: component.name, type: component.type });
             }
           }
           resolvePlannedEvents(pages, queries, components);
@@ -79490,7 +79526,7 @@ function applyAppPhaseTool(client) {
           applied.components_kept += diff.keep.length;
           applied.components_moved += diff.relayout.length;
           const created = page.prepared.components.map((component) => ({
-            component_id: diff.ids.get(component.clientRef ?? component.name),
+            component_id: diff.ids.get(componentRef(component)),
             name: component.name
           }));
           return { ...page, created, written: diff.create.length };
@@ -79512,7 +79548,7 @@ function applyAppPhaseTool(client) {
             const created = page.created[index];
             if (!created)
               throw new Error(`Could not resolve component "${component.name}" after creation.`);
-            componentTargets.set(component.clientRef ?? component.name, {
+            componentTargets.set(componentRef(component), {
               id: created.component_id,
               name: created.name,
               type: component.type

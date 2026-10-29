@@ -1,3 +1,4 @@
+import { componentRef } from '../componentReferences.js';
 import { prepareQueryOptionsForWrite } from '../queryPersistence.js';
 import { frozenAppRefusal } from '../frozenApp.js';
 import { peekAppPlan } from '../appPlanStore.js';
@@ -329,7 +330,9 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         const preparedBatches = new Map<string, ReturnType<typeof prepareComponentBatch>>();
         for (const page of spec.pages ?? []) {
           if (!page.components?.length) continue;
-          const prepared = prepareComponentBatch(page.components, { canvasColor });
+          const prepared = prepareComponentBatch(page.components, {
+            canvasColor, existingComponents: plannedPageMatches.get(logicalRef(page))?.components,
+          });
           if (prepared.errors.length) throw new Error(`Page "${page.name}": ${prepared.errors.join(' ')}`);
           preparedBatches.set(logicalRef(page), prepared);
         }
@@ -355,7 +358,9 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           );
           for (const prepared of preparedBatches.values()) {
             for (const component of prepared.components) {
-              components.set(component.clientRef ?? component.name, { id: `planned:${component.name}`, name: component.name, type: component.type });
+              const ref = componentRef(component);
+              if (components.has(ref)) throw new Error(`Duplicate component client_ref/name "${ref}" in planned app.`);
+              components.set(ref, { id: `planned:${ref}`, name: component.name, type: component.type });
             }
           }
           resolvePlannedEvents(pages, queries, components);
@@ -574,7 +579,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           applied.components_moved += diff.relayout.length;
           // Every planned component has its id now, written or not: events and other pages refer to them by it.
           const created = page.prepared.components.map((component) => ({
-            component_id: diff.ids.get(component.clientRef ?? component.name)!, name: component.name,
+            component_id: diff.ids.get(componentRef(component))!, name: component.name,
           }));
           return { ...page, created, written: diff.create.length };
         }));
@@ -597,7 +602,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
           page.prepared.components.forEach((component, index) => {
             const created = page.created[index];
             if (!created) throw new Error(`Could not resolve component "${component.name}" after creation.`);
-            componentTargets.set(component.clientRef ?? component.name, {
+            componentTargets.set(componentRef(component), {
               id: created.component_id,
               name: created.name,
               type: component.type,

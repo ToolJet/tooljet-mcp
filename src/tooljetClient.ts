@@ -1,3 +1,4 @@
+import { componentRef, indexComponentReferences } from './componentReferences.js';
 import { assertAiDatasource, isSampleDatasource } from './datasourcePolicy.js';
 import { createAppVersionLifecycle } from './appVersionLifecycle.js';
 import { createWorkflowClient, type WorkflowClient } from './workflowClient.js';
@@ -276,9 +277,9 @@ export interface ComponentSpec {
   /** Create the component under this id instead of a new one: a page replace recreates a changed component under
    *  the id it had, so events and bindings that hold the id stay valid (pageReplaceInPlace.ts). */
   id?: string;
-  /** Caller-stable reference used only inside one createComponents batch. */
+  /** Caller-stable reference; defaults to name when omitted. */
   clientRef?: string;
-  /** Parent another component in the same batch by its clientRef. */
+  /** Parent another component in the same batch by its clientRef, or name when it has no clientRef. */
   parentRef?: string;
   /** Parent an already-existing component by its ToolJet component id. */
   parent?: string;
@@ -2536,15 +2537,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function createComponents(
     params: CreateComponentsParams
   ): Promise<Array<CreateComponentResult & { name: string }>> {
+    const references = indexComponentReferences(params.components);
+    if (references.errors.length) throw new Error(`createComponents: ${references.errors.join(' ')}`);
     const entries = params.components.map((spec) => ({ id: spec.id ?? randomUUID(), spec }));
-    const refToId = new Map<string, string>();
-    for (const e of entries) {
-      if (!e.spec.clientRef) continue;
-      if (refToId.has(e.spec.clientRef)) {
-        throw new Error(`createComponents: duplicate clientRef "${e.spec.clientRef}".`);
-      }
-      refToId.set(e.spec.clientRef, e.id);
-    }
+    const refToId = new Map(entries.map((entry) => [componentRef(entry.spec), entry.id]));
     const diff: Record<string, unknown> = {};
     for (const e of entries) {
       if (e.spec.parent && e.spec.parentRef) {
@@ -2565,7 +2561,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       // Button by its client ref (or its name when it has none), as lint checks, and ids are made here.
       const submit = e.spec.type === 'Form' ? (dto.properties as Record<string, { value?: unknown }> | undefined)?.buttonToSubmit : undefined;
       const submitId = submit && typeof submit.value === 'string'
-        ? refToId.get(submit.value) ?? entries.find((other) => !other.spec.clientRef && other.spec.name === submit.value)?.id
+        ? refToId.get(submit.value)
         : undefined;
       if (submit && submitId) {
         dto.properties = { ...(dto.properties as Record<string, unknown>), buttonToSubmit: { ...submit, value: submitId } };

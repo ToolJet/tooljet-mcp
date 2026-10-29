@@ -1,3 +1,4 @@
+import { componentRef, indexComponentReferences } from './componentReferences.js';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -32,7 +33,7 @@ export interface InPlaceComponent extends ComponentSpec {
 }
 
 export interface InPlaceDiff {
-  /** Planned ref (client ref, and name) -> the component's id after the apply. */
+  /** Planned ref (client ref, otherwise name) -> the component's id after the apply. */
   ids: Map<string, string>;
   /** Names of components left untouched. */
   keep: string[];
@@ -137,14 +138,15 @@ export function diffPageInPlace(
   definitions: DefaultDefinitions = bundledDefinitions(),
   newId: () => string = randomUUID,
 ): InPlaceDiff {
+  const references = indexComponentReferences(planned);
+  if (references.errors.length) throw new Error(references.errors.join(' '));
   const storedByName = new Map(stored.filter((component) => component.name).map((component) => [component.name!, component]));
   const ids = new Map<string, string>();
   const idOf = new Map<ComponentSpec, string>();
   for (const spec of planned) {
     const id = storedByName.get(spec.name)?.id ?? newId();
     idOf.set(spec, id);
-    ids.set(spec.name, id);
-    if (spec.clientRef) ids.set(spec.clientRef, id);
+    ids.set(componentRef(spec), id);
   }
   const diff: InPlaceDiff = { ids, keep: [], relayout: [], create: [], recreated: [], deleteIds: [], why: {} };
   const plannedNames = new Set(planned.map((spec) => spec.name));
