@@ -51,12 +51,33 @@ try {
     assert.deepEqual(payload.data, JSON.parse(bytes.toString('utf8')));
     assert.equal(payload.data_version, createHash('sha256').update(bytes).digest('hex').slice(0, 12));
   }
+  // Exercise validation through the shipped module graph, with synthetic plans and no API writes.
+  for (const [expression, valid] of [
+    ['{{ [3, 5].map(value => value * 2).join(", ") }}', true],
+    ['{{ 1 + }}', false],
+  ]) {
+    const response = await client.callTool({ name: 'lint_app_spec', arguments: {
+      pages: [{ name: 'Workshop', icon: 'IconHome2', components: [{
+        name: 'summary', type: 'Text', properties: { text: { value: expression } },
+        layout: { left: 0, top: 0, width: 43, height: 40 },
+      }] }],
+    } });
+    assert(!response.isError, JSON.stringify(response));
+    const plan = JSON.parse(response.content[0].text);
+    assert.equal(plan.ok, valid);
+    assert.equal(typeof plan.plan_token === 'string', valid);
+    assert.equal(response._meta.tooljet_metrics.http_requests, 0);
+    if (!valid) assert(plan.errors.some((error) => error.includes('invalid JavaScript')));
+  }
   // Changing the entry after startup must block use of an old module graph.
   const entry = join(directory, 'bundle/index.js');
   writeFileSync(entry, readFileSync(entry, 'utf8') + '\n// replacement build\n');
   const status = await client.callTool({ name: 'get_runtime_info', arguments: {} });
   assert.equal(JSON.parse(status.content[0].text).restart_required, true);
-  console.log(`Standalone plugin ${version}: initialized, ${tools.length} tools, catalogs/hashes and stale-runtime detection passed.`);
+  const blocked = await client.callTool({ name: 'get_component_catalog', arguments: { type: 'Table' } });
+  assert.equal(blocked.isError, true);
+  assert.match(blocked.content[0].text, /MCP_RUNTIME_STALE/);
+  console.log(`Standalone plugin ${version}: initialized, ${tools.length} tools, catalogs/hashes, valid/invalid app plans and stale-runtime blocking passed.`);
 } finally {
   await client.close();
   rmSync(directory, { recursive: true, force: true });
