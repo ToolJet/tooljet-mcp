@@ -52654,6 +52654,7 @@ function packFromLibrary(lib) {
         ...entry.roleEvents ? { roleEvents: entry.roleEvents } : {},
         ...entry.roleActions ? { roleActions: entry.roleActions } : {},
         ...entry.roleValues ? { roleValues: entry.roleValues } : {},
+        ...entry.labelCase ? { labelCase: entry.labelCase } : {},
         slots: entry.slots ?? [],
         ...manifest.surface ? { surface: manifest.surface } : {},
         ...manifest.themeMode ? { themeMode: manifest.themeMode } : {}
@@ -61040,18 +61041,25 @@ function createAuth(config2, fetchImpl = fetch) {
 }
 
 // dist/componentLibrary.js
+var defaultPack = () => process.env.MCP_AGENT_PACK?.trim().toLowerCase() || void 0;
+var savedComponentLibrary = (library) => library === "ui2" && defaultPack() ? `pack:${defaultPack()}` : library;
 var COMPONENT_LIBRARY_NAMES = {
   ui1: "ToolJet UI 1.0",
   ui2: "ToolJet UI 2.0"
 };
 var isUi2Type = (type) => typeof type === "string" && /^Shad[A-Z]/.test(type);
+var isPackType = (type) => typeof type === "string" && /^Lib_[a-z0-9]+_/i.test(type);
 function resolveComponentLibrary(globalSettings, componentTypes) {
   const settings = globalSettings;
   const saved = settings?.componentLibrary ?? settings?.component_library;
   if (saved === "ui1" || saved === "ui2")
     return { library: saved, source: "saved" };
+  if (typeof saved === "string" && saved.startsWith("pack:") && saved.length > 5)
+    return { library: "ui2", source: "saved", pack: saved.slice(5) };
+  if (typeof saved === "string" && saved.startsWith("lib:"))
+    return { library: "ui1", source: "saved" };
   for (const type of componentTypes)
-    if (isUi2Type(type))
+    if (isUi2Type(type) || isPackType(type))
       return { library: "ui2", source: "inferred" };
   return { library: "ui1", source: "inferred" };
 }
@@ -61071,7 +61079,8 @@ function componentLibraryWarnings(library, pages, request) {
   for (const page of pages ?? []) {
     for (const component of page.components ?? []) {
       const type = String(component.type ?? "");
-      const mismatch = library.library === "ui1" ? isUi2Type(type) : !isUi2Type(type) && !nativeFitsUi2(component);
+      const ui2Side = isUi2Type(type) || isPackType(type);
+      const mismatch = library.library === "ui1" ? ui2Side : !ui2Side && !nativeFitsUi2(component);
       if (!mismatch)
         continue;
       off.set(type, [...off.get(type) ?? [], component.name ?? type]);
@@ -69104,6 +69113,7 @@ function lintDesktopCanvasCoverage(components) {
     `Desktop page content spans only columns ${left}-${right} of ToolJet's 43-column canvas despite having multiple operational/analytical surfaces. This often produces an accidental half-width app. Expand the main composition toward the standard columns 2-41, or browser-verify that the narrow rail is deliberate.`
   ];
 }
+var LIBRARY_HOST_KEYS = /* @__PURE__ */ new Set(["libraryId", "libraryName", "componentName", "correlationId"]);
 var RENDERED_TEXT_KEYS = ["text", "rawHtml", "label", "title", "placeholder", "description", "subtitle", "primaryValue", "secondaryValue"];
 var CONTAINER_ITEMS = { Tabs: "tabs", Steps: "steps", Timeline: "data" };
 function lintRenderedText(spec) {
@@ -69399,6 +69409,8 @@ function lintComponentSpec(spec, context = {}) {
       if (sectionName === "property" && STYLE_KEYS_IN_PROPERTIES.has(key4))
         continue;
       if (sectionName === "property" && INSPECTOR_ONLY_PROPERTIES[spec.type ?? ""]?.includes(key4))
+        continue;
+      if (sectionName === "property" && spec.type?.startsWith("Lib_") && LIBRARY_HOST_KEYS.has(key4))
         continue;
       const renamed = sectionName === "property" ? retiredUi2Name(spec.type, "properties", key4) : void 0;
       if (renamed) {
@@ -73307,21 +73319,21 @@ function appVersionLifecycleTools(client) {
 }
 
 // dist/tools/workspaceGroupManagement.js
+var listWorkspaceGroupsInput = external_exports.object({
+  group_id: external_exports.string().uuid().optional(),
+  include_permissions: external_exports.boolean().optional(),
+  resource_type: external_exports.enum(["app", "module", "workflow", "data_source"]).optional()
+}).strict();
 function listWorkspaceGroupsTool(client) {
-  const schema = external_exports.object({
-    group_id: external_exports.string().uuid().optional(),
-    include_permissions: external_exports.boolean().optional(),
-    resource_type: external_exports.enum(["app", "module", "workflow", "data_source"]).optional()
-  }).strict();
   return {
     name: "list_workspace_groups",
     title: "List Workspace Groups",
     annotations: { readOnlyHint: true, openWorldHint: true },
     description: "List groups in the current PAT-pinned workspace. Supply group_id to list its non-archived members with group_user_id (membership id, distinct from user_id and organization_user_id). Use include_permissions:true with group_id to read permission switches and granular access rules. Use resource_type (app/module/workflow/data_source) to discover selectable resources and their names/IDs. Use exact returned ids for group changes. Requires ToolJet admin permissions.",
-    inputSchema: schema.shape,
+    inputSchema: listWorkspaceGroupsInput.shape,
     async handler(input) {
       try {
-        const args = schema.parse(input);
+        const args = listWorkspaceGroupsInput.parse(input);
         if (args.include_permissions && !args.group_id)
           throw new Error("group_id is required with include_permissions.");
         const resources = args.resource_type ? { resources: await client.listWorkspaceGroupResources(args.resource_type) } : {};
@@ -73340,44 +73352,44 @@ function listWorkspaceGroupsTool(client) {
     }
   };
 }
+var manageWorkspaceGroupsInput = external_exports.object({
+  action: external_exports.enum(["create", "rename", "delete", "remove_member", "duplicate", "update_permissions", "create_access", "update_access", "delete_access"]),
+  group_id: external_exports.string().uuid().optional(),
+  name: external_exports.string().trim().min(1).max(50).optional(),
+  group_user_id: external_exports.string().uuid().optional(),
+  confirm: external_exports.boolean().optional(),
+  permissions: external_exports.object(Object.fromEntries(WORKSPACE_PERMISSION_KEYS.map((key4) => [key4, external_exports.boolean().optional()]))).strict().optional(),
+  copy: external_exports.object({
+    permissions: external_exports.boolean().optional(),
+    members: external_exports.boolean().optional(),
+    apps: external_exports.boolean().optional(),
+    modules: external_exports.boolean().optional(),
+    workflows: external_exports.boolean().optional(),
+    data_sources: external_exports.boolean().optional()
+  }).strict().optional(),
+  rule_id: external_exports.string().uuid().optional(),
+  resource_type: external_exports.enum(["app", "module", "workflow", "data_source"]).optional(),
+  access: external_exports.object({
+    name: external_exports.string().trim().min(1).max(255).optional(),
+    is_all: external_exports.boolean().optional(),
+    actions: external_exports.object(Object.fromEntries(WORKSPACE_ACCESS_KEYS.map((key4) => [key4, external_exports.boolean().optional()]))).strict().optional(),
+    resource_ids: external_exports.array(external_exports.string().uuid()).max(1e3).optional(),
+    add_resource_ids: external_exports.array(external_exports.string().uuid()).min(1).max(1e3).optional(),
+    remove_resource_ids: external_exports.array(external_exports.string().uuid()).min(1).max(1e3).optional()
+  }).strict().optional(),
+  allow_role_change: external_exports.boolean().optional()
+}).strict();
 function manageWorkspaceGroupsTool(client) {
-  const schema = external_exports.object({
-    action: external_exports.enum(["create", "rename", "delete", "remove_member", "duplicate", "update_permissions", "create_access", "update_access", "delete_access"]),
-    group_id: external_exports.string().uuid().optional(),
-    name: external_exports.string().trim().min(1).max(50).optional(),
-    group_user_id: external_exports.string().uuid().optional(),
-    confirm: external_exports.boolean().optional(),
-    permissions: external_exports.object(Object.fromEntries(WORKSPACE_PERMISSION_KEYS.map((key4) => [key4, external_exports.boolean().optional()]))).strict().optional(),
-    copy: external_exports.object({
-      permissions: external_exports.boolean().optional(),
-      members: external_exports.boolean().optional(),
-      apps: external_exports.boolean().optional(),
-      modules: external_exports.boolean().optional(),
-      workflows: external_exports.boolean().optional(),
-      data_sources: external_exports.boolean().optional()
-    }).strict().optional(),
-    rule_id: external_exports.string().uuid().optional(),
-    resource_type: external_exports.enum(["app", "module", "workflow", "data_source"]).optional(),
-    access: external_exports.object({
-      name: external_exports.string().trim().min(1).max(255).optional(),
-      is_all: external_exports.boolean().optional(),
-      actions: external_exports.object(Object.fromEntries(WORKSPACE_ACCESS_KEYS.map((key4) => [key4, external_exports.boolean().optional()]))).strict().optional(),
-      resource_ids: external_exports.array(external_exports.string().uuid()).max(1e3).optional(),
-      add_resource_ids: external_exports.array(external_exports.string().uuid()).min(1).max(1e3).optional(),
-      remove_resource_ids: external_exports.array(external_exports.string().uuid()).min(1).max(1e3).optional()
-    }).strict().optional(),
-    allow_role_change: external_exports.boolean().optional()
-  }).strict();
   return {
     name: "manage_workspace_groups",
     title: "Manage Workspace Groups",
     strictInput: true,
     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
     description: "Create, rename, delete custom groups or remove a member in the current PAT-pinned workspace. All actions require confirm:true after reviewing the exact change. create needs name; rename needs group_id and name; delete needs group_id; remove_member needs group_id and group_user_id from list_workspace_groups. Removing membership does not delete the workspace user. Deleting a group removes its memberships and permissions. duplicate needs group_id and at least one true copy flag (permissions/members/apps/modules/workflows/data_sources; omitted flags false); ToolJet assigns the copy name. update_permissions needs group_id and permissions (only supplied switches change). create_access needs group_id, resource_type and access {name,is_all,actions,resource_ids}; update_access needs group_id, rule_id and access (only supplied fields change); delete_access needs group_id and rule_id. For update/delete access, optional resource_type must match the existing rule. Read include_permissions:true first to resolve rule IDs; resource_type discovers selectable resource IDs. On update_access, use access.add_resource_ids/remove_resource_ids to change only those resources and preserve the rest. access.resource_ids is only for an explicitly requested replacement of the entire rule selection; do not combine it with add/remove_resource_ids. Resource additions/removals require a selected-resource rule; is_all:true applies to ALL current and future resources of its type. On create_access, omitted action switches are disabled. App actions: canEdit/canView/hideFromDashboard/canAccessDevelopment/canAccessStaging/canAccessProduction/canAccessReleased. Module actions: canEdit/canView/hideFromDashboard. Workflow actions: canEdit/canView. Data source actions: canConfigure/canUse. canEdit/canView and canConfigure/canUse are exclusive pairs: enabling one disables the other, including on partial updates. Disabled groups and read_only rules are not editable under the current license/plan. allow_role_change is only for permission updates and access updates, and only with explicit consent to change affected member roles. Admin permissions cannot be changed; default group names/memberships cannot be changed here. To add members use manage_workspace_users with group_ids. ToolJet admin and license checks apply.",
-    inputSchema: schema.shape,
+    inputSchema: manageWorkspaceGroupsInput.shape,
     async handler(input) {
       try {
-        const args = schema.parse(input);
+        const args = manageWorkspaceGroupsInput.parse(input);
         if (args.confirm !== true)
           throw new Error(`${args.action} requires confirm:true after reviewing the exact change.`);
         const needsName = args.action === "create" || args.action === "rename";
@@ -74051,11 +74063,17 @@ function createAppTool(client) {
         const choice = args.theme ?? "standard";
         const pins = libraryPins();
         const pinned = pins ? { customComponentLibraries: pins } : {};
-        const result = { ...created, component_library: componentLibrary, theme: { mode: "workspace_default" } };
+        const result = {
+          ...created,
+          component_library: componentLibrary,
+          ...componentLibrary === "ui2" && defaultPack() ? { component_pack: defaultPack() } : {},
+          theme: { mode: "workspace_default" }
+        };
+        const savedLibrary = savedComponentLibrary(componentLibrary);
         const saveLibrary = () => Promise.resolve().then(() => client.updateAppSettings({
           appId: created.app_id,
           versionId: created.version_id,
-          globalSettings: { componentLibrary, ...pinned }
+          globalSettings: { componentLibrary: savedLibrary, ...pinned }
         })).catch((libraryErr) => {
           result.component_library_warning = `Could not save component_library "${componentLibrary}": ${libraryErr instanceof Error ? libraryErr.message : String(libraryErr)}. Build in it anyway.`;
         });
@@ -74070,7 +74088,7 @@ function createAppTool(client) {
           await client.updateAppSettings({
             appId: created.app_id,
             versionId: created.version_id,
-            globalSettings: { theme, componentLibrary, ...pinned, ...appMode ? { appMode } : {} }
+            globalSettings: { theme, componentLibrary: savedLibrary, ...pinned, ...appMode ? { appMode } : {} }
           });
           const mode = choice === "standard" ? "standard" : typeof choice === "object" ? "derived" : "named";
           const accentNote = mode === "standard" ? accentWarning(STANDARD_PRIMARY) : mode === "derived" ? accentWarning(choice.definition) : null;
@@ -74362,7 +74380,7 @@ function persistenceMismatches(args, snapshot2) {
   if (args.app_mode !== void 0)
     expectEqual("app_mode", global2.appMode, args.app_mode);
   if (args.component_library !== void 0)
-    expectEqual("component_library", global2.componentLibrary, args.component_library);
+    expectEqual("component_library", global2.componentLibrary, savedComponentLibrary(args.component_library));
   if (args.theme_id !== void 0) {
     const theme = global2.theme;
     expectEqual("theme_id", theme?.id, args.theme_id);
@@ -74446,7 +74464,8 @@ function updateAppSettingsTool(client) {
           ...args.canvas_max_width !== void 0 ? { canvasMaxWidth: args.canvas_max_width.value, canvasMaxWidthType: args.canvas_max_width.unit } : {},
           ...args.app_mode !== void 0 ? { appMode: args.app_mode } : {},
           ...theme ? { theme } : {},
-          ...args.component_library !== void 0 ? { componentLibrary: args.component_library } : {}
+          // UI 2.0 is saved as the default pack ("pack:<id>"), as create_app does, so the panel shows that pack.
+          ...args.component_library !== void 0 ? { componentLibrary: savedComponentLibrary(args.component_library) } : {}
         };
         const properties = {
           ...args.hide_header !== void 0 ? { hideHeader: args.hide_header } : {},
@@ -84922,18 +84941,18 @@ function required3(value2, label3) {
     throw new Error(`${label3} is required for this action.`);
   return value2;
 }
+var manageWorkspaceUsersInput = external_exports.object({
+  action: external_exports.enum(["invite", "update", "archive", "unarchive"]),
+  organization_user_id: external_exports.string().uuid().optional(),
+  email: external_exports.string().email().optional(),
+  first_name: external_exports.string().trim().max(99).optional(),
+  last_name: external_exports.string().trim().max(99).optional(),
+  role: userRole.optional(),
+  group_ids: external_exports.array(external_exports.string().uuid()).max(100).optional(),
+  user_metadata: external_exports.record(external_exports.string(), external_exports.unknown()).optional(),
+  confirm: external_exports.boolean().optional()
+}).strict();
 function manageWorkspaceUsersTool(client) {
-  const schema = external_exports.object({
-    action: external_exports.enum(["invite", "update", "archive", "unarchive"]),
-    organization_user_id: external_exports.string().uuid().optional(),
-    email: external_exports.string().email().optional(),
-    first_name: external_exports.string().trim().max(99).optional(),
-    last_name: external_exports.string().trim().max(99).optional(),
-    role: userRole.optional(),
-    group_ids: external_exports.array(external_exports.string().uuid()).max(100).optional(),
-    user_metadata: external_exports.record(external_exports.string(), external_exports.unknown()).optional(),
-    confirm: external_exports.boolean().optional()
-  }).strict();
   return {
     name: "manage_workspace_users",
     title: "Manage Workspace Users",
@@ -84946,10 +84965,10 @@ function manageWorkspaceUsersTool(client) {
       openWorldHint: true
     },
     description: "Manage users only in the workspace pinned to the current ToolJet PAT. Invite, update, archive, and unarchive require confirm:true. Updates can change role, add existing custom group_ids while preserving all other memberships, and merge supplied user_metadata keys while preserving other keys. Empty group_ids never removes groups. first_name/last_name are only supported for invitations: editing an existing name requires a Super Admin in ToolJet and is refused by this workspace-scoped tool before any mutation. Updates are read back before success is reported. Use manage_workspace_groups remove_member for explicit membership removal. Updates cannot change email or passwords. Changing a role to end-user also transfers any apps owned by that user to the acting admin under ToolJet's existing behavior; disclose this before confirmation. Invite accepts email, optional names/role/group_ids; archive/unarchive accepts only organization_user_id. Never substitute role or membership changes for a rejected name edit, or bypass the PAT owner's ToolJet permissions.",
-    inputSchema: schema.shape,
+    inputSchema: manageWorkspaceUsersInput.shape,
     async handler(input) {
       try {
-        const args = schema.parse(input);
+        const args = manageWorkspaceUsersInput.parse(input);
         const allowed = args.action === "invite" ? ["email", "first_name", "last_name", "role", "group_ids"] : args.action === "update" ? ["organization_user_id", "first_name", "last_name", "role", "group_ids", "user_metadata"] : ["organization_user_id"];
         for (const key4 of Object.keys(args)) {
           if (!["action", "confirm", ...allowed].includes(key4))
@@ -85568,6 +85587,15 @@ var LEGACY_SINGULAR_CREATE_TOOL_NAMES = /* @__PURE__ */ new Set([
   "add_query",
   "add_component"
 ]);
+var inputSchemas = /* @__PURE__ */ new Map();
+function sharedInputSchema(tool) {
+  let schema = inputSchemas.get(tool.name);
+  if (!schema) {
+    schema = tool.strictInput ? external_exports.object(tool.inputSchema).strict() : external_exports.object(tool.inputSchema);
+    inputSchemas.set(tool.name, schema);
+  }
+  return schema;
+}
 function includeLegacySingularCreateTools() {
   return /^(1|true|yes)$/i.test(process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS ?? "");
 }
@@ -85651,18 +85679,19 @@ function registerTools(server, client, runtime = runtimeFreshness) {
   ];
   const exposedTools = includeLegacySingularCreateTools() ? tools : tools.filter((tool) => !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name));
   for (const tool of exposedTools) {
-    server.registerTool(tool.name, {
+    const { name: name2, handler } = tool;
+    server.registerTool(name2, {
       title: tool.title,
       description: tool.description,
-      inputSchema: tool.strictInput ? external_exports.object(tool.inputSchema).strict() : tool.inputSchema,
+      inputSchema: sharedInputSchema(tool),
       annotations: tool.annotations
-    }, (args) => withToolTelemetry(tool.name, async () => {
+    }, (args) => withToolTelemetry(name2, async () => {
       const status = runtime.status();
-      if (status.restart_required && tool.name !== "get_runtime_info") {
+      if (status.restart_required && name2 !== "get_runtime_info") {
         return staleRuntimeResult(status);
       }
-      const snapshot2 = await snapshotBeforeWrite(client, tool.name, args);
-      return withRuntimeStatus(withSnapshotNote(await tool.handler(args), snapshot2), status);
+      const snapshot2 = await snapshotBeforeWrite(client, name2, args);
+      return withRuntimeStatus(withSnapshotNote(await handler(args), snapshot2), status);
     }));
   }
 }
@@ -85706,7 +85735,13 @@ var CATALOG_RESOURCES = [
 var dataDir = resolve7(dirname8(fileURLToPath8(import.meta.url)), "../data");
 var versions = /* @__PURE__ */ new Map();
 var payloads = /* @__PURE__ */ new Map();
-var readPart = (file2) => file2 === "component-schemas.json" ? Buffer.from(JSON.stringify(allComponentSchemas())) : readFileSync8(resolve7(dataDir, file2));
+var readPart = (file2) => {
+  const bytes = readFileSync8(resolve7(dataDir, file2));
+  if (file2 !== "component-schemas.json")
+    return bytes;
+  const live = JSON.stringify(allComponentSchemas());
+  return live === JSON.stringify(JSON.parse(bytes.toString("utf8"))) ? bytes : Buffer.from(live);
+};
 function readData(resource) {
   const bytes = readPart(resource.file);
   const dataVersion = createHash4("sha256").update(bytes).digest("hex").slice(0, 12);
@@ -86017,6 +86052,14 @@ function createGatewayHttpServer() {
     }
     if (!gatewayMode && !hasUserCredential && !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN)) {
       res.writeHead(401, { "Content-Type": "text/plain" }).end(`No ToolJet credential. Send your personal access token as \`Authorization: Bearer <token>\` or in the ${PAT_HEADER} header, or set TOOLJET_PAT on this server. Create a token in ToolJet under Settings \u2192 Access tokens.`);
+      return;
+    }
+    if (req.method !== "POST") {
+      res.writeHead(405, { "Content-Type": "application/json", Allow: "POST" }).end(JSON.stringify({
+        jsonrpc: "2.0",
+        error: { code: -32e3, message: "Method not allowed: this server is stateless and serves POST only." },
+        id: null
+      }));
       return;
     }
     let parsedBody;
