@@ -52551,10 +52551,11 @@ function registerLibraryPacks(packs) {
 function libraryPack() {
   return libraryPacksAll()[0] ?? null;
 }
+var isBuiltin = (pack) => pack.kind === "builtin";
 var packOfType = (type) => typeof type === "string" ? libraryPacksAll().find((p) => type.startsWith(p.prefix)) : void 0;
 var isLibraryPackType = (type) => !!packOfType(type);
 function libraryPins() {
-  const packs = libraryPacksAll();
+  const packs = libraryPacksAll().filter((p) => !isBuiltin(p));
   return packs.length ? Object.fromEntries(packs.map((p) => [p.correlationId.replace(/-/g, ""), p.version])) : void 0;
 }
 function toLibraryComponent(spec) {
@@ -52562,6 +52563,17 @@ function toLibraryComponent(spec) {
   if (!pack)
     return spec;
   const componentName = spec.type.slice(pack.prefix.length);
+  if (isBuiltin(pack)) {
+    return {
+      ...spec,
+      type: "PackComponent",
+      properties: {
+        ...spec.properties ?? {},
+        pack: { value: pack.pack },
+        componentName: { value: componentName }
+      }
+    };
+  }
   return {
     ...spec,
     type: "LibraryComponent",
@@ -52575,12 +52587,20 @@ function toLibraryComponent(spec) {
   };
 }
 function libraryTypeOf(component) {
-  if (component.type !== "LibraryComponent")
+  if (component.type !== "LibraryComponent" && component.type !== "PackComponent")
     return void 0;
   const value2 = (key4) => {
     const entry = component.properties?.[key4];
     return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
   };
+  if (component.type === "PackComponent") {
+    const id = value2("pack");
+    const name3 = value2("componentName");
+    if (typeof id !== "string" || typeof name3 !== "string")
+      return void 0;
+    const known = libraryPacksAll().find((p) => p.pack === id);
+    return !known || known.components[name3] ? `Lib_${id}_${name3}` : void 0;
+  }
   const pack = libraryPacksAll().find((p) => p.correlationId === value2("correlationId"));
   const name2 = value2("componentName");
   return pack && typeof name2 === "string" && pack.components[name2] ? `${pack.prefix}${name2}` : void 0;
@@ -52621,8 +52641,27 @@ function packFromLibrary(lib) {
   if (!manifest || manifest.manifestVersion !== 2 || !manifest.components)
     return null;
   const packId = (manifest.pack || lib.name).toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return packFromManifest(packId, lib.name, lib.revisions?.[0]?.version ?? "", manifest, {
+    kind: "library",
+    libraryId: lib.id,
+    correlationId: lib.correlationId
+  });
+}
+function packFromBuiltin(info, manifest) {
+  if (!manifest?.components)
+    return null;
+  const packId = info.pack.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return packFromManifest(packId, info.displayName || info.pack, info.version ?? "", manifest, {
+    kind: "builtin",
+    libraryId: "",
+    correlationId: ""
+  });
+}
+function packFromManifest(packId, libraryName, version2, manifest, identity) {
+  if (!manifest.components)
+    return null;
+  const lib = { name: libraryName };
   const prefix = `Lib_${packId}_`;
-  const version2 = lib.revisions?.[0]?.version ?? "";
   const schemas = {};
   const definitions = {};
   const components = {};
@@ -52717,14 +52756,18 @@ function packFromLibrary(lib) {
     };
   }
   return {
-    pack: { pack: packId, prefix, libraryId: lib.id, correlationId: lib.correlationId, libraryName: lib.name, version: version2, components },
+    pack: { pack: packId, prefix, ...identity, libraryName, version: version2, components },
     schemas,
     definitions
   };
 }
-async function loadInstalledPacks(listLibraries) {
-  const libraries = await listLibraries();
-  const packs = libraries.map(packFromLibrary).filter((p) => !!p);
+async function loadInstalledPacks(listLibraries, listBuiltin) {
+  let packs = [];
+  const builtin = listBuiltin ? await listBuiltin().catch(() => null) : null;
+  if (builtin?.length)
+    packs = builtin.map((b) => packFromBuiltin(b.info, b.manifest)).filter((p) => !!p);
+  if (!packs.length)
+    packs = (await listLibraries()).map(packFromLibrary).filter((p) => !!p);
   if (!packs.length)
     return [];
   registerComponentSchemas(Object.assign({}, ...packs.map((p) => p.schemas)));
@@ -63403,7 +63446,7 @@ function lintComponentStateBindings(value2, components, path) {
   });
 }
 function retiredUi2Message(type, prop4, name2) {
-  if (!type.startsWith("Shad"))
+  if (!type.startsWith("Shad") && !isLibraryPackType(type))
     return void 0;
   const schema = getComponentSchema(type);
   if (schema?.exposedVariables?.some((variable) => variable.name === prop4))
@@ -63430,6 +63473,8 @@ var UI2_MEANT = {
   selectedValue: ["value"],
   text: ["value"],
   selectedCard: ["selectedItem", "lastSelectedCard"],
+  selectedCardId: ["selectedItemId", "selectedItem"],
+  selectedId: ["selectedItemId", "selectedRowId"],
   selectedRow: ["selectedItem", "selectedRow"]
 };
 var WRONG_ALIASES = {
@@ -69118,7 +69163,7 @@ function lintDesktopCanvasCoverage(components) {
     `Desktop page content spans only columns ${left}-${right} of ToolJet's 43-column canvas despite having multiple operational/analytical surfaces. This often produces an accidental half-width app. Expand the main composition toward the standard columns 2-41, or browser-verify that the narrow rail is deliberate.`
   ];
 }
-var LIBRARY_HOST_KEYS = /* @__PURE__ */ new Set(["libraryId", "libraryName", "componentName", "correlationId"]);
+var LIBRARY_HOST_KEYS = /* @__PURE__ */ new Set(["libraryId", "libraryName", "componentName", "correlationId", "pack"]);
 var RENDERED_TEXT_KEYS = ["text", "rawHtml", "label", "title", "placeholder", "description", "subtitle", "primaryValue", "secondaryValue"];
 var CONTAINER_ITEMS = { Tabs: "tabs", Steps: "steps", Timeline: "data" };
 function lintRenderedText(spec) {
@@ -72925,6 +72970,20 @@ function createClient(auth, config2) {
     const body = await res.json();
     return Array.isArray(body) ? body : body?.libraries ?? [];
   }
+  async function listBuiltinPacks() {
+    const res = await auth.authedFetch("/api/builtin-packs");
+    if (!res.ok)
+      return null;
+    const body = await res.json();
+    if (!Array.isArray(body))
+      return null;
+    const packs = body;
+    return Promise.all(packs.map(async (info) => {
+      const file2 = await auth.authedFetch(`/api/builtin-packs/${encodeURIComponent(info.pack)}/${encodeURIComponent(info.hash)}/manifest.json`);
+      const manifest = file2.ok ? await file2.json() : null;
+      return { info, manifest };
+    }));
+  }
   async function deleteComponents(params) {
     const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/components`, {
       method: "DELETE",
@@ -73200,6 +73259,7 @@ function createClient(auth, config2) {
     updateComponents,
     deleteComponents,
     listComponentLibraries,
+    listBuiltinPacks,
     updateLayouts,
     updateQuery,
     updateQueryDatasource,
@@ -85683,7 +85743,7 @@ function buildServer(identity) {
   const config2 = loadConfig(identity);
   const auth = createAuth(config2);
   const client = createClient(auth, config2);
-  packsReady = loadInstalledPacks(() => client.listComponentLibraries()).then((packs) => {
+  packsReady = loadInstalledPacks(() => client.listComponentLibraries(), () => client.listBuiltinPacks()).then((packs) => {
     if (packs.length) {
       refreshCatalogResources();
       console.error(`tooljet-mcp: component packs: ${packs.join(", ")}`);

@@ -22,7 +22,7 @@ export function buildServer(identity?: RequestIdentity): McpServer {
   const auth = createAuth(config);
   const client = createClient(auth, config);
   // The workspace's component packs join the catalogue once read (packCatalog.ts); index.ts waits for it.
-  packsReady = loadInstalledPacks(() => client.listComponentLibraries())
+  packsReady = loadInstalledPacks(() => client.listComponentLibraries(), () => client.listBuiltinPacks())
     .then((packs) => {
       if (packs.length) {
         refreshCatalogResources();
