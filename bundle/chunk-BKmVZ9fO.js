@@ -1,9 +1,9 @@
 import { createRequire } from "node:module";
 import { o as external_exports, q as editContractSchema, s as generateEditContract, p as COMPONENT_FX_GUIDANCE } from "./chunk-8iUq0slz.js";
-import { s as strictEntry, g as specSchema, h as createClient, l as listWorkspaceGroupsTool, m as manageWorkspaceGroupsTool, j as inspectDatasourceSchemaTool, u as updateComponentsTool, o as ok, k as nodeCatalog, f as fail, p as capabilityRequestSchema, q as getWorkflowCapabilities, w as lint, x as apply, y as deleteNode, z as validateGraph, v as validateTableBatch, A as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec } from "./chunk-rf3v0KLq.js";
-import { a6 as dbColumnTypeSchema, a7 as componentInputSchema, a8 as lintAppSpecTool, a9 as projectJavascriptRuntime, aa as projectAppSettings, ab as compactTheme, ac as pageSettingProperties, l as literalCanvasColor, ad as containsExactValue, h as prepareQueryOptionsForWrite, ae as inspectUpdateCompatibility, af as normalizePlanBindingAliases, ag as containsNamedBinding, ah as normalizePlannedLayouts, ai as materializeRequiredDefaultChildren, aj as mapKeyRefusal, j as prepareComponentBatch, v as validateEvents, n as expandQueryLifecycles, q as persistedEventSpecs, ak as persistedEventIds } from "./chunk-pk1wj3UI.js";
-import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, W as WebStandardStreamableHTTPServerTransport, g as getRequestListener, c as validatePersistedAppSummary } from "./chunk-CeK3IIjD.js";
-import { M as McpServer } from "./chunk-CldhDVI0.js";
+import { s as strictEntry, g as specSchema, h as createClient, l as listWorkspaceGroupsTool, m as manageWorkspaceGroupsTool, j as inspectDatasourceSchemaTool, u as updateComponentsTool, o as ok, k as nodeCatalog, f as fail, p as capabilityRequestSchema, q as getWorkflowCapabilities, w as lint, x as apply, y as deleteNode, z as validateGraph, v as validateTableBatch, A as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec } from "./chunk-DbFNT0Gf.js";
+import { a6 as dbColumnTypeSchema, a7 as componentInputSchema, a8 as lintAppSpecTool, a9 as projectJavascriptRuntime, aa as projectAppSettings, ab as compactTheme, ac as pageSettingProperties, l as literalCanvasColor, ad as containsExactValue, h as prepareQueryOptionsForWrite, ae as inspectUpdateCompatibility, af as normalizePlanBindingAliases, ag as containsNamedBinding, ah as normalizePlannedLayouts, ai as materializeRequiredDefaultChildren, aj as mapKeyRefusal, j as prepareComponentBatch, v as validateEvents, n as expandQueryLifecycles, q as persistedEventSpecs, ak as persistedEventIds } from "./chunk-pMEylbpx.js";
+import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, W as WebStandardStreamableHTTPServerTransport, g as getRequestListener, c as validatePersistedAppSummary } from "./chunk-JCMmiPv2.js";
+import { M as McpServer } from "./chunk-DiCiME0d.js";
 import { u as pageIconSchema, c as componentSlotSchema, a as componentNameSchema, t as lintComponents, i as introducedLintFindings, x as lintRenderedGeometryBlocking, y as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, f as lintComponentSlots, l as lintComponentSpec, g as lintUnusableTextGeometry, z as lintNestedContainerWidths, h as lintStandardSingleLineInputHeight, j as lintTextGeometry, k as lintRenderedGeometry, F as FORM_SCHEMA_FIELD_TYPE_SET, A as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-gznY6rD8.js";
 import { ea as getCatalog, e5 as getComponentSchema, eb as getLegacyComponentReplacement, ee as readCatalogBytes } from "./chunk-BEuHHGL1.js";
 import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-CsHFzbSc.js";
@@ -4177,18 +4177,18 @@ function required(value, label) {
     throw new Error(`${label} is required for this action.`);
   return value;
 }
+var manageWorkspaceUsersInput = external_exports.object({
+  action: external_exports.enum(["invite", "update", "archive", "unarchive"]),
+  organization_user_id: external_exports.string().uuid().optional(),
+  email: external_exports.string().email().optional(),
+  first_name: external_exports.string().trim().max(99).optional(),
+  last_name: external_exports.string().trim().max(99).optional(),
+  role: userRole.optional(),
+  group_ids: external_exports.array(external_exports.string().uuid()).max(100).optional(),
+  user_metadata: external_exports.record(external_exports.string(), external_exports.unknown()).optional(),
+  confirm: external_exports.boolean().optional()
+}).strict();
 function manageWorkspaceUsersTool(client) {
-  const schema = external_exports.object({
-    action: external_exports.enum(["invite", "update", "archive", "unarchive"]),
-    organization_user_id: external_exports.string().uuid().optional(),
-    email: external_exports.string().email().optional(),
-    first_name: external_exports.string().trim().max(99).optional(),
-    last_name: external_exports.string().trim().max(99).optional(),
-    role: userRole.optional(),
-    group_ids: external_exports.array(external_exports.string().uuid()).max(100).optional(),
-    user_metadata: external_exports.record(external_exports.string(), external_exports.unknown()).optional(),
-    confirm: external_exports.boolean().optional()
-  }).strict();
   return {
     name: "manage_workspace_users",
     title: "Manage Workspace Users",
@@ -4201,10 +4201,10 @@ function manageWorkspaceUsersTool(client) {
       openWorldHint: true
     },
     description: "Manage users only in the workspace pinned to the current ToolJet connection. OAuth connections require the workspace_users scope. Invite, update, archive, and unarchive require confirm:true. Updates can change role, add existing custom group_ids while preserving all other memberships, and merge supplied user_metadata keys while preserving other keys. Empty group_ids never removes groups. first_name/last_name are only supported for invitations: editing an existing name requires a Super Admin in ToolJet and is refused by this workspace-scoped tool before any mutation. Updates are read back before success is reported. Use manage_workspace_groups remove_member for explicit membership removal. Updates cannot change email or passwords. Changing a role to end-user also transfers any apps owned by that user to the acting admin under ToolJet's existing behavior; disclose this before confirmation. Invite accepts email, optional names/role/group_ids; archive/unarchive accepts only organization_user_id. Never substitute role or membership changes for a rejected name edit, or bypass the connection owner's ToolJet permissions.",
-    inputSchema: schema.shape,
+    inputSchema: manageWorkspaceUsersInput.shape,
     async handler(input) {
       try {
-        const args = schema.parse(input);
+        const args = manageWorkspaceUsersInput.parse(input);
         const allowed = args.action === "invite" ? ["email", "first_name", "last_name", "role", "group_ids"] : args.action === "update" ? ["organization_user_id", "first_name", "last_name", "role", "group_ids", "user_metadata"] : ["organization_user_id"];
         for (const key of Object.keys(args)) {
           if (!["action", "confirm", ...allowed].includes(key))
@@ -4545,6 +4545,15 @@ var LEGACY_SINGULAR_CREATE_TOOL_NAMES = /* @__PURE__ */ new Set([
   "add_query",
   "add_component"
 ]);
+var inputSchemas = /* @__PURE__ */ new Map();
+function sharedInputSchema(tool) {
+  let schema = inputSchemas.get(tool.name);
+  if (!schema) {
+    schema = tool.strictInput ? external_exports.object(tool.inputSchema).strict() : external_exports.object(tool.inputSchema);
+    inputSchemas.set(tool.name, schema);
+  }
+  return schema;
+}
 function includeLegacySingularCreateTools() {
   return /^(1|true|yes)$/i.test(process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS ?? "");
 }
@@ -4630,17 +4639,18 @@ function registerTools(server, client, runtime = runtimeFreshness) {
   for (const tool of exposedTools) {
     if (tool.name === "verify_page_render" && !canRender)
       continue;
-    server.registerTool(tool.name, {
+    const { name, handler } = tool;
+    server.registerTool(name, {
       title: tool.title,
       description: tool.description,
-      inputSchema: tool.strictInput ? external_exports.object(tool.inputSchema).strict() : tool.inputSchema,
+      inputSchema: sharedInputSchema(tool),
       annotations: tool.annotations
-    }, (args) => withToolTelemetry(tool.name, async () => {
+    }, (args) => withToolTelemetry(name, async () => {
       const status = runtime.status();
-      if (status.restart_required && tool.name !== "get_runtime_info") {
+      if (status.restart_required && name !== "get_runtime_info") {
         return staleRuntimeResult(status);
       }
-      return withRuntimeStatus(await tool.handler(args), status);
+      return withRuntimeStatus(await handler(args), status);
     }));
   }
 }

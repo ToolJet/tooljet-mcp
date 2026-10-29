@@ -2,9 +2,10 @@ import { z } from 'zod';
 import { WORKSPACE_PERMISSION_KEYS, WORKSPACE_ACCESS_KEYS, workspaceAccessKeys, type ToolJetClient } from '../tooljetClient.js';
 import { fail, ok, type ToolDef } from './types.js';
 
+const listWorkspaceGroupsInput = z.object({ group_id: z.string().uuid().optional(), include_permissions: z.boolean().optional(),
+  resource_type: z.enum(['app', 'module', 'workflow', 'data_source']).optional() }).strict();
+
 export function listWorkspaceGroupsTool(client: ToolJetClient): ToolDef {
-  const schema = z.object({ group_id: z.string().uuid().optional(), include_permissions: z.boolean().optional(),
-    resource_type: z.enum(['app', 'module', 'workflow', 'data_source']).optional() }).strict();
   return {
     name: 'list_workspace_groups',
     title: 'List Workspace Groups',
@@ -15,10 +16,10 @@ export function listWorkspaceGroupsTool(client: ToolJetClient): ToolDef {
       'Use include_permissions:true with group_id to read permission switches and granular access rules. ' +
       'Use resource_type (app/module/workflow/data_source) to discover selectable resources and their names/IDs. ' +
       'Use exact returned ids for group changes. Requires ToolJet admin permissions.',
-    inputSchema: schema.shape,
+    inputSchema: listWorkspaceGroupsInput.shape,
     async handler(input) {
       try {
-        const args = schema.parse(input);
+        const args = listWorkspaceGroupsInput.parse(input);
         if (args.include_permissions && !args.group_id) throw new Error('group_id is required with include_permissions.');
         const resources = args.resource_type ? { resources: await client.listWorkspaceGroupResources(args.resource_type) } : {};
         if (!args.group_id) return ok({ ...(args.resource_type ? {} : { groups: await client.listWorkspaceGroups() }), ...resources });
@@ -32,25 +33,26 @@ export function listWorkspaceGroupsTool(client: ToolJetClient): ToolDef {
   };
 }
 
+const manageWorkspaceGroupsInput = z.object({
+  action: z.enum(['create', 'rename', 'delete', 'remove_member', 'duplicate', 'update_permissions', 'create_access', 'update_access', 'delete_access']),
+  group_id: z.string().uuid().optional(),
+  name: z.string().trim().min(1).max(50).optional(),
+  group_user_id: z.string().uuid().optional(),
+  confirm: z.boolean().optional(),
+  permissions: z.object(Object.fromEntries(WORKSPACE_PERMISSION_KEYS.map(key => [key, z.boolean().optional()]))).strict().optional(),
+  copy: z.object({ permissions: z.boolean().optional(), members: z.boolean().optional(), apps: z.boolean().optional(),
+    modules: z.boolean().optional(), workflows: z.boolean().optional(), data_sources: z.boolean().optional() }).strict().optional(),
+  rule_id: z.string().uuid().optional(),
+  resource_type: z.enum(['app', 'module', 'workflow', 'data_source']).optional(),
+  access: z.object({ name: z.string().trim().min(1).max(255).optional(), is_all: z.boolean().optional(),
+    actions: z.object(Object.fromEntries(WORKSPACE_ACCESS_KEYS.map(key => [key, z.boolean().optional()]))).strict().optional(),
+    resource_ids: z.array(z.string().uuid()).max(1000).optional(),
+    add_resource_ids: z.array(z.string().uuid()).min(1).max(1000).optional(),
+    remove_resource_ids: z.array(z.string().uuid()).min(1).max(1000).optional() }).strict().optional(),
+  allow_role_change: z.boolean().optional(),
+}).strict();
+
 export function manageWorkspaceGroupsTool(client: ToolJetClient): ToolDef {
-  const schema = z.object({
-    action: z.enum(['create', 'rename', 'delete', 'remove_member', 'duplicate', 'update_permissions', 'create_access', 'update_access', 'delete_access']),
-    group_id: z.string().uuid().optional(),
-    name: z.string().trim().min(1).max(50).optional(),
-    group_user_id: z.string().uuid().optional(),
-    confirm: z.boolean().optional(),
-    permissions: z.object(Object.fromEntries(WORKSPACE_PERMISSION_KEYS.map(key => [key, z.boolean().optional()]))).strict().optional(),
-    copy: z.object({ permissions: z.boolean().optional(), members: z.boolean().optional(), apps: z.boolean().optional(),
-      modules: z.boolean().optional(), workflows: z.boolean().optional(), data_sources: z.boolean().optional() }).strict().optional(),
-    rule_id: z.string().uuid().optional(),
-    resource_type: z.enum(['app', 'module', 'workflow', 'data_source']).optional(),
-    access: z.object({ name: z.string().trim().min(1).max(255).optional(), is_all: z.boolean().optional(),
-      actions: z.object(Object.fromEntries(WORKSPACE_ACCESS_KEYS.map(key => [key, z.boolean().optional()]))).strict().optional(),
-      resource_ids: z.array(z.string().uuid()).max(1000).optional(),
-      add_resource_ids: z.array(z.string().uuid()).min(1).max(1000).optional(),
-      remove_resource_ids: z.array(z.string().uuid()).min(1).max(1000).optional() }).strict().optional(),
-    allow_role_change: z.boolean().optional(),
-  }).strict();
   return {
     name: 'manage_workspace_groups',
     title: 'Manage Workspace Groups',
@@ -77,10 +79,10 @@ export function manageWorkspaceGroupsTool(client: ToolJetClient): ToolDef {
       'allow_role_change is only for permission updates and access updates, and only with explicit consent to change affected member roles. ' +
       'Admin permissions cannot be changed; default group names/memberships cannot be changed here. ' +
       'To add members use manage_workspace_users with group_ids. ToolJet admin and license checks apply.',
-    inputSchema: schema.shape,
+    inputSchema: manageWorkspaceGroupsInput.shape,
     async handler(input) {
       try {
-        const args = schema.parse(input);
+        const args = manageWorkspaceGroupsInput.parse(input);
         if (args.confirm !== true) throw new Error(`${args.action} requires confirm:true after reviewing the exact change.`);
         const needsName = args.action === 'create' || args.action === 'rename';
         if (needsName !== (args.name !== undefined)) throw new Error(needsName ? 'name is required.' : 'name must be omitted.');

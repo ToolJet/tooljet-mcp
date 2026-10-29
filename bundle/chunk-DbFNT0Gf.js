@@ -3623,21 +3623,21 @@ function pageOrderIndex(page) {
   return typeof page?.index === "number" ? page.index : void 0;
 }
 createRequire(import.meta.url);
+var listWorkspaceGroupsInput = external_exports.object({
+  group_id: external_exports.string().uuid().optional(),
+  include_permissions: external_exports.boolean().optional(),
+  resource_type: external_exports.enum(["app", "module", "workflow", "data_source"]).optional()
+}).strict();
 function listWorkspaceGroupsTool(client) {
-  const schema = external_exports.object({
-    group_id: external_exports.string().uuid().optional(),
-    include_permissions: external_exports.boolean().optional(),
-    resource_type: external_exports.enum(["app", "module", "workflow", "data_source"]).optional()
-  }).strict();
   return {
     name: "list_workspace_groups",
     title: "List Workspace Groups",
     annotations: { readOnlyHint: true, openWorldHint: true },
     description: "List groups in the workspace pinned to the current connection. OAuth connections require the workspace_users scope. Supply group_id to list its non-archived members with group_user_id (membership id, distinct from user_id and organization_user_id). Use include_permissions:true with group_id to read permission switches and granular access rules. Use resource_type (app/module/workflow/data_source) to discover selectable resources and their names/IDs. Use exact returned ids for group changes. Requires ToolJet admin permissions.",
-    inputSchema: schema.shape,
+    inputSchema: listWorkspaceGroupsInput.shape,
     async handler(input) {
       try {
-        const args = schema.parse(input);
+        const args = listWorkspaceGroupsInput.parse(input);
         if (args.include_permissions && !args.group_id)
           throw new Error("group_id is required with include_permissions.");
         const resources = args.resource_type ? { resources: await client.listWorkspaceGroupResources(args.resource_type) } : {};
@@ -3656,44 +3656,44 @@ function listWorkspaceGroupsTool(client) {
     }
   };
 }
+var manageWorkspaceGroupsInput = external_exports.object({
+  action: external_exports.enum(["create", "rename", "delete", "remove_member", "duplicate", "update_permissions", "create_access", "update_access", "delete_access"]),
+  group_id: external_exports.string().uuid().optional(),
+  name: external_exports.string().trim().min(1).max(50).optional(),
+  group_user_id: external_exports.string().uuid().optional(),
+  confirm: external_exports.boolean().optional(),
+  permissions: external_exports.object(Object.fromEntries(WORKSPACE_PERMISSION_KEYS.map((key) => [key, external_exports.boolean().optional()]))).strict().optional(),
+  copy: external_exports.object({
+    permissions: external_exports.boolean().optional(),
+    members: external_exports.boolean().optional(),
+    apps: external_exports.boolean().optional(),
+    modules: external_exports.boolean().optional(),
+    workflows: external_exports.boolean().optional(),
+    data_sources: external_exports.boolean().optional()
+  }).strict().optional(),
+  rule_id: external_exports.string().uuid().optional(),
+  resource_type: external_exports.enum(["app", "module", "workflow", "data_source"]).optional(),
+  access: external_exports.object({
+    name: external_exports.string().trim().min(1).max(255).optional(),
+    is_all: external_exports.boolean().optional(),
+    actions: external_exports.object(Object.fromEntries(WORKSPACE_ACCESS_KEYS.map((key) => [key, external_exports.boolean().optional()]))).strict().optional(),
+    resource_ids: external_exports.array(external_exports.string().uuid()).max(1e3).optional(),
+    add_resource_ids: external_exports.array(external_exports.string().uuid()).min(1).max(1e3).optional(),
+    remove_resource_ids: external_exports.array(external_exports.string().uuid()).min(1).max(1e3).optional()
+  }).strict().optional(),
+  allow_role_change: external_exports.boolean().optional()
+}).strict();
 function manageWorkspaceGroupsTool(client) {
-  const schema = external_exports.object({
-    action: external_exports.enum(["create", "rename", "delete", "remove_member", "duplicate", "update_permissions", "create_access", "update_access", "delete_access"]),
-    group_id: external_exports.string().uuid().optional(),
-    name: external_exports.string().trim().min(1).max(50).optional(),
-    group_user_id: external_exports.string().uuid().optional(),
-    confirm: external_exports.boolean().optional(),
-    permissions: external_exports.object(Object.fromEntries(WORKSPACE_PERMISSION_KEYS.map((key) => [key, external_exports.boolean().optional()]))).strict().optional(),
-    copy: external_exports.object({
-      permissions: external_exports.boolean().optional(),
-      members: external_exports.boolean().optional(),
-      apps: external_exports.boolean().optional(),
-      modules: external_exports.boolean().optional(),
-      workflows: external_exports.boolean().optional(),
-      data_sources: external_exports.boolean().optional()
-    }).strict().optional(),
-    rule_id: external_exports.string().uuid().optional(),
-    resource_type: external_exports.enum(["app", "module", "workflow", "data_source"]).optional(),
-    access: external_exports.object({
-      name: external_exports.string().trim().min(1).max(255).optional(),
-      is_all: external_exports.boolean().optional(),
-      actions: external_exports.object(Object.fromEntries(WORKSPACE_ACCESS_KEYS.map((key) => [key, external_exports.boolean().optional()]))).strict().optional(),
-      resource_ids: external_exports.array(external_exports.string().uuid()).max(1e3).optional(),
-      add_resource_ids: external_exports.array(external_exports.string().uuid()).min(1).max(1e3).optional(),
-      remove_resource_ids: external_exports.array(external_exports.string().uuid()).min(1).max(1e3).optional()
-    }).strict().optional(),
-    allow_role_change: external_exports.boolean().optional()
-  }).strict();
   return {
     name: "manage_workspace_groups",
     title: "Manage Workspace Groups",
     strictInput: true,
     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
     description: "Create, rename, delete custom groups or remove a member in the workspace pinned to the current connection. OAuth connections require the workspace_users scope. All actions require confirm:true after reviewing the exact change. create needs name; rename needs group_id and name; delete needs group_id; remove_member needs group_id and group_user_id from list_workspace_groups. Removing membership does not delete the workspace user. Deleting a group removes its memberships and permissions. duplicate needs group_id and at least one true copy flag (permissions/members/apps/modules/workflows/data_sources; omitted flags false); ToolJet assigns the copy name. update_permissions needs group_id and permissions (only supplied switches change). create_access needs group_id, resource_type and access {name,is_all,actions,resource_ids}; update_access needs group_id, rule_id and access (only supplied fields change); delete_access needs group_id and rule_id. For update/delete access, optional resource_type must match the existing rule. Read include_permissions:true first to resolve rule IDs; resource_type discovers selectable resource IDs. On update_access, use access.add_resource_ids/remove_resource_ids to change only those resources and preserve the rest. access.resource_ids is only for an explicitly requested replacement of the entire rule selection; do not combine it with add/remove_resource_ids. Resource additions/removals require a selected-resource rule; is_all:true applies to ALL current and future resources of its type. On create_access, omitted action switches are disabled. App actions: canEdit/canView/hideFromDashboard/canAccessDevelopment/canAccessStaging/canAccessProduction/canAccessReleased. Module actions: canEdit/canView/hideFromDashboard. Workflow actions: canEdit/canView. Data source actions: canConfigure/canUse. canEdit/canView and canConfigure/canUse are exclusive pairs: enabling one disables the other, including on partial updates. Disabled groups and read_only rules are not editable under the current license/plan. allow_role_change is only for permission updates and access updates, and only with explicit consent to change affected member roles. Admin permissions cannot be changed; default group names/memberships cannot be changed here. To add members use manage_workspace_users with group_ids. ToolJet admin and license checks apply.",
-    inputSchema: schema.shape,
+    inputSchema: manageWorkspaceGroupsInput.shape,
     async handler(input) {
       try {
-        const args = schema.parse(input);
+        const args = manageWorkspaceGroupsInput.parse(input);
         if (args.confirm !== true)
           throw new Error(`${args.action} requires confirm:true after reviewing the exact change.`);
         const needsName = args.action === "create" || args.action === "rename";

@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 import { createRequire } from "node:module";
-import { b as buildServer, a as buildUnconfiguredServer, c as allowedApiOrigins, A as ALLOWED_API_ORIGINS_VAR, o as oauthHttpOptionsFromEnv, d as createOAuthHttpServer, i as identityFromHeaders, S as SESSION_TOKEN_HEADER, B as BASE_URL_HEADER, P as PAT_HEADER, e as StreamableHTTPServerTransport } from "./chunk-B_EXmN9g.js";
+import { b as buildServer, a as buildUnconfiguredServer, c as allowedApiOrigins, A as ALLOWED_API_ORIGINS_VAR, o as oauthHttpOptionsFromEnv, d as createOAuthHttpServer, i as identityFromHeaders, S as SESSION_TOKEN_HEADER, B as BASE_URL_HEADER, P as PAT_HEADER, e as StreamableHTTPServerTransport } from "./chunk-BKmVZ9fO.js";
 import "./chunk-8iUq0slz.js";
-import "./chunk-rf3v0KLq.js";
-import { J as JSONRPCMessageSchema } from "./chunk-pk1wj3UI.js";
-import "./chunk-CeK3IIjD.js";
-import "./chunk-CldhDVI0.js";
+import "./chunk-DbFNT0Gf.js";
+import { J as JSONRPCMessageSchema } from "./chunk-pMEylbpx.js";
+import "./chunk-JCMmiPv2.js";
+import "./chunk-DiCiME0d.js";
 import "./chunk-BLALee7Y.js";
-import "./chunk-BsYpTL2E.js";
+import "./chunk-RXyqA4vh.js";
 import "./chunk-gznY6rD8.js";
 import "./chunk-BEuHHGL1.js";
 import "./chunk-Biq-LW6M.js";
@@ -325,6 +325,14 @@ function createGatewayHttpServer() {
     }
     if (!gatewayMode && !hasUserCredential && !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN)) {
       res.writeHead(401, { "Content-Type": "text/plain" }).end(`No ToolJet credential. Send your personal access token as \`Authorization: Bearer <token>\` or in the ${PAT_HEADER} header, or set TOOLJET_PAT on this server. Create a token in ToolJet under Settings \u2192 Access tokens.`);
+      return;
+    }
+    if (req.method !== "POST") {
+      res.writeHead(405, { "Content-Type": "application/json", Allow: "POST" }).end(JSON.stringify({
+        jsonrpc: "2.0",
+        error: { code: -32e3, message: "Method not allowed: this server is stateless and serves POST only." },
+        id: null
+      }));
       return;
     }
     let parsedBody;
