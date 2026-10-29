@@ -20,6 +20,21 @@ The observed refresh request violates those requirements. A live proxy/request t
 captured, so the loopback repro establishes the client behavior; it does not identify which
 server-side validation produced each live error.
 
+## Independent Codex control (29 October 2026)
+
+The same hosted workspace connection was tested through Codex's remote HTTP OAuth client
+(CLI 0.163.0-alpha.11.2 for login/reconnect, followed by tool calls in the existing chat).
+Login and discovery of 72 tools succeeded, as did a fresh-client reconnect without signing in.
+Authenticated workspace/app reads, phase preflight, app writes and persisted readback passed.
+The existing private QA app was continued with three components and eight synthetic ticket
+rows; browser checks confirmed rendering, native search and sorting without layout findings.
+Calls also succeeded after the original access token's documented maximum ten-minute lifetime,
+without another login or consent. This is behavioral renewal evidence, not a token-endpoint
+wire trace; no tokens were extracted to perform the check.
+
+This control supports a client-specific interoperability issue. It does not clear Antigravity's
+release gate or change the package's PAT default.
+
 ## Reproduce without ToolJet access
 
 1. Run `node scripts/probe-antigravity-oauth-refresh.mjs` (Node 20+). It binds only
