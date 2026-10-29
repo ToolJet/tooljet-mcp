@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
-import { S as getComponentSchema, T as getCatalog, U as getLegacyComponentReplacement, V as lintBindingNames, W as parseExpression, X as parse, Y as bindingSpans } from "./chunk-9MxONkew.js";
-import { e as external_exports } from "./chunk-BXrPi5U1.js";
+import { e5 as getComponentSchema, ea as getCatalog, eb as getLegacyComponentReplacement } from "./chunk-BEuHHGL1.js";
+import { o as external_exports } from "./chunk-8iUq0slz.js";
+import { l as lintBindingNames, p as parseExpression, a as parse, b as bindingSpans } from "./chunk-yxr8SUor.js";
 import { readFileSync } from "node:fs";
 createRequire(import.meta.url);
 var VOID_TAGS = /* @__PURE__ */ new Set(["br", "img", "hr", "input", "meta", "link", "source", "wbr", "col"]);
@@ -2573,7 +2574,7 @@ function lintTextGeometry(components) {
   return warnings;
 }
 function componentKey(component) {
-  return component.clientRef ?? component.id;
+  return component.clientRef ?? component.id ?? component.name;
 }
 function parentPlacement(component) {
   if (component.parentRef) {

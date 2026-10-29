@@ -1,11 +1,11 @@
 import { createRequire } from "node:module";
-import { C as COMPONENT_FX_UPDATE_GUIDANCE } from "./chunk-D0rVi1EZ.js";
-import { S as STYLE_KEYS_IN_PROPERTIES, P as PROPERTY_KEY_ALIASES, n as nearestCatalogKey, c as componentSlotSchema, a as componentNameSchema, b as componentNameError, d as decodeComponentParent, e as encodeComponentParent, s as suggestedHtmlHeight, i as introducedLintFindings, l as lintComponentSpec, f as lintComponentSlots, g as lintUnusableTextGeometry, h as lintStandardSingleLineInputHeight, j as lintTextGeometry, k as lintRenderedGeometry, m as lintKanbanInteractions, o as assertPageIcon } from "./chunk-UjCY7xly.js";
-import { S as getComponentSchema, Z as assertPersistableQueryToggles, _ as normalizeQueryOptions, a0 as validateQueryOptions, a1 as issueMessages } from "./chunk-9MxONkew.js";
-import { e as external_exports } from "./chunk-BXrPi5U1.js";
+import { o as external_exports, C as COMPONENT_FX_UPDATE_GUIDANCE } from "./chunk-8iUq0slz.js";
+import { S as STYLE_KEYS_IN_PROPERTIES, P as PROPERTY_KEY_ALIASES, n as nearestCatalogKey, c as componentSlotSchema, a as componentNameSchema, b as componentNameError, d as decodeComponentParent, e as encodeComponentParent, s as suggestedHtmlHeight, i as introducedLintFindings, l as lintComponentSpec, f as lintComponentSlots, g as lintUnusableTextGeometry, h as lintStandardSingleLineInputHeight, j as lintTextGeometry, k as lintRenderedGeometry, m as lintKanbanInteractions, o as assertPageIcon } from "./chunk-gznY6rD8.js";
+import { e5 as getComponentSchema } from "./chunk-BEuHHGL1.js";
+import { c as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches, e as normalizeQueryOptions, v as validateQueryOptions, i as issueMessages } from "./chunk-yxr8SUor.js";
 import { randomUUID, createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-CWXC6H5y.js";
+import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-CsHFzbSc.js";
 import { Script } from "node:vm";
 createRequire(import.meta.url);
 function resolveRef(candidates, ref2, kind, scope, describe = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
@@ -128,10 +128,10 @@ function normalizeSection(section) {
   const value = {};
   const patch = {};
   for (const [key, entry] of Object.entries(section)) {
-    const canonical2 = entry !== null && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry : { value: entry };
-    value[key] = canonical2;
-    if (canonical2 !== entry)
-      patch[key] = canonical2;
+    const canonical = entry !== null && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry : { value: entry };
+    value[key] = canonical;
+    if (canonical !== entry)
+      patch[key] = canonical;
   }
   return {
     value,
@@ -212,21 +212,21 @@ function normalizeComponentSpec(component, options = {}) {
   };
   for (const key of Object.keys(properties)) {
     const aliasTarget = aliasTargetFor(key);
-    const canonical2 = aliasTarget ?? key;
-    const belongsInStyles = canonical2 !== "styles" && (STYLE_KEYS_IN_PROPERTIES.has(canonical2) || !!aliasTarget && !!knownStyleKeys?.has(canonical2) && !knownPropertyKeys?.has(canonical2));
+    const canonical = aliasTarget ?? key;
+    const belongsInStyles = canonical !== "styles" && (STYLE_KEYS_IN_PROPERTIES.has(canonical) || !!aliasTarget && !!knownStyleKeys?.has(canonical) && !knownPropertyKeys?.has(canonical));
     if (!aliasTarget && !belongsInStyles)
       continue;
     if (belongsInStyles) {
-      if (stylesValue[canonical2] === void 0)
-        stylesValue[canonical2] = properties[key];
+      if (stylesValue[canonical] === void 0)
+        stylesValue[canonical] = properties[key];
       delete properties[key];
       stylesChanged = true;
-      warnings.push(`${component.type} "${component.name}": moved ${aliasTarget ? `alias "${key}"` : `style key "${key}"`} to styles.${canonical2} (ToolJet reads it from styles, not properties).`);
-    } else if (canonical2 !== key) {
-      if (properties[canonical2] === void 0)
-        properties[canonical2] = properties[key];
+      warnings.push(`${component.type} "${component.name}": moved ${aliasTarget ? `alias "${key}"` : `style key "${key}"`} to styles.${canonical} (ToolJet reads it from styles, not properties).`);
+    } else if (canonical !== key) {
+      if (properties[canonical] === void 0)
+        properties[canonical] = properties[key];
       delete properties[key];
-      warnings.push(`${component.type} "${component.name}": renamed alias "${key}" to "${canonical2}".`);
+      warnings.push(`${component.type} "${component.name}": renamed alias "${key}" to "${canonical}".`);
     }
   }
   if (stylesChanged)
@@ -972,6 +972,48 @@ var nodeCatalog = {
   limitations: ["Agent tool connections are not authored", "No publishing or trigger setup", "No concurrent-edit protection", "No automatic execution during authoring", "Advanced nodes are preserved but not authored"]
 };
 createRequire(import.meta.url);
+function componentRef(component) {
+  return component.clientRef ?? component.name;
+}
+function indexComponentReferences(components, existing = []) {
+  const refs = /* @__PURE__ */ new Map();
+  const errors = [];
+  const names = /* @__PURE__ */ new Set();
+  const persisted = /* @__PURE__ */ new Map();
+  for (const component of existing) {
+    for (const ref2 of new Set([component.id, component.name].filter((key) => Boolean(key)))) {
+      const ids = persisted.get(ref2) ?? /* @__PURE__ */ new Set();
+      ids.add(component.id);
+      persisted.set(ref2, ids);
+    }
+  }
+  for (const component of components) {
+    const ref2 = componentRef(component);
+    if (!ref2.trim())
+      errors.push(`Component "${component.name}": client_ref must not be empty.`);
+    if (refs.has(ref2) || persisted.has(ref2))
+      errors.push(`Duplicate component client_ref/name "${ref2}".`);
+    else
+      refs.set(ref2, component);
+    if (names.has(component.name))
+      errors.push(`Duplicate component name "${component.name}" in batch.`);
+    names.add(component.name);
+  }
+  const resolved = components.map((component) => {
+    if (component.parentRef && component.parent) {
+      errors.push(`Component "${component.name}": set EITHER parent or parent_ref, not both.`);
+    }
+    if (component.parentRef && !refs.has(component.parentRef)) {
+      const ids = persisted.get(component.parentRef);
+      if (ids?.size === 1 && !component.parent) {
+        return { ...component, parentRef: void 0, parent: [...ids][0] };
+      }
+      errors.push(`Component "${component.name}": unknown parent_ref "${component.parentRef}". Use a same-batch client_ref (or name when no client_ref is set); for an existing component, use parent with its persisted id.`);
+    }
+    return component;
+  });
+  return { refs, components: resolved, errors };
+}
 var SAMPLE_DATASOURCE_REFUSAL = "Sample data source is unavailable to AI. Do not inspect, test, read, write, or create queries on it. Use ToolJet Database for new app data, or another connected user-owned datasource.";
 function isSampleDatasource(source) {
   return String(source.type ?? "").trim().toLowerCase() === "sample" || String(source.name ?? "").toLowerCase().replace(/[\s_-]+/g, "") === "sampledatasource";
@@ -1027,12 +1069,12 @@ function createAppVersionLifecycle(auth, getApp) {
       return { id: e.id, name: e.name, priority: e.priority, enabled: e.enabled !== false };
     }).sort((a, b) => a.priority - b.priority);
   }
-  function environment(envs, name2) {
-    const matches = envs.filter((e) => e.name.toLowerCase() === name2.trim().toLowerCase());
+  function environment(envs, name) {
+    const matches = envs.filter((e) => e.name.toLowerCase() === name.trim().toLowerCase());
     if (matches.length !== 1)
-      throw new Error(`Unknown or ambiguous environment: ${name2}. Inspect list_app_versions.`);
+      throw new Error(`Unknown or ambiguous environment: ${name}. Inspect list_app_versions.`);
     if (!matches[0].enabled)
-      throw new Error(`Environment ${name2} is not enabled for this workspace.`);
+      throw new Error(`Environment ${name} is not enabled for this workspace.`);
     return matches[0];
   }
   function selection(appId, v, environmentId = v.environmentId) {
@@ -1275,8 +1317,8 @@ function createWorkflowClient(auth, config, queries) {
       return request(`/api/apps?${new URLSearchParams({ type: "workflow", page: String(page), searchKey: search })}`);
     },
     get,
-    async create(name2) {
-      const created = record(await request("/api/workflows", { name: name2, type: "workflow" }));
+    async create(name) {
+      const created = record(await request("/api/workflows", { name, type: "workflow" }));
       const id = required(created.id, "created workflow ID");
       try {
         return await get(id);
@@ -1579,14 +1621,14 @@ function tableCreationLevels(tables) {
   const completed = /* @__PURE__ */ new Set();
   const levels = [];
   while (remaining.size) {
-    const ready = [...remaining].filter((name2) => [...dependencies.get(name2) ?? []].every((dependency) => completed.has(dependency)));
+    const ready = [...remaining].filter((name) => [...dependencies.get(name) ?? []].every((dependency) => completed.has(dependency)));
     if (!ready.length) {
-      throw new Error(`Table batch contains a circular foreign-key dependency: ${[...remaining].map((name2) => byName.get(name2)?.tableName ?? name2).join(", ")}. Create one side first, then add the circular foreign key as a column change.`);
+      throw new Error(`Table batch contains a circular foreign-key dependency: ${[...remaining].map((name) => byName.get(name)?.tableName ?? name).join(", ")}. Create one side first, then add the circular foreign key as a column change.`);
     }
-    levels.push(ready.map((name2) => byName.get(name2)));
-    ready.forEach((name2) => {
-      remaining.delete(name2);
-      completed.add(name2);
+    levels.push(ready.map((name) => byName.get(name)));
+    ready.forEach((name) => {
+      remaining.delete(name);
+      completed.add(name);
     });
   }
   return levels;
@@ -1692,7 +1734,7 @@ function completedPartialWrites(error) {
   return error instanceof PartialWriteError ? error.completed : [];
 }
 function assertAllowedToolJetDbColumnNames(operation, columns) {
-  const reserved = columns.map((column) => column.name).filter((name2) => TOOLJET_DB_RESERVED_COLUMN_NAMES.has(name2.toLowerCase()));
+  const reserved = columns.map((column) => column.name).filter((name) => TOOLJET_DB_RESERVED_COLUMN_NAMES.has(name.toLowerCase()));
   if (reserved.length) {
     throw new Error(`ToolJet ${operation} failed: reserved column name${reserved.length === 1 ? "" : "s"}: ${reserved.join(", ")}. Use a descriptive name such as step_action, result_comment, or item_condition.`);
   }
@@ -1945,11 +1987,11 @@ function createClient(auth, config) {
       };
     });
   }
-  async function createWorkspaceGroup(name2) {
+  async function createWorkspaceGroup(name) {
     const res = await auth.authedFetch(groupPath, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name2 })
+      body: JSON.stringify({ name })
     });
     await assertOk(res, "createWorkspaceGroup");
     const created = await res.json();
@@ -1957,11 +1999,11 @@ function createClient(auth, config) {
       throw new Error("Create group response did not include an id.");
     return getWorkspaceGroup(created.id);
   }
-  async function renameWorkspaceGroup(groupId, name2) {
+  async function renameWorkspaceGroup(groupId, name) {
     const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name2 })
+      body: JSON.stringify({ name })
     });
     await assertOk(res, "renameWorkspaceGroup");
   }
@@ -2245,8 +2287,8 @@ function createClient(auth, config) {
   async function updateAppThemeDefinition(themeId, definition2) {
     await updateAppTheme(themeId, "definition", { definition: definition2 }, "updateAppThemeDefinition");
   }
-  async function renameAppTheme(themeId, name2) {
-    await updateAppTheme(themeId, "name", { name: name2 }, "renameAppTheme");
+  async function renameAppTheme(themeId, name) {
+    await updateAppTheme(themeId, "name", { name }, "renameAppTheme");
   }
   async function deleteAppTheme(themeId) {
     const res = await auth.authedFetch(`/api/themes/${encodeURIComponent(themeId)}`, { method: "DELETE" });
@@ -2283,11 +2325,11 @@ function createClient(auth, config) {
   async function useWorkspace(workspaceId) {
     return auth.switchWorkspace(workspaceId);
   }
-  async function createApp(name2) {
+  async function createApp(name) {
     let createRes;
-    let finalName = name2;
+    let finalName = name;
     for (let attempt = 1; attempt <= 6; attempt++) {
-      finalName = attempt === 1 ? name2 : `${name2} ${attempt}`;
+      finalName = attempt === 1 ? name : `${name} ${attempt}`;
       createRes = await auth.authedFetch("/api/apps", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -2484,16 +2526,16 @@ function createClient(auth, config) {
       promoted_to_environments: promotedToEnvironments
     };
   }
-  async function renameApp(appId, versionId, name2) {
+  async function renameApp(appId, versionId, name) {
     const res = await auth.authedFetch(`/api/apps/${appId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ app: { name: name2, editingVersionId: versionId } })
+      body: JSON.stringify({ app: { name, editingVersionId: versionId } })
     });
     await assertOk(res, "renameApp");
     const refreshed = await getApp(appId);
-    if (refreshed.name !== name2) {
-      throw new Error(`ToolJet renameApp failed: expected name "${name2}", received "${String(refreshed.name)}".`);
+    if (refreshed.name !== name) {
+      throw new Error(`ToolJet renameApp failed: expected name "${name}", received "${String(refreshed.name)}".`);
     }
   }
   async function listTables() {
@@ -2515,7 +2557,7 @@ function createClient(auth, config) {
       return typeof index === "number" && Number.isFinite(index) ? Math.max(highest, index) : highest;
     }, 0);
     const startIndex = Math.max(highestPersistedIndex, existingPages.length) + 1;
-    const handleOf = (name2) => name2.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "page";
+    const handleOf = (name) => name.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "page";
     const existingNames = new Set((app.pages ?? []).map((page) => String(page.name).toLowerCase()));
     const existingHandles = new Set((app.pages ?? []).map((page) => String(page.handle).toLowerCase()));
     const seenNames = /* @__PURE__ */ new Set();
@@ -2644,8 +2686,8 @@ function createClient(auth, config) {
     const requestedNames = new Map(updates.map((update) => [update.pageId, update.name]));
     const finalNames = pages.map((page) => {
       const kind = page.isPageGroup === true ? "group" : "page";
-      const name2 = String(requestedNames.get(String(page.id)) ?? page.name ?? "").trim().toLowerCase();
-      return `${kind}:${name2}`;
+      const name = String(requestedNames.get(String(page.id)) ?? page.name ?? "").trim().toLowerCase();
+      return `${kind}:${name}`;
     });
     if (new Set(finalNames).size !== finalNames.length) {
       throw new Error("ToolJet updatePages failed: page names must remain unique.");
@@ -2806,6 +2848,7 @@ function createClient(auth, config) {
     if (!query2.data_source_id)
       throw new Error("Cannot verify the saved query datasource; refusing AI access.");
     await assertDatasourceAllowed(query2.data_source_id, versionId, environmentId);
+    return query2;
   }
   async function listDatasources(versionId) {
     const [orgId, orgSlug, envId] = await Promise.all([
@@ -3074,6 +3117,10 @@ function createClient(auth, config) {
   async function createQueryUnqueued(params) {
     assertPersistableQueryToggles(params.options, `ToolJet createQuery refused query "${params.name}"`);
     const kind = params.kind ?? await resolveDatasourceKind(params.versionId, params.dataSourceId);
+    if (kind === "workflows") {
+      params = { ...params, options: normalizeWorkflowQueryOptions(params.options) };
+      await assertWorkflowQueryTarget(params.options);
+    }
     await assertDatasourceAllowed(params.dataSourceId, params.versionId);
     const res = await auth.authedFetch(`/api/data-queries/data-sources/${params.dataSourceId}/versions/${params.versionId}`, {
       method: "POST",
@@ -3082,11 +3129,22 @@ function createClient(auth, config) {
     });
     await assertOk(res, "createQuery");
     const body = await res.json();
+    if (kind === "workflows") {
+      try {
+        await verifyWorkflowMapping(body.id, params.versionId, params.options);
+      } catch (error) {
+        throw new PartialWriteError("createQuery", [{ query_id: body.id, name: body.name }], [String(error)]);
+      }
+    }
     return { query_id: body.id, name: body.name };
   }
   async function createQueries(params) {
     const batchCheck = (async () => {
-      await listDatasources(params.versionId);
+      const datasources = await listDatasources(params.versionId);
+      for (const query2 of params.queries) {
+        if (datasources.find((source) => source.id === query2.dataSourceId)?.kind === "workflows")
+          await assertWorkflowQueryTarget(query2.options);
+      }
       await Promise.all(params.queries.map((q) => assertDatasourceAllowed(q.dataSourceId)));
       return void 0;
     })().catch((error) => ({ error }));
@@ -3097,7 +3155,7 @@ function createClient(auth, config) {
       options: q.options,
       kind: q.kind
     }, batchCheck)));
-    const completed = settled.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+    const completed = settled.flatMap((result) => result.status === "fulfilled" ? [result.value] : result.reason instanceof PartialWriteError ? result.reason.completed : []);
     const failures = settled.flatMap((result, index) => result.status === "rejected" ? [`${params.queries[index].name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []);
     if (failures.length)
       throw new PartialWriteError("createQueries", completed, failures);
@@ -3124,16 +3182,11 @@ function createClient(auth, config) {
     return dto;
   }
   async function createComponents(params) {
+    const references = indexComponentReferences(params.components);
+    if (references.errors.length)
+      throw new Error(`createComponents: ${references.errors.join(" ")}`);
     const entries = params.components.map((spec) => ({ id: spec.id ?? randomUUID(), spec }));
-    const refToId = /* @__PURE__ */ new Map();
-    for (const e of entries) {
-      if (!e.spec.clientRef)
-        continue;
-      if (refToId.has(e.spec.clientRef)) {
-        throw new Error(`createComponents: duplicate clientRef "${e.spec.clientRef}".`);
-      }
-      refToId.set(e.spec.clientRef, e.id);
-    }
+    const refToId = new Map(entries.map((entry) => [componentRef(entry.spec), entry.id]));
     const diff = {};
     for (const e of entries) {
       if (e.spec.parent && e.spec.parentRef) {
@@ -3150,7 +3203,7 @@ function createClient(auth, config) {
       if (resolvedParent)
         dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName);
       const submit = e.spec.type === "Form" ? dto.properties?.buttonToSubmit : void 0;
-      const submitId = submit && typeof submit.value === "string" ? refToId.get(submit.value) ?? entries.find((other) => !other.spec.clientRef && other.spec.name === submit.value)?.id : void 0;
+      const submitId = submit && typeof submit.value === "string" ? refToId.get(submit.value) : void 0;
       if (submit && submitId) {
         dto.properties = { ...dto.properties, buttonToSubmit: { ...submit, value: submitId } };
       }
@@ -3259,7 +3312,11 @@ function createClient(auth, config) {
   }
   async function updateQuery(params) {
     assertPersistableQueryToggles(params.options, `ToolJet updateQuery refused query "${params.queryId}"`);
-    await assertQueryDatasourceAllowed(params.queryId, params.versionId);
+    const query2 = await assertQueryDatasourceAllowed(params.queryId, params.versionId);
+    if (query2.kind === "workflows") {
+      params = { ...params, options: normalizeWorkflowQueryOptions(params.options) };
+      await assertWorkflowQueryTarget(params.options);
+    }
     const body = { options: params.options };
     if (params.name !== void 0)
       body.name = params.name;
@@ -3269,7 +3326,40 @@ function createClient(auth, config) {
       body: JSON.stringify(body)
     });
     await assertOk(res, "updateQuery");
+    if (query2.kind === "workflows") {
+      try {
+        await verifyWorkflowMapping(params.queryId, params.versionId, params.options);
+      } catch (error) {
+        throw new PartialWriteError("updateQuery", [{ query_id: params.queryId, datasource_id: query2.data_source_id }], [String(error)]);
+      }
+    }
     return { query_id: params.queryId };
+  }
+  async function verifyWorkflowMapping(queryId, versionId, options) {
+    try {
+      const saved = await getQuery(queryId, versionId);
+      if (saved.kind !== "workflows" || !workflowMappingMatches(options, saved.options)) {
+        throw new Error("Saved workflow target differs from the requested mapping.");
+      }
+    } catch (error) {
+      throw new Error(`Query ${queryId} was written, but its workflow mapping could not be verified. Inspect this query and repair it in place; do not recreate it. ${String(error)}`);
+    }
+  }
+  async function assertWorkflowQueryTarget(raw) {
+    assertWorkflowQueryOptions(raw);
+    const options = normalizeWorkflowQueryOptions(raw);
+    const workflowId = options.workflowId;
+    const versionId = options.workflowVersionId;
+    const path = versionId ? `/api/v2/apps/${encodeURIComponent(workflowId)}/versions/${encodeURIComponent(versionId)}` : `/api/apps/${encodeURIComponent(workflowId)}`;
+    const response = await auth.authedFetch(path);
+    await assertOk(response, "verify workflow query target");
+    const app = await response.json();
+    if (app?.id !== workflowId || app.type !== "workflow" || (app.organizationId ?? app.organization_id) !== await auth.getOrganizationId()) {
+      throw new Error("Workflow query target must be an accessible workflow in the active workspace.");
+    }
+    if (versionId && (app.editing_version ?? app.editingVersion)?.id !== versionId) {
+      throw new Error("Workflow query version does not belong to the selected workflow.");
+    }
   }
   async function updateQueryDatasource(params) {
     await assertDatasourceAllowed(params.dataSourceId, params.versionId);
@@ -3440,6 +3530,7 @@ function createClient(auth, config) {
   }
   return {
     appVersions: createAppVersionLifecycle(auth, getApp),
+    assertWorkflowQueryTarget,
     workflows: createWorkflowClient(auth, config, { assertDatasourceAllowed, getQueries, listDatasources, createQuery, updateQuery, deleteQuery, getDevelopmentEnvironmentId }),
     listWorkspaces,
     useWorkspace,
@@ -4129,14 +4220,14 @@ async function prepare(client, workflowId, versionId, spec, ids) {
       throw new Error(`Datasource ${datasource.id} is not an AI model datasource.`);
     const kind = datasource.kind;
     const dataSourceId = datasource.id;
-    const name2 = item.role === "agent-model" ? item.name : input.name;
+    const name = item.role === "agent-model" ? item.name : input.name;
     if (oldQuery && (oldQuery.kind !== kind || oldQuery.data_source_id !== dataSourceId))
       throw new Error(item.role === "agent-model" ? "Changing an Agent model datasource is unsupported; remove the model first, then add its replacement in a second phase." : "Changing an existing query datasource is unsupported; add a new node.");
-    if (oldQuery?.name !== void 0 && oldQuery.name !== name2)
+    if (oldQuery?.name !== void 0 && oldQuery.name !== name)
       throw new Error(item.role === "agent-model" ? "Renaming an Agent model query is unsupported; remove the model first, then add its replacement in a second phase." : "Renaming existing queries is unsupported because code references cannot be rewritten safely.");
-    if (claimedNames.has(name2) || queries.some((q) => q.name === name2 && q.id !== oldQuery?.id))
-      throw new Error(`Duplicate query name: ${name2}`);
-    claimedNames.add(name2);
+    if (claimedNames.has(name) || queries.some((q) => q.name === name && q.id !== oldQuery?.id))
+      throw new Error(`Duplicate query name: ${name}`);
+    claimedNames.add(name);
     const requestedOptions = item.role === "agent-model" ? item.options : input.type === "javascript" || input.type === "loop" ? { ...oldQuery?.options ?? {}, code: input.code } : input.options;
     const options = item.role === "agent-model" ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
     if (item.role === "workflow-node" && kind === "runjs")
@@ -4147,7 +4238,7 @@ async function prepare(client, workflowId, versionId, spec, ids) {
         throw new Error(issueMessages(validation2.errors).join(" "));
       warnings.push(...issueMessages(validation2.warnings));
     }
-    writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name: name2, dataSourceId: dataSourceId ?? "", kind, options });
+    writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name, dataSourceId: dataSourceId ?? "", kind, options });
     if (!existingMapping && !compiled.graph.queries.some((mapping) => mapping.idOnDefinition === item.definition_id))
       compiled.graph.queries.push({ idOnDefinition: item.definition_id, id: `pending:${item.node_id}` });
   }
@@ -4249,215 +4340,34 @@ async function deleteNode(client, workflowId, versionId, nodeId) {
     throw new Error(JSON.stringify({ errors: result.errors, blockers: result.blockers }));
   return apply(client, result.plan_token);
 }
-createRequire(import.meta.url);
-var name = external_exports.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/).refine((v) => !["__proto__", "prototype", "constructor"].includes(v));
-var editContractSchema = external_exports.object({
-  source_query: name.describe("Already-loaded bounded raw row-array query; never a display projection."),
-  table_component: name,
-  id_field: name.default("id"),
-  prefix: name.describe("Unique prefix for generated snapshot/draft variables and RunJS query names."),
-  fields: external_exports.array(external_exports.object({
-    field: name,
-    component: name,
-    type: external_exports.enum(["text", "number", "date_only", "boolean"]),
-    required: external_exports.boolean().default(false),
-    nullable: external_exports.boolean().default(false).describe("Opt in to clearing to null; a user change event is also required."),
-    trim: external_exports.boolean().default(false),
-    choices: external_exports.union([
-      external_exports.array(external_exports.object({ label: external_exports.string(), value: external_exports.union([external_exports.string(), external_exports.number().finite()]) }).strict()).min(1).max(100),
-      external_exports.object({ query: name, value_field: name, label_field: name }).strict()
-    ]).optional().describe("Opt-in DropdownV2 for text/number fields: literal label/value options or an already-loaded bounded raw option query. Values must match the declared field type.")
-  })).min(1).max(40)
-}).strict();
-function canonical(value, field) {
-  if (value === void 0)
-    throw new Error(`Missing input: ${field.field}`);
-  if (value === null || value === "") {
-    if (field.required)
-      throw new Error(`Required field: ${field.field}`);
-    if (value === null && !field.nullable)
-      throw new Error(`Null not allowed: ${field.field}`);
-    return value;
-  }
-  if (field.type === "text") {
-    if (typeof value !== "string")
-      throw new Error(`Expected text: ${field.field}`);
-    if (field.required && !value.trim())
-      throw new Error(`Required field: ${field.field}`);
-    return field.trim ? value.trim() : value;
-  }
-  if (field.type === "boolean") {
-    if (typeof value !== "boolean")
-      throw new Error(`Expected boolean: ${field.field}`);
-    return value;
-  }
-  if (field.type === "number") {
-    if (typeof value !== "number" && typeof value !== "string" || typeof value === "string" && !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value) || !Number.isFinite(Number(value)))
-      throw new Error(`Expected finite number: ${field.field}`);
-    return Number(value);
-  }
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))?$/.test(value)) {
-    throw new Error(`Expected ISO date: ${field.field}`);
-  }
-  const day = value.slice(0, 10);
-  const parsed = /* @__PURE__ */ new Date(day + "T00:00:00Z");
-  if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== day || !Number.isFinite(Date.parse(value))) {
-    throw new Error(`Invalid date: ${field.field}`);
-  }
-  return day;
-}
-function generateEditContract(input) {
-  const spec = editContractSchema.parse(input);
-  for (const key of ["field", "component"]) {
-    if (new Set(spec.fields.map((f) => f[key])).size !== spec.fields.length)
-      throw new Error(`Duplicate ${key} in edit contract`);
-  }
-  if (spec.fields.some((f) => f.field === spec.id_field))
-    throw new Error("The stable primary key cannot be edited");
-  if (spec.fields.some((f) => f.required && f.nullable))
-    throw new Error("A required field cannot be nullable");
-  for (const f of spec.fields)
-    if (f.choices) {
-      if (!["text", "number"].includes(f.type))
-        throw new Error("Choices require a text or number field");
-      if (Array.isArray(f.choices)) {
-        if (f.choices.some((o) => typeof o.value !== (f.type === "text" ? "string" : "number")))
-          throw new Error("Choice values must match field type");
-        if (new Set(f.choices.map((o) => o.value)).size !== f.choices.length)
-          throw new Error("Duplicate choice value");
-      }
-    }
-  const snapshot = `${spec.prefix}Snapshot`, draft = `${spec.prefix}Draft`;
-  const openName = `${spec.prefix}Open`, prepareName = `${spec.prefix}Prepare`;
-  const q = JSON.stringify;
-  const helpers = `const canonical = ${canonical.toString()};
-const fields = ${q(spec.fields)};
-const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
-`;
-  const openCode = helpers + `await actions.setVariable(${q(snapshot)}, null);
-await actions.setVariable(${q(draft)}, null);
-const selection = components.${spec.table_component}.selectedRow;
-const id = selection && selection[${q(spec.id_field)}];
-if ((typeof id !== 'string' && typeof id !== 'number') || id === '' || (typeof id === 'number' && !Number.isFinite(id))) throw new Error('Select a record first');
-const rows = queries.${spec.source_query}.data;
-if (!Array.isArray(rows)) throw new Error('Raw records are not loaded');
-const matches = rows.filter(r => r && own(r, ${q(spec.id_field)}) && r[${q(spec.id_field)}] === id);
-if (matches.length !== 1) throw new Error('Expected exactly one raw record for the selected ID');
-const values = {};
-for (const field of fields) {
-  if (!own(matches[0], field.field)) throw new Error('Raw record omits: ' + field.field);
-  // Existing incomplete records must be openable for correction. Validate required
-  // values on Prepare, not before the user can edit them.
-  values[field.field] = canonical(matches[0][field.field], { ...field, required: false, nullable: true });
-}
-await actions.setVariable(${q(snapshot)}, { id, values });
-return { id };`;
-  const prepareCode = helpers + `const snapshot = variables.${snapshot};
-const draft = variables.${draft};
-const selection = components.${spec.table_component}.selectedRow;
-if (!snapshot || !selection || selection[${q(spec.id_field)}] !== snapshot.id) throw new Error('Reopen the selected record before saving');
-if (draft && draft.id !== snapshot.id) throw new Error('Draft belongs to another record');
-const changes = draft ? draft.values : {};
-if (!changes || typeof changes !== 'object' || Array.isArray(changes)) throw new Error('Invalid draft');
-const patch = {};
-for (const key of Object.keys(changes)) if (!fields.some(f => f.field === key)) throw new Error('Unknown draft field: ' + key);
-for (const field of fields) {
-  if (!own(snapshot.values, field.field)) throw new Error('Incomplete edit snapshot');
-  if (!own(changes, field.field)) {
-    canonical(snapshot.values[field.field], field);
-    continue;
-  }
-  const raw = changes[field.field];
-  let value = canonical(raw, field);
-  if (value === '' && field.type !== 'text') value = null;
-  if (value === '' || value === null) {
-    if (!field.nullable) throw new Error('Clearing is not allowed: ' + field.field);
-    value = null;
-  }
-  if (value !== snapshot.values[field.field]) patch[field.field] = value;
-}
-return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
-  const inputs = spec.fields.map((f) => {
-    const type = f.choices ? "DropdownV2" : { text: "TextInput", number: "NumberInput", date_only: "DatePickerV2", boolean: "Checkbox" }[f.type];
-    const initialKey = f.choices ? "schema" : ["date_only", "boolean"].includes(f.type) ? "defaultValue" : "value";
-    const exposed = f.type === "date_only" ? "selectedDate" : "value";
-    const trigger = f.choices || f.type === "date_only" ? "onSelect" : "onChange";
-    const schema = getComponentSchema(type);
-    if (!schema?.properties.some((p) => p.key === initialKey) || !schema.events?.some((e) => e.id === trigger))
-      throw new Error(`Unsupported edit adapter: ${type}`);
-    const initial = `variables.${snapshot} && variables.${snapshot}.values[${q(f.field)}]`;
-    let value = `{{${initial} != null ? variables.${snapshot}.values[${q(f.field)}] : ${f.type === "boolean" ? "false" : "''"}}}`;
-    if (f.choices) {
-      const options = Array.isArray(f.choices) ? q(f.choices) : `(queries.${f.choices.query}.data || []).map(r=>({label:r[${q(f.choices.label_field)}],value:r[${q(f.choices.value_field)}]}))`;
-      value = `{{(${options}).map(option=>({label:option.label,value:option.value,visible:true,default:!!variables.${snapshot} && option.value === variables.${snapshot}.values[${q(f.field)}]}))}}`;
-    }
-    const exposedValue = `components.${f.component}.${exposed}`;
-    const changedValue = f.choices && f.nullable ? `(${exposedValue} == null ? null : ${exposedValue})` : exposedValue;
-    const draftValue = `{{({id:variables.${snapshot}.id,values:Object.assign({},variables.${draft} && variables.${draft}.id === variables.${snapshot}.id ? variables.${draft}.values : {},{${q(f.field)}:${changedValue}})})}}`;
-    return {
-      name: f.component,
-      type,
-      properties: { [initialKey]: value, ...f.choices ? { advanced: "{{true}}", showClearBtn: f.nullable } : {}, ...f.type === "date_only" ? { dateFormat: "YYYY-MM-DD" } : {} },
-      validation: { mandatory: f.required },
-      events: [{ source_ref: f.component, source_type: "component", trigger, action: {
-        actionId: "set-custom-variable",
-        key: draft,
-        value: draftValue,
-        runOnlyIf: `{{!!variables.${snapshot}}}`
-      } }]
-    };
-  });
-  return {
-    queries: [
-      { name: openName, kind: "runjs", options: { code: openCode } },
-      { name: prepareName, kind: "runjs", options: { code: prepareCode } }
-    ],
-    inputs,
-    mutation_contract: {
-      id: `{{queries.${prepareName}.data.id}}`,
-      patch: `{{queries.${prepareName}.data.patch}}`,
-      runOnlyIf: `{{queries.${prepareName}.data && queries.${prepareName}.data.changed === true}}`
-    },
-    wiring: [
-      `Run ${openName} on Edit; open the editor only on its success. Merge the returned input properties and change events into your native layout. Never use display selectedRow fields as defaults.`,
-      `Run ${prepareName} on Save; run a datasource-specific PATCH/update ONLY on its success and with mutation_contract.runOnlyIf. No change means no write. Bind the ID and patch from mutation_contract; never expand missing patch keys to null or empty strings.`,
-      "Gate Save while open/prepare/write are loading. Preserve the editor on failure. Refresh affected queries and close/reset only after the actual mutation succeeds; refresh actions are not assumed to complete in order."
-    ],
-    limitations: [
-      "Requires an already-loaded bounded raw row array and a single stable scalar ID. This generates wiring only; it does not create resources or persist data.",
-      "Only text, finite number, ISO date-only and boolean fields are covered; text/number fields can opt into dropdown choices. Required/nullable/trim are explicit opt-ins; domain constraints, authorization and optimistic concurrency must be enforced separately.",
-      "Dropdown option queries must already return bounded raw arrays with matching ID types and include the current value, including inactive owners when necessary. Missing options are not permission to clear stored relationships. Validate membership/authorization separately; this helper does not create or execute option queries.",
-      "Draft tracks native change events, not every displayed input value. Programmatic field changes must update the draft explicitly. Browser-verify that all change events fire, including both checkbox transitions."
-    ]
-  };
-}
 export {
-  generateEditContract as A,
+  ToolJetHttpError as A,
+  PartialWriteError as P,
   TOOLJET_DB_DATA_TYPES as T,
   normalizeType as a,
   booleanBindingValue as b,
-  completedPartialWrites as c,
-  specSchema as d,
-  createClient as e,
+  componentRef as c,
+  invalidSeedTimestamps as d,
+  completedPartialWrites as e,
   fail as f,
-  inspectDatasourceSchemaTool as g,
-  nodeCatalog as h,
-  invalidSeedTimestamps as i,
-  capabilityRequestSchema as j,
-  getWorkflowCapabilities as k,
+  specSchema as g,
+  createClient as h,
+  indexComponentReferences as i,
+  inspectDatasourceSchemaTool as j,
+  nodeCatalog as k,
   listWorkspaceGroupsTool as l,
   manageWorkspaceGroupsTool as m,
   normalizeComponentSpec as n,
   ok as o,
-  lint as p,
-  apply as q,
+  capabilityRequestSchema as p,
+  getWorkflowCapabilities as q,
   resolveRef as r,
   strictEntry as s,
   tableQuotaError as t,
   updateComponentsTool as u,
   validateTableBatch as v,
-  deleteNode as w,
-  validateGraph as x,
-  ToolJetHttpError as y,
-  editContractSchema as z
+  lint as w,
+  apply as x,
+  deleteNode as y,
+  validateGraph as z
 };

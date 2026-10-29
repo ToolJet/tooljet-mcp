@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ToolJetClient } from '../tooljetClient.js';
+import { PartialWriteError, type ToolJetClient } from '../tooljetClient.js';
 import { prepareQueryOptionsForWrite } from '../queryPersistence.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { resolveRef } from '../refResolution.js';
@@ -108,6 +108,8 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
             name: args.name,
           });
         } catch (error) {
+          // Options were saved; restoring only the old source would pair it with the new options.
+          if (error instanceof PartialWriteError) throw error;
           if (args.datasource_id && currentDatasourceId && args.datasource_id !== currentDatasourceId) {
             if (!originalDatasourceAvailable) {
               try {

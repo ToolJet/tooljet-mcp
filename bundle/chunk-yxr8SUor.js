@@ -1,13 +1,11 @@
 import { createRequire } from "node:module";
-import { _ as __toESM, a as __commonJS, p as require_parse, q as require_util, r as readCatalog, s as __export } from "./chunk-D0rVi1EZ.js";
-import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-CWXC6H5y.js";
-import { a$ as require_moment, aB as ParseErrorEnum, aJ as ScopeHandler, aZ as getExportedToken, t as tt, N as percentSign, ai as tokenLabelName, aC as tokenIsIdentifier, a as rightCurlyBrace, g as greaterThan, M as ampersand, x as leftCurlyBrace, l as lessThan, n as carriageReturn, m as lineFeed, E as Errors, J as numberSign, Z as lowercaseX, a6 as semicolon, c as isIdentifierChar, f as dash, aj as tokenIsKeyword, al as types, h as exclamationMark, z as isIdentifierStart, P as quotationMark, O as apostrophe, b0 as tokenComesBeforeExpression } from "./chunk-Cyh9PdSf.js";
-import { g as getOptions, O as OptionFlags, t as typescript_default, i as isNewLine } from "./chunk-CE2u8IbT.js";
-import { f as flow_default } from "./chunk-CSI-ODCK.js";
-import { S as StatementParser } from "./chunk-5X4UDYG8.js";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { resolve, dirname } from "node:path";
+import { m as require_parse, n as require_util } from "./chunk-8iUq0slz.js";
+import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-CsHFzbSc.js";
+import { a$ as require_moment, aB as ParseErrorEnum, aJ as ScopeHandler, aZ as getExportedToken, t as tt, N as percentSign, ai as tokenLabelName, aC as tokenIsIdentifier, a as rightCurlyBrace, g as greaterThan, M as ampersand, x as leftCurlyBrace, l as lessThan, n as carriageReturn, m as lineFeed, E as Errors, J as numberSign, Z as lowercaseX, a6 as semicolon, c as isIdentifierChar, f as dash, aj as tokenIsKeyword, al as types, h as exclamationMark, z as isIdentifierStart, P as quotationMark, O as apostrophe, b0 as tokenComesBeforeExpression } from "./chunk-CPO3lpSy.js";
+import { g as getOptions, O as OptionFlags, t as typescript_default, i as isNewLine } from "./chunk-qhyW4MeS.js";
+import { f as flow_default } from "./chunk-CLeJ853_.js";
+import { S as StatementParser } from "./chunk-BjOFSCcG.js";
+import { e8 as __toESM, e6 as __commonJS } from "./chunk-BEuHHGL1.js";
 createRequire(import.meta.url);
 var require_stringify = __commonJS({
   "node_modules/json5/lib/stringify.js"(exports, module) {
@@ -149,7 +147,7 @@ var require_stringify = __commonJS({
         let stepback = indent;
         indent = indent + gap;
         let keys = propertyList || Object.keys(value2);
-        let partial2 = [];
+        let partial = [];
         for (const key of keys) {
           const propertyString = serializeProperty(key, value2);
           if (propertyString !== void 0) {
@@ -158,20 +156,20 @@ var require_stringify = __commonJS({
               member += " ";
             }
             member += propertyString;
-            partial2.push(member);
+            partial.push(member);
           }
         }
         let final;
-        if (partial2.length === 0) {
+        if (partial.length === 0) {
           final = "{}";
         } else {
           let properties;
           if (gap === "") {
-            properties = partial2.join(",");
+            properties = partial.join(",");
             final = "{" + properties + "}";
           } else {
             let separator = ",\n" + indent;
-            properties = partial2.join(separator);
+            properties = partial.join(separator);
             final = "{\n" + indent + properties + ",\n" + stepback + "}";
           }
         }
@@ -201,21 +199,21 @@ var require_stringify = __commonJS({
         stack.push(value2);
         let stepback = indent;
         indent = indent + gap;
-        let partial2 = [];
+        let partial = [];
         for (let i = 0; i < value2.length; i++) {
           const propertyString = serializeProperty(String(i), value2);
-          partial2.push(propertyString !== void 0 ? propertyString : "null");
+          partial.push(propertyString !== void 0 ? propertyString : "null");
         }
         let final;
-        if (partial2.length === 0) {
+        if (partial.length === 0) {
           final = "[]";
         } else {
           if (gap === "") {
-            let properties = partial2.join(",");
+            let properties = partial.join(",");
             final = "[" + properties + "]";
           } else {
             let separator = ",\n" + indent;
-            let properties = partial2.join(separator);
+            let properties = partial.join(separator);
             final = "[\n" + indent + properties + ",\n" + stepback + "]";
           }
         }
@@ -3633,6 +3631,77 @@ function extractRowCount(result) {
   return numeric.length === 1 ? numeric[0] : void 0;
 }
 createRequire(import.meta.url);
+var QUERY_TOGGLES = ["runOnPageLoad", "runOnDependencyChange", "requestConfirmation", "showSuccessNotification"];
+var STATIC_TOGGLE = /^\s*(?:\{\{\s*(true|false)\s*\}\}|(true|false))\s*$/;
+function isPlainObject(value) {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+function staticToggle(value) {
+  if (typeof value !== "string")
+    return void 0;
+  const match = STATIC_TOGGLE.exec(value);
+  return match ? (match[1] ?? match[2]) === "true" : void 0;
+}
+function normalizeQueryToggles(options) {
+  if (!isPlainObject(options))
+    return options;
+  let out = options;
+  for (const key of QUERY_TOGGLES) {
+    const value = staticToggle(options[key]);
+    if (value === void 0)
+      continue;
+    if (out === options)
+      out = { ...options };
+    out[key] = value;
+  }
+  return out;
+}
+function describe(value) {
+  if (value === null)
+    return "null";
+  if (Array.isArray(value))
+    return "an array";
+  if (typeof value === "object")
+    return "an object";
+  if (typeof value === "string")
+    return JSON.stringify(value);
+  return `${typeof value} ${String(value)}`;
+}
+function queryToggleIssues(options) {
+  if (!isPlainObject(options))
+    return [];
+  const issues = [];
+  for (const key of QUERY_TOGGLES) {
+    if (!(key in options))
+      continue;
+    const value = options[key];
+    if (value === void 0 || typeof value === "boolean" || staticToggle(value) !== void 0)
+      continue;
+    const dynamic = typeof value === "string" ? " ToolJet does not evaluate it and treats any text as on. Run the query from an event instead when it depends on state." : "";
+    issues.push({
+      code: "query_toggle_not_boolean",
+      path: key,
+      message: `${key} must be true or false (or left out), not ${describe(value)}.${dynamic}`
+    });
+  }
+  return issues;
+}
+function toggleRewriteWarning(before, after) {
+  const changed = QUERY_TOGGLES.filter((key) => before?.[key] !== after?.[key]);
+  if (!changed.length)
+    return void 0;
+  return `${changed.map((key) => `${key} ${JSON.stringify(before[key])} saved as ${String(after[key])}`).join(", ")}; ToolJet reads these as true/false and runs any text on load.`;
+}
+function assertPersistableQueryToggles(options, subject) {
+  const issues = queryToggleIssues(options);
+  const strings = isPlainObject(options) ? QUERY_TOGGLES.filter((key) => typeof options[key] === "string") : [];
+  const messages = [
+    ...issues.map((issue2) => issue2.message),
+    ...strings.filter((key) => !issues.some((issue2) => issue2.path === key)).map((key) => `${key} must be sent as a boolean, not ${JSON.stringify(options[key])}.`)
+  ];
+  if (messages.length)
+    throw new Error(`${subject}: ${messages.join(" ")}`);
+}
 function bindingSpans(value) {
   const spans = [];
   let from = 0;
@@ -3659,76 +3728,28 @@ function bindingSpans(value) {
   }
   return spans;
 }
-var QUERY_TOGGLES = ["runOnPageLoad", "runOnDependencyChange", "requestConfirmation", "showSuccessNotification"];
-var STATIC_TOGGLE = /^\s*(?:\{\{\s*(true|false)\s*\}\}|(true|false))\s*$/;
-function isPlainObject$1(value) {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-function staticToggle(value) {
+function primitiveWriteBindingEntries(value) {
   if (typeof value !== "string")
-    return void 0;
-  const match = STATIC_TOGGLE.exec(value);
-  return match ? (match[1] ?? match[2]) === "true" : void 0;
-}
-function normalizeQueryToggles(options) {
-  if (!isPlainObject$1(options))
-    return options;
-  let out = options;
-  for (const key of QUERY_TOGGLES) {
-    const value = staticToggle(options[key]);
-    if (value === void 0)
-      continue;
-    if (out === options)
-      out = { ...options };
-    out[key] = value;
-  }
-  return out;
-}
-function describe(value) {
-  if (value === null)
-    return "null";
-  if (Array.isArray(value))
-    return "an array";
-  if (typeof value === "object")
-    return "an object";
-  if (typeof value === "string")
-    return JSON.stringify(value);
-  return `${typeof value} ${String(value)}`;
-}
-function queryToggleIssues(options) {
-  if (!isPlainObject$1(options))
     return [];
-  const issues = [];
-  for (const key of QUERY_TOGGLES) {
-    if (!(key in options))
-      continue;
-    const value = options[key];
-    if (value === void 0 || typeof value === "boolean" || staticToggle(value) !== void 0)
-      continue;
-    const dynamic = typeof value === "string" ? " ToolJet does not evaluate it and treats any text as on. Run the query from an event instead when it depends on state." : "";
-    issues.push({
-      code: "query_toggle_not_boolean",
-      path: key,
-      message: `${key} must be true or false (or left out), not ${describe(value)}.${dynamic}`
+  const source = value.trim();
+  const spans = bindingSpans(source);
+  if (spans.length !== 1 || spans[0].start !== 0 || spans[0].end !== source.length)
+    return [];
+  try {
+    const node = parseExpression(spans[0].body);
+    if (node.type !== "ObjectExpression")
+      return [];
+    return node.properties.flatMap((p) => {
+      if (p.type !== "ObjectProperty" || p.computed)
+        return [];
+      const key = p.key.type === "Identifier" ? p.key.name : p.key.type === "StringLiteral" || p.key.type === "NumericLiteral" ? String(p.key.value) : void 0;
+      if (!key)
+        return [];
+      return ["StringLiteral", "NumericLiteral", "BooleanLiteral", "NullLiteral", "TemplateLiteral", "UnaryExpression"].includes(p.value.type) ? [key] : [];
     });
+  } catch {
+    return [];
   }
-  return issues;
-}
-function toggleRewriteWarning(before, after) {
-  const changed = QUERY_TOGGLES.filter((key) => before?.[key] !== after?.[key]);
-  if (!changed.length)
-    return void 0;
-  return `${changed.map((key) => `${key} ${JSON.stringify(before[key])} saved as ${String(after[key])}`).join(", ")}; ToolJet reads these as true/false and runs any text on load.`;
-}
-function assertPersistableQueryToggles(options, subject) {
-  const issues = queryToggleIssues(options);
-  const strings = isPlainObject$1(options) ? QUERY_TOGGLES.filter((key) => typeof options[key] === "string") : [];
-  const messages = [
-    ...issues.map((issue2) => issue2.message),
-    ...strings.filter((key) => !issues.some((issue2) => issue2.path === key)).map((key) => `${key} must be sent as a boolean, not ${JSON.stringify(options[key])}.`)
-  ];
-  if (messages.length)
-    throw new Error(`${subject}: ${messages.join(" ")}`);
 }
 var object = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : void 0;
 function conditionalWriteWarning(kind, options) {
@@ -3811,29 +3832,6 @@ function arithmeticWriteWarning(kind, options) {
   if (!risky.length)
     return;
   return `update_rows calculates ${[...new Set(risky)].map((x) => JSON.stringify(x)).join(", ")} from selectedRow arithmetic without an expected-value predicate for that column. Verify the source query actually returns every operand; an absent value defaulted to zero can overwrite a real balance. For accumulated stock, balances or counters, prefer a supported atomic database increment/decrement with bounds and idempotency, or an explicit optimistic-concurrency predicate. Do not silently replace the intended calculation; ordinary derived-field formulas may be intentional. This is advisory, not proof that the operation is incorrect.`;
-}
-function primitiveWriteBindingEntries(value) {
-  if (typeof value !== "string")
-    return [];
-  const source = value.trim();
-  const spans = bindingSpans(source);
-  if (spans.length !== 1 || spans[0].start !== 0 || spans[0].end !== source.length)
-    return [];
-  try {
-    const node = parseExpression(spans[0].body);
-    if (node.type !== "ObjectExpression")
-      return [];
-    return node.properties.flatMap((p) => {
-      if (p.type !== "ObjectProperty" || p.computed)
-        return [];
-      const key = p.key.type === "Identifier" ? p.key.name : p.key.type === "StringLiteral" || p.key.type === "NumericLiteral" ? String(p.key.value) : void 0;
-      if (!key)
-        return [];
-      return ["StringLiteral", "NumericLiteral", "BooleanLiteral", "NullLiteral", "TemplateLiteral", "UnaryExpression"].includes(p.value.type) ? [key] : [];
-    });
-  } catch {
-    return [];
-  }
 }
 var UPDATE_OPERATIONS = /* @__PURE__ */ new Set(["update_one", "update_many", "find_one_update"]);
 var BULK_UPDATES = ["updateOne", "updateMany"];
@@ -3949,7 +3947,7 @@ function setStages(update) {
   }
   return [];
 }
-function issue$1(path, field) {
+function issue(path, field) {
   return {
     code: "mongodb_whole_array_set",
     path,
@@ -3973,12 +3971,72 @@ function mongoArrayReplacementIssues(options) {
       });
     }
   }
-  return updates.flatMap(({ path, update }) => setStages(update).flatMap((set) => replacedArrayPaths(unwrap(set)).map((field) => issue$1(path, field))));
+  return updates.flatMap(({ path, update }) => setStages(update).flatMap((set) => replacedArrayPaths(unwrap(set)).map((field) => issue(path, field))));
+}
+var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+var ALIASES = { workflow_id: "workflowId", workflow_version_id: "workflowVersionId" };
+function normalizeWorkflowQueryOptions(options) {
+  let normalized = options;
+  for (const [alias, field] of Object.entries(ALIASES)) {
+    if (!(alias in options))
+      continue;
+    if (options[field] !== void 0 && options[field] !== options[alias])
+      continue;
+    if (normalized === options)
+      normalized = { ...options };
+    if (normalized[field] === void 0)
+      normalized[field] = normalized[alias];
+    delete normalized[alias];
+  }
+  return normalized;
+}
+function workflowQueryIssues(options) {
+  const errors = [];
+  for (const [alias, field] of Object.entries(ALIASES)) {
+    if (alias in options && options[field] !== void 0 && options[field] !== options[alias])
+      errors.push({
+        code: "conflicting_workflow_target",
+        path: alias,
+        message: `Conflicting workflow selectors ${field} and ${alias}; specify one target.`
+      });
+  }
+  if ("sync_execution" in options)
+    errors.push({ code: "invalid_workflow_option", path: "sync_execution", message: "Use the native syncExecution boolean, not sync_execution." });
+  options = normalizeWorkflowQueryOptions(options);
+  for (const field of ["workflowId", "workflowVersionId"]) {
+    const value = options[field];
+    if (field === "workflowVersionId" && (value === void 0 || value === null))
+      continue;
+    if (typeof value !== "string" || !UUID.test(value))
+      errors.push({
+        code: "invalid_workflow_target",
+        path: field,
+        message: `Workflow query options.${field} must be a literal workflow ${field === "workflowId" ? "ID from list_workflows/get_workflow" : "version ID from list_app_versions/get_workflow"}. A query and its success/failure handlers do not establish the workflow mapping.`
+      });
+  }
+  if (options.syncExecution !== void 0 && typeof options.syncExecution !== "boolean") {
+    errors.push({ code: "invalid_workflow_option", path: "syncExecution", message: "Workflow query syncExecution must be a boolean." });
+  }
+  if (options.params !== void 0 && (!Array.isArray(options.params) || options.params.some((param) => !param || typeof param !== "object" || Array.isArray(param) || typeof param.key !== "string" || !Object.hasOwn(param, "value")))) {
+    errors.push({ code: "invalid_workflow_option", path: "params", message: "Workflow query params must be an array of {key, value} entries; values may contain app bindings." });
+  }
+  return errors;
+}
+function assertWorkflowQueryOptions(options) {
+  const errors = workflowQueryIssues(options);
+  if (errors.length)
+    throw new Error(errors.map((error) => error.message).join(" "));
+}
+function workflowMappingMatches(expected, actual) {
+  if (!actual || typeof actual !== "object" || Array.isArray(actual))
+    return false;
+  const saved = normalizeWorkflowQueryOptions(actual);
+  return saved.workflowId === expected.workflowId && (saved.workflowVersionId ?? null) === (expected.workflowVersionId ?? null);
 }
 var KNOWN_IGNORED_KEYS = {
   run_on_page_load: "runOnPageLoad"
 };
-function isObject$1(value) {
+function isObject(value) {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 function isTruthyStatic(value) {
@@ -3990,7 +4048,7 @@ function isDynamicBinding(value) {
 function valueAtPath(source, path) {
   let cursor = source;
   for (const segment of path.split(".")) {
-    if (!isObject$1(cursor) || !Object.prototype.hasOwnProperty.call(cursor, segment))
+    if (!isObject(cursor) || !Object.prototype.hasOwnProperty.call(cursor, segment))
       return void 0;
     cursor = cursor[segment];
   }
@@ -4073,7 +4131,7 @@ function bindingStrings(value, path = "") {
   if (Array.isArray(value)) {
     return value.flatMap((item, index) => bindingStrings(item, `${path}[${index}]`));
   }
-  if (!isObject$1(value))
+  if (!isObject(value))
     return [];
   return Object.entries(value).flatMap(([key, item]) => bindingStrings(item, path ? `${path}.${key}` : key));
 }
@@ -4494,7 +4552,7 @@ function undeclaredNames(source, known) {
 }
 function transformationWarnings(options) {
   const warnings = [];
-  const bag = isObject$1(options.transformations) ? options.transformations : void 0;
+  const bag = isObject(options.transformations) ? options.transformations : void 0;
   const languages = bag ? Object.keys(bag).filter((key) => key === "javascript" || key === "python") : [];
   const hasCode = languages.length > 0 || typeof options.transformation === "string" && options.transformation.trim() !== "";
   if (!hasCode)
@@ -4541,6 +4599,8 @@ var TARGET_FIELD = /(^|_)(table|table_name|table_id|collection|collection_name|s
 function validateQueryOptions(kind, options, executionContext = "app") {
   const errors = [];
   errors.push(...queryToggleIssues(options));
+  if (kind === "workflows")
+    errors.push(...workflowQueryIssues(options));
   if (kind === "hubspot")
     errors.push(...hubspotQueryIssues(options).map((issue2) => ({ code: "invalid_hubspot_query", ...issue2 })));
   errors.push(...apiEndpointQueryIssues(kind, options).map((issue2) => ({ code: "invalid_api_endpoint_query", ...issue2 })));
@@ -4548,6 +4608,12 @@ function validateQueryOptions(kind, options, executionContext = "app") {
     errors.push({ code: "automatic_hubspot_write", message: "HubSpot writes must run from an explicit user action, not on page load or dependency changes." });
   }
   const warnings = tableStateWarnings(options);
+  if (kind === "workflows") {
+    const normalized = normalizeWorkflowQueryOptions(options);
+    if (normalized !== options)
+      warnings.push({ code: "legacy_workflow_selector", message: "Legacy workflow selector keys are equivalent to workflowId/workflowVersionId; writes use the native camelCase keys." });
+    options = normalized;
+  }
   const conditionalWrite = conditionalWriteWarning(kind, options);
   if (conditionalWrite)
     warnings.push({ code: "conditional_write_result", path: "update_rows", message: conditionalWrite });
@@ -4695,7 +4761,7 @@ function validateQueryOptions(kind, options, executionContext = "app") {
   for (const root of allowedTopLevel) {
     const children = nestedChildren(fields, root);
     const actual = options[root];
-    if (!children.size || !isObject$1(actual))
+    if (!children.size || !isObject(actual))
       continue;
     for (const child of Object.keys(actual)) {
       if (!children.has(child)) {
@@ -4717,8 +4783,8 @@ function validateQueryOptions(kind, options, executionContext = "app") {
       errors.push({ code: "missing_target", path: targets[0], message: `${kind}/${operation} names nothing to act on: set ${targets.join(" or ")}.` });
     }
   }
-  const required2 = intersection(matching.map((variant) => variant.required));
-  for (const path of required2) {
+  const required = intersection(matching.map((variant) => variant.required));
+  for (const path of required) {
     const value = valueAtPath(options, path);
     if (value === void 0 || value === null || value === "") {
       errors.push({
@@ -4769,8 +4835,8 @@ function validateQueryOptions(kind, options, executionContext = "app") {
         path: columnsPath,
         message: `ToolJet DB ${operation} "${columnsPath}" binds a flat object with primitive entry values at ${primitiveEntries.map((k) => JSON.stringify(k)).join(", ")}. ToolJet reads {column, value} records, so these fields are omitted or the write fails. Use a literal column map with bound values, e.g. {"0":{"column":"status","value":"{{components.status.value}}"}}, or make the binding return that same record-map shape. Do not change the intended field values.`
       });
-    if (isObject$1(columns) && Object.keys(columns).length > 0) {
-      const flat = Object.entries(columns).filter(([, clause]) => !isObject$1(clause) || typeof clause.column !== "string" || clause.column === "");
+    if (isObject(columns) && Object.keys(columns).length > 0) {
+      const flat = Object.entries(columns).filter(([, clause]) => !isObject(clause) || typeof clause.column !== "string" || clause.column === "");
       if (flat.length > 0) {
         const example = flat[0][0];
         errors.push({
@@ -4781,12 +4847,12 @@ function validateQueryOptions(kind, options, executionContext = "app") {
       }
     }
   }
-  if (kind !== "tooljetdb" && operation === "create_row" && isObject$1(valueAtPath(options, "create_row"))) {
+  if (kind !== "tooljetdb" && operation === "create_row" && isObject(valueAtPath(options, "create_row"))) {
     const createRow = valueAtPath(options, "create_row");
     const columns = createRow.columns;
-    const usable = isObject$1(columns) && Object.values(columns).some((clause) => isObject$1(clause) && typeof clause.column === "string" && clause.column !== "");
+    const usable = isObject(columns) && Object.values(columns).some((clause) => isObject(clause) && typeof clause.column === "string" && clause.column !== "");
     if (!usable) {
-      const misplaced = !isObject$1(columns) && Object.values(createRow).some((clause) => isObject$1(clause) && typeof clause.column === "string" && clause.column !== "");
+      const misplaced = !isObject(columns) && Object.values(createRow).some((clause) => isObject(clause) && typeof clause.column === "string" && clause.column !== "");
       errors.push({
         code: "malformed_write_columns",
         path: "create_row.columns",
@@ -4797,8 +4863,8 @@ function validateQueryOptions(kind, options, executionContext = "app") {
   if (kind === "tooljetdb" && (operation === "update_rows" || operation === "delete_rows")) {
     const filtersPath = `${operation}.where_filters`;
     const filters = valueAtPath(options, filtersPath);
-    if (isObject$1(filters) || Array.isArray(filters)) {
-      const usable = Object.entries(filters).filter(([, clause]) => isObject$1(clause) && typeof clause.column === "string" && clause.column !== "" && typeof clause.operator === "string" && clause.operator !== "");
+    if (isObject(filters) || Array.isArray(filters)) {
+      const usable = Object.entries(filters).filter(([, clause]) => isObject(clause) && typeof clause.column === "string" && clause.column !== "" && typeof clause.operator === "string" && clause.operator !== "");
       if (usable.length === 0) {
         const example = Object.keys(filters)[0];
         errors.push({
@@ -4817,7 +4883,7 @@ function validateQueryOptions(kind, options, executionContext = "app") {
   }
   if (kind === "tooljetdb" && ["list_rows", "update_rows", "delete_rows"].includes(operation)) {
     const filters = valueAtPath(options, `${operation}.where_filters`);
-    if (isObject$1(filters) || Array.isArray(filters)) {
+    if (isObject(filters) || Array.isArray(filters)) {
       for (const [mapKey, rawClause] of Object.entries(filters)) {
         const aliases = {
           equals: "eq",
@@ -4841,14 +4907,14 @@ function validateQueryOptions(kind, options, executionContext = "app") {
           less_than_or_equal: "lte",
           "<=": "lte"
         };
-        if (isObject$1(rawClause) && typeof rawClause.operator === "string" && Object.hasOwn(aliases, rawClause.operator)) {
+        if (isObject(rawClause) && typeof rawClause.operator === "string" && Object.hasOwn(aliases, rawClause.operator)) {
           errors.push({
             code: "invalid_tooljetdb_filter_operator",
             path: `${operation}.where_filters.${mapKey}.operator`,
             message: `ToolJet DB filter operator "${rawClause.operator}" is not a PostgREST builder operator. Use "${aliases[rawClause.operator]}" for this comparison; keep the same column and value. The query was not automatically rewritten. Fetch the datasource operation contract if unsure.`
           });
         }
-        if (!isObject$1(rawClause) || rawClause.operator !== "eq")
+        if (!isObject(rawClause) || rawClause.operator !== "eq")
           continue;
         const column = typeof rawClause.column === "string" ? rawClause.column : "";
         const value = typeof rawClause.value === "string" ? rawClause.value : "";
@@ -4868,9 +4934,9 @@ function validateQueryOptions(kind, options, executionContext = "app") {
   }
   if (kind === "tooljetdb" && operation === "list_rows") {
     const orderFilters = valueAtPath(options, "list_rows.order_filters");
-    if (isObject$1(orderFilters)) {
+    if (isObject(orderFilters)) {
       for (const [mapKey, rawClause] of Object.entries(orderFilters)) {
-        if (!isObject$1(rawClause) || typeof rawClause.id !== "string" || rawClause.id === mapKey)
+        if (!isObject(rawClause) || typeof rawClause.id !== "string" || rawClause.id === mapKey)
           continue;
         warnings.push({
           code: "mismatched_record_id",
@@ -4886,15 +4952,15 @@ function issueMessages(issues, prefix) {
   return issues.map((issue2) => `${prefix ? `${prefix}: ` : ""}${issue2.message}`);
 }
 function normalizeWriteColumnMap(columns) {
-  if (!isObject$1(columns) || Object.keys(columns).length === 0)
+  if (!isObject(columns) || Object.keys(columns).length === 0)
     return null;
   const entries = Object.entries(columns);
-  if (entries.every(([, clause]) => isObject$1(clause) && typeof clause.column === "string" && clause.column !== "")) {
+  if (entries.every(([, clause]) => isObject(clause) && typeof clause.column === "string" && clause.column !== "")) {
     return null;
   }
   const normalized = {};
   entries.forEach(([key, clause], index) => {
-    if (isObject$1(clause) && typeof clause.column === "string" && clause.column !== "") {
+    if (isObject(clause) && typeof clause.column === "string" && clause.column !== "") {
       normalized[String(index)] = clause;
       return;
     }
@@ -4904,7 +4970,9 @@ function normalizeWriteColumnMap(columns) {
 }
 function normalizeQueryOptions(kind, rawOptions) {
   const options = normalizeQueryToggles(rawOptions);
-  if (kind === "mongodb" && isObject$1(options)) {
+  if (kind === "workflows")
+    return normalizeWorkflowQueryOptions(options);
+  if (kind === "mongodb" && isObject(options)) {
     let result = options;
     for (const field of ["filter", "options", "pipeline", "document", "documents", "update", "replacement", "operations"]) {
       const value = options[field];
@@ -4916,7 +4984,7 @@ function normalizeQueryOptions(kind, rawOptions) {
     }
     return result;
   }
-  if (kind !== "tooljetdb" || !isObject$1(options))
+  if (kind !== "tooljetdb" || !isObject(options))
     return options;
   const operation = typeof options.operation === "string" ? options.operation : "";
   if (operation === "create_row") {
@@ -4925,925 +4993,36 @@ function normalizeQueryOptions(kind, rawOptions) {
   }
   if (operation === "update_rows") {
     const updateRows = options.update_rows;
-    if (!isObject$1(updateRows))
+    if (!isObject(updateRows))
       return options;
     const normalized = normalizeWriteColumnMap(updateRows.columns);
     return normalized ? { ...options, update_rows: { ...updateRows, columns: normalized } } : options;
   }
   return options;
 }
-createRequire(import.meta.url);
-var dataPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-schemas.json");
-var compatibilityPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-compatibility.json");
-var cache = null;
-var legacyReplacements = null;
-function load() {
-  if (!cache)
-    cache = readCatalog(dataPath);
-  return cache;
-}
-function loadLegacyReplacements() {
-  if (!legacyReplacements) {
-    const compatibility = JSON.parse(readFileSync(compatibilityPath, "utf8"));
-    legacyReplacements = compatibility.legacyReplacements ?? {};
-  }
-  return legacyReplacements;
-}
-function getCatalog() {
-  const legacy = loadLegacyReplacements();
-  return Object.values(load()).filter((c) => !legacy[c.type]).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
-}
-function getComponentSchema(type) {
-  return load()[type] ?? null;
-}
-function getLegacyComponentReplacement(type) {
-  return loadLegacyReplacements()[type] ?? null;
-}
-createRequire(import.meta.url);
-var _a$1;
-var $output = /* @__PURE__ */ Symbol("ZodOutput");
-var $input = /* @__PURE__ */ Symbol("ZodInput");
-var $ZodRegistry = class {
-  constructor() {
-    this._map = /* @__PURE__ */ new WeakMap();
-    this._idmap = /* @__PURE__ */ new Map();
-  }
-  add(schema, ..._meta) {
-    const meta = _meta[0];
-    this._map.set(schema, meta);
-    if (meta && typeof meta === "object" && "id" in meta) {
-      this._idmap.set(meta.id, schema);
-    }
-    return this;
-  }
-  clear() {
-    this._map = /* @__PURE__ */ new WeakMap();
-    this._idmap = /* @__PURE__ */ new Map();
-    return this;
-  }
-  remove(schema) {
-    const meta = this._map.get(schema);
-    if (meta && typeof meta === "object" && "id" in meta) {
-      this._idmap.delete(meta.id);
-    }
-    this._map.delete(schema);
-    return this;
-  }
-  get(schema) {
-    const p = schema._zod.parent;
-    if (p) {
-      const pm = { ...this.get(p) ?? {} };
-      delete pm.id;
-      const f = { ...pm, ...this._map.get(schema) };
-      return Object.keys(f).length ? f : void 0;
-    }
-    return this._map.get(schema);
-  }
-  has(schema) {
-    return this._map.has(schema);
-  }
-};
-function registry() {
-  return new $ZodRegistry();
-}
-(_a$1 = globalThis).__zod_globalRegistry ?? (_a$1.__zod_globalRegistry = registry());
-var globalRegistry = globalThis.__zod_globalRegistry;
-createRequire(import.meta.url);
-var _a;
-var NEVER = /* @__PURE__ */ Object.freeze({
-  status: "aborted"
-});
-// @__NO_SIDE_EFFECTS__
-function $constructor(name, initializer, params) {
-  function init(inst, def) {
-    if (!inst._zod) {
-      Object.defineProperty(inst, "_zod", {
-        value: {
-          def,
-          constr: _,
-          traits: /* @__PURE__ */ new Set()
-        },
-        enumerable: false
-      });
-    }
-    if (inst._zod.traits.has(name)) {
-      return;
-    }
-    inst._zod.traits.add(name);
-    initializer(inst, def);
-    const proto = _.prototype;
-    const keys = Object.keys(proto);
-    for (let i = 0; i < keys.length; i++) {
-      const k = keys[i];
-      if (!(k in inst)) {
-        inst[k] = proto[k].bind(inst);
-      }
-    }
-  }
-  const Parent = params?.Parent ?? Object;
-  class Definition extends Parent {
-  }
-  Object.defineProperty(Definition, "name", { value: name });
-  function _(def) {
-    var _a2;
-    const inst = params?.Parent ? new Definition() : this;
-    init(inst, def);
-    (_a2 = inst._zod).deferred ?? (_a2.deferred = []);
-    for (const fn of inst._zod.deferred) {
-      fn();
-    }
-    return inst;
-  }
-  Object.defineProperty(_, "init", { value: init });
-  Object.defineProperty(_, Symbol.hasInstance, {
-    value: (inst) => {
-      if (params?.Parent && inst instanceof params.Parent)
-        return true;
-      return inst?._zod?.traits?.has(name);
-    }
-  });
-  Object.defineProperty(_, "name", { value: name });
-  return _;
-}
-var $brand = /* @__PURE__ */ Symbol("zod_brand");
-var $ZodAsyncError = class extends Error {
-  constructor() {
-    super(`Encountered Promise during synchronous parse. Use .parseAsync() instead.`);
-  }
-};
-var $ZodEncodeError = class extends Error {
-  constructor(name) {
-    super(`Encountered unidirectional transform during encode: ${name}`);
-    this.name = "ZodEncodeError";
-  }
-};
-(_a = globalThis).__zod_globalConfig ?? (_a.__zod_globalConfig = {});
-var globalConfig = globalThis.__zod_globalConfig;
-function config(newConfig) {
-  if (newConfig)
-    Object.assign(globalConfig, newConfig);
-  return globalConfig;
-}
-var util_exports = {};
-__export(util_exports, {
-  BIGINT_FORMAT_RANGES: () => BIGINT_FORMAT_RANGES,
-  Class: () => Class,
-  NUMBER_FORMAT_RANGES: () => NUMBER_FORMAT_RANGES,
-  aborted: () => aborted,
-  allowsEval: () => allowsEval,
-  assert: () => assert,
-  assertEqual: () => assertEqual,
-  assertIs: () => assertIs,
-  assertNever: () => assertNever,
-  assertNotEqual: () => assertNotEqual,
-  assignProp: () => assignProp,
-  base64ToUint8Array: () => base64ToUint8Array,
-  base64urlToUint8Array: () => base64urlToUint8Array,
-  cached: () => cached,
-  captureStackTrace: () => captureStackTrace,
-  cleanEnum: () => cleanEnum,
-  cleanRegex: () => cleanRegex,
-  clone: () => clone,
-  cloneDef: () => cloneDef,
-  createTransparentProxy: () => createTransparentProxy,
-  defineLazy: () => defineLazy,
-  esc: () => esc,
-  escapeRegex: () => escapeRegex,
-  explicitlyAborted: () => explicitlyAborted,
-  extend: () => extend,
-  finalizeIssue: () => finalizeIssue,
-  floatSafeRemainder: () => floatSafeRemainder,
-  getElementAtPath: () => getElementAtPath,
-  getEnumValues: () => getEnumValues,
-  getLengthableOrigin: () => getLengthableOrigin,
-  getParsedType: () => getParsedType,
-  getSizableOrigin: () => getSizableOrigin,
-  hexToUint8Array: () => hexToUint8Array,
-  isObject: () => isObject,
-  isPlainObject: () => isPlainObject,
-  issue: () => issue,
-  joinValues: () => joinValues,
-  jsonStringifyReplacer: () => jsonStringifyReplacer,
-  merge: () => merge,
-  mergeDefs: () => mergeDefs,
-  normalizeParams: () => normalizeParams,
-  nullish: () => nullish,
-  numKeys: () => numKeys,
-  objectClone: () => objectClone,
-  omit: () => omit,
-  optionalKeys: () => optionalKeys,
-  parsedType: () => parsedType,
-  partial: () => partial,
-  pick: () => pick,
-  prefixIssues: () => prefixIssues,
-  primitiveTypes: () => primitiveTypes,
-  promiseAllObject: () => promiseAllObject,
-  propertyKeyTypes: () => propertyKeyTypes,
-  randomString: () => randomString,
-  required: () => required,
-  safeExtend: () => safeExtend,
-  shallowClone: () => shallowClone,
-  slugify: () => slugify,
-  stringifyPrimitive: () => stringifyPrimitive,
-  uint8ArrayToBase64: () => uint8ArrayToBase64,
-  uint8ArrayToBase64url: () => uint8ArrayToBase64url,
-  uint8ArrayToHex: () => uint8ArrayToHex,
-  unwrapMessage: () => unwrapMessage
-});
-function assertEqual(val) {
-  return val;
-}
-function assertNotEqual(val) {
-  return val;
-}
-function assertIs(_arg) {
-}
-function assertNever(_x) {
-  throw new Error("Unexpected value in exhaustive check");
-}
-function assert(_) {
-}
-function getEnumValues(entries) {
-  const numericValues = Object.values(entries).filter((v) => typeof v === "number");
-  const values = Object.entries(entries).filter(([k, _]) => numericValues.indexOf(+k) === -1).map(([_, v]) => v);
-  return values;
-}
-function joinValues(array, separator = "|") {
-  return array.map((val) => stringifyPrimitive(val)).join(separator);
-}
-function jsonStringifyReplacer(_, value) {
-  if (typeof value === "bigint")
-    return value.toString();
-  return value;
-}
-function cached(getter) {
-  return {
-    get value() {
-      {
-        const value = getter();
-        Object.defineProperty(this, "value", { value });
-        return value;
-      }
-    }
-  };
-}
-function nullish(input) {
-  return input === null || input === void 0;
-}
-function cleanRegex(source) {
-  const start = source.startsWith("^") ? 1 : 0;
-  const end = source.endsWith("$") ? source.length - 1 : source.length;
-  return source.slice(start, end);
-}
-function floatSafeRemainder(val, step) {
-  const ratio = val / step;
-  const roundedRatio = Math.round(ratio);
-  const tolerance = Number.EPSILON * Math.max(Math.abs(ratio), 1);
-  if (Math.abs(ratio - roundedRatio) < tolerance)
-    return 0;
-  return ratio - roundedRatio;
-}
-var EVALUATING = /* @__PURE__ */ Symbol("evaluating");
-function defineLazy(object2, key, getter) {
-  let value = void 0;
-  Object.defineProperty(object2, key, {
-    get() {
-      if (value === EVALUATING) {
-        return void 0;
-      }
-      if (value === void 0) {
-        value = EVALUATING;
-        value = getter();
-      }
-      return value;
-    },
-    set(v) {
-      Object.defineProperty(object2, key, {
-        value: v
-        // configurable: true,
-      });
-    },
-    configurable: true
-  });
-}
-function objectClone(obj) {
-  return Object.create(Object.getPrototypeOf(obj), Object.getOwnPropertyDescriptors(obj));
-}
-function assignProp(target, prop, value) {
-  Object.defineProperty(target, prop, {
-    value,
-    writable: true,
-    enumerable: true,
-    configurable: true
-  });
-}
-function mergeDefs(...defs) {
-  const mergedDescriptors = {};
-  for (const def of defs) {
-    const descriptors = Object.getOwnPropertyDescriptors(def);
-    Object.assign(mergedDescriptors, descriptors);
-  }
-  return Object.defineProperties({}, mergedDescriptors);
-}
-function cloneDef(schema) {
-  return mergeDefs(schema._zod.def);
-}
-function getElementAtPath(obj, path) {
-  if (!path)
-    return obj;
-  return path.reduce((acc, key) => acc?.[key], obj);
-}
-function promiseAllObject(promisesObj) {
-  const keys = Object.keys(promisesObj);
-  const promises = keys.map((key) => promisesObj[key]);
-  return Promise.all(promises).then((results) => {
-    const resolvedObj = {};
-    for (let i = 0; i < keys.length; i++) {
-      resolvedObj[keys[i]] = results[i];
-    }
-    return resolvedObj;
-  });
-}
-function randomString(length = 10) {
-  const chars = "abcdefghijklmnopqrstuvwxyz";
-  let str2 = "";
-  for (let i = 0; i < length; i++) {
-    str2 += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return str2;
-}
-function esc(str2) {
-  return JSON.stringify(str2);
-}
-function slugify(input) {
-  return input.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "");
-}
-var captureStackTrace = "captureStackTrace" in Error ? Error.captureStackTrace : (..._args) => {
-};
-function isObject(data) {
-  return typeof data === "object" && data !== null && !Array.isArray(data);
-}
-var allowsEval = /* @__PURE__ */ cached(() => {
-  if (globalConfig.jitless) {
-    return false;
-  }
-  if (typeof navigator !== "undefined" && navigator?.userAgent?.includes("Cloudflare")) {
-    return false;
-  }
-  try {
-    const F = Function;
-    new F("");
-    return true;
-  } catch (_) {
-    return false;
-  }
-});
-function isPlainObject(o) {
-  if (isObject(o) === false)
-    return false;
-  const ctor = o.constructor;
-  if (ctor === void 0)
-    return true;
-  if (typeof ctor !== "function")
-    return true;
-  const prot = ctor.prototype;
-  if (isObject(prot) === false)
-    return false;
-  if (Object.prototype.hasOwnProperty.call(prot, "isPrototypeOf") === false) {
-    return false;
-  }
-  return true;
-}
-function shallowClone(o) {
-  if (isPlainObject(o))
-    return { ...o };
-  if (Array.isArray(o))
-    return [...o];
-  if (o instanceof Map)
-    return new Map(o);
-  if (o instanceof Set)
-    return new Set(o);
-  return o;
-}
-function numKeys(data) {
-  let keyCount = 0;
-  for (const key in data) {
-    if (Object.prototype.hasOwnProperty.call(data, key)) {
-      keyCount++;
-    }
-  }
-  return keyCount;
-}
-var getParsedType = (data) => {
-  const t = typeof data;
-  switch (t) {
-    case "undefined":
-      return "undefined";
-    case "string":
-      return "string";
-    case "number":
-      return Number.isNaN(data) ? "nan" : "number";
-    case "boolean":
-      return "boolean";
-    case "function":
-      return "function";
-    case "bigint":
-      return "bigint";
-    case "symbol":
-      return "symbol";
-    case "object":
-      if (Array.isArray(data)) {
-        return "array";
-      }
-      if (data === null) {
-        return "null";
-      }
-      if (data.then && typeof data.then === "function" && data.catch && typeof data.catch === "function") {
-        return "promise";
-      }
-      if (typeof Map !== "undefined" && data instanceof Map) {
-        return "map";
-      }
-      if (typeof Set !== "undefined" && data instanceof Set) {
-        return "set";
-      }
-      if (typeof Date !== "undefined" && data instanceof Date) {
-        return "date";
-      }
-      if (typeof File !== "undefined" && data instanceof File) {
-        return "file";
-      }
-      return "object";
-    default:
-      throw new Error(`Unknown data type: ${t}`);
-  }
-};
-var propertyKeyTypes = /* @__PURE__ */ new Set(["string", "number", "symbol"]);
-var primitiveTypes = /* @__PURE__ */ new Set([
-  "string",
-  "number",
-  "bigint",
-  "boolean",
-  "symbol",
-  "undefined"
-]);
-function escapeRegex(str2) {
-  return str2.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-function clone(inst, def, params) {
-  const cl = new inst._zod.constr(def ?? inst._zod.def);
-  if (!def || params?.parent)
-    cl._zod.parent = inst;
-  return cl;
-}
-function normalizeParams(_params) {
-  const params = _params;
-  if (!params)
-    return {};
-  if (typeof params === "string")
-    return { error: () => params };
-  if (params?.message !== void 0) {
-    if (params?.error !== void 0)
-      throw new Error("Cannot specify both `message` and `error` params");
-    params.error = params.message;
-  }
-  delete params.message;
-  if (typeof params.error === "string")
-    return { ...params, error: () => params.error };
-  return params;
-}
-function createTransparentProxy(getter) {
-  let target;
-  return new Proxy({}, {
-    get(_, prop, receiver) {
-      target ?? (target = getter());
-      return Reflect.get(target, prop, receiver);
-    },
-    set(_, prop, value, receiver) {
-      target ?? (target = getter());
-      return Reflect.set(target, prop, value, receiver);
-    },
-    has(_, prop) {
-      target ?? (target = getter());
-      return Reflect.has(target, prop);
-    },
-    deleteProperty(_, prop) {
-      target ?? (target = getter());
-      return Reflect.deleteProperty(target, prop);
-    },
-    ownKeys(_) {
-      target ?? (target = getter());
-      return Reflect.ownKeys(target);
-    },
-    getOwnPropertyDescriptor(_, prop) {
-      target ?? (target = getter());
-      return Reflect.getOwnPropertyDescriptor(target, prop);
-    },
-    defineProperty(_, prop, descriptor) {
-      target ?? (target = getter());
-      return Reflect.defineProperty(target, prop, descriptor);
-    }
-  });
-}
-function stringifyPrimitive(value) {
-  if (typeof value === "bigint")
-    return value.toString() + "n";
-  if (typeof value === "string")
-    return `"${value}"`;
-  return `${value}`;
-}
-function optionalKeys(shape) {
-  return Object.keys(shape).filter((k) => {
-    return shape[k]._zod.optin === "optional" && shape[k]._zod.optout === "optional";
-  });
-}
-var NUMBER_FORMAT_RANGES = {
-  safeint: [Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER],
-  int32: [-2147483648, 2147483647],
-  uint32: [0, 4294967295],
-  float32: [-34028234663852886e22, 34028234663852886e22],
-  float64: [-Number.MAX_VALUE, Number.MAX_VALUE]
-};
-var BIGINT_FORMAT_RANGES = {
-  int64: [/* @__PURE__ */ BigInt("-9223372036854775808"), /* @__PURE__ */ BigInt("9223372036854775807")],
-  uint64: [/* @__PURE__ */ BigInt(0), /* @__PURE__ */ BigInt("18446744073709551615")]
-};
-function pick(schema, mask) {
-  const currDef = schema._zod.def;
-  const checks = currDef.checks;
-  const hasChecks = checks && checks.length > 0;
-  if (hasChecks) {
-    throw new Error(".pick() cannot be used on object schemas containing refinements");
-  }
-  const def = mergeDefs(schema._zod.def, {
-    get shape() {
-      const newShape = {};
-      for (const key in mask) {
-        if (!(key in currDef.shape)) {
-          throw new Error(`Unrecognized key: "${key}"`);
-        }
-        if (!mask[key])
-          continue;
-        newShape[key] = currDef.shape[key];
-      }
-      assignProp(this, "shape", newShape);
-      return newShape;
-    },
-    checks: []
-  });
-  return clone(schema, def);
-}
-function omit(schema, mask) {
-  const currDef = schema._zod.def;
-  const checks = currDef.checks;
-  const hasChecks = checks && checks.length > 0;
-  if (hasChecks) {
-    throw new Error(".omit() cannot be used on object schemas containing refinements");
-  }
-  const def = mergeDefs(schema._zod.def, {
-    get shape() {
-      const newShape = { ...schema._zod.def.shape };
-      for (const key in mask) {
-        if (!(key in currDef.shape)) {
-          throw new Error(`Unrecognized key: "${key}"`);
-        }
-        if (!mask[key])
-          continue;
-        delete newShape[key];
-      }
-      assignProp(this, "shape", newShape);
-      return newShape;
-    },
-    checks: []
-  });
-  return clone(schema, def);
-}
-function extend(schema, shape) {
-  if (!isPlainObject(shape)) {
-    throw new Error("Invalid input to extend: expected a plain object");
-  }
-  const checks = schema._zod.def.checks;
-  const hasChecks = checks && checks.length > 0;
-  if (hasChecks) {
-    const existingShape = schema._zod.def.shape;
-    for (const key in shape) {
-      if (Object.getOwnPropertyDescriptor(existingShape, key) !== void 0) {
-        throw new Error("Cannot overwrite keys on object schemas containing refinements. Use `.safeExtend()` instead.");
-      }
-    }
-  }
-  const def = mergeDefs(schema._zod.def, {
-    get shape() {
-      const _shape = { ...schema._zod.def.shape, ...shape };
-      assignProp(this, "shape", _shape);
-      return _shape;
-    }
-  });
-  return clone(schema, def);
-}
-function safeExtend(schema, shape) {
-  if (!isPlainObject(shape)) {
-    throw new Error("Invalid input to safeExtend: expected a plain object");
-  }
-  const def = mergeDefs(schema._zod.def, {
-    get shape() {
-      const _shape = { ...schema._zod.def.shape, ...shape };
-      assignProp(this, "shape", _shape);
-      return _shape;
-    }
-  });
-  return clone(schema, def);
-}
-function merge(a, b) {
-  if (a._zod.def.checks?.length) {
-    throw new Error(".merge() cannot be used on object schemas containing refinements. Use .safeExtend() instead.");
-  }
-  const def = mergeDefs(a._zod.def, {
-    get shape() {
-      const _shape = { ...a._zod.def.shape, ...b._zod.def.shape };
-      assignProp(this, "shape", _shape);
-      return _shape;
-    },
-    get catchall() {
-      return b._zod.def.catchall;
-    },
-    checks: b._zod.def.checks ?? []
-  });
-  return clone(a, def);
-}
-function partial(Class2, schema, mask) {
-  const currDef = schema._zod.def;
-  const checks = currDef.checks;
-  const hasChecks = checks && checks.length > 0;
-  if (hasChecks) {
-    throw new Error(".partial() cannot be used on object schemas containing refinements");
-  }
-  const def = mergeDefs(schema._zod.def, {
-    get shape() {
-      const oldShape = schema._zod.def.shape;
-      const shape = { ...oldShape };
-      if (mask) {
-        for (const key in mask) {
-          if (!(key in oldShape)) {
-            throw new Error(`Unrecognized key: "${key}"`);
-          }
-          if (!mask[key])
-            continue;
-          shape[key] = Class2 ? new Class2({
-            type: "optional",
-            innerType: oldShape[key]
-          }) : oldShape[key];
-        }
-      } else {
-        for (const key in oldShape) {
-          shape[key] = Class2 ? new Class2({
-            type: "optional",
-            innerType: oldShape[key]
-          }) : oldShape[key];
-        }
-      }
-      assignProp(this, "shape", shape);
-      return shape;
-    },
-    checks: []
-  });
-  return clone(schema, def);
-}
-function required(Class2, schema, mask) {
-  const def = mergeDefs(schema._zod.def, {
-    get shape() {
-      const oldShape = schema._zod.def.shape;
-      const shape = { ...oldShape };
-      if (mask) {
-        for (const key in mask) {
-          if (!(key in shape)) {
-            throw new Error(`Unrecognized key: "${key}"`);
-          }
-          if (!mask[key])
-            continue;
-          shape[key] = new Class2({
-            type: "nonoptional",
-            innerType: oldShape[key]
-          });
-        }
-      } else {
-        for (const key in oldShape) {
-          shape[key] = new Class2({
-            type: "nonoptional",
-            innerType: oldShape[key]
-          });
-        }
-      }
-      assignProp(this, "shape", shape);
-      return shape;
-    }
-  });
-  return clone(schema, def);
-}
-function aborted(x, startIndex = 0) {
-  if (x.aborted === true)
-    return true;
-  for (let i = startIndex; i < x.issues.length; i++) {
-    if (x.issues[i]?.continue !== true) {
-      return true;
-    }
-  }
-  return false;
-}
-function explicitlyAborted(x, startIndex = 0) {
-  if (x.aborted === true)
-    return true;
-  for (let i = startIndex; i < x.issues.length; i++) {
-    if (x.issues[i]?.continue === false) {
-      return true;
-    }
-  }
-  return false;
-}
-function prefixIssues(path, issues) {
-  return issues.map((iss) => {
-    var _a2;
-    (_a2 = iss).path ?? (_a2.path = []);
-    iss.path.unshift(path);
-    return iss;
-  });
-}
-function unwrapMessage(message) {
-  return typeof message === "string" ? message : message?.message;
-}
-function finalizeIssue(iss, ctx, config2) {
-  const message = iss.message ? iss.message : unwrapMessage(iss.inst?._zod.def?.error?.(iss)) ?? unwrapMessage(ctx?.error?.(iss)) ?? unwrapMessage(config2.customError?.(iss)) ?? unwrapMessage(config2.localeError?.(iss)) ?? "Invalid input";
-  const { inst: _inst, continue: _continue, input: _input, ...rest } = iss;
-  rest.path ?? (rest.path = []);
-  rest.message = message;
-  if (ctx?.reportInput) {
-    rest.input = _input;
-  }
-  return rest;
-}
-function getSizableOrigin(input) {
-  if (input instanceof Set)
-    return "set";
-  if (input instanceof Map)
-    return "map";
-  if (input instanceof File)
-    return "file";
-  return "unknown";
-}
-function getLengthableOrigin(input) {
-  if (Array.isArray(input))
-    return "array";
-  if (typeof input === "string")
-    return "string";
-  return "unknown";
-}
-function parsedType(data) {
-  const t = typeof data;
-  switch (t) {
-    case "number": {
-      return Number.isNaN(data) ? "nan" : "number";
-    }
-    case "object": {
-      if (data === null) {
-        return "null";
-      }
-      if (Array.isArray(data)) {
-        return "array";
-      }
-      const obj = data;
-      if (obj && Object.getPrototypeOf(obj) !== Object.prototype && "constructor" in obj && obj.constructor) {
-        return obj.constructor.name;
-      }
-    }
-  }
-  return t;
-}
-function issue(...args) {
-  const [iss, input, inst] = args;
-  if (typeof iss === "string") {
-    return {
-      message: iss,
-      code: "custom",
-      input,
-      inst
-    };
-  }
-  return { ...iss };
-}
-function cleanEnum(obj) {
-  return Object.entries(obj).filter(([k, _]) => {
-    return Number.isNaN(Number.parseInt(k, 10));
-  }).map((el) => el[1]);
-}
-function base64ToUint8Array(base64) {
-  const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
-}
-function uint8ArrayToBase64(bytes) {
-  let binaryString = "";
-  for (let i = 0; i < bytes.length; i++) {
-    binaryString += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binaryString);
-}
-function base64urlToUint8Array(base64url) {
-  const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
-  const padding = "=".repeat((4 - base64.length % 4) % 4);
-  return base64ToUint8Array(base64 + padding);
-}
-function uint8ArrayToBase64url(bytes) {
-  return uint8ArrayToBase64(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-}
-function hexToUint8Array(hex) {
-  const cleanHex = hex.replace(/^0x/, "");
-  if (cleanHex.length % 2 !== 0) {
-    throw new Error("Invalid hex string length");
-  }
-  const bytes = new Uint8Array(cleanHex.length / 2);
-  for (let i = 0; i < cleanHex.length; i += 2) {
-    bytes[i / 2] = Number.parseInt(cleanHex.slice(i, i + 2), 16);
-  }
-  return bytes;
-}
-function uint8ArrayToHex(bytes) {
-  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-var Class = class {
-  constructor(..._args) {
-  }
-};
 export {
-  $constructor as $,
-  cleanRegex as A,
-  BIGINT_FORMAT_RANGES as B,
-  globalRegistry as C,
-  normalizeParams as D,
-  shallowClone as E,
-  slugify as F,
-  util_exports as G,
-  clone as H,
-  joinValues as I,
-  stringifyPrimitive as J,
-  parsedType as K,
-  registry as L,
-  NEVER as M,
-  NUMBER_FORMAT_RANGES as N,
-  $output as O,
-  $input as P,
-  $brand as Q,
-  $ZodRegistry as R,
-  getComponentSchema as S,
-  getCatalog as T,
-  getLegacyComponentReplacement as U,
-  lintBindingNames as V,
-  parseExpression as W,
-  parse as X,
-  bindingSpans as Y,
-  assertPersistableQueryToggles as Z,
-  normalizeQueryOptions as _,
-  $ZodAsyncError as a,
-  validateQueryOptions as a0,
-  issueMessages as a1,
-  normalizeQueryToggles as a2,
-  toggleRewriteWarning as a3,
-  queryToggleIssues as a4,
-  arithmeticWriteWarning as a5,
-  assessQueryRead as a6,
-  LARGE_READ_ROW_THRESHOLD as a7,
-  resolveStaticBindings as a8,
-  resolvedReadRefusal as a9,
-  sameReadSource as aa,
-  extractRowCount as ab,
-  emptyViewerOnlyParams as ac,
-  emptyParamsNote as ad,
-  unresolvedNote as ae,
-  captureStackTrace as b,
-  config as c,
-  defineLazy as d,
-  escapeRegex as e,
-  finalizeIssue as f,
-  $ZodEncodeError as g,
-  prefixIssues as h,
-  isPlainObject as i,
-  globalConfig as j,
-  allowsEval as k,
-  cached as l,
-  esc as m,
-  isObject as n,
-  getEnumValues as o,
-  primitiveTypes as p,
-  propertyKeyTypes as q,
-  aborted as r,
-  jsonStringifyReplacer as s,
-  issue as t,
-  optionalKeys as u,
-  floatSafeRemainder as v,
-  nullish as w,
-  getSizableOrigin as x,
-  getLengthableOrigin as y,
-  explicitlyAborted as z
+  LARGE_READ_ROW_THRESHOLD as L,
+  parse as a,
+  bindingSpans as b,
+  assertPersistableQueryToggles as c,
+  assertWorkflowQueryOptions as d,
+  normalizeQueryOptions as e,
+  normalizeQueryToggles as f,
+  arithmeticWriteWarning as g,
+  assessQueryRead as h,
+  issueMessages as i,
+  resolvedReadRefusal as j,
+  extractRowCount as k,
+  lintBindingNames as l,
+  emptyViewerOnlyParams as m,
+  normalizeWorkflowQueryOptions as n,
+  emptyParamsNote as o,
+  parseExpression as p,
+  queryToggleIssues as q,
+  resolveStaticBindings as r,
+  sameReadSource as s,
+  toggleRewriteWarning as t,
+  unresolvedNote as u,
+  validateQueryOptions as v,
+  workflowMappingMatches as w
 };

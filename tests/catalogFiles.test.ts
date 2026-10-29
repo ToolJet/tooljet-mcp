@@ -1,4 +1,5 @@
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -52,4 +53,42 @@ describe('reviewable catalog files', () => {
     writeFileSync(file, JSON.stringify(index));
     expect(() => readCatalog(file)).toThrow(/Duplicate catalog key/);
   });
+});
+
+it.each([false, true])('selective datasource regeneration preserves unrelated entries (split=%s)', split => {
+  const dir = mkdtempSync(join(tmpdir(), 'catalog-generator-'));
+  directories.push(dir);
+  for (const name of ['scripts', 'lib', 'data', 'tooljet/plugins/packages', 'tooljet/marketplace/plugins']) {
+    mkdirSync(join(dir, name), { recursive: true });
+  }
+  writeFileSync(join(dir, 'package.json'), '{"type":"module"}');
+  for (const name of ['scripts/generate-datasource-catalog.mjs', 'scripts/datasource-coverage.mjs', 'lib/catalogFiles.js']) {
+    copyFileSync(new URL(`../${name}`, import.meta.url), join(dir, name));
+  }
+  // Satisfy the generator's source-completeness guard using independent synthetic plugins.
+  for (let i = 0; i < 50; i++) {
+    const lib = join(dir, 'tooljet/plugins/packages', `sensor${i}`, 'lib');
+    mkdirSync(lib, { recursive: true });
+    writeFileSync(join(lib, 'manifest.json'), JSON.stringify({ source: { kind: `sensor${i}`, type: 'database' } }));
+    writeFileSync(join(lib, 'operations.json'), '{"properties":{}}');
+    writeFileSync(join(lib, 'index.ts'), 'class Sensor { async testConnection() {} }');
+  }
+  const untouched = {
+    kind: 'observatory', operations: [], contracts: {}, operationSelection: { mode: 'single' },
+    sources: [{ collection: 'static', package: 'observatory' }],
+    description: 'Synthetic retained contract from another source release',
+  };
+  const catalogFile = join(dir, 'data/datasource-schemas.json');
+  const before = { observatory: untouched, workflows: { stale: true } };
+  if (split) writeCatalog(catalogFile, before);
+  else writeFileSync(catalogFile, JSON.stringify(before));
+  execFileSync(process.execPath, [join(dir, 'scripts/generate-datasource-catalog.mjs'), '--kind=workflows'], {
+    env: { ...process.env, TOOLJET_ROOT: join(dir, 'tooljet') }, stdio: 'pipe',
+  });
+  const after = readCatalog(catalogFile);
+  expect(Object.keys(after)).toEqual(['observatory', 'workflows']);
+  expect(after.observatory).toEqual(untouched);
+  expect(after.workflows.contracts.default.variants[0].required).toEqual(['workflowId']);
+  const coverage = JSON.parse(readFileSync(join(dir, 'data/datasource-coverage.json'), 'utf8'));
+  expect(coverage.datasource_kinds).toBe(2);
 });

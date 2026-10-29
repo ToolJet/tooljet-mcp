@@ -13,11 +13,11 @@ describe('materializeRequiredDefaultChildren', () => {
     expect(result.materializedChildren).toBe(2);
     expect(result.components).toHaveLength(3);
     const [kanban, title, description] = result.components;
-    expect(kanban.clientRef).toMatch(/^__mcp_default_parent_/);
+    expect(kanban.clientRef).toBeUndefined();
     expect(title).toMatchObject({
       name: 'ticketBoardCardTitle',
       type: 'Text',
-      parentRef: kanban.clientRef,
+      parentRef: kanban.name,
       properties: { text: { value: '{{cardData.title}}' } },
       styles: { fontWeight: { value: 'bold' }, textSize: { value: 16 } },
       // Card children live on the card's own 43-column grid; the catalog's 14-column defaults cut names.
@@ -26,20 +26,20 @@ describe('materializeRequiredDefaultChildren', () => {
     expect(description).toMatchObject({
       name: 'ticketBoardCardDescription',
       type: 'Text',
-      parentRef: kanban.clientRef,
+      parentRef: kanban.name,
       properties: { text: { value: '{{cardData.description}}' } },
       layout: { top: 44, left: 2, width: 39, height: 30 },
     });
     expect(result.warnings.join(' ')).toMatch(/materialized 2 catalog default children/i);
   });
 
-  it('does not add defaults when a custom Kanban child is supplied', () => {
+  it.each([undefined, 'board'])('does not add defaults for custom children with clientRef %s', (clientRef) => {
     const input = [
-      { name: 'ticketBoard', type: 'Kanban', properties: {}, clientRef: 'board' },
+      { name: 'ticketBoard', type: 'Kanban', properties: {}, clientRef },
       {
         name: 'ticketCard',
         type: 'Html',
-        parentRef: 'board',
+        parentRef: clientRef ?? 'ticketBoard',
         properties: { rawHtml: { value: '<div>{{cardData.title}}</div>' } },
         layout: { top: 10, left: 4, width: 290, height: 80 },
       },

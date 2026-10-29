@@ -1,13 +1,12 @@
 import { createRequire } from "node:module";
-import { s as strictEntry, d as specSchema, e as createClient, l as listWorkspaceGroupsTool, m as manageWorkspaceGroupsTool, g as inspectDatasourceSchemaTool, u as updateComponentsTool, o as ok, h as nodeCatalog, f as fail, j as capabilityRequestSchema, k as getWorkflowCapabilities, p as lint, q as apply, w as deleteNode, x as validateGraph, v as validateTableBatch, y as ToolJetHttpError, z as editContractSchema, A as generateEditContract, r as resolveRef, n as normalizeComponentSpec } from "./chunk-ZQS-Lgzr.js";
-import { a6 as dbColumnTypeSchema, a7 as componentInputSchema, a8 as lintAppSpecTool, a9 as projectJavascriptRuntime, aa as projectAppSettings, ab as compactTheme, ac as pageSettingProperties, l as literalCanvasColor, ad as containsExactValue, h as prepareQueryOptionsForWrite, ae as inspectUpdateCompatibility, af as normalizePlanBindingAliases, ag as containsNamedBinding, ah as normalizePlannedLayouts, ai as materializeRequiredDefaultChildren, aj as mapKeyRefusal, j as prepareComponentBatch, v as validateEvents, n as expandQueryLifecycles, q as persistedEventSpecs, ak as persistedEventIds } from "./chunk-BaJdJttX.js";
-import { t as COMPONENT_FX_GUIDANCE, u as readCatalogBytes } from "./chunk-D0rVi1EZ.js";
-import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, W as WebStandardStreamableHTTPServerTransport, g as getRequestListener, c as validatePersistedAppSummary } from "./chunk-CMEE1SxG.js";
-import { M as McpServer } from "./chunk-BPFGPLZ8.js";
-import { u as pageIconSchema, c as componentSlotSchema, a as componentNameSchema, t as lintComponents, i as introducedLintFindings, x as lintRenderedGeometryBlocking, y as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, f as lintComponentSlots, l as lintComponentSpec, g as lintUnusableTextGeometry, z as lintNestedContainerWidths, h as lintStandardSingleLineInputHeight, j as lintTextGeometry, k as lintRenderedGeometry, F as FORM_SCHEMA_FIELD_TYPE_SET, A as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-UjCY7xly.js";
-import { T as getCatalog, S as getComponentSchema, U as getLegacyComponentReplacement } from "./chunk-9MxONkew.js";
-import { e as external_exports } from "./chunk-BXrPi5U1.js";
-import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-CWXC6H5y.js";
+import { o as external_exports, q as editContractSchema, s as generateEditContract, p as COMPONENT_FX_GUIDANCE } from "./chunk-8iUq0slz.js";
+import { s as strictEntry, g as specSchema, h as createClient, l as listWorkspaceGroupsTool, m as manageWorkspaceGroupsTool, j as inspectDatasourceSchemaTool, u as updateComponentsTool, o as ok, k as nodeCatalog, f as fail, p as capabilityRequestSchema, q as getWorkflowCapabilities, w as lint, x as apply, y as deleteNode, z as validateGraph, v as validateTableBatch, A as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec } from "./chunk-rf3v0KLq.js";
+import { a6 as dbColumnTypeSchema, a7 as componentInputSchema, a8 as lintAppSpecTool, a9 as projectJavascriptRuntime, aa as projectAppSettings, ab as compactTheme, ac as pageSettingProperties, l as literalCanvasColor, ad as containsExactValue, h as prepareQueryOptionsForWrite, ae as inspectUpdateCompatibility, af as normalizePlanBindingAliases, ag as containsNamedBinding, ah as normalizePlannedLayouts, ai as materializeRequiredDefaultChildren, aj as mapKeyRefusal, j as prepareComponentBatch, v as validateEvents, n as expandQueryLifecycles, q as persistedEventSpecs, ak as persistedEventIds } from "./chunk-pk1wj3UI.js";
+import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, W as WebStandardStreamableHTTPServerTransport, g as getRequestListener, c as validatePersistedAppSummary } from "./chunk-CeK3IIjD.js";
+import { M as McpServer } from "./chunk-CldhDVI0.js";
+import { u as pageIconSchema, c as componentSlotSchema, a as componentNameSchema, t as lintComponents, i as introducedLintFindings, x as lintRenderedGeometryBlocking, y as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, f as lintComponentSlots, l as lintComponentSpec, g as lintUnusableTextGeometry, z as lintNestedContainerWidths, h as lintStandardSingleLineInputHeight, j as lintTextGeometry, k as lintRenderedGeometry, F as FORM_SCHEMA_FIELD_TYPE_SET, A as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-gznY6rD8.js";
+import { ea as getCatalog, e5 as getComponentSchema, eb as getLegacyComponentReplacement, ee as readCatalogBytes } from "./chunk-BEuHHGL1.js";
+import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-CsHFzbSc.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { createServer } from "node:http";
@@ -2703,7 +2702,17 @@ function validateAppTool(client) {
     async handler(args) {
       try {
         const summary = args.version_id ? await client.getAppSummary(args.app_id, args.version_id) : await client.getAppSummary(args.app_id);
-        return ok(validatePersistedAppSummary(summary, { canvasColor: await literalCanvasColor(client, args.app_id, summary.version_id) }));
+        const validation = validatePersistedAppSummary(summary, { canvasColor: await literalCanvasColor(client, args.app_id, summary.version_id) });
+        for (const query of summary.queries.filter((query2) => query2.kind === "workflows")) {
+          try {
+            await client.assertWorkflowQueryTarget(query.options);
+          } catch (error) {
+            validation.errors.push(`Query "${query.name ?? query.id}": workflow target could not be verified. ${String(error)}`);
+          }
+        }
+        validation.checked.push("workflow target identity, workspace and explicit version ownership");
+        validation.ok = validation.errors.length === 0;
+        return ok(validation);
       } catch (err) {
         return fail(err);
       }
@@ -3685,6 +3694,8 @@ function updateQueryTool(client) {
             name: args.name
           });
         } catch (error) {
+          if (error instanceof PartialWriteError)
+            throw error;
           if (args.datasource_id && currentDatasourceId && args.datasource_id !== currentDatasourceId) {
             if (!originalDatasourceAvailable) {
               try {

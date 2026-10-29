@@ -1,14 +1,14 @@
 import { createRequire } from "node:module";
-import { J as JSONRPCMessageSchema, i as isInitializeRequest, a as isJSONRPCRequest, D as DEFAULT_NEGOTIATED_PROTOCOL_VERSION, S as SUPPORTED_PROTOCOL_VERSIONS, b as isJSONRPCResultResponse, c as isJSONRPCErrorResponse, p as peekAppPlan, d as consumeAppPlan, f as frozenAppRefusal, r as replaceView, e as replaceFingerprint, g as danglingAfterReplace, h as prepareQueryOptionsForWrite, m as matchPlannedPage, l as literalCanvasColor, j as prepareComponentBatch, k as replaceIds, n as expandQueryLifecycles, v as validateEvents, o as navigationReorders, q as persistedEventSpecs } from "./chunk-BaJdJttX.js";
-import { _ as __toESM, a as __commonJS } from "./chunk-D0rVi1EZ.js";
-import { f as fail, o as ok, c as completedPartialWrites, t as tableQuotaError, r as resolveRef } from "./chunk-ZQS-Lgzr.js";
-import { e as external_exports } from "./chunk-BXrPi5U1.js";
-import { a6 as assessQueryRead, a7 as LARGE_READ_ROW_THRESHOLD, a8 as resolveStaticBindings, a9 as resolvedReadRefusal, aa as sameReadSource, ab as extractRowCount, ac as emptyViewerOnlyParams, ad as emptyParamsNote, ae as unresolvedNote, a0 as validateQueryOptions, a1 as issueMessages } from "./chunk-9MxONkew.js";
+import { J as JSONRPCMessageSchema, i as isInitializeRequest, a as isJSONRPCRequest, D as DEFAULT_NEGOTIATED_PROTOCOL_VERSION, S as SUPPORTED_PROTOCOL_VERSIONS, b as isJSONRPCResultResponse, c as isJSONRPCErrorResponse, p as peekAppPlan, d as consumeAppPlan, f as frozenAppRefusal, r as replaceView, e as replaceFingerprint, g as danglingAfterReplace, h as prepareQueryOptionsForWrite, m as matchPlannedPage, l as literalCanvasColor, j as prepareComponentBatch, k as replaceIds, n as expandQueryLifecycles, v as validateEvents, o as navigationReorders, q as persistedEventSpecs } from "./chunk-pk1wj3UI.js";
+import { e8 as __toESM, e6 as __commonJS } from "./chunk-BEuHHGL1.js";
+import { f as fail, o as ok, c as componentRef, e as completedPartialWrites, t as tableQuotaError, r as resolveRef, i as indexComponentReferences } from "./chunk-rf3v0KLq.js";
+import { o as external_exports } from "./chunk-8iUq0slz.js";
+import { h as assessQueryRead, L as LARGE_READ_ROW_THRESHOLD, r as resolveStaticBindings, j as resolvedReadRefusal, s as sameReadSource, k as extractRowCount, m as emptyViewerOnlyParams, o as emptyParamsNote, u as unresolvedNote, v as validateQueryOptions, i as issueMessages } from "./chunk-yxr8SUor.js";
 import "node:http";
 import { Http2ServerRequest, constants } from "node:http2";
 import { Readable } from "node:stream";
-import { v as validateAppStructure, e as encodeComponentParent } from "./chunk-UjCY7xly.js";
-import { g as getDatasourceQuerySchema } from "./chunk-CWXC6H5y.js";
+import { v as validateAppStructure, e as encodeComponentParent } from "./chunk-gznY6rD8.js";
+import { g as getDatasourceQuerySchema } from "./chunk-CsHFzbSc.js";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
@@ -2563,15 +2563,16 @@ var sameRect = (planned, stored) => {
   return RECT_KEYS.every((key) => Number(stored[key]) === Number(planned[key]));
 };
 function diffPageInPlace(stored, planned, definitions = bundledDefinitions(), newId = randomUUID) {
+  const references = indexComponentReferences(planned);
+  if (references.errors.length)
+    throw new Error(references.errors.join(" "));
   const storedByName = new Map(stored.filter((component) => component.name).map((component) => [component.name, component]));
   const ids = /* @__PURE__ */ new Map();
   const idOf = /* @__PURE__ */ new Map();
   for (const spec of planned) {
     const id = storedByName.get(spec.name)?.id ?? newId();
     idOf.set(spec, id);
-    ids.set(spec.name, id);
-    if (spec.clientRef)
-      ids.set(spec.clientRef, id);
+    ids.set(componentRef(spec), id);
   }
   const diff = { ids, keep: [], relayout: [], create: [], recreated: [], deleteIds: [], why: {} };
   const plannedNames = new Set(planned.map((spec) => spec.name));
@@ -3283,6 +3284,10 @@ function applyAppPhaseTool(client) {
             throw new Error(`${prepared.errors.join(" ")} Nothing was written; lint the phase again.`);
           return { kind, options: prepared.options };
         });
+        for (const query of preparedQueryOptions) {
+          if (query.kind === "workflows")
+            await client.assertWorkflowQueryTarget(query.options);
+        }
         const plannedPageMatches = /* @__PURE__ */ new Map();
         const claimedPageIds = /* @__PURE__ */ new Set();
         const reusableHome = initialSummary.pages.length === 1 && initialSummary.pages[0]?.handle === "home" && initialSummary.pages[0].components.length === 0 ? initialSummary.pages[0] : void 0;
@@ -3339,7 +3344,10 @@ function applyAppPhaseTool(client) {
         for (const page of spec.pages ?? []) {
           if (!page.components?.length)
             continue;
-          const prepared = prepareComponentBatch(page.components, { canvasColor });
+          const prepared = prepareComponentBatch(page.components, {
+            canvasColor,
+            existingComponents: plannedPageMatches.get(logicalRef(page))?.components
+          });
           if (prepared.errors.length)
             throw new Error(`Page "${page.name}": ${prepared.errors.join(" ")}`);
           preparedBatches.set(logicalRef(page), prepared);
@@ -3364,7 +3372,10 @@ function applyAppPhaseTool(client) {
           })));
           for (const prepared of preparedBatches.values()) {
             for (const component of prepared.components) {
-              components.set(component.clientRef ?? component.name, { id: `planned:${component.name}`, name: component.name, type: component.type });
+              const ref = componentRef(component);
+              if (components.has(ref))
+                throw new Error(`Duplicate component client_ref/name "${ref}" in planned app.`);
+              components.set(ref, { id: `planned:${ref}`, name: component.name, type: component.type });
             }
           }
           resolvePlannedEvents(pages, queries, components);
@@ -3465,15 +3476,6 @@ function applyAppPhaseTool(client) {
           }) : Promise.resolve([]),
           createInputs.length ? client.createQueries({ versionId: args.version_id, queries: createInputs }) : Promise.resolve([])
         ]);
-        for (const query of updateInputs) {
-          const queryId = replacing.queriesToUpdate.get(query.name);
-          const current = initialSummary.queries.find((candidate) => candidate.id === queryId);
-          if (current && query.dataSourceId && current.data_source_id !== query.dataSourceId) {
-            await client.updateQueryDatasource({ queryId, versionId: args.version_id, dataSourceId: query.dataSourceId });
-          }
-          await client.updateQuery({ queryId, versionId: args.version_id, options: query.options });
-          applied.queries_updated += 1;
-        }
         const seedResults = seedWrite.status === "fulfilled" ? seedWrite.value : completedPartialWrites(seedWrite.reason);
         const createdQueries = queryWrite.status === "fulfilled" ? queryWrite.value : completedPartialWrites(queryWrite.reason);
         applied.seed_rows = seedResults.reduce((total, result) => total + result.processed_rows, 0);
@@ -3484,6 +3486,20 @@ function applyAppPhaseTool(client) {
         ];
         if (dataFailures.length)
           throw new Error(dataFailures.join(" | "));
+        for (const query of updateInputs) {
+          const queryId = replacing.queriesToUpdate.get(query.name);
+          const current = initialSummary.queries.find((candidate) => candidate.id === queryId);
+          if (current && query.dataSourceId && current.data_source_id !== query.dataSourceId) {
+            await client.updateQueryDatasource({ queryId, versionId: args.version_id, dataSourceId: query.dataSourceId });
+          }
+          try {
+            await client.updateQuery({ queryId, versionId: args.version_id, options: query.options });
+            applied.queries_updated += 1;
+          } catch (error) {
+            applied.queries_updated += completedPartialWrites(error).length;
+            throw error;
+          }
+        }
         const queryTargets = persistedTargets(planSummary.queries.map((query) => ({ id: query.id, name: query.name ?? query.id })));
         let createdIndex = 0;
         (spec.queries ?? []).forEach((query) => {
@@ -3547,7 +3563,7 @@ function applyAppPhaseTool(client) {
           applied.components_kept += diff.keep.length;
           applied.components_moved += diff.relayout.length;
           const created = page.prepared.components.map((component) => ({
-            component_id: diff.ids.get(component.clientRef ?? component.name),
+            component_id: diff.ids.get(componentRef(component)),
             name: component.name
           }));
           return { ...page, created, written: diff.create.length };
@@ -3569,7 +3585,7 @@ function applyAppPhaseTool(client) {
             const created = page.created[index];
             if (!created)
               throw new Error(`Could not resolve component "${component.name}" after creation.`);
-            componentTargets.set(component.clientRef ?? component.name, {
+            componentTargets.set(componentRef(component), {
               id: created.component_id,
               name: created.name,
               type: component.type
@@ -3661,7 +3677,7 @@ function applyAppPhaseTool(client) {
         });
       } catch (error) {
         let recovery = "";
-        const onlyFoundation = applied.components === 0 && applied.queries === 0 && applied.events === 0;
+        const onlyFoundation = applied.components === 0 && applied.queries === 0 && applied.queries_updated === 0 && applied.events === 0;
         if (onlyFoundation && createdPageIds.length) {
           const removed = [];
           for (const pageId of createdPageIds) {

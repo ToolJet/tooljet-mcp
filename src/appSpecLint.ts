@@ -1,3 +1,4 @@
+import { componentRef, indexComponentReferences } from './componentReferences.js';
 import { materializeRequiredDefaultChildren } from './defaultChildren.js';
 import { matchPlannedPage } from './pageMatch.js';
 import { validateEvents } from './eventValidation.js';
@@ -446,13 +447,11 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     errors.push(...lintQueryFedCharts(expansion.components, spec.queries ?? []).map((message) => `Page "${plannedPage.name}": ${message}`));
     warnings.push(...componentLint.warnings.map((message) => `Page "${plannedPage.name}": ${message}`));
 
+    const references = indexComponentReferences(expansion.components, existingPage?.components);
+    errors.push(...references.errors.map((message) => `Page "${plannedPage.name}": ${message}`));
     const localRefs = new Map<string, string>();
-    for (const component of existingPage?.components ?? []) {
-      if (component.name) localRefs.set(component.name, component.id);
-      localRefs.set(component.id, component.id);
-    }
-    const componentEntries = expansion.components.map((component, componentIndex) => {
-      const ref = component.clientRef ?? component.name;
+    const componentEntries = references.components.map((component, componentIndex) => {
+      const ref = componentRef(component);
       const id = `planned-component:${pageIndex}:${componentIndex}:${ref}`;
       if ((existingPage?.components ?? []).some((candidate) => candidate.name === component.name)) {
         errors.push(`Page "${plannedPage.name}" already has a component named "${component.name}".`);
@@ -461,10 +460,10 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
       else localRefs.set(ref, id);
       registerRef(componentRefs, ref, { id, name: component.name, type: component.type }, 'component', errors);
       componentCount += 1;
-      return { component, id };
+      return { component, id, originalParentRef: expansion.components[componentIndex]!.parentRef };
     });
 
-    const plannedComponents = componentEntries.map(({ component, id }) => {
+    const plannedComponents = componentEntries.map(({ component, id, originalParentRef }) => {
       let parent: string | undefined;
       if (component.parentRef) {
         parent = localRefs.get(component.parentRef);
@@ -474,7 +473,7 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
           );
         }
       } else if (component.parent) {
-        warnings.push(
+        if (!originalParentRef) warnings.push(
           `Page "${plannedPage.name}" component "${component.name}" uses persisted parent id "${component.parent}"; ` +
             'its parent relationship cannot be verified in a pre-write plan. Prefer parent_ref.'
         );

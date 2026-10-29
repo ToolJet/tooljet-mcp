@@ -1,11 +1,11 @@
 import { createRequire } from "node:module";
-import { t as COMPONENT_FX_GUIDANCE } from "./chunk-D0rVi1EZ.js";
-import { r as resolveRef$1, v as validateTableBatch, n as normalizeComponentSpec, a as normalizeType, b as booleanBindingValue, T as TOOLJET_DB_DATA_TYPES, f as fail, i as invalidSeedTimestamps, o as ok } from "./chunk-ZQS-Lgzr.js";
-import { p as lintComponentStateBindings, d as decodeComponentParent, q as minimumTextHeight, r as pageIconError, t as lintComponents, e as encodeComponentParent, v as validateAppStructure, a as componentNameSchema, c as componentSlotSchema, s as suggestedHtmlHeight, u as pageIconSchema, w as namespaceReads } from "./chunk-UjCY7xly.js";
-import { a2 as normalizeQueryToggles, a3 as toggleRewriteWarning, a1 as issueMessages, a4 as queryToggleIssues, _ as normalizeQueryOptions, a0 as validateQueryOptions, S as getComponentSchema, W as parseExpression, a5 as arithmeticWriteWarning, Y as bindingSpans } from "./chunk-9MxONkew.js";
-import { e as external_exports } from "./chunk-BXrPi5U1.js";
+import { o as external_exports, p as COMPONENT_FX_GUIDANCE } from "./chunk-8iUq0slz.js";
+import { r as resolveRef$1, c as componentRef, v as validateTableBatch, n as normalizeComponentSpec, i as indexComponentReferences, a as normalizeType, b as booleanBindingValue, T as TOOLJET_DB_DATA_TYPES, f as fail, d as invalidSeedTimestamps, o as ok } from "./chunk-rf3v0KLq.js";
+import { p as lintComponentStateBindings, d as decodeComponentParent, q as minimumTextHeight, r as pageIconError, t as lintComponents, e as encodeComponentParent, v as validateAppStructure, a as componentNameSchema, c as componentSlotSchema, s as suggestedHtmlHeight, u as pageIconSchema, w as namespaceReads } from "./chunk-gznY6rD8.js";
+import { e5 as getComponentSchema } from "./chunk-BEuHHGL1.js";
+import { f as normalizeQueryToggles, t as toggleRewriteWarning, i as issueMessages, q as queryToggleIssues, e as normalizeQueryOptions, v as validateQueryOptions, p as parseExpression, g as arithmeticWriteWarning, b as bindingSpans } from "./chunk-yxr8SUor.js";
 import { randomUUID } from "node:crypto";
-import { dl as union, dz as string, dU as number, e5 as looseObject, dT as object, e6 as literal, dk as unknown, ev as _enum, eS as array, eg as intersection, dJ as record, eO as boolean, dM as preprocess, dS as optional, ec as iso_exports, eB as discriminatedUnion, eG as custom, dX as _null2 } from "./chunk-CK5pWCHM.js";
+import { j as union, A as string, V as number, a7 as looseObject, U as object, a8 as literal, i as unknown, ax as _enum, aU as array, ai as intersection, K as record, aQ as boolean, N as preprocess, T as optional, ae as iso_exports, aD as discriminatedUnion, aI as custom, Y as _null2 } from "./chunk-4DDZMCNh.js";
 createRequire(import.meta.url);
 var member = (n) => n && ["MemberExpression", "OptionalMemberExpression"].includes(n.type);
 var key = (n) => n.computed ? n.property?.type === "StringLiteral" ? n.property.value : void 0 : n.property?.name;
@@ -711,33 +711,24 @@ function childName(parentName, child, index) {
   const role = baseRole.charAt(0).toUpperCase() + baseRole.slice(1) + (cardField ? "" : index + 1);
   return `${parentName}Card${role}`;
 }
-function unusedInternalRef(used, index) {
-  let suffix = index + 1;
-  let ref = `__mcp_default_parent_${suffix}`;
-  while (used.has(ref))
-    ref = `__mcp_default_parent_${++suffix}`;
-  used.add(ref);
-  return ref;
-}
 function materializeRequiredDefaultChildren(input) {
-  const usedRefs = new Set(input.flatMap((component) => component.clientRef ? [component.clientRef] : []));
   const explicitParentRefs = new Set(input.flatMap((component) => component.parentRef && (!component.slotName || component.slotName === "body") ? [component.parentRef] : []));
   const components = [];
   const warnings = [];
   let materializedChildren = 0;
-  input.forEach((original, componentIndex) => {
+  input.forEach((original) => {
     if (!AUTO_MATERIALIZE_DEFAULTS.has(original.type)) {
       components.push(original);
       return;
     }
     const schema = getComponentSchema(original.type);
     const defaults = schema?.defaultChildren ?? [];
-    if (!defaults.length || original.clientRef && explicitParentRefs.has(original.clientRef)) {
+    if (!defaults.length || explicitParentRefs.has(componentRef(original))) {
       components.push(original);
       return;
     }
-    const clientRef = original.clientRef ?? unusedInternalRef(usedRefs, componentIndex);
-    components.push({ ...original, clientRef });
+    const clientRef = componentRef(original);
+    components.push(original);
     defaults.forEach((child, childIndex) => {
       const defaultValue = child.defaultValue ?? {};
       components.push({
@@ -776,7 +767,7 @@ function prepareQueryOptionsForWrite(kind, raw, subject) {
   }
   const options = normalizeQueryOptions(kind, toggled);
   if (options !== toggled) {
-    warnings.push(line(kind === "mongodb" ? "serialized MongoDB document fields to the JSON text expected by the plugin." : `rewrote the ${String(options.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`));
+    warnings.push(line(kind === "workflows" ? "normalized legacy workflow selectors to workflowId/workflowVersionId." : kind === "mongodb" ? "serialized MongoDB document fields to the JSON text expected by the plugin." : `rewrote the ${String(options.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`));
   }
   const validation = validateQueryOptions(kind, options);
   warnings.push(...issueMessages(validation.warnings, subject));
@@ -1286,14 +1277,11 @@ function lintPlannedApp(spec, existingSummary, options = {}) {
     errors.push(...componentLint.errors.map((message) => `Page "${plannedPage.name}": ${message}`));
     errors.push(...lintQueryFedCharts(expansion.components, spec.queries ?? []).map((message) => `Page "${plannedPage.name}": ${message}`));
     warnings.push(...componentLint.warnings.map((message) => `Page "${plannedPage.name}": ${message}`));
+    const references = indexComponentReferences(expansion.components, existingPage?.components);
+    errors.push(...references.errors.map((message) => `Page "${plannedPage.name}": ${message}`));
     const localRefs = /* @__PURE__ */ new Map();
-    for (const component of existingPage?.components ?? []) {
-      if (component.name)
-        localRefs.set(component.name, component.id);
-      localRefs.set(component.id, component.id);
-    }
-    const componentEntries = expansion.components.map((component, componentIndex) => {
-      const ref = component.clientRef ?? component.name;
+    const componentEntries = references.components.map((component, componentIndex) => {
+      const ref = componentRef(component);
       const id = `planned-component:${pageIndex}:${componentIndex}:${ref}`;
       if ((existingPage?.components ?? []).some((candidate) => candidate.name === component.name)) {
         errors.push(`Page "${plannedPage.name}" already has a component named "${component.name}".`);
@@ -1304,9 +1292,9 @@ function lintPlannedApp(spec, existingSummary, options = {}) {
         localRefs.set(ref, id);
       registerRef(componentRefs, ref, { id, name: component.name, type: component.type }, "component", errors);
       componentCount += 1;
-      return { component, id };
+      return { component, id, originalParentRef: expansion.components[componentIndex].parentRef };
     });
-    const plannedComponents = componentEntries.map(({ component, id }) => {
+    const plannedComponents = componentEntries.map(({ component, id, originalParentRef }) => {
       let parent;
       if (component.parentRef) {
         parent = localRefs.get(component.parentRef);
@@ -1314,7 +1302,8 @@ function lintPlannedApp(spec, existingSummary, options = {}) {
           errors.push(`Page "${plannedPage.name}" component "${component.name}" has unknown parent_ref "${component.parentRef}".`);
         }
       } else if (component.parent) {
-        warnings.push(`Page "${plannedPage.name}" component "${component.name}" uses persisted parent id "${component.parent}"; its parent relationship cannot be verified in a pre-write plan. Prefer parent_ref.`);
+        if (!originalParentRef)
+          warnings.push(`Page "${plannedPage.name}" component "${component.name}" uses persisted parent id "${component.parent}"; its parent relationship cannot be verified in a pre-write plan. Prefer parent_ref.`);
         parent = component.parent;
       }
       if (parent)
@@ -1709,7 +1698,8 @@ function prepareComponentBatch(inputs, options = {}) {
     heightFixes.push(`Html "${component.name ?? "?"}" needed about ${fix.needed}px for its markup but was ${fix.from}px; saved at ${fix.to}px. Anything placed within ${fix.to - fix.from}px below it now overlaps; move it down.`);
   }
   const expanded = materializeRequiredDefaultChildren(normalized.map((result) => result.component));
-  const lint = lintComponents(expanded.components, options);
+  const references = indexComponentReferences(expanded.components, options.existingComponents);
+  const lint = lintComponents(references.components, options);
   const lateListviewChildWarnings = requested.flatMap((component) => component.parent && containsListItemBinding({
     properties: component.properties,
     styles: component.styles,
@@ -1719,8 +1709,8 @@ function prepareComponentBatch(inputs, options = {}) {
     `Component "${component.name}" is being added under an existing parent and reads listItem. ToolJet can mount late-added Listview children with empty repeated values. Create the Listview and all listItem-bound children atomically in one component batch using client_ref/parent_ref.`
   ] : []);
   return {
-    components: expanded.components,
-    errors: lint.errors,
+    components: references.components,
+    errors: [...references.errors, ...lint.errors],
     warnings: [
       ...normalized.flatMap((item) => item.warnings),
       ...expanded.warnings,
