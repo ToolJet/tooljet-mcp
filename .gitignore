@@ -14,3 +14,6 @@ docs/specs/
 skill/references/catalog/
 skills/*/references/catalog/
 plugins/*/skills/*/references/catalog/
+
+# Generated Antigravity marketplace package
+plugins/tooljet-antigravity/
