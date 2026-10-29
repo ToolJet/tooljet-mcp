@@ -1,10 +1,10 @@
 import { createRequire } from "node:module";
 import { _ as __toESM, a as __commonJS, p as require_parse, q as require_util, r as readCatalog, s as __export } from "./chunk-D0rVi1EZ.js";
 import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-CWXC6H5y.js";
-import { L as require_moment, r as require_lib, P as ParseErrorEnum, S as ScopeHandler, J as getExportedToken, a as tt, n as tokenLabelName, t as tokenIsIdentifier, E as Errors, j as isIdentifierChar, m as tokenIsKeyword, d as types, i as isIdentifierStart, M as tokenComesBeforeExpression } from "./chunk-DrLKaGjO.js";
-import { t as typescript_default, f as flow_default } from "./chunk-9VCdKoN2.js";
-import { S as StatementParser } from "./chunk-vwy9-y_4.js";
-import { g as getOptions, i as isNewLine } from "./chunk-CRR4NmSc.js";
+import { a$ as require_moment, aB as ParseErrorEnum, aJ as ScopeHandler, aZ as getExportedToken, t as tt, N as percentSign, ai as tokenLabelName, aC as tokenIsIdentifier, a as rightCurlyBrace, g as greaterThan, M as ampersand, x as leftCurlyBrace, l as lessThan, n as carriageReturn, m as lineFeed, E as Errors, J as numberSign, Z as lowercaseX, a6 as semicolon, c as isIdentifierChar, f as dash, aj as tokenIsKeyword, al as types, h as exclamationMark, z as isIdentifierStart, P as quotationMark, O as apostrophe, b0 as tokenComesBeforeExpression } from "./chunk-Cyh9PdSf.js";
+import { g as getOptions, O as OptionFlags, t as typescript_default, i as isNewLine } from "./chunk-CE2u8IbT.js";
+import { f as flow_default } from "./chunk-CSI-ODCK.js";
+import { S as StatementParser } from "./chunk-5X4UDYG8.js";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
@@ -226,7 +226,7 @@ var require_stringify = __commonJS({
     };
   }
 });
-var require_lib2 = __commonJS({
+var require_lib = __commonJS({
   "node_modules/json5/lib/index.js"(exports, module) {
     var parse2 = require_parse();
     var stringify = require_stringify();
@@ -314,7 +314,7 @@ function assessRedisRead(options, datasourceId) {
   }
   return { ...base, reason: `Redis command ${command} is not a supported bounded read. Writes, scripts, KEYS and administrative commands are not automatically executed.` };
 }
-var import_json5 = __toESM(require_lib2());
+var import_json5 = __toESM(require_lib());
 var import_moment = __toESM(require_moment(), 1);
 var { defineProperty } = Object;
 var toUnenumerable = (object2, key) => {
@@ -330,7 +330,7 @@ function toESTreeLocation(node) {
 var estree_default = (superClass) => class ESTreeParserMixin extends superClass {
   parse() {
     const file = toESTreeLocation(super.parse());
-    if (this.optionFlags & 256) {
+    if (this.optionFlags & OptionFlags.Tokens) {
       file.tokens = file.tokens.map(toESTreeLocation);
     }
     return file;
@@ -781,7 +781,6 @@ var estree_default = (superClass) => class ESTreeParserMixin extends superClass 
     toESTreeLocation(node);
   }
 };
-var charCodes = __toESM(require_lib());
 var entities = {
   // @ts-expect-error __proto__ is not an actual property: https://github.com/microsoft/TypeScript/issues/38385
   __proto__: null,
@@ -1083,10 +1082,10 @@ var jsx_default = (superClass) => class JSXParserMixin extends superClass {
       }
       const ch = this.input.charCodeAt(this.state.pos);
       switch (ch) {
-        case charCodes.lessThan:
-        case charCodes.leftCurlyBrace:
+        case lessThan:
+        case leftCurlyBrace:
           if (this.state.pos === this.state.start) {
-            if (ch === charCodes.lessThan && this.state.canStartJSXElement) {
+            if (ch === lessThan && this.state.canStartJSXElement) {
               ++this.state.pos;
               this.finishToken(tt.jsxTagStart);
             } else {
@@ -1097,13 +1096,13 @@ var jsx_default = (superClass) => class JSXParserMixin extends superClass {
           out += this.input.slice(chunkStart, this.state.pos);
           this.finishToken(tt.jsxText, out);
           return;
-        case charCodes.ampersand:
+        case ampersand:
           out += this.input.slice(chunkStart, this.state.pos);
           out += this.jsxReadEntity();
           chunkStart = this.state.pos;
           break;
-        case charCodes.greaterThan:
-        case charCodes.rightCurlyBrace:
+        case greaterThan:
+        case rightCurlyBrace:
         /* falls through */
         default:
           if (isNewLine(ch)) {
@@ -1120,7 +1119,7 @@ var jsx_default = (superClass) => class JSXParserMixin extends superClass {
     const ch = this.input.charCodeAt(this.state.pos);
     let out;
     ++this.state.pos;
-    if (ch === charCodes.carriageReturn && this.input.charCodeAt(this.state.pos) === charCodes.lineFeed) {
+    if (ch === carriageReturn && this.input.charCodeAt(this.state.pos) === lineFeed) {
       ++this.state.pos;
       out = normalizeCRLF ? "\n" : "\r\n";
     } else {
@@ -1139,7 +1138,7 @@ var jsx_default = (superClass) => class JSXParserMixin extends superClass {
       }
       const ch = this.input.charCodeAt(this.state.pos);
       if (ch === quote) break;
-      if (ch === charCodes.ampersand) {
+      if (ch === ampersand) {
         out += this.input.slice(chunkStart, this.state.pos);
         out += this.jsxReadEntity();
         chunkStart = this.state.pos;
@@ -1156,10 +1155,10 @@ var jsx_default = (superClass) => class JSXParserMixin extends superClass {
   }
   jsxReadEntity() {
     const startPos = ++this.state.pos;
-    if (this.codePointAtPos(this.state.pos) === charCodes.numberSign) {
+    if (this.codePointAtPos(this.state.pos) === numberSign) {
       ++this.state.pos;
       let radix = 10;
-      if (this.codePointAtPos(this.state.pos) === charCodes.lowercaseX) {
+      if (this.codePointAtPos(this.state.pos) === lowercaseX) {
         radix = 16;
         ++this.state.pos;
       }
@@ -1172,14 +1171,14 @@ var jsx_default = (superClass) => class JSXParserMixin extends superClass {
         /* allowNumSeparator */
         "bail"
       );
-      if (codePoint !== null && this.codePointAtPos(this.state.pos) === charCodes.semicolon) {
+      if (codePoint !== null && this.codePointAtPos(this.state.pos) === semicolon) {
         ++this.state.pos;
         return String.fromCodePoint(codePoint);
       }
     } else {
       let count = 0;
       let semi = false;
-      while (count++ < 10 && this.state.pos < this.length && !(semi = this.codePointAtPos(this.state.pos) === charCodes.semicolon)) {
+      while (count++ < 10 && this.state.pos < this.length && !(semi = this.codePointAtPos(this.state.pos) === semicolon)) {
         ++this.state.pos;
       }
       if (semi) {
@@ -1205,7 +1204,7 @@ var jsx_default = (superClass) => class JSXParserMixin extends superClass {
     const start = this.state.pos;
     do {
       ch = this.input.charCodeAt(++this.state.pos);
-    } while (isIdentifierChar(ch) || ch === charCodes.dash);
+    } while (isIdentifierChar(ch) || ch === dash);
     this.finishToken(tt.jsxName, this.input.slice(start, this.state.pos));
   }
   // Parse next token as JSX identifier
@@ -1434,7 +1433,7 @@ var jsx_default = (superClass) => class JSXParserMixin extends superClass {
   parseExprAtom(refExpressionErrors) {
     if (this.match(tt.jsxTagStart)) {
       return this.jsxParseElement();
-    } else if (this.match(tt.lt) && this.input.charCodeAt(this.state.pos) !== charCodes.exclamationMark) {
+    } else if (this.match(tt.lt) && this.input.charCodeAt(this.state.pos) !== exclamationMark) {
       this.replaceToken(tt.jsxTagStart);
       return this.jsxParseElement();
     } else {
@@ -1456,17 +1455,17 @@ var jsx_default = (superClass) => class JSXParserMixin extends superClass {
         this.jsxReadWord();
         return;
       }
-      if (code === charCodes.greaterThan) {
+      if (code === greaterThan) {
         ++this.state.pos;
         this.finishToken(tt.jsxTagEnd);
         return;
       }
-      if ((code === charCodes.quotationMark || code === charCodes.apostrophe) && context === types.j_oTag) {
+      if ((code === quotationMark || code === apostrophe) && context === types.j_oTag) {
         this.jsxReadString(code);
         return;
       }
     }
-    if (code === charCodes.lessThan && this.state.canStartJSXElement && this.input.charCodeAt(this.state.pos + 1) !== charCodes.exclamationMark) {
+    if (code === lessThan && this.state.canStartJSXElement && this.input.charCodeAt(this.state.pos + 1) !== exclamationMark) {
       ++this.state.pos;
       this.finishToken(tt.jsxTagStart);
       return;
@@ -1494,7 +1493,6 @@ var jsx_default = (superClass) => class JSXParserMixin extends superClass {
     }
   }
 };
-var charCodes2 = __toESM(require_lib());
 var PlaceholderErrors = ParseErrorEnum`placeholders`({
   ClassNameIsRequired: "A class name is required.",
   UnexpectedSpace: "Unexpected space in placeholder."
@@ -1529,7 +1527,7 @@ var placeholders_default = (superClass) => class PlaceholdersParserMixin extends
    * tokenizer/index.ts                                           *
    * ============================================================ */
   getTokenFromCode(code) {
-    if (code === charCodes2.percentSign && this.input.charCodeAt(this.state.pos + 1) === charCodes2.percentSign) {
+    if (code === percentSign && this.input.charCodeAt(this.state.pos + 1) === percentSign) {
       this.finishOp(tt.placeholder, 2);
     } else {
       super.getTokenFromCode(code);
@@ -1594,7 +1592,7 @@ var placeholders_default = (superClass) => class PlaceholdersParserMixin extends
       return true;
     }
     const next = this.nextTokenStart();
-    if (this.input.charCodeAt(next) === charCodes2.percentSign && this.input.charCodeAt(next + 1) === charCodes2.percentSign) {
+    if (this.input.charCodeAt(next) === percentSign && this.input.charCodeAt(next + 1) === percentSign) {
       return true;
     }
     return false;
@@ -1910,46 +1908,46 @@ var Parser = class extends StatementParser {
     this.startIndex = normalizedOptions.startIndex;
     let optionFlags = 0;
     if (normalizedOptions.allowAwaitOutsideFunction) {
-      optionFlags |= 1;
+      optionFlags |= OptionFlags.AllowAwaitOutsideFunction;
     }
     if (normalizedOptions.allowReturnOutsideFunction) {
-      optionFlags |= 2;
+      optionFlags |= OptionFlags.AllowReturnOutsideFunction;
     }
     if (normalizedOptions.allowImportExportEverywhere) {
-      optionFlags |= 8;
+      optionFlags |= OptionFlags.AllowImportExportEverywhere;
     }
     if (normalizedOptions.allowSuperOutsideMethod) {
-      optionFlags |= 16;
+      optionFlags |= OptionFlags.AllowSuperOutsideMethod;
     }
     if (normalizedOptions.allowUndeclaredExports) {
-      optionFlags |= 64;
+      optionFlags |= OptionFlags.AllowUndeclaredExports;
     }
     if (normalizedOptions.allowNewTargetOutsideFunction) {
-      optionFlags |= 4;
+      optionFlags |= OptionFlags.AllowNewTargetOutsideFunction;
     }
     if (normalizedOptions.allowYieldOutsideFunction) {
-      optionFlags |= 32;
+      optionFlags |= OptionFlags.AllowYieldOutsideFunction;
     }
     if (normalizedOptions.ranges) {
-      optionFlags |= 128;
+      optionFlags |= OptionFlags.Ranges;
     }
     if (normalizedOptions.tokens) {
-      optionFlags |= 256;
+      optionFlags |= OptionFlags.Tokens;
     }
     if (normalizedOptions.createImportExpressions) {
-      optionFlags |= 512;
+      optionFlags |= OptionFlags.CreateImportExpressions;
     }
     if (normalizedOptions.createParenthesizedExpressions) {
-      optionFlags |= 1024;
+      optionFlags |= OptionFlags.CreateParenthesizedExpressions;
     }
     if (normalizedOptions.errorRecovery) {
-      optionFlags |= 2048;
+      optionFlags |= OptionFlags.ErrorRecovery;
     }
     if (normalizedOptions.attachComment) {
-      optionFlags |= 4096;
+      optionFlags |= OptionFlags.AttachComment;
     }
     if (normalizedOptions.annexB) {
-      optionFlags |= 8192;
+      optionFlags |= OptionFlags.AnnexB;
     }
     this.optionFlags = optionFlags;
   }
@@ -2010,12 +2008,12 @@ function parseExpression(input, options) {
   }
   return parser.getExpression();
 }
-function generateExportedTokenTypes(internalTokenTypes) {
+function generateExportedTokenTypes(internalTokenTypes2) {
   const tokenTypes = {};
   for (const typeName of Object.keys(
-    internalTokenTypes
+    internalTokenTypes2
   )) {
-    tokenTypes[typeName] = getExportedToken(internalTokenTypes[typeName]);
+    tokenTypes[typeName] = getExportedToken(internalTokenTypes2[typeName]);
   }
   return tokenTypes;
 }

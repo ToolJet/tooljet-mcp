@@ -1,13 +1,13 @@
 import { createRequire } from "node:module";
-import { J as JSONRPCMessageSchema, i as isInitializeRequest, a as isJSONRPCRequest, D as DEFAULT_NEGOTIATED_PROTOCOL_VERSION, S as SUPPORTED_PROTOCOL_VERSIONS, b as isJSONRPCResultResponse, c as isJSONRPCErrorResponse, p as peekAppPlan, d as consumeAppPlan, f as frozenAppRefusal, r as replaceView, e as replaceFingerprint, g as danglingAfterReplace, h as prepareQueryOptionsForWrite, m as matchPlannedPage, l as literalCanvasColor, j as prepareComponentBatch, k as replaceIds, n as expandQueryLifecycles, v as validateEvents, o as navigationReorders, q as persistedEventSpecs } from "./chunk-D_icJ33s.js";
+import { J as JSONRPCMessageSchema, i as isInitializeRequest, a as isJSONRPCRequest, D as DEFAULT_NEGOTIATED_PROTOCOL_VERSION, S as SUPPORTED_PROTOCOL_VERSIONS, b as isJSONRPCResultResponse, c as isJSONRPCErrorResponse, p as peekAppPlan, d as consumeAppPlan, f as frozenAppRefusal, r as replaceView, e as replaceFingerprint, g as danglingAfterReplace, h as prepareQueryOptionsForWrite, m as matchPlannedPage, l as literalCanvasColor, j as prepareComponentBatch, k as replaceIds, n as expandQueryLifecycles, v as validateEvents, o as navigationReorders, q as persistedEventSpecs } from "./chunk-BaJdJttX.js";
 import { _ as __toESM, a as __commonJS } from "./chunk-D0rVi1EZ.js";
-import { f as fail, o as ok, c as completedPartialWrites, t as tableQuotaError, r as resolveRef } from "./chunk-D46B2dYj.js";
-import { e as external_exports } from "./chunk-Dx0NqId0.js";
-import { a6 as assessQueryRead, a7 as LARGE_READ_ROW_THRESHOLD, a8 as resolveStaticBindings, a9 as resolvedReadRefusal, aa as sameReadSource, ab as extractRowCount, ac as emptyViewerOnlyParams, ad as emptyParamsNote, ae as unresolvedNote, a0 as validateQueryOptions, a1 as issueMessages } from "./chunk-C8mwOWJa.js";
+import { f as fail, o as ok, c as completedPartialWrites, t as tableQuotaError, r as resolveRef } from "./chunk-ZQS-Lgzr.js";
+import { e as external_exports } from "./chunk-BXrPi5U1.js";
+import { a6 as assessQueryRead, a7 as LARGE_READ_ROW_THRESHOLD, a8 as resolveStaticBindings, a9 as resolvedReadRefusal, aa as sameReadSource, ab as extractRowCount, ac as emptyViewerOnlyParams, ad as emptyParamsNote, ae as unresolvedNote, a0 as validateQueryOptions, a1 as issueMessages } from "./chunk-9MxONkew.js";
 import "node:http";
 import { Http2ServerRequest, constants } from "node:http2";
 import { Readable } from "node:stream";
-import { v as validateAppStructure, e as encodeComponentParent } from "./chunk-DKzM5TGJ.js";
+import { v as validateAppStructure, e as encodeComponentParent } from "./chunk-UjCY7xly.js";
 import { g as getDatasourceQuerySchema } from "./chunk-CWXC6H5y.js";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";

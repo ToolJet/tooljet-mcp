@@ -1,9 +1,7 @@
 import { createRequire } from "node:module";
-import { E as ExpressionErrors, f as functionFlags, n as newParameterDeclarationScope, a as newExpressionScope, L as LValParser, b as newAsyncArrowScope, s as setInnerComments, c as newArrowHeadScope, T as Token } from "./chunk-CRR4NmSc.js";
-import { r as require_lib, a as tt, E as Errors, v as createPositionWithColumnOffset, i as isIdentifierStart, j as isIdentifierChar, t as tokenIsIdentifier, y as tokenIsLoop, b as tokenIsKeywordOrIdentifier, z as tokenIsAssignment, g as tokenCanStartExpression, h as tokenOperatorPrecedence, A as tokenIsOperator, B as tokenIsRightAssociative, U as UnparenthesizedPipeBodyDescriptions, C as tokenIsPrefix, D as tokenIsPostfix, f as tokenIsTemplate, n as tokenLabelName, F as canBeReservedWord, G as isKeyword, H as isReservedWord, q as isStrictBindReservedWord, I as isStrictReservedWord, J as getExportedToken, K as tokenKeywordOrIdentifierIsKeyword } from "./chunk-DrLKaGjO.js";
-import { _ as __toESM } from "./chunk-D0rVi1EZ.js";
+import { L as LoopLabelKind, O as OptionFlags, E as ExpressionErrors, f as functionFlags, n as newParameterDeclarationScope, P as ParseBindingListFlags, a as ParamKind, b as newExpressionScope, c as LValParser, d as newAsyncArrowScope, s as setInnerComments, e as newArrowHeadScope, T as Token } from "./chunk-CE2u8IbT.js";
+import { t as tt, E as Errors, a9 as createPositionWithColumnOffset, D as equalsTo, a4 as colon, a6 as semicolon, z as isIdentifierStart, c as isIdentifierChar, A as backslash, y as leftSquareBracket, x as leftCurlyBrace, a8 as leftParenthesis, C as dot, aC as tokenIsIdentifier, e as ScopeFlag, B as BindingFlag, aO as tokenIsLoop, a7 as rightParenthesis, ak as ClassElementType, a5 as comma, P as quotationMark, O as apostrophe, aD as tokenIsKeywordOrIdentifier, au as lowercaseF, aP as tokenIsAssignment, aH as tokenCanStartExpression, aI as tokenOperatorPrecedence, aQ as tokenIsOperator, aR as tokenIsRightAssociative, aS as UnparenthesizedPipeBodyDescriptions, aT as tokenIsPrefix, aU as tokenIsPostfix, aG as tokenIsTemplate, g as greaterThan, ai as tokenLabelName, aV as canBeReservedWord, aW as isKeyword, aX as isReservedWord, i as isStrictBindReservedWord, aY as isStrictReservedWord, r as rightSquareBracket, a as rightCurlyBrace, aZ as getExportedToken, a3 as graveAccent, a_ as tokenKeywordOrIdentifierIsKeyword } from "./chunk-Cyh9PdSf.js";
 createRequire(import.meta.url);
-var charCodes = __toESM(require_lib());
 var ExpressionParser = class extends LValParser {
   // For object literal, check if property __proto__ has been used more than once.
   // If the expression is a destructuring assignment, then __proto__ may appear
@@ -52,7 +50,7 @@ var ExpressionParser = class extends LValParser {
     this.finalizeRemainingComments();
     expr.comments = this.comments;
     expr.errors = this.state.errors;
-    if (this.optionFlags & 256) {
+    if (this.optionFlags & OptionFlags.Tokens) {
       expr.tokens = this.tokens;
     }
     return expr;
@@ -477,7 +475,7 @@ var ExpressionParser = class extends LValParser {
     if (type === tt.questionDot) {
       if (noCalls) {
         this.raise(Errors.OptionalChainingNoNew, this.state.startLoc);
-        if (this.lookaheadCharCode() === charCodes.leftParenthesis) {
+        if (this.lookaheadCharCode() === leftParenthesis) {
           return this.stopParseSubscript(base, state);
         }
       }
@@ -719,7 +717,7 @@ var ExpressionParser = class extends LValParser {
           );
         }
         if (this.match(tt.parenL)) {
-          if (this.optionFlags & 512) {
+          if (this.optionFlags & OptionFlags.CreateImportExpressions) {
             return this.parseImportCall(node);
           } else {
             return this.finishNode(node, "Import");
@@ -836,7 +834,7 @@ var ExpressionParser = class extends LValParser {
       case tt.lt: {
         const lookaheadCh = this.input.codePointAt(this.nextTokenStart());
         if (isIdentifierStart(lookaheadCh) || // Element/Type Parameter <foo>
-        lookaheadCh === charCodes.greaterThan) {
+        lookaheadCh === greaterThan) {
           throw this.expectOnePlugin(["jsx", "flow", "typescript"]);
         }
         throw this.unexpected();
@@ -862,7 +860,7 @@ var ExpressionParser = class extends LValParser {
           }
         }
         if (tokenIsIdentifier(type)) {
-          if (this.isContextual(tt._module) && this.lookaheadInLineCharCode() === charCodes.leftCurlyBrace) {
+          if (this.isContextual(tt._module) && this.lookaheadInLineCharCode() === leftCurlyBrace) {
             return this.parseModuleExpression();
           }
           const canBeArrow = this.state.potentialArrowAt === this.state.start;
@@ -877,7 +875,7 @@ var ExpressionParser = class extends LValParser {
                 this.startNodeAtNode(id)
               );
             } else if (tokenIsIdentifier(type2)) {
-              if (canBeArrow && this.lookaheadCharCode() === charCodes.equalsTo) {
+              if (canBeArrow && this.lookaheadCharCode() === equalsTo) {
                 return this.parseAsyncArrowUnaryFunction(
                   this.startNodeAtNode(id)
                 );
@@ -1021,10 +1019,7 @@ var ExpressionParser = class extends LValParser {
     const oldLabels = this.state.labels;
     this.state.labels = [];
     if (isAsync) {
-      this.prodParam.enter(
-        2
-        /* PARAM_AWAIT */
-      );
+      this.prodParam.enter(ParamKind.PARAM_AWAIT);
       node.body = this.parseBlock();
       this.prodParam.exit();
     } else {
@@ -1039,13 +1034,13 @@ var ExpressionParser = class extends LValParser {
     this.next();
     if (this.match(tt.parenL) && !this.scope.allowDirectSuper) {
       {
-        if (!(this.optionFlags & 16)) {
+        if (!(this.optionFlags & OptionFlags.AllowSuperOutsideMethod)) {
           this.raise(Errors.SuperNotAllowed, node);
         }
       }
     } else if (!this.scope.allowSuper) {
       {
-        if (!(this.optionFlags & 16)) {
+        if (!(this.optionFlags & OptionFlags.AllowSuperOutsideMethod)) {
           this.raise(Errors.UnexpectedSuper, node);
         }
       }
@@ -1216,7 +1211,7 @@ var ExpressionParser = class extends LValParser {
         exprList.push(
           this.parseParenItem(this.parseRestBinding(), spreadNodeStartLoc)
         );
-        if (!this.checkCommaAfterRest(charCodes.rightParenthesis)) {
+        if (!this.checkCommaAfterRest(rightParenthesis)) {
           break;
         }
       } else {
@@ -1268,7 +1263,7 @@ var ExpressionParser = class extends LValParser {
     );
   }
   wrapParenthesis(startLoc, expression) {
-    if (!(this.optionFlags & 1024)) {
+    if (!(this.optionFlags & OptionFlags.CreateParenthesizedExpressions)) {
       this.addExtra(expression, "parenthesized", true);
       this.addExtra(expression, "parenStart", startLoc.index);
       this.takeSurroundingComments(
@@ -1697,7 +1692,7 @@ var ExpressionParser = class extends LValParser {
     this.initFunction(node, isAsync);
     node.generator = isGenerator;
     this.scope.enter(
-      514 | 16 | (inClassScope ? 576 : 0) | (allowDirectSuper ? 32 : 0)
+      ScopeFlag.FUNCTION | ScopeFlag.SUPER | (inClassScope ? ScopeFlag.CLASS : 0) | (allowDirectSuper ? ScopeFlag.DIRECT_SUPER : 0)
     );
     this.prodParam.enter(functionFlags(isAsync, node.generator));
     this.parseFunctionParams(node, isConstructor);
@@ -1734,13 +1729,10 @@ var ExpressionParser = class extends LValParser {
   // If the parameters are provided, they will be converted to an
   // assignable list.
   parseArrowExpression(node, params, isAsync, trailingCommaLoc) {
-    this.scope.enter(
-      514 | 4
-      /* ARROW */
-    );
+    this.scope.enter(ScopeFlag.FUNCTION | ScopeFlag.ARROW);
     let flags = functionFlags(isAsync, false);
     if (!this.match(tt.braceL) && this.prodParam.hasIn) {
-      flags |= 8;
+      flags |= ParamKind.PARAM_IN;
     }
     this.prodParam.enter(flags);
     this.initFunction(node, isAsync);
@@ -1776,8 +1768,7 @@ var ExpressionParser = class extends LValParser {
       const oldLabels = this.state.labels;
       this.state.labels = [];
       this.prodParam.enter(
-        this.prodParam.currentFlags() | 4
-        /* PARAM_RETURN */
+        this.prodParam.currentFlags() | ParamKind.PARAM_RETURN
       );
       node.body = this.parseBlock(
         true,
@@ -1806,7 +1797,7 @@ var ExpressionParser = class extends LValParser {
           if (this.state.strict && node.id) {
             this.checkIdentifier(
               node.id,
-              65,
+              BindingFlag.TYPE_OUTSIDE,
               strictModeChanged
             );
           }
@@ -1833,7 +1824,7 @@ var ExpressionParser = class extends LValParser {
       this.checkLVal(
         param,
         formalParameters,
-        5,
+        BindingFlag.TYPE_VAR,
         checkClashes,
         strictModeChanged
       );
@@ -1996,7 +1987,7 @@ var ExpressionParser = class extends LValParser {
     if (this.eat(tt.star)) {
       this.raise(Errors.ObsoleteAwaitStar, node);
     }
-    if (!this.scope.inFunction && !(this.optionFlags & 1)) {
+    if (!this.scope.inFunction && !(this.optionFlags & OptionFlags.AllowAwaitOutsideFunction)) {
       if (this.isAmbiguousPrefixOrIdentifier()) {
         this.ambiguousScriptDifferentAst = true;
       } else {
@@ -2175,12 +2166,9 @@ var ExpressionParser = class extends LValParser {
   }
   allowInAnd(callback) {
     const flags = this.prodParam.currentFlags();
-    const prodParamToSet = 8 & ~flags;
+    const prodParamToSet = ParamKind.PARAM_IN & ~flags;
     if (prodParamToSet) {
-      this.prodParam.enter(
-        flags | 8
-        /* PARAM_IN */
-      );
+      this.prodParam.enter(flags | ParamKind.PARAM_IN);
       try {
         return callback();
       } finally {
@@ -2191,12 +2179,9 @@ var ExpressionParser = class extends LValParser {
   }
   disallowInAnd(callback) {
     const flags = this.prodParam.currentFlags();
-    const prodParamToClear = 8 & flags;
+    const prodParamToClear = ParamKind.PARAM_IN & flags;
     if (prodParamToClear) {
-      this.prodParam.enter(
-        flags & -9
-        /* PARAM_IN */
-      );
+      this.prodParam.enter(flags & ~ParamKind.PARAM_IN);
       try {
         return callback();
       } finally {
@@ -2263,7 +2248,7 @@ var ExpressionParser = class extends LValParser {
   parseMaybeAssignAllowInOrVoidPattern(close, refExpressionErrors, afterLeftParse) {
     if (refExpressionErrors != null && this.match(tt._void)) {
       const nextCode = this.lookaheadCharCode();
-      if (nextCode === charCodes.comma || nextCode === (close === tt.bracketR ? charCodes.rightSquareBracket : close === tt.braceR ? charCodes.rightCurlyBrace : charCodes.rightParenthesis) || nextCode === charCodes.equalsTo) {
+      if (nextCode === comma || nextCode === (close === tt.bracketR ? rightSquareBracket : close === tt.braceR ? rightCurlyBrace : rightParenthesis) || nextCode === equalsTo) {
         return this.parseMaybeDefault(
           this.state.startLoc,
           this.parseVoidPattern(refExpressionErrors)
@@ -2276,15 +2261,8 @@ var ExpressionParser = class extends LValParser {
   parsePropertyNamePrefixOperator(prop) {
   }
 };
-var charCodes2 = __toESM(require_lib());
-var loopLabel = {
-  kind: 1
-  /* Loop */
-};
-var switchLabel = {
-  kind: 2
-  /* Switch */
-};
+var loopLabel = { kind: LoopLabelKind.Loop };
+var switchLabel = { kind: LoopLabelKind.Switch };
 var loneSurrogate = /[\uD800-\uDFFF]/u;
 var keywordRelationalOperator = /in(?:stanceof)?/y;
 function babel7CompatTokens(tokens, input, startIndex) {
@@ -2327,7 +2305,7 @@ function babel7CompatTokens(tokens, input, startIndex) {
           const backquoteEnd = start + 1;
           const backquoteEndLoc = createPositionWithColumnOffset(loc.start, 1);
           let startToken;
-          if (input.charCodeAt(start - startIndex) === charCodes2.graveAccent) {
+          if (input.charCodeAt(start - startIndex) === graveAccent) {
             startToken = new Token({
               // @ts-expect-error: hacky way to create token
               type: getExportedToken(tt.backQuote),
@@ -2413,7 +2391,7 @@ var StatementParser = class extends ExpressionParser {
       this.options.sourceType === "module" ? "module" : "script"
     );
     file.comments = this.comments;
-    if (this.optionFlags & 256) {
+    if (this.optionFlags & OptionFlags.Tokens) {
       file.tokens = babel7CompatTokens(
         this.tokens,
         this.input,
@@ -2427,7 +2405,7 @@ var StatementParser = class extends ExpressionParser {
     program.interpreter = this.parseInterpreterDirective();
     this.parseBlockBody(program, true, true, end);
     if (this.inModule) {
-      if (!(this.optionFlags & 64) && this.scope.undefinedExports.size > 0) {
+      if (!(this.optionFlags & OptionFlags.AllowUndeclaredExports) && this.scope.undefinedExports.size > 0) {
         for (const [localName, at] of Array.from(this.scope.undefinedExports)) {
           this.raise(Errors.ModuleExportUndefined, at, { localName });
         }
@@ -2497,8 +2475,8 @@ var StatementParser = class extends ExpressionParser {
     const nextCh = this.codePointAtPos(next);
     if (this.isUnparsedContextual(next, "of")) {
       const nextCharAfterOf = this.lookaheadCharCodeSince(next + 2);
-      if (nextCharAfterOf !== charCodes2.equalsTo && nextCharAfterOf !== charCodes2.colon && // recover from `for(using of;...);`
-      nextCharAfterOf !== charCodes2.semicolon) {
+      if (nextCharAfterOf !== equalsTo && nextCharAfterOf !== colon && // recover from `for(using of;...);`
+      nextCharAfterOf !== semicolon) {
         return false;
       }
     }
@@ -2531,19 +2509,19 @@ var StatementParser = class extends ExpressionParser {
       keywordRelationalOperator.lastIndex = pos;
       if (keywordRelationalOperator.test(this.input)) {
         const endCh = this.codePointAtPos(keywordRelationalOperator.lastIndex);
-        if (!isIdentifierChar(endCh) && endCh !== charCodes2.backslash) {
+        if (!isIdentifierChar(endCh) && endCh !== backslash) {
           return false;
         }
       }
       return true;
-    } else if (ch === charCodes2.backslash) {
+    } else if (ch === backslash) {
       return true;
     } else {
       return false;
     }
   }
   chStartsBindingPattern(ch) {
-    return ch === charCodes2.leftSquareBracket || ch === charCodes2.leftCurlyBrace;
+    return ch === leftSquareBracket || ch === leftCurlyBrace;
   }
   /**
    * Assuming we have seen a contextual `let` and declaration is allowed, check if it
@@ -2562,7 +2540,7 @@ var StatementParser = class extends ExpressionParser {
   hasInLineFollowingBindingIdentifierOrBrace() {
     const next = this.nextTokenInLineStart();
     const nextCh = this.codePointAtPos(next);
-    return nextCh === charCodes2.leftCurlyBrace || this.chStartsBindingIdentifier(nextCh, next);
+    return nextCh === leftCurlyBrace || this.chStartsBindingIdentifier(nextCh, next);
   }
   allowsUsing() {
     return (this.scope.inModule || !this.scope.inTopLevel) && !this.scope.inBareCaseStatement;
@@ -2640,7 +2618,7 @@ var StatementParser = class extends ExpressionParser {
       case tt._for:
         return this.parseForStatement(node);
       case tt._function:
-        if (this.lookaheadCharCode() === charCodes2.dot) break;
+        if (this.lookaheadCharCode() === dot) break;
         if (!allowFunctionDeclaration) {
           this.raise(
             this.state.strict ? Errors.StrictFunction : this.options.annexB ? Errors.SloppyFunctionAnnexB : Errors.SloppyFunction,
@@ -2706,9 +2684,9 @@ var StatementParser = class extends ExpressionParser {
         }
         const next = this.nextTokenStart();
         const nextCh = this.codePointAtPos(next);
-        if (nextCh !== charCodes2.leftSquareBracket) {
+        if (nextCh !== leftSquareBracket) {
           if (!allowDeclaration && this.hasFollowingLineBreak()) break;
-          if (!this.chStartsBindingIdentifier(nextCh, next) && nextCh !== charCodes2.leftCurlyBrace) {
+          if (!this.chStartsBindingIdentifier(nextCh, next) && nextCh !== leftCurlyBrace) {
             break;
           }
         }
@@ -2737,14 +2715,14 @@ var StatementParser = class extends ExpressionParser {
         return this.parseEmptyStatement(node);
       case tt._import: {
         const nextTokenCharCode = this.lookaheadCharCode();
-        if (nextTokenCharCode === charCodes2.leftParenthesis || // import()
-        nextTokenCharCode === charCodes2.dot) {
+        if (nextTokenCharCode === leftParenthesis || // import()
+        nextTokenCharCode === dot) {
           break;
         }
       }
       // fall through
       case tt._export: {
-        if (!(this.optionFlags & 8) && !topLevel) {
+        if (!(this.optionFlags & OptionFlags.AllowImportExportEverywhere) && !topLevel) {
           this.raise(Errors.UnexpectedImportExport, this.state.startLoc);
         }
         this.next();
@@ -2795,7 +2773,7 @@ var StatementParser = class extends ExpressionParser {
     }
   }
   assertModuleNodeAllowed(node) {
-    if (!(this.optionFlags & 8) && !this.inModule) {
+    if (!(this.optionFlags & OptionFlags.AllowImportExportEverywhere) && !this.inModule) {
       this.raise(Errors.ImportOutsideModule, node);
     }
   }
@@ -2924,7 +2902,7 @@ var StatementParser = class extends ExpressionParser {
     for (i = 0; i < this.state.labels.length; ++i) {
       const lab = this.state.labels[i];
       if (node.label == null || lab.name === node.label.name) {
-        if (lab.kind != null && (isBreak || lab.kind === 1)) {
+        if (lab.kind != null && (isBreak || lab.kind === LoopLabelKind.Loop)) {
           break;
         }
         if (node.label && isBreak) break;
@@ -2980,10 +2958,7 @@ var StatementParser = class extends ExpressionParser {
       awaitAt = this.state.startLoc;
       this.next();
     }
-    this.scope.enter(
-      0
-      /* OTHER */
-    );
+    this.scope.enter(ScopeFlag.OTHER);
     this.expect(tt.parenL);
     if (this.match(tt.semi)) {
       if (awaitAt !== null) {
@@ -3098,10 +3073,7 @@ var StatementParser = class extends ExpressionParser {
     const cases = node.cases = [];
     this.expect(tt.braceL);
     this.state.labels.push(switchLabel);
-    this.scope.enter(
-      256
-      /* SWITCH */
-    );
+    this.scope.enter(ScopeFlag.SWITCH);
     let cur;
     for (let sawDefault; !this.match(tt.braceR); ) {
       if (this.match(tt._case) || this.match(tt._default)) {
@@ -3149,14 +3121,12 @@ var StatementParser = class extends ExpressionParser {
   parseCatchClauseParam() {
     const param = this.parseBindingAtom();
     this.scope.enter(
-      this.options.annexB && param.type === "Identifier" ? 8 : 0
-      /* OTHER */
+      this.options.annexB && param.type === "Identifier" ? ScopeFlag.SIMPLE_CATCH : ScopeFlag.OTHER
     );
     this.checkLVal(
       param,
       { type: "CatchClause" },
-      9
-      /* TYPE_CATCH_PARAM */
+      BindingFlag.TYPE_CATCH_PARAM
     );
     return param;
   }
@@ -3173,10 +3143,7 @@ var StatementParser = class extends ExpressionParser {
         this.expect(tt.parenR);
       } else {
         clause.param = null;
-        this.scope.enter(
-          0
-          /* OTHER */
-        );
+        this.scope.enter(ScopeFlag.OTHER);
       }
       clause.body = // For the smartPipelines plugin: Disable topic references from outer
       // contexts within the catch clause's body.
@@ -3251,7 +3218,7 @@ var StatementParser = class extends ExpressionParser {
         });
       }
     }
-    const kind = tokenIsLoop(this.state.type) ? 1 : this.match(tt._switch) ? 2 : null;
+    const kind = tokenIsLoop(this.state.type) ? LoopLabelKind.Loop : this.match(tt._switch) ? LoopLabelKind.Switch : null;
     for (let i = this.state.labels.length - 1; i >= 0; i--) {
       const label = this.state.labels[i];
       if (label.statementStart === node.start) {
@@ -3286,10 +3253,7 @@ var StatementParser = class extends ExpressionParser {
     }
     this.expect(tt.braceL);
     if (createNewLexicalScope) {
-      this.scope.enter(
-        0
-        /* OTHER */
-      );
+      this.scope.enter(ScopeFlag.OTHER);
     }
     this.parseBlockBody(
       node,
@@ -3456,8 +3420,7 @@ var StatementParser = class extends ExpressionParser {
     this.checkLVal(
       id,
       { type: "VariableDeclarator" },
-      kind === "var" ? 5 : 8201
-      /* TYPE_LEXICAL */
+      kind === "var" ? BindingFlag.TYPE_VAR : BindingFlag.TYPE_LEXICAL
     );
     decl.id = id;
   }
@@ -3492,10 +3455,7 @@ var StatementParser = class extends ExpressionParser {
     }
     const oldMaybeInArrowParameters = this.state.maybeInArrowParameters;
     this.state.maybeInArrowParameters = false;
-    this.scope.enter(
-      514
-      /* FUNCTION */
-    );
+    this.scope.enter(ScopeFlag.FUNCTION);
     this.prodParam.enter(functionFlags(isAsync, node.generator));
     if (!isDeclaration) {
       node.id = this.parseFunctionId();
@@ -3527,8 +3487,8 @@ var StatementParser = class extends ExpressionParser {
     this.expressionScope.enter(newParameterDeclarationScope());
     node.params = this.parseBindingList(
       tt.parenR,
-      charCodes2.rightParenthesis,
-      2 | (isConstructor ? 4 : 0)
+      rightParenthesis,
+      ParseBindingListFlags.IS_FUNCTION_PARAMS | (isConstructor ? ParseBindingListFlags.IS_CONSTRUCTOR_PARAMS : 0)
     );
     this.expressionScope.exit();
   }
@@ -3536,7 +3496,7 @@ var StatementParser = class extends ExpressionParser {
     if (!node.id) return;
     this.scope.declareName(
       node.id.name,
-      !this.options.annexB || this.state.strict || node.generator || node.async ? this.scope.treatFunctionsAsVar ? 5 : 8201 : 17,
+      !this.options.annexB || this.state.strict || node.generator || node.async ? this.scope.treatFunctionsAsVar ? BindingFlag.TYPE_VAR : BindingFlag.TYPE_LEXICAL : BindingFlag.TYPE_FUNCTION,
       node.id.loc.start
     );
   }
@@ -3821,15 +3781,11 @@ var StatementParser = class extends ExpressionParser {
   }
   parseClassStaticBlock(classBody, member) {
     this.scope.enter(
-      576 | 128 | 16
-      /* SUPER */
+      ScopeFlag.CLASS | ScopeFlag.STATIC_BLOCK | ScopeFlag.SUPER
     );
     const oldLabels = this.state.labels;
     this.state.labels = [];
-    this.prodParam.enter(
-      0
-      /* PARAM */
-    );
+    this.prodParam.enter(ParamKind.PARAM);
     const body = member.body = [];
     this.parseBlockOrModuleBlockBody(body, void 0, false, tt.braceR);
     this.prodParam.exit();
@@ -3851,7 +3807,7 @@ var StatementParser = class extends ExpressionParser {
     classBody.body.push(node);
     this.classScope.declarePrivateName(
       this.getPrivateNameSV(node.key),
-      0,
+      ClassElementType.OTHER,
       node.key.loc.start
     );
   }
@@ -3864,7 +3820,7 @@ var StatementParser = class extends ExpressionParser {
     if (isPrivate) {
       this.classScope.declarePrivateName(
         this.getPrivateNameSV(node.key),
-        0,
+        ClassElementType.OTHER,
         node.key.loc.start
       );
     }
@@ -3894,7 +3850,7 @@ var StatementParser = class extends ExpressionParser {
       true
     );
     classBody.body.push(node);
-    const kind = node.kind === "get" ? node.static ? 6 : 2 : node.kind === "set" ? node.static ? 5 : 1 : 0;
+    const kind = node.kind === "get" ? node.static ? ClassElementType.STATIC_GETTER : ClassElementType.INSTANCE_GETTER : node.kind === "set" ? node.static ? ClassElementType.STATIC_SETTER : ClassElementType.INSTANCE_SETTER : ClassElementType.OTHER;
     this.declareClassPrivateMethodInScope(node, kind);
   }
   declareClassPrivateMethodInScope(node, kind) {
@@ -3926,21 +3882,15 @@ var StatementParser = class extends ExpressionParser {
   }
   // https://tc39.es/ecma262/#prod-Initializer
   parseInitializer(node) {
-    this.scope.enter(
-      576 | 16
-      /* SUPER */
-    );
+    this.scope.enter(ScopeFlag.CLASS | ScopeFlag.SUPER);
     this.expressionScope.enter(newExpressionScope());
-    this.prodParam.enter(
-      0
-      /* PARAM */
-    );
+    this.prodParam.enter(ParamKind.PARAM);
     node.value = this.eat(tt.eq) ? this.parseMaybeAssignAllowIn() : null;
     this.expressionScope.exit();
     this.prodParam.exit();
     this.scope.exit();
   }
-  parseClassId(node, isStatement, optionalId, bindingType = 8331) {
+  parseClassId(node, isStatement, optionalId, bindingType = BindingFlag.TYPE_CLASS) {
     if (tokenIsIdentifier(this.state.type)) {
       node.id = this.parseIdentifier();
       if (isStatement) {
@@ -4161,7 +4111,7 @@ var StatementParser = class extends ExpressionParser {
       if ((type === tt._type || type === tt._interface) && !this.state.containsEsc) {
         const next2 = this.nextTokenStart();
         const nextChar = this.input.charCodeAt(next2);
-        if (nextChar === charCodes2.leftCurlyBrace || this.chStartsBindingIdentifier(nextChar, next2) && !this.input.startsWith("from", next2)) {
+        if (nextChar === leftCurlyBrace || this.chStartsBindingIdentifier(nextChar, next2) && !this.input.startsWith("from", next2)) {
           this.expectOnePlugin(["flow", "typescript"]);
           return false;
         }
@@ -4171,14 +4121,14 @@ var StatementParser = class extends ExpressionParser {
     }
     const next = this.nextTokenStart();
     const hasFrom = this.isUnparsedContextual(next, "from");
-    if (this.input.charCodeAt(next) === charCodes2.comma || tokenIsIdentifier(this.state.type) && hasFrom) {
+    if (this.input.charCodeAt(next) === comma || tokenIsIdentifier(this.state.type) && hasFrom) {
       return true;
     }
     if (this.match(tt._default) && hasFrom) {
       const nextAfterFrom = this.input.charCodeAt(
         this.nextTokenStartSince(next + 4)
       );
-      return nextAfterFrom === charCodes2.quotationMark || nextAfterFrom === charCodes2.apostrophe;
+      return nextAfterFrom === quotationMark || nextAfterFrom === apostrophe;
     }
     return false;
   }
@@ -4454,7 +4404,7 @@ var StatementParser = class extends ExpressionParser {
       // NO: import <phase> from 'foo';
       // With the module declarations proposals, we will need further disambiguation
       // for `import module from from;`.
-      type !== tt._from || this.lookaheadCharCode() === charCodes2.lowercaseF
+      type !== tt._from || this.lookaheadCharCode() === lowercaseF
     ) : (
       // OK: import <phase> { x } from "foo";
       // OK: import <phase> x from "foo";
@@ -4491,7 +4441,7 @@ var StatementParser = class extends ExpressionParser {
       // NO: import <phase> from 'foo';
       // With the module declarations proposals, we will need further disambiguation
       // for `import module from from;`.
-      type !== tt._from || this.lookaheadCharCode() === charCodes2.lowercaseF
+      type !== tt._from || this.lookaheadCharCode() === lowercaseF
     ) : (
       // OK: import <phase> { x } from "foo";
       // OK: import <phase> x from "foo";
@@ -4548,7 +4498,7 @@ var StatementParser = class extends ExpressionParser {
     specifier.local = this.parseIdentifier();
     node.specifiers.push(this.finishImportSpecifier(specifier, type));
   }
-  finishImportSpecifier(specifier, type, bindingType = 8201) {
+  finishImportSpecifier(specifier, type, bindingType = BindingFlag.TYPE_LEXICAL) {
     this.checkLVal(specifier.local, { type }, bindingType);
     return this.finishNode(specifier, type);
   }
@@ -4632,7 +4582,7 @@ var StatementParser = class extends ExpressionParser {
       var useWith = false;
     }
     if (this.match(tt._with)) {
-      if (this.hasPrecedingLineBreak() && this.lookaheadCharCode() === charCodes2.leftParenthesis) {
+      if (this.hasPrecedingLineBreak() && this.lookaheadCharCode() === leftParenthesis) {
         return;
       }
       this.next();

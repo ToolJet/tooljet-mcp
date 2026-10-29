@@ -1,8 +1,8 @@
 import { createRequire } from "node:module";
 import { C as COMPONENT_FX_UPDATE_GUIDANCE } from "./chunk-D0rVi1EZ.js";
-import { S as STYLE_KEYS_IN_PROPERTIES, P as PROPERTY_KEY_ALIASES, n as nearestCatalogKey, c as componentSlotSchema, a as componentNameSchema, b as componentNameError, d as decodeComponentParent, e as encodeComponentParent, s as suggestedHtmlHeight, i as introducedLintFindings, l as lintComponentSpec, f as lintComponentSlots, g as lintUnusableTextGeometry, h as lintStandardSingleLineInputHeight, j as lintTextGeometry, k as lintRenderedGeometry, m as lintKanbanInteractions, o as assertPageIcon } from "./chunk-DKzM5TGJ.js";
-import { S as getComponentSchema, Z as assertPersistableQueryToggles, _ as normalizeQueryOptions, a0 as validateQueryOptions, a1 as issueMessages } from "./chunk-C8mwOWJa.js";
-import { e as external_exports } from "./chunk-Dx0NqId0.js";
+import { S as STYLE_KEYS_IN_PROPERTIES, P as PROPERTY_KEY_ALIASES, n as nearestCatalogKey, c as componentSlotSchema, a as componentNameSchema, b as componentNameError, d as decodeComponentParent, e as encodeComponentParent, s as suggestedHtmlHeight, i as introducedLintFindings, l as lintComponentSpec, f as lintComponentSlots, g as lintUnusableTextGeometry, h as lintStandardSingleLineInputHeight, j as lintTextGeometry, k as lintRenderedGeometry, m as lintKanbanInteractions, o as assertPageIcon } from "./chunk-UjCY7xly.js";
+import { S as getComponentSchema, Z as assertPersistableQueryToggles, _ as normalizeQueryOptions, a0 as validateQueryOptions, a1 as issueMessages } from "./chunk-9MxONkew.js";
+import { e as external_exports } from "./chunk-BXrPi5U1.js";
 import { randomUUID, createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-CWXC6H5y.js";

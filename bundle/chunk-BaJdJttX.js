@@ -1,11 +1,11 @@
 import { createRequire } from "node:module";
 import { t as COMPONENT_FX_GUIDANCE } from "./chunk-D0rVi1EZ.js";
-import { r as resolveRef$1, v as validateTableBatch, n as normalizeComponentSpec, a as normalizeType, b as booleanBindingValue, T as TOOLJET_DB_DATA_TYPES, f as fail, i as invalidSeedTimestamps, o as ok } from "./chunk-D46B2dYj.js";
-import { p as lintComponentStateBindings, d as decodeComponentParent, q as minimumTextHeight, r as pageIconError, t as lintComponents, e as encodeComponentParent, v as validateAppStructure, a as componentNameSchema, c as componentSlotSchema, s as suggestedHtmlHeight, u as pageIconSchema, w as namespaceReads } from "./chunk-DKzM5TGJ.js";
-import { a2 as normalizeQueryToggles, a3 as toggleRewriteWarning, a1 as issueMessages, a4 as queryToggleIssues, _ as normalizeQueryOptions, a0 as validateQueryOptions, S as getComponentSchema, W as parseExpression, a5 as arithmeticWriteWarning, Y as bindingSpans } from "./chunk-C8mwOWJa.js";
-import { e as external_exports } from "./chunk-Dx0NqId0.js";
+import { r as resolveRef$1, v as validateTableBatch, n as normalizeComponentSpec, a as normalizeType, b as booleanBindingValue, T as TOOLJET_DB_DATA_TYPES, f as fail, i as invalidSeedTimestamps, o as ok } from "./chunk-ZQS-Lgzr.js";
+import { p as lintComponentStateBindings, d as decodeComponentParent, q as minimumTextHeight, r as pageIconError, t as lintComponents, e as encodeComponentParent, v as validateAppStructure, a as componentNameSchema, c as componentSlotSchema, s as suggestedHtmlHeight, u as pageIconSchema, w as namespaceReads } from "./chunk-UjCY7xly.js";
+import { a2 as normalizeQueryToggles, a3 as toggleRewriteWarning, a1 as issueMessages, a4 as queryToggleIssues, _ as normalizeQueryOptions, a0 as validateQueryOptions, S as getComponentSchema, W as parseExpression, a5 as arithmeticWriteWarning, Y as bindingSpans } from "./chunk-9MxONkew.js";
+import { e as external_exports } from "./chunk-BXrPi5U1.js";
 import { randomUUID } from "node:crypto";
-import { dl as union, dz as string, dU as number, e5 as looseObject, dT as object, e6 as literal, dk as unknown, ev as _enum, eS as array, eg as intersection, dJ as record, eO as boolean, dM as preprocess, dS as optional, ec as iso_exports, eB as discriminatedUnion, eG as custom, dX as _null2 } from "./chunk-BEO8NmYl.js";
+import { dl as union, dz as string, dU as number, e5 as looseObject, dT as object, e6 as literal, dk as unknown, ev as _enum, eS as array, eg as intersection, dJ as record, eO as boolean, dM as preprocess, dS as optional, ec as iso_exports, eB as discriminatedUnion, eG as custom, dX as _null2 } from "./chunk-CK5pWCHM.js";
 createRequire(import.meta.url);
 var member = (n) => n && ["MemberExpression", "OptionalMemberExpression"].includes(n.type);
 var key = (n) => n.computed ? n.property?.type === "StringLiteral" ? n.property.value : void 0 : n.property?.name;

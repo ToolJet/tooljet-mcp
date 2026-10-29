@@ -35,7 +35,7 @@ function dependencyNotices(inputs) {
       directory = dirname(directory);
     }
   }
-  return [...packages].sort(([a], [b]) => a.localeCompare(b)).map(([name, license]) => `${name}\n${license}`).join('\n\n');
+  return [...packages].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([name, license]) => `${name}\n${license}`).join('\n\n');
 }
 
 /** Babel's npm entry is monolithic. Its source map contains the original source modules.
@@ -69,11 +69,20 @@ export function parserSourcePlugin() {
         if (args.path === '@babel/helper-string-parser') return { path: 'babel-helper-string-parser/src/index.ts', namespace: 'parser-source' };
         if (args.path === '@babel/helper-validator-identifier') return { path: 'babel-helper-validator-identifier/src/index.ts', namespace: 'parser-source' };
         if (args.path.startsWith('.')) return { path: posix.normalize(posix.join(posix.dirname(args.importer), args.path)), namespace: 'parser-source' };
-        return { path: require.resolve(args.path) };
+        // Keep symlinked dependency paths portable, and use charcodes' published ESM
+        // entry so the parser's hot loops read constants without CommonJS getters.
+        return builder.resolve(args.path === 'charcodes' ? 'charcodes/lib/index.mjs' : args.path, {
+          kind: args.kind, resolveDir: root,
+        });
       });
-      builder.onLoad({ filter: /.*/, namespace: 'parser-source' }, (args) => {
+      builder.onLoad({ filter: /.*/, namespace: 'parser-source' }, async (args) => {
         if (!sources.has(args.path)) throw new Error(`Missing published parser source: ${args.path}`);
-        return { contents: sources.get(args.path), loader: 'ts', resolveDir: root };
+        // Match Babel's published production build without changing NODE_ENV checks
+        // in the MCP server or any other dependency.
+        const compiled = await transform(sources.get(args.path), {
+          loader: 'ts', target: 'node20', define: { 'process.env.NODE_ENV': '"production"' },
+        });
+        return { contents: compiled.code, loader: 'js', resolveDir: root };
       });
       builder.onResolve({ filter: /^split:/ }, (args) => {
         const name = args.path.slice(6);

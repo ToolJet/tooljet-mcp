@@ -69,6 +69,22 @@ try {
     assert.equal(response._meta.tooljet_metrics.http_requests, 0);
     if (!valid) assert(plan.errors.some((error) => error.includes('invalid JavaScript')));
   }
+  // RunJS lint exercises Babel in the final split/reprinted bundle. Omitting the
+  // version deliberately prevents datasource lookup while syntax is still checked.
+  for (const [code, parses] of [
+    ['return [4, 6].map(value => value * 2);', true],
+    ['const = ;', false],
+  ]) {
+    const response = await client.callTool({ name: 'lint_app_spec', arguments: {
+      queries: [{ name: 'transformReadings', kind: 'runjs', datasource_id: 'js-fixture', options: { code } }],
+    } });
+    assert(!response.isError, JSON.stringify(response));
+    const plan = JSON.parse(response.content[0].text);
+    assert.equal(plan.ok, false);
+    assert(plan.errors.includes('version_id is required when a plan contains queries.'));
+    assert.equal(plan.errors.some((error) => error.includes('JavaScript does not parse')), !parses);
+    assert.equal(response._meta.tooljet_metrics.http_requests, 0);
+  }
   // Changing the entry after startup must block use of an old module graph.
   const entry = join(directory, 'bundle/index.js');
   writeFileSync(entry, readFileSync(entry, 'utf8') + '\n// replacement build\n');
