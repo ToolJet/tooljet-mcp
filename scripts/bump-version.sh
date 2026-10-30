@@ -50,22 +50,24 @@ fi
 
 echo "Bumping $CURRENT -> $NEW"
 
-# ponytail: six hand-maintained copies of the same version, not a shared config file — this
-# script exists so they can't silently drift, not to fix the duplication itself. (A 6th copy,
-# src/runtimeFreshness.ts's TOOLJET_MCP_VERSION, drifted for a full release because it wasn't in
-# this list — get_runtime_info kept reporting 0.2.0 after package.json moved to 0.4.0.)
+# Keep every shipped manifest, discovery listing, lockfile and runtime version aligned.
+# These updates change metadata only; they do not regenerate skill content or the bundle.
 jq --arg v "$NEW" '.version = $v' package.json > package.json.tmp && mv package.json.tmp package.json
 jq --arg v "$NEW" '.version = $v' plugin.json > plugin.json.tmp && mv plugin.json.tmp plugin.json
 jq --arg v "$NEW" '.version = $v' .claude-plugin/plugin.json > .claude-plugin/plugin.json.tmp && mv .claude-plugin/plugin.json.tmp .claude-plugin/plugin.json
 jq --arg v "$NEW" '.version = $v' .codex-plugin/plugin.json > .codex-plugin/plugin.json.tmp && mv .codex-plugin/plugin.json.tmp .codex-plugin/plugin.json
-jq --arg v "$NEW" '.plugins[0].version = $v' .claude-plugin/marketplace.json > .claude-plugin/marketplace.json.tmp && mv .claude-plugin/marketplace.json.tmp .claude-plugin/marketplace.json
+jq --arg v "$NEW" '.plugins |= map(if has("version") then .version = $v else . end)' .claude-plugin/marketplace.json > .claude-plugin/marketplace.json.tmp && mv .claude-plugin/marketplace.json.tmp .claude-plugin/marketplace.json
+jq --arg v "$NEW" '.version = $v | .packages[""].version = $v' package-lock.json > package-lock.json.tmp && mv package-lock.json.tmp package-lock.json
+for manifest in registry/server.json plugins/tooljet-app-builder-skills/plugin.json plugins/tooljet-app-builder-skills/.claude-plugin/plugin.json plugins/tooljet-app-builder-skills/.codex-plugin/plugin.json; do
+  jq --arg v "$NEW" '.version = $v' "$manifest" > "$manifest.tmp" && mv "$manifest.tmp" "$manifest"
+done
 sed -i.bak "s/export const TOOLJET_MCP_VERSION = '.*';/export const TOOLJET_MCP_VERSION = '$NEW';/" src/runtimeFreshness.ts && rm -f src/runtimeFreshness.ts.bak
 
 if [[ "$CURRENT_BRANCH" == "main" ]]; then
   git checkout -b "release/v$NEW"
 fi
 
-git add package.json plugin.json .claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json src/runtimeFreshness.ts
+git add package.json package-lock.json plugin.json .claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json registry/server.json plugins/tooljet-app-builder-skills/plugin.json plugins/tooljet-app-builder-skills/.claude-plugin/plugin.json plugins/tooljet-app-builder-skills/.codex-plugin/plugin.json src/runtimeFreshness.ts
 git commit -m "Chore: bump version to $NEW"
 
 if [[ "$CURRENT_BRANCH" == "main" ]]; then
@@ -73,7 +75,7 @@ if [[ "$CURRENT_BRANCH" == "main" ]]; then
   git push -u origin "$BRANCH"
 
   gh pr create --base main --head "$BRANCH" --title "Chore: release v$NEW" --body "$(cat <<EOF
-Version bump only: \`$CURRENT\` → \`$NEW\`, across \`package.json\`, \`plugin.json\`, \`.claude-plugin/plugin.json\`, \`.claude-plugin/marketplace.json\`, \`.codex-plugin/plugin.json\`, \`src/runtimeFreshness.ts\`. No catalog/skill/bundle regeneration — run those separately if this release needs fresh content too.
+Version bump only: \`$CURRENT\` → \`$NEW\`, across package/lock metadata, plugin manifests, marketplace entries, MCP Registry metadata and the runtime version. No catalog/skill/bundle regeneration — run those separately if this release needs fresh content too.
 
 No tag yet — run \`scripts/tag-release.sh\` once this merges.
 EOF
