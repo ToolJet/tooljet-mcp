@@ -984,6 +984,12 @@ const makeReference = (title, purpose, headings, document = fullSkill) => `# ${t
 
 const workflowBuilder = `## ToolJet workflow authoring
 
+### Link an existing workflow to an app
+
+Discover the workflow with \`list_workflows/get_workflow\`, then fetch \`get_datasource_query_schema({kind:"workflows"})\`. Create or update a query using the destination app's \`version_id\` and its available Workflows datasource ID. Set \`options.workflowId\` to the workflow ID (camelCase, a literal UUID); \`workflowVersionId\` optionally selects a workflow version, otherwise execution uses the released version, with the current backend falling back to the editing version for a never-released workflow. A newly created workflow draft is not automatically released; do not publish it without authorization. Use native \`params:[{key,value}]\` and \`syncExecution:true\` when success/failure should reflect completion. Query event handlers do not establish the workflow mapping. Preserve the complete options on update, inspect the saved query's workflow/version IDs, and run \`validate_app\` before claiming the app is linked. Check each app/workflow pair separately.
+
+### Author a workflow graph
+
 Use the workflow tools for a ToolJet automation graph, not for an app's page-level interaction flow. The supported authoring subset is Start, JavaScript, datasource query, Loop, condition, Agent, and response nodes.
 
 Use this capability-first sequence:
@@ -1020,7 +1026,7 @@ const workflows = makeReference(
 );
 const workflowBuilderReference = `# ToolJet workflow builder
 
-Read this only when creating, editing, validating, or running a ToolJet automation workflow. App Builder page and interaction guidance remains in workflows.md.
+Read this when linking a workflow to an app, or creating, editing, validating, or running a ToolJet automation workflow. App Builder page and interaction guidance remains in workflows.md.
 
 ${workflowBuilder}`;
 const uiLayout = makeReference(
@@ -1156,7 +1162,7 @@ For absent/failing sources, use \`datasources_url\`, \`settings_url\`, or \`reco
 ## Load only the references the phase needs
 
 - \`references/workflows.md\` — tool selection, plan/apply, repair, reuse, deletion, silent-failure guardrails, FX visibility.
-- \`references/workflow-builder.md\` — workflow discovery, authoring, validation, and execution safety; only for workflow requests.
+- \`references/workflow-builder.md\` — link workflows to apps, workflow discovery, authoring, validation, and execution safety.
 - \`references/ui-layout.md\` — page design, canvas geometry, nested layouts, charts, and visual defaults.
 - \`references/tables.md\` — Table binding, row actions, sizing, and datasource-neutral server-side pagination.
 - \`references/forms.md\` — generated-vs-standalone forms, validation, uploads, and modal geometry.

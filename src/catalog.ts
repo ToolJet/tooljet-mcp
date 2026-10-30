@@ -7,6 +7,7 @@
  *   repair existing apps.
  */
 import { readFileSync } from 'node:fs';
+import { readCatalog } from '../lib/catalogFiles.js';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
@@ -83,7 +84,7 @@ const compatibilityPath = resolve(
 let cache: Record<string, ComponentSchema> | null = null;
 let legacyReplacements: Record<string, string> | null = null;
 function load(): Record<string, ComponentSchema> {
-  if (!cache) cache = JSON.parse(readFileSync(dataPath, 'utf8')) as Record<string, ComponentSchema>;
+  if (!cache) cache = readCatalog(dataPath) as Record<string, ComponentSchema>;
   return cache;
 }
 
