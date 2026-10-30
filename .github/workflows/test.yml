@@ -16,10 +16,20 @@ jobs:
       - run: npm ci
       # Uses the pinned source snapshot; no ToolJet checkout or credentials required.
       - run: npm run build:skill-plugin
+      - name: Build Copilot package from the shared skill
+        run: npm run build:copilot-plugin
       - name: Verify generated Markdown is current
         run: git diff --exit-code -- skill skills plugins
       - name: Verify generated skill plugin has no untracked files
         run: test -z "$(git ls-files --others --exclude-standard -- plugins)"
+      - name: Test Copilot package boundaries
+        run: node --test tests/copilotPackage.test.mjs
+      - name: Upload generated Copilot package for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: tooljet-copilot-${{ github.sha }}
+          path: plugins/tooljet-copilot/
+          if-no-files-found: error
       - run: npm test
       - name: Build shipped bundle and verify MCP initialization
         run: npm run build:plugin

@@ -8,6 +8,15 @@ For remote HTTP clients, [OAuth setup](docs/oauth.md) connects through the works
 
 ## Prerequisites
 
+### GitHub Copilot
+
+See [Copilot setup](docs/copilot.md) for the shared app-builder skill package and
+native Cloud OAuth connection instructions. `npm run build:copilot-plugin` builds
+ignored distribution output; no separate skill source is maintained. The package
+requires an existing ToolJet MCP connection and is not yet marketplace-listed.
+
+### Local server
+
 - A ToolJet instance with personal access token support.
 - A personal access token for the target ToolJet workspace.
 - Node.js 20 or newer.

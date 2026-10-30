@@ -19,7 +19,8 @@
     "render:catalog": "npm run build && node scripts/render-component-catalog.mjs",
     "sync:skill": "node scripts/sync-skill.mjs --all",
     "build:plugin": "node scripts/build-plugin.mjs",
-    "build:skill-plugin": "node scripts/generate-skill.mjs && node scripts/build-skill-plugin.mjs"
+    "build:skill-plugin": "node scripts/generate-skill.mjs && node scripts/build-skill-plugin.mjs",
+    "build:copilot-plugin": "node scripts/generate-skill.mjs && node scripts/build-copilot-plugin.mjs"
   },
   "keywords": [],
   "author": "",
