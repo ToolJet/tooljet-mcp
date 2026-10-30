@@ -22,3 +22,7 @@ plugins/tooljet-grok/
 # Copilot package is generated for review/distribution, never maintained in source.
 plugins/tooljet-copilot/
 plugins/tooljet-cursor/
+
+# Agent packages are generated artifacts, not separate maintained skills.
+plugins/tooljet-gemini/
+plugins/tooljet-kiro/
