@@ -101,11 +101,16 @@ limits of the checks. Never relax ToolJet's resource/client checks to pass a cli
 
 ## Publish the distribution
 
-After reviewing and merging the source, a maintainer manually runs **Publish Grok
-plugin distribution** from `main` in GitHub Actions. It builds and tests the package,
-then commits only the installable files at the root of `codex/grok-plugin-dist` in this
-repository. Updates append commits; the workflow does not force-push. It never runs
-on pull requests or automatically publishes when source changes.
+After a push or merge to `main` passes **MCP tests and packaging**, **Publish Grok
+plugin distribution** runs automatically. It checks out that exact tested commit,
+builds and tests the package, then commits only the installable files at the root of
+`codex/grok-plugin-dist`. Unchanged output produces no new commit. A superseded run
+is skipped if a newer commit has reached `main`, preventing an older CI completion
+from rolling the distribution back. Updates append commits; the workflow does not
+force-push and does not publish from pull-request or fork CI runs.
+
+A maintainer can also rerun **Publish Grok plugin distribution** manually from `main`
+in GitHub Actions. No distribution files are committed to the source branch.
 
 The workflow summary reports the source commit and full distribution commit. Add one
 remote-source entry in `xai-org/plugin-marketplace` using this repository's URL and that

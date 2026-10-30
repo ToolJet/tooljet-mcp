@@ -1,24 +1,37 @@
 name: Publish Grok plugin distribution
 
-# Deliberate maintainer action after source review and merge; never runs on PRs.
+# Automatic only after successful push-to-main CI; manual reruns remain available.
 on:
+  workflow_run:
+    workflows: [MCP tests and packaging]
+    branches: [main]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: grok-plugin-distribution
-  cancel-in-progress: false
-
 jobs:
   publish:
-    if: github.ref == 'refs/heads/main'
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
+    concurrency:
+      group: grok-plugin-distribution
+      cancel-in-progress: false
     permissions:
       contents: write
+    env:
+      SOURCE_COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_COMMIT }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -29,6 +42,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          current_main=$(git ls-remote --heads origin refs/heads/main)
+          if [ "${current_main%%$'\t'*}" != "$SOURCE_COMMIT" ]; then
+            echo "Skipped superseded source commit $SOURCE_COMMIT; a newer main commit must pass CI." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           dist_branch='codex/grok-plugin-dist'
           publication_dir="$RUNNER_TEMP/tooljet-grok-distribution"
           existing_ref=$(git ls-remote --heads origin "refs/heads/$dist_branch")
@@ -36,7 +54,7 @@ jobs:
             git fetch origin "refs/heads/$dist_branch"
             git worktree add --detach "$publication_dir" FETCH_HEAD
           else
-            git worktree add --detach "$publication_dir" "$GITHUB_SHA"
+            git worktree add --detach "$publication_dir" "$SOURCE_COMMIT"
             git -C "$publication_dir" switch --orphan codex/grok-dist-build
           fi
           rsync -a --delete --exclude='.git' "$GITHUB_WORKSPACE/plugins/tooljet-grok/" "$publication_dir/"
@@ -44,13 +62,13 @@ jobs:
           git -C "$publication_dir" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git -C "$publication_dir" add --all
           if ! git -C "$publication_dir" diff --cached --quiet; then
-            git -C "$publication_dir" commit -m "Build Grok plugin from $GITHUB_SHA"
+            git -C "$publication_dir" commit -m "Build Grok plugin from $SOURCE_COMMIT"
             git -C "$publication_dir" push origin "HEAD:refs/heads/$dist_branch"
           fi
           dist_sha=$(git -C "$publication_dir" rev-parse HEAD)
           {
             echo '### Grok plugin distribution'
-            echo "Source commit: $GITHUB_SHA"
+            echo "Source commit: $SOURCE_COMMIT"
             echo "Distribution branch: $dist_branch"
             echo "Distribution commit: $dist_sha"
             echo 'Pin this full distribution commit in the xAI catalog; omit source.path.'
