@@ -45,6 +45,9 @@ export function registerLibraryPacks(packs: LibraryPack[]): void {
   discovered = packs;
 }
 
+/** The packs the ToolJet server announced at start-up (none offline or in tests). */
+export const serverLibraryPacks = (): LibraryPack[] => discovered ?? [];
+
 /** The first known pack (callers that need any pack at all). */
 export function libraryPack(): LibraryPack | null {
   return libraryPacksAll()[0] ?? null;
