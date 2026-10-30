@@ -17,3 +17,4 @@ plugins/*/skills/*/references/catalog/
 
 # Copilot package is generated for review/distribution, never maintained in source.
 plugins/tooljet-copilot/
+plugins/tooljet-cursor/

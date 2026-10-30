@@ -15,6 +15,12 @@ native Cloud OAuth connection instructions. `npm run build:copilot-plugin` build
 ignored distribution output; no separate skill source is maintained. The package
 requires an existing ToolJet MCP connection and is not yet marketplace-listed.
 
+### Cursor and MCP Registry
+
+Cursor users can use the same maintained skill with a native Cloud OAuth connection;
+see [Cursor setup](docs/cursor.md). The [official MCP Registry metadata](docs/mcp-registry.md)
+is prepared separately. Neither build publishes a marketplace or registry listing.
+
 ### Local server
 
 - A ToolJet instance with personal access token support.
