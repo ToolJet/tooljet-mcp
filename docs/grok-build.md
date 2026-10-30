@@ -84,13 +84,13 @@ used, and no OAuth credential store was inspected.
 source. Do not edit its skill files or README directly. Maintain the shared generator,
 references and browser-audit source used by `scripts/generate-skill.mjs`, and edit this
 setup guide here. Run `npm run build:grok-plugin` to regenerate the canonical skill and
-then package it for Grok. The copy lets the catalog install the plugin subdirectory
-without depending on files outside that package.
+then package it for Grok. This build directory is ignored by Git. It is uploaded as
+a CI artifact for review; the generated skill and README are not committed to the
+source branch.
 
-CI rebuilds the Grok distribution before checking the complete generated tree for
-tracked differences and untracked files. A source change without its regenerated package,
-or a hand edit to a packaged copy, therefore fails CI. The package tests also check the
-transport boundary and source copying. Run
+CI builds a fresh Grok distribution from the shared source and runs its package tests.
+There is no separately committed Grok skill to synchronize. Existing shared generated
+files remain protected by the repository's normal generation checks. Run
 `node --test tests/grokPackage.test.mjs` and the native validator above.
 
 Before claiming live compatibility, verify Grok Build's own OAuth login, tool discovery,
@@ -99,10 +99,23 @@ does not establish Grok compatibility. Use synthetic data in a private QA app; d
 send credentials or real customer data in the submission. Record the Grok version and
 limits of the checks. Never relax ToolJet's resource/client checks to pass a client test.
 
-For marketplace publication, add one remote-source entry in `xai-org/plugin-marketplace`,
-point to this repository's `plugins/tooljet-grok` directory, pin a public full commit SHA,
-and generate the component index with xAI's scripts. Use brand-specific keywords and
-ToolJet-owned domains. Do not submit placeholder SHAs or claim completed OAuth tests.
+## Publish the distribution
+
+After reviewing and merging the source, a maintainer manually runs **Publish Grok
+plugin distribution** from `main` in GitHub Actions. It builds and tests the package,
+then commits only the installable files at the root of `codex/grok-plugin-dist` in this
+repository. Updates append commits; the workflow does not force-push. It never runs
+on pull requests or automatically publishes when source changes.
+
+The workflow summary reports the source commit and full distribution commit. Add one
+remote-source entry in `xai-org/plugin-marketplace` using this repository's URL and that
+distribution commit as `source.sha`. Omit `source.path`: the plugin is at the root of
+the distribution commit. Generate the component index with xAI's scripts. Use
+brand-specific keywords and ToolJet-owned domains. Do not submit a source-branch SHA,
+placeholder pin or CI artifact URL; the catalog installs public Git commits.
+
+Publishing a distribution does not submit the xAI marketplace PR. The publisher must
+review the resulting package and separately approve that submission.
 
 Support: https://github.com/ToolJet/tooljet-mcp/issues
 

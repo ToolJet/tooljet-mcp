@@ -1,0 +1,57 @@
+name: Publish Grok plugin distribution
+
+# Deliberate maintainer action after source review and merge; never runs on PRs.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: grok-plugin-distribution
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Both scripts use Node built-ins and the checked-in source snapshot.
+      - run: npm run build:grok-plugin
+      - run: node --test tests/grokPackage.test.mjs
+      - name: Publish generated files to the distribution branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          dist_branch='codex/grok-plugin-dist'
+          publication_dir="$RUNNER_TEMP/tooljet-grok-distribution"
+          existing_ref=$(git ls-remote --heads origin "refs/heads/$dist_branch")
+          if [ -n "$existing_ref" ]; then
+            git fetch origin "refs/heads/$dist_branch"
+            git worktree add --detach "$publication_dir" FETCH_HEAD
+          else
+            git worktree add --detach "$publication_dir" "$GITHUB_SHA"
+            git -C "$publication_dir" switch --orphan codex/grok-dist-build
+          fi
+          rsync -a --delete --exclude='.git' "$GITHUB_WORKSPACE/plugins/tooljet-grok/" "$publication_dir/"
+          git -C "$publication_dir" config user.name 'github-actions[bot]'
+          git -C "$publication_dir" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C "$publication_dir" add --all
+          if ! git -C "$publication_dir" diff --cached --quiet; then
+            git -C "$publication_dir" commit -m "Build Grok plugin from $GITHUB_SHA"
+            git -C "$publication_dir" push origin "HEAD:refs/heads/$dist_branch"
+          fi
+          dist_sha=$(git -C "$publication_dir" rev-parse HEAD)
+          {
+            echo '### Grok plugin distribution'
+            echo "Source commit: $GITHUB_SHA"
+            echo "Distribution branch: $dist_branch"
+            echo "Distribution commit: $dist_sha"
+            echo 'Pin this full distribution commit in the xAI catalog; omit source.path.'
+          } >> "$GITHUB_STEP_SUMMARY"

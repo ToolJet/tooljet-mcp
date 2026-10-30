@@ -14,3 +14,6 @@ docs/specs/
 skill/references/catalog/
 skills/*/references/catalog/
 plugins/*/skills/*/references/catalog/
+
+# Grok distribution is built in CI and published separately, not maintained in source.
+plugins/tooljet-grok/

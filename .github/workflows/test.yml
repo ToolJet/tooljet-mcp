@@ -24,6 +24,13 @@ jobs:
         run: test -z "$(git ls-files --others --exclude-standard -- plugins)"
       - name: Test Grok package boundaries
         run: node --test tests/grokPackage.test.mjs
+      - name: Upload generated Grok package for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: tooljet-grok-${{ github.sha }}
+          path: plugins/tooljet-grok/
+          include-hidden-files: true
+          if-no-files-found: error
       - run: npm test
       - name: Build shipped bundle and verify MCP initialization
         run: npm run build:plugin
