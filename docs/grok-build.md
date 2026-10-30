@@ -80,8 +80,17 @@ used, and no OAuth credential store was inspected.
 
 ## Maintainer and reviewer checks
 
-Build with `npm run build:grok-plugin`; this copies the canonical skill rather than
-maintaining a separate Grok-specific app-building prompt. Run
+`plugins/tooljet-grok/` is a generated, self-contained distribution, not another skill
+source. Do not edit its skill files or README directly. Maintain the shared generator,
+references and browser-audit source used by `scripts/generate-skill.mjs`, and edit this
+setup guide here. Run `npm run build:grok-plugin` to regenerate the canonical skill and
+then package it for Grok. The copy lets the catalog install the plugin subdirectory
+without depending on files outside that package.
+
+CI rebuilds the Grok distribution before checking the complete generated tree for
+tracked differences and untracked files. A source change without its regenerated package,
+or a hand edit to a packaged copy, therefore fails CI. The package tests also check the
+transport boundary and source copying. Run
 `node --test tests/grokPackage.test.mjs` and the native validator above.
 
 Before claiming live compatibility, verify Grok Build's own OAuth login, tool discovery,
