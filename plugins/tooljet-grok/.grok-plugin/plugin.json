@@ -1,0 +1,20 @@
+{
+  "name": "tooljet",
+  "version": "0.10.0",
+  "description": "Build and edit ToolJet dashboards, internal tools and business applications with visual components, connected data and workflows.",
+  "author": {
+    "name": "ToolJet",
+    "url": "https://tooljet.com"
+  },
+  "homepage": "https://tooljet.com/mcp",
+  "repository": "https://github.com/ToolJet/tooljet-mcp",
+  "license": "ISC",
+  "keywords": [
+    "tooljet",
+    "tooljet apps",
+    "tooljet mcp"
+  ],
+  "skills": [
+    "./skills/"
+  ]
+}
