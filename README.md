@@ -8,6 +8,15 @@ For remote HTTP clients, [OAuth setup](docs/oauth.md) connects through the works
 
 ## Prerequisites
 
+### Grok Build Cloud plugin
+
+See [Grok Build setup](docs/grok-build.md) for the separate native HTTP/OAuth package,
+workspace selection, validation and reviewer checks. Build it with
+`npm run build:grok-plugin`; it reuses the canonical skill and does not ship a PAT or
+local MCP runtime. Live Grok OAuth compatibility must be verified before marketplace submission.
+
+### Local server
+
 - A ToolJet instance with personal access token support.
 - A personal access token for the target ToolJet workspace.
 - Node.js 20 or newer.
