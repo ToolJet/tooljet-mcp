@@ -25,7 +25,7 @@ jobs:
       - name: Verify generated skill plugin has no untracked files
         run: test -z "$(git ls-files --others --exclude-standard -- plugins)"
       - name: Test Gemini and Kiro package boundaries
-        run: node --test tests/geminiKiroPackage.test.mjs
+        run: npx vitest run tests/skillPlugin.test.ts --maxWorkers=1
       - name: Upload generated Gemini CLI extension for review
         uses: actions/upload-artifact@v4
         with:
