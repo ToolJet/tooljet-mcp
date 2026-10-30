@@ -8,6 +8,13 @@ For remote HTTP clients, [OAuth setup](docs/oauth.md) connects through the works
 
 ## Prerequisites
 
+### Grok Build Cloud plugin
+
+See [Grok Build setup](docs/grok-build.md) for the separate native HTTP/OAuth package,
+workspace selection, validation and reviewer checks. Build it with
+`npm run build:grok-plugin`; it reuses the canonical skill and does not ship a PAT or
+local MCP runtime. Live Grok OAuth compatibility must be verified before marketplace submission.
+
 ### GitHub Copilot
 
 See [Copilot setup](docs/copilot.md) for the shared app-builder skill package and
@@ -204,7 +211,7 @@ Package metadata comes from `scripts/build-skill-plugin.mjs` and `package.json`.
 
 ## Install as a Claude Code plugin
 
-This repo is also a **self-contained Claude Code plugin** — installing it registers the MCP server *and* the `tooljet-app-builder` skill together. No `npm install`/build on the user's side: a single-file bundle (`bundle/index.js`) plus the runtime catalogs in `data/` are committed.
+This repo is also a **self-contained Claude Code plugin** — installing it registers the MCP server *and* the `tooljet-app-builder` skill together. No `npm install`/build on the user's side: the entry (`bundle/index.js`), its readable ESM dependency chunks, and the runtime catalogs in `data/` are committed. Claude Code may still run its automatic lockfile install because the repository root contains `package.json` and `package-lock.json`; that separate directory review requirement remains.
 
 **Install (no marketplace needed):**
 ```
@@ -226,7 +233,7 @@ export TOOLJET_PAT="tj_pat_..."
 ```
 If `TOOLJET_DEPLOYMENT_URL` and `TOOLJET_PAT` are missing, the server exits during startup with a clear required-variable error. Set them and restart.
 
-**What ships / how it's built.** `bundle/index.js` is an esbuild single-file bundle of the server (all deps inlined, so it runs with no `node_modules`); it reads the component/datasource schemas and component compatibility metadata from `data/` at runtime. `generate:skill` writes both `skill/` and the packaged `skills/tooljet-app-builder/` from the same source, including every focused reference. Rebuild all of that after a source or catalog change with:
+**What ships / how it's built.** `bundle/index.js` loads content-hashed ESM chunks with all runtime dependencies included, so it runs with no `node_modules`. The build uses esbuild module boundaries and Rollup to keep readable files below 256 KiB. Babel is built from the pinned package's published source modules; see `scripts/vendor/README.md`. Component and datasource catalogs use small index files plus standalone JSON parts in `data/`; their public MCP resource payloads and hashes are unchanged. `npm run check:plugin-package` enforces file sizes, file count, and the absence of packed artifacts. These packaging checks do not replace Anthropic's security review. When deploying or uploading the runtime, copy the entire `bundle/` and `data/` directories, preserving their subdirectories. Direct catalog-file readers should use `lib/catalogFiles.js` or the MCP catalog resources instead of treating the catalog index as the complete schema. `generate:skill` writes both `skill/` and the packaged `skills/tooljet-app-builder/` from the same source, including every focused reference. Rebuild all of that after a source or catalog change with:
 ```bash
 npm run generate:catalogs && npm run generate:skill && npm run build:plugin
 ```

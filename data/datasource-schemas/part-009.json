@@ -1,0 +1,4595 @@
+{
+  "weaviate": {
+    "kind": "weaviate",
+    "name": "Weaviate",
+    "type": "database",
+    "description": "A schema defining Weaviate datasource",
+    "defaults": {
+      "data_type": "schema",
+      "operation_schema": "get_schema",
+      "operation_collection": "get_collection",
+      "operation_objects": "list_objects"
+    },
+    "operations": [
+      "collection.create_collection",
+      "collection.delete_collection",
+      "collection.get_collection",
+      "objects.create_object",
+      "objects.delete_object_by_id",
+      "objects.get_object_by_id",
+      "objects.list_objects",
+      "schema.get_schema"
+    ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "data_type",
+        "operation_collection",
+        "operation_objects",
+        "operation_schema"
+      ],
+      "values": [
+        "collection.create_collection",
+        "collection.delete_collection",
+        "collection.get_collection",
+        "objects.create_object",
+        "objects.delete_object_by_id",
+        "objects.get_object_by_id",
+        "objects.list_objects",
+        "schema.get_schema"
+      ]
+    },
+    "contracts": {
+      "collection.create_collection": {
+        "operation": "collection.create_collection",
+        "variants": [
+          {
+            "when": {
+              "data_type": [
+                "collection"
+              ],
+              "operation_collection": [
+                "create_collection"
+              ]
+            },
+            "fields": {
+              "async_enabled": {
+                "path": "async_enabled",
+                "type": "unknown|binding",
+                "label": "Async enabled"
+              },
+              "bm_25": {
+                "path": "bm_25",
+                "type": "unknown|binding",
+                "label": "Bm 25"
+              },
+              "clean_up_interval_seconds": {
+                "path": "clean_up_interval_seconds",
+                "type": "unknown|binding",
+                "label": "Cleanup interval seconds"
+              },
+              "collectionName": {
+                "path": "collectionName",
+                "type": "unknown|binding",
+                "label": "Collection Name",
+                "description": "Enter the name of the collection"
+              },
+              "consistency": {
+                "path": "consistency",
+                "type": "boolean|binding",
+                "label": "Consistency"
+              },
+              "data_type": {
+                "path": "data_type",
+                "type": "string|binding",
+                "label": "Data type",
+                "description": "Single select dropdown for data type",
+                "allowedValues": [
+                  "schema",
+                  "collection",
+                  "objects"
+                ]
+              },
+              "deletion_strategy": {
+                "path": "deletion_strategy",
+                "type": "unknown|binding",
+                "label": "Deletion strategy"
+              },
+              "description": {
+                "path": "description",
+                "type": "unknown|binding",
+                "label": "Description"
+              },
+              "factor": {
+                "path": "factor",
+                "type": "unknown|binding",
+                "label": "Factor"
+              },
+              "index_null_state": {
+                "path": "index_null_state",
+                "type": "unknown|binding",
+                "label": "Index null state"
+              },
+              "index_property_length": {
+                "path": "index_property_length",
+                "type": "unknown|binding",
+                "label": "Index property length"
+              },
+              "index_time_stamps": {
+                "path": "index_time_stamps",
+                "type": "unknown|binding",
+                "label": "Index time stamps"
+              },
+              "module_config": {
+                "path": "module_config",
+                "type": "unknown|binding",
+                "label": "Module config"
+              },
+              "operation_collection": {
+                "path": "operation_collection",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "get_collection",
+                  "create_collection",
+                  "delete_collection"
+                ]
+              },
+              "properties": {
+                "path": "properties",
+                "type": "unknown|binding",
+                "label": "Properties"
+              },
+              "sharding_config": {
+                "path": "sharding_config",
+                "type": "unknown|binding",
+                "label": "Sharding config"
+              },
+              "stop_words": {
+                "path": "stop_words",
+                "type": "unknown|binding",
+                "label": "Stop words"
+              },
+              "vector_index_config": {
+                "path": "vector_index_config",
+                "type": "unknown|binding",
+                "label": "Vector index config"
+              },
+              "vector_index_type": {
+                "path": "vector_index_type",
+                "type": "unknown|binding",
+                "label": "Vector index type"
+              },
+              "vectorizer": {
+                "path": "vectorizer",
+                "type": "unknown|binding",
+                "label": "Vectorizer"
+              }
+            },
+            "required": [
+              "data_type",
+              "operation_collection"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-database-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "collection.delete_collection": {
+        "operation": "collection.delete_collection",
+        "variants": [
+          {
+            "when": {
+              "data_type": [
+                "collection"
+              ],
+              "operation_collection": [
+                "delete_collection"
+              ]
+            },
+            "fields": {
+              "collectionName": {
+                "path": "collectionName",
+                "type": "unknown|binding",
+                "label": "Collection Name",
+                "description": "Enter the name of the collection"
+              },
+              "data_type": {
+                "path": "data_type",
+                "type": "string|binding",
+                "label": "Data type",
+                "description": "Single select dropdown for data type",
+                "allowedValues": [
+                  "schema",
+                  "collection",
+                  "objects"
+                ]
+              },
+              "operation_collection": {
+                "path": "operation_collection",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "get_collection",
+                  "create_collection",
+                  "delete_collection"
+                ]
+              }
+            },
+            "required": [
+              "data_type",
+              "operation_collection"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-database-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "collection.get_collection": {
+        "operation": "collection.get_collection",
+        "variants": [
+          {
+            "when": {
+              "data_type": [
+                "collection"
+              ],
+              "operation_collection": [
+                "get_collection"
+              ]
+            },
+            "fields": {
+              "collectionName": {
+                "path": "collectionName",
+                "type": "unknown|binding",
+                "label": "Collection Name",
+                "description": "Enter the name of the collection"
+              },
+              "consistency": {
+                "path": "consistency",
+                "type": "boolean|binding",
+                "label": "Consistency"
+              },
+              "data_type": {
+                "path": "data_type",
+                "type": "string|binding",
+                "label": "Data type",
+                "description": "Single select dropdown for data type",
+                "allowedValues": [
+                  "schema",
+                  "collection",
+                  "objects"
+                ]
+              },
+              "operation_collection": {
+                "path": "operation_collection",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "get_collection",
+                  "create_collection",
+                  "delete_collection"
+                ]
+              }
+            },
+            "required": [
+              "data_type",
+              "operation_collection"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-database-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "objects.create_object": {
+        "operation": "objects.create_object",
+        "variants": [
+          {
+            "when": {
+              "data_type": [
+                "objects"
+              ],
+              "operation_objects": [
+                "create_object"
+              ]
+            },
+            "fields": {
+              "collectionName_create_object": {
+                "path": "collectionName_create_object",
+                "type": "unknown|binding",
+                "label": "Collection Name",
+                "description": "Enter the name of the collection"
+              },
+              "data_type": {
+                "path": "data_type",
+                "type": "string|binding",
+                "label": "Data type",
+                "description": "Single select dropdown for data type",
+                "allowedValues": [
+                  "schema",
+                  "collection",
+                  "objects"
+                ]
+              },
+              "object_uuid": {
+                "path": "object_uuid",
+                "type": "unknown|binding",
+                "label": "Object uuid",
+                "description": "Enter the name of the collection"
+              },
+              "operation_objects": {
+                "path": "operation_objects",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_objects",
+                  "create_object",
+                  "get_object_by_id",
+                  "delete_object_by_id"
+                ]
+              },
+              "properties_create_object": {
+                "path": "properties_create_object",
+                "type": "unknown|binding",
+                "label": "Properties",
+                "description": "Enter the name of the collection"
+              },
+              "vectors_create_object": {
+                "path": "vectors_create_object",
+                "type": "unknown|binding",
+                "label": "Vectors",
+                "description": "Enter the name of the collection"
+              }
+            },
+            "required": [
+              "data_type",
+              "operation_objects"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-database-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "objects.delete_object_by_id": {
+        "operation": "objects.delete_object_by_id",
+        "variants": [
+          {
+            "when": {
+              "data_type": [
+                "objects"
+              ],
+              "operation_objects": [
+                "delete_object_by_id"
+              ]
+            },
+            "fields": {
+              "collectionName_delete_object": {
+                "path": "collectionName_delete_object",
+                "type": "unknown|binding",
+                "label": "Collection Name",
+                "description": "Enter the name of the collection"
+              },
+              "data_type": {
+                "path": "data_type",
+                "type": "string|binding",
+                "label": "Data type",
+                "description": "Single select dropdown for data type",
+                "allowedValues": [
+                  "schema",
+                  "collection",
+                  "objects"
+                ]
+              },
+              "objectId_delete_object": {
+                "path": "objectId_delete_object",
+                "type": "unknown|binding",
+                "label": "Object ID",
+                "description": "Enter the ID of the object"
+              },
+              "operation_objects": {
+                "path": "operation_objects",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_objects",
+                  "create_object",
+                  "get_object_by_id",
+                  "delete_object_by_id"
+                ]
+              }
+            },
+            "required": [
+              "data_type",
+              "operation_objects"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-database-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "objects.get_object_by_id": {
+        "operation": "objects.get_object_by_id",
+        "variants": [
+          {
+            "when": {
+              "data_type": [
+                "objects"
+              ],
+              "operation_objects": [
+                "get_object_by_id"
+              ]
+            },
+            "fields": {
+              "collectionName_get_object": {
+                "path": "collectionName_get_object",
+                "type": "unknown|binding",
+                "label": "Collection Name",
+                "description": "Enter the name of the collection"
+              },
+              "data_type": {
+                "path": "data_type",
+                "type": "string|binding",
+                "label": "Data type",
+                "description": "Single select dropdown for data type",
+                "allowedValues": [
+                  "schema",
+                  "collection",
+                  "objects"
+                ]
+              },
+              "objectId_get_object": {
+                "path": "objectId_get_object",
+                "type": "unknown|binding",
+                "label": "Object ID"
+              },
+              "operation_objects": {
+                "path": "operation_objects",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_objects",
+                  "create_object",
+                  "get_object_by_id",
+                  "delete_object_by_id"
+                ]
+              }
+            },
+            "required": [
+              "data_type",
+              "operation_objects"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-database-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "objects.list_objects": {
+        "operation": "objects.list_objects",
+        "variants": [
+          {
+            "when": {
+              "data_type": [
+                "objects"
+              ],
+              "operation_objects": [
+                "list_objects"
+              ]
+            },
+            "fields": {
+              "after": {
+                "path": "after",
+                "type": "unknown|binding",
+                "label": "After"
+              },
+              "collectionName": {
+                "path": "collectionName",
+                "type": "unknown|binding",
+                "label": "Collection Name",
+                "description": "Enter the name of the collection"
+              },
+              "data_type": {
+                "path": "data_type",
+                "type": "string|binding",
+                "label": "Data type",
+                "description": "Single select dropdown for data type",
+                "allowedValues": [
+                  "schema",
+                  "collection",
+                  "objects"
+                ]
+              },
+              "include": {
+                "path": "include",
+                "type": "unknown|binding",
+                "label": "Include"
+              },
+              "include_vectors": {
+                "path": "include_vectors",
+                "type": "unknown|binding",
+                "label": "Include vectors"
+              },
+              "limit": {
+                "path": "limit",
+                "type": "unknown|binding",
+                "label": "Limit"
+              },
+              "offset": {
+                "path": "offset",
+                "type": "unknown|binding",
+                "label": "Offset"
+              },
+              "operation_objects": {
+                "path": "operation_objects",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_objects",
+                  "create_object",
+                  "get_object_by_id",
+                  "delete_object_by_id"
+                ]
+              },
+              "order": {
+                "path": "order",
+                "type": "unknown|binding",
+                "label": "Order"
+              },
+              "sort": {
+                "path": "sort",
+                "type": "unknown|binding",
+                "label": "Sort"
+              },
+              "tenant": {
+                "path": "tenant",
+                "type": "unknown|binding",
+                "label": "Tenant"
+              }
+            },
+            "required": [
+              "data_type",
+              "operation_objects"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-database-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "schema.get_schema": {
+        "operation": "schema.get_schema",
+        "variants": [
+          {
+            "when": {
+              "data_type": [
+                "schema"
+              ],
+              "operation_schema": [
+                "get_schema"
+              ]
+            },
+            "fields": {
+              "consistency": {
+                "path": "consistency",
+                "type": "boolean|binding",
+                "label": "Consistency"
+              },
+              "data_type": {
+                "path": "data_type",
+                "type": "string|binding",
+                "label": "Data type",
+                "description": "Single select dropdown for data type",
+                "allowedValues": [
+                  "schema",
+                  "collection",
+                  "objects"
+                ]
+              },
+              "operation_schema": {
+                "path": "operation_schema",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "get_schema"
+                ]
+              }
+            },
+            "required": [
+              "data_type",
+              "operation_schema"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-database-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      }
+    },
+    "properties": {
+      "data_type": {
+        "label": "Data type",
+        "key": "data_type",
+        "type": "dropdown-component-flip",
+        "description": "Single select dropdown for data type",
+        "list": [
+          {
+            "value": "schema",
+            "name": "Schema"
+          },
+          {
+            "value": "collection",
+            "name": "Collection"
+          },
+          {
+            "value": "objects",
+            "name": "Objects"
+          }
+        ]
+      },
+      "schema": {
+        "operation_schema": {
+          "label": "Operation",
+          "key": "operation_schema",
+          "type": "dropdown-component-flip",
+          "description": "Single select dropdown for operation",
+          "list": [
+            {
+              "value": "get_schema",
+              "name": "Get database schema"
+            }
+          ]
+        },
+        "get_schema": {
+          "consistency": {
+            "label": "Consistency",
+            "key": "consistency",
+            "type": "toggle",
+            "value": "true",
+            "tooltip": "Enable consistency"
+          }
+        }
+      },
+      "collection": {
+        "operation_collection": {
+          "label": "Operation",
+          "key": "operation_collection",
+          "type": "dropdown-component-flip",
+          "description": "Single select dropdown for operation",
+          "list": [
+            {
+              "value": "get_collection",
+              "name": "Get Collection"
+            },
+            {
+              "value": "create_collection",
+              "name": "Create Collection"
+            },
+            {
+              "value": "delete_collection",
+              "name": "Delete Collection"
+            }
+          ]
+        },
+        "get_collection": {
+          "collectionName": {
+            "label": "Collection Name",
+            "key": "collectionName",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "description": "Enter the name of the collection",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "Enter the name of the collection",
+            "tooltip": "Enter the name of the collection"
+          },
+          "consistency": {
+            "label": "Consistency",
+            "key": "consistency",
+            "type": "toggle",
+            "value": "true",
+            "tooltip": "Enable consistency"
+          }
+        },
+        "create_collection": {
+          "collectionName": {
+            "label": "Collection Name",
+            "key": "collectionName",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "description": "Enter the name of the collection",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "Enter the name of the collection"
+          },
+          "vectorizer": {
+            "label": "Vectorizer",
+            "key": "vectorizer",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "{}"
+          },
+          "vector_index_type": {
+            "label": "Vector index type",
+            "key": "vector_index_type",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "Value"
+          },
+          "vector_index_config": {
+            "label": "Vector index config",
+            "key": "vector_index_config",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "{}"
+          },
+          "sharding_config": {
+            "label": "Sharding config",
+            "key": "sharding_config",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "{}"
+          },
+          "factor": {
+            "label": "Factor",
+            "key": "factor",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "1"
+          },
+          "async_enabled": {
+            "label": "Async enabled",
+            "key": "async_enabled",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "true"
+          },
+          "deletion_strategy": {
+            "label": "Deletion strategy",
+            "key": "deletion_strategy",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "NoAutomatedResolution"
+          },
+          "clean_up_interval_seconds": {
+            "label": "Cleanup interval seconds",
+            "key": "clean_up_interval_seconds",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "1"
+          },
+          "bm_25": {
+            "label": "Bm 25",
+            "key": "bm_25",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "{“k1”:1,”b”:1}"
+          },
+          "stop_words": {
+            "label": "Stop words",
+            "key": "stop_words",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "{“preset”:””,”additions”:[“”],”removals”:[“”]}"
+          },
+          "index_time_stamps": {
+            "label": "Index time stamps",
+            "key": "index_time_stamps",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "true"
+          },
+          "index_null_state": {
+            "label": "Index null state",
+            "key": "index_null_state",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "true"
+          },
+          "index_property_length": {
+            "label": "Index property length",
+            "key": "index_property_length",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "true"
+          },
+          "module_config": {
+            "label": "Module config",
+            "key": "module_config",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "{}"
+          },
+          "description": {
+            "label": "Description",
+            "key": "description",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "{}"
+          },
+          "consistency": {
+            "label": "Consistency",
+            "key": "consistency",
+            "type": "toggle",
+            "value": "true",
+            "tooltip": "Enable consistency"
+          },
+          "properties": {
+            "label": "Properties",
+            "key": "properties",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "256px",
+            "className": "codehinter-plugins",
+            "placeholder": "[\n\t{\n\t\t\"dataType\": [\"\"],\n\t\t\"description\": \"\",\n\t\t\"moduleConfig\": {},\n\t\t\"name\": \"\",\n\t\t\"indexInverted\": true,\n\t\t\"indexFilterable\": true,\n\t\t\"indexSearchable\": true,\n\t\t\"indexRangeFilters\": true,\n\t\t\"tokenization\": \"word\",\n\t\t\"nestedProperties\": []\n\t}\n]"
+          }
+        },
+        "delete_collection": {
+          "collectionName": {
+            "label": "Collection Name",
+            "key": "collectionName",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "description": "Enter the name of the collection",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "Enter the name of the collection"
+          }
+        }
+      },
+      "objects": {
+        "operation_objects": {
+          "label": "Operation",
+          "key": "operation_objects",
+          "type": "dropdown-component-flip",
+          "description": "Single select dropdown for operation",
+          "list": [
+            {
+              "value": "list_objects",
+              "name": "List Objects"
+            },
+            {
+              "value": "create_object",
+              "name": "Create Object"
+            },
+            {
+              "value": "get_object_by_id",
+              "name": "Get Object By Id"
+            },
+            {
+              "value": "delete_object_by_id",
+              "name": "Delete Object By Id"
+            }
+          ]
+        },
+        "get_object_by_id": {
+          "collectionName_get_object": {
+            "label": "Collection Name",
+            "key": "collectionName_get_object",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "description": "Enter the name of the collection",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "Enter the name of the collection"
+          },
+          "objectId_get_object": {
+            "label": "Object ID",
+            "key": "objectId_get_object",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "Enter the ID of the object"
+          }
+        },
+        "delete_object_by_id": {
+          "collectionName_delete_object": {
+            "label": "Collection Name",
+            "key": "collectionName_delete_object",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "description": "Enter the name of the collection",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "Enter the name of the collection"
+          },
+          "objectId_delete_object": {
+            "label": "Object ID",
+            "key": "objectId_delete_object",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "description": "Enter the ID of the object",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "Enter the ID of the object"
+          }
+        },
+        "list_objects": {
+          "collectionName": {
+            "label": "Collection Name",
+            "key": "collectionName",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "description": "Enter the name of the collection",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "Enter the name of the collection"
+          },
+          "include_vectors": {
+            "label": "Include vectors",
+            "key": "include_vectors",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "true or ['title','review_body']"
+          },
+          "after": {
+            "label": "After",
+            "key": "after",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "{}"
+          },
+          "offset": {
+            "label": "Offset",
+            "key": "offset",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "{}"
+          },
+          "limit": {
+            "label": "Limit",
+            "key": "limit",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "10"
+          },
+          "include": {
+            "label": "Include",
+            "key": "include",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "value1, value2"
+          },
+          "sort": {
+            "label": "Sort",
+            "key": "sort",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "value1, value2"
+          },
+          "order": {
+            "label": "Order",
+            "key": "order",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "value1, value2"
+          },
+          "tenant": {
+            "label": "Tenant",
+            "key": "tenant",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "value"
+          }
+        },
+        "create_object": {
+          "collectionName_create_object": {
+            "label": "Collection Name",
+            "key": "collectionName_create_object",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "description": "Enter the name of the collection",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "ArticleAuthor"
+          },
+          "object_uuid": {
+            "label": "Object uuid",
+            "key": "object_uuid",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "description": "Enter the name of the collection",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "ed89d9e7-4c9d-4a6a-8d20-095cb0026f54"
+          },
+          "properties_create_object": {
+            "label": "Properties",
+            "key": "properties_create_object",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "description": "Enter the name of the collection",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "{\n 'question': 'This vector DB is OSS & supports automatic property type inference on import',\n 'newProperty': 123\n}"
+          },
+          "vectors_create_object": {
+            "label": "Vectors",
+            "key": "vectors_create_object",
+            "type": "codehinter",
+            "lineNumbers": false,
+            "description": "Enter the name of the collection",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "{\n title: Array(1536).fill(0.12345),\n review_body: Array(1536).fill(0.31313),\n title_country: Array(1536).fill(0.05050)\n}"
+          }
+        }
+      }
+    },
+    "introspectionMethods": [],
+    "supportsTestConnection": true,
+    "sources": [
+      {
+        "collection": "marketplace",
+        "package": "weaviate"
+      }
+    ]
+  },
+  "woocommerce": {
+    "kind": "woocommerce",
+    "name": "WooCommerce",
+    "type": "api",
+    "description": "A schema defining WooCommerce datasource",
+    "defaults": {},
+    "operations": [
+      "batch_update_customer",
+      "batch_update_order",
+      "batch_update_product",
+      "create_coupon",
+      "create_customer",
+      "create_order",
+      "create_product",
+      "delete_customer",
+      "delete_order",
+      "delete_product",
+      "list_coupon",
+      "list_customer",
+      "list_order",
+      "list_product",
+      "retrieve_customer",
+      "retrieve_order",
+      "retrieve_product",
+      "update_customer",
+      "update_order",
+      "update_product"
+    ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation",
+        "resource"
+      ],
+      "values": [
+        "batch_update_customer",
+        "batch_update_order",
+        "batch_update_product",
+        "create_coupon",
+        "create_customer",
+        "create_order",
+        "create_product",
+        "delete_customer",
+        "delete_order",
+        "delete_product",
+        "list_coupon",
+        "list_customer",
+        "list_order",
+        "list_product",
+        "retrieve_customer",
+        "retrieve_order",
+        "retrieve_product",
+        "update_customer",
+        "update_order",
+        "update_product"
+      ]
+    },
+    "contracts": {
+      "batch_update_customer": {
+        "operation": "batch_update_customer",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "batch_update_customer"
+              ],
+              "resource": [
+                "customer"
+              ]
+            },
+            "fields": {
+              "body": {
+                "path": "body",
+                "type": "unknown|binding",
+                "label": "Data",
+                "description": "Enter data"
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_customer",
+                  "update_customer",
+                  "delete_customer",
+                  "batch_update_customer",
+                  "create_customer",
+                  "retrieve_customer"
+                ]
+              },
+              "resource": {
+                "path": "resource",
+                "type": "string|binding",
+                "label": "Resource",
+                "description": "Resource select",
+                "allowedValues": [
+                  "product",
+                  "customer",
+                  "order",
+                  "coupon"
+                ]
+              }
+            },
+            "required": [
+              "operation",
+              "resource"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "batch_update_order": {
+        "operation": "batch_update_order",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "batch_update_order"
+              ],
+              "resource": [
+                "order"
+              ]
+            },
+            "fields": {
+              "body": {
+                "path": "body",
+                "type": "unknown|binding",
+                "label": "Data",
+                "description": "Enter data"
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_order",
+                  "update_order",
+                  "delete_order",
+                  "batch_update_order",
+                  "create_order",
+                  "retrieve_order"
+                ]
+              },
+              "resource": {
+                "path": "resource",
+                "type": "string|binding",
+                "label": "Resource",
+                "description": "Resource select",
+                "allowedValues": [
+                  "product",
+                  "customer",
+                  "order",
+                  "coupon"
+                ]
+              }
+            },
+            "required": [
+              "operation",
+              "resource"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "batch_update_product": {
+        "operation": "batch_update_product",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "batch_update_product"
+              ],
+              "resource": [
+                "product"
+              ]
+            },
+            "fields": {
+              "body": {
+                "path": "body",
+                "type": "unknown|binding",
+                "label": "Data",
+                "description": "Enter data"
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_product",
+                  "update_product",
+                  "delete_product",
+                  "batch_update_product",
+                  "create_product",
+                  "retrieve_product"
+                ]
+              },
+              "resource": {
+                "path": "resource",
+                "type": "string|binding",
+                "label": "Resource",
+                "description": "Resource select",
+                "allowedValues": [
+                  "product",
+                  "customer",
+                  "order",
+                  "coupon"
+                ]
+              }
+            },
+            "required": [
+              "operation",
+              "resource"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "create_coupon": {
+        "operation": "create_coupon",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "create_coupon"
+              ],
+              "resource": [
+                "coupon"
+              ]
+            },
+            "fields": {
+              "body": {
+                "path": "body",
+                "type": "unknown|binding",
+                "label": "Data",
+                "description": "Enter data"
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_coupon",
+                  "create_coupon"
+                ]
+              },
+              "resource": {
+                "path": "resource",
+                "type": "string|binding",
+                "label": "Resource",
+                "description": "Resource select",
+                "allowedValues": [
+                  "product",
+                  "customer",
+                  "order",
+                  "coupon"
+                ]
+              }
+            },
+            "required": [
+              "operation",
+              "resource"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "create_customer": {
+        "operation": "create_customer",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "create_customer"
+              ],
+              "resource": [
+                "customer"
+              ]
+            },
+            "fields": {
+              "body": {
+                "path": "body",
+                "type": "unknown|binding",
+                "label": "Data",
+                "description": "Enter data"
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_customer",
+                  "update_customer",
+                  "delete_customer",
+                  "batch_update_customer",
+                  "create_customer",
+                  "retrieve_customer"
+                ]
+              },
+              "resource": {
+                "path": "resource",
+                "type": "string|binding",
+                "label": "Resource",
+                "description": "Resource select",
+                "allowedValues": [
+                  "product",
+                  "customer",
+                  "order",
+                  "coupon"
+                ]
+              }
+            },
+            "required": [
+              "operation",
+              "resource"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "create_order": {
+        "operation": "create_order",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "create_order"
+              ],
+              "resource": [
+                "order"
+              ]
+            },
+            "fields": {
+              "body": {
+                "path": "body",
+                "type": "unknown|binding",
+                "label": "Data",
+                "description": "Enter data"
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_order",
+                  "update_order",
+                  "delete_order",
+                  "batch_update_order",
+                  "create_order",
+                  "retrieve_order"
+                ]
+              },
+              "resource": {
+                "path": "resource",
+                "type": "string|binding",
+                "label": "Resource",
+                "description": "Resource select",
+                "allowedValues": [
+                  "product",
+                  "customer",
+                  "order",
+                  "coupon"
+                ]
+              }
+            },
+            "required": [
+              "operation",
+              "resource"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "create_product": {
+        "operation": "create_product",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "create_product"
+              ],
+              "resource": [
+                "product"
+              ]
+            },
+            "fields": {
+              "body": {
+                "path": "body",
+                "type": "unknown|binding",
+                "label": "Data",
+                "description": "Enter data"
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_product",
+                  "update_product",
+                  "delete_product",
+                  "batch_update_product",
+                  "create_product",
+                  "retrieve_product"
+                ]
+              },
+              "resource": {
+                "path": "resource",
+                "type": "string|binding",
+                "label": "Resource",
+                "description": "Resource select",
+                "allowedValues": [
+                  "product",
+                  "customer",
+                  "order",
+                  "coupon"
+                ]
+              }
+            },
+            "required": [
+              "operation",
+              "resource"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "delete_customer": {
+        "operation": "delete_customer",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "delete_customer"
+              ],
+              "resource": [
+                "customer"
+              ]
+            },
+            "fields": {
+              "customer_id": {
+                "path": "customer_id",
+                "type": "unknown|binding",
+                "label": "Customer ID",
+                "description": "Enter customer ID"
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_customer",
+                  "update_customer",
+                  "delete_customer",
+                  "batch_update_customer",
+                  "create_customer",
+                  "retrieve_customer"
+                ]
+              },
+              "resource": {
+                "path": "resource",
+                "type": "string|binding",
+                "label": "Resource",
+                "description": "Resource select",
+                "allowedValues": [
+                  "product",
+                  "customer",
+                  "order",
+                  "coupon"
+                ]
+              }
+            },
+            "required": [
+              "operation",
+              "resource"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "delete_order": {
+        "operation": "delete_order",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "delete_order"
+              ],
+              "resource": [
+                "order"
+              ]
+            },
+            "fields": {
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_order",
+                  "update_order",
+                  "delete_order",
+                  "batch_update_order",
+                  "create_order",
+                  "retrieve_order"
+                ]
+              },
+              "order_id": {
+                "path": "order_id",
+                "type": "unknown|binding",
+                "label": "Order ID",
+                "description": "Enter order ID"
+              },
+              "resource": {
+                "path": "resource",
+                "type": "string|binding",
+                "label": "Resource",
+                "description": "Resource select",
+                "allowedValues": [
+                  "product",
+                  "customer",
+                  "order",
+                  "coupon"
+                ]
+              }
+            },
+            "required": [
+              "operation",
+              "resource"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "delete_product": {
+        "operation": "delete_product",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "delete_product"
+              ],
+              "resource": [
+                "product"
+              ]
+            },
+            "fields": {
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_product",
+                  "update_product",
+                  "delete_product",
+                  "batch_update_product",
+                  "create_product",
+                  "retrieve_product"
+                ]
+              },
+              "product_id": {
+                "path": "product_id",
+                "type": "unknown|binding",
+                "label": "Product ID",
+                "description": "Enter product ID"
+              },
+              "resource": {
+                "path": "resource",
+                "type": "string|binding",
+                "label": "Resource",
+                "description": "Resource select",
+                "allowedValues": [
+                  "product",
+                  "customer",
+                  "order",
+                  "coupon"
+                ]
+              }
+            },
+            "required": [
+              "operation",
+              "resource"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "list_coupon": {
+        "operation": "list_coupon",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "list_coupon"
+              ],
+              "resource": [
+                "coupon"
+              ]
+            },
+            "fields": {
+              "after": {
+                "path": "after",
+                "type": "unknown|binding",
+                "label": "After",
+                "description": "Enter after"
+              },
+              "before": {
+                "path": "before",
+                "type": "unknown|binding",
+                "label": "Before",
+                "description": "Enter before"
+              },
+              "code": {
+                "path": "code",
+                "type": "unknown|binding",
+                "label": "Code",
+                "description": "Enter code"
+              },
+              "context": {
+                "path": "context",
+                "type": "unknown|binding",
+                "label": "Context",
+                "description": "Enter context"
+              },
+              "exclude": {
+                "path": "exclude",
+                "type": "unknown|binding",
+                "label": "Exclude",
+                "description": "Enter exclude"
+              },
+              "include": {
+                "path": "include",
+                "type": "unknown|binding",
+                "label": "Include",
+                "description": "Enter include"
+              },
+              "offset": {
+                "path": "offset",
+                "type": "unknown|binding",
+                "label": "Offset",
+                "description": "Enter offset"
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_coupon",
+                  "create_coupon"
+                ]
+              },
+              "order": {
+                "path": "order",
+                "type": "unknown|binding",
+                "label": "Order",
+                "description": "Enter order"
+              },
+              "orderby": {
+                "path": "orderby",
+                "type": "unknown|binding",
+                "label": "Order By",
+                "description": "Enter orderby"
+              },
+              "page": {
+                "path": "page",
+                "type": "unknown|binding",
+                "label": "Page",
+                "description": "Enter page"
+              },
+              "per_page": {
+                "path": "per_page",
+                "type": "unknown|binding",
+                "label": "Per Page",
+                "description": "Enter per_page"
+              },
+              "resource": {
+                "path": "resource",
+                "type": "string|binding",
+                "label": "Resource",
+                "description": "Resource select",
+                "allowedValues": [
+                  "product",
+                  "customer",
+                  "order",
+                  "coupon"
+                ]
+              },
+              "search": {
+                "path": "search",
+                "type": "unknown|binding",
+                "label": "Search",
+                "description": "Enter search"
+              }
+            },
+            "required": [
+              "operation",
+              "resource"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "list_customer": {
+        "operation": "list_customer",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "list_customer"
+              ],
+              "resource": [
+                "customer"
+              ]
+            },
+            "fields": {
+              "context": {
+                "path": "context",
+                "type": "unknown|binding",
+                "label": "Context",
+                "description": "Enter context"
+              },
+              "email": {
+                "path": "email",
+                "type": "unknown|binding",
+                "label": "Email",
+                "description": "Enter email"
+              },
+              "exclude": {
+                "path": "exclude",
+                "type": "unknown|binding",
+                "label": "Exclude",
+                "description": "Enter exclude"
+              },
+              "include": {
+                "path": "include",
+                "type": "unknown|binding",
+                "label": "Include",
+                "description": "Enter include"
+              },
+              "offset": {
+                "path": "offset",
+                "type": "unknown|binding",
+                "label": "Offset",
+                "description": "Enter offset"
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_customer",
+                  "update_customer",
+                  "delete_customer",
+                  "batch_update_customer",
+                  "create_customer",
+                  "retrieve_customer"
+                ]
+              },
+              "order": {
+                "path": "order",
+                "type": "unknown|binding",
+                "label": "Order",
+                "description": "Enter order"
+              },
+              "orderby": {
+                "path": "orderby",
+                "type": "unknown|binding",
+                "label": "Order By",
+                "description": "Enter orderby"
+              },
+              "page": {
+                "path": "page",
+                "type": "unknown|binding",
+                "label": "Page",
+                "description": "Enter page"
+              },
+              "per_page": {
+                "path": "per_page",
+                "type": "unknown|binding",
+                "label": "Per Page",
+                "description": "Enter per_page"
+              },
+              "resource": {
+                "path": "resource",
+                "type": "string|binding",
+                "label": "Resource",
+                "description": "Resource select",
+                "allowedValues": [
+                  "product",
+                  "customer",
+                  "order",
+                  "coupon"
+                ]
+              },
+              "role": {
+                "path": "role",
+                "type": "unknown|binding",
+                "label": "Role",
+                "description": "Enter role"
+              },
+              "search": {
+                "path": "search",
+                "type": "unknown|binding",
+                "label": "Search",
+                "description": "Enter search"
+              }
+            },
+            "required": [
+              "operation",
+              "resource"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "list_order": {
+        "operation": "list_order",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "list_order"
+              ],
+              "resource": [
+                "order"
+              ]
+            },
+            "fields": {
+              "after": {
+                "path": "after",
+                "type": "unknown|binding",
+                "label": "After",
+                "description": "Enter after"
+              },
+              "before": {
+                "path": "before",
+                "type": "unknown|binding",
+                "label": "Before",
+                "description": "Enter before"
+              },
+              "context": {
+                "path": "context",
+                "type": "unknown|binding",
+                "label": "Context",
+                "description": "Enter context"
+              },
+              "customer": {
+                "path": "customer",
+                "type": "unknown|binding",
+                "label": "Customer",
+                "description": "Enter customer"
+              },
+              "dp": {
+                "path": "dp",
+                "type": "unknown|binding",
+                "label": "Decimal Point",
+                "description": "Enter dp"
+              },
+              "exclude": {
+                "path": "exclude",
+                "type": "unknown|binding",
+                "label": "Exclude",
+                "description": "Enter exclude"
+              },
+              "include": {
+                "path": "include",
+                "type": "unknown|binding",
+                "label": "Include",
+                "description": "Enter include"
+              },
+              "offset": {
+                "path": "offset",
+                "type": "unknown|binding",
+                "label": "Offset",
+                "description": "Enter offset"
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_order",
+                  "update_order",
+                  "delete_order",
+                  "batch_update_order",
+                  "create_order",
+                  "retrieve_order"
+                ]
+              },
+              "order": {
+                "path": "order",
+                "type": "unknown|binding",
+                "label": "Order",
+                "description": "Enter order"
+              },
+              "orderby": {
+                "path": "orderby",
+                "type": "unknown|binding",
+                "label": "Order By",
+                "description": "Enter orderby"
+              },
+              "page": {
+                "path": "page",
+                "type": "unknown|binding",
+                "label": "Page",
+                "description": "Enter page"
+              },
+              "parent": {
+                "path": "parent",
+                "type": "unknown|binding",
+                "label": "Parent",
+                "description": "Enter parent"
+              },
+              "parent_exclude": {
+                "path": "parent_exclude",
+                "type": "unknown|binding",
+                "label": "Parent Exclude",
+                "description": "Enter parent_exclude"
+              },
+              "per_page": {
+                "path": "per_page",
+                "type": "unknown|binding",
+                "label": "Per Page",
+                "description": "Enter per_page"
+              },
+              "product": {
+                "path": "product",
+                "type": "unknown|binding",
+                "label": "Product",
+                "description": "Enter product"
+              },
+              "resource": {
+                "path": "resource",
+                "type": "string|binding",
+                "label": "Resource",
+                "description": "Resource select",
+                "allowedValues": [
+                  "product",
+                  "customer",
+                  "order",
+                  "coupon"
+                ]
+              },
+              "search": {
+                "path": "search",
+                "type": "unknown|binding",
+                "label": "Search",
+                "description": "Enter search"
+              },
+              "status": {
+                "path": "status",
+                "type": "unknown|binding",
+                "label": "Status",
+                "description": "Enter status"
+              }
+            },
+            "required": [
+              "operation",
+              "resource"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "list_product": {
+        "operation": "list_product",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "list_product"
+              ],
+              "resource": [
+                "product"
+              ]
+            },
+            "fields": {
+              "after": {
+                "path": "after",
+                "type": "unknown|binding",
+                "label": "After",
+                "description": "Enter after"
+              },
+              "attribute": {
+                "path": "attribute",
+                "type": "unknown|binding",
+                "label": "Attribute",
+                "description": "Enter attribute"
+              },
+              "attribute_term": {
+                "path": "attribute_term",
+                "type": "unknown|binding",
+                "label": "Attribute Term",
+                "description": "Enter attribute_term"
+              },
+              "before": {
+                "path": "before",
+                "type": "unknown|binding",
+                "label": "Before",
+                "description": "Enter before"
+              },
+              "category": {
+                "path": "category",
+                "type": "unknown|binding",
+                "label": "Category",
+                "description": "Enter category"
+              },
+              "context": {
+                "path": "context",
+                "type": "unknown|binding",
+                "label": "Context",
+                "description": "Enter context"
+              },
+              "exclude": {
+                "path": "exclude",
+                "type": "unknown|binding",
+                "label": "Exclude",
+                "description": "Enter exclude"
+              },
+              "featured": {
+                "path": "featured",
+                "type": "unknown|binding",
+                "label": "Featured",
+                "description": "Enter featured"
+              },
+              "include": {
+                "path": "include",
+                "type": "unknown|binding",
+                "label": "Include",
+                "description": "Enter include"
+              },
+              "max_price": {
+                "path": "max_price",
+                "type": "unknown|binding",
+                "label": "Max Price",
+                "description": "Enter max_price"
+              },
+              "min_price": {
+                "path": "min_price",
+                "type": "unknown|binding",
+                "label": "Min Price",
+                "description": "Enter min_price"
+              },
+              "offset": {
+                "path": "offset",
+                "type": "unknown|binding",
+                "label": "Offset",
+                "description": "Enter offset"
+              },
+              "on_sale": {
+                "path": "on_sale",
+                "type": "unknown|binding",
+                "label": "On Sale",
+                "description": "Enter on_sale"
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_product",
+                  "update_product",
+                  "delete_product",
+                  "batch_update_product",
+                  "create_product",
+                  "retrieve_product"
+                ]
+              },
+              "order": {
+                "path": "order",
+                "type": "unknown|binding",
+                "label": "Order",
+                "description": "Enter order"
+              },
+              "orderby": {
+                "path": "orderby",
+                "type": "unknown|binding",
+                "label": "Order By",
+                "description": "Enter orderby"
+              },
+              "page": {
+                "path": "page",
+                "type": "unknown|binding",
+                "label": "Page",
+                "description": "Enter page"
+              },
+              "parent": {
+                "path": "parent",
+                "type": "unknown|binding",
+                "label": "Parent",
+                "description": "Enter parent"
+              },
+              "parent_exclude": {
+                "path": "parent_exclude",
+                "type": "unknown|binding",
+                "label": "Parent Exclude",
+                "description": "Enter parent_exclude"
+              },
+              "per_page": {
+                "path": "per_page",
+                "type": "unknown|binding",
+                "label": "Per Page",
+                "description": "Enter per_page"
+              },
+              "resource": {
+                "path": "resource",
+                "type": "string|binding",
+                "label": "Resource",
+                "description": "Resource select",
+                "allowedValues": [
+                  "product",
+                  "customer",
+                  "order",
+                  "coupon"
+                ]
+              },
+              "search": {
+                "path": "search",
+                "type": "unknown|binding",
+                "label": "Search",
+                "description": "Enter search"
+              },
+              "shipping_class": {
+                "path": "shipping_class",
+                "type": "unknown|binding",
+                "label": "Shipping Class",
+                "description": "Enter shipping_class"
+              },
+              "sku": {
+                "path": "sku",
+                "type": "unknown|binding",
+                "label": "SKU",
+                "description": "Enter sku"
+              },
+              "slug": {
+                "path": "slug",
+                "type": "unknown|binding",
+                "label": "Slug",
+                "description": "Enter slug"
+              },
+              "status": {
+                "path": "status",
+                "type": "unknown|binding",
+                "label": "Status",
+                "description": "Enter status"
+              },
+              "stock_status": {
+                "path": "stock_status",
+                "type": "unknown|binding",
+                "label": "Stock Status",
+                "description": "Enter stock_status"
+              },
+              "tag": {
+                "path": "tag",
+                "type": "unknown|binding",
+                "label": "Tag",
+                "description": "Enter tag"
+              },
+              "tax_class": {
+                "path": "tax_class",
+                "type": "unknown|binding",
+                "label": "Tax Class",
+                "description": "Enter tax_class"
+              },
+              "type": {
+                "path": "type",
+                "type": "unknown|binding",
+                "label": "Type",
+                "description": "Enter type"
+              }
+            },
+            "required": [
+              "operation",
+              "resource"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "retrieve_customer": {
+        "operation": "retrieve_customer",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "retrieve_customer"
+              ],
+              "resource": [
+                "customer"
+              ]
+            },
+            "fields": {
+              "customer_id": {
+                "path": "customer_id",
+                "type": "unknown|binding",
+                "label": "Customer ID",
+                "description": "Enter customer ID"
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_customer",
+                  "update_customer",
+                  "delete_customer",
+                  "batch_update_customer",
+                  "create_customer",
+                  "retrieve_customer"
+                ]
+              },
+              "resource": {
+                "path": "resource",
+                "type": "string|binding",
+                "label": "Resource",
+                "description": "Resource select",
+                "allowedValues": [
+                  "product",
+                  "customer",
+                  "order",
+                  "coupon"
+                ]
+              }
+            },
+            "required": [
+              "operation",
+              "resource"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "retrieve_order": {
+        "operation": "retrieve_order",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "retrieve_order"
+              ],
+              "resource": [
+                "order"
+              ]
+            },
+            "fields": {
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_order",
+                  "update_order",
+                  "delete_order",
+                  "batch_update_order",
+                  "create_order",
+                  "retrieve_order"
+                ]
+              },
+              "order_id": {
+                "path": "order_id",
+                "type": "unknown|binding",
+                "label": "Order ID",
+                "description": "Enter order ID"
+              },
+              "resource": {
+                "path": "resource",
+                "type": "string|binding",
+                "label": "Resource",
+                "description": "Resource select",
+                "allowedValues": [
+                  "product",
+                  "customer",
+                  "order",
+                  "coupon"
+                ]
+              }
+            },
+            "required": [
+              "operation",
+              "resource"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "retrieve_product": {
+        "operation": "retrieve_product",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "retrieve_product"
+              ],
+              "resource": [
+                "product"
+              ]
+            },
+            "fields": {
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_product",
+                  "update_product",
+                  "delete_product",
+                  "batch_update_product",
+                  "create_product",
+                  "retrieve_product"
+                ]
+              },
+              "product_id": {
+                "path": "product_id",
+                "type": "unknown|binding",
+                "label": "Product ID",
+                "description": "Enter product ID"
+              },
+              "resource": {
+                "path": "resource",
+                "type": "string|binding",
+                "label": "Resource",
+                "description": "Resource select",
+                "allowedValues": [
+                  "product",
+                  "customer",
+                  "order",
+                  "coupon"
+                ]
+              }
+            },
+            "required": [
+              "operation",
+              "resource"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "update_customer": {
+        "operation": "update_customer",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "update_customer"
+              ],
+              "resource": [
+                "customer"
+              ]
+            },
+            "fields": {
+              "body": {
+                "path": "body",
+                "type": "unknown|binding",
+                "label": "Data",
+                "description": "Enter data"
+              },
+              "customer_id": {
+                "path": "customer_id",
+                "type": "unknown|binding",
+                "label": "Customer ID",
+                "description": "Enter customer ID"
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_customer",
+                  "update_customer",
+                  "delete_customer",
+                  "batch_update_customer",
+                  "create_customer",
+                  "retrieve_customer"
+                ]
+              },
+              "resource": {
+                "path": "resource",
+                "type": "string|binding",
+                "label": "Resource",
+                "description": "Resource select",
+                "allowedValues": [
+                  "product",
+                  "customer",
+                  "order",
+                  "coupon"
+                ]
+              }
+            },
+            "required": [
+              "operation",
+              "resource"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "update_order": {
+        "operation": "update_order",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "update_order"
+              ],
+              "resource": [
+                "order"
+              ]
+            },
+            "fields": {
+              "body": {
+                "path": "body",
+                "type": "unknown|binding",
+                "label": "Data",
+                "description": "Enter data"
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_order",
+                  "update_order",
+                  "delete_order",
+                  "batch_update_order",
+                  "create_order",
+                  "retrieve_order"
+                ]
+              },
+              "order_id": {
+                "path": "order_id",
+                "type": "unknown|binding",
+                "label": "Order ID",
+                "description": "Enter order ID"
+              },
+              "resource": {
+                "path": "resource",
+                "type": "string|binding",
+                "label": "Resource",
+                "description": "Resource select",
+                "allowedValues": [
+                  "product",
+                  "customer",
+                  "order",
+                  "coupon"
+                ]
+              }
+            },
+            "required": [
+              "operation",
+              "resource"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "update_product": {
+        "operation": "update_product",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "update_product"
+              ],
+              "resource": [
+                "product"
+              ]
+            },
+            "fields": {
+              "body": {
+                "path": "body",
+                "type": "unknown|binding",
+                "label": "Data",
+                "description": "Enter data"
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "list_product",
+                  "update_product",
+                  "delete_product",
+                  "batch_update_product",
+                  "create_product",
+                  "retrieve_product"
+                ]
+              },
+              "product_id": {
+                "path": "product_id",
+                "type": "unknown|binding",
+                "label": "Product ID",
+                "description": "Enter product ID"
+              },
+              "resource": {
+                "path": "resource",
+                "type": "string|binding",
+                "label": "Resource",
+                "description": "Resource select",
+                "allowedValues": [
+                  "product",
+                  "customer",
+                  "order",
+                  "coupon"
+                ]
+              }
+            },
+            "required": [
+              "operation",
+              "resource"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      }
+    },
+    "properties": {
+      "resource": {
+        "label": "Resource",
+        "key": "resource",
+        "className": "col-md-4",
+        "type": "dropdown-component-flip",
+        "description": "Resource select",
+        "list": [
+          {
+            "value": "product",
+            "name": "Product"
+          },
+          {
+            "value": "customer",
+            "name": "Customer"
+          },
+          {
+            "value": "order",
+            "name": "Order"
+          },
+          {
+            "value": "coupon",
+            "name": "Coupon"
+          }
+        ]
+      },
+      "customer": {
+        "operation": {
+          "label": "Operation",
+          "key": "operation",
+          "type": "dropdown-component-flip",
+          "description": "Single select dropdown for operation",
+          "list": [
+            {
+              "value": "list_customer",
+              "name": "List all customers"
+            },
+            {
+              "value": "update_customer",
+              "name": "Update a customer"
+            },
+            {
+              "value": "delete_customer",
+              "name": "Delete a customer"
+            },
+            {
+              "value": "batch_update_customer",
+              "name": "Batch update customers"
+            },
+            {
+              "value": "create_customer",
+              "name": "Create a customer"
+            },
+            {
+              "value": "retrieve_customer",
+              "name": "Retrieve a customer"
+            }
+          ]
+        },
+        "list_customer": {
+          "page": {
+            "label": "Page",
+            "key": "page",
+            "type": "codehinter",
+            "description": "Enter page",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "context": {
+            "label": "Context",
+            "key": "context",
+            "type": "codehinter",
+            "description": "Enter context",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "per_page": {
+            "label": "Per Page",
+            "key": "per_page",
+            "type": "codehinter",
+            "description": "Enter per_page",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "search": {
+            "label": "Search",
+            "key": "search",
+            "type": "codehinter",
+            "description": "Enter search",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "exclude": {
+            "label": "Exclude",
+            "key": "exclude",
+            "type": "codehinter",
+            "description": "Enter exclude",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "include": {
+            "label": "Include",
+            "key": "include",
+            "type": "codehinter",
+            "description": "Enter include",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "offset": {
+            "label": "Offset",
+            "key": "offset",
+            "type": "codehinter",
+            "description": "Enter offset",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "order": {
+            "label": "Order",
+            "key": "order",
+            "type": "codehinter",
+            "description": "Enter order",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "orderby": {
+            "label": "Order By",
+            "key": "orderby",
+            "type": "codehinter",
+            "description": "Enter orderby",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "email": {
+            "label": "Email",
+            "key": "email",
+            "type": "codehinter",
+            "description": "Enter email",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "role": {
+            "label": "Role",
+            "key": "role",
+            "type": "codehinter",
+            "description": "Enter role",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          }
+        },
+        "update_customer": {
+          "customer_id": {
+            "label": "Customer ID",
+            "key": "customer_id",
+            "type": "codehinter",
+            "description": "Enter customer ID",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "body": {
+            "label": "Data",
+            "key": "body",
+            "type": "codehinter",
+            "description": "Enter data",
+            "height": "150px",
+            "placeholder": "",
+            "editorType": "extendedSingleLine"
+          }
+        },
+        "delete_customer": {
+          "customer_id": {
+            "label": "Customer ID",
+            "key": "customer_id",
+            "type": "codehinter",
+            "description": "Enter customer ID",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          }
+        },
+        "batch_update_customer": {
+          "body": {
+            "label": "Data",
+            "key": "body",
+            "type": "codehinter",
+            "description": "Enter data",
+            "height": "150px",
+            "placeholder": "",
+            "editorType": "extendedSingleLine"
+          }
+        },
+        "create_customer": {
+          "body": {
+            "label": "Data",
+            "key": "body",
+            "type": "codehinter",
+            "description": "Enter data",
+            "height": "150px",
+            "placeholder": "",
+            "editorType": "extendedSingleLine"
+          }
+        },
+        "retrieve_customer": {
+          "customer_id": {
+            "label": "Customer ID",
+            "key": "customer_id",
+            "type": "codehinter",
+            "description": "Enter customer ID",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          }
+        }
+      },
+      "product": {
+        "operation": {
+          "label": "Operation",
+          "key": "operation",
+          "type": "dropdown-component-flip",
+          "description": "Single select dropdown for operation",
+          "list": [
+            {
+              "value": "list_product",
+              "name": "List all products"
+            },
+            {
+              "value": "update_product",
+              "name": "Update a product"
+            },
+            {
+              "value": "delete_product",
+              "name": "Delete a product"
+            },
+            {
+              "value": "batch_update_product",
+              "name": "Batch update products"
+            },
+            {
+              "value": "create_product",
+              "name": "Create a product"
+            },
+            {
+              "value": "retrieve_product",
+              "name": "Retrieve a product"
+            }
+          ]
+        },
+        "list_product": {
+          "page": {
+            "label": "Page",
+            "key": "page",
+            "type": "codehinter",
+            "description": "Enter page",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "context": {
+            "label": "Context",
+            "key": "context",
+            "type": "codehinter",
+            "description": "Enter context",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "per_page": {
+            "label": "Per Page",
+            "key": "per_page",
+            "type": "codehinter",
+            "description": "Enter per_page",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "search": {
+            "label": "Search",
+            "key": "search",
+            "type": "codehinter",
+            "description": "Enter search",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "exclude": {
+            "label": "Exclude",
+            "key": "exclude",
+            "type": "codehinter",
+            "description": "Enter exclude",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "include": {
+            "label": "Include",
+            "key": "include",
+            "type": "codehinter",
+            "description": "Enter include",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "offset": {
+            "label": "Offset",
+            "key": "offset",
+            "type": "codehinter",
+            "description": "Enter offset",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "order": {
+            "label": "Order",
+            "key": "order",
+            "type": "codehinter",
+            "description": "Enter order",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "orderby": {
+            "label": "Order By",
+            "key": "orderby",
+            "type": "codehinter",
+            "description": "Enter orderby",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "slug": {
+            "label": "Slug",
+            "key": "slug",
+            "type": "codehinter",
+            "description": "Enter slug",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "status": {
+            "label": "Status",
+            "key": "status",
+            "type": "codehinter",
+            "description": "Enter status",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "type": {
+            "label": "Type",
+            "key": "type",
+            "type": "codehinter",
+            "description": "Enter type",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "sku": {
+            "label": "SKU",
+            "key": "sku",
+            "type": "codehinter",
+            "description": "Enter sku",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "featured": {
+            "label": "Featured",
+            "key": "featured",
+            "type": "codehinter",
+            "description": "Enter featured",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "category": {
+            "label": "Category",
+            "key": "category",
+            "type": "codehinter",
+            "description": "Enter category",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "tag": {
+            "label": "Tag",
+            "key": "tag",
+            "type": "codehinter",
+            "description": "Enter tag",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "shipping_class": {
+            "label": "Shipping Class",
+            "key": "shipping_class",
+            "type": "codehinter",
+            "description": "Enter shipping_class",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "attribute": {
+            "label": "Attribute",
+            "key": "attribute",
+            "type": "codehinter",
+            "description": "Enter attribute",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "attribute_term": {
+            "label": "Attribute Term",
+            "key": "attribute_term",
+            "type": "codehinter",
+            "description": "Enter attribute_term",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "tax_class": {
+            "label": "Tax Class",
+            "key": "tax_class",
+            "type": "codehinter",
+            "description": "Enter tax_class",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "on_sale": {
+            "label": "On Sale",
+            "key": "on_sale",
+            "type": "codehinter",
+            "description": "Enter on_sale",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "min_price": {
+            "label": "Min Price",
+            "key": "min_price",
+            "type": "codehinter",
+            "description": "Enter min_price",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "max_price": {
+            "label": "Max Price",
+            "key": "max_price",
+            "type": "codehinter",
+            "description": "Enter max_price",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "stock_status": {
+            "label": "Stock Status",
+            "key": "stock_status",
+            "type": "codehinter",
+            "description": "Enter stock_status",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "before": {
+            "label": "Before",
+            "key": "before",
+            "type": "codehinter",
+            "description": "Enter before",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "after": {
+            "label": "After",
+            "key": "after",
+            "type": "codehinter",
+            "description": "Enter after",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "parent_exclude": {
+            "label": "Parent Exclude",
+            "key": "parent_exclude",
+            "type": "codehinter",
+            "description": "Enter parent_exclude",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "parent": {
+            "label": "Parent",
+            "key": "parent",
+            "type": "codehinter",
+            "description": "Enter parent",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          }
+        },
+        "update_product": {
+          "product_id": {
+            "label": "Product ID",
+            "key": "product_id",
+            "type": "codehinter",
+            "description": "Enter product ID",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "body": {
+            "label": "Data",
+            "key": "body",
+            "type": "codehinter",
+            "description": "Enter data",
+            "height": "150px",
+            "placeholder": "",
+            "editorType": "extendedSingleLine"
+          }
+        },
+        "delete_product": {
+          "product_id": {
+            "label": "Product ID",
+            "key": "product_id",
+            "type": "codehinter",
+            "description": "Enter product ID",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          }
+        },
+        "batch_update_product": {
+          "body": {
+            "label": "Data",
+            "key": "body",
+            "type": "codehinter",
+            "description": "Enter data",
+            "height": "150px",
+            "placeholder": "",
+            "editorType": "extendedSingleLine"
+          }
+        },
+        "create_product": {
+          "body": {
+            "label": "Data",
+            "key": "body",
+            "type": "codehinter",
+            "description": "Enter data",
+            "height": "150px",
+            "placeholder": "",
+            "editorType": "extendedSingleLine"
+          }
+        },
+        "retrieve_product": {
+          "product_id": {
+            "label": "Product ID",
+            "key": "product_id",
+            "type": "codehinter",
+            "description": "Enter product ID",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          }
+        }
+      },
+      "order": {
+        "operation": {
+          "label": "Operation",
+          "key": "operation",
+          "type": "dropdown-component-flip",
+          "description": "Single select dropdown for operation",
+          "list": [
+            {
+              "value": "list_order",
+              "name": "List all orders"
+            },
+            {
+              "value": "update_order",
+              "name": "Update a order"
+            },
+            {
+              "value": "delete_order",
+              "name": "Delete a order"
+            },
+            {
+              "value": "batch_update_order",
+              "name": "Batch update orders"
+            },
+            {
+              "value": "create_order",
+              "name": "Create a order"
+            },
+            {
+              "value": "retrieve_order",
+              "name": "Retrieve a order"
+            }
+          ]
+        },
+        "list_order": {
+          "context": {
+            "label": "Context",
+            "key": "context",
+            "type": "codehinter",
+            "description": "Enter context",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "page": {
+            "label": "Page",
+            "key": "page",
+            "type": "codehinter",
+            "description": "Enter page",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "per_page": {
+            "label": "Per Page",
+            "key": "per_page",
+            "type": "codehinter",
+            "description": "Enter per_page",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "search": {
+            "label": "Search",
+            "key": "search",
+            "type": "codehinter",
+            "description": "Enter search",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "after": {
+            "label": "After",
+            "key": "after",
+            "type": "codehinter",
+            "description": "Enter after",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "before": {
+            "label": "Before",
+            "key": "before",
+            "type": "codehinter",
+            "description": "Enter before",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "exclude": {
+            "label": "Exclude",
+            "key": "exclude",
+            "type": "codehinter",
+            "description": "Enter exclude",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "include": {
+            "label": "Include",
+            "key": "include",
+            "type": "codehinter",
+            "description": "Enter include",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "offset": {
+            "label": "Offset",
+            "key": "offset",
+            "type": "codehinter",
+            "description": "Enter offset",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "order": {
+            "label": "Order",
+            "key": "order",
+            "type": "codehinter",
+            "description": "Enter order",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "orderby": {
+            "label": "Order By",
+            "key": "orderby",
+            "type": "codehinter",
+            "description": "Enter orderby",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "parent": {
+            "label": "Parent",
+            "key": "parent",
+            "type": "codehinter",
+            "description": "Enter parent",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "parent_exclude": {
+            "label": "Parent Exclude",
+            "key": "parent_exclude",
+            "type": "codehinter",
+            "description": "Enter parent_exclude",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "status": {
+            "label": "Status",
+            "key": "status",
+            "type": "codehinter",
+            "description": "Enter status",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "customer": {
+            "label": "Customer",
+            "key": "customer",
+            "type": "codehinter",
+            "description": "Enter customer",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "product": {
+            "label": "Product",
+            "key": "product",
+            "type": "codehinter",
+            "description": "Enter product",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "dp": {
+            "label": "Decimal Point",
+            "key": "dp",
+            "type": "codehinter",
+            "description": "Enter dp",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          }
+        },
+        "update_order": {
+          "order_id": {
+            "label": "Order ID",
+            "key": "order_id",
+            "type": "codehinter",
+            "description": "Enter order ID",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "body": {
+            "label": "Data",
+            "key": "body",
+            "type": "codehinter",
+            "description": "Enter data",
+            "height": "150px",
+            "placeholder": "",
+            "editorType": "extendedSingleLine"
+          }
+        },
+        "delete_order": {
+          "order_id": {
+            "label": "Order ID",
+            "key": "order_id",
+            "type": "codehinter",
+            "description": "Enter order ID",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          }
+        },
+        "batch_update_order": {
+          "body": {
+            "label": "Data",
+            "key": "body",
+            "type": "codehinter",
+            "description": "Enter data",
+            "height": "150px",
+            "placeholder": "",
+            "editorType": "extendedSingleLine"
+          }
+        },
+        "create_order": {
+          "body": {
+            "label": "Data",
+            "key": "body",
+            "type": "codehinter",
+            "description": "Enter data",
+            "height": "150px",
+            "placeholder": "",
+            "editorType": "extendedSingleLine"
+          }
+        },
+        "retrieve_order": {
+          "order_id": {
+            "label": "Order ID",
+            "key": "order_id",
+            "type": "codehinter",
+            "description": "Enter order ID",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          }
+        }
+      },
+      "coupon": {
+        "operation": {
+          "label": "Operation",
+          "key": "operation",
+          "type": "dropdown-component-flip",
+          "description": "Single select dropdown for operation",
+          "list": [
+            {
+              "value": "list_coupon",
+              "name": "List all coupons"
+            },
+            {
+              "value": "create_coupon",
+              "name": "Create a coupon"
+            }
+          ]
+        },
+        "list_coupon": {
+          "context": {
+            "label": "Context",
+            "key": "context",
+            "type": "codehinter",
+            "description": "Enter context",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "page": {
+            "label": "Page",
+            "key": "page",
+            "type": "codehinter",
+            "description": "Enter page",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "per_page": {
+            "label": "Per Page",
+            "key": "per_page",
+            "type": "codehinter",
+            "description": "Enter per_page",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "search": {
+            "label": "Search",
+            "key": "search",
+            "type": "codehinter",
+            "description": "Enter search",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "after": {
+            "label": "After",
+            "key": "after",
+            "type": "codehinter",
+            "description": "Enter after",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "before": {
+            "label": "Before",
+            "key": "before",
+            "type": "codehinter",
+            "description": "Enter before",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "exclude": {
+            "label": "Exclude",
+            "key": "exclude",
+            "type": "codehinter",
+            "description": "Enter exclude",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "include": {
+            "label": "Include",
+            "key": "include",
+            "type": "codehinter",
+            "description": "Enter include",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "offset": {
+            "label": "Offset",
+            "key": "offset",
+            "type": "codehinter",
+            "description": "Enter offset",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "order": {
+            "label": "Order",
+            "key": "order",
+            "type": "codehinter",
+            "description": "Enter order",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "orderby": {
+            "label": "Order By",
+            "key": "orderby",
+            "type": "codehinter",
+            "description": "Enter orderby",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          },
+          "code": {
+            "label": "Code",
+            "key": "code",
+            "type": "codehinter",
+            "description": "Enter code",
+            "width": "320px",
+            "height": "36px",
+            "className": "codehinter-plugins",
+            "placeholder": "",
+            "lineNumbers": false
+          }
+        },
+        "create_coupon": {
+          "body": {
+            "label": "Data",
+            "key": "body",
+            "type": "codehinter",
+            "description": "Enter data",
+            "height": "150px",
+            "placeholder": "",
+            "editorType": "extendedSingleLine"
+          }
+        }
+      }
+    },
+    "introspectionMethods": [],
+    "supportsTestConnection": true,
+    "sources": [
+      {
+        "collection": "core",
+        "package": "woocommerce"
+      }
+    ]
+  },
+  "workflows": {
+    "kind": "workflows",
+    "name": "Workflows",
+    "type": "static",
+    "description": "Invoke a ToolJet workflow from an app query. The workflow target is stored in this query, independently of event handlers.",
+    "defaults": {
+      "params": [],
+      "syncExecution": true
+    },
+    "operations": [],
+    "operationSelection": {
+      "mode": "single",
+      "description": "Use the default contract; workflowId is required. No operation selector."
+    },
+    "contracts": {
+      "default": {
+        "operation": "default",
+        "variants": [
+          {
+            "when": {},
+            "fields": {
+              "params": {
+                "path": "params",
+                "type": "array",
+                "description": "Native editor shape: [{key: \"parcelCount\", value: \"{{components.parcelCount.value}}\"}]. Use [] for no inputs."
+              },
+              "syncExecution": {
+                "path": "syncExecution",
+                "type": "boolean",
+                "description": "Use true when handlers/results must reflect workflow completion; false only waits for dispatch."
+              },
+              "workflowId": {
+                "path": "workflowId",
+                "type": "string",
+                "description": "Required literal workflow UUID from list_workflows/get_workflow. Use camelCase, not workflow_id or a dropdown option object."
+              },
+              "workflowVersionId": {
+                "path": "workflowVersionId",
+                "type": "string|null",
+                "description": "Optional literal workflow version UUID. Omit or use null to use the released version; the current backend falls back to the editing version for a never-released workflow. Linking does not release it."
+              }
+            },
+            "required": [
+              "workflowId"
+            ]
+          }
+        ],
+        "notes": [
+          "add_queries.version_id/update_query.version_id is the destination APP version, not the workflow version. Preserve the full options on update. Read the saved mapping and validate_app before declaring the workflow linked."
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "runtime-dependent",
+          "source": "ToolJet workflow query runtime",
+          "description": "Synchronous queries expose the workflow response as queries.<name>.data. Its shape depends on the workflow response node. Asynchronous dispatch does not prove workflow completion."
+        }
+      }
+    },
+    "properties": {},
+    "introspectionMethods": [],
+    "supportsTestConnection": false,
+    "sources": [
+      {
+        "collection": "static",
+        "package": "workflows"
+      }
+    ]
+  },
+  "xero": {
+    "kind": "xero",
+    "name": "Xero",
+    "type": "api",
+    "description": "A schema defining Xero datasource",
+    "defaults": {},
+    "operations": [],
+    "operationSelection": {
+      "mode": "remote-spec",
+      "field": "xero_operation",
+      "specs": [
+        {
+          "label": "Accounts",
+          "ref": "@spec/xero/accounts",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "accounts",
+          "path": "marketplace/plugins/xero/openapi-specs/accounts.yaml"
+        },
+        {
+          "label": "Finance",
+          "ref": "@spec/xero/finance",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "finance",
+          "path": "marketplace/plugins/xero/openapi-specs/finance.yaml"
+        },
+        {
+          "label": "identity",
+          "ref": "@spec/xero/identity",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "identity",
+          "path": "marketplace/plugins/xero/openapi-specs/identity.yaml"
+        },
+        {
+          "label": "BankFeeds",
+          "ref": "@spec/xero/bankfeeds",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "bankfeeds",
+          "path": "marketplace/plugins/xero/openapi-specs/bankfeeds.yaml"
+        },
+        {
+          "label": "AppStore",
+          "ref": "@spec/xero/appstore",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "appstore",
+          "path": "marketplace/plugins/xero/openapi-specs/appstore.yaml"
+        },
+        {
+          "label": "Assets",
+          "ref": "@spec/xero/assets",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "assets",
+          "path": "marketplace/plugins/xero/openapi-specs/assets.yaml"
+        },
+        {
+          "label": "PayrollAu",
+          "ref": "@spec/xero/payrollau",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "payrollau",
+          "path": "marketplace/plugins/xero/openapi-specs/payrollau.yaml"
+        },
+        {
+          "label": "PayrollUk",
+          "ref": "@spec/xero/payrolluk",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "payrolluk",
+          "path": "marketplace/plugins/xero/openapi-specs/payrolluk.yaml"
+        },
+        {
+          "label": "PayrollNz",
+          "ref": "@spec/xero/payrollnz",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "payrollnz",
+          "path": "marketplace/plugins/xero/openapi-specs/payrollnz.yaml"
+        },
+        {
+          "label": "Projects",
+          "ref": "@spec/xero/projects",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "projects",
+          "path": "marketplace/plugins/xero/openapi-specs/projects.yaml"
+        },
+        {
+          "label": "Files",
+          "ref": "@spec/xero/files",
+          "location": "bundled",
+          "plugin": "xero",
+          "name": "files",
+          "path": "marketplace/plugins/xero/openapi-specs/files.yaml"
+        }
+      ],
+      "description": "The operation list comes from the OpenAPI spec(s) in `specs`, which ship with the ToolJet plugin rather than being declared in operations.json. They are not enumerated in this catalog yet; read the spec, or inspect the datasource in ToolJet, before authoring a query."
+    },
+    "contracts": {
+      "default": {
+        "operation": "default",
+        "variants": [
+          {
+            "when": {},
+            "fields": {
+              "tenant_id": {
+                "path": "tenant_id",
+                "type": "string|binding",
+                "label": "Tenant",
+                "description": "Select the Xero tenant. Click 'Get Tenants' to fetch available tenants."
+              },
+              "xero_operation": {
+                "path": "xero_operation",
+                "type": "react-component-api-endpoint",
+                "description": "Single select dropdown for operation"
+              }
+            },
+            "required": []
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "runtime-dependent",
+          "source": "remote-api",
+          "description": "The selected remote API endpoint defines the query data. This generated contract does not yet expose endpoint-specific response fields."
+        }
+      }
+    },
+    "properties": {
+      "tenant_id": {
+        "key": "tenant_id",
+        "label": "Tenant",
+        "type": "dynamic-selector",
+        "description": "Select the Xero tenant. Click 'Get Tenants' to fetch available tenants.",
+        "operation": {
+          "key": "get_tenants",
+          "label": "Get Tenants",
+          "invokeMethod": "getTenants"
+        },
+        "fxEnabled": true
+      },
+      "operation": {
+        "label": "",
+        "key": "xero_operation",
+        "type": "react-component-api-endpoint",
+        "description": "Single select dropdown for operation",
+        "specUrl": {
+          "Accounts": "@spec/xero/accounts",
+          "Finance": "@spec/xero/finance",
+          "identity": "@spec/xero/identity",
+          "BankFeeds": "@spec/xero/bankfeeds",
+          "AppStore": "@spec/xero/appstore",
+          "Assets": "@spec/xero/assets",
+          "PayrollAu": "@spec/xero/payrollau",
+          "PayrollUk": "@spec/xero/payrolluk",
+          "PayrollNz": "@spec/xero/payrollnz",
+          "Projects": "@spec/xero/projects",
+          "Files": "@spec/xero/files"
+        }
+      }
+    },
+    "introspectionMethods": [
+      "getTenants"
+    ],
+    "supportsTestConnection": false,
+    "sources": [
+      {
+        "collection": "marketplace",
+        "package": "xero"
+      }
+    ]
+  },
+  "zendesk": {
+    "kind": "zendesk",
+    "name": "Zendesk",
+    "type": "api",
+    "description": "A schema defining Zendesk datasource",
+    "defaults": {},
+    "operations": [
+      "get_profile",
+      "get_user",
+      "read_requested_tickets",
+      "search",
+      "show_ticket",
+      "update_ticket"
+    ],
+    "operationSelection": {
+      "mode": "enumerated",
+      "fields": [
+        "operation"
+      ],
+      "values": [
+        "get_profile",
+        "get_user",
+        "read_requested_tickets",
+        "search",
+        "show_ticket",
+        "update_ticket"
+      ]
+    },
+    "contracts": {
+      "get_profile": {
+        "operation": "get_profile",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "get_profile"
+              ]
+            },
+            "fields": {
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "read_tickets",
+                  "read_requested_tickets",
+                  "show_ticket",
+                  "update_ticket",
+                  "list_users",
+                  "get_user",
+                  "get_profile",
+                  "search"
+                ]
+              },
+              "user_id": {
+                "path": "user_id",
+                "type": "unknown|binding",
+                "label": "User ID",
+                "description": "Enter user id"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "get_user": {
+        "operation": "get_user",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "get_user"
+              ]
+            },
+            "fields": {
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "read_tickets",
+                  "read_requested_tickets",
+                  "show_ticket",
+                  "update_ticket",
+                  "list_users",
+                  "get_user",
+                  "get_profile",
+                  "search"
+                ]
+              },
+              "user_id": {
+                "path": "user_id",
+                "type": "unknown|binding",
+                "label": "User ID",
+                "description": "Enter user id"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "read_requested_tickets": {
+        "operation": "read_requested_tickets",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "read_requested_tickets"
+              ]
+            },
+            "fields": {
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "read_tickets",
+                  "read_requested_tickets",
+                  "show_ticket",
+                  "update_ticket",
+                  "list_users",
+                  "get_user",
+                  "get_profile",
+                  "search"
+                ]
+              },
+              "user_id": {
+                "path": "user_id",
+                "type": "unknown|binding",
+                "label": "User ID",
+                "description": "Enter user id"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "search": {
+        "operation": "search",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "search"
+              ]
+            },
+            "fields": {
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "read_tickets",
+                  "read_requested_tickets",
+                  "show_ticket",
+                  "update_ticket",
+                  "list_users",
+                  "get_user",
+                  "get_profile",
+                  "search"
+                ]
+              },
+              "query": {
+                "path": "query",
+                "type": "unknown|binding",
+                "label": "Query",
+                "description": "Enter query"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "show_ticket": {
+        "operation": "show_ticket",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "show_ticket"
+              ]
+            },
+            "fields": {
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "read_tickets",
+                  "read_requested_tickets",
+                  "show_ticket",
+                  "update_ticket",
+                  "list_users",
+                  "get_user",
+                  "get_profile",
+                  "search"
+                ]
+              },
+              "ticket_id": {
+                "path": "ticket_id",
+                "type": "unknown|binding",
+                "label": "Ticket ID",
+                "description": "Enter ticket id"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      },
+      "update_ticket": {
+        "operation": "update_ticket",
+        "variants": [
+          {
+            "when": {
+              "operation": [
+                "update_ticket"
+              ]
+            },
+            "fields": {
+              "body": {
+                "path": "body",
+                "type": "unknown|binding",
+                "label": "body",
+                "description": "Enter ticket"
+              },
+              "operation": {
+                "path": "operation",
+                "type": "string|binding",
+                "label": "Operation",
+                "description": "Single select dropdown for operation",
+                "allowedValues": [
+                  "read_tickets",
+                  "read_requested_tickets",
+                  "show_ticket",
+                  "update_ticket",
+                  "list_users",
+                  "get_user",
+                  "get_profile",
+                  "search"
+                ]
+              },
+              "ticket_id": {
+                "path": "ticket_id",
+                "type": "unknown|binding",
+                "label": "Ticket ID",
+                "description": "Enter ticket id"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          }
+        ],
+        "response": {
+          "type": "unknown",
+          "status": "unknown",
+          "source": "tooljet-api-plugin",
+          "description": "No stable response shape has been curated from this ToolJet plugin yet. Inspect a safe successful run before binding nested fields."
+        }
+      }
+    },
+    "properties": {
+      "operation": {
+        "label": "Operation",
+        "key": "operation",
+        "type": "dropdown-component-flip",
+        "description": "Single select dropdown for operation",
+        "list": [
+          {
+            "value": "read_tickets",
+            "name": "List tickets"
+          },
+          {
+            "value": "read_requested_tickets",
+            "name": "List requested tickets"
+          },
+          {
+            "value": "show_ticket",
+            "name": "Show ticket"
+          },
+          {
+            "value": "update_ticket",
+            "name": "Update ticket"
+          },
+          {
+            "value": "list_users",
+            "name": "List users"
+          },
+          {
+            "value": "get_user",
+            "name": "Get user"
+          },
+          {
+            "value": "get_profile",
+            "name": "Get profile"
+          },
+          {
+            "value": "search",
+            "name": "Search"
+          }
+        ]
+      },
+      "read_requested_tickets": {
+        "user_id": {
+          "label": "User ID",
+          "key": "user_id",
+          "type": "codehinter",
+          "lineNumbers": false,
+          "description": "Enter user id",
+          "height": "36px",
+          "className": "codehinter-plugins",
+          "placeholder": "Enter user id"
+        }
+      },
+      "show_ticket": {
+        "ticket_id": {
+          "label": "Ticket ID",
+          "key": "ticket_id",
+          "type": "codehinter",
+          "lineNumbers": false,
+          "description": "Enter ticket id",
+          "height": "36px",
+          "className": "codehinter-plugins",
+          "placeholder": "Enter ticket id"
+        }
+      },
+      "get_user": {
+        "user_id": {
+          "label": "User ID",
+          "key": "user_id",
+          "type": "codehinter",
+          "lineNumbers": false,
+          "description": "Enter user id",
+          "height": "36px",
+          "className": "codehinter-plugins",
+          "placeholder": "Enter user id"
+        }
+      },
+      "get_profile": {
+        "user_id": {
+          "label": "User ID",
+          "key": "user_id",
+          "type": "codehinter",
+          "lineNumbers": false,
+          "description": "Enter user id",
+          "height": "36px",
+          "className": "codehinter-plugins",
+          "placeholder": "Enter user id"
+        }
+      },
+      "update_ticket": {
+        "ticket_id": {
+          "label": "Ticket ID",
+          "key": "ticket_id",
+          "type": "codehinter",
+          "lineNumbers": false,
+          "description": "Enter ticket id",
+          "height": "36px",
+          "className": "codehinter-plugins",
+          "placeholder": "Enter ticket id"
+        },
+        "body": {
+          "label": "body",
+          "key": "body",
+          "type": "codehinter",
+          "className": "codehinter-plugins",
+          "height": "150px",
+          "editorType": "extendedSingleLine",
+          "description": "Enter ticket",
+          "placeholder": "Enter ticket"
+        }
+      },
+      "search": {
+        "query": {
+          "label": "Query",
+          "key": "query",
+          "type": "codehinter",
+          "lineNumbers": false,
+          "className": "codehinter-plugins",
+          "height": "36px",
+          "description": "Enter query",
+          "placeholder": "type:ticket status:open"
+        }
+      }
+    },
+    "introspectionMethods": [],
+    "supportsTestConnection": false,
+    "sources": [
+      {
+        "collection": "core",
+        "package": "zendesk"
+      }
+    ]
+  }
+}

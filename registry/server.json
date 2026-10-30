@@ -3,7 +3,7 @@
   "name": "io.github.ToolJet/tooljet-mcp",
   "title": "ToolJet",
   "description": "Build and edit ToolJet internal tools, dashboards, business apps and workflows with Cloud OAuth.",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "websiteUrl": "https://tooljet.com/mcp",
   "repository": {
     "url": "https://github.com/ToolJet/tooljet-mcp",
