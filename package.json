@@ -21,7 +21,8 @@
     "build:plugin": "node scripts/build-plugin.mjs",
     "build:skill-plugin": "node scripts/generate-skill.mjs && node scripts/build-skill-plugin.mjs",
     "check:plugin-package": "node scripts/check-plugin-package.mjs",
-    "build:grok-plugin": "node scripts/generate-skill.mjs && node scripts/build-grok-plugin.mjs"
+    "build:grok-plugin": "node scripts/generate-skill.mjs && node scripts/build-grok-plugin.mjs",
+    "build:copilot-plugin": "node scripts/generate-skill.mjs && node scripts/build-copilot-plugin.mjs"
   },
   "keywords": [],
   "author": "",
