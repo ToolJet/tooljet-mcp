@@ -15,3 +15,7 @@ docs/specs/
 skill/references/catalog/
 skills/*/references/catalog/
 plugins/*/skills/*/references/catalog/
+
+# Agent packages are generated artifacts, not separate maintained skills.
+plugins/tooljet-gemini/
+plugins/tooljet-kiro/

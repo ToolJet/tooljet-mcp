@@ -16,10 +16,28 @@ jobs:
       - run: npm ci
       # Uses the pinned source snapshot; no ToolJet checkout or credentials required.
       - run: npm run build:skill-plugin
+      - name: Build Gemini CLI extension from the shared skill
+        run: npm run build:gemini-extension
+      - name: Build Kiro power from the shared skill
+        run: npm run build:kiro-power
       - name: Verify generated Markdown is current
         run: git diff --exit-code -- skill skills plugins
       - name: Verify generated skill plugin has no untracked files
         run: test -z "$(git ls-files --others --exclude-standard -- plugins)"
+      - name: Test Gemini and Kiro package boundaries
+        run: node --test tests/geminiKiroPackage.test.mjs
+      - name: Upload generated Gemini CLI extension for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: tooljet-gemini-${{ github.sha }}
+          path: plugins/tooljet-gemini/
+          if-no-files-found: error
+      - name: Upload generated Kiro power for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: tooljet-kiro-${{ github.sha }}
+          path: plugins/tooljet-kiro/
+          if-no-files-found: error
       - run: npm test
       - name: Build shipped bundle and verify MCP initialization
         run: npm run build:plugin

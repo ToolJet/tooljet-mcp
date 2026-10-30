@@ -162,10 +162,10 @@ name: tooljet-app-builder
 description: "Build ToolJet apps end-to-end via the tooljet-mcp tools — create apps, add datasource queries, and add components bound to them. Use whenever asked to build/scaffold a ToolJet app, dashboard, or internal tool, or to add pages/components/queries. This is a KNOWLEDGE reference (component binding rules, canvas mechanics, query schemas); YOU make all layout and design decisions."
 metadata:
   generated_by: scripts/generate-skill.mjs
-  sources:
-    - Source-verified component binding rules (${componentList.length} components)
-    - ToolJet WidgetManager catalog (${catalog.length} built-in components)
-    - ToolJet appCanvasConstants (grid mechanics)
+  sources: >-
+    Source-verified component binding rules (${componentList.length} components);
+    ToolJet WidgetManager catalog (${catalog.length} built-in components);
+    ToolJet appCanvasConstants (grid mechanics)
 ---
 
 <!-- GENERATED FILE — do not edit by hand. Run \`node scripts/generate-skill.mjs\` to regenerate. -->
@@ -1102,10 +1102,10 @@ name: tooljet-app-builder
 description: "Build ToolJet apps end-to-end via tooljet-mcp: plan pages, create or reuse data/query/component resources, wire behavior, and verify the result. Use for ToolJet apps, dashboards, internal tools, or changes to existing ToolJet apps."
 metadata:
   generated_by: scripts/generate-skill.mjs
-  sources:
-    - Source-verified component binding rules (${componentList.length} components)
-    - ToolJet WidgetManager catalog (${catalog.length} built-in components)
-    - ToolJet appCanvasConstants (grid mechanics)
+  sources: >-
+    Source-verified component binding rules (${componentList.length} components);
+    ToolJet WidgetManager catalog (${catalog.length} built-in components);
+    ToolJet appCanvasConstants (grid mechanics)
 ---
 
 <!-- GENERATED FILE — do not edit by hand. Run \`node scripts/generate-skill.mjs\` to regenerate every host package. -->

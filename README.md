@@ -6,6 +6,13 @@ An MCP server that lets a coding agent (Codex, Claude Code, …) build and maint
 
 For remote HTTP clients, [OAuth setup](docs/oauth.md) connects through the workspace's ToolJet login and consent flow without copying a PAT. OAuth is Cloud-only in this release and requires the companion ToolJet Cloud backend with `MCP_OAUTH_ENABLED=true` and all five OAuth migrations. Existing local PAT plugins remain supported; the prerequisites below describe that local setup.
 
+## Gemini CLI and Kiro
+
+Build a [Gemini CLI extension](docs/gemini.md) or [Kiro power](docs/kiro.md)
+from the same maintained skill, then configure a native Cloud OAuth connection.
+Generated packages are ignored build artifacts; local installation does not
+establish public gallery availability or successful live OAuth/app editing.
+
 ## Prerequisites
 
 - A ToolJet instance with personal access token support.

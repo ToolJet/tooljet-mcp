@@ -20,7 +20,9 @@
     "sync:skill": "node scripts/sync-skill.mjs --all",
     "build:plugin": "node scripts/build-plugin.mjs",
     "build:skill-plugin": "node scripts/generate-skill.mjs && node scripts/build-skill-plugin.mjs",
-    "check:plugin-package": "node scripts/check-plugin-package.mjs"
+    "check:plugin-package": "node scripts/check-plugin-package.mjs",
+    "build:gemini-extension": "node scripts/generate-skill.mjs && node scripts/build-gemini-extension.mjs",
+    "build:kiro-power": "node scripts/generate-skill.mjs && node scripts/build-kiro-power.mjs"
   },
   "keywords": [],
   "author": "",
