@@ -62,6 +62,22 @@ Use approved data sources only. Review permissions, SQL and custom code before a
 deployment. The plugin does not make an app public, migrate a spreadsheet automatically,
 or promise authorization correctness from a visual preview.
 
+## Live compatibility check — 29 October 2026
+
+Grok Build 1.0.60 stable was tested with the installed package in an isolated Grok
+profile against a dedicated private ToolJet Cloud workspace. Native OAuth login and
+workspace discovery succeeded. Grok inspected an existing synthetic QA app, changed
+one Text component, read the exact value back, and passed structural validation with
+no errors or warnings. A separate browser check confirmed the saved text and working
+table search and sorting. This was a bounded edit, not a full new-app generation test.
+
+After the original access token's documented ten-minute maximum lifetime, a fresh
+native Grok diagnostic completed the authenticated handshake and discovered 72 tools.
+A restarted Grok session then read the saved app text successfully without another
+login. This is behavioral evidence of renewal and reconnect, not a wire-level token
+endpoint trace or a long-running soak test. No PAT fallback or credential transfer was
+used, and no OAuth credential store was inspected.
+
 ## Maintainer and reviewer checks
 
 Build with `npm run build:grok-plugin`; this copies the canonical skill rather than
