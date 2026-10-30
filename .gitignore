@@ -18,3 +18,6 @@ plugins/*/skills/*/references/catalog/
 
 # Grok distribution is built in CI and published separately, not maintained in source.
 plugins/tooljet-grok/
+
+# Copilot package is generated for review/distribution, never maintained in source.
+plugins/tooljet-copilot/

@@ -15,6 +15,13 @@ workspace selection, validation and reviewer checks. Build it with
 `npm run build:grok-plugin`; it reuses the canonical skill and does not ship a PAT or
 local MCP runtime. Live Grok OAuth compatibility must be verified before marketplace submission.
 
+### GitHub Copilot
+
+See [Copilot setup](docs/copilot.md) for the shared app-builder skill package and
+native Cloud OAuth connection instructions. `npm run build:copilot-plugin` builds
+ignored distribution output; no separate skill source is maintained. The package
+requires an existing ToolJet MCP connection and is not yet marketplace-listed.
+
 ### Local server
 
 - A ToolJet instance with personal access token support.

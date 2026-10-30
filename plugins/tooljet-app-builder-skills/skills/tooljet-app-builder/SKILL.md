@@ -3,10 +3,10 @@ name: tooljet-app-builder
 description: "Build ToolJet apps end-to-end via tooljet-mcp: plan pages, create or reuse data/query/component resources, wire behavior, and verify the result. Use for ToolJet apps, dashboards, internal tools, or changes to existing ToolJet apps."
 metadata:
   generated_by: scripts/generate-skill.mjs
-  sources:
-    - Source-verified component binding rules (22 components)
-    - ToolJet WidgetManager catalog (74 built-in components)
-    - ToolJet appCanvasConstants (grid mechanics)
+  sources: >-
+    Source-verified component binding rules (22 components);
+    ToolJet WidgetManager catalog (74 built-in components);
+    ToolJet appCanvasConstants (grid mechanics)
 ---
 
 <!-- GENERATED FILE — do not edit by hand. Run `node scripts/generate-skill.mjs` to regenerate every host package. -->
