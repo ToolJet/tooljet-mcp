@@ -18,6 +18,14 @@ function files(dir: string, prefix = ''): string[] {
 }
 
 describe('standalone app-builder skill plugin', () => {
+  it('keeps shared skill metadata compatible with the Agent Skills specification', () => {
+    const skill = readFileSync(resolve(plugin, 'skills/tooljet-app-builder/SKILL.md'), 'utf8');
+    const frontmatter = skill.match(/^---\n([\s\S]*?)\n---\n/);
+    expect(frontmatter).not.toBeNull();
+    const { metadata } = parse(frontmatter![1]);
+    expect(Object.values(metadata).every(value => typeof value === 'string')).toBe(true);
+  });
+
   it('cannot auto-register a server or run install hooks in any supported client', () => {
     expect(readdirSync(plugin).sort()).toEqual(['.claude-plugin', '.codex-plugin', 'plugin.json', 'skills']);
     for (const file of ['.claude-plugin/plugin.json', '.codex-plugin/plugin.json', 'plugin.json']) {

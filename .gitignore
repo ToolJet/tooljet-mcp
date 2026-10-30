@@ -16,6 +16,13 @@ skill/references/catalog/
 skills/*/references/catalog/
 plugins/*/skills/*/references/catalog/
 
+# Grok distribution is built in CI and published separately, not maintained in source.
+plugins/tooljet-grok/
+
+# Copilot package is generated for review/distribution, never maintained in source.
+plugins/tooljet-copilot/
+plugins/tooljet-cursor/
+
 # Agent packages are generated artifacts, not separate maintained skills.
 plugins/tooljet-gemini/
 plugins/tooljet-kiro/

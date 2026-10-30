@@ -15,6 +15,28 @@ establish public gallery availability or successful live OAuth/app editing.
 
 ## Prerequisites
 
+### Grok Build Cloud plugin
+
+See [Grok Build setup](docs/grok-build.md) for the separate native HTTP/OAuth package,
+workspace selection, validation and reviewer checks. Build it with
+`npm run build:grok-plugin`; it reuses the canonical skill and does not ship a PAT or
+local MCP runtime. Live Grok OAuth compatibility must be verified before marketplace submission.
+
+### GitHub Copilot
+
+See [Copilot setup](docs/copilot.md) for the shared app-builder skill package and
+native Cloud OAuth connection instructions. `npm run build:copilot-plugin` builds
+ignored distribution output; no separate skill source is maintained. The package
+requires an existing ToolJet MCP connection and is not yet marketplace-listed.
+
+### Cursor and MCP Registry
+
+Cursor users can use the same maintained skill with a native Cloud OAuth connection;
+see [Cursor setup](docs/cursor.md). The [official MCP Registry metadata](docs/mcp-registry.md)
+is prepared separately. Neither build publishes a marketplace or registry listing.
+
+### Local server
+
 - A ToolJet instance with personal access token support.
 - A personal access token for the target ToolJet workspace.
 - Node.js 20 or newer.
