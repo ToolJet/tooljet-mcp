@@ -1,3 +1,4 @@
+import { readCatalog } from '../lib/catalogFiles.js';
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -15,7 +16,7 @@ import { resolve } from 'node:path';
 const dataDir = resolve(__dirname, '../data');
 const read = (name: string) => JSON.parse(readFileSync(resolve(dataDir, name), 'utf8'));
 const overrides: Record<string, any> = read('datasource-contract-overrides.json');
-const catalog: Record<string, any> = read('datasource-schemas.json');
+const catalog: Record<string, any> = readCatalog(resolve(dataDir, 'datasource-schemas.json'));
 
 const STALE = 'Run: TOOLJET_ROOT=<tooljet checkout> node scripts/generate-datasource-catalog.mjs';
 

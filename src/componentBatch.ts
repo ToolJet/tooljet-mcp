@@ -1,3 +1,4 @@
+import { indexComponentReferences } from './componentReferences.js';
 import { suggestedHtmlHeight, type ReadinessComponent } from './renderReadiness.js';
 import { z } from 'zod';
 import { COMPONENT_SLOT_NAMES, componentSlotSchema } from './componentParent.js';
@@ -48,7 +49,7 @@ export interface PreparedComponentBatch {
 }
 
 /** Normalize and fully lint one page's component batch before any ToolJet write. */
-export function prepareComponentBatch(inputs: ComponentInput[], options: { canvasColor?: string } = {}): PreparedComponentBatch {
+export function prepareComponentBatch(inputs: ComponentInput[], options: { canvasColor?: string; existingComponents?: Array<{ id: string; name?: string }> } = {}): PreparedComponentBatch {
   const requested = inputs.map(({ client_ref, parent_ref, slot_name, ...component }) => ({
     ...component,
     clientRef: client_ref,
@@ -76,7 +77,8 @@ export function prepareComponentBatch(inputs: ComponentInput[], options: { canva
     );
   }
   const expanded = materializeRequiredDefaultChildren(normalized.map((result) => result.component));
-  const lint = lintComponents(expanded.components, options);
+  const references = indexComponentReferences(expanded.components, options.existingComponents);
+  const lint = lintComponents(references.components, options);
   const lateListviewChildWarnings = requested.flatMap((component) =>
     component.parent && containsListItemBinding({
       properties: component.properties,
@@ -92,8 +94,8 @@ export function prepareComponentBatch(inputs: ComponentInput[], options: { canva
       : []
   );
   return {
-    components: expanded.components,
-    errors: lint.errors,
+    components: references.components,
+    errors: [...references.errors, ...lint.errors],
     warnings: [
       ...normalized.flatMap((item) => item.warnings),
       ...expanded.warnings,
