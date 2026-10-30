@@ -4,7 +4,10 @@ import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, rm
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+import { buildAgentSkillPlugin } from './build-agent-skill-plugin.mjs';
+export { buildAgentSkillPlugin };
+
+export function buildSkillPlugin(root = resolve(dirname(fileURLToPath(import.meta.url)), '..')) {
 const name = 'tooljet-app-builder-skills';
 const output = resolve(root, 'plugins', name);
 const source = resolve(root, 'skills/tooljet-app-builder');
@@ -79,3 +82,10 @@ for (const path of ['.claude-plugin/marketplace.json', '.agents/plugins/marketpl
 }
 verifyTree(output);
 console.log(`Built plugins/${name}: skill, references, and manifests; no MCP server.`);
+
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  if (process.argv[2]) console.log(`Built ${buildAgentSkillPlugin(resolve(dirname(fileURLToPath(import.meta.url)), '..'), process.argv[2])}`);
+  else buildSkillPlugin();
+}

@@ -23,7 +23,9 @@
     "check:plugin-package": "node scripts/check-plugin-package.mjs",
     "build:grok-plugin": "node scripts/generate-skill.mjs && node scripts/build-grok-plugin.mjs",
     "build:copilot-plugin": "node scripts/generate-skill.mjs && node scripts/build-copilot-plugin.mjs",
-    "build:cursor-plugin": "node scripts/generate-skill.mjs && node scripts/build-cursor-plugin.mjs"
+    "build:cursor-plugin": "node scripts/generate-skill.mjs && node scripts/build-cursor-plugin.mjs",
+    "build:gemini-extension": "node scripts/generate-skill.mjs && node scripts/build-skill-plugin.mjs gemini",
+    "build:kiro-power": "node scripts/generate-skill.mjs && node scripts/build-skill-plugin.mjs kiro"
   },
   "keywords": [],
   "author": "",
