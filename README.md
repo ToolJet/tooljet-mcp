@@ -503,9 +503,16 @@ publishes a power, accepts terms or changes an existing account.
 
 On 29 October 2026, Kiro CLI 2.36.0 installed the generated v0.11.0 power in an
 isolated profile. The manifest passed the official Agent Plugins 1.0 schema.
-Kiro account sign-in, conversation activation, ToolJet consent, live app editing
-and reconnection remain pending. CLI installation does not prove IDE or Web
-installation; another client's OAuth success is not Kiro evidence.
+Kiro account sign-in, native power activation and skill loading, ToolJet Cloud
+OAuth, one bounded Text edit, exact persisted readback and structural validation
+all passed. The selected workspace UUID matched; the API returned its UUID as the
+name rather than the UI label. The runtime was fresh v0.11.0. A separate remote
+OAuth client independently confirmed the saved value and clean validation.
+A fresh native Kiro process read the exact saved value without another login
+more than ten minutes after the first verified authenticated call. This is
+behavioral reconnection evidence; token stores and refresh HTTP traffic were not
+inspected. Visual rendering and IDE/Web installation were not tested; another
+client's OAuth success is not Kiro evidence.
 
 Support: https://github.com/ToolJet/tooljet-mcp/issues
 
