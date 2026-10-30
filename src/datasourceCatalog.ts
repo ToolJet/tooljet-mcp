@@ -1,5 +1,5 @@
 /** Query-option schemas compiled from ToolJet's core + marketplace plugin definitions. */
-import { readFileSync } from 'node:fs';
+import { readCatalog } from '../lib/catalogFiles.js';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
@@ -114,7 +114,7 @@ const dataPath = resolve(dirname(fileURLToPath(import.meta.url)), '../data/datas
 let cache: Record<string, DatasourceQuerySchema> | null = null;
 
 function load(): Record<string, DatasourceQuerySchema> {
-  if (!cache) cache = JSON.parse(readFileSync(dataPath, 'utf8')) as Record<string, DatasourceQuerySchema>;
+  if (!cache) cache = readCatalog(dataPath) as Record<string, DatasourceQuerySchema>;
   return cache;
 }
 

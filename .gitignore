@@ -4,6 +4,7 @@ dist
 
 # macOS Finder metadata
 .DS_Store
+/tooljet-app-builder.zip
 
 # Planning/design working notes — kept locally, not part of the published package.
 docs/plans/
@@ -14,6 +15,9 @@ docs/specs/
 skill/references/catalog/
 skills/*/references/catalog/
 plugins/*/skills/*/references/catalog/
+
+# Grok distribution is built in CI and published separately, not maintained in source.
+plugins/tooljet-grok/
 
 # Copilot package is generated for review/distribution, never maintained in source.
 plugins/tooljet-copilot/

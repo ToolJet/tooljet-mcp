@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "tooljet-app-builder-skills",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "App-building guidance for an existing ToolJet MCP connection, including remote OAuth. No bundled MCP server.",
   "author": {
     "name": "ToolJet"
