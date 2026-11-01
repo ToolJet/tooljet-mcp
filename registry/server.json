@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.ToolJet/tooljet-mcp",
+  "title": "ToolJet",
+  "description": "Build and edit ToolJet internal tools, dashboards, business apps and workflows with Cloud OAuth.",
+  "version": "0.11.0",
+  "websiteUrl": "https://tooljet.com/mcp",
+  "repository": {
+    "url": "https://github.com/ToolJet/tooljet-mcp",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp-oauth.tooljet.com/mcp/{workspace_id}",
+      "variables": {
+        "workspace_id": {
+          "description": "Your ToolJet Cloud workspace UUID from https://app.tooljet.ai/<workspace-id>. Sign in through your MCP client's OAuth flow and approve the intended workspace.",
+          "isRequired": true,
+          "isSecret": false,
+          "format": "string"
+        }
+      }
+    }
+  ]
+}

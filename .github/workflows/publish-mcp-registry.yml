@@ -1,0 +1,76 @@
+name: Publish MCP Registry metadata
+
+on:
+  workflow_dispatch:
+    inputs:
+      server_name:
+        description: 'Confirm the reviewed listing: io.github.ToolJet/tooljet-mcp'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-mcp-registry
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      github.repository == 'ToolJet/tooljet-mcp' &&
+      github.ref == 'refs/heads/main' &&
+      inputs.server_name == 'io.github.ToolJet/tooljet-mcp'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node --test tests/cursorRegistry.test.mjs
+      - name: Verify the reviewed listing identity and release version
+        run: |
+          node --input-type=module - <<'JS'
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+          const server = JSON.parse(readFileSync('registry/server.json'));
+          const pkg = JSON.parse(readFileSync('package.json'));
+          assert.equal(server.name, 'io.github.ToolJet/tooljet-mcp');
+          assert.equal(server.version, pkg.version);
+          JS
+      - name: Download and verify the pinned official publisher
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error \
+            https://github.com/modelcontextprotocol/registry/releases/download/v1.8.6/mcp-publisher_linux_amd64.tar.gz \
+            --output mcp-publisher.tar.gz
+          echo '1fbe93fc0783c2394d8012c8d6e50a59e98cb2cc2d216264cc69f405d0e21340  mcp-publisher.tar.gz' | sha256sum --check
+          tar xzf mcp-publisher.tar.gz mcp-publisher
+      - name: Validate public metadata without publishing
+        run: ./mcp-publisher validate registry/server.json
+      - name: Authenticate this repository with GitHub OIDC
+        run: ./mcp-publisher login github-oidc
+      - name: Publish reviewed metadata
+        run: ./mcp-publisher publish registry/server.json
+      - name: Verify the public listing
+        run: |
+          node --input-type=module - <<'JS'
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+          const expected = JSON.parse(readFileSync('registry/server.json'));
+          const url = `https://registry.modelcontextprotocol.io/v0.1/servers/${encodeURIComponent(expected.name)}/versions/${encodeURIComponent(expected.version)}`;
+          const response = await fetch(url, { signal: AbortSignal.timeout(20000) });
+          assert.ok(response.ok, `Public registry verification returned HTTP ${response.status}`);
+          const { server } = await response.json();
+          assert.equal(server.name, expected.name);
+          assert.equal(server.version, expected.version);
+          assert.equal(server.remotes[0].url, expected.remotes[0].url);
+          assert.equal(server.remotes[0].variables.workspace_id.isRequired, true);
+          console.log(`Verified ${server.name} ${server.version} in the public registry.`);
+          JS
