@@ -52501,9 +52501,18 @@ var SAMPLE_BLANKS = {
   // The sample's 'set up your workspace' line is not a build's; completeTitle alone reads fine.
   ShadQuestionnaire: { completeText: "" }
 };
+var PACK_SAMPLE_TEXT = ["label", "title", "resourceTitle", "subTitle", "message"];
 function registerPackDefinitions(extra) {
   packDefaultDefinition("");
-  Object.assign(cached2 ?? (cached2 = {}), extra);
+  const defs = extra;
+  for (const def of Object.values(defs)) {
+    for (const key4 of PACK_SAMPLE_TEXT) {
+      const entry = def?.properties?.[key4];
+      if (entry && typeof entry.value === "string" && entry.value && !entry.value.trim().startsWith("{{"))
+        def.properties[key4] = { ...entry, value: "" };
+    }
+  }
+  Object.assign(cached2 ?? (cached2 = {}), defs);
 }
 function packDefaultDefinition(type) {
   if (!cached2) {
