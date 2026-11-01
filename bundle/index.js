@@ -61091,7 +61091,11 @@ var defaultPack = () => {
   const raw = process.env.MCP_AGENT_PACK;
   return (raw === void 0 ? "shadcn" : raw).trim().toLowerCase() || void 0;
 };
-var savedComponentLibrary = (library) => library === "ui2" && defaultPack() ? `pack:${defaultPack()}` : library;
+var savedComponentLibrary = (library, pack) => {
+  const chosen = pack?.trim().toLowerCase() || defaultPack();
+  return library === "ui2" && chosen ? `pack:${chosen}` : library;
+};
+var COMPONENT_PACK_DESCRIPTION = `The component pack a UI 2.0 app is built with, saved on the app (the components panel lists it): "shadcn" (Rocket 2.0, ToolJet's own look), "antd" (Ant Design) or "mui" (Material UI). Pass it when the user names a design system; then build with that pack's Lib_<pack>_* widgets. Omitted, the default pack.`;
 var COMPONENT_LIBRARY_NAMES = {
   ui1: "ToolJet UI 1.0",
   ui2: "ToolJet UI 2.0"
@@ -67473,9 +67477,14 @@ var componentSlotSchema = external_exports.union([
   external_exports.string().regex(LIBRARY_TAB_SLOT)
 ]);
 var ENCODED_SLOT_SUFFIXES = ["header", "footer", "modal"];
-function encodeComponentParent(parentId, slotName) {
+function isPackContainerType(type) {
+  return typeof type === "string" && (type.startsWith("Lib_") || type === "PackComponent" || type === "LibraryComponent");
+}
+function encodeComponentParent(parentId, slotName, parentType) {
   if (!slotName)
     return parentId;
+  if (isPackContainerType(parentType))
+    return `${decodeComponentParent(parentId).parentId}-${slotName}`;
   if (slotName === "body")
     return decodeComponentParent(parentId).parentId;
   const base2 = decodeComponentParent(parentId).parentId;
@@ -67483,6 +67492,8 @@ function encodeComponentParent(parentId, slotName) {
   return tab ? `${base2}-${tab[1]}` : `${base2}-${slotName}`;
 }
 function decodeComponentParent(parentId) {
+  if (parentId.endsWith("-body"))
+    return { parentId: parentId.slice(0, -"-body".length), slotName: "body" };
   for (const slotName of ENCODED_SLOT_SUFFIXES) {
     const suffix = `-${slotName}`;
     if (parentId.endsWith(suffix)) {
@@ -72870,6 +72881,7 @@ function createClient(auth, config2) {
         refToId.set(e.spec.name, e.id);
     }
     const diff = {};
+    const typeById = new Map(entries.map((e) => [e.id, e.spec.type]));
     for (const e of entries) {
       if (e.spec.parent && e.spec.parentRef) {
         throw new Error(`createComponents "${e.spec.name}": set EITHER parent or parentRef, not both.`);
@@ -72882,8 +72894,10 @@ function createClient(auth, config2) {
       if (e.spec.slotName && !resolvedParent) {
         throw new Error(`createComponents "${e.spec.name}": slotName requires parent or parentRef.`);
       }
-      if (resolvedParent)
-        dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName);
+      if (resolvedParent) {
+        const parentType = typeById.get(resolvedParent) ?? e.spec.parentType;
+        dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName, parentType);
+      }
       const submit = e.spec.type === "Form" ? dto.properties?.buttonToSubmit : void 0;
       const submitId = submit && typeof submit.value === "string" ? refToId.get(submit.value) ?? entries.find((other) => !other.spec.clientRef && other.spec.name === submit.value)?.id : void 0;
       if (submit && submitId) {
@@ -73959,7 +73973,8 @@ function createAppTool(client) {
       name: external_exports.string().min(1),
       theme: external_exports.union([external_exports.string().min(1), derivedThemeSchema]).optional(),
       app_mode: external_exports.enum(["light", "dark"]).optional().describe("Open the app in this mode. Pass 'dark' when the request asks for a dark app, so the theme's dark values paint every surface; never paint dark backgrounds by hand on a light-mode app."),
-      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in, saved on the app (the components panel lists it). Default "ui2", ToolJet UI 2.0; "ui1" (ToolJet UI 1.0, the native widgets) only when the user asks for it.')
+      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in, saved on the app (the components panel lists it). Default "ui2", ToolJet UI 2.0; "ui1" (ToolJet UI 1.0, the native widgets) only when the user asks for it.'),
+      component_pack: external_exports.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION)
     },
     async handler(args) {
       try {
@@ -73973,10 +73988,10 @@ function createAppTool(client) {
         const result = {
           ...created,
           component_library: componentLibrary,
-          ...componentLibrary === "ui2" && defaultPack() ? { component_pack: defaultPack() } : {},
+          ...componentLibrary === "ui2" && (args.component_pack || defaultPack()) ? { component_pack: (args.component_pack || defaultPack()).toLowerCase() } : {},
           theme: { mode: "workspace_default" }
         };
-        const savedLibrary = savedComponentLibrary(componentLibrary);
+        const savedLibrary = savedComponentLibrary(componentLibrary, args.component_pack);
         const saveLibrary = () => Promise.resolve().then(() => client.updateAppSettings({
           appId: created.app_id,
           versionId: created.version_id,
@@ -74268,7 +74283,8 @@ var SETTING_KEYS = [
   "navigation_position",
   "navigation_style",
   "navigation_collapsible",
-  "component_library"
+  "component_library",
+  "component_pack"
 ];
 function persistenceMismatches(args, snapshot2) {
   const global2 = snapshot2.global_settings;
@@ -74286,8 +74302,8 @@ function persistenceMismatches(args, snapshot2) {
   }
   if (args.app_mode !== void 0)
     expectEqual("app_mode", global2.appMode, args.app_mode);
-  if (args.component_library !== void 0)
-    expectEqual("component_library", global2.componentLibrary, savedComponentLibrary(args.component_library));
+  if (args.component_library !== void 0 || args.component_pack !== void 0)
+    expectEqual("component_library", global2.componentLibrary, savedComponentLibrary(args.component_library ?? "ui2", args.component_pack));
   if (args.theme_id !== void 0) {
     const theme = global2.theme;
     expectEqual("theme_id", theme?.id, args.theme_id);
@@ -74337,7 +74353,8 @@ function updateAppSettingsTool(client) {
       navigation_position: external_exports.enum(["side", "top"]).optional(),
       navigation_style: external_exports.enum(["texticon", "text", "icon"]).optional(),
       navigation_collapsible: external_exports.boolean().optional(),
-      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in: "ui1" ToolJet UI 1.0 (native widgets) or "ui2" ToolJet UI 2.0 (Shad* types). Change it only when the user asks to move the app to the other library.')
+      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in: "ui1" ToolJet UI 1.0 (native widgets) or "ui2" ToolJet UI 2.0 (Shad* types). Change it only when the user asks to move the app to the other library.'),
+      component_pack: external_exports.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION)
     },
     async handler(requested) {
       try {
@@ -74372,7 +74389,7 @@ function updateAppSettingsTool(client) {
           ...args.app_mode !== void 0 ? { appMode: args.app_mode } : {},
           ...theme ? { theme } : {},
           // UI 2.0 is saved as the default pack ("pack:<id>"), as create_app does, so the panel shows that pack.
-          ...args.component_library !== void 0 ? { componentLibrary: savedComponentLibrary(args.component_library) } : {}
+          ...args.component_library !== void 0 || args.component_pack !== void 0 ? { componentLibrary: savedComponentLibrary(args.component_library ?? "ui2", args.component_pack) } : {}
         };
         const properties = {
           ...args.hide_header !== void 0 ? { hideHeader: args.hide_header } : {},
@@ -78441,6 +78458,9 @@ function polishFlexRows(input) {
       continue;
     if (rect2.width < 39 || rect2.left >= 2 && rect2.left + rect2.width <= 41)
       continue;
+    const band = styleText(root, "backgroundColor").toLowerCase();
+    if (band && band !== "transparent" && !band.startsWith("var(--cc-appbackground"))
+      continue;
     const raw = text2(prop3(root, "padding"));
     const padding = raw === "" ? 12 : Number(raw) || 0;
     if (padding >= PAGE_MARGIN)
@@ -81956,7 +81976,8 @@ function diffPageInPlace(stored, planned, definitions = bundledDefinitions(), ne
     if (childOrder)
       properties = { ...properties, childOrder: childOrderProperty(childOrder) };
     const { clientRef: _clientRef, parentRef: _parentRef, ...rest } = spec;
-    const resolved = { ...rest, properties, id, ...parent ? { parent } : {} };
+    const parentType = parent ? planned.find((other) => idOf.get(other) === decodeComponentParent(parent).parentId)?.type : void 0;
+    const resolved = { ...rest, properties, id, ...parent ? { parent } : {}, ...parentType ? { parentType } : {} };
     if (!parent)
       delete resolved.parent;
     const existing = storedByName.get(spec.name);
@@ -81967,7 +81988,7 @@ function diffPageInPlace(stored, planned, definitions = bundledDefinitions(), ne
     let why;
     if (existing.type !== spec.type)
       why = `type ${existing.type} -> ${spec.type}`;
-    else if ((existing.parent ?? void 0) !== (parent ? encodeComponentParent(parent, spec.slotName) : void 0))
+    else if ((existing.parent ?? void 0) !== (parent ? encodeComponentParent(parent, spec.slotName, parentType) : void 0))
       why = "parent";
     else if (!definitions[spec.type])
       why = "no default definition for this widget";

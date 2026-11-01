@@ -31,15 +31,22 @@ export const componentSlotSchema = z.union([
 
 const ENCODED_SLOT_SUFFIXES = ['header', 'footer', 'modal'] as const;
 
+/** A pack widget (Lib_* as planned, PackComponent or LibraryComponent as stored) draws each slot, its body included,
+ *  on a canvas "<id>-<slot>" (SdkComponentHost renderSlot), unlike ToolJet's own containers whose body is the bare id. */
+export function isPackContainerType(type: unknown): boolean {
+  return typeof type === 'string' && (type.startsWith('Lib_') || type === 'PackComponent' || type === 'LibraryComponent');
+}
+
 /**
  * ToolJet persists header/footer placement by suffixing the parent component id. The MCP surface
  * exposes a stable slot name so callers never need to know that storage convention. Body children
- * use the unsuffixed parent id. Kanban's separate card-click canvas uses the modal suffix. A tab's
+ * use the unsuffixed parent id, except under a pack widget, whose every slot is suffixed (parentType). Kanban's separate card-click canvas uses the modal suffix. A tab's
  * children sit on "<tabs id>-<tab item id>" (frontend Tabs.jsx: SubContainer id={`${id}-${tab.id}`});
  * tab item ids are t0, t1, ..., which no UUID segment can end with, so the suffix decodes unambiguously.
  */
-export function encodeComponentParent(parentId: string, slotName?: ComponentSlotName): string {
+export function encodeComponentParent(parentId: string, slotName?: ComponentSlotName, parentType?: string): string {
   if (!slotName) return parentId;
+  if (isPackContainerType(parentType)) return `${decodeComponentParent(parentId).parentId}-${slotName}`;
   if (slotName === 'body') return decodeComponentParent(parentId).parentId;
   const base = decodeComponentParent(parentId).parentId;
   const tab = TAB_SLOT.exec(slotName);
@@ -50,6 +57,8 @@ export function decodeComponentParent(parentId: string): {
   parentId: string;
   slotName: ComponentSlotName;
 } {
+  // a pack widget's body canvas (see isPackContainerType)
+  if (parentId.endsWith('-body')) return { parentId: parentId.slice(0, -'-body'.length), slotName: 'body' };
   for (const slotName of ENCODED_SLOT_SUFFIXES) {
     const suffix = `-${slotName}`;
     if (parentId.endsWith(suffix)) {
