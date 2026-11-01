@@ -69174,9 +69174,15 @@ function lintCanvasSideGutter(components) {
   const roots = components.filter((component) => !parentPlacement(component) && !EXEMPT.has(component.type ?? ""));
   if (roots.length < 3)
     return [];
+  const band = (component) => {
+    if (!["FlexContainer", "Container"].includes(component.type ?? ""))
+      return false;
+    const colour = String(propVal2(component.styles, "backgroundColor") ?? "").trim().toLowerCase();
+    return !!colour && colour !== "transparent" && !colour.startsWith("var(--cc-appbackground");
+  };
   const offenders = roots.filter((component) => {
     const rect2 = component.layouts?.desktop ?? component.layout;
-    if (!rect2 || typeof rect2.left !== "number" || typeof rect2.width !== "number")
+    if (!rect2 || typeof rect2.left !== "number" || typeof rect2.width !== "number" || band(component))
       return false;
     return rect2.left < MIN_LEFT || rect2.left + rect2.width > MAX_RIGHT;
   });
