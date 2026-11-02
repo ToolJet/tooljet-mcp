@@ -3089,22 +3089,22 @@ var require_compile = __commonJS({
       }
     }
     exports.compileSchema = compileSchema;
-    function resolveRef4(root, baseId, ref2) {
+    function resolveRef4(root2, baseId, ref2) {
       var _a3;
       ref2 = (0, resolve_1.resolveUrl)(this.opts.uriResolver, baseId, ref2);
-      const schOrFunc = root.refs[ref2];
+      const schOrFunc = root2.refs[ref2];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve8.call(this, root, ref2);
+      let _sch = resolve9.call(this, root2, ref2);
       if (_sch === void 0) {
-        const schema = (_a3 = root.localRefs) === null || _a3 === void 0 ? void 0 : _a3[ref2];
+        const schema = (_a3 = root2.localRefs) === null || _a3 === void 0 ? void 0 : _a3[ref2];
         const { schemaId } = this.opts;
         if (schema)
-          _sch = new SchemaEnv({ schema, schemaId, root, baseId });
+          _sch = new SchemaEnv({ schema, schemaId, root: root2, baseId });
       }
       if (_sch === void 0)
         return;
-      return root.refs[ref2] = inlineOrCompile.call(this, _sch);
+      return root2.refs[ref2] = inlineOrCompile.call(this, _sch);
     }
     exports.resolveRef = resolveRef4;
     function inlineOrCompile(sch) {
@@ -3122,23 +3122,23 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve8(root, ref2) {
+    function resolve9(root2, ref2) {
       let sch;
       while (typeof (sch = this.refs[ref2]) == "string")
         ref2 = sch;
-      return sch || this.schemas[ref2] || resolveSchema.call(this, root, ref2);
+      return sch || this.schemas[ref2] || resolveSchema.call(this, root2, ref2);
     }
-    function resolveSchema(root, ref2) {
+    function resolveSchema(root2, ref2) {
       const p = this.opts.uriResolver.parse(ref2);
       const refPath = (0, resolve_1._getFullPath)(this.opts.uriResolver, p);
-      let baseId = (0, resolve_1.getFullPath)(this.opts.uriResolver, root.baseId, void 0);
-      if (Object.keys(root.schema).length > 0 && refPath === baseId) {
-        return getJsonPointer.call(this, p, root);
+      let baseId = (0, resolve_1.getFullPath)(this.opts.uriResolver, root2.baseId, void 0);
+      if (Object.keys(root2.schema).length > 0 && refPath === baseId) {
+        return getJsonPointer.call(this, p, root2);
       }
       const id = (0, resolve_1.normalizeId)(refPath);
       const schOrRef = this.refs[id] || this.schemas[id];
       if (typeof schOrRef == "string") {
-        const sch = resolveSchema.call(this, root, schOrRef);
+        const sch = resolveSchema.call(this, root2, schOrRef);
         if (typeof (sch === null || sch === void 0 ? void 0 : sch.schema) !== "object")
           return;
         return getJsonPointer.call(this, p, sch);
@@ -3153,7 +3153,7 @@ var require_compile = __commonJS({
         const schId = schema[schemaId];
         if (schId)
           baseId = (0, resolve_1.resolveUrl)(this.opts.uriResolver, baseId, schId);
-        return new SchemaEnv({ schema, schemaId, root, baseId });
+        return new SchemaEnv({ schema, schemaId, root: root2, baseId });
       }
       return getJsonPointer.call(this, p, schOrRef);
     }
@@ -3165,7 +3165,7 @@ var require_compile = __commonJS({
       "dependencies",
       "definitions"
     ]);
-    function getJsonPointer(parsedRef, { baseId, schema, root }) {
+    function getJsonPointer(parsedRef, { baseId, schema, root: root2 }) {
       var _a3;
       if (((_a3 = parsedRef.fragment) === null || _a3 === void 0 ? void 0 : _a3[0]) !== "/")
         return;
@@ -3184,10 +3184,10 @@ var require_compile = __commonJS({
       let env2;
       if (typeof schema != "boolean" && schema.$ref && !(0, util_1.schemaHasRulesButRef)(schema, this.RULES)) {
         const $ref = (0, resolve_1.resolveUrl)(this.opts.uriResolver, baseId, schema.$ref);
-        env2 = resolveSchema.call(this, root, $ref);
+        env2 = resolveSchema.call(this, root2, $ref);
       }
       const { schemaId } = this.opts;
-      env2 = env2 || new SchemaEnv({ schema, schemaId, root, baseId });
+      env2 = env2 || new SchemaEnv({ schema, schemaId, root: root2, baseId });
       if (env2.schema !== env2.root.schema)
         return env2;
       return void 0;
@@ -3753,7 +3753,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve8(baseURI, relativeURI, options2) {
+    function resolve9(baseURI, relativeURI, options2) {
       const schemelessOptions = options2 ? Object.assign({ scheme: "null" }, options2) : { scheme: "null" };
       const { parsed: baseParsed, malformedAuthorityOrPort: baseMalformed } = parseWithStatus(baseURI, schemelessOptions);
       const { parsed: relativeParsed, malformedAuthorityOrPort: relativeMalformed } = parseWithStatus(relativeURI, schemelessOptions);
@@ -3764,49 +3764,49 @@ var require_fast_uri = __commonJS({
       schemelessOptions.skipEscape = true;
       return serialize(resolved, schemelessOptions);
     }
-    function resolveComponent(base2, relative, options2, skipNormalization) {
+    function resolveComponent(base2, relative2, options2, skipNormalization) {
       const target2 = {};
       if (!skipNormalization) {
         base2 = parse5(serialize(base2, options2), options2);
-        relative = parse5(serialize(relative, options2), options2);
+        relative2 = parse5(serialize(relative2, options2), options2);
       }
       options2 = options2 || {};
-      if (!options2.tolerant && relative.scheme) {
-        target2.scheme = relative.scheme;
-        target2.userinfo = relative.userinfo;
-        target2.host = relative.host;
-        target2.port = relative.port;
-        target2.path = removeDotSegments(relative.path || "");
-        target2.query = relative.query;
+      if (!options2.tolerant && relative2.scheme) {
+        target2.scheme = relative2.scheme;
+        target2.userinfo = relative2.userinfo;
+        target2.host = relative2.host;
+        target2.port = relative2.port;
+        target2.path = removeDotSegments(relative2.path || "");
+        target2.query = relative2.query;
       } else {
-        if (relative.userinfo !== void 0 || relative.host !== void 0 || relative.port !== void 0) {
-          target2.userinfo = relative.userinfo;
-          target2.host = relative.host;
-          target2.port = relative.port;
-          target2.path = removeDotSegments(relative.path || "");
-          target2.query = relative.query;
+        if (relative2.userinfo !== void 0 || relative2.host !== void 0 || relative2.port !== void 0) {
+          target2.userinfo = relative2.userinfo;
+          target2.host = relative2.host;
+          target2.port = relative2.port;
+          target2.path = removeDotSegments(relative2.path || "");
+          target2.query = relative2.query;
         } else {
-          if (!relative.path) {
+          if (!relative2.path) {
             target2.path = base2.path;
-            if (relative.query !== void 0) {
-              target2.query = relative.query;
+            if (relative2.query !== void 0) {
+              target2.query = relative2.query;
             } else {
               target2.query = base2.query;
             }
           } else {
-            if (relative.path[0] === "/") {
-              target2.path = removeDotSegments(relative.path);
+            if (relative2.path[0] === "/") {
+              target2.path = removeDotSegments(relative2.path);
             } else {
               if ((base2.userinfo !== void 0 || base2.host !== void 0 || base2.port !== void 0) && !base2.path) {
-                target2.path = "/" + relative.path;
+                target2.path = "/" + relative2.path;
               } else if (!base2.path) {
-                target2.path = relative.path;
+                target2.path = relative2.path;
               } else {
-                target2.path = base2.path.slice(0, base2.path.lastIndexOf("/") + 1) + relative.path;
+                target2.path = base2.path.slice(0, base2.path.lastIndexOf("/") + 1) + relative2.path;
               }
               target2.path = removeDotSegments(target2.path);
             }
-            target2.query = relative.query;
+            target2.query = relative2.query;
           }
           target2.userinfo = base2.userinfo;
           target2.host = base2.host;
@@ -3814,7 +3814,7 @@ var require_fast_uri = __commonJS({
         }
         target2.scheme = base2.scheme;
       }
-      target2.fragment = relative.fragment;
+      target2.fragment = relative2.fragment;
       return target2;
     }
     function equal(uriA, uriB, options2) {
@@ -4037,7 +4037,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve8,
+      resolve: resolve9,
       resolveComponent,
       equal,
       serialize,
@@ -4342,8 +4342,8 @@ var require_core = __commonJS({
           keyRef = sch;
         if (sch === void 0) {
           const { schemaId } = this.opts;
-          const root = new compile_1.SchemaEnv({ schema: {}, schemaId });
-          sch = compile_1.resolveSchema.call(this, root, keyRef);
+          const root2 = new compile_1.SchemaEnv({ schema: {}, schemaId });
+          sch = compile_1.resolveSchema.call(this, root2, keyRef);
           if (!sch)
             return;
           this.refs[keyRef] = sch;
@@ -4704,20 +4704,20 @@ var require_ref = __commonJS({
       code(cxt) {
         const { gen, schema: $ref, it } = cxt;
         const { baseId, schemaEnv: env2, validateName, opts, self } = it;
-        const { root } = env2;
-        if (($ref === "#" || $ref === "#/") && baseId === root.baseId)
+        const { root: root2 } = env2;
+        if (($ref === "#" || $ref === "#/") && baseId === root2.baseId)
           return callRootRef();
-        const schOrEnv = compile_1.resolveRef.call(self, root, baseId, $ref);
+        const schOrEnv = compile_1.resolveRef.call(self, root2, baseId, $ref);
         if (schOrEnv === void 0)
           throw new ref_error_1.default(it.opts.uriResolver, baseId, $ref);
         if (schOrEnv instanceof compile_1.SchemaEnv)
           return callValidate(schOrEnv);
         return inlineRefSchema(schOrEnv);
         function callRootRef() {
-          if (env2 === root)
+          if (env2 === root2)
             return callRef(cxt, validateName, env2, env2.$async);
-          const rootName = gen.scopeValue("root", { ref: root });
-          return callRef(cxt, (0, codegen_1._)`${rootName}.validate`, root, root.$async);
+          const rootName = gen.scopeValue("root", { ref: root2 });
+          return callRef(cxt, (0, codegen_1._)`${rootName}.validate`, root2, root2.$async);
         }
         function callValidate(sch) {
           const v = getValidate(cxt, sch);
@@ -22013,9 +22013,9 @@ var require_anchors = __commonJS({
       }
       return true;
     }
-    function anchorNames(root) {
+    function anchorNames(root2) {
       const anchors = /* @__PURE__ */ new Set();
-      visit.visit(root, {
+      visit.visit(root2, {
         Value(_key, node2) {
           if (node2.anchor)
             anchors.add(node2.anchor);
@@ -25574,10 +25574,10 @@ var require_resolve_block_map = __commonJS({
       let offset = bm.offset;
       let commentEnd = null;
       for (const collItem of bm.items) {
-        const { start, key: key4, sep, value: value2 } = collItem;
+        const { start, key: key4, sep: sep2, value: value2 } = collItem;
         const keyProps = resolveProps.resolveProps(start, {
           indicator: "explicit-key-ind",
-          next: key4 ?? sep?.[0],
+          next: key4 ?? sep2?.[0],
           offset,
           onError,
           parentIndent: bm.indent,
@@ -25591,7 +25591,7 @@ var require_resolve_block_map = __commonJS({
             else if ("indent" in key4 && key4.indent !== bm.indent)
               onError(offset, "BAD_INDENT", startColMsg);
           }
-          if (!keyProps.anchor && !keyProps.tag && !sep) {
+          if (!keyProps.anchor && !keyProps.tag && !sep2) {
             commentEnd = keyProps.end;
             if (keyProps.comment) {
               if (map2.comment)
@@ -25615,7 +25615,7 @@ var require_resolve_block_map = __commonJS({
         ctx.atKey = false;
         if (utilMapIncludes.mapIncludes(ctx, map2.items, keyNode))
           onError(keyStart, "DUPLICATE_KEY", "Map keys must be unique");
-        const valueProps = resolveProps.resolveProps(sep ?? [], {
+        const valueProps = resolveProps.resolveProps(sep2 ?? [], {
           indicator: "map-value-ind",
           next: value2,
           offset: keyNode.range[2],
@@ -25631,7 +25631,7 @@ var require_resolve_block_map = __commonJS({
             if (ctx.options.strict && keyProps.start < valueProps.found.offset - 1024)
               onError(keyNode.range, "KEY_OVER_1024_CHARS", "The : indicator must be at most 1024 chars after the start of an implicit block mapping key");
           }
-          const valueNode = value2 ? composeNode(ctx, value2, valueProps, onError) : composeEmptyNode(ctx, offset, sep, null, valueProps, onError);
+          const valueNode = value2 ? composeNode(ctx, value2, valueProps, onError) : composeEmptyNode(ctx, offset, sep2, null, valueProps, onError);
           if (ctx.schema.compat)
             utilFlowIndentCheck.flowIndentCheck(bm.indent, value2, onError);
           offset = valueNode.range[2];
@@ -25722,7 +25722,7 @@ var require_resolve_end = __commonJS({
       let comment = "";
       if (end) {
         let hasSpace = false;
-        let sep = "";
+        let sep2 = "";
         for (const token of end) {
           const { source: source2, type } = token;
           switch (type) {
@@ -25736,13 +25736,13 @@ var require_resolve_end = __commonJS({
               if (!comment)
                 comment = cb;
               else
-                comment += sep + cb;
-              sep = "";
+                comment += sep2 + cb;
+              sep2 = "";
               break;
             }
             case "newline":
               if (comment)
-                sep += source2;
+                sep2 += source2;
               hasSpace = true;
               break;
             default:
@@ -25785,18 +25785,18 @@ var require_resolve_flow_collection = __commonJS({
       let offset = fc.offset + fc.start.source.length;
       for (let i = 0; i < fc.items.length; ++i) {
         const collItem = fc.items[i];
-        const { start, key: key4, sep, value: value2 } = collItem;
+        const { start, key: key4, sep: sep2, value: value2 } = collItem;
         const props2 = resolveProps.resolveProps(start, {
           flow: fcName,
           indicator: "explicit-key-ind",
-          next: key4 ?? sep?.[0],
+          next: key4 ?? sep2?.[0],
           offset,
           onError,
           parentIndent: fc.indent,
           startOnNewline: false
         });
         if (!props2.found) {
-          if (!props2.anchor && !props2.tag && !sep && !value2) {
+          if (!props2.anchor && !props2.tag && !sep2 && !value2) {
             if (i === 0 && props2.comma)
               onError(props2.comma, "UNEXPECTED_TOKEN", `Unexpected , in ${fcName}`);
             else if (i < fc.items.length - 1)
@@ -25850,8 +25850,8 @@ var require_resolve_flow_collection = __commonJS({
             }
           }
         }
-        if (!isMap && !sep && !props2.found) {
-          const valueNode = value2 ? composeNode(ctx, value2, props2, onError) : composeEmptyNode(ctx, props2.end, sep, null, props2, onError);
+        if (!isMap && !sep2 && !props2.found) {
+          const valueNode = value2 ? composeNode(ctx, value2, props2, onError) : composeEmptyNode(ctx, props2.end, sep2, null, props2, onError);
           coll.items.push(valueNode);
           offset = valueNode.range[2];
           if (isBlock(value2))
@@ -25863,7 +25863,7 @@ var require_resolve_flow_collection = __commonJS({
           if (isBlock(key4))
             onError(keyNode.range, "BLOCK_IN_FLOW", blockMsg);
           ctx.atKey = false;
-          const valueProps = resolveProps.resolveProps(sep ?? [], {
+          const valueProps = resolveProps.resolveProps(sep2 ?? [], {
             flow: fcName,
             indicator: "map-value-ind",
             next: value2,
@@ -25874,8 +25874,8 @@ var require_resolve_flow_collection = __commonJS({
           });
           if (valueProps.found) {
             if (!isMap && !props2.found && ctx.options.strict) {
-              if (sep)
-                for (const st of sep) {
+              if (sep2)
+                for (const st of sep2) {
                   if (st === valueProps.found)
                     break;
                   if (st.type === "newline") {
@@ -25892,7 +25892,7 @@ var require_resolve_flow_collection = __commonJS({
             else
               onError(valueProps.start, "MISSING_CHAR", `Missing , or : between ${fcName} items`);
           }
-          const valueNode = value2 ? composeNode(ctx, value2, valueProps, onError) : valueProps.found ? composeEmptyNode(ctx, valueProps.end, sep, null, valueProps, onError) : null;
+          const valueNode = value2 ? composeNode(ctx, value2, valueProps, onError) : valueProps.found ? composeEmptyNode(ctx, valueProps.end, sep2, null, valueProps, onError) : null;
           if (valueNode) {
             if (isBlock(value2))
               onError(valueNode.range, "BLOCK_IN_FLOW", blockMsg);
@@ -26072,7 +26072,7 @@ var require_resolve_block_scalar = __commonJS({
           chompStart = i + 1;
       }
       let value2 = "";
-      let sep = "";
+      let sep2 = "";
       let prevMoreIndented = false;
       for (let i = 0; i < contentStart; ++i)
         value2 += lines[i][0].slice(trimIndent) + "\n";
@@ -26089,24 +26089,24 @@ var require_resolve_block_scalar = __commonJS({
           indent = "";
         }
         if (type === Scalar.Scalar.BLOCK_LITERAL) {
-          value2 += sep + indent.slice(trimIndent) + content;
-          sep = "\n";
+          value2 += sep2 + indent.slice(trimIndent) + content;
+          sep2 = "\n";
         } else if (indent.length > trimIndent || content[0] === "	") {
-          if (sep === " ")
-            sep = "\n";
-          else if (!prevMoreIndented && sep === "\n")
-            sep = "\n\n";
-          value2 += sep + indent.slice(trimIndent) + content;
-          sep = "\n";
+          if (sep2 === " ")
+            sep2 = "\n";
+          else if (!prevMoreIndented && sep2 === "\n")
+            sep2 = "\n\n";
+          value2 += sep2 + indent.slice(trimIndent) + content;
+          sep2 = "\n";
           prevMoreIndented = true;
         } else if (content === "") {
-          if (sep === "\n")
+          if (sep2 === "\n")
             value2 += "\n";
           else
-            sep = "\n";
+            sep2 = "\n";
         } else {
-          value2 += sep + content;
-          sep = " ";
+          value2 += sep2 + content;
+          sep2 = " ";
           prevMoreIndented = false;
         }
       }
@@ -26288,25 +26288,25 @@ var require_resolve_flow_scalar = __commonJS({
       if (!match)
         return source2;
       let res = match[1];
-      let sep = " ";
+      let sep2 = " ";
       let pos = first.lastIndex;
       line.lastIndex = pos;
       while (match = line.exec(source2)) {
         if (match[1] === "") {
-          if (sep === "\n")
-            res += sep;
+          if (sep2 === "\n")
+            res += sep2;
           else
-            sep = "\n";
+            sep2 = "\n";
         } else {
-          res += sep + match[1];
-          sep = " ";
+          res += sep2 + match[1];
+          sep2 = " ";
         }
         pos = line.lastIndex;
       }
       const last = /[ \t]*(.*)/sy;
       last.lastIndex = pos;
       match = last.exec(source2);
-      return res + sep + (match?.[1] ?? "");
+      return res + sep2 + (match?.[1] ?? "");
     }
     function doubleQuotedValue(source2, onError) {
       let res = "";
@@ -27116,14 +27116,14 @@ var require_cst_stringify = __commonJS({
         }
       }
     }
-    function stringifyItem({ start, key: key4, sep, value: value2 }) {
+    function stringifyItem({ start, key: key4, sep: sep2, value: value2 }) {
       let res = "";
       for (const st of start)
         res += st.source;
       if (key4)
         res += stringifyToken(key4);
-      if (sep)
-        for (const st of sep)
+      if (sep2)
+        for (const st of sep2)
           res += st.source;
       if (value2)
         res += stringifyToken(value2);
@@ -28290,18 +28290,18 @@ var require_parser = __commonJS({
         if (this.type === "map-value-ind") {
           const prev = getPrevProps(this.peek(2));
           const start = getFirstKeyStartProps(prev);
-          let sep;
+          let sep2;
           if (scalar.end) {
-            sep = scalar.end;
-            sep.push(this.sourceToken);
+            sep2 = scalar.end;
+            sep2.push(this.sourceToken);
             delete scalar.end;
           } else
-            sep = [this.sourceToken];
+            sep2 = [this.sourceToken];
           const map2 = {
             type: "block-map",
             offset: scalar.offset,
             indent: scalar.indent,
-            items: [{ start, key: scalar, sep }]
+            items: [{ start, key: scalar, sep: sep2 }]
           };
           this.onKeyLine = true;
           this.stack[this.stack.length - 1] = map2;
@@ -28454,15 +28454,15 @@ var require_parser = __commonJS({
                 } else if (isFlowToken(it.key) && !includesToken(it.sep, "newline")) {
                   const start2 = getFirstKeyStartProps(it.start);
                   const key4 = it.key;
-                  const sep = it.sep;
-                  sep.push(this.sourceToken);
+                  const sep2 = it.sep;
+                  sep2.push(this.sourceToken);
                   delete it.key;
                   delete it.sep;
                   this.stack.push({
                     type: "block-map",
                     offset: this.offset,
                     indent: this.indent,
-                    items: [{ start: start2, key: key4, sep }]
+                    items: [{ start: start2, key: key4, sep: sep2 }]
                   });
                 } else if (start.length > 0) {
                   it.sep = it.sep.concat(start, this.sourceToken);
@@ -28656,13 +28656,13 @@ var require_parser = __commonJS({
             const prev = getPrevProps(parent);
             const start = getFirstKeyStartProps(prev);
             fixFlowSeqItems(fc);
-            const sep = fc.end.splice(1, fc.end.length);
-            sep.push(this.sourceToken);
+            const sep2 = fc.end.splice(1, fc.end.length);
+            sep2.push(this.sourceToken);
             const map2 = {
               type: "block-map",
               offset: fc.offset,
               indent: fc.indent,
-              items: [{ start, key: fc, sep }]
+              items: [{ start, key: fc, sep: sep2 }]
             };
             this.onKeyLine = true;
             this.stack[this.stack.length - 1] = map2;
@@ -28985,7 +28985,7 @@ var require_parse = __commonJS({
     var column;
     var token;
     var key4;
-    var root;
+    var root2;
     module.exports = function parse5(text3, reviver) {
       source2 = String(text3);
       parseState = "start";
@@ -28995,15 +28995,15 @@ var require_parse = __commonJS({
       column = 0;
       token = void 0;
       key4 = void 0;
-      root = void 0;
+      root2 = void 0;
       do {
         token = lex();
         parseStates[parseState]();
       } while (token.type !== "eof");
       if (typeof reviver === "function") {
-        return internalize({ "": root }, "", reviver);
+        return internalize({ "": root2 }, "", reviver);
       }
-      return root;
+      return root2;
     };
     function internalize(holder, name2, reviver) {
       const value2 = holder[name2];
@@ -29727,8 +29727,8 @@ var require_parse = __commonJS({
           value2 = token.value;
           break;
       }
-      if (root === void 0) {
-        root = value2;
+      if (root2 === void 0) {
+        root2 = value2;
       } else {
         const parent = stack[stack.length - 1];
         if (Array.isArray(parent)) {
@@ -45714,8 +45714,8 @@ function process2(schema, ctx, _params = { path: [], schemaPath: [] }) {
   return _result.schema;
 }
 function extractDefs(ctx, schema) {
-  const root = ctx.seen.get(schema);
-  if (!root)
+  const root2 = ctx.seen.get(schema);
+  if (!root2)
     throw new Error("Unprocessed schema. This is a bug in Zod.");
   const idToSchema = /* @__PURE__ */ new Map();
   for (const entry of ctx.seen.entries()) {
@@ -45740,7 +45740,7 @@ function extractDefs(ctx, schema) {
       entry[1].defId = id;
       return { defId: id, ref: `${uriGenerator("__shared")}#/${defsSegment}/${id}` };
     }
-    if (entry[1] === root) {
+    if (entry[1] === root2) {
       return { ref: "#" };
     }
     const uriPrefix = `#`;
@@ -45804,8 +45804,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
   }
 }
 function finalize(ctx, schema) {
-  const root = ctx.seen.get(schema);
-  if (!root)
+  const root2 = ctx.seen.get(schema);
+  if (!root2)
     throw new Error("Unprocessed schema. This is a bug in Zod.");
   const flattenRef = (zodSchema) => {
     const seen = ctx.seen.get(zodSchema);
@@ -45888,7 +45888,7 @@ function finalize(ctx, schema) {
       throw new Error("Schema is missing an `id` property");
     result.$id = ctx.external.uri(id);
   }
-  Object.assign(result, root.def ?? root.schema);
+  Object.assign(result, root2.def ?? root2.schema);
   const rootMetaId = ctx.metadataRegistry.get(schema)?.id;
   if (rootMetaId !== void 0 && result.id === rootMetaId)
     delete result.id;
@@ -50368,12 +50368,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve8) => {
+    return new Promise((resolve9) => {
       const json3 = serializeMessage(message);
       if (this._stdout.write(json3)) {
-        resolve8();
+        resolve9();
       } else {
-        this._stdout.once("drain", resolve8);
+        this._stdout.once("drain", resolve9);
       }
     });
   }
@@ -50801,7 +50801,7 @@ var readBodyDirect = (request) => {
     request[bodyBufferKey] = buffered;
     return Promise.resolve(buffered);
   }
-  const promise2 = new Promise((resolve8, reject) => {
+  const promise2 = new Promise((resolve9, reject) => {
     const chunks = [];
     let settled = false;
     const finish = (callback) => {
@@ -50819,7 +50819,7 @@ var readBodyDirect = (request) => {
         else if (recovered === void 0) reject(error51 ?? normalizeAbortError(request, incoming));
         else {
           request[bodyBufferKey] = recovered;
-          resolve8(recovered);
+          resolve9(recovered);
         }
       });
       return true;
@@ -50831,7 +50831,7 @@ var readBodyDirect = (request) => {
       finish(() => {
         const buffer = chunks.length === 1 ? chunks[0] : Buffer.concat(chunks);
         request[bodyBufferKey] = buffer;
-        resolve8(buffer);
+        resolve9(buffer);
       });
     };
     const onError = (error51) => {
@@ -51356,7 +51356,7 @@ var responseViaResponseObject = async (res, outgoing, options2 = {}) => {
         });
         if (!chunk) {
           if (i === 1) {
-            await new Promise((resolve8) => setTimeout(resolve8));
+            await new Promise((resolve9) => setTimeout(resolve9));
             maxReadCount = 3;
             continue;
           }
@@ -52036,9 +52036,9 @@ data:
       const initRequest = messages.find((m) => isInitializeRequest(m));
       const clientProtocolVersion = initRequest ? initRequest.params.protocolVersion : req.headers.get("mcp-protocol-version") ?? DEFAULT_NEGOTIATED_PROTOCOL_VERSION;
       if (this._enableJsonResponse) {
-        return new Promise((resolve8) => {
+        return new Promise((resolve9) => {
           this._streamMapping.set(streamId, {
-            resolveJson: resolve8,
+            resolveJson: resolve9,
             cleanup: () => {
               this._streamMapping.delete(streamId);
             }
@@ -52609,7 +52609,9 @@ function libraryTypeOf(component) {
     if (typeof id !== "string" || typeof name3 !== "string")
       return void 0;
     const known = libraryPacksAll().find((p) => p.pack === id);
-    return !known || known.components[name3] ? `Lib_${id}_${name3}` : void 0;
+    if (!known)
+      return `Lib_${id.toLowerCase().replace(/[^a-z0-9]+/g, "")}_${name3}`;
+    return known.components[name3] ? `${known.prefix}${name3}` : void 0;
   }
   const pack = libraryPacksAll().find((p) => p.correlationId === value2("correlationId"));
   const name2 = value2("componentName");
@@ -52664,10 +52666,12 @@ function packFromBuiltin(info, manifest) {
   return packFromManifest(packId, info.displayName || info.pack, info.version ?? "", manifest, {
     kind: "builtin",
     libraryId: "",
-    correlationId: ""
+    correlationId: "",
+    serverPack: info.pack
   });
 }
 function packFromManifest(packId, libraryName, version2, manifest, identity) {
+  const { serverPack, ...packIdentity } = identity;
   if (!manifest.components)
     return null;
   const lib = { name: libraryName };
@@ -52766,7 +52770,7 @@ function packFromManifest(packId, libraryName, version2, manifest, identity) {
     };
   }
   return {
-    pack: { pack: packId, prefix, ...identity, libraryName, version: version2, components },
+    pack: { pack: serverPack ?? packId, prefix, ...packIdentity, libraryName, version: version2, components },
     schemas,
     definitions
   };
@@ -58699,7 +58703,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve8) => setTimeout(resolve8, pollInterval));
+        await new Promise((resolve9) => setTimeout(resolve9, pollInterval));
         options2?.signal?.throwIfAborted();
       }
     } catch (error51) {
@@ -58716,7 +58720,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options2) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options2 ?? {};
-    return new Promise((resolve8, reject) => {
+    return new Promise((resolve9, reject) => {
       const earlyReject = (error51) => {
         reject(error51);
       };
@@ -58794,7 +58798,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve8(parseResult.data);
+            resolve9(parseResult.data);
           }
         } catch (error51) {
           reject(error51);
@@ -59055,12 +59059,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve8, reject) => {
+    return new Promise((resolve9, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve8, interval);
+      const timeoutId = setTimeout(resolve9, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -60151,7 +60155,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve8) => setTimeout(resolve8, pollInterval));
+      await new Promise((resolve9) => setTimeout(resolve9, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -61589,7 +61593,7 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
       graph.nodes.push(node2);
     node_ids[input.ref] = id;
   }
-  const resolve8 = (ref2) => node_ids[ref2] ?? (graph.nodes.some((n) => n.id === ref2) ? ref2 : void 0);
+  const resolve9 = (ref2) => node_ids[ref2] ?? (graph.nodes.some((n) => n.id === ref2) ? ref2 : void 0);
   const editedEdges = /* @__PURE__ */ new Set();
   for (const input of spec.edges) {
     const id = input.existing_id ?? ids?.edge_ids[input.ref] ?? randomUUID();
@@ -61599,7 +61603,7 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
     const old = graph.edges.find((e) => e.id === id);
     if (input.existing_id && !old)
       throw new Error(`Unknown existing edge: ${id}`);
-    const source2 = resolve8(input.from), target2 = resolve8(input.to);
+    const source2 = resolve9(input.from), target2 = resolve9(input.to);
     if (!source2 || !target2)
       throw new Error(`Unknown endpoint in edge ${input.ref}. Use a supplied ref or existing node ID.`);
     const sourceNode = graph.nodes.find((node2) => node2.id === source2);
@@ -61991,8 +61995,8 @@ function parseAttrs(text3) {
   return attrs;
 }
 function parseHtml(html) {
-  const root = { tag: "#root", style: {}, attrs: {}, children: [], text: "" };
-  const stack = [root];
+  const root2 = { tag: "#root", style: {}, attrs: {}, children: [], text: "" };
+  const stack = [root2];
   const re = /<!--[\s\S]*?-->|<\/\s*([a-zA-Z][\w-]*)\s*>|<([a-zA-Z][\w-]*)((?:\s+[^>]*?)?)\s*(\/?)>|([^<]+)|</g;
   let m;
   while (m = re.exec(html)) {
@@ -62030,7 +62034,7 @@ function parseHtml(html) {
       }
     }
   }
-  return root;
+  return root2;
 }
 function decodeEntities(text3) {
   return text3.replace(/&nbsp;/g, "\xA0").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&[a-z]+;|&#\d+;/gi, "x");
@@ -62191,7 +62195,7 @@ function contextFor(node2, parent) {
   }
   return { fontSize, lineHeight, width: parent.width };
 }
-function inlineRunHeight(run, ctx) {
+function inlineRunHeight(run2, ctx) {
   let maxLine = ctx.lineHeight;
   const segments = [""];
   const walk4 = (nodes, c) => {
@@ -62212,7 +62216,7 @@ function inlineRunHeight(run, ctx) {
       }
     }
   };
-  walk4(run, ctx);
+  walk4(run2, ctx);
   let lines = 0;
   for (const segment of segments) {
     const text3 = segment.replace(/\s+/g, " ").trim();
@@ -62274,15 +62278,15 @@ function childrenHeight(node2, ctx, pinned = false) {
   if (node2.tag === "tr")
     return rowHeight(children, ctx);
   let total = 0;
-  let run = [];
+  let run2 = [];
   const flush = () => {
-    if (run.length)
-      total += inlineRunHeight(run, ctx);
-    run = [];
+    if (run2.length)
+      total += inlineRunHeight(run2, ctx);
+    run2 = [];
   };
   for (const child of children) {
     if (isInline(child))
-      run.push(child);
+      run2.push(child);
     else {
       flush();
       total += blockHeight(child, ctx);
@@ -62348,17 +62352,17 @@ function flexHeight(node2, children, ctx, pinned = false) {
     return mt + pt + bt + childrenHeight(c, { ...inner, width: innerWidth });
   }));
 }
-function rootHeight(root, ctx) {
+function rootHeight(root2, ctx) {
   let total = 0;
-  let run = [];
+  let run2 = [];
   const flush = () => {
-    if (run.length)
-      total += inlineRunHeight(run, ctx);
-    run = [];
+    if (run2.length)
+      total += inlineRunHeight(run2, ctx);
+    run2 = [];
   };
-  for (const child of root.children.filter((c) => !isHidden(c))) {
+  for (const child of root2.children.filter((c) => !isHidden(c))) {
     if (isInline(child)) {
-      run.push(child);
+      run2.push(child);
       continue;
     }
     flush();
@@ -62385,9 +62389,9 @@ function estimateHtmlHeight(rawHtml, widthPx) {
   const { html, repeats } = stripHtmlBindings(rawHtml);
   if (!html.trim())
     return null;
-  const root = parseHtml(html);
+  const root2 = parseHtml(html);
   const ctx = { fontSize: DEFAULT_FONT_SIZE, lineHeight: DEFAULT_FONT_SIZE * LINE_HEIGHT_FACTOR, width: Math.max(40, widthPx) };
-  const height2 = rootHeight(root, ctx);
+  const height2 = rootHeight(root2, ctx);
   if (!Number.isFinite(height2) || height2 <= 0)
     return null;
   return { height: Math.round(height2), lowerBound: repeats };
@@ -62474,7 +62478,7 @@ function eventPayload(event) {
 function queryTriggers(summary) {
   const byId = new Map(summary.queries.map((q) => [q.id, q]));
   const byName = new Map(summary.queries.flatMap((q) => q.name ? [[q.name, q]] : []));
-  const resolve8 = (ref2) => typeof ref2 === "string" ? byId.get(ref2) ?? byName.get(ref2) : void 0;
+  const resolve9 = (ref2) => typeof ref2 === "string" ? byId.get(ref2) ?? byName.get(ref2) : void 0;
   const triggers = /* @__PURE__ */ new Map();
   for (const q of summary.queries) {
     const options2 = q.options && typeof q.options === "object" ? q.options : {};
@@ -62486,7 +62490,7 @@ function queryTriggers(summary) {
     const payload2 = eventPayload(e.event);
     if (!payload2 || payload2.actionId !== "run-query")
       continue;
-    const target2 = resolve8(payload2.queryId ?? payload2.queryName);
+    const target2 = resolve9(payload2.queryId ?? payload2.queryName);
     if (!target2)
       continue;
     const entry = triggers.get(target2.id);
@@ -62685,8 +62689,8 @@ function lintHtmlRootSurface(c, surfaceAround) {
       `${who}: rawHtml has ${roots.length} top-level nodes. ${why} Wrap everything in one root element: ${template}`
     ];
   }
-  const root = roots[0];
-  const style2 = root.style;
+  const root2 = roots[0];
+  const style2 = root2.style;
   const problems = [];
   const dynamic = truthy(propVal(c.properties, "dynamicHeight"));
   const heightValue = (style2.height ?? style2["min-height"] ?? "").trim();
@@ -62902,9 +62906,9 @@ function maskSavedIds(code) {
   return { source: source2, ids };
 }
 function namespaceAccesses(code, namespace) {
-  let root;
+  let root2;
   try {
-    root = (0, import_parser.parse)(code, { sourceType: "script", allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true });
+    root2 = (0, import_parser.parse)(code, { sourceType: "script", allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true });
   } catch {
     return [];
   }
@@ -62929,7 +62933,7 @@ function namespaceAccesses(code, namespace) {
     for (const child of Object.values(value2))
       visit(child);
   };
-  visit(root);
+  visit(root2);
   return shadowed ? [] : reads;
 }
 function runjsQueryReferences(code) {
@@ -62939,9 +62943,9 @@ function runjsComponentReferences(code) {
   return [...new Set(namespaceReads(code, "components").map((read) => read.name))];
 }
 function runjsReturnsNothing(code) {
-  let root;
+  let root2;
   try {
-    root = (0, import_parser.parse)(code, { sourceType: "script", allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true });
+    root2 = (0, import_parser.parse)(code, { sourceType: "script", allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true });
   } catch {
     return false;
   }
@@ -62956,7 +62960,7 @@ function runjsReturnsNothing(code) {
       return false;
     return Object.entries(node2).some(([key4, child]) => !["leadingComments", "trailingComments", "innerComments", "loc"].includes(key4) && typeof child === "object" && returns(child));
   };
-  return !returns(root.program);
+  return !returns(root2.program);
 }
 
 // dist/bindingSpans.js
@@ -63126,9 +63130,9 @@ function lintWhitespaceGuards(summary) {
       }
       const n = obj(x);
       if (n.type === "UnaryExpression" && n.operator === "!") {
-        const field = obj(n.argument), control = obj(field.object), root = obj(control.object);
+        const field = obj(n.argument), control = obj(field.object), root2 = obj(control.object);
         const name2 = prop(control);
-        if (prop(field) === "value" && root.type === "Identifier" && root.name === "components" && typeof name2 === "string" && reads.has(name2) && textAreas.has(name2))
+        if (prop(field) === "value" && root2.type === "Identifier" && root2.name === "components" && typeof name2 === "string" && reads.has(name2) && textAreas.has(name2))
           found.add(name2);
       }
       for (const child of Object.values(n))
@@ -63163,9 +63167,9 @@ function lintSelectedRowObjectGuards(summary) {
       continue;
     const found = /* @__PURE__ */ new Set();
     const rowName = (v) => {
-      const row = obj2(v), table = obj2(row.object), root = obj2(table.object);
+      const row = obj2(v), table = obj2(row.object), root2 = obj2(table.object);
       const name2 = member(table);
-      if (["MemberExpression", "OptionalMemberExpression"].includes(String(row.type)) && member(row) === "selectedRow" && ["MemberExpression", "OptionalMemberExpression"].includes(String(table.type)) && root.type === "Identifier" && root.name === "components" && typeof name2 === "string" && tables.has(name2))
+      if (["MemberExpression", "OptionalMemberExpression"].includes(String(row.type)) && member(row) === "selectedRow" && ["MemberExpression", "OptionalMemberExpression"].includes(String(table.type)) && root2.type === "Identifier" && root2.name === "components" && typeof name2 === "string" && tables.has(name2))
         return name2;
       return void 0;
     };
@@ -63249,10 +63253,10 @@ function lintSurfaceInsets(c) {
     const roots = parseHtml(stripHtmlBindings(raw2).html).children.filter((n) => n.tag !== "#text" || n.text.trim());
     if (roots.length !== 1 || roots[0].tag === "#text")
       return [];
-    const root = roots[0];
-    if (!horizontal2(root.style, "padding") && !horizontal2(root.style, "margin"))
+    const root2 = roots[0];
+    if (!horizontal2(root2.style, "padding") && !horizontal2(root2.style, "margin"))
       return [];
-    const paintedChild = root.children.some((n) => n.tag !== "#text" && (n.style.background || n.style["background-color"] || n.style.border));
+    const paintedChild = root2.children.some((n) => n.tag !== "#text" && (n.style.background || n.style["background-color"] || n.style.border));
     if (!paintedChild)
       return [];
     return [`Html "${c.name ?? c.id}": the background-covering root has horizontal padding/margin around a painted child surface. This shrinks its visible edges inside the component box. If it should align with adjacent native surfaces, keep the root horizontal inset at zero and put text padding inside the painted child. Preserve intentional insets/shadow clearance when browser-verified; this is advisory, not a full-width requirement.`];
@@ -63418,16 +63422,16 @@ function lintComponentStateBindings(value2, components, path) {
   if (typeof value2 !== "string")
     return [];
   const binding = value2.trim().match(/^\{\{([\s\S]*)\}\}$/);
-  let root;
+  let root2;
   if (binding) {
     try {
-      root = (0, import_parser6.parseExpression)(binding[1]);
+      root2 = (0, import_parser6.parseExpression)(binding[1]);
     } catch {
       return [];
     }
   } else if (/\.code$/.test(path)) {
     try {
-      root = (0, import_parser6.parse)(value2, { sourceType: "script", allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true }).program;
+      root2 = (0, import_parser6.parse)(value2, { sourceType: "script", allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true }).program;
     } catch {
       return [];
     }
@@ -63469,7 +63473,7 @@ function lintComponentStateBindings(value2, components, path) {
     }
     Object.values(node2).forEach(visit);
   };
-  visit(root);
+  visit(root2);
   return shadowed ? [] : [...wrongNames].map((key4) => {
     const [name2, type, prop4] = key4.split("\0");
     if (prop4.includes(".")) {
@@ -66117,8 +66121,8 @@ function fieldMap(variants) {
 function topLevelKeys(fields) {
   return new Set(Object.keys(fields).map((path) => path.split(".")[0]));
 }
-function nestedChildren(fields, root) {
-  return new Set(Object.keys(fields).filter((path) => path.startsWith(`${root}.`)).map((path) => path.slice(root.length + 1).split(".")[0]));
+function nestedChildren(fields, root2) {
+  return new Set(Object.keys(fields).filter((path) => path.startsWith(`${root2}.`)).map((path) => path.slice(root2.length + 1).split(".")[0]));
 }
 function suffixSuggestion(key4, fields) {
   const matches2 = Object.keys(fields).filter((path) => path.endsWith(`.${key4}`));
@@ -66753,17 +66757,17 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
       message: replacement ? `Option key "${key4}" is not read at this location for ${kind}/${operation}; use "${replacement}".` : `Unknown option key "${key4}" for ${kind}/${operation}; ToolJet plugins may silently drop it.`
     });
   }
-  for (const root of allowedTopLevel) {
-    const children = nestedChildren(fields, root);
-    const actual = options2[root];
+  for (const root2 of allowedTopLevel) {
+    const children = nestedChildren(fields, root2);
+    const actual = options2[root2];
     if (!children.size || !isObject2(actual))
       continue;
     for (const child of Object.keys(actual)) {
       if (!children.has(child)) {
         warnings.push({
           code: "unknown_nested_option_key",
-          path: `${root}.${child}`,
-          message: `Unknown nested option key "${root}.${child}" for ${kind}/${operation}; ToolJet may silently drop it.`
+          path: `${root2}.${child}`,
+          message: `Unknown nested option key "${root2}.${child}" for ${kind}/${operation}; ToolJet may silently drop it.`
         });
       }
     }
@@ -67188,13 +67192,13 @@ function projectedFields(c) {
   if (c.type !== "Table")
     return;
   const raw = c.properties?.data;
-  const root = expression(node(raw) && "value" in node(raw) ? node(raw).value : raw);
-  if (root?.type !== "CallExpression")
+  const root2 = expression(node(raw) && "value" in node(raw) ? node(raw).value : raw);
+  if (root2?.type !== "CallExpression")
     return;
-  const callee = node(root.callee);
+  const callee = node(root2.callee);
   if (!member3(callee) || key2(callee) !== "map")
     return;
-  const args = root.arguments;
+  const args = root2.arguments;
   if (!Array.isArray(args) || args.length !== 1)
     return;
   const callback = node(args[0]);
@@ -67258,11 +67262,11 @@ function lintSelectedRowProjections(components, extraSources = []) {
         inspect(v, label3);
       return;
     }
-    const root = expression(value2);
-    if (!root)
+    const root2 = expression(value2);
+    if (!root2)
       return;
     let shadowed = false;
-    walk3(root, (n) => {
+    walk3(root2, (n) => {
       if (Array.isArray(n.params) && /"(?:components|variables)"/.test(JSON.stringify(n.params)))
         shadowed = true;
       if (n.type === "VariableDeclarator" && /"(?:components|variables)"/.test(JSON.stringify(n.id)))
@@ -67270,7 +67274,7 @@ function lintSelectedRowProjections(components, extraSources = []) {
     });
     if (shadowed)
       return;
-    walk3(root, (n) => {
+    walk3(root2, (n) => {
       if (!member3(n))
         return;
       const field = key2(n), selection = node(n.object), table = node(selection?.object), namespace = node(table?.object);
@@ -67387,9 +67391,9 @@ function dropdownSelfDefaultWarning(value2, name2) {
   const binding = value2.trim().match(/^\{\{([\s\S]*)\}\}$/);
   if (!binding)
     return [];
-  let root;
+  let root2;
   try {
-    root = (0, import_parser14.parseExpression)(binding[1]);
+    root2 = (0, import_parser14.parseExpression)(binding[1]);
   } catch {
     return [];
   }
@@ -67426,7 +67430,7 @@ function dropdownSelfDefaultWarning(value2, name2) {
       }
     }
   };
-  list(root);
+  list(root2);
   return self ? [`DropdownV2 "${name2}": option.default reads this dropdown's own value. This does not initialize it from an existing record and can leave edit fields blank or stale when switching records. For record editing compare option.value with the raw record/draft field, preserving ID types and null; or verify explicit initialization/reset events before every edit. A missing selection must not silently clear a stored relationship. Advisory only: intentional event-driven initialization is not verified.`] : [];
 }
 function dropdownDefaultVisibilityWarning(value2, label3) {
@@ -67437,9 +67441,9 @@ function dropdownDefaultVisibilityWarning(value2, label3) {
     const binding = value2.trim().match(/^\{\{([\s\S]*)\}\}$/);
     if (!binding)
       return [];
-    let root;
+    let root2;
     try {
-      root = (0, import_parser14.parseExpression)(binding[1]);
+      root2 = (0, import_parser14.parseExpression)(binding[1]);
     } catch {
       return [];
     }
@@ -67458,10 +67462,10 @@ function dropdownDefaultVisibilityWarning(value2, label3) {
         return;
       missing = true;
     };
-    if (root.type === "ArrayExpression")
-      root.elements.forEach(option);
-    else if (root.type === "CallExpression" && root.callee?.type === "MemberExpression" && !root.callee.computed && root.callee.property?.name === "map" && root.arguments.length === 1) {
-      const callback = root.arguments[0];
+    if (root2.type === "ArrayExpression")
+      root2.elements.forEach(option);
+    else if (root2.type === "CallExpression" && root2.callee?.type === "MemberExpression" && !root2.callee.computed && root2.callee.property?.name === "map" && root2.arguments.length === 1) {
+      const callback = root2.arguments[0];
       if (callback?.type === "ArrowFunctionExpression")
         option(callback.body);
     }
@@ -67490,10 +67494,10 @@ function isPackContainerType(type) {
   return typeof type === "string" && (type.startsWith("Lib_") || type === "PackComponent" || type === "LibraryComponent");
 }
 function encodeComponentParent(parentId, slotName, parentType) {
+  if (isPackContainerType(parentType))
+    return `${decodeComponentParent(parentId).parentId}-${slotName ?? "body"}`;
   if (!slotName)
     return parentId;
-  if (isPackContainerType(parentType))
-    return `${decodeComponentParent(parentId).parentId}-${slotName}`;
   if (slotName === "body")
     return decodeComponentParent(parentId).parentId;
   const base2 = decodeComponentParent(parentId).parentId;
@@ -68446,9 +68450,9 @@ function functionStyleTableMap(value2) {
   const binding = value2.trim().match(/^\{\{([\s\S]*)\}\}$/);
   if (!binding)
     return false;
-  let root;
+  let root2;
   try {
-    root = (0, import_parser15.parseExpression)(binding[1]);
+    root2 = (0, import_parser15.parseExpression)(binding[1]);
   } catch {
     return false;
   }
@@ -68463,7 +68467,7 @@ function functionStyleTableMap(value2) {
       return true;
     return Object.values(node2).some(visit);
   };
-  return visit(root);
+  return visit(root2);
 }
 function statementBodyMapInValue(value2) {
   if (typeof value2 === "string") {
@@ -68847,9 +68851,9 @@ function lintTableProjectionRender(spec, warnings = []) {
   const binding = data.trim().match(/^\{\{([\s\S]*)\}\}$/);
   if (!binding)
     return [];
-  let root;
+  let root2;
   try {
-    root = (0, import_parser15.parseExpression)(binding[1]);
+    root2 = (0, import_parser15.parseExpression)(binding[1]);
   } catch {
     return [];
   }
@@ -68985,13 +68989,13 @@ function lintTableProjectionRender(spec, warnings = []) {
         if (seen.has(key4))
           continue;
         seen.add(key4);
-        inspect(prop4.value, key4, 0, node2 === root && !unknownOverride);
+        inspect(prop4.value, key4, 0, node2 === root2 && !unknownOverride);
       }
     }
     for (const child of Object.values(node2))
       visit(child, depth + 1);
   };
-  visit(root);
+  visit(root2);
   for (const { proven, message } of reported.values())
     (proven ? errors : warnings).push(message);
   return errors;
@@ -70853,10 +70857,10 @@ function hexLuminance(hex3) {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 function htmlRootHasDarkBackground(rawHtml) {
-  const root = rawHtml.match(/<[a-z][a-z0-9]*\b[^>]*\bstyle\s*=\s*"([^"]*)"/i);
-  if (!root)
+  const root2 = rawHtml.match(/<[a-z][a-z0-9]*\b[^>]*\bstyle\s*=\s*"([^"]*)"/i);
+  if (!root2)
     return false;
-  const declaration = root[1].match(/(?:^|;)\s*background(?:-color|-image)?\s*:\s*([^;]+)/i);
+  const declaration = root2[1].match(/(?:^|;)\s*background(?:-color|-image)?\s*:\s*([^;]+)/i);
   if (!declaration)
     return false;
   const value2 = declaration[1];
@@ -72680,7 +72684,7 @@ function createClient(auth, config2) {
         return res;
       if (Array.isArray(row) && /['"]0['"] column|column ['"]0['"]/i.test(body))
         return res;
-      await new Promise((resolve8) => setTimeout(resolve8, SCHEMA_CACHE_RETRY_DELAYS_MS[schemaWaits]));
+      await new Promise((resolve9) => setTimeout(resolve9, SCHEMA_CACHE_RETRY_DELAYS_MS[schemaWaits]));
       schemaWaits += 1;
     }
   }
@@ -72765,8 +72769,8 @@ function createClient(auth, config2) {
   async function createQuery(params) {
     const previous = queryCreateTails.get(params.versionId);
     let release;
-    const tail = new Promise((resolve8) => {
-      release = resolve8;
+    const tail = new Promise((resolve9) => {
+      release = resolve9;
     });
     queryCreateTails.set(params.versionId, tail);
     await previous;
@@ -74724,6 +74728,422 @@ function dropTableTool(client) {
   };
 }
 
+// dist/tools/codeApp.js
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { existsSync as existsSync2, mkdirSync, readFileSync as readFileSync8, readdirSync, statSync as statSync2, writeFileSync, copyFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { dirname as dirname8, join, relative, resolve as resolve7, sep } from "node:path";
+
+// dist/catalogResources.js
+import { createHash as createHash3 } from "node:crypto";
+import { readFileSync as readFileSync7 } from "node:fs";
+import { dirname as dirname7, resolve as resolve6 } from "node:path";
+import { fileURLToPath as fileURLToPath7 } from "node:url";
+
+// dist/runtimeFreshness.js
+import { createHash as createHash2 } from "node:crypto";
+import { statSync } from "node:fs";
+import { fileURLToPath as fileURLToPath6 } from "node:url";
+var TOOLJET_MCP_VERSION = "0.8.0";
+function snapshot(path) {
+  try {
+    const stat = statSync(path);
+    const source2 = `${Math.round(stat.mtimeMs * 1e3)}:${stat.size}`;
+    return {
+      buildId: createHash2("sha256").update(source2).digest("hex").slice(0, 12),
+      modifiedMs: stat.mtimeMs,
+      size: stat.size
+    };
+  } catch {
+    return { buildId: "missing", modifiedMs: -1, size: -1 };
+  }
+}
+var RuntimeFreshnessMonitor = class {
+  artifactPath;
+  loaded;
+  startedAt = (/* @__PURE__ */ new Date()).toISOString();
+  constructor(artifactPath = fileURLToPath6(import.meta.url)) {
+    this.artifactPath = artifactPath;
+    this.loaded = snapshot(artifactPath);
+  }
+  status() {
+    const current = snapshot(this.artifactPath);
+    const stale = current.modifiedMs !== this.loaded.modifiedMs || current.size !== this.loaded.size;
+    return {
+      version: TOOLJET_MCP_VERSION,
+      state: stale ? "stale" : "fresh",
+      build_id: this.loaded.buildId,
+      disk_build_id: current.buildId,
+      process_started_at: this.startedAt,
+      restart_required: stale
+    };
+  }
+};
+var runtimeFreshness = new RuntimeFreshnessMonitor();
+function staleRuntimeResult(status) {
+  return {
+    isError: true,
+    content: [{
+      type: "text",
+      text: `Error: MCP_RUNTIME_STALE: the ToolJet MCP files changed after this process started (loaded ${status.build_id}, disk ${status.disk_build_id}). Restart or reload the MCP/plugin host, then retry. No ToolJet request was attempted.`
+    }],
+    _meta: { tooljet_runtime: status }
+  };
+}
+function withRuntimeStatus(result, status) {
+  return { ...result, _meta: { ...result._meta ?? {}, tooljet_runtime: status } };
+}
+
+// dist/catalogResources.js
+var PREFACE = "Read-only catalog data, for clients that validate or build plans locally. ";
+var CATALOG_RESOURCES = [
+  {
+    name: "catalog-components",
+    uri: "tooljet://catalog/components",
+    file: "component-schemas.json",
+    title: "Component catalog",
+    description: `${PREFACE}Every component type by name: properties, styles, events, actions, default size and authoring hints.`
+  },
+  {
+    name: "catalog-component-compatibility",
+    uri: "tooljet://catalog/component-compatibility",
+    file: "component-compatibility.json",
+    title: "Component compatibility",
+    description: `${PREFACE}Legacy component types and the modern type that replaces each.`
+  },
+  {
+    name: "catalog-datasources",
+    uri: "tooljet://catalog/datasources",
+    file: "datasource-schemas.json",
+    title: "Datasource query catalog",
+    description: `${PREFACE}The query contract of every datasource kind: operations, options and their shapes.`
+  },
+  {
+    name: "catalog-page-icons",
+    uri: "tooljet://catalog/page-icons",
+    file: "page-icons.json",
+    title: "Page icons",
+    description: `${PREFACE}The icon package, its version and every icon name a page may use.`
+  }
+];
+var dataDir = resolve6(dirname7(fileURLToPath7(import.meta.url)), "../data");
+var versions = /* @__PURE__ */ new Map();
+var payloads = /* @__PURE__ */ new Map();
+var readPart = (file2) => {
+  const bytes = readFileSync7(resolve6(dataDir, file2));
+  if (file2 !== "component-schemas.json")
+    return bytes;
+  const live = JSON.stringify(allComponentSchemas());
+  return live === JSON.stringify(JSON.parse(bytes.toString("utf8"))) ? bytes : Buffer.from(live);
+};
+function readData(resource) {
+  const bytes = readPart(resource.file);
+  const dataVersion = createHash3("sha256").update(bytes).digest("hex").slice(0, 12);
+  versions.set(resource.file, dataVersion);
+  return { bytes, dataVersion };
+}
+function catalogVersionOf(parts) {
+  const hash2 = createHash3("sha256");
+  for (const part of parts) {
+    hash2.update(`${part.file}
+${part.bytes.length}
+`);
+    hash2.update(part.bytes);
+  }
+  return hash2.digest("hex").slice(0, 12);
+}
+var catalogVersionCache;
+function catalogVersion() {
+  catalogVersionCache ??= catalogVersionOf(CATALOG_RESOURCES.map((resource) => ({
+    file: resource.file,
+    bytes: readPart(resource.file)
+  })));
+  return catalogVersionCache;
+}
+function listedCatalogVersion() {
+  try {
+    return catalogVersion();
+  } catch {
+    return void 0;
+  }
+}
+function listedVersion(resource) {
+  try {
+    return versions.get(resource.file) ?? readData(resource).dataVersion;
+  } catch {
+    return void 0;
+  }
+}
+function payload(resource) {
+  let text3 = payloads.get(resource.file);
+  if (text3 === void 0) {
+    const { bytes, dataVersion } = readData(resource);
+    const data = JSON.parse(bytes.toString("utf8"));
+    text3 = JSON.stringify({ mcp_version: TOOLJET_MCP_VERSION, catalog_version: catalogVersion(), data_version: dataVersion, data });
+    payloads.set(resource.file, text3);
+  }
+  return text3;
+}
+var metadataOf = (resource, catalog) => {
+  const dataVersion = listedVersion(resource);
+  return {
+    title: resource.title,
+    description: resource.description,
+    mimeType: "application/json",
+    ...dataVersion ? { _meta: { data_version: dataVersion, ...catalog ? { catalog_version: catalog } : {} } } : {}
+  };
+};
+var registered = [];
+function refreshCatalogResources() {
+  versions.clear();
+  payloads.clear();
+  catalogVersionCache = void 0;
+  const catalog = listedCatalogVersion();
+  for (const { resource, handle } of registered)
+    handle.update({ metadata: metadataOf(resource, catalog) });
+}
+function registerCatalogResources(server) {
+  const catalog = listedCatalogVersion();
+  for (const resource of CATALOG_RESOURCES) {
+    const handle = server.registerResource(resource.name, resource.uri, metadataOf(resource, catalog), async () => ({
+      contents: [{ uri: resource.uri, mimeType: "application/json", text: payload(resource) }]
+    }));
+    registered.push({ resource, handle });
+  }
+}
+
+// dist/tools/codeApp.js
+var run = promisify(execFile);
+var root = () => resolve7(process.env.TOOLJET_CODE_APP_ROOT || join(homedir(), "tooljet-code-apps"));
+var cli = () => process.env.TOOLJET_CLI || "tooljet";
+var NAME = /^[a-z][a-z0-9-]{1,40}$/;
+var projectDir = (name2) => {
+  if (!NAME.test(name2))
+    throw new Error(`name must match ${NAME} (lowercase letters, digits, hyphens)`);
+  return join(root(), name2);
+};
+var insideProject = (dir, path) => {
+  const full = resolve7(dir, path);
+  const rel = relative(dir, full);
+  if (!rel || rel.startsWith("..") || rel.split(sep)[0] === "node_modules" || rel.split(sep)[0] === "dist" || rel.startsWith(".tooljet")) {
+    throw new Error(`path "${path}" is outside the editable part of the project (src/, configs, package.json)`);
+  }
+  return full;
+};
+var TEXT = /\.(tsx?|jsx?|mjs|cjs|json|css|scss|md|txt|svg|html)$/i;
+var listFiles = (dir, base2 = dir, out = []) => {
+  if (!existsSync2(dir))
+    return out;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === "node_modules" || entry.name === "dist" || entry.name.startsWith("."))
+      continue;
+    const full = join(dir, entry.name);
+    if (entry.isDirectory())
+      listFiles(full, base2, out);
+    else if (TEXT.test(entry.name))
+      out.push(relative(base2, full).split(sep).join("/"));
+  }
+  return out.sort();
+};
+var manifestSummary = (dir) => {
+  const file2 = join(dir, "dist", "manifest.json");
+  if (!existsSync2(file2))
+    return null;
+  const manifest = JSON.parse(readFileSync8(file2, "utf8"));
+  return Object.fromEntries(Object.entries(manifest.components ?? {}).map(([name2, c]) => [
+    name2,
+    {
+      props: (c.props ?? []).map((p) => `${p.name}: ${p.type}`),
+      events: (c.events ?? []).map((e) => e.name),
+      actions: (c.actions ?? []).map((a) => a.name)
+    }
+  ]));
+};
+async function runCli(dir, args, timeoutMs) {
+  try {
+    const { stdout, stderr } = await run(cli(), args, { cwd: dir, timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024, env: { ...process.env, FORCE_COLOR: "0" } });
+    return { stdout, stderr, code: 0 };
+  } catch (err) {
+    const e = err;
+    return { stdout: e.stdout ?? "", stderr: e.stderr ?? e.message ?? "", code: typeof e.code === "number" ? e.code : 1 };
+  }
+}
+var strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "");
+function codeAppScaffoldTool() {
+  return {
+    name: "code_app_scaffold",
+    title: "Scaffold Code App",
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    description: "Create a code-app project: a React + TypeScript component pack on shadcn + Tailwind with react-router, whose one exported component is the whole app on a single ToolJet page. Returns the project files. Then edit with code_app_write_files, build with code_app_build, install with code_app_install, and place the component with add_components as Lib_<pack>_App with its props bound to queries and its events wired to queries. The sample app reads items from the `items` prop, exposes `pending` {id,status} and fires onUpdate and onRefresh.",
+    inputSchema: {
+      name: external_exports.string().regex(NAME).describe("Project and pack id: lowercase letters, digits and hyphens, e.g. inventory-console"),
+      display_name: external_exports.string().min(1).max(100).describe("Human name shown in the builder")
+    },
+    async handler(args) {
+      try {
+        const dir = projectDir(args.name);
+        if (existsSync2(dir))
+          return ok({ project_dir: dir, existed: true, files: listFiles(dir) });
+        mkdirSync(root(), { recursive: true });
+        const init = await runCli(root(), ["library", "init", args.name, "--template", "code-app", "--display-name", args.display_name, "--local"], 12e4);
+        if (init.code !== 0)
+          throw new Error(`scaffold failed: ${strip(init.stderr || init.stdout)}`);
+        const install = await run("npm", ["install", "--no-audit", "--no-fund"], { cwd: dir, timeout: 3e5, maxBuffer: 16 * 1024 * 1024 });
+        return ok({ project_dir: dir, existed: false, files: listFiles(dir), npm: strip(install.stdout).trim().split("\n").pop() });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+function codeAppReadFilesTool() {
+  return {
+    name: "code_app_read_files",
+    title: "Read Code App Files",
+    annotations: { readOnlyHint: true, openWorldHint: false },
+    description: "Read files of a code-app project. Without paths, lists every source file; with paths, returns their contents.",
+    inputSchema: {
+      name: external_exports.string().regex(NAME),
+      paths: external_exports.array(external_exports.string()).optional().describe("Project-relative paths, e.g. src/App/index.tsx")
+    },
+    async handler(args) {
+      try {
+        const dir = projectDir(args.name);
+        if (!existsSync2(dir))
+          throw new Error(`no project "${args.name}" under ${root()}; call code_app_scaffold first`);
+        if (!args.paths?.length)
+          return ok({ project_dir: dir, files: listFiles(dir) });
+        const files = Object.fromEntries(args.paths.map((p) => [p, readFileSync8(insideProject(dir, p), "utf8")]));
+        return ok({ project_dir: dir, files });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+function codeAppWriteFilesTool() {
+  return {
+    name: "code_app_write_files",
+    title: "Write Code App Files",
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    description: "Write whole files into a code-app project (src/, configs, package.json). Keep every ToolJet.* hook at the top of the exported component in src/App/index.tsx so the manifest sees it; call code_app_build after writing.",
+    inputSchema: {
+      name: external_exports.string().regex(NAME),
+      files: external_exports.array(external_exports.object({ path: external_exports.string(), content: external_exports.string() })).min(1).max(40)
+    },
+    async handler(args) {
+      try {
+        const dir = projectDir(args.name);
+        if (!existsSync2(dir))
+          throw new Error(`no project "${args.name}" under ${root()}; call code_app_scaffold first`);
+        const written = [];
+        for (const file2 of args.files) {
+          const full = insideProject(dir, file2.path);
+          mkdirSync(dirname8(full), { recursive: true });
+          writeFileSync(full, file2.content);
+          written.push(file2.path);
+        }
+        return ok({ project_dir: dir, written });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+function codeAppBuildTool() {
+  return {
+    name: "code_app_build",
+    title: "Build Code App",
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    description: "Build a code-app project with the ToolJet CLI (esbuild, Tailwind through PostCSS, manifest generation). Returns ok, the TypeScript errors and warnings to fix, bundle sizes and the manifest summary (props, events, actions per component). Repeat write and build until ok is true, then code_app_install.",
+    inputSchema: { name: external_exports.string().regex(NAME) },
+    async handler(args) {
+      try {
+        const dir = projectDir(args.name);
+        if (!existsSync2(dir))
+          throw new Error(`no project "${args.name}" under ${root()}; call code_app_scaffold first`);
+        const started = Date.now();
+        const result = await runCli(dir, ["library", "build"], 3e5);
+        const output = strip(result.stdout + result.stderr);
+        const tsErrors = /TypeScript compiled \((\d+) errors\)/.exec(output);
+        const errorCount = tsErrors ? Number(tsErrors[1]) : result.code === 0 ? 0 : 1;
+        const sizeOf = (file2) => existsSync2(join(dir, "dist", file2)) ? Math.round(statSync2(join(dir, "dist", file2)).size / 1024) : 0;
+        const okBuild = result.code === 0 && errorCount === 0;
+        return ok({
+          ok: okBuild,
+          build_ms: Date.now() - started,
+          typescript_errors: errorCount,
+          // The CLI prints the error report after the counts; keep everything past the first error line.
+          errors: errorCount ? output.slice(output.indexOf("error")).trim().slice(0, 12e3) : "",
+          warnings: output.split("\n").filter((line) => /warning|⚠/i.test(line)).map((line) => line.trim()),
+          bundle_kb: sizeOf("index.js"),
+          css_kb: sizeOf("index.css"),
+          manifest: manifestSummary(dir),
+          output: output.trim().slice(0, 4e3)
+        });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+function codeAppInstallTool(client) {
+  return {
+    name: "code_app_install",
+    title: "Install Code App",
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    description: "Install the last build of a code-app project on the ToolJet server as a builtin pack (restarting the server when TOOLJET_BACKEND_RESTART_CMD is set) and refresh this catalogue. Returns the pack id and the component types to use with add_components (Lib_<pack>_<Component>). Build first with code_app_build.",
+    inputSchema: {
+      name: external_exports.string().regex(NAME),
+      version: external_exports.string().regex(/^\d+(\.\d+){0,2}$/).optional().describe("Pack version label, default 1.0.0")
+    },
+    async handler(args) {
+      try {
+        const dir = projectDir(args.name);
+        const dist = join(dir, "dist");
+        if (!existsSync2(join(dist, "index.js")) || !existsSync2(join(dist, "manifest.json"))) {
+          throw new Error(`no build in ${dist}; call code_app_build first`);
+        }
+        const packsDir = process.env.TOOLJET_BUILTIN_PACKS_DIR;
+        if (!packsDir) {
+          throw new Error("TOOLJET_BUILTIN_PACKS_DIR is not set. On an instance with custom component libraries, publish with `tooljet library publish --version <v>` from the project folder instead; on this instance set the variable to the server's builtin-packs folder.");
+        }
+        const target2 = join(packsDir, args.name);
+        mkdirSync(target2, { recursive: true });
+        for (const file2 of ["index.js", "index.css", "manifest.json"]) {
+          if (existsSync2(join(dist, file2)))
+            copyFileSync(join(dist, file2), join(target2, file2));
+        }
+        const config2 = JSON.parse(readFileSync8(join(dir, ".tooljet", "config.json"), "utf8"));
+        writeFileSync(join(target2, "builtin.json"), JSON.stringify({ pack: args.name, displayName: config2.libraryName || args.name, version: args.version || "1.0.0" }, null, 2) + "\n");
+        let restart = "not restarted: TOOLJET_BACKEND_RESTART_CMD is not set; the server reads builtin-packs once per process";
+        if (process.env.TOOLJET_BACKEND_RESTART_CMD) {
+          const { stdout, stderr } = await run("/bin/zsh", ["-lc", process.env.TOOLJET_BACKEND_RESTART_CMD], { timeout: 18e4 });
+          restart = strip(stdout + stderr).trim().split("\n").pop() ?? "restarted";
+        }
+        const packs = await loadInstalledPacks(() => client.listComponentLibraries(), () => client.listBuiltinPacks());
+        if (packs.length)
+          refreshCatalogResources();
+        const listed = (await client.listBuiltinPacks())?.find((p) => p.info.pack === args.name);
+        const prefix = `Lib_${args.name.toLowerCase().replace(/[^a-z0-9]+/g, "")}_`;
+        const components = Object.keys(manifestSummary(dir) ?? {});
+        return ok({
+          pack: args.name,
+          hash: listed?.info.hash ?? null,
+          served: !!listed,
+          restart,
+          component_types: components.map((c) => `${prefix}${c}`),
+          catalogue: packs,
+          next: `add_components with type ${prefix}${components[0] ?? "App"}, name "app", layout {top:0,left:0,width:43,height:900}, props bound to {{queries.<name>.data}}; then add_events for each event; open the editor with ?mode=code.`
+        });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+
 // dist/tools/getTableSchema.js
 function getTableSchemaTool(client) {
   return {
@@ -76317,8 +76737,8 @@ function selectAppSummary(summary, selection = {}) {
     action_id: "event.actionId"
   };
   const eventFields = (selection.eventFields ? [...new Set(selection.eventFields.map((path) => {
-    const [root, ...rest] = path.split(".");
-    const mapped = EVENT_ALIASES[root];
+    const [root2, ...rest] = path.split(".");
+    const mapped = EVENT_ALIASES[root2];
     return mapped ? [mapped, ...rest].join(".") : path;
   }))] : void 0) ?? (detail === "full" ? [...EVENT_FIELDS] : STRUCTURE_EVENT_FIELDS);
   validatePaths(appFields, APP_FIELDS, "app_fields");
@@ -76547,9 +76967,9 @@ function inputRefs(value2) {
     const binding = v.trim().match(/^\{\{([\s\S]*)\}\}$/);
     if (!binding)
       return;
-    let root;
+    let root2;
     try {
-      root = (0, import_parser16.parseExpression)(binding[1]);
+      root2 = (0, import_parser16.parseExpression)(binding[1]);
     } catch {
       return;
     }
@@ -76571,7 +76991,7 @@ function inputRefs(value2) {
       }
       Object.values(n).forEach(visit);
     };
-    visit(root);
+    visit(root2);
     if (!uncertain)
       found.forEach((name2) => refs2.add(name2));
   };
@@ -76585,9 +77005,9 @@ function truthyOnlyRequiredText(value2, disabled) {
   const binding = raw.trim().match(/^\{\{([\s\S]*)\}\}$/);
   if (!binding)
     return /* @__PURE__ */ new Set();
-  let root;
+  let root2;
   try {
-    root = (0, import_parser16.parseExpression)(binding[1]);
+    root2 = (0, import_parser16.parseExpression)(binding[1]);
   } catch {
     return /* @__PURE__ */ new Set();
   }
@@ -76610,7 +77030,7 @@ function truthyOnlyRequiredText(value2, disabled) {
     const v = n.type === "UnaryExpression" && n.operator === "!" ? n.argument : n;
     return Boolean(member4(v) && key3(v) === "isLoading" && rooted(v.object, "queries"));
   };
-  return visit(root) ? refs2 : /* @__PURE__ */ new Set();
+  return visit(root2) ? refs2 : /* @__PURE__ */ new Set();
 }
 function requiredMutationGuardWarnings(source2, query2, action, components) {
   const inputs = inputRefs(query2.options);
@@ -76635,7 +77055,7 @@ function unconditional(action) {
 }
 function queryEventCycleErrors(summary, additions, persisted) {
   const names = new Map(summary.queries.map((q) => [q.id, q.name ?? q.id]));
-  const resolve8 = (value2) => {
+  const resolve9 = (value2) => {
     if (typeof value2 !== "string")
       return void 0;
     if (names.has(value2))
@@ -76646,7 +77066,7 @@ function queryEventCycleErrors(summary, additions, persisted) {
   const edge = (event) => {
     if (event.sourceType !== "data_query" || !names.has(event.sourceId) || event.action.actionId !== "run-query" || !unconditional(event.action))
       return void 0;
-    const target2 = resolve8(event.action.queryId);
+    const target2 = resolve9(event.action.queryId);
     return target2 ? [event.sourceId, target2] : void 0;
   };
   const graph = /* @__PURE__ */ new Map();
@@ -78457,30 +78877,30 @@ function polishFlexRows(input) {
     }
     warnings.push(`"${host.name}" held only dialogs, which draw nothing until opened, so it showed as an empty band; the dialogs now sit at the page root, the container is gone${lift > 0 ? ` and the sections below moved up ${lift}px` : ""}.`);
   }
-  for (const root of components) {
-    if (!root || root.type !== "FlexContainer" || root.parentRef || root.parent)
+  for (const root2 of components) {
+    if (!root2 || root2.type !== "FlexContainer" || root2.parentRef || root2.parent)
       continue;
-    const dynamic = text2(prop3(root, "dynamicHeight")).replace(/[{}\s]/g, "");
+    const dynamic = text2(prop3(root2, "dynamicHeight")).replace(/[{}\s]/g, "");
     if (dynamic === "true")
       continue;
-    setProp(root, "dynamicHeight", "{{true}}");
+    setProp(root2, "dynamicHeight", "{{true}}");
   }
-  for (const root of components) {
-    if (!root || root.type !== "FlexContainer" || root.parentRef || root.parent)
+  for (const root2 of components) {
+    if (!root2 || root2.type !== "FlexContainer" || root2.parentRef || root2.parent)
       continue;
-    const rect2 = root.layouts?.desktop ?? root.layout;
+    const rect2 = root2.layouts?.desktop ?? root2.layout;
     if (!rect2 || typeof rect2.left !== "number" || typeof rect2.width !== "number")
       continue;
     if (rect2.width < 39 || rect2.left >= 2 && rect2.left + rect2.width <= 41)
       continue;
-    const band = styleText(root, "backgroundColor").toLowerCase();
+    const band = styleText(root2, "backgroundColor").toLowerCase();
     if (band && band !== "transparent" && !band.startsWith("var(--cc-appbackground"))
       continue;
-    const raw = text2(prop3(root, "padding"));
+    const raw = text2(prop3(root2, "padding"));
     const padding = raw === "" ? 12 : Number(raw) || 0;
     if (padding >= PAGE_MARGIN)
       continue;
-    setProp(root, "padding", PAGE_MARGIN);
+    setProp(root2, "padding", PAGE_MARGIN);
   }
   const heightOf2 = (c) => Number(c.layout?.height ?? c.layouts?.desktop?.height ?? NaN);
   for (const sheet of components) {
@@ -81866,16 +82286,16 @@ function autoFitHtmlHeights(args) {
 
 // dist/pageReplaceInPlace.js
 import { randomUUID as randomUUID4 } from "node:crypto";
-import { readFileSync as readFileSync7 } from "node:fs";
-import { dirname as dirname7, resolve as resolve6 } from "node:path";
-import { fileURLToPath as fileURLToPath6 } from "node:url";
+import { readFileSync as readFileSync9 } from "node:fs";
+import { dirname as dirname9, resolve as resolve8 } from "node:path";
+import { fileURLToPath as fileURLToPath8 } from "node:url";
 var SECTIONS2 = ["properties", "styles", "validation", "others"];
 var bundled;
 function bundledDefinitions() {
   if (!bundled) {
-    const path = resolve6(dirname7(fileURLToPath6(import.meta.url)), "../data/component-default-definitions.json");
+    const path = resolve8(dirname9(fileURLToPath8(import.meta.url)), "../data/component-default-definitions.json");
     try {
-      bundled = JSON.parse(readFileSync7(path, "utf8")).definitions;
+      bundled = JSON.parse(readFileSync9(path, "utf8")).definitions;
     } catch {
       bundled = {};
     }
@@ -82483,7 +82903,7 @@ async function checkPlanReads(client, params) {
     const query2 = byId.get(id);
     const name2 = query2.name ?? id;
     const needsViewer = containsComponentBinding(query2.options);
-    const run = async () => {
+    const run2 = async () => {
       try {
         const bindings = resolveStaticBindings(query2.options);
         emptyViewerOnlyParams(query2.options, bindings);
@@ -82492,10 +82912,10 @@ async function checkPlanReads(client, params) {
         return { status: "failed", message: error51 instanceof Error ? error51.message : String(error51) };
       }
     };
-    let result = await run();
+    let result = await run2();
     if (result.status === "failed" && CLOCK_SKEW.test(String(result.message ?? result.description ?? ""))) {
-      await new Promise((resolve8) => setTimeout(resolve8, params.retryDelayMs ?? CLOCK_SKEW_RETRY_MS));
-      result = await run();
+      await new Promise((resolve9) => setTimeout(resolve9, params.retryDelayMs ?? CLOCK_SKEW_RETRY_MS));
+      result = await run2();
     }
     check2.ran += 1;
     if (result.status !== "failed") {
@@ -82591,7 +83011,7 @@ async function waitForCreatedTables(client, tableNames) {
         const delay = TABLE_READY_DELAYS_MS[attempt];
         if (delay === void 0)
           break;
-        await new Promise((resolve8) => setTimeout(resolve8, delay));
+        await new Promise((resolve9) => setTimeout(resolve9, delay));
       }
     }
     throw new Error(`Created table "${tableName}" did not become readable before seeding: ${lastError instanceof Error ? lastError.message : String(lastError)}`);
@@ -84693,60 +85113,6 @@ function deleteEventTool(client) {
   };
 }
 
-// dist/runtimeFreshness.js
-import { createHash as createHash2 } from "node:crypto";
-import { statSync } from "node:fs";
-import { fileURLToPath as fileURLToPath7 } from "node:url";
-var TOOLJET_MCP_VERSION = "0.8.0";
-function snapshot(path) {
-  try {
-    const stat = statSync(path);
-    const source2 = `${Math.round(stat.mtimeMs * 1e3)}:${stat.size}`;
-    return {
-      buildId: createHash2("sha256").update(source2).digest("hex").slice(0, 12),
-      modifiedMs: stat.mtimeMs,
-      size: stat.size
-    };
-  } catch {
-    return { buildId: "missing", modifiedMs: -1, size: -1 };
-  }
-}
-var RuntimeFreshnessMonitor = class {
-  artifactPath;
-  loaded;
-  startedAt = (/* @__PURE__ */ new Date()).toISOString();
-  constructor(artifactPath = fileURLToPath7(import.meta.url)) {
-    this.artifactPath = artifactPath;
-    this.loaded = snapshot(artifactPath);
-  }
-  status() {
-    const current = snapshot(this.artifactPath);
-    const stale = current.modifiedMs !== this.loaded.modifiedMs || current.size !== this.loaded.size;
-    return {
-      version: TOOLJET_MCP_VERSION,
-      state: stale ? "stale" : "fresh",
-      build_id: this.loaded.buildId,
-      disk_build_id: current.buildId,
-      process_started_at: this.startedAt,
-      restart_required: stale
-    };
-  }
-};
-var runtimeFreshness = new RuntimeFreshnessMonitor();
-function staleRuntimeResult(status) {
-  return {
-    isError: true,
-    content: [{
-      type: "text",
-      text: `Error: MCP_RUNTIME_STALE: the ToolJet MCP files changed after this process started (loaded ${status.build_id}, disk ${status.disk_build_id}). Restart or reload the MCP/plugin host, then retry. No ToolJet request was attempted.`
-    }],
-    _meta: { tooljet_runtime: status }
-  };
-}
-function withRuntimeStatus(result, status) {
-  return { ...result, _meta: { ...result._meta ?? {}, tooljet_runtime: status } };
-}
-
 // dist/tools/getRuntimeInfo.js
 function getRuntimeInfoTool(runtime) {
   return {
@@ -85607,6 +85973,11 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     runWorkflowTool(client),
     getWorkflowExecutionTool(client),
     getRuntimeInfoTool(runtime),
+    codeAppScaffoldTool(),
+    codeAppReadFilesTool(),
+    codeAppWriteFilesTool(),
+    codeAppBuildTool(),
+    codeAppInstallTool(client),
     listWorkspacesTool(client),
     useWorkspaceTool(client),
     manageAppPermissionsTool(client),
@@ -85684,128 +86055,6 @@ function registerTools(server, client, runtime = runtimeFreshness) {
       }
       return withRuntimeStatus(await tool.handler(args), status);
     }));
-  }
-}
-
-// dist/catalogResources.js
-import { createHash as createHash3 } from "node:crypto";
-import { readFileSync as readFileSync8 } from "node:fs";
-import { dirname as dirname8, resolve as resolve7 } from "node:path";
-import { fileURLToPath as fileURLToPath8 } from "node:url";
-var PREFACE = "Read-only catalog data, for clients that validate or build plans locally. ";
-var CATALOG_RESOURCES = [
-  {
-    name: "catalog-components",
-    uri: "tooljet://catalog/components",
-    file: "component-schemas.json",
-    title: "Component catalog",
-    description: `${PREFACE}Every component type by name: properties, styles, events, actions, default size and authoring hints.`
-  },
-  {
-    name: "catalog-component-compatibility",
-    uri: "tooljet://catalog/component-compatibility",
-    file: "component-compatibility.json",
-    title: "Component compatibility",
-    description: `${PREFACE}Legacy component types and the modern type that replaces each.`
-  },
-  {
-    name: "catalog-datasources",
-    uri: "tooljet://catalog/datasources",
-    file: "datasource-schemas.json",
-    title: "Datasource query catalog",
-    description: `${PREFACE}The query contract of every datasource kind: operations, options and their shapes.`
-  },
-  {
-    name: "catalog-page-icons",
-    uri: "tooljet://catalog/page-icons",
-    file: "page-icons.json",
-    title: "Page icons",
-    description: `${PREFACE}The icon package, its version and every icon name a page may use.`
-  }
-];
-var dataDir = resolve7(dirname8(fileURLToPath8(import.meta.url)), "../data");
-var versions = /* @__PURE__ */ new Map();
-var payloads = /* @__PURE__ */ new Map();
-var readPart = (file2) => {
-  const bytes = readFileSync8(resolve7(dataDir, file2));
-  if (file2 !== "component-schemas.json")
-    return bytes;
-  const live = JSON.stringify(allComponentSchemas());
-  return live === JSON.stringify(JSON.parse(bytes.toString("utf8"))) ? bytes : Buffer.from(live);
-};
-function readData(resource) {
-  const bytes = readPart(resource.file);
-  const dataVersion = createHash3("sha256").update(bytes).digest("hex").slice(0, 12);
-  versions.set(resource.file, dataVersion);
-  return { bytes, dataVersion };
-}
-function catalogVersionOf(parts) {
-  const hash2 = createHash3("sha256");
-  for (const part of parts) {
-    hash2.update(`${part.file}
-${part.bytes.length}
-`);
-    hash2.update(part.bytes);
-  }
-  return hash2.digest("hex").slice(0, 12);
-}
-var catalogVersionCache;
-function catalogVersion() {
-  catalogVersionCache ??= catalogVersionOf(CATALOG_RESOURCES.map((resource) => ({
-    file: resource.file,
-    bytes: readPart(resource.file)
-  })));
-  return catalogVersionCache;
-}
-function listedCatalogVersion() {
-  try {
-    return catalogVersion();
-  } catch {
-    return void 0;
-  }
-}
-function listedVersion(resource) {
-  try {
-    return versions.get(resource.file) ?? readData(resource).dataVersion;
-  } catch {
-    return void 0;
-  }
-}
-function payload(resource) {
-  let text3 = payloads.get(resource.file);
-  if (text3 === void 0) {
-    const { bytes, dataVersion } = readData(resource);
-    const data = JSON.parse(bytes.toString("utf8"));
-    text3 = JSON.stringify({ mcp_version: TOOLJET_MCP_VERSION, catalog_version: catalogVersion(), data_version: dataVersion, data });
-    payloads.set(resource.file, text3);
-  }
-  return text3;
-}
-var metadataOf = (resource, catalog) => {
-  const dataVersion = listedVersion(resource);
-  return {
-    title: resource.title,
-    description: resource.description,
-    mimeType: "application/json",
-    ...dataVersion ? { _meta: { data_version: dataVersion, ...catalog ? { catalog_version: catalog } : {} } } : {}
-  };
-};
-var registered = [];
-function refreshCatalogResources() {
-  versions.clear();
-  payloads.clear();
-  catalogVersionCache = void 0;
-  const catalog = listedCatalogVersion();
-  for (const { resource, handle } of registered)
-    handle.update({ metadata: metadataOf(resource, catalog) });
-}
-function registerCatalogResources(server) {
-  const catalog = listedCatalogVersion();
-  for (const resource of CATALOG_RESOURCES) {
-    const handle = server.registerResource(resource.name, resource.uri, metadataOf(resource, catalog), async () => ({
-      contents: [{ uri: resource.uri, mimeType: "application/json", text: payload(resource) }]
-    }));
-    registered.push({ resource, handle });
   }
 }
 
@@ -86084,9 +86333,9 @@ async function serveHttp() {
   }
   const { server: httpServer, gatewayMode } = createGatewayHttpServer();
   const host = process.env.MCP_HTTP_HOST ?? (gatewayMode ? "0.0.0.0" : "127.0.0.1");
-  await new Promise((resolve8, reject) => {
+  await new Promise((resolve9, reject) => {
     httpServer.once("error", reject);
-    httpServer.listen(port, host, resolve8);
+    httpServer.listen(port, host, resolve9);
   });
   console.error(`tooljet-mcp: listening on http://${host}:${port} (${gatewayMode ? "gateway" : "direct"} mode)`);
 }

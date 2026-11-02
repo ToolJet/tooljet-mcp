@@ -90,11 +90,14 @@ export function packFromLibrary(lib: InstalledLibrary): PackResult | null {
 /** A shipped pack: its manifest has no manifestVersion; the pack id is the server's folder name. */
 export function packFromBuiltin(info: BuiltinPackInfo, manifest: PackManifest | null): PackResult | null {
   if (!manifest?.components) return null;
+  // The Lib_* type keeps letters and digits only; the stored `pack` property must be the id the server serves the
+  // files under (its folder name, hyphens and all), or the canvas finds no such pack.
   const packId = info.pack.toLowerCase().replace(/[^a-z0-9]+/g, '');
   return packFromManifest(packId, info.displayName || info.pack, info.version ?? '', manifest, {
     kind: 'builtin',
     libraryId: '',
     correlationId: '',
+    serverPack: info.pack,
   });
 }
 
@@ -103,8 +106,9 @@ function packFromManifest(
   libraryName: string,
   version: string,
   manifest: PackManifest,
-  identity: { kind: 'builtin' | 'library'; libraryId: string; correlationId: string },
+  identity: { kind: 'builtin' | 'library'; libraryId: string; correlationId: string; serverPack?: string },
 ): PackResult | null {
+  const { serverPack, ...packIdentity } = identity;
   if (!manifest.components) return null;
   const lib = { name: libraryName };
   const prefix = `Lib_${packId}_`;
@@ -206,7 +210,7 @@ function packFromManifest(
     };
   }
   return {
-    pack: { pack: packId, prefix, ...identity, libraryName, version, components },
+    pack: { pack: serverPack ?? packId, prefix, ...packIdentity, libraryName, version, components },
     schemas,
     definitions,
   };
