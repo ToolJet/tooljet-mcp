@@ -15,7 +15,12 @@ import { ok, fail, type ToolDef } from './types.js';
     code_app_write_files  write app.json, frontend/src and frontend/styles/{theme,global}.css
     code_app_build        refresh typed hooks from the app's queries, build, and check the code against the app
     code_app_install      tooljet app dev --once: upload to the dev track and link the code page, its route pages and
-                          the version pin
+                          the version pin. Refuses while the security scan has critical or high findings.
+    code_app_add_dependency  tooljet app vet (malware, known vulnerabilities, versions under 7 days old, licence,
+                          blocklist) and only then add the packages to frontend/package.json and install them
+
+  Security: tooljet app check runs @tooljet/app-scanner (code rules, secrets, dependencies) and prints it with --json;
+  build reports the offline scan, install runs the full one first, and the server scans again at publish.
 
   The code reads data with useAppQuery('<query>') from frontend/src/tooljet.gen.ts and writes by running a query with
   parameters (`await useAppQuery('update').run({ id, status })`); queries themselves are created with add_queries.
@@ -86,6 +91,66 @@ async function cli(cwd: string, args: string[], timeoutMs = 300_000): Promise<{ 
     return { code: typeof e.code === 'number' ? e.code : 1, output: strip((e.stdout ?? '') + (e.stderr ?? e.message ?? '')) };
   }
 }
+
+export interface SecurityFinding {
+  ruleId: string;
+  severity: string;
+  message: string;
+  location: string;
+  blocking?: boolean;
+  package?: string;
+}
+
+export interface SecurityReport {
+  gate?: 'pass' | 'fail';
+  counts?: Record<string, number>;
+  notRun?: { id: string; reason?: string }[];
+  findings?: SecurityFinding[];
+  error?: string;
+}
+
+/** The JSON report of `tooljet app check --json` / `tooljet app vet --json`, or null when the output is not one. */
+export function parseReport<T = Record<string, unknown>>(output: string): T | null {
+  const start = output.indexOf('{');
+  const end = output.lastIndexOf('}');
+  if (start < 0 || end < start) return null;
+  try {
+    return JSON.parse(output.slice(start, end + 1)) as T;
+  } catch {
+    return null;
+  }
+}
+
+/** Findings an agent must fix before installing: critical and high, whatever the workspace policy blocks. */
+export const mustFix = (security: SecurityReport | undefined): SecurityFinding[] =>
+  (security?.findings ?? []).filter((f) => f.severity === 'critical' || f.severity === 'high');
+
+/** The scan for a tool result: counts, gate, what did not run, and the findings (most severe first, at most 40). */
+export const securitySummary = (security: SecurityReport | undefined) =>
+  !security
+    ? { error: 'no security report (the CLI predates tooljet app check --json)' }
+    : security.error
+      ? { error: security.error }
+      : {
+          gate: security.gate,
+          counts: security.counts,
+          not_run: (security.notRun ?? []).map((n) => `${n.id}${n.reason ? `: ${n.reason}` : ''}`),
+          findings: (security.findings ?? []).slice(0, 40),
+          ...((security.findings?.length ?? 0) > 40 ? { more_findings: security.findings!.length - 40 } : {}),
+        };
+
+/** package.json with these packages pinned to the exact versions vetted. */
+export function withDependencies(
+  pkg: { dependencies?: Record<string, string> },
+  packages: { name: string; version: string }[]
+): { dependencies: Record<string, string> } {
+  const dependencies = { ...(pkg.dependencies ?? {}) };
+  for (const p of packages) dependencies[p.name] = p.version;
+  return { ...pkg, dependencies: Object.fromEntries(Object.entries(dependencies).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) };
+}
+
+/** An npm spec an agent may add: a registry name (optionally scoped) with an optional version, range or tag. */
+export const PACKAGE_SPEC = /^(@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*(@[A-Za-z0-9.^~<>=*| -]+)?$/;
 
 export function codeAppScaffoldTool(): ToolDef {
   return {
@@ -201,8 +266,9 @@ export function codeAppBuildTool(): ToolDef {
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     description:
       "Refresh the typed hooks from the app's current queries (tooljet app pull), build the app's code (TypeScript, Tailwind, " +
-      'manifest), and check it against the app (tooljet app check: every useAppQuery name, route, link and page must exist). ' +
-      'Returns ok and every error to fix. Repeat write and build until ok, then code_app_install.',
+      'manifest), and check it against the app (tooljet app check: every useAppQuery name, route, link and page must exist) ' +
+      'and the security scan (code rules such as external fetch, eval and token storage; secrets; vendored code). ' +
+      'Returns ok and every error and security finding to fix. Repeat write and build until ok, then code_app_install.',
     inputSchema: { name: z.string().regex(NAME) },
     async handler(args: { name: string }) {
       try {
@@ -211,7 +277,8 @@ export function codeAppBuildTool(): ToolDef {
         const pull = await cli(dir, ['app', 'pull']);
         const build = await cli(join(dir, 'frontend'), ['library', 'build']);
         const tsErrors = Number(/TypeScript compiled \((\d+) errors\)/.exec(build.output)?.[1] ?? (build.code === 0 ? 0 : 1));
-        const check = await cli(dir, ['app', 'check', '--offline']);
+        const check = await cli(dir, ['app', 'check', '--offline', '--json']);
+        const report = parseReport<{ problems?: { file: string; line: number; message: string }[]; accessibility?: unknown[]; security?: SecurityReport }>(check.output);
         const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0;
         return ok({
           ok: okBuild,
@@ -219,9 +286,13 @@ export function codeAppBuildTool(): ToolDef {
           pull: pull.code === 0 ? 'typed hooks refreshed' : pull.output.trim(),
           typescript_errors: tsErrors,
           build_output: build.code === 0 && tsErrors === 0 ? build.output.trim().split('\n').slice(-6).join('\n') : build.output.trim().slice(0, 12_000),
-          check: check.output.trim().slice(0, 6000),
+          check: report?.problems
+            ? report.problems.map((p) => `${p.file}:${p.line}  ${p.message}`)
+            : check.output.trim().slice(0, 6000),
           // jsx-a11y recommended rules, warnings only (tooljet app check); fix them when they are cheap to fix.
-          a11y_warnings: Number(/(\d+) accessibility warnings?/.exec(check.output)?.[1] ?? 0),
+          a11y_warnings: report?.accessibility?.length ?? Number(/(\d+) accessibility warnings?/.exec(check.output)?.[1] ?? 0),
+          // The offline scan (no dependency network checks): fix critical and high before code_app_install.
+          security: securitySummary(report?.security),
         });
       } catch (err) {
         return fail(err);
@@ -238,14 +309,84 @@ export function codeAppInstallTool(): ToolDef {
     description:
       "Upload the app's code (tooljet app dev --once): it creates or updates the app's Code mode page, one hidden page per route " +
       "(set each route's page permissions on it), the page's root component, and pins the app version to this build. Build first. " +
-      'Returns the editor URL.',
+      'Runs the full security scan first and refuses while it has critical or high findings, listing them. Returns the editor URL.',
     inputSchema: { name: z.string().regex(NAME) },
     async handler(args: { name: string }) {
       try {
         const dir = requireProject(args.name);
+        // The full scan, dependency checks included, before anything reaches the app.
+        const check = await cli(dir, ['app', 'check', '--json']);
+        const security = parseReport<{ security?: SecurityReport }>(check.output)?.security;
+        if (!security || security.error)
+          throw new Error(`The security scan did not run, so nothing was installed: ${security?.error ?? check.output.trim().slice(0, 2000)}`);
+        const blocking = mustFix(security);
+        if (blocking.length)
+          return fail(
+            new Error(
+              `Not installed: the security scan has ${blocking.length} critical or high finding${blocking.length > 1 ? 's' : ''}. ` +
+                'Fix them in the code (or remove the package), code_app_build, then install again:\n' +
+                blocking.map((f) => `${f.severity.toUpperCase()} ${f.ruleId} ${f.package ?? f.location}: ${f.message}`).join('\n')
+            )
+          );
         const result = await cli(dir, ['app', 'dev', '--once']);
         if (result.code !== 0) throw new Error(result.output.trim());
-        return ok({ linked: true, editor_url: /Open: (\S+)/.exec(result.output)?.[1] ?? null, output: result.output.trim() });
+        return ok({
+          linked: true,
+          editor_url: /Open: (\S+)/.exec(result.output)?.[1] ?? null,
+          output: result.output.trim(),
+          security: securitySummary(security),
+        });
+      } catch (err) {
+        return fail(err);
+      }
+    },
+  };
+}
+
+export function codeAppAddDependencyTool(): ToolDef {
+  return {
+    name: 'code_app_add_dependency',
+    title: 'Add Code Mode Dependency',
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    description:
+      "Add npm packages to a Code mode app (frontend/package.json is not writable otherwise). Each package is vetted first " +
+      '(tooljet app vet: malware, known vulnerabilities, versions published in the last 7 days, licence, workspace blocklist); ' +
+      'when any fails, nothing is written and the findings say why: pick another version or package. Passing packages are pinned ' +
+      'to the exact version vetted and installed without install scripts. Prefer what the template already has (shadcn, Tailwind, lucide-react).',
+    inputSchema: {
+      name: z.string().regex(NAME),
+      packages: z.array(z.string().regex(PACKAGE_SPEC)).min(1).max(10).describe('name, name@version or name@range, e.g. date-fns@4'),
+    },
+    async handler(args: { name: string; packages: string[] }) {
+      try {
+        const dir = requireProject(args.name);
+        const vet = await cli(dir, ['app', 'vet', ...args.packages, '--json']);
+        const report = parseReport<SecurityReport & { ok?: boolean; packages?: { name: string; version: string }[] }>(vet.output);
+        if (!report?.packages) throw new Error(`The package check did not run, so nothing was added: ${vet.output.trim().slice(0, 2000)}`);
+        if (!report.ok)
+          return fail(
+            new Error(
+              `Not added: ${report.packages.map((p) => `${p.name}@${p.version}`).join(', ')} fail${report.packages.length > 1 ? '' : 's'} the package check:\n` +
+                (report.findings ?? []).map((f) => `${f.severity.toUpperCase()} ${f.ruleId} ${f.package ?? f.location}: ${f.message}`).join('\n')
+            )
+          );
+        const pkgFile = join(dir, 'frontend', 'package.json');
+        const lockFile = join(dir, 'frontend', 'package-lock.json');
+        const before = readFileSync(pkgFile, 'utf8');
+        const lockBefore = existsSync(lockFile) ? readFileSync(lockFile, 'utf8') : null;
+        writeFileSync(pkgFile, JSON.stringify(withDependencies(JSON.parse(before), report.packages), null, 2) + '\n');
+        const install = await cli(dir, ['app', 'install']);
+        if (install.code !== 0) {
+          writeFileSync(pkgFile, before);
+          if (lockBefore !== null) writeFileSync(lockFile, lockBefore);
+          throw new Error(`tooljet app install failed, package.json restored: ${install.output.trim().slice(0, 4000)}`);
+        }
+        return ok({
+          added: report.packages.map((p) => `${p.name}@${p.version}`),
+          not_run: (report.notRun ?? []).map((n) => `${n.id}${n.reason ? `: ${n.reason}` : ''}`),
+          // Transitive packages come with the install; code_app_build and code_app_install scan the whole lockfile.
+          next: 'Import the package in frontend/src, then code_app_build.',
+        });
       } catch (err) {
         return fail(err);
       }
