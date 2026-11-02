@@ -1,0 +1,21 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "tooljet",
+  "version": "0.11.1",
+  "description": "Build and edit ToolJet internal tools, dashboards and business applications using an existing ToolJet MCP connection and the maintained app-builder skill.",
+  "author": {
+    "name": "ToolJet",
+    "url": "https://tooljet.com"
+  },
+  "homepage": "https://tooljet.com/mcp",
+  "repository": "https://github.com/ToolJet/tooljet-mcp",
+  "license": "ISC",
+  "keywords": [
+    "tooljet",
+    "internal-tools",
+    "dashboards",
+    "business-apps",
+    "app-builder",
+    "mcp"
+  ]
+}
