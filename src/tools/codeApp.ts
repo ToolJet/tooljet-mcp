@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { ok, fail, type ToolDef } from './types.js';
@@ -32,6 +32,38 @@ const NAME = /^[a-z][a-z0-9-]{1,40}$/;
 const projectDir = (name: string): string => {
   if (!NAME.test(name)) throw new Error(`name must match ${NAME} (lowercase letters, digits, hyphens)`);
   return join(root(), name);
+};
+
+const appIdOf = (dir: string): string | undefined => {
+  try {
+    return JSON.parse(readFileSync(join(dir, 'app.json'), 'utf8')).appId;
+  } catch {
+    return undefined;
+  }
+};
+
+/** The projects for an app, newest app.json first (older ones are leftovers of an earlier scaffold). */
+export const projectsForApp = (appId: string): string[] => {
+  if (!existsSync(root())) return [];
+  return readdirSync(root(), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && NAME.test(entry.name) && appIdOf(join(root(), entry.name)) === appId)
+    .map((entry) => entry.name)
+    .sort((a, b) => statSync(join(root(), b, 'app.json')).mtimeMs - statSync(join(root(), a, 'app.json')).mtimeMs);
+};
+
+const APP_ID = z.string().uuid().optional().describe("The app's id: finds its project, so you never have to know the folder name");
+const PROJECT_NAME = z.string().regex(NAME).optional().describe('The project folder, when you know it; app_id is enough');
+
+/** A tool's project: by app_id (preferred), else by name. */
+const locateProject = (args: { name?: string; app_id?: string }): string => {
+  if (args.app_id) {
+    const [found] = projectsForApp(args.app_id);
+    if (!found) throw new Error(`no Code mode project for app ${args.app_id} under ${root()}; call code_app_scaffold with this app_id`);
+    if (args.name && args.name !== found) throw new Error(`app ${args.app_id}'s project is "${found}", not "${args.name}"`);
+    return join(root(), found);
+  }
+  if (!args.name) throw new Error('give app_id (or the project name)');
+  return requireProject(args.name);
 };
 
 const requireProject = (name: string): string => {
@@ -104,7 +136,12 @@ export function codeAppScaffoldTool(): ToolDef {
     },
     async handler(args: { name: string; display_name: string; app_id: string }) {
       try {
-        const dir = projectDir(args.name);
+        // One project per app: an app that already has one gets it back, whatever name is asked for.
+        const [existing] = projectsForApp(args.app_id);
+        const dir = existing ? join(root(), existing) : projectDir(args.name);
+        const owner = appIdOf(dir);
+        if (!existing && owner && owner !== args.app_id)
+          throw new Error(`project "${args.name}" belongs to app ${owner}; choose another name`);
         if (!existsSync(join(dir, 'app.json'))) {
           mkdirSync(root(), { recursive: true });
           const init = await cli(root(), ['app', 'init', args.name, '--name', args.display_name, '--no-install']);
@@ -125,6 +162,7 @@ export function codeAppScaffoldTool(): ToolDef {
         if (pull.code !== 0) throw new Error(`tooljet app pull failed: ${pull.output}`);
         return ok({
           project_dir: dir,
+          ...(existing ? { existing_project: existing, note: `This app already has a project, "${existing}"; it is used as is.` } : {}),
           files: listFiles(dir),
           app_json: JSON.parse(readFileSync(join(dir, 'app.json'), 'utf8')),
           generated_hooks: readFileSync(join(dir, 'frontend', 'src', 'tooljet.gen.ts'), 'utf8'),
@@ -152,10 +190,10 @@ export function codeAppReadFilesTool(): ToolDef {
     description:
       'Read a Code mode project. Without paths, lists its files; with paths, returns their contents (app.json, frontend/...). ' +
       'Edits saved in the ToolJet Code panel since the last install are brought into the project first.',
-    inputSchema: { name: z.string().regex(NAME), paths: z.array(z.string()).optional() },
-    async handler(args: { name: string; paths?: string[] }) {
+    inputSchema: { app_id: APP_ID, name: PROJECT_NAME, paths: z.array(z.string()).optional() },
+    async handler(args: { app_id?: string; name?: string; paths?: string[] }) {
       try {
-        const dir = requireProject(args.name);
+        const dir = locateProject(args);
         const sync = await syncEditorEdits(dir);
         if (!args.paths?.length) return ok({ project_dir: dir, ...sync, files: listFiles(dir) });
         const files = Object.fromEntries(
@@ -183,12 +221,13 @@ export function codeAppWriteFilesTool(): ToolDef {
       'Read data with useAppQuery from ../tooljet.gen; write by awaiting a query\'s run({ ...parameters }); route with AppRouter, ' +
       'react-router <Routes>/<Route> whose paths are exactly app.json\'s, and routePath(id, params). Then code_app_build.',
     inputSchema: {
-      name: z.string().regex(NAME),
+      app_id: APP_ID,
+      name: PROJECT_NAME,
       files: z.array(z.object({ path: z.string(), content: z.string() })).min(1).max(40),
     },
-    async handler(args: { name: string; files: { path: string; content: string }[] }) {
+    async handler(args: { app_id?: string; name?: string; files: { path: string; content: string }[] }) {
       try {
-        const dir = requireProject(args.name);
+        const dir = locateProject(args);
         const written: string[] = [];
         for (const file of args.files) {
           const full = editable(dir, file.path);
@@ -213,10 +252,10 @@ export function codeAppBuildTool(): ToolDef {
       "Refresh the typed hooks from the app's current queries (tooljet app pull), build the app's code (TypeScript, Tailwind, " +
       'manifest), and check it against the app (tooljet app check: every useAppQuery name, route, link and page must exist). ' +
       'Returns ok and every error to fix. Repeat write and build until ok, then code_app_install.',
-    inputSchema: { name: z.string().regex(NAME) },
-    async handler(args: { name: string }) {
+    inputSchema: { app_id: APP_ID, name: PROJECT_NAME },
+    async handler(args: { app_id?: string; name?: string }) {
       try {
-        const dir = requireProject(args.name);
+        const dir = locateProject(args);
         const started = Date.now();
         const pull = await cli(dir, ['app', 'pull']);
         const build = await cli(join(dir, 'frontend'), ['library', 'build']);
@@ -250,10 +289,10 @@ export function codeAppInstallTool(): ToolDef {
       "(set each route's page permissions on it), the page's root component, pins the app version to this build, and stores the source on " +
       'ToolJet so the Code panel can edit it. Build first. Returns the editor URL. If it says the source was edited in the ToolJet editor, ' +
       'call code_app_read_files to bring those edits down, reapply your change, and install again.',
-    inputSchema: { name: z.string().regex(NAME) },
-    async handler(args: { name: string }) {
+    inputSchema: { app_id: APP_ID, name: PROJECT_NAME },
+    async handler(args: { app_id?: string; name?: string }) {
       try {
-        const dir = requireProject(args.name);
+        const dir = locateProject(args);
         // Agent-built apps keep their source on ToolJet (owner platform) unless a repository owns it; the CLI refuses
         // to take a repository-owned source over and to overwrite editor edits it has not pulled.
         const result = await cli(dir, ['app', 'dev', '--once', '--source', 'platform']);
