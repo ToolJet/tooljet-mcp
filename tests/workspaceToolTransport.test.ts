@@ -101,6 +101,7 @@ describe('workspace folder discovery through the MCP transport', () => {
       expect(apps?.annotations?.readOnlyHint).toBe(true);
       expect(apps?.inputSchema.properties).toHaveProperty('folder_id');
       expect(apps?.description).toContain('NOT workspace folders');
+      expect(apps?.description).toContain('meta.total_count remains the workspace-wide count of matching apps even with folder_id');
     });
   });
 

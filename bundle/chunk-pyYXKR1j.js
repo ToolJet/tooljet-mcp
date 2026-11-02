@@ -4140,7 +4140,7 @@ function listWorkspaceAppsTool(client) {
       readOnlyHint: true,
       openWorldHint: true
     },
-    description: "List front-end apps in the workspace pinned to the current ToolJet connection, with pagination, app-name search, and optional folder_id filtering. Discover folder IDs with list_workspace_folders. Each app includes folders: [{id,name}] (empty when unfiled). The top-level folder describes the selected folder, or is null. meta.workspace_folder_count counts visible app folders; meta.folder_app_count counts matching apps in the selected folder (null without a folder filter). Legacy meta.folder_count counts apps in the selected folder, NOT workspace folders, and is 0 without a folder filter. This cannot inspect or switch to another workspace.",
+    description: "List front-end apps in the workspace pinned to the current ToolJet connection, with pagination, app-name search, and optional folder_id filtering. Discover folder IDs with list_workspace_folders. Each app includes folders: [{id,name}] (empty when unfiled). The top-level folder describes the selected folder, or is null. meta.workspace_folder_count counts visible app folders; meta.folder_app_count counts matching apps in the selected folder (null without a folder filter). meta.total_count remains the workspace-wide count of matching apps even with folder_id; use meta.folder_app_count for the folder. Legacy meta.folder_count counts apps in the selected folder, NOT workspace folders, and is 0 without a folder filter. This cannot inspect or switch to another workspace.",
     inputSchema: listWorkspaceAppsInput.shape,
     async handler(input) {
       try {
