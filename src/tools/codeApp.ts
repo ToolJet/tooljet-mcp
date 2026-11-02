@@ -137,17 +137,27 @@ export function codeAppScaffoldTool(): ToolDef {
   };
 }
 
+/** `tooljet app source-pull`: what it reports when it brought editor edits down, or a warning when it could not run. */
+async function syncEditorEdits(dir: string): Promise<{ editor_edits?: string; sync_warning?: string }> {
+  const pull = await cli(dir, ['app', 'source-pull'], 60_000);
+  if (pull.code !== 0) return { sync_warning: `Could not check the ToolJet editor for edits: ${pull.output.trim().slice(0, 300)}` };
+  return /Pulled revision/.test(pull.output) ? { editor_edits: pull.output.trim() } : {};
+}
+
 export function codeAppReadFilesTool(): ToolDef {
   return {
     name: 'code_app_read_files',
     title: 'Read Code Mode Files',
-    annotations: { readOnlyHint: true, openWorldHint: false },
-    description: 'Read a Code mode project. Without paths, lists its files; with paths, returns their contents (app.json, frontend/...).',
+    annotations: { readOnlyHint: true, openWorldHint: true },
+    description:
+      'Read a Code mode project. Without paths, lists its files; with paths, returns their contents (app.json, frontend/...). ' +
+      'Edits saved in the ToolJet Code panel since the last install are brought into the project first.',
     inputSchema: { name: z.string().regex(NAME), paths: z.array(z.string()).optional() },
     async handler(args: { name: string; paths?: string[] }) {
       try {
         const dir = requireProject(args.name);
-        if (!args.paths?.length) return ok({ project_dir: dir, files: listFiles(dir) });
+        const sync = await syncEditorEdits(dir);
+        if (!args.paths?.length) return ok({ project_dir: dir, ...sync, files: listFiles(dir) });
         const files = Object.fromEntries(
           args.paths.map((p) => {
             const full = resolve(dir, p);
@@ -155,7 +165,7 @@ export function codeAppReadFilesTool(): ToolDef {
             return [p, readFileSync(full, 'utf8')];
           })
         );
-        return ok({ project_dir: dir, files });
+        return ok({ project_dir: dir, ...sync, files });
       } catch (err) {
         return fail(err);
       }
@@ -236,14 +246,17 @@ export function codeAppInstallTool(): ToolDef {
     title: 'Install Code Mode App',
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     description:
-      "Upload the app's code (tooljet app dev --once): it creates or updates the app's Code mode page, one hidden page per route " +
-      "(set each route's page permissions on it), the page's root component, and pins the app version to this build. Build first. " +
-      'Returns the editor URL.',
+      "Upload the app's code (tooljet app dev --once --source platform): it creates or updates the app's Code mode page, one hidden page per route " +
+      "(set each route's page permissions on it), the page's root component, pins the app version to this build, and stores the source on " +
+      'ToolJet so the Code panel can edit it. Build first. Returns the editor URL. If it says the source was edited in the ToolJet editor, ' +
+      'call code_app_read_files to bring those edits down, reapply your change, and install again.',
     inputSchema: { name: z.string().regex(NAME) },
     async handler(args: { name: string }) {
       try {
         const dir = requireProject(args.name);
-        const result = await cli(dir, ['app', 'dev', '--once']);
+        // Agent-built apps keep their source on ToolJet (owner platform) unless a repository owns it; the CLI refuses
+        // to take a repository-owned source over and to overwrite editor edits it has not pulled.
+        const result = await cli(dir, ['app', 'dev', '--once', '--source', 'platform']);
         if (result.code !== 0) throw new Error(result.output.trim());
         return ok({ linked: true, editor_url: /Open: (\S+)/.exec(result.output)?.[1] ?? null, output: result.output.trim() });
       } catch (err) {
