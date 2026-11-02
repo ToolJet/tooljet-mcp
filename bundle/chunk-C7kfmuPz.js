@@ -1,9 +1,9 @@
 import { createRequire } from "node:module";
 import { o as external_exports, q as editContractSchema, s as generateEditContract, p as COMPONENT_FX_GUIDANCE } from "./chunk-8iUq0slz.js";
-import { s as strictEntry, g as specSchema, h as createClient, l as listWorkspaceGroupsTool, m as manageWorkspaceGroupsTool, j as inspectDatasourceSchemaTool, u as updateComponentsTool, o as ok, k as nodeCatalog, f as fail, p as capabilityRequestSchema, q as getWorkflowCapabilities, w as lint, x as apply, y as deleteNode, z as validateGraph, v as validateTableBatch, A as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec } from "./chunk-DbFNT0Gf.js";
-import { a6 as dbColumnTypeSchema, a7 as componentInputSchema, a8 as lintAppSpecTool, a9 as projectJavascriptRuntime, aa as projectAppSettings, ab as compactTheme, ac as pageSettingProperties, l as literalCanvasColor, ad as containsExactValue, h as prepareQueryOptionsForWrite, ae as inspectUpdateCompatibility, af as normalizePlanBindingAliases, ag as containsNamedBinding, ah as normalizePlannedLayouts, ai as materializeRequiredDefaultChildren, aj as mapKeyRefusal, j as prepareComponentBatch, v as validateEvents, n as expandQueryLifecycles, q as persistedEventSpecs, ak as persistedEventIds } from "./chunk-pMEylbpx.js";
-import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, W as WebStandardStreamableHTTPServerTransport, g as getRequestListener, c as validatePersistedAppSummary } from "./chunk-JCMmiPv2.js";
-import { M as McpServer } from "./chunk-DiCiME0d.js";
+import { s as strictEntry, g as specSchema, h as createClient, l as listWorkspaceGroupsTool, m as manageWorkspaceGroupsTool, j as inspectDatasourceSchemaTool, u as updateComponentsTool, o as ok, k as nodeCatalog, f as fail, p as capabilityRequestSchema, q as getWorkflowCapabilities, w as lint, x as apply, y as deleteNode, z as validateGraph, v as validateTableBatch, A as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec } from "./chunk-DPRaio-O.js";
+import { a6 as dbColumnTypeSchema, a7 as componentInputSchema, a8 as lintAppSpecTool, a9 as projectJavascriptRuntime, aa as projectAppSettings, ab as compactTheme, ac as pageSettingProperties, l as literalCanvasColor, ad as containsExactValue, h as prepareQueryOptionsForWrite, ae as inspectUpdateCompatibility, af as normalizePlanBindingAliases, ag as containsNamedBinding, ah as normalizePlannedLayouts, ai as materializeRequiredDefaultChildren, aj as mapKeyRefusal, j as prepareComponentBatch, v as validateEvents, n as expandQueryLifecycles, q as persistedEventSpecs, ak as persistedEventIds } from "./chunk-BSLFsOrq.js";
+import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, W as WebStandardStreamableHTTPServerTransport, g as getRequestListener, c as validatePersistedAppSummary } from "./chunk-OWshVslc.js";
+import { M as McpServer } from "./chunk-D9uYZnsM.js";
 import { u as pageIconSchema, c as componentSlotSchema, a as componentNameSchema, t as lintComponents, i as introducedLintFindings, x as lintRenderedGeometryBlocking, y as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, f as lintComponentSlots, l as lintComponentSpec, g as lintUnusableTextGeometry, z as lintNestedContainerWidths, h as lintStandardSingleLineInputHeight, j as lintTextGeometry, k as lintRenderedGeometry, F as FORM_SCHEMA_FIELD_TYPE_SET, A as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-gznY6rD8.js";
 import { ea as getCatalog, e5 as getComponentSchema, eb as getLegacyComponentReplacement, ee as readCatalogBytes } from "./chunk-BEuHHGL1.js";
 import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-CsHFzbSc.js";
@@ -3932,7 +3932,7 @@ function deleteEventTool(client) {
     }
   };
 }
-var TOOLJET_MCP_VERSION = "0.11.0";
+var TOOLJET_MCP_VERSION = "0.11.1";
 function snapshot(path) {
   try {
     const stat = statSync(path);
@@ -4123,22 +4123,50 @@ function manageAppPermissionsTool(client) {
 }
 var userRole = external_exports.enum(["admin", "builder", "end-user"]);
 var userStatus = external_exports.enum(["active", "archived", "invited"]);
+var listWorkspaceAppsInput = external_exports.object({
+  page: external_exports.number().int().positive().optional(),
+  search_text: external_exports.string().trim().max(100).describe("Filter by app name.").optional(),
+  folder_id: external_exports.string().uuid().describe("Folder ID returned by list_workspace_folders.").optional()
+}).strict();
+var listWorkspaceFoldersInput = external_exports.object({
+  search_text: external_exports.string().trim().max(100).describe("Case-insensitive folder-name search.").optional()
+}).strict();
 function listWorkspaceAppsTool(client) {
   return {
     name: "list_workspace_apps",
     title: "List Workspace Apps",
+    strictInput: true,
     annotations: {
       readOnlyHint: true,
       openWorldHint: true
     },
-    description: "List apps in the workspace pinned to the current ToolJet connection. This cannot inspect or switch to another workspace.",
-    inputSchema: {
-      page: external_exports.number().int().positive().optional(),
-      search_text: external_exports.string().trim().max(100).optional()
-    },
-    async handler(args) {
+    description: "List front-end apps in the workspace pinned to the current ToolJet connection, with pagination, app-name search, and optional folder_id filtering. Discover folder IDs with list_workspace_folders. Each app includes folders: [{id,name}] (empty when unfiled). The top-level folder describes the selected folder, or is null. meta.workspace_folder_count counts visible app folders; meta.folder_app_count counts matching apps in the selected folder (null without a folder filter). Legacy meta.folder_count counts apps in the selected folder, NOT workspace folders, and is 0 without a folder filter. This cannot inspect or switch to another workspace.",
+    inputSchema: listWorkspaceAppsInput.shape,
+    async handler(input) {
       try {
-        return ok(await client.listWorkspaceApps({ page: args.page, searchText: args.search_text }));
+        const args = listWorkspaceAppsInput.parse(input);
+        return ok(await client.listWorkspaceApps({ page: args.page, searchText: args.search_text, folderId: args.folder_id }));
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  };
+}
+function listWorkspaceFoldersTool(client) {
+  return {
+    name: "list_workspace_folders",
+    title: "List Workspace Folders",
+    strictInput: true,
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
+    description: "List visible front-end app folders in the workspace pinned to the current ToolJet connection. Returns folders: [{id,name,app_count}] and meta.total_count (matching folders). app_count counts apps visible to you. search_text filters folder names, not app names. Includes empty folders when ToolJet permits you to see them. Pass a returned id as folder_id to list_workspace_apps to read that folder\u2019s apps with pagination and app-name search. OAuth connections require the apps scope; existing ToolJet permissions still apply.",
+    inputSchema: listWorkspaceFoldersInput.shape,
+    async handler(input) {
+      try {
+        const args = listWorkspaceFoldersInput.parse(input);
+        return ok(await client.listWorkspaceFolders({ searchText: args.search_text }));
       } catch (error) {
         return fail(error);
       }
@@ -4575,6 +4603,7 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     useWorkspaceTool(client),
     manageAppPermissionsTool(client),
     listWorkspaceAppsTool(client),
+    listWorkspaceFoldersTool(client),
     listWorkspaceUsersTool(client),
     manageWorkspaceUsersTool(client),
     listWorkspaceGroupsTool(client),

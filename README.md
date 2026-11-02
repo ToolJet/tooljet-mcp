@@ -269,7 +269,8 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 |---|---|
 | `list_workspaces()` / `use_workspace(workspace_id)` | Inspect or switch the active ToolJet workspace; results include its manual datasource-settings URL |
 | `manage_app_permissions(...)` | List eligible users/groups and inspect, restrict, or clear page/query/component access; mutations are confirmed and license-gated |
-| `list_workspace_apps(...)` | List apps in the workspace pinned to the current PAT |
+| `list_workspace_folders(search_text?)` | List visible app folders with IDs, names, and accessible app counts; search folder names |
+| `list_workspace_apps(page?, search_text?, folder_id?)` | List/search front-end apps with folder memberships; optionally filter by a discovered folder ID |
 | `list_workspace_users(...)` | List/search workspace users with pagination and status filtering through PAT auth |
 | `list_workspace_groups(...)` | List groups/members; read permission switches and granular rules with `include_permissions:true`; discover selectable resources with `resource_type` |
 | `manage_workspace_groups(...)` | Create/rename/delete/duplicate groups, remove members, update permission switches, and create/update/delete granular access; requires confirmation and ToolJet admin permissions |
@@ -295,6 +296,10 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 | `add_components(...)` / `add_component_batches(...)` | Place one page or several independent pages, including atomic parent/child batches and native header/body/footer slots |
 | `add_events(...)` / `add_query_lifecycles(...)` | Add arbitrary interactions or expand standard mutation success/failure flows in one batch |
 | `update_*` / confirmed `delete_*` / `run_query(...)` | Repair apps in place; require exact-target confirmation for deletion and explicit approval for large/billable reads |
+
+To browse a folder, call `list_workspace_folders({search_text:"Nursery"})`, then pass its returned ID to `list_workspace_apps({folder_id:"<returned-id>",page:1})`. Folder search matches folder names; app search matches app names and can be combined with `folder_id`. Both tools use the current connection's workspace and ToolJet permissions. They list front-end app folders, not workflow or query folders.
+
+Each app includes `folders: [{id,name}]`, with an empty array for unfiled apps. The app-list response includes `folder` (the selected folder or `null`), `meta.workspace_folder_count` (all visible app folders), and `meta.folder_app_count` (accessible apps matching the search in the selected folder, or `null` without a folder filter). The existing `meta.folder_count` is preserved for compatibility: it counts matching apps in the selected folder and is `0` without a folder filter; it never counts workspace folders. Existing pagination and `total_count` retain their API meanings. Folder discovery makes one API request; app listing makes two regardless of the number of apps on the page.
 
 Group management stays within the PAT workspace. `manage_workspace_groups` supports `create`, `rename`, `delete`, `remove_member`, `duplicate`, `update_permissions`, `create_access`, `update_access`, and `delete_access`. Read groups and membership IDs with `list_workspace_groups`; add `group_id` and `include_permissions:true` for permission switches and granular rule IDs. Use `resource_type` (`app`, `module`, `workflow`, or `data_source`) to discover selectable resources.
 
