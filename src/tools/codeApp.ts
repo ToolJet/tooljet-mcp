@@ -12,7 +12,7 @@ import { ok, fail, type ToolDef } from './types.js';
 
     code_app_scaffold     tooljet app init, linked to an app the agent created (create_app), then typed hooks (pull)
     code_app_read_files   read app.json and frontend/src
-    code_app_write_files  write app.json and frontend/src
+    code_app_write_files  write app.json, frontend/src and frontend/styles/{theme,global}.css
     code_app_build        refresh typed hooks from the app's queries, build, and check the code against the app
     code_app_install      tooljet app dev --once: upload to the dev track and link the code page, its route pages and
                           the version pin
@@ -40,12 +40,15 @@ const requireProject = (name: string): string => {
   return dir;
 };
 
-/** What an agent may write: app.json and the frontend's source. */
-const editable = (dir: string, path: string): string => {
+/** What an agent may write: app.json, the frontend's source, and the two style files (theme.css, global.css). */
+const STYLE_FILES = new Set(['frontend/styles/theme.css', 'frontend/styles/global.css']);
+export const editable = (dir: string, path: string): string => {
   const full = resolve(dir, path);
   const rel = relative(dir, full).split(sep).join('/');
-  if (rel === 'app.json' || (rel.startsWith('frontend/src/') && !rel.endsWith('tooljet.gen.ts'))) return full;
-  throw new Error(`"${path}" is not editable: write app.json or files under frontend/src/ (tooljet.gen.ts is generated)`);
+  if (rel === 'app.json' || STYLE_FILES.has(rel) || (rel.startsWith('frontend/src/') && !rel.endsWith('tooljet.gen.ts'))) return full;
+  throw new Error(
+    `"${path}" is not editable: write app.json, frontend/styles/theme.css, frontend/styles/global.css or files under frontend/src/ (tooljet.gen.ts is generated)`
+  );
 };
 
 const TEXT = /\.(tsx?|jsx?|json|css|md)$/i;
@@ -163,7 +166,7 @@ export function codeAppWriteFilesTool(): ToolDef {
     title: 'Write Code Page Files',
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     description:
-      'Write whole files into a code page project: app.json (name, codePage, routes [{id, path, title}]) and anything under frontend/src/. ' +
+      'Write whole files into a code page project: app.json (name, codePage, routes [{id, path, title}]), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. ' +
       'Read data with useAppQuery from ../tooljet.gen; write by awaiting a query\'s run({ ...parameters }); route with AppRouter, ' +
       'react-router <Routes>/<Route> whose paths are exactly app.json\'s, and routePath(id, params). Then code_app_build.',
     inputSchema: {

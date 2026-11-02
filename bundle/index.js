@@ -74789,12 +74789,13 @@ var requireProject = (name2) => {
     throw new Error(`no app project "${name2}" under ${root()}; call code_app_scaffold first`);
   return dir;
 };
+var STYLE_FILES = /* @__PURE__ */ new Set(["frontend/styles/theme.css", "frontend/styles/global.css"]);
 var editable = (dir, path) => {
   const full = resolve6(dir, path);
   const rel = relative(dir, full).split(sep).join("/");
-  if (rel === "app.json" || rel.startsWith("frontend/src/") && !rel.endsWith("tooljet.gen.ts"))
+  if (rel === "app.json" || STYLE_FILES.has(rel) || rel.startsWith("frontend/src/") && !rel.endsWith("tooljet.gen.ts"))
     return full;
-  throw new Error(`"${path}" is not editable: write app.json or files under frontend/src/ (tooljet.gen.ts is generated)`);
+  throw new Error(`"${path}" is not editable: write app.json, frontend/styles/theme.css, frontend/styles/global.css or files under frontend/src/ (tooljet.gen.ts is generated)`);
 };
 var TEXT = /\.(tsx?|jsx?|json|css|md)$/i;
 var listFiles = (dir, base2 = dir, out = []) => {
@@ -74906,7 +74907,7 @@ function codeAppWriteFilesTool() {
     name: "code_app_write_files",
     title: "Write Code Page Files",
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-    description: "Write whole files into a code page project: app.json (name, codePage, routes [{id, path, title}]) and anything under frontend/src/. Read data with useAppQuery from ../tooljet.gen; write by awaiting a query's run({ ...parameters }); route with AppRouter, react-router <Routes>/<Route> whose paths are exactly app.json's, and routePath(id, params). Then code_app_build.",
+    description: "Write whole files into a code page project: app.json (name, codePage, routes [{id, path, title}]), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. Read data with useAppQuery from ../tooljet.gen; write by awaiting a query's run({ ...parameters }); route with AppRouter, react-router <Routes>/<Route> whose paths are exactly app.json's, and routePath(id, params). Then code_app_build.",
     inputSchema: {
       name: external_exports.string().regex(NAME),
       files: external_exports.array(external_exports.object({ path: external_exports.string(), content: external_exports.string() })).min(1).max(40)
