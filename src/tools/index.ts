@@ -116,7 +116,7 @@ export function registerTools(
     runWorkflowTool(client),
     getWorkflowExecutionTool(client),
     getRuntimeInfoTool(runtime),
-    codeAppScaffoldTool(),
+    codeAppScaffoldTool(client),
     codeAppReadFilesTool(),
     codeAppWriteFilesTool(),
     codeAppBuildTool(),

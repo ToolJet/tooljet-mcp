@@ -5,6 +5,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import { homedir } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { ok, fail, type ToolDef } from './types.js';
+import type { ToolJetClient } from '../tooljetClient.js';
 
 /*
   Code pages: a ToolJet app page whose whole UI is React code, kept in an app project (app.json + frontend/) and built
@@ -119,7 +120,37 @@ async function cli(cwd: string, args: string[], timeoutMs = 300_000): Promise<{ 
   }
 }
 
-export function codeAppScaffoldTool(): ToolDef {
+const PLACEHOLDER_NAME = /^Untitled App\b/;
+
+/**
+ * Give an app still named "Untitled App: ..." (the dashboard's placeholder) its real name, as apply_app_phase does
+ * for a visual build. Names are unique per workspace: a taken one gets a short suffix. Returns the name it got.
+ */
+async function nameApp(
+  client: Pick<ToolJetClient, 'renameApp'> | undefined,
+  dir: string,
+  name: string
+): Promise<{ renamed_to?: string; rename_warning?: string }> {
+  let snapshot: { appId?: string; appName?: string; versionId?: string };
+  try {
+    snapshot = JSON.parse(readFileSync(join(dir, '.tooljet', 'snapshot.json'), 'utf8'));
+  } catch {
+    return {};
+  }
+  if (!client || !snapshot.appId || !snapshot.versionId || !PLACEHOLDER_NAME.test(snapshot.appName ?? '')) return {};
+  try {
+    await client.renameApp(snapshot.appId, snapshot.versionId, name);
+    return { renamed_to: name };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/exist|unique|duplicate|taken|conflict|409|422/i.test(message)) return { rename_warning: `Could not name the app: ${message}` };
+    const fallback = `${name} ${Math.random().toString(36).slice(2, 5)}`;
+    await client.renameApp(snapshot.appId, snapshot.versionId, fallback);
+    return { renamed_to: fallback, rename_warning: `App name "${name}" is already used in this workspace; the app was named "${fallback}" instead.` };
+  }
+}
+
+export function codeAppScaffoldTool(client?: Pick<ToolJetClient, 'renameApp'>): ToolDef {
   return {
     name: 'code_app_scaffold',
     title: 'Scaffold Code Mode App',
@@ -131,7 +162,7 @@ export function codeAppScaffoldTool(): ToolDef {
       'Returns the files and the generated hooks.',
     inputSchema: {
       name: z.string().regex(NAME).describe('Project folder: lowercase letters, digits and hyphens, e.g. inventory-console'),
-      display_name: z.string().min(1).max(100).describe("The app's name"),
+      display_name: z.string().min(1).max(100).describe("The app's name; an app still called \"Untitled App\" is renamed to it"),
       app_id: z.string().uuid().describe('The app from create_app'),
     },
     async handler(args: { name: string; display_name: string; app_id: string }) {
@@ -160,8 +191,10 @@ export function codeAppScaffoldTool(): ToolDef {
         }
         const pull = await cli(dir, ['app', 'pull']);
         if (pull.code !== 0) throw new Error(`tooljet app pull failed: ${pull.output}`);
+        const naming = await nameApp(client, dir, args.display_name);
         return ok({
           project_dir: dir,
+          ...naming,
           ...(existing ? { existing_project: existing, note: `This app already has a project, "${existing}"; it is used as is.` } : {}),
           files: listFiles(dir),
           app_json: JSON.parse(readFileSync(join(dir, 'app.json'), 'utf8')),

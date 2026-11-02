@@ -63,3 +63,57 @@ describe('Code mode projects are found by app id', () => {
     expect(out).toMatch(/belongs to app/);
   });
 });
+
+describe('code_app_scaffold names an untitled app', () => {
+  let dir: string;
+  const env = { ...process.env };
+  const setup = (appName: string) => {
+    const p = join(dir, 'apps', 'tasks');
+    mkdirSync(join(p, 'frontend', 'src'), { recursive: true });
+    mkdirSync(join(p, '.tooljet'), { recursive: true });
+    writeFileSync(join(p, 'app.json'), JSON.stringify({ name: 'Tasks', appId: APP }));
+    writeFileSync(join(p, 'frontend', 'src', 'tooljet.gen.ts'), '// hooks');
+    writeFileSync(join(p, '.tooljet', 'snapshot.json'), JSON.stringify({ appId: APP, appName, versionId: 'v1' }));
+  };
+  const scaffold = (client: any) =>
+    codeAppScaffoldTool(client).handler({ name: 'tasks', display_name: 'Tasks', app_id: APP } as any).then((r: any) => JSON.parse(r.content[0].text));
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'tj-mcp-name-'));
+    writeFileSync(join(dir, 'cli.js'), "console.log('ok')");
+    process.env.TOOLJET_CLI = join(dir, 'cli.js');
+    process.env.TOOLJET_CODE_APP_ROOT = join(dir, 'apps');
+  });
+  afterEach(() => {
+    process.env = { ...env };
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('renames the placeholder name to the display name', async () => {
+    setup('Untitled App: 5f0c2d');
+    const calls: string[][] = [];
+    const out = await scaffold({ renameApp: async (...a: string[]) => void calls.push(a) });
+    expect(calls).toEqual([[APP, 'v1', 'Tasks']]);
+    expect(out.renamed_to).toBe('Tasks');
+  });
+
+  it('suffixes a taken name', async () => {
+    setup('Untitled App: 5f0c2d');
+    let first = true;
+    const out = await scaffold({
+      renameApp: async () => {
+        if (first) ((first = false), (() => { throw new Error('App name already exists'); })());
+      },
+    });
+    expect(out.renamed_to).toMatch(/^Tasks \w{3}$/);
+    expect(out.rename_warning).toMatch(/already used/);
+  });
+
+  it('leaves a name someone chose alone', async () => {
+    setup('Team tasks');
+    const calls: string[][] = [];
+    const out = await scaffold({ renameApp: async (...a: string[]) => void calls.push(a) });
+    expect(calls).toEqual([]);
+    expect(out).not.toHaveProperty('renamed_to');
+  });
+});
