@@ -1,3 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+
 export interface Config {
   apiUrl: string;
   /** Where a human opens ToolJet in a browser — used only to build user-facing links (a datasource's
@@ -63,6 +67,37 @@ const GATEWAY_URL_VAR = 'MCP_GATEWAY_URL';
 const GATEWAY_TOKEN_VAR = 'MCP_GATEWAY_TOKEN';
 
 /** An environment variable, or undefined when unset OR blank. */
+/**
+ * The login `tooljet auth login` stored (~/.tooljet/credentials.json, or TOOLJET_CREDENTIALS_FILE): its default
+ * workspace's instance and token. Lets an editor's MCP config name only the server, with no token in it. Ignored
+ * when TOOLJET_URL names a different instance, so a token is never sent anywhere but where it came from.
+ */
+export function storedCliLogin(explicitApiUrl?: string): { apiUrl: string; pat: string } | undefined {
+  const file = env('TOOLJET_CREDENTIALS_FILE') ?? join(homedir(), '.tooljet', 'credentials.json');
+  let store: { default?: string; workspaces?: Record<string, { url?: string; apiToken?: string }> };
+  try {
+    store = JSON.parse(readFileSync(file, 'utf8'));
+  } catch {
+    return undefined;
+  }
+  const entry = store?.default ? store.workspaces?.[store.default] : undefined;
+  if (!entry?.url || !entry.apiToken) return undefined;
+  let origin: string;
+  try {
+    origin = new URL(entry.url).origin;
+  } catch {
+    return undefined;
+  }
+  if (explicitApiUrl) {
+    try {
+      if (new URL(explicitApiUrl).origin !== origin) return undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  return { apiUrl: origin, pat: entry.apiToken };
+}
+
 function env(name: string): string | undefined {
   const value = process.env[name]?.trim();
   return value ? value : undefined;
@@ -355,15 +390,19 @@ export function loadConfig(identity?: RequestIdentity): Config {
   const apiUrl = staticApiUrl;
   const appUrl = explicitAppUrl ?? explicitApiUrl ?? 'http://localhost:8082';
 
-  const pat = env('TOOLJET_PAT');
   const sessionToken = env('TOOLJET_SESSION_TOKEN');
+  const stored = !env('TOOLJET_PAT') && !sessionToken ? storedCliLogin(explicitApiUrl) : undefined;
+  const pat = env('TOOLJET_PAT') ?? stored?.pat;
   const workspaceId = env('TOOLJET_WORKSPACE_ID');
+  if (stored) {
+    return { apiUrl: stored.apiUrl, appUrl: explicitAppUrl ?? stored.apiUrl, pat: stored.pat };
+  }
   if (!pat && !sessionToken) {
     throw new Error(
       'TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal ' +
         'access token in ToolJet under Settings → Access tokens, in the workspace you want this ' +
         'server to act on, and set TOOLJET_PAT. A shared HTTP server instead receives the acting ' +
-        `user per request via the ${SESSION_TOKEN_HEADER} header.`
+        `user per request via the ${SESSION_TOKEN_HEADER} header. Or sign in once with \`tooljet auth login\`.`
     );
   }
   // A session cannot be interrogated for its workspace the way a PAT exchange response can, and
