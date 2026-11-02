@@ -11,7 +11,7 @@ import { renderAuditBase, renderAuditOrigins, renderAuditUrlAllowed, renderAudit
  */
 
 export interface RenderFinding {
-  kind: 'empty_render' | 'placeholder_text' | 'clipped' | 'overlap' | 'unreachable';
+  kind: 'empty_render' | 'placeholder_text' | 'clipped' | 'overlap' | 'overflow' | 'unreachable';
   component: string;
   detail: string;
   reason?: 'browser_unavailable' | 'auth_required' | 'navigation_failed' | 'blocked_destination' | 'redirect_blocked' | 'blocked_execution' | 'no_widgets';
@@ -177,6 +177,61 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
  * `playwright-core` is optional: resolved from node_modules when installed, otherwise from the directory
  * named by MCP_RENDER_AUDIT_PLAYWRIGHT (a path to a playwright-core package). Bundles mark it external.
  */
+/**
+ * Runs inside the page: a code page draws its whole app in one same-origin iframe, which the widget walk cannot see
+ * into. Checks the frame's own document: nothing scrolls sideways, nothing sits past the right edge, the app drew
+ * something, and no placeholder text shows. Returns null when the page has no code page.
+ */
+export function codePageAuditScript(): RenderFinding[] | null {
+  const frame = document.querySelector('iframe[data-tj-code-page-frame]') as HTMLIFrameElement | null;
+  if (!frame) return null;
+  const findings: RenderFinding[] = [];
+  const doc = frame.contentDocument;
+  const width = window.innerWidth;
+  const host = document.scrollingElement;
+  if (host && host.scrollWidth > host.clientWidth + 1)
+    findings.push({ kind: 'overflow', component: 'code page', detail: `the page scrolls sideways at ${width}px (${host.scrollWidth}px wide)` });
+  if (!doc || !doc.body) {
+    findings.push({ kind: 'empty_render', component: 'code page', detail: 'the code page frame has no document' });
+    return findings;
+  }
+  const root = doc.getElementById('tj-frame-root');
+  const text = (root?.innerText ?? '').trim();
+  if (!root || root.children.length === 0 || (!text && !root.querySelector('svg,canvas,img'))) {
+    findings.push({ kind: 'empty_render', component: 'code page', detail: 'the code page rendered nothing' });
+    return findings;
+  }
+  const scroller = doc.scrollingElement;
+  if (scroller && scroller.scrollWidth > scroller.clientWidth + 1)
+    findings.push({ kind: 'overflow', component: 'code page', detail: `the app scrolls sideways at ${width}px (${scroller.scrollWidth}px of content in ${scroller.clientWidth}px)` });
+  const frameRect = frame.getBoundingClientRect();
+  if (frameRect.bottom > window.innerHeight + 1)
+    findings.push({ kind: 'clipped', component: 'code page', detail: `the app runs ${Math.round(frameRect.bottom - window.innerHeight)}px below the window` });
+  const describe = (el: Element) => {
+    const id = el.getAttribute('data-testid') || el.id;
+    const label = (el.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 40);
+    return `${el.tagName.toLowerCase()}${id ? `#${id}` : ''}${label ? ` "${label}"` : ''}`;
+  };
+  // Elements that end past the frame's right edge and are not inside a container that scrolls on purpose.
+  const cut: string[] = [];
+  const frameWidth = doc.documentElement.clientWidth;
+  for (const el of Array.from(doc.querySelectorAll('#tj-frame-root *'))) {
+    if (cut.length >= 3) break;
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0 || r.right <= frameWidth + 1) continue;
+    let scrolls = false;
+    for (let a = el.parentElement; a && a !== doc.body; a = a.parentElement) {
+      const ox = doc.defaultView!.getComputedStyle(a).overflowX;
+      if (ox === 'auto' || ox === 'scroll' || ox === 'hidden' || ox === 'clip') { scrolls = true; break; }
+    }
+    if (!scrolls) cut.push(describe(el));
+  }
+  if (cut.length) findings.push({ kind: 'clipped', component: 'code page', detail: `cut off at the right edge at ${width}px: ${cut.join(', ')}` });
+  const placeholder = text.match(/\b(undefined|NaN|Invalid date|\[object Object\])\b/);
+  if (placeholder) findings.push({ kind: 'placeholder_text', component: 'code page', detail: `the app shows "${placeholder[1]}"` });
+  return findings;
+}
+
 async function loadPlaywright(): Promise<any | null> {
   const explicit = process.env.MCP_RENDER_AUDIT_PLAYWRIGHT;
   if (explicit) {
@@ -207,7 +262,9 @@ export async function auditPages(
   pages: Array<{ page: string; url: string }>,
   options: { channel?: string; executablePath?: string; settleMs?: number; chartWaitMs?: number; concurrency?: number; allowedOrigins?: Set<string>;
     /** The builder's ToolJet session (tj_auth_token), set as a cookie for the viewer origin so a private app opens. */
-    session?: string; savedQueries?: RenderAuditQueries } = {},
+    session?: string; savedQueries?: RenderAuditQueries;
+    /** Window width in px (default 1600); a code page is checked at 375, 768 and 1280. */
+    viewportWidth?: number } = {},
   driver: () => Promise<any | null> = loadPlaywright
 ): Promise<PageRenderReport[]> {
   const unreachable = (p: { page: string; url: string }, reason: RenderFinding['reason'], detail: string): PageRenderReport =>
@@ -248,7 +305,9 @@ export async function auditPages(
       if (blockFindings.length < 4 && !blockFindings.some((f) => f.reason === finding.reason && f.detail === finding.detail)) blockFindings.push(finding);
     };
     try {
-      ctx = await browser.newContext({ viewport: { width: 1600, height: 900 }, serviceWorkers: 'block' });
+      const width = options.viewportWidth ?? 1600;
+      // A phone width gets a phone's height; wider windows keep 900.
+      ctx = await browser.newContext({ viewport: { width, height: width < 768 ? 812 : 900 }, serviceWorkers: 'block' });
       if (!ctx.routeWebSocket) {
         reports[index] = unreachable(p, 'browser_unavailable', 'The render audit requires Playwright 1.48+ for WebSocket interception');
         return;
@@ -329,6 +388,12 @@ export async function auditPages(
         return;
       }
       const result = (await page.evaluate(auditScript)) as { widgets: number; findings: RenderFinding[] };
+      const codePage = (await page.evaluate(codePageAuditScript)) as RenderFinding[] | null;
+      if (Array.isArray(codePage)) {
+        // The root widget is the code page's container; its own findings come from inside the frame.
+        reports[index] = { page: p.page, url: p.url, widgets: result.widgets, findings: [...codePage, ...blockFindings] };
+        return;
+      }
       // A page left empty after a blocked request names that request: a bare no_widgets hid why every page of
       // every build read empty (compiler round 3, 2026-10-04).
       reports[index] = result.widgets === 0 && blocked
@@ -366,7 +431,9 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
     title: 'Verify Page Render',
     annotations: { readOnlyHint: true, openWorldHint: true },
     description:
-      'Render audit of one page or every page of an app in a headless browser at 1600x900, after the app is built. ' +
+      'Render audit of one page or every page of an app in a headless browser (1600x900 unless viewport_width is set), after the app is built. ' +
+      'On a code page it checks inside the app: sideways scrolling, content cut off at the right edge, an empty app and placeholder ' +
+      'text; pass route to open one route of it and viewport_width (375, 768, 1280) to check each width. ' +
       'Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken ' +
       'expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", ' +
       '"Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. ' +
@@ -379,8 +446,10 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
       app_id: z.string().regex(/^[A-Za-z0-9_-]+$/),
       page_handle: z.string().optional().describe('one page handle; omit to audit every page'),
       viewer_url: z.string().optional().describe('canonical viewer base URL; alternate origins require host configuration in MCP_RENDER_AUDIT_ALLOWED_ORIGINS'),
+      viewport_width: z.number().int().min(320).max(2560).optional().describe('window width in px; default 1600'),
+      route: z.string().regex(/^\/[A-Za-z0-9_\-\/:.]*$/).optional().describe('a code page route path to open, such as /orders/36'),
     },
-    async handler(args: { app_id: string; page_handle?: string; viewer_url?: string }) {
+    async handler(args: { app_id: string; page_handle?: string; viewer_url?: string; viewport_width?: number; route?: string }) {
       try {
         if (!/^[A-Za-z0-9_-]+$/.test(args.app_id)) return fail(new Error('Invalid app id'));
         const { base, origins } = renderAuditBase(viewerBase(), args.viewer_url);
@@ -388,7 +457,10 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
         const pages = (summary.pages ?? []) as Array<{ handle?: string; name?: string }>;
         // The version being edited (preview), not the released one: a build audits what it just changed.
         const version = await client.editingVersionName?.(args.app_id).catch(() => undefined);
-        const preview = version ? `?env=development&version=${encodeURIComponent(version)}` : '';
+        const query = new URLSearchParams();
+        if (version) { query.set('env', 'development'); query.set('version', version); }
+        if (args.route) query.set('route', args.route);
+        const preview = query.toString() ? `?${query}` : '';
         const targets = pages
           .filter((p) => !args.page_handle || p.handle === args.page_handle)
           .map((p) => ({ page: p.handle ?? p.name ?? 'home', url: `${base}/applications/${args.app_id}/${encodeURIComponent(p.handle ?? 'home')}${preview}` }));
@@ -398,6 +470,7 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
           executablePath: process.env.MCP_RENDER_AUDIT_CHROME || undefined,
           allowedOrigins: origins,
           savedQueries: summary,
+          viewportWidth: args.viewport_width,
           // MCP_RENDER_AUDIT_SESSION=off keeps the browser unauthenticated (private apps are then reported unverified).
           session: process.env.MCP_RENDER_AUDIT_SESSION === 'off' ? undefined : await client.viewerSession?.().catch(() => undefined),
         };

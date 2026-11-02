@@ -245,3 +245,43 @@ describe('render audit static assets', () => {
     expect(f.route.abort).toHaveBeenCalled();
   });
 });
+
+describe('render audit of a code page', () => {
+  it('opens one route at the requested width', async () => {
+    const f = browserFixture();
+    (f.context as any).addCookies = vi.fn().mockResolvedValue(undefined);
+    const gotoUrls: string[] = [];
+    const page = await f.context.newPage();
+    const goto = page.goto;
+    f.context.newPage = vi.fn().mockResolvedValue({ ...page, goto: async (url: string, o: unknown) => { gotoUrls.push(url); return goto(url, o); } });
+    const session = { ...client, viewerSession: async () => 'tok123', editingVersionName: async () => 'v2' };
+    const res: any = await verifyPageRenderTool(session, () => 'http://viewer.test', f.driver)
+      .handler({ app_id: 'app1', page_handle: 'home', viewport_width: 375, route: '/orders/36' });
+    expect(res.isError).toBeFalsy();
+    expect(gotoUrls).toEqual(['http://viewer.test/applications/app1/home?env=development&version=v2&route=%2Forders%2F36']);
+    expect(f.browser.newContext).toHaveBeenCalledWith(expect.objectContaining({ viewport: { width: 375, height: 812 } }));
+  });
+
+  it('keeps 1600x900 when no width is given', async () => {
+    const f = browserFixture();
+    await auditPages(target, {}, f.driver);
+    expect(f.browser.newContext).toHaveBeenCalledWith(expect.objectContaining({ viewport: { width: 1600, height: 900 } }));
+  });
+
+  it('reports what the check inside the code page found instead of the widget walk', async () => {
+    const f = browserFixture();
+    const page = await f.context.newPage();
+    const overflow = { kind: 'overflow', component: 'code page', detail: 'the app scrolls sideways at 375px (520px of content in 375px)' };
+    page.evaluate = vi.fn().mockResolvedValueOnce({ widgets: 1, findings: [{ kind: 'overlap', component: 'x', detail: 'canvas only' }] }).mockResolvedValueOnce([overflow]);
+    f.context.newPage = vi.fn().mockResolvedValue(page);
+    const [report] = await auditPages(target, { viewportWidth: 375 }, f.driver);
+    expect(report.findings).toEqual([overflow]);
+  });
+
+  it('rejects a route that is not a path', async () => {
+    const tool = verifyPageRenderTool(client, () => 'http://viewer.test');
+    const schema = (await import('zod')).z.object(tool.inputSchema as any);
+    expect(schema.safeParse({ app_id: 'a', route: 'https://elsewhere.test' }).success).toBe(false);
+    expect(schema.safeParse({ app_id: 'a', route: '/orders/:id' }).success).toBe(true);
+  });
+});
