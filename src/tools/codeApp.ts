@@ -101,7 +101,7 @@ export function codeAppScaffoldTool(): ToolDef {
         const dir = projectDir(args.name);
         if (!existsSync(join(dir, 'app.json'))) {
           mkdirSync(root(), { recursive: true });
-          const init = await cli(root(), ['app', 'init', args.name, '--name', args.display_name]);
+          const init = await cli(root(), ['app', 'init', args.name, '--name', args.display_name, '--no-install']);
           if (init.code !== 0) throw new Error(`tooljet app init failed: ${init.output}`);
           const appFile = join(dir, 'app.json');
           writeFileSync(appFile, JSON.stringify({ ...JSON.parse(readFileSync(appFile, 'utf8')), appId: args.app_id }, null, 2) + '\n');
@@ -111,7 +111,9 @@ export function codeAppScaffoldTool(): ToolDef {
             pkg.dependencies['@tooljet/custom-component-sdk'] = process.env.TOOLJET_SDK_SPEC;
             writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + '\n');
           }
-          await run('npm', ['install', '--no-audit', '--no-fund'], { cwd: join(dir, 'frontend'), timeout: 300_000, maxBuffer: 16 * 1024 * 1024 });
+          // The CLI's install: never runs a package's install scripts (npm/pnpm/yarn with --ignore-scripts).
+          const install = await cli(dir, ['app', 'install']);
+          if (install.code !== 0) throw new Error(`tooljet app install failed: ${install.output}`);
         }
         const pull = await cli(dir, ['app', 'pull']);
         if (pull.code !== 0) throw new Error(`tooljet app pull failed: ${pull.output}`);

@@ -60724,6 +60724,9 @@ var EMPTY_COMPLETION_RESULT = {
 };
 
 // dist/config.js
+import { readFileSync as readFileSync4 } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 var SESSION_TOKEN_HEADER = "x-tooljet-session";
 var WORKSPACE_ID_HEADER = "x-tooljet-workspace-id";
 var WORKSPACE_SLUG_HEADER = "x-tooljet-workspace-slug";
@@ -60733,6 +60736,33 @@ var CUSTOMER_ID_HEADER = "x-tooljet-customer-id";
 var ALLOWED_API_ORIGINS_VAR = "MCP_ALLOWED_API_ORIGINS";
 var GATEWAY_URL_VAR = "MCP_GATEWAY_URL";
 var GATEWAY_TOKEN_VAR = "MCP_GATEWAY_TOKEN";
+function storedCliLogin(explicitApiUrl) {
+  const file2 = env("TOOLJET_CREDENTIALS_FILE") ?? join(homedir(), ".tooljet", "credentials.json");
+  let store2;
+  try {
+    store2 = JSON.parse(readFileSync4(file2, "utf8"));
+  } catch {
+    return void 0;
+  }
+  const entry = store2?.default ? store2.workspaces?.[store2.default] : void 0;
+  if (!entry?.url || !entry.apiToken)
+    return void 0;
+  let origin;
+  try {
+    origin = new URL(entry.url).origin;
+  } catch {
+    return void 0;
+  }
+  if (explicitApiUrl) {
+    try {
+      if (new URL(explicitApiUrl).origin !== origin)
+        return void 0;
+    } catch {
+      return void 0;
+    }
+  }
+  return { apiUrl: origin, pat: entry.apiToken };
+}
 function env(name2) {
   const value2 = process.env[name2]?.trim();
   return value2 ? value2 : void 0;
@@ -60901,11 +60931,15 @@ function loadConfig(identity) {
   }
   const apiUrl = staticApiUrl;
   const appUrl = explicitAppUrl ?? explicitApiUrl ?? "http://localhost:8082";
-  const pat = env("TOOLJET_PAT");
   const sessionToken = env("TOOLJET_SESSION_TOKEN");
+  const stored = !env("TOOLJET_PAT") && !sessionToken ? storedCliLogin(explicitApiUrl) : void 0;
+  const pat = env("TOOLJET_PAT") ?? stored?.pat;
   const workspaceId = env("TOOLJET_WORKSPACE_ID");
+  if (stored) {
+    return { apiUrl: stored.apiUrl, appUrl: explicitAppUrl ?? stored.apiUrl, pat: stored.pat };
+  }
   if (!pat && !sessionToken) {
-    throw new Error(`TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal access token in ToolJet under Settings \u2192 Access tokens, in the workspace you want this server to act on, and set TOOLJET_PAT. A shared HTTP server instead receives the acting user per request via the ${SESSION_TOKEN_HEADER} header.`);
+    throw new Error(`TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal access token in ToolJet under Settings \u2192 Access tokens, in the workspace you want this server to act on, and set TOOLJET_PAT. A shared HTTP server instead receives the acting user per request via the ${SESSION_TOKEN_HEADER} header. Or sign in once with \`tooljet auth login\`.`);
   }
   if (sessionToken && !workspaceId) {
     throw new Error("TOOLJET_WORKSPACE_ID is required alongside TOOLJET_SESSION_TOKEN.");
@@ -61824,13 +61858,13 @@ import { randomUUID as randomUUID2 } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 
 // dist/pageIcons.js
-import { readFileSync as readFileSync4 } from "node:fs";
+import { readFileSync as readFileSync5 } from "node:fs";
 var cached3;
 var normalizedName = (value2) => value2.trim().replace(/^icon/i, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
 function icons() {
   if (cached3)
     return cached3;
-  const catalog = JSON.parse(readFileSync4(new URL("../data/page-icons.json", import.meta.url), "utf8"));
+  const catalog = JSON.parse(readFileSync5(new URL("../data/page-icons.json", import.meta.url), "utf8"));
   if (catalog.package !== "@tabler/icons-react" || !catalog.version || !Array.isArray(catalog.names) || !catalog.names.length || !catalog.names.every((name2) => typeof name2 === "string" && /^Icon[A-Za-z0-9]+$/.test(name2))) {
     throw new Error("Invalid page icon catalog; regenerate data/page-icons.json from ToolJet frontend dependencies.");
   }
@@ -63636,7 +63670,7 @@ function assertPersistableQueryToggles(options2, subject) {
 var import_parser11 = __toESM(require_lib(), 1);
 
 // dist/datasourceCatalog.js
-import { readFileSync as readFileSync5 } from "node:fs";
+import { readFileSync as readFileSync6 } from "node:fs";
 import { fileURLToPath as fileURLToPath4 } from "node:url";
 import { dirname as dirname5, resolve as resolve4 } from "node:path";
 var COMMON_QUERY_OPTION_FIELDS = {
@@ -63670,7 +63704,7 @@ var dataPath2 = resolve4(dirname5(fileURLToPath4(import.meta.url)), "../data/dat
 var cache2 = null;
 function load2() {
   if (!cache2)
-    cache2 = JSON.parse(readFileSync5(dataPath2, "utf8"));
+    cache2 = JSON.parse(readFileSync6(dataPath2, "utf8"));
   return cache2;
 }
 function getDatasourceCatalog() {
@@ -73707,7 +73741,7 @@ function useWorkspaceTool(client) {
 }
 
 // dist/tools/createApp.js
-import { existsSync, readFileSync as readFileSync6 } from "node:fs";
+import { existsSync, readFileSync as readFileSync7 } from "node:fs";
 import { dirname as dirname6, resolve as resolve5 } from "node:path";
 import { fileURLToPath as fileURLToPath5 } from "node:url";
 
@@ -73945,7 +73979,7 @@ function loadStandardTheme() {
     if (!path) {
       throw new Error(`standard theme file not found (looked in ${standardThemeCandidates.join(", ")})`);
     }
-    standardThemeCache = JSON.parse(readFileSync6(path, "utf8"));
+    standardThemeCache = JSON.parse(readFileSync7(path, "utf8"));
   }
   return standardThemeCache;
 }
@@ -74738,20 +74772,20 @@ function dropTableTool(client) {
 // dist/tools/codeApp.js
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { existsSync as existsSync2, mkdirSync, readFileSync as readFileSync7, readdirSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { dirname as dirname7, join, relative, resolve as resolve6, sep } from "node:path";
+import { existsSync as existsSync2, mkdirSync, readFileSync as readFileSync8, readdirSync, writeFileSync } from "node:fs";
+import { homedir as homedir2 } from "node:os";
+import { dirname as dirname7, join as join2, relative, resolve as resolve6, sep } from "node:path";
 var run = promisify(execFile);
-var root = () => resolve6(process.env.TOOLJET_CODE_APP_ROOT || join(homedir(), "tooljet-code-apps"));
+var root = () => resolve6(process.env.TOOLJET_CODE_APP_ROOT || join2(homedir2(), "tooljet-code-apps"));
 var NAME = /^[a-z][a-z0-9-]{1,40}$/;
 var projectDir = (name2) => {
   if (!NAME.test(name2))
     throw new Error(`name must match ${NAME} (lowercase letters, digits, hyphens)`);
-  return join(root(), name2);
+  return join2(root(), name2);
 };
 var requireProject = (name2) => {
   const dir = projectDir(name2);
-  if (!existsSync2(join(dir, "app.json")))
+  if (!existsSync2(join2(dir, "app.json")))
     throw new Error(`no app project "${name2}" under ${root()}; call code_app_scaffold first`);
   return dir;
 };
@@ -74769,7 +74803,7 @@ var listFiles = (dir, base2 = dir, out = []) => {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (["node_modules", "dist"].includes(entry.name) || entry.name.startsWith("."))
       continue;
-    const full = join(dir, entry.name);
+    const full = join2(dir, entry.name);
     if (entry.isDirectory())
       listFiles(full, base2, out);
     else if (TEXT.test(entry.name) && entry.name !== "package-lock.json")
@@ -74809,20 +74843,22 @@ function codeAppScaffoldTool() {
     async handler(args) {
       try {
         const dir = projectDir(args.name);
-        if (!existsSync2(join(dir, "app.json"))) {
+        if (!existsSync2(join2(dir, "app.json"))) {
           mkdirSync(root(), { recursive: true });
-          const init = await cli(root(), ["app", "init", args.name, "--name", args.display_name]);
+          const init = await cli(root(), ["app", "init", args.name, "--name", args.display_name, "--no-install"]);
           if (init.code !== 0)
             throw new Error(`tooljet app init failed: ${init.output}`);
-          const appFile = join(dir, "app.json");
-          writeFileSync(appFile, JSON.stringify({ ...JSON.parse(readFileSync7(appFile, "utf8")), appId: args.app_id }, null, 2) + "\n");
+          const appFile = join2(dir, "app.json");
+          writeFileSync(appFile, JSON.stringify({ ...JSON.parse(readFileSync8(appFile, "utf8")), appId: args.app_id }, null, 2) + "\n");
           if (process.env.TOOLJET_SDK_SPEC) {
-            const pkgFile = join(dir, "frontend", "package.json");
-            const pkg = JSON.parse(readFileSync7(pkgFile, "utf8"));
+            const pkgFile = join2(dir, "frontend", "package.json");
+            const pkg = JSON.parse(readFileSync8(pkgFile, "utf8"));
             pkg.dependencies["@tooljet/custom-component-sdk"] = process.env.TOOLJET_SDK_SPEC;
             writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + "\n");
           }
-          await run("npm", ["install", "--no-audit", "--no-fund"], { cwd: join(dir, "frontend"), timeout: 3e5, maxBuffer: 16 * 1024 * 1024 });
+          const install = await cli(dir, ["app", "install"]);
+          if (install.code !== 0)
+            throw new Error(`tooljet app install failed: ${install.output}`);
         }
         const pull = await cli(dir, ["app", "pull"]);
         if (pull.code !== 0)
@@ -74830,8 +74866,8 @@ function codeAppScaffoldTool() {
         return ok({
           project_dir: dir,
           files: listFiles(dir),
-          app_json: JSON.parse(readFileSync7(join(dir, "app.json"), "utf8")),
-          generated_hooks: readFileSync7(join(dir, "frontend", "src", "tooljet.gen.ts"), "utf8"),
+          app_json: JSON.parse(readFileSync8(join2(dir, "app.json"), "utf8")),
+          generated_hooks: readFileSync8(join2(dir, "frontend", "src", "tooljet.gen.ts"), "utf8"),
           next: "Set the routes in app.json, write the screens under frontend/src/App/, then code_app_build until ok, then code_app_install."
         });
       } catch (err) {
@@ -74856,7 +74892,7 @@ function codeAppReadFilesTool() {
           const full = resolve6(dir, p);
           if (relative(dir, full).startsWith(".."))
             throw new Error(`"${p}" is outside the project`);
-          return [p, readFileSync7(full, "utf8")];
+          return [p, readFileSync8(full, "utf8")];
         }));
         return ok({ project_dir: dir, files });
       } catch (err) {
@@ -74904,7 +74940,7 @@ function codeAppBuildTool() {
         const dir = requireProject(args.name);
         const started = Date.now();
         const pull = await cli(dir, ["app", "pull"]);
-        const build = await cli(join(dir, "frontend"), ["library", "build"]);
+        const build = await cli(join2(dir, "frontend"), ["library", "build"]);
         const tsErrors = Number(/TypeScript compiled \((\d+) errors\)/.exec(build.output)?.[1] ?? (build.code === 0 ? 0 : 1));
         const check2 = await cli(dir, ["app", "check", "--offline"]);
         const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check2.code === 0;
@@ -82158,7 +82194,7 @@ function autoFitHtmlHeights(args) {
 
 // dist/pageReplaceInPlace.js
 import { randomUUID as randomUUID4 } from "node:crypto";
-import { readFileSync as readFileSync8 } from "node:fs";
+import { readFileSync as readFileSync9 } from "node:fs";
 import { dirname as dirname8, resolve as resolve7 } from "node:path";
 import { fileURLToPath as fileURLToPath6 } from "node:url";
 var SECTIONS2 = ["properties", "styles", "validation", "others"];
@@ -82167,7 +82203,7 @@ function bundledDefinitions() {
   if (!bundled) {
     const path = resolve7(dirname8(fileURLToPath6(import.meta.url)), "../data/component-default-definitions.json");
     try {
-      bundled = JSON.parse(readFileSync8(path, "utf8")).definitions;
+      bundled = JSON.parse(readFileSync9(path, "utf8")).definitions;
     } catch {
       bundled = {};
     }
@@ -85986,7 +86022,7 @@ function registerTools(server, client, runtime = runtimeFreshness) {
 
 // dist/catalogResources.js
 import { createHash as createHash3 } from "node:crypto";
-import { readFileSync as readFileSync9 } from "node:fs";
+import { readFileSync as readFileSync10 } from "node:fs";
 import { dirname as dirname9, resolve as resolve8 } from "node:path";
 import { fileURLToPath as fileURLToPath8 } from "node:url";
 var PREFACE = "Read-only catalog data, for clients that validate or build plans locally. ";
@@ -86024,7 +86060,7 @@ var dataDir = resolve8(dirname9(fileURLToPath8(import.meta.url)), "../data");
 var versions = /* @__PURE__ */ new Map();
 var payloads = /* @__PURE__ */ new Map();
 var readPart = (file2) => {
-  const bytes = readFileSync9(resolve8(dataDir, file2));
+  const bytes = readFileSync10(resolve8(dataDir, file2));
   if (file2 !== "component-schemas.json")
     return bytes;
   const live = JSON.stringify(allComponentSchemas());
