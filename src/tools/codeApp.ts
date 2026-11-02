@@ -87,10 +87,10 @@ async function cli(cwd: string, args: string[], timeoutMs = 300_000): Promise<{ 
 export function codeAppScaffoldTool(): ToolDef {
   return {
     name: 'code_app_scaffold',
-    title: 'Scaffold Code Page',
+    title: 'Scaffold Code Mode App',
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     description:
-      'Create an app project for a code page of an app you created with create_app: app.json (the code page and its routes) and ' +
+      'Create the Code mode project for an app you created with create_app: app.json (the app and its routes, its screens) and ' +
       'frontend/ (React + TypeScript on shadcn + Tailwind, react-router through AppRouter). Create the app\'s queries with add_queries ' +
       'BEFORE this, so the typed hooks it writes (frontend/src/tooljet.gen.ts: useAppQuery, row types, ROUTES, routePath, PAGES) list them. ' +
       'Returns the files and the generated hooks.',
@@ -137,9 +137,9 @@ export function codeAppScaffoldTool(): ToolDef {
 export function codeAppReadFilesTool(): ToolDef {
   return {
     name: 'code_app_read_files',
-    title: 'Read Code Page Files',
+    title: 'Read Code Mode Files',
     annotations: { readOnlyHint: true, openWorldHint: false },
-    description: 'Read a code page project. Without paths, lists its files; with paths, returns their contents (app.json, frontend/...).',
+    description: 'Read a Code mode project. Without paths, lists its files; with paths, returns their contents (app.json, frontend/...).',
     inputSchema: { name: z.string().regex(NAME), paths: z.array(z.string()).optional() },
     async handler(args: { name: string; paths?: string[] }) {
       try {
@@ -163,10 +163,10 @@ export function codeAppReadFilesTool(): ToolDef {
 export function codeAppWriteFilesTool(): ToolDef {
   return {
     name: 'code_app_write_files',
-    title: 'Write Code Page Files',
+    title: 'Write Code Mode Files',
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     description:
-      'Write whole files into a code page project: app.json (name, codePage, routes [{id, path, title}]), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. ' +
+      'Write whole files into a Code mode project: app.json (name, codePage, routes [{id, path, title}]), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. ' +
       'Read data with useAppQuery from ../tooljet.gen; write by awaiting a query\'s run({ ...parameters }); route with AppRouter, ' +
       'react-router <Routes>/<Route> whose paths are exactly app.json\'s, and routePath(id, params). Then code_app_build.',
     inputSchema: {
@@ -194,10 +194,10 @@ export function codeAppWriteFilesTool(): ToolDef {
 export function codeAppBuildTool(): ToolDef {
   return {
     name: 'code_app_build',
-    title: 'Build Code Page',
+    title: 'Build Code Mode App',
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     description:
-      "Refresh the typed hooks from the app's current queries (tooljet app pull), build the code page (TypeScript, Tailwind, " +
+      "Refresh the typed hooks from the app's current queries (tooljet app pull), build the app's code (TypeScript, Tailwind, " +
       'manifest), and check it against the app (tooljet app check: every useAppQuery name, route, link and page must exist). ' +
       'Returns ok and every error to fix. Repeat write and build until ok, then code_app_install.',
     inputSchema: { name: z.string().regex(NAME) },
@@ -230,10 +230,10 @@ export function codeAppBuildTool(): ToolDef {
 export function codeAppInstallTool(): ToolDef {
   return {
     name: 'code_app_install',
-    title: 'Install Code Page',
+    title: 'Install Code Mode App',
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     description:
-      "Upload the code page to the app (tooljet app dev --once): it creates or updates the code page, one hidden page per route " +
+      "Upload the app's code (tooljet app dev --once): it creates or updates the app's Code mode page, one hidden page per route " +
       "(set each route's page permissions on it), the page's root component, and pins the app version to this build. Build first. " +
       'Returns the editor URL.',
     inputSchema: { name: z.string().regex(NAME) },

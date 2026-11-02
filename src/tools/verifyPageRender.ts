@@ -233,23 +233,23 @@ export function codePageAuditScript(): RenderFinding[] | null {
   const width = window.innerWidth;
   const host = document.scrollingElement;
   if (host && host.scrollWidth > host.clientWidth + 1)
-    findings.push({ kind: 'overflow', component: 'code page', detail: `the page scrolls sideways at ${width}px (${host.scrollWidth}px wide)` });
+    findings.push({ kind: 'overflow', component: 'Code mode app', detail: `the page scrolls sideways at ${width}px (${host.scrollWidth}px wide)` });
   if (!doc || !doc.body) {
-    findings.push({ kind: 'empty_render', component: 'code page', detail: 'the code page frame has no document' });
+    findings.push({ kind: 'empty_render', component: 'Code mode app', detail: 'the Code mode frame has no document' });
     return findings;
   }
   const root = doc.getElementById('tj-frame-root');
   const text = (root?.innerText ?? '').trim();
   if (!root || root.children.length === 0 || (!text && !root.querySelector('svg,canvas,img'))) {
-    findings.push({ kind: 'empty_render', component: 'code page', detail: 'the code page rendered nothing' });
+    findings.push({ kind: 'empty_render', component: 'Code mode app', detail: 'the Code mode app rendered nothing' });
     return findings;
   }
   const scroller = doc.scrollingElement;
   if (scroller && scroller.scrollWidth > scroller.clientWidth + 1)
-    findings.push({ kind: 'overflow', component: 'code page', detail: `the app scrolls sideways at ${width}px (${scroller.scrollWidth}px of content in ${scroller.clientWidth}px)` });
+    findings.push({ kind: 'overflow', component: 'Code mode app', detail: `the app scrolls sideways at ${width}px (${scroller.scrollWidth}px of content in ${scroller.clientWidth}px)` });
   const frameRect = frame.getBoundingClientRect();
   if (frameRect.bottom > window.innerHeight + 1)
-    findings.push({ kind: 'clipped', component: 'code page', detail: `the app runs ${Math.round(frameRect.bottom - window.innerHeight)}px below the window` });
+    findings.push({ kind: 'clipped', component: 'Code mode app', detail: `the app runs ${Math.round(frameRect.bottom - window.innerHeight)}px below the window` });
   const describe = (el: Element) => {
     const id = el.getAttribute('data-testid') || el.id;
     const label = (el.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 40);
@@ -269,9 +269,9 @@ export function codePageAuditScript(): RenderFinding[] | null {
     }
     if (!scrolls) cut.push(describe(el));
   }
-  if (cut.length) findings.push({ kind: 'clipped', component: 'code page', detail: `cut off at the right edge at ${width}px: ${cut.join(', ')}` });
+  if (cut.length) findings.push({ kind: 'clipped', component: 'Code mode app', detail: `cut off at the right edge at ${width}px: ${cut.join(', ')}` });
   const placeholder = text.match(/\b(undefined|NaN|Invalid date|\[object Object\])\b/);
-  if (placeholder) findings.push({ kind: 'placeholder_text', component: 'code page', detail: `the app shows "${placeholder[1]}"` });
+  if (placeholder) findings.push({ kind: 'placeholder_text', component: 'Code mode app', detail: `the app shows "${placeholder[1]}"` });
   return findings;
 }
 
@@ -495,8 +495,8 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
     annotations: { readOnlyHint: true, openWorldHint: true },
     description:
       'Render audit of one page or every page of an app in a headless browser (1600x900 unless viewport_width is set), after the app is built. ' +
-      'On a code page it checks inside the app: sideways scrolling, content cut off at the right edge, an empty app and placeholder ' +
-      'text; pass route to open one route of it and viewport_width (375, 768, 1280) to check each width. A code page also gets ' +
+      'On an app in Code mode it checks inside the app: sideways scrolling, content cut off at the right edge, an empty app and placeholder ' +
+      'text; pass route to open one route of it and viewport_width (375, 768, 1280) to check each width. An app in Code mode also gets ' +
       'an axe-core accessibility run (WCAG 2 A/AA; `accessibility` lists violations by impact) and a screenshot path. ' +
       'Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken ' +
       'expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", ' +
@@ -511,7 +511,7 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
       page_handle: z.string().optional().describe('one page handle; omit to audit every page'),
       viewer_url: z.string().optional().describe('canonical viewer base URL; alternate origins require host configuration in MCP_RENDER_AUDIT_ALLOWED_ORIGINS'),
       viewport_width: z.number().int().min(320).max(2560).optional().describe('window width in px; default 1600'),
-      route: z.string().regex(/^\/[A-Za-z0-9_\-\/:.]*$/).optional().describe('a code page route path to open, such as /orders/36'),
+      route: z.string().regex(/^\/[A-Za-z0-9_\-\/:.]*$/).optional().describe('a Code mode route path to open, such as /orders/36'),
     },
     async handler(args: { app_id: string; page_handle?: string; viewer_url?: string; viewport_width?: number; route?: string }) {
       try {
