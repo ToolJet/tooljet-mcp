@@ -285,3 +285,23 @@ describe('render audit of a code page', () => {
     expect(schema.safeParse({ app_id: 'a', route: '/orders/:id' }).success).toBe(true);
   });
 });
+
+describe('render audit of a code page: axe and screenshot', () => {
+  it('runs axe-core in the frame, keeps violations apart from findings, and saves a screenshot', async () => {
+    vi.stubEnv('MCP_RENDER_AUDIT_SCREENSHOTS', '/tmp/tj-audit-test');
+    const f = browserFixture();
+    const page = await f.context.newPage();
+    const violation = { id: 'button-name', impact: 'critical', help: 'Buttons must have discernible text', nodes: 2, targets: ['#a', '#b'] };
+    const frameEvaluate = vi.fn().mockResolvedValueOnce(undefined).mockResolvedValueOnce([violation]);
+    page.evaluate = vi.fn().mockResolvedValueOnce({ widgets: 1, findings: [] }).mockResolvedValueOnce([]);
+    (page as any).$ = vi.fn().mockResolvedValue({ contentFrame: async () => ({ evaluate: frameEvaluate }) });
+    (page as any).screenshot = vi.fn().mockResolvedValue(undefined);
+    f.context.newPage = vi.fn().mockResolvedValue(page);
+    const [report] = await auditPages([{ page: 'home', url: 'http://viewer.test/applications/app1/home?route=%2Forders%2F36' }], { viewportWidth: 375 }, f.driver);
+    expect(report.findings).toEqual([]);
+    expect(report.accessibility).toEqual([violation]);
+    expect(String(frameEvaluate.mock.calls[0][0])).toContain('axe');
+    expect(report.screenshot).toBe('/tmp/tj-audit-test/app1-home-orders-36-375.png');
+    expect((page as any).screenshot).toHaveBeenCalledWith({ path: '/tmp/tj-audit-test/app1-home-orders-36-375.png', fullPage: false });
+  });
+});

@@ -1,4 +1,8 @@
 import { z } from 'zod';
+import { mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import axe from 'axe-core';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { renderAuditBase, renderAuditOrigins, renderAuditUrlAllowed, renderAuditRequest, type RenderAuditQueries } from '../renderAuditPolicy.js';
@@ -17,11 +21,50 @@ export interface RenderFinding {
   reason?: 'browser_unavailable' | 'auth_required' | 'navigation_failed' | 'blocked_destination' | 'redirect_blocked' | 'blocked_execution' | 'no_widgets';
 }
 
+export interface AxeViolation {
+  id: string;
+  impact: string | null;
+  help: string;
+  nodes: number;
+  targets: string[];
+}
+
 export interface PageRenderReport {
   page: string;
   url: string;
   widgets: number;
   findings: RenderFinding[];
+  /** Code pages: axe-core violations inside the page's frame (WCAG 2 A/AA rules). Reported, not counted as findings. */
+  accessibility?: AxeViolation[];
+  /** Code pages: a screenshot of the window at this width. */
+  screenshot?: string;
+}
+
+/** Where code page screenshots go: MCP_RENDER_AUDIT_SCREENSHOTS, else a folder under the system temp directory. */
+const screenshotDir = (): string => process.env.MCP_RENDER_AUDIT_SCREENSHOTS || join(tmpdir(), 'tooljet-render-audit');
+
+/**
+ * axe-core inside a code page's frame. The source is evaluated through the browser's debugging protocol, which the
+ * frame's Content Security Policy (no eval, no inline scripts) does not apply to, so the page's own policy stays on.
+ */
+async function axeInCodePage(page: any): Promise<AxeViolation[] | undefined> {
+  const handle = await page.$('iframe[data-tj-code-page-frame]');
+  const frame = await handle?.contentFrame();
+  if (!frame) return undefined;
+  await frame.evaluate(`${(axe as any).source}\n;void 0`);
+  return frame.evaluate(() =>
+    (window as any).axe
+      .run(document, { resultTypes: ['violations'], runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } })
+      .then((r: any) =>
+        r.violations.map((v: any) => ({
+          id: v.id,
+          impact: v.impact ?? null,
+          help: v.help,
+          nodes: v.nodes.length,
+          targets: v.nodes.slice(0, 3).map((n: any) => [].concat(n.target).join(' ')),
+        }))
+      )
+  );
 }
 
 /** Runs inside the page: the same walk as the campaign's audit script, over ToolJet's widget containers. */
@@ -391,7 +434,27 @@ export async function auditPages(
       const codePage = (await page.evaluate(codePageAuditScript)) as RenderFinding[] | null;
       if (Array.isArray(codePage)) {
         // The root widget is the code page's container; its own findings come from inside the frame.
-        reports[index] = { page: p.page, url: p.url, widgets: result.widgets, findings: [...codePage, ...blockFindings] };
+        const accessibility = await axeInCodePage(page).catch(() => undefined);
+        let screenshot: string | undefined;
+        try {
+          const dir = screenshotDir();
+          mkdirSync(dir, { recursive: true });
+          const route = new URL(p.url).searchParams.get('route') || '/';
+          const app = /\/applications\/([^/?]+)/.exec(new URL(p.url).pathname)?.[1]?.slice(0, 8) ?? 'app';
+          const slug = `${app}-${p.page}${route.replace(/[^A-Za-z0-9]+/g, '-')}`.replace(/-+$/, '');
+          screenshot = join(dir, `${slug}-${options.viewportWidth ?? 1600}.png`);
+          await page.screenshot({ path: screenshot, fullPage: false });
+        } catch {
+          screenshot = undefined;
+        }
+        reports[index] = {
+          page: p.page,
+          url: p.url,
+          widgets: result.widgets,
+          findings: [...codePage, ...blockFindings],
+          ...(accessibility ? { accessibility } : {}),
+          ...(screenshot ? { screenshot } : {}),
+        };
         return;
       }
       // A page left empty after a blocked request names that request: a bare no_widgets hid why every page of
@@ -433,7 +496,8 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
     description:
       'Render audit of one page or every page of an app in a headless browser (1600x900 unless viewport_width is set), after the app is built. ' +
       'On a code page it checks inside the app: sideways scrolling, content cut off at the right edge, an empty app and placeholder ' +
-      'text; pass route to open one route of it and viewport_width (375, 768, 1280) to check each width. ' +
+      'text; pass route to open one route of it and viewport_width (375, 768, 1280) to check each width. A code page also gets ' +
+      'an axe-core accessibility run (WCAG 2 A/AA; `accessibility` lists violations by impact) and a screenshot path. ' +
       'Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken ' +
       'expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", ' +
       '"Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. ' +
@@ -472,7 +536,7 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
           savedQueries: summary,
           viewportWidth: args.viewport_width,
           // MCP_RENDER_AUDIT_SESSION=off keeps the browser unauthenticated (private apps are then reported unverified).
-          session: process.env.MCP_RENDER_AUDIT_SESSION === 'off' ? undefined : await client.viewerSession?.().catch(() => undefined),
+          session: process.env.MCP_RENDER_AUDIT_SESSION === 'off' ? undefined : await client.viewerSession?.(args.app_id).catch(() => undefined),
         };
         const reports = await auditPages(targets, options, driver);
         // A private app redirects the headless browser to sign-in, and this audit will NOT publish it
@@ -481,7 +545,8 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
         // the app public with nothing to notice it. An unreachable page is reported as unreachable and
         // the operator gives the audit a viewer session instead.
         const total = reports.reduce((n, r) => n + r.findings.length, 0);
-        return ok({ pages: reports, ok: total === 0, findings: total });
+        const axeCount = reports.reduce((n, r) => n + (r.accessibility?.length ?? 0), 0);
+        return ok({ pages: reports, ok: total === 0, findings: total, ...(reports.some((r) => r.accessibility) ? { accessibility_violations: axeCount } : {}) });
       } catch (err) {
         return fail(err);
       }

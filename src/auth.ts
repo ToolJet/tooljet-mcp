@@ -23,7 +23,8 @@ export interface Auth {
   /** Switch the ACTIVE workspace for all subsequent calls; re-issues the session cookie. */
   switchWorkspace(workspaceId: string): Promise<Workspace>;
   /** The current session token (logging in first), for the render audit's viewer browser. */
-  viewerSession?(): Promise<string | undefined>;
+  /** A session for the viewer: pinned to `appId` when given (the server's read-only render-check session). */
+  viewerSession?(appId?: string): Promise<string | undefined>;
 }
 
 export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Auth {
@@ -196,7 +197,28 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
     return current;
   }
 
-  async function viewerSession(): Promise<string | undefined> {
+  const pinnedSessions = new Map<string, string>();
+  async function viewerSession(appId?: string): Promise<string | undefined> {
+    // A workspace token's own session is the automation session, whose ceiling excludes the viewer's boot reads
+    // (session, app access, environments): the viewer then shows "App not found". The server mints a read-only
+    // session pinned to one app for exactly this (personal-access-tokens AGENTS.md, "app-pinned render check").
+    if (appId && config.pat && !config.sessionToken) {
+      const cached = pinnedSessions.get(appId);
+      if (cached) return cached;
+      const res = await fetchImpl(`${config.apiUrl}/api/personal-access-tokens/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.pat}` },
+        body: JSON.stringify({ appId }),
+      });
+      recordHttpResponse(res);
+      if (res.ok) {
+        const body = (await res.json()) as { authToken?: string };
+        if (body.authToken) {
+          pinnedSessions.set(appId, body.authToken);
+          return body.authToken;
+        }
+      }
+    }
     if (!token) await login();
     return token;
   }

@@ -697,7 +697,7 @@ export interface ToolJetClient {
   /** Whether the instance has a Google Maps API key in its public config (the Map component needs it); undefined when unknown. */
   hasGoogleMapsKey?(): Promise<boolean | undefined>;
   /** The builder's session token, for the render audit's browser. */
-  viewerSession?(): Promise<string | undefined>;
+  viewerSession?(appId?: string): Promise<string | undefined>;
   /** The name of the version being edited (the preview's version= parameter). */
   editingVersionName?(appId: string): Promise<string | undefined>;
 }
@@ -3207,7 +3207,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     deletePage,
     createEvents,
     hasGoogleMapsKey,
-    viewerSession: () => auth.viewerSession?.() ?? Promise.resolve(undefined),
+    viewerSession: (appId?: string) => auth.viewerSession?.(appId) ?? Promise.resolve(undefined),
     editingVersionName: async (appId: string) => ((await getApp(appId))?.editing_version?.name as string | undefined) ?? undefined,
     getDevelopmentEnvironmentId,
     listDatasources,
