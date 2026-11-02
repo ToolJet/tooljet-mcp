@@ -68,6 +68,9 @@ const strip = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
 const cliEnv = () => ({
   ...process.env,
   FORCE_COLOR: '0',
+  // The CLI is oclif: under NODE_ENV=development it loads its TypeScript sources instead of the build and fails
+  // ("Unexpected token ':'"). A ToolJet server running in development passes that on to this MCP server.
+  NODE_ENV: 'production',
   TOOLJET_URL: process.env.TOOLJET_URL ?? '',
   TOOLJET_PAT: process.env.TOOLJET_PAT ?? '',
   TOOLJET_APP_URL: process.env.TOOLJET_DEPLOYMENT_URL ?? process.env.TOOLJET_APP_URL ?? '',
