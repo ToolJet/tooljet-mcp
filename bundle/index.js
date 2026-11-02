@@ -107510,9 +107510,9 @@ async function cli(cwd, args, timeoutMs = 3e5) {
 function codeAppScaffoldTool() {
   return {
     name: "code_app_scaffold",
-    title: "Scaffold Code Page",
+    title: "Scaffold Code Mode App",
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-    description: "Create an app project for a code page of an app you created with create_app: app.json (the code page and its routes) and frontend/ (React + TypeScript on shadcn + Tailwind, react-router through AppRouter). Create the app's queries with add_queries BEFORE this, so the typed hooks it writes (frontend/src/tooljet.gen.ts: useAppQuery, row types, ROUTES, routePath, PAGES) list them. Returns the files and the generated hooks.",
+    description: "Create the Code mode project for an app you created with create_app: app.json (the app and its routes, its screens) and frontend/ (React + TypeScript on shadcn + Tailwind, react-router through AppRouter). Create the app's queries with add_queries BEFORE this, so the typed hooks it writes (frontend/src/tooljet.gen.ts: useAppQuery, row types, ROUTES, routePath, PAGES) list them. Returns the files and the generated hooks.",
     inputSchema: {
       name: external_exports.string().regex(NAME).describe("Project folder: lowercase letters, digits and hyphens, e.g. inventory-console"),
       display_name: external_exports.string().min(1).max(100).describe("The app's name"),
@@ -107557,9 +107557,9 @@ function codeAppScaffoldTool() {
 function codeAppReadFilesTool() {
   return {
     name: "code_app_read_files",
-    title: "Read Code Page Files",
+    title: "Read Code Mode Files",
     annotations: { readOnlyHint: true, openWorldHint: false },
-    description: "Read a code page project. Without paths, lists its files; with paths, returns their contents (app.json, frontend/...).",
+    description: "Read a Code mode project. Without paths, lists its files; with paths, returns their contents (app.json, frontend/...).",
     inputSchema: { name: external_exports.string().regex(NAME), paths: external_exports.array(external_exports.string()).optional() },
     async handler(args) {
       try {
@@ -107582,9 +107582,9 @@ function codeAppReadFilesTool() {
 function codeAppWriteFilesTool() {
   return {
     name: "code_app_write_files",
-    title: "Write Code Page Files",
+    title: "Write Code Mode Files",
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-    description: "Write whole files into a code page project: app.json (name, codePage, routes [{id, path, title}]), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. Read data with useAppQuery from ../tooljet.gen; write by awaiting a query's run({ ...parameters }); route with AppRouter, react-router <Routes>/<Route> whose paths are exactly app.json's, and routePath(id, params). Then code_app_build.",
+    description: "Write whole files into a Code mode project: app.json (name, codePage, routes [{id, path, title}]), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. Read data with useAppQuery from ../tooljet.gen; write by awaiting a query's run({ ...parameters }); route with AppRouter, react-router <Routes>/<Route> whose paths are exactly app.json's, and routePath(id, params). Then code_app_build.",
     inputSchema: {
       name: external_exports.string().regex(NAME),
       files: external_exports.array(external_exports.object({ path: external_exports.string(), content: external_exports.string() })).min(1).max(40)
@@ -107609,9 +107609,9 @@ function codeAppWriteFilesTool() {
 function codeAppBuildTool() {
   return {
     name: "code_app_build",
-    title: "Build Code Page",
+    title: "Build Code Mode App",
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-    description: "Refresh the typed hooks from the app's current queries (tooljet app pull), build the code page (TypeScript, Tailwind, manifest), and check it against the app (tooljet app check: every useAppQuery name, route, link and page must exist). Returns ok and every error to fix. Repeat write and build until ok, then code_app_install.",
+    description: "Refresh the typed hooks from the app's current queries (tooljet app pull), build the app's code (TypeScript, Tailwind, manifest), and check it against the app (tooljet app check: every useAppQuery name, route, link and page must exist). Returns ok and every error to fix. Repeat write and build until ok, then code_app_install.",
     inputSchema: { name: external_exports.string().regex(NAME) },
     async handler(args) {
       try {
@@ -107641,9 +107641,9 @@ function codeAppBuildTool() {
 function codeAppInstallTool() {
   return {
     name: "code_app_install",
-    title: "Install Code Page",
+    title: "Install Code Mode App",
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-    description: "Upload the code page to the app (tooljet app dev --once): it creates or updates the code page, one hidden page per route (set each route's page permissions on it), the page's root component, and pins the app version to this build. Build first. Returns the editor URL.",
+    description: "Upload the app's code (tooljet app dev --once): it creates or updates the app's Code mode page, one hidden page per route (set each route's page permissions on it), the page's root component, and pins the app version to this build. Build first. Returns the editor URL.",
     inputSchema: { name: external_exports.string().regex(NAME) },
     async handler(args) {
       try {
@@ -110499,23 +110499,23 @@ function codePageAuditScript() {
   const width = window.innerWidth;
   const host = document.scrollingElement;
   if (host && host.scrollWidth > host.clientWidth + 1)
-    findings.push({ kind: "overflow", component: "code page", detail: `the page scrolls sideways at ${width}px (${host.scrollWidth}px wide)` });
+    findings.push({ kind: "overflow", component: "Code mode app", detail: `the page scrolls sideways at ${width}px (${host.scrollWidth}px wide)` });
   if (!doc || !doc.body) {
-    findings.push({ kind: "empty_render", component: "code page", detail: "the code page frame has no document" });
+    findings.push({ kind: "empty_render", component: "Code mode app", detail: "the Code mode frame has no document" });
     return findings;
   }
   const root2 = doc.getElementById("tj-frame-root");
   const text3 = (root2?.innerText ?? "").trim();
   if (!root2 || root2.children.length === 0 || !text3 && !root2.querySelector("svg,canvas,img")) {
-    findings.push({ kind: "empty_render", component: "code page", detail: "the code page rendered nothing" });
+    findings.push({ kind: "empty_render", component: "Code mode app", detail: "the Code mode app rendered nothing" });
     return findings;
   }
   const scroller = doc.scrollingElement;
   if (scroller && scroller.scrollWidth > scroller.clientWidth + 1)
-    findings.push({ kind: "overflow", component: "code page", detail: `the app scrolls sideways at ${width}px (${scroller.scrollWidth}px of content in ${scroller.clientWidth}px)` });
+    findings.push({ kind: "overflow", component: "Code mode app", detail: `the app scrolls sideways at ${width}px (${scroller.scrollWidth}px of content in ${scroller.clientWidth}px)` });
   const frameRect = frame.getBoundingClientRect();
   if (frameRect.bottom > window.innerHeight + 1)
-    findings.push({ kind: "clipped", component: "code page", detail: `the app runs ${Math.round(frameRect.bottom - window.innerHeight)}px below the window` });
+    findings.push({ kind: "clipped", component: "Code mode app", detail: `the app runs ${Math.round(frameRect.bottom - window.innerHeight)}px below the window` });
   const describe4 = (el) => {
     const id = el.getAttribute("data-testid") || el.id;
     const label3 = (el.textContent ?? "").trim().replace(/\s+/g, " ").slice(0, 40);
@@ -110541,10 +110541,10 @@ function codePageAuditScript() {
       cut.push(describe4(el));
   }
   if (cut.length)
-    findings.push({ kind: "clipped", component: "code page", detail: `cut off at the right edge at ${width}px: ${cut.join(", ")}` });
+    findings.push({ kind: "clipped", component: "Code mode app", detail: `cut off at the right edge at ${width}px: ${cut.join(", ")}` });
   const placeholder = text3.match(/\b(undefined|NaN|Invalid date|\[object Object\])\b/);
   if (placeholder)
-    findings.push({ kind: "placeholder_text", component: "code page", detail: `the app shows "${placeholder[1]}"` });
+    findings.push({ kind: "placeholder_text", component: "Code mode app", detail: `the app shows "${placeholder[1]}"` });
   return findings;
 }
 async function loadPlaywright() {
@@ -110751,13 +110751,13 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
     name: "verify_page_render",
     title: "Verify Page Render",
     annotations: { readOnlyHint: true, openWorldHint: true },
-    description: 'Render audit of one page or every page of an app in a headless browser (1600x900 unless viewport_width is set), after the app is built. On a code page it checks inside the app: sideways scrolling, content cut off at the right edge, an empty app and placeholder text; pass route to open one route of it and viewport_width (375, 768, 1280) to check each width. A code page also gets an axe-core accessibility run (WCAG 2 A/AA; `accessibility` lists violations by impact) and a screenshot path. Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", "Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. Run it once per page before the handoff and review every finding; report unverified behavior explicitly. Opens the version being edited with the builder\'s own ToolJet session (limited to the viewer origin), so a private app is audited without being made public. Only saved, static, bounded read queries may run; writes, dynamic queries and queries requiring confirmation are blocked and reported as unverified. Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.',
+    description: 'Render audit of one page or every page of an app in a headless browser (1600x900 unless viewport_width is set), after the app is built. On an app in Code mode it checks inside the app: sideways scrolling, content cut off at the right edge, an empty app and placeholder text; pass route to open one route of it and viewport_width (375, 768, 1280) to check each width. An app in Code mode also gets an axe-core accessibility run (WCAG 2 A/AA; `accessibility` lists violations by impact) and a screenshot path. Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", "Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. Run it once per page before the handoff and review every finding; report unverified behavior explicitly. Opens the version being edited with the builder\'s own ToolJet session (limited to the viewer origin), so a private app is audited without being made public. Only saved, static, bounded read queries may run; writes, dynamic queries and queries requiring confirmation are blocked and reported as unverified. Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.',
     inputSchema: {
       app_id: external_exports.string().regex(/^[A-Za-z0-9_-]+$/),
       page_handle: external_exports.string().optional().describe("one page handle; omit to audit every page"),
       viewer_url: external_exports.string().optional().describe("canonical viewer base URL; alternate origins require host configuration in MCP_RENDER_AUDIT_ALLOWED_ORIGINS"),
       viewport_width: external_exports.number().int().min(320).max(2560).optional().describe("window width in px; default 1600"),
-      route: external_exports.string().regex(/^\/[A-Za-z0-9_\-\/:.]*$/).optional().describe("a code page route path to open, such as /orders/36")
+      route: external_exports.string().regex(/^\/[A-Za-z0-9_\-\/:.]*$/).optional().describe("a Code mode route path to open, such as /orders/36")
     },
     async handler(args) {
       try {
