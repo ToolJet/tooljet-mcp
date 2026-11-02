@@ -1,33 +1,32 @@
 import { z } from 'zod';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync, copyFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
-import type { ToolJetClient } from '../tooljetClient.js';
-import { loadInstalledPacks, type BuiltinPackInfo } from '../packCatalog.js';
-import { refreshCatalogResources } from '../catalogResources.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 /*
-  Code apps: an app whose whole UI is one React component from a component pack, on a single ToolJet page. These
-  tools give an agent the loop a developer has with the CLI: scaffold a project, read and write its files, build it
-  (TypeScript errors, bundle sizes and the manifest come back), and install the build so the pack's component can
-  be placed with add_components as `Lib_<pack>_<Component>`.
+  Code pages: a ToolJet app page whose whole UI is React code, kept in an app project (app.json + frontend/) and built
+  with the ToolJet CLI (`tooljet app ...`). These tools give an agent the developer's loop:
 
-  Environment:
-    TOOLJET_CODE_APP_ROOT       folder that holds the projects (default ~/tooljet-code-apps)
-    TOOLJET_CLI                 the ToolJet CLI entry point (default: `tooljet` on PATH)
-    TOOLJET_BUILTIN_PACKS_DIR   the server's builtin-packs folder, for installs on an instance whose licence has no
-                                custom component libraries; without it code_app_install explains the publish path
-    TOOLJET_BACKEND_RESTART_CMD a command that restarts the ToolJet server and returns once it answers (the server
-                                reads builtin-packs once per process)
+    code_app_scaffold     tooljet app init, linked to an app the agent created (create_app), then typed hooks (pull)
+    code_app_read_files   read app.json and frontend/src
+    code_app_write_files  write app.json and frontend/src
+    code_app_build        refresh typed hooks from the app's queries, build, and check the code against the app
+    code_app_install      tooljet app dev --once: upload to the dev track and link the code page, its route pages and
+                          the version pin
+
+  The code reads data with useAppQuery('<query>') from frontend/src/tooljet.gen.ts and writes by running a query with
+  parameters (`await useAppQuery('update').run({ id, status })`); queries themselves are created with add_queries.
+
+  Environment: TOOLJET_CODE_APP_ROOT (where projects live, default ~/tooljet-code-apps), TOOLJET_CLI (the CLI entry
+  point, default `tooljet`), TOOLJET_SDK_SPEC (an npm spec for @tooljet/custom-component-sdk, for an unreleased SDK).
+  The CLI reaches ToolJet with this server's TOOLJET_URL and TOOLJET_PAT.
 */
 
 const run = promisify(execFile);
-
 const root = (): string => resolve(process.env.TOOLJET_CODE_APP_ROOT || join(homedir(), 'tooljet-code-apps'));
-const cli = (): string => process.env.TOOLJET_CLI || 'tooljet';
 const NAME = /^[a-z][a-z0-9-]{1,40}$/;
 
 const projectDir = (name: string): string => {
@@ -35,81 +34,94 @@ const projectDir = (name: string): string => {
   return join(root(), name);
 };
 
-const insideProject = (dir: string, path: string): string => {
-  const full = resolve(dir, path);
-  const rel = relative(dir, full);
-  if (!rel || rel.startsWith('..') || rel.split(sep)[0] === 'node_modules' || rel.split(sep)[0] === 'dist' || rel.startsWith('.tooljet')) {
-    throw new Error(`path "${path}" is outside the editable part of the project (src/, configs, package.json)`);
-  }
-  return full;
+const requireProject = (name: string): string => {
+  const dir = projectDir(name);
+  if (!existsSync(join(dir, 'app.json'))) throw new Error(`no app project "${name}" under ${root()}; call code_app_scaffold first`);
+  return dir;
 };
 
-const TEXT = /\.(tsx?|jsx?|mjs|cjs|json|css|scss|md|txt|svg|html)$/i;
+/** What an agent may write: app.json and the frontend's source. */
+const editable = (dir: string, path: string): string => {
+  const full = resolve(dir, path);
+  const rel = relative(dir, full).split(sep).join('/');
+  if (rel === 'app.json' || (rel.startsWith('frontend/src/') && !rel.endsWith('tooljet.gen.ts'))) return full;
+  throw new Error(`"${path}" is not editable: write app.json or files under frontend/src/ (tooljet.gen.ts is generated)`);
+};
+
+const TEXT = /\.(tsx?|jsx?|json|css|md)$/i;
 const listFiles = (dir: string, base = dir, out: string[] = []): string[] => {
   if (!existsSync(dir)) return out;
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name.startsWith('.')) continue;
+    if (['node_modules', 'dist'].includes(entry.name) || entry.name.startsWith('.')) continue;
     const full = join(dir, entry.name);
     if (entry.isDirectory()) listFiles(full, base, out);
-    else if (TEXT.test(entry.name)) out.push(relative(base, full).split(sep).join('/'));
+    else if (TEXT.test(entry.name) && entry.name !== 'package-lock.json') out.push(relative(base, full).split(sep).join('/'));
   }
   return out.sort();
 };
 
-const manifestSummary = (dir: string) => {
-  const file = join(dir, 'dist', 'manifest.json');
-  if (!existsSync(file)) return null;
-  const manifest = JSON.parse(readFileSync(file, 'utf8')) as {
-    components?: Record<string, { props?: { name: string; type: string }[]; events?: { name: string }[]; actions?: { name: string }[] }>;
-  };
-  return Object.fromEntries(
-    Object.entries(manifest.components ?? {}).map(([name, c]) => [
-      name,
-      {
-        props: (c.props ?? []).map((p) => `${p.name}: ${p.type}`),
-        events: (c.events ?? []).map((e) => e.name),
-        actions: (c.actions ?? []).map((a) => a.name),
-      },
-    ]),
-  );
-};
+const strip = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
 
-async function runCli(dir: string, args: string[], timeoutMs: number): Promise<{ stdout: string; stderr: string; code: number }> {
+const cliEnv = () => ({
+  ...process.env,
+  FORCE_COLOR: '0',
+  TOOLJET_URL: process.env.TOOLJET_URL ?? '',
+  TOOLJET_PAT: process.env.TOOLJET_PAT ?? '',
+  TOOLJET_APP_URL: process.env.TOOLJET_DEPLOYMENT_URL ?? process.env.TOOLJET_APP_URL ?? '',
+});
+
+async function cli(cwd: string, args: string[], timeoutMs = 300_000): Promise<{ code: number; output: string }> {
+  const [cmd, pre] = process.env.TOOLJET_CLI ? ['node', [process.env.TOOLJET_CLI]] : ['tooljet', []];
   try {
-    const { stdout, stderr } = await run(cli(), args, { cwd: dir, timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024, env: { ...process.env, FORCE_COLOR: '0' } });
-    return { stdout, stderr, code: 0 };
+    const { stdout, stderr } = await run(cmd, [...pre, ...args], { cwd, timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024, env: cliEnv() });
+    return { code: 0, output: strip(stdout + stderr) };
   } catch (err) {
     const e = err as { stdout?: string; stderr?: string; code?: number; message?: string };
-    return { stdout: e.stdout ?? '', stderr: e.stderr ?? e.message ?? '', code: typeof e.code === 'number' ? e.code : 1 };
+    return { code: typeof e.code === 'number' ? e.code : 1, output: strip((e.stdout ?? '') + (e.stderr ?? e.message ?? '')) };
   }
 }
-
-const strip = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
 
 export function codeAppScaffoldTool(): ToolDef {
   return {
     name: 'code_app_scaffold',
-    title: 'Scaffold Code App',
-    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    title: 'Scaffold Code Page',
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     description:
-      'Create a code-app project: a React + TypeScript component pack on shadcn + Tailwind with react-router, whose one exported ' +
-      'component is the whole app on a single ToolJet page. Returns the project files. Then edit with code_app_write_files, ' +
-      'build with code_app_build, install with code_app_install, and place the component with add_components as Lib_<pack>_App ' +
-      'with its props bound to queries and its events wired to queries. The sample app reads items from the `items` prop, ' +
-      'exposes `pending` {id,status} and fires onUpdate and onRefresh.',
+      'Create an app project for a code page of an app you created with create_app: app.json (the code page and its routes) and ' +
+      'frontend/ (React + TypeScript on shadcn + Tailwind, react-router through AppRouter). Create the app\'s queries with add_queries ' +
+      'BEFORE this, so the typed hooks it writes (frontend/src/tooljet.gen.ts: useAppQuery, row types, ROUTES, routePath, PAGES) list them. ' +
+      'Returns the files and the generated hooks.',
     inputSchema: {
-      name: z.string().regex(NAME).describe('Project and pack id: lowercase letters, digits and hyphens, e.g. inventory-console'),
-      display_name: z.string().min(1).max(100).describe('Human name shown in the builder'),
+      name: z.string().regex(NAME).describe('Project folder: lowercase letters, digits and hyphens, e.g. inventory-console'),
+      display_name: z.string().min(1).max(100).describe("The app's name"),
+      app_id: z.string().uuid().describe('The app from create_app'),
     },
-    async handler(args: { name: string; display_name: string }) {
+    async handler(args: { name: string; display_name: string; app_id: string }) {
       try {
         const dir = projectDir(args.name);
-        if (existsSync(dir)) return ok({ project_dir: dir, existed: true, files: listFiles(dir) });
-        mkdirSync(root(), { recursive: true });
-        const init = await runCli(root(), ['library', 'init', args.name, '--template', 'code-app', '--display-name', args.display_name, '--local'], 120_000);
-        if (init.code !== 0) throw new Error(`scaffold failed: ${strip(init.stderr || init.stdout)}`);
-        const install = await run('npm', ['install', '--no-audit', '--no-fund'], { cwd: dir, timeout: 300_000, maxBuffer: 16 * 1024 * 1024 });
-        return ok({ project_dir: dir, existed: false, files: listFiles(dir), npm: strip(install.stdout).trim().split('\n').pop() });
+        if (!existsSync(join(dir, 'app.json'))) {
+          mkdirSync(root(), { recursive: true });
+          const init = await cli(root(), ['app', 'init', args.name, '--name', args.display_name]);
+          if (init.code !== 0) throw new Error(`tooljet app init failed: ${init.output}`);
+          const appFile = join(dir, 'app.json');
+          writeFileSync(appFile, JSON.stringify({ ...JSON.parse(readFileSync(appFile, 'utf8')), appId: args.app_id }, null, 2) + '\n');
+          if (process.env.TOOLJET_SDK_SPEC) {
+            const pkgFile = join(dir, 'frontend', 'package.json');
+            const pkg = JSON.parse(readFileSync(pkgFile, 'utf8'));
+            pkg.dependencies['@tooljet/custom-component-sdk'] = process.env.TOOLJET_SDK_SPEC;
+            writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + '\n');
+          }
+          await run('npm', ['install', '--no-audit', '--no-fund'], { cwd: join(dir, 'frontend'), timeout: 300_000, maxBuffer: 16 * 1024 * 1024 });
+        }
+        const pull = await cli(dir, ['app', 'pull']);
+        if (pull.code !== 0) throw new Error(`tooljet app pull failed: ${pull.output}`);
+        return ok({
+          project_dir: dir,
+          files: listFiles(dir),
+          app_json: JSON.parse(readFileSync(join(dir, 'app.json'), 'utf8')),
+          generated_hooks: readFileSync(join(dir, 'frontend', 'src', 'tooljet.gen.ts'), 'utf8'),
+          next: 'Set the routes in app.json, write the screens under frontend/src/App/, then code_app_build until ok, then code_app_install.',
+        });
       } catch (err) {
         return fail(err);
       }
@@ -120,19 +132,21 @@ export function codeAppScaffoldTool(): ToolDef {
 export function codeAppReadFilesTool(): ToolDef {
   return {
     name: 'code_app_read_files',
-    title: 'Read Code App Files',
+    title: 'Read Code Page Files',
     annotations: { readOnlyHint: true, openWorldHint: false },
-    description: 'Read files of a code-app project. Without paths, lists every source file; with paths, returns their contents.',
-    inputSchema: {
-      name: z.string().regex(NAME),
-      paths: z.array(z.string()).optional().describe('Project-relative paths, e.g. src/App/index.tsx'),
-    },
+    description: 'Read a code page project. Without paths, lists its files; with paths, returns their contents (app.json, frontend/...).',
+    inputSchema: { name: z.string().regex(NAME), paths: z.array(z.string()).optional() },
     async handler(args: { name: string; paths?: string[] }) {
       try {
-        const dir = projectDir(args.name);
-        if (!existsSync(dir)) throw new Error(`no project "${args.name}" under ${root()}; call code_app_scaffold first`);
+        const dir = requireProject(args.name);
         if (!args.paths?.length) return ok({ project_dir: dir, files: listFiles(dir) });
-        const files = Object.fromEntries(args.paths.map((p) => [p, readFileSync(insideProject(dir, p), 'utf8')]));
+        const files = Object.fromEntries(
+          args.paths.map((p) => {
+            const full = resolve(dir, p);
+            if (relative(dir, full).startsWith('..')) throw new Error(`"${p}" is outside the project`);
+            return [p, readFileSync(full, 'utf8')];
+          })
+        );
         return ok({ project_dir: dir, files });
       } catch (err) {
         return fail(err);
@@ -144,22 +158,22 @@ export function codeAppReadFilesTool(): ToolDef {
 export function codeAppWriteFilesTool(): ToolDef {
   return {
     name: 'code_app_write_files',
-    title: 'Write Code App Files',
+    title: 'Write Code Page Files',
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     description:
-      'Write whole files into a code-app project (src/, configs, package.json). Keep every ToolJet.* hook at the top of the ' +
-      'exported component in src/App/index.tsx so the manifest sees it; call code_app_build after writing.',
+      'Write whole files into a code page project: app.json (name, codePage, routes [{id, path, title}]) and anything under frontend/src/. ' +
+      'Read data with useAppQuery from ../tooljet.gen; write by awaiting a query\'s run({ ...parameters }); route with AppRouter, ' +
+      'react-router <Routes>/<Route> whose paths are exactly app.json\'s, and routePath(id, params). Then code_app_build.',
     inputSchema: {
       name: z.string().regex(NAME),
       files: z.array(z.object({ path: z.string(), content: z.string() })).min(1).max(40),
     },
     async handler(args: { name: string; files: { path: string; content: string }[] }) {
       try {
-        const dir = projectDir(args.name);
-        if (!existsSync(dir)) throw new Error(`no project "${args.name}" under ${root()}; call code_app_scaffold first`);
+        const dir = requireProject(args.name);
         const written: string[] = [];
         for (const file of args.files) {
-          const full = insideProject(dir, file.path);
+          const full = editable(dir, file.path);
           mkdirSync(dirname(full), { recursive: true });
           writeFileSync(full, file.content);
           written.push(file.path);
@@ -175,35 +189,29 @@ export function codeAppWriteFilesTool(): ToolDef {
 export function codeAppBuildTool(): ToolDef {
   return {
     name: 'code_app_build',
-    title: 'Build Code App',
-    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    title: 'Build Code Page',
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     description:
-      'Build a code-app project with the ToolJet CLI (esbuild, Tailwind through PostCSS, manifest generation). Returns ok, the ' +
-      'TypeScript errors and warnings to fix, bundle sizes and the manifest summary (props, events, actions per component). ' +
-      'Repeat write and build until ok is true, then code_app_install.',
+      "Refresh the typed hooks from the app's current queries (tooljet app pull), build the code page (TypeScript, Tailwind, " +
+      'manifest), and check it against the app (tooljet app check: every useAppQuery name, route, link and page must exist). ' +
+      'Returns ok and every error to fix. Repeat write and build until ok, then code_app_install.',
     inputSchema: { name: z.string().regex(NAME) },
     async handler(args: { name: string }) {
       try {
-        const dir = projectDir(args.name);
-        if (!existsSync(dir)) throw new Error(`no project "${args.name}" under ${root()}; call code_app_scaffold first`);
+        const dir = requireProject(args.name);
         const started = Date.now();
-        const result = await runCli(dir, ['library', 'build'], 300_000);
-        const output = strip(result.stdout + result.stderr);
-        const tsErrors = /TypeScript compiled \((\d+) errors\)/.exec(output);
-        const errorCount = tsErrors ? Number(tsErrors[1]) : result.code === 0 ? 0 : 1;
-        const sizeOf = (file: string) => (existsSync(join(dir, 'dist', file)) ? Math.round(statSync(join(dir, 'dist', file)).size / 1024) : 0);
-        const okBuild = result.code === 0 && errorCount === 0;
+        const pull = await cli(dir, ['app', 'pull']);
+        const build = await cli(join(dir, 'frontend'), ['library', 'build']);
+        const tsErrors = Number(/TypeScript compiled \((\d+) errors\)/.exec(build.output)?.[1] ?? (build.code === 0 ? 0 : 1));
+        const check = await cli(dir, ['app', 'check', '--offline']);
+        const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0;
         return ok({
           ok: okBuild,
           build_ms: Date.now() - started,
-          typescript_errors: errorCount,
-          // The CLI prints the error report after the counts; keep everything past the first error line.
-          errors: errorCount ? output.slice(output.indexOf('error')).trim().slice(0, 12_000) : '',
-          warnings: output.split('\n').filter((line) => /warning|⚠/i.test(line)).map((line) => line.trim()),
-          bundle_kb: sizeOf('index.js'),
-          css_kb: sizeOf('index.css'),
-          manifest: manifestSummary(dir),
-          output: output.trim().slice(0, 4000),
+          pull: pull.code === 0 ? 'typed hooks refreshed' : pull.output.trim(),
+          typescript_errors: tsErrors,
+          build_output: build.code === 0 && tsErrors === 0 ? build.output.trim().split('\n').slice(-6).join('\n') : build.output.trim().slice(0, 12_000),
+          check: check.output.trim().slice(0, 6000),
         });
       } catch (err) {
         return fail(err);
@@ -212,63 +220,22 @@ export function codeAppBuildTool(): ToolDef {
   };
 }
 
-export function codeAppInstallTool(client: ToolJetClient): ToolDef {
+export function codeAppInstallTool(): ToolDef {
   return {
     name: 'code_app_install',
-    title: 'Install Code App',
+    title: 'Install Code Page',
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     description:
-      'Install the last build of a code-app project on the ToolJet server as a builtin pack (restarting the server when ' +
-      'TOOLJET_BACKEND_RESTART_CMD is set) and refresh this catalogue. Returns the pack id and the component types to use ' +
-      'with add_components (Lib_<pack>_<Component>). Build first with code_app_build.',
-    inputSchema: {
-      name: z.string().regex(NAME),
-      version: z.string().regex(/^\d+(\.\d+){0,2}$/).optional().describe('Pack version label, default 1.0.0'),
-    },
-    async handler(args: { name: string; version?: string }) {
+      "Upload the code page to the app (tooljet app dev --once): it creates or updates the code page, one hidden page per route " +
+      "(set each route's page permissions on it), the page's root component, and pins the app version to this build. Build first. " +
+      'Returns the editor URL.',
+    inputSchema: { name: z.string().regex(NAME) },
+    async handler(args: { name: string }) {
       try {
-        const dir = projectDir(args.name);
-        const dist = join(dir, 'dist');
-        if (!existsSync(join(dist, 'index.js')) || !existsSync(join(dist, 'manifest.json'))) {
-          throw new Error(`no build in ${dist}; call code_app_build first`);
-        }
-        const packsDir = process.env.TOOLJET_BUILTIN_PACKS_DIR;
-        if (!packsDir) {
-          throw new Error(
-            'TOOLJET_BUILTIN_PACKS_DIR is not set. On an instance with custom component libraries, publish with ' +
-              '`tooljet library publish --version <v>` from the project folder instead; on this instance set the variable ' +
-              "to the server's builtin-packs folder.",
-          );
-        }
-        const target = join(packsDir, args.name);
-        mkdirSync(target, { recursive: true });
-        for (const file of ['index.js', 'index.css', 'manifest.json']) {
-          if (existsSync(join(dist, file))) copyFileSync(join(dist, file), join(target, file));
-        }
-        const config = JSON.parse(readFileSync(join(dir, '.tooljet', 'config.json'), 'utf8')) as { libraryName?: string };
-        writeFileSync(
-          join(target, 'builtin.json'),
-          JSON.stringify({ pack: args.name, displayName: config.libraryName || args.name, version: args.version || '1.0.0' }, null, 2) + '\n',
-        );
-        let restart = 'not restarted: TOOLJET_BACKEND_RESTART_CMD is not set; the server reads builtin-packs once per process';
-        if (process.env.TOOLJET_BACKEND_RESTART_CMD) {
-          const { stdout, stderr } = await run('/bin/zsh', ['-lc', process.env.TOOLJET_BACKEND_RESTART_CMD], { timeout: 180_000 });
-          restart = strip(stdout + stderr).trim().split('\n').pop() ?? 'restarted';
-        }
-        const packs = await loadInstalledPacks(() => client.listComponentLibraries(), () => client.listBuiltinPacks());
-        if (packs.length) refreshCatalogResources();
-        const listed = (await client.listBuiltinPacks())?.find((p: { info: BuiltinPackInfo }) => p.info.pack === args.name);
-        const prefix = `Lib_${args.name.toLowerCase().replace(/[^a-z0-9]+/g, '')}_`;
-        const components = Object.keys(manifestSummary(dir) ?? {});
-        return ok({
-          pack: args.name,
-          hash: listed?.info.hash ?? null,
-          served: !!listed,
-          restart,
-          component_types: components.map((c) => `${prefix}${c}`),
-          catalogue: packs,
-          next: `add_components with type ${prefix}${components[0] ?? 'App'}, name "app", layout {top:0,left:0,width:43,height:900}, props bound to {{queries.<name>.data}}; then add_events for each event; open the editor with ?mode=code.`,
-        });
+        const dir = requireProject(args.name);
+        const result = await cli(dir, ['app', 'dev', '--once']);
+        if (result.code !== 0) throw new Error(result.output.trim());
+        return ok({ linked: true, editor_url: /Open: (\S+)/.exec(result.output)?.[1] ?? null, output: result.output.trim() });
       } catch (err) {
         return fail(err);
       }

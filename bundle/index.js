@@ -63641,6 +63641,13 @@ import { fileURLToPath as fileURLToPath4 } from "node:url";
 import { dirname as dirname5, resolve as resolve4 } from "node:path";
 var COMMON_QUERY_OPTION_FIELDS = {
   runOnPageLoad: { path: "runOnPageLoad", type: "boolean|binding", description: "Run when the app first loads." },
+  // Query parameters, on every kind: values passed to a run (a code page's run({ ... }), a run-query action) and read in
+  // the query as {{parameters.<name>}}.
+  parameters: {
+    path: "parameters",
+    type: "array",
+    description: "Query parameters [{ name, defaultValue }]: read as {{parameters.name}}, set by whoever runs the query."
+  },
   runOnDependencyChange: { path: "runOnDependencyChange", type: "boolean|binding" },
   requestConfirmation: { path: "requestConfirmation", type: "boolean|binding" },
   requestConfirmationFx: { path: "requestConfirmationFx", type: "boolean" },
@@ -74731,266 +74738,102 @@ function dropTableTool(client) {
 // dist/tools/codeApp.js
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { existsSync as existsSync2, mkdirSync, readFileSync as readFileSync8, readdirSync, statSync as statSync2, writeFileSync, copyFileSync } from "node:fs";
+import { existsSync as existsSync2, mkdirSync, readFileSync as readFileSync7, readdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname as dirname8, join, relative, resolve as resolve7, sep } from "node:path";
-
-// dist/catalogResources.js
-import { createHash as createHash3 } from "node:crypto";
-import { readFileSync as readFileSync7 } from "node:fs";
-import { dirname as dirname7, resolve as resolve6 } from "node:path";
-import { fileURLToPath as fileURLToPath7 } from "node:url";
-
-// dist/runtimeFreshness.js
-import { createHash as createHash2 } from "node:crypto";
-import { statSync } from "node:fs";
-import { fileURLToPath as fileURLToPath6 } from "node:url";
-var TOOLJET_MCP_VERSION = "0.8.0";
-function snapshot(path) {
-  try {
-    const stat = statSync(path);
-    const source2 = `${Math.round(stat.mtimeMs * 1e3)}:${stat.size}`;
-    return {
-      buildId: createHash2("sha256").update(source2).digest("hex").slice(0, 12),
-      modifiedMs: stat.mtimeMs,
-      size: stat.size
-    };
-  } catch {
-    return { buildId: "missing", modifiedMs: -1, size: -1 };
-  }
-}
-var RuntimeFreshnessMonitor = class {
-  artifactPath;
-  loaded;
-  startedAt = (/* @__PURE__ */ new Date()).toISOString();
-  constructor(artifactPath = fileURLToPath6(import.meta.url)) {
-    this.artifactPath = artifactPath;
-    this.loaded = snapshot(artifactPath);
-  }
-  status() {
-    const current = snapshot(this.artifactPath);
-    const stale = current.modifiedMs !== this.loaded.modifiedMs || current.size !== this.loaded.size;
-    return {
-      version: TOOLJET_MCP_VERSION,
-      state: stale ? "stale" : "fresh",
-      build_id: this.loaded.buildId,
-      disk_build_id: current.buildId,
-      process_started_at: this.startedAt,
-      restart_required: stale
-    };
-  }
-};
-var runtimeFreshness = new RuntimeFreshnessMonitor();
-function staleRuntimeResult(status) {
-  return {
-    isError: true,
-    content: [{
-      type: "text",
-      text: `Error: MCP_RUNTIME_STALE: the ToolJet MCP files changed after this process started (loaded ${status.build_id}, disk ${status.disk_build_id}). Restart or reload the MCP/plugin host, then retry. No ToolJet request was attempted.`
-    }],
-    _meta: { tooljet_runtime: status }
-  };
-}
-function withRuntimeStatus(result, status) {
-  return { ...result, _meta: { ...result._meta ?? {}, tooljet_runtime: status } };
-}
-
-// dist/catalogResources.js
-var PREFACE = "Read-only catalog data, for clients that validate or build plans locally. ";
-var CATALOG_RESOURCES = [
-  {
-    name: "catalog-components",
-    uri: "tooljet://catalog/components",
-    file: "component-schemas.json",
-    title: "Component catalog",
-    description: `${PREFACE}Every component type by name: properties, styles, events, actions, default size and authoring hints.`
-  },
-  {
-    name: "catalog-component-compatibility",
-    uri: "tooljet://catalog/component-compatibility",
-    file: "component-compatibility.json",
-    title: "Component compatibility",
-    description: `${PREFACE}Legacy component types and the modern type that replaces each.`
-  },
-  {
-    name: "catalog-datasources",
-    uri: "tooljet://catalog/datasources",
-    file: "datasource-schemas.json",
-    title: "Datasource query catalog",
-    description: `${PREFACE}The query contract of every datasource kind: operations, options and their shapes.`
-  },
-  {
-    name: "catalog-page-icons",
-    uri: "tooljet://catalog/page-icons",
-    file: "page-icons.json",
-    title: "Page icons",
-    description: `${PREFACE}The icon package, its version and every icon name a page may use.`
-  }
-];
-var dataDir = resolve6(dirname7(fileURLToPath7(import.meta.url)), "../data");
-var versions = /* @__PURE__ */ new Map();
-var payloads = /* @__PURE__ */ new Map();
-var readPart = (file2) => {
-  const bytes = readFileSync7(resolve6(dataDir, file2));
-  if (file2 !== "component-schemas.json")
-    return bytes;
-  const live = JSON.stringify(allComponentSchemas());
-  return live === JSON.stringify(JSON.parse(bytes.toString("utf8"))) ? bytes : Buffer.from(live);
-};
-function readData(resource) {
-  const bytes = readPart(resource.file);
-  const dataVersion = createHash3("sha256").update(bytes).digest("hex").slice(0, 12);
-  versions.set(resource.file, dataVersion);
-  return { bytes, dataVersion };
-}
-function catalogVersionOf(parts) {
-  const hash2 = createHash3("sha256");
-  for (const part of parts) {
-    hash2.update(`${part.file}
-${part.bytes.length}
-`);
-    hash2.update(part.bytes);
-  }
-  return hash2.digest("hex").slice(0, 12);
-}
-var catalogVersionCache;
-function catalogVersion() {
-  catalogVersionCache ??= catalogVersionOf(CATALOG_RESOURCES.map((resource) => ({
-    file: resource.file,
-    bytes: readPart(resource.file)
-  })));
-  return catalogVersionCache;
-}
-function listedCatalogVersion() {
-  try {
-    return catalogVersion();
-  } catch {
-    return void 0;
-  }
-}
-function listedVersion(resource) {
-  try {
-    return versions.get(resource.file) ?? readData(resource).dataVersion;
-  } catch {
-    return void 0;
-  }
-}
-function payload(resource) {
-  let text3 = payloads.get(resource.file);
-  if (text3 === void 0) {
-    const { bytes, dataVersion } = readData(resource);
-    const data = JSON.parse(bytes.toString("utf8"));
-    text3 = JSON.stringify({ mcp_version: TOOLJET_MCP_VERSION, catalog_version: catalogVersion(), data_version: dataVersion, data });
-    payloads.set(resource.file, text3);
-  }
-  return text3;
-}
-var metadataOf = (resource, catalog) => {
-  const dataVersion = listedVersion(resource);
-  return {
-    title: resource.title,
-    description: resource.description,
-    mimeType: "application/json",
-    ...dataVersion ? { _meta: { data_version: dataVersion, ...catalog ? { catalog_version: catalog } : {} } } : {}
-  };
-};
-var registered = [];
-function refreshCatalogResources() {
-  versions.clear();
-  payloads.clear();
-  catalogVersionCache = void 0;
-  const catalog = listedCatalogVersion();
-  for (const { resource, handle } of registered)
-    handle.update({ metadata: metadataOf(resource, catalog) });
-}
-function registerCatalogResources(server) {
-  const catalog = listedCatalogVersion();
-  for (const resource of CATALOG_RESOURCES) {
-    const handle = server.registerResource(resource.name, resource.uri, metadataOf(resource, catalog), async () => ({
-      contents: [{ uri: resource.uri, mimeType: "application/json", text: payload(resource) }]
-    }));
-    registered.push({ resource, handle });
-  }
-}
-
-// dist/tools/codeApp.js
+import { dirname as dirname7, join, relative, resolve as resolve6, sep } from "node:path";
 var run = promisify(execFile);
-var root = () => resolve7(process.env.TOOLJET_CODE_APP_ROOT || join(homedir(), "tooljet-code-apps"));
-var cli = () => process.env.TOOLJET_CLI || "tooljet";
+var root = () => resolve6(process.env.TOOLJET_CODE_APP_ROOT || join(homedir(), "tooljet-code-apps"));
 var NAME = /^[a-z][a-z0-9-]{1,40}$/;
 var projectDir = (name2) => {
   if (!NAME.test(name2))
     throw new Error(`name must match ${NAME} (lowercase letters, digits, hyphens)`);
   return join(root(), name2);
 };
-var insideProject = (dir, path) => {
-  const full = resolve7(dir, path);
-  const rel = relative(dir, full);
-  if (!rel || rel.startsWith("..") || rel.split(sep)[0] === "node_modules" || rel.split(sep)[0] === "dist" || rel.startsWith(".tooljet")) {
-    throw new Error(`path "${path}" is outside the editable part of the project (src/, configs, package.json)`);
-  }
-  return full;
+var requireProject = (name2) => {
+  const dir = projectDir(name2);
+  if (!existsSync2(join(dir, "app.json")))
+    throw new Error(`no app project "${name2}" under ${root()}; call code_app_scaffold first`);
+  return dir;
 };
-var TEXT = /\.(tsx?|jsx?|mjs|cjs|json|css|scss|md|txt|svg|html)$/i;
+var editable = (dir, path) => {
+  const full = resolve6(dir, path);
+  const rel = relative(dir, full).split(sep).join("/");
+  if (rel === "app.json" || rel.startsWith("frontend/src/") && !rel.endsWith("tooljet.gen.ts"))
+    return full;
+  throw new Error(`"${path}" is not editable: write app.json or files under frontend/src/ (tooljet.gen.ts is generated)`);
+};
+var TEXT = /\.(tsx?|jsx?|json|css|md)$/i;
 var listFiles = (dir, base2 = dir, out = []) => {
   if (!existsSync2(dir))
     return out;
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === "node_modules" || entry.name === "dist" || entry.name.startsWith("."))
+    if (["node_modules", "dist"].includes(entry.name) || entry.name.startsWith("."))
       continue;
     const full = join(dir, entry.name);
     if (entry.isDirectory())
       listFiles(full, base2, out);
-    else if (TEXT.test(entry.name))
+    else if (TEXT.test(entry.name) && entry.name !== "package-lock.json")
       out.push(relative(base2, full).split(sep).join("/"));
   }
   return out.sort();
 };
-var manifestSummary = (dir) => {
-  const file2 = join(dir, "dist", "manifest.json");
-  if (!existsSync2(file2))
-    return null;
-  const manifest = JSON.parse(readFileSync8(file2, "utf8"));
-  return Object.fromEntries(Object.entries(manifest.components ?? {}).map(([name2, c]) => [
-    name2,
-    {
-      props: (c.props ?? []).map((p) => `${p.name}: ${p.type}`),
-      events: (c.events ?? []).map((e) => e.name),
-      actions: (c.actions ?? []).map((a) => a.name)
-    }
-  ]));
-};
-async function runCli(dir, args, timeoutMs) {
+var strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "");
+var cliEnv = () => ({
+  ...process.env,
+  FORCE_COLOR: "0",
+  TOOLJET_URL: process.env.TOOLJET_URL ?? "",
+  TOOLJET_PAT: process.env.TOOLJET_PAT ?? "",
+  TOOLJET_APP_URL: process.env.TOOLJET_DEPLOYMENT_URL ?? process.env.TOOLJET_APP_URL ?? ""
+});
+async function cli(cwd, args, timeoutMs = 3e5) {
+  const [cmd, pre] = process.env.TOOLJET_CLI ? ["node", [process.env.TOOLJET_CLI]] : ["tooljet", []];
   try {
-    const { stdout, stderr } = await run(cli(), args, { cwd: dir, timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024, env: { ...process.env, FORCE_COLOR: "0" } });
-    return { stdout, stderr, code: 0 };
+    const { stdout, stderr } = await run(cmd, [...pre, ...args], { cwd, timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024, env: cliEnv() });
+    return { code: 0, output: strip(stdout + stderr) };
   } catch (err) {
     const e = err;
-    return { stdout: e.stdout ?? "", stderr: e.stderr ?? e.message ?? "", code: typeof e.code === "number" ? e.code : 1 };
+    return { code: typeof e.code === "number" ? e.code : 1, output: strip((e.stdout ?? "") + (e.stderr ?? e.message ?? "")) };
   }
 }
-var strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "");
 function codeAppScaffoldTool() {
   return {
     name: "code_app_scaffold",
-    title: "Scaffold Code App",
-    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-    description: "Create a code-app project: a React + TypeScript component pack on shadcn + Tailwind with react-router, whose one exported component is the whole app on a single ToolJet page. Returns the project files. Then edit with code_app_write_files, build with code_app_build, install with code_app_install, and place the component with add_components as Lib_<pack>_App with its props bound to queries and its events wired to queries. The sample app reads items from the `items` prop, exposes `pending` {id,status} and fires onUpdate and onRefresh.",
+    title: "Scaffold Code Page",
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    description: "Create an app project for a code page of an app you created with create_app: app.json (the code page and its routes) and frontend/ (React + TypeScript on shadcn + Tailwind, react-router through AppRouter). Create the app's queries with add_queries BEFORE this, so the typed hooks it writes (frontend/src/tooljet.gen.ts: useAppQuery, row types, ROUTES, routePath, PAGES) list them. Returns the files and the generated hooks.",
     inputSchema: {
-      name: external_exports.string().regex(NAME).describe("Project and pack id: lowercase letters, digits and hyphens, e.g. inventory-console"),
-      display_name: external_exports.string().min(1).max(100).describe("Human name shown in the builder")
+      name: external_exports.string().regex(NAME).describe("Project folder: lowercase letters, digits and hyphens, e.g. inventory-console"),
+      display_name: external_exports.string().min(1).max(100).describe("The app's name"),
+      app_id: external_exports.string().uuid().describe("The app from create_app")
     },
     async handler(args) {
       try {
         const dir = projectDir(args.name);
-        if (existsSync2(dir))
-          return ok({ project_dir: dir, existed: true, files: listFiles(dir) });
-        mkdirSync(root(), { recursive: true });
-        const init = await runCli(root(), ["library", "init", args.name, "--template", "code-app", "--display-name", args.display_name, "--local"], 12e4);
-        if (init.code !== 0)
-          throw new Error(`scaffold failed: ${strip(init.stderr || init.stdout)}`);
-        const install = await run("npm", ["install", "--no-audit", "--no-fund"], { cwd: dir, timeout: 3e5, maxBuffer: 16 * 1024 * 1024 });
-        return ok({ project_dir: dir, existed: false, files: listFiles(dir), npm: strip(install.stdout).trim().split("\n").pop() });
+        if (!existsSync2(join(dir, "app.json"))) {
+          mkdirSync(root(), { recursive: true });
+          const init = await cli(root(), ["app", "init", args.name, "--name", args.display_name]);
+          if (init.code !== 0)
+            throw new Error(`tooljet app init failed: ${init.output}`);
+          const appFile = join(dir, "app.json");
+          writeFileSync(appFile, JSON.stringify({ ...JSON.parse(readFileSync7(appFile, "utf8")), appId: args.app_id }, null, 2) + "\n");
+          if (process.env.TOOLJET_SDK_SPEC) {
+            const pkgFile = join(dir, "frontend", "package.json");
+            const pkg = JSON.parse(readFileSync7(pkgFile, "utf8"));
+            pkg.dependencies["@tooljet/custom-component-sdk"] = process.env.TOOLJET_SDK_SPEC;
+            writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + "\n");
+          }
+          await run("npm", ["install", "--no-audit", "--no-fund"], { cwd: join(dir, "frontend"), timeout: 3e5, maxBuffer: 16 * 1024 * 1024 });
+        }
+        const pull = await cli(dir, ["app", "pull"]);
+        if (pull.code !== 0)
+          throw new Error(`tooljet app pull failed: ${pull.output}`);
+        return ok({
+          project_dir: dir,
+          files: listFiles(dir),
+          app_json: JSON.parse(readFileSync7(join(dir, "app.json"), "utf8")),
+          generated_hooks: readFileSync7(join(dir, "frontend", "src", "tooljet.gen.ts"), "utf8"),
+          next: "Set the routes in app.json, write the screens under frontend/src/App/, then code_app_build until ok, then code_app_install."
+        });
       } catch (err) {
         return fail(err);
       }
@@ -75000,21 +74843,21 @@ function codeAppScaffoldTool() {
 function codeAppReadFilesTool() {
   return {
     name: "code_app_read_files",
-    title: "Read Code App Files",
+    title: "Read Code Page Files",
     annotations: { readOnlyHint: true, openWorldHint: false },
-    description: "Read files of a code-app project. Without paths, lists every source file; with paths, returns their contents.",
-    inputSchema: {
-      name: external_exports.string().regex(NAME),
-      paths: external_exports.array(external_exports.string()).optional().describe("Project-relative paths, e.g. src/App/index.tsx")
-    },
+    description: "Read a code page project. Without paths, lists its files; with paths, returns their contents (app.json, frontend/...).",
+    inputSchema: { name: external_exports.string().regex(NAME), paths: external_exports.array(external_exports.string()).optional() },
     async handler(args) {
       try {
-        const dir = projectDir(args.name);
-        if (!existsSync2(dir))
-          throw new Error(`no project "${args.name}" under ${root()}; call code_app_scaffold first`);
+        const dir = requireProject(args.name);
         if (!args.paths?.length)
           return ok({ project_dir: dir, files: listFiles(dir) });
-        const files = Object.fromEntries(args.paths.map((p) => [p, readFileSync8(insideProject(dir, p), "utf8")]));
+        const files = Object.fromEntries(args.paths.map((p) => {
+          const full = resolve6(dir, p);
+          if (relative(dir, full).startsWith(".."))
+            throw new Error(`"${p}" is outside the project`);
+          return [p, readFileSync7(full, "utf8")];
+        }));
         return ok({ project_dir: dir, files });
       } catch (err) {
         return fail(err);
@@ -75025,22 +74868,20 @@ function codeAppReadFilesTool() {
 function codeAppWriteFilesTool() {
   return {
     name: "code_app_write_files",
-    title: "Write Code App Files",
+    title: "Write Code Page Files",
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-    description: "Write whole files into a code-app project (src/, configs, package.json). Keep every ToolJet.* hook at the top of the exported component in src/App/index.tsx so the manifest sees it; call code_app_build after writing.",
+    description: "Write whole files into a code page project: app.json (name, codePage, routes [{id, path, title}]) and anything under frontend/src/. Read data with useAppQuery from ../tooljet.gen; write by awaiting a query's run({ ...parameters }); route with AppRouter, react-router <Routes>/<Route> whose paths are exactly app.json's, and routePath(id, params). Then code_app_build.",
     inputSchema: {
       name: external_exports.string().regex(NAME),
       files: external_exports.array(external_exports.object({ path: external_exports.string(), content: external_exports.string() })).min(1).max(40)
     },
     async handler(args) {
       try {
-        const dir = projectDir(args.name);
-        if (!existsSync2(dir))
-          throw new Error(`no project "${args.name}" under ${root()}; call code_app_scaffold first`);
+        const dir = requireProject(args.name);
         const written = [];
         for (const file2 of args.files) {
-          const full = insideProject(dir, file2.path);
-          mkdirSync(dirname8(full), { recursive: true });
+          const full = editable(dir, file2.path);
+          mkdirSync(dirname7(full), { recursive: true });
           writeFileSync(full, file2.content);
           written.push(file2.path);
         }
@@ -75054,33 +74895,26 @@ function codeAppWriteFilesTool() {
 function codeAppBuildTool() {
   return {
     name: "code_app_build",
-    title: "Build Code App",
-    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-    description: "Build a code-app project with the ToolJet CLI (esbuild, Tailwind through PostCSS, manifest generation). Returns ok, the TypeScript errors and warnings to fix, bundle sizes and the manifest summary (props, events, actions per component). Repeat write and build until ok is true, then code_app_install.",
+    title: "Build Code Page",
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    description: "Refresh the typed hooks from the app's current queries (tooljet app pull), build the code page (TypeScript, Tailwind, manifest), and check it against the app (tooljet app check: every useAppQuery name, route, link and page must exist). Returns ok and every error to fix. Repeat write and build until ok, then code_app_install.",
     inputSchema: { name: external_exports.string().regex(NAME) },
     async handler(args) {
       try {
-        const dir = projectDir(args.name);
-        if (!existsSync2(dir))
-          throw new Error(`no project "${args.name}" under ${root()}; call code_app_scaffold first`);
+        const dir = requireProject(args.name);
         const started = Date.now();
-        const result = await runCli(dir, ["library", "build"], 3e5);
-        const output = strip(result.stdout + result.stderr);
-        const tsErrors = /TypeScript compiled \((\d+) errors\)/.exec(output);
-        const errorCount = tsErrors ? Number(tsErrors[1]) : result.code === 0 ? 0 : 1;
-        const sizeOf = (file2) => existsSync2(join(dir, "dist", file2)) ? Math.round(statSync2(join(dir, "dist", file2)).size / 1024) : 0;
-        const okBuild = result.code === 0 && errorCount === 0;
+        const pull = await cli(dir, ["app", "pull"]);
+        const build = await cli(join(dir, "frontend"), ["library", "build"]);
+        const tsErrors = Number(/TypeScript compiled \((\d+) errors\)/.exec(build.output)?.[1] ?? (build.code === 0 ? 0 : 1));
+        const check2 = await cli(dir, ["app", "check", "--offline"]);
+        const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check2.code === 0;
         return ok({
           ok: okBuild,
           build_ms: Date.now() - started,
-          typescript_errors: errorCount,
-          // The CLI prints the error report after the counts; keep everything past the first error line.
-          errors: errorCount ? output.slice(output.indexOf("error")).trim().slice(0, 12e3) : "",
-          warnings: output.split("\n").filter((line) => /warning|⚠/i.test(line)).map((line) => line.trim()),
-          bundle_kb: sizeOf("index.js"),
-          css_kb: sizeOf("index.css"),
-          manifest: manifestSummary(dir),
-          output: output.trim().slice(0, 4e3)
+          pull: pull.code === 0 ? "typed hooks refreshed" : pull.output.trim(),
+          typescript_errors: tsErrors,
+          build_output: build.code === 0 && tsErrors === 0 ? build.output.trim().split("\n").slice(-6).join("\n") : build.output.trim().slice(0, 12e3),
+          check: check2.output.trim().slice(0, 6e3)
         });
       } catch (err) {
         return fail(err);
@@ -75088,55 +74922,20 @@ function codeAppBuildTool() {
     }
   };
 }
-function codeAppInstallTool(client) {
+function codeAppInstallTool() {
   return {
     name: "code_app_install",
-    title: "Install Code App",
+    title: "Install Code Page",
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-    description: "Install the last build of a code-app project on the ToolJet server as a builtin pack (restarting the server when TOOLJET_BACKEND_RESTART_CMD is set) and refresh this catalogue. Returns the pack id and the component types to use with add_components (Lib_<pack>_<Component>). Build first with code_app_build.",
-    inputSchema: {
-      name: external_exports.string().regex(NAME),
-      version: external_exports.string().regex(/^\d+(\.\d+){0,2}$/).optional().describe("Pack version label, default 1.0.0")
-    },
+    description: "Upload the code page to the app (tooljet app dev --once): it creates or updates the code page, one hidden page per route (set each route's page permissions on it), the page's root component, and pins the app version to this build. Build first. Returns the editor URL.",
+    inputSchema: { name: external_exports.string().regex(NAME) },
     async handler(args) {
       try {
-        const dir = projectDir(args.name);
-        const dist = join(dir, "dist");
-        if (!existsSync2(join(dist, "index.js")) || !existsSync2(join(dist, "manifest.json"))) {
-          throw new Error(`no build in ${dist}; call code_app_build first`);
-        }
-        const packsDir = process.env.TOOLJET_BUILTIN_PACKS_DIR;
-        if (!packsDir) {
-          throw new Error("TOOLJET_BUILTIN_PACKS_DIR is not set. On an instance with custom component libraries, publish with `tooljet library publish --version <v>` from the project folder instead; on this instance set the variable to the server's builtin-packs folder.");
-        }
-        const target2 = join(packsDir, args.name);
-        mkdirSync(target2, { recursive: true });
-        for (const file2 of ["index.js", "index.css", "manifest.json"]) {
-          if (existsSync2(join(dist, file2)))
-            copyFileSync(join(dist, file2), join(target2, file2));
-        }
-        const config2 = JSON.parse(readFileSync8(join(dir, ".tooljet", "config.json"), "utf8"));
-        writeFileSync(join(target2, "builtin.json"), JSON.stringify({ pack: args.name, displayName: config2.libraryName || args.name, version: args.version || "1.0.0" }, null, 2) + "\n");
-        let restart = "not restarted: TOOLJET_BACKEND_RESTART_CMD is not set; the server reads builtin-packs once per process";
-        if (process.env.TOOLJET_BACKEND_RESTART_CMD) {
-          const { stdout, stderr } = await run("/bin/zsh", ["-lc", process.env.TOOLJET_BACKEND_RESTART_CMD], { timeout: 18e4 });
-          restart = strip(stdout + stderr).trim().split("\n").pop() ?? "restarted";
-        }
-        const packs = await loadInstalledPacks(() => client.listComponentLibraries(), () => client.listBuiltinPacks());
-        if (packs.length)
-          refreshCatalogResources();
-        const listed = (await client.listBuiltinPacks())?.find((p) => p.info.pack === args.name);
-        const prefix = `Lib_${args.name.toLowerCase().replace(/[^a-z0-9]+/g, "")}_`;
-        const components = Object.keys(manifestSummary(dir) ?? {});
-        return ok({
-          pack: args.name,
-          hash: listed?.info.hash ?? null,
-          served: !!listed,
-          restart,
-          component_types: components.map((c) => `${prefix}${c}`),
-          catalogue: packs,
-          next: `add_components with type ${prefix}${components[0] ?? "App"}, name "app", layout {top:0,left:0,width:43,height:900}, props bound to {{queries.<name>.data}}; then add_events for each event; open the editor with ?mode=code.`
-        });
+        const dir = requireProject(args.name);
+        const result = await cli(dir, ["app", "dev", "--once"]);
+        if (result.code !== 0)
+          throw new Error(result.output.trim());
+        return ok({ linked: true, editor_url: /Open: (\S+)/.exec(result.output)?.[1] ?? null, output: result.output.trim() });
       } catch (err) {
         return fail(err);
       }
@@ -82286,16 +82085,16 @@ function autoFitHtmlHeights(args) {
 
 // dist/pageReplaceInPlace.js
 import { randomUUID as randomUUID4 } from "node:crypto";
-import { readFileSync as readFileSync9 } from "node:fs";
-import { dirname as dirname9, resolve as resolve8 } from "node:path";
-import { fileURLToPath as fileURLToPath8 } from "node:url";
+import { readFileSync as readFileSync8 } from "node:fs";
+import { dirname as dirname8, resolve as resolve7 } from "node:path";
+import { fileURLToPath as fileURLToPath6 } from "node:url";
 var SECTIONS2 = ["properties", "styles", "validation", "others"];
 var bundled;
 function bundledDefinitions() {
   if (!bundled) {
-    const path = resolve8(dirname9(fileURLToPath8(import.meta.url)), "../data/component-default-definitions.json");
+    const path = resolve7(dirname8(fileURLToPath6(import.meta.url)), "../data/component-default-definitions.json");
     try {
-      bundled = JSON.parse(readFileSync9(path, "utf8")).definitions;
+      bundled = JSON.parse(readFileSync8(path, "utf8")).definitions;
     } catch {
       bundled = {};
     }
@@ -85113,6 +84912,60 @@ function deleteEventTool(client) {
   };
 }
 
+// dist/runtimeFreshness.js
+import { createHash as createHash2 } from "node:crypto";
+import { statSync } from "node:fs";
+import { fileURLToPath as fileURLToPath7 } from "node:url";
+var TOOLJET_MCP_VERSION = "0.8.0";
+function snapshot(path) {
+  try {
+    const stat = statSync(path);
+    const source2 = `${Math.round(stat.mtimeMs * 1e3)}:${stat.size}`;
+    return {
+      buildId: createHash2("sha256").update(source2).digest("hex").slice(0, 12),
+      modifiedMs: stat.mtimeMs,
+      size: stat.size
+    };
+  } catch {
+    return { buildId: "missing", modifiedMs: -1, size: -1 };
+  }
+}
+var RuntimeFreshnessMonitor = class {
+  artifactPath;
+  loaded;
+  startedAt = (/* @__PURE__ */ new Date()).toISOString();
+  constructor(artifactPath = fileURLToPath7(import.meta.url)) {
+    this.artifactPath = artifactPath;
+    this.loaded = snapshot(artifactPath);
+  }
+  status() {
+    const current = snapshot(this.artifactPath);
+    const stale = current.modifiedMs !== this.loaded.modifiedMs || current.size !== this.loaded.size;
+    return {
+      version: TOOLJET_MCP_VERSION,
+      state: stale ? "stale" : "fresh",
+      build_id: this.loaded.buildId,
+      disk_build_id: current.buildId,
+      process_started_at: this.startedAt,
+      restart_required: stale
+    };
+  }
+};
+var runtimeFreshness = new RuntimeFreshnessMonitor();
+function staleRuntimeResult(status) {
+  return {
+    isError: true,
+    content: [{
+      type: "text",
+      text: `Error: MCP_RUNTIME_STALE: the ToolJet MCP files changed after this process started (loaded ${status.build_id}, disk ${status.disk_build_id}). Restart or reload the MCP/plugin host, then retry. No ToolJet request was attempted.`
+    }],
+    _meta: { tooljet_runtime: status }
+  };
+}
+function withRuntimeStatus(result, status) {
+  return { ...result, _meta: { ...result._meta ?? {}, tooljet_runtime: status } };
+}
+
 // dist/tools/getRuntimeInfo.js
 function getRuntimeInfoTool(runtime) {
   return {
@@ -85977,7 +85830,7 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     codeAppReadFilesTool(),
     codeAppWriteFilesTool(),
     codeAppBuildTool(),
-    codeAppInstallTool(client),
+    codeAppInstallTool(),
     listWorkspacesTool(client),
     useWorkspaceTool(client),
     manageAppPermissionsTool(client),
@@ -86055,6 +85908,128 @@ function registerTools(server, client, runtime = runtimeFreshness) {
       }
       return withRuntimeStatus(await tool.handler(args), status);
     }));
+  }
+}
+
+// dist/catalogResources.js
+import { createHash as createHash3 } from "node:crypto";
+import { readFileSync as readFileSync9 } from "node:fs";
+import { dirname as dirname9, resolve as resolve8 } from "node:path";
+import { fileURLToPath as fileURLToPath8 } from "node:url";
+var PREFACE = "Read-only catalog data, for clients that validate or build plans locally. ";
+var CATALOG_RESOURCES = [
+  {
+    name: "catalog-components",
+    uri: "tooljet://catalog/components",
+    file: "component-schemas.json",
+    title: "Component catalog",
+    description: `${PREFACE}Every component type by name: properties, styles, events, actions, default size and authoring hints.`
+  },
+  {
+    name: "catalog-component-compatibility",
+    uri: "tooljet://catalog/component-compatibility",
+    file: "component-compatibility.json",
+    title: "Component compatibility",
+    description: `${PREFACE}Legacy component types and the modern type that replaces each.`
+  },
+  {
+    name: "catalog-datasources",
+    uri: "tooljet://catalog/datasources",
+    file: "datasource-schemas.json",
+    title: "Datasource query catalog",
+    description: `${PREFACE}The query contract of every datasource kind: operations, options and their shapes.`
+  },
+  {
+    name: "catalog-page-icons",
+    uri: "tooljet://catalog/page-icons",
+    file: "page-icons.json",
+    title: "Page icons",
+    description: `${PREFACE}The icon package, its version and every icon name a page may use.`
+  }
+];
+var dataDir = resolve8(dirname9(fileURLToPath8(import.meta.url)), "../data");
+var versions = /* @__PURE__ */ new Map();
+var payloads = /* @__PURE__ */ new Map();
+var readPart = (file2) => {
+  const bytes = readFileSync9(resolve8(dataDir, file2));
+  if (file2 !== "component-schemas.json")
+    return bytes;
+  const live = JSON.stringify(allComponentSchemas());
+  return live === JSON.stringify(JSON.parse(bytes.toString("utf8"))) ? bytes : Buffer.from(live);
+};
+function readData(resource) {
+  const bytes = readPart(resource.file);
+  const dataVersion = createHash3("sha256").update(bytes).digest("hex").slice(0, 12);
+  versions.set(resource.file, dataVersion);
+  return { bytes, dataVersion };
+}
+function catalogVersionOf(parts) {
+  const hash2 = createHash3("sha256");
+  for (const part of parts) {
+    hash2.update(`${part.file}
+${part.bytes.length}
+`);
+    hash2.update(part.bytes);
+  }
+  return hash2.digest("hex").slice(0, 12);
+}
+var catalogVersionCache;
+function catalogVersion() {
+  catalogVersionCache ??= catalogVersionOf(CATALOG_RESOURCES.map((resource) => ({
+    file: resource.file,
+    bytes: readPart(resource.file)
+  })));
+  return catalogVersionCache;
+}
+function listedCatalogVersion() {
+  try {
+    return catalogVersion();
+  } catch {
+    return void 0;
+  }
+}
+function listedVersion(resource) {
+  try {
+    return versions.get(resource.file) ?? readData(resource).dataVersion;
+  } catch {
+    return void 0;
+  }
+}
+function payload(resource) {
+  let text3 = payloads.get(resource.file);
+  if (text3 === void 0) {
+    const { bytes, dataVersion } = readData(resource);
+    const data = JSON.parse(bytes.toString("utf8"));
+    text3 = JSON.stringify({ mcp_version: TOOLJET_MCP_VERSION, catalog_version: catalogVersion(), data_version: dataVersion, data });
+    payloads.set(resource.file, text3);
+  }
+  return text3;
+}
+var metadataOf = (resource, catalog) => {
+  const dataVersion = listedVersion(resource);
+  return {
+    title: resource.title,
+    description: resource.description,
+    mimeType: "application/json",
+    ...dataVersion ? { _meta: { data_version: dataVersion, ...catalog ? { catalog_version: catalog } : {} } } : {}
+  };
+};
+var registered = [];
+function refreshCatalogResources() {
+  versions.clear();
+  payloads.clear();
+  catalogVersionCache = void 0;
+  const catalog = listedCatalogVersion();
+  for (const { resource, handle } of registered)
+    handle.update({ metadata: metadataOf(resource, catalog) });
+}
+function registerCatalogResources(server) {
+  const catalog = listedCatalogVersion();
+  for (const resource of CATALOG_RESOURCES) {
+    const handle = server.registerResource(resource.name, resource.uri, metadataOf(resource, catalog), async () => ({
+      contents: [{ uri: resource.uri, mimeType: "application/json", text: payload(resource) }]
+    }));
+    registered.push({ resource, handle });
   }
 }
 

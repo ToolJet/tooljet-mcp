@@ -120,7 +120,7 @@ export function registerTools(
     codeAppReadFilesTool(),
     codeAppWriteFilesTool(),
     codeAppBuildTool(),
-    codeAppInstallTool(client),
+    codeAppInstallTool(),
     listWorkspacesTool(client),
     useWorkspaceTool(client),
     manageAppPermissionsTool(client),
