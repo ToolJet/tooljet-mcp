@@ -13,6 +13,11 @@ describe('pack widget slots', () => {
     expect(encodeComponentParent(card, 'body')).toBe(card);
     expect(encodeComponentParent(card, 'header', 'ModalV2')).toBe(`${card}-header`);
   });
+  // Claude Code's SkyLine run left slot_name out, body being the default, and every card on all five pages drew empty
+  it('suffix the body under a pack widget when no slot is named', () => {
+    expect(encodeComponentParent(card, undefined, 'PackComponent')).toBe(`${card}-body`);
+    expect(encodeComponentParent(card, undefined, 'FlexContainer')).toBe(card);
+  });
   it('decode the body canvas back to its parent', () => {
     expect(decodeComponentParent(`${card}-body`)).toEqual({ parentId: card, slotName: 'body' });
     expect(encodeComponentParent(`${card}-body`, 'body', 'Lib_antd_Modal')).toBe(`${card}-body`);

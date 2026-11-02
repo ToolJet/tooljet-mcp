@@ -45,8 +45,9 @@ export function isPackContainerType(type: unknown): boolean {
  * tab item ids are t0, t1, ..., which no UUID segment can end with, so the suffix decodes unambiguously.
  */
 export function encodeComponentParent(parentId: string, slotName?: ComponentSlotName, parentType?: string): string {
+  // a pack widget's body is a slot of its own even when the caller leaves slot_name to its default
+  if (isPackContainerType(parentType)) return `${decodeComponentParent(parentId).parentId}-${slotName ?? 'body'}`;
   if (!slotName) return parentId;
-  if (isPackContainerType(parentType)) return `${decodeComponentParent(parentId).parentId}-${slotName}`;
   if (slotName === 'body') return decodeComponentParent(parentId).parentId;
   const base = decodeComponentParent(parentId).parentId;
   const tab = TAB_SLOT.exec(slotName);
