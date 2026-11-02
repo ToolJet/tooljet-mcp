@@ -217,6 +217,8 @@ export function codeAppBuildTool(): ToolDef {
           typescript_errors: tsErrors,
           build_output: build.code === 0 && tsErrors === 0 ? build.output.trim().split('\n').slice(-6).join('\n') : build.output.trim().slice(0, 12_000),
           check: check.output.trim().slice(0, 6000),
+          // jsx-a11y recommended rules, warnings only (tooljet app check); fix them when they are cheap to fix.
+          a11y_warnings: Number(/(\d+) accessibility warnings?/.exec(check.output)?.[1] ?? 0),
         });
       } catch (err) {
         return fail(err);

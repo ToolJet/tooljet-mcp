@@ -74951,7 +74951,9 @@ function codeAppBuildTool() {
           pull: pull.code === 0 ? "typed hooks refreshed" : pull.output.trim(),
           typescript_errors: tsErrors,
           build_output: build.code === 0 && tsErrors === 0 ? build.output.trim().split("\n").slice(-6).join("\n") : build.output.trim().slice(0, 12e3),
-          check: check2.output.trim().slice(0, 6e3)
+          check: check2.output.trim().slice(0, 6e3),
+          // jsx-a11y recommended rules, warnings only (tooljet app check); fix them when they are cheap to fix.
+          a11y_warnings: Number(/(\d+) accessibility warnings?/.exec(check2.output)?.[1] ?? 0)
         });
       } catch (err) {
         return fail(err);
