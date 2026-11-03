@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import axe from 'axe-core';
 import type { ToolJetClient } from '../tooljetClient.js';
 import type { ViewerSession } from '../auth.js';
 import { ok, fail, type ToolDef } from './types.js';
@@ -54,6 +53,8 @@ async function axeInCodePage(page: any): Promise<AxeViolation[] | undefined> {
   const handle = await page.$('iframe[data-tj-code-page-frame]');
   const frame = await handle?.contentFrame();
   if (!frame) return undefined;
+  // Loaded on use, like playwright-core: the bundle keeps both outside its reviewable modules.
+  const { default: axe } = await import('axe-core');
   await frame.evaluate(`${(axe as any).source}\n;void 0`);
   return frame.evaluate(() =>
     (window as any).axe

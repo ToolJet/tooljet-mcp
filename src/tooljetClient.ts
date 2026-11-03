@@ -2756,12 +2756,6 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     }
     const additions = flexEntries.flatMap((e) =>
       e.parentId && !batchIds.has(e.parentId) ? [{ parentId: e.parentId, childId: e.id }] : []);
-    let pageComponents = params.pageComponents;
-    if (additions.length && !pageComponents) {
-      const summary = await getAppSummary(params.appId, params.versionId);
-      pageComponents = summary.pages.find((page) => page.id === params.pageId)?.components ?? [];
-    }
-    const appended = additions.length ? appendedChildOrders(pageComponents ?? [], additions) : new Map<string, string[]>();
 
     const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/components`, {
       method: 'POST',
@@ -2770,6 +2764,14 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     });
     await assertOk(res, 'createComponents');
     const created = entries.map((e) => ({ component_id: e.id, name: e.spec.name }));
+    // Read after the create, so the page read never holds up or precedes the write.
+    let pageComponents = params.pageComponents;
+    if (additions.length && !pageComponents) {
+      // Only FlexContainer parents need their stored order; when the page cannot be read, no order is appended.
+      const summary = await getAppSummary(params.appId, params.versionId).catch(() => undefined);
+      pageComponents = summary?.pages.find((page) => page.id === params.pageId)?.components ?? [];
+    }
+    const appended = additions.length ? appendedChildOrders(pageComponents ?? [], additions) : new Map<string, string[]>();
     if (appended.size) {
       try {
         await writeFlexChildOrders(params.appId, params.versionId, params.pageId, appended);
