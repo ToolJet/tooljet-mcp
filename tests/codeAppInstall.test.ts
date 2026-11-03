@@ -23,10 +23,12 @@ if (args[1] === 'publish') {
 
 // One version line (user decision, 2026-11-02): a Code mode app is versioned like any app. Saving the version freezes
 // its code server-side, so the install has no publish step of its own.
+let skipPull = true; // the first-touch pull of the stored code is tested in codeAppSync.test.ts
+
 describe('code_app_install', () => {
   let dir: string;
   const env = { ...process.env };
-  const calls = () => readFileSync(join(dir, 'cli.log'), 'utf8').trim().split('\n').map((line) => JSON.parse(line)).filter((args) => args[1] !== 'check');
+  const calls = () => readFileSync(join(dir, 'cli.log'), 'utf8').trim().split('\n').map((line) => JSON.parse(line)).filter((args) => args[1] !== 'check' && !(args[1] === 'source-pull' && skipPull));
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'tj-mcp-install-'));

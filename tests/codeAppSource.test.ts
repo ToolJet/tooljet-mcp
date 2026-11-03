@@ -13,6 +13,8 @@ if (process.argv[3] === 'source-pull') console.log(process.env.FAKE_PULL || 'Alr
 else console.log('Open: http://localhost/editor');
 `;
 
+let skipPull = true; // the first-touch pull of the stored code is tested in codeAppSync.test.ts
+
 describe('Code mode source on ToolJet', () => {
   let dir: string;
   const env = { ...process.env };
@@ -21,7 +23,7 @@ describe('Code mode source on ToolJet', () => {
       .trim()
       .split('\n')
       .map((line) => JSON.parse(line))
-      .filter((args) => args[1] !== 'check'); // the security scan install runs first (codeAppSecurity.test.ts)
+      .filter((args) => args[1] !== 'check' && !(args[1] === 'source-pull' && skipPull)); // the security scan install runs first (codeAppSecurity.test.ts)
   const result = (r: any) => JSON.parse(r.content[0].text);
 
   beforeEach(() => {
@@ -44,10 +46,12 @@ describe('Code mode source on ToolJet', () => {
   });
 
   it('brings Code panel edits down before reading, and says so', async () => {
+    skipPull = false;
     process.env.FAKE_PULL = 'Pulled revision 3 (owner platform): 2 files written, 0 removed';
     const read = result(await codeAppReadFilesTool().handler({ name: 'tasks' } as any));
     expect(calls()[0]).toEqual(['app', 'source-pull']);
     expect(read.editor_edits).toMatch(/Pulled revision 3/);
+    skipPull = true;
   });
 
   it('reads quietly when the project is already in step', async () => {

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
@@ -296,11 +297,71 @@ export function codeAppScaffoldTool(client?: Pick<ToolJetClient, 'renameApp'>): 
 }
 
 /** `tooljet app source-pull`: what it reports when it brought editor edits down, or a warning when it could not run. */
-async function syncEditorEdits(dir: string): Promise<{ editor_edits?: string; sync_warning?: string }> {
+async function syncEditorEdits(dir: string, { force = false } = {}): Promise<{ editor_edits?: string; sync_warning?: string }> {
+  if (force) forgetSourceRevision(dir);
   const pull = await cli(dir, ['app', 'source-pull'], 60_000);
   if (pull.code !== 0) return { sync_warning: `Could not check the ToolJet editor for edits: ${pull.output.trim().slice(0, 300)}` };
+  // What the agent read stays recorded: a write compares it with the file as the pull left it, so only a file the pull
+  // changed needs reading again.
   return /Pulled revision/.test(pull.output) ? { editor_edits: pull.output.trim() } : {};
 }
+
+/*
+  The stored code on ToolJet is the truth, not the project folder. `tooljet app source-pull` skips the pull when the
+  project's last revision number equals the stored one, but revision numbers count per version: after a Save version
+  the new draft can sit at the same number as the project while holding the user's Style inspector and Code panel edits,
+  and the agent then rewrote the files from its old copy (Maintenance request tracker, 2026-11-02: the user's Muted
+  header was lost). So the first time a build touches a project it pulls whatever is stored, and a write to an existing
+  file needs a read of that file, in this build, after the last pull.
+*/
+const freshProjects = new Set<string>();
+const readHashes = new Map<string, string>();
+const sha = (text: string): string => createHash('sha256').update(text).digest('hex');
+const readKey = (dir: string, rel: string): string => `${dir}\0${rel}`;
+
+/** Make the next source-pull fetch the stored code whatever revision number the project last saw. */
+function forgetSourceRevision(dir: string): void {
+  const file = join(dir, '.tooljet', 'source.json');
+  if (!existsSync(file)) return;
+  try {
+    const state = JSON.parse(readFileSync(file, 'utf8'));
+    writeFileSync(file, JSON.stringify({ ...state, revision: -1 }, null, 2) + '\n');
+  } catch {
+    /* an unreadable state file already reads as "never pulled" */
+  }
+}
+
+/** The stored code, once per build per project (the MCP process lives for one build). */
+async function ensureFresh(dir: string): Promise<{ editor_edits?: string; sync_warning?: string }> {
+  if (freshProjects.has(dir)) return {};
+  const sync = await syncEditorEdits(dir, { force: true });
+  if (!sync.sync_warning) freshProjects.add(dir);
+  return sync;
+}
+
+/** Tests: a new build (a new MCP process) starts with nothing pulled or read. */
+export function resetCodeSessionForTests(): void {
+  freshProjects.clear();
+  readHashes.clear();
+}
+
+/** Lines that differ between two versions of a file (a multiset count, enough to tell a small change from a rewrite). */
+export function changedLines(before: string, after: string): number {
+  const count = (text: string) => text.split('\n').reduce((m, l) => m.set(l, (m.get(l) ?? 0) + 1), new Map<string, number>());
+  const a = count(before);
+  const b = count(after);
+  let changed = 0;
+  for (const [line, n] of a) changed += Math.max(0, n - (b.get(line) ?? 0));
+  for (const [line, n] of b) changed += Math.max(0, n - (a.get(line) ?? 0));
+  return changed;
+}
+
+/** A whole-file write that replaces this much of an existing file is a rewrite, and needs rewrite: true. */
+export const isRewrite = (before: string, after: string): boolean => {
+  const changed = changedLines(before, after);
+  const size = Math.max(before.split('\n').length, after.split('\n').length);
+  return changed > 20 && changed > 0.4 * size;
+};
 
 export function codeAppReadFilesTool(): ToolDef {
   return {
@@ -314,13 +375,17 @@ export function codeAppReadFilesTool(): ToolDef {
     async handler(args: { app_id?: string; name?: string; paths?: string[] }) {
       try {
         const dir = locateProject(args);
-        const sync = await syncEditorEdits(dir);
+        if (!freshProjects.has(dir)) await followDraft(dir);
+        const sync = freshProjects.has(dir) ? await syncEditorEdits(dir) : await ensureFresh(dir);
         if (!args.paths?.length) return ok({ project_dir: dir, ...sync, files: listFiles(dir) });
         const files = Object.fromEntries(
           args.paths.map((p) => {
             const full = resolve(dir, p);
-            if (relative(dir, full).startsWith('..')) throw new Error(`"${p}" is outside the project`);
-            return [p, readFileSync(full, 'utf8')];
+            const rel = relative(dir, full).split(sep).join('/');
+            if (rel.startsWith('..')) throw new Error(`"${p}" is outside the project`);
+            const content = readFileSync(full, 'utf8');
+            readHashes.set(readKey(dir, rel), sha(content));
+            return [p, content];
           })
         );
         return ok({ project_dir: dir, ...sync, files });
@@ -337,25 +402,68 @@ export function codeAppWriteFilesTool(): ToolDef {
     title: 'Write Code Mode Files',
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     description:
-      'Write whole files into a Code mode project: app.json (name, codePage, routes [{id, path, title}]), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. ' +
+      'Write into a Code mode project: app.json (name, codePage, routes [{id, path, title}]), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. ' +
+      'To change an existing file, read it first (code_app_read_files) and pass edits: [{ path, find, replace }] with the exact text to change; ' +
+      'files: [{ path, content }] is for new files, or for a rewrite the request needs (then rewrite: true). A write to a file that changed ' +
+      'in the ToolJet editor since you read it is refused: read it again and apply your change to what is there. ' +
       'Read data with useAppQuery from ../tooljet.gen; write by awaiting a query\'s run({ ...parameters }); route with AppRouter, ' +
       'react-router <Routes>/<Route> whose paths are exactly app.json\'s, and routePath(id, params). Then code_app_build.' + USER_WORDS,
     inputSchema: {
       app_id: APP_ID,
       name: PROJECT_NAME,
-      files: z.array(z.object({ path: z.string(), content: z.string() })).min(1).max(40),
+      files: z.array(z.object({ path: z.string(), content: z.string() })).max(40).optional(),
+      edits: z.array(z.object({ path: z.string(), find: z.string().min(1), replace: z.string() })).max(60).optional()
+        .describe('Targeted changes to existing files: each find must appear exactly once in the file as it is now'),
+      rewrite: z.boolean().optional().describe('Allow files to replace most of an existing file (only when the request needs it)'),
     },
-    async handler(args: { app_id?: string; name?: string; files: { path: string; content: string }[] }) {
+    async handler(args: { app_id?: string; name?: string; files?: { path: string; content: string }[]; edits?: { path: string; find: string; replace: string }[]; rewrite?: boolean }) {
       try {
         const dir = locateProject(args);
-        const written: string[] = [];
-        for (const file of args.files) {
+        if (!args.files?.length && !args.edits?.length) throw new Error('Pass files (new files) or edits (changes to existing files).');
+        if (!freshProjects.has(dir)) await followDraft(dir);
+        const first = await ensureFresh(dir);
+        const sync = first.editor_edits || first.sync_warning ? first : await syncEditorEdits(dir);
+        // Everything is checked before anything is written, so a refused call changes nothing.
+        const next = new Map<string, { full: string; content: string }>();
+        const current = (rel: string, full: string): string | undefined => next.get(rel)?.content ?? (existsSync(full) ? readFileSync(full, 'utf8') : undefined);
+        const stale = (rel: string, full: string): string | undefined => {
+          if (next.has(rel) || !existsSync(full)) return undefined;
+          const known = readHashes.get(readKey(dir, rel));
+          if (!known) return `${rel} has not been read in this build: read it with code_app_read_files first`;
+          if (known !== sha(readFileSync(full, 'utf8'))) return `${rel} changed on ToolJet (an edit in the editor) since you read it: read it again and apply your change to what is there now`;
+          return undefined;
+        };
+        const refusals: string[] = [];
+        for (const file of args.files ?? []) {
           const full = editable(dir, file.path);
-          mkdirSync(dirname(full), { recursive: true });
-          writeFileSync(full, file.content);
-          written.push(file.path);
+          const rel = relative(dir, full).split(sep).join('/');
+          const why = stale(rel, full);
+          if (why) refusals.push(why);
+          const before = current(rel, full);
+          if (!why && before !== undefined && !args.rewrite && isRewrite(before, file.content))
+            refusals.push(`${rel}: this replaces most of the file; change only what the request needs with edits (find/replace), or pass rewrite: true if the request really is a rewrite`);
+          next.set(rel, { full, content: file.content });
         }
-        return ok({ project_dir: dir, written });
+        for (const edit of args.edits ?? []) {
+          const full = editable(dir, edit.path);
+          const rel = relative(dir, full).split(sep).join('/');
+          const why = stale(rel, full);
+          if (why) { refusals.push(why); continue; }
+          const before = current(rel, full);
+          if (before === undefined) { refusals.push(`${rel} does not exist: create it with files`); continue; }
+          const found = before.split(edit.find).length - 1;
+          if (found !== 1) { refusals.push(`${rel}: the find text appears ${found} times; it must match exactly once (copy it from the file as it is now)`); continue; }
+          next.set(rel, { full, content: before.replace(edit.find, () => edit.replace) });
+        }
+        if (refusals.length) return fail(new Error('Not written:\n' + refusals.map((r) => `- ${r}`).join('\n')));
+        const written: string[] = [];
+        for (const [rel, { full, content }] of next) {
+          mkdirSync(dirname(full), { recursive: true });
+          writeFileSync(full, content);
+          readHashes.set(readKey(dir, rel), sha(content)); // the agent knows what it just wrote
+          written.push(rel);
+        }
+        return ok({ project_dir: dir, ...sync, written });
       } catch (err) {
         return fail(err);
       }
@@ -400,6 +508,7 @@ export function codeAppBuildTool(): ToolDef {
       try {
         const dir = locateProject(args);
         const followed = await followDraft(dir);
+        await ensureFresh(dir);
         const started = Date.now();
         const pull = await cli(dir, ['app', 'pull']);
         const build = await cli(join(dir, 'frontend'), ['library', 'build']);
@@ -446,6 +555,7 @@ export function codeAppInstallTool(): ToolDef {
       try {
         const dir = locateProject(args);
         const followed = await followDraft(dir);
+        await ensureFresh(dir);
         // The full scan, dependency checks included, before anything reaches the app.
         const check = await cli(dir, ['app', 'check', '--json']);
         const security = parseReport<{ security?: SecurityReport }>(check.output)?.security;

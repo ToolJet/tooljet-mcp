@@ -44,7 +44,8 @@ const calls = () =>
     .trim()
     .split('\n')
     .filter(Boolean)
-    .map((l) => JSON.parse(l).args.join(' '));
+    .map((l) => JSON.parse(l).args.join(' '))
+    .filter((c) => c !== 'app source-pull'); // the first-touch pull of the stored code (codeAppSync.test.ts)
 const replies = (r: Record<string, { code: number; output: unknown }>) => {
   process.env.FAKE_CLI_REPLIES = JSON.stringify(r);
 };

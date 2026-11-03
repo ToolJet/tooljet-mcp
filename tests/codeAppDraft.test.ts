@@ -47,7 +47,7 @@ describe('Code mode tools follow the draft after a Save version', () => {
     writeFileSync(join(project(), 'app.json'), JSON.stringify({ appId: 'app-1', version: { id: 'ver-1', name: 'v1' } }));
     process.env.FAKE_STATUS = 'published';
     const result = JSON.parse((await codeAppInstallTool().handler({ name: 'tasks' } as any)).content[0].text);
-    expect(calls()).toEqual(['app checkout --list', 'app checkout --editing', 'app check --json', 'app dev --once']);
+    expect(calls()).toEqual(['app checkout --list', 'app checkout --editing', 'app source-pull', 'app check --json', 'app dev --once']);
     expect(result.draft).toMatch(/v1 is saved, so the code now goes into the app's draft/);
     expect(JSON.parse(readFileSync(join(project(), 'app.json'), 'utf8')).version).toBeUndefined();
   });
