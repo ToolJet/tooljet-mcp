@@ -8,6 +8,7 @@ import { codeAppInstallTool, codeAppReadFilesTool } from '../src/tools/codeApp.j
 const FAKE_CLI = `
 const fs = require('fs');
 fs.appendFileSync(process.env.FAKE_CLI_LOG, JSON.stringify(process.argv.slice(2)) + '\\n');
+if (process.argv[3] === 'check') { console.log(JSON.stringify({ problems: [], security: { gate: 'pass', counts: {}, findings: [] } })); process.exit(0); }
 if (process.argv[3] === 'source-pull') console.log(process.env.FAKE_PULL || 'Already at revision 1 (owner platform)');
 else console.log('Open: http://localhost/editor');
 `;
@@ -19,7 +20,8 @@ describe('Code mode source on ToolJet', () => {
     readFileSync(join(dir, 'cli.log'), 'utf8')
       .trim()
       .split('\n')
-      .map((line) => JSON.parse(line));
+      .map((line) => JSON.parse(line))
+      .filter((args) => args[1] !== 'check'); // the security scan install runs first (codeAppSecurity.test.ts)
   const result = (r: any) => JSON.parse(r.content[0].text);
 
   beforeEach(() => {

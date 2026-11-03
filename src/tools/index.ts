@@ -20,7 +20,7 @@ import { createTablesTool } from './createTables.js';
 import { addTableColumnTool } from './addTableColumn.js';
 import { dropTableColumnTool } from './dropTableColumn.js';
 import { dropTableTool } from './dropTable.js';
-import { codeAppScaffoldTool, codeAppReadFilesTool, codeAppWriteFilesTool, codeAppBuildTool, codeAppInstallTool } from './codeApp.js';
+import { codeAppScaffoldTool, codeAppReadFilesTool, codeAppWriteFilesTool, codeAppBuildTool, codeAppInstallTool, codeAppAddDependencyTool } from './codeApp.js';
 import { getTableSchemaTool } from './getTableSchema.js';
 import { insertRowsTool } from './insertRows.js';
 import { insertRowsBatchTool } from './insertRowsBatch.js';
@@ -121,6 +121,7 @@ export function registerTools(
     codeAppWriteFilesTool(),
     codeAppBuildTool(),
     codeAppInstallTool(),
+    codeAppAddDependencyTool(),
     listWorkspacesTool(client),
     useWorkspaceTool(client),
     manageAppPermissionsTool(client),

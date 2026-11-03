@@ -9,6 +9,7 @@ const FAKE_CLI = `
 const fs = require('fs');
 const args = process.argv.slice(2);
 fs.appendFileSync(process.env.FAKE_CLI_LOG, JSON.stringify(args) + '\\n');
+if (process.argv[3] === 'check') { console.log(JSON.stringify({ problems: [], security: { gate: 'pass', counts: {}, findings: [] } })); process.exit(0); }
 if (args[1] === 'publish') {
   const version = args[args.indexOf('-v') + 1];
   if ((process.env.FAKE_TAKEN || '').split(',').includes(version)) {
@@ -25,7 +26,8 @@ if (args[1] === 'publish') {
 describe('code_app_install publish', () => {
   let dir: string;
   const env = { ...process.env };
-  const calls = () => readFileSync(join(dir, 'cli.log'), 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+  // The security scan install runs first is covered in codeAppSecurity.test.ts.
+  const calls = () => readFileSync(join(dir, 'cli.log'), 'utf8').trim().split('\n').map((line) => JSON.parse(line)).filter((args) => args[1] !== 'check');
   const result = (r: any) => JSON.parse(r.content[0].text);
   const project = () => join(dir, 'apps', 'tasks');
 
