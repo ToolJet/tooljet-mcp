@@ -26,10 +26,13 @@ describe('verify_page_render', () => {
 });
 
 function browserFixture({ status = 200, widgets = 1, landed = 'http://viewer.test/applications/app1/home', resource, redirect, method = 'GET', duringSettle = false, resourceType = 'document', socket = false }: {
-  status?: number; widgets?: number; landed?: string; resource?: string; redirect?: string; method?: string; duringSettle?: boolean; resourceType?: string; socket?: boolean;
+  status?: number; widgets?: number; landed?: string; resource?: string; redirect?: string; method?: string; duringSettle?: boolean; resourceType?: string;
+  /** true: a third-party socket; a string: that socket URL. */
+  socket?: boolean | string;
 } = {}) {
   let handler: (route: any) => Promise<void>;
   let onSocket: ((ws: any) => void) | undefined;
+  const ws = { url: () => (typeof socket === 'string' ? socket : 'wss://realtime.thirdparty.test/socket'), close: vi.fn(), connectToServer: vi.fn() };
   const route = {
     request: () => ({ url: () => resource ?? 'http://viewer.test/applications/app1/home', method: () => method, resourceType: () => resourceType }),
     abort: vi.fn().mockResolvedValue(undefined),
@@ -45,14 +48,14 @@ function browserFixture({ status = 200, widgets = 1, landed = 'http://viewer.tes
     routeWebSocket: vi.fn(async (_: string, cb: (ws: any) => void) => { onSocket = cb; }),
     close: vi.fn().mockResolvedValue(undefined),
     newPage: vi.fn().mockResolvedValue({
-      goto: async () => { if (socket) onSocket?.({ url: () => 'ws://viewer.test/ws', close: () => {} }); if (!duringSettle && (resource || redirect)) { await handler(route); if (route.abort.mock.calls.length) throw new Error('aborted'); } return { status: () => status }; },
+      goto: async () => { if (socket) onSocket?.(ws); if (!duringSettle && (resource || redirect)) { await handler(route); if (route.abort.mock.calls.length) throw new Error('aborted'); } return { status: () => status }; },
       waitForTimeout: vi.fn(async () => { if (duringSettle) await handler(route); }), waitForFunction: vi.fn().mockResolvedValue(undefined),
       url: () => landed, evaluate: vi.fn().mockResolvedValue({ widgets, findings: [] }),
     }),
   };
   const browser = { newContext: vi.fn().mockResolvedValue(context), close: vi.fn() };
   const driver = async () => ({ chromium: { launch: vi.fn().mockResolvedValue(browser) } });
-  return { route, context, browser, driver };
+  return { route, context, browser, driver, ws };
 }
 const target = [{ page: 'home', url: 'http://viewer.test/applications/app1/home' }];
 
@@ -187,6 +190,52 @@ describe('render audit network boundary and honest results', () => {
 // apps are private while they are built, so no page was ever audited. The browser now carries the MCP server's own
 // session, scoped to the audit origins it may visit, and opens the version being edited (a released app's public URL
 // would show the old version).
+// The merged ToolJet viewer opens its own /ws and waits on it: with every socket blocked, some Code mode pages never rendered
+// and every result carried a finding, so the agent read each check as failed (guideline v2 check, 2026-11-02).
+describe('render audit WebSockets', () => {
+  it.each(['ws://viewer.test/ws', 'wss://viewer.test/ws'])('lets the ToolJet instance\'s own socket through: %s', async (socket) => {
+    const f = browserFixture({ socket });
+    const origins = new Set(['http://viewer.test', 'https://viewer.test']);
+    const [report] = await auditPages(target, { allowedOrigins: origins }, f.driver);
+    expect(f.ws.connectToServer).toHaveBeenCalledOnce();
+    expect(f.ws.close).not.toHaveBeenCalled();
+    expect(report.findings).toEqual([]);
+  });
+
+  it('closes a third-party socket and reports it without failing the render', async () => {
+    const f = browserFixture({ socket: true });
+    const [report] = await auditPages(target, {}, f.driver);
+    expect(f.ws.connectToServer).not.toHaveBeenCalled();
+    expect(f.ws.close).toHaveBeenCalled();
+    expect(report.widgets).toBe(1);
+    expect(report.findings).toEqual([expect.objectContaining({ kind: 'blocked_socket', reason: 'blocked_destination' })]);
+    expect(report.findings[0].detail).not.toMatch(/token|\?/);
+  });
+
+  it('does not count a blocked third-party socket against ok', async () => {
+    const f = browserFixture({ socket: true });
+    const res: any = await verifyPageRenderTool(client, () => 'http://viewer.test', f.driver).handler({ app_id: 'app1' });
+    const body = JSON.parse(res.content[0].text);
+    expect(body.ok).toBe(true);
+    // Both pages share the fixture's one context, so the socket lands on whichever page registered last.
+    expect(body.pages.flatMap((p: any) => p.findings.map((x: any) => x.kind))).toContain('blocked_socket');
+  });
+
+  it('still reports an empty page as unreachable when the only block was a third-party socket', async () => {
+    const f = browserFixture({ socket: true, widgets: 0 });
+    const [report] = await auditPages(target, {}, f.driver);
+    expect(report.findings[0].kind).toBe('unreachable');
+    expect(report.findings[0].detail).toMatch(/no widgets/);
+  });
+
+  it('blocks a socket to a look-alike host', async () => {
+    const f = browserFixture({ socket: 'ws://viewer.test.attacker.test/ws' });
+    await auditPages(target, {}, f.driver);
+    expect(f.ws.connectToServer).not.toHaveBeenCalled();
+    expect(f.ws.close).toHaveBeenCalled();
+  });
+});
+
 describe('render audit with the builder\'s session', () => {
   it('adds the session cookie for the viewer origin only', async () => {
     const f = browserFixture();

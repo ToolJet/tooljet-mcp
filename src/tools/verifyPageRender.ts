@@ -15,7 +15,8 @@ import { renderAuditBase, renderAuditOrigins, renderAuditUrlAllowed, renderAudit
  */
 
 export interface RenderFinding {
-  kind: 'empty_render' | 'placeholder_text' | 'clipped' | 'overlap' | 'overflow' | 'unreachable';
+  /** blocked_socket: a WebSocket to a third-party destination was closed; reported, but the render still counts. */
+  kind: 'empty_render' | 'placeholder_text' | 'clipped' | 'overlap' | 'overflow' | 'unreachable' | 'blocked_socket';
   component: string;
   detail: string;
   reason?: 'browser_unavailable' | 'auth_required' | 'navigation_failed' | 'blocked_destination' | 'redirect_blocked' | 'blocked_execution' | 'no_widgets';
@@ -298,6 +299,12 @@ async function loadPlaywright(): Promise<any | null> {
 /** Resource types the audit lets through from an allowed origin without refetching them. */
 const STATIC_RESOURCES = new Set(['script', 'stylesheet', 'image', 'font']);
 
+/** A WebSocket URL as the http(s) URL whose origin it shares, so the audit origins decide both. */
+const socketHttpUrl = (url: string): string => url.replace(/^ws(s?):/i, 'http$1:');
+
+/** Findings that report a blocked dependency without saying the page is wrong; they do not make `ok` false. */
+const INFORMATIONAL_KINDS = new Set<RenderFinding['kind']>(['blocked_socket']);
+
 /** A URL's path, without its query string (which can carry ids and tokens). */
 const pathOf = (url: string): string => { try { return new URL(url).pathname; } catch { return '?'; } };
 
@@ -355,12 +362,22 @@ export async function auditPages(
         reports[index] = unreachable(p, 'browser_unavailable', 'The render audit requires Playwright 1.48+ for WebSocket interception');
         return;
       }
-      // Audits are snapshots, not live subscriptions. No unaudited socket channel may bypass routing.
+      // Sockets are routed too: none may bypass the origin boundary.
       if (options.session) {
         // Only the viewer's own origin gets the session, and every request to any other origin is aborted below.
         await ctx.addCookies([{ name: 'tj_auth_token', value: options.session, url: new URL(p.url).origin }]);
       }
-      await ctx.routeWebSocket('**/*', (socket: any) => { block({ kind: 'unreachable', component: '-', reason: 'blocked_destination', detail: 'A WebSocket dependency was blocked; live behavior was not verified' }, `WebSocket ${pathOf(socket.url?.() ?? '')}`); socket.close(); });
+      await ctx.routeWebSocket('**/*', (socket: any) => {
+        const url = String(socket.url?.() ?? '');
+        // The ToolJet instance's own socket (the viewer's /ws) passes through: the merged viewer waits on it, and with
+        // every socket blocked some Code mode pages never rendered and every result carried a finding (2026-11-02).
+        if (renderAuditUrlAllowed(socketHttpUrl(url), origins)) {
+          socket.connectToServer();
+          return;
+        }
+        block({ kind: 'blocked_socket', component: '-', reason: 'blocked_destination', detail: 'A WebSocket to a destination outside the audit origins was blocked; its live behavior was not verified' }, `WebSocket ${(() => { try { return new URL(url).host; } catch { return '?'; } })()}`);
+        socket.close();
+      });
       await ctx.route('**/*', async (route: any) => {
         const request = route.request();
         const url = request.url();
@@ -460,14 +477,14 @@ export async function auditPages(
       // A page left empty after a blocked request names that request: a bare no_widgets hid why every page of
       // every build read empty (compiler round 3, 2026-10-04).
       reports[index] = result.widgets === 0 && blocked
-        ? { page: p.page, url: p.url, widgets: 0, findings: [{ ...blocked, detail: `${blocked.detail}; the page then showed no widgets. Blocked: ${blocks.join('; ')}` }] }
+        ? { page: p.page, url: p.url, widgets: 0, findings: [{ ...blocked, kind: 'unreachable', detail: `${blocked.detail}; the page then showed no widgets. Blocked: ${blocks.join('; ')}` }] }
         : result.widgets === 0
         ? unreachable(p, 'no_widgets', 'No ToolJet widgets were found; the page may be empty, unauthenticated, or not loaded')
         : { page: p.page, url: p.url, widgets: result.widgets, findings: [...result.findings, ...blockFindings] };
     } catch (err) {
       // What failed, first line only: "could not load" alone left an audit that never ran undiagnosable.
       const why = String((err as Error)?.message ?? err).split('\n')[0]!.slice(0, 200);
-      reports[index] = blocked ? { ...p, widgets: 0, findings: [{ ...blocked, detail: `${blocked.detail}; the audit then stopped: ${why}. Blocked: ${blocks.join('; ')}` }] }
+      reports[index] = blocked ? { ...p, widgets: 0, findings: [{ ...blocked, kind: 'unreachable', detail: `${blocked.detail}; the audit then stopped: ${why}. Blocked: ${blocks.join('; ')}` }] }
         : unreachable(p, 'navigation_failed', `Could not load or inspect the viewer page: ${why}`);
     } finally {
       await ctx?.close().catch(() => {});
@@ -504,7 +521,8 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
       'Run it once per page before the handoff and review every finding; report unverified behavior explicitly. ' +
       'Opens the version being edited with the builder\'s own ToolJet session (limited to the viewer origin), so a private app is ' +
       'audited without being made public. Only saved, static, bounded read queries may run; writes, dynamic queries ' +
-      'and queries requiring confirmation are blocked and reported as unverified. ' +
+      'and queries requiring confirmation are blocked and reported as unverified. WebSockets to the ToolJet origin pass; any other ' +
+      'WebSocket is closed and reported as a `blocked_socket` finding, which does not make `ok` false. ' +
       'Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.',
     inputSchema: {
       app_id: z.string().regex(/^[A-Za-z0-9_-]+$/),
@@ -544,7 +562,7 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
         // is not ours to choose, the restore is a best-effort call that can fail, and a failure leaves
         // the app public with nothing to notice it. An unreachable page is reported as unreachable and
         // the operator gives the audit a viewer session instead.
-        const total = reports.reduce((n, r) => n + r.findings.length, 0);
+        const total = reports.reduce((n, r) => n + r.findings.filter((f) => !INFORMATIONAL_KINDS.has(f.kind)).length, 0);
         const axeCount = reports.reduce((n, r) => n + (r.accessibility?.length ?? 0), 0);
         return ok({ pages: reports, ok: total === 0, findings: total, ...(reports.some((r) => r.accessibility) ? { accessibility_violations: axeCount } : {}) });
       } catch (err) {

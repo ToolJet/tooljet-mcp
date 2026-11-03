@@ -107449,7 +107449,7 @@ function dropTableTool(client) {
 // dist/tools/codeApp.js
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { existsSync as existsSync2, mkdirSync, readFileSync as readFileSync8, readdirSync, writeFileSync } from "node:fs";
+import { existsSync as existsSync2, mkdirSync, readFileSync as readFileSync8, readdirSync, statSync, writeFileSync } from "node:fs";
 import { homedir as homedir2 } from "node:os";
 import { dirname as dirname7, join as join2, relative, resolve as resolve6, sep } from "node:path";
 var run = promisify(execFile);
@@ -107459,6 +107459,33 @@ var projectDir = (name2) => {
   if (!NAME.test(name2))
     throw new Error(`name must match ${NAME} (lowercase letters, digits, hyphens)`);
   return join2(root(), name2);
+};
+var appIdOf = (dir) => {
+  try {
+    return JSON.parse(readFileSync8(join2(dir, "app.json"), "utf8")).appId;
+  } catch {
+    return void 0;
+  }
+};
+var projectsForApp = (appId) => {
+  if (!existsSync2(root()))
+    return [];
+  return readdirSync(root(), { withFileTypes: true }).filter((entry) => entry.isDirectory() && NAME.test(entry.name) && appIdOf(join2(root(), entry.name)) === appId).map((entry) => entry.name).sort((a, b) => statSync(join2(root(), b, "app.json")).mtimeMs - statSync(join2(root(), a, "app.json")).mtimeMs);
+};
+var APP_ID = external_exports.string().uuid().optional().describe("The app's id: finds its project, so you never have to know the folder name");
+var PROJECT_NAME = external_exports.string().regex(NAME).optional().describe("The project folder, when you know it; app_id is enough");
+var locateProject = (args) => {
+  if (args.app_id) {
+    const [found] = projectsForApp(args.app_id);
+    if (!found)
+      throw new Error(`no Code mode project for app ${args.app_id} under ${root()}; call code_app_scaffold with this app_id`);
+    if (args.name && args.name !== found)
+      throw new Error(`app ${args.app_id}'s project is "${found}", not "${args.name}"`);
+    return join2(root(), found);
+  }
+  if (!args.name)
+    throw new Error("give app_id (or the project name)");
+  return requireProject(args.name);
 };
 var requireProject = (name2) => {
   const dir = projectDir(name2);
@@ -107510,7 +107537,29 @@ async function cli(cwd, args, timeoutMs = 3e5) {
     return { code: typeof e.code === "number" ? e.code : 1, output: strip((e.stdout ?? "") + (e.stderr ?? e.message ?? "")) };
   }
 }
-function codeAppScaffoldTool() {
+var PLACEHOLDER_NAME = /^Untitled App\b/;
+async function nameApp(client, dir, name2) {
+  let snapshot2;
+  try {
+    snapshot2 = JSON.parse(readFileSync8(join2(dir, ".tooljet", "snapshot.json"), "utf8"));
+  } catch {
+    return {};
+  }
+  if (!client || !snapshot2.appId || !snapshot2.versionId || !PLACEHOLDER_NAME.test(snapshot2.appName ?? ""))
+    return {};
+  try {
+    await client.renameApp(snapshot2.appId, snapshot2.versionId, name2);
+    return { renamed_to: name2 };
+  } catch (error51) {
+    const message = error51 instanceof Error ? error51.message : String(error51);
+    if (!/exist|unique|duplicate|taken|conflict|409|422/i.test(message))
+      return { rename_warning: `Could not name the app: ${message}` };
+    const fallback = `${name2} ${Math.random().toString(36).slice(2, 5)}`;
+    await client.renameApp(snapshot2.appId, snapshot2.versionId, fallback);
+    return { renamed_to: fallback, rename_warning: `App name "${name2}" is already used in this workspace; the app was named "${fallback}" instead.` };
+  }
+}
+function codeAppScaffoldTool(client) {
   return {
     name: "code_app_scaffold",
     title: "Scaffold Code Mode App",
@@ -107518,12 +107567,16 @@ function codeAppScaffoldTool() {
     description: "Create the Code mode project for an app you created with create_app: app.json (the app and its routes, its screens) and frontend/ (React + TypeScript on shadcn + Tailwind, react-router through AppRouter). Create the app's queries with add_queries BEFORE this, so the typed hooks it writes (frontend/src/tooljet.gen.ts: useAppQuery, row types, ROUTES, routePath, PAGES) list them. Returns the files and the generated hooks.",
     inputSchema: {
       name: external_exports.string().regex(NAME).describe("Project folder: lowercase letters, digits and hyphens, e.g. inventory-console"),
-      display_name: external_exports.string().min(1).max(100).describe("The app's name"),
+      display_name: external_exports.string().min(1).max(100).describe(`The app's name; an app still called "Untitled App" is renamed to it`),
       app_id: external_exports.string().uuid().describe("The app from create_app")
     },
     async handler(args) {
       try {
-        const dir = projectDir(args.name);
+        const [existing] = projectsForApp(args.app_id);
+        const dir = existing ? join2(root(), existing) : projectDir(args.name);
+        const owner = appIdOf(dir);
+        if (!existing && owner && owner !== args.app_id)
+          throw new Error(`project "${args.name}" belongs to app ${owner}; choose another name`);
         if (!existsSync2(join2(dir, "app.json"))) {
           mkdirSync(root(), { recursive: true });
           const init = await cli(root(), ["app", "init", args.name, "--name", args.display_name, "--no-install"]);
@@ -107544,8 +107597,11 @@ function codeAppScaffoldTool() {
         const pull = await cli(dir, ["app", "pull"]);
         if (pull.code !== 0)
           throw new Error(`tooljet app pull failed: ${pull.output}`);
+        const naming = await nameApp(client, dir, args.display_name);
         return ok({
           project_dir: dir,
+          ...naming,
+          ...existing ? { existing_project: existing, note: `This app already has a project, "${existing}"; it is used as is.` } : {},
           files: listFiles(dir),
           app_json: JSON.parse(readFileSync8(join2(dir, "app.json"), "utf8")),
           generated_hooks: readFileSync8(join2(dir, "frontend", "src", "tooljet.gen.ts"), "utf8"),
@@ -107557,25 +107613,32 @@ function codeAppScaffoldTool() {
     }
   };
 }
+async function syncEditorEdits(dir) {
+  const pull = await cli(dir, ["app", "source-pull"], 6e4);
+  if (pull.code !== 0)
+    return { sync_warning: `Could not check the ToolJet editor for edits: ${pull.output.trim().slice(0, 300)}` };
+  return /Pulled revision/.test(pull.output) ? { editor_edits: pull.output.trim() } : {};
+}
 function codeAppReadFilesTool() {
   return {
     name: "code_app_read_files",
     title: "Read Code Mode Files",
-    annotations: { readOnlyHint: true, openWorldHint: false },
-    description: "Read a Code mode project. Without paths, lists its files; with paths, returns their contents (app.json, frontend/...).",
-    inputSchema: { name: external_exports.string().regex(NAME), paths: external_exports.array(external_exports.string()).optional() },
+    annotations: { readOnlyHint: true, openWorldHint: true },
+    description: "Read a Code mode project. Without paths, lists its files; with paths, returns their contents (app.json, frontend/...). Edits saved in the ToolJet Code panel since the last install are brought into the project first.",
+    inputSchema: { app_id: APP_ID, name: PROJECT_NAME, paths: external_exports.array(external_exports.string()).optional() },
     async handler(args) {
       try {
-        const dir = requireProject(args.name);
+        const dir = locateProject(args);
+        const sync = await syncEditorEdits(dir);
         if (!args.paths?.length)
-          return ok({ project_dir: dir, files: listFiles(dir) });
+          return ok({ project_dir: dir, ...sync, files: listFiles(dir) });
         const files = Object.fromEntries(args.paths.map((p) => {
           const full = resolve6(dir, p);
           if (relative(dir, full).startsWith(".."))
             throw new Error(`"${p}" is outside the project`);
           return [p, readFileSync8(full, "utf8")];
         }));
-        return ok({ project_dir: dir, files });
+        return ok({ project_dir: dir, ...sync, files });
       } catch (err) {
         return fail(err);
       }
@@ -107589,12 +107652,13 @@ function codeAppWriteFilesTool() {
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     description: "Write whole files into a Code mode project: app.json (name, codePage, routes [{id, path, title}]), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. Read data with useAppQuery from ../tooljet.gen; write by awaiting a query's run({ ...parameters }); route with AppRouter, react-router <Routes>/<Route> whose paths are exactly app.json's, and routePath(id, params). Then code_app_build.",
     inputSchema: {
-      name: external_exports.string().regex(NAME),
+      app_id: APP_ID,
+      name: PROJECT_NAME,
       files: external_exports.array(external_exports.object({ path: external_exports.string(), content: external_exports.string() })).min(1).max(40)
     },
     async handler(args) {
       try {
-        const dir = requireProject(args.name);
+        const dir = locateProject(args);
         const written = [];
         for (const file2 of args.files) {
           const full = editable(dir, file2.path);
@@ -107615,10 +107679,10 @@ function codeAppBuildTool() {
     title: "Build Code Mode App",
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     description: "Refresh the typed hooks from the app's current queries (tooljet app pull), build the app's code (TypeScript, Tailwind, manifest), and check it against the app (tooljet app check: every useAppQuery name, route, link and page must exist). Returns ok and every error to fix. Repeat write and build until ok, then code_app_install.",
-    inputSchema: { name: external_exports.string().regex(NAME) },
+    inputSchema: { app_id: APP_ID, name: PROJECT_NAME },
     async handler(args) {
       try {
-        const dir = requireProject(args.name);
+        const dir = locateProject(args);
         const started = Date.now();
         const pull = await cli(dir, ["app", "pull"]);
         const build = await cli(join2(dir, "frontend"), ["library", "build"]);
@@ -107646,12 +107710,12 @@ function codeAppInstallTool() {
     name: "code_app_install",
     title: "Install Code Mode App",
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-    description: "Upload the app's code (tooljet app dev --once): it creates or updates the app's Code mode page, one hidden page per route (set each route's page permissions on it), the page's root component, and pins the app version to this build. Build first. Returns the editor URL.",
-    inputSchema: { name: external_exports.string().regex(NAME) },
+    description: "Upload the app's code (tooljet app dev --once --source platform): it creates or updates the app's Code mode page, one hidden page per route (set each route's page permissions on it), the page's root component, pins the app version to this build, and stores the source on ToolJet so the Code panel can edit it. Build first. Returns the editor URL. If it says the source was edited in the ToolJet editor, call code_app_read_files to bring those edits down, reapply your change, and install again.",
+    inputSchema: { app_id: APP_ID, name: PROJECT_NAME },
     async handler(args) {
       try {
-        const dir = requireProject(args.name);
-        const result = await cli(dir, ["app", "dev", "--once"]);
+        const dir = locateProject(args);
+        const result = await cli(dir, ["app", "dev", "--once", "--source", "platform"]);
         if (result.code !== 0)
           throw new Error(result.output.trim());
         return ok({ linked: true, editor_url: /Open: (\S+)/.exec(result.output)?.[1] ?? null, output: result.output.trim() });
@@ -110569,6 +110633,8 @@ async function loadPlaywright() {
   }
 }
 var STATIC_RESOURCES = /* @__PURE__ */ new Set(["script", "stylesheet", "image", "font"]);
+var socketHttpUrl = (url2) => url2.replace(/^ws(s?):/i, "http$1:");
+var INFORMATIONAL_KINDS = /* @__PURE__ */ new Set(["blocked_socket"]);
 var pathOf = (url2) => {
   try {
     return new URL(url2).pathname;
@@ -110626,7 +110692,18 @@ async function auditPages(pages, options2 = {}, driver = loadPlaywright) {
         await ctx.addCookies([{ name: "tj_auth_token", value: options2.session, url: new URL(p.url).origin }]);
       }
       await ctx.routeWebSocket("**/*", (socket) => {
-        block({ kind: "unreachable", component: "-", reason: "blocked_destination", detail: "A WebSocket dependency was blocked; live behavior was not verified" }, `WebSocket ${pathOf(socket.url?.() ?? "")}`);
+        const url2 = String(socket.url?.() ?? "");
+        if (renderAuditUrlAllowed(socketHttpUrl(url2), origins)) {
+          socket.connectToServer();
+          return;
+        }
+        block({ kind: "blocked_socket", component: "-", reason: "blocked_destination", detail: "A WebSocket to a destination outside the audit origins was blocked; its live behavior was not verified" }, `WebSocket ${(() => {
+          try {
+            return new URL(url2).host;
+          } catch {
+            return "?";
+          }
+        })()}`);
         socket.close();
       });
       await ctx.route("**/*", async (route) => {
@@ -110726,10 +110803,10 @@ async function auditPages(pages, options2 = {}, driver = loadPlaywright) {
         };
         return;
       }
-      reports[index] = result.widgets === 0 && blocked ? { page: p.page, url: p.url, widgets: 0, findings: [{ ...blocked, detail: `${blocked.detail}; the page then showed no widgets. Blocked: ${blocks.join("; ")}` }] } : result.widgets === 0 ? unreachable(p, "no_widgets", "No ToolJet widgets were found; the page may be empty, unauthenticated, or not loaded") : { page: p.page, url: p.url, widgets: result.widgets, findings: [...result.findings, ...blockFindings] };
+      reports[index] = result.widgets === 0 && blocked ? { page: p.page, url: p.url, widgets: 0, findings: [{ ...blocked, kind: "unreachable", detail: `${blocked.detail}; the page then showed no widgets. Blocked: ${blocks.join("; ")}` }] } : result.widgets === 0 ? unreachable(p, "no_widgets", "No ToolJet widgets were found; the page may be empty, unauthenticated, or not loaded") : { page: p.page, url: p.url, widgets: result.widgets, findings: [...result.findings, ...blockFindings] };
     } catch (err) {
       const why = String(err?.message ?? err).split("\n")[0].slice(0, 200);
-      reports[index] = blocked ? { ...p, widgets: 0, findings: [{ ...blocked, detail: `${blocked.detail}; the audit then stopped: ${why}. Blocked: ${blocks.join("; ")}` }] } : unreachable(p, "navigation_failed", `Could not load or inspect the viewer page: ${why}`);
+      reports[index] = blocked ? { ...p, widgets: 0, findings: [{ ...blocked, kind: "unreachable", detail: `${blocked.detail}; the audit then stopped: ${why}. Blocked: ${blocks.join("; ")}` }] } : unreachable(p, "navigation_failed", `Could not load or inspect the viewer page: ${why}`);
     } finally {
       await ctx?.close().catch(() => {
       });
@@ -110754,7 +110831,7 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
     name: "verify_page_render",
     title: "Verify Page Render",
     annotations: { readOnlyHint: true, openWorldHint: true },
-    description: 'Render audit of one page or every page of an app in a headless browser (1600x900 unless viewport_width is set), after the app is built. On an app in Code mode it checks inside the app: sideways scrolling, content cut off at the right edge, an empty app and placeholder text; pass route to open one route of it and viewport_width (375, 768, 1280) to check each width. An app in Code mode also gets an axe-core accessibility run (WCAG 2 A/AA; `accessibility` lists violations by impact) and a screenshot path. Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", "Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. Run it once per page before the handoff and review every finding; report unverified behavior explicitly. Opens the version being edited with the builder\'s own ToolJet session (limited to the viewer origin), so a private app is audited without being made public. Only saved, static, bounded read queries may run; writes, dynamic queries and queries requiring confirmation are blocked and reported as unverified. Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.',
+    description: 'Render audit of one page or every page of an app in a headless browser (1600x900 unless viewport_width is set), after the app is built. On an app in Code mode it checks inside the app: sideways scrolling, content cut off at the right edge, an empty app and placeholder text; pass route to open one route of it and viewport_width (375, 768, 1280) to check each width. An app in Code mode also gets an axe-core accessibility run (WCAG 2 A/AA; `accessibility` lists violations by impact) and a screenshot path. Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", "Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. Run it once per page before the handoff and review every finding; report unverified behavior explicitly. Opens the version being edited with the builder\'s own ToolJet session (limited to the viewer origin), so a private app is audited without being made public. Only saved, static, bounded read queries may run; writes, dynamic queries and queries requiring confirmation are blocked and reported as unverified. WebSockets to the ToolJet origin pass; any other WebSocket is closed and reported as a `blocked_socket` finding, which does not make `ok` false. Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.',
     inputSchema: {
       app_id: external_exports.string().regex(/^[A-Za-z0-9_-]+$/),
       page_handle: external_exports.string().optional().describe("one page handle; omit to audit every page"),
@@ -110791,7 +110868,7 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
           session: process.env.MCP_RENDER_AUDIT_SESSION === "off" ? void 0 : await client.viewerSession?.(args.app_id).catch(() => void 0)
         };
         const reports = await auditPages(targets, options2, driver);
-        const total = reports.reduce((n, r) => n + r.findings.length, 0);
+        const total = reports.reduce((n, r) => n + r.findings.filter((f) => !INFORMATIONAL_KINDS.has(f.kind)).length, 0);
         const axeCount = reports.reduce((n, r) => n + (r.accessibility?.length ?? 0), 0);
         return ok({ pages: reports, ok: total === 0, findings: total, ...reports.some((r) => r.accessibility) ? { accessibility_violations: axeCount } : {} });
       } catch (err) {
@@ -117749,12 +117826,12 @@ function deleteEventTool(client) {
 
 // dist/runtimeFreshness.js
 import { createHash as createHash2 } from "node:crypto";
-import { statSync } from "node:fs";
+import { statSync as statSync2 } from "node:fs";
 import { fileURLToPath as fileURLToPath7 } from "node:url";
 var TOOLJET_MCP_VERSION = "0.8.0";
 function snapshot(path) {
   try {
-    const stat = statSync(path);
+    const stat = statSync2(path);
     const source2 = `${Math.round(stat.mtimeMs * 1e3)}:${stat.size}`;
     return {
       buildId: createHash2("sha256").update(source2).digest("hex").slice(0, 12),
@@ -118661,7 +118738,7 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     runWorkflowTool(client),
     getWorkflowExecutionTool(client),
     getRuntimeInfoTool(runtime),
-    codeAppScaffoldTool(),
+    codeAppScaffoldTool(client),
     codeAppReadFilesTool(),
     codeAppWriteFilesTool(),
     codeAppBuildTool(),
