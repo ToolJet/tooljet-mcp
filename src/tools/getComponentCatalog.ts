@@ -69,6 +69,40 @@ function resolveCatalogType(requestedType: string): {
     : { type: requestedType };
 }
 
+/** Names models reach for from shadcn/ui and other kits, mapped to the pack's types (or how to compose them). */
+const PACK_CONCEPTS: Array<[RegExp, string[]]> = [
+  [/table|grid|datatable/i, ['ShadTable']],
+  [/metric|stat|kpi/i, ['ShadStat', 'ShadSparkline', 'ShadSummaryStrip']],
+  [/summary|figures|totals|strip|headline/i, ['ShadSummaryStrip']],
+  [/recent|activity|feed|records?|orders|people|contacts|inbox/i, ['ShadRecordList']],
+  [/card|panel|surface/i, ['FlexContainer (cardStyle "shadcnCard")', 'ShadCardGrid']],
+  [/gallery|tiles?|catalog|products?|cards|grid/i, ['ShadCardGrid']],
+  [/hero|header|masthead|jumbotron|cover|welcome/i, ['ShadHero']],
+  [/modal|dialog|sheet|drawer/i, ['ShadDialog']],
+  [/dropdown|menu/i, ['ShadDropdownMenu', 'ShadSelect', 'ShadCombobox']],
+  [/list/i, ['ShadListView', 'ShadRecordList', 'ShadKeyValue']],
+  [/chat|message|assistant|conversation|copilot|bot|thread/i, ['ShadChat']],
+  [/question|survey|quiz|onboarding|intake|wizard|poll|triage|form/i, ['ShadQuestionnaire']],
+  [/chart|graph/i, ['ShadBarChart', 'ShadLineChart', 'ShadAreaChart', 'ShadPieChart', 'ShadComboChart', 'ShadScatterChart', 'ShadFunnelChart', 'ShadHeatmapChart']],
+  [/funnel|conversion/i, ['ShadFunnelChart']],
+  [/scatter|bubble|correlation/i, ['ShadScatterChart']],
+  [/heat|matrix|grid|calendar/i, ['ShadHeatmapChart']],
+  [/board|kanban|pipeline|stage|trello|dispatch|grouped by/i, ['ShadKanban']],
+  [/combo|composed|mixed|dual/i, ['ShadComboChart']],
+  [/label|title|typography/i, ['ShadHeading', 'ShadText']],
+  [/date/i, ['ShadDatePicker', 'ShadDateTimePicker', 'ShadCalendar']],
+  [/toast|notification|banner/i, ['ShadAlert']],
+  [/divider/i, ['ShadSeparator']],
+  [/schedule|scheduler|booking|reservation|roster|rota|shift|on.?call|resource|timeline.?view|gantt|availability|rooms?/i, ['ShadSchedule']],
+  [/progress|goal|budget|quota|target|onboarding|checklist|capacity|completion/i, ['ShadProgressList', 'ShadProgress']],
+  [/map|geo|location|pins?$|markers?|route|locator|spatial|leaflet|places|zones?$|territor|geofence|dispatch|fleet/i, ['ShadMap']],
+];
+function packSuggestions(requestedType: string): string[] {
+  if (!/^Shad[A-Z]/.test(requestedType)) return [];
+  const rest = requestedType.slice(4);
+  return [...new Set(PACK_CONCEPTS.filter(([pattern]) => pattern.test(rest)).flatMap(([, types]) => types))];
+}
+
 /** Catalog types whose name shares a word with an unknown one, for the error that names it. */
 function nearbyTypes(requestedType: string): string[] {
   const words = requestedType.split(/(?=[A-Z])|[\s_-]+/).map((word) => word.toLowerCase()).filter((word) => word.length >= 4);
@@ -84,9 +118,10 @@ function selectEntries(
     ? entries.filter((entry) => keys.includes(entry.key))
     : entries;
   if (detail === 'full' || keys?.length) return selected;
-  return selected.map(({ key, valueType, allowedValues, requires, mutuallyExclusiveWith }) => ({
+  return selected.map(({ key, valueType, valueTypes, allowedValues, requires, mutuallyExclusiveWith }) => ({
     key,
     ...(valueType !== undefined ? { valueType } : {}),
+    ...(valueTypes !== undefined ? { valueTypes } : {}),
     ...(allowedValues !== undefined ? { allowedValues } : {}),
     ...(requires !== undefined ? { requires } : {}),
     ...(mutuallyExclusiveWith !== undefined ? { mutuallyExclusiveWith } : {}),
@@ -204,7 +239,17 @@ export function getComponentCatalogTool(client: ToolJetClient): ToolDef {
           const schema = getComponentSchema(resolved.type);
           if (!schema) {
             const near = nearbyTypes(singleType);
-            return ok({ error: `Unknown component type "${singleType}". Call with no argument to list valid types.`, ...(near.length ? { did_you_mean: near } : {}) });
+            const suggested = [...new Set([...packSuggestions(singleType), ...near])].slice(0, 6);
+            // A guessed pack name (ShadCard, even ShadZZZ to fish for a list) gets the pack's whole type list, as a
+            // batch request does: a build that never saw ShadFunnelChart wrote its funnel as a line of text.
+            const packTypes = /^Shad[A-Z]/.test(singleType)
+              ? getCatalog().map((entry) => entry.type).filter((type) => /^Shad[A-Z]/.test(type))
+              : [];
+            return ok({
+              error: `Unknown component type "${singleType}". Call with no argument to list valid types.`,
+              ...(suggested.length ? { did_you_mean: suggested } : {}),
+              ...(packTypes.length ? { pack_types: packTypes } : {}),
+            });
           }
           return ok({
             ...selectSchema(schema, args),
@@ -270,7 +315,20 @@ export function getComponentCatalogTool(client: ToolJetClient): ToolDef {
           components.push(component);
           componentByResolvedType.set(resolved.type, component);
         }
-        return ok({ components, unknown_types: unknownTypes });
+        const suggestions = Object.fromEntries(
+          unknownTypes
+            .map((type) => [type, [...new Set([...packSuggestions(type), ...nearbyTypes(type)])].slice(0, 6)] as const)
+            .filter(([, near]) => near.length)
+        );
+        const guessedPack = unknownTypes.some((type) => /^Shad[A-Z]/.test(type));
+        return ok({
+          components,
+          unknown_types: unknownTypes,
+          ...(Object.keys(suggestions).length ? { suggestions } : {}),
+          ...(guessedPack
+            ? { pack_types: getCatalog().map((entry) => entry.type).filter((type) => /^Shad[A-Z]/.test(type)) }
+            : {}),
+        });
       } catch (err) {
         return fail(err);
       }

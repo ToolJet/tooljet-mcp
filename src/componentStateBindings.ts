@@ -1,4 +1,7 @@
 import { parse, parseExpression } from '@babel/parser';
+import { getComponentSchema } from './catalog.js';
+import { retiredUi2Name } from './ui2LegacyNames.js';
+import { isLibraryPackType } from './libraryPack.js';
 
 type Node = Record<string, unknown> & { type: string };
 type Component = { name?: string; type?: string };
@@ -58,12 +61,27 @@ export function lintComponentStateBindings(value: unknown, components: Component
       (node.type === 'CallExpression' && isNode(node.callee) && node.callee.type === 'Identifier' && node.callee.name === 'eval')
     ) shadowed = true;
     const prop = isMember(node) ? memberName(node) : undefined;
+    // components.<name>.<value>.<member>: a UI 2.0 value with a catalogued shape has only those members.
+    if (prop && isMember(node.object) && isMember(node.object.object)) {
+      const value = node.object as Node;
+      const owner = value.object as Node;
+      if (isNode(owner.object) && owner.object.type === 'Identifier' && owner.object.name === 'components') {
+        const name = memberName(owner);
+        const variable = memberName(value);
+        const type = name ? components.find((c) => c.name === name)?.type : undefined;
+        if (name && variable && type && missingMember(type, variable, prop)) {
+          wrongNames.add(`${name}\u0000${type}\u0000${variable}.${prop}`);
+        }
+      }
+    }
     if (prop && isMember(node.object)) {
       const owner = node.object;
       if (isNode(owner.object) && owner.object.type === 'Identifier' && owner.object.name === 'components') {
         const name = memberName(owner);
         const type = name ? components.find((c) => c.name === name)?.type : undefined;
-        if (name && type && WRONG_ALIASES[type]?.[prop]) wrongNames.add(`${name}\u0000${type}\u0000${prop}`);
+        if (name && type && (WRONG_ALIASES[type]?.[prop] || retiredUi2Message(type, prop, name))) {
+          wrongNames.add(`${name}\u0000${type}\u0000${prop}`);
+        }
       }
     }
     Object.values(node).forEach(visit);
@@ -71,9 +89,57 @@ export function lintComponentStateBindings(value: unknown, components: Component
   visit(root);
   return shadowed ? [] : [...wrongNames].map((key) => {
     const [name, type, prop] = key.split('\u0000') as [string, string, string];
-    return `${path}: ${WRONG_ALIASES[type]![prop]!(name)}`;
+    if (prop.includes('.')) {
+      const [variable, member] = prop.split('.') as [string, string];
+      return `${path}: ${type} "${name}" ${variable} has no ${member}; it reads undefined at runtime. ` +
+        `It has ${missingMember(type, variable, member)!.join(', ')}.`;
+    }
+    return `${path}: ${WRONG_ALIASES[type]?.[prop]?.(name) ?? retiredUi2Message(type, prop, name)}`;
   });
 }
+
+/** A UI 2.0 widget's retired exposed value or action (ui2LegacyNames.ts) read in a binding, unless the name is still
+ *  current for the type: the old name reads undefined. */
+function retiredUi2Message(type: string, prop: string, name: string): string | undefined {
+  // A pack component (Lib_<pack>_<Component>) publishes exactly its manifest's props too. An edit reads the app's
+  // widgets back as pack types, so a sheet bound to a card grid's invented selectedCardId always showed the first
+  // technician and validate_app passed (staging, 2026-10-28).
+  if (!type.startsWith('Shad') && !isLibraryPackType(type)) return undefined;
+  const schema = getComponentSchema(type);
+  if (schema?.exposedVariables?.some((variable) => variable.name === prop)) return undefined;
+  if (schema?.actions?.some((action) => action.handle === prop)) return undefined;
+  const exposed = retiredUi2Name(type, 'exposed', prop);
+  if (exposed) {
+    return `${type} "${name}" exposes ${exposed}, not ${prop} (renamed); read components.${name}.${exposed}. ` +
+      'The old name is undefined at runtime.';
+  }
+  const action = retiredUi2Name(type, 'actions', prop);
+  if (action) {
+    return `${type} "${name}" action ${prop}() was renamed ${action}(); call components.${name}.${action}(...). ` +
+      'The old name is undefined at runtime.';
+  }
+  // A UI 2.0 widget publishes exactly its catalogued values and actions (the catalog is built from its definition),
+  // plus the id every component has, so any other name reads undefined. Luna builds (2026-10-18): an intake form's
+  // submit check read consent.checked and could never pass; a job count read a record list's data and showed 0.
+  const published = schema?.exposedVariables?.map((variable) => variable.name) ?? [];
+  if (prop === 'id' || !published.length) return undefined;
+  const meant = UI2_MEANT[prop]?.find((candidate) => published.includes(candidate));
+  return `${type} "${name}" has no ${prop}; it reads undefined at runtime. ` +
+    (meant ? `Read components.${name}.${meant}. ` : '') +
+    `It publishes ${published.join(', ')}.`;
+}
+
+/** What a binding most likely meant by a name UI 2.0 widgets do not publish, in order of preference. */
+const UI2_MEANT: Record<string, string[]> = {
+  checked: ['value'],
+  selected: ['value', 'selectedItem'],
+  selectedValue: ['value'],
+  text: ['value'],
+  selectedCard: ['selectedItem', 'lastSelectedCard'],
+  selectedCardId: ['selectedItemId', 'selectedItem'],
+  selectedId: ['selectedItemId', 'selectedRowId'],
+  selectedRow: ['selectedItem', 'selectedRow'],
+};
 
 /** Properties a binding reads that are proven wrong for that component type, with the message naming the right one. */
 const WRONG_ALIASES: Record<string, Record<string, (name: string) => string>> = {
@@ -97,3 +163,33 @@ const WRONG_ALIASES: Record<string, Record<string, (name: string) => string>> = 
       'the incorrect alias is undefined, even with optional chaining or a fallback. An empty selection is [].',
   },
 };
+
+/** Date and time pickers whose value is '' while nothing is picked. */
+const DATE_PICKERS = new Set(['ShadDatePicker', 'ShadDateTimePicker', 'ShadTimePicker', 'Datepicker', 'DatePickerV2', 'DatetimePickerV2', 'TimePicker']);
+
+/** A ToolJet DB create_row or update_rows column written straight from a date or time picker's value. An empty picker
+ *  publishes '' and a date or timestamp column rejects it, so the whole save fails whenever the field is left blank
+ *  (an intake form's optional incident date, 2026-10-18). A fallback (`|| null`, a ternary) passes. */
+export function lintEmptyDateWrites(value: unknown, components: Component[], path: string): string[] {
+  if (Array.isArray(value)) return value.flatMap((child, i) => lintEmptyDateWrites(child, components, `${path}[${i}]`));
+  if (value && typeof value === 'object') return Object.entries(value).flatMap(([key, child]) =>
+    lintEmptyDateWrites(child, components, `${path}.${key}`));
+  if (typeof value !== 'string' || !/\.(create_row|update_rows\.columns)\.[^.]+\.value$/.test(path)) return [];
+  const read = value.trim().match(/^\{\{\s*components\??\.([A-Za-z_$][\w$]*)\??\.value\s*\}\}$/);
+  const picker = read ? components.find((c) => c.name === read[1]) : undefined;
+  if (!picker?.type || !DATE_PICKERS.has(picker.type)) return [];
+  return [`${path}: ${picker.type} "${picker.name}" is '' while no date is picked, and a date or timestamp column ` +
+    `rejects '', so the save fails whenever it is left blank. Write {{ components.${picker.name}.value || null }}.`];
+}
+
+/** The members a UI 2.0 widget's exposed value has, when its catalog entry lists them and `member` is not one;
+ *  undefined when the value has no listed shape or the member exists. */
+function missingMember(type: string, variable: string, member: string): string[] | undefined {
+  if (!type.startsWith('Shad')) return undefined;
+  const entry = getComponentSchema(type)?.exposedVariables?.find((v) => v.name === variable) as { shape?: unknown } | undefined;
+  const shape = entry?.shape;
+  if (!shape || typeof shape !== 'object' || Array.isArray(shape)) return undefined;
+  const members = Object.keys(shape as Record<string, unknown>);
+  if (members.includes('...') || members.includes(member)) return undefined;
+  return members;
+}

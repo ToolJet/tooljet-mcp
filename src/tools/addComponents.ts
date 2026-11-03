@@ -6,6 +6,7 @@ import { lintRenderedGeometryBlocking, lintRenderedGeometryAdvisory, type LintCo
 import { introducedLintFindings } from '../lint.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
 import { literalCanvasColor } from '../appSettings.js';
+import { resolveParentRef } from '../componentParent.js';
 import { COMPONENT_FX_GUIDANCE } from '../componentFxGuidance.js';
 
 export function addComponentsTool(client: ToolJetClient): ToolDef {
@@ -37,7 +38,8 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
       'For ModalV2/Form/Container native regions, set child ' +
       '`slot_name` to `header`, `body`, or `footer`; body is the default. A Kanban with no explicit child automatically gets its ' +
       'catalog card children so cards are not blank; supplying a child with its `parent_ref` suppresses ' +
-      'those defaults (use Html for wrapped multi-line card content). For the Kanban card-click modal, parent its detail controls to the Kanban with slot_name:"modal"; these do not replace card children.',
+      'those defaults (use Html for wrapped multi-line card content). For the Kanban card-click modal, parent its detail controls to the Kanban with slot_name:"modal"; these do not replace card children. ' +
+      'FlexContainer children render in request order (MCP writes the container childOrder), ignore top/left, fill the width unless the child layout sets fillWidth:false with widthPx, and keep their px height.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),
@@ -62,7 +64,23 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
         return fail(new Error('Cannot validate this write: the app summary is for a different editing version. Refresh the app version before adding components.'));
       }
       if (summary) pageWarnings.push(...normalizePlanBindingAliases({ pages: [{ components: inputs }] }, summary));
-      const prepared = prepareComponentBatch(inputs, { canvasColor: await literalCanvasColor(client, args.app_id, summary?.version_id ?? args.version_id) });
+      const existingPage = summary?.pages.find((candidate) => candidate.id === args.page_id);
+      // A parent named by its component name is stored as that component's id; a parent that matches nothing on the
+      // page is refused rather than stored detached (the component would never render).
+      if (existingPage) {
+        const parentErrors: string[] = [];
+        for (const input of inputs as Array<ComponentInput & { parent?: string; name?: string }>) {
+          if (typeof input.parent !== 'string' || !input.parent) continue;
+          const resolved = resolveParentRef(existingPage.components, input.parent);
+          if (resolved.ok) input.parent = resolved.parent;
+          else parentErrors.push(`Component "${input.name ?? '?'}": ${resolved.error}`);
+        }
+        if (parentErrors.length) return fail(new Error(parentErrors.join(' ')));
+      }
+      const prepared = prepareComponentBatch(inputs, {
+        canvasColor: await literalCanvasColor(client, args.app_id, summary?.version_id ?? args.version_id),
+        flexContainerIds: existingPage?.components.filter((component) => component.type === 'FlexContainer').map((component) => component.id),
+      });
       if (prepared.errors.length) return fail(new Error(prepared.errors.join(' ')));
       // Geometry against the page as it already is, not the batch alone: a targeted add that lands on top
       // of an existing table (a modal's buttons placed at root, a caption over a register) passed here
@@ -91,6 +109,8 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
           versionId: args.version_id,
           pageId: args.page_id,
           components: prepared.components,
+          // Lets a child added to an existing FlexContainer join its childOrder without another page read.
+          pageComponents: existingPage?.components,
         });
         return ok({
           components: result,

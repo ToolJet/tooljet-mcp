@@ -1342,7 +1342,7 @@ describe('lintComponents (batch)', () => {
       { name: 'board', type: 'Kanban', clientRef: 'board' },
       { name: 'badHeader', type: 'Text', parentRef: 'board', slotName: 'header', properties: {} },
     ]);
-    expect(result.errors.join(' ')).toMatch(/slot_name:"header".*Kanban parent.*ModalV2, Form, and Container/i);
+    expect(result.errors.join(' ')).toMatch(/slot_name:"header".*Kanban parent.*ModalV2 \(and ShadDialog\), Form, and Container/i);
   });
 
   it('aggregates per-component results and overlaps', () => {
@@ -1983,6 +1983,12 @@ describe('lintUnrenderableHeights', () => {
     expect(
       lintUnrenderableHeights([at('Divider', 'rule', 10), at('ModalV2', 'mdl', 1), at('Html', 'band', 96), at('Table', 'tbl', 300)])
     ).toEqual([]);
+  });
+
+  it('accepts the UI 2.0 widgets the app draws under 24px, and nothing lower', () => {
+    // A small-tone text line is 18px and a checkbox row 20px in the viewer (packHeights.ts).
+    expect(lintUnrenderableHeights([at('ShadText', 'note', 18), at('ShadCheckbox', 'agree', 20)])).toEqual([]);
+    expect(lintUnrenderableHeights([at('ShadText', 'note', 14), at('ShadCheckbox', 'agree', 18), at('ShadBadge', 'b', 20)])).toHaveLength(3);
   });
 });
 

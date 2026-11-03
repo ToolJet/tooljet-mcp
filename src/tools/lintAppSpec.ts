@@ -1,4 +1,5 @@
 import type { ToolJetClient } from '../tooljetClient.js';
+import { matchDatasourceByName } from '../datasourceNameMatch.js';
 import { lintPlannedApp, pagesUsingQuery, type AppSpecLintResult } from '../appSpecLint.js';
 import { literalCanvasColor } from '../appSettings.js';
 import { appPlanSchema, type AppPlanInput } from '../appPlanSchema.js';
@@ -15,6 +16,7 @@ import { restatedQueryNames } from '../restatedQueries.js';
 import { COMPONENT_FX_GUIDANCE } from '../componentFxGuidance.js';
 import { frozenAppRefusal } from '../frozenApp.js';
 import { mapKeyRefusal } from '../mapKeyGuard.js';
+import { componentLibraryWarnings, resolveComponentLibrary } from '../componentLibrary.js';
 const TABLE_NAME_MAX = 31; // ToolJet DB table names are at most 31 characters
 
 function unique(values: string[]): string[] {
@@ -67,8 +69,6 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
         if (replacePages.length && !args.app_id) {
           preflightErrors.push(`pages ${replacePages.join(', ')}: replace needs app_id, so the plan is checked against the page it replaces.`);
         }
-        const mapRefusal = await mapKeyRefusal(client, (args.pages ?? []).flatMap((page) => (page.components ?? []).map((c) => String(c.type))));
-        if (mapRefusal) preflightErrors.push(mapRefusal);
         const needsTables = Boolean(
           args.tables?.length ||
           args.seed_data?.length ||
@@ -81,6 +81,16 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
         // A promoted (frozen) version refuses writes: say so before the plan is linted, not part-way through an apply.
         const frozen = frozenAppRefusal(fetchedSummary);
         if (frozen) return fail(new Error(frozen));
+        // Widgets from the other library than the app's (a plan without app_id is taken to be for a new, UI 2.0 app).
+        const appLibrary = fetchedSummary
+          ? fetchedSummary.component_library
+            ?? resolveComponentLibrary(undefined, fetchedSummary.pages.flatMap((page) => page.components.map((c) => c.type)))
+          : { library: 'ui2' as const, source: 'new' as const };
+        preflightWarnings.push(...componentLibraryWarnings(appLibrary, args.pages, args.component_library_request));
+        // A Google Map on an instance without the key; in a UI 2.0 app the refusal names the key-free UI 2.0 Map.
+        const mapRefusal = await mapKeyRefusal(client,
+          (args.pages ?? []).flatMap((page) => (page.components ?? []).map((c) => String(c.type))), appLibrary.library);
+        if (mapRefusal) preflightErrors.push(mapRefusal);
         // Resolve names once, before collision renames or existing-table seed checks. A planned
         // name takes precedence over an existing namesake; all references must follow it together.
         const plannedNames = new Map<string, string>();
@@ -303,12 +313,16 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
             preflightErrors.push(`Query "${query.name}" must provide exactly one of datasource_id or datasource_name.`);
           } else if (hasName) {
             const matches = datasources.filter(source => source.name === query.datasource_name);
-            if (!query.datasource_name || matches.length !== 1) {
+            const matched = matchDatasourceByName(datasources, query.datasource_name);
+            if (!matched) {
               preflightErrors.push(
                 `Query "${query.name}" datasource_name "${query.datasource_name}" must match exactly one source in this version ` +
                 `(found ${matches.length}). Use the exact name or id returned by list_datasources(version_id).`
               );
-            } else datasourceId = matches[0]!.id;
+            } else {
+              datasourceId = matched.id;
+              if (matched.note) preflightWarnings.push(`Query "${query.name}": ${matched.note}`);
+            }
           }
           const datasourceKind = datasourceKinds.get(datasourceId ?? '');
           if (args.version_id && !datasourceKind) {
@@ -414,6 +428,7 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
             name: page.name,
             icon: page.icon,
             hidden: page.hidden,
+            archetype: page.archetype,
             components: page.components?.map((component) => ({
               name: component.name,
               type: component.type,

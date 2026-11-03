@@ -1,4 +1,5 @@
 import type { AppSummary } from './tooljetClient.js';
+import { matchDatasourceByName } from './datasourceNameMatch.js';
 import { prepareQueryOptionsForWrite } from './queryPersistence.js';
 
 /**
@@ -36,10 +37,10 @@ export function restatedQueryNames(
     const held = summary.queries.filter((existing) => existing.name === query.name);
     if (held.length !== 1) continue;
     const existing = held[0]!;
-    const named = query.datasource_name !== undefined ? datasources.filter((source) => source.name === query.datasource_name) : [];
+    const matched = query.datasource_id === undefined ? matchDatasourceByName(datasources, query.datasource_name) : null;
     const datasource = query.datasource_id !== undefined
       ? datasources.find((source) => source.id === query.datasource_id)
-      : named.length === 1 ? named[0] : undefined;
+      : matched ? datasources.find((source) => source.id === matched.id) : undefined;
     if (!datasource || datasource.id !== existing.data_source_id) continue;
     const options = structuredClone(query.options ?? {});
     if (query.table_ref) {

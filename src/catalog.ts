@@ -17,6 +17,8 @@ export interface ComponentProp {
   description?: string;
   label?: string;
   valueType?: string;
+  /** The member types of a 'union' valueType, e.g. ['array', 'string']. */
+  valueTypes?: string[];
   default?: unknown;
   /** Static values accepted by a source-defined select/switch property. */
   allowedValues?: Array<string | number | boolean>;
@@ -96,6 +98,18 @@ function loadLegacyReplacements(): Record<string, string> {
     legacyReplacements = compatibility.legacyReplacements ?? {};
   }
   return legacyReplacements;
+}
+
+/** Every component schema, with the packs discovered at run time (the components catalogue resource serves this). */
+export function allComponentSchemas(): Record<string, ComponentSchema> {
+  return load();
+}
+
+/** Adds catalogue types discovered at run time (the workspace's component packs, packCatalog.ts). */
+export function registerComponentSchemas(extra: Record<string, ComponentSchema>): void {
+  const all = load();
+  for (const key of Object.keys(all)) if (/^Lib_[a-z0-9]+_/.test(key) && !(key in extra)) delete all[key];
+  Object.assign(all, extra);
 }
 
 /** The palette for new authoring: modern component types + purpose (no per-prop detail). */

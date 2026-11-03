@@ -164,7 +164,7 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
     for (let j = i + 1; j < boxes.length; j++) {
       const a = boxes[i];
       const b = boxes[j];
-      if (a.name.startsWith('ModalV2:') || b.name.startsWith('ModalV2:')) continue;
+      if (/^(ModalV2|ShadDialog):/.test(a.name) || /^(ModalV2|ShadDialog):/.test(b.name)) continue;
       if (a.name.split(':')[1] === b.name.split(':')[1]) continue; // a widget's inner container repeats its name
       if (a.el.contains(b.el) || b.el.contains(a.el)) continue; // a child inside its parent (a Kanban card, a modal body) is not an overlap
       const ix = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
@@ -198,6 +198,9 @@ async function loadPlaywright(): Promise<any | null> {
     return null;
   }
 }
+
+/** Resource types the audit lets through from an allowed origin without refetching them. */
+const STATIC_RESOURCES = new Set(['script', 'stylesheet', 'image', 'font']);
 
 /** A URL's path, without its query string (which can carry ids and tokens). */
 const pathOf = (url: string): string => { try { return new URL(url).pathname; } catch { return '?'; } };
@@ -238,10 +241,14 @@ export async function auditPages(
     let blocked: RenderFinding | undefined;
     // Every distinct block, for a page that ends up empty: the first one alone (a WebSocket) did not say why.
     const blocks: string[] = [];
+    // One finding per distinct kind of block, for a page that did render: the always-blocked WebSocket came first and
+    // hid a blocked query run behind it, so a page whose data never loaded read as verified (2026-10-12).
+    const blockFindings: RenderFinding[] = [];
     const block = (finding: RenderFinding, where: string) => {
       blocked ??= finding;
       const line = `${finding.reason}: ${where}`;
       if (blocks.length < 4 && !blocks.includes(line)) blocks.push(line);
+      if (blockFindings.length < 4 && !blockFindings.some((f) => f.reason === finding.reason && f.detail === finding.detail)) blockFindings.push(finding);
     };
     try {
       ctx = await browser.newContext({ viewport: { width: 1600, height: 900 }, serviceWorkers: 'block' });
@@ -278,6 +285,14 @@ export async function auditPages(
             block({ kind: 'unreachable', component: '-', reason: 'blocked_execution',
               detail: `${policy.detail!} (${request.method()} ${pathOf(url)})` }, `${request.method()} ${pathOf(url)}`);
             await route.abort();
+            return;
+          }
+          // The viewer's own scripts, styles, images and fonts pass through: a dev frontend's unminified bundles
+          // are tens of megabytes, and fetching then fulfilling them killed Chrome two seconds into every audit of
+          // a local viewer (2026-10-12). They run no query and carry no session; documents and API calls are
+          // still fetched below, so redirects and query runs stay checked.
+          if (request.method() === 'GET' && STATIC_RESOURCES.has(request.resourceType?.())) {
+            await route.continue();
             return;
           }
           // route.continue() may automatically follow redirects before another interception. Fetch
@@ -332,7 +347,7 @@ export async function auditPages(
         ? { page: p.page, url: p.url, widgets: 0, findings: [{ ...blocked, detail: `${blocked.detail}; the page then showed no widgets. Blocked: ${blocks.join('; ')}` }] }
         : result.widgets === 0
         ? unreachable(p, 'no_widgets', 'No ToolJet widgets were found; the page may be empty, unauthenticated, or not loaded')
-        : { page: p.page, url: p.url, widgets: result.widgets, findings: [...result.findings, ...(blocked ? [blocked] : [])] };
+        : { page: p.page, url: p.url, widgets: result.widgets, findings: [...result.findings, ...blockFindings] };
     } catch (err) {
       // What failed, first line only: "could not load" alone left an audit that never ran undiagnosable.
       const why = String((err as Error)?.message ?? err).split('\n')[0]!.slice(0, 200);
