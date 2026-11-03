@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
-import { L as LoopLabelKind, O as OptionFlags, E as ExpressionErrors, f as functionFlags, n as newParameterDeclarationScope, P as ParseBindingListFlags, a as ParamKind, b as newExpressionScope, c as LValParser, d as newAsyncArrowScope, s as setInnerComments, e as newArrowHeadScope, T as Token } from "./chunk-qhyW4MeS.js";
-import { t as tt, E as Errors, a9 as createPositionWithColumnOffset, D as equalsTo, a4 as colon, a6 as semicolon, z as isIdentifierStart, c as isIdentifierChar, A as backslash, y as leftSquareBracket, x as leftCurlyBrace, a8 as leftParenthesis, C as dot, aC as tokenIsIdentifier, e as ScopeFlag, B as BindingFlag, aO as tokenIsLoop, a7 as rightParenthesis, ak as ClassElementType, a5 as comma, P as quotationMark, O as apostrophe, aD as tokenIsKeywordOrIdentifier, au as lowercaseF, aP as tokenIsAssignment, aH as tokenCanStartExpression, aI as tokenOperatorPrecedence, aQ as tokenIsOperator, aR as tokenIsRightAssociative, aS as UnparenthesizedPipeBodyDescriptions, aT as tokenIsPrefix, aU as tokenIsPostfix, aG as tokenIsTemplate, g as greaterThan, ai as tokenLabelName, aV as canBeReservedWord, aW as isKeyword, aX as isReservedWord, i as isStrictBindReservedWord, aY as isStrictReservedWord, r as rightSquareBracket, a as rightCurlyBrace, aZ as getExportedToken, a3 as graveAccent, a_ as tokenKeywordOrIdentifierIsKeyword } from "./chunk-CPO3lpSy.js";
+import { L as LoopLabelKind, O as OptionFlags, E as ExpressionErrors, f as functionFlags, n as newParameterDeclarationScope, P as ParseBindingListFlags, a as ParamKind, b as newExpressionScope, c as LValParser, d as newAsyncArrowScope, s as setInnerComments, e as newArrowHeadScope, T as Token, g as getOptions, t as typescript_default, i as isNewLine } from "./chunk-BTd7F5Le.js";
+import { f as flow_default } from "./chunk-BA4riEze.js";
+import { t as tt, E as Errors, a9 as createPositionWithColumnOffset, D as equalsTo, a4 as colon, a6 as semicolon, z as isIdentifierStart, c as isIdentifierChar, A as backslash, y as leftSquareBracket, x as leftCurlyBrace, a8 as leftParenthesis, C as dot, aC as tokenIsIdentifier, e as ScopeFlag, B as BindingFlag, aO as tokenIsLoop, a7 as rightParenthesis, ak as ClassElementType, a5 as comma, P as quotationMark, O as apostrophe, aD as tokenIsKeywordOrIdentifier, au as lowercaseF, aP as tokenIsAssignment, aH as tokenCanStartExpression, aI as tokenOperatorPrecedence, aQ as tokenIsOperator, aR as tokenIsRightAssociative, aS as UnparenthesizedPipeBodyDescriptions, aT as tokenIsPrefix, aU as tokenIsPostfix, aG as tokenIsTemplate, g as greaterThan, ai as tokenLabelName, aV as canBeReservedWord, aW as isKeyword, aX as isReservedWord, i as isStrictBindReservedWord, aY as isStrictReservedWord, r as rightSquareBracket, a as rightCurlyBrace, aZ as getExportedToken, a3 as graveAccent, a_ as tokenKeywordOrIdentifierIsKeyword, aB as ParseErrorEnum, aJ as ScopeHandler, N as percentSign, M as ampersand, l as lessThan, n as carriageReturn, m as lineFeed, J as numberSign, Z as lowercaseX, f as dash, aj as tokenIsKeyword, al as types, h as exclamationMark, a$ as tokenComesBeforeExpression } from "./chunk-BfJD-M_q.js";
 createRequire(import.meta.url);
 var ExpressionParser = class extends LValParser {
   // For object literal, check if property __proto__ has been used more than once.
@@ -1916,13 +1917,13 @@ var ExpressionParser = class extends LValParser {
     } else {
       this.unexpected();
     }
-    const tokenIsKeyword = tokenKeywordOrIdentifierIsKeyword(type);
+    const tokenIsKeyword2 = tokenKeywordOrIdentifierIsKeyword(type);
     if (liberal) {
-      if (tokenIsKeyword) {
+      if (tokenIsKeyword2) {
         this.replaceToken(tt.name);
       }
     } else {
-      this.checkReservedWord(name, startLoc, tokenIsKeyword, false);
+      this.checkReservedWord(name, startLoc, tokenIsKeyword2, false);
     }
     this.next();
     return name;
@@ -4710,6 +4711,1749 @@ var StatementParser = class extends ExpressionParser {
     return param.type === "Identifier" && param.name === "this";
   }
 };
+createRequire(import.meta.url);
+var { defineProperty } = Object;
+var toUnenumerable = (object, key) => {
+  if (object) {
+    defineProperty(object, key, { enumerable: false, value: object[key] });
+  }
+};
+function toESTreeLocation(node) {
+  toUnenumerable(node.loc.start, "index");
+  toUnenumerable(node.loc.end, "index");
+  return node;
+}
+var estree_default = (superClass) => class ESTreeParserMixin extends superClass {
+  parse() {
+    const file = toESTreeLocation(super.parse());
+    if (this.optionFlags & OptionFlags.Tokens) {
+      file.tokens = file.tokens.map(toESTreeLocation);
+    }
+    return file;
+  }
+  // @ts-expect-error ESTree plugin changes node types
+  parseRegExpLiteral({ pattern, flags }) {
+    let regex = null;
+    try {
+      regex = new RegExp(pattern, flags);
+    } catch (_) {
+    }
+    const node = this.estreeParseLiteral(regex);
+    node.regex = { pattern, flags };
+    return node;
+  }
+  // @ts-expect-error ESTree plugin changes node types
+  parseBigIntLiteral(value) {
+    let bigInt;
+    try {
+      bigInt = BigInt(value);
+    } catch {
+      bigInt = null;
+    }
+    const node = this.estreeParseLiteral(bigInt);
+    node.bigint = String(node.value || value);
+    return node;
+  }
+  // @ts-expect-error ESTree plugin changes node types
+  parseDecimalLiteral(value) {
+    const decimal = null;
+    const node = this.estreeParseLiteral(decimal);
+    node.decimal = String(node.value || value);
+    return node;
+  }
+  estreeParseLiteral(value) {
+    return this.parseLiteral(value, "Literal");
+  }
+  // @ts-expect-error ESTree plugin changes node types
+  parseStringLiteral(value) {
+    return this.estreeParseLiteral(value);
+  }
+  parseNumericLiteral(value) {
+    return this.estreeParseLiteral(value);
+  }
+  // @ts-expect-error ESTree plugin changes node types
+  parseNullLiteral() {
+    return this.estreeParseLiteral(null);
+  }
+  parseBooleanLiteral(value) {
+    return this.estreeParseLiteral(value);
+  }
+  // https://github.com/estree/estree/blob/master/es2020.md#chainexpression
+  estreeParseChainExpression(node, endLoc) {
+    const chain = this.startNodeAtNode(node);
+    chain.expression = node;
+    return this.finishNodeAt(chain, "ChainExpression", endLoc);
+  }
+  // Cast a Directive to an ExpressionStatement. Mutates the input Directive.
+  directiveToStmt(directive) {
+    const expression = directive.value;
+    delete directive.value;
+    this.castNodeTo(expression, "Literal");
+    expression.raw = expression.extra.raw;
+    expression.value = expression.extra.expressionValue;
+    const stmt = this.castNodeTo(directive, "ExpressionStatement");
+    stmt.expression = expression;
+    stmt.directive = expression.extra.rawValue;
+    delete expression.extra;
+    return stmt;
+  }
+  /**
+   * The TS-ESLint always define optional AST properties, here we provide the
+   * default value for such properties immediately after `finishNode` was invoked.
+   * This hook will be implemented by the typescript plugin.
+   *
+   * Note: This hook should be manually invoked when we change the `type` of a given AST
+   * node, to ensure that the optional properties are correctly filled.
+   * @param node The AST node finished by finishNode
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  fillOptionalPropertiesForTSESLint(node) {
+  }
+  cloneEstreeStringLiteral(node) {
+    const { start, end, loc, range, raw, value } = node;
+    const cloned = Object.create(node.constructor.prototype);
+    cloned.type = "Literal";
+    cloned.start = start;
+    cloned.end = end;
+    cloned.loc = loc;
+    cloned.range = range;
+    cloned.raw = raw;
+    cloned.value = value;
+    return cloned;
+  }
+  // ==================================
+  // Overrides
+  // ==================================
+  initFunction(node, isAsync) {
+    super.initFunction(node, isAsync);
+    node.expression = false;
+  }
+  checkDeclaration(node) {
+    if (node != null && this.isObjectProperty(node)) {
+      this.checkDeclaration(node.value);
+    } else {
+      super.checkDeclaration(node);
+    }
+  }
+  getObjectOrClassMethodParams(method) {
+    return method.value.params;
+  }
+  isValidDirective(stmt) {
+    return stmt.type === "ExpressionStatement" && stmt.expression.type === "Literal" && typeof stmt.expression.value === "string" && !stmt.expression.extra?.parenthesized;
+  }
+  parseBlockBody(node, allowDirectives, topLevel, end, afterBlockParse) {
+    super.parseBlockBody(
+      node,
+      allowDirectives,
+      topLevel,
+      end,
+      afterBlockParse
+    );
+    const directiveStatements = node.directives.map(
+      (d) => this.directiveToStmt(d)
+    );
+    node.body = directiveStatements.concat(node.body);
+    delete node.directives;
+  }
+  parsePrivateName() {
+    const node = super.parsePrivateName();
+    {
+      if (!this.getPluginOption("estree", "classFeatures")) {
+        return node;
+      }
+    }
+    return this.convertPrivateNameToPrivateIdentifier(node);
+  }
+  convertPrivateNameToPrivateIdentifier(node) {
+    const name = super.getPrivateNameSV(node);
+    delete node.id;
+    node.name = name;
+    return this.castNodeTo(node, "PrivateIdentifier");
+  }
+  // @ts-expect-error ESTree plugin changes node types
+  isPrivateName(node) {
+    {
+      if (!this.getPluginOption("estree", "classFeatures")) {
+        return super.isPrivateName(node);
+      }
+    }
+    return node.type === "PrivateIdentifier";
+  }
+  // @ts-expect-error ESTree plugin changes node types
+  getPrivateNameSV(node) {
+    {
+      if (!this.getPluginOption("estree", "classFeatures")) {
+        return super.getPrivateNameSV(node);
+      }
+    }
+    return node.name;
+  }
+  // @ts-expect-error plugin may override interfaces
+  parseLiteral(value, type) {
+    const node = super.parseLiteral(value, type);
+    node.raw = node.extra.raw;
+    delete node.extra;
+    return node;
+  }
+  parseFunctionBody(node, allowExpression, isMethod = false) {
+    super.parseFunctionBody(node, allowExpression, isMethod);
+    node.expression = node.body.type !== "BlockStatement";
+  }
+  // @ts-expect-error plugin may override interfaces
+  parseMethod(node, isGenerator, isAsync, isConstructor, allowDirectSuper, type, inClassScope = false) {
+    let funcNode = this.startNode();
+    funcNode.kind = node.kind;
+    funcNode = super.parseMethod(
+      funcNode,
+      isGenerator,
+      isAsync,
+      isConstructor,
+      allowDirectSuper,
+      type,
+      inClassScope
+    );
+    delete funcNode.kind;
+    const { typeParameters } = node;
+    if (typeParameters) {
+      delete node.typeParameters;
+      funcNode.typeParameters = typeParameters;
+      this.resetStartLocationFromNode(funcNode, typeParameters);
+    }
+    const valueNode = this.castNodeTo(
+      funcNode,
+      "FunctionExpression"
+    );
+    node.value = valueNode;
+    if (type === "ClassPrivateMethod") {
+      node.computed = false;
+    }
+    if (type === "ObjectMethod") {
+      if (node.kind === "method") {
+        node.kind = "init";
+      }
+      node.shorthand = false;
+      return this.finishNode(
+        // @ts-expect-error cast methods to estree types
+        node,
+        "Property"
+      );
+    } else {
+      return this.finishNode(
+        // @ts-expect-error cast methods to estree types
+        node,
+        "MethodDefinition"
+      );
+    }
+  }
+  nameIsConstructor(key) {
+    if (key.type === "Literal") return key.value === "constructor";
+    return super.nameIsConstructor(key);
+  }
+  parseClassProperty(...args) {
+    const propertyNode = super.parseClassProperty(...args);
+    {
+      if (!this.getPluginOption("estree", "classFeatures")) {
+        return propertyNode;
+      }
+    }
+    {
+      this.castNodeTo(propertyNode, "PropertyDefinition");
+    }
+    return propertyNode;
+  }
+  parseClassPrivateProperty(...args) {
+    const propertyNode = super.parseClassPrivateProperty(...args);
+    {
+      if (!this.getPluginOption("estree", "classFeatures")) {
+        return propertyNode;
+      }
+    }
+    {
+      this.castNodeTo(propertyNode, "PropertyDefinition");
+    }
+    propertyNode.computed = false;
+    return propertyNode;
+  }
+  parseClassAccessorProperty(node) {
+    const accessorPropertyNode = super.parseClassAccessorProperty(node);
+    {
+      if (!this.getPluginOption("estree", "classFeatures")) {
+        return accessorPropertyNode;
+      }
+    }
+    if (accessorPropertyNode.abstract && this.hasPlugin("typescript")) {
+      delete accessorPropertyNode.abstract;
+      this.castNodeTo(accessorPropertyNode, "TSAbstractAccessorProperty");
+    } else {
+      this.castNodeTo(accessorPropertyNode, "AccessorProperty");
+    }
+    return accessorPropertyNode;
+  }
+  parseObjectProperty(prop, startLoc, isPattern, refExpressionErrors) {
+    const node = super.parseObjectProperty(
+      prop,
+      startLoc,
+      isPattern,
+      refExpressionErrors
+    );
+    if (node) {
+      node.kind = "init";
+      this.castNodeTo(node, "Property");
+    }
+    return node;
+  }
+  finishObjectProperty(node) {
+    node.kind = "init";
+    return this.finishNode(
+      node,
+      "Property"
+    );
+  }
+  isValidLVal(type, disallowCallExpression, isUnparenthesizedInAssign, binding) {
+    return type === "Property" ? "value" : super.isValidLVal(
+      type,
+      disallowCallExpression,
+      isUnparenthesizedInAssign,
+      binding
+    );
+  }
+  isAssignable(node, isBinding) {
+    if (node != null && this.isObjectProperty(node)) {
+      return this.isAssignable(node.value, isBinding);
+    }
+    return super.isAssignable(node, isBinding);
+  }
+  toAssignable(node, isLHS = false) {
+    if (node != null && this.isObjectProperty(node)) {
+      const { key, value } = node;
+      if (this.isPrivateName(key)) {
+        this.classScope.usePrivateName(
+          this.getPrivateNameSV(key),
+          key.loc.start
+        );
+      }
+      this.toAssignable(value, isLHS);
+    } else {
+      super.toAssignable(node, isLHS);
+    }
+  }
+  toAssignableObjectExpressionProp(prop, isLast, isLHS) {
+    if (prop.type === "Property" && (prop.kind === "get" || prop.kind === "set")) {
+      this.raise(Errors.PatternHasAccessor, prop.key);
+    } else if (prop.type === "Property" && prop.method) {
+      this.raise(Errors.PatternHasMethod, prop.key);
+    } else {
+      super.toAssignableObjectExpressionProp(prop, isLast, isLHS);
+    }
+  }
+  finishCallExpression(unfinished, optional) {
+    const node = super.finishCallExpression(unfinished, optional);
+    if (node.callee.type === "Import") {
+      this.castNodeTo(node, "ImportExpression");
+      node.source = node.arguments[0];
+      node.options = node.arguments[1] ?? null;
+      {
+        node.attributes = node.arguments[1] ?? null;
+      }
+      delete node.arguments;
+      delete node.callee;
+    } else if (node.type === "OptionalCallExpression") {
+      this.castNodeTo(node, "CallExpression");
+    } else {
+      node.optional = false;
+    }
+    return node;
+  }
+  toReferencedArguments(node) {
+    if (node.type === "ImportExpression") {
+      return;
+    }
+    super.toReferencedArguments(node);
+  }
+  parseExport(unfinished, decorators) {
+    const exportStartLoc = this.state.lastTokStartLoc;
+    const node = super.parseExport(unfinished, decorators);
+    switch (node.type) {
+      case "ExportAllDeclaration":
+        node.exported = null;
+        break;
+      case "ExportNamedDeclaration":
+        if (node.specifiers.length === 1 && node.specifiers[0].type === "ExportNamespaceSpecifier") {
+          this.castNodeTo(node, "ExportAllDeclaration");
+          node.exported = node.specifiers[0].exported;
+          delete node.specifiers;
+        }
+      // fallthrough
+      case "ExportDefaultDeclaration":
+        {
+          const { declaration } = node;
+          if (declaration?.type === "ClassDeclaration" && // @ts-expect-error comparing undefined and number
+          declaration.decorators?.length > 0 && // decorator comes before export
+          declaration.start === node.start) {
+            this.resetStartLocation(
+              node,
+              // For compatibility with ESLint's keyword-spacing rule, which assumes that an
+              // export declaration must start with export.
+              // https://github.com/babel/babel/issues/15085
+              // Here we reset export declaration's start to be the start of the export token
+              exportStartLoc
+            );
+          }
+        }
+        break;
+    }
+    return node;
+  }
+  stopParseSubscript(base, state) {
+    const node = super.stopParseSubscript(base, state);
+    if (state.optionalChainMember) {
+      return this.estreeParseChainExpression(node, base.loc.end);
+    }
+    return node;
+  }
+  parseMember(base, startLoc, state, computed, optional) {
+    const node = super.parseMember(base, startLoc, state, computed, optional);
+    if (node.type === "OptionalMemberExpression") {
+      this.castNodeTo(node, "MemberExpression");
+    } else {
+      node.optional = false;
+    }
+    return node;
+  }
+  isOptionalMemberExpression(node) {
+    if (node.type === "ChainExpression") {
+      return node.expression.type === "MemberExpression";
+    }
+    return super.isOptionalMemberExpression(node);
+  }
+  hasPropertyAsPrivateName(node) {
+    if (node.type === "ChainExpression") {
+      node = node.expression;
+    }
+    return super.hasPropertyAsPrivateName(node);
+  }
+  // @ts-expect-error ESTree plugin changes node types
+  isObjectProperty(node) {
+    return node.type === "Property" && node.kind === "init" && !node.method;
+  }
+  // @ts-expect-error ESTree plugin changes node types
+  isObjectMethod(node) {
+    return node.type === "Property" && (node.method || node.kind === "get" || node.kind === "set");
+  }
+  /* ============================================================ *
+   * parser/node.ts                                               *
+   * ============================================================ */
+  castNodeTo(node, type) {
+    const result = super.castNodeTo(node, type);
+    this.fillOptionalPropertiesForTSESLint(result);
+    return result;
+  }
+  cloneIdentifier(node) {
+    const cloned = super.cloneIdentifier(node);
+    this.fillOptionalPropertiesForTSESLint(cloned);
+    return cloned;
+  }
+  cloneStringLiteral(node) {
+    if (node.type === "Literal") {
+      return this.cloneEstreeStringLiteral(node);
+    }
+    return super.cloneStringLiteral(node);
+  }
+  finishNodeAt(node, type, endLoc) {
+    return toESTreeLocation(super.finishNodeAt(node, type, endLoc));
+  }
+  // Override for TS-ESLint that does not allow optional AST properties
+  finishNode(node, type) {
+    const result = super.finishNode(node, type);
+    this.fillOptionalPropertiesForTSESLint(result);
+    return result;
+  }
+  resetStartLocation(node, startLoc) {
+    super.resetStartLocation(node, startLoc);
+    toESTreeLocation(node);
+  }
+  resetEndLocation(node, endLoc = this.state.lastTokEndLoc) {
+    super.resetEndLocation(node, endLoc);
+    toESTreeLocation(node);
+  }
+};
+var entities = {
+  // @ts-expect-error __proto__ is not an actual property: https://github.com/microsoft/TypeScript/issues/38385
+  __proto__: null,
+  quot: '"',
+  amp: "&",
+  apos: "'",
+  lt: "<",
+  gt: ">",
+  nbsp: "\xA0",
+  iexcl: "\xA1",
+  cent: "\xA2",
+  pound: "\xA3",
+  curren: "\xA4",
+  yen: "\xA5",
+  brvbar: "\xA6",
+  sect: "\xA7",
+  uml: "\xA8",
+  copy: "\xA9",
+  ordf: "\xAA",
+  laquo: "\xAB",
+  not: "\xAC",
+  shy: "\xAD",
+  reg: "\xAE",
+  macr: "\xAF",
+  deg: "\xB0",
+  plusmn: "\xB1",
+  sup2: "\xB2",
+  sup3: "\xB3",
+  acute: "\xB4",
+  micro: "\xB5",
+  para: "\xB6",
+  middot: "\xB7",
+  cedil: "\xB8",
+  sup1: "\xB9",
+  ordm: "\xBA",
+  raquo: "\xBB",
+  frac14: "\xBC",
+  frac12: "\xBD",
+  frac34: "\xBE",
+  iquest: "\xBF",
+  Agrave: "\xC0",
+  Aacute: "\xC1",
+  Acirc: "\xC2",
+  Atilde: "\xC3",
+  Auml: "\xC4",
+  Aring: "\xC5",
+  AElig: "\xC6",
+  Ccedil: "\xC7",
+  Egrave: "\xC8",
+  Eacute: "\xC9",
+  Ecirc: "\xCA",
+  Euml: "\xCB",
+  Igrave: "\xCC",
+  Iacute: "\xCD",
+  Icirc: "\xCE",
+  Iuml: "\xCF",
+  ETH: "\xD0",
+  Ntilde: "\xD1",
+  Ograve: "\xD2",
+  Oacute: "\xD3",
+  Ocirc: "\xD4",
+  Otilde: "\xD5",
+  Ouml: "\xD6",
+  times: "\xD7",
+  Oslash: "\xD8",
+  Ugrave: "\xD9",
+  Uacute: "\xDA",
+  Ucirc: "\xDB",
+  Uuml: "\xDC",
+  Yacute: "\xDD",
+  THORN: "\xDE",
+  szlig: "\xDF",
+  agrave: "\xE0",
+  aacute: "\xE1",
+  acirc: "\xE2",
+  atilde: "\xE3",
+  auml: "\xE4",
+  aring: "\xE5",
+  aelig: "\xE6",
+  ccedil: "\xE7",
+  egrave: "\xE8",
+  eacute: "\xE9",
+  ecirc: "\xEA",
+  euml: "\xEB",
+  igrave: "\xEC",
+  iacute: "\xED",
+  icirc: "\xEE",
+  iuml: "\xEF",
+  eth: "\xF0",
+  ntilde: "\xF1",
+  ograve: "\xF2",
+  oacute: "\xF3",
+  ocirc: "\xF4",
+  otilde: "\xF5",
+  ouml: "\xF6",
+  divide: "\xF7",
+  oslash: "\xF8",
+  ugrave: "\xF9",
+  uacute: "\xFA",
+  ucirc: "\xFB",
+  uuml: "\xFC",
+  yacute: "\xFD",
+  thorn: "\xFE",
+  yuml: "\xFF",
+  OElig: "\u0152",
+  oelig: "\u0153",
+  Scaron: "\u0160",
+  scaron: "\u0161",
+  Yuml: "\u0178",
+  fnof: "\u0192",
+  circ: "\u02C6",
+  tilde: "\u02DC",
+  Alpha: "\u0391",
+  Beta: "\u0392",
+  Gamma: "\u0393",
+  Delta: "\u0394",
+  Epsilon: "\u0395",
+  Zeta: "\u0396",
+  Eta: "\u0397",
+  Theta: "\u0398",
+  Iota: "\u0399",
+  Kappa: "\u039A",
+  Lambda: "\u039B",
+  Mu: "\u039C",
+  Nu: "\u039D",
+  Xi: "\u039E",
+  Omicron: "\u039F",
+  Pi: "\u03A0",
+  Rho: "\u03A1",
+  Sigma: "\u03A3",
+  Tau: "\u03A4",
+  Upsilon: "\u03A5",
+  Phi: "\u03A6",
+  Chi: "\u03A7",
+  Psi: "\u03A8",
+  Omega: "\u03A9",
+  alpha: "\u03B1",
+  beta: "\u03B2",
+  gamma: "\u03B3",
+  delta: "\u03B4",
+  epsilon: "\u03B5",
+  zeta: "\u03B6",
+  eta: "\u03B7",
+  theta: "\u03B8",
+  iota: "\u03B9",
+  kappa: "\u03BA",
+  lambda: "\u03BB",
+  mu: "\u03BC",
+  nu: "\u03BD",
+  xi: "\u03BE",
+  omicron: "\u03BF",
+  pi: "\u03C0",
+  rho: "\u03C1",
+  sigmaf: "\u03C2",
+  sigma: "\u03C3",
+  tau: "\u03C4",
+  upsilon: "\u03C5",
+  phi: "\u03C6",
+  chi: "\u03C7",
+  psi: "\u03C8",
+  omega: "\u03C9",
+  thetasym: "\u03D1",
+  upsih: "\u03D2",
+  piv: "\u03D6",
+  ensp: "\u2002",
+  emsp: "\u2003",
+  thinsp: "\u2009",
+  zwnj: "\u200C",
+  zwj: "\u200D",
+  lrm: "\u200E",
+  rlm: "\u200F",
+  ndash: "\u2013",
+  mdash: "\u2014",
+  lsquo: "\u2018",
+  rsquo: "\u2019",
+  sbquo: "\u201A",
+  ldquo: "\u201C",
+  rdquo: "\u201D",
+  bdquo: "\u201E",
+  dagger: "\u2020",
+  Dagger: "\u2021",
+  bull: "\u2022",
+  hellip: "\u2026",
+  permil: "\u2030",
+  prime: "\u2032",
+  Prime: "\u2033",
+  lsaquo: "\u2039",
+  rsaquo: "\u203A",
+  oline: "\u203E",
+  frasl: "\u2044",
+  euro: "\u20AC",
+  image: "\u2111",
+  weierp: "\u2118",
+  real: "\u211C",
+  trade: "\u2122",
+  alefsym: "\u2135",
+  larr: "\u2190",
+  uarr: "\u2191",
+  rarr: "\u2192",
+  darr: "\u2193",
+  harr: "\u2194",
+  crarr: "\u21B5",
+  lArr: "\u21D0",
+  uArr: "\u21D1",
+  rArr: "\u21D2",
+  dArr: "\u21D3",
+  hArr: "\u21D4",
+  forall: "\u2200",
+  part: "\u2202",
+  exist: "\u2203",
+  empty: "\u2205",
+  nabla: "\u2207",
+  isin: "\u2208",
+  notin: "\u2209",
+  ni: "\u220B",
+  prod: "\u220F",
+  sum: "\u2211",
+  minus: "\u2212",
+  lowast: "\u2217",
+  radic: "\u221A",
+  prop: "\u221D",
+  infin: "\u221E",
+  ang: "\u2220",
+  and: "\u2227",
+  or: "\u2228",
+  cap: "\u2229",
+  cup: "\u222A",
+  int: "\u222B",
+  there4: "\u2234",
+  sim: "\u223C",
+  cong: "\u2245",
+  asymp: "\u2248",
+  ne: "\u2260",
+  equiv: "\u2261",
+  le: "\u2264",
+  ge: "\u2265",
+  sub: "\u2282",
+  sup: "\u2283",
+  nsub: "\u2284",
+  sube: "\u2286",
+  supe: "\u2287",
+  oplus: "\u2295",
+  otimes: "\u2297",
+  perp: "\u22A5",
+  sdot: "\u22C5",
+  lceil: "\u2308",
+  rceil: "\u2309",
+  lfloor: "\u230A",
+  rfloor: "\u230B",
+  lang: "\u2329",
+  rang: "\u232A",
+  loz: "\u25CA",
+  spades: "\u2660",
+  clubs: "\u2663",
+  hearts: "\u2665",
+  diams: "\u2666"
+};
+var xhtml_default = entities;
+var JsxErrors = ParseErrorEnum`jsx`({
+  AttributeIsEmpty: "JSX attributes must only be assigned a non-empty expression.",
+  MissingClosingTagElement: ({ openingTagName }) => `Expected corresponding JSX closing tag for <${openingTagName}>.`,
+  MissingClosingTagFragment: "Expected corresponding JSX closing tag for <>.",
+  UnexpectedSequenceExpression: "Sequence expressions cannot be directly nested inside JSX. Did you mean to wrap it in parentheses (...)?",
+  // FIXME: Unify with Errors.UnexpectedToken
+  UnexpectedToken: ({
+    unexpected,
+    HTMLEntity
+  }) => `Unexpected token \`${unexpected}\`. Did you mean \`${HTMLEntity}\` or \`{'${unexpected}'}\`?`,
+  UnsupportedJsxValue: "JSX value should be either an expression or a quoted JSX text.",
+  UnterminatedJsxContent: "Unterminated JSX contents.",
+  UnwrappedAdjacentJSXElements: "Adjacent JSX elements must be wrapped in an enclosing tag. Did you want a JSX fragment <>...</>?"
+});
+function isFragment(object) {
+  return object ? object.type === "JSXOpeningFragment" || object.type === "JSXClosingFragment" : false;
+}
+function getQualifiedJSXName(object) {
+  if (object.type === "JSXIdentifier") {
+    return object.name;
+  }
+  if (object.type === "JSXNamespacedName") {
+    return object.namespace.name + ":" + object.name.name;
+  }
+  if (object.type === "JSXMemberExpression") {
+    return getQualifiedJSXName(object.object) + "." + getQualifiedJSXName(object.property);
+  }
+  throw new Error("Node had unexpected type: " + object.type);
+}
+var jsx_default = (superClass) => class JSXParserMixin extends superClass {
+  // Reads inline JSX contents token.
+  jsxReadToken() {
+    let out = "";
+    let chunkStart = this.state.pos;
+    for (; ; ) {
+      if (this.state.pos >= this.length) {
+        throw this.raise(
+          JsxErrors.UnterminatedJsxContent,
+          this.state.startLoc
+        );
+      }
+      const ch = this.input.charCodeAt(this.state.pos);
+      switch (ch) {
+        case lessThan:
+        case leftCurlyBrace:
+          if (this.state.pos === this.state.start) {
+            if (ch === lessThan && this.state.canStartJSXElement) {
+              ++this.state.pos;
+              this.finishToken(tt.jsxTagStart);
+            } else {
+              super.getTokenFromCode(ch);
+            }
+            return;
+          }
+          out += this.input.slice(chunkStart, this.state.pos);
+          this.finishToken(tt.jsxText, out);
+          return;
+        case ampersand:
+          out += this.input.slice(chunkStart, this.state.pos);
+          out += this.jsxReadEntity();
+          chunkStart = this.state.pos;
+          break;
+        case greaterThan:
+        case rightCurlyBrace:
+        /* falls through */
+        default:
+          if (isNewLine(ch)) {
+            out += this.input.slice(chunkStart, this.state.pos);
+            out += this.jsxReadNewLine(true);
+            chunkStart = this.state.pos;
+          } else {
+            ++this.state.pos;
+          }
+      }
+    }
+  }
+  jsxReadNewLine(normalizeCRLF) {
+    const ch = this.input.charCodeAt(this.state.pos);
+    let out;
+    ++this.state.pos;
+    if (ch === carriageReturn && this.input.charCodeAt(this.state.pos) === lineFeed) {
+      ++this.state.pos;
+      out = normalizeCRLF ? "\n" : "\r\n";
+    } else {
+      out = String.fromCharCode(ch);
+    }
+    ++this.state.curLine;
+    this.state.lineStart = this.state.pos;
+    return out;
+  }
+  jsxReadString(quote) {
+    let out = "";
+    let chunkStart = ++this.state.pos;
+    for (; ; ) {
+      if (this.state.pos >= this.length) {
+        throw this.raise(Errors.UnterminatedString, this.state.startLoc);
+      }
+      const ch = this.input.charCodeAt(this.state.pos);
+      if (ch === quote) break;
+      if (ch === ampersand) {
+        out += this.input.slice(chunkStart, this.state.pos);
+        out += this.jsxReadEntity();
+        chunkStart = this.state.pos;
+      } else if (isNewLine(ch)) {
+        out += this.input.slice(chunkStart, this.state.pos);
+        out += this.jsxReadNewLine(false);
+        chunkStart = this.state.pos;
+      } else {
+        ++this.state.pos;
+      }
+    }
+    out += this.input.slice(chunkStart, this.state.pos++);
+    this.finishToken(tt.string, out);
+  }
+  jsxReadEntity() {
+    const startPos = ++this.state.pos;
+    if (this.codePointAtPos(this.state.pos) === numberSign) {
+      ++this.state.pos;
+      let radix = 10;
+      if (this.codePointAtPos(this.state.pos) === lowercaseX) {
+        radix = 16;
+        ++this.state.pos;
+      }
+      const codePoint = this.readInt(
+        radix,
+        /* len */
+        void 0,
+        /* forceLen */
+        false,
+        /* allowNumSeparator */
+        "bail"
+      );
+      if (codePoint !== null && this.codePointAtPos(this.state.pos) === semicolon) {
+        ++this.state.pos;
+        return String.fromCodePoint(codePoint);
+      }
+    } else {
+      let count = 0;
+      let semi = false;
+      while (count++ < 10 && this.state.pos < this.length && !(semi = this.codePointAtPos(this.state.pos) === semicolon)) {
+        ++this.state.pos;
+      }
+      if (semi) {
+        const desc = this.input.slice(startPos, this.state.pos);
+        const entity = xhtml_default[desc];
+        ++this.state.pos;
+        if (entity) {
+          return entity;
+        }
+      }
+    }
+    this.state.pos = startPos;
+    return "&";
+  }
+  // Read a JSX identifier (valid tag or attribute name).
+  //
+  // Optimized version since JSX identifiers can"t contain
+  // escape characters and so can be read as single slice.
+  // Also assumes that first character was already checked
+  // by isIdentifierStart in readToken.
+  jsxReadWord() {
+    let ch;
+    const start = this.state.pos;
+    do {
+      ch = this.input.charCodeAt(++this.state.pos);
+    } while (isIdentifierChar(ch) || ch === dash);
+    this.finishToken(tt.jsxName, this.input.slice(start, this.state.pos));
+  }
+  // Parse next token as JSX identifier
+  jsxParseIdentifier() {
+    const node = this.startNode();
+    if (this.match(tt.jsxName)) {
+      node.name = this.state.value;
+    } else if (tokenIsKeyword(this.state.type)) {
+      node.name = tokenLabelName(this.state.type);
+    } else {
+      this.unexpected();
+    }
+    this.next();
+    return this.finishNode(node, "JSXIdentifier");
+  }
+  // Parse namespaced identifier.
+  jsxParseNamespacedName() {
+    const startLoc = this.state.startLoc;
+    const name = this.jsxParseIdentifier();
+    if (!this.eat(tt.colon)) return name;
+    const node = this.startNodeAt(startLoc);
+    node.namespace = name;
+    node.name = this.jsxParseIdentifier();
+    return this.finishNode(node, "JSXNamespacedName");
+  }
+  // Parses element name in any form - namespaced, member
+  // or single identifier.
+  jsxParseElementName() {
+    const startLoc = this.state.startLoc;
+    let node = this.jsxParseNamespacedName();
+    if (node.type === "JSXNamespacedName") {
+      return node;
+    }
+    while (this.eat(tt.dot)) {
+      const newNode = this.startNodeAt(startLoc);
+      newNode.object = node;
+      newNode.property = this.jsxParseIdentifier();
+      node = this.finishNode(newNode, "JSXMemberExpression");
+    }
+    return node;
+  }
+  // Parses any type of JSX attribute value.
+  jsxParseAttributeValue() {
+    let node;
+    switch (this.state.type) {
+      case tt.braceL:
+        node = this.startNode();
+        this.setContext(types.brace);
+        this.next();
+        node = this.jsxParseExpressionContainer(node, types.j_oTag);
+        if (node.expression.type === "JSXEmptyExpression") {
+          this.raise(JsxErrors.AttributeIsEmpty, node);
+        }
+        return node;
+      case tt.jsxTagStart:
+      case tt.string:
+        return this.parseExprAtom();
+      default:
+        throw this.raise(JsxErrors.UnsupportedJsxValue, this.state.startLoc);
+    }
+  }
+  // JSXEmptyExpression is unique type since it doesn't actually parse anything,
+  // and so it should start at the end of last read token (left brace) and finish
+  // at the beginning of the next one (right brace).
+  jsxParseEmptyExpression() {
+    const node = this.startNodeAt(this.state.lastTokEndLoc);
+    return this.finishNodeAt(node, "JSXEmptyExpression", this.state.startLoc);
+  }
+  // Parse JSX spread child
+  jsxParseSpreadChild(node) {
+    this.next();
+    node.expression = this.parseExpression();
+    this.setContext(types.j_expr);
+    this.state.canStartJSXElement = true;
+    this.expect(tt.braceR);
+    return this.finishNode(node, "JSXSpreadChild");
+  }
+  // Parses JSX expression enclosed into curly brackets.
+  jsxParseExpressionContainer(node, previousContext) {
+    if (this.match(tt.braceR)) {
+      node.expression = this.jsxParseEmptyExpression();
+    } else {
+      const expression = this.parseExpression();
+      node.expression = expression;
+    }
+    this.setContext(previousContext);
+    this.state.canStartJSXElement = true;
+    this.expect(tt.braceR);
+    return this.finishNode(node, "JSXExpressionContainer");
+  }
+  // Parses following JSX attribute name-value pair.
+  jsxParseAttribute() {
+    const node = this.startNode();
+    if (this.match(tt.braceL)) {
+      this.setContext(types.brace);
+      this.next();
+      this.expect(tt.ellipsis);
+      node.argument = this.parseMaybeAssignAllowIn();
+      this.setContext(types.j_oTag);
+      this.state.canStartJSXElement = true;
+      this.expect(tt.braceR);
+      return this.finishNode(node, "JSXSpreadAttribute");
+    }
+    node.name = this.jsxParseNamespacedName();
+    node.value = this.eat(tt.eq) ? this.jsxParseAttributeValue() : null;
+    return this.finishNode(node, "JSXAttribute");
+  }
+  // Parses JSX opening tag starting after "<".
+  jsxParseOpeningElementAt(startLoc) {
+    const node = this.startNodeAt(
+      startLoc
+    );
+    if (this.eat(tt.jsxTagEnd)) {
+      return this.finishNode(node, "JSXOpeningFragment");
+    }
+    node.name = this.jsxParseElementName();
+    return this.jsxParseOpeningElementAfterName(
+      node
+    );
+  }
+  jsxParseOpeningElementAfterName(node) {
+    const attributes = [];
+    while (!this.match(tt.slash) && !this.match(tt.jsxTagEnd)) {
+      attributes.push(this.jsxParseAttribute());
+    }
+    node.attributes = attributes;
+    node.selfClosing = this.eat(tt.slash);
+    this.expect(tt.jsxTagEnd);
+    return this.finishNode(node, "JSXOpeningElement");
+  }
+  // Parses JSX closing tag starting after "</".
+  jsxParseClosingElementAt(startLoc) {
+    const node = this.startNodeAt(
+      startLoc
+    );
+    if (this.eat(tt.jsxTagEnd)) {
+      return this.finishNode(node, "JSXClosingFragment");
+    }
+    node.name = this.jsxParseElementName();
+    this.expect(tt.jsxTagEnd);
+    return this.finishNode(node, "JSXClosingElement");
+  }
+  // Parses entire JSX element, including it"s opening tag
+  // (starting after "<"), attributes, contents and closing tag.
+  jsxParseElementAt(startLoc) {
+    const node = this.startNodeAt(startLoc);
+    const children = [];
+    const openingElement = this.jsxParseOpeningElementAt(startLoc);
+    let closingElement = null;
+    if (!openingElement.selfClosing) {
+      contents: for (; ; ) {
+        switch (this.state.type) {
+          case tt.jsxTagStart:
+            startLoc = this.state.startLoc;
+            this.next();
+            if (this.eat(tt.slash)) {
+              closingElement = this.jsxParseClosingElementAt(startLoc);
+              break contents;
+            }
+            children.push(this.jsxParseElementAt(startLoc));
+            break;
+          case tt.jsxText:
+            children.push(this.parseLiteral(this.state.value, "JSXText"));
+            break;
+          case tt.braceL: {
+            const node2 = this.startNode();
+            this.setContext(types.brace);
+            this.next();
+            if (this.match(tt.ellipsis)) {
+              children.push(this.jsxParseSpreadChild(node2));
+            } else {
+              children.push(
+                this.jsxParseExpressionContainer(node2, types.j_expr)
+              );
+            }
+            break;
+          }
+          // istanbul ignore next - should never happen
+          default:
+            this.unexpected();
+        }
+      }
+      if (isFragment(openingElement) && !isFragment(closingElement) && closingElement !== null) {
+        this.raise(JsxErrors.MissingClosingTagFragment, closingElement);
+      } else if (!isFragment(openingElement) && isFragment(closingElement)) {
+        this.raise(JsxErrors.MissingClosingTagElement, closingElement, {
+          openingTagName: getQualifiedJSXName(openingElement.name)
+        });
+      } else if (!isFragment(openingElement) && !isFragment(closingElement)) {
+        if (getQualifiedJSXName(closingElement.name) !== getQualifiedJSXName(openingElement.name)) {
+          this.raise(JsxErrors.MissingClosingTagElement, closingElement, {
+            openingTagName: getQualifiedJSXName(openingElement.name)
+          });
+        }
+      }
+    }
+    if (isFragment(openingElement)) {
+      node.openingFragment = openingElement;
+      node.closingFragment = closingElement;
+    } else {
+      node.openingElement = openingElement;
+      node.closingElement = closingElement;
+    }
+    node.children = children;
+    if (this.match(tt.lt)) {
+      throw this.raise(
+        JsxErrors.UnwrappedAdjacentJSXElements,
+        this.state.startLoc
+      );
+    }
+    return isFragment(openingElement) ? this.finishNode(node, "JSXFragment") : this.finishNode(node, "JSXElement");
+  }
+  // Parses entire JSX element from current position.
+  jsxParseElement() {
+    const startLoc = this.state.startLoc;
+    this.next();
+    return this.jsxParseElementAt(startLoc);
+  }
+  setContext(newContext) {
+    const { context } = this.state;
+    context[context.length - 1] = newContext;
+  }
+  // ==================================
+  // Overrides
+  // ==================================
+  parseExprAtom(refExpressionErrors) {
+    if (this.match(tt.jsxTagStart)) {
+      return this.jsxParseElement();
+    } else if (this.match(tt.lt) && this.input.charCodeAt(this.state.pos) !== exclamationMark) {
+      this.replaceToken(tt.jsxTagStart);
+      return this.jsxParseElement();
+    } else {
+      return super.parseExprAtom(refExpressionErrors);
+    }
+  }
+  skipSpace() {
+    const curContext = this.curContext();
+    if (!curContext.preserveSpace) super.skipSpace();
+  }
+  getTokenFromCode(code) {
+    const context = this.curContext();
+    if (context === types.j_expr) {
+      this.jsxReadToken();
+      return;
+    }
+    if (context === types.j_oTag || context === types.j_cTag) {
+      if (isIdentifierStart(code)) {
+        this.jsxReadWord();
+        return;
+      }
+      if (code === greaterThan) {
+        ++this.state.pos;
+        this.finishToken(tt.jsxTagEnd);
+        return;
+      }
+      if ((code === quotationMark || code === apostrophe) && context === types.j_oTag) {
+        this.jsxReadString(code);
+        return;
+      }
+    }
+    if (code === lessThan && this.state.canStartJSXElement && this.input.charCodeAt(this.state.pos + 1) !== exclamationMark) {
+      ++this.state.pos;
+      this.finishToken(tt.jsxTagStart);
+      return;
+    }
+    super.getTokenFromCode(code);
+  }
+  updateContext(prevType) {
+    const { context, type } = this.state;
+    if (type === tt.slash && prevType === tt.jsxTagStart) {
+      context.splice(-2, 2, types.j_cTag);
+      this.state.canStartJSXElement = false;
+    } else if (type === tt.jsxTagStart) {
+      context.push(types.j_oTag);
+    } else if (type === tt.jsxTagEnd) {
+      const out = context[context.length - 1];
+      if (out === types.j_oTag && prevType === tt.slash || out === types.j_cTag) {
+        context.pop();
+        this.state.canStartJSXElement = context[context.length - 1] === types.j_expr;
+      } else {
+        this.setContext(types.j_expr);
+        this.state.canStartJSXElement = true;
+      }
+    } else {
+      this.state.canStartJSXElement = tokenComesBeforeExpression(type);
+    }
+  }
+};
+var PlaceholderErrors = ParseErrorEnum`placeholders`({
+  ClassNameIsRequired: "A class name is required.",
+  UnexpectedSpace: "Unexpected space in placeholder."
+});
+var placeholders_default = (superClass) => class PlaceholdersParserMixin extends superClass {
+  parsePlaceholder(expectedNode) {
+    if (this.match(tt.placeholder)) {
+      const node = this.startNode();
+      this.next();
+      this.assertNoSpace();
+      node.name = super.parseIdentifier(
+        /* liberal */
+        true
+      );
+      this.assertNoSpace();
+      this.expect(tt.placeholder);
+      return this.finishPlaceholder(node, expectedNode);
+    }
+  }
+  finishPlaceholder(node, expectedNode) {
+    let placeholder = node;
+    if (!placeholder.expectedNode || !placeholder.type) {
+      placeholder = this.finishNode(
+        placeholder,
+        "Placeholder"
+      );
+    }
+    placeholder.expectedNode = expectedNode;
+    return placeholder;
+  }
+  /* ============================================================ *
+   * tokenizer/index.ts                                           *
+   * ============================================================ */
+  getTokenFromCode(code) {
+    if (code === percentSign && this.input.charCodeAt(this.state.pos + 1) === percentSign) {
+      this.finishOp(tt.placeholder, 2);
+    } else {
+      super.getTokenFromCode(code);
+    }
+  }
+  /* ============================================================ *
+   * parser/expression.ts                                         *
+   * ============================================================ */
+  parseExprAtom(refExpressionErrors) {
+    return this.parsePlaceholder("Expression") || super.parseExprAtom(refExpressionErrors);
+  }
+  parseIdentifier(liberal) {
+    return this.parsePlaceholder("Identifier") || super.parseIdentifier(liberal);
+  }
+  checkReservedWord(word, startLoc, checkKeywords, isBinding) {
+    if (word !== void 0) {
+      super.checkReservedWord(word, startLoc, checkKeywords, isBinding);
+    }
+  }
+  /* ============================================================ *
+   * parser/node.ts                                               *
+   * ============================================================ */
+  cloneIdentifier(node) {
+    const cloned = super.cloneIdentifier(node);
+    if (cloned.type === "Placeholder") {
+      cloned.expectedNode = node.expectedNode;
+    }
+    return cloned;
+  }
+  cloneStringLiteral(node) {
+    if (node.type === "Placeholder") {
+      return this.cloneIdentifier(node);
+    }
+    return super.cloneStringLiteral(node);
+  }
+  /* ============================================================ *
+   * parser/lval.ts                                               *
+   * ============================================================ */
+  parseBindingAtom() {
+    return this.parsePlaceholder("Pattern") || super.parseBindingAtom();
+  }
+  isValidLVal(type, disallowCallExpression, isParenthesized, binding) {
+    return type === "Placeholder" || super.isValidLVal(
+      type,
+      disallowCallExpression,
+      isParenthesized,
+      binding
+    );
+  }
+  toAssignable(node, isLHS) {
+    if (node && node.type === "Placeholder" && node.expectedNode === "Expression") {
+      node.expectedNode = "Pattern";
+    } else {
+      super.toAssignable(node, isLHS);
+    }
+  }
+  /* ============================================================ *
+   * parser/statement.ts                                          *
+   * ============================================================ */
+  chStartsBindingIdentifier(ch, pos) {
+    if (super.chStartsBindingIdentifier(ch, pos)) {
+      return true;
+    }
+    const next = this.nextTokenStart();
+    if (this.input.charCodeAt(next) === percentSign && this.input.charCodeAt(next + 1) === percentSign) {
+      return true;
+    }
+    return false;
+  }
+  verifyBreakContinue(node, isBreak) {
+    if (node.label?.type === "Placeholder") return;
+    super.verifyBreakContinue(node, isBreak);
+  }
+  // @ts-expect-error Plugin will override parser interface
+  parseExpressionStatement(node, expr) {
+    if (expr.type !== "Placeholder" || expr.extra?.parenthesized) {
+      return super.parseExpressionStatement(node, expr);
+    }
+    if (this.match(tt.colon)) {
+      const stmt = node;
+      stmt.label = this.finishPlaceholder(expr, "Identifier");
+      this.next();
+      stmt.body = super.parseStatementOrSloppyAnnexBFunctionDeclaration();
+      return this.finishNode(stmt, "LabeledStatement");
+    }
+    this.semicolon();
+    const stmtPlaceholder = node;
+    stmtPlaceholder.name = expr.name;
+    return this.finishPlaceholder(stmtPlaceholder, "Statement");
+  }
+  parseBlock(allowDirectives, createNewLexicalScope, afterBlockParse) {
+    return this.parsePlaceholder("BlockStatement") || super.parseBlock(
+      allowDirectives,
+      createNewLexicalScope,
+      afterBlockParse
+    );
+  }
+  parseFunctionId(requireId) {
+    return this.parsePlaceholder("Identifier") || super.parseFunctionId(requireId);
+  }
+  // @ts-expect-error Plugin will override parser interface
+  parseClass(node, isStatement, optionalId) {
+    const type = isStatement ? "ClassDeclaration" : "ClassExpression";
+    this.next();
+    const oldStrict = this.state.strict;
+    const placeholder = this.parsePlaceholder("Identifier");
+    if (placeholder) {
+      if (this.match(tt._extends) || this.match(tt.placeholder) || this.match(tt.braceL)) {
+        node.id = placeholder;
+      } else if (optionalId || !isStatement) {
+        node.id = null;
+        node.body = this.finishPlaceholder(placeholder, "ClassBody");
+        return this.finishNode(node, type);
+      } else {
+        throw this.raise(
+          PlaceholderErrors.ClassNameIsRequired,
+          this.state.startLoc
+        );
+      }
+    } else {
+      this.parseClassId(node, isStatement, optionalId);
+    }
+    super.parseClassSuper(node);
+    node.body = this.parsePlaceholder("ClassBody") || super.parseClassBody(!!node.superClass, oldStrict);
+    return this.finishNode(node, type);
+  }
+  parseExport(node, decorators) {
+    const placeholder = this.parsePlaceholder("Identifier");
+    if (!placeholder) return super.parseExport(node, decorators);
+    const node2 = node;
+    if (!this.isContextual(tt._from) && !this.match(tt.comma)) {
+      node2.specifiers = [];
+      node2.source = null;
+      node2.declaration = this.finishPlaceholder(placeholder, "Declaration");
+      return this.finishNode(node2, "ExportNamedDeclaration");
+    }
+    this.expectPlugin("exportDefaultFrom");
+    const specifier = this.startNode();
+    specifier.exported = placeholder;
+    node2.specifiers = [this.finishNode(specifier, "ExportDefaultSpecifier")];
+    return super.parseExport(node2, decorators);
+  }
+  isExportDefaultSpecifier() {
+    if (this.match(tt._default)) {
+      const next = this.nextTokenStart();
+      if (this.isUnparsedContextual(next, "from")) {
+        if (this.input.startsWith(
+          tokenLabelName(tt.placeholder),
+          this.nextTokenStartSince(next + 4)
+        )) {
+          return true;
+        }
+      }
+    }
+    return super.isExportDefaultSpecifier();
+  }
+  maybeParseExportDefaultSpecifier(node, maybeDefaultIdentifier) {
+    if (node.specifiers?.length) {
+      return true;
+    }
+    return super.maybeParseExportDefaultSpecifier(
+      node,
+      maybeDefaultIdentifier
+    );
+  }
+  checkExport(node) {
+    const { specifiers } = node;
+    if (specifiers?.length) {
+      node.specifiers = specifiers.filter(
+        // @ts-expect-error placeholder typings
+        (node2) => node2.exported.type === "Placeholder"
+      );
+    }
+    super.checkExport(node);
+    node.specifiers = specifiers;
+  }
+  parseImport(node) {
+    const placeholder = this.parsePlaceholder("Identifier");
+    if (!placeholder) return super.parseImport(node);
+    node.specifiers = [];
+    if (!this.isContextual(tt._from) && !this.match(tt.comma)) {
+      node.source = this.finishPlaceholder(placeholder, "StringLiteral");
+      this.semicolon();
+      return this.finishNode(node, "ImportDeclaration");
+    }
+    const specifier = this.startNodeAtNode(placeholder);
+    specifier.local = placeholder;
+    node.specifiers.push(
+      this.finishNode(specifier, "ImportDefaultSpecifier")
+    );
+    if (this.eat(tt.comma)) {
+      const hasStarImport = this.maybeParseStarImportSpecifier(node);
+      if (!hasStarImport) this.parseNamedImportSpecifiers(node);
+    }
+    this.expectContextual(tt._from);
+    node.source = this.parseImportSource();
+    this.semicolon();
+    return this.finishNode(node, "ImportDeclaration");
+  }
+  parseImportSource() {
+    return this.parsePlaceholder("StringLiteral") || super.parseImportSource();
+  }
+  // Throws if the current token and the prev one are separated by a space.
+  assertNoSpace() {
+    if (this.state.start > this.offsetToSourcePos(this.state.lastTokEndLoc.index)) {
+      this.raise(
+        PlaceholderErrors.UnexpectedSpace,
+        this.state.lastTokEndLoc
+      );
+    }
+  }
+};
+var v8intrinsic_default = (superClass) => class V8IntrinsicMixin extends superClass {
+  parseV8Intrinsic() {
+    if (this.match(tt.modulo)) {
+      const v8IntrinsicStartLoc = this.state.startLoc;
+      const node = this.startNode();
+      this.next();
+      if (tokenIsIdentifier(this.state.type)) {
+        const name = this.parseIdentifierName();
+        const identifier = this.createIdentifier(node, name);
+        this.castNodeTo(identifier, "V8IntrinsicIdentifier");
+        if (this.match(tt.parenL)) {
+          return identifier;
+        }
+      }
+      this.unexpected(v8IntrinsicStartLoc);
+    }
+  }
+  /* ============================================================ *
+   * parser/expression.js                                         *
+   * ============================================================ */
+  parseExprAtom(refExpressionErrors) {
+    return this.parseV8Intrinsic() || super.parseExprAtom(refExpressionErrors);
+  }
+};
+var PIPELINE_PROPOSALS = ["minimal", "fsharp", "hack", "smart"];
+var TOPIC_TOKENS = ["^^", "@@", "^", "%", "#"];
+function validatePlugins(pluginsMap) {
+  if (pluginsMap.has("decorators")) {
+    if (pluginsMap.has("decorators-legacy")) {
+      throw new Error(
+        "Cannot use the decorators and decorators-legacy plugin together"
+      );
+    }
+    const decoratorsBeforeExport = pluginsMap.get("decorators").decoratorsBeforeExport;
+    if (decoratorsBeforeExport != null && typeof decoratorsBeforeExport !== "boolean") {
+      throw new Error(
+        "'decoratorsBeforeExport' must be a boolean, if specified."
+      );
+    }
+    const allowCallParenthesized = pluginsMap.get("decorators").allowCallParenthesized;
+    if (allowCallParenthesized != null && typeof allowCallParenthesized !== "boolean") {
+      throw new Error("'allowCallParenthesized' must be a boolean.");
+    }
+  }
+  if (pluginsMap.has("flow") && pluginsMap.has("typescript")) {
+    throw new Error("Cannot combine flow and typescript plugins.");
+  }
+  if (pluginsMap.has("placeholders") && pluginsMap.has("v8intrinsic")) {
+    throw new Error("Cannot combine placeholders and v8intrinsic plugins.");
+  }
+  if (pluginsMap.has("pipelineOperator")) {
+    const proposal = pluginsMap.get("pipelineOperator").proposal;
+    if (!PIPELINE_PROPOSALS.includes(proposal)) {
+      const proposalList = PIPELINE_PROPOSALS.map((p) => `"${p}"`).join(", ");
+      throw new Error(
+        `"pipelineOperator" requires "proposal" option whose value must be one of: ${proposalList}.`
+      );
+    }
+    if (proposal === "hack") {
+      if (pluginsMap.has("placeholders")) {
+        throw new Error(
+          "Cannot combine placeholders plugin and Hack-style pipes."
+        );
+      }
+      if (pluginsMap.has("v8intrinsic")) {
+        throw new Error(
+          "Cannot combine v8intrinsic plugin and Hack-style pipes."
+        );
+      }
+      const topicToken = pluginsMap.get("pipelineOperator").topicToken;
+      if (!TOPIC_TOKENS.includes(topicToken)) {
+        const tokenList = TOPIC_TOKENS.map((t) => `"${t}"`).join(", ");
+        throw new Error(
+          `"pipelineOperator" in "proposal": "hack" mode also requires a "topicToken" option whose value must be one of: ${tokenList}.`
+        );
+      }
+      {
+        if (topicToken === "#" && pluginsMap.get("recordAndTuple")?.syntaxType === "hash") {
+          throw new Error(
+            `Plugin conflict between \`["pipelineOperator", { proposal: "hack", topicToken: "#" }]\` and \`${JSON.stringify(["recordAndTuple", pluginsMap.get("recordAndTuple")])}\`.`
+          );
+        }
+      }
+    } else if (proposal === "smart" && pluginsMap.get("recordAndTuple")?.syntaxType === "hash") {
+      throw new Error(
+        `Plugin conflict between \`["pipelineOperator", { proposal: "smart" }]\` and \`${JSON.stringify(["recordAndTuple", pluginsMap.get("recordAndTuple")])}\`.`
+      );
+    }
+  }
+  if (pluginsMap.has("moduleAttributes")) {
+    {
+      if (pluginsMap.has("deprecatedImportAssert") || pluginsMap.has("importAssertions")) {
+        throw new Error(
+          "Cannot combine importAssertions, deprecatedImportAssert and moduleAttributes plugins."
+        );
+      }
+      const moduleAttributesVersionPluginOption = pluginsMap.get("moduleAttributes").version;
+      if (moduleAttributesVersionPluginOption !== "may-2020") {
+        throw new Error(
+          "The 'moduleAttributes' plugin requires a 'version' option, representing the last proposal update. Currently, the only supported value is 'may-2020'."
+        );
+      }
+    }
+  }
+  if (pluginsMap.has("importAssertions")) {
+    if (pluginsMap.has("deprecatedImportAssert")) {
+      throw new Error(
+        "Cannot combine importAssertions and deprecatedImportAssert plugins."
+      );
+    }
+  }
+  if (pluginsMap.has("deprecatedImportAssert")) ;
+  else if (pluginsMap.has("importAttributes") && pluginsMap.get("importAttributes").deprecatedAssertSyntax) {
+    {
+      pluginsMap.set("deprecatedImportAssert", {});
+    }
+  }
+  if (pluginsMap.has("recordAndTuple")) {
+    {
+      const syntaxType = pluginsMap.get("recordAndTuple").syntaxType;
+      if (syntaxType != null) {
+        const RECORD_AND_TUPLE_SYNTAX_TYPES = ["hash", "bar"];
+        if (!RECORD_AND_TUPLE_SYNTAX_TYPES.includes(syntaxType)) {
+          throw new Error(
+            "The 'syntaxType' option of the 'recordAndTuple' plugin must be one of: " + RECORD_AND_TUPLE_SYNTAX_TYPES.map((p) => `'${p}'`).join(", ")
+          );
+        }
+      }
+    }
+  }
+  if (pluginsMap.has("asyncDoExpressions") && !pluginsMap.has("doExpressions")) {
+    const error = new Error(
+      "'asyncDoExpressions' requires 'doExpressions', please add 'doExpressions' to parser plugins."
+    );
+    error.missingPlugins = "doExpressions";
+    throw error;
+  }
+  if (pluginsMap.has("optionalChainingAssign") && pluginsMap.get("optionalChainingAssign").version !== "2023-07") {
+    throw new Error(
+      "The 'optionalChainingAssign' plugin requires a 'version' option, representing the last proposal update. Currently, the only supported value is '2023-07'."
+    );
+  }
+  if (pluginsMap.has("discardBinding") && pluginsMap.get("discardBinding").syntaxType !== "void") {
+    throw new Error(
+      "The 'discardBinding' plugin requires a 'syntaxType' option. Currently the only supported value is 'void'."
+    );
+  }
+}
+var mixinPlugins = {
+  estree: estree_default,
+  jsx: jsx_default,
+  flow: flow_default,
+  typescript: typescript_default,
+  v8intrinsic: v8intrinsic_default,
+  placeholders: placeholders_default
+};
+var mixinPluginNames = Object.keys(mixinPlugins);
+var Parser = class extends StatementParser {
+  constructor(options, input, pluginsMap) {
+    const normalizedOptions = getOptions(options);
+    super(normalizedOptions, input);
+    this.options = normalizedOptions;
+    this.initializeScopes();
+    this.plugins = pluginsMap;
+    this.filename = normalizedOptions.sourceFilename;
+    this.startIndex = normalizedOptions.startIndex;
+    let optionFlags = 0;
+    if (normalizedOptions.allowAwaitOutsideFunction) {
+      optionFlags |= OptionFlags.AllowAwaitOutsideFunction;
+    }
+    if (normalizedOptions.allowReturnOutsideFunction) {
+      optionFlags |= OptionFlags.AllowReturnOutsideFunction;
+    }
+    if (normalizedOptions.allowImportExportEverywhere) {
+      optionFlags |= OptionFlags.AllowImportExportEverywhere;
+    }
+    if (normalizedOptions.allowSuperOutsideMethod) {
+      optionFlags |= OptionFlags.AllowSuperOutsideMethod;
+    }
+    if (normalizedOptions.allowUndeclaredExports) {
+      optionFlags |= OptionFlags.AllowUndeclaredExports;
+    }
+    if (normalizedOptions.allowNewTargetOutsideFunction) {
+      optionFlags |= OptionFlags.AllowNewTargetOutsideFunction;
+    }
+    if (normalizedOptions.allowYieldOutsideFunction) {
+      optionFlags |= OptionFlags.AllowYieldOutsideFunction;
+    }
+    if (normalizedOptions.ranges) {
+      optionFlags |= OptionFlags.Ranges;
+    }
+    if (normalizedOptions.tokens) {
+      optionFlags |= OptionFlags.Tokens;
+    }
+    if (normalizedOptions.createImportExpressions) {
+      optionFlags |= OptionFlags.CreateImportExpressions;
+    }
+    if (normalizedOptions.createParenthesizedExpressions) {
+      optionFlags |= OptionFlags.CreateParenthesizedExpressions;
+    }
+    if (normalizedOptions.errorRecovery) {
+      optionFlags |= OptionFlags.ErrorRecovery;
+    }
+    if (normalizedOptions.attachComment) {
+      optionFlags |= OptionFlags.AttachComment;
+    }
+    if (normalizedOptions.annexB) {
+      optionFlags |= OptionFlags.AnnexB;
+    }
+    this.optionFlags = optionFlags;
+  }
+  // This can be overwritten, for example, by the TypeScript plugin.
+  getScopeHandler() {
+    return ScopeHandler;
+  }
+  parse() {
+    this.enterInitialScopes();
+    const file = this.startNode();
+    const program = this.startNode();
+    this.nextToken();
+    file.errors = null;
+    const result = this.parseTopLevel(file, program);
+    result.errors = this.state.errors;
+    result.comments.length = this.state.commentsLen;
+    return result;
+  }
+};
+function parse(input, options) {
+  if (options?.sourceType === "unambiguous") {
+    options = {
+      ...options
+    };
+    try {
+      options.sourceType = "module";
+      const parser = getParser(options, input);
+      const ast = parser.parse();
+      if (parser.sawUnambiguousESM) {
+        return ast;
+      }
+      if (parser.ambiguousScriptDifferentAst) {
+        try {
+          options.sourceType = "script";
+          return getParser(options, input).parse();
+        } catch {
+        }
+      } else {
+        ast.program.sourceType = "script";
+      }
+      return ast;
+    } catch (moduleError) {
+      try {
+        options.sourceType = "script";
+        return getParser(options, input).parse();
+      } catch {
+      }
+      throw moduleError;
+    }
+  } else {
+    return getParser(options, input).parse();
+  }
+}
+function parseExpression(input, options) {
+  const parser = getParser(options, input);
+  if (parser.options.strictMode) {
+    parser.state.strict = true;
+  }
+  return parser.getExpression();
+}
+function generateExportedTokenTypes(internalTokenTypes2) {
+  const tokenTypes = {};
+  for (const typeName of Object.keys(
+    internalTokenTypes2
+  )) {
+    tokenTypes[typeName] = getExportedToken(internalTokenTypes2[typeName]);
+  }
+  return tokenTypes;
+}
+generateExportedTokenTypes(tt);
+function getParser(options, input) {
+  let cls = Parser;
+  const pluginsMap = /* @__PURE__ */ new Map();
+  if (options?.plugins) {
+    for (const plugin of options.plugins) {
+      let name, opts;
+      if (typeof plugin === "string") {
+        name = plugin;
+      } else {
+        [name, opts] = plugin;
+      }
+      if (!pluginsMap.has(name)) {
+        pluginsMap.set(name, opts || {});
+      }
+    }
+    validatePlugins(pluginsMap);
+    cls = getParserClass(pluginsMap);
+  }
+  return new cls(options, input, pluginsMap);
+}
+var parserClassCache = /* @__PURE__ */ new Map();
+function getParserClass(pluginsMap) {
+  const pluginList = [];
+  for (const name of mixinPluginNames) {
+    if (pluginsMap.has(name)) {
+      pluginList.push(name);
+    }
+  }
+  const key = pluginList.join("|");
+  let cls = parserClassCache.get(key);
+  if (!cls) {
+    cls = Parser;
+    for (const plugin of pluginList) {
+      cls = mixinPlugins[plugin](cls);
+    }
+    parserClassCache.set(key, cls);
+  }
+  return cls;
+}
 export {
-  StatementParser as S
+  parse as a,
+  parseExpression as p
 };

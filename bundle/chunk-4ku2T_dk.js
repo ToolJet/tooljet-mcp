@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
-import { e8 as __toESM, e6 as __commonJS, e9 as readCatalog, e7 as __require } from "./chunk-BEuHHGL1.js";
-import { r as require_errors, a as require_identity, b as require_Scalar, c as require_cst, d as require_lexer, e as require_parser, f as require_resolve_end, g as require_toJS, h as require_applyReviver, i as require_Node, j as require_stringifyString, k as require_resolve_block_scalar, l as require_resolve_flow_scalar } from "./chunk-8iUq0slz.js";
+import { b0 as readCatalog } from "./chunk-BfJD-M_q.js";
+import { r as require_errors, a as require_identity, b as require_Scalar, c as require_cst, d as require_lexer, e as require_parser, f as require_resolve_end, g as require_toJS, h as require_applyReviver, i as require_Node, j as require_stringifyString, k as require_resolve_block_scalar, l as require_resolve_flow_scalar } from "./chunk-CWE-b1Z5.js";
+import { ed as __toESM, eb as __commonJS, ec as __require } from "./chunk-BnsUSpmS.js";
 import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
 createRequire(import.meta.url);
@@ -4157,6 +4158,13 @@ var require_dist = __commonJS({
 });
 var COMMON_QUERY_OPTION_FIELDS = {
   runOnPageLoad: { path: "runOnPageLoad", type: "boolean|binding", description: "Run when the app first loads." },
+  // Query parameters, on every kind: values passed to a run (a code page's run({ ... }), a run-query action) and read in
+  // the query as {{parameters.<name>}}.
+  parameters: {
+    path: "parameters",
+    type: "array",
+    description: "Query parameters [{ name, defaultValue }]: read as {{parameters.name}}, set by whoever runs the query."
+  },
   runOnDependencyChange: { path: "runOnDependencyChange", type: "boolean|binding" },
   requestConfirmation: { path: "requestConfirmation", type: "boolean|binding" },
   requestConfirmationFx: { path: "requestConfirmationFx", type: "boolean" },

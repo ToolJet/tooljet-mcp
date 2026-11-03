@@ -1,19 +1,22 @@
 import { createRequire } from "node:module";
-import { o as external_exports, q as editContractSchema, s as generateEditContract, p as COMPONENT_FX_GUIDANCE } from "./chunk-8iUq0slz.js";
-import { s as strictEntry, g as specSchema, h as createClient, l as listWorkspaceGroupsTool, m as manageWorkspaceGroupsTool, j as inspectDatasourceSchemaTool, u as updateComponentsTool, o as ok, k as nodeCatalog, f as fail, p as capabilityRequestSchema, q as getWorkflowCapabilities, w as lint, x as apply, y as deleteNode, z as validateGraph, v as validateTableBatch, A as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec } from "./chunk-DbFNT0Gf.js";
-import { a6 as dbColumnTypeSchema, a7 as componentInputSchema, a8 as lintAppSpecTool, a9 as projectJavascriptRuntime, aa as projectAppSettings, ab as compactTheme, ac as pageSettingProperties, l as literalCanvasColor, ad as containsExactValue, h as prepareQueryOptionsForWrite, ae as inspectUpdateCompatibility, af as normalizePlanBindingAliases, ag as containsNamedBinding, ah as normalizePlannedLayouts, ai as materializeRequiredDefaultChildren, aj as mapKeyRefusal, j as prepareComponentBatch, v as validateEvents, n as expandQueryLifecycles, q as persistedEventSpecs, ak as persistedEventIds } from "./chunk-pMEylbpx.js";
-import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, W as WebStandardStreamableHTTPServerTransport, g as getRequestListener, c as validatePersistedAppSummary } from "./chunk-JCMmiPv2.js";
-import { M as McpServer } from "./chunk-DiCiME0d.js";
-import { u as pageIconSchema, c as componentSlotSchema, a as componentNameSchema, t as lintComponents, i as introducedLintFindings, x as lintRenderedGeometryBlocking, y as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, f as lintComponentSlots, l as lintComponentSpec, g as lintUnusableTextGeometry, z as lintNestedContainerWidths, h as lintStandardSingleLineInputHeight, j as lintTextGeometry, k as lintRenderedGeometry, F as FORM_SCHEMA_FIELD_TYPE_SET, A as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-gznY6rD8.js";
-import { ea as getCatalog, e5 as getComponentSchema, eb as getLegacyComponentReplacement, ee as readCatalogBytes } from "./chunk-BEuHHGL1.js";
-import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-CsHFzbSc.js";
+import { b1 as external_exports, b4 as specSchema, bd as registerComponentSchemas, be as updateAppSettingsTool, bf as getComponentCatalogTool, b2 as nodeCatalog, b3 as validateGraph, bc as mapKeyRefusal, bg as readCatalogBytes, bh as allComponentSchemas } from "./chunk-BfJD-M_q.js";
+import { x as capabilityRequestSchema, y as getWorkflowCapabilities, z as lint, A as apply, B as deleteNode, C as prepareSqlDiscoveryQueries, D as editContractSchema, E as generateEditContract } from "./chunk-BR4RJzBT.js";
+import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, a as FLEX_GROW_DESCRIPTION, b as FLEX_WIDTH_PX_DESCRIPTION, d as FLEX_FILL_WIDTH_DESCRIPTION, m as createClient, o as registerPackDefinitions, q as listWorkspaceGroupsTool, t as manageWorkspaceGroupsTool, u as inspectDatasourceSchemaTool, w as updateComponentsTool, v as validateTableBatch, x as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec, C as COMPONENT_FX_GUIDANCE, y as appendedChildOrders, z as reparentAdditions, l as childOrderProperty } from "./chunk-MVJ6JtzN.js";
+import { c as componentInputSchema, o as codeAppScaffoldTool, q as codeAppReadFilesTool, t as codeAppWriteFilesTool, u as codeAppBuildTool, w as codeAppInstallTool, x as codeAppAddDependencyTool, y as containsExactValue, b as prepareQueryOptionsForWrite, z as containsNamedBinding, A as normalizePlannedLayouts, B as materializeRequiredDefaultChildren, h as prepareComponentBatch, v as validateEvents, j as expandQueryLifecycles, k as persistedEventSpecs, C as persistedEventIds } from "./chunk-CIP1bu8Y.js";
+import { K as dbColumnTypeSchema, N as lintAppSpecTool, W as WebStandardStreamableHTTPServerTransport, O as getRequestListener, Q as inspectUpdateCompatibility, U as normalizePlanBindingAliases } from "./chunk-dzalgVt-.js";
+import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, c as validatePersistedAppSummary } from "./chunk-BmiOaue9.js";
+import { e7 as ok, e9 as fail, ee as defaultPack, e6 as savedComponentLibrary, ea as COMPONENT_PACK_DESCRIPTION, ep as projectJavascriptRuntime, e8 as projectAppSettings, eq as compactTheme, em as literalCanvasColor } from "./chunk-BnsUSpmS.js";
+import { M as McpServer } from "./chunk-C5lIISJx.js";
+import { E as pageIconSchema, c as componentSlotSchema, G as registerLibraryPacks, H as libraryPins, f as componentNameSchema, B as lintComponents, h as resolveParentRef, j as introducedLintFindings, I as lintRenderedGeometryBlocking, J as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, m as lintComponentSlots, k as lintComponentSpec, o as lintUnusableTextGeometry, K as lintNestedContainerWidths, p as lintStandardSingleLineInputHeight, q as lintTextGeometry, s as lintRenderedGeometry, L as FORM_SCHEMA_FIELD_TYPE_SET, M as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-BPTeHE1L.js";
+import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-4ku2T_dk.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { createServer } from "node:http";
+import { statSync, readFileSync, accessSync, constants, existsSync } from "node:fs";
+import { homedir } from "node:os";
+import { dirname, resolve, basename, join } from "node:path";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { mkdir, appendFile } from "node:fs/promises";
-import { dirname, resolve, basename, join } from "node:path";
-import { statSync, accessSync, constants, existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
 function createExchangeLimiter(limit = 300, trustedProxyHops = 0) {
@@ -82,9 +85,9 @@ function createVerifiedExchangeCache(ttlMs = 6e4, capacity = 1e4) {
   };
 }
 var StreamableHTTPServerTransport = class {
-  constructor(options2 = {}) {
+  constructor(options = {}) {
     this._requestContext = /* @__PURE__ */ new WeakMap();
-    this._webStandardTransport = new WebStandardStreamableHTTPServerTransport(options2);
+    this._webStandardTransport = new WebStandardStreamableHTTPServerTransport(options);
     this._requestListener = getRequestListener(async (webRequest) => {
       const context = this._requestContext.get(webRequest);
       return this._webStandardTransport.handleRequest(webRequest, {
@@ -142,8 +145,8 @@ var StreamableHTTPServerTransport = class {
   /**
    * Sends a JSON-RPC message through the transport.
    */
-  async send(message, options2) {
-    return this._webStandardTransport.send(message, options2);
+  async send(message, options) {
+    return this._webStandardTransport.send(message, options);
   }
   /**
    * Handles an incoming HTTP request, whether GET or POST.
@@ -181,6 +184,160 @@ var StreamableHTTPServerTransport = class {
     this._webStandardTransport.closeStandaloneSSEStream();
   }
 };
+var words = (s) => s.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
+var eventLabel = (s) => words(s).replace(/ (\w)/g, (_, c) => ` ${c.toLowerCase()}`);
+var VALUE_TYPE = { string: "string", number: "number", boolean: "boolean", array: "array", object: "object", enumeration: "string" };
+var stamp = (p) => {
+  if (p.default === void 0)
+    return p.type === "boolean" ? "{{false}}" : "";
+  if (p.type === "boolean")
+    return `{{${p.default}}}`;
+  if (p.type === "enumeration" || p.type === "string")
+    return String(p.default);
+  return `{{${JSON.stringify(p.default)}}}`;
+};
+var SAMPLE_TEXT = /^(eyebrow|subtitle|description|meta|actionLabel|secondaryActionLabel|asideValue|asideLabel|changeLabel|change)$/;
+function packFromLibrary(lib) {
+  const manifest = lib.manifest;
+  if (!manifest || manifest.manifestVersion !== 2 || !manifest.components)
+    return null;
+  const packId = (manifest.pack || lib.name).toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return packFromManifest(packId, lib.name, lib.revisions?.[0]?.version ?? "", manifest, {
+    kind: "library",
+    libraryId: lib.id,
+    correlationId: lib.correlationId
+  });
+}
+function packFromBuiltin(info, manifest) {
+  if (!manifest?.components)
+    return null;
+  const packId = info.pack.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return packFromManifest(packId, info.displayName || info.pack, info.version ?? "", manifest, {
+    kind: "builtin",
+    libraryId: "",
+    correlationId: "",
+    serverPack: info.pack
+  });
+}
+function packFromManifest(packId, libraryName, version, manifest, identity) {
+  const { serverPack, ...packIdentity } = identity;
+  if (!manifest.components)
+    return null;
+  const lib = { name: libraryName };
+  const prefix = `Lib_${packId}_`;
+  const schemas = {};
+  const definitions = {};
+  const components = {};
+  for (const [name, entry] of Object.entries(manifest.components)) {
+    const type = `${prefix}${name}`;
+    const allProps = entry.props ?? [];
+    const runtimeValue = (p) => p.name === "value" && p.inspector === "hidden" && allProps.some((q) => q.name === "defaultValue");
+    const props = allProps.filter((p) => !runtimeValue(p));
+    const fits = entry.fit === true;
+    components[name] = {
+      type,
+      props: props.map((p) => p.name),
+      events: (entry.events ?? []).map((e) => e.name),
+      styles: (entry.styles ?? []).map((s) => s.name),
+      actions: (entry.actions ?? []).map((a) => a.name),
+      fit: fits,
+      ...entry.role ? { role: entry.role } : {},
+      ...entry.roleProps ? { roleProps: entry.roleProps } : {},
+      ...entry.roleEvents ? { roleEvents: entry.roleEvents } : {},
+      ...entry.roleActions ? { roleActions: entry.roleActions } : {}
+    };
+    schemas[type] = {
+      type,
+      name: type,
+      // Read by the AI compiler, which plans in roles and resolves a role to this pack's component (libSwap.ts).
+      pack: {
+        id: packId,
+        component: name,
+        ...entry.role ? { role: entry.role } : {},
+        ...entry.roleProps ? { roleProps: entry.roleProps } : {},
+        ...entry.roleEvents ? { roleEvents: entry.roleEvents } : {},
+        ...entry.roleActions ? { roleActions: entry.roleActions } : {},
+        ...entry.roleValues ? { roleValues: entry.roleValues } : {},
+        ...entry.labelCase ? { labelCase: entry.labelCase } : {},
+        slots: entry.slots ?? [],
+        ...manifest.surface ? { surface: manifest.surface } : {},
+        ...manifest.themeMode ? { themeMode: manifest.themeMode } : {}
+      },
+      description: [
+        `${entry.displayName ?? words(name)} from the ${lib.name} pack.`,
+        entry.usage,
+        fits ? "Sizes to its content in the app (Dynamic height on)." : "Drawn at the height you give it."
+      ].filter(Boolean).join(" "),
+      defaultSize: { width: entry.defaultWidth ?? 6, height: (entry.defaultHeight ?? 4) * 10 },
+      properties: [
+        ...props.map((p) => ({
+          key: p.name,
+          label: p.label ?? words(p.name),
+          valueType: VALUE_TYPE[p.type] ?? "string",
+          ...p.default !== void 0 ? { default: stamp(p) } : {},
+          ...p.enumValues ? { allowedValues: p.enumValues } : {},
+          ...p.description ? { description: p.description } : {}
+        })),
+        { key: "visibility", label: "Visibility", valueType: "boolean", default: "{{true}}" },
+        { key: "loadingState", label: "Loading state", valueType: "boolean", default: "{{false}}" },
+        { key: "disabledState", label: "Disable", valueType: "boolean", default: "{{false}}" },
+        { key: "dynamicHeight", label: "Dynamic height", valueType: "boolean", default: fits ? "{{true}}" : "{{false}}" }
+      ],
+      styles: [
+        ...(entry.styles ?? []).map((s) => ({ key: s.name, label: s.label ?? words(s.name), valueType: VALUE_TYPE[s.type] ?? "string" })),
+        { key: "boxShadow", label: "Box shadow", valueType: "string" }
+      ],
+      events: (entry.events ?? []).map((e) => ({ id: e.name, label: e.displayName ?? eventLabel(e.name) })),
+      actions: [
+        ...(entry.actions ?? []).map((a) => ({
+          handle: a.name,
+          displayName: a.displayName ?? words(a.name),
+          ...a.params?.length ? { params: a.params.map((p) => ({ handle: p.handle, displayName: p.displayName ?? words(p.handle) })) } : {}
+        })),
+        { handle: "setVisibility", displayName: "Set visibility", params: [{ handle: "visibility", displayName: "Value", defaultValue: "{{false}}" }] },
+        { handle: "setLoading", displayName: "Set loading", params: [{ handle: "loading", displayName: "Value", defaultValue: "{{false}}" }] },
+        { handle: "setDisable", displayName: "Set disable", params: [{ handle: "disable", displayName: "Value", defaultValue: "{{false}}" }] }
+      ],
+      exposedVariables: [
+        ...allProps.map((p) => ({ name: p.name, ...p.default !== void 0 ? { default: p.default } : {} })),
+        { name: "isVisible", default: true },
+        { name: "isLoading", default: false },
+        { name: "isDisabled", default: false },
+        ...entry.validation ? [{ name: "isValid", default: true }, { name: "isMandatory", default: false }] : []
+      ]
+    };
+    definitions[type] = {
+      properties: {
+        ...Object.fromEntries(props.map((p) => [p.name, { value: SAMPLE_TEXT.test(p.name) && p.type !== "boolean" ? p.type === "array" ? "{{[]}}" : "" : stamp(p) }])),
+        visibility: { value: "{{true}}" },
+        loadingState: { value: "{{false}}" },
+        disabledState: { value: "{{false}}" },
+        dynamicHeight: { value: fits ? "{{true}}" : "{{false}}" }
+      },
+      styles: { boxShadow: { value: "0px 0px 0px 0px #00000040" } },
+      others: { showOnDesktop: { value: "{{true}}" }, showOnMobile: { value: "{{false}}" } }
+    };
+  }
+  return {
+    pack: { pack: serverPack ?? packId, prefix, ...packIdentity, libraryName, version, components },
+    schemas,
+    definitions
+  };
+}
+async function loadInstalledPacks(listLibraries, listBuiltin) {
+  let packs = [];
+  const builtin = listBuiltin ? await listBuiltin().catch(() => null) : null;
+  if (builtin?.length)
+    packs = builtin.map((b) => packFromBuiltin(b.info, b.manifest)).filter((p) => !!p);
+  if (!packs.length)
+    packs = (await listLibraries()).map(packFromLibrary).filter((p) => !!p);
+  if (!packs.length)
+    return [];
+  registerComponentSchemas(Object.assign({}, ...packs.map((p) => p.schemas)));
+  registerPackDefinitions(Object.assign({}, ...packs.map((p) => p.definitions)));
+  registerLibraryPacks(packs.map((p) => p.pack));
+  return packs.map((p) => `${p.pack.libraryName} ${p.pack.version}`);
+}
 var SESSION_TOKEN_HEADER = "x-tooljet-session";
 var WORKSPACE_ID_HEADER = "x-tooljet-workspace-id";
 var WORKSPACE_SLUG_HEADER = "x-tooljet-workspace-slug";
@@ -190,6 +347,33 @@ var CUSTOMER_ID_HEADER = "x-tooljet-customer-id";
 var ALLOWED_API_ORIGINS_VAR = "MCP_ALLOWED_API_ORIGINS";
 var GATEWAY_URL_VAR = "MCP_GATEWAY_URL";
 var GATEWAY_TOKEN_VAR = "MCP_GATEWAY_TOKEN";
+function storedCliLogin(explicitApiUrl) {
+  const file = env("TOOLJET_CREDENTIALS_FILE") ?? join(homedir(), ".tooljet", "credentials.json");
+  let store;
+  try {
+    store = JSON.parse(readFileSync(file, "utf8"));
+  } catch {
+    return void 0;
+  }
+  const entry = store?.default ? store.workspaces?.[store.default] : void 0;
+  if (!entry?.url || !entry.apiToken)
+    return void 0;
+  let origin;
+  try {
+    origin = new URL(entry.url).origin;
+  } catch {
+    return void 0;
+  }
+  if (explicitApiUrl) {
+    try {
+      if (new URL(explicitApiUrl).origin !== origin)
+        return void 0;
+    } catch {
+      return void 0;
+    }
+  }
+  return { apiUrl: origin, pat: entry.apiToken };
+}
 function env(name) {
   const value = process.env[name]?.trim();
   return value ? value : void 0;
@@ -362,11 +546,15 @@ function loadConfig(identity) {
   }
   const apiUrl = staticApiUrl;
   const appUrl = explicitAppUrl ?? explicitApiUrl ?? "http://localhost:8082";
-  const pat = env("TOOLJET_PAT");
   const sessionToken = env("TOOLJET_SESSION_TOKEN");
+  const stored = !env("TOOLJET_PAT") && !sessionToken ? storedCliLogin(explicitApiUrl) : void 0;
+  const pat = env("TOOLJET_PAT") ?? stored?.pat;
   const workspaceId = env("TOOLJET_WORKSPACE_ID");
+  if (stored) {
+    return { apiUrl: stored.apiUrl, appUrl: explicitAppUrl ?? stored.apiUrl, pat: stored.pat };
+  }
   if (!pat && !sessionToken) {
-    throw new Error(`TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal access token in ToolJet under Settings \u2192 Access tokens, in the workspace you want this server to act on, and set TOOLJET_PAT. A shared HTTP server instead receives the acting user per request via the ${SESSION_TOKEN_HEADER} header.`);
+    throw new Error(`TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal access token in ToolJet under Settings \u2192 Access tokens, in the workspace you want this server to act on, and set TOOLJET_PAT. A shared HTTP server instead receives the acting user per request via the ${SESSION_TOKEN_HEADER} header. Or sign in once with \`tooljet auth login\`.`);
   }
   if (sessionToken && !workspaceId) {
     throw new Error("TOOLJET_WORKSPACE_ID is required alongside TOOLJET_SESSION_TOKEN.");
@@ -560,6 +748,36 @@ function createAuth(config, fetchImpl = fetch) {
     }
     return current;
   }
+  const pinnedSessions = /* @__PURE__ */ new Map();
+  let renderSession;
+  const RENDER_SESSION_MARGIN_MS = 6e4;
+  async function aiRenderSession(appId) {
+    if (renderSession && renderSession.expiresAt - RENDER_SESSION_MARGIN_MS > Date.now() && (!appId || !renderSession.appId || renderSession.appId === appId))
+      return renderSession.token;
+    try {
+      if (!token)
+        await login();
+      const res = await rawFetch("/api/personal-access-tokens/ai-render-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(appId ? { appId } : {})
+      });
+      if (!res.ok)
+        return void 0;
+      const body = await res.json();
+      if (!body.authToken)
+        return void 0;
+      const expiresAt = typeof body.expiresAt === "number" ? body.expiresAt : Date.parse(String(body.expiresAt ?? ""));
+      renderSession = {
+        token: body.authToken,
+        appId: body.appId,
+        expiresAt: Number.isFinite(expiresAt) ? expiresAt : Date.now() + 5 * 6e4
+      };
+      return body.authToken;
+    } catch {
+      return void 0;
+    }
+  }
   async function viewerSession(appId) {
     if (config.isOAuthDelegation) {
       if (!appId || !/^[A-Za-z0-9_-]+$/.test(appId))
@@ -581,6 +799,29 @@ function createAuth(config, fetchImpl = fetch) {
         origin: new URL(config.viewerUrl || config.appUrl).origin,
         expiresAt: Math.floor(Date.now() / 1e3) + body.expires_in
       };
+    }
+    if (config.sessionToken) {
+      const rendered = await aiRenderSession(appId);
+      if (rendered)
+        return rendered;
+    }
+    if (appId && config.pat && !config.sessionToken) {
+      const cached = pinnedSessions.get(appId);
+      if (cached)
+        return cached;
+      const res = await fetchImpl(`${config.apiUrl}/api/personal-access-tokens/session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.pat}` },
+        body: JSON.stringify({ appId })
+      });
+      recordHttpResponse(res);
+      if (res.ok) {
+        const body = await res.json();
+        if (body.authToken) {
+          pinnedSessions.set(appId, body.authToken);
+          return body.authToken;
+        }
+      }
     }
     if (!token)
       await login();
@@ -712,6 +953,46 @@ function useWorkspaceTool(client) {
     }
   };
 }
+var ACCENT_MENU = [
+  { name: "Indigo", hex: "#4F46E5", fits: "software, analytics, internal tools" },
+  { name: "Violet", hex: "#7C3AED", fits: "creative, education, product teams" },
+  { name: "Fuchsia", hex: "#C026D3", fits: "consumer, beauty, events" },
+  { name: "Rose", hex: "#E11D48", fits: "hospitality, retail, food" },
+  { name: "Coral", hex: "#EA580C", fits: "logistics, field service, sports" },
+  { name: "Amber", hex: "#B45309", fits: "manufacturing, construction, real estate" },
+  { name: "Emerald", hex: "#059669", fits: "finance, sustainability, health" },
+  { name: "Teal", hex: "#0D9488", fits: "healthcare, travel, operations" },
+  { name: "Sky", hex: "#0284C7", fits: "support, IT, aviation, marine" }
+];
+var MENU_TEXT = ACCENT_MENU.map((a) => `${a.name} ${a.hex} (${a.fits})`).join(", ");
+var hsl = (hex) => {
+  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(hex.trim());
+  if (!m)
+    return null;
+  const full = m[1].length === 3 ? m[1].replace(/./g, (c) => c + c) : m[1];
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d === 0)
+    return { h: 0, s: 0, l };
+  const s = d / (1 - Math.abs(2 * l - 1));
+  const h = max === r ? (g - b) / d % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return { h: (h * 60 + 360) % 360, s, l };
+};
+var accentWarning = (definition) => {
+  const light = definition?.brand?.colors?.primary?.light;
+  if (typeof light !== "string")
+    return null;
+  const c = hsl(light);
+  if (!c)
+    return null;
+  const kind = c.l < 0.22 ? "near-black" : c.s < 0.2 ? "grey" : c.h >= 212 && c.h <= 226 && c.s > 0.75 && c.l >= 0.45 && c.l <= 0.66 ? "the stock blue" : null;
+  if (!kind)
+    return null;
+  return `The theme's primary ${light} is ${kind}, which reads plain. Unless the request names this colour or the brand uses it, pick an accent from the menu by the request's brand, industry or mood: ${MENU_TEXT}. Keep the canvas and neutrals light and lightly tinted toward it.`;
+};
 var THEME_LICENCE_USER_MESSAGE = "Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.";
 var colorPair = external_exports.object({
   light: external_exports.string().trim().min(1).max(100).describe("Color used in light mode; hex is recommended."),
@@ -764,13 +1045,13 @@ var themeDefinition = external_exports.object({
 async function applyToApp(client, theme, args, definition) {
   if (!args.app_id || !args.version_id)
     return void 0;
-  const dark = paintsDarkCanvasInLightMode(definition);
+  const mode = args.app_mode ?? (paintsDarkCanvasInLightMode(definition) ? "dark" : void 0);
   await client.updateAppSettings({
     appId: args.app_id,
     versionId: args.version_id,
-    globalSettings: { theme, ...dark ? { appMode: "dark" } : {} }
+    globalSettings: { theme, ...mode ? { appMode: mode } : {} }
   });
-  return { app_id: args.app_id, version_id: args.version_id, ...dark ? { app_mode: "dark" } : {} };
+  return { app_id: args.app_id, version_id: args.version_id, ...mode ? { app_mode: mode } : {} };
 }
 function requireValue(value, label) {
   if (value === void 0)
@@ -793,7 +1074,7 @@ function manageThemeTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. create with app_id and version_id also applies the theme to that app (in dark mode when its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same name, so there is no need to list themes first. Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass include_definitions:true (or theme_id) to get a definition.",
+    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. create with app_id and version_id also applies the theme to that app (in app_mode, else in dark mode when its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same name, so there is no need to list themes first. Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass include_definitions:true (or theme_id) to get a definition.",
     inputSchema: {
       action: external_exports.enum(["list", "create", "set_default", "update_definition", "rename", "delete"]),
       theme_id: external_exports.string().uuid().optional(),
@@ -803,7 +1084,8 @@ function manageThemeTool(client) {
       confirm: external_exports.boolean().optional(),
       include_definitions: external_exports.boolean().optional(),
       app_id: external_exports.string().uuid().optional().describe("create only: apply the theme to this app as well"),
-      version_id: external_exports.string().uuid().optional().describe("create only, with app_id: the app version to apply it to")
+      version_id: external_exports.string().uuid().optional().describe("create only, with app_id: the app version to apply it to"),
+      app_mode: external_exports.enum(["light", "dark"]).optional().describe("create only, with app_id: open the app in this mode. Pass 'dark' when the request asks for a dark app: the theme's dark values then paint every surface, and ToolJet's own parts (tables, inputs) draw for them. Never paint dark backgrounds by hand on a light-mode app.")
     },
     async handler(args) {
       try {
@@ -845,7 +1127,8 @@ function manageThemeTool(client) {
               isDefault: args.is_default ?? false
             });
             const applied = await applyToApp(client, created, args, args.definition);
-            return ok({ theme: created, ...applied ? { applied } : {} });
+            const accent = accentWarning(args.definition);
+            return ok({ theme: created, ...applied ? { applied } : {}, ...accent ? { warnings: [accent] } : {} });
           } catch (error) {
             if (error instanceof ToolJetHttpError && error.status === 451) {
               return ok({
@@ -868,7 +1151,8 @@ function manageThemeTool(client) {
         }
         if (args.action === "update_definition") {
           await client.updateAppThemeDefinition(themeId, requireValue(args.definition, "definition"));
-          return ok({ theme: await readTheme(client, themeId) });
+          const accent = accentWarning(args.definition);
+          return ok({ theme: await readTheme(client, themeId), ...accent ? { warnings: [accent] } : {} });
         }
         if (args.action === "rename") {
           await client.renameAppTheme(themeId, requireValue(args.name, "name"));
@@ -885,6 +1169,7 @@ function manageThemeTool(client) {
     }
   };
 }
+var STANDARD_PRIMARY = { brand: { colors: { primary: { light: "#2563EB" } } } };
 var here = dirname(fileURLToPath(import.meta.url));
 var standardThemeCandidates = [
   resolve(here, "../../data/default-theme.json"),
@@ -907,6 +1192,11 @@ var derivedThemeSchema = external_exports.object({
 }).strict();
 async function resolveTheme(client, choice) {
   const themes = await client.listAppThemes();
+  if (process.env.MCP_AGENT_PACK_LOOK === "own" && (choice === "standard" || choice === "workspace_default")) {
+    const basic = themes.find((theme) => theme.isBasic && !theme.isDisabled);
+    if (basic)
+      return basic;
+  }
   const wanted = choice === "standard" ? loadStandardTheme() : typeof choice === "object" ? choice : void 0;
   if (wanted) {
     const existing = themes.find((theme) => theme.name === wanted.name && !theme.isDisabled);
@@ -941,32 +1231,55 @@ function createAppTool(client) {
       destructiveHint: false,
       openWorldHint: true
     },
-    description: 'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, app_url (a backward-compatible alias for editor_url), and the theme that was applied. Honor explicit or selected themes first. Otherwise derive a theme from a brand, industry or customer type (see references/themes.md) and pass theme:{name, definition}; include complete brand, text, border, systemStatus and surface tokens with light/dark values, not a font-only or partial definition. It is created once per workspace by name and applied. Otherwise the app gets the standard theme ("ToolJet Modern": neutral greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. If a theme cannot be created (for example a licence gate) the app is still created and the result carries a theme warning.',
+    description: 'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, app_url (a backward-compatible alias for editor_url), and the theme that was applied. Honor explicit or selected themes first. Otherwise derive a theme from a brand, industry or customer type (see references/themes.md) and pass theme:{name, definition}; include complete brand, text, border, systemStatus and surface tokens with light/dark values, not a font-only or partial definition. It is created once per workspace by name and applied. Otherwise the app gets the standard theme ("ToolJet Modern": neutral greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. If a theme cannot be created (for example a licence gate) the app is still created and the result carries a theme warning. New apps are built in ToolJet UI 2.0 (component_library "ui2": types starting with Shad, laid out in FlexContainers); pass component_library "ui1" only when the user asks for the classic ToolJet widgets.',
     inputSchema: {
       name: external_exports.string().min(1),
-      theme: external_exports.union([external_exports.string().min(1), derivedThemeSchema]).optional()
+      theme: external_exports.union([external_exports.string().min(1), derivedThemeSchema]).optional(),
+      app_mode: external_exports.enum(["light", "dark"]).optional().describe("Open the app in this mode. Pass 'dark' when the request asks for a dark app, so the theme's dark values paint every surface; never paint dark backgrounds by hand on a light-mode app."),
+      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in, saved on the app (the components panel lists it). Default "ui2", ToolJet UI 2.0; "ui1" (ToolJet UI 1.0, the native widgets) only when the user asks for it.'),
+      component_pack: external_exports.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION)
     },
     async handler(args) {
       try {
         if (typeof args.theme === "object")
           derivedThemeSchema.parse(args.theme);
         const created = await client.createApp(args.name);
+        const componentLibrary = args.component_library ?? "ui2";
         const choice = args.theme ?? "standard";
-        const result = { ...created, theme: { mode: "workspace_default" } };
-        if (choice === "workspace_default")
+        const pins = libraryPins();
+        const pinned = pins ? { customComponentLibraries: pins } : {};
+        const result = {
+          ...created,
+          component_library: componentLibrary,
+          ...componentLibrary === "ui2" && (args.component_pack || defaultPack()) ? { component_pack: (args.component_pack || defaultPack()).toLowerCase() } : {},
+          theme: { mode: "workspace_default" }
+        };
+        const savedLibrary = savedComponentLibrary(componentLibrary, args.component_pack);
+        const saveLibrary = () => Promise.resolve().then(() => client.updateAppSettings({
+          appId: created.app_id,
+          versionId: created.version_id,
+          globalSettings: { componentLibrary: savedLibrary, ...pinned }
+        })).catch((libraryErr) => {
+          result.component_library_warning = `Could not save component_library "${componentLibrary}": ${libraryErr instanceof Error ? libraryErr.message : String(libraryErr)}. Build in it anyway.`;
+        });
+        if (choice === "workspace_default") {
+          await saveLibrary();
           return ok(result);
+        }
         const label = typeof choice === "object" ? choice.name : choice;
         try {
           const theme = await resolveTheme(client, choice);
-          const dark = typeof choice === "object" && paintsDarkCanvasInLightMode(choice.definition);
+          const appMode = args.app_mode ?? (typeof choice === "object" && paintsDarkCanvasInLightMode(choice.definition) ? "dark" : void 0);
           await client.updateAppSettings({
             appId: created.app_id,
             versionId: created.version_id,
-            globalSettings: { theme, ...dark ? { appMode: "dark" } : {} }
+            globalSettings: { theme, componentLibrary: savedLibrary, ...pinned, ...appMode ? { appMode } : {} }
           });
           const mode = choice === "standard" ? "standard" : typeof choice === "object" ? "derived" : "named";
-          result.theme = { mode, id: theme.id, name: theme.name, ...dark ? { app_mode: "dark" } : {} };
+          const accentNote = mode === "standard" ? accentWarning(STANDARD_PRIMARY) : mode === "derived" ? accentWarning(choice.definition) : null;
+          result.theme = { mode, id: theme.id, name: theme.name, ...appMode ? { app_mode: appMode } : {}, ...accentNote ? { accent_note: accentNote } : {} };
         } catch (themeErr) {
+          await saveLibrary();
           result.theme = {
             mode: "workspace_default",
             warning: `Could not apply theme "${label}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
@@ -1095,147 +1408,6 @@ function listAppThemesTool(client) {
     async handler() {
       try {
         return ok({ themes: (await client.listAppThemes()).map((theme) => compactTheme(theme)) });
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-var SETTING_KEYS = [
-  "canvas_background_color",
-  "canvas_max_width",
-  "app_mode",
-  "theme_id",
-  "hide_header",
-  "hide_logo",
-  "header_title",
-  "navigation_hidden",
-  "navigation_position",
-  "navigation_style",
-  "navigation_collapsible"
-];
-function persistenceMismatches(args, snapshot2) {
-  const global = snapshot2.global_settings;
-  const page = pageSettingProperties(snapshot2);
-  const mismatches = [];
-  const expectEqual = (label, actual, expected) => {
-    if (actual !== expected)
-      mismatches.push(`${label} did not persist (expected ${JSON.stringify(expected)}, read back ${JSON.stringify(actual)})`);
-  };
-  if (args.canvas_background_color !== void 0)
-    expectEqual("canvas_background_color", global.canvasBackgroundColor, args.canvas_background_color);
-  if (args.canvas_max_width !== void 0) {
-    expectEqual("canvas_max_width.value", global.canvasMaxWidth, args.canvas_max_width.value);
-    expectEqual("canvas_max_width.unit", global.canvasMaxWidthType, args.canvas_max_width.unit);
-  }
-  if (args.app_mode !== void 0)
-    expectEqual("app_mode", global.appMode, args.app_mode);
-  if (args.theme_id !== void 0) {
-    const theme = global.theme;
-    expectEqual("theme_id", theme?.id, args.theme_id);
-  }
-  if (args.hide_header !== void 0)
-    expectEqual("hide_header", page.hideHeader, args.hide_header);
-  if (args.hide_logo !== void 0)
-    expectEqual("hide_logo", page.hideLogo, args.hide_logo);
-  if (args.header_title !== void 0)
-    expectEqual("header_title", page.name, args.header_title);
-  if (args.navigation_hidden !== void 0) {
-    const disableMenu = page.disableMenu;
-    expectEqual("navigation_hidden", disableMenu?.value, `{{${args.navigation_hidden}}}`);
-  }
-  if (args.navigation_position !== void 0)
-    expectEqual("navigation_position", page.position, args.navigation_position);
-  if (args.navigation_style !== void 0)
-    expectEqual("navigation_style", page.style, args.navigation_style);
-  if (args.navigation_collapsible !== void 0)
-    expectEqual("navigation_collapsible", page.collapsable, args.navigation_collapsible);
-  return mismatches;
-}
-function updateAppSettingsTool(client) {
-  return {
-    name: "update_app_settings",
-    title: "Update App Settings",
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: true
-    },
-    description: "Patch app-wide visual settings on the current editing version in one version update, then read them back. Supports canvas background/width/mode, a theme selected from list_app_themes, header/logo/title, and navigation visibility/layout. hide_header controls the app header/banner. The separate generated page-navigation menu can be positioned on the side or top; navigation_hidden hides that entire menu in either position. To hide only one non-Home page from that menu, use update_pages.hidden. Omitted fields are preserved. Every requested field is read back; the tool returns an error instead of success if any field did not persist.",
-    inputSchema: {
-      app_id: external_exports.string().min(1),
-      version_id: external_exports.string().min(1),
-      canvas_background_color: external_exports.string().max(200).optional(),
-      canvas_max_width: external_exports.object({
-        value: external_exports.number().positive().max(1e5),
-        unit: external_exports.enum(["%", "px"])
-      }).optional(),
-      app_mode: external_exports.enum(["auto", "light", "dark"]).optional(),
-      theme_id: external_exports.string().uuid().optional(),
-      hide_header: external_exports.boolean().optional().describe("Hide or show the app header/banner. This is separate from the generated page-navigation menu."),
-      hide_logo: external_exports.boolean().optional(),
-      header_title: external_exports.string().trim().min(1).max(32).optional(),
-      navigation_hidden: external_exports.boolean().optional().describe("Hide or show the entire generated page-navigation menu, whether it is positioned on the side or top. To hide only one non-Home page from the menu, use update_pages.hidden."),
-      navigation_position: external_exports.enum(["side", "top"]).optional(),
-      navigation_style: external_exports.enum(["texticon", "text", "icon"]).optional(),
-      navigation_collapsible: external_exports.boolean().optional()
-    },
-    async handler(args) {
-      try {
-        const changed = SETTING_KEYS.filter((key) => args[key] !== void 0);
-        if (!changed.length)
-          throw new Error("update_app_settings requires at least one setting field.");
-        if (args.canvas_max_width?.unit === "%" && args.canvas_max_width.value > 100) {
-          throw new Error('canvas_max_width.value cannot exceed 100 when unit is "%".');
-        }
-        const current = await client.getAppSettings(args.app_id, args.version_id);
-        const currentPage = pageSettingProperties(current);
-        const finalPosition = args.navigation_position ?? currentPage.position;
-        const finalStyle = args.navigation_style ?? currentPage.style;
-        if (finalPosition === "top" && finalStyle === "icon") {
-          throw new Error('navigation_style "icon" is not supported when navigation_position is "top"; use "text" or "texticon".');
-        }
-        let theme;
-        if (args.theme_id) {
-          const themes = await client.listAppThemes();
-          const selected = themes.find((candidate) => candidate.id === args.theme_id);
-          if (!selected)
-            throw new Error(`Theme "${args.theme_id}" is not available in the active workspace.`);
-          if (selected.isDisabled)
-            throw new Error(`Theme "${selected.name}" is disabled and cannot be selected.`);
-          theme = selected;
-        }
-        const globalSettings = {
-          ...args.canvas_background_color !== void 0 ? { canvasBackgroundColor: args.canvas_background_color } : {},
-          ...args.canvas_max_width !== void 0 ? { canvasMaxWidth: args.canvas_max_width.value, canvasMaxWidthType: args.canvas_max_width.unit } : {},
-          ...args.app_mode !== void 0 ? { appMode: args.app_mode } : {},
-          ...theme ? { theme } : {}
-        };
-        const properties = {
-          ...args.hide_header !== void 0 ? { hideHeader: args.hide_header } : {},
-          ...args.hide_logo !== void 0 ? { hideLogo: args.hide_logo } : {},
-          ...args.header_title !== void 0 ? { name: args.header_title } : {},
-          ...args.navigation_hidden !== void 0 ? { disableMenu: { value: `{{${args.navigation_hidden}}}`, fxActive: false } } : {},
-          ...args.navigation_position !== void 0 ? { position: args.navigation_position } : {},
-          ...args.navigation_style !== void 0 ? { style: args.navigation_style } : {},
-          ...args.navigation_collapsible !== void 0 ? { collapsable: args.navigation_collapsible } : {}
-        };
-        await client.updateAppSettings({
-          appId: args.app_id,
-          versionId: args.version_id,
-          ...Object.keys(globalSettings).length ? { globalSettings } : {},
-          ...Object.keys(properties).length ? { pageSettings: { properties } } : {}
-        });
-        const persisted = await client.getAppSettings(args.app_id, args.version_id);
-        const mismatches = persistenceMismatches(args, persisted);
-        if (mismatches.length) {
-          throw new Error(`update_app_settings partially failed readback: ${mismatches.join("; ")}. Other requested fields may already have persisted; inspect get_app_settings before retrying.`);
-        }
-        return ok({
-          updated_fields: changed.length,
-          settings: projectAppSettings(persisted),
-          warnings: []
-        });
       } catch (error) {
         return fail(error);
       }
@@ -1551,6 +1723,44 @@ function insertRowsTool(client) {
     }
   };
 }
+var PICTURE_COLUMN = /image|photo|picture|cover|avatar|thumbnail|thumb|img|logo/i;
+var PICTURE_URL = /\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i;
+var PICTURE_HOST = /(^|\.)(images\.unsplash\.com|images\.pexels\.com|cdn\.pixabay\.com)$/i;
+var isPicture = (column, value) => {
+  if (typeof value !== "string")
+    return false;
+  const v = value.trim();
+  if (/^data:image\//i.test(v))
+    return true;
+  if (!/^https?:\/\//i.test(v))
+    return false;
+  try {
+    const url = new URL(v);
+    return PICTURE_HOST.test(url.hostname) || PICTURE_URL.test(url.pathname) || PICTURE_COLUMN.test(column);
+  } catch {
+    return false;
+  }
+};
+function seedPictureWarnings(tables) {
+  const warnings = [];
+  for (const { table_name: table, rows } of tables) {
+    const columns = new Set(rows.flatMap((row) => Object.keys(row ?? {})));
+    for (const column of columns) {
+      const pictures = rows.map((row) => row?.[column]).filter((value) => isPicture(column, value));
+      if (!pictures.length)
+        continue;
+      if (pictures.some((p) => /^data:image\//i.test(p.trim()))) {
+        warnings.push(`${table}.${column} holds drawn data: images, which read as placeholder art; use the records' own picture URLs, or leave the picture out.`);
+        continue;
+      }
+      const distinct = new Set(pictures.map((p) => p.trim())).size;
+      if (pictures.length >= 4 && distinct * 3 <= pictures.length) {
+        warnings.push(`${table}.${column}: ${pictures.length} rows share ${distinct} picture${distinct === 1 ? "" : "s"}; a picture repeated across records reads as placeholder art: give each row its own, or leave the picture out.`);
+      }
+    }
+  }
+  return warnings;
+}
 var seedSchema = external_exports.object({
   table_name: external_exports.string(),
   rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1).max(40)
@@ -1572,216 +1782,14 @@ function insertRowsBatchTool(client) {
         const results = await client.insertRowsBatch({
           tables: args.tables.map((table) => ({ tableName: table.table_name, rows: table.rows }))
         });
+        const warnings = seedPictureWarnings(args.tables);
         return ok({
           tables: results,
-          processed_rows: results.reduce((total, result) => total + result.processed_rows, 0)
+          processed_rows: results.reduce((total, result) => total + result.processed_rows, 0),
+          ...warnings.length ? { warnings } : {}
         });
       } catch (error) {
         return fail(error);
-      }
-    }
-  };
-}
-var CATALOG_SECTIONS = [
-  "overview",
-  "properties",
-  "styles",
-  "events",
-  "actions",
-  "exposedVariables",
-  "defaultChildren",
-  "renderingHints",
-  "authoringHints"
-];
-var DEFAULT_TYPED_SECTIONS = [
-  "overview",
-  "properties",
-  "events",
-  "actions"
-];
-var CATALOG_TYPE_ALIASES = /* @__PURE__ */ new Map([
-  ["gridview", {
-    type: "Listview",
-    note: 'ToolJet grid view is Listview with mode:"grid" (properties.mode.value); use type:"Listview" when creating it.'
-  }]
-]);
-function resolveCatalogType(requestedType) {
-  const alias = CATALOG_TYPE_ALIASES.get(requestedType.replace(/[\s_-]+/g, "").toLowerCase());
-  if (alias)
-    return { type: alias.type, alias: { requested_type: requestedType, note: alias.note } };
-  if (getComponentSchema(requestedType))
-    return { type: requestedType };
-  const wanted = requestedType.replace(/[\s_-]+/g, "").toLowerCase();
-  const types = getCatalog().map((entry) => entry.type);
-  const near = types.find((type) => type.toLowerCase() === wanted) ?? types.find((type) => type.toLowerCase().replace(/v\d+$/, "") === wanted);
-  return near ? { type: near, alias: { requested_type: requestedType, note: `There is no "${requestedType}"; this is ${near}. Use type "${near}".` } } : { type: requestedType };
-}
-function nearbyTypes(requestedType) {
-  const words = requestedType.split(/(?=[A-Z])|[\s_-]+/).map((word) => word.toLowerCase()).filter((word) => word.length >= 4);
-  return getCatalog().map((entry) => entry.type).filter((type) => words.some((word) => type.toLowerCase().includes(word))).slice(0, 6);
-}
-function selectEntries(entries, keys, detail) {
-  const selected = keys?.length ? entries.filter((entry) => keys.includes(entry.key)) : entries;
-  if (detail === "full" || keys?.length)
-    return selected;
-  return selected.map(({ key, valueType, allowedValues, requires, mutuallyExclusiveWith }) => ({
-    key,
-    ...valueType !== void 0 ? { valueType } : {},
-    ...allowedValues !== void 0 ? { allowedValues } : {},
-    ...requires !== void 0 ? { requires } : {},
-    ...mutuallyExclusiveWith !== void 0 ? { mutuallyExclusiveWith } : {}
-  }));
-}
-function selectSchema(schema, args) {
-  const detail = args.detail ?? "compact";
-  const sections = new Set(args.sections ?? DEFAULT_TYPED_SECTIONS);
-  const result = { type: schema.type };
-  if (sections.has("overview")) {
-    if (schema.name !== void 0)
-      result.name = schema.name;
-    if (schema.description !== void 0)
-      result.description = schema.description;
-    if (schema.defaultSize !== void 0)
-      result.defaultSize = schema.defaultSize;
-  }
-  if (sections.has("properties")) {
-    result.properties = selectEntries(schema.properties, args.property_keys, detail);
-  }
-  if (sections.has("styles")) {
-    result.styles = selectEntries(schema.styles, args.style_keys, detail);
-  }
-  if (sections.has("events") && schema.events !== void 0)
-    result.events = schema.events;
-  if (sections.has("actions") && schema.actions !== void 0)
-    result.actions = schema.actions;
-  if (sections.has("exposedVariables") && schema.exposedVariables !== void 0) {
-    result.exposedVariables = schema.exposedVariables;
-  }
-  if (sections.has("defaultChildren") && schema.defaultChildren !== void 0) {
-    result.defaultChildren = schema.defaultChildren;
-  }
-  if (sections.has("renderingHints") && schema.renderingHints !== void 0) {
-    result.renderingHints = schema.renderingHints;
-  }
-  if (sections.has("authoringHints") && schema.authoringHints !== void 0) {
-    result.authoringHints = schema.authoringHints;
-  }
-  return result;
-}
-function legacyNotice(type) {
-  const replacement = getLegacyComponentReplacement(type);
-  return replacement ? {
-    deprecated: true,
-    replacement,
-    deprecation_note: `"${type}" remains available only for inspecting or repairing existing apps. Use "${replacement}" for new components.`
-  } : {};
-}
-async function instanceNote(client, type) {
-  const refusal = type === "Map" ? await mapKeyRefusal(client, ["Map"]) : void 0;
-  return refusal ? { instance_note: refusal } : {};
-}
-function getComponentCatalogTool(client) {
-  return {
-    name: "get_component_catalog",
-    title: "Get Component Catalog",
-    // Served from the bundled catalog in data/; never reaches the ToolJet instance.
-    annotations: {
-      readOnlyHint: true,
-      openWorldHint: false
-    },
-    description: 'Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one component or types for a batch needed in the current page/phase. Typed reads default to detail:"compact" and the overview/properties/events/actions sections; compact property/style lists omit labels and defaults. Use detail:"full" or exact property_keys/style_keys only when those values are needed. Request renderingHints/authoringHints for layout-sensitive or nested components. Use requests when different types need different sections/keys in one call; top-level detail/sections/keys apply as defaults to every requested type, and the type/types/requests selectors may be combined. sections selects only overview, properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. GridView is a lookup alias for Listview mode:"grid"; component writes must still use type:"Listview". authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar contracts once and reuse them; never guess property/event/action ids.',
-    inputSchema: {
-      type: external_exports.string().optional(),
-      types: external_exports.array(external_exports.string()).min(1).max(25).optional(),
-      requests: external_exports.array(external_exports.object({
-        type: external_exports.string(),
-        detail: external_exports.enum(["compact", "full"]).optional(),
-        sections: external_exports.array(external_exports.enum(CATALOG_SECTIONS)).min(1).optional(),
-        property_keys: external_exports.array(external_exports.string()).min(1).optional(),
-        style_keys: external_exports.array(external_exports.string()).min(1).optional()
-      })).min(1).max(25).optional(),
-      detail: external_exports.enum(["compact", "full"]).optional(),
-      sections: external_exports.array(external_exports.enum(CATALOG_SECTIONS)).min(1).optional(),
-      property_keys: external_exports.array(external_exports.string()).min(1).optional(),
-      style_keys: external_exports.array(external_exports.string()).min(1).optional()
-    },
-    async handler(args) {
-      try {
-        const singleType = args?.type;
-        const typesList = args?.types ?? [];
-        const batch = args?.requests ?? [];
-        const hasSelector = !!singleType || typesList.length > 0 || batch.length > 0;
-        if (!hasSelector) {
-          if (args.detail || args.sections || args.property_keys || args.style_keys) {
-            return fail(new Error("Catalog detail/sections/key filters require `type`, `types`, or `requests`."));
-          }
-          return ok(getCatalog());
-        }
-        if (singleType && typesList.length === 0 && batch.length === 0) {
-          const resolved = resolveCatalogType(singleType);
-          const schema = getComponentSchema(resolved.type);
-          if (!schema) {
-            const near = nearbyTypes(singleType);
-            return ok({ error: `Unknown component type "${singleType}". Call with no argument to list valid types.`, ...near.length ? { did_you_mean: near } : {} });
-          }
-          return ok({
-            ...selectSchema(schema, args),
-            ...legacyNotice(schema.type),
-            ...resolved.alias ? { alias: resolved.alias } : {},
-            ...await instanceNote(client, schema.type)
-          });
-        }
-        const withDefaults = (type, over) => ({
-          type,
-          detail: over?.detail ?? args.detail,
-          sections: over?.sections ?? args.sections,
-          property_keys: over?.property_keys ?? args.property_keys,
-          style_keys: over?.style_keys ?? args.style_keys
-        });
-        const ordered = [
-          ...batch.map((r) => withDefaults(r.type, r)),
-          ...typesList.map((t) => withDefaults(t)),
-          ...singleType ? [withDefaults(singleType)] : []
-        ];
-        const components = [];
-        const unknownTypes = [];
-        const componentByResolvedType = /* @__PURE__ */ new Map();
-        const seenUnknown = /* @__PURE__ */ new Set();
-        for (const request of ordered) {
-          if (!request.type)
-            continue;
-          const resolved = resolveCatalogType(request.type);
-          const schema = getComponentSchema(resolved.type);
-          if (!schema) {
-            if (!seenUnknown.has(request.type)) {
-              seenUnknown.add(request.type);
-              unknownTypes.push(request.type);
-            }
-            continue;
-          }
-          const existing = componentByResolvedType.get(resolved.type);
-          if (existing) {
-            if (resolved.alias) {
-              const requestedAliases = Array.isArray(existing.requested_aliases) ? existing.requested_aliases : [];
-              if (!requestedAliases.includes(request.type)) {
-                existing.requested_aliases = [...requestedAliases, request.type];
-              }
-            }
-            continue;
-          }
-          const component = {
-            ...selectSchema(schema, request),
-            ...legacyNotice(schema.type),
-            ...resolved.alias ? { alias: resolved.alias } : {},
-            ...resolved.alias ? { requested_aliases: [request.type] } : {},
-            ...await instanceNote(client, schema.type)
-          };
-          components.push(component);
-          componentByResolvedType.set(resolved.type, component);
-        }
-        return ok({ components, unknown_types: unknownTypes });
-      } catch (err) {
-        return fail(err);
       }
     }
   };
@@ -1994,147 +2002,6 @@ function testDatasourceConnectionTool(client) {
     }
   };
 }
-var DIALECTS = {
-  postgresql: { quote: "double", limit: "limit", metadata: "postgresql" },
-  mysql: { quote: "backtick", limit: "limit", metadata: "mysql" },
-  mssql: { quote: "bracket", limit: "top", metadata: "mssql" },
-  snowflake: { quote: "double", limit: "limit" },
-  bigquery: { quote: "backtick", limit: "limit" },
-  oracledb: { quote: "double", limit: "fetch" }
-};
-function assertIdentifier(identifier, label) {
-  if (!identifier.trim() || identifier.length > 256 || /[\0-\x1f\x7f;`"\[\]\\]/.test(identifier)) {
-    throw new Error(`${label} contains unsupported or unsafe identifier characters.`);
-  }
-}
-function quote(kind, identifier) {
-  assertIdentifier(identifier, "SQL identifier");
-  const style = DIALECTS[kind].quote;
-  if (style === "backtick")
-    return `\`${identifier}\``;
-  if (style === "bracket")
-    return `[${identifier}]`;
-  return `"${identifier}"`;
-}
-function literal(value) {
-  return `'${value.replaceAll("'", "''")}'`;
-}
-function source(kind, schema, table) {
-  return schema ? `${quote(kind, schema)}.${quote(kind, table)}` : quote(kind, table);
-}
-function boundedSelect(kind, projection, from, limit, distinct = false) {
-  const prefix = `SELECT ${distinct ? "DISTINCT " : ""}`;
-  if (DIALECTS[kind].limit === "top")
-    return `${prefix}TOP (${limit}) ${projection} FROM ${from}`;
-  if (DIALECTS[kind].limit === "fetch")
-    return `${prefix}${projection} FROM ${from} FETCH FIRST ${limit} ROWS ONLY`;
-  return `${prefix}${projection} FROM ${from} LIMIT ${limit}`;
-}
-function options(kind, query) {
-  return {
-    mode: "sql",
-    query,
-    ...!["snowflake"].includes(kind) ? { query_params: [] } : {},
-    runOnPageLoad: false
-  };
-}
-function metadataSql(kind, purpose, schema, table) {
-  const metadata = "metadata" in DIALECTS[kind] ? DIALECTS[kind].metadata : void 0;
-  if (!metadata)
-    return void 0;
-  if (purpose !== "views" && !table)
-    throw new Error(`${purpose} discovery requires table.`);
-  if (metadata !== "mysql" && !schema)
-    throw new Error(`${purpose} discovery for ${kind} requires schema.`);
-  const schemaFilter = metadata === "mysql" && !schema ? "DATABASE()" : literal(schema);
-  const tableFilter = table ? literal(table) : void 0;
-  if (metadata === "postgresql") {
-    if (purpose === "primary_keys")
-      return `SELECT kcu.column_name, kcu.ordinal_position, tc.constraint_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.ordinal_position`;
-    if (purpose === "foreign_keys")
-      return `SELECT kcu.constraint_name, kcu.column_name, ccu.table_schema AS referenced_schema, ccu.table_name AS referenced_table, ccu.column_name AS referenced_column FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_catalog = tc.constraint_catalog AND ccu.constraint_schema = tc.constraint_schema AND ccu.constraint_name = tc.constraint_name WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.constraint_name, kcu.ordinal_position`;
-    if (purpose === "indexes")
-      return `SELECT indexname AS index_name, indexdef AS definition FROM pg_indexes WHERE schemaname = ${schemaFilter} AND tablename = ${tableFilter} ORDER BY indexname`;
-    return `SELECT table_schema, table_name AS view_name FROM information_schema.views WHERE table_schema = ${schemaFilter} ORDER BY table_name`;
-  }
-  if (metadata === "mysql") {
-    if (purpose === "primary_keys")
-      return `SELECT column_name, ordinal_position, constraint_name FROM information_schema.key_column_usage WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} AND constraint_name = 'PRIMARY' ORDER BY ordinal_position`;
-    if (purpose === "foreign_keys")
-      return `SELECT constraint_name, column_name, referenced_table_schema AS referenced_schema, referenced_table_name AS referenced_table, referenced_column_name AS referenced_column FROM information_schema.key_column_usage WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} AND referenced_table_name IS NOT NULL ORDER BY constraint_name, ordinal_position`;
-    if (purpose === "indexes")
-      return `SELECT index_name, column_name, non_unique, seq_in_index FROM information_schema.statistics WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} ORDER BY index_name, seq_in_index`;
-    return `SELECT table_schema, table_name AS view_name FROM information_schema.views WHERE table_schema = ${schemaFilter} ORDER BY table_name`;
-  }
-  if (purpose === "primary_keys")
-    return `SELECT kcu.COLUMN_NAME AS column_name, kcu.ORDINAL_POSITION AS ordinal_position, tc.CONSTRAINT_NAME AS constraint_name FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA AND tc.TABLE_NAME = kcu.TABLE_NAME WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY' AND tc.TABLE_SCHEMA = ${schemaFilter} AND tc.TABLE_NAME = ${tableFilter} ORDER BY kcu.ORDINAL_POSITION`;
-  if (purpose === "foreign_keys")
-    return `SELECT fk.name AS constraint_name, pc.name AS column_name, rs.name AS referenced_schema, rt.name AS referenced_table, rc.name AS referenced_column FROM sys.foreign_key_columns fkc JOIN sys.foreign_keys fk ON fk.object_id = fkc.constraint_object_id JOIN sys.tables pt ON pt.object_id = fkc.parent_object_id JOIN sys.schemas ps ON ps.schema_id = pt.schema_id JOIN sys.columns pc ON pc.object_id = pt.object_id AND pc.column_id = fkc.parent_column_id JOIN sys.tables rt ON rt.object_id = fkc.referenced_object_id JOIN sys.schemas rs ON rs.schema_id = rt.schema_id JOIN sys.columns rc ON rc.object_id = rt.object_id AND rc.column_id = fkc.referenced_column_id WHERE ps.name = ${schemaFilter} AND pt.name = ${tableFilter} ORDER BY fk.name, fkc.constraint_column_id`;
-  if (purpose === "indexes")
-    return `SELECT i.name AS index_name, c.name AS column_name, i.is_unique, ic.key_ordinal FROM sys.indexes i JOIN sys.tables t ON t.object_id = i.object_id JOIN sys.schemas s ON s.schema_id = t.schema_id JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id WHERE s.name = ${schemaFilter} AND t.name = ${tableFilter} AND i.is_hypothetical = 0 ORDER BY i.name, ic.key_ordinal`;
-  return `SELECT TABLE_SCHEMA AS table_schema, TABLE_NAME AS view_name FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = ${schemaFilter} ORDER BY TABLE_NAME`;
-}
-function boundMetadata(kind, sql) {
-  if (DIALECTS[kind].limit === "top")
-    return sql.replace(/^SELECT\s+/i, "SELECT TOP (100) ");
-  if (DIALECTS[kind].limit === "fetch")
-    return `${sql} FETCH FIRST 100 ROWS ONLY`;
-  return `${sql} LIMIT 100`;
-}
-function safeName(value) {
-  return value.replace(/[^A-Za-z0-9_]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "table";
-}
-function prepareSqlDiscoveryQueries(args) {
-  if (!(args.kind in DIALECTS))
-    throw new Error(`Datasource kind "${args.kind}" is not supported by SQL discovery.`);
-  const kind = args.kind;
-  if (args.schema)
-    assertIdentifier(args.schema, "schema");
-  if (args.table)
-    assertIdentifier(args.table, "table");
-  for (const column of [...args.columns ?? [], ...args.distinctColumns ?? []])
-    assertIdentifier(column, "column");
-  const tablePurposes = args.purposes.filter((purpose) => purpose !== "views");
-  if (tablePurposes.length && !args.table)
-    throw new Error("Table-scoped SQL discovery requires table.");
-  if (args.purposes.includes("preview") && !args.columns?.length) {
-    throw new Error("Preview discovery requires one or more explicit columns; SELECT * is never generated.");
-  }
-  if (args.purposes.includes("distinct") && !args.distinctColumns?.length) {
-    throw new Error("Distinct discovery requires one or more explicit distinct_columns.");
-  }
-  const from = args.table ? source(kind, args.schema, args.table) : void 0;
-  const prefix = safeName(args.namePrefix ?? args.table ?? args.schema ?? "schema");
-  const queries = [];
-  const unsupported = [];
-  for (const purpose of [...new Set(args.purposes)]) {
-    let sql;
-    if (purpose === "count")
-      sql = `SELECT COUNT(*) AS row_count FROM ${from}`;
-    else if (purpose === "preview") {
-      sql = boundedSelect(kind, args.columns.map((column) => quote(kind, column)).join(", "), from, args.limit);
-    } else if (purpose === "distinct") {
-      sql = boundedSelect(kind, args.distinctColumns.map((column) => quote(kind, column)).join(", "), from, args.limit, true);
-    } else {
-      sql = metadataSql(kind, purpose, args.schema, args.table);
-      if (!sql) {
-        unsupported.push({
-          purpose,
-          reason: `${args.kind} does not expose a verified ${purpose} selector and MCP has no curated read-only SQL contract for it yet.`
-        });
-        continue;
-      }
-      sql = boundMetadata(kind, sql);
-    }
-    queries.push({
-      purpose,
-      name: `${prefix}_${purpose}`,
-      datasource_id: args.datasourceId,
-      options: options(kind, sql)
-    });
-  }
-  return { queries, unsupported };
-}
 var purposes = ["count", "preview", "distinct", "primary_keys", "foreign_keys", "indexes", "views"];
 function prepareSqlDiscoveryQueriesTool(client) {
   return {
@@ -2246,12 +2113,12 @@ function bindingValue(prefix, column) {
   const access = `${prefix}[${JSON.stringify(column.name)}]`;
   return column.type.toLowerCase().includes("json") ? `{{JSON.stringify(${access})}}` : `{{${access}}}`;
 }
-function generateFormSchema(columns, options2) {
-  const exclude = new Set(options2.exclude ?? []);
+function generateFormSchema(columns, options) {
+  const exclude = new Set(options.exclude ?? []);
   const omitted = [];
   const byName = new Map(columns.map((column) => [column.name, column]));
   const seen = /* @__PURE__ */ new Set();
-  const ordered = options2.include ? options2.include.flatMap((name) => {
+  const ordered = options.include ? options.include.flatMap((name) => {
     if (seen.has(name))
       return [];
     seen.add(name);
@@ -2263,7 +2130,7 @@ function generateFormSchema(columns, options2) {
   const selected = ordered.filter((column) => {
     if (exclude.has(column.name))
       return false;
-    if (options2.mode === "create" && column.type.toLowerCase() === "serial") {
+    if (options.mode === "create" && column.type.toLowerCase() === "serial") {
       omitted.push({ name: column.name, reason: "generated serial column omitted from create form" });
       return false;
     }
@@ -2277,11 +2144,11 @@ function generateFormSchema(columns, options2) {
       Object.assign(field, { values: choices, displayValues: choices.map(String) });
     if (type === "datepicker")
       Object.assign(field, { enableDate: true, enableTime: true });
-    if (options2.mode === "edit" && column.isPrimaryKey)
+    if (options.mode === "edit" && column.isPrimaryKey)
       field.styles = { disabled: true };
-    if (options2.initialValuesBinding) {
-      field.value = bindingValue(options2.initialValuesBinding, column);
-    } else if (options2.mode === "create" && column.defaultValue !== void 0) {
+    if (options.initialValuesBinding) {
+      field.value = bindingValue(options.initialValuesBinding, column);
+    } else if (options.mode === "create" && column.defaultValue !== void 0) {
       if (column.type.toLowerCase().includes("json"))
         field.value = JSON.stringify(column.defaultValue);
       else if (type === "checkbox" && booleanDefault(column.defaultValue) !== void 0) {
@@ -2290,10 +2157,10 @@ function generateFormSchema(columns, options2) {
         field.value = "{{0}}";
       else
         field.value = column.defaultValue;
-    } else if (options2.mode === "create" && type === "datepicker") {
+    } else if (options.mode === "create" && type === "datepicker") {
       field.value = "{{null}}";
     }
-    field = mergeField(field, options2.fieldOverrides?.[column.name]);
+    field = mergeField(field, options.fieldOverrides?.[column.name]);
     const finalType = field.type;
     if (typeof finalType !== "string" || !FORM_SCHEMA_FIELD_TYPE_SET.has(finalType)) {
       throw new Error(`Form field "${column.name}" has unsupported type "${String(finalType)}".`);
@@ -2311,9 +2178,9 @@ function generateFormSchema(columns, options2) {
     throw new Error(`Generated ToolJet Form is not layout-safe for ${standaloneFields.join(", ")}. FormUtils does not pass label alignment through to generated fields; Dropdown/Multiselect labels do not align with inputs, and TextArea retains a literal "Label" and can render as a single-line control. Build the entire form from standalone components in one add_components call, set styles.alignment.value="top" on every labelled input, use a consistent two-column grid for compact fields, and make TextArea fields full-width. Generated Form is approved only for textinput, number, emailinput, password, datepicker, and checkbox fields.`);
   }
   const schema = {
-    title: options2.title ?? `${options2.mode === "create" ? "Create" : "Edit"} ${humanize(options2.tableName)}`,
+    title: options.title ?? `${options.mode === "create" ? "Create" : "Edit"} ${humanize(options.tableName)}`,
     properties: fields,
-    submitButton: { value: options2.submitLabel ?? (options2.mode === "create" ? "Create" : "Save changes") }
+    submitButton: { value: options.submitLabel ?? (options.mode === "create" ? "Create" : "Save changes") }
   };
   const recommendedCanvasHeight = Math.max(300, selected.length * 70);
   const recommendedFormHeight = recommendedCanvasHeight + 130;
@@ -2337,7 +2204,7 @@ function generateFormSchema(columns, options2) {
       default_value: column.defaultValue,
       foreign_keys: column.foreignKeys,
       generated_type: fields[column.name].type,
-      overridden: !!options2.fieldOverrides?.[column.name]
+      overridden: !!options.fieldOverrides?.[column.name]
     })),
     omitted_fields: omitted,
     layout_guidance: {
@@ -2435,7 +2302,7 @@ function getAppTool(client) {
     }
   };
 }
-var APP_FIELDS = ["app_id", "name", "version_id", "editor_frozen", "environment"];
+var APP_FIELDS = ["app_id", "name", "version_id", "editor_frozen", "environment", "component_library"];
 var PAGE_FIELDS = ["id", "name", "handle", "icon", "hidden", "index", "is_page_group", "page_group_id"];
 var COMPONENT_FIELDS = [
   "id",
@@ -2466,8 +2333,8 @@ function validatePaths(paths, roots, label) {
     }
   }
 }
-function readPath(source2, segments) {
-  let cursor = source2;
+function readPath(source, segments) {
+  let cursor = source;
   for (const segment of segments) {
     if (cursor === null || typeof cursor !== "object" || !Object.prototype.hasOwnProperty.call(cursor, segment)) {
       return { found: false };
@@ -2488,11 +2355,11 @@ function writePath(target2, segments, value) {
   }
   cursor[segments.at(-1)] = value;
 }
-function pickPaths(source2, paths) {
+function pickPaths(source, paths) {
   const result = {};
   for (const path of paths) {
     const segments = path.split(".");
-    const selected = readPath(source2, segments);
+    const selected = readPath(source, segments);
     if (selected.found)
       writePath(result, segments, selected.value);
   }
@@ -2571,7 +2438,7 @@ function getAppSummaryTool(client) {
       readOnlyHint: true,
       openWorldHint: true
     },
-    description: `Selective, bounded inspection of an app \u2014 use this instead of get_app. Pass version_id after create_app_version to inspect that exact version instead of the server's default editing version. By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. Field roots: app(app_id/name/version_id), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component(id/name/type/layouts/properties/styles/validation/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.`,
+    description: `Selective, bounded inspection of an app \u2014 use this instead of get_app. Pass version_id after create_app_version to inspect that exact version instead of the server's default editing version. By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. component_library says which library the app is built in: {library:"ui1"} is ToolJet UI 1.0 (the native widgets), {library:"ui2"} is ToolJet UI 2.0 (types starting with Shad, laid out in FlexContainers); source "saved" is the app's setting, "inferred" is read from its widgets. Build in that library unless the user asks for the other. Field roots: app(app_id/name/version_id/component_library), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component(id/name/type/layouts/properties/styles/validation/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.`,
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string().min(1).optional(),
@@ -2916,17 +2783,17 @@ function addQueryTool(client) {
         const prepared = prepareQueryOptionsForWrite(datasource.kind, args.options);
         if (prepared.errors.length)
           return fail(new Error(prepared.errors.join(" ")));
-        const { options: options2, warnings } = prepared;
+        const { options, warnings } = prepared;
         const validation = prepared.validation;
         if (args.kind && args.kind !== datasource.kind) {
           warnings.push(`Caller kind "${args.kind}" was ignored; datasource "${args.datasource_id}" is kind "${datasource.kind}".`);
         }
-        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name, kind: datasource.kind, options: options2 }]));
+        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name, kind: datasource.kind, options }]));
         const result = await client.createQuery({
           versionId: args.version_id,
           dataSourceId: args.datasource_id,
           name: args.name,
-          options: options2,
+          options,
           kind: datasource.kind
         });
         return ok({
@@ -2985,7 +2852,7 @@ function addQueriesTool(client) {
           if (prepared.errors.length)
             throw new Error(prepared.errors.join(" "));
           warnings.push(...prepared.warnings);
-          const { options: options2 } = prepared;
+          const { options } = prepared;
           const validation = prepared.validation;
           if (query.kind && query.kind !== datasource.kind) {
             warnings.push(`Query "${query.name}": caller kind "${query.kind}" was ignored; datasource kind is "${datasource.kind}".`);
@@ -2996,7 +2863,7 @@ function addQueriesTool(client) {
             operation: validation.operation,
             schema_found: validation.schemaFound
           });
-          return { query: { ...query, options: options2 }, kind: datasource.kind };
+          return { query: { ...query, options }, kind: datasource.kind };
         });
         warnings.push(...await inspectUpdateCompatibility(client, resolved.map(({ query, kind }) => ({
           name: query.name,
@@ -3118,7 +2985,7 @@ function addComponentsTool(client) {
       destructiveHint: false,
       openWorldHint: true
     },
-    description: "Place MANY components on one page in a single call (all share app_id/version_id/page_id). Prefer this over repeated add_component when building an app \u2014 it is one request. Returns [{ component_id, name }]. Note: the batch is atomic \u2014 if one component is invalid (e.g. missing name), the whole call fails; fix that component and retry. Property/style/validation/other leaves may be supplied as concise raw values or canonical `{ value: ... }` envelopes; MCP persists the canonical ToolJet shape. " + COMPONENT_FX_GUIDANCE + 'IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, \u2026) in each component\u2019s top-level `styles` object, NOT under `properties` \u2014 ToolJet silently ignores styles nested in properties (and this tool will reject them). Provide either `layout` (one rectangle for both resolutions) or `layouts:{desktop,mobile}`. To create a modal/container and its children atomically, give the parent a unique `client_ref` and each child the matching `parent_ref`; child bindings may also use unique client_ref aliases declared in this batch; MCP resolves them to runtime names when existing names can be checked, without overriding an existing runtime name. coordinates are relative to that parent, with a fresh 43-column grid in each nested canvas. A full-row child uses width 43 even in a narrow parent. Container/Form/modal slots may use left 2, width 39 for insets; grid-mode Listview full rows use left 0, width 43. For ModalV2/Form/Container native regions, set child `slot_name` to `header`, `body`, or `footer`; body is the default. A Kanban with no explicit child automatically gets its catalog card children so cards are not blank; supplying a child with its `parent_ref` suppresses those defaults (use Html for wrapped multi-line card content). For the Kanban card-click modal, parent its detail controls to the Kanban with slot_name:"modal"; these do not replace card children.',
+    description: "Place MANY components on one page in a single call (all share app_id/version_id/page_id). Prefer this over repeated add_component when building an app \u2014 it is one request. Returns [{ component_id, name }]. Note: the batch is atomic \u2014 if one component is invalid (e.g. missing name), the whole call fails; fix that component and retry. Property/style/validation/other leaves may be supplied as concise raw values or canonical `{ value: ... }` envelopes; MCP persists the canonical ToolJet shape. " + COMPONENT_FX_GUIDANCE + 'IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, \u2026) in each component\u2019s top-level `styles` object, NOT under `properties` \u2014 ToolJet silently ignores styles nested in properties (and this tool will reject them). Provide either `layout` (one rectangle for both resolutions) or `layouts:{desktop,mobile}`. To create a modal/container and its children atomically, give the parent a unique `client_ref` and each child the matching `parent_ref`; child bindings may also use unique client_ref aliases declared in this batch; MCP resolves them to runtime names when existing names can be checked, without overriding an existing runtime name. coordinates are relative to that parent, with a fresh 43-column grid in each nested canvas. A full-row child uses width 43 even in a narrow parent. Container/Form/modal slots may use left 2, width 39 for insets; grid-mode Listview full rows use left 0, width 43. For ModalV2/Form/Container native regions, set child `slot_name` to `header`, `body`, or `footer`; body is the default. A Kanban with no explicit child automatically gets its catalog card children so cards are not blank; supplying a child with its `parent_ref` suppresses those defaults (use Html for wrapped multi-line card content). For the Kanban card-click modal, parent its detail controls to the Kanban with slot_name:"modal"; these do not replace card children. FlexContainer children render in request order (MCP writes the container childOrder), ignore top/left, fill the width unless the child layout sets fillWidth:false with widthPx, and keep their px height.',
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -3139,7 +3006,25 @@ function addComponentsTool(client) {
       }
       if (summary)
         pageWarnings.push(...normalizePlanBindingAliases({ pages: [{ components: inputs }] }, summary));
-      const prepared = prepareComponentBatch(inputs, { canvasColor: await literalCanvasColor(client, args.app_id, summary?.version_id ?? args.version_id) });
+      const existingPage = summary?.pages.find((candidate) => candidate.id === args.page_id);
+      if (existingPage) {
+        const parentErrors = [];
+        for (const input of inputs) {
+          if (typeof input.parent !== "string" || !input.parent)
+            continue;
+          const resolved = resolveParentRef(existingPage.components, input.parent);
+          if (resolved.ok)
+            input.parent = resolved.parent;
+          else
+            parentErrors.push(`Component "${input.name ?? "?"}": ${resolved.error}`);
+        }
+        if (parentErrors.length)
+          return fail(new Error(parentErrors.join(" ")));
+      }
+      const prepared = prepareComponentBatch(inputs, {
+        canvasColor: await literalCanvasColor(client, args.app_id, summary?.version_id ?? args.version_id),
+        flexContainerIds: existingPage?.components.filter((component) => component.type === "FlexContainer").map((component) => component.id)
+      });
       if (prepared.errors.length)
         return fail(new Error(prepared.errors.join(" ")));
       try {
@@ -3161,7 +3046,9 @@ function addComponentsTool(client) {
           appId: args.app_id,
           versionId: args.version_id,
           pageId: args.page_id,
-          components: prepared.components
+          components: prepared.components,
+          // Lets a child added to an existing FlexContainer join its childOrder without another page read.
+          pageComponents: existingPage?.components
         });
         return ok({
           components: result,
@@ -3199,19 +3086,48 @@ function addComponentBatchesTool(client) {
       }
       const pages = structuredClone(args.pages);
       const aliasWarnings = [];
-      if (pages.some((page) => page.components.some((c) => c.client_ref && c.client_ref !== c.name))) {
+      const needsAliases = pages.some((page) => page.components.some((c) => c.client_ref && c.client_ref !== c.name));
+      const targetsExistingParent = pages.some((page) => page.components.some((c) => c.parent));
+      let summary;
+      if (needsAliases || targetsExistingParent) {
         try {
-          const summary = await client.getAppSummary(args.app_id);
+          summary = await client.getAppSummary(args.app_id);
           if (summary.version_id && summary.version_id !== args.version_id) {
             return fail(new Error("Cannot normalize this write against a different editing version. Refresh the app version."));
           }
-          aliasWarnings.push(...normalizePlanBindingAliases({ pages }, summary));
+          if (needsAliases)
+            aliasWarnings.push(...normalizePlanBindingAliases({ pages }, summary));
         } catch {
-          aliasWarnings.push("Batch component aliases were not normalized because existing names could not be read. Use exact runtime names.");
+          if (needsAliases)
+            aliasWarnings.push("Batch component aliases were not normalized because existing names could not be read. Use exact runtime names.");
         }
       }
+      const pageComponentsOf = (pageId) => summary?.pages.find((page) => page.id === pageId)?.components;
+      const parentErrors = [];
+      for (const page of pages) {
+        const existing = pageComponentsOf(page.page_id);
+        if (!existing)
+          continue;
+        for (const component of page.components) {
+          if (typeof component.parent !== "string" || !component.parent)
+            continue;
+          const resolved = resolveParentRef(existing, component.parent);
+          if (resolved.ok)
+            component.parent = resolved.parent;
+          else
+            parentErrors.push(`Page ${page.page_id}: Component "${component.name ?? "?"}": ${resolved.error}`);
+        }
+      }
+      if (parentErrors.length)
+        return fail(new Error(`${parentErrors.join(" ")} (Nothing was saved: refused before any write.)`));
       const canvasColor = await literalCanvasColor(client, args.app_id, args.version_id);
-      const prepared = pages.map((page) => ({ ...page, prepared: prepareComponentBatch(page.components, { canvasColor }) }));
+      const prepared = pages.map((page) => ({
+        ...page,
+        prepared: prepareComponentBatch(page.components, {
+          canvasColor,
+          flexContainerIds: (pageComponentsOf(page.page_id) ?? []).filter((c) => c.type === "FlexContainer").map((c) => c.id)
+        })
+      }));
       const errors = prepared.flatMap((page) => page.prepared.errors.map((error) => `Page ${page.page_id}: ${error}`));
       const mapRefusal = await mapKeyRefusal(client, pages.flatMap((page) => page.components.map((c) => String(c.type))));
       if (mapRefusal)
@@ -3224,7 +3140,8 @@ function addComponentBatchesTool(client) {
           appId: args.app_id,
           versionId: args.version_id,
           pageId: page.page_id,
-          components: page.prepared.components
+          components: page.prepared.components,
+          pageComponents: pageComponentsOf(page.page_id)
         }),
         warnings: page.prepared.warnings
       })));
@@ -3333,7 +3250,16 @@ function deleteComponentsTool(client) {
     }
   };
 }
-var rect = external_exports.object({ top: external_exports.number(), left: external_exports.number(), width: external_exports.number(), height: external_exports.number() });
+var rect = external_exports.object({
+  top: external_exports.number(),
+  left: external_exports.number(),
+  width: external_exports.number(),
+  height: external_exports.number(),
+  fillWidth: external_exports.boolean().optional().describe(FLEX_FILL_WIDTH_DESCRIPTION),
+  widthPx: external_exports.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION),
+  grow: external_exports.number().positive().optional().describe(FLEX_GROW_DESCRIPTION),
+  minWidthPx: external_exports.number().nonnegative().optional().describe(FLEX_MIN_WIDTH_PX_DESCRIPTION)
+});
 var RECT_KEYS = /* @__PURE__ */ new Set(["top", "left", "width", "height"]);
 var layoutEntrySchema = strictEntry({
   component_id: external_exports.string(),
@@ -3362,7 +3288,7 @@ function updateLayoutTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Move / resize existing components (batch) without touching their properties. `left`/`width` are in the immediate parent canvas's own 43-column grid, including nested containers; `top`/`height` are pixels. Full rows use width 43, independent of the parent outer width. Container/Form/modal insets may use left 2, width 39; grid-mode Listview full rows use left 0, width 43. Provide desktop and/or mobile per component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` (header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent.",
+    description: "Move / resize existing components (batch) without touching their properties. `left`/`width` are in the immediate parent canvas's own 43-column grid, including nested containers; `top`/`height` are pixels. Full rows use width 43, independent of the parent outer width. Container/Form/modal insets may use left 2, width 39; grid-mode Listview full rows use left 0, width 43. Provide desktop and/or mobile per component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` (header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent. A FlexContainer child takes its width from fillWidth/widthPx, not width/left; a component reparented into a FlexContainer is appended to its childOrder.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -3471,6 +3397,21 @@ function updateLayoutTool(client) {
             slotName: l.slot_name
           }))
         });
+        const appended = appendedChildOrders(page.components, reparentAdditions(page.components, resolvedLayouts.map((layout) => ({
+          componentId: layout.component_id,
+          parent: layout.parent !== void 0 ? encodeComponentParent(layout.parent, layout.slot_name) : void 0
+        }))));
+        if (appended.size) {
+          await client.updateComponents({
+            appId: args.app_id,
+            versionId: args.version_id,
+            pageId: args.page_id,
+            updates: [...appended].map(([componentId, order]) => ({
+              componentId,
+              definition: { properties: { childOrder: childOrderProperty(order) } }
+            }))
+          });
+        }
         return ok({ ...result, warnings });
       } catch (err) {
         return fail(err);
@@ -3674,10 +3615,10 @@ function updateQueryTool(client) {
         if (prepared.errors.length)
           return fail(new Error(prepared.errors.join(" ")));
         const warnings = [...resolutionWarnings, ...prepared.warnings];
-        const { options: options2, validation } = prepared;
+        const { options, validation } = prepared;
         if (!kind)
           warnings.push("Query options were not contract-validated; pass app_id or kind on update_query.");
-        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name ?? args.query_id, kind, options: options2 }]));
+        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name ?? args.query_id, kind, options }]));
         if (args.datasource_id && args.datasource_id !== currentDatasourceId) {
           await client.updateQueryDatasource({
             queryId: args.query_id,
@@ -3690,7 +3631,7 @@ function updateQueryTool(client) {
           result = await client.updateQuery({
             queryId: args.query_id,
             versionId: args.version_id,
-            options: options2,
+            options,
             name: args.name
           });
         } catch (error) {
@@ -3932,13 +3873,13 @@ function deleteEventTool(client) {
     }
   };
 }
-var TOOLJET_MCP_VERSION = "0.11.0";
+var TOOLJET_MCP_VERSION = "0.11.1";
 function snapshot(path) {
   try {
     const stat = statSync(path);
-    const source2 = `${Math.round(stat.mtimeMs * 1e3)}:${stat.size}`;
+    const source = `${Math.round(stat.mtimeMs * 1e3)}:${stat.size}`;
     return {
-      buildId: createHash("sha256").update(source2).digest("hex").slice(0, 12),
+      buildId: createHash("sha256").update(source).digest("hex").slice(0, 12),
       modifiedMs: stat.mtimeMs,
       size: stat.size
     };
@@ -4571,6 +4512,12 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     runWorkflowTool(client),
     getWorkflowExecutionTool(client),
     getRuntimeInfoTool(runtime),
+    codeAppScaffoldTool(client),
+    codeAppReadFilesTool(),
+    codeAppWriteFilesTool(),
+    codeAppBuildTool(),
+    codeAppInstallTool(),
+    codeAppAddDependencyTool(),
     listWorkspacesTool(client),
     useWorkspaceTool(client),
     manageAppPermissionsTool(client),
@@ -4688,8 +4635,15 @@ var CATALOG_RESOURCES = [
 var dataDir = resolve(dirname(fileURLToPath(import.meta.url)), "../data");
 var versions = /* @__PURE__ */ new Map();
 var payloads = /* @__PURE__ */ new Map();
+var readPart = (file) => {
+  const bytes = readCatalogBytes(resolve(dataDir, file));
+  if (file !== "component-schemas.json")
+    return bytes;
+  const live = JSON.stringify(allComponentSchemas());
+  return live === JSON.stringify(JSON.parse(bytes.toString("utf8"))) ? bytes : Buffer.from(live);
+};
 function readData(resource) {
-  const bytes = readCatalogBytes(resolve(dataDir, resource.file));
+  const bytes = readPart(resource.file);
   const dataVersion = createHash("sha256").update(bytes).digest("hex").slice(0, 12);
   versions.set(resource.file, dataVersion);
   return { bytes, dataVersion };
@@ -4708,7 +4662,7 @@ var catalogVersionCache;
 function catalogVersion() {
   catalogVersionCache ??= catalogVersionOf(CATALOG_RESOURCES.map((resource) => ({
     file: resource.file,
-    bytes: readCatalogBytes(resolve(dataDir, resource.file))
+    bytes: readPart(resource.file)
   })));
   return catalogVersionCache;
 }
@@ -4736,24 +4690,48 @@ function payload(resource) {
   }
   return text;
 }
+var metadataOf = (resource, catalog) => {
+  const dataVersion = listedVersion(resource);
+  return {
+    title: resource.title,
+    description: resource.description,
+    mimeType: "application/json",
+    ...dataVersion ? { _meta: { data_version: dataVersion, ...catalog ? { catalog_version: catalog } : {} } } : {}
+  };
+};
+var registered = [];
+function refreshCatalogResources() {
+  versions.clear();
+  payloads.clear();
+  catalogVersionCache = void 0;
+  const catalog = listedCatalogVersion();
+  for (const { resource, handle } of registered)
+    handle.update({ metadata: metadataOf(resource, catalog) });
+}
 function registerCatalogResources(server) {
   const catalog = listedCatalogVersion();
   for (const resource of CATALOG_RESOURCES) {
-    const dataVersion = listedVersion(resource);
-    server.registerResource(resource.name, resource.uri, {
-      title: resource.title,
-      description: resource.description,
-      mimeType: "application/json",
-      ...dataVersion ? { _meta: { data_version: dataVersion, ...catalog ? { catalog_version: catalog } : {} } } : {}
-    }, async () => ({
+    const handle = server.registerResource(resource.name, resource.uri, metadataOf(resource, catalog), async () => ({
       contents: [{ uri: resource.uri, mimeType: "application/json", text: payload(resource) }]
     }));
+    registered.push({ resource, handle });
   }
 }
+var packsReady = Promise.resolve([]);
 function buildServer(identity) {
   const config = loadConfig(identity);
   const auth = createAuth(config);
   const client = createClient(auth, config);
+  packsReady = loadInstalledPacks(() => client.listComponentLibraries(), () => client.listBuiltinPacks()).then((packs) => {
+    if (packs.length) {
+      refreshCatalogResources();
+      console.error(`tooljet-mcp: component packs: ${packs.join(", ")}`);
+    }
+    return packs;
+  }).catch((err) => {
+    console.error(`tooljet-mcp: component packs not read: ${err instanceof Error ? err.message : String(err)}`);
+    return [];
+  });
   const server = new McpServer({ name: "tooljet-mcp", version: TOOLJET_MCP_VERSION });
   registerTools(server, client);
   registerCatalogResources(server);
@@ -4826,20 +4804,20 @@ async function readOAuthBody(req, maxBytes) {
   }
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
-function createOAuthHttpServer(options2) {
-  const issuer = checkedUrl(options2.issuer, "issuer");
-  const resourceBase = checkedUrl(options2.resourceUrl, "resourceUrl");
-  const apiUrl = checkedUrl(options2.apiUrl, "apiUrl");
-  const appUrl = checkedUrl(options2.appUrl, "appUrl");
-  if (options2.exchangeSecret.length < 32)
+function createOAuthHttpServer(options) {
+  const issuer = checkedUrl(options.issuer, "issuer");
+  const resourceBase = checkedUrl(options.resourceUrl, "resourceUrl");
+  const apiUrl = checkedUrl(options.apiUrl, "apiUrl");
+  const appUrl = checkedUrl(options.appUrl, "appUrl");
+  if (options.exchangeSecret.length < 32)
     throw new Error("OAuth exchange secret must contain at least 32 characters");
   const resource = new URL(resourceBase);
-  const factory = options2.serverFactory ?? buildServer;
-  const fetchImpl = options2.fetchImpl ?? fetch;
-  const maxBodyBytes = options2.maxBodyBytes ?? OAUTH_MAX_BODY_BYTES;
+  const factory = options.serverFactory ?? buildServer;
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const maxBodyBytes = options.maxBodyBytes ?? OAUTH_MAX_BODY_BYTES;
   if (!Number.isSafeInteger(maxBodyBytes) || maxBodyBytes <= 0)
     throw new Error("Invalid OAuth request body limit");
-  const allowedOrigins = new Set((options2.allowedOrigins || []).map((origin) => {
+  const allowedOrigins = new Set((options.allowedOrigins || []).map((origin) => {
     const checked = checkedUrl(origin, "allowedOrigin");
     if (new URL(checked).origin !== checked)
       throw new Error("OAuth allowed origins must not include a path");
@@ -4931,7 +4909,7 @@ function createOAuthHttpServer(options2) {
           method: "POST",
           redirect: "error",
           signal: AbortSignal.timeout(1e4),
-          headers: { authorization: `Bearer ${options2.exchangeSecret}`, "content-type": "application/json" },
+          headers: { authorization: `Bearer ${options.exchangeSecret}`, "content-type": "application/json" },
           body: JSON.stringify({
             grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
             subject_token_type: "urn:ietf:params:oauth:token-type:access_token",
@@ -5024,5 +5002,6 @@ export {
   createOAuthHttpServer as d,
   StreamableHTTPServerTransport as e,
   identityFromHeaders as i,
-  oauthHttpOptionsFromEnv as o
+  oauthHttpOptionsFromEnv as o,
+  packsReady as p
 };
