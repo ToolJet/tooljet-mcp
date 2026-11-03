@@ -30,8 +30,7 @@ export function listWorkspaceAppsTool(client: ToolJetClient): ToolDef {
       '(empty when unfiled). The top-level folder describes the selected folder, or is null. ' +
       'meta.workspace_folder_count counts visible app folders; meta.folder_app_count counts matching apps in the selected folder ' +
       '(null without a folder filter). meta.total_count remains the workspace-wide count of matching apps even with folder_id; ' +
-      'use meta.folder_app_count for the folder. Legacy meta.folder_count counts apps in the selected folder, NOT workspace folders, ' +
-      'and is 0 without a folder filter. This cannot inspect or switch to another workspace.',
+      'use meta.folder_app_count for the folder. This cannot inspect or switch to another workspace.',
     inputSchema: listWorkspaceAppsInput.shape,
     async handler(input: z.infer<typeof listWorkspaceAppsInput>) {
       try {

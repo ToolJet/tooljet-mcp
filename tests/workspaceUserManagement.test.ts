@@ -171,7 +171,7 @@ describe('workspace folder discovery API client', () => {
         { id: unfiledId, name: 'Delivery board', folders: [] },
       ],
       folder: null,
-      meta: { ...appResponse().meta, folder_app_count: null, workspace_folder_count: 3 },
+      meta: { current_page: 1, total_pages: 3, total_count: 21, folder_app_count: null, workspace_folder_count: 3 },
     });
     expect(authedFetch.mock.calls).toEqual([[folderPath], ['/api/apps?page=1&type=front-end']]);
   });
@@ -188,9 +188,10 @@ describe('workspace folder discovery API client', () => {
     const result = await client.listWorkspaceApps({ folderId: nurseryId, page: 2, searchText: 'seed & soil/葉' });
     expect(result).toMatchObject({
       folder: { id: nurseryId, name: 'Nursery & Stock', app_count: 12 },
-      meta: { current_page: 2, total_pages: 2, total_count: 21, folder_count: 10,
+      meta: { current_page: 2, total_pages: 2, total_count: 21,
         folder_app_count: 10, workspace_folder_count: 3 },
     });
+    expect(result.meta).not.toHaveProperty('folder_count');
     const url = new URL(authedFetch.mock.calls[1]![0], 'https://example.test');
     expect(Object.fromEntries(url.searchParams)).toEqual({
       page: '2', type: 'front-end', searchKey: 'seed & soil/葉', folder: nurseryId,

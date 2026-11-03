@@ -1875,6 +1875,7 @@ function createClient(auth, config) {
     if (!parsed.success)
       throw new Error("Unexpected workspace apps response.");
     const data = parsed.data;
+    const { folder_count: folderAppCount, ...meta } = data.meta;
     return {
       ...data,
       apps: data.apps.map((app) => ({
@@ -1883,9 +1884,8 @@ function createClient(auth, config) {
       })),
       folder: selectedFolder?.summary ?? null,
       meta: {
-        ...data.meta,
-        // Preserve the API's legacy folder_count (apps in the selected folder).
-        folder_app_count: selectedFolder ? data.meta.folder_count : null,
+        ...meta,
+        folder_app_count: selectedFolder ? folderAppCount : null,
         workspace_folder_count: folders.length
       }
     };

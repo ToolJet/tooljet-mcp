@@ -100,7 +100,7 @@ describe('workspace folder discovery through the MCP transport', () => {
       expect(folders?.inputSchema.properties).toHaveProperty('search_text');
       expect(apps?.annotations?.readOnlyHint).toBe(true);
       expect(apps?.inputSchema.properties).toHaveProperty('folder_id');
-      expect(apps?.description).toContain('NOT workspace folders');
+      expect(apps?.description).not.toContain('meta.folder_count');
       expect(apps?.description).toContain('meta.total_count remains the workspace-wide count of matching apps even with folder_id');
     });
   });
@@ -116,10 +116,10 @@ describe('workspace folder discovery through the MCP transport', () => {
         folder_id: body.folders[0].id, page: 1, search_text: '  Telescope  ',
       } });
       expect(apps.isError).not.toBe(true);
-      expect(JSON.parse((apps.content as Array<{ text: string }>)[0]!.text)).toMatchObject({
+      expect(JSON.parse((apps.content as Array<{ text: string }>)[0]!.text)).toEqual({
         apps: [{ id: appId, name: 'Telescope schedule', folders: [{ id: folderId, name: 'Observatory' }] }],
         folder: { id: folderId, name: 'Observatory', app_count: 1 },
-        meta: { workspace_folder_count: 1, folder_app_count: 1 },
+        meta: { current_page: 1, total_pages: 1, total_count: 4, workspace_folder_count: 1, folder_app_count: 1 },
       });
       expect(fetch.mock.calls).toEqual([
         ['/api/folder-apps?type=front-end'], ['/api/folder-apps?type=front-end'],
