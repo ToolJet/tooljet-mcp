@@ -51858,7 +51858,7 @@ var require_axe = __commonJS({
             }
           }, {
             key: "clip",
-            value: function clip() {
+            value: function clip2() {
               var C = new _Color2(this);
               var L = C.getLuminosity();
               var n2 = Math.min(C.r, C.g, C.b);
@@ -107686,10 +107686,14 @@ async function syncEditorEdits(dir, { force = false } = {}) {
   const pull = await cli(dir, ["app", "source-pull"], 6e4);
   if (pull.code !== 0)
     return { sync_warning: `Could not check the ToolJet editor for edits: ${pull.output.trim().slice(0, 300)}` };
+  lastSynced.set(dir, Date.now());
   return /Pulled revision/.test(pull.output) ? { editor_edits: pull.output.trim() } : {};
 }
 var freshProjects = /* @__PURE__ */ new Set();
 var readHashes = /* @__PURE__ */ new Map();
+var lastSynced = /* @__PURE__ */ new Map();
+var readSyncWindowMs = () => Number(process.env.MCP_CODE_APP_READ_SYNC_MS ?? 2e4);
+var syncedRecently = (dir) => Date.now() - (lastSynced.get(dir) ?? -Infinity) < readSyncWindowMs();
 var sha = (text3) => createHash2("sha256").update(text3).digest("hex");
 var readKey = (dir, rel) => `${dir}\0${rel}`;
 function forgetSourceRevision(dir) {
@@ -107721,6 +107725,36 @@ function changedLines(before, after) {
     changed += Math.max(0, n - (a.get(line) ?? 0));
   return changed;
 }
+var clip = (line) => line.trim().length > 100 ? `${line.trim().slice(0, 100)}...` : line.trim();
+var lineAt = (text3, index) => text3.slice(0, index).split("\n").length;
+function findHint(content, find) {
+  const lines = content.split("\n");
+  const at = [];
+  for (let i = content.indexOf(find); i >= 0 && at.length < 6; i = content.indexOf(find, i + 1))
+    at.push(lineAt(content, i));
+  if (at.length > 1) {
+    const shown2 = at.slice(0, 5).map((n) => `line ${n}${n > 1 ? ` (after "${clip(lines[n - 2])}")` : ""}`);
+    return ` It is at ${shown2.join("; ")}${at.length > 5 ? "; and more" : ""}. Add a neighbouring line to the find so it matches one place.`;
+  }
+  if (at.length === 1)
+    return "";
+  const wanted = find.split("\n").map((l) => l.trim());
+  const trimmed = lines.map((l) => l.trim());
+  const starts = trimmed.flatMap((l, i) => wanted.every((w, k) => trimmed[i + k] === w) ? [i + 1] : []);
+  if (starts.length === 1)
+    return ` The same lines are at line ${starts[0]} with different indentation or spacing; copy them exactly as the file has them.`;
+  const words3 = (l) => new Set(l.match(/[A-Za-z_$][\w$]*|\d+/g) ?? []);
+  const key4 = wanted.reduce((a, b) => b.length > a.length ? b : a, "");
+  const target2 = words3(key4);
+  if (!target2.size)
+    return "";
+  const scored = lines.map((l, i) => {
+    const w = words3(l);
+    const shared = [...target2].filter((t) => w.has(t)).length;
+    return { n: i + 1, l, score: shared / Math.max(target2.size, w.size) };
+  }).filter((x) => x.score >= 0.5).sort((a, b) => b.score - a.score).slice(0, 2);
+  return scored.length ? ` Closest: ${scored.map((x) => `line ${x.n}: "${clip(x.l)}"`).join("; ")}.` : "";
+}
 var isRewrite = (before, after) => {
   const changed = changedLines(before, after);
   const size2 = Math.max(before.split("\n").length, after.split("\n").length);
@@ -107738,7 +107772,7 @@ function codeAppReadFilesTool() {
         const dir = locateProject(args);
         if (!freshProjects.has(dir))
           await followDraft(dir);
-        const sync = freshProjects.has(dir) ? await syncEditorEdits(dir) : await ensureFresh(dir);
+        const sync = !freshProjects.has(dir) ? await ensureFresh(dir) : syncedRecently(dir) ? {} : await syncEditorEdits(dir);
         if (!args.paths?.length)
           return ok({ project_dir: dir, ...sync, files: listFiles(dir) });
         const files = Object.fromEntries(args.paths.map((p) => {
@@ -107818,7 +107852,7 @@ function codeAppWriteFilesTool() {
           }
           const found = before.split(edit.find).length - 1;
           if (found !== 1) {
-            refusals.push(`${rel}: the find text appears ${found} times; it must match exactly once (copy it from the file as it is now)`);
+            refusals.push(`${rel}: the find text appears ${found} times; it must match exactly once (copy it from the file as it is now).${findHint(before, edit.find)}`);
             continue;
           }
           next.set(rel, { full, content: before.replace(edit.find, () => edit.replace) });
@@ -110897,6 +110931,33 @@ var pathOf = (url2) => {
     return "?";
   }
 };
+function trackNetwork(page) {
+  if (typeof page?.on !== "function")
+    return void 0;
+  const tracker = { inflight: /* @__PURE__ */ new Set(), lastActivity: Date.now() };
+  const done = (request) => {
+    tracker.inflight.delete(request);
+    tracker.lastActivity = Date.now();
+  };
+  page.on("request", (request) => {
+    tracker.inflight.add(request);
+    tracker.lastActivity = Date.now();
+  });
+  page.on("requestfinished", done);
+  page.on("requestfailed", done);
+  return tracker;
+}
+var CODE_QUIET_MS = Number(process.env.MCP_RENDER_AUDIT_QUIET_MS || 750);
+var CODE_MIN_SETTLE_MS = 750;
+async function settleWhenQuiet(page, tracker, maxMs) {
+  const started = Date.now();
+  await page.waitForTimeout(Math.min(CODE_MIN_SETTLE_MS, maxMs));
+  while (Date.now() - started < maxMs) {
+    if (tracker.inflight.size === 0 && Date.now() - tracker.lastActivity >= CODE_QUIET_MS)
+      return;
+    await page.waitForTimeout(100);
+  }
+}
 async function auditPages(pages, options2 = {}, driver = loadPlaywright) {
   const unreachable = (p, reason, detail) => ({ ...p, widgets: 0, findings: [{ kind: "unreachable", component: "-", reason, detail }] });
   if (!pages.length)
@@ -111014,6 +111075,7 @@ async function auditPages(pages, options2 = {}, driver = loadPlaywright) {
         }
       });
       const page = await ctx.newPage();
+      const network = trackNetwork(page);
       const response = await page.goto(p.url, { waitUntil: "domcontentloaded", timeout: 6e4 });
       if (response && response.status() >= 400) {
         const status = response.status();
@@ -111029,13 +111091,18 @@ async function auditPages(pages, options2 = {}, driver = loadPlaywright) {
         const root2 = frame.contentDocument?.getElementById("tj-frame-root");
         return !!root2 && root2.children.length > 0;
       }, void 0, { timeout: options2.contentWaitMs ?? Number(process.env.MCP_RENDER_AUDIT_CONTENT_WAIT_MS || 3e4) }).catch(() => void 0);
-      await page.waitForTimeout(options2.settleMs ?? 6e3);
-      await page.waitForFunction(() => {
-        const charts = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart').length;
-        const plots = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart .js-plotly-plot').length;
-        return charts === 0 || plots >= charts;
-      }, void 0, { timeout: options2.chartWaitMs ?? 2e4 }).catch(() => void 0);
-      await page.waitForTimeout(1500);
+      const codeFrame = network ? await page.evaluate(() => !!document.querySelector("iframe[data-tj-code-page-frame]")).catch(() => false) : false;
+      if (codeFrame === true) {
+        await settleWhenQuiet(page, network, options2.settleMs ?? 6e3);
+      } else {
+        await page.waitForTimeout(options2.settleMs ?? 6e3);
+        await page.waitForFunction(() => {
+          const charts = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart').length;
+          const plots = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart .js-plotly-plot').length;
+          return charts === 0 || plots >= charts;
+        }, void 0, { timeout: options2.chartWaitMs ?? 2e4 }).catch(() => void 0);
+        await page.waitForTimeout(1500);
+      }
       const landed = page.url();
       if (/\/(?:login|sign-in|signin)\b/i.test(new URL(landed).pathname)) {
         reports[index] = unreachable(p, "auth_required", "The viewer requires sign-in; private app rendering was not verified");

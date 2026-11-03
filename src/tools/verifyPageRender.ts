@@ -308,6 +308,38 @@ const INFORMATIONAL_KINDS = new Set<RenderFinding['kind']>(['blocked_socket']);
 /** A URL's path, without its query string (which can carry ids and tokens). */
 const pathOf = (url: string): string => { try { return new URL(url).pathname; } catch { return '?'; } };
 
+/** The page's requests still in flight and when the last one started or ended (the frame's requests included). */
+interface NetworkTracker { inflight: Set<unknown>; lastActivity: number }
+
+function trackNetwork(page: any): NetworkTracker | undefined {
+  if (typeof page?.on !== 'function') return undefined;
+  const tracker: NetworkTracker = { inflight: new Set(), lastActivity: Date.now() };
+  const done = (request: unknown) => { tracker.inflight.delete(request); tracker.lastActivity = Date.now(); };
+  page.on('request', (request: unknown) => { tracker.inflight.add(request); tracker.lastActivity = Date.now(); });
+  page.on('requestfinished', done);
+  page.on('requestfailed', done);
+  return tracker;
+}
+
+/** How long a Code mode page's network must be idle before it is judged, and the least it waits after drawing. */
+const CODE_QUIET_MS = Number(process.env.MCP_RENDER_AUDIT_QUIET_MS || 750);
+const CODE_MIN_SETTLE_MS = 750;
+
+/**
+ * Settle a Code mode page: wait until no request has been in flight for CODE_QUIET_MS (its queries have answered and it
+ * has drawn them), at most `maxMs`. A fixed 6 s settle plus 1.5 s was 7.5 s of every check, and each build checks every
+ * route (2026-11-02 traces: 58 checks, median 15 s each); a page whose network never goes quiet still waits the full
+ * `maxMs`, as before.
+ */
+async function settleWhenQuiet(page: any, tracker: NetworkTracker, maxMs: number): Promise<void> {
+  const started = Date.now();
+  await page.waitForTimeout(Math.min(CODE_MIN_SETTLE_MS, maxMs));
+  while (Date.now() - started < maxMs) {
+    if (tracker.inflight.size === 0 && Date.now() - tracker.lastActivity >= CODE_QUIET_MS) return;
+    await page.waitForTimeout(100);
+  }
+}
+
 export async function auditPages(
   pages: Array<{ page: string; url: string }>,
   options: { channel?: string; executablePath?: string; settleMs?: number; chartWaitMs?: number; concurrency?: number; allowedOrigins?: Set<string>;
@@ -423,6 +455,7 @@ export async function auditPages(
         }
       });
       const page = await ctx.newPage();
+      const network = trackNetwork(page);
       const response = await page.goto(p.url, { waitUntil: 'domcontentloaded', timeout: 60000 });
       if (response && response.status() >= 400) {
         const status = response.status();
@@ -445,21 +478,29 @@ export async function auditPages(
           { timeout: options.contentWaitMs ?? Number(process.env.MCP_RENDER_AUDIT_CONTENT_WAIT_MS || 30000) }
         )
         .catch(() => undefined);
-      await page.waitForTimeout(options.settleMs ?? 6000);
-      // Charts mount after their queries resolve; judging them before Plotly has drawn reports a
-      // healthy chart as empty, and judging before it has mounted misses an empty one entirely.
-      await page
-        .waitForFunction(
-          () => {
-            const charts = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart').length;
-            const plots = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart .js-plotly-plot').length;
-            return charts === 0 || plots >= charts;
-          },
-          undefined,
-          { timeout: options.chartWaitMs ?? 20000 }
-        )
-        .catch(() => undefined);
-      await page.waitForTimeout(1500);
+      // A Code mode page settles when its network goes quiet; a ToolJet page keeps the fixed settle and chart wait.
+      const codeFrame = network
+        ? await page.evaluate(() => !!document.querySelector('iframe[data-tj-code-page-frame]')).catch(() => false)
+        : false;
+      if (codeFrame === true) {
+        await settleWhenQuiet(page, network!, options.settleMs ?? 6000);
+      } else {
+        await page.waitForTimeout(options.settleMs ?? 6000);
+        // Charts mount after their queries resolve; judging them before Plotly has drawn reports a
+        // healthy chart as empty, and judging before it has mounted misses an empty one entirely.
+        await page
+          .waitForFunction(
+            () => {
+              const charts = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart').length;
+              const plots = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart .js-plotly-plot').length;
+              return charts === 0 || plots >= charts;
+            },
+            undefined,
+            { timeout: options.chartWaitMs ?? 20000 }
+          )
+          .catch(() => undefined);
+        await page.waitForTimeout(1500);
+      }
       const landed: string = page.url();
       if (/\/(?:login|sign-in|signin)\b/i.test(new URL(landed).pathname)) {
         reports[index] = unreachable(p, 'auth_required', 'The viewer requires sign-in; private app rendering was not verified');
