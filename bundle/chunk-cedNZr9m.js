@@ -3543,7 +3543,7 @@ function auditScript() {
   }
   return { widgets: widgets.length, findings: findings.slice(0, 60) };
 }
-function codePageAuditScript() {
+function codePageAuditScript(route) {
   const frame = document.querySelector("iframe[data-tj-code-page-frame]");
   if (!frame)
     return null;
@@ -3574,6 +3574,15 @@ function codePageAuditScript() {
     const label = (el.textContent ?? "").trim().replace(/\s+/g, " ").slice(0, 40);
     return `${el.tagName.toLowerCase()}${id ? `#${id}` : ""}${label ? ` "${label}"` : ""}`;
   };
+  const win = doc.defaultView;
+  const insideScroller = (el) => {
+    for (let a = el.parentElement; a && a !== doc.body; a = a.parentElement) {
+      const ox = win.getComputedStyle(a).overflowX;
+      if (ox === "auto" || ox === "scroll")
+        return true;
+    }
+    return false;
+  };
   const cut = [];
   const frameWidth = doc.documentElement.clientWidth;
   for (const el of Array.from(doc.querySelectorAll("#tj-frame-root *"))) {
@@ -3582,19 +3591,33 @@ function codePageAuditScript() {
     const r = el.getBoundingClientRect();
     if (r.width === 0 || r.height === 0 || r.right <= frameWidth + 1)
       continue;
-    let scrolls = false;
-    for (let a = el.parentElement; a && a !== doc.body; a = a.parentElement) {
-      const ox = doc.defaultView.getComputedStyle(a).overflowX;
-      if (ox === "auto" || ox === "scroll" || ox === "hidden" || ox === "clip") {
-        scrolls = true;
-        break;
-      }
-    }
-    if (!scrolls)
+    if (!insideScroller(el))
       cut.push(describe(el));
   }
   if (cut.length)
     findings.push({ kind: "clipped", component: "Code mode app", detail: `cut off at the right edge at ${width}px: ${cut.join(", ")}` });
+  const spills = (el) => {
+    const h = el;
+    if (!(h.clientWidth >= 8) || h.scrollWidth <= h.clientWidth + 4)
+      return false;
+    const cs = win.getComputedStyle(h);
+    if (cs.display === "inline" || cs.overflowX === "auto" || cs.overflowX === "scroll" || cs.textOverflow === "ellipsis")
+      return false;
+    return !insideScroller(h);
+  };
+  const spilled = Array.from(doc.querySelectorAll("#tj-frame-root *")).filter(spills);
+  const innermost = spilled.filter((el) => !spilled.some((other) => other !== el && el.contains(other)));
+  const spillLines = innermost.slice(0, 3).map((el) => {
+    const h = el;
+    const cs = win.getComputedStyle(h);
+    const widest = Array.from(h.children).reduce((best, c) => !best || c.getBoundingClientRect().width > best.getBoundingClientRect().width ? c : best, null);
+    const tracks = cs.display === "grid" && cs.gridTemplateColumns !== "none" ? `, its grid columns (${cs.gridTemplateColumns}) are wider than the box` : "";
+    const what = widest && widest.getBoundingClientRect().width > h.clientWidth + 4 ? `${describe(widest)} (${Math.round(widest.getBoundingClientRect().width)}px)` : `content ${h.scrollWidth}px wide`;
+    const clips = cs.overflowX === "hidden" || cs.overflowX === "clip" ? " and is cut off" : " and spills out";
+    return `${what} in ${describe(h)} (${h.clientWidth}px)${tracks}${clips}`;
+  });
+  if (spillLines.length)
+    findings.push({ kind: "overflow", component: "Code mode app", detail: `content wider than its box${route ? ` on ${route}` : ""} at ${width}px: ${spillLines.join("; ")}. Let it wrap or shrink (min-w-0, flexible columns, fewer fixed widths), or put it in an overflow-x-auto wrapper` });
   const placeholder = text.match(/\b(undefined|NaN|Invalid date|\[object Object\])\b/);
   if (placeholder)
     findings.push({ kind: "placeholder_text", component: "Code mode app", detail: `the app shows "${placeholder[1]}"` });
@@ -3837,7 +3860,7 @@ async function auditPages(pages, options = {}, driver = loadPlaywright) {
         return;
       }
       const result = await page.evaluate(auditScript);
-      const codePage = await page.evaluate(codePageAuditScript);
+      const codePage = await page.evaluate(codePageAuditScript, new URL(p.url).searchParams.get("route") || void 0);
       if (Array.isArray(codePage)) {
         const accessibility = await axeInCodePage(page).catch(() => void 0);
         let screenshot;

@@ -229,7 +229,7 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
  * into. Checks the frame's own document: nothing scrolls sideways, nothing sits past the right edge, the app drew
  * something, and no placeholder text shows. Returns null when the page has no code page.
  */
-export function codePageAuditScript(): RenderFinding[] | null {
+export function codePageAuditScript(route?: string): RenderFinding[] | null {
   const frame = document.querySelector('iframe[data-tj-code-page-frame]') as HTMLIFrameElement | null;
   if (!frame) return null;
   const findings: RenderFinding[] = [];
@@ -259,6 +259,15 @@ export function codePageAuditScript(): RenderFinding[] | null {
     const label = (el.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 40);
     return `${el.tagName.toLowerCase()}${id ? `#${id}` : ''}${label ? ` "${label}"` : ''}`;
   };
+  const win = doc.defaultView!;
+  // Inside a container that scrolls sideways on purpose. A hidden or clipped ancestor is no excuse: it cuts the content off.
+  const insideScroller = (el: Element): boolean => {
+    for (let a = el.parentElement; a && a !== doc.body; a = a.parentElement) {
+      const ox = win.getComputedStyle(a).overflowX;
+      if (ox === 'auto' || ox === 'scroll') return true;
+    }
+    return false;
+  };
   // Elements that end past the frame's right edge and are not inside a container that scrolls on purpose.
   const cut: string[] = [];
   const frameWidth = doc.documentElement.clientWidth;
@@ -266,14 +275,33 @@ export function codePageAuditScript(): RenderFinding[] | null {
     if (cut.length >= 3) break;
     const r = el.getBoundingClientRect();
     if (r.width === 0 || r.height === 0 || r.right <= frameWidth + 1) continue;
-    let scrolls = false;
-    for (let a = el.parentElement; a && a !== doc.body; a = a.parentElement) {
-      const ox = doc.defaultView!.getComputedStyle(a).overflowX;
-      if (ox === 'auto' || ox === 'scroll' || ox === 'hidden' || ox === 'clip') { scrolls = true; break; }
-    }
-    if (!scrolls) cut.push(describe(el));
+    if (!insideScroller(el)) cut.push(describe(el));
   }
   if (cut.length) findings.push({ kind: 'clipped', component: 'Code mode app', detail: `cut off at the right edge at ${width}px: ${cut.join(', ')}` });
+  // Content wider than its own box: it spills over its neighbours or is cut off without reaching the window's edge. The
+  // DeepSeek round of 2026-11-03 shipped a queue table 693px wide in a 646px card at 1280 px and a dashboard grid whose
+  // track was 358px in a 343px box at 375 px; both passed the edge check above. Boxes that scroll or truncate on
+  // purpose, and screen-reader-only text (1px boxes), are left alone. Only the innermost box of a chain is named.
+  const spills = (el: Element): boolean => {
+    const h = el as HTMLElement;
+    if (!(h.clientWidth >= 8) || h.scrollWidth <= h.clientWidth + 4) return false;
+    const cs = win.getComputedStyle(h);
+    if (cs.display === 'inline' || cs.overflowX === 'auto' || cs.overflowX === 'scroll' || cs.textOverflow === 'ellipsis') return false;
+    return !insideScroller(h);
+  };
+  const spilled = Array.from(doc.querySelectorAll('#tj-frame-root *')).filter(spills);
+  const innermost = spilled.filter((el) => !spilled.some((other) => other !== el && el.contains(other)));
+  const spillLines = innermost.slice(0, 3).map((el) => {
+    const h = el as HTMLElement;
+    const cs = win.getComputedStyle(h);
+    const widest = Array.from(h.children).reduce<Element | null>((best, c) => (!best || c.getBoundingClientRect().width > best.getBoundingClientRect().width ? c : best), null);
+    const tracks = cs.display === 'grid' && cs.gridTemplateColumns !== 'none' ? `, its grid columns (${cs.gridTemplateColumns}) are wider than the box` : '';
+    const what = widest && widest.getBoundingClientRect().width > h.clientWidth + 4 ? `${describe(widest)} (${Math.round(widest.getBoundingClientRect().width)}px)` : `content ${h.scrollWidth}px wide`;
+    const clips = cs.overflowX === 'hidden' || cs.overflowX === 'clip' ? ' and is cut off' : ' and spills out';
+    return `${what} in ${describe(h)} (${h.clientWidth}px)${tracks}${clips}`;
+  });
+  if (spillLines.length)
+    findings.push({ kind: 'overflow', component: 'Code mode app', detail: `content wider than its box${route ? ` on ${route}` : ''} at ${width}px: ${spillLines.join('; ')}. Let it wrap or shrink (min-w-0, flexible columns, fewer fixed widths), or put it in an overflow-x-auto wrapper` });
   const placeholder = text.match(/\b(undefined|NaN|Invalid date|\[object Object\])\b/);
   if (placeholder) findings.push({ kind: 'placeholder_text', component: 'Code mode app', detail: `the app shows "${placeholder[1]}"` });
   return findings;
@@ -544,7 +572,7 @@ export async function auditPages(
         return;
       }
       const result = (await page.evaluate(auditScript)) as { widgets: number; findings: RenderFinding[] };
-      const codePage = (await page.evaluate(codePageAuditScript)) as RenderFinding[] | null;
+      const codePage = (await page.evaluate(codePageAuditScript, new URL(p.url).searchParams.get('route') || undefined)) as RenderFinding[] | null;
       if (Array.isArray(codePage)) {
         // The root widget is the code page's container; its own findings come from inside the frame.
         const accessibility = await axeInCodePage(page).catch(() => undefined);
