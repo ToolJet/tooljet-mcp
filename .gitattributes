@@ -1,0 +1,2 @@
+# Generated dependency templates contain significant spaces before newlines.
+bundle/*.js whitespace=-blank-at-eol

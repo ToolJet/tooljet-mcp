@@ -3,10 +3,10 @@ name: tooljet-app-builder
 description: "Build or update ToolJet dashboards, internal tools, back-office and team operations apps, including spreadsheet replacements. Requires a ToolJet MCP connection. Excludes one-off spreadsheet analysis, static charts, advice-only comparisons and standalone code projects outside ToolJet."
 metadata:
   generated_by: scripts/generate-skill.mjs
-  sources:
-    - Source-verified component binding rules (22 components)
-    - ToolJet WidgetManager catalog (74 built-in components)
-    - ToolJet appCanvasConstants (grid mechanics)
+  sources: >-
+    Source-verified component binding rules (22 components);
+    ToolJet WidgetManager catalog (74 built-in components);
+    ToolJet appCanvasConstants (grid mechanics)
 ---
 
 <!-- GENERATED FILE — do not edit by hand. Run `node scripts/generate-skill.mjs` to regenerate every host package. -->
@@ -56,12 +56,14 @@ Detail: `references/qa.md`.
 
 ## Datasource repair handoff
 
-If a source is absent or a query fails, use its `datasources_url`, `settings_url`, or `recovery.url`. Open it in the built-in browser when available; otherwise send the link. Never enter credentials, authorize OAuth, test, or save the connection. If `list_datasources` marks it `connectable`, stop and hand off; if absent, report no connector and suggest REST API. Sample data only on request. See `references/datasources.md`.
+**Sample data source is forbidden for AI**, even on request. Use ToolJet Database; synthetic rows are allowed.
+
+For absent/failing sources, use `datasources_url`, `settings_url`, or `recovery.url`. Open it in the built-in browser when available; otherwise send the link. Never enter credentials, authorize OAuth, test, or save connections. For `connectable` sources, stop and hand off; if absent, report no connector and suggest REST API. See `references/datasources.md`.
 
 ## Load only the references the phase needs
 
 - `references/workflows.md` — tool selection, plan/apply, repair, reuse, deletion, silent-failure guardrails, FX visibility.
-- `references/workflow-builder.md` — workflow discovery, authoring, validation, and execution safety; only for workflow requests.
+- `references/workflow-builder.md` — link workflows to apps, workflow discovery, authoring, validation, and execution safety.
 - `references/ui-layout.md` — page design, canvas geometry, nested layouts, charts, and visual defaults.
 - `references/tables.md` — Table binding, row actions, sizing, and datasource-neutral server-side pagination.
 - `references/forms.md` — generated-vs-standalone forms, validation, uploads, and modal geometry.

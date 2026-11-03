@@ -16,7 +16,7 @@
  * client that cached a version can skip the read.
  */
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readCatalogBytes } from '../lib/catalogFiles.js';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -74,7 +74,7 @@ const versions = new Map<string, string>();
 const payloads = new Map<string, string>();
 
 function readData(resource: CatalogResource): { bytes: Buffer; dataVersion: string } {
-  const bytes = readFileSync(resolve(dataDir, resource.file));
+  const bytes = readCatalogBytes(resolve(dataDir, resource.file));
   const dataVersion = createHash('sha256').update(bytes).digest('hex').slice(0, 12);
   versions.set(resource.file, dataVersion);
   return { bytes, dataVersion };
@@ -97,7 +97,7 @@ let catalogVersionCache: string | undefined;
  *  describe the whole catalog. */
 function catalogVersion(): string {
   catalogVersionCache ??= catalogVersionOf(CATALOG_RESOURCES.map((resource) => ({
-    file: resource.file, bytes: readFileSync(resolve(dataDir, resource.file)),
+    file: resource.file, bytes: readCatalogBytes(resolve(dataDir, resource.file)),
   })));
   return catalogVersionCache;
 }

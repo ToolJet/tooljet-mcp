@@ -1,3 +1,4 @@
+import { componentRef } from './componentReferences.js';
 import { getComponentSchema, type ComponentDefaultChild } from './catalog.js';
 import type { ComponentLayout, ComponentSpec } from './tooljetClient.js';
 
@@ -42,24 +43,15 @@ function childName(parentName: string, child: ComponentDefaultChild, index: numb
   return `${parentName}Card${role}`;
 }
 
-function unusedInternalRef(used: Set<string>, index: number): string {
-  let suffix = index + 1;
-  let ref = `__mcp_default_parent_${suffix}`;
-  while (used.has(ref)) ref = `__mcp_default_parent_${++suffix}`;
-  used.add(ref);
-  return ref;
-}
-
 /** Materialize only defaults required for a component to render meaningful content.
  * Explicit same-batch children always win, allowing callers to author a custom card body. */
 export function materializeRequiredDefaultChildren(input: ComponentSpec[]): DefaultChildrenExpansion {
-  const usedRefs = new Set(input.flatMap((component) => component.clientRef ? [component.clientRef] : []));
   const explicitParentRefs = new Set(input.flatMap((component) => component.parentRef && (!component.slotName || component.slotName === 'body') ? [component.parentRef] : []));
   const components: ComponentSpec[] = [];
   const warnings: string[] = [];
   let materializedChildren = 0;
 
-  input.forEach((original, componentIndex) => {
+  input.forEach((original) => {
     if (!AUTO_MATERIALIZE_DEFAULTS.has(original.type)) {
       components.push(original);
       return;
@@ -67,13 +59,13 @@ export function materializeRequiredDefaultChildren(input: ComponentSpec[]): Defa
 
     const schema = getComponentSchema(original.type);
     const defaults = schema?.defaultChildren ?? [];
-    if (!defaults.length || (original.clientRef && explicitParentRefs.has(original.clientRef))) {
+    if (!defaults.length || explicitParentRefs.has(componentRef(original))) {
       components.push(original);
       return;
     }
 
-    const clientRef = original.clientRef ?? unusedInternalRef(usedRefs, componentIndex);
-    components.push({ ...original, clientRef });
+    const clientRef = componentRef(original);
+    components.push(original);
     defaults.forEach((child, childIndex) => {
       const defaultValue = child.defaultValue ?? {};
       components.push({

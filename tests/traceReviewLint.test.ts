@@ -62,7 +62,7 @@ describe('seed data for a table that already has rows', () => {
   it('is refused before anything is written', async () => {
     const client = { listTables: async () => [{ id: 't1', table_name: 'mx_products' }, { id: 't2', table_name: 'mx_empty' }], hasRows: async (id: string) => id === 't1' };
     const run = async (table: string) => JSON.parse(String((await lintAppSpecTool(client as never).handler({ seed_data: [{ table_name: table, rows: [{ sku: 'ME-001' }] }] } as never)).content[0]!.text));
-    expect(JSON.stringify((await run('mx_products')).errors)).toMatch(/mx_products.*already has rows/);
+    expect(JSON.stringify((await run('mx_products')).errors)).toMatch(/mx_products.*already has rows.*insert_rows_batch/);
     expect((await run('mx_empty')).errors ?? []).toEqual([]);
   });
 });

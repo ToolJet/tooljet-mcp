@@ -44,8 +44,13 @@ describe('direct batch binding aliases', () => {
     if (scenario === 'collision') mock.getAppSummary.mockResolvedValue({ version_id: 'v1', pages: [{id: 'other', components: [{name: 'input_alias'}]}], queries: [] });
     if (scenario === 'unavailable') mock.getAppSummary.mockRejectedValue(new Error('offline'));
     if (scenario === 'ambiguous') components.push({ ...field(), name: 'Second', layout: {left: 2, top: 100, width: 15, height: 60} });
-    await addComponentsTool(mock as unknown as ToolJetClient).handler({ ...context, components });
-    expect(mock.createComponents).toHaveBeenCalledOnce();
+    const result = await addComponentsTool(mock as unknown as ToolJetClient).handler({ ...context, components });
+    if (scenario === 'ambiguous') {
+      expect(result.isError).toBe(true);
+      expect(result.content[0]!.text).toMatch(/Duplicate component client_ref/);
+      expect(mock.createComponents).not.toHaveBeenCalled();
+    }
+    else expect(mock.createComponents).toHaveBeenCalledOnce();
     for (const [write] of mock.createComponents.mock.calls) expect(write.components[1].properties.disabledState.value).toContain('components.input_alias');
     expect(components[1]!.properties).toHaveProperty('disabledState', '{{!components.input_alias?.value}}');
   });

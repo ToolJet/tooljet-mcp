@@ -718,7 +718,7 @@ export function lintTextGeometry(components: LintComponent[]): string[] {
 }
 
 function componentKey(component: LintComponent): string | undefined {
-  return component.clientRef ?? component.id;
+  return component.clientRef ?? component.id ?? component.name;
 }
 
 function parentPlacement(component: LintComponent): {

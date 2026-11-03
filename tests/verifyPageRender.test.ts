@@ -99,9 +99,20 @@ describe('render audit query execution', () => {
     expect(f.route.fetch).not.toHaveBeenCalled();
   });
 
-  it('passes the audited app queries into the authenticated browser gate', async () => {
+  it('refuses a browser audit before navigation when an old query uses an excluded datasource', async () => {
     const f = browserFixture({ resource: run, method: 'POST' });
-    const session = { ...client, getAppSummary: async () => ({ ...await client.getAppSummary(), ...savedQueries }) };
+    const session = { ...client, listDatasources: async () => [],
+      assertDatasourceAllowed: async () => { throw new Error('Sample data source is unavailable to AI.'); },
+      getAppSummary: async () => ({ ...await client.getAppSummary(), ...savedQueries }) };
+    const result = await verifyPageRenderTool(session as any, () => 'http://viewer.test', f.driver).handler({ app_id: 'app1' });
+    expect(result.isError).toBe(true);
+    expect(JSON.stringify(result)).toContain('Sample data source');
+    expect(f.route.fetch).not.toHaveBeenCalled();
+  });
+
+  it('allows verified app-local datasources even when absent from the global inventory', async () => {
+    const f = browserFixture({ resource: run, method: 'POST' });
+    const session = { ...client, listDatasources: async () => [], assertDatasourceAllowed: async () => undefined, getAppSummary: async () => ({ ...await client.getAppSummary(), ...savedQueries }) };
     const result = await verifyPageRenderTool(session as any, () => 'http://viewer.test', f.driver).handler({ app_id: 'app1' });
     expect(result.isError).toBeFalsy();
     expect(f.route.fetch).toHaveBeenCalled();

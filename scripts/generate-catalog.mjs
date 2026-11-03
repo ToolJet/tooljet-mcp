@@ -1,3 +1,4 @@
+import { writeCatalog } from '../lib/catalogFiles.js';
 // Harvests per-component property schemas from ToolJet's widget definitions into
 // data/component-schemas.json, which the get_component_catalog tool serves on demand.
 // Gives Codex the real props (name, type, default) + defaultSize + styles for every
@@ -789,7 +790,7 @@ if (schemas.Calendar) {
 }
 
 mkdirSync(resolve(root, 'data'), { recursive: true });
-writeFileSync(resolve(root, 'data/component-schemas.json'), JSON.stringify(schemas, null, 2) + '\n');
+writeCatalog(resolve(root, 'data/component-schemas.json'), schemas);
 const total = Object.keys(schemas).length;
 const withProps = Object.values(schemas).filter((s) => s.properties.length).length;
 console.log(`Harvested ${total} components (${withProps} with property schemas). Skipped: ${skipped.length ? skipped.join(', ') : 'none'}`);

@@ -94,6 +94,22 @@ export const LEGACY_SINGULAR_CREATE_TOOL_NAMES = new Set([
   'add_component',
 ]);
 
+/* The HTTP transport builds a server per request and keeps it until the response closes, so every
+   open request held its own copy of all 73 input schemas: about 4.2 MB of zod closures each, which
+   took the hosted server to its heap limit at roughly 115 open requests. A tool's schema depends only
+   on its name (the factories build it from constants, never from the client), so the first copy is
+   kept for the process and the per-request copies become garbage at once. */
+const inputSchemas = new Map<string, z.ZodObject>();
+
+function sharedInputSchema(tool: ToolDef): z.ZodObject {
+  let schema = inputSchemas.get(tool.name);
+  if (!schema) {
+    schema = tool.strictInput ? z.object(tool.inputSchema).strict() : z.object(tool.inputSchema);
+    inputSchemas.set(tool.name, schema);
+  }
+  return schema;
+}
+
 function includeLegacySingularCreateTools(): boolean {
   return /^(1|true|yes)$/i.test(process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS ?? '');
 }
@@ -187,20 +203,22 @@ export function registerTools(
   const canRender = renderAuditAvailable();
   for (const tool of exposedTools) {
     if (tool.name === 'verify_page_render' && !canRender) continue;
+    // The callback takes the name and handler, not `tool`: holding the def would keep its own schema copy alive.
+    const { name, handler } = tool;
     server.registerTool(
-      tool.name,
+      name,
       {
         title: tool.title,
         description: tool.description,
-        inputSchema: tool.strictInput ? z.object(tool.inputSchema).strict() : tool.inputSchema,
+        inputSchema: sharedInputSchema(tool),
         annotations: tool.annotations,
       },
-      (args: any) => withToolTelemetry(tool.name, async () => {
+      (args: any) => withToolTelemetry(name, async () => {
         const status = runtime.status();
-        if (status.restart_required && tool.name !== 'get_runtime_info') {
+        if (status.restart_required && name !== 'get_runtime_info') {
           return staleRuntimeResult(status);
         }
-        return withRuntimeStatus(await tool.handler(args), status);
+        return withRuntimeStatus(await handler(args), status);
       }) as any
     );
   }

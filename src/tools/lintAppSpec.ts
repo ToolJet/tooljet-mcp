@@ -162,7 +162,7 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
           (await client.hasRows?.(tableIds.get(name.toLowerCase())!).catch(() => undefined)) === true ? name : undefined));
         for (const name of withRows.filter(Boolean)) {
           preflightErrors.push(`Seed data targets "${name}", which already has rows (seeded earlier), so they would be inserted ` +
-            'again: leave that table out of seed_data.');
+            'again: leave that table out of seed_data. To add more rows to it, call insert_rows_batch with only the new rows.');
         }
         for (const table of args.tables ?? []) {
           const key = table.table_name.toLowerCase();
