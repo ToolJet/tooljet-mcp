@@ -80,3 +80,15 @@ describe('code_app_install publish', () => {
     expect(calls()).toEqual([['app', 'dev', '--once', '--source', 'platform']]);
   });
 });
+
+describe('Code mode tool descriptions', () => {
+  it('end with the user vocabulary rule and do not teach internal words', async () => {
+    const mod = await import('../src/tools/codeApp.js');
+    const tools = [mod.codeAppScaffoldTool(), mod.codeAppReadFilesTool(), mod.codeAppWriteFilesTool(), mod.codeAppBuildTool(), mod.codeAppInstallTool()];
+    for (const tool of tools) {
+      expect(tool.description.endsWith(mod.USER_WORDS)).toBe(true);
+      const own = tool.description.slice(0, -mod.USER_WORDS.length);
+      expect(own).not.toMatch(/root component|pins the app version|published revision/);
+    }
+  });
+});

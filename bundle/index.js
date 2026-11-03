@@ -107453,6 +107453,7 @@ import { existsSync as existsSync2, mkdirSync, readFileSync as readFileSync8, re
 import { homedir as homedir2 } from "node:os";
 import { dirname as dirname7, join as join2, relative, resolve as resolve6, sep } from "node:path";
 var run = promisify(execFile);
+var USER_WORDS = ` Talk to the user about "the app's code", "published code versions" and "Live preview"; never say bundle, library, revision, manifest, root component, dev track or pin, and never show internal names, ids or paths.`;
 var root = () => resolve6(process.env.TOOLJET_CODE_APP_ROOT || join2(homedir2(), "tooljet-code-apps"));
 var NAME = /^[a-z][a-z0-9-]{1,40}$/;
 var projectDir = (name2) => {
@@ -107564,7 +107565,7 @@ function codeAppScaffoldTool(client) {
     name: "code_app_scaffold",
     title: "Scaffold Code Mode App",
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-    description: "Create the Code mode project for an app you created with create_app: app.json (the app and its routes, its screens) and frontend/ (React + TypeScript on shadcn + Tailwind, react-router through AppRouter). Create the app's queries with add_queries BEFORE this, so the typed hooks it writes (frontend/src/tooljet.gen.ts: useAppQuery, row types, ROUTES, routePath, PAGES) list them. Returns the files and the generated hooks.",
+    description: "Create the Code mode project for an app you created with create_app: app.json (the app and its routes, its screens) and frontend/ (React + TypeScript on shadcn + Tailwind, react-router through AppRouter). Create the app's queries with add_queries BEFORE this, so the typed hooks it writes (frontend/src/tooljet.gen.ts: useAppQuery, row types, ROUTES, routePath, PAGES) list them. Returns the files and the generated hooks." + USER_WORDS,
     inputSchema: {
       name: external_exports.string().regex(NAME).describe("Project folder: lowercase letters, digits and hyphens, e.g. inventory-console"),
       display_name: external_exports.string().min(1).max(100).describe(`The app's name; an app still called "Untitled App" is renamed to it`),
@@ -107624,7 +107625,7 @@ function codeAppReadFilesTool() {
     name: "code_app_read_files",
     title: "Read Code Mode Files",
     annotations: { readOnlyHint: true, openWorldHint: true },
-    description: "Read a Code mode project. Without paths, lists its files; with paths, returns their contents (app.json, frontend/...). Edits saved in the ToolJet Code panel since the last install are brought into the project first.",
+    description: "Read a Code mode project. Without paths, lists its files; with paths, returns their contents (app.json, frontend/...). Edits saved in the ToolJet Code panel since the last install are brought into the project first." + USER_WORDS,
     inputSchema: { app_id: APP_ID, name: PROJECT_NAME, paths: external_exports.array(external_exports.string()).optional() },
     async handler(args) {
       try {
@@ -107650,7 +107651,7 @@ function codeAppWriteFilesTool() {
     name: "code_app_write_files",
     title: "Write Code Mode Files",
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-    description: "Write whole files into a Code mode project: app.json (name, codePage, routes [{id, path, title}]), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. Read data with useAppQuery from ../tooljet.gen; write by awaiting a query's run({ ...parameters }); route with AppRouter, react-router <Routes>/<Route> whose paths are exactly app.json's, and routePath(id, params). Then code_app_build.",
+    description: "Write whole files into a Code mode project: app.json (name, codePage, routes [{id, path, title}]), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. Read data with useAppQuery from ../tooljet.gen; write by awaiting a query's run({ ...parameters }); route with AppRouter, react-router <Routes>/<Route> whose paths are exactly app.json's, and routePath(id, params). Then code_app_build." + USER_WORDS,
     inputSchema: {
       app_id: APP_ID,
       name: PROJECT_NAME,
@@ -107678,7 +107679,7 @@ function codeAppBuildTool() {
     name: "code_app_build",
     title: "Build Code Mode App",
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-    description: "Refresh the typed hooks from the app's current queries (tooljet app pull), build the app's code (TypeScript, Tailwind, manifest), and check it against the app (tooljet app check: every useAppQuery name, route, link and page must exist). Returns ok and every error to fix. Repeat write and build until ok, then code_app_install.",
+    description: "Refresh the typed hooks from the app's current queries (tooljet app pull), build the app's code (TypeScript, Tailwind, manifest), and check it against the app (tooljet app check: every useAppQuery name, route, link and page must exist). Returns ok and every error to fix. Repeat write and build until ok, then code_app_install." + USER_WORDS,
     inputSchema: { app_id: APP_ID, name: PROJECT_NAME },
     async handler(args) {
       try {
@@ -107736,7 +107737,7 @@ function codeAppInstallTool() {
     name: "code_app_install",
     title: "Install Code Mode App",
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-    description: "Upload the app's code (tooljet app dev --once --source platform): it creates or updates the app's Code mode page, one hidden page per route (set each route's page permissions on it), the page's root component, pins the app version to this build, and stores the source on ToolJet so the Code panel can edit it. Build first. Returns the editor URL. If it says the source was edited in the ToolJet editor, call code_app_read_files to bring those edits down, reapply your change, and install again. With publish: true it publishes the code instead (tooljet app publish, run here, never by the user): a new published revision that the app version is pinned to, so the version can be saved and released. Publish once, as the last install of a build or edit.",
+    description: "Upload the app's code (tooljet app dev --once --source platform): it creates or updates the app's Code mode page, one hidden page per route (set each route's page permissions on it) and the component that runs the code, points the app version at this code as a Live preview, and stores the source on ToolJet so the Code panel can edit it. Build first. Returns the editor URL. If it says the source was edited in the ToolJet editor, call code_app_read_files to bring those edits down, reapply your change, and install again. With publish: true it publishes the code instead (tooljet app publish, run here, never by the user): a new published code version that the app version uses, so the version can be saved and released. Publish once, as the last install of a build or edit." + USER_WORDS,
     inputSchema: {
       app_id: APP_ID,
       name: PROJECT_NAME,
