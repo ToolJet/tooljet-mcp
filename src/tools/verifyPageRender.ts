@@ -311,6 +311,59 @@ const INFORMATIONAL_KINDS = new Set<RenderFinding['kind']>(['blocked_socket']);
 /** A URL's path, without its query string (which can carry ids and tokens). */
 const pathOf = (url: string): string => { try { return new URL(url).pathname; } catch { return '?'; } };
 
+/** The page's requests still in flight (with when each started) and when the last one started or ended (the frame's requests included). */
+interface NetworkTracker { inflight: Map<unknown, number>; lastActivity: number }
+
+function trackNetwork(page: any): NetworkTracker | undefined {
+  if (typeof page?.on !== 'function') return undefined;
+  const tracker: NetworkTracker = { inflight: new Map(), lastActivity: Date.now() };
+  const done = (request: unknown) => { tracker.inflight.delete(request); tracker.lastActivity = Date.now(); };
+  page.on('request', (request: any) => {
+    if (STREAM_PATHS.test(pathOf(String(request?.url?.() ?? '')))) return;
+    tracker.inflight.set(request, Date.now());
+    tracker.lastActivity = Date.now();
+  });
+  page.on('requestfinished', done);
+  page.on('requestfailed', done);
+  return tracker;
+}
+
+/** How long a Code mode page's network must be idle before it is judged, and the least it waits after drawing. */
+const CODE_QUIET_MS = Number(process.env.MCP_RENDER_AUDIT_QUIET_MS || 750);
+const CODE_MIN_SETTLE_MS = 750;
+/**
+ * A request open longer than this is a stream, not a load: the viewer keeps /api/code-page-security open for as long as
+ * the page is (live check, 2026-11-03), so counting it held every check to the full settle. A query run answers in
+ * about 0.2 s.
+ */
+const LONG_REQUEST_MS = 3000;
+/** Streams the viewer holds open for the page's lifetime: never part of loading. */
+const STREAM_PATHS = /\/api\/code-page-security$/;
+
+/**
+ * Settle a Code mode page: wait until no request has been in flight for CODE_QUIET_MS (its queries have answered and it
+ * has drawn them), at most `maxMs`. A fixed 6 s settle plus 1.5 s was 7.5 s of every check, and each build checks every
+ * route (2026-11-02 traces: 58 checks, median 15 s each); a page whose network never goes quiet still waits the full
+ * `maxMs`, as before.
+ */
+/** The code page's frame has its app drawn (the widget can draw before the frame is attached). */
+function codeFrameDrawn(): boolean {
+  const frame = document.querySelector('iframe[data-tj-code-page-frame]') as HTMLIFrameElement | null;
+  const root = frame?.contentDocument?.getElementById('tj-frame-root');
+  return !!root && root.children.length > 0;
+}
+
+async function settleWhenQuiet(page: any, tracker: NetworkTracker, maxMs: number): Promise<void> {
+  const started = Date.now();
+  await page.waitForTimeout(Math.min(CODE_MIN_SETTLE_MS, maxMs));
+  while (Date.now() - started < maxMs) {
+    const now = Date.now();
+    const loading = [...tracker.inflight.values()].some((since) => now - since < LONG_REQUEST_MS);
+    if (!loading && now - tracker.lastActivity >= CODE_QUIET_MS && (await page.evaluate(codeFrameDrawn).catch(() => true)) !== false) return;
+    await page.waitForTimeout(100);
+  }
+}
+
 export async function auditPages(
   pages: Array<{ page: string; url: string }>,
   options: { channel?: string; executablePath?: string; settleMs?: number; chartWaitMs?: number; concurrency?: number; allowedOrigins?: Set<string>;
@@ -318,6 +371,8 @@ export async function auditPages(
     session?: ViewerSession; savedQueries?: RenderAuditQueries;
     /** Window width in px (default 1600); a code page is checked at 375, 768 and 1280. */
     viewportWidth?: number;
+    /** A Code mode check (the handler sets it when a route is given): settle on a quiet network, not a fixed wait. */
+    codePage?: boolean;
     /** How long to wait for the page to draw before the settle (default 30 s, MCP_RENDER_AUDIT_CONTENT_WAIT_MS). */
     contentWaitMs?: number } = {},
   driver: () => Promise<any | null> = loadPlaywright
@@ -436,6 +491,7 @@ export async function auditPages(
         }
       });
       const page = await ctx.newPage();
+      const network = trackNetwork(page);
       const response = await page.goto(p.url, { waitUntil: 'domcontentloaded', timeout: 60000 });
       if (response && response.status() >= 400) {
         const status = response.status();
@@ -458,21 +514,30 @@ export async function auditPages(
           { timeout: options.contentWaitMs ?? Number(process.env.MCP_RENDER_AUDIT_CONTENT_WAIT_MS || 30000) }
         )
         .catch(() => undefined);
-      await page.waitForTimeout(options.settleMs ?? 6000);
-      // Charts mount after their queries resolve; judging them before Plotly has drawn reports a
-      // healthy chart as empty, and judging before it has mounted misses an empty one entirely.
-      await page
-        .waitForFunction(
-          () => {
-            const charts = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart').length;
-            const plots = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart .js-plotly-plot').length;
-            return charts === 0 || plots >= charts;
-          },
-          undefined,
-          { timeout: options.chartWaitMs ?? 20000 }
-        )
-        .catch(() => undefined);
-      await page.waitForTimeout(1500);
+      // A Code mode page settles when its network goes quiet; a ToolJet page keeps the fixed settle and chart wait.
+      // The widget can draw before the code page's frame is attached, so a check with a route counts as Code mode as well.
+      const codeFrame = network
+        ? options.codePage || await page.evaluate(() => !!document.querySelector('iframe[data-tj-code-page-frame]')).catch(() => false)
+        : false;
+      if (codeFrame === true) {
+        await settleWhenQuiet(page, network!, options.settleMs ?? 6000);
+      } else {
+        await page.waitForTimeout(options.settleMs ?? 6000);
+        // Charts mount after their queries resolve; judging them before Plotly has drawn reports a
+        // healthy chart as empty, and judging before it has mounted misses an empty one entirely.
+        await page
+          .waitForFunction(
+            () => {
+              const charts = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart').length;
+              const plots = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart .js-plotly-plot').length;
+              return charts === 0 || plots >= charts;
+            },
+            undefined,
+            { timeout: options.chartWaitMs ?? 20000 }
+          )
+          .catch(() => undefined);
+        await page.waitForTimeout(1500);
+      }
       const landed: string = page.url();
       if (/\/(?:login|sign-in|signin)\b/i.test(new URL(landed).pathname)) {
         reports[index] = unreachable(p, 'auth_required', 'The viewer requires sign-in; private app rendering was not verified');
@@ -572,7 +637,12 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
           return fail(new Error('OAuth render verification must use the configured ToolJet deployment origin'));
         }
         const summary = await client.getAppSummary(args.app_id);
-        const pages = (summary.pages ?? []) as Array<{ handle?: string; name?: string }>;
+        const allPages = (summary.pages ?? []) as Array<{ handle?: string; name?: string; hidden?: unknown }>;
+        // A Code mode route is drawn by the one code page, and every hidden route page shows the same app: a route check
+        // without a page handle audited all of them (7 audits for the purchase approvals app, 25 to 41 s against 11 s for
+        // one, 2026-11-02 traces). It now opens the first visible page only.
+        const visible = allPages.filter((p) => p.hidden !== true && (p.hidden as any)?.value !== true && (p.hidden as any)?.value !== '{{true}}');
+        const pages = args.route && !args.page_handle ? (visible.length ? visible : allPages).slice(0, 1) : allPages;
         // The version being edited (preview), not the released one: a build audits what it just changed.
         const version = await client.editingVersionName?.(args.app_id).catch(() => undefined);
         const query = new URLSearchParams();
@@ -599,6 +669,7 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
           allowedOrigins: origins,
           savedQueries: summary,
           viewportWidth: args.viewport_width,
+          codePage: Boolean(args.route),
           // MCP_RENDER_AUDIT_SESSION=off keeps the browser unauthenticated (private apps are then reported unverified).
           session: process.env.MCP_RENDER_AUDIT_SESSION === 'off' ? undefined : client.browserRenderOrigin
             ? await client.viewerSession?.(args.app_id)

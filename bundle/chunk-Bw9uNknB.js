@@ -1,16 +1,1917 @@
 import { createRequire } from "node:module";
-import { e as peekAppPlan, g as consumeAppPlan, f as frozenAppRefusal, r as replaceView, a as replaceFingerprint, d as danglingAfterReplace, b as prepareQueryOptionsForWrite, m as matchPlannedPage, h as prepareComponentBatch, i as replaceIds, j as expandQueryLifecycles, v as validateEvents, n as navigationReorders, k as persistedEventSpecs } from "./chunk-CIP1bu8Y.js";
-import { e9 as fail, em as literalCanvasColor, ef as tableQuotaError, e7 as ok } from "./chunk-BnsUSpmS.js";
-import { c as componentRef, h as completedPartialWrites, r as resolveRef, i as indexComponentReferences, j as isFlexContainerType, k as batchChildOrders, l as childOrderProperty } from "./chunk-MVJ6JtzN.js";
-import { D as validateAppStructure, d as decodeComponentParent, e as encodeComponentParent } from "./chunk-BPTeHE1L.js";
-import { L as LARGE_READ_ROW_THRESHOLD, h as assessQueryRead, j as resolveStaticBindings, k as resolvedReadRefusal, s as sameReadSource, m as extractRowCount, o as emptyViewerOnlyParams, p as emptyParamsNote, u as unresolvedNote, v as validateQueryOptions, i as issueMessages } from "./chunk-BR4RJzBT.js";
-import { g as getDatasourceQuerySchema } from "./chunk-4ku2T_dk.js";
-import { b1 as external_exports } from "./chunk-BfJD-M_q.js";
-import { randomUUID } from "node:crypto";
-import { readFileSync, mkdirSync } from "node:fs";
-import { resolve, dirname, join } from "node:path";
+import { $ as JSONRPCMessageSchema, a0 as isInitializeRequest, e as isJSONRPCRequest, a1 as DEFAULT_NEGOTIATED_PROTOCOL_VERSION, Z as SUPPORTED_PROTOCOL_VERSIONS, i as isJSONRPCResultResponse, d as isJSONRPCErrorResponse } from "./chunk-D8ok0NvG.js";
+import { ed as __toESM, eb as __commonJS, e9 as fail, eo as literalCanvasColor, ef as tableQuotaError, e7 as ok } from "./chunk-By54lwVj.js";
+import "node:http";
+import { Http2ServerRequest, constants } from "node:http2";
+import { Readable } from "node:stream";
+import { p as peekAppPlan, c as consumeAppPlan, f as frozenAppRefusal, r as replaceView, a as replaceFingerprint, d as danglingAfterReplace, b as prepareQueryOptionsForWrite, m as matchPlannedPage, e as prepareComponentBatch, g as replaceIds, h as expandQueryLifecycles, v as validateEvents, n as navigationReorders, i as persistedEventSpecs } from "./chunk-BIe0w3nF.js";
+import { c as componentRef, h as completedPartialWrites, r as resolveRef, i as indexComponentReferences, j as isFlexContainerType, k as batchChildOrders, l as childOrderProperty } from "./chunk-y8WOZ3tA.js";
+import { D as validateAppStructure, d as decodeComponentParent, e as encodeComponentParent } from "./chunk-BG-Wl49O.js";
+import { L as LARGE_READ_ROW_THRESHOLD, h as assessQueryRead, j as resolveStaticBindings, k as resolvedReadRefusal, s as sameReadSource, m as extractRowCount, o as emptyViewerOnlyParams, p as emptyParamsNote, u as unresolvedNote, v as validateQueryOptions, i as issueMessages } from "./chunk-DVQIMXVs.js";
+import { g as getDatasourceQuerySchema } from "./chunk-BNuWox9h.js";
+import { b1 as external_exports } from "./chunk-C1LXenY0.js";
+import { randomUUID, createHash } from "node:crypto";
+import { readFileSync, mkdirSync, existsSync, writeFileSync, readdirSync, statSync } from "node:fs";
+import { resolve, dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { tmpdir } from "node:os";
+import { tmpdir, homedir } from "node:os";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+createRequire(import.meta.url);
+var require_content_type = __commonJS({
+  "node_modules/content-type/index.js"(exports) {
+    var PARAM_REGEXP = /; *([!#$%&'*+.^_`|~0-9A-Za-z-]+) *= *("(?:[\u000b\u0020\u0021\u0023-\u005b\u005d-\u007e\u0080-\u00ff]|\\[\u000b\u0020-\u00ff])*"|[!#$%&'*+.^_`|~0-9A-Za-z-]+) */g;
+    var TEXT_REGEXP = /^[\u000b\u0020-\u007e\u0080-\u00ff]+$/;
+    var TOKEN_REGEXP = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
+    var QESC_REGEXP = /\\([\u000b\u0020-\u00ff])/g;
+    var QUOTE_REGEXP = /([\\"])/g;
+    var TYPE_REGEXP = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+\/[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
+    exports.format = format;
+    exports.parse = parse;
+    function format(obj) {
+      if (!obj || typeof obj !== "object") {
+        throw new TypeError("argument obj is required");
+      }
+      var parameters = obj.parameters;
+      var type = obj.type;
+      if (!type || !TYPE_REGEXP.test(type)) {
+        throw new TypeError("invalid type");
+      }
+      var string = type;
+      if (parameters && typeof parameters === "object") {
+        var param;
+        var params = Object.keys(parameters).sort();
+        for (var i = 0; i < params.length; i++) {
+          param = params[i];
+          if (!TOKEN_REGEXP.test(param)) {
+            throw new TypeError("invalid parameter name");
+          }
+          string += "; " + param + "=" + qstring(parameters[param]);
+        }
+      }
+      return string;
+    }
+    function parse(string) {
+      if (!string) {
+        throw new TypeError("argument string is required");
+      }
+      var header = typeof string === "object" ? getcontenttype(string) : string;
+      if (typeof header !== "string") {
+        throw new TypeError("argument string is required to be a string");
+      }
+      var index = header.indexOf(";");
+      var type = index !== -1 ? header.slice(0, index).trim() : header.trim();
+      if (!TYPE_REGEXP.test(type)) {
+        throw new TypeError("invalid media type");
+      }
+      var obj = new ContentType(type.toLowerCase());
+      if (index !== -1) {
+        var key;
+        var match;
+        var value;
+        PARAM_REGEXP.lastIndex = index;
+        while (match = PARAM_REGEXP.exec(header)) {
+          if (match.index !== index) {
+            throw new TypeError("invalid parameter format");
+          }
+          index += match[0].length;
+          key = match[1].toLowerCase();
+          value = match[2];
+          if (value.charCodeAt(0) === 34) {
+            value = value.slice(1, -1);
+            if (value.indexOf("\\") !== -1) {
+              value = value.replace(QESC_REGEXP, "$1");
+            }
+          }
+          obj.parameters[key] = value;
+        }
+        if (index !== header.length) {
+          throw new TypeError("invalid parameter format");
+        }
+      }
+      return obj;
+    }
+    function getcontenttype(obj) {
+      var header;
+      if (typeof obj.getHeader === "function") {
+        header = obj.getHeader("content-type");
+      } else if (typeof obj.headers === "object") {
+        header = obj.headers && obj.headers["content-type"];
+      }
+      if (typeof header !== "string") {
+        throw new TypeError("content-type header is missing from object");
+      }
+      return header;
+    }
+    function qstring(val) {
+      var str = String(val);
+      if (TOKEN_REGEXP.test(str)) {
+        return str;
+      }
+      if (str.length > 0 && !TEXT_REGEXP.test(str)) {
+        throw new TypeError("invalid parameter value");
+      }
+      return '"' + str.replace(QUOTE_REGEXP, "\\$1") + '"';
+    }
+    function ContentType(type) {
+      this.parameters = /* @__PURE__ */ Object.create(null);
+      this.type = type;
+    }
+  }
+});
+var import_content_type = __toESM(require_content_type(), 1);
+function mediaTypeEssence(header) {
+  if (!header) {
+    return void 0;
+  }
+  try {
+    return import_content_type.default.parse(header).type;
+  } catch {
+    const essence = (header.split(";", 1)[0] ?? "").trim().toLowerCase();
+    if (essence === "" || header.slice(essence.length).includes(",")) {
+      return void 0;
+    }
+    return essence;
+  }
+}
+function isJsonContentType(header) {
+  if (header === "application/json") {
+    return true;
+  }
+  return mediaTypeEssence(header) === "application/json";
+}
+var DEFAULT_SSE_KEEP_ALIVE_MS = 15e3;
+var MAX_TIMER_DELAY_MS = 2 ** 31 - 1;
+function armSseKeepAlive(intervalMs, onTick) {
+  if (!Number.isFinite(intervalMs) || intervalMs < 1) {
+    return void 0;
+  }
+  const timer = setInterval(onTick, Math.min(intervalMs, MAX_TIMER_DELAY_MS));
+  timer.unref?.();
+  return timer;
+}
+var WebStandardStreamableHTTPServerTransport = class {
+  constructor(options = {}) {
+    this._started = false;
+    this._hasHandledRequest = false;
+    this._streamMapping = /* @__PURE__ */ new Map();
+    this._requestToStreamMapping = /* @__PURE__ */ new Map();
+    this._resumableStreams = /* @__PURE__ */ new Set();
+    this._requestResponseMap = /* @__PURE__ */ new Map();
+    this._initialized = false;
+    this._enableJsonResponse = false;
+    this._standaloneSseStreamId = "_GET_stream";
+    this._closed = false;
+    this.sessionIdGenerator = options.sessionIdGenerator;
+    this._enableJsonResponse = options.enableJsonResponse ?? false;
+    this._eventStore = options.eventStore;
+    this._onsessioninitialized = options.onsessioninitialized;
+    this._onsessionclosed = options.onsessionclosed;
+    this._allowedHosts = options.allowedHosts;
+    this._allowedOrigins = options.allowedOrigins;
+    this._enableDnsRebindingProtection = options.enableDnsRebindingProtection ?? false;
+    this._retryInterval = options.retryInterval;
+    this._keepAliveMs = options.keepAliveMs ?? DEFAULT_SSE_KEEP_ALIVE_MS;
+  }
+  /**
+   * Arms a keep-alive interval for an SSE stream that periodically writes an SSE
+   * comment frame so intermediaries and idle timeouts don't kill the connection.
+   * The returned timer is owned by the stream it was armed for: the stream's
+   * cancel/cleanup callbacks must clear it. The interval clears itself if a
+   * write fails (stream already closed/cancelled).
+   */
+  startKeepAlive(controller, encoder) {
+    if (this._closed)
+      return void 0;
+    const timer = armSseKeepAlive(this._keepAliveMs, () => {
+      try {
+        controller.enqueue(encoder.encode(": keepalive\n\n"));
+      } catch {
+        if (timer !== void 0)
+          clearInterval(timer);
+      }
+    });
+    return timer;
+  }
+  /**
+   * Starts the transport. This is required by the Transport interface but is a no-op
+   * for the Streamable HTTP transport as connections are managed per-request.
+   */
+  async start() {
+    if (this._started) {
+      throw new Error("Transport already started");
+    }
+    this._started = true;
+  }
+  /**
+   * Helper to create a JSON error response
+   */
+  createJsonErrorResponse(status, code, message, options) {
+    const error = { code, message };
+    if (options?.data !== void 0) {
+      error.data = options.data;
+    }
+    return new Response(JSON.stringify({
+      jsonrpc: "2.0",
+      error,
+      id: null
+    }), {
+      status,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers
+      }
+    });
+  }
+  /**
+   * Validates request headers for DNS rebinding protection.
+   * @returns Error response if validation fails, undefined if validation passes.
+   */
+  validateRequestHeaders(req) {
+    if (!this._enableDnsRebindingProtection) {
+      return void 0;
+    }
+    if (this._allowedHosts && this._allowedHosts.length > 0) {
+      const hostHeader = req.headers.get("host");
+      if (!hostHeader || !this._allowedHosts.includes(hostHeader)) {
+        const error = `Invalid Host header: ${hostHeader}`;
+        this.onerror?.(new Error(error));
+        return this.createJsonErrorResponse(403, -32e3, error);
+      }
+    }
+    if (this._allowedOrigins && this._allowedOrigins.length > 0) {
+      const originHeader = req.headers.get("origin");
+      if (originHeader && !this._allowedOrigins.includes(originHeader)) {
+        const error = `Invalid Origin header: ${originHeader}`;
+        this.onerror?.(new Error(error));
+        return this.createJsonErrorResponse(403, -32e3, error);
+      }
+    }
+    return void 0;
+  }
+  /**
+   * Handles an incoming HTTP request, whether GET, POST, or DELETE
+   * Returns a Response object (Web Standard)
+   */
+  async handleRequest(req, options) {
+    if (this._closed) {
+      return this.createJsonErrorResponse(404, -32001, "Session not found");
+    }
+    if (!this.sessionIdGenerator && this._hasHandledRequest) {
+      throw new Error("Stateless transport cannot be reused across requests. Create a new transport per request.");
+    }
+    this._hasHandledRequest = true;
+    const validationError = this.validateRequestHeaders(req);
+    if (validationError) {
+      return validationError;
+    }
+    switch (req.method) {
+      case "POST":
+        return this.handlePostRequest(req, options);
+      case "GET":
+        return this.handleGetRequest(req);
+      case "DELETE":
+        return this.handleDeleteRequest(req);
+      default:
+        return this.handleUnsupportedRequest();
+    }
+  }
+  /**
+   * Writes a priming event to establish resumption capability.
+   * Only sends if eventStore is configured (opt-in for resumability) and
+   * the client's protocol version supports empty SSE data (>= 2025-11-25).
+   */
+  async writePrimingEvent(controller, encoder, streamId, protocolVersion) {
+    if (!this._eventStore) {
+      return;
+    }
+    if (protocolVersion < "2025-11-25") {
+      return;
+    }
+    const primingEventId = await this._eventStore.storeEvent(streamId, {});
+    let primingEvent = `id: ${primingEventId}
+data: 
+
+`;
+    if (this._retryInterval !== void 0) {
+      primingEvent = `id: ${primingEventId}
+retry: ${this._retryInterval}
+data: 
+
+`;
+    }
+    controller.enqueue(encoder.encode(primingEvent));
+    this._resumableStreams.add(streamId);
+  }
+  /**
+   * Handles GET requests for SSE stream
+   */
+  async handleGetRequest(req) {
+    const acceptHeader = req.headers.get("accept");
+    if (!acceptHeader?.includes("text/event-stream")) {
+      this.onerror?.(new Error("Not Acceptable: Client must accept text/event-stream"));
+      return this.createJsonErrorResponse(406, -32e3, "Not Acceptable: Client must accept text/event-stream");
+    }
+    const sessionError = this.validateSession(req);
+    if (sessionError) {
+      return sessionError;
+    }
+    const protocolError = this.validateProtocolVersion(req);
+    if (protocolError) {
+      return protocolError;
+    }
+    if (this._eventStore) {
+      const lastEventId = req.headers.get("last-event-id");
+      if (lastEventId) {
+        return this.replayEvents(lastEventId);
+      }
+    }
+    if (this._streamMapping.get(this._standaloneSseStreamId) !== void 0) {
+      this.onerror?.(new Error("Conflict: Only one SSE stream is allowed per session"));
+      return this.createJsonErrorResponse(409, -32e3, "Conflict: Only one SSE stream is allowed per session");
+    }
+    const encoder = new TextEncoder();
+    let streamController;
+    let keepAliveTimer = void 0;
+    const readable = new ReadableStream({
+      start: (controller) => {
+        streamController = controller;
+      },
+      cancel: () => {
+        if (keepAliveTimer !== void 0) {
+          clearInterval(keepAliveTimer);
+        }
+        if (this._streamMapping.get(this._standaloneSseStreamId)?.controller === streamController) {
+          this._streamMapping.delete(this._standaloneSseStreamId);
+        }
+      }
+    });
+    const headers = {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no"
+    };
+    if (this.sessionId !== void 0) {
+      headers["mcp-session-id"] = this.sessionId;
+    }
+    this._streamMapping.set(this._standaloneSseStreamId, {
+      controller: streamController,
+      encoder,
+      cleanup: () => {
+        if (keepAliveTimer !== void 0) {
+          clearInterval(keepAliveTimer);
+        }
+        this._streamMapping.delete(this._standaloneSseStreamId);
+        try {
+          streamController.close();
+        } catch {
+        }
+      }
+    });
+    keepAliveTimer = this.startKeepAlive(streamController, encoder);
+    return new Response(readable, { headers });
+  }
+  /**
+   * Replays events that would have been sent after the specified event ID
+   * Only used when resumability is enabled
+   */
+  async replayEvents(lastEventId) {
+    if (!this._eventStore) {
+      this.onerror?.(new Error("Event store not configured"));
+      return this.createJsonErrorResponse(400, -32e3, "Event store not configured");
+    }
+    try {
+      let streamId;
+      if (this._eventStore.getStreamIdForEventId) {
+        streamId = await this._eventStore.getStreamIdForEventId(lastEventId);
+        if (!streamId) {
+          this.onerror?.(new Error("Invalid event ID format"));
+          return this.createJsonErrorResponse(400, -32e3, "Invalid event ID format");
+        }
+        if (this._streamMapping.get(streamId) !== void 0) {
+          this.onerror?.(new Error("Conflict: Stream already has an active connection"));
+          return this.createJsonErrorResponse(409, -32e3, "Conflict: Stream already has an active connection");
+        }
+      }
+      const headers = {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+        "X-Accel-Buffering": "no"
+      };
+      if (this.sessionId !== void 0) {
+        headers["mcp-session-id"] = this.sessionId;
+      }
+      const encoder = new TextEncoder();
+      let streamController;
+      let keepAliveTimer = void 0;
+      let replayedStreamId = void 0;
+      let cancelled = false;
+      const readable = new ReadableStream({
+        start: (controller) => {
+          streamController = controller;
+        },
+        cancel: () => {
+          cancelled = true;
+          if (keepAliveTimer !== void 0) {
+            clearInterval(keepAliveTimer);
+          }
+          if (replayedStreamId !== void 0 && this._streamMapping.get(replayedStreamId)?.controller === streamController) {
+            this._streamMapping.delete(replayedStreamId);
+          }
+        }
+      });
+      const replayedEventIds = /* @__PURE__ */ new Set();
+      replayedStreamId = await this._eventStore.replayEventsAfter(lastEventId, {
+        send: async (eventId, message) => {
+          const success = this.writeSSEEvent(streamController, encoder, message, eventId);
+          if (!success) {
+            this.onerror?.(new Error("Failed replay events"));
+            try {
+              streamController.close();
+            } catch {
+            }
+          } else {
+            replayedEventIds.add(eventId);
+          }
+        }
+      });
+      if (this._closed || cancelled) {
+        try {
+          streamController.close();
+        } catch {
+        }
+        return this.createJsonErrorResponse(404, -32001, "Session not found");
+      }
+      this._streamMapping.get(replayedStreamId)?.cleanup();
+      this._streamMapping.set(replayedStreamId, {
+        controller: streamController,
+        encoder,
+        replayedEventIds,
+        cleanup: () => {
+          if (keepAliveTimer !== void 0) {
+            clearInterval(keepAliveTimer);
+          }
+          this._streamMapping.delete(replayedStreamId);
+          try {
+            streamController.close();
+          } catch {
+          }
+        }
+      });
+      this._resumableStreams.add(replayedStreamId);
+      keepAliveTimer = this.startKeepAlive(streamController, encoder);
+      return new Response(readable, { headers });
+    } catch (error) {
+      this.onerror?.(error);
+      return this.createJsonErrorResponse(500, -32e3, "Error replaying events");
+    }
+  }
+  /**
+   * Writes an event to an SSE stream via controller with proper formatting
+   */
+  writeSSEEvent(controller, encoder, message, eventId) {
+    try {
+      let eventData = `event: message
+`;
+      if (eventId) {
+        eventData += `id: ${eventId}
+`;
+      }
+      eventData += `data: ${JSON.stringify(message)}
+
+`;
+      controller.enqueue(encoder.encode(eventData));
+      return true;
+    } catch (error) {
+      this.onerror?.(error);
+      return false;
+    }
+  }
+  /**
+   * Handles unsupported requests (PUT, PATCH, etc.)
+   */
+  handleUnsupportedRequest() {
+    this.onerror?.(new Error("Method not allowed."));
+    return new Response(JSON.stringify({
+      jsonrpc: "2.0",
+      error: {
+        code: -32e3,
+        message: "Method not allowed."
+      },
+      id: null
+    }), {
+      status: 405,
+      headers: {
+        Allow: "GET, POST, DELETE",
+        "Content-Type": "application/json"
+      }
+    });
+  }
+  /**
+   * Handles POST requests containing JSON-RPC messages
+   */
+  async handlePostRequest(req, options) {
+    try {
+      const acceptHeader = req.headers.get("accept");
+      if (!acceptHeader?.includes("application/json") || !acceptHeader.includes("text/event-stream")) {
+        this.onerror?.(new Error("Not Acceptable: Client must accept both application/json and text/event-stream"));
+        return this.createJsonErrorResponse(406, -32e3, "Not Acceptable: Client must accept both application/json and text/event-stream");
+      }
+      const ct = req.headers.get("content-type");
+      if (!isJsonContentType(ct)) {
+        this.onerror?.(new Error("Unsupported Media Type: Content-Type must be application/json"));
+        return this.createJsonErrorResponse(415, -32e3, "Unsupported Media Type: Content-Type must be application/json");
+      }
+      const requestInfo = {
+        headers: Object.fromEntries(req.headers.entries()),
+        url: new URL(req.url)
+      };
+      let rawMessage;
+      if (options?.parsedBody !== void 0) {
+        rawMessage = options.parsedBody;
+      } else {
+        try {
+          rawMessage = await req.json();
+        } catch {
+          this.onerror?.(new Error("Parse error: Invalid JSON"));
+          return this.createJsonErrorResponse(400, -32700, "Parse error: Invalid JSON");
+        }
+      }
+      let messages;
+      try {
+        if (Array.isArray(rawMessage)) {
+          messages = rawMessage.map((msg) => JSONRPCMessageSchema.parse(msg));
+        } else {
+          messages = [JSONRPCMessageSchema.parse(rawMessage)];
+        }
+      } catch {
+        this.onerror?.(new Error("Parse error: Invalid JSON-RPC message"));
+        return this.createJsonErrorResponse(400, -32700, "Parse error: Invalid JSON-RPC message");
+      }
+      if (this._closed) {
+        return this.createJsonErrorResponse(404, -32001, "Session not found");
+      }
+      const isInitializationRequest = messages.some(isInitializeRequest);
+      if (isInitializationRequest) {
+        if (this._initialized && this.sessionId !== void 0) {
+          this.onerror?.(new Error("Invalid Request: Server already initialized"));
+          return this.createJsonErrorResponse(400, -32600, "Invalid Request: Server already initialized");
+        }
+        if (messages.length > 1) {
+          this.onerror?.(new Error("Invalid Request: Only one initialization request is allowed"));
+          return this.createJsonErrorResponse(400, -32600, "Invalid Request: Only one initialization request is allowed");
+        }
+        this.sessionId = this.sessionIdGenerator?.();
+        this._initialized = true;
+        if (this.sessionId && this._onsessioninitialized) {
+          await Promise.resolve(this._onsessioninitialized(this.sessionId));
+        }
+      }
+      if (!isInitializationRequest) {
+        const sessionError = this.validateSession(req);
+        if (sessionError) {
+          return sessionError;
+        }
+        const protocolError = this.validateProtocolVersion(req);
+        if (protocolError) {
+          return protocolError;
+        }
+      }
+      if (this._closed) {
+        return this.createJsonErrorResponse(404, -32001, "Session not found");
+      }
+      const hasRequests = messages.some(isJSONRPCRequest);
+      if (!hasRequests) {
+        for (const message of messages) {
+          this.onmessage?.(message, { authInfo: options?.authInfo, requestInfo });
+        }
+        return new Response(null, { status: 202 });
+      }
+      const streamId = crypto.randomUUID();
+      const initRequest = messages.find((m) => isInitializeRequest(m));
+      const clientProtocolVersion = initRequest ? initRequest.params.protocolVersion : req.headers.get("mcp-protocol-version") ?? DEFAULT_NEGOTIATED_PROTOCOL_VERSION;
+      if (this._enableJsonResponse) {
+        return new Promise((resolve2) => {
+          this._streamMapping.set(streamId, {
+            resolveJson: resolve2,
+            cleanup: () => {
+              this._streamMapping.delete(streamId);
+            }
+          });
+          for (const message of messages) {
+            if (isJSONRPCRequest(message)) {
+              this._requestToStreamMapping.set(message.id, streamId);
+            }
+          }
+          for (const message of messages) {
+            this.onmessage?.(message, { authInfo: options?.authInfo, requestInfo });
+          }
+        });
+      }
+      const encoder = new TextEncoder();
+      let streamController;
+      let keepAliveTimer = void 0;
+      const readable = new ReadableStream({
+        start: (controller) => {
+          streamController = controller;
+        },
+        cancel: () => {
+          if (keepAliveTimer !== void 0) {
+            clearInterval(keepAliveTimer);
+          }
+          if (this._streamMapping.get(streamId)?.controller === streamController) {
+            this._streamMapping.delete(streamId);
+          }
+        }
+      });
+      const headers = {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+        "X-Accel-Buffering": "no"
+      };
+      if (this.sessionId !== void 0) {
+        headers["mcp-session-id"] = this.sessionId;
+      }
+      for (const message of messages) {
+        if (isJSONRPCRequest(message)) {
+          this._streamMapping.set(streamId, {
+            controller: streamController,
+            encoder,
+            cleanup: () => {
+              if (keepAliveTimer !== void 0) {
+                clearInterval(keepAliveTimer);
+              }
+              this._streamMapping.delete(streamId);
+              try {
+                streamController.close();
+              } catch {
+              }
+            }
+          });
+          this._requestToStreamMapping.set(message.id, streamId);
+        }
+      }
+      try {
+        await this.writePrimingEvent(streamController, encoder, streamId, clientProtocolVersion);
+        for (const message of messages) {
+          let closeSSEStream;
+          let closeStandaloneSSEStream;
+          if (isJSONRPCRequest(message) && this._eventStore && clientProtocolVersion >= "2025-11-25") {
+            closeSSEStream = () => {
+              this.closeSSEStream(message.id);
+            };
+            closeStandaloneSSEStream = () => {
+              this.closeStandaloneSSEStream();
+            };
+          }
+          this.onmessage?.(message, { authInfo: options?.authInfo, requestInfo, closeSSEStream, closeStandaloneSSEStream });
+        }
+      } catch (error) {
+        this._streamMapping.get(streamId)?.cleanup();
+        this._resumableStreams.delete(streamId);
+        for (const message of messages) {
+          if (isJSONRPCRequest(message)) {
+            this._requestToStreamMapping.delete(message.id);
+          }
+        }
+        throw error;
+      }
+      if (this._streamMapping.get(streamId)?.controller === streamController) {
+        keepAliveTimer = this.startKeepAlive(streamController, encoder);
+      }
+      return new Response(readable, { status: 200, headers });
+    } catch (error) {
+      this.onerror?.(error);
+      return this.createJsonErrorResponse(400, -32700, "Parse error", { data: String(error) });
+    }
+  }
+  /**
+   * Handles DELETE requests to terminate sessions
+   */
+  async handleDeleteRequest(req) {
+    const sessionError = this.validateSession(req);
+    if (sessionError) {
+      return sessionError;
+    }
+    const protocolError = this.validateProtocolVersion(req);
+    if (protocolError) {
+      return protocolError;
+    }
+    try {
+      await Promise.resolve(this._onsessionclosed?.(this.sessionId));
+      return new Response(null, { status: 200 });
+    } finally {
+      await this.close();
+    }
+  }
+  /**
+   * Validates session ID for non-initialization requests.
+   * Returns Response error if invalid, undefined otherwise
+   */
+  validateSession(req) {
+    if (this.sessionIdGenerator === void 0) {
+      return void 0;
+    }
+    if (!this._initialized) {
+      this.onerror?.(new Error("Bad Request: Server not initialized"));
+      return this.createJsonErrorResponse(400, -32e3, "Bad Request: Server not initialized");
+    }
+    const sessionId = req.headers.get("mcp-session-id");
+    if (!sessionId) {
+      this.onerror?.(new Error("Bad Request: Mcp-Session-Id header is required"));
+      return this.createJsonErrorResponse(400, -32e3, "Bad Request: Mcp-Session-Id header is required");
+    }
+    if (sessionId !== this.sessionId) {
+      this.onerror?.(new Error("Session not found"));
+      return this.createJsonErrorResponse(404, -32001, "Session not found");
+    }
+    return void 0;
+  }
+  /**
+   * Validates the MCP-Protocol-Version header on incoming requests.
+   *
+   * For initialization: Version negotiation handles unknown versions gracefully
+   * (server responds with its supported version).
+   *
+   * For subsequent requests with MCP-Protocol-Version header:
+   * - Accept if in supported list
+   * - 400 if unsupported
+   *
+   * For HTTP requests without the MCP-Protocol-Version header:
+   * - Accept and default to the version negotiated at initialization
+   */
+  validateProtocolVersion(req) {
+    const protocolVersion = req.headers.get("mcp-protocol-version");
+    if (protocolVersion !== null && !SUPPORTED_PROTOCOL_VERSIONS.includes(protocolVersion)) {
+      this.onerror?.(new Error(`Bad Request: Unsupported protocol version: ${protocolVersion} (supported versions: ${SUPPORTED_PROTOCOL_VERSIONS.join(", ")})`));
+      return this.createJsonErrorResponse(400, -32e3, `Bad Request: Unsupported protocol version: ${protocolVersion} (supported versions: ${SUPPORTED_PROTOCOL_VERSIONS.join(", ")})`);
+    }
+    return void 0;
+  }
+  async close() {
+    if (this._closed) {
+      return;
+    }
+    this._closed = true;
+    this._streamMapping.forEach(({ cleanup }) => {
+      cleanup();
+    });
+    this._streamMapping.clear();
+    this._requestResponseMap.clear();
+    this._resumableStreams.clear();
+    this.onclose?.();
+  }
+  /**
+   * Close an SSE stream for a specific request, triggering client reconnection.
+   * Use this to implement polling behavior during long-running operations -
+   * client will reconnect after the retry interval specified in the priming event.
+   */
+  closeSSEStream(requestId) {
+    const streamId = this._requestToStreamMapping.get(requestId);
+    if (!streamId)
+      return;
+    const stream = this._streamMapping.get(streamId);
+    if (stream) {
+      stream.cleanup();
+    }
+  }
+  /**
+   * Close the standalone GET SSE stream, triggering client reconnection.
+   * Use this to implement polling behavior for server-initiated notifications.
+   */
+  closeStandaloneSSEStream() {
+    const stream = this._streamMapping.get(this._standaloneSseStreamId);
+    if (stream) {
+      stream.cleanup();
+    }
+  }
+  async send(message, options) {
+    let requestId = options?.relatedRequestId;
+    if (isJSONRPCResultResponse(message) || isJSONRPCErrorResponse(message)) {
+      requestId = message.id;
+    }
+    if (requestId === void 0) {
+      if (isJSONRPCResultResponse(message) || isJSONRPCErrorResponse(message)) {
+        throw new Error("Cannot send a response on a standalone SSE stream unless resuming a previous client request");
+      }
+      let eventId;
+      if (this._eventStore) {
+        eventId = await this._eventStore.storeEvent(this._standaloneSseStreamId, message);
+      }
+      const standaloneSse = this._streamMapping.get(this._standaloneSseStreamId);
+      if (standaloneSse === void 0) {
+        return;
+      }
+      if (standaloneSse.controller && standaloneSse.encoder && (eventId === void 0 || !standaloneSse.replayedEventIds?.has(eventId))) {
+        this.writeSSEEvent(standaloneSse.controller, standaloneSse.encoder, message, eventId);
+      }
+      return;
+    }
+    const streamId = this._requestToStreamMapping.get(requestId);
+    if (!streamId) {
+      throw new Error(`No connection established for request ID: ${String(requestId)}`);
+    }
+    let stream = this._streamMapping.get(streamId);
+    if (!this._enableJsonResponse) {
+      let eventId;
+      if (this._eventStore) {
+        eventId = await this._eventStore.storeEvent(streamId, message);
+        stream = this._streamMapping.get(streamId);
+      }
+      if (stream?.controller && stream?.encoder && (eventId === void 0 || !stream.replayedEventIds?.has(eventId))) {
+        const written = this.writeSSEEvent(stream.controller, stream.encoder, message, eventId);
+        if (written && eventId !== void 0) {
+          this._resumableStreams.add(streamId);
+        }
+      }
+    }
+    if (isJSONRPCResultResponse(message) || isJSONRPCErrorResponse(message)) {
+      this._requestResponseMap.set(requestId, message);
+      const relatedIds = Array.from(this._requestToStreamMapping.entries()).filter(([_, sid]) => sid === streamId).map(([id]) => id);
+      const allResponsesReady = relatedIds.every((id) => this._requestResponseMap.has(id));
+      if (allResponsesReady) {
+        if (!stream) {
+          if (this._closed) {
+            for (const id of relatedIds) {
+              this._requestResponseMap.delete(id);
+              this._requestToStreamMapping.delete(id);
+            }
+            return;
+          }
+          if (!this._enableJsonResponse && this._eventStore && this._resumableStreams.has(streamId)) {
+            for (const id of relatedIds) {
+              this._requestResponseMap.delete(id);
+              this._requestToStreamMapping.delete(id);
+            }
+            this._resumableStreams.delete(streamId);
+            return;
+          }
+          for (const id of relatedIds) {
+            this._requestResponseMap.delete(id);
+            this._requestToStreamMapping.delete(id);
+          }
+          throw new Error(`No connection established for request ID: ${String(requestId)}`);
+        }
+        if (this._enableJsonResponse && stream.resolveJson) {
+          const headers = {
+            "Content-Type": "application/json"
+          };
+          if (this.sessionId !== void 0) {
+            headers["mcp-session-id"] = this.sessionId;
+          }
+          const responses = relatedIds.map((id) => this._requestResponseMap.get(id));
+          if (responses.length === 1) {
+            stream.resolveJson(new Response(JSON.stringify(responses[0]), { status: 200, headers }));
+          } else {
+            stream.resolveJson(new Response(JSON.stringify(responses), { status: 200, headers }));
+          }
+        } else {
+          stream.cleanup();
+        }
+        for (const id of relatedIds) {
+          this._requestResponseMap.delete(id);
+          this._requestToStreamMapping.delete(id);
+        }
+        this._resumableStreams.delete(streamId);
+      }
+    }
+  }
+};
+createRequire(import.meta.url);
+var X_ALREADY_SENT = "x-hono-already-sent";
+var RequestError = class extends Error {
+  constructor(message, options) {
+    super(message, options);
+    this.name = "RequestError";
+  }
+};
+var nonJoinedHeaders = /* @__PURE__ */ new Set([
+  "age",
+  "authorization",
+  "content-length",
+  "content-type",
+  "etag",
+  "expires",
+  "from",
+  "host",
+  "if-modified-since",
+  "if-unmodified-since",
+  "last-modified",
+  "location",
+  "max-forwards",
+  "proxy-authorization",
+  "referer",
+  "retry-after",
+  "server",
+  "user-agent"
+]);
+var validHeaderName = /^[!#$%&'*+\-.^_`|~\dA-Za-z]+$/;
+var isHttpWhitespace = (code) => code === 9 || code === 10 || code === 13 || code === 32;
+var normalizeHeaderValue = (value) => {
+  if (!isHttpWhitespace(value.charCodeAt(0)) && !isHttpWhitespace(value.charCodeAt(value.length - 1))) return value;
+  let start = 0;
+  let end = value.length;
+  while (start < end && isHttpWhitespace(value.charCodeAt(start))) start++;
+  while (end > start && isHttpWhitespace(value.charCodeAt(end - 1))) end--;
+  return value.slice(start, end);
+};
+var forbiddenHeaderValue = /[\0\r\n]/;
+var GlobalHeaders = globalThis.Headers;
+var materializeHeaders = (rawHeaders, HeadersCtor = GlobalHeaders) => {
+  const headers = new HeadersCtor();
+  for (let i = 0; i < rawHeaders.length; i += 2) {
+    const name = rawHeaders[i];
+    if (!name.startsWith(":")) headers.append(name, rawHeaders[i + 1]);
+  }
+  return headers;
+};
+var RequestHeaders = class {
+  #incoming;
+  #rawHeaders;
+  #headers;
+  #invalidValue;
+  constructor(incoming) {
+    this.#incoming = incoming;
+    if (incoming instanceof Http2ServerRequest) this.#rawHeaders = incoming.rawHeaders.slice();
+  }
+  get #lazyRawHeaders() {
+    return this.#rawHeaders ??= this.#incoming.rawHeaders.slice();
+  }
+  get #native() {
+    if (!this.#headers) {
+      this.#headers = materializeHeaders(this.#lazyRawHeaders);
+      this.#rawHeaders = void 0;
+    }
+    return this.#headers;
+  }
+  #normalizedName(name) {
+    if (typeof name !== "string") return;
+    if (!validHeaderName.test(name)) throw new TypeError(`Invalid header name: ${name}`);
+    return name.toLowerCase();
+  }
+  #lookupHttp1(lowerName) {
+    const headers = this.#incoming instanceof Http2ServerRequest ? void 0 : this.#incoming.headers;
+    if (!headers || nonJoinedHeaders.has(lowerName) || lowerName === "set-cookie" || lowerName === "__proto__") return;
+    if (!Object.hasOwn(headers, lowerName)) return null;
+    const rawValue = headers[lowerName];
+    if (typeof rawValue === "string") {
+      const value = normalizeHeaderValue(rawValue);
+      return forbiddenHeaderValue.test(value) ? void 0 : value;
+    }
+  }
+  #lookup(rawHeaders, lowerName) {
+    const separator = lowerName === "cookie" ? "; " : ", ";
+    let value = null;
+    for (let i = 0; i < rawHeaders.length; i += 2) {
+      const rawName = rawHeaders[i];
+      if (rawName.length === lowerName.length && rawName.toLowerCase() === lowerName) {
+        const rawValue = normalizeHeaderValue(rawHeaders[i + 1]);
+        if (forbiddenHeaderValue.test(rawValue)) {
+          this.#invalidValue = true;
+          return;
+        }
+        value = value === null ? rawValue : value + separator + rawValue;
+      }
+    }
+    return value;
+  }
+  append(name, value) {
+    this.#native.append(name, value);
+  }
+  delete(name) {
+    this.#native.delete(name);
+  }
+  get(name) {
+    const lowerName = this.#normalizedName(name);
+    if (lowerName && !this.#headers && !this.#invalidValue) {
+      const http1Value = this.#lookupHttp1(lowerName);
+      if (http1Value !== void 0) return http1Value;
+      const value = this.#lookup(this.#lazyRawHeaders, lowerName);
+      if (value !== void 0) return value;
+    }
+    return this.#native.get(name);
+  }
+  has(name) {
+    const lowerName = this.#normalizedName(name);
+    if (lowerName && !this.#headers && !this.#invalidValue) {
+      const http1Value = this.#lookupHttp1(lowerName);
+      if (http1Value !== void 0) return http1Value !== null;
+      const value = this.#lookup(this.#lazyRawHeaders, lowerName);
+      if (value !== void 0) return value !== null;
+    }
+    return this.#native.has(name);
+  }
+  set(name, value) {
+    this.#native.set(name, value);
+  }
+  getSetCookie() {
+    return this.#native.getSetCookie();
+  }
+  keys() {
+    return this.#native.keys();
+  }
+  values() {
+    return this.#native.values();
+  }
+  entries() {
+    return this.#native.entries();
+  }
+  forEach(callback, thisArg) {
+    this.#native.forEach((value, key) => {
+      callback.call(thisArg, value, key, this);
+    });
+  }
+  [Symbol.iterator]() {
+    return this.entries();
+  }
+};
+Object.defineProperty(RequestHeaders.prototype, /* @__PURE__ */ Symbol.for("nodejs.util.inspect.custom"), { value: function(depth, options, inspectFn) {
+  return `Headers (lightweight) ${inspectFn(Object.fromEntries(this), {
+    ...options,
+    depth: depth == null ? null : depth - 1
+  })}`;
+} });
+Object.setPrototypeOf(RequestHeaders.prototype, GlobalHeaders.prototype);
+var newHeadersFromIncoming = (incoming) => globalThis.Headers === GlobalHeaders ? new RequestHeaders(incoming) : materializeHeaders(incoming.rawHeaders, globalThis.Headers);
+var reValidRequestUrl = /^\/[!#$&-;=?-\[\]_a-z~]*$/;
+var reDotSegment = /\/\.\.?(?:[/?#]|$)/;
+var reValidHost = /^[a-z0-9._-]+(?::(?:[1-5]\d{3,4}|[6-9]\d{3}))?$/;
+var buildUrl = (scheme, host, incomingUrl) => {
+  const url = `${scheme}://${host}${incomingUrl}`;
+  if (!reValidHost.test(host)) {
+    const urlObj = new URL(url);
+    if (urlObj.hostname.length !== host.length && urlObj.hostname !== (host.includes(":") ? host.replace(/:\d+$/, "") : host).toLowerCase()) throw new RequestError("Invalid host header");
+    return urlObj.href;
+  } else if (incomingUrl.length === 0) return url + "/";
+  else {
+    if (incomingUrl.charCodeAt(0) !== 47) throw new RequestError("Invalid URL");
+    if (!reValidRequestUrl.test(incomingUrl) || reDotSegment.test(incomingUrl)) return new URL(url).href;
+    return url;
+  }
+};
+var toRequestError = (e) => {
+  if (e instanceof RequestError) return e;
+  return new RequestError(e.message, { cause: e });
+};
+var GlobalRequest = global.Request;
+var Request$1 = class extends GlobalRequest {
+  constructor(input, options) {
+    if (typeof input === "object" && getRequestCache in input) {
+      const hasReplacementBody = options !== void 0 && "body" in options && options.body != null;
+      if (input[bodyConsumedDirectlyKey] && !hasReplacementBody) throw new TypeError("Cannot construct a Request with a Request object that has already been used.");
+      input = input[getRequestCache]();
+    }
+    if (typeof options?.body?.getReader !== "undefined") options.duplex ??= "half";
+    super(input, options);
+  }
+};
+var wrapBodyStream = /* @__PURE__ */ Symbol("wrapBodyStream");
+var byteExactEncodings = /* @__PURE__ */ new Set([
+  "latin1",
+  "binary",
+  "hex",
+  "base64",
+  "base64url"
+]);
+var isByteExactEncoding = (encoding) => encoding === null || byteExactEncodings.has(encoding);
+var bodyBufferedBeforeDisconnectKey = /* @__PURE__ */ Symbol("bodyBufferedBeforeDisconnect");
+var bodyBufferedLengthBeforeDisconnectKey = /* @__PURE__ */ Symbol("bodyBufferedLengthBeforeDisconnect");
+var toBufferChunk = (chunk, encoding) => Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, encoding ?? "utf8");
+var isRecoverableDisconnectedIncoming = (incoming) => !(incoming instanceof Http2ServerRequest) && !!incoming.complete && !!incoming.readableAborted && typeof incoming.read === "function" && isByteExactEncoding(incoming.readableEncoding);
+var recordBodyBufferedBeforeDisconnect = (incoming) => {
+  if (incoming.readableDidRead || !isRecoverableDisconnectedIncoming(incoming)) return;
+  const incomingWithRecovery = incoming;
+  incomingWithRecovery[bodyBufferedLengthBeforeDisconnectKey] ??= incoming.readableLength;
+};
+var readBodyBufferedBeforeDisconnect = (incoming, chunks) => {
+  if (incoming.readableDidRead && !chunks || !isRecoverableDisconnectedIncoming(incoming)) return;
+  const incomingWithRecovery = incoming;
+  if (incomingWithRecovery[bodyBufferedBeforeDisconnectKey] !== void 0) return incomingWithRecovery[bodyBufferedBeforeDisconnectKey];
+  let result;
+  const errored = incoming.errored;
+  if (errored && errored.code !== "ECONNRESET") result = errored;
+  else if (incomingWithRecovery[bodyBufferedLengthBeforeDisconnectKey] !== void 0 && incoming.readableLength !== incomingWithRecovery[bodyBufferedLengthBeforeDisconnectKey]) result = newBodyUnusableError();
+  else {
+    const bodyChunks = chunks ?? [];
+    const chunk = incoming.read();
+    if (chunk !== null) bodyChunks.push(toBufferChunk(chunk, incoming.readableEncoding));
+    const buffer = bodyChunks.length === 1 ? bodyChunks[0] : Buffer.concat(bodyChunks);
+    result = buffer;
+    const contentLength = incoming.headers["content-length"];
+    if (typeof contentLength === "string" && /^\d+$/.test(contentLength)) {
+      const expectedLength = Number(contentLength);
+      if (Number.isSafeInteger(expectedLength) && buffer.length !== expectedLength) result = newBodyUnusableError();
+    }
+  }
+  incomingWithRecovery[bodyBufferedBeforeDisconnectKey] = result;
+  return result;
+};
+var enqueueBufferedBody = (controller, buffered) => {
+  if (buffered instanceof Error) {
+    controller.error(buffered);
+    return;
+  }
+  if (buffered.length > 0) controller.enqueue(buffered);
+  controller.close();
+};
+var newRequestFromIncoming = (method, url, headers, incoming, abortController) => {
+  const init = {
+    method,
+    headers,
+    signal: abortController.signal
+  };
+  if (method === "TRACE") {
+    init.method = "GET";
+    const req = new Request$1(url, init);
+    Object.defineProperty(req, "method", { get() {
+      return "TRACE";
+    } });
+    return req;
+  }
+  if (!(method === "GET" || method === "HEAD")) if ("rawBody" in incoming && incoming.rawBody instanceof Buffer) init.body = new ReadableStream({ start(controller) {
+    controller.enqueue(incoming.rawBody);
+    controller.close();
+  } });
+  else if (incoming[wrapBodyStream]) {
+    let reader;
+    init.body = new ReadableStream({ async pull(controller) {
+      try {
+        if (!reader) {
+          const buffered = readBodyBufferedBeforeDisconnect(incoming);
+          if (buffered !== void 0) {
+            enqueueBufferedBody(controller, buffered);
+            return;
+          }
+        }
+        reader ||= Readable.toWeb(incoming).getReader();
+        const { done, value } = await reader.read();
+        if (done) controller.close();
+        else controller.enqueue(value);
+      } catch (error) {
+        controller.error(error);
+      }
+    } });
+  } else {
+    const buffered = readBodyBufferedBeforeDisconnect(incoming);
+    if (buffered !== void 0) init.body = new ReadableStream({ start(controller) {
+      enqueueBufferedBody(controller, buffered);
+    } });
+    else init.body = Readable.toWeb(incoming);
+  }
+  return new Request$1(url, init);
+};
+var getRequestCache = /* @__PURE__ */ Symbol("getRequestCache");
+var requestCache = /* @__PURE__ */ Symbol("requestCache");
+var incomingKey = /* @__PURE__ */ Symbol("incomingKey");
+var urlKey = /* @__PURE__ */ Symbol("urlKey");
+var methodKey = /* @__PURE__ */ Symbol("methodKey");
+var headersKey = /* @__PURE__ */ Symbol("headersKey");
+var abortControllerKey = /* @__PURE__ */ Symbol("abortControllerKey");
+var getAbortController = /* @__PURE__ */ Symbol("getAbortController");
+var abortRequest = /* @__PURE__ */ Symbol("abortRequest");
+var bodyBufferKey = /* @__PURE__ */ Symbol("bodyBuffer");
+var bodyReadPromiseKey = /* @__PURE__ */ Symbol("bodyReadPromise");
+var bodyConsumedDirectlyKey = /* @__PURE__ */ Symbol("bodyConsumedDirectly");
+var bodyLockReaderKey = /* @__PURE__ */ Symbol("bodyLockReader");
+var abortReasonKey = /* @__PURE__ */ Symbol("abortReason");
+var newBodyUnusableError = () => {
+  return /* @__PURE__ */ new TypeError("Body is unusable");
+};
+var rejectBodyUnusable = () => {
+  return Promise.reject(newBodyUnusableError());
+};
+var textDecoder = new TextDecoder();
+var consumeBodyDirectOnce = (request) => {
+  if (request[bodyConsumedDirectlyKey]) return rejectBodyUnusable();
+  request[bodyConsumedDirectlyKey] = true;
+};
+var toArrayBuffer = (buf) => {
+  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+};
+var contentType = (request) => {
+  return (request[headersKey] ||= newHeadersFromIncoming(request[incomingKey])).get("content-type") || "";
+};
+var methodTokenRegExp = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
+var normalizeIncomingMethod = (method) => {
+  if (typeof method !== "string" || method.length === 0) return "GET";
+  switch (method) {
+    case "DELETE":
+    case "GET":
+    case "HEAD":
+    case "OPTIONS":
+    case "PATCH":
+    case "POST":
+    case "PUT":
+    case "QUERY":
+      return method;
+  }
+  const upper = method.toUpperCase();
+  switch (upper) {
+    case "DELETE":
+    case "GET":
+    case "HEAD":
+    case "OPTIONS":
+    case "POST":
+    case "PUT":
+      return upper;
+    default:
+      return method;
+  }
+};
+var validateDirectReadMethod = (method) => {
+  if (!methodTokenRegExp.test(method)) return /* @__PURE__ */ new TypeError(`'${method}' is not a valid HTTP method.`);
+  const normalized = method.toUpperCase();
+  if (normalized === "CONNECT" || normalized === "TRACK" || normalized === "TRACE" && method !== "TRACE") return /* @__PURE__ */ new TypeError(`'${method}' HTTP method is unsupported.`);
+};
+var readBodyWithFastPath = (request, method, fromBuffer) => {
+  if (request[bodyConsumedDirectlyKey]) return rejectBodyUnusable();
+  const methodName = request.method;
+  if (methodName === "GET" || methodName === "HEAD") return request[getRequestCache]()[method]();
+  const methodValidationError = validateDirectReadMethod(methodName);
+  if (methodValidationError) return Promise.reject(methodValidationError);
+  if (request[requestCache]) {
+    if (methodName !== "TRACE") return request[requestCache][method]();
+  }
+  const alreadyUsedError = consumeBodyDirectOnce(request);
+  if (alreadyUsedError) return alreadyUsedError;
+  const raw = readRawBodyIfAvailable(request);
+  if (raw) {
+    const result = Promise.resolve(fromBuffer(raw, request));
+    request[bodyBufferKey] = void 0;
+    return result;
+  }
+  return readBodyDirect(request).then((buf) => {
+    const result = fromBuffer(buf, request);
+    request[bodyBufferKey] = void 0;
+    return result;
+  });
+};
+var readRawBodyIfAvailable = (request) => {
+  const incoming = request[incomingKey];
+  if ("rawBody" in incoming && incoming.rawBody instanceof Buffer) return incoming.rawBody;
+};
+var normalizeAbortError = (request, incoming) => {
+  if (incoming.errored) return incoming.errored;
+  const reason = request[abortReasonKey];
+  if (reason !== void 0) return reason instanceof Error ? reason : new Error(String(reason));
+  return /* @__PURE__ */ new Error("Client connection prematurely closed.");
+};
+var readBodyDirect = (request) => {
+  if (request[bodyBufferKey]) return Promise.resolve(request[bodyBufferKey]);
+  if (request[bodyReadPromiseKey]) return request[bodyReadPromiseKey];
+  const incoming = request[incomingKey];
+  if (incoming.readableDidRead) return rejectBodyUnusable();
+  const buffered = readBodyBufferedBeforeDisconnect(incoming);
+  if (buffered !== void 0) {
+    if (buffered instanceof Error) return Promise.reject(buffered);
+    request[bodyBufferKey] = buffered;
+    return Promise.resolve(buffered);
+  }
+  const promise = new Promise((resolve2, reject) => {
+    const chunks = [];
+    let settled = false;
+    const finish = (callback) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      callback();
+    };
+    const recoverCompleteBodyAfterDisconnect = (error) => {
+      const streamError = incoming.errored ?? error;
+      if (!isRecoverableDisconnectedIncoming(incoming) || streamError && streamError.code !== "ECONNRESET") return false;
+      finish(() => {
+        const recovered = readBodyBufferedBeforeDisconnect(incoming, chunks);
+        if (recovered instanceof Error) reject(recovered);
+        else if (recovered === void 0) reject(error ?? normalizeAbortError(request, incoming));
+        else {
+          request[bodyBufferKey] = recovered;
+          resolve2(recovered);
+        }
+      });
+      return true;
+    };
+    const onData = (chunk) => {
+      chunks.push(toBufferChunk(chunk, incoming.readableEncoding));
+    };
+    const onEnd = () => {
+      finish(() => {
+        const buffer = chunks.length === 1 ? chunks[0] : Buffer.concat(chunks);
+        request[bodyBufferKey] = buffer;
+        resolve2(buffer);
+      });
+    };
+    const onError = (error) => {
+      if (recoverCompleteBodyAfterDisconnect(error)) return;
+      finish(() => {
+        reject(error);
+      });
+    };
+    const onClose = () => {
+      if (incoming.readableEnded) {
+        onEnd();
+        return;
+      }
+      if (recoverCompleteBodyAfterDisconnect()) return;
+      finish(() => {
+        reject(normalizeAbortError(request, incoming));
+      });
+    };
+    const cleanup = () => {
+      incoming.off("data", onData);
+      incoming.off("end", onEnd);
+      incoming.off("error", onError);
+      incoming.off("close", onClose);
+      request[bodyReadPromiseKey] = void 0;
+    };
+    incoming.on("data", onData);
+    incoming.on("end", onEnd);
+    incoming.on("error", onError);
+    incoming.on("close", onClose);
+    queueMicrotask(() => {
+      if (settled) return;
+      if (incoming.readableEnded) onEnd();
+      else if (incoming.errored) onError(incoming.errored);
+      else if (incoming.destroyed) onClose();
+    });
+  });
+  request[bodyReadPromiseKey] = promise;
+  return promise;
+};
+var requestPrototype = {
+  get method() {
+    return this[methodKey];
+  },
+  get url() {
+    return this[urlKey];
+  },
+  get headers() {
+    return this[headersKey] ||= newHeadersFromIncoming(this[incomingKey]);
+  },
+  [abortRequest](reason) {
+    if (this[abortReasonKey] === void 0) this[abortReasonKey] = reason;
+    const abortController = this[abortControllerKey];
+    if (abortController && !abortController.signal.aborted) abortController.abort(reason);
+  },
+  [getAbortController]() {
+    this[abortControllerKey] ||= new AbortController();
+    if (this[abortReasonKey] !== void 0 && !this[abortControllerKey].signal.aborted) this[abortControllerKey].abort(this[abortReasonKey]);
+    return this[abortControllerKey];
+  },
+  [getRequestCache]() {
+    const abortController = this[getAbortController]();
+    if (this[requestCache]) return this[requestCache];
+    const method = this.method;
+    if (this[bodyConsumedDirectlyKey] && !(method === "GET" || method === "HEAD")) {
+      this[bodyBufferKey] = void 0;
+      const init = {
+        method: method === "TRACE" ? "GET" : method,
+        headers: this.headers,
+        signal: abortController.signal
+      };
+      if (method !== "TRACE") {
+        init.body = new ReadableStream({ start(c) {
+          c.close();
+        } });
+        init.duplex = "half";
+      }
+      const req = new Request$1(this[urlKey], init);
+      if (method === "TRACE") Object.defineProperty(req, "method", { get() {
+        return "TRACE";
+      } });
+      return this[requestCache] = req;
+    }
+    return this[requestCache] = newRequestFromIncoming(this.method, this[urlKey], this.headers, this[incomingKey], abortController);
+  },
+  get body() {
+    if (!this[bodyConsumedDirectlyKey]) return this[getRequestCache]().body;
+    const request = this[getRequestCache]();
+    if (!this[bodyLockReaderKey] && request.body) this[bodyLockReaderKey] = request.body.getReader();
+    return request.body;
+  },
+  get bodyUsed() {
+    if (this[bodyConsumedDirectlyKey]) return true;
+    if (this[requestCache]) return this[requestCache].bodyUsed;
+    return false;
+  }
+};
+Object.defineProperty(requestPrototype, "signal", { get() {
+  return this[getAbortController]().signal;
+} });
+[
+  "cache",
+  "credentials",
+  "destination",
+  "integrity",
+  "mode",
+  "redirect",
+  "referrer",
+  "referrerPolicy",
+  "keepalive"
+].forEach((k) => {
+  Object.defineProperty(requestPrototype, k, { get() {
+    return this[getRequestCache]()[k];
+  } });
+});
+["clone", "formData"].forEach((k) => {
+  Object.defineProperty(requestPrototype, k, { value: function() {
+    if (this[bodyConsumedDirectlyKey]) {
+      if (k === "clone") throw newBodyUnusableError();
+      return rejectBodyUnusable();
+    }
+    return this[getRequestCache]()[k]();
+  } });
+});
+Object.defineProperty(requestPrototype, "text", { value: function() {
+  return readBodyWithFastPath(this, "text", (buf) => textDecoder.decode(buf));
+} });
+Object.defineProperty(requestPrototype, "arrayBuffer", { value: function() {
+  return readBodyWithFastPath(this, "arrayBuffer", (buf) => toArrayBuffer(buf));
+} });
+Object.defineProperty(requestPrototype, "blob", { value: function() {
+  return readBodyWithFastPath(this, "blob", (buf, request) => {
+    const type = contentType(request);
+    const init = type ? { headers: { "content-type": type } } : void 0;
+    return new Response(buf, init).blob();
+  });
+} });
+Object.defineProperty(requestPrototype, "json", { value: function() {
+  if (this[bodyConsumedDirectlyKey]) return rejectBodyUnusable();
+  return this.text().then(JSON.parse);
+} });
+Object.defineProperty(requestPrototype, /* @__PURE__ */ Symbol.for("nodejs.util.inspect.custom"), { value: function(depth, options, inspectFn) {
+  return `Request (lightweight) ${inspectFn({
+    method: this.method,
+    url: this.url,
+    headers: this.headers,
+    nativeRequest: this[requestCache]
+  }, {
+    ...options,
+    depth: depth == null ? null : depth - 1
+  })}`;
+} });
+Object.setPrototypeOf(requestPrototype, Request$1.prototype);
+var newRequest = (incoming, defaultHostname) => {
+  const req = Object.create(requestPrototype);
+  req[incomingKey] = incoming;
+  req[methodKey] = normalizeIncomingMethod(incoming.method);
+  const incomingUrl = incoming.url || "";
+  if (incomingUrl[0] !== "/" && (incomingUrl.startsWith("http://") || incomingUrl.startsWith("https://"))) {
+    if (incoming instanceof Http2ServerRequest) throw new RequestError("Absolute URL for :path is not allowed in HTTP/2");
+    try {
+      req[urlKey] = new URL(incomingUrl).href;
+    } catch (e) {
+      throw new RequestError("Invalid absolute URL", { cause: e });
+    }
+    return req;
+  }
+  const host = (incoming instanceof Http2ServerRequest ? incoming.authority : incoming.headers.host) || defaultHostname;
+  if (!host) throw new RequestError("Missing host header");
+  let scheme;
+  if (incoming instanceof Http2ServerRequest) {
+    scheme = incoming.scheme;
+    if (!(scheme === "http" || scheme === "https")) throw new RequestError("Unsupported scheme");
+  } else scheme = incoming.socket && incoming.socket.encrypted ? "https" : "http";
+  try {
+    req[urlKey] = buildUrl(scheme, host, incomingUrl);
+  } catch (e) {
+    if (e instanceof RequestError) throw e;
+    else throw new RequestError("Invalid URL", { cause: e });
+  }
+  return req;
+};
+var defaultContentType = "text/plain; charset=UTF-8";
+var responseCache = /* @__PURE__ */ Symbol("responseCache");
+var getResponseCache = /* @__PURE__ */ Symbol("getResponseCache");
+var cacheKey = /* @__PURE__ */ Symbol("cache");
+var GlobalResponse = global.Response;
+var Response$1 = class Response$12 {
+  #body;
+  #init;
+  [getResponseCache]() {
+    const cache = this[cacheKey];
+    const liveHeaders = cache && cache[2] instanceof Headers ? cache[2] : void 0;
+    delete this[cacheKey];
+    return this[responseCache] ||= new GlobalResponse(this.#body, liveHeaders ? {
+      status: this.#init?.status,
+      statusText: this.#init?.statusText,
+      headers: liveHeaders
+    } : this.#init);
+  }
+  constructor(body, init) {
+    let headers;
+    this.#body = body;
+    if (init instanceof GlobalResponse) {
+      const cachedGlobalResponse = init[responseCache];
+      if (cachedGlobalResponse) {
+        this.#init = cachedGlobalResponse;
+        this[getResponseCache]();
+        return;
+      }
+      this.#init = init instanceof Response$12 ? init.#init : init;
+      headers = new Headers(init.headers);
+    } else this.#init = init;
+    if (body == null || typeof body === "string" || typeof body?.getReader !== "undefined" || body instanceof Blob || body instanceof Uint8Array) this[cacheKey] = [
+      init?.status || 200,
+      body ?? null,
+      headers || init?.headers
+    ];
+  }
+  get headers() {
+    const cache = this[cacheKey];
+    if (cache) {
+      if (!(cache[2] instanceof Headers)) cache[2] = new Headers(cache[2] || (cache[1] === null ? void 0 : { "content-type": defaultContentType }));
+      return cache[2];
+    }
+    return this[getResponseCache]().headers;
+  }
+  get status() {
+    return this[cacheKey]?.[0] ?? this[getResponseCache]().status;
+  }
+  get ok() {
+    const status = this.status;
+    return status >= 200 && status < 300;
+  }
+};
+[
+  "body",
+  "bodyUsed",
+  "redirected",
+  "statusText",
+  "trailers",
+  "type",
+  "url"
+].forEach((k) => {
+  Object.defineProperty(Response$1.prototype, k, { get() {
+    return this[getResponseCache]()[k];
+  } });
+});
+[
+  "arrayBuffer",
+  "blob",
+  "clone",
+  "formData",
+  "json",
+  "text"
+].forEach((k) => {
+  Object.defineProperty(Response$1.prototype, k, { value: function() {
+    return this[getResponseCache]()[k]();
+  } });
+});
+Object.defineProperty(Response$1.prototype, /* @__PURE__ */ Symbol.for("nodejs.util.inspect.custom"), { value: function(depth, options, inspectFn) {
+  return `Response (lightweight) ${inspectFn({
+    status: this.status,
+    headers: this.headers,
+    ok: this.ok,
+    nativeResponse: this[responseCache]
+  }, {
+    ...options,
+    depth: depth == null ? null : depth - 1
+  })}`;
+} });
+Object.setPrototypeOf(Response$1, GlobalResponse);
+Object.setPrototypeOf(Response$1.prototype, GlobalResponse.prototype);
+var validRedirectUrl = /^https?:\/\/[!#-;=?-[\]_a-z~A-Z]+$/;
+var parseRedirectUrl = (url) => {
+  if (url instanceof URL) return url.href;
+  if (validRedirectUrl.test(url)) return url;
+  return new URL(url).href;
+};
+var validRedirectStatuses = /* @__PURE__ */ new Set([
+  301,
+  302,
+  303,
+  307,
+  308
+]);
+Object.defineProperty(Response$1, "redirect", {
+  value: function redirect(url, status = 302) {
+    if (!validRedirectStatuses.has(status)) throw new RangeError("Invalid status code");
+    return new Response$1(null, {
+      status,
+      headers: { location: parseRedirectUrl(url) }
+    });
+  },
+  writable: true,
+  configurable: true
+});
+Object.defineProperty(Response$1, "json", {
+  value: function json(data, init) {
+    const body = JSON.stringify(data);
+    if (body === void 0) throw new TypeError("The data is not JSON serializable");
+    const initHeaders = init?.headers;
+    let headers;
+    if (initHeaders) {
+      headers = new Headers(initHeaders);
+      if (!headers.has("content-type")) headers.set("content-type", "application/json");
+    } else headers = { "content-type": "application/json" };
+    return new Response$1(body, {
+      status: init?.status ?? 200,
+      statusText: init?.statusText,
+      headers
+    });
+  },
+  writable: true,
+  configurable: true
+});
+async function readWithoutBlocking(readPromise) {
+  return Promise.race([readPromise, Promise.resolve().then(() => Promise.resolve(void 0))]);
+}
+function writeFromReadableStreamDefaultReader(reader, writable, currentReadPromise) {
+  const cancel = (error) => {
+    reader.cancel(error).catch(() => {
+    });
+  };
+  writable.on("close", cancel);
+  writable.on("error", cancel);
+  (currentReadPromise ?? reader.read()).then(flow, handleStreamError);
+  return reader.closed.finally(() => {
+    writable.off("close", cancel);
+    writable.off("error", cancel);
+  });
+  function handleStreamError(error) {
+    if (error) writable.destroy(error);
+  }
+  function onDrain() {
+    reader.read().then(flow, handleStreamError);
+  }
+  function flow({ done, value }) {
+    try {
+      if (done) writable.end();
+      else if (!writable.write(value)) writable.once("drain", onDrain);
+      else return reader.read().then(flow, handleStreamError);
+    } catch (e) {
+      handleStreamError(e);
+    }
+  }
+}
+function writeFromReadableStream(stream, writable) {
+  if (stream.locked) throw new TypeError("ReadableStream is locked.");
+  else if (writable.destroyed) return;
+  return writeFromReadableStreamDefaultReader(stream.getReader(), writable);
+}
+var buildOutgoingHttpHeaders = (headers, defaultContentType2) => {
+  const res = {};
+  if (!(headers instanceof Headers)) headers = new Headers(headers ?? void 0);
+  if (headers.has("set-cookie")) {
+    const cookies = [];
+    for (const [k, v] of headers) if (k === "set-cookie") cookies.push(v);
+    else res[k] = v;
+    if (cookies.length > 0) res["set-cookie"] = cookies;
+  } else for (const [k, v] of headers) res[k] = v;
+  if (defaultContentType2) res["content-type"] ??= defaultContentType2;
+  return res;
+};
+var outgoingEnded = /* @__PURE__ */ Symbol("outgoingEnded");
+var incomingDraining = /* @__PURE__ */ Symbol("incomingDraining");
+var DRAIN_TIMEOUT_MS = 500;
+var MAX_DRAIN_BYTES = 64 * 1024 * 1024;
+var drainIncoming = (incoming) => {
+  const incomingWithDrainState = incoming;
+  if (incoming.destroyed || incomingWithDrainState[incomingDraining]) return;
+  incomingWithDrainState[incomingDraining] = true;
+  if (incoming instanceof Http2ServerRequest) {
+    try {
+      incoming.stream?.close?.(constants.NGHTTP2_NO_ERROR);
+    } catch {
+    }
+    return;
+  }
+  let bytesRead = 0;
+  const cleanup = () => {
+    clearTimeout(timer);
+    incoming.off("data", onData);
+    incoming.off("end", cleanup);
+    incoming.off("error", cleanup);
+  };
+  const forceClose = () => {
+    cleanup();
+    const socket = incoming.socket;
+    if (socket && !socket.destroyed) {
+      if (typeof socket.destroySoon === "function") socket.destroySoon();
+      else if (typeof socket.destroy === "function") socket.destroy();
+    }
+  };
+  const timer = setTimeout(forceClose, DRAIN_TIMEOUT_MS);
+  timer.unref?.();
+  const onData = (chunk) => {
+    bytesRead += chunk.length;
+    if (bytesRead > MAX_DRAIN_BYTES) forceClose();
+  };
+  incoming.on("data", onData);
+  incoming.on("end", cleanup);
+  incoming.on("error", cleanup);
+  incoming.resume();
+};
+var makeCloseHandler = (req, incoming, outgoing, needsBodyCleanup) => () => {
+  if (incoming.errored) {
+    recordBodyBufferedBeforeDisconnect(incoming);
+    req[abortRequest](incoming.errored.toString());
+  } else if (!outgoing.writableFinished) {
+    recordBodyBufferedBeforeDisconnect(incoming);
+    req[abortRequest]("Client connection prematurely closed.");
+  }
+  if (needsBodyCleanup && !incoming.readableEnded) setTimeout(() => {
+    if (!incoming.readableEnded) setTimeout(() => {
+      drainIncoming(incoming);
+    });
+  });
+};
+var isImmediateCacheableResponse = (res) => {
+  if (!(cacheKey in res)) return false;
+  const body = res[cacheKey][1];
+  return body === null || typeof body === "string" || body instanceof Uint8Array;
+};
+var handleRequestError = () => new Response(null, { status: 400 });
+var handleFetchError = (e) => new Response(null, { status: e instanceof Error && (e.name === "TimeoutError" || e.constructor.name === "TimeoutError") ? 504 : 500 });
+var handleResponseError = (e, outgoing) => {
+  const err = e instanceof Error ? e : new Error("unknown error", { cause: e });
+  if (err.code === "ERR_STREAM_PREMATURE_CLOSE") console.info("The user aborted a request.");
+  else {
+    console.error(e);
+    if (!outgoing.headersSent) outgoing.writeHead(500, { "Content-Type": "text/plain" });
+    outgoing.end(`Error: ${err.message}`);
+    outgoing.destroy(err);
+  }
+};
+var flushHeaders = (outgoing) => {
+  if ("flushHeaders" in outgoing && outgoing.writable) outgoing.flushHeaders();
+};
+var responseViaCache = async (res, outgoing) => {
+  let [status, body, header] = res[cacheKey];
+  if (!header) {
+    if (body === null) {
+      outgoing.writeHead(status);
+      outgoing.end();
+    } else if (typeof body === "string") {
+      outgoing.writeHead(status, {
+        "Content-Type": defaultContentType,
+        "Content-Length": Buffer.byteLength(body)
+      });
+      outgoing.end(body);
+    } else if (body instanceof Uint8Array) {
+      outgoing.writeHead(status, {
+        "Content-Type": defaultContentType,
+        "Content-Length": body.byteLength
+      });
+      outgoing.end(body);
+    } else if (body instanceof Blob) {
+      outgoing.writeHead(status, {
+        "Content-Type": defaultContentType,
+        "Content-Length": body.size
+      });
+      outgoing.end(new Uint8Array(await body.arrayBuffer()));
+    } else {
+      outgoing.writeHead(status, { "Content-Type": defaultContentType });
+      flushHeaders(outgoing);
+      await writeFromReadableStream(body, outgoing)?.catch((e) => handleResponseError(e, outgoing));
+    }
+    outgoing[outgoingEnded]?.();
+    return;
+  }
+  let hasContentLength = false;
+  if (header instanceof Headers) {
+    hasContentLength = header.has("content-length");
+    header = buildOutgoingHttpHeaders(header, body === null ? void 0 : defaultContentType);
+  } else if (Array.isArray(header)) {
+    const headerObj = new Headers(header);
+    hasContentLength = headerObj.has("content-length");
+    header = buildOutgoingHttpHeaders(headerObj, body === null ? void 0 : defaultContentType);
+  } else for (const key in header) if (key.length === 14 && key.toLowerCase() === "content-length") {
+    hasContentLength = true;
+    break;
+  }
+  if (!hasContentLength) {
+    if (typeof body === "string") header["Content-Length"] = Buffer.byteLength(body);
+    else if (body instanceof Uint8Array) header["Content-Length"] = body.byteLength;
+    else if (body instanceof Blob) header["Content-Length"] = body.size;
+  }
+  outgoing.writeHead(status, header);
+  if (body == null) outgoing.end();
+  else if (typeof body === "string" || body instanceof Uint8Array) outgoing.end(body);
+  else if (body instanceof Blob) outgoing.end(new Uint8Array(await body.arrayBuffer()));
+  else {
+    flushHeaders(outgoing);
+    await writeFromReadableStream(body, outgoing)?.catch((e) => handleResponseError(e, outgoing));
+  }
+  outgoing[outgoingEnded]?.();
+};
+var isPromise = (res) => typeof res.then === "function";
+var responseViaResponseObject = async (res, outgoing, options = {}) => {
+  if (isPromise(res)) if (options.errorHandler) try {
+    res = await res;
+  } catch (err) {
+    const errRes = await options.errorHandler(err);
+    if (!errRes) return;
+    res = errRes;
+  }
+  else res = await res.catch(handleFetchError);
+  if (cacheKey in res) return responseViaCache(res, outgoing);
+  const resHeaderRecord = buildOutgoingHttpHeaders(res.headers, res.body === null ? void 0 : defaultContentType);
+  if (res.body) {
+    const reader = res.body.getReader();
+    const values = [];
+    let done = false;
+    let currentReadPromise = void 0;
+    if (resHeaderRecord["transfer-encoding"] !== "chunked") {
+      let maxReadCount = 2;
+      for (let i = 0; i < maxReadCount; i++) {
+        currentReadPromise ||= reader.read();
+        const chunk = await readWithoutBlocking(currentReadPromise).catch((e) => {
+          console.error(e);
+          done = true;
+        });
+        if (!chunk) {
+          if (i === 1) {
+            await new Promise((resolve2) => setTimeout(resolve2));
+            maxReadCount = 3;
+            continue;
+          }
+          break;
+        }
+        currentReadPromise = void 0;
+        if (chunk.value) values.push(chunk.value);
+        if (chunk.done) {
+          done = true;
+          break;
+        }
+      }
+      if (done && !("content-length" in resHeaderRecord)) resHeaderRecord["content-length"] = values.reduce((acc, value) => acc + value.length, 0);
+    }
+    outgoing.writeHead(res.status, resHeaderRecord);
+    values.forEach((value) => {
+      outgoing.write(value);
+    });
+    if (done) outgoing.end();
+    else {
+      if (values.length === 0) flushHeaders(outgoing);
+      await writeFromReadableStreamDefaultReader(reader, outgoing, currentReadPromise);
+    }
+  } else if (resHeaderRecord[X_ALREADY_SENT]) ;
+  else {
+    outgoing.writeHead(res.status, resHeaderRecord);
+    outgoing.end();
+  }
+  outgoing[outgoingEnded]?.();
+};
+var getRequestListener = (fetchCallback, options = {}) => {
+  const autoCleanupIncoming = options.autoCleanupIncoming ?? true;
+  if (options.overrideGlobalObjects !== false && global.Request !== Request$1) {
+    Object.defineProperty(global, "Request", { value: Request$1 });
+    Object.defineProperty(global, "Response", { value: Response$1 });
+  }
+  return async (incoming, outgoing) => {
+    let res, req;
+    let needsBodyCleanup = false;
+    let closeHandlerAttached = false;
+    const ensureCloseHandler = () => {
+      if (!req || closeHandlerAttached) return;
+      closeHandlerAttached = true;
+      outgoing.on("close", makeCloseHandler(req, incoming, outgoing, needsBodyCleanup));
+    };
+    try {
+      req = newRequest(incoming, options.hostname);
+      needsBodyCleanup = autoCleanupIncoming && !(incoming.method === "GET" || incoming.method === "HEAD");
+      if (needsBodyCleanup) {
+        incoming[wrapBodyStream] = true;
+        if (incoming instanceof Http2ServerRequest) outgoing[outgoingEnded] = () => {
+          if (!incoming.readableEnded) setTimeout(() => {
+            if (!incoming.readableEnded) setTimeout(() => {
+              incoming.destroy();
+              outgoing.destroy();
+            });
+          });
+        };
+      }
+      res = fetchCallback(req, {
+        incoming,
+        outgoing
+      });
+      if (!isPromise(res) && isImmediateCacheableResponse(res)) {
+        if (needsBodyCleanup && !incoming.readableEnded) outgoing.once("finish", () => {
+          if (!incoming.readableEnded) drainIncoming(incoming);
+        });
+        return responseViaCache(res, outgoing);
+      }
+      ensureCloseHandler();
+    } catch (e) {
+      if (!res) if (options.errorHandler) {
+        ensureCloseHandler();
+        res = await options.errorHandler(req ? e : toRequestError(e));
+        if (!res) return;
+      } else if (!req) res = handleRequestError();
+      else res = handleFetchError(e);
+      else return handleResponseError(e, outgoing);
+    }
+    try {
+      return await responseViaResponseObject(res, outgoing, options);
+    } catch (e) {
+      return handleResponseError(e, outgoing);
+    }
+  };
+};
 createRequire(import.meta.url);
 var valueOf = (prop) => prop && typeof prop === "object" && "value" in prop ? prop.value : prop;
 function htmlFedTextColumns(table, queries) {
@@ -707,7 +2608,7 @@ async function checkPlanReads(client, params) {
     const query = byId.get(id);
     const name = query.name ?? id;
     const needsViewer = containsComponentBinding(query.options);
-    const run = async () => {
+    const run2 = async () => {
       try {
         const bindings = resolveStaticBindings(query.options);
         emptyViewerOnlyParams(query.options, bindings);
@@ -716,10 +2617,10 @@ async function checkPlanReads(client, params) {
         return { status: "failed", message: error instanceof Error ? error.message : String(error) };
       }
     };
-    let result = await run();
+    let result = await run2();
     if (result.status === "failed" && CLOCK_SKEW.test(String(result.message ?? result.description ?? ""))) {
       await new Promise((resolve2) => setTimeout(resolve2, params.retryDelayMs ?? CLOCK_SKEW_RETRY_MS));
-      result = await run();
+      result = await run2();
     }
     check.ran += 1;
     if (result.status !== "failed") {
@@ -1656,9 +3557,9 @@ function codePageAuditScript() {
     findings.push({ kind: "empty_render", component: "Code mode app", detail: "the Code mode frame has no document" });
     return findings;
   }
-  const root = doc.getElementById("tj-frame-root");
-  const text = (root?.innerText ?? "").trim();
-  if (!root || root.children.length === 0 || !text && !root.querySelector("svg,canvas,img")) {
+  const root2 = doc.getElementById("tj-frame-root");
+  const text = (root2?.innerText ?? "").trim();
+  if (!root2 || root2.children.length === 0 || !text && !root2.querySelector("svg,canvas,img")) {
     findings.push({ kind: "empty_render", component: "Code mode app", detail: "the Code mode app rendered nothing" });
     return findings;
   }
@@ -1727,6 +3628,44 @@ var pathOf = (url) => {
     return "?";
   }
 };
+function trackNetwork(page) {
+  if (typeof page?.on !== "function")
+    return void 0;
+  const tracker = { inflight: /* @__PURE__ */ new Map(), lastActivity: Date.now() };
+  const done = (request) => {
+    tracker.inflight.delete(request);
+    tracker.lastActivity = Date.now();
+  };
+  page.on("request", (request) => {
+    if (STREAM_PATHS.test(pathOf(String(request?.url?.() ?? ""))))
+      return;
+    tracker.inflight.set(request, Date.now());
+    tracker.lastActivity = Date.now();
+  });
+  page.on("requestfinished", done);
+  page.on("requestfailed", done);
+  return tracker;
+}
+var CODE_QUIET_MS = Number(process.env.MCP_RENDER_AUDIT_QUIET_MS || 750);
+var CODE_MIN_SETTLE_MS = 750;
+var LONG_REQUEST_MS = 3e3;
+var STREAM_PATHS = /\/api\/code-page-security$/;
+function codeFrameDrawn() {
+  const frame = document.querySelector("iframe[data-tj-code-page-frame]");
+  const root2 = frame?.contentDocument?.getElementById("tj-frame-root");
+  return !!root2 && root2.children.length > 0;
+}
+async function settleWhenQuiet(page, tracker, maxMs) {
+  const started = Date.now();
+  await page.waitForTimeout(Math.min(CODE_MIN_SETTLE_MS, maxMs));
+  while (Date.now() - started < maxMs) {
+    const now = Date.now();
+    const loading = [...tracker.inflight.values()].some((since) => now - since < LONG_REQUEST_MS);
+    if (!loading && now - tracker.lastActivity >= CODE_QUIET_MS && await page.evaluate(codeFrameDrawn).catch(() => true) !== false)
+      return;
+    await page.waitForTimeout(100);
+  }
+}
 async function auditPages(pages, options = {}, driver = loadPlaywright) {
   const unreachable = (p, reason, detail) => ({ ...p, widgets: 0, findings: [{ kind: "unreachable", component: "-", reason, detail }] });
   if (!pages.length)
@@ -1864,6 +3803,7 @@ async function auditPages(pages, options = {}, driver = loadPlaywright) {
         }
       });
       const page = await ctx.newPage();
+      const network = trackNetwork(page);
       const response = await page.goto(p.url, { waitUntil: "domcontentloaded", timeout: 6e4 });
       if (response && response.status() >= 400) {
         const status = response.status();
@@ -1876,16 +3816,21 @@ async function auditPages(pages, options = {}, driver = loadPlaywright) {
         const frame = document.querySelector("iframe[data-tj-code-page-frame]");
         if (!frame)
           return true;
-        const root = frame.contentDocument?.getElementById("tj-frame-root");
-        return !!root && root.children.length > 0;
+        const root2 = frame.contentDocument?.getElementById("tj-frame-root");
+        return !!root2 && root2.children.length > 0;
       }, void 0, { timeout: options.contentWaitMs ?? Number(process.env.MCP_RENDER_AUDIT_CONTENT_WAIT_MS || 3e4) }).catch(() => void 0);
-      await page.waitForTimeout(options.settleMs ?? 6e3);
-      await page.waitForFunction(() => {
-        const charts = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart').length;
-        const plots = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart .js-plotly-plot').length;
-        return charts === 0 || plots >= charts;
-      }, void 0, { timeout: options.chartWaitMs ?? 2e4 }).catch(() => void 0);
-      await page.waitForTimeout(1500);
+      const codeFrame = network ? options.codePage || await page.evaluate(() => !!document.querySelector("iframe[data-tj-code-page-frame]")).catch(() => false) : false;
+      if (codeFrame === true) {
+        await settleWhenQuiet(page, network, options.settleMs ?? 6e3);
+      } else {
+        await page.waitForTimeout(options.settleMs ?? 6e3);
+        await page.waitForFunction(() => {
+          const charts = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart').length;
+          const plots = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart .js-plotly-plot').length;
+          return charts === 0 || plots >= charts;
+        }, void 0, { timeout: options.chartWaitMs ?? 2e4 }).catch(() => void 0);
+        await page.waitForTimeout(1500);
+      }
       const landed = page.url();
       if (/\/(?:login|sign-in|signin)\b/i.test(new URL(landed).pathname)) {
         reports[index] = unreachable(p, "auth_required", "The viewer requires sign-in; private app rendering was not verified");
@@ -1965,7 +3910,9 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
           return fail(new Error("OAuth render verification must use the configured ToolJet deployment origin"));
         }
         const summary = await client.getAppSummary(args.app_id);
-        const pages = summary.pages ?? [];
+        const allPages = summary.pages ?? [];
+        const visible = allPages.filter((p) => p.hidden !== true && p.hidden?.value !== true && p.hidden?.value !== "{{true}}");
+        const pages = args.route && !args.page_handle ? (visible.length ? visible : allPages).slice(0, 1) : allPages;
         const version = await client.editingVersionName?.(args.app_id).catch(() => void 0);
         const query = new URLSearchParams();
         if (version) {
@@ -1993,6 +3940,7 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
           allowedOrigins: origins,
           savedQueries: summary,
           viewportWidth: args.viewport_width,
+          codePage: Boolean(args.route),
           // MCP_RENDER_AUDIT_SESSION=off keeps the browser unauthenticated (private apps are then reported unverified).
           session: process.env.MCP_RENDER_AUDIT_SESSION === "off" ? void 0 : client.browserRenderOrigin ? await client.viewerSession?.(args.app_id) : await client.viewerSession?.(args.app_id).catch(() => void 0)
         };
@@ -2008,10 +3956,569 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
     }
   };
 }
+createRequire(import.meta.url);
+var run = promisify(execFile);
+var USER_WORDS = ` Talk to the user about "the app's code" and its versions (v1, v2): one version line, as for any app. Never say code version, revision, publishing code, bundle, library, manifest, root component, dev track or pin, and never show internal names, ids or paths.`;
+var root = () => resolve(process.env.TOOLJET_CODE_APP_ROOT || join(homedir(), "tooljet-code-apps"));
+var NAME = /^[a-z][a-z0-9-]{1,40}$/;
+var projectDir = (name) => {
+  if (!NAME.test(name))
+    throw new Error(`name must match ${NAME} (lowercase letters, digits, hyphens)`);
+  return join(root(), name);
+};
+var appIdOf = (dir) => {
+  try {
+    return JSON.parse(readFileSync(join(dir, "app.json"), "utf8")).appId;
+  } catch {
+    return void 0;
+  }
+};
+var projectsForApp = (appId) => {
+  if (!existsSync(root()))
+    return [];
+  return readdirSync(root(), { withFileTypes: true }).filter((entry) => entry.isDirectory() && NAME.test(entry.name) && appIdOf(join(root(), entry.name)) === appId).map((entry) => entry.name).sort((a, b) => statSync(join(root(), b, "app.json")).mtimeMs - statSync(join(root(), a, "app.json")).mtimeMs);
+};
+var APP_ID = external_exports.string().uuid().optional().describe("The app's id: finds its project, so you never have to know the folder name");
+var PROJECT_NAME = external_exports.string().regex(NAME).optional().describe("The project folder, when you know it; app_id is enough");
+var locateProject = (args) => {
+  if (args.app_id) {
+    const [found] = projectsForApp(args.app_id);
+    if (!found)
+      throw new Error(`no Code mode project for app ${args.app_id} under ${root()}; call code_app_scaffold with this app_id`);
+    if (args.name && args.name !== found)
+      throw new Error(`app ${args.app_id}'s project is "${found}", not "${args.name}"`);
+    return join(root(), found);
+  }
+  if (!args.name)
+    throw new Error("give app_id (or the project name)");
+  return requireProject(args.name);
+};
+var requireProject = (name) => {
+  const dir = projectDir(name);
+  if (!existsSync(join(dir, "app.json")))
+    throw new Error(`no app project "${name}" under ${root()}; call code_app_scaffold first`);
+  return dir;
+};
+var STYLE_FILES = /* @__PURE__ */ new Set(["frontend/styles/theme.css", "frontend/styles/global.css"]);
+var editable = (dir, path) => {
+  const full = resolve(dir, path);
+  const rel = relative(dir, full).split(sep).join("/");
+  if (rel === "app.json" || STYLE_FILES.has(rel) || rel.startsWith("frontend/src/") && !rel.endsWith("tooljet.gen.ts"))
+    return full;
+  throw new Error(`"${path}" is not editable: write app.json, frontend/styles/theme.css, frontend/styles/global.css or files under frontend/src/ (tooljet.gen.ts is generated)`);
+};
+var TEXT = /\.(tsx?|jsx?|json|css|md)$/i;
+var listFiles = (dir, base = dir, out = []) => {
+  if (!existsSync(dir))
+    return out;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (["node_modules", "dist"].includes(entry.name) || entry.name.startsWith("."))
+      continue;
+    const full = join(dir, entry.name);
+    if (entry.isDirectory())
+      listFiles(full, base, out);
+    else if (TEXT.test(entry.name) && entry.name !== "package-lock.json")
+      out.push(relative(base, full).split(sep).join("/"));
+  }
+  return out.sort();
+};
+var strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "");
+var cliEnv = () => ({
+  ...process.env,
+  FORCE_COLOR: "0",
+  // The CLI is oclif: under NODE_ENV=development it loads its TypeScript sources instead of the build and fails
+  // ("Unexpected token ':'"). A ToolJet server running in development passes that on to this MCP server.
+  NODE_ENV: "production",
+  TOOLJET_URL: process.env.TOOLJET_URL ?? "",
+  TOOLJET_PAT: process.env.TOOLJET_PAT ?? "",
+  TOOLJET_APP_URL: process.env.TOOLJET_DEPLOYMENT_URL ?? process.env.TOOLJET_APP_URL ?? ""
+});
+async function cli(cwd, args, timeoutMs = 3e5) {
+  const [cmd, pre] = process.env.TOOLJET_CLI ? ["node", [process.env.TOOLJET_CLI]] : ["tooljet", []];
+  try {
+    const { stdout, stderr } = await run(cmd, [...pre, ...args], { cwd, timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024, env: cliEnv() });
+    return { code: 0, output: strip(stdout + stderr) };
+  } catch (err) {
+    const e = err;
+    return { code: typeof e.code === "number" ? e.code : 1, output: strip((e.stdout ?? "") + (e.stderr ?? e.message ?? "")) };
+  }
+}
+var PLACEHOLDER_NAME = /^Untitled App\b/;
+async function nameApp(client, dir, name) {
+  let snapshot;
+  try {
+    snapshot = JSON.parse(readFileSync(join(dir, ".tooljet", "snapshot.json"), "utf8"));
+  } catch {
+    return {};
+  }
+  if (!client || !snapshot.appId || !snapshot.versionId || !PLACEHOLDER_NAME.test(snapshot.appName ?? ""))
+    return {};
+  try {
+    await client.renameApp(snapshot.appId, snapshot.versionId, name);
+    return { renamed_to: name };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/exist|unique|duplicate|taken|conflict|409|422/i.test(message))
+      return { rename_warning: `Could not name the app: ${message}` };
+    const fallback = `${name} ${Math.random().toString(36).slice(2, 5)}`;
+    await client.renameApp(snapshot.appId, snapshot.versionId, fallback);
+    return { renamed_to: fallback, rename_warning: `App name "${name}" is already used in this workspace; the app was named "${fallback}" instead.` };
+  }
+}
+function parseReport(output) {
+  const start = output.indexOf("{");
+  const end = output.lastIndexOf("}");
+  if (start < 0 || end < start)
+    return null;
+  try {
+    return JSON.parse(output.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+}
+var mustFix = (security) => (security?.findings ?? []).filter((f) => f.severity === "critical" || f.severity === "high");
+var securitySummary = (security) => !security ? { error: "no security report (the CLI predates tooljet app check --json)" } : security.error ? { error: security.error } : {
+  gate: security.gate,
+  counts: security.counts,
+  not_run: (security.notRun ?? []).map((n) => `${n.id}${n.reason ? `: ${n.reason}` : ""}`),
+  findings: (security.findings ?? []).slice(0, 40),
+  ...(security.findings?.length ?? 0) > 40 ? { more_findings: security.findings.length - 40 } : {}
+};
+function withDependencies(pkg, packages) {
+  const dependencies = { ...pkg.dependencies ?? {} };
+  for (const p of packages)
+    dependencies[p.name] = p.version;
+  return { ...pkg, dependencies: Object.fromEntries(Object.entries(dependencies).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) };
+}
+function withoutDependencies(pkg, names) {
+  const drop = (deps) => deps && Object.fromEntries(Object.entries(deps).filter(([name]) => !names.includes(name)));
+  return { ...pkg, ...pkg.dependencies ? { dependencies: drop(pkg.dependencies) } : {}, ...pkg.devDependencies ? { devDependencies: drop(pkg.devDependencies) } : {} };
+}
+var PACKAGE_NAME = /^(@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
+var PACKAGE_SPEC = /^(@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*(@[A-Za-z0-9.^~<>=*| -]+)?$/;
+function codeAppScaffoldTool(client) {
+  return {
+    name: "code_app_scaffold",
+    title: "Scaffold Code Mode App",
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    description: "Create the Code mode project for an app you created with create_app: app.json (the app and its routes, its screens) and frontend/ (React + TypeScript on shadcn + Tailwind, react-router through AppRouter). Create the app's queries with add_queries BEFORE this, so the typed hooks it writes (frontend/src/tooljet.gen.ts: useAppQuery, row types, ROUTES, routePath, PAGES) list them. Returns the files and the generated hooks." + USER_WORDS,
+    inputSchema: {
+      name: external_exports.string().regex(NAME).describe("Project folder: lowercase letters, digits and hyphens, e.g. inventory-console"),
+      display_name: external_exports.string().min(1).max(100).describe(`The app's name; an app still called "Untitled App" is renamed to it`),
+      app_id: external_exports.string().uuid().describe("The app from create_app")
+    },
+    async handler(args) {
+      try {
+        const [existing] = projectsForApp(args.app_id);
+        const dir = existing ? join(root(), existing) : projectDir(args.name);
+        const owner = appIdOf(dir);
+        if (!existing && owner && owner !== args.app_id)
+          throw new Error(`project "${args.name}" belongs to app ${owner}; choose another name`);
+        if (!existsSync(join(dir, "app.json"))) {
+          mkdirSync(root(), { recursive: true });
+          const init = await cli(root(), ["app", "init", args.name, "--name", args.display_name, "--no-install"]);
+          if (init.code !== 0)
+            throw new Error(`tooljet app init failed: ${init.output}`);
+          const appFile = join(dir, "app.json");
+          writeFileSync(appFile, JSON.stringify({ ...JSON.parse(readFileSync(appFile, "utf8")), appId: args.app_id }, null, 2) + "\n");
+          if (process.env.TOOLJET_SDK_SPEC) {
+            const pkgFile = join(dir, "frontend", "package.json");
+            const pkg = JSON.parse(readFileSync(pkgFile, "utf8"));
+            pkg.dependencies["@tooljet/custom-component-sdk"] = process.env.TOOLJET_SDK_SPEC;
+            writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + "\n");
+          }
+          const install = await cli(dir, ["app", "install"]);
+          if (install.code !== 0)
+            throw new Error(`tooljet app install failed: ${install.output}`);
+        }
+        const pull = await cli(dir, ["app", "pull"]);
+        if (pull.code !== 0)
+          throw new Error(`tooljet app pull failed: ${pull.output}`);
+        const naming = await nameApp(client, dir, args.display_name);
+        return ok({
+          project_dir: dir,
+          ...naming,
+          ...existing ? { existing_project: existing, note: `This app already has a project, "${existing}"; it is used as is.` } : {},
+          files: listFiles(dir),
+          app_json: JSON.parse(readFileSync(join(dir, "app.json"), "utf8")),
+          generated_hooks: readFileSync(join(dir, "frontend", "src", "tooljet.gen.ts"), "utf8"),
+          next: "Set the routes in app.json, write the screens under frontend/src/App/, then code_app_build until ok, then code_app_install."
+        });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+async function syncEditorEdits(dir, { force = false } = {}) {
+  if (force)
+    forgetSourceRevision(dir);
+  const pull = await cli(dir, ["app", "source-pull"], 6e4);
+  if (pull.code !== 0)
+    return { sync_warning: `Could not check the ToolJet editor for edits: ${pull.output.trim().slice(0, 300)}` };
+  lastSynced.set(dir, Date.now());
+  return /Pulled revision/.test(pull.output) ? { editor_edits: pull.output.trim() } : {};
+}
+var freshProjects = /* @__PURE__ */ new Set();
+var readHashes = /* @__PURE__ */ new Map();
+var lastSynced = /* @__PURE__ */ new Map();
+var readSyncWindowMs = () => Number(process.env.MCP_CODE_APP_READ_SYNC_MS ?? 2e4);
+var syncedRecently = (dir) => Date.now() - (lastSynced.get(dir) ?? -Infinity) < readSyncWindowMs();
+var sha = (text) => createHash("sha256").update(text).digest("hex");
+var readKey = (dir, rel) => `${dir}\0${rel}`;
+function forgetSourceRevision(dir) {
+  const file = join(dir, ".tooljet", "source.json");
+  if (!existsSync(file))
+    return;
+  try {
+    const state = JSON.parse(readFileSync(file, "utf8"));
+    writeFileSync(file, JSON.stringify({ ...state, revision: -1 }, null, 2) + "\n");
+  } catch {
+  }
+}
+async function ensureFresh(dir) {
+  if (freshProjects.has(dir))
+    return {};
+  const sync = await syncEditorEdits(dir, { force: true });
+  if (!sync.sync_warning)
+    freshProjects.add(dir);
+  return sync;
+}
+function changedLines(before, after) {
+  const count = (text) => text.split("\n").reduce((m, l) => m.set(l, (m.get(l) ?? 0) + 1), /* @__PURE__ */ new Map());
+  const a = count(before);
+  const b = count(after);
+  let changed = 0;
+  for (const [line, n] of a)
+    changed += Math.max(0, n - (b.get(line) ?? 0));
+  for (const [line, n] of b)
+    changed += Math.max(0, n - (a.get(line) ?? 0));
+  return changed;
+}
+var clip = (line) => line.trim().length > 100 ? `${line.trim().slice(0, 100)}...` : line.trim();
+var lineAt = (text, index) => text.slice(0, index).split("\n").length;
+function findHint(content, find) {
+  const lines = content.split("\n");
+  const at = [];
+  for (let i = content.indexOf(find); i >= 0 && at.length < 6; i = content.indexOf(find, i + 1))
+    at.push(lineAt(content, i));
+  if (at.length > 1) {
+    const shown = at.slice(0, 5).map((n) => `line ${n}${n > 1 ? ` (after "${clip(lines[n - 2])}")` : ""}`);
+    return ` It is at ${shown.join("; ")}${at.length > 5 ? "; and more" : ""}. Add a neighbouring line to the find so it matches one place.`;
+  }
+  if (at.length === 1)
+    return "";
+  const wanted = find.split("\n").map((l) => l.trim());
+  const trimmed = lines.map((l) => l.trim());
+  const starts = trimmed.flatMap((l, i) => wanted.every((w, k) => trimmed[i + k] === w) ? [i + 1] : []);
+  if (starts.length === 1)
+    return ` The same lines are at line ${starts[0]} with different indentation or spacing; copy them exactly as the file has them.`;
+  const words = (l) => new Set(l.match(/[A-Za-z_$][\w$]*|\d+/g) ?? []);
+  const key = wanted.reduce((a, b) => b.length > a.length ? b : a, "");
+  const target = words(key);
+  if (!target.size)
+    return "";
+  const scored = lines.map((l, i) => {
+    const w = words(l);
+    const shared = [...target].filter((t) => w.has(t)).length;
+    return { n: i + 1, l, score: shared / Math.max(target.size, w.size) };
+  }).filter((x) => x.score >= 0.5).sort((a, b) => b.score - a.score).slice(0, 2);
+  return scored.length ? ` Closest: ${scored.map((x) => `line ${x.n}: "${clip(x.l)}"`).join("; ")}.` : "";
+}
+var isRewrite = (before, after) => {
+  const changed = changedLines(before, after);
+  const size = Math.max(before.split("\n").length, after.split("\n").length);
+  return changed > 20 && changed > 0.4 * size;
+};
+function codeAppReadFilesTool() {
+  return {
+    name: "code_app_read_files",
+    title: "Read Code Mode Files",
+    annotations: { readOnlyHint: true, openWorldHint: true },
+    description: "Read a Code mode project. Without paths, lists its files; with paths, returns their contents (app.json, frontend/...). Edits saved in the ToolJet Code panel since the last install are brought into the project first." + USER_WORDS,
+    inputSchema: { app_id: APP_ID, name: PROJECT_NAME, paths: external_exports.array(external_exports.string()).optional() },
+    async handler(args) {
+      try {
+        const dir = locateProject(args);
+        if (!freshProjects.has(dir))
+          await followDraft(dir);
+        const sync = !freshProjects.has(dir) ? await ensureFresh(dir) : syncedRecently(dir) ? {} : await syncEditorEdits(dir);
+        if (!args.paths?.length)
+          return ok({ project_dir: dir, ...sync, files: listFiles(dir) });
+        const files = Object.fromEntries(args.paths.map((p) => {
+          const full = resolve(dir, p);
+          const rel = relative(dir, full).split(sep).join("/");
+          if (rel.startsWith(".."))
+            throw new Error(`"${p}" is outside the project`);
+          const content = readFileSync(full, "utf8");
+          readHashes.set(readKey(dir, rel), sha(content));
+          return [p, content];
+        }));
+        return ok({ project_dir: dir, ...sync, files });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+function codeAppWriteFilesTool() {
+  return {
+    name: "code_app_write_files",
+    title: "Write Code Mode Files",
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    description: "Write into a Code mode project: app.json (name, codePage, routes [{id, path, title}]), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. To change an existing file, read it first (code_app_read_files) and pass edits: [{ path, find, replace }] with the exact text to change; files: [{ path, content }] is for new files, or for a rewrite the request needs (then rewrite: true). A write to a file that changed in the ToolJet editor since you read it is refused: read it again and apply your change to what is there. Read data with useAppQuery from ../tooljet.gen; write by awaiting a query's run({ ...parameters }); route with AppRouter, react-router <Routes>/<Route> whose paths are exactly app.json's, and routePath(id, params). Then code_app_build." + USER_WORDS,
+    inputSchema: {
+      app_id: APP_ID,
+      name: PROJECT_NAME,
+      files: external_exports.array(external_exports.object({ path: external_exports.string(), content: external_exports.string() })).max(40).optional(),
+      edits: external_exports.array(external_exports.object({ path: external_exports.string(), find: external_exports.string().min(1), replace: external_exports.string() })).max(60).optional().describe("Targeted changes to existing files: each find must appear exactly once in the file as it is now"),
+      rewrite: external_exports.boolean().optional().describe("Allow files to replace most of an existing file (only when the request needs it)")
+    },
+    async handler(args) {
+      try {
+        const dir = locateProject(args);
+        if (!args.files?.length && !args.edits?.length)
+          throw new Error("Pass files (new files) or edits (changes to existing files).");
+        if (!freshProjects.has(dir))
+          await followDraft(dir);
+        const first = await ensureFresh(dir);
+        const sync = first.editor_edits || first.sync_warning ? first : await syncEditorEdits(dir);
+        const next = /* @__PURE__ */ new Map();
+        const current = (rel, full) => next.get(rel)?.content ?? (existsSync(full) ? readFileSync(full, "utf8") : void 0);
+        const stale = (rel, full) => {
+          if (next.has(rel) || !existsSync(full))
+            return void 0;
+          const known = readHashes.get(readKey(dir, rel));
+          if (!known)
+            return `${rel} has not been read in this build: read it with code_app_read_files first`;
+          if (known !== sha(readFileSync(full, "utf8")))
+            return `${rel} changed on ToolJet (an edit in the editor) since you read it: read it again and apply your change to what is there now`;
+          return void 0;
+        };
+        const refusals = [];
+        for (const file of args.files ?? []) {
+          const full = editable(dir, file.path);
+          const rel = relative(dir, full).split(sep).join("/");
+          const why = stale(rel, full);
+          if (why)
+            refusals.push(why);
+          const before = current(rel, full);
+          if (!why && before !== void 0 && !args.rewrite && isRewrite(before, file.content))
+            refusals.push(`${rel}: this replaces most of the file; change only what the request needs with edits (find/replace), or pass rewrite: true if the request really is a rewrite`);
+          next.set(rel, { full, content: file.content });
+        }
+        for (const edit of args.edits ?? []) {
+          const full = editable(dir, edit.path);
+          const rel = relative(dir, full).split(sep).join("/");
+          const why = stale(rel, full);
+          if (why) {
+            refusals.push(why);
+            continue;
+          }
+          const before = current(rel, full);
+          if (before === void 0) {
+            refusals.push(`${rel} does not exist: create it with files`);
+            continue;
+          }
+          const found = before.split(edit.find).length - 1;
+          if (found !== 1) {
+            refusals.push(`${rel}: the find text appears ${found} times; it must match exactly once (copy it from the file as it is now).${findHint(before, edit.find)}`);
+            continue;
+          }
+          next.set(rel, { full, content: before.replace(edit.find, () => edit.replace) });
+        }
+        if (refusals.length)
+          return fail(new Error("Not written:\n" + refusals.map((r) => `- ${r}`).join("\n")));
+        const written = [];
+        for (const [rel, { full, content }] of next) {
+          mkdirSync(dirname(full), { recursive: true });
+          writeFileSync(full, content);
+          readHashes.set(readKey(dir, rel), sha(content));
+          written.push(rel);
+        }
+        return ok({ project_dir: dir, ...sync, written });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+async function followDraft(dir) {
+  let pinned;
+  try {
+    pinned = JSON.parse(readFileSync(join(dir, "app.json"), "utf8")).version;
+  } catch {
+    return void 0;
+  }
+  if (!pinned?.id)
+    return void 0;
+  const list = await cli(dir, ["app", "checkout", "--list"], 6e4);
+  const line = list.output.split("\n").find((l) => l.trimStart().startsWith("*") && l.includes(pinned.id));
+  if (list.code !== 0 || !line || /\bdraft\b/i.test(line))
+    return void 0;
+  const moved = await cli(dir, ["app", "checkout", "--editing"], 6e4);
+  if (moved.code !== 0)
+    throw new Error(`The app's draft could not be opened: ${moved.output.trim().slice(0, 500)}`);
+  return `${pinned.name ?? "The pinned version"} is saved, so the code now goes into the app's draft.`;
+}
+var STYLESHEET = "frontend/src/styles/globals.css";
+var IMPORT_RE = /(?:^|[\s;])import\s+(?:[^'"]*?from\s+)?['"]([^'"]+\.css)['"]/gm;
+function missingStylesheet(dir) {
+  const sheet = join(dir, STYLESHEET);
+  if (!existsSync(sheet))
+    return void 0;
+  const src = join(dir, "frontend", "src");
+  for (const rel of listFiles(src)) {
+    if (!/\.(tsx?|jsx?)$/.test(rel) || rel.startsWith("components/"))
+      continue;
+    const file = join(src, rel);
+    const code = readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    for (const m of code.matchAll(IMPORT_RE)) {
+      if (resolve(dirname(file), m[1]) === sheet)
+        return void 0;
+    }
+  }
+  return "frontend/src/App/index.tsx: the app's stylesheet is not imported, so every screen renders unstyled (no Tailwind, no theme colours). Add `import '../styles/globals.css';` back with the other imports at the top of App/index.tsx.";
+}
+function codeAppBuildTool() {
+  return {
+    name: "code_app_build",
+    title: "Build Code Mode App",
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    description: "Refresh the typed hooks from the app's current queries (tooljet app pull), build the app's code (TypeScript, Tailwind, manifest), and check it against the app (tooljet app check: every useAppQuery name, route, link and page must exist) and the security scan (code rules such as external fetch, eval and token storage; secrets; vendored code). Returns ok and every error and security finding to fix. Repeat write and build until ok, then code_app_install." + USER_WORDS,
+    inputSchema: { app_id: APP_ID, name: PROJECT_NAME },
+    async handler(args) {
+      try {
+        const dir = locateProject(args);
+        const followed = await followDraft(dir);
+        await ensureFresh(dir);
+        const started = Date.now();
+        const pull = await cli(dir, ["app", "pull"]);
+        const build = await cli(join(dir, "frontend"), ["library", "build"]);
+        const tsErrors = Number(/TypeScript compiled \((\d+) errors\)/.exec(build.output)?.[1] ?? (build.code === 0 ? 0 : 1));
+        const check = await cli(dir, ["app", "check", "--offline", "--json"]);
+        const report = parseReport(check.output);
+        const unstyled = missingStylesheet(dir);
+        const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0 && !unstyled;
+        return ok({
+          ...followed ? { draft: followed } : {},
+          ok: okBuild,
+          build_ms: Date.now() - started,
+          pull: pull.code === 0 ? "typed hooks refreshed" : pull.output.trim(),
+          typescript_errors: tsErrors,
+          build_output: build.code === 0 && tsErrors === 0 ? build.output.trim().split("\n").slice(-6).join("\n") : build.output.trim().slice(0, 12e3),
+          check: report?.problems ? [...unstyled ? [unstyled] : [], ...report.problems.map((p) => `${p.file}:${p.line}  ${p.message}`)] : unstyled ? [unstyled, check.output.trim().slice(0, 6e3)] : check.output.trim().slice(0, 6e3),
+          // jsx-a11y recommended rules, warnings only (tooljet app check); fix them when they are cheap to fix.
+          a11y_warnings: report?.accessibility?.length ?? Number(/(\d+) accessibility warnings?/.exec(check.output)?.[1] ?? 0),
+          // The offline scan (no dependency network checks): fix critical and high before code_app_install.
+          security: securitySummary(report?.security)
+        });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+function codeAppInstallTool() {
+  return {
+    name: "code_app_install",
+    title: "Install Code Mode App",
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    description: "Upload the app's code (tooljet app dev --once --source platform): it creates or updates the app's Code mode page, one hidden page per route (set each route's page permissions on it) and the component that runs the code, points the app version at this code as a Live preview, and stores the source on ToolJet so the Code panel can edit it. Build first. Runs the full security scan first and refuses while it has critical or high findings, listing them. Returns the editor URL. If it says the source was edited in the ToolJet editor, call code_app_read_files to bring those edits down, reapply your change, and install again. This is the last step of a build or edit: saving the app version (release_app saves a draft first) freezes the code." + USER_WORDS,
+    inputSchema: { app_id: APP_ID, name: PROJECT_NAME },
+    async handler(args) {
+      try {
+        const dir = locateProject(args);
+        const followed = await followDraft(dir);
+        await ensureFresh(dir);
+        const unstyled = missingStylesheet(dir);
+        if (unstyled)
+          return fail(new Error(`Not installed: ${unstyled} Then code_app_build and install again.`));
+        const check = await cli(dir, ["app", "check", "--json"]);
+        const security = parseReport(check.output)?.security;
+        if (!security || security.error)
+          throw new Error(`The security scan did not run, so nothing was installed: ${security?.error ?? check.output.trim().slice(0, 2e3)}`);
+        const blocking = mustFix(security);
+        if (blocking.length)
+          return fail(new Error(`Not installed: the security scan has ${blocking.length} critical or high finding${blocking.length > 1 ? "s" : ""}. Fix them in the code (or remove the package), code_app_build, then install again:
+` + blocking.map((f) => `${f.severity.toUpperCase()} ${f.ruleId} ${f.package ?? f.location}: ${f.message}`).join("\n")));
+        const result = await cli(dir, ["app", "dev", "--once", "--source", "platform"]);
+        if (result.code !== 0)
+          throw new Error(result.output.trim());
+        return ok({
+          ...followed ? { draft: followed } : {},
+          linked: true,
+          editor_url: /Open: (\S+)/.exec(result.output)?.[1] ?? null,
+          output: result.output.trim(),
+          security: securitySummary(security)
+        });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+function codeAppAddDependencyTool() {
+  return {
+    name: "code_app_add_dependency",
+    title: "Add Code Mode Dependency",
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    description: "Add npm packages to a Code mode app (frontend/package.json is not writable otherwise). Each package is vetted first (tooljet app vet: malware, known vulnerabilities, versions published in the last 7 days, licence, workspace blocklist); when any fails, nothing is written and the findings say why: pick another version or package. Passing packages are pinned to the exact version vetted and installed without install scripts. Prefer what the template already has (shadcn, Tailwind, lucide-react). To fix a vulnerable package, pass it again at a fixed version (upgrade), or pass its replacement and the old name in remove; the lockfile is refreshed through the same install." + USER_WORDS,
+    inputSchema: {
+      app_id: APP_ID,
+      name: PROJECT_NAME,
+      packages: external_exports.array(external_exports.string().regex(PACKAGE_SPEC)).max(10).describe("name, name@version or name@range, e.g. date-fns@4"),
+      remove: external_exports.array(external_exports.string().regex(PACKAGE_NAME)).max(10).optional().describe("package names to take out of frontend/package.json (a replaced package)")
+    },
+    async handler(args) {
+      try {
+        const dir = locateProject(args);
+        if (!args.packages.length && !args.remove?.length)
+          throw new Error("Pass packages to add, or names to remove.");
+        const vet = args.packages.length ? await cli(dir, ["app", "vet", ...args.packages, "--json"]) : { code: 0, output: '{"ok":true,"packages":[]}' };
+        const report = parseReport(vet.output);
+        if (!report?.packages)
+          throw new Error(`The package check did not run, so nothing was added: ${vet.output.trim().slice(0, 2e3)}`);
+        if (!report.ok)
+          return fail(new Error(`Not added: ${report.packages.map((p) => `${p.name}@${p.version}`).join(", ")} fail${report.packages.length > 1 ? "" : "s"} the package check:
+` + (report.findings ?? []).map((f) => `${f.severity.toUpperCase()} ${f.ruleId} ${f.package ?? f.location}: ${f.message}`).join("\n")));
+        const pkgFile = join(dir, "frontend", "package.json");
+        const lockFile = join(dir, "frontend", "package-lock.json");
+        const before = readFileSync(pkgFile, "utf8");
+        const lockBefore = existsSync(lockFile) ? readFileSync(lockFile, "utf8") : null;
+        writeFileSync(pkgFile, JSON.stringify(withDependencies(withoutDependencies(JSON.parse(before), args.remove ?? []), report.packages), null, 2) + "\n");
+        const install = await cli(dir, ["app", "install"]);
+        if (install.code !== 0) {
+          writeFileSync(pkgFile, before);
+          if (lockBefore !== null)
+            writeFileSync(lockFile, lockBefore);
+          throw new Error(`tooljet app install failed, package.json restored: ${install.output.trim().slice(0, 4e3)}`);
+        }
+        return ok({
+          added: report.packages.map((p) => `${p.name}@${p.version}`),
+          ...args.remove?.length ? { removed: args.remove } : {},
+          not_run: (report.notRun ?? []).map((n) => `${n.id}${n.reason ? `: ${n.reason}` : ""}`),
+          // Transitive packages come with the install; code_app_build and code_app_install scan the whole lockfile.
+          next: "Import the package in frontend/src, then code_app_build."
+        });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
 export {
-  applyAppPhaseTool as a,
-  runQueriesTool as b,
-  validatePersistedAppSummary as c,
+  WebStandardStreamableHTTPServerTransport as W,
+  codeAppReadFilesTool as a,
+  codeAppWriteFilesTool as b,
+  codeAppScaffoldTool as c,
+  codeAppBuildTool as d,
+  codeAppInstallTool as e,
+  codeAppAddDependencyTool as f,
+  applyAppPhaseTool as g,
+  runQueriesTool as h,
+  getRequestListener as i,
+  validatePersistedAppSummary as j,
   runQueryTool as r,
   verifyPageRenderTool as v
 };

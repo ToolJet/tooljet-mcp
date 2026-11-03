@@ -1,9 +1,9 @@
 import { createRequire } from "node:module";
-import { r as require_lib, l as lintSelectedRowProjections, a as lintBindingNames, b as bindingSpans } from "./chunk-BR4RJzBT.js";
-import { ed as __toESM, ee as defaultPack } from "./chunk-BnsUSpmS.js";
+import { r as require_lib, l as lintSelectedRowProjections, a as lintBindingNames, b as bindingSpans } from "./chunk-DVQIMXVs.js";
+import { ed as __toESM, ee as defaultPack } from "./chunk-By54lwVj.js";
 import { s as surfaceAroundResolver, l as lintOversizedWidths, a as lintHtmlContentHeight, b as lintHtmlRootSurface, c as lintUnguardedComponentRefs, d as lintEmbeddedBindingSyntax, e as lintChartDataShape, f as lintUnguardedSelectionText, g as lintTextFormat, h as lintTableColumnsShape, B as BARE_QUERY_DATA_BINDING, i as lintUntriggeredDataQueries, j as lintAutomaticWrites, p as parseHtml, k as stripHtmlBindings } from "./chunk-DzndRVyJ.js";
-import { b1 as external_exports, b8 as getComponentSchema, b9 as getCatalog, ba as getLegacyComponentReplacement } from "./chunk-BfJD-M_q.js";
-import { p as parseExpression, a as parse } from "./chunk-BH4WXI_n.js";
+import { b1 as external_exports, b8 as getComponentSchema, b9 as getCatalog, ba as getLegacyComponentReplacement } from "./chunk-C1LXenY0.js";
+import { p as parseExpression, a as parse } from "./chunk-C-mOcraM.js";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";

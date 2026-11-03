@@ -7,6 +7,7 @@ import {
   codeAppInstallTool,
   codeAppReadFilesTool,
   codeAppWriteFilesTool,
+  findHint,
   resetCodeSessionForTests,
 } from '../src/tools/codeApp.js';
 
@@ -170,7 +171,69 @@ describe('Code mode edits start from the stored code', () => {
     await read([queue]);
     await read([queue]);
     const pulls = readFileSync(join(dir, 'cli.log'), 'utf8').trim().split('\n').filter((l) => l.includes('source-pull')).length;
-    expect(pulls).toBe(2); // the forced first pull, then the ordinary check, which finds nothing new
+    expect(pulls).toBe(1); // the forced first pull; the second read comes within the window and reuses it
     expect(existsSync(join(project(), '.tooljet', 'source.json'))).toBe(true);
+  });
+
+  // An edit reads 7 files on average, often several in one turn, and every read ran source-pull (1.6 to 2 s) (2026-11-02).
+  it('checks the stored code again on a read once the window has passed', async () => {
+    process.env.MCP_CODE_APP_READ_SYNC_MS = '0';
+    writeFileSync(join(store(), 'store.json'), JSON.stringify({ revision: 1 }));
+    mkdirSync(join(store(), 'frontend', 'src', 'App'), { recursive: true });
+    writeFileSync(join(store(), queue), QUEUE('bg-muted', 'Report an issue'));
+    await read([queue]);
+    writeFileSync(join(store(), queue), QUEUE('bg-card', 'Report an issue'));
+    writeFileSync(join(store(), 'store.json'), JSON.stringify({ revision: 2 }));
+    expect(json(await read([queue])).files[queue]).toContain('bg-card');
+  });
+
+  it('still refuses a write when the editor changed the file inside the read window', async () => {
+    await write({ files: [{ path: queue, content: QUEUE('bg-card', 'Report an issue') }] });
+    await install();
+    resetCodeSessionForTests();
+    await read([queue]);
+    writeFileSync(join(store(), queue), QUEUE('bg-muted', 'Report an issue'));
+    writeFileSync(join(store(), 'store.json'), JSON.stringify({ revision: 5 }));
+    await read([queue]); // within the window: no check, so the agent still holds the old copy
+    const result = await write({ edits: [{ path: queue, find: 'Report an issue', replace: 'Report a problem' }] });
+    expect(text(result)).toMatch(/changed on ToolJet \(an edit in the editor\) since you read it/);
+  });
+});
+
+describe('a refused edit says where its find text is', () => {
+  const file = [
+    'export async function approve(id: string) {',
+    '  setError(null);',
+    '  await run({ id });',
+    '}',
+    'export async function reject(id: string) {',
+    '  setError(null);',
+    '  await run({ id, status: "rejected" });',
+    '}',
+    'export function approverFor(stage: StageId, dept: string, amount: number): Approver {',
+    '  return table[stage];',
+    '}',
+  ].join('\n');
+
+  it('names every place a repeated find occurs, with the line before it', () => {
+    const hint = findHint(file, '  setError(null);');
+    expect(hint).toContain('line 2 (after "export async function approve(id: string) {")');
+    expect(hint).toContain('line 6 (after "export async function reject(id: string) {")');
+    expect(hint).toMatch(/Add a neighbouring line/);
+  });
+
+  it('points at the same lines with other indentation', () => {
+    expect(findHint(file, 'setError(null);\nawait run({ id });')).toMatch(/at line 2 with different indentation/);
+  });
+
+  it('offers the closest line for a find that is not in the file', () => {
+    expect(findHint(file, 'export function approverFor(stage: StageId, department: string): Approver {')).toContain(
+      'line 9: "export function approverFor(stage: StageId, dept: string, amount: number): Approver {"'
+    );
+  });
+
+  it('adds nothing when the find matches once, or nothing is close', () => {
+    expect(findHint(file, '  return table[stage];')).toBe('');
+    expect(findHint(file, 'const unrelated = 42;')).toBe('');
   });
 });
