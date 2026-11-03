@@ -107739,6 +107739,24 @@ function codeAppWriteFilesTool() {
     }
   };
 }
+async function followDraft(dir) {
+  let pinned;
+  try {
+    pinned = JSON.parse(readFileSync8(join2(dir, "app.json"), "utf8")).version;
+  } catch {
+    return void 0;
+  }
+  if (!pinned?.id)
+    return void 0;
+  const list = await cli(dir, ["app", "checkout", "--list"], 6e4);
+  const line = list.output.split("\n").find((l) => l.trimStart().startsWith("*") && l.includes(pinned.id));
+  if (list.code !== 0 || !line || /\bdraft\b/i.test(line))
+    return void 0;
+  const moved = await cli(dir, ["app", "checkout", "--editing"], 6e4);
+  if (moved.code !== 0)
+    throw new Error(`The app's draft could not be opened: ${moved.output.trim().slice(0, 500)}`);
+  return `${pinned.name ?? "The pinned version"} is saved, so the code now goes into the app's draft.`;
+}
 function codeAppBuildTool() {
   return {
     name: "code_app_build",
@@ -107749,6 +107767,7 @@ function codeAppBuildTool() {
     async handler(args) {
       try {
         const dir = locateProject(args);
+        const followed = await followDraft(dir);
         const started = Date.now();
         const pull = await cli(dir, ["app", "pull"]);
         const build = await cli(join2(dir, "frontend"), ["library", "build"]);
@@ -107757,6 +107776,7 @@ function codeAppBuildTool() {
         const report = parseReport(check2.output);
         const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check2.code === 0;
         return ok({
+          ...followed ? { draft: followed } : {},
           ok: okBuild,
           build_ms: Date.now() - started,
           pull: pull.code === 0 ? "typed hooks refreshed" : pull.output.trim(),
@@ -107784,6 +107804,7 @@ function codeAppInstallTool() {
     async handler(args) {
       try {
         const dir = locateProject(args);
+        const followed = await followDraft(dir);
         const check2 = await cli(dir, ["app", "check", "--json"]);
         const security = parseReport(check2.output)?.security;
         if (!security || security.error)
@@ -107796,6 +107817,7 @@ function codeAppInstallTool() {
         if (result.code !== 0)
           throw new Error(result.output.trim());
         return ok({
+          ...followed ? { draft: followed } : {},
           linked: true,
           editor_url: /Open: (\S+)/.exec(result.output)?.[1] ?? null,
           output: result.output.trim(),

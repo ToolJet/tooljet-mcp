@@ -363,6 +363,28 @@ export function codeAppWriteFilesTool(): ToolDef {
   };
 }
 
+/**
+ * One version line (2026-11-02): each Save version turns the draft into a saved version and ToolJet opens a new draft,
+ * which is the editing version. A project that pins a version in app.json (a clone, or `tooljet app checkout`) would go
+ * on building into the saved one; when the pinned version is not a draft, the project follows the editing draft again.
+ * A pinned draft stays as it is. Returns a note when it moved.
+ */
+export async function followDraft(dir: string): Promise<string | undefined> {
+  let pinned: { id?: string; name?: string } | undefined;
+  try {
+    pinned = JSON.parse(readFileSync(join(dir, 'app.json'), 'utf8')).version;
+  } catch {
+    return undefined;
+  }
+  if (!pinned?.id) return undefined;
+  const list = await cli(dir, ['app', 'checkout', '--list'], 60_000);
+  const line = list.output.split('\n').find((l) => l.trimStart().startsWith('*') && l.includes(pinned!.id!));
+  if (list.code !== 0 || !line || /\bdraft\b/i.test(line)) return undefined;
+  const moved = await cli(dir, ['app', 'checkout', '--editing'], 60_000);
+  if (moved.code !== 0) throw new Error(`The app's draft could not be opened: ${moved.output.trim().slice(0, 500)}`);
+  return `${pinned.name ?? 'The pinned version'} is saved, so the code now goes into the app's draft.`;
+}
+
 export function codeAppBuildTool(): ToolDef {
   return {
     name: 'code_app_build',
@@ -377,6 +399,7 @@ export function codeAppBuildTool(): ToolDef {
     async handler(args: { app_id?: string; name?: string }) {
       try {
         const dir = locateProject(args);
+        const followed = await followDraft(dir);
         const started = Date.now();
         const pull = await cli(dir, ['app', 'pull']);
         const build = await cli(join(dir, 'frontend'), ['library', 'build']);
@@ -385,6 +408,7 @@ export function codeAppBuildTool(): ToolDef {
         const report = parseReport<{ problems?: { file: string; line: number; message: string }[]; accessibility?: unknown[]; security?: SecurityReport }>(check.output);
         const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0;
         return ok({
+          ...(followed ? { draft: followed } : {}),
           ok: okBuild,
           build_ms: Date.now() - started,
           pull: pull.code === 0 ? 'typed hooks refreshed' : pull.output.trim(),
@@ -421,6 +445,7 @@ export function codeAppInstallTool(): ToolDef {
     async handler(args: { app_id?: string; name?: string }) {
       try {
         const dir = locateProject(args);
+        const followed = await followDraft(dir);
         // The full scan, dependency checks included, before anything reaches the app.
         const check = await cli(dir, ['app', 'check', '--json']);
         const security = parseReport<{ security?: SecurityReport }>(check.output)?.security;
@@ -440,6 +465,7 @@ export function codeAppInstallTool(): ToolDef {
         const result = await cli(dir, ['app', 'dev', '--once', '--source', 'platform']);
         if (result.code !== 0) throw new Error(result.output.trim());
         return ok({
+          ...(followed ? { draft: followed } : {}),
           linked: true,
           editor_url: /Open: (\S+)/.exec(result.output)?.[1] ?? null,
           output: result.output.trim(),
