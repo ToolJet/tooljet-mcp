@@ -211,7 +211,7 @@ describe('shadcn-look Table people', () => {
 describe('shadcn-look Table dates', () => {
   const cols = (result: ReturnType<typeof normalizeComponentSpec>) =>
     (result.component.properties?.columns as { value: Record<string, unknown>[] }).value;
-  it('shows a date column authored in a machine format as a readable date, parsing with that format (clinic showed 2026-10-12)', () => {
+  it('shows a date column authored in a machine format as a readable date, parsing with that format (a test build showed 2026-10-12)', () => {
     const [c] = cols(normalizeComponentSpec(table('shadcn', [{ id: 'd', key: 'day', name: 'Data', columnType: 'datepicker', dateFormat: 'YYYY-MM-DD' }])));
     expect(c.dateFormat).toBe('MMM D, YYYY');
     expect(c.parseDateFormat).toBe('YYYY-MM-DD');

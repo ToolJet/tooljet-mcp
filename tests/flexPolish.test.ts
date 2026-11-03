@@ -339,7 +339,7 @@ describe('polishFlexRows: a header title takes the free space', () => {
     const input = [
       row('header', { justifyContent: { value: 'space-between' } }),
       { ...child('title', 'ShadHeading', 'header', { text: { value: "Today's appointments" } }), layout: { top: 0, left: 0, width: 20, height: 40, fillWidth: false, widthPx: 400 } },
-      { ...child('count', 'ShadBadge', 'header', { text: { value: '3 clinicians' } }), layout: { top: 0, left: 0, width: 4, height: 24 } },
+      { ...child('count', 'ShadBadge', 'header', { text: { value: '3 members' } }), layout: { top: 0, left: 0, width: 4, height: 24 } },
       { ...child('refresh', 'ShadButton', 'header', { text: { value: 'Refresh' } }), layout: { top: 0, left: 0, width: 4, height: 36 } },
     ];
     const { components, warnings } = polishFlexRows(input as ComponentSpec[]);
@@ -448,11 +448,11 @@ describe('polishFlexRows: a button with no fill flag', () => {
 });
 
 describe('polishFlexRows: a badge beside a title', () => {
-  it('keeps its own width instead of filling (a "3 clinicians" badge floated mid-header)', () => {
+  it('keeps its own width instead of filling (a "3 members" badge floated mid-header)', () => {
     const input = [
       row('header', { justifyContent: { value: 'space-between' } }),
       { ...child('title', 'ShadHeading', 'header', { text: { value: "Today's appointments" } }), layout: { top: 0, left: 0, width: 20, height: 40 } },
-      { ...child('count', 'ShadBadge', 'header', { text: { value: '3 clinicians' } }), layout: { top: 0, left: 0, width: 4, height: 24 } },
+      { ...child('count', 'ShadBadge', 'header', { text: { value: '3 members' } }), layout: { top: 0, left: 0, width: 4, height: 24 } },
     ];
     const badge = polishFlexRows(input as ComponentSpec[]).components.find((c) => c.clientRef === 'count')!.layout as Record<string, unknown>;
     expect(badge.fillWidth).toBe(false);
