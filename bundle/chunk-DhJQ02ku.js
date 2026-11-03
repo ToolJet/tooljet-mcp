@@ -4859,15 +4859,16 @@ function createOAuthHttpServer(options2) {
         sendOAuthJson(res, 200, { status: "ok", transport: "streamable-http", authorization: "oauth" });
         return;
       }
-      const metadata = url.pathname.startsWith(metadataPrefix);
+      const metadata = url.pathname === metadataPrefix.slice(0, -1) || url.pathname.startsWith(metadataPrefix);
       const prefix = metadata ? metadataPrefix : pathPrefix;
+      const shared = url.pathname === prefix.slice(0, -1);
       const workspace = url.pathname.startsWith(prefix) ? url.pathname.slice(prefix.length) : "";
-      if (!/^[A-Za-z0-9_-]{1,128}$/.test(workspace)) {
+      if (!shared && !/^[A-Za-z0-9_-]{1,128}$/.test(workspace)) {
         sendOAuthJson(res, 404, { error: "not_found" });
         return;
       }
-      const canonicalResource = `${resourceBase}/${workspace}`;
-      const metadataUrl = `${resource.origin}${metadataPrefix}${workspace}`;
+      const canonicalResource = shared ? resourceBase : `${resourceBase}/${workspace}`;
+      const metadataUrl = `${resource.origin}${shared ? metadataPrefix.slice(0, -1) : metadataPrefix + workspace}`;
       if (metadata && req.method === "GET") {
         res.setHeader("access-control-allow-origin", "*");
         sendOAuthJson(res, 200, {
