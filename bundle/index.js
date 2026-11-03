@@ -110800,6 +110800,15 @@ async function auditPages(pages, options2 = {}, driver = loadPlaywright) {
         reports[index] = unreachable(p, [401, 403].includes(status) ? "auth_required" : "navigation_failed", "Viewer returned HTTP " + status);
         return;
       }
+      await page.waitForFunction(() => {
+        if (!document.querySelector('[data-cy^="draggable-widget-"]'))
+          return false;
+        const frame = document.querySelector("iframe[data-tj-code-page-frame]");
+        if (!frame)
+          return true;
+        const root2 = frame.contentDocument?.getElementById("tj-frame-root");
+        return !!root2 && root2.children.length > 0;
+      }, void 0, { timeout: options2.contentWaitMs ?? Number(process.env.MCP_RENDER_AUDIT_CONTENT_WAIT_MS || 3e4) }).catch(() => void 0);
       await page.waitForTimeout(options2.settleMs ?? 6e3);
       await page.waitForFunction(() => {
         const charts = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart').length;

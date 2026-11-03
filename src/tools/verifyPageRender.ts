@@ -314,7 +314,9 @@ export async function auditPages(
     /** The builder's ToolJet session (tj_auth_token), set as a cookie for the viewer origin so a private app opens. */
     session?: string; savedQueries?: RenderAuditQueries;
     /** Window width in px (default 1600); a code page is checked at 375, 768 and 1280. */
-    viewportWidth?: number } = {},
+    viewportWidth?: number;
+    /** How long to wait for the page to draw before the settle (default 30 s, MCP_RENDER_AUDIT_CONTENT_WAIT_MS). */
+    contentWaitMs?: number } = {},
   driver: () => Promise<any | null> = loadPlaywright
 ): Promise<PageRenderReport[]> {
   const unreachable = (p: { page: string; url: string }, reason: RenderFinding['reason'], detail: string): PageRenderReport =>
@@ -427,6 +429,22 @@ export async function auditPages(
         reports[index] = unreachable(p, [401, 403].includes(status) ? 'auth_required' : 'navigation_failed', 'Viewer returned HTTP ' + status);
         return;
       }
+      // Wait for the page to draw before the settle: a widget, and on a Code mode page its frame's app. A dev-track Code
+      // mode page drew its widget 3 to 4 s after load on an idle stack, and a fixed 6 s settle during a build read two
+      // working pages as "no widgets" (Equipment checkout log, 2026-11-02). An empty page still ends as no_widgets.
+      await page
+        .waitForFunction(
+          () => {
+            if (!document.querySelector('[data-cy^="draggable-widget-"]')) return false;
+            const frame = document.querySelector('iframe[data-tj-code-page-frame]') as HTMLIFrameElement | null;
+            if (!frame) return true;
+            const root = frame.contentDocument?.getElementById('tj-frame-root');
+            return !!root && root.children.length > 0;
+          },
+          undefined,
+          { timeout: options.contentWaitMs ?? Number(process.env.MCP_RENDER_AUDIT_CONTENT_WAIT_MS || 30000) }
+        )
+        .catch(() => undefined);
       await page.waitForTimeout(options.settleMs ?? 6000);
       // Charts mount after their queries resolve; judging them before Plotly has drawn reports a
       // healthy chart as empty, and judging before it has mounted misses an empty one entirely.

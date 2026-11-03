@@ -354,3 +354,38 @@ describe('render audit of a code page: axe and screenshot', () => {
     expect((page as any).screenshot).toHaveBeenCalledWith({ path: '/tmp/tj-audit-test/app1-home-orders-36-375.png', fullPage: false });
   });
 });
+
+// Equipment checkout log (2026-11-02): a working dev-track Code mode page drew its widget 3 to 4 s after load, and a
+// fixed 6 s settle during a build read it as "no widgets" twice. The audit now waits for the page to draw first.
+describe('render audit waits for the page to draw', () => {
+  it('waits for content before the settle, with its own timeout', async () => {
+    const f = browserFixture();
+    const order: string[] = [];
+    const page = await f.context.newPage();
+    const waitForFunction = vi.fn(async (_fn: unknown, _arg: unknown, opts: any) => { order.push(`content:${opts.timeout}`); });
+    const waitForTimeout = vi.fn(async (ms: number) => { order.push(`settle:${ms}`); });
+    f.context.newPage = vi.fn().mockResolvedValue({ ...page, waitForFunction, waitForTimeout });
+    await auditPages(target, { contentWaitMs: 12_000, settleMs: 100 }, f.driver);
+    expect(order[0]).toBe('content:12000');
+    expect(order[1]).toBe('settle:100');
+  });
+
+  it('counts a Code mode page as drawn only once its frame has the app', async () => {
+    const f = browserFixture();
+    const page = await f.context.newPage();
+    let predicate: (() => boolean) | undefined;
+    const waitForFunction = vi.fn(async (fn: () => boolean) => { predicate ??= fn; });
+    f.context.newPage = vi.fn().mockResolvedValue({ ...page, waitForFunction });
+    await auditPages(target, {}, f.driver);
+    const doc = (widget: boolean, frame?: { children: number }) => ({
+      querySelector: (sel: string) =>
+        sel.startsWith('[data-cy') ? (widget ? {} : null)
+          : frame ? { contentDocument: { getElementById: () => ({ children: { length: frame.children } }) } } : null,
+    });
+    const run = (d: unknown) => { (globalThis as any).document = d; try { return predicate!(); } finally { delete (globalThis as any).document; } };
+    expect(run(doc(false))).toBe(false);
+    expect(run(doc(true))).toBe(true); // a visual page: the widget is enough
+    expect(run(doc(true, { children: 0 }))).toBe(false); // the frame is there but the app has not drawn
+    expect(run(doc(true, { children: 1 }))).toBe(true);
+  });
+});
