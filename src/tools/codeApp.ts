@@ -267,13 +267,8 @@ export function codeAppScaffoldTool(client?: Pick<ToolJetClient, 'renameApp'>): 
           if (init.code !== 0) throw new Error(`tooljet app init failed: ${init.output}`);
           const appFile = join(dir, 'app.json');
           writeFileSync(appFile, JSON.stringify({ ...JSON.parse(readFileSync(appFile, 'utf8')), appId: args.app_id }, null, 2) + '\n');
-          if (process.env.TOOLJET_SDK_SPEC) {
-            const pkgFile = join(dir, 'frontend', 'package.json');
-            const pkg = JSON.parse(readFileSync(pkgFile, 'utf8'));
-            pkg.dependencies['@tooljet/custom-component-sdk'] = process.env.TOOLJET_SDK_SPEC;
-            writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + '\n');
-          }
-          // The CLI's install: never runs a package's install scripts (npm/pnpm/yarn with --ignore-scripts).
+          // The CLI's install: never runs a package's install scripts (npm/pnpm/yarn with --ignore-scripts). It takes the SDK
+          // from TOOLJET_SDK_SPEC without recording that path in the project, so it never reaches ToolJet's stored code.
           const install = await cli(dir, ['app', 'install']);
           if (install.code !== 0) throw new Error(`tooljet app install failed: ${install.output}`);
         }
