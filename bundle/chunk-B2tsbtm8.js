@@ -1,9 +1,9 @@
 import { createRequire } from "node:module";
 import { o as external_exports, q as editContractSchema, s as generateEditContract, p as COMPONENT_FX_GUIDANCE } from "./chunk-8iUq0slz.js";
-import { s as strictEntry, g as specSchema, h as createClient, l as listWorkspaceGroupsTool, m as manageWorkspaceGroupsTool, j as inspectDatasourceSchemaTool, u as updateComponentsTool, o as ok, k as nodeCatalog, f as fail, p as capabilityRequestSchema, q as getWorkflowCapabilities, w as lint, x as apply, y as deleteNode, z as validateGraph, v as validateTableBatch, A as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec } from "./chunk-DbFNT0Gf.js";
-import { a6 as dbColumnTypeSchema, a7 as componentInputSchema, a8 as lintAppSpecTool, a9 as projectJavascriptRuntime, aa as projectAppSettings, ab as compactTheme, ac as pageSettingProperties, l as literalCanvasColor, ad as containsExactValue, h as prepareQueryOptionsForWrite, ae as inspectUpdateCompatibility, af as normalizePlanBindingAliases, ag as containsNamedBinding, ah as normalizePlannedLayouts, ai as materializeRequiredDefaultChildren, aj as mapKeyRefusal, j as prepareComponentBatch, v as validateEvents, n as expandQueryLifecycles, q as persistedEventSpecs, ak as persistedEventIds } from "./chunk-pMEylbpx.js";
-import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, W as WebStandardStreamableHTTPServerTransport, g as getRequestListener, c as validatePersistedAppSummary } from "./chunk-JCMmiPv2.js";
-import { M as McpServer } from "./chunk-DiCiME0d.js";
+import { s as strictEntry, g as specSchema, h as createClient, l as listWorkspaceGroupsTool, m as manageWorkspaceGroupsTool, j as inspectDatasourceSchemaTool, u as updateComponentsTool, o as ok, k as nodeCatalog, f as fail, p as capabilityRequestSchema, q as getWorkflowCapabilities, w as lint, x as apply, y as deleteNode, z as validateGraph, v as validateTableBatch, A as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec } from "./chunk-0QSMROXi.js";
+import { a6 as dbColumnTypeSchema, a7 as componentInputSchema, a8 as lintAppSpecTool, a9 as projectJavascriptRuntime, aa as projectAppSettings, ab as compactTheme, ac as pageSettingProperties, l as literalCanvasColor, ad as containsExactValue, h as prepareQueryOptionsForWrite, ae as inspectUpdateCompatibility, af as normalizePlanBindingAliases, ag as containsNamedBinding, ah as normalizePlannedLayouts, ai as materializeRequiredDefaultChildren, aj as mapKeyRefusal, j as prepareComponentBatch, v as validateEvents, n as expandQueryLifecycles, q as persistedEventSpecs, ak as persistedEventIds } from "./chunk-AvO_sJ_L.js";
+import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, W as WebStandardStreamableHTTPServerTransport, g as getRequestListener, c as validatePersistedAppSummary } from "./chunk-CqS74O9G.js";
+import { M as McpServer } from "./chunk-CI8AWTJz.js";
 import { u as pageIconSchema, c as componentSlotSchema, a as componentNameSchema, t as lintComponents, i as introducedLintFindings, x as lintRenderedGeometryBlocking, y as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, f as lintComponentSlots, l as lintComponentSpec, g as lintUnusableTextGeometry, z as lintNestedContainerWidths, h as lintStandardSingleLineInputHeight, j as lintTextGeometry, k as lintRenderedGeometry, F as FORM_SCHEMA_FIELD_TYPE_SET, A as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-gznY6rD8.js";
 import { ea as getCatalog, e5 as getComponentSchema, eb as getLegacyComponentReplacement, ee as readCatalogBytes } from "./chunk-BEuHHGL1.js";
 import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-CsHFzbSc.js";
@@ -671,6 +671,64 @@ function appVersionLifecycleTools(client) {
       handler: execute((a) => client.appVersions.remove(a.app_id, a.version_id, a.fallback_version_id))
     }
   ];
+}
+var VERSION_WRITE_TOOLS = /* @__PURE__ */ new Set([
+  "lint_app_spec",
+  "apply_app_phase",
+  "add_page",
+  "add_pages",
+  "update_pages",
+  "delete_page",
+  "add_query",
+  "add_queries",
+  "update_query",
+  "delete_query",
+  "add_component",
+  "add_components",
+  "add_component_batches",
+  "update_components",
+  "delete_components",
+  "update_layout",
+  "add_events",
+  "add_query_lifecycles",
+  "update_events",
+  "delete_event",
+  "update_app_settings",
+  "manage_theme"
+]);
+var MAX_VERSION_NAME = 25;
+function draftName(base, taken) {
+  for (let n = 1; ; n++) {
+    const suffix = `_${n}`;
+    const name = base.slice(0, MAX_VERSION_NAME - suffix.length) + suffix;
+    if (!taken.has(name))
+      return name;
+  }
+}
+async function releasedVersionGuard(client, args) {
+  if (typeof args.app_id !== "string")
+    return void 0;
+  const appId = args.app_id;
+  const summary = await client.getAppSummary(appId);
+  const targetId = typeof args.version_id === "string" ? args.version_id : summary.version_id;
+  if (!targetId)
+    return void 0;
+  const target2 = targetId === summary.version_id ? summary : await client.getAppSummary(appId, targetId);
+  if (!target2.version_released)
+    return void 0;
+  const { versions: versions2 } = await client.appVersions.list(appId);
+  const released = versions2.find((v) => v.version_id === targetId);
+  const drafts = versions2.filter((v) => v.version_id !== targetId && v.status?.toUpperCase() === "DRAFT");
+  const refuse = (text) => ({ content: [{ type: "text", text: `Not executed: ${text}` }], isError: true });
+  if (drafts.length) {
+    return refuse(`version "${released?.version_name ?? targetId}" is released and cannot be edited. Nothing was changed. Draft version(s) already exist: ${drafts.map((d) => `"${d.version_name}" (${d.version_id})`).join(", ")}. Ask the user whether to continue in one of them (they open it in the ToolJet editor) or to create a new draft from the released version with create_app_version. Do not retry this write on the released version.`);
+  }
+  const created = await client.createAppVersion({
+    appId,
+    versionName: draftName(released?.version_name ?? "v1", new Set(versions2.map((v) => v.version_name))),
+    versionFromId: targetId
+  });
+  return refuse(`version "${released?.version_name ?? targetId}" is released and cannot be edited, so nothing was written to it. A new draft version "${created.version_name}" (version_id ${created.version_id}) was created from it and is now the editing version. Its pages, components, queries and events have new ids: call get_app_summary with version_id ${created.version_id}, then redo this change against the draft using those ids. Tell the user the changes are in the new draft and the released version is unchanged until they release the draft.`);
 }
 function listWorkspacesTool(client) {
   return {
@@ -2435,7 +2493,7 @@ function getAppTool(client) {
     }
   };
 }
-var APP_FIELDS = ["app_id", "name", "version_id", "editor_frozen", "environment"];
+var APP_FIELDS = ["app_id", "name", "version_id", "editor_frozen", "version_released", "environment"];
 var PAGE_FIELDS = ["id", "name", "handle", "icon", "hidden", "index", "is_page_group", "page_group_id"];
 var COMPONENT_FIELDS = [
   "id",
@@ -3932,7 +3990,7 @@ function deleteEventTool(client) {
     }
   };
 }
-var TOOLJET_MCP_VERSION = "0.11.0";
+var TOOLJET_MCP_VERSION = "0.11.1";
 function snapshot(path) {
   try {
     const stat = statSync(path);
@@ -4649,6 +4707,15 @@ function registerTools(server, client, runtime = runtimeFreshness) {
       const status = runtime.status();
       if (status.restart_required && name !== "get_runtime_info") {
         return staleRuntimeResult(status);
+      }
+      if (VERSION_WRITE_TOOLS.has(name)) {
+        try {
+          const refused = await releasedVersionGuard(client, args ?? {});
+          if (refused)
+            return withRuntimeStatus(refused, status);
+        } catch (err) {
+          return withRuntimeStatus(fail(err), status);
+        }
       }
       return withRuntimeStatus(await handler(args), status);
     }));
