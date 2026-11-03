@@ -110934,13 +110934,15 @@ var pathOf = (url2) => {
 function trackNetwork(page) {
   if (typeof page?.on !== "function")
     return void 0;
-  const tracker = { inflight: /* @__PURE__ */ new Set(), lastActivity: Date.now() };
+  const tracker = { inflight: /* @__PURE__ */ new Map(), lastActivity: Date.now() };
   const done = (request) => {
     tracker.inflight.delete(request);
     tracker.lastActivity = Date.now();
   };
   page.on("request", (request) => {
-    tracker.inflight.add(request);
+    if (STREAM_PATHS.test(pathOf(String(request?.url?.() ?? ""))))
+      return;
+    tracker.inflight.set(request, Date.now());
     tracker.lastActivity = Date.now();
   });
   page.on("requestfinished", done);
@@ -110949,11 +110951,20 @@ function trackNetwork(page) {
 }
 var CODE_QUIET_MS = Number(process.env.MCP_RENDER_AUDIT_QUIET_MS || 750);
 var CODE_MIN_SETTLE_MS = 750;
+var LONG_REQUEST_MS = 3e3;
+var STREAM_PATHS = /\/api\/code-page-security$/;
+function codeFrameDrawn() {
+  const frame = document.querySelector("iframe[data-tj-code-page-frame]");
+  const root2 = frame?.contentDocument?.getElementById("tj-frame-root");
+  return !!root2 && root2.children.length > 0;
+}
 async function settleWhenQuiet(page, tracker, maxMs) {
   const started = Date.now();
   await page.waitForTimeout(Math.min(CODE_MIN_SETTLE_MS, maxMs));
   while (Date.now() - started < maxMs) {
-    if (tracker.inflight.size === 0 && Date.now() - tracker.lastActivity >= CODE_QUIET_MS)
+    const now = Date.now();
+    const loading = [...tracker.inflight.values()].some((since) => now - since < LONG_REQUEST_MS);
+    if (!loading && now - tracker.lastActivity >= CODE_QUIET_MS && await page.evaluate(codeFrameDrawn).catch(() => true) !== false)
       return;
     await page.waitForTimeout(100);
   }
@@ -111091,7 +111102,7 @@ async function auditPages(pages, options2 = {}, driver = loadPlaywright) {
         const root2 = frame.contentDocument?.getElementById("tj-frame-root");
         return !!root2 && root2.children.length > 0;
       }, void 0, { timeout: options2.contentWaitMs ?? Number(process.env.MCP_RENDER_AUDIT_CONTENT_WAIT_MS || 3e4) }).catch(() => void 0);
-      const codeFrame = network ? await page.evaluate(() => !!document.querySelector("iframe[data-tj-code-page-frame]")).catch(() => false) : false;
+      const codeFrame = network ? options2.codePage || await page.evaluate(() => !!document.querySelector("iframe[data-tj-code-page-frame]")).catch(() => false) : false;
       if (codeFrame === true) {
         await settleWhenQuiet(page, network, options2.settleMs ?? 6e3);
       } else {
@@ -111176,7 +111187,9 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
           return fail(new Error("Invalid app id"));
         const { base: base2, origins } = renderAuditBase(viewerBase(), args.viewer_url);
         const summary = await client.getAppSummary(args.app_id);
-        const pages = summary.pages ?? [];
+        const allPages = summary.pages ?? [];
+        const visible = allPages.filter((p) => p.hidden !== true && p.hidden?.value !== true && p.hidden?.value !== "{{true}}");
+        const pages = args.route && !args.page_handle ? (visible.length ? visible : allPages).slice(0, 1) : allPages;
         const version2 = await client.editingVersionName?.(args.app_id).catch(() => void 0);
         const query2 = new URLSearchParams();
         if (version2) {
@@ -111195,6 +111208,7 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
           allowedOrigins: origins,
           savedQueries: summary,
           viewportWidth: args.viewport_width,
+          codePage: Boolean(args.route),
           // MCP_RENDER_AUDIT_SESSION=off keeps the browser unauthenticated (private apps are then reported unverified).
           session: process.env.MCP_RENDER_AUDIT_SESSION === "off" ? void 0 : await client.viewerSession?.(args.app_id).catch(() => void 0)
         };
