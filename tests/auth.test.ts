@@ -243,3 +243,25 @@ describe('viewerSession for the render check', () => {
     }
   });
 });
+
+describe('ai-render-session final contract (code-app-demo d103a8349a)', () => {
+  const sessionConfig: Config = { apiUrl: 'http://localhost:3000', appUrl: 'http://localhost:8082', sessionToken: 'SESSION_JWT', workspaceId: 'org-9' };
+
+  it('takes the full response and uses authToken for the viewer', async () => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(mockResponse({ status: 201, json: {
+      authToken: 'RENDER', organizationId: 'org-9', organizationSlug: 'acme', organizationName: 'Acme',
+      expiresAt: new Date(Date.now() + 10 * 60_000).toISOString(), appId: 'app-1' } }));
+    const auth = createAuth(sessionConfig, fetchImpl as unknown as typeof fetch);
+    expect(await auth.viewerSession!('app-1')).toBe('RENDER');
+    expect(((fetchImpl.mock.calls[0][1] as RequestInit).headers as Headers).get('tj-workspace-id')).toBe('org-9');
+    // The build's own session is untouched: later API calls still use it.
+    fetchImpl.mockResolvedValueOnce(mockResponse({ json: { ok: true } }));
+    await auth.authedFetch('/api/apps/app-1');
+    expect(((fetchImpl.mock.calls[1][1] as RequestInit).headers as Headers).get('Cookie')).toBe('tj_auth_token=SESSION_JWT');
+  });
+
+  it('falls back on a 403 refusal (another app, not an ai_builder session)', async () => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(mockResponse({ status: 403, json: { message: 'This session cannot render another app' } }));
+    expect(await createAuth(sessionConfig, fetchImpl as unknown as typeof fetch).viewerSession!('app-2')).toBe('SESSION_JWT');
+  });
+});
