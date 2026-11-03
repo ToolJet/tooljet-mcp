@@ -824,6 +824,15 @@ describe('polishFlexRows: a page-wide root container keeps a page margin', () =>
     expect(prop(polishFlexRows([root(undefined)]).components, 'pageRoot', 'padding')).toBe(24);
   });
 
+  // SkyLine in Ant Design (2026-11-01): the app header, a white band with its own padded rows, was padded 24px and drew
+  // its 46px menu in a 100px bar.
+  it('leaves a band painted its own colour edge to edge', () => {
+    const band = { ...root(0), styles: { backgroundColor: { value: '#ffffff' } } };
+    expect(prop(polishFlexRows([band]).components, 'pageRoot', 'padding')).toBe(0);
+    const surface = { ...root(0), styles: { backgroundColor: { value: 'var(--cc-appBackground-surface)' } } };
+    expect(prop(polishFlexRows([surface]).components, 'pageRoot', 'padding')).toBe(24);
+  });
+
   it('keeps a wider padding, a root inside the gutter, and nested containers as they are', () => {
     expect(prop(polishFlexRows([root(32)]).components, 'pageRoot', 'padding')).toBe(32);
     expect(prop(polishFlexRows([root(0, { top: 0, left: 2, width: 39, height: 900 })]).components, 'pageRoot', 'padding')).toBe(0);

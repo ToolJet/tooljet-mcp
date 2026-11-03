@@ -45,6 +45,9 @@ export function registerLibraryPacks(packs: LibraryPack[]): void {
   discovered = packs;
 }
 
+/** The packs the ToolJet server announced at start-up (none offline or in tests). */
+export const serverLibraryPacks = (): LibraryPack[] => discovered ?? [];
+
 /** The first known pack (callers that need any pack at all). */
 export function libraryPack(): LibraryPack | null {
   return libraryPacksAll()[0] ?? null;
@@ -109,8 +112,9 @@ export function libraryTypeOf(component: { type?: string; properties?: Section }
     const name = value('componentName');
     if (typeof id !== 'string' || typeof name !== 'string') return undefined;
     const known = libraryPacksAll().find((p) => p.pack === id);
-    // A pack this server has not read still reads back as its Lib_* type, so the agent sees what is on the page.
-    return !known || known.components[name] ? `Lib_${id}_${name}` : undefined;
+    // A pack this server has not read still reads back as a Lib_* type, so the agent sees what is on the page.
+    if (!known) return `Lib_${id.toLowerCase().replace(/[^a-z0-9]+/g, '')}_${name}`;
+    return known.components[name] ? `${known.prefix}${name}` : undefined;
   }
   const pack = libraryPacksAll().find((p) => p.correlationId === value('correlationId'));
   const name = value('componentName');

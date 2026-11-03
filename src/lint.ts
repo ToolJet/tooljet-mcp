@@ -1,4 +1,5 @@
-import { isLibraryPackType } from './libraryPack.js';
+import { isLibraryPackType, serverLibraryPacks } from './libraryPack.js';
+import { defaultPack } from './componentLibrary.js';
 // Mechanical, catalog-independent checks that catch the render bugs the skill can only *advise*
 // against. Used by add_component(s) (component-level, pre-write) and validate_app (whole-app,
 // post-write). Errors block; warnings are surfaced to the agent but don't block.
@@ -28,7 +29,7 @@ import { lintSurfaceInsets } from './surfaceInsets.js';
 import { lintComponentStateBindings, lintEmptyDateWrites } from './componentStateBindings.js';
 import { lintBindingNames } from './queryValidation.js';
 import { pageIconError } from './pageIcons.js';
-import { runjsComponentReferences, runjsQueryReferences } from './runjsReferences.js';
+import { runjsComponentReferences, runjsQueryReferences, runjsReturnsNothing } from './runjsReferences.js';
 import { lintBindingSyntax } from './bindingSyntax.js';
 import { lintSelectedRowProjections } from './selectedRowProjection.js';
 import { dropdownDefaultVisibilityWarning, dropdownSelfDefaultWarning } from './dropdownDefaultContract.js';
@@ -1400,9 +1401,17 @@ export function lintCanvasSideGutter(components: LintComponent[]): string[] {
   // it is adding, and a page-level "no side gutter" verdict from that has no context behind it.
   // Mirrors lintDesktopCanvasCoverage, which guards the same way.
   if (roots.length < 3) return [];
+  // A container painted its own colour across the canvas is a full-bleed band (an app header, a hero strip), as the
+  // page-margin polish treats it (flexPolish.ts): it is meant to touch the edges. The agent blocks a build on this
+  // warning, so a SkyLine header written edge to edge was moved back into the gutter (2026-11-01).
+  const band = (component: LintComponent) => {
+    if (!['FlexContainer', 'Container'].includes(component.type ?? '')) return false;
+    const colour = String(propVal(component.styles, 'backgroundColor') ?? '').trim().toLowerCase();
+    return !!colour && colour !== 'transparent' && !colour.startsWith('var(--cc-appbackground');
+  };
   const offenders = roots.filter((component) => {
     const rect = component.layouts?.desktop ?? component.layout;
-    if (!rect || typeof rect.left !== 'number' || typeof rect.width !== 'number') return false;
+    if (!rect || typeof rect.left !== 'number' || typeof rect.width !== 'number' || band(component)) return false;
     return rect.left < MIN_LEFT || rect.left + rect.width > MAX_RIGHT;
   });
   if (!offenders.length) return [];
@@ -1883,6 +1892,18 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
     errors.push(
       `Component "${label}": unknown component type "${spec.type}"; ToolJet may persist an unusable component.` +
         (suggestion ? ` Did you mean "${suggestion}"?` : ' Call get_component_catalog with no type to list supported types.')
+    );
+  } else if (/^Shad[A-Z]/.test(spec.type) && defaultPack() && serverLibraryPacks().length) {
+    // A server that ships component packs has no ToolJet UI 2.0 Shad* widgets: a ShadButton written by an edit saved and
+    // drew "This widget is not available" (Rocket 2.0 todo app, logout button, staging 2026-10-29).
+    const name = spec.type.slice(4);
+    const matches = serverLibraryPacks().filter((p) => p.components[name]).map((p) => `${p.prefix}${name}`);
+    errors.push(
+      `Component "${label}": "${spec.type}" is not available on this ToolJet; UI 2.0 widgets draw as the app's component ` +
+        'pack. ' +
+        (matches.length
+          ? `Write the app's pack component instead: ${matches.join(' or ')} (the one matching the app's pack).`
+          : 'Call get_component_catalog for the pack components.')
     );
   } else {
     const replacement = getLegacyComponentReplacement(spec.type);
@@ -3496,6 +3517,23 @@ export function validateAppStructure(summary: AppSummary, options: { canvasColor
         `RunJS query "${query.name ?? query.id}" references components[${JSON.stringify(name)}], but no component is named ` +
           `${JSON.stringify(name)}. Use the persisted component name exactly (bracket notation for spaces); ` +
           'a plan client_ref is not a runtime component name. A fallback can hide the missing reference and silently ignore user input.'
+      );
+    }
+    // Its data is read (a binding, another query or an event) but the body never returns at the top level, so the
+    // data is always empty.
+    if (query.name && runjsReturnsNothing(code)) {
+      const name = query.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Searched in JSON text, so a bracket read's quotes arrive escaped.
+      const read = new RegExp(`queries\\s*(?:\\??\\.\\s*${name}|\\[\\s*\\\\?['"\`]${name}\\\\?['"\`]\\s*\\])\\s*\\??\\.\\s*data\\b`);
+      const elsewhere = JSON.stringify([
+        summary.pages.map((page) => page.components),
+        summary.queries.filter((other) => other.id !== query.id).map((other) => other.options),
+        summary.events,
+      ]);
+      if (read.test(elsewhere)) errors.push(
+        `RunJS query "${query.name}" never returns a value at the top level, but queries.${query.name}.data is read. ToolJet ` +
+          'uses the body\'s top-level return as the query\'s data, so it is always undefined and everything bound to it shows ' +
+          'empty. Write the body as statements that end in `return { ... }`, not as an expression such as `(() => { ... })()`.'
       );
     }
     const referencedNames = runjsQueryReferences(code);

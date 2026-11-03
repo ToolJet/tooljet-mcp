@@ -43,10 +43,24 @@ const SAMPLE_BLANKS: Record<string, Record<string, unknown>> = {
 /** The default definition of a component-pack widget (data/pack-default-definitions.json, generated from the
  *  frontend's pack configs), or undefined for any other type. The server merges no defaults over pack types, so a
  *  pack component is stored with these filled in, as the editor's drag and drop does. */
-/** Adds default definitions discovered at run time (the workspace's component packs, packCatalog.ts). */
+/** The display text a shipped pack's palette default carries as a sample (Ant Design: a Select labelled "Department", a
+ *  Descriptions titled "Order details", a Schedule whose first column reads "Room"). SkyLine's Auto build (2026-11-01)
+ *  left these unset and the app showed them; a build that wants a label or title sets it. */
+const PACK_SAMPLE_TEXT = ['label', 'title', 'resourceTitle', 'subTitle', 'message'];
+
+/** Adds default definitions discovered at run time (the workspace's component packs, packCatalog.ts), their sample
+ *  display text blanked. */
 export function registerPackDefinitions(extra: Record<string, unknown>): void {
   packDefaultDefinition('');
-  Object.assign(cached ?? (cached = {}), extra as Record<string, PackDefinition>);
+  const defs = extra as Record<string, PackDefinition>;
+  for (const def of Object.values(defs)) {
+    for (const key of PACK_SAMPLE_TEXT) {
+      const entry = def?.properties?.[key] as { value?: unknown } | undefined;
+      if (entry && typeof entry.value === 'string' && entry.value && !entry.value.trim().startsWith('{{'))
+        def.properties![key] = { ...entry, value: '' };
+    }
+  }
+  Object.assign(cached ?? (cached = {}), defs);
 }
 
 export function packDefaultDefinition(type: string): PackDefinition | undefined {

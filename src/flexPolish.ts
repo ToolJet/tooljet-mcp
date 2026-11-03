@@ -199,6 +199,10 @@ export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
     if (!rect || typeof rect.left !== 'number' || typeof rect.width !== 'number') continue;
     // Page-wide (most of the 43 columns) and touching an edge; a small row at the edge is not a page's frame.
     if (rect.width < 39 || (rect.left >= 2 && rect.left + rect.width <= 41)) continue;
+    // A band painted its own colour (an app header, a hero strip) is meant to run to the edge, and its rows carry their
+    // own padding: a forced 24px made an Ant Design top bar 100px tall (SkyLine, 2026-11-01).
+    const band = styleText(root, 'backgroundColor').toLowerCase();
+    if (band && band !== 'transparent' && !band.startsWith('var(--cc-appbackground')) continue;
     // An unset padding is the FlexContainer's default, 12px.
     const raw = text(prop(root, 'padding'));
     const padding = raw === '' ? 12 : Number(raw) || 0;
