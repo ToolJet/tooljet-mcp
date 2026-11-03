@@ -537,6 +537,8 @@ export interface AppSummary {
   version_id?: string;
   /** ToolJet's should_freeze_editor: a promoted (or git-locked) version, where writes are refused. */
   editor_frozen?: boolean;
+  /** The version is the app's released one (or PUBLISHED); ToolJet refuses edits to it. */
+  version_released?: boolean;
   /** The editing version's environment (development, staging, production). */
   environment?: string;
   pages: Array<{
@@ -1209,9 +1211,15 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       event: e.event,
       ...(typeof e.index === 'number' ? { index: e.index } : {}),
     }));
+    const editingVersion = full.editing_version ?? full.editingVersion;
+    const versionStatus = String(editingVersion?.status ?? '').toUpperCase();
+    const released =
+      (editingVersion?.id && (full.current_version_id ?? full.currentVersionId) === editingVersion.id) ||
+      versionStatus === 'PUBLISHED' || versionStatus === 'RELEASED';
     return {
-      app_id: full.id, name: full.name, version_id: full.editing_version?.id,
+      app_id: full.id, name: full.name, version_id: editingVersion?.id,
       ...(full.should_freeze_editor === true ? { editor_frozen: true } : {}),
+      ...(released ? { version_released: true } : {}),
       ...(typeof full.editorEnvironment?.name === 'string' ? { environment: full.editorEnvironment.name } : {}),
       pages, queries, events,
     };

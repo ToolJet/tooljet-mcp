@@ -4,7 +4,8 @@ import { listWorkspaceGroupsTool, manageWorkspaceGroupsTool } from './workspaceG
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ToolJetClient } from '../tooljetClient.js';
-import type { ToolDef } from './types.js';
+import { fail, type ToolDef } from './types.js';
+import { releasedVersionGuard, VERSION_WRITE_TOOLS } from '../releasedVersion.js';
 import { listWorkspacesTool } from './listWorkspaces.js';
 import { useWorkspaceTool } from './useWorkspace.js';
 import { createAppTool } from './createApp.js';
@@ -217,6 +218,14 @@ export function registerTools(
         const status = runtime.status();
         if (status.restart_required && name !== 'get_runtime_info') {
           return staleRuntimeResult(status);
+        }
+        if (VERSION_WRITE_TOOLS.has(name)) {
+          try {
+            const refused = await releasedVersionGuard(client, args ?? {});
+            if (refused) return withRuntimeStatus(refused, status);
+          } catch (err) {
+            return withRuntimeStatus(fail(err), status);
+          }
         }
         return withRuntimeStatus(await handler(args), status);
       }) as any
