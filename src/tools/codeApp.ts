@@ -16,13 +16,13 @@ import type { ToolJetClient } from '../tooljetClient.js';
     code_app_write_files  write app.json, frontend/src and frontend/styles/{theme,global}.css
     code_app_build        refresh typed hooks from the app's queries, build, and check the code against the app
     code_app_install      tooljet app dev --once: upload to the dev track and link the code page, its route pages and
-                          the version pin; with publish, tooljet app publish: a published revision the version can be
-                          saved and released with. Refuses while the security scan has critical or high findings.
+                          the version pin. Refuses while the security scan has critical or high findings. Saving the
+                          app version freezes its code (one version line, as for visual apps; no separate publish).
     code_app_add_dependency  tooljet app vet (malware, known vulnerabilities, versions under 7 days old, licence,
                           blocklist) and only then add the packages to frontend/package.json and install them
 
   Security: tooljet app check runs @tooljet/app-scanner (code rules, secrets, dependencies) and prints it with --json;
-  build reports the offline scan, install runs the full one first, and the server scans again at publish.
+  build reports the offline scan, install runs the full one first, and the server scans again when a version is saved.
 
   The code reads data with useAppQuery('<query>') from frontend/src/tooljet.gen.ts and writes by running a query with
   parameters (`await useAppQuery('update').run({ id, status })`); queries themselves are created with add_queries.
@@ -40,8 +40,8 @@ const run = promisify(execFile);
  * 2026-11-02), so every Code mode tool description ends with this rule.
  */
 export const USER_WORDS =
-  " Talk to the user about \"the app's code\", \"published code versions\" and \"Live preview\"; never say bundle, library, " +
-  'revision, manifest, root component, dev track or pin, and never show internal names, ids or paths.';
+  " Talk to the user about \"the app's code\" and its versions (v1, v2): one version line, as for any app. Never say code " +
+  'version, revision, publishing code, bundle, library, manifest, root component, dev track or pin, and never show internal names, ids or paths.';
 const root = (): string => resolve(process.env.TOOLJET_CODE_APP_ROOT || join(homedir(), 'tooljet-code-apps'));
 const NAME = /^[a-z][a-z0-9-]{1,40}$/;
 
@@ -405,42 +405,6 @@ export function codeAppBuildTool(): ToolDef {
   };
 }
 
-/** Where a project remembers the last revision it published (beside the CLI's own config). */
-const publishedFile = (dir: string): string => join(dir, 'frontend', '.tooljet', 'published.json');
-
-/** 1.0.0, then the next patch after the last one published from this project. */
-export const nextRevision = (last?: string): string => {
-  const m = /^(\d+)\.(\d+)\.(\d+)$/.exec(last ?? '');
-  return m ? `${m[1]}.${m[2]}.${Number(m[3]) + 1}` : '1.0.0';
-};
-
-/**
- * tooljet app publish with the next free X.Y.Z: the app's code becomes a published revision, the editing version is
- * pinned to it and the source is stored on ToolJet. A dev-track install leaves the version pinned to a developer
- * preview, which cannot be saved or released, and the agent then told the user to run `tooljet app publish` on the
- * server (UX review, 2026-11-02). A version the library already has is skipped.
- */
-export async function publishProject(dir: string, attempts = 25): Promise<{ version: string; output: string }> {
-  let last: string | undefined;
-  try {
-    last = JSON.parse(readFileSync(publishedFile(dir), 'utf8')).version;
-  } catch {
-    last = undefined;
-  }
-  let version = nextRevision(last);
-  for (let i = 0; i < attempts; i++) {
-    const result = await cli(dir, ['app', 'publish', '-v', version, '-m', 'Published by the AI builder', '--source', 'platform'], 600_000);
-    if (result.code === 0) {
-      mkdirSync(dirname(publishedFile(dir)), { recursive: true });
-      writeFileSync(publishedFile(dir), JSON.stringify({ version, publishedAt: new Date().toISOString() }, null, 2) + '\n');
-      return { version, output: result.output.trim() };
-    }
-    if (!/already exists/i.test(result.output)) throw new Error(result.output.trim());
-    version = nextRevision(version);
-  }
-  throw new Error(`no free revision number after ${attempts} tries (last tried ${version})`);
-}
-
 export function codeAppInstallTool(): ToolDef {
   return {
     name: 'code_app_install',
@@ -452,17 +416,12 @@ export function codeAppInstallTool(): ToolDef {
       'ToolJet so the Code panel can edit it. Build first. Runs the full security scan first and refuses while it has critical or high findings, listing them. ' +
       'Returns the editor URL. If it says the source was edited in the ToolJet editor, ' +
       'call code_app_read_files to bring those edits down, reapply your change, and install again. ' +
-      'With publish: true it publishes the code instead (tooljet app publish, run here, never by the user): a new published code version ' +
-      'that the app version uses, so the version can be saved and released. Publish once, as the last install of a build or edit.' + USER_WORDS,
-    inputSchema: {
-      app_id: APP_ID,
-      name: PROJECT_NAME,
-      publish: z.boolean().optional().describe('Publish the code as a new revision and pin the version to it (the last install of a build or edit)'),
-    },
-    async handler(args: { app_id?: string; name?: string; publish?: boolean }) {
+      'This is the last step of a build or edit: saving the app version (release_app saves a draft first) freezes the code.' + USER_WORDS,
+    inputSchema: { app_id: APP_ID, name: PROJECT_NAME },
+    async handler(args: { app_id?: string; name?: string }) {
       try {
         const dir = locateProject(args);
-        // The full scan, dependency checks included, before anything reaches the app (published or not).
+        // The full scan, dependency checks included, before anything reaches the app.
         const check = await cli(dir, ['app', 'check', '--json']);
         const security = parseReport<{ security?: SecurityReport }>(check.output)?.security;
         if (!security || security.error)
@@ -476,10 +435,6 @@ export function codeAppInstallTool(): ToolDef {
                 blocking.map((f) => `${f.severity.toUpperCase()} ${f.ruleId} ${f.package ?? f.location}: ${f.message}`).join('\n')
             )
           );
-        if (args.publish) {
-          const published = await publishProject(dir);
-          return ok({ linked: true, published: true, revision: published.version, output: published.output, security: securitySummary(security) });
-        }
         // Agent-built apps keep their source on ToolJet (owner platform) unless a repository owns it; the CLI refuses
         // to take a repository-owned source over and to overwrite editor edits it has not pulled.
         const result = await cli(dir, ['app', 'dev', '--once', '--source', 'platform']);

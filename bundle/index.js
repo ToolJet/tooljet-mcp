@@ -107453,7 +107453,7 @@ import { existsSync as existsSync2, mkdirSync, readFileSync as readFileSync8, re
 import { homedir as homedir2 } from "node:os";
 import { dirname as dirname7, join as join2, relative, resolve as resolve6, sep } from "node:path";
 var run = promisify(execFile);
-var USER_WORDS = ` Talk to the user about "the app's code", "published code versions" and "Live preview"; never say bundle, library, revision, manifest, root component, dev track or pin, and never show internal names, ids or paths.`;
+var USER_WORDS = ` Talk to the user about "the app's code" and its versions (v1, v2): one version line, as for any app. Never say code version, revision, publishing code, bundle, library, manifest, root component, dev track or pin, and never show internal names, ids or paths.`;
 var root = () => resolve6(process.env.TOOLJET_CODE_APP_ROOT || join2(homedir2(), "tooljet-code-apps"));
 var NAME = /^[a-z][a-z0-9-]{1,40}$/;
 var projectDir = (name2) => {
@@ -107740,43 +107740,13 @@ function codeAppBuildTool() {
     }
   };
 }
-var publishedFile = (dir) => join2(dir, "frontend", ".tooljet", "published.json");
-var nextRevision = (last) => {
-  const m = /^(\d+)\.(\d+)\.(\d+)$/.exec(last ?? "");
-  return m ? `${m[1]}.${m[2]}.${Number(m[3]) + 1}` : "1.0.0";
-};
-async function publishProject(dir, attempts = 25) {
-  let last;
-  try {
-    last = JSON.parse(readFileSync8(publishedFile(dir), "utf8")).version;
-  } catch {
-    last = void 0;
-  }
-  let version2 = nextRevision(last);
-  for (let i = 0; i < attempts; i++) {
-    const result = await cli(dir, ["app", "publish", "-v", version2, "-m", "Published by the AI builder", "--source", "platform"], 6e5);
-    if (result.code === 0) {
-      mkdirSync(dirname7(publishedFile(dir)), { recursive: true });
-      writeFileSync(publishedFile(dir), JSON.stringify({ version: version2, publishedAt: (/* @__PURE__ */ new Date()).toISOString() }, null, 2) + "\n");
-      return { version: version2, output: result.output.trim() };
-    }
-    if (!/already exists/i.test(result.output))
-      throw new Error(result.output.trim());
-    version2 = nextRevision(version2);
-  }
-  throw new Error(`no free revision number after ${attempts} tries (last tried ${version2})`);
-}
 function codeAppInstallTool() {
   return {
     name: "code_app_install",
     title: "Install Code Mode App",
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-    description: "Upload the app's code (tooljet app dev --once --source platform): it creates or updates the app's Code mode page, one hidden page per route (set each route's page permissions on it) and the component that runs the code, points the app version at this code as a Live preview, and stores the source on ToolJet so the Code panel can edit it. Build first. Runs the full security scan first and refuses while it has critical or high findings, listing them. Returns the editor URL. If it says the source was edited in the ToolJet editor, call code_app_read_files to bring those edits down, reapply your change, and install again. With publish: true it publishes the code instead (tooljet app publish, run here, never by the user): a new published code version that the app version uses, so the version can be saved and released. Publish once, as the last install of a build or edit." + USER_WORDS,
-    inputSchema: {
-      app_id: APP_ID,
-      name: PROJECT_NAME,
-      publish: external_exports.boolean().optional().describe("Publish the code as a new revision and pin the version to it (the last install of a build or edit)")
-    },
+    description: "Upload the app's code (tooljet app dev --once --source platform): it creates or updates the app's Code mode page, one hidden page per route (set each route's page permissions on it) and the component that runs the code, points the app version at this code as a Live preview, and stores the source on ToolJet so the Code panel can edit it. Build first. Runs the full security scan first and refuses while it has critical or high findings, listing them. Returns the editor URL. If it says the source was edited in the ToolJet editor, call code_app_read_files to bring those edits down, reapply your change, and install again. This is the last step of a build or edit: saving the app version (release_app saves a draft first) freezes the code." + USER_WORDS,
+    inputSchema: { app_id: APP_ID, name: PROJECT_NAME },
     async handler(args) {
       try {
         const dir = locateProject(args);
@@ -107788,10 +107758,6 @@ function codeAppInstallTool() {
         if (blocking.length)
           return fail(new Error(`Not installed: the security scan has ${blocking.length} critical or high finding${blocking.length > 1 ? "s" : ""}. Fix them in the code (or remove the package), code_app_build, then install again:
 ` + blocking.map((f) => `${f.severity.toUpperCase()} ${f.ruleId} ${f.package ?? f.location}: ${f.message}`).join("\n")));
-        if (args.publish) {
-          const published = await publishProject(dir);
-          return ok({ linked: true, published: true, revision: published.version, output: published.output, security: securitySummary(security) });
-        }
         const result = await cli(dir, ["app", "dev", "--once", "--source", "platform"]);
         if (result.code !== 0)
           throw new Error(result.output.trim());
