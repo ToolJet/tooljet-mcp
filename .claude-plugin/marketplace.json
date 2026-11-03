@@ -27,7 +27,7 @@
       "name": "tooljet-app-builder-skills",
       "source": "./plugins/tooljet-app-builder-skills",
       "description": "App-building guidance for an existing ToolJet MCP connection, including remote OAuth. No bundled MCP server.",
-      "version": "0.11.0",
+      "version": "0.11.1",
       "author": {
         "name": "ToolJet"
       },
