@@ -107891,6 +107891,25 @@ async function followDraft(dir) {
     throw new Error(`The app's draft could not be opened: ${moved.output.trim().slice(0, 500)}`);
   return `${pinned.name ?? "The pinned version"} is saved, so the code now goes into the app's draft.`;
 }
+var STYLESHEET = "frontend/src/styles/globals.css";
+var IMPORT_RE = /(?:^|[\s;])import\s+(?:[^'"]*?from\s+)?['"]([^'"]+\.css)['"]/gm;
+function missingStylesheet(dir) {
+  const sheet = join2(dir, STYLESHEET);
+  if (!existsSync2(sheet))
+    return void 0;
+  const src = join2(dir, "frontend", "src");
+  for (const rel of listFiles(src)) {
+    if (!/\.(tsx?|jsx?)$/.test(rel) || rel.startsWith("components/"))
+      continue;
+    const file2 = join2(src, rel);
+    const code = readFileSync8(file2, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    for (const m of code.matchAll(IMPORT_RE)) {
+      if (resolve6(dirname7(file2), m[1]) === sheet)
+        return void 0;
+    }
+  }
+  return "frontend/src/App/index.tsx: the app's stylesheet is not imported, so every screen renders unstyled (no Tailwind, no theme colours). Add `import '../styles/globals.css';` back with the other imports at the top of App/index.tsx.";
+}
 function codeAppBuildTool() {
   return {
     name: "code_app_build",
@@ -107909,7 +107928,8 @@ function codeAppBuildTool() {
         const tsErrors = Number(/TypeScript compiled \((\d+) errors\)/.exec(build.output)?.[1] ?? (build.code === 0 ? 0 : 1));
         const check2 = await cli(dir, ["app", "check", "--offline", "--json"]);
         const report = parseReport(check2.output);
-        const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check2.code === 0;
+        const unstyled = missingStylesheet(dir);
+        const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check2.code === 0 && !unstyled;
         return ok({
           ...followed ? { draft: followed } : {},
           ok: okBuild,
@@ -107917,7 +107937,7 @@ function codeAppBuildTool() {
           pull: pull.code === 0 ? "typed hooks refreshed" : pull.output.trim(),
           typescript_errors: tsErrors,
           build_output: build.code === 0 && tsErrors === 0 ? build.output.trim().split("\n").slice(-6).join("\n") : build.output.trim().slice(0, 12e3),
-          check: report?.problems ? report.problems.map((p) => `${p.file}:${p.line}  ${p.message}`) : check2.output.trim().slice(0, 6e3),
+          check: report?.problems ? [...unstyled ? [unstyled] : [], ...report.problems.map((p) => `${p.file}:${p.line}  ${p.message}`)] : unstyled ? [unstyled, check2.output.trim().slice(0, 6e3)] : check2.output.trim().slice(0, 6e3),
           // jsx-a11y recommended rules, warnings only (tooljet app check); fix them when they are cheap to fix.
           a11y_warnings: report?.accessibility?.length ?? Number(/(\d+) accessibility warnings?/.exec(check2.output)?.[1] ?? 0),
           // The offline scan (no dependency network checks): fix critical and high before code_app_install.
@@ -107941,6 +107961,9 @@ function codeAppInstallTool() {
         const dir = locateProject(args);
         const followed = await followDraft(dir);
         await ensureFresh(dir);
+        const unstyled = missingStylesheet(dir);
+        if (unstyled)
+          return fail(new Error(`Not installed: ${unstyled} Then code_app_build and install again.`));
         const check2 = await cli(dir, ["app", "check", "--json"]);
         const security = parseReport(check2.output)?.security;
         if (!security || security.error)

@@ -545,6 +545,34 @@ export async function followDraft(dir: string): Promise<string | undefined> {
   return `${pinned.name ?? 'The pinned version'} is saved, so the code now goes into the app's draft.`;
 }
 
+/** The stylesheet the app's entry imports: Tailwind and, through it, the theme tokens and page-wide rules. */
+const STYLESHEET = 'frontend/src/styles/globals.css';
+const IMPORT_RE = /(?:^|[\s;])import\s+(?:[^'"]*?from\s+)?['"]([^'"]+\.css)['"]/gm;
+
+/**
+ * Why the app would render without its styles, or undefined: no file under frontend/src imports
+ * src/styles/globals.css. Purchase Approvals B1 (2026-11-02) rewrote App/index.tsx without the import and shipped
+ * unstyled; the build, the scan and the render check all passed, since an unstyled page neither overflows nor fails
+ * contrast.
+ */
+export function missingStylesheet(dir: string): string | undefined {
+  const sheet = join(dir, STYLESHEET);
+  if (!existsSync(sheet)) return undefined; // not this template: nothing to hold the project to
+  const src = join(dir, 'frontend', 'src');
+  for (const rel of listFiles(src)) {
+    if (!/\.(tsx?|jsx?)$/.test(rel) || rel.startsWith('components/')) continue;
+    const file = join(src, rel);
+    const code = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    for (const m of code.matchAll(IMPORT_RE)) {
+      if (resolve(dirname(file), m[1]!) === sheet) return undefined;
+    }
+  }
+  return (
+    "frontend/src/App/index.tsx: the app's stylesheet is not imported, so every screen renders unstyled (no Tailwind, " +
+    "no theme colours). Add `import '../styles/globals.css';` back with the other imports at the top of App/index.tsx."
+  );
+}
+
 export function codeAppBuildTool(): ToolDef {
   return {
     name: 'code_app_build',
@@ -567,7 +595,8 @@ export function codeAppBuildTool(): ToolDef {
         const tsErrors = Number(/TypeScript compiled \((\d+) errors\)/.exec(build.output)?.[1] ?? (build.code === 0 ? 0 : 1));
         const check = await cli(dir, ['app', 'check', '--offline', '--json']);
         const report = parseReport<{ problems?: { file: string; line: number; message: string }[]; accessibility?: unknown[]; security?: SecurityReport }>(check.output);
-        const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0;
+        const unstyled = missingStylesheet(dir);
+        const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0 && !unstyled;
         return ok({
           ...(followed ? { draft: followed } : {}),
           ok: okBuild,
@@ -576,8 +605,8 @@ export function codeAppBuildTool(): ToolDef {
           typescript_errors: tsErrors,
           build_output: build.code === 0 && tsErrors === 0 ? build.output.trim().split('\n').slice(-6).join('\n') : build.output.trim().slice(0, 12_000),
           check: report?.problems
-            ? report.problems.map((p) => `${p.file}:${p.line}  ${p.message}`)
-            : check.output.trim().slice(0, 6000),
+            ? [...(unstyled ? [unstyled] : []), ...report.problems.map((p) => `${p.file}:${p.line}  ${p.message}`)]
+            : unstyled ? [unstyled, check.output.trim().slice(0, 6000)] : check.output.trim().slice(0, 6000),
           // jsx-a11y recommended rules, warnings only (tooljet app check); fix them when they are cheap to fix.
           a11y_warnings: report?.accessibility?.length ?? Number(/(\d+) accessibility warnings?/.exec(check.output)?.[1] ?? 0),
           // The offline scan (no dependency network checks): fix critical and high before code_app_install.
@@ -608,6 +637,8 @@ export function codeAppInstallTool(): ToolDef {
         const dir = locateProject(args);
         const followed = await followDraft(dir);
         await ensureFresh(dir);
+        const unstyled = missingStylesheet(dir);
+        if (unstyled) return fail(new Error(`Not installed: ${unstyled} Then code_app_build and install again.`));
         // The full scan, dependency checks included, before anything reaches the app.
         const check = await cli(dir, ['app', 'check', '--json']);
         const security = parseReport<{ security?: SecurityReport }>(check.output)?.security;
