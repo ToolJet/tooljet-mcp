@@ -180,3 +180,66 @@ describe('createAuth (backend-minted session)', () => {
     await expect(auth.switchWorkspace('org-other')).rejects.not.toThrow(/TOOLJET_PAT/);
   });
 });
+
+// Reading log (2026-11-02): in-product builds run on the relay's ai_builder session (no PAT), whose scope ceiling blocks
+// the viewer's boot reads, so every render check came back unreachable. The server mints a render session for it.
+describe('viewerSession for the render check', () => {
+  const sessionConfig: Config = {
+    apiUrl: 'http://localhost:3000',
+    appUrl: 'http://localhost:8082',
+    sessionToken: 'SESSION_JWT',
+    workspaceId: 'org-9',
+  };
+  const minted = (token: string, msFromNow: number) =>
+    mockResponse({ status: 201, json: { authToken: token, expiresAt: new Date(Date.now() + msFromNow).toISOString(), appId: 'app-1' } });
+
+  it('with a session token, mints a render session through the relay route and caches it', async () => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(minted('RENDER_1', 10 * 60_000));
+    const auth = createAuth(sessionConfig, fetchImpl as unknown as typeof fetch);
+    expect(await auth.viewerSession!('app-1')).toBe('RENDER_1');
+    expect(await auth.viewerSession!('app-1')).toBe('RENDER_1');
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchImpl.mock.calls[0];
+    expect(url).toBe('http://localhost:3000/api/personal-access-tokens/ai-render-session');
+    expect((init as RequestInit).method).toBe('POST');
+    expect(JSON.parse(String((init as RequestInit).body))).toEqual({ appId: 'app-1' });
+    expect(((init as RequestInit).headers as Headers).get('Cookie')).toBe('tj_auth_token=SESSION_JWT');
+  });
+
+  it('re-mints shortly before the render session expires', async () => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(minted('RENDER_1', 30_000)).mockResolvedValueOnce(minted('RENDER_2', 10 * 60_000));
+    const auth = createAuth(sessionConfig, fetchImpl as unknown as typeof fetch);
+    expect(await auth.viewerSession!('app-1')).toBe('RENDER_1');
+    expect(await auth.viewerSession!('app-1')).toBe('RENDER_2'); // under a minute left: a new one
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([404, 401, 403])('falls back to the supplied session when the route answers %s, and keeps the build session', async (status) => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(mockResponse({ status })).mockResolvedValue(mockResponse({ json: { ok: true } }));
+    const auth = createAuth(sessionConfig, fetchImpl as unknown as typeof fetch);
+    expect(await auth.viewerSession!('app-1')).toBe('SESSION_JWT');
+    // A refused render session never clears or "expires" the build's own session.
+    await auth.authedFetch('/api/apps/app-1');
+    expect(((fetchImpl.mock.calls[1][1] as RequestInit).headers as Headers).get('Cookie')).toBe('tj_auth_token=SESSION_JWT');
+  });
+
+  it('with a PAT, still mints the app-pinned session from the PAT and never calls the relay route', async () => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(sessionResponse('org1', 'PINNED'));
+    const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
+    expect(await auth.viewerSession!('app-1')).toBe('PINNED');
+    const [url, init] = fetchImpl.mock.calls[0];
+    expect(url).toBe('http://localhost:3000/api/personal-access-tokens/session');
+    expect(JSON.parse(String((init as RequestInit).body))).toEqual({ appId: 'app-1' });
+    expect(fetchImpl.mock.calls.some(([u]) => String(u).includes('ai-render-session'))).toBe(false);
+  });
+
+  it('never writes the render token to the console', async () => {
+    const spies = ['log', 'info', 'warn', 'error', 'debug'].map((m) => vi.spyOn(console, m as 'log').mockImplementation(() => {}));
+    const fetchImpl = vi.fn().mockResolvedValueOnce(minted('SECRET_RENDER_TOKEN', 10 * 60_000));
+    await createAuth(sessionConfig, fetchImpl as unknown as typeof fetch).viewerSession!('app-1');
+    for (const spy of spies) {
+      expect(JSON.stringify(spy.mock.calls)).not.toContain('SECRET_RENDER_TOKEN');
+      spy.mockRestore();
+    }
+  });
+});

@@ -93784,7 +93784,41 @@ function createAuth(config2, fetchImpl = fetch) {
     return current;
   }
   const pinnedSessions = /* @__PURE__ */ new Map();
+  let renderSession;
+  const RENDER_SESSION_MARGIN_MS = 6e4;
+  async function aiRenderSession(appId) {
+    if (renderSession && renderSession.expiresAt - RENDER_SESSION_MARGIN_MS > Date.now() && (!appId || !renderSession.appId || renderSession.appId === appId))
+      return renderSession.token;
+    try {
+      if (!token)
+        await login();
+      const res = await rawFetch("/api/personal-access-tokens/ai-render-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(appId ? { appId } : {})
+      });
+      if (!res.ok)
+        return void 0;
+      const body = await res.json();
+      if (!body.authToken)
+        return void 0;
+      const expiresAt = typeof body.expiresAt === "number" ? body.expiresAt : Date.parse(String(body.expiresAt ?? ""));
+      renderSession = {
+        token: body.authToken,
+        appId: body.appId,
+        expiresAt: Number.isFinite(expiresAt) ? expiresAt : Date.now() + 5 * 6e4
+      };
+      return body.authToken;
+    } catch {
+      return void 0;
+    }
+  }
   async function viewerSession(appId) {
+    if (config2.sessionToken) {
+      const rendered = await aiRenderSession(appId);
+      if (rendered)
+        return rendered;
+    }
     if (appId && config2.pat && !config2.sessionToken) {
       const cached5 = pinnedSessions.get(appId);
       if (cached5)
