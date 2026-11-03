@@ -301,6 +301,7 @@ async function syncEditorEdits(dir: string, { force = false } = {}): Promise<{ e
   if (force) forgetSourceRevision(dir);
   const pull = await cli(dir, ['app', 'source-pull'], 60_000);
   if (pull.code !== 0) return { sync_warning: `Could not check the ToolJet editor for edits: ${pull.output.trim().slice(0, 300)}` };
+  lastSynced.set(dir, Date.now());
   // What the agent read stays recorded: a write compares it with the file as the pull left it, so only a file the pull
   // changed needs reading again.
   return /Pulled revision/.test(pull.output) ? { editor_edits: pull.output.trim() } : {};
@@ -316,6 +317,15 @@ async function syncEditorEdits(dir: string, { force = false } = {}): Promise<{ e
 */
 const freshProjects = new Set<string>();
 const readHashes = new Map<string, string>();
+/*
+  When each project last checked the stored code. Every read ran `tooljet app source-pull` (a CLI process and a request,
+  1.6 to 2 s), and an edit reads 7 files on average, several in one turn (2026-11-02 traces). A read within
+  readSyncWindowMs() of the last check reuses it. Writes always check: a file edited in the editor since it was read
+  is still refused, because the write's check brings the edit down and its hash no longer matches the read.
+*/
+const lastSynced = new Map<string, number>();
+const readSyncWindowMs = (): number => Number(process.env.MCP_CODE_APP_READ_SYNC_MS ?? 20_000);
+const syncedRecently = (dir: string): boolean => Date.now() - (lastSynced.get(dir) ?? -Infinity) < readSyncWindowMs();
 const sha = (text: string): string => createHash('sha256').update(text).digest('hex');
 const readKey = (dir: string, rel: string): string => `${dir}\0${rel}`;
 
@@ -343,6 +353,7 @@ async function ensureFresh(dir: string): Promise<{ editor_edits?: string; sync_w
 export function resetCodeSessionForTests(): void {
   freshProjects.clear();
   readHashes.clear();
+  lastSynced.clear();
 }
 
 /** Lines that differ between two versions of a file (a multiset count, enough to tell a small change from a rewrite). */
@@ -354,6 +365,47 @@ export function changedLines(before: string, after: string): number {
   for (const [line, n] of a) changed += Math.max(0, n - (b.get(line) ?? 0));
   for (const [line, n] of b) changed += Math.max(0, n - (a.get(line) ?? 0));
   return changed;
+}
+
+const clip = (line: string): string => (line.trim().length > 100 ? `${line.trim().slice(0, 100)}...` : line.trim());
+const lineAt = (text: string, index: number): number => text.slice(0, index).split('\n').length;
+
+/**
+ * Where an edit's find text is, for its refusal, so the next try can be right without another read: every match with
+ * the line before it (a find that occurs several times needs a neighbouring line added), or, for a find that is not in
+ * the file, the lines that come closest. In the purchase approvals build and edits (2026-11-02) 16 of 38 write calls were refused
+ * this way, and the repair turns cost 52 s and 23k output tokens.
+ */
+export function findHint(content: string, find: string): string {
+  const lines = content.split('\n');
+  const at: number[] = [];
+  for (let i = content.indexOf(find); i >= 0 && at.length < 6; i = content.indexOf(find, i + 1)) at.push(lineAt(content, i));
+  if (at.length > 1) {
+    const shown = at.slice(0, 5).map((n) => `line ${n}${n > 1 ? ` (after "${clip(lines[n - 2])}")` : ''}`);
+    return ` It is at ${shown.join('; ')}${at.length > 5 ? '; and more' : ''}. Add a neighbouring line to the find so it matches one place.`;
+  }
+  if (at.length === 1) return '';
+  // Indentation or trailing spaces: the same lines once each is trimmed.
+  const wanted = find.split('\n').map((l) => l.trim());
+  const trimmed = lines.map((l) => l.trim());
+  const starts = trimmed.flatMap((l, i) => (wanted.every((w, k) => trimmed[i + k] === w) ? [i + 1] : []));
+  if (starts.length === 1)
+    return ` The same lines are at line ${starts[0]} with different indentation or spacing; copy them exactly as the file has them.`;
+  // Otherwise the lines sharing the most words with the find's longest line.
+  const words = (l: string) => new Set(l.match(/[A-Za-z_$][\w$]*|\d+/g) ?? []);
+  const key = wanted.reduce((a, b) => (b.length > a.length ? b : a), '');
+  const target = words(key);
+  if (!target.size) return '';
+  const scored = lines
+    .map((l, i) => {
+      const w = words(l);
+      const shared = [...target].filter((t) => w.has(t)).length;
+      return { n: i + 1, l, score: shared / Math.max(target.size, w.size) };
+    })
+    .filter((x) => x.score >= 0.5)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 2);
+  return scored.length ? ` Closest: ${scored.map((x) => `line ${x.n}: "${clip(x.l)}"`).join('; ')}.` : '';
 }
 
 /** A whole-file write that replaces this much of an existing file is a rewrite, and needs rewrite: true. */
@@ -376,7 +428,7 @@ export function codeAppReadFilesTool(): ToolDef {
       try {
         const dir = locateProject(args);
         if (!freshProjects.has(dir)) await followDraft(dir);
-        const sync = freshProjects.has(dir) ? await syncEditorEdits(dir) : await ensureFresh(dir);
+        const sync = !freshProjects.has(dir) ? await ensureFresh(dir) : syncedRecently(dir) ? {} : await syncEditorEdits(dir);
         if (!args.paths?.length) return ok({ project_dir: dir, ...sync, files: listFiles(dir) });
         const files = Object.fromEntries(
           args.paths.map((p) => {
@@ -452,7 +504,7 @@ export function codeAppWriteFilesTool(): ToolDef {
           const before = current(rel, full);
           if (before === undefined) { refusals.push(`${rel} does not exist: create it with files`); continue; }
           const found = before.split(edit.find).length - 1;
-          if (found !== 1) { refusals.push(`${rel}: the find text appears ${found} times; it must match exactly once (copy it from the file as it is now)`); continue; }
+          if (found !== 1) { refusals.push(`${rel}: the find text appears ${found} times; it must match exactly once (copy it from the file as it is now).${findHint(before, edit.find)}`); continue; }
           next.set(rel, { full, content: before.replace(edit.find, () => edit.replace) });
         }
         if (refusals.length) return fail(new Error('Not written:\n' + refusals.map((r) => `- ${r}`).join('\n')));
