@@ -1685,6 +1685,17 @@ function notOnCalendar(value) {
     return true;
   return day > new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
+var workspaceFoldersResponse = external_exports.object({
+  folders: external_exports.array(external_exports.object({
+    id: external_exports.string().min(1),
+    name: external_exports.string(),
+    folder_apps: external_exports.array(external_exports.object({ app_id: external_exports.string().min(1) }))
+  }))
+});
+var workspaceAppsResponse = external_exports.object({
+  apps: external_exports.array(external_exports.object({ id: external_exports.string().min(1) }).loose()),
+  meta: external_exports.object({ folder_count: external_exports.number().int().nonnegative() }).loose()
+}).loose();
 var WORKSPACE_PERMISSION_KEYS = [
   "appCreate",
   "appDelete",
@@ -1831,13 +1842,53 @@ function tableForeignKeyDto(foreignKey) {
 function createClient(auth, config) {
   let developmentEnvironmentIdPromise;
   const datasourceManagementUrl = (workspaceSlug, datasourceId) => `${config.appUrl}/${encodeURIComponent(workspaceSlug)}/data-sources` + (datasourceId ? `/${encodeURIComponent(datasourceId)}` : "");
+  async function getWorkspaceFolders() {
+    const res = await auth.authedFetch("/api/folder-apps?type=front-end");
+    await assertOk(res, "listWorkspaceFolders");
+    const parsed = workspaceFoldersResponse.safeParse(await res.json());
+    if (!parsed.success)
+      throw new Error("Unexpected workspace folders response.");
+    return parsed.data.folders.map((folder) => {
+      const appIds = new Set(folder.folder_apps.map((membership) => membership.app_id));
+      return { summary: { id: folder.id, name: folder.name, app_count: appIds.size }, appIds };
+    });
+  }
+  async function listWorkspaceFolders(params = {}) {
+    const search = params.searchText?.trim().toLowerCase() ?? "";
+    const folders = (await getWorkspaceFolders()).map((folder) => folder.summary).filter((folder) => folder.name.toLowerCase().includes(search));
+    return { folders, meta: { total_count: folders.length } };
+  }
   async function listWorkspaceApps(params = {}) {
+    const folders = await getWorkspaceFolders();
+    const selectedFolder = folders.find((folder) => folder.summary.id === params.folderId);
+    if (params.folderId !== void 0 && !selectedFolder) {
+      throw new Error("Folder not found or not accessible in the current workspace. Use list_workspace_folders to find an accessible folder_id.");
+    }
     const query2 = new URLSearchParams({ page: String(params.page ?? 1), type: "front-end" });
     if (params.searchText)
       query2.set("searchKey", params.searchText);
+    if (params.folderId)
+      query2.set("folder", params.folderId);
     const res = await auth.authedFetch(`/api/apps?${query2}`);
     await assertOk(res, "listWorkspaceApps");
-    return await res.json();
+    const parsed = workspaceAppsResponse.safeParse(await res.json());
+    if (!parsed.success)
+      throw new Error("Unexpected workspace apps response.");
+    const data = parsed.data;
+    const { folder_count: folderAppCount, ...meta } = data.meta;
+    return {
+      ...data,
+      apps: data.apps.map((app) => ({
+        ...app,
+        folders: folders.filter((folder) => folder.appIds.has(app.id)).map(({ summary: { id, name } }) => ({ id, name }))
+      })),
+      folder: selectedFolder?.summary ?? null,
+      meta: {
+        ...meta,
+        folder_app_count: selectedFolder ? folderAppCount : null,
+        workspace_folder_count: folders.length
+      }
+    };
   }
   async function listWorkspaceUsers(params = {}) {
     const query2 = new URLSearchParams({ page: String(params.page ?? 1) });
@@ -3535,6 +3586,7 @@ function createClient(auth, config) {
     listWorkspaces,
     useWorkspace,
     listWorkspaceApps,
+    listWorkspaceFolders,
     listWorkspaceUsers,
     listWorkspaceGroups,
     getWorkspaceGroup,

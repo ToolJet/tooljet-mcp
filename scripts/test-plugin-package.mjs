@@ -32,6 +32,8 @@ try {
   assert.equal(client.getServerVersion().version, version);
   const { tools } = await client.listTools();
   assert(tools.some((tool) => tool.name === 'lint_app_spec'));
+  assert(tools.some((tool) => tool.name === 'list_workspace_folders' && tool.annotations?.readOnlyHint));
+  assert(tools.find((tool) => tool.name === 'list_workspace_apps')?.inputSchema.properties?.folder_id);
   for (const [name, args] of [
     ['get_runtime_info', {}],
     ['get_component_catalog', { type: 'Table', detail: 'full' }],

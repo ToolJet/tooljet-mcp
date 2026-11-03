@@ -5,23 +5,64 @@ import { fail, ok, type ToolDef } from './types.js';
 const userRole = z.enum(['admin', 'builder', 'end-user']);
 const userStatus = z.enum(['active', 'archived', 'invited']);
 
+const listWorkspaceAppsInput = z.object({
+  page: z.number().int().positive().optional(),
+  search_text: z.string().trim().max(100).describe('Filter by app name.').optional(),
+  folder_id: z.string().uuid().describe('Folder ID returned by list_workspace_folders.').optional(),
+}).strict();
+
+const listWorkspaceFoldersInput = z.object({
+  search_text: z.string().trim().max(100).describe('Case-insensitive folder-name search.').optional(),
+}).strict();
+
 export function listWorkspaceAppsTool(client: ToolJetClient): ToolDef {
   return {
     name: 'list_workspace_apps',
     title: 'List Workspace Apps',
+    strictInput: true,
     annotations: {
       readOnlyHint: true,
       openWorldHint: true,
     },
     description:
-      'List apps in the workspace pinned to the current ToolJet connection. This cannot inspect or switch to another workspace.',
-    inputSchema: {
-      page: z.number().int().positive().optional(),
-      search_text: z.string().trim().max(100).optional(),
-    },
-    async handler(args: { page?: number; search_text?: string }) {
+      'List front-end apps in the workspace pinned to the current ToolJet connection, with pagination, app-name search, ' +
+      'and optional folder_id filtering. Discover folder IDs with list_workspace_folders. Each app includes folders: [{id,name}] ' +
+      '(empty when unfiled). The top-level folder describes the selected folder, or is null. ' +
+      'meta.workspace_folder_count counts visible app folders; meta.folder_app_count counts matching apps in the selected folder ' +
+      '(null without a folder filter). meta.total_count remains the workspace-wide count of matching apps even with folder_id; ' +
+      'use meta.folder_app_count for the folder. This cannot inspect or switch to another workspace.',
+    inputSchema: listWorkspaceAppsInput.shape,
+    async handler(input: z.infer<typeof listWorkspaceAppsInput>) {
       try {
-        return ok(await client.listWorkspaceApps({ page: args.page, searchText: args.search_text }));
+        const args = listWorkspaceAppsInput.parse(input);
+        return ok(await client.listWorkspaceApps({ page: args.page, searchText: args.search_text, folderId: args.folder_id }));
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  };
+}
+
+export function listWorkspaceFoldersTool(client: ToolJetClient): ToolDef {
+  return {
+    name: 'list_workspace_folders',
+    title: 'List Workspace Folders',
+    strictInput: true,
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
+    description:
+      'List visible front-end app folders in the workspace pinned to the current ToolJet connection. ' +
+      'Returns folders: [{id,name,app_count}] and meta.total_count (matching folders). app_count counts apps visible to you. ' +
+      'search_text filters folder names, not app names. Includes empty folders when ToolJet permits you to see them. ' +
+      'Pass a returned id as folder_id to list_workspace_apps to read that folder’s apps with pagination and app-name search. ' +
+      'OAuth connections require the apps scope; existing ToolJet permissions still apply.',
+    inputSchema: listWorkspaceFoldersInput.shape,
+    async handler(input: z.infer<typeof listWorkspaceFoldersInput>) {
+      try {
+        const args = listWorkspaceFoldersInput.parse(input);
+        return ok(await client.listWorkspaceFolders({ searchText: args.search_text }));
       } catch (error) {
         return fail(error);
       }
