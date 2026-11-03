@@ -349,11 +349,68 @@ async function ensureFresh(dir: string): Promise<{ editor_edits?: string; sync_w
   return sync;
 }
 
+/*
+  The full security scan an install runs (`tooljet app check --json`, network checks included) took 3.7 s of the
+  install's time on a finished project (2026-11-03), and the model spends the turn after a passing build writing the
+  install call. So a passing build starts that same scan in the background, and the install uses it only when no file
+  of the project has changed since: the hash of every file the scanner reads (it skips node_modules, dist and .tooljet,
+  where the check itself rewrites the app snapshot), taken before and after the scan, must equal the hash at install time. Any change, a scan that did not run, or one older than scanReuseMs()
+  means the install scans again as before. MCP_CODE_APP_SCAN_PREFETCH=0 turns it off.
+*/
+const prefetchedScans = new Map<string, { hash: string; at: number; result: Promise<{ code: number; output: string } | null> }>();
+const scanReuseMs = (): number => Number(process.env.MCP_CODE_APP_SCAN_REUSE_MS ?? 600_000);
+
+/** A hash of the project's files outside node_modules, dist and .tooljet (paths and contents). */
+export function projectHash(dir: string): string {
+  const hash = createHash('sha256');
+  const walk = (at: string): void => {
+    for (const entry of readdirSync(at, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
+      if (entry.isDirectory() && ['node_modules', 'dist', '.tooljet'].includes(entry.name)) continue;
+      const full = join(at, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.isFile()) hash.update(relative(dir, full)).update('\0').update(readFileSync(full)).update('\0');
+    }
+  };
+  walk(dir);
+  return hash.digest('hex');
+}
+
+function prefetchFullScan(dir: string): void {
+  if (process.env.MCP_CODE_APP_SCAN_PREFETCH === '0') return;
+  const hash = projectHash(dir);
+  const result = cli(dir, ['app', 'check', '--json']).then((check) => {
+    try {
+      return projectHash(dir) === hash ? check : null;
+    } catch {
+      return null;
+    }
+  });
+  prefetchedScans.set(dir, { hash, at: Date.now(), result });
+}
+
+/** The install's full scan: the one a passing build started, when nothing changed since, else a new one. */
+async function fullScan(dir: string): Promise<{ code: number; output: string; reused: boolean }> {
+  const prefetched = prefetchedScans.get(dir);
+  prefetchedScans.delete(dir);
+  if (prefetched && Date.now() - prefetched.at < scanReuseMs() && projectHash(dir) === prefetched.hash) {
+    const check = await prefetched.result;
+    const security = check && parseReport<{ security?: SecurityReport }>(check.output)?.security;
+    if (check && security && !security.error && projectHash(dir) === prefetched.hash) return { ...check, reused: true };
+  }
+  return { ...(await cli(dir, ['app', 'check', '--json'])), reused: false };
+}
+
+/** Tests: wait for the scan a build started in the background. */
+export async function prefetchedScanForTests(dir: string): Promise<unknown> {
+  return prefetchedScans.get(dir)?.result;
+}
+
 /** Tests: a new build (a new MCP process) starts with nothing pulled or read. */
 export function resetCodeSessionForTests(): void {
   freshProjects.clear();
   readHashes.clear();
   lastSynced.clear();
+  prefetchedScans.clear();
 }
 
 /** Lines that differ between two versions of a file (a multiset count, enough to tell a small change from a rewrite). */
@@ -597,6 +654,7 @@ export function codeAppBuildTool(): ToolDef {
         const report = parseReport<{ problems?: { file: string; line: number; message: string }[]; accessibility?: unknown[]; security?: SecurityReport }>(check.output);
         const unstyled = missingStylesheet(dir);
         const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0 && !unstyled;
+        if (okBuild) prefetchFullScan(dir);
         return ok({
           ...(followed ? { draft: followed } : {}),
           ok: okBuild,
@@ -640,7 +698,7 @@ export function codeAppInstallTool(): ToolDef {
         const unstyled = missingStylesheet(dir);
         if (unstyled) return fail(new Error(`Not installed: ${unstyled} Then code_app_build and install again.`));
         // The full scan, dependency checks included, before anything reaches the app.
-        const check = await cli(dir, ['app', 'check', '--json']);
+        const check = await fullScan(dir);
         const security = parseReport<{ security?: SecurityReport }>(check.output)?.security;
         if (!security || security.error)
           throw new Error(`The security scan did not run, so nothing was installed: ${security?.error ?? check.output.trim().slice(0, 2000)}`);

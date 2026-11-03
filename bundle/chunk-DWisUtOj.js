@@ -4207,6 +4207,48 @@ async function ensureFresh(dir) {
     freshProjects.add(dir);
   return sync;
 }
+var prefetchedScans = /* @__PURE__ */ new Map();
+var scanReuseMs = () => Number(process.env.MCP_CODE_APP_SCAN_REUSE_MS ?? 6e5);
+function projectHash(dir) {
+  const hash = createHash("sha256");
+  const walk = (at) => {
+    for (const entry of readdirSync(at, { withFileTypes: true }).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)) {
+      if (entry.isDirectory() && ["node_modules", "dist", ".tooljet"].includes(entry.name))
+        continue;
+      const full = join(at, entry.name);
+      if (entry.isDirectory())
+        walk(full);
+      else if (entry.isFile())
+        hash.update(relative(dir, full)).update("\0").update(readFileSync(full)).update("\0");
+    }
+  };
+  walk(dir);
+  return hash.digest("hex");
+}
+function prefetchFullScan(dir) {
+  if (process.env.MCP_CODE_APP_SCAN_PREFETCH === "0")
+    return;
+  const hash = projectHash(dir);
+  const result = cli(dir, ["app", "check", "--json"]).then((check) => {
+    try {
+      return projectHash(dir) === hash ? check : null;
+    } catch {
+      return null;
+    }
+  });
+  prefetchedScans.set(dir, { hash, at: Date.now(), result });
+}
+async function fullScan(dir) {
+  const prefetched = prefetchedScans.get(dir);
+  prefetchedScans.delete(dir);
+  if (prefetched && Date.now() - prefetched.at < scanReuseMs() && projectHash(dir) === prefetched.hash) {
+    const check = await prefetched.result;
+    const security = check && parseReport(check.output)?.security;
+    if (check && security && !security.error && projectHash(dir) === prefetched.hash)
+      return { ...check, reused: true };
+  }
+  return { ...await cli(dir, ["app", "check", "--json"]), reused: false };
+}
 function changedLines(before, after) {
   const count = (text) => text.split("\n").reduce((m, l) => m.set(l, (m.get(l) ?? 0) + 1), /* @__PURE__ */ new Map());
   const a = count(before);
@@ -4423,6 +4465,8 @@ function codeAppBuildTool() {
         const report = parseReport(check.output);
         const unstyled = missingStylesheet(dir);
         const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0 && !unstyled;
+        if (okBuild)
+          prefetchFullScan(dir);
         return ok({
           ...followed ? { draft: followed } : {},
           ok: okBuild,
@@ -4457,7 +4501,7 @@ function codeAppInstallTool() {
         const unstyled = missingStylesheet(dir);
         if (unstyled)
           return fail(new Error(`Not installed: ${unstyled} Then code_app_build and install again.`));
-        const check = await cli(dir, ["app", "check", "--json"]);
+        const check = await fullScan(dir);
         const security = parseReport(check.output)?.security;
         if (!security || security.error)
           throw new Error(`The security scan did not run, so nothing was installed: ${security?.error ?? check.output.trim().slice(0, 2e3)}`);
