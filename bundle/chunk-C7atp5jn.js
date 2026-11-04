@@ -4,8 +4,9 @@ import { p as capabilityRequestSchema, x as getWorkflowCapabilities, y as lint, 
 import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, a as FLEX_GROW_DESCRIPTION, b as FLEX_WIDTH_PX_DESCRIPTION, d as FLEX_FILL_WIDTH_DESCRIPTION, m as createClient, o as registerPackDefinitions, q as listWorkspaceGroupsTool, t as manageWorkspaceGroupsTool, u as inspectDatasourceSchemaTool, w as updateComponentsTool, v as validateTableBatch, x as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec, C as COMPONENT_FX_GUIDANCE, y as appendedChildOrders, z as reparentAdditions, l as childOrderProperty } from "./chunk-D3gbHEVi.js";
 import { M as McpServer } from "./chunk-CtPGpRoO.js";
 import { j as dbColumnTypeSchema, k as componentInputSchema, l as lintAppSpecTool, o as containsExactValue, b as prepareQueryOptionsForWrite, q as inspectUpdateCompatibility, s as normalizePlanBindingAliases, t as containsNamedBinding, u as normalizePlannedLayouts, w as materializeRequiredDefaultChildren, e as prepareComponentBatch, v as validateEvents, h as expandQueryLifecycles, i as persistedEventSpecs, x as persistedEventIds } from "./chunk-CFlPSMbo.js";
-import { c as codeAppScaffoldTool, a as codeAppReadFilesTool, b as codeAppWriteFilesTool, d as codeAppBuildTool, e as codeAppInstallTool, f as codeAppAddDependencyTool, v as verifyPageRenderTool, g as applyAppPhaseTool, r as runQueryTool, h as runQueriesTool, W as WebStandardStreamableHTTPServerTransport, i as getRequestListener, j as validatePersistedAppSummary, l as libraryPinErrors } from "./chunk-WzDnlNqG.js";
+import { c as codeAppScaffoldTool, a as codeAppReadFilesTool, b as codeAppWriteFilesTool, d as codeAppBuildTool, e as codeAppInstallTool, f as codeAppAddDependencyTool, g as applyAppPhaseTool, r as runQueryTool, h as runQueriesTool, n as noCodeIdentity, W as WebStandardStreamableHTTPServerTransport, i as getRequestListener, v as validatePersistedAppSummary, l as libraryPinErrors } from "./chunk-DUTMEu_M.js";
 import { e7 as ok, e9 as fail, ee as defaultPack, e6 as savedComponentLibrary, ea as COMPONENT_PACK_DESCRIPTION, ep as projectJavascriptRuntime, e8 as projectAppSettings, eq as compactTheme, eo as literalCanvasColor } from "./chunk-By54lwVj.js";
+import { v as verifyPageRenderTool } from "./chunk-zdNr1SYF.js";
 import { F as pageIconSchema, c as componentSlotSchema, I as registerLibraryPacks, J as libraryPins, f as componentNameSchema, C as lintComponents, h as resolveParentRef, j as introducedLintFindings, K as lintRenderedGeometryBlocking, L as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, o as lintComponentSlots, k as lintComponentSpec, p as lintUnusableTextGeometry, M as lintNestedContainerWidths, q as lintStandardSingleLineInputHeight, s as lintTextGeometry, u as lintRenderedGeometry, N as FORM_SCHEMA_FIELD_TYPE_SET, O as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-D3MI2A-T.js";
 import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-Dwp0GyCm.js";
 import { createHash } from "node:crypto";
@@ -803,6 +804,7 @@ function createAuth(config, fetchImpl = fetch) {
       const rendered = await aiRenderSession(appId);
       if (rendered)
         return rendered;
+      throw new Error("The render check could not get its own read-only session.");
     }
     if (appId && config.pat && !config.sessionToken) {
       const cached = pinnedSessions.get(appId);
@@ -821,6 +823,7 @@ function createAuth(config, fetchImpl = fetch) {
           return body.authToken;
         }
       }
+      throw new Error("The render check could not get its own read-only session.");
     }
     if (!token)
       await login();
@@ -4507,7 +4510,7 @@ function sharedInputSchema(tool) {
 function includeLegacySingularCreateTools() {
   return /^(1|true|yes)$/i.test(process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS ?? "");
 }
-function registerTools(server, client, runtime = runtimeFreshness) {
+function registerTools(server, client, runtime = runtimeFreshness, code = noCodeIdentity(client)) {
   const tools = [
     getWorkflowNodeCatalogTool(),
     getWorkflowCapabilitiesTool(client),
@@ -4521,12 +4524,12 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     runWorkflowTool(client),
     getWorkflowExecutionTool(client),
     getRuntimeInfoTool(runtime),
-    codeAppScaffoldTool(client),
-    codeAppReadFilesTool(),
-    codeAppWriteFilesTool(),
-    codeAppBuildTool(),
-    codeAppInstallTool(),
-    codeAppAddDependencyTool(),
+    codeAppScaffoldTool(code),
+    codeAppReadFilesTool(code),
+    codeAppWriteFilesTool(code),
+    codeAppBuildTool(code),
+    codeAppInstallTool(code),
+    codeAppAddDependencyTool(code),
     listWorkspacesTool(client),
     useWorkspaceTool(client),
     manageAppPermissionsTool(client),
@@ -4727,7 +4730,7 @@ function registerCatalogResources(server) {
   }
 }
 var packsReady = Promise.resolve([]);
-function buildServer(identity) {
+function buildServer(identity, { hosted = false } = {}) {
   const config = loadConfig(identity);
   const auth = createAuth(config);
   const client = createClient(auth, config);
@@ -4742,7 +4745,13 @@ function buildServer(identity) {
     return [];
   });
   const server = new McpServer({ name: "tooljet-mcp", version: TOOLJET_MCP_VERSION });
-  registerTools(server, client);
+  registerTools(server, client, void 0, {
+    client,
+    workspaceId: () => auth.getOrganizationId(),
+    credential: hosted ? { sessionToken: identity?.sessionToken, pat: identity?.pat } : { sessionToken: config.sessionToken, pat: config.pat },
+    apiUrl: config.apiUrl,
+    appUrl: config.appUrl
+  });
   registerCatalogResources(server);
   return server;
 }

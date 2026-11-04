@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 import { createRequire } from "node:module";
-import { b as buildServer, a as buildUnconfiguredServer, p as packsReady, c as allowedApiOrigins, A as ALLOWED_API_ORIGINS_VAR, o as oauthHttpOptionsFromEnv, d as createOAuthHttpServer, i as identityFromHeaders, S as SESSION_TOKEN_HEADER, B as BASE_URL_HEADER, P as PAT_HEADER, e as StreamableHTTPServerTransport } from "./chunk-cA7qZo6x.js";
+import { b as buildServer, a as buildUnconfiguredServer, p as packsReady, c as allowedApiOrigins, A as ALLOWED_API_ORIGINS_VAR, o as oauthHttpOptionsFromEnv, d as createOAuthHttpServer, i as identityFromHeaders, S as SESSION_TOKEN_HEADER, B as BASE_URL_HEADER, P as PAT_HEADER, e as StreamableHTTPServerTransport } from "./chunk-C7atp5jn.js";
 import "./chunk-DsdTCwqi.js";
 import "./chunk-CWuyYxjg.js";
 import "./chunk-D3gbHEVi.js";
 import "./chunk-CtPGpRoO.js";
 import { $ as JSONRPCMessageSchema } from "./chunk-cnuR2fe-.js";
 import "./chunk-CFlPSMbo.js";
-import "./chunk-WzDnlNqG.js";
+import "./chunk-DUTMEu_M.js";
 import "./chunk-By54lwVj.js";
 import "./chunk-CGEvVdBY.js";
+import "./chunk-zdNr1SYF.js";
 import "./chunk-D3MI2A-T.js";
 import "./chunk-f43-efsm.js";
 import "./chunk-Brg6_25C.js";
@@ -353,7 +354,7 @@ function createGatewayHttpServer() {
       }
     }
     const readsResource = !!parsedBody && typeof parsedBody === "object" && !Array.isArray(parsedBody) && parsedBody.method === "resources/read";
-    const server = buildServer(identity);
+    const server = buildServer(identity, { hosted: true });
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: void 0, enableJsonResponse: readsResource });
     res.on("close", () => {
       transport.close();
