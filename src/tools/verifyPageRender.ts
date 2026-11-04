@@ -7,6 +7,7 @@ import type { ToolJetClient } from '../tooljetClient.js';
 import type { ViewerSession } from '../auth.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { renderAuditBase, renderAuditOrigins, renderAuditUrlAllowed, renderAuditRequest, type RenderAuditQueries } from '../renderAuditPolicy.js';
+import { startEgressProxy, type EgressProxy } from '../renderEgressProxy.js';
 
 /**
  * Render audit: open a page in a headless browser and report what static checks cannot see. Built from
@@ -417,13 +418,28 @@ export async function auditPages(
   if (!pw) {
     return pages.map((p) => unreachable(p, 'browser_unavailable', 'playwright-core is not installed on the MCP host; the render audit cannot run'));
   }
+  // Every connection the browser makes goes through an egress proxy that holds the audit origins (renderEgressProxy.ts),
+  // loopback included: redirects of the resources passed through below are checked there. Each context gets its own,
+  // so a block is reported on the page that caused it; the browser-wide one covers anything outside a context.
+  const proxies: EgressProxy[] = [];
+  const proxyFor = async (onBlocked?: (destination: string) => void) => {
+    const proxy = await startEgressProxy(origins, onBlocked);
+    proxies.push(proxy);
+    return { server: proxy.server, bypass: '<-loopback>' };
+  };
+  const closeProxies = () => Promise.all(proxies.splice(0).map((proxy) => proxy.close().catch(() => {})));
   const launch: Record<string, unknown> = { headless: true, chromiumSandbox: true,
     args: ['--force-webrtc-ip-handling-policy=disable_non_proxied_udp'] };
   if (options.executablePath) launch.executablePath = options.executablePath;
   else launch.channel = options.channel ?? 'chrome';
   let browser: any;
-  try { browser = await pw.chromium.launch(launch); }
-  catch { return pages.map((p) => unreachable(p, 'browser_unavailable', 'Chrome could not start on the MCP host; check the configured executable/channel')); }
+  try {
+    launch.proxy = await proxyFor();
+    browser = await pw.chromium.launch(launch);
+  } catch {
+    await closeProxies();
+    return pages.map((p) => unreachable(p, 'browser_unavailable', 'Chrome could not start on the MCP host; check the configured executable/channel'));
+  }
   // Pages are audited a few at a time in their own contexts: a 13-page app took over three minutes
   // sequentially (settle 6s + chart wait per page) and tripped the harness's 60s tool timeout.
   const concurrency = Math.max(1, Math.min(options.concurrency ?? 4, pages.length || 1));
@@ -446,7 +462,9 @@ export async function auditPages(
     try {
       const width = options.viewportWidth ?? 1600;
       // A phone width gets a phone's height; wider windows keep 900.
-      ctx = await browser.newContext({ viewport: { width, height: width < 768 ? 812 : 900 }, serviceWorkers: 'block' });
+      const proxy = await proxyFor((destination) => block({ kind: 'unreachable', component: '-', reason: 'redirect_blocked',
+        detail: 'A redirect or connection to a destination outside the configured audit origins was blocked' }, `connection to ${destination}`));
+      ctx = await browser.newContext({ viewport: { width, height: width < 768 ? 812 : 900 }, serviceWorkers: 'block', proxy });
       if (!ctx.routeWebSocket) {
         reports[index] = unreachable(p, 'browser_unavailable', 'The render audit requires Playwright 1.48+ for WebSocket interception');
         return;
@@ -497,8 +515,9 @@ export async function auditPages(
           }
           // The viewer's own scripts, styles, images and fonts pass through: a dev frontend's unminified bundles
           // are tens of megabytes, and fetching then fulfilling them killed Chrome two seconds into every audit of
-          // a local viewer (2026-10-12). They run no query and carry no session; documents and API calls are
-          // still fetched below, so redirects and query runs stay checked.
+          // a local viewer (2026-10-12). They run no query and carry no session. Playwright follows their redirects
+          // without coming back here, so the egress proxy checks each hop against the same origins; documents and
+          // API calls are still fetched below with redirects off, so query runs stay checked.
           if (request.method() === 'GET' && STATIC_RESOURCES.has(request.resourceType?.())) {
             await route.continue();
             return;
@@ -628,6 +647,7 @@ export async function auditPages(
     await Promise.all(workers);
   } finally {
     await browser.close();
+    await closeProxies();
   }
   return reports;
 }
