@@ -275,6 +275,7 @@ export function codeAppScaffoldTool(client?: Pick<ToolJetClient, 'renameApp'>): 
         const pull = await cli(dir, ['app', 'pull']);
         if (pull.code !== 0) throw new Error(`tooljet app pull failed: ${pull.output}`);
         const naming = await nameApp(client, dir, args.display_name);
+        if (!existing) rememberScaffold(dir);
         return ok({
           project_dir: dir,
           ...naming,
@@ -293,9 +294,14 @@ export function codeAppScaffoldTool(client?: Pick<ToolJetClient, 'renameApp'>): 
 
 /** `tooljet app source-pull`: what it reports when it brought editor edits down, or a warning when it could not run. */
 async function syncEditorEdits(dir: string, { force = false } = {}): Promise<{ editor_edits?: string; sync_warning?: string }> {
+  // Nothing to bring down until the first install stores the code: a pull on every write was 29 s of a first build
+  // (2026-11-03). Only the check that found no stored code counts, so a project that has code still pulls every time.
+  if (!force && nothingStored.has(dir)) return {};
   if (force) forgetSourceRevision(dir);
   const pull = await cli(dir, ['app', 'source-pull'], 60_000);
   if (pull.code !== 0) return { sync_warning: `Could not check the ToolJet editor for edits: ${pull.output.trim().slice(0, 300)}` };
+  if (/No source is stored/i.test(pull.output)) nothingStored.add(dir);
+  else nothingStored.delete(dir);
   lastSynced.set(dir, Date.now());
   // What the agent read stays recorded: a write compares it with the file as the pull left it, so only a file the pull
   // changed needs reading again.
@@ -311,6 +317,9 @@ async function syncEditorEdits(dir: string, { force = false } = {}): Promise<{ e
   file needs a read of that file, in this build, after the last pull.
 */
 const freshProjects = new Set<string>();
+const nothingStored = new Set<string>();
+/** The files as scaffolded, by project and path: replacing the template's own file is not a rewrite of anyone's work. */
+const scaffoldHashes = new Map<string, string>();
 const readHashes = new Map<string, string>();
 /*
   When each project last checked the stored code. Every read ran `tooljet app source-pull` (a CLI process and a request,
@@ -333,6 +342,13 @@ function forgetSourceRevision(dir: string): void {
     writeFileSync(file, JSON.stringify({ ...state, revision: -1 }, null, 2) + '\n');
   } catch {
     /* an unreadable state file already reads as "never pulled" */
+  }
+}
+
+function rememberScaffold(dir: string): void {
+  for (const rel of listFiles(dir)) {
+    const full = join(dir, rel);
+    if (existsSync(full)) scaffoldHashes.set(readKey(dir, rel), sha(readFileSync(full, 'utf8')));
   }
 }
 
@@ -403,6 +419,8 @@ export async function prefetchedScanForTests(dir: string): Promise<unknown> {
 /** Tests: a new build (a new MCP process) starts with nothing pulled or read. */
 export function resetCodeSessionForTests(): void {
   freshProjects.clear();
+  nothingStored.clear();
+  scaffoldHashes.clear();
   readHashes.clear();
   lastSynced.clear();
   prefetchedScans.clear();
@@ -508,7 +526,7 @@ export function codeAppWriteFilesTool(): ToolDef {
     description:
       'Write into a Code mode project: app.json (name, codePage, routes [{id, path, title}]), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. ' +
       'To change an existing file, read it first (code_app_read_files) and pass edits: [{ path, find, replace }] with the exact text to change; ' +
-      'files: [{ path, content }] is for new files, or for a rewrite the request needs (then rewrite: true). A write to a file that changed ' +
+      'files: [{ path, content }] is for new files and for replacing a file still as the template left it, or for a rewrite the request needs (then rewrite: true, as well as the files). A write to a file that changed ' +
       'in the ToolJet editor since you read it is refused: read it again and apply your change to what is there. ' +
       'Read data with useAppQuery from ../tooljet.gen; write by awaiting a query\'s run({ ...parameters }); route with AppRouter, ' +
       'react-router <Routes>/<Route> whose paths are exactly app.json\'s, and routePath(id, params). Then code_app_build.' + USER_WORDS,
@@ -523,7 +541,11 @@ export function codeAppWriteFilesTool(): ToolDef {
     async handler(args: { app_id?: string; name?: string; files?: { path: string; content: string }[]; edits?: { path: string; find: string; replace: string }[]; rewrite?: boolean }) {
       try {
         const dir = locateProject(args);
-        if (!args.files?.length && !args.edits?.length) throw new Error('Pass files (new files) or edits (changes to existing files).');
+        if (!args.files?.length && !args.edits?.length)
+          throw new Error(
+            `Nothing was written: this call had no files and no edits, so it sent no code${args.rewrite ? ' (rewrite: true only allows a rewrite, it carries none)' : ''}. ` +
+              'Send the code in this call: files: [{ path, content }] with the whole file, or edits: [{ path, find, replace }].'
+          );
         if (!freshProjects.has(dir)) await followDraft(dir);
         const first = await ensureFresh(dir);
         const sync = first.editor_edits || first.sync_warning ? first : await syncEditorEdits(dir);
@@ -544,7 +566,8 @@ export function codeAppWriteFilesTool(): ToolDef {
           const why = stale(rel, full);
           if (why) refusals.push(why);
           const before = current(rel, full);
-          if (!why && before !== undefined && !args.rewrite && isRewrite(before, file.content))
+          const stillTemplate = before !== undefined && scaffoldHashes.get(readKey(dir, rel)) === sha(before);
+          if (!why && before !== undefined && !args.rewrite && !stillTemplate && isRewrite(before, file.content))
             refusals.push(`${rel}: this replaces most of the file; change only what the request needs with edits (find/replace), or pass rewrite: true if the request really is a rewrite`);
           next.set(rel, { full, content: file.content });
         }
@@ -690,6 +713,7 @@ export function codeAppInstallTool(): ToolDef {
         const dir = locateProject(args);
         const followed = await followDraft(dir);
         await ensureFresh(dir);
+        nothingStored.delete(dir);
         const unstyled = missingStylesheet(dir);
         if (unstyled) return fail(new Error(`Not installed: ${unstyled} Then code_app_build and install again.`));
         // The full scan, dependency checks included, before anything reaches the app.
