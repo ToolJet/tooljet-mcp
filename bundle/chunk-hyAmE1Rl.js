@@ -946,6 +946,25 @@ function assertAllowedToolJetDbColumnNames(operation, columns) {
     throw new Error(`ToolJet ${operation} failed: reserved column name${reserved.length === 1 ? "" : "s"}: ${reserved.join(", ")}. Use a descriptive name such as step_action, result_comment, or item_condition.`);
   }
 }
+function alignSeedRowKeys(schema, rows) {
+  const noDefault = new Set(schema.filter((column) => column.defaultValue === void 0 || column.defaultValue === null).map((column) => column.name));
+  const keys = new Set(rows.flatMap((row) => Object.keys(row)));
+  for (const key of keys) {
+    if (!noDefault.has(key))
+      continue;
+    for (const row of rows)
+      if (!(key in row))
+        row[key] = null;
+  }
+}
+function sameKeysRun(rows, start, limit) {
+  const keysOf = (row) => Object.keys(row).sort().join("\0");
+  const keys = keysOf(rows[start]);
+  let end = start + 1;
+  while (end < rows.length && end - start < limit && keysOf(rows[end]) === keys)
+    end++;
+  return rows.slice(start, end);
+}
 function condenseErrorBody(detail, limit = 600) {
   const text = String(detail ?? "");
   if (/<!doctype html|<html[\s>]/i.test(text)) {
@@ -2271,9 +2290,10 @@ function createClient(auth, config) {
     const table = (await listTables()).find((candidate) => candidate.table_name === params.tableName);
     if (!table)
       throw new Error(`insertRows: ToolJet DB table "${params.tableName}" was not found in the active workspace.`);
+    alignSeedRowKeys(schema, rows);
     let processedRows = 0;
     while (bulkInsertAccepted && rows.length - processedRows >= 2) {
-      const chunk = rows.slice(processedRows, processedRows + BULK_INSERT_ROWS);
+      const chunk = sameKeysRun(rows, processedRows, BULK_INSERT_ROWS);
       let res;
       try {
         res = await insertRowViaProxy(table.id, chunk);

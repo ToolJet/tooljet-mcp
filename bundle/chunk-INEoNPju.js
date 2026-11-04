@@ -4,8 +4,8 @@ import { ed as __toESM, eb as __commonJS, e9 as fail, eo as literalCanvasColor, 
 import "node:http";
 import { Http2ServerRequest, constants } from "node:http2";
 import { Readable } from "node:stream";
-import { p as peekAppPlan, c as consumeAppPlan, f as frozenAppRefusal, r as replaceView, a as replaceFingerprint, d as danglingAfterReplace, b as prepareQueryOptionsForWrite, m as matchPlannedPage, e as prepareComponentBatch, g as replaceIds, h as expandQueryLifecycles, v as validateEvents, n as navigationReorders, i as persistedEventSpecs } from "./chunk-BIe0w3nF.js";
-import { c as componentRef, h as completedPartialWrites, r as resolveRef, i as indexComponentReferences, j as isFlexContainerType, k as batchChildOrders, l as childOrderProperty } from "./chunk-y8WOZ3tA.js";
+import { p as peekAppPlan, c as consumeAppPlan, f as frozenAppRefusal, r as replaceView, a as replaceFingerprint, d as danglingAfterReplace, b as prepareQueryOptionsForWrite, m as matchPlannedPage, e as prepareComponentBatch, g as replaceIds, h as expandQueryLifecycles, v as validateEvents, n as navigationReorders, i as persistedEventSpecs } from "./chunk-B6s0SEcB.js";
+import { c as componentRef, h as completedPartialWrites, r as resolveRef, i as indexComponentReferences, j as isFlexContainerType, k as batchChildOrders, l as childOrderProperty } from "./chunk-hyAmE1Rl.js";
 import { D as validateAppStructure, d as decodeComponentParent, e as encodeComponentParent } from "./chunk-BG-Wl49O.js";
 import { L as LARGE_READ_ROW_THRESHOLD, h as assessQueryRead, j as resolveStaticBindings, k as resolvedReadRefusal, s as sameReadSource, m as extractRowCount, o as emptyViewerOnlyParams, p as emptyParamsNote, u as unresolvedNote, v as validateQueryOptions, i as issueMessages } from "./chunk-DVQIMXVs.js";
 import { g as getDatasourceQuerySchema } from "./chunk-BNuWox9h.js";
@@ -3301,6 +3301,15 @@ function reserveRenderAudit(grant) {
       grants.delete(grant);
   };
 }
+async function waitForRenderAudit(grant, timeoutMs = 6e4) {
+  const deadline = Date.now() + timeoutMs;
+  for (; ; ) {
+    const release = reserveRenderAudit(grant);
+    if (release || grant && grants.has(grant) || Date.now() >= deadline)
+      return release;
+    await new Promise((resolve2) => setTimeout(resolve2, 200));
+  }
+}
 function httpUrl(value) {
   const url = new URL(value);
   if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) {
@@ -3922,7 +3931,7 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
       route: external_exports.string().regex(/^\/[A-Za-z0-9_\-\/:.]*$/).optional().describe("a Code mode route path to open, such as /orders/36")
     },
     async handler(args) {
-      const release = reserveRenderAudit(client.renderAuditGrant);
+      const release = await waitForRenderAudit(client.renderAuditGrant);
       if (!release)
         return fail(new Error("Render verification is busy; rendering remains unverified. Retry shortly."));
       try {
@@ -4144,12 +4153,6 @@ function codeAppScaffoldTool(client) {
             throw new Error(`tooljet app init failed: ${init.output}`);
           const appFile = join(dir, "app.json");
           writeFileSync(appFile, JSON.stringify({ ...JSON.parse(readFileSync(appFile, "utf8")), appId: args.app_id }, null, 2) + "\n");
-          if (process.env.TOOLJET_SDK_SPEC) {
-            const pkgFile = join(dir, "frontend", "package.json");
-            const pkg = JSON.parse(readFileSync(pkgFile, "utf8"));
-            pkg.dependencies["@tooljet/custom-component-sdk"] = process.env.TOOLJET_SDK_SPEC;
-            writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + "\n");
-          }
           const install = await cli(dir, ["app", "install"]);
           if (install.code !== 0)
             throw new Error(`tooljet app install failed: ${install.output}`);
@@ -4158,6 +4161,8 @@ function codeAppScaffoldTool(client) {
         if (pull.code !== 0)
           throw new Error(`tooljet app pull failed: ${pull.output}`);
         const naming = await nameApp(client, dir, args.display_name);
+        if (!existing)
+          rememberScaffold(dir);
         return ok({
           project_dir: dir,
           ...naming,
@@ -4174,15 +4179,23 @@ function codeAppScaffoldTool(client) {
   };
 }
 async function syncEditorEdits(dir, { force = false } = {}) {
+  if (!force && nothingStored.has(dir))
+    return {};
   if (force)
     forgetSourceRevision(dir);
   const pull = await cli(dir, ["app", "source-pull"], 6e4);
   if (pull.code !== 0)
     return { sync_warning: `Could not check the ToolJet editor for edits: ${pull.output.trim().slice(0, 300)}` };
+  if (/No source is stored/i.test(pull.output))
+    nothingStored.add(dir);
+  else
+    nothingStored.delete(dir);
   lastSynced.set(dir, Date.now());
   return /Pulled revision/.test(pull.output) ? { editor_edits: pull.output.trim() } : {};
 }
 var freshProjects = /* @__PURE__ */ new Set();
+var nothingStored = /* @__PURE__ */ new Set();
+var scaffoldHashes = /* @__PURE__ */ new Map();
 var readHashes = /* @__PURE__ */ new Map();
 var lastSynced = /* @__PURE__ */ new Map();
 var readSyncWindowMs = () => Number(process.env.MCP_CODE_APP_READ_SYNC_MS ?? 2e4);
@@ -4197,6 +4210,13 @@ function forgetSourceRevision(dir) {
     const state = JSON.parse(readFileSync(file, "utf8"));
     writeFileSync(file, JSON.stringify({ ...state, revision: -1 }, null, 2) + "\n");
   } catch {
+  }
+}
+function rememberScaffold(dir) {
+  for (const rel of listFiles(dir)) {
+    const full = join(dir, rel);
+    if (existsSync(full))
+      scaffoldHashes.set(readKey(dir, rel), sha(readFileSync(full, "utf8")));
   }
 }
 async function ensureFresh(dir) {
@@ -4331,7 +4351,7 @@ function codeAppWriteFilesTool() {
     name: "code_app_write_files",
     title: "Write Code Mode Files",
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-    description: "Write into a Code mode project: app.json (name, codePage, routes [{id, path, title}]), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. To change an existing file, read it first (code_app_read_files) and pass edits: [{ path, find, replace }] with the exact text to change; files: [{ path, content }] is for new files, or for a rewrite the request needs (then rewrite: true). A write to a file that changed in the ToolJet editor since you read it is refused: read it again and apply your change to what is there. Read data with useAppQuery from ../tooljet.gen; write by awaiting a query's run({ ...parameters }); route with AppRouter, react-router <Routes>/<Route> whose paths are exactly app.json's, and routePath(id, params). Then code_app_build." + USER_WORDS,
+    description: "Write into a Code mode project: app.json (name, codePage, routes [{id, path, title}]), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. To change an existing file, read it first (code_app_read_files) and pass edits: [{ path, find, replace }] with the exact text to change; files: [{ path, content }] is for new files and for replacing a file still as the template left it, or for a rewrite the request needs (then rewrite: true, as well as the files). A write to a file that changed in the ToolJet editor since you read it is refused: read it again and apply your change to what is there. Read data with useAppQuery from ../tooljet.gen; write by awaiting a query's run({ ...parameters }); route with AppRouter, react-router <Routes>/<Route> whose paths are exactly app.json's, and routePath(id, params). Then code_app_build." + USER_WORDS,
     inputSchema: {
       app_id: APP_ID,
       name: PROJECT_NAME,
@@ -4343,7 +4363,7 @@ function codeAppWriteFilesTool() {
       try {
         const dir = locateProject(args);
         if (!args.files?.length && !args.edits?.length)
-          throw new Error("Pass files (new files) or edits (changes to existing files).");
+          throw new Error(`Nothing was written: this call had no files and no edits, so it sent no code${args.rewrite ? " (rewrite: true only allows a rewrite, it carries none)" : ""}. Send the code in this call: files: [{ path, content }] with the whole file, or edits: [{ path, find, replace }].`);
         if (!freshProjects.has(dir))
           await followDraft(dir);
         const first = await ensureFresh(dir);
@@ -4368,7 +4388,8 @@ function codeAppWriteFilesTool() {
           if (why)
             refusals.push(why);
           const before = current(rel, full);
-          if (!why && before !== void 0 && !args.rewrite && isRewrite(before, file.content))
+          const stillTemplate = before !== void 0 && scaffoldHashes.get(readKey(dir, rel)) === sha(before);
+          if (!why && before !== void 0 && !args.rewrite && !stillTemplate && isRewrite(before, file.content))
             refusals.push(`${rel}: this replaces most of the file; change only what the request needs with edits (find/replace), or pass rewrite: true if the request really is a rewrite`);
           next.set(rel, { full, content: file.content });
         }
@@ -4498,6 +4519,7 @@ function codeAppInstallTool() {
         const dir = locateProject(args);
         const followed = await followDraft(dir);
         await ensureFresh(dir);
+        nothingStored.delete(dir);
         const unstyled = missingStylesheet(dir);
         if (unstyled)
           return fail(new Error(`Not installed: ${unstyled} Then code_app_build and install again.`));
