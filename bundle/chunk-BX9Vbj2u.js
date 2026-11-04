@@ -1334,6 +1334,15 @@ function createClient(auth, config) {
     await assertOk(res, "getApp");
     return res.json();
   }
+  async function canEditApp(appId) {
+    const res = await auth.authedFetch(`/api/apps/${encodeURIComponent(appId)}/tables`);
+    if (res.ok)
+      return true;
+    if (res.status === 403 || res.status === 404)
+      return false;
+    await assertOk(res, "canEditApp");
+    return false;
+  }
   function projectComponent(id, entry) {
     const c = entry?.component ?? {};
     const def = c.definition ?? {};
@@ -2959,6 +2968,7 @@ function createClient(auth, config) {
     releaseApp,
     renameApp,
     getApp,
+    canEditApp,
     getAppSummary,
     listAppPermissionSubjects,
     getAppPermission,

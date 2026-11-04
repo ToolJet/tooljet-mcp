@@ -5,6 +5,8 @@ import { b1 as external_exports } from "./chunk-DsdTCwqi.js";
 import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createServer, request } from "node:http";
+import { connect } from "node:net";
 createRequire(import.meta.url);
 var running = 0;
 var grants = /* @__PURE__ */ new Set();
@@ -91,6 +93,143 @@ function renderAuditRequest(url, method, saved) {
     return blocked("A query that is not a proven bounded read was blocked");
   }
   return { allowed: true, postData: JSON.stringify({ resolvedOptions: {} }) };
+}
+var HOP_BY_HOP = ["proxy-connection", "proxy-authorization", "connection", "keep-alive", "te", "trailer", "upgrade"];
+var forwardHeaders = (headers) => {
+  const out = { ...headers };
+  for (const name of HOP_BY_HOP)
+    delete out[name];
+  return out;
+};
+var defaultPort = (protocol) => protocol === "https:" || protocol === "wss:" ? "443" : "80";
+var tunnelTargets = (origins) => {
+  const targets = /* @__PURE__ */ new Set();
+  for (const origin of origins) {
+    try {
+      const url = new URL(origin);
+      targets.add(`${url.hostname.toLowerCase()}:${url.port || defaultPort(url.protocol)}`);
+    } catch {
+    }
+  }
+  return targets;
+};
+var tunnelTarget = (authority) => {
+  if (!authority || !/:\d{1,5}$/.test(authority))
+    return void 0;
+  try {
+    const url = new URL(`http://${authority}`);
+    const port = /:(\d{1,5})$/.exec(authority)[1];
+    return url.username || url.password || url.pathname !== "/" ? void 0 : `${url.hostname.toLowerCase()}:${port}`;
+  } catch {
+    return void 0;
+  }
+};
+var unbracket = (hostname) => hostname.replace(/^\[|\]$/g, "");
+async function startEgressProxy(origins, onBlocked = () => {
+}) {
+  const tunnels = tunnelTargets(origins);
+  const sockets = /* @__PURE__ */ new Set();
+  const track = (socket) => {
+    sockets.add(socket);
+    socket.once("close", () => sockets.delete(socket));
+  };
+  const refuseSocket = (socket, destination) => {
+    onBlocked(destination);
+    socket.end("HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+  };
+  const tunnel = (client, host, port, first) => {
+    const upstream = connect(port, unbracket(host), () => {
+      first(upstream);
+      upstream.pipe(client);
+      client.pipe(upstream);
+    });
+    track(upstream);
+    upstream.on("error", () => client.destroy());
+    client.on("error", () => upstream.destroy());
+  };
+  const server = createServer((req, res) => {
+    let url;
+    try {
+      url = new URL(req.url ?? "");
+    } catch {
+      res.writeHead(400).end();
+      return;
+    }
+    if (url.protocol !== "http:" || !renderAuditUrlAllowed(url.href, origins)) {
+      onBlocked(url.origin);
+      res.writeHead(403, { "content-length": "0", connection: "close" }).end();
+      return;
+    }
+    const upstream = request({ host: unbracket(url.hostname), port: url.port || 80, method: req.method, path: url.pathname + url.search, headers: forwardHeaders(req.headers) }, (answer) => {
+      const headers = { ...answer.headers };
+      for (const name of ["connection", "keep-alive", "transfer-encoding"])
+        delete headers[name];
+      res.writeHead(answer.statusCode ?? 502, answer.statusMessage, headers);
+      answer.pipe(res);
+    });
+    upstream.on("error", () => {
+      if (!res.headersSent)
+        res.writeHead(502, { "content-length": "0" });
+      res.end();
+    });
+    req.pipe(upstream);
+  });
+  server.on("connection", track);
+  server.on("connect", (req, client, head) => {
+    const target = tunnelTarget(req.url);
+    if (!target || !tunnels.has(target)) {
+      refuseSocket(client, target ?? "an unreadable tunnel target");
+      return;
+    }
+    const at = target.lastIndexOf(":");
+    tunnel(client, target.slice(0, at), Number(target.slice(at + 1)), (upstream) => {
+      client.write("HTTP/1.1 200 Connection Established\r\n\r\n");
+      if (head.length)
+        upstream.write(head);
+    });
+  });
+  server.on("upgrade", (req, client, head) => {
+    let url;
+    try {
+      url = new URL(req.url ?? "");
+    } catch {
+      refuseSocket(client, "an unreadable upgrade target");
+      return;
+    }
+    const asHttp = url.href.replace(/^ws:/i, "http:");
+    if (!/^(http|ws):$/i.test(url.protocol) || !renderAuditUrlAllowed(asHttp, origins)) {
+      refuseSocket(client, url.origin);
+      return;
+    }
+    tunnel(client, url.hostname, Number(url.port || 80), (upstream) => {
+      const lines = [`${req.method} ${url.pathname}${url.search} HTTP/${req.httpVersion}`];
+      for (let i = 0; i < req.rawHeaders.length; i += 2) {
+        if (!/^proxy-/i.test(req.rawHeaders[i]))
+          lines.push(`${req.rawHeaders[i]}: ${req.rawHeaders[i + 1]}`);
+      }
+      upstream.write(lines.join("\r\n") + "\r\n\r\n");
+      if (head.length)
+        upstream.write(head);
+    });
+  });
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      server.off("error", reject);
+      resolve();
+    });
+  });
+  const address = server.address();
+  if (!address || typeof address === "string")
+    throw new Error("The render egress proxy has no address");
+  return {
+    server: `http://127.0.0.1:${address.port}`,
+    close: () => new Promise((resolve) => {
+      for (const socket of sockets)
+        socket.destroy();
+      server.close(() => resolve());
+    })
+  };
 }
 var screenshotDir = () => process.env.MCP_RENDER_AUDIT_SCREENSHOTS || join(tmpdir(), "tooljet-render-audit");
 async function axeInCodePage(page) {
@@ -389,14 +528,14 @@ function trackNetwork(page) {
   if (typeof page?.on !== "function")
     return void 0;
   const tracker = { inflight: /* @__PURE__ */ new Map(), lastActivity: Date.now() };
-  const done = (request) => {
-    tracker.inflight.delete(request);
+  const done = (request2) => {
+    tracker.inflight.delete(request2);
     tracker.lastActivity = Date.now();
   };
-  page.on("request", (request) => {
-    if (STREAM_PATHS.test(pathOf(String(request?.url?.() ?? ""))))
+  page.on("request", (request2) => {
+    if (STREAM_PATHS.test(pathOf(String(request2?.url?.() ?? ""))))
       return;
-    tracker.inflight.set(request, Date.now());
+    tracker.inflight.set(request2, Date.now());
     tracker.lastActivity = Date.now();
   });
   page.on("requestfinished", done);
@@ -435,6 +574,14 @@ async function auditPages(pages, options = {}, driver = loadPlaywright) {
   if (!pw) {
     return pages.map((p) => unreachable(p, "browser_unavailable", "playwright-core is not installed on the MCP host; the render audit cannot run"));
   }
+  const proxies = [];
+  const proxyFor = async (onBlocked) => {
+    const proxy = await startEgressProxy(origins, onBlocked);
+    proxies.push(proxy);
+    return { server: proxy.server, bypass: "<-loopback>" };
+  };
+  const closeProxies = () => Promise.all(proxies.splice(0).map((proxy) => proxy.close().catch(() => {
+  })));
   const launch = {
     headless: true,
     chromiumSandbox: true,
@@ -446,8 +593,10 @@ async function auditPages(pages, options = {}, driver = loadPlaywright) {
     launch.channel = options.channel ?? "chrome";
   let browser;
   try {
+    launch.proxy = await proxyFor();
     browser = await pw.chromium.launch(launch);
   } catch {
+    await closeProxies();
     return pages.map((p) => unreachable(p, "browser_unavailable", "Chrome could not start on the MCP host; check the configured executable/channel"));
   }
   const concurrency = Math.max(1, Math.min(options.concurrency ?? 4, pages.length || 1));
@@ -468,7 +617,13 @@ async function auditPages(pages, options = {}, driver = loadPlaywright) {
     };
     try {
       const width = options.viewportWidth ?? 1600;
-      ctx = await browser.newContext({ viewport: { width, height: width < 768 ? 812 : 900 }, serviceWorkers: "block" });
+      const proxy = await proxyFor((destination) => block({
+        kind: "unreachable",
+        component: "-",
+        reason: "redirect_blocked",
+        detail: "A redirect or connection to a destination outside the configured audit origins was blocked"
+      }, `connection to ${destination}`));
+      ctx = await browser.newContext({ viewport: { width, height: width < 768 ? 812 : 900 }, serviceWorkers: "block", proxy });
       if (!ctx.routeWebSocket) {
         reports[index] = unreachable(p, "browser_unavailable", "The render audit requires Playwright 1.48+ for WebSocket interception");
         return;
@@ -516,26 +671,26 @@ async function auditPages(pages, options = {}, driver = loadPlaywright) {
         socket.close();
       });
       await ctx.route("**/*", async (route) => {
-        const request = route.request();
-        const url = request.url();
+        const request2 = route.request();
+        const url = request2.url();
         if (!renderAuditUrlAllowed(url, origins)) {
-          block({ kind: "unreachable", component: "-", reason: "blocked_destination", detail: "A navigation or resource outside the configured audit origins was blocked" }, `${request.method()} ${new URL(url).origin}`);
+          block({ kind: "unreachable", component: "-", reason: "blocked_destination", detail: "A navigation or resource outside the configured audit origins was blocked" }, `${request2.method()} ${new URL(url).origin}`);
           await route.abort();
           return;
         }
         try {
-          const policy = renderAuditRequest(url, request.method(), options.savedQueries);
+          const policy = renderAuditRequest(url, request2.method(), options.savedQueries);
           if (!policy.allowed) {
             block({
               kind: "unreachable",
               component: "-",
               reason: "blocked_execution",
-              detail: `${policy.detail} (${request.method()} ${pathOf(url)})`
-            }, `${request.method()} ${pathOf(url)}`);
+              detail: `${policy.detail} (${request2.method()} ${pathOf(url)})`
+            }, `${request2.method()} ${pathOf(url)}`);
             await route.abort();
             return;
           }
-          if (request.method() === "GET" && STATIC_RESOURCES.has(request.resourceType?.())) {
+          if (request2.method() === "GET" && STATIC_RESOURCES.has(request2.resourceType?.())) {
             await route.continue();
             return;
           }
@@ -554,7 +709,7 @@ async function auditPages(pages, options = {}, driver = loadPlaywright) {
                 component: "-",
                 reason: signIn ? "auth_required" : "redirect_blocked",
                 detail: signIn ? "The viewer requires sign-in; private app rendering was not verified" : "An HTTP redirect was blocked. Configure the canonical viewer/resource URL and its trusted origin"
-              }, `${request.method()} ${pathOf(url)} redirected`);
+              }, `${request2.method()} ${pathOf(url)} redirected`);
               await route.abort();
             } else
               await route.fulfill({ response: response2 });
@@ -562,7 +717,7 @@ async function auditPages(pages, options = {}, driver = loadPlaywright) {
             await response2.dispose();
           }
         } catch {
-          block({ kind: "unreachable", component: "-", reason: "navigation_failed", detail: "A viewer resource could not be loaded; the audit is incomplete" }, `${request.method()} ${pathOf(url)}`);
+          block({ kind: "unreachable", component: "-", reason: "navigation_failed", detail: "A viewer resource could not be loaded; the audit is incomplete" }, `${request2.method()} ${pathOf(url)}`);
           await route.abort().catch(() => {
           });
         }
@@ -647,6 +802,7 @@ async function auditPages(pages, options = {}, driver = loadPlaywright) {
     await Promise.all(workers);
   } finally {
     await browser.close();
+    await closeProxies();
   }
   return reports;
 }
