@@ -1,12 +1,12 @@
 import { createRequire } from "node:module";
-import { o as external_exports, q as editContractSchema, s as generateEditContract, p as COMPONENT_FX_GUIDANCE } from "./chunk-8iUq0slz.js";
-import { s as strictEntry, g as specSchema, h as createClient, l as listWorkspaceGroupsTool, m as manageWorkspaceGroupsTool, j as inspectDatasourceSchemaTool, u as updateComponentsTool, o as ok, k as nodeCatalog, f as fail, p as capabilityRequestSchema, q as getWorkflowCapabilities, w as lint, x as apply, y as deleteNode, z as validateGraph, v as validateTableBatch, A as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec } from "./chunk-DTNK3HRU.js";
-import { a6 as dbColumnTypeSchema, a7 as componentInputSchema, a8 as lintAppSpecTool, a9 as projectJavascriptRuntime, aa as projectAppSettings, ab as compactTheme, ac as pageSettingProperties, l as literalCanvasColor, ad as containsExactValue, h as prepareQueryOptionsForWrite, ae as inspectUpdateCompatibility, af as normalizePlanBindingAliases, ag as containsNamedBinding, ah as normalizePlannedLayouts, ai as materializeRequiredDefaultChildren, aj as mapKeyRefusal, j as prepareComponentBatch, v as validateEvents, n as expandQueryLifecycles, q as persistedEventSpecs, ak as persistedEventIds } from "./chunk-C-4D1Wqw.js";
-import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, W as WebStandardStreamableHTTPServerTransport, g as getRequestListener, c as validatePersistedAppSummary } from "./chunk-BmRxQuBQ.js";
-import { M as McpServer } from "./chunk-CPtKEQcN.js";
-import { u as pageIconSchema, c as componentSlotSchema, a as componentNameSchema, t as lintComponents, i as introducedLintFindings, x as lintRenderedGeometryBlocking, y as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, f as lintComponentSlots, l as lintComponentSpec, g as lintUnusableTextGeometry, z as lintNestedContainerWidths, h as lintStandardSingleLineInputHeight, j as lintTextGeometry, k as lintRenderedGeometry, F as FORM_SCHEMA_FIELD_TYPE_SET, A as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-gznY6rD8.js";
+import { o as external_exports, s as specSchema, q as nodeCatalog, v as validateGraph, y as editContractSchema, z as generateEditContract } from "./chunk-8YTh_X7O.js";
+import { t as themeDefinition, s as strictEntry, d as createClient, e as listWorkspaceAppsTool, g as listWorkspaceFoldersTool, h as listWorkspaceUsersTool, m as manageWorkspaceUsersTool, j as listWorkspaceGroupsTool, k as manageWorkspaceGroupsTool, p as inspectDatasourceSchemaTool, q as manageThemeTool, o as ok, f as fail, r as capabilityRequestSchema, u as getWorkflowCapabilities, w as lint, x as apply, y as deleteNode, z as paintsDarkCanvasInLightMode, A as projectJavascriptRuntime, B as projectAppSettings, C as compactTheme, D as pageSettingProperties, v as validateTableBatch, E as ToolJetHttpError, l as literalCanvasColor, P as PartialWriteError, F as hasNonEmptyDefinition, G as themeActionTools, H as workspaceGroupActionTools, I as workspaceUserActionTools, J as exposeActions } from "./chunk-zEby1wOD.js";
+import { a6 as dbColumnTypeSchema, a7 as componentInputSchema, a8 as lintAppSpecTool, a9 as containsExactValue, h as prepareQueryOptionsForWrite, aa as inspectUpdateCompatibility, ab as normalizePlanBindingAliases, o as resolveRef, ac as containsNamedBinding, ad as normalizeComponentSpec, ae as normalizePlannedLayouts, af as materializeRequiredDefaultChildren, ag as mapKeyRefusal, ah as COMPONENT_FX_GUIDANCE, j as prepareComponentBatch, ai as COMPONENT_FX_UPDATE_GUIDANCE, v as validateEvents, l as expandQueryLifecycles, q as persistedEventSpecs, aj as persistedEventIds } from "./chunk-DVEwpOfg.js";
+import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, W as WebStandardStreamableHTTPServerTransport, g as getRequestListener, c as validatePersistedAppSummary } from "./chunk-BwTaPq16.js";
+import { M as McpServer } from "./chunk-yTQfFEtN.js";
+import { g as pageIconSchema, f as componentSlotSchema, c as componentNameSchema, b as lintComponents, i as introducedLintFindings, j as lintRenderedGeometryBlocking, k as lintRenderedGeometryAdvisory, o as componentNameError, d as decodeComponentParent, e as encodeComponentParent, s as suggestedHtmlHeight, q as lintComponentSpec, r as lintComponentSlots, t as lintUnusableTextGeometry, u as lintStandardSingleLineInputHeight, w as lintTextGeometry, x as lintRenderedGeometry, y as lintKanbanInteractions, z as lintNestedContainerWidths, F as FORM_SCHEMA_FIELD_TYPE_SET, A as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-CUSf2Ml4.js";
 import { ea as getCatalog, e5 as getComponentSchema, eb as getLegacyComponentReplacement, ee as readCatalogBytes } from "./chunk-BEuHHGL1.js";
-import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-CsHFzbSc.js";
+import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-wUGawh4I.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { createServer } from "node:http";
@@ -629,7 +629,7 @@ function appVersionLifecycleTools(client) {
       name: "list_app_versions",
       title: "List App Versions",
       description: "List exact versions and environments for one app. Use returned IDs to resolve named lifecycle targets; never infer IDs.",
-      annotations: { readOnlyHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
       strictInput: true,
       inputSchema: { app_id: target.app_id },
       handler: execute((a) => client.appVersions.list(a.app_id))
@@ -638,7 +638,7 @@ function appVersionLifecycleTools(client) {
       name: "promote_app_version",
       title: "Promote App Version",
       description: "Save a draft if necessary and promote the selected version only as far as the explicitly requested environment. Never releases the app. Pass confirm:true only for an explicit promotion request. Returns verified editor selection metadata.",
-      annotations: { readOnlyHint: false, destructiveHint: true },
+      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
       strictInput: true,
       inputSchema: { ...target, environment_name: external_exports.enum(["staging", "production"]), confirm: external_exports.literal(true) },
       handler: execute((a) => client.appVersions.promote(a.app_id, a.version_id, a.environment_name))
@@ -647,7 +647,7 @@ function appVersionLifecycleTools(client) {
       name: "switch_app_environment",
       title: "Switch App Environment",
       description: "Open the same app version in a requested environment without publishing, promoting, or releasing it. Fails if that version is not available there. Use only for an explicit environment-switch request.",
-      annotations: { readOnlyHint: false, destructiveHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
       strictInput: true,
       inputSchema: { ...target, environment_name: environment },
       handler: execute((a) => client.appVersions.switchEnvironment(a.app_id, a.version_id, a.environment_name))
@@ -656,7 +656,7 @@ function appVersionLifecycleTools(client) {
       name: "update_app_version",
       title: "Update App Version",
       description: "Rename the selected version or edit its description, only when explicitly requested. Does not publish, promote, or release. Backend version permissions and edit restrictions apply.",
-      annotations: { readOnlyHint: false, destructiveHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
       strictInput: true,
       inputSchema: { ...target, version_name: external_exports.string().trim().min(1).max(50).optional(), version_description: external_exports.string().max(500).optional() },
       handler: execute((a) => client.appVersions.update(a.app_id, a.version_id, { name: a.version_name, description: a.version_description }))
@@ -665,7 +665,7 @@ function appVersionLifecycleTools(client) {
       name: "delete_app_version",
       title: "Delete App Version",
       description: "Delete the explicitly selected, unreleased version only on an explicit user deletion request. List versions first and provide a different fallback_version_id in the same app for the editor to open afterward. Never delete the released or only version. Do not retry an uncertain deletion automatically.",
-      annotations: { readOnlyHint: false, destructiveHint: true },
+      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
       strictInput: true,
       inputSchema: { ...target, fallback_version_id: external_exports.string().uuid(), confirm: external_exports.literal(true) },
       handler: execute((a) => client.appVersions.remove(a.app_id, a.version_id, a.fallback_version_id))
@@ -678,7 +678,8 @@ function listWorkspacesTool(client) {
     title: "List Workspaces",
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true
+      destructiveHint: false,
+      openWorldHint: false
     },
     description: "List the ToolJet workspaces (organizations) this user belongs to: [{ id, name, slug, datasources_url, is_default, is_current }]. datasources_url opens ToolJet connection management for user-assisted setup/repair. A user can be in multiple workspaces, and apps/tables/datasources are scoped to the ACTIVE one. This server is token-scoped to a single workspace, so exactly one is returned and there anything. `is_current` marks the active workspace.",
     inputSchema: {},
@@ -697,7 +698,8 @@ function useWorkspaceTool(client) {
     title: "Confirm Active Workspace",
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true
+      destructiveHint: false,
+      openWorldHint: false
     },
     description: "Confirm the ACTIVE workspace (organization). This server is scoped to a single workspace by its connection credentials and cannot switch: passing that workspace id returns it, and any other id errors naming the one in use. Everything is created in that workspace, so there is nothing to select at setup \u2014 call list_workspaces if you need its id, name, slug or datasources_url.",
     inputSchema: {
@@ -708,179 +710,6 @@ function useWorkspaceTool(client) {
         return ok(await client.useWorkspace(args.workspace_id));
       } catch (err) {
         return fail(err);
-      }
-    }
-  };
-}
-var THEME_LICENCE_USER_MESSAGE = "Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.";
-var colorPair = external_exports.object({
-  light: external_exports.string().trim().min(1).max(100).describe("Color used in light mode; hex is recommended."),
-  dark: external_exports.string().trim().min(1).max(100).describe("Color used in dark mode; hex is recommended.")
-}).strict();
-var themeDefinition = external_exports.object({
-  brand: external_exports.object({
-    colors: external_exports.object({
-      primary: colorPair,
-      secondary: colorPair.optional(),
-      tertiary: colorPair.optional()
-    }).strict()
-  }).strict(),
-  text: external_exports.object({
-    font: external_exports.string().trim().min(1).max(200),
-    colors: external_exports.object({
-      primary: colorPair,
-      placeholder: colorPair.optional(),
-      disabled: colorPair.optional()
-    }).strict()
-  }).strict(),
-  border: external_exports.object({
-    radius: external_exports.object({
-      default: external_exports.number().nonnegative(),
-      small: external_exports.number().nonnegative(),
-      large: external_exports.number().nonnegative()
-    }).strict(),
-    colors: external_exports.object({
-      default: colorPair,
-      weak: colorPair.optional(),
-      disabled: colorPair.optional()
-    }).strict()
-  }).strict(),
-  systemStatus: external_exports.object({
-    colors: external_exports.object({
-      success: colorPair,
-      error: colorPair.optional(),
-      warning: colorPair.optional()
-    }).strict()
-  }).strict(),
-  surface: external_exports.object({
-    colors: external_exports.object({
-      appBackground: colorPair,
-      surface1: colorPair,
-      surface2: colorPair,
-      surface3: colorPair
-    }).strict()
-  }).strict()
-}).strict();
-async function applyToApp(client, theme, args, definition) {
-  if (!args.app_id || !args.version_id)
-    return void 0;
-  const dark = paintsDarkCanvasInLightMode(definition);
-  await client.updateAppSettings({
-    appId: args.app_id,
-    versionId: args.version_id,
-    globalSettings: { theme, ...dark ? { appMode: "dark" } : {} }
-  });
-  return { app_id: args.app_id, version_id: args.version_id, ...dark ? { app_mode: "dark" } : {} };
-}
-function requireValue(value, label) {
-  if (value === void 0)
-    throw new Error(`manage_theme requires ${label} for this action.`);
-  return value;
-}
-async function readTheme(client, themeId) {
-  const theme = (await client.listAppThemes()).find((candidate) => candidate.id === themeId);
-  if (!theme)
-    throw new Error(`Theme "${themeId}" is not available in the active workspace.`);
-  return theme;
-}
-function manageThemeTool(client) {
-  return {
-    name: "manage_theme",
-    title: "Manage Workspace Theme",
-    // list/create/rename are safe, but the same tool also deletes a theme, so the hint covers its widest action.
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: true
-    },
-    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. create with app_id and version_id also applies the theme to that app (in dark mode when its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same name, so there is no need to list themes first. Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass include_definitions:true (or theme_id) to get a definition.",
-    inputSchema: {
-      action: external_exports.enum(["list", "create", "set_default", "update_definition", "rename", "delete"]),
-      theme_id: external_exports.string().uuid().optional(),
-      name: external_exports.string().trim().min(1).max(100).optional(),
-      definition: themeDefinition.optional(),
-      is_default: external_exports.boolean().optional(),
-      confirm: external_exports.boolean().optional(),
-      include_definitions: external_exports.boolean().optional(),
-      app_id: external_exports.string().uuid().optional().describe("create only: apply the theme to this app as well"),
-      version_id: external_exports.string().uuid().optional().describe("create only, with app_id: the app version to apply it to")
-    },
-    async handler(args) {
-      try {
-        if (args.action === "list") {
-          const themes = await client.listAppThemes();
-          if (args.include_definitions)
-            return ok({ themes });
-          if (args.theme_id) {
-            const one = themes.find((theme) => theme.id === args.theme_id);
-            return one ? ok({ themes: [one] }) : fail(new Error(`Theme "${args.theme_id}" not found.`));
-          }
-          return ok({
-            themes: themes.map(({ id, name, isDefault, isBasic, isDisabled }) => ({ id, name, isDefault, isBasic, isDisabled })),
-            note: "Definitions omitted; pass include_definitions:true or theme_id to read one."
-          });
-        }
-        if (args.action === "create") {
-          const name = requireValue(args.name, "name");
-          if (name.length < 5)
-            throw new Error("Theme name must contain at least 5 characters.");
-          if (name === "ToolJet")
-            throw new Error('The reserved theme name "ToolJet" cannot be used.');
-          const existing = (await client.listAppThemes()).find((theme) => theme.name === name && !theme.isDisabled);
-          if (existing) {
-            const applied = await applyToApp(client, existing, args, existing.definition ?? args.definition);
-            return ok({
-              theme: existing,
-              reused: true,
-              ...applied ? { applied } : {},
-              warnings: [
-                `Theme "${name}" already exists in this workspace; returned it instead of creating a duplicate. ` + (applied ? "It is applied to the app." : "Apply it with update_app_settings, or use update_definition to change it.")
-              ]
-            });
-          }
-          try {
-            const created = await client.createAppTheme({
-              name,
-              definition: requireValue(args.definition, "definition"),
-              isDefault: args.is_default ?? false
-            });
-            const applied = await applyToApp(client, created, args, args.definition);
-            return ok({ theme: created, ...applied ? { applied } : {} });
-          } catch (error) {
-            if (error instanceof ToolJetHttpError && error.status === 451) {
-              return ok({
-                theme: null,
-                licensed: false,
-                user_message: THEME_LICENCE_USER_MESSAGE,
-                warnings: [
-                  "Custom themes are not included in this ToolJet plan (HTTP 451). The app keeps the workspace default theme. Do not retry theme creation or guess a theme id; build the app on the default theme and repeat `user_message` to the user in the closing handoff."
-                ]
-              });
-            }
-            throw error;
-          }
-        }
-        const themeId = requireValue(args.theme_id, "theme_id");
-        await readTheme(client, themeId);
-        if (args.action === "set_default") {
-          await client.setDefaultAppTheme(themeId, args.is_default ?? true);
-          return ok({ theme: await readTheme(client, themeId) });
-        }
-        if (args.action === "update_definition") {
-          await client.updateAppThemeDefinition(themeId, requireValue(args.definition, "definition"));
-          return ok({ theme: await readTheme(client, themeId) });
-        }
-        if (args.action === "rename") {
-          await client.renameAppTheme(themeId, requireValue(args.name, "name"));
-          return ok({ theme: await readTheme(client, themeId) });
-        }
-        if (args.confirm !== true) {
-          throw new Error(`Deleting theme "${themeId}" requires confirm:true after exact-target user approval.`);
-        }
-        await client.deleteAppTheme(themeId);
-        return ok({ deleted: true, theme_id: themeId });
-      } catch (error) {
-        return fail(error);
       }
     }
   };
@@ -921,17 +750,6 @@ async function resolveTheme(client, choice) {
     throw new Error(`Theme "${named.name}" is disabled and cannot be selected.`);
   return named;
 }
-function paintsDarkCanvasInLightMode(definition) {
-  const light = definition?.surface?.colors?.appBackground?.light;
-  const hex = typeof light === "string" ? /^#([0-9a-f]{6})$/i.exec(light.trim())?.[1] : void 0;
-  if (!hex)
-    return false;
-  const [r, g, b] = [0, 2, 4].map((at) => {
-    const channel = parseInt(hex.slice(at, at + 2), 16) / 255;
-    return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.18;
-}
 function createAppTool(client) {
   return {
     name: "create_app",
@@ -939,7 +757,7 @@ function createAppTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: 'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, app_url (a backward-compatible alias for editor_url), and the theme that was applied. Honor explicit or selected themes first. Otherwise derive a theme from a brand, industry or customer type (see references/themes.md) and pass theme:{name, definition}; include complete brand, text, border, systemStatus and surface tokens with light/dark values, not a font-only or partial definition. It is created once per workspace by name and applied. Otherwise the app gets the standard theme ("ToolJet Modern": neutral greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. If a theme cannot be created (for example a licence gate) the app is still created and the result carries a theme warning.',
     inputSchema: {
@@ -986,7 +804,7 @@ function createAppVersionTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Create a new draft version of an existing ToolJet app by cloning a specified source version. Returns the app_id, new version_id, version_name, source_version_id, and available version metadata; Conflicts fail without adopting an existing draft, including after a timeout. Before editing, inspect the returned version_id for its cloned resource IDs. The agent and ToolJet editor automatically switch to the newly created version after success. Version names must be unique within the app.",
     inputSchema: {
@@ -1014,7 +832,7 @@ function switchAppVersionTool(client) {
   return {
     name: "switch_app_version",
     title: "Switch App Version",
-    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     description: "Select an existing ToolJet app version as the version the current editor should open and subsequent agent edits should target. Use only when the user explicitly asks to switch, select, open, or work on that version. This does not publish or release the version. Returns verified version and environment metadata that the ToolJet client uses to switch the editor.",
     inputSchema: { app_id: external_exports.string().uuid(), version_id: external_exports.string().uuid() },
     strictInput: true,
@@ -1034,7 +852,7 @@ function releaseAppTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Release a specific ToolJet app version so it becomes the app's live released version. Use only when the user explicitly asked to release or publish the app, and pass confirm:true. The operation publishes a draft when necessary and promotes it one environment at a time until it reaches production when the workspace requires it, then releases only that exact version. It is safe to retry after a transient preparation failure. Returns a verified current_version_id after reading the app back.",
     inputSchema: {
@@ -1058,7 +876,8 @@ function getAppSettingsTool(client) {
     title: "Get App Settings",
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true
+      destructiveHint: false,
+      openWorldHint: false
     },
     description: "Read the current editing version's compact app-wide visual settings: canvas background/width/mode, selected theme, header/logo/title, and navigation visibility/layout. Use before update_app_settings; this omits theme definitions and other large raw app data. Set include_libraries for bounded, read-only JavaScript library configuration and RunJS scope guidance before authoring library-dependent queries; this never loads or executes code.",
     inputSchema: {
@@ -1088,7 +907,8 @@ function listAppThemesTool(client) {
     title: "List App Themes",
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true
+      destructiveHint: false,
+      openWorldHint: false
     },
     description: "List compact workspace themes available for app settings. Disabled themes are returned but cannot be selected by update_app_settings. Theme definitions are intentionally omitted to keep discovery small.",
     inputSchema: {},
@@ -1159,7 +979,7 @@ function updateAppSettingsTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Patch app-wide visual settings on the current editing version in one version update, then read them back. Supports canvas background/width/mode, a theme selected from list_app_themes, header/logo/title, and navigation visibility/layout. hide_header controls the app header/banner. The separate generated page-navigation menu can be positioned on the side or top; navigation_hidden hides that entire menu in either position. To hide only one non-Home page from that menu, use update_pages.hidden. Omitted fields are preserved. Every requested field is read back; the tool returns an error instead of success if any field did not persist.",
     inputSchema: {
@@ -1248,7 +1068,8 @@ function listDatasourcesTool(client) {
     title: "List Datasources",
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true
+      destructiveHint: false,
+      openWorldHint: false
     },
     description: "List AI-eligible workspace-connected datasources. The shared Sample data source is excluded and must never be used by AI. Includes the built-in ToolJet-DB datasource (kind 'tooljetdb') to use as the datasource_id for add_query. These sources appear automatically in both existing and newly created apps; there is no per-app attach/link step. If an expected source is absent, check workspace, permissions, connection, and environment configuration. Each returned source includes settings_url for user-assisted connection repair; never enter credentials or save changes for the user. Returns {datasources, connectable}: `datasources` are the connected ones (use their id for add_queries), `connectable` names every source ToolJet CAN connect. A source the user named that is in `connectable` but not in `datasources` needs connecting; one in neither has no ToolJet connector and has to go through a REST API datasource pointed at its HTTP API. Pass the actual app version_id: for a new app, create_app must return it before this call.",
     inputSchema: {
@@ -1275,7 +1096,8 @@ function listTablesTool(client) {
     title: "List ToolJet DB Tables",
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true
+      destructiveHint: false,
+      openWorldHint: false
     },
     description: "List the ToolJet-DB tables in the workspace as { tables: [{ id, table_name }], total, shown }. A ToolJet-DB (tooljetdb) query's options require the table's `id` as `table_id` (NOT the table name) \u2014 call this to resolve a table name to its id before add_query. Pass `search` (a case-insensitive substring, usually the app's table prefix) so a busy workspace does not return hundreds of unrelated tables; at most `limit` rows come back (default 100).",
     inputSchema: {
@@ -1327,7 +1149,7 @@ function createTableTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Create a ToolJet-DB table. Give table_name and columns (name, type, optional primaryKey/notNull/unique/defaultValue/configurations). Optional foreign_keys supports single or composite relationships with columns, referencedTable, referencedColumns, onDelete, and onUpdate. Types accept tjdb values or friendly aliases: string, integer, number, bigint, boolean, timestamp, json, serial. Known ToolJet DB reserved column names are rejected locally with a rename suggestion before any API request. If no column is marked primaryKey, a serial `id` primary key is added automatically. Returns { table_id, table_name }. For a NEW app, confirm the data model with the user before creating tables.",
     inputSchema: {
@@ -1376,7 +1198,7 @@ function createTablesTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Create multiple ToolJet-DB tables in one call. The complete batch is preflighted before writes for duplicate/reserved names, foreign-key column mistakes, and circular dependencies. Tables are then created in dependency order, with independent tables created in batches of at most four; a failed batch stops further creation. Returns {tables}. ToolJet has no atomic multi-table endpoint: if an upstream request fails, the error names any tables already created; MCP never deletes them automatically.",
     inputSchema: { tables: external_exports.array(tableSchema).min(1).max(50) },
@@ -1440,7 +1262,7 @@ function addTableColumnTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Add one column to an existing ToolJet DB table without recreating it. Supports the same type aliases, constraints, default/configuration metadata, and optional foreign-key shape as create_table. Read the current schema with get_table_schema first. Existing rows must be compatible with non-null/default constraints.",
     inputSchema: {
@@ -1468,7 +1290,7 @@ function dropTableColumnTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Permanently drop a ToolJet DB column and its stored values. This is destructive. Inspect the schema and query/component bindings first, obtain explicit user approval, then pass confirm:true in that same approved operation.",
     inputSchema: {
@@ -1492,7 +1314,7 @@ function dropTableTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Permanently drop a ToolJet DB table and all its rows. This is destructive. Inspect dependent queries/components, obtain explicit user approval for the named table, then pass confirm:true in that same approved operation.",
     inputSchema: {
@@ -1514,7 +1336,8 @@ function getTableSchemaTool(client) {
     title: "Get Table Schema",
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true
+      destructiveHint: false,
+      openWorldHint: false
     },
     description: "Get a ToolJet-DB table's columns, including primary/not-null/unique constraints, defaults, configurations, and foreign-key relationships. Use before building queries, columns, forms, or filters on an existing table, or to verify a table you just created.",
     inputSchema: { table_name: external_exports.string() },
@@ -1535,7 +1358,7 @@ function insertRowsTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Seed rows into a ToolJet-DB table (so a generated app is not empty). rows is an array of objects keyed by column name. Omit generated serial primary keys so ToolJet uses the table sequence. This is insert-only: explicit duplicate keys fail instead of updating existing rows. Returns { processed_rows }. Optional: only seed when the user wants sample data.",
     inputSchema: {
@@ -1563,7 +1386,7 @@ function insertRowsBatchTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Seed multiple ToolJet-DB tables in one call. Entries are processed in the listed order so parent rows can be inserted before foreign-key children. Writes are insert-only: omit generated serial keys; explicit duplicate keys fail rather than updating rows. Returns {tables:[{table_name,processed_rows}],processed_rows}. A partial failure reports completed table/row counts; do not retry completed seeds. Keep initial demo data representative and small; each table payload is capped at 40 rows so large fixtures must be split across compact calls.",
     inputSchema: { tables: external_exports.array(seedSchema).min(1).max(50) },
@@ -1687,6 +1510,7 @@ function getComponentCatalogTool(client) {
     // Served from the bundled catalog in data/; never reaches the ToolJet instance.
     annotations: {
       readOnlyHint: true,
+      destructiveHint: false,
       openWorldHint: false
     },
     description: 'Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one component or types for a batch needed in the current page/phase. Typed reads default to detail:"compact" and the overview/properties/events/actions sections; compact property/style lists omit labels and defaults. Use detail:"full" or exact property_keys/style_keys only when those values are needed. Request renderingHints/authoringHints for layout-sensitive or nested components. Use requests when different types need different sections/keys in one call; top-level detail/sections/keys apply as defaults to every requested type, and the type/types/requests selectors may be combined. sections selects only overview, properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. GridView is a lookup alias for Listview mode:"grid"; component writes must still use type:"Listview". authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar contracts once and reuse them; never guess property/event/action ids.',
@@ -1791,7 +1615,7 @@ var requestSchema = external_exports.object({
   kind: external_exports.string().optional(),
   datasource_id: external_exports.string().optional(),
   version_id: external_exports.string().optional(),
-  operation: external_exports.string().optional(),
+  operation: external_exports.string().describe("Catalog filter only: return the schema for this operation; never execute it.").optional(),
   sections: external_exports.array(external_exports.enum(SECTIONS)).min(1).optional()
 });
 async function resolveKind(client, request, fallbackVersionId, datasourceCache = /* @__PURE__ */ new Map()) {
@@ -1835,14 +1659,15 @@ function getDatasourceQuerySchemaTool(client) {
     title: "Get Datasource Query Schema",
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true
+      destructiveHint: false,
+      openWorldHint: false
     },
-    description: "Get compact, operation-specific request contracts plus response shape/status when known. Unknown and runtime-dependent responses are labelled explicitly so callers know when a safe run or remote schema is still required. Call with no selector for the datasource palette; select by `kind`, or by `datasource_id` + `version_id` to resolve the kind automatically. Pass `operation` to avoid loading unrelated branches. `sections` defaults to summary/request/response for one operation; request raw plugin UI metadata only for diagnostics. `requests` batches up to 10 contracts; any top-level fields (kind/datasource_id/version_id/operation/sections) act as defaults for every entry, so mixing top-level and `requests` is fine.",
+    description: "Read datasource authoring metadata from the bundled catalog. This tool never invokes a datasource operation, creates a query, or executes SQL/API requests. Get compact, operation-specific request contracts plus response shape/status when known. Unknown and runtime-dependent responses are labelled explicitly so callers know when a safe run or remote schema is still required. Call with no selector for the datasource palette; select by `kind`, or by `datasource_id` + `version_id` to resolve the kind automatically. Pass `operation` to avoid loading unrelated branches. `sections` defaults to summary/request/response for one operation; request raw plugin UI metadata only for diagnostics. `requests` batches up to 10 contracts; any top-level fields (kind/datasource_id/version_id/operation/sections) act as defaults for every entry, so mixing top-level and `requests` is fine.",
     inputSchema: {
       kind: external_exports.string().optional(),
       datasource_id: external_exports.string().optional(),
       version_id: external_exports.string().optional(),
-      operation: external_exports.string().optional(),
+      operation: external_exports.string().describe("Catalog filter only: return the schema for this operation; never execute it.").optional(),
       sections: external_exports.array(external_exports.enum(SECTIONS)).min(1).optional(),
       requests: external_exports.array(requestSchema).min(1).max(10).optional()
     },
@@ -1903,6 +1728,7 @@ function testDatasourceConnectionTool(client) {
     // Probes reachability; changes nothing on either side.
     annotations: {
       readOnlyHint: true,
+      destructiveHint: false,
       openWorldHint: true
     },
     description: "Run ToolJet's own connection test for one ALREADY-CONNECTED datasource \u2014 the same check the datasource settings page performs. Uses the datasource's stored credentials; you never supply, see, or need them. Use it to distinguish a broken connection from a wrong query when a run fails, or to confirm a source before building on it. Returns supported:false for datasource kinds whose plugin does not implement a connection test (REST API, GraphQL, and most OAuth/HTTP integrations) \u2014 that is not a fault and says nothing about the connection. On a real failure, hand the returned settings_url to the user for repair; never enter credentials or save settings for them.",
@@ -2143,7 +1969,8 @@ function prepareSqlDiscoveryQueriesTool(client) {
     // Returns query specs; deliberately neither creates nor runs them.
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true
+      destructiveHint: false,
+      openWorldHint: false
     },
     description: "Prepare\u2014but do not create or run\u2014read-only SQL query specs for a connected SQL datasource. Produces add_queries-compatible count, explicit-column bounded preview/distinct, and verified metadata queries for primary keys, foreign keys, indexes, and views where the dialect is curated. It never emits SELECT *; preview/distinct limits are hard-capped at 100. Add the returned specs in one add_queries call, then use run_query under its count/large/billable-read safeguards.",
     inputSchema: {
@@ -2365,7 +2192,8 @@ function generateFormSchemaTool(client) {
     // Reads a table’s schema and returns a property block; places nothing.
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true
+      destructiveHint: false,
+      openWorldHint: false
     },
     description: "Generate a ready-to-place ToolJet Form property block from an existing ToolJet DB table only when every selected field maps to textinput, number, emailinput, password, datepicker, or checkbox. Mixed schemas needing dropdown, multiselect, textarea, radio, toggle, starrating, or filepicker are rejected with the standalone-component workaround because FormUtils cannot render them with clean, controllable alignment.",
     inputSchema: {
@@ -2419,7 +2247,8 @@ function getAppTool(client) {
     title: "Get App",
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true
+      destructiveHint: false,
+      openWorldHint: false
     },
     description: "Fetch the FULL raw ToolJet app by id (pages, versions, every component with its complete widget schema). This is large (100KB+ for a real app) \u2014 for routine inspection prefer get_app_summary, which returns the same structure with actual values only. Use get_app only when you need raw fields the summary omits.",
     inputSchema: {
@@ -2569,7 +2398,8 @@ function getAppSummaryTool(client) {
     title: "Get App Summary",
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true
+      destructiveHint: false,
+      openWorldHint: false
     },
     description: `Selective, bounded inspection of an app \u2014 use this instead of get_app. Pass version_id after create_app_version to inspect that exact version instead of the server's default editing version. By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. Field roots: app(app_id/name/version_id), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component(id/name/type/layouts/properties/styles/validation/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.`,
     inputSchema: {
@@ -2669,7 +2499,8 @@ function getComponentTool(client) {
     title: "Get Component",
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true
+      destructiveHint: false,
+      openWorldHint: false
     },
     description: "Fetch ONE placed component by id \u2014 its actual bound values only: { id, name, type, page_id, layouts, properties, styles, validation, others }. Includes actual native input validation. Cheaper than get_app_summary when you only need to inspect or diff a single component before update_component.",
     inputSchema: {
@@ -2692,7 +2523,8 @@ function validateAppTool(client) {
     title: "Validate App",
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true
+      destructiveHint: false,
+      openWorldHint: false
     },
     description: "Validate persisted app structure and saved query contracts WITHOUT executing queries or opening a browser. Pass version_id after create_app_version to validate that exact version. Returns an explicit checked/not_checked scope plus { ok, errors, warnings }. Catches: dangling event references (event on a deleted component/query, run-query pointing at a missing query), ambiguous duplicate component/query names, bindings to non-existent queries/components ({{queries.X}} / {{components.X}} with no such X), and per-component render traps (Table bound without rawJson, malformed DropdownV2 options, invalid static Chart JSON, Chart left with its clipping default title, bad headerCasing). Run it before you call the app done (then still do the one browser pass). `errors` are broken references or invalid persisted contracts you should fix; `warnings` are likely render problems worth checking. A clean result does NOT prove external APIs, mutations, event delivery, or visual rendering work; run explicitly selected safe reads and browser-test primary flows.",
     inputSchema: {
@@ -2726,7 +2558,7 @@ function addPageTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: 'Add a page to an app. Returns { page_id, name }; pass that page_id to add_component(s) to place components on it. ToolJet auto-renders a left-sidebar navigation menu across pages, so you get page switching for free. Use multiple pages when it genuinely helps (e.g. list + detail, or separate dashboard/admin views) \u2014 don\'t fragment a simple app across many pages. A relevant `icon` is required (a Tabler icon name, e.g. "IconLayoutDashboard", "IconUsers", "IconChartBar", "IconSettings") so every added page reads clearly in the sidebar. The auto-created Home page already falls back to IconHome2; missing or invalid names render a generic fallback rather than the intended icon. Set `hidden: true` for a page that is opened ONLY from another page (e.g. a detail page reached by row-click \u2192 switch-page) \u2014 it stays fully reachable but is removed from the sidebar nav so the menu stays clean.',
     inputSchema: {
@@ -2763,7 +2595,7 @@ function addPagesTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Add multiple pages to an app in one call. Names/handles are preflighted together, page order follows the input order, and sidebar icon/hidden metadata is persisted and verified with one final readback. Every page requires a relevant Tabler icon; set hidden:true for detail pages reached only through navigation. Returns {pages}. ToolJet has no page bulk transaction: a rare partial failure names every persisted page; do not retry the whole batch or auto-delete those pages.",
     inputSchema: {
@@ -2799,7 +2631,7 @@ function updatePagesTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Update existing page sidebar metadata and/or reorder pages, with one final readback verification. Use updates to rename pages, set a relevant Tabler icon, or toggle one non-Home page in the menu. The Home page can be renamed, restyled, and reordered, but cannot be hidden. To hide or show the entire generated navigation menu, use update_app_settings.navigation_hidden instead. Use order only with the complete ordered list of every current page id (available from create_app/get_app_summary); partial orders are rejected to prevent duplicate indexes.",
     inputSchema: {
@@ -2834,7 +2666,7 @@ function deletePageTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Permanently delete one non-Home page and its components. This is destructive: inspect the target, obtain explicit user approval for the named page, then pass confirm:true. The tool refuses pages still targeted by events outside that page, because ToolJet does not safely retarget those references. Group-wide deletion is disabled because ToolJet does not return a verifiable child-page deletion set; delete each inspected and approved page separately.",
     inputSchema: {
@@ -2897,7 +2729,7 @@ function addQueryTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Create a query on an app version's datasource (ANY datasource \u2014 ToolJet DB, Postgres, RunJS, ServiceNow, \u2026). The query kind is resolved from datasource_id. Options are contract-validated before the write; known-invalid operations/missing required fields block, while unknown keys are returned in `warnings` because ToolJet may silently drop them. Call get_datasource_query_schema with datasource_id + version_id + operation first.",
     inputSchema: {
@@ -2954,7 +2786,7 @@ function addQueriesTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Create MANY queries in a single call (all share version_id). Prefer this over repeated add_query when building an app. Each query names its own datasource_id and options. Call get_datasource_query_schema for the operations you use before constructing those options. The batch resolves datasource kinds once, contract-validates every query before any writes, and returns {queries,warnings,validation}. ToolJet has no query bulk transaction: a rare partial failure names every persisted query; do not retry the whole batch. Creates are serialized per version within this MCP client. Optional client_ref aliases declared in this batch are resolved in its query bindings/RunJS when unambiguous; existing runtime names take precedence.",
     inputSchema: {
@@ -3036,7 +2868,7 @@ function addComponentTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: 'Place a component on an app page. `name` is required. A Table binds data via properties.data.value = "{{queries.<queryName>.data}}". Property/style/validation/other leaves may be supplied as concise raw values or canonical `{ value: ... }` envelopes; MCP persists the canonical ToolJet shape. ' + COMPONENT_FX_GUIDANCE + "IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, \u2026) in the top-level `styles` object, NOT under `properties` \u2014 ToolJet silently ignores styles nested in properties (and this tool will reject them). Provide either `layout` (one rectangle applied to both resolutions) or `layouts:{desktop,mobile}` for per-resolution placement. Kanban automatically gets its catalog card children; use add_components with client_ref/parent_ref when you need a custom card body such as wrapped Html.",
     inputSchema: {
@@ -3116,7 +2948,7 @@ function addComponentsTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Place MANY components on one page in a single call (all share app_id/version_id/page_id). Prefer this over repeated add_component when building an app \u2014 it is one request. Returns [{ component_id, name }]. Note: the batch is atomic \u2014 if one component is invalid (e.g. missing name), the whole call fails; fix that component and retry. Property/style/validation/other leaves may be supplied as concise raw values or canonical `{ value: ... }` envelopes; MCP persists the canonical ToolJet shape. " + COMPONENT_FX_GUIDANCE + 'IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, \u2026) in each component\u2019s top-level `styles` object, NOT under `properties` \u2014 ToolJet silently ignores styles nested in properties (and this tool will reject them). Provide either `layout` (one rectangle for both resolutions) or `layouts:{desktop,mobile}`. To create a modal/container and its children atomically, give the parent a unique `client_ref` and each child the matching `parent_ref`; child bindings may also use unique client_ref aliases declared in this batch; MCP resolves them to runtime names when existing names can be checked, without overriding an existing runtime name. coordinates are relative to that parent, with a fresh 43-column grid in each nested canvas. A full-row child uses width 43 even in a narrow parent. Container/Form/modal slots may use left 2, width 39 for insets; grid-mode Listview full rows use left 0, width 43. For ModalV2/Form/Container native regions, set child `slot_name` to `header`, `body`, or `footer`; body is the default. A Kanban with no explicit child automatically gets its catalog card children so cards are not blank; supplying a child with its `parent_ref` suppresses those defaults (use Html for wrapped multi-line card content). For the Kanban card-click modal, parent its detail controls to the Kanban with slot_name:"modal"; these do not replace card children.',
     inputSchema: {
@@ -3184,7 +3016,7 @@ function addComponentBatchesTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Place complete component batches on 2\u201320 pages concurrently. MCP normalizes and lints every page before any write, then sends one atomic ToolJet component request per page in parallel. Use add_components for one page. Cross-page bindings may use unique client_ref aliases declared in this batch; existing runtime names take precedence. Cross-page creation is not transactional because ToolJet has no multi-page component endpoint; an upstream partial failure names the completed and failed pages so it can be repaired in place. " + COMPONENT_FX_GUIDANCE,
     inputSchema: {
@@ -3241,6 +3073,198 @@ function addComponentBatchesTool(client) {
     }
   };
 }
+var DEFINITION_SECTIONS = ["properties", "styles", "validation", "general", "general_styles", "others"];
+var definitionSchema = strictEntry({
+  properties: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  general: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  general_styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  others: external_exports.record(external_exports.string(), external_exports.any()).optional()
+}, (key) => key === "layout" || key === "layouts" ? `definition."${key}" is not a component definition section; move/resize with update_layout instead.` : `definition."${key}" is not a component definition section; use one of ${DEFINITION_SECTIONS.join("/")}.`);
+var updateSchema2 = strictEntry({
+  component_id: external_exports.string(),
+  definition: definitionSchema.optional(),
+  name: componentNameSchema.optional(),
+  parent: external_exports.string().optional(),
+  slot_name: componentSlotSchema.optional()
+}, (key) => {
+  if (DEFINITION_SECTIONS.includes(key)) {
+    return `Update entry key "${key}" must be nested under \`definition\` (e.g. { component_id, definition: { ${key}: {...} } }); top-level ${key} would write nothing.`;
+  }
+  if (key === "layout" || key === "layouts") {
+    return `Update entry key "${key}" is not accepted by update_components; move/resize with update_layout instead.`;
+  }
+  return `Unknown update entry key "${key}"; accepted keys are component_id, definition, name, parent, slot_name.`;
+});
+function updateComponentsTool(client) {
+  return {
+    name: "update_components",
+    title: "Update Components",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: false
+    },
+    description: "Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves under `definition` (properties/styles/validation/others) \u2014 ToolJet deep-merges, so untouched values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. " + COMPONENT_FX_UPDATE_GUIDANCE + "NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container regions, or modal for Kanban card-click content; omit parent to keep the current parent. Unknown entry keys are rejected (a top-level properties/styles patch is an error, not a silent no-op), and an entry that changes nothing fails. Get component ids + current values from get_app_summary / get_component.",
+    inputSchema: {
+      app_id: external_exports.string(),
+      version_id: external_exports.string(),
+      page_id: external_exports.string(),
+      updates: external_exports.array(updateSchema2).min(1)
+    },
+    async handler(args) {
+      try {
+        const summary = await client.getAppSummary(args.app_id);
+        const page = summary.pages.find((candidate) => candidate.id === args.page_id);
+        if (!page)
+          return fail(new Error(`Page "${args.page_id}" does not exist in app "${args.app_id}".`));
+        const projected = new Map(page.components.map((component) => [component.id, component]));
+        const warnings = [];
+        const errors = [];
+        const changedComponents = [];
+        let placementChanged = false;
+        const layoutFixes = [];
+        const resolvedUpdates = [];
+        for (const update of args.updates) {
+          if (update.name !== void 0) {
+            const nameError = componentNameError(update.name);
+            if (nameError) {
+              errors.push(`Component "${update.component_id}": ${nameError}`);
+              continue;
+            }
+          }
+          const resolution = resolveRef(page.components, update.component_id, "Component", `on page "${args.page_id}"`);
+          if (!resolution.ok) {
+            errors.push(resolution.error);
+            continue;
+          }
+          if (resolution.warning)
+            warnings.push(resolution.warning);
+          const current = resolution.target;
+          const componentId = current.id;
+          if (update.definition && (update.name !== void 0 || update.parent !== void 0 || update.slot_name !== void 0)) {
+            errors.push(`Component "${update.component_id}": set EITHER definition OR name/parent/slot_name in one entry.`);
+            continue;
+          }
+          if (!hasNonEmptyDefinition(update.definition) && update.name === void 0 && update.parent === void 0 && update.slot_name === void 0) {
+            errors.push(`Component "${update.component_id}": nothing to update. Send the changed leaves under definition (properties/styles/validation/others) or a name/parent/slot_name change.`);
+            continue;
+          }
+          let parent = update.parent;
+          let slotName = update.slot_name;
+          if (slotName !== void 0) {
+            parent ??= current.parent ? decodeComponentParent(current.parent).parentId : void 0;
+            if (!parent) {
+              if (slotName === "body") {
+                warnings.push(`Component "${update.component_id}": slot_name:"body" ignored on a root component (it has no parent slots).`);
+                slotName = void 0;
+              } else {
+                errors.push(`Component "${update.component_id}": slot_name:"${slotName}" requires an existing or explicit parent.`);
+                continue;
+              }
+            }
+          }
+          const definition = update.definition;
+          const next = {
+            id: current.id,
+            name: update.name ?? current.name ?? current.id,
+            type: current.type,
+            properties: { ...current.properties ?? {}, ...definition?.properties ?? {} },
+            styles: { ...current.styles ?? {}, ...definition?.styles ?? {} },
+            layouts: current.layouts,
+            parent: parent !== void 0 ? encodeComponentParent(parent, slotName) : current.parent,
+            slotName
+          };
+          const normalized = normalizeComponentSpec({
+            name: next.name ?? current.id,
+            type: next.type ?? current.type ?? "",
+            properties: next.properties ?? {},
+            styles: next.styles,
+            validation: definition?.validation,
+            others: { ...current.others ?? {}, ...definition?.others ?? {} },
+            layouts: next.layouts,
+            parent: next.parent
+          });
+          const normalizedNext = { ...normalized.component, id: current.id };
+          const heightFix = update.definition ? suggestedHtmlHeight(normalizedNext) : null;
+          const desktopRect = current.layouts?.desktop;
+          if (heightFix && desktopRect && typeof desktopRect.top === "number") {
+            normalizedNext.layouts = { ...normalizedNext.layouts ?? {}, desktop: { ...desktopRect, height: heightFix.to } };
+            layoutFixes.push({ componentId: current.id, desktop: { ...desktopRect, height: heightFix.to } });
+            warnings.push(`Html "${normalizedNext.name ?? current.id}" needed about ${heightFix.needed}px for its new markup but was ${heightFix.from}px; its height is now ${heightFix.to}px. Anything within ${heightFix.to - heightFix.from}px below it now overlaps; move it down.`);
+          }
+          projected.set(current.id, normalizedNext);
+          if (update.definition)
+            changedComponents.push({ before: current, after: normalizedNext });
+          placementChanged ||= update.parent !== void 0 || update.slot_name !== void 0;
+          warnings.push(...onlyTouchedBraceNotes(normalized.warnings, definition));
+          let normalizedDefinition = update.definition;
+          if (update.definition && Object.keys(normalized.patch).length) {
+            normalizedDefinition = { ...update.definition };
+            for (const section of ["properties", "styles", "validation", "others"]) {
+              const sectionPatch = normalized.patch[section];
+              if (!sectionPatch)
+                continue;
+              normalizedDefinition[section] = {
+                ...update.definition[section] ?? {},
+                ...sectionPatch
+              };
+            }
+          }
+          resolvedUpdates.push({
+            componentId,
+            definition: normalizedDefinition,
+            name: update.name,
+            parent,
+            slotName: update.slot_name
+          });
+          if (!update.definition)
+            continue;
+          errors.push(...introducedLintFindings(lintComponentSpec(current).errors, lintComponentSpec(normalizedNext).errors));
+          warnings.push(...introducedLintFindings(lintComponentSpec(current).warnings, lintComponentSpec(normalizedNext).warnings));
+        }
+        const allComponents = [...projected.values()];
+        const introducedForChanged = (lint2) => changedComponents.flatMap(({ before, after }) => introducedLintFindings(lint2([before]), lint2([after])));
+        if (placementChanged) {
+          errors.push(...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(allComponents)));
+        }
+        errors.push(...introducedForChanged(lintUnusableTextGeometry));
+        if (errors.length)
+          return fail(new Error(`${errors.join(" ")} (Nothing was saved: refused before any write.)`));
+        warnings.push(...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)));
+        warnings.push(...introducedForChanged(lintTextGeometry));
+        warnings.push(...lintRenderedGeometry(allComponents));
+        warnings.push(...lintKanbanInteractions(allComponents));
+        const result = await client.updateComponents({
+          appId: args.app_id,
+          versionId: args.version_id,
+          pageId: args.page_id,
+          updates: resolvedUpdates
+        });
+        if (layoutFixes.length) {
+          await client.updateLayouts({ appId: args.app_id, versionId: args.version_id, pageId: args.page_id, layouts: layoutFixes });
+        }
+        return ok({ ...result, warnings: [...new Set(warnings)] });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+function onlyTouchedBraceNotes(warnings, definition) {
+  const touched = /* @__PURE__ */ new Set([
+    ...Object.keys(definition?.properties ?? {}).map((key) => `properties.${key}`),
+    ...Object.keys(definition?.styles ?? {}).map((key) => `styles.${key}`)
+  ]);
+  return warnings.flatMap((warning) => {
+    const m = /^(.*?: separated adjacent closing braces inside )(.+?)( \(ToolJet ends.*)$/s.exec(warning);
+    if (!m)
+      return [warning];
+    const keys = m[2].split(", ").filter((key) => touched.has(key));
+    return keys.length ? [`${m[1]}${keys.join(", ")}${m[3]}`] : [];
+  });
+}
 function deleteComponentsTool(client) {
   return {
     name: "delete_components",
@@ -3248,7 +3272,7 @@ function deleteComponentsTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Permanently remove named components from one page. Inspect the targets and obtain explicit approval, then pass confirm:true. The tool refuses surviving child components, component/query bindings, and external events that still reference a target. It verifies every requested id disappeared and never deletes dependencies automatically.",
     inputSchema: {
@@ -3360,7 +3384,7 @@ function updateLayoutTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Move / resize existing components (batch) without touching their properties. `left`/`width` are in the immediate parent canvas's own 43-column grid, including nested containers; `top`/`height` are pixels. Full rows use width 43, independent of the parent outer width. Container/Form/modal insets may use left 2, width 39; grid-mode Listview full rows use left 0, width 43. Provide desktop and/or mobile per component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` (header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent.",
     inputSchema: {
@@ -3505,7 +3529,7 @@ function addEventsTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Wire interactivity and lifecycle behavior to components, data queries, pages, or Table sub-elements. Each event uses { source_id, source_type: 'component'|'data_query'|'page'|'table_column', trigger, action }; component_id remains a shorthand for component sources. trigger is the component's event id (Button: 'onClick'; Table: 'onRowClicked'/'onSearch'/'onPageChanged'). For a modern Table Button column use source_id='<table id>', source_type='table_column', ref='<column key or name>::<button id>', trigger='onClick'. For a Navigation item use source_type='component', trigger='onClick', ref='<non-group menu item id>'; other ordinary components cannot use ref. Dynamic menu membership is reported as unverified. The legacy source_type='table_action' is accepted for existing deprecated properties.actions buttons only; do not use it for new apps. Query lifecycle triggers are 'onDataQuerySuccess' and 'onDataQueryFailure'; page load is 'onPageLoad'. action is { actionId, ...params } \u2014 use these EXACT ids (an invalid actionId silently does nothing):\n  \u2022 run a query:   { actionId: 'run-query', queryId: '<id>', queryName: '<name>' }\n  \u2022 switch page:   { actionId: 'switch-page', pageId: '<target page id>' }\n  \u2022 show alert:    { actionId: 'show-alert', message: '...', alertType: 'success'|'info'|'warning'|'error' }\n  \u2022 show/close modal: { actionId: 'show-modal', modal: '<id>' } / { actionId: 'close-modal', modal: '<id>' }\n  \u2022 set a custom variable: { actionId: 'set-custom-variable', key: 'selectedRow', value: '{{components.<table>.selectedRow}}' }  (id is set-custom-variable, NOT set-variable; read back as {{variables.selectedRow}})\n  \u2022 control a component:   { actionId: 'control-component', componentId: '<id>', componentSpecificActionHandle: '<get_component_catalog actions.handle>', componentSpecificActionParams: [{handle:'<required param>',value:'...'}] } (use [] for parameterless actions)\n  \u2022 reset/change a Table page: { actionId: 'set-table-page', table: '<Table component id>', pageIndex: '{{1}}' }\n  \u2022 other valid ids: unset-custom-variable, set-page-variable, copy-to-clipboard, generate-file, open-webpage, go-to-app, logout. generate-file CSV/plaintext works; PDF expects pre-formed PDF bytes and does not perform conversion.\nFor reliable mutations, let the submit/click event run only the mutation; attach refresh, success alert, reset/close actions to the mutation's onDataQuerySuccess and an error alert to onDataQueryFailure. For master\u2192detail, order handlers as set-custom-variable \u2192 optional run-query \u2192 switch-page. Navigation MUST be last because later same-trigger handlers do not run; a runOnPageLoad detail query does NOT re-run on page switch. Create all of an app's events in one call. MCP validates source existence, component-specific triggers, Table Button-column refs, action ids, and action targets before writing.",
     inputSchema: {
@@ -3562,7 +3586,7 @@ function addQueryLifecyclesTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Create standard mutation success/failure behavior for many queries in one call. For each query, declare refresh_query_ids, clear_component_ids, close_modal_id, success_alert, and/or failure_alert; MCP expands them into normal ordered ToolJet events, validates every source/target/action, then performs one bulk event write. Optional success_actions/failure_actions accept ordinary event action objects for uncommon extras. before_refresh_actions are dispatched before refresh_query_ids; success_actions remain after them. This is ordering, not a transaction or async completion guarantee: chain dependent writes via success events and refresh only after the final write. Use add_events for other ordering. This helper is datasource-neutral.",
     inputSchema: {
@@ -3621,7 +3645,7 @@ function updateQueryTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Change an existing query in place. `options` REPLACES the stored options wholesale \u2014 send the FULL options object, not a partial. Pass app_id so the existing query kind is resolved and options are validated. To repoint a query, also pass datasource_id; validation happens before the datasource changes, and MCP attempts to roll back the source if the subsequent option update fails. The query toggles (runOnPageLoad, runOnDependencyChange, requestConfirmation, showSuccessNotification) must be true or false on every call.",
     inputSchema: {
@@ -3738,7 +3762,7 @@ function deleteQueryTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Permanently delete one query. Inspect the target and obtain explicit approval, then pass app_id and confirm:true. The tool refuses component bindings, dependent query bindings, and external events that still reference it, verifies the query disappeared, and never deletes dependencies automatically.",
     inputSchema: {
@@ -3806,7 +3830,8 @@ function listEventsTool(client) {
     title: "List Events",
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true
+      destructiveHint: false,
+      openWorldHint: false
     },
     description: "List event handlers for a version, optionally filtered to one source (component/query id). Returns [{ id, name, index, event, sourceId, target }] where `event` is the { eventId(trigger), ref?, actionId, ...params } blob. target may be component, data_query, page, table_column, or legacy table_action. Table Button columns use ref=`<column key or name>::<button id>`. Use the ids with update_events / delete_event to fix or remove wiring without rebuilding.",
     inputSchema: {
@@ -3835,7 +3860,7 @@ function updateEventsTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: 'Edit existing event handlers (batch) \u2014 e.g. change an action or its params \u2014 instead of deleting and re-adding. For updateType "update" you MUST include `name` and the full `event` blob ({ eventId, actionId, ...params }) per entry (name becomes null if omitted). For "reorder" only `index` is used. Get event ids from list_events. Outer event_id identifies the saved handler; inner event.eventId is its trigger name (for example "onClick"), NOT the saved handler id.',
     inputSchema: {
@@ -3910,7 +3935,7 @@ function deleteEventTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Delete one event handler by id (from list_events). Use this to remove wiring that points at a deleted component/query, or to drop an action you added by mistake.",
     inputSchema: {
@@ -3932,7 +3957,7 @@ function deleteEventTool(client) {
     }
   };
 }
-var TOOLJET_MCP_VERSION = "0.11.1";
+var TOOLJET_MCP_VERSION = "0.12.0";
 function snapshot(path) {
   try {
     const stat = statSync(path);
@@ -3992,6 +4017,7 @@ function getRuntimeInfoTool(runtime) {
     // Reports this process’s own build identity; touches nothing outside it.
     annotations: {
       readOnlyHint: true,
+      destructiveHint: false,
       openWorldHint: false
     },
     description: "Return the loaded ToolJet MCP version/build identity and whether its on-disk runtime changed after process start. If restart_required is true, restart or reload the MCP/plugin host before using any other tool.",
@@ -4001,7 +4027,7 @@ function getRuntimeInfoTool(runtime) {
     }
   };
 }
-function requireValue2(value, label) {
+function requireValue(value, label) {
   if (value === void 0)
     throw new Error(`${label} is required for this action.`);
   return value;
@@ -4065,7 +4091,7 @@ function manageAppPermissionsTool(client) {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "List eligible subjects, inspect, set, or clear server-enforced access for one app page, query, or component. Use list_subjects first and exact ids from get_app_summary; users/groups must already have access to the app. set restricts access to the selected users or groups. clear broadens access to every user who can access the app. Mutations require confirm:true after the user explicitly requests the exact access rule. ToolJet license gates still apply.",
     inputSchema: {
@@ -4083,8 +4109,8 @@ function manageAppPermissionsTool(client) {
         if (args.action === "list_subjects") {
           return ok({ app_id: args.app_id, ...await client.listAppPermissionSubjects(args.app_id) });
         }
-        const resourceType = requireValue2(args.resource_type, "resource_type");
-        const resourceId = requireValue2(args.resource_id, "resource_id");
+        const resourceType = requireValue(args.resource_type, "resource_type");
+        const resourceId = requireValue(args.resource_id, "resource_id");
         const summary = await client.getAppSummary(args.app_id);
         const resource = findResource(summary, resourceType, resourceId);
         if (args.action === "get") {
@@ -4098,9 +4124,9 @@ function manageAppPermissionsTool(client) {
           await client.clearAppPermission(args.app_id, resourceType, resourceId);
           return ok({ app_id: args.app_id, resource, access: "all", permission_id: null });
         }
-        const accessType = requireValue2(args.access_type, "access_type");
+        const accessType = requireValue(args.access_type, "access_type");
         const subjectIds = accessType === "users" ? args.user_ids : args.group_ids;
-        requireValue2(subjectIds, accessType === "users" ? "user_ids" : "group_ids");
+        requireValue(subjectIds, accessType === "users" ? "user_ids" : "group_ids");
         if (accessType === "users" && args.group_ids !== void 0) {
           throw new Error("group_ids must be omitted when access_type is users.");
         }
@@ -4121,171 +4147,50 @@ function manageAppPermissionsTool(client) {
     }
   };
 }
-var userRole = external_exports.enum(["admin", "builder", "end-user"]);
-var userStatus = external_exports.enum(["active", "archived", "invited"]);
-var listWorkspaceAppsInput = external_exports.object({
-  page: external_exports.number().int().positive().optional(),
-  search_text: external_exports.string().trim().max(100).describe("Filter by app name.").optional(),
-  folder_id: external_exports.string().uuid().describe("Folder ID returned by list_workspace_folders.").optional()
-}).strict();
-var listWorkspaceFoldersInput = external_exports.object({
-  search_text: external_exports.string().trim().max(100).describe("Case-insensitive folder-name search.").optional()
-}).strict();
-function listWorkspaceAppsTool(client) {
-  return {
-    name: "list_workspace_apps",
-    title: "List Workspace Apps",
-    strictInput: true,
-    annotations: {
-      readOnlyHint: true,
-      openWorldHint: true
-    },
-    description: "List front-end apps in the workspace pinned to the current ToolJet connection, with pagination, app-name search, and optional folder_id filtering. Discover folder IDs with list_workspace_folders. Each app includes folders: [{id,name}] (empty when unfiled). The top-level folder describes the selected folder, or is null. meta.workspace_folder_count counts visible app folders; meta.folder_app_count counts matching apps in the selected folder (null without a folder filter). meta.total_count remains the workspace-wide count of matching apps even with folder_id; use meta.folder_app_count for the folder. This cannot inspect or switch to another workspace.",
-    inputSchema: listWorkspaceAppsInput.shape,
-    async handler(input) {
-      try {
-        const args = listWorkspaceAppsInput.parse(input);
-        return ok(await client.listWorkspaceApps({ page: args.page, searchText: args.search_text, folderId: args.folder_id }));
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-function listWorkspaceFoldersTool(client) {
-  return {
-    name: "list_workspace_folders",
-    title: "List Workspace Folders",
-    strictInput: true,
-    annotations: {
-      readOnlyHint: true,
-      openWorldHint: true
-    },
-    description: "List visible front-end app folders in the workspace pinned to the current ToolJet connection. Returns folders: [{id,name,app_count}] and meta.total_count (matching folders). app_count counts apps visible to you. search_text filters folder names, not app names. Includes empty folders when ToolJet permits you to see them. Pass a returned id as folder_id to list_workspace_apps to read that folder\u2019s apps with pagination and app-name search. OAuth connections require the apps scope; existing ToolJet permissions still apply.",
-    inputSchema: listWorkspaceFoldersInput.shape,
-    async handler(input) {
-      try {
-        const args = listWorkspaceFoldersInput.parse(input);
-        return ok(await client.listWorkspaceFolders({ searchText: args.search_text }));
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-function listWorkspaceUsersTool(client) {
-  return {
-    name: "list_workspace_users",
-    title: "List Workspace Users",
-    annotations: {
-      readOnlyHint: true,
-      openWorldHint: true
-    },
-    description: "List users in the workspace pinned to the current ToolJet connection. Supports pagination, search, and status filtering. OAuth connections require the workspace_users scope.",
-    inputSchema: {
-      page: external_exports.number().int().positive().optional(),
-      search_text: external_exports.string().trim().max(100).optional(),
-      filter_status: userStatus.optional()
-    },
-    async handler(args) {
-      try {
-        return ok(await client.listWorkspaceUsers({
-          page: args.page,
-          searchText: args.search_text,
-          status: args.filter_status
-        }));
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-function required(value, label) {
-  if (!value)
-    throw new Error(`${label} is required for this action.`);
-  return value;
-}
-var manageWorkspaceUsersInput = external_exports.object({
-  action: external_exports.enum(["invite", "update", "archive", "unarchive"]),
-  organization_user_id: external_exports.string().uuid().optional(),
-  email: external_exports.string().email().optional(),
-  first_name: external_exports.string().trim().max(99).optional(),
-  last_name: external_exports.string().trim().max(99).optional(),
-  role: userRole.optional(),
-  group_ids: external_exports.array(external_exports.string().uuid()).max(100).optional(),
-  user_metadata: external_exports.record(external_exports.string(), external_exports.unknown()).optional(),
-  confirm: external_exports.boolean().optional()
-}).strict();
-function manageWorkspaceUsersTool(client) {
-  return {
-    name: "manage_workspace_users",
-    title: "Manage Workspace Users",
-    strictInput: true,
-    // invite is additive, but update overwrites a member's role and archive revokes their access to
-    // the workspace, so the hint covers its widest action.
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: true
-    },
-    description: "Manage users only in the workspace pinned to the current ToolJet connection. OAuth connections require the workspace_users scope. Invite, update, archive, and unarchive require confirm:true. Updates can change role, add existing custom group_ids while preserving all other memberships, and merge supplied user_metadata keys while preserving other keys. Empty group_ids never removes groups. first_name/last_name are only supported for invitations: editing an existing name requires a Super Admin in ToolJet and is refused by this workspace-scoped tool before any mutation. Updates are read back before success is reported. Use manage_workspace_groups remove_member for explicit membership removal. Updates cannot change email or passwords. Changing a role to end-user also transfers any apps owned by that user to the acting admin under ToolJet's existing behavior; disclose this before confirmation. Invite accepts email, optional names/role/group_ids; archive/unarchive accepts only organization_user_id. Never substitute role or membership changes for a rejected name edit, or bypass the connection owner's ToolJet permissions.",
-    inputSchema: manageWorkspaceUsersInput.shape,
-    async handler(input) {
-      try {
-        const args = manageWorkspaceUsersInput.parse(input);
-        const allowed = args.action === "invite" ? ["email", "first_name", "last_name", "role", "group_ids"] : args.action === "update" ? ["organization_user_id", "first_name", "last_name", "role", "group_ids", "user_metadata"] : ["organization_user_id"];
-        for (const key of Object.keys(args)) {
-          if (!["action", "confirm", ...allowed].includes(key))
-            throw new Error(`${key} is not supported for ${args.action}; no changes were made.`);
-        }
-        if (args.action === "update" && (args.first_name !== void 0 || args.last_name !== void 0)) {
-          throw new Error("Name changes require a Super Admin and are not supported by this workspace-scoped tool. No changes were made. Ask a Super Admin to edit the name in ToolJet.");
-        }
-        if (args.confirm !== true) {
-          throw new Error(`${args.action} requires confirm:true after checking the exact workspace user.`);
-        }
-        if (args.action === "invite") {
-          await client.inviteWorkspaceUser({
-            email: required(args.email, "email"),
-            role: args.role ?? "end-user",
-            firstName: args.first_name,
-            lastName: args.last_name,
-            groupIds: args.group_ids
-          });
-          return ok({ invited: true, email: args.email });
-        }
-        const organizationUserId = required(args.organization_user_id, "organization_user_id");
-        if (args.action === "archive" || args.action === "unarchive") {
-          await client.setWorkspaceUserArchived(organizationUserId, args.action === "archive");
-          return ok({ organization_user_id: organizationUserId, status: args.action === "archive" ? "archived" : "active" });
-        }
-        if (args.first_name === void 0 && args.last_name === void 0 && args.role === void 0 && !args.group_ids?.length && args.user_metadata === void 0) {
-          throw new Error("update requires at least one changed field.");
-        }
-        const result = await client.updateWorkspaceUser(organizationUserId, {
-          firstName: args.first_name,
-          lastName: args.last_name,
-          role: args.role,
-          addGroupIds: args.group_ids,
-          userMetadata: args.user_metadata
-        });
-        return ok({
-          organization_user_id: organizationUserId,
-          ...result,
-          ...!result.updated ? { already_satisfied: true } : {}
-        });
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
+var appPermissions = [
+  {
+    action: "list_subjects",
+    name: "list_app_permission_subjects",
+    title: "List App Permission Subjects",
+    description: "List users and groups eligible for resource access rules in one app. Subjects must already have app access. ToolJet permissions and license gates apply.",
+    required: ["app_id"],
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
+  },
+  {
+    action: "get",
+    name: "get_app_resource_permission",
+    title: "Get App Resource Permission",
+    description: "Read server-enforced access for one page, query, or component belonging to the selected app. Use exact resource IDs from get_app_summary.",
+    required: ["app_id", "resource_type", "resource_id"],
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
+  },
+  {
+    action: "set",
+    name: "set_app_resource_permission",
+    title: "Set App Resource Permission",
+    description: "Replace access to one app page, query, or component with selected users or groups. Supply user_ids for access_type users or group_ids for groups, never both. Requires confirm:true after explicit approval of the exact rule; existing app access and license gates still apply.",
+    required: ["app_id", "resource_type", "resource_id", "access_type", "confirm"],
+    optional: ["user_ids", "group_ids"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
+  },
+  {
+    action: "clear",
+    name: "clear_app_resource_permission",
+    title: "Clear App Resource Permission",
+    description: "Remove a resource access restriction, broadening access to every user who can access the app. Requires confirm:true after explicit approval of this exact page, query, or component.",
+    required: ["app_id", "resource_type", "resource_id", "confirm"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
+  }
+];
+function appPermissionActionTools(source2) {
+  return exposeActions(source2, appPermissions);
 }
 function getWorkflowNodeCatalogTool(_client) {
   return {
     name: "get_workflow_node_catalog",
     title: "Get Workflow Node Catalog",
     description: "Supported workflow node types, ports and exact authoring schema. Unsupported native nodes are preserved, not authored.",
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     inputSchema: {},
     async handler() {
       try {
@@ -4300,8 +4205,8 @@ function getWorkflowCapabilitiesTool(client) {
   return {
     name: "get_workflow_capabilities",
     title: "Get Workflow Capabilities",
-    description: "List authorable workflow node types and classify configured datasource instances for one workflow version: ordinary query, AI-model attachment, or email. This is not a datasource option contract. After choosing a datasource, call get_datasource_query_schema with datasource_id + version_id + operation for its exact query fields, allowed operations, response shape, and introspection methods. Does not inspect credentials, create resources, or execute queries.",
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    description: "List authorable workflow node types and classify configured datasource instances for one workflow version: ordinary query, AI-model attachment, or email. Reads workflow metadata and the configured datasource list only; it does not invoke the listed capabilities. After choosing a datasource, call get_datasource_query_schema with datasource_id + version_id + operation for its exact query fields, allowed operations, response shape, and introspection methods. Does not inspect credentials, create resources, or execute queries.",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     inputSchema: capabilityRequestSchema.shape,
     async handler(args) {
       try {
@@ -4356,7 +4261,7 @@ function listWorkflowsTool(client) {
     name: "list_workflows",
     title: "List Workflows",
     description: "List workflows in the active workspace.",
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     inputSchema: listWorkflowsInputSchema.shape,
     async handler(args) {
       try {
@@ -4373,7 +4278,7 @@ function createWorkflowTool(client) {
     name: "create_workflow",
     title: "Create Workflow",
     description: "Create an editable ToolJet workflow draft. Does not execute, publish, or configure triggers. Inspect get_workflow before adding its start node.",
-    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     inputSchema: createWorkflowInputSchema.shape,
     async handler(args) {
       try {
@@ -4390,7 +4295,7 @@ function getWorkflowTool(client) {
     name: "get_workflow",
     title: "Get Workflow",
     description: "Read a workflow graph and query options. Use returned node IDs as existing_id when editing. Omitted version selects the current editing version, which may be read-only.",
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     inputSchema: getWorkflowInputSchema.shape,
     async handler(args) {
       try {
@@ -4408,7 +4313,7 @@ function lintWorkflowSpecTool(client) {
     name: "lint_workflow_spec",
     title: "Lint Workflow Spec",
     description: "Validate graph edits, query options, and runtime prerequisites without executing or saving. Returns a scoped one-use plan token when runnable, or for an editable draft only when allow_draft is true. Omitted nodes/edges are preserved; removals require explicit IDs.",
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     inputSchema: lintWorkflowSpecInputSchema.shape,
     async handler(args) {
       try {
@@ -4425,7 +4330,7 @@ function applyWorkflowSpecTool(client) {
     name: "apply_workflow_spec",
     title: "Apply Workflow Spec",
     description: "Apply a validated plan to an editable draft and verify readback. May edit/remove graph objects. Partial writes return IDs for recovery; never blindly retry creation. Does not execute or publish.",
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     inputSchema: applyWorkflowSpecInputSchema.shape,
     async handler(args) {
       try {
@@ -4443,7 +4348,7 @@ function deleteWorkflowNodeTool(client) {
     name: "delete_workflow_node",
     title: "Delete Workflow Node",
     description: "Delete one workflow node and all incident edges. Saves the graph before deleting a query only when no remaining mapping references it. Incomplete drafts can be cleaned up; remaining runtime blockers are returned. Does not execute or publish. A failed query deletion leaves only an orphaned query; inspect the returned recovery details before retrying.",
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     inputSchema: deleteWorkflowNodeInputSchema.shape,
     async handler(args) {
       try {
@@ -4461,7 +4366,7 @@ function validateWorkflowTool(client) {
     name: "validate_workflow",
     title: "Validate Workflow",
     description: "Check persisted graph structure and query ownership without execution. Does not prove runtime correctness.",
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     inputSchema: validateWorkflowInputSchema.shape,
     async handler(args) {
       try {
@@ -4553,7 +4458,7 @@ function getWorkflowExecutionTool(client) {
     name: "get_workflow_execution",
     title: "Get Workflow Execution",
     description: "Inspect execution status and a bounded page of node results. Does not start or retry executions.",
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     inputSchema: getWorkflowExecutionInputSchema.shape,
     async handler(args) {
       try {
@@ -4663,6 +4568,7 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     deleteEventTool(client),
     manageThemeTool(client)
   ];
+  tools.push(...managementActionTools(tools));
   const exposedTools = includeLegacySingularCreateTools() ? tools : tools.filter((tool) => !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name));
   const canRender = renderAuditAvailable();
   for (const tool of exposedTools) {
@@ -4682,6 +4588,15 @@ function registerTools(server, client, runtime = runtimeFreshness) {
       return withRuntimeStatus(await handler(args), status);
     }));
   }
+}
+function managementActionTools(sources) {
+  const factories = {
+    manage_app_permissions: appPermissionActionTools,
+    manage_workspace_users: workspaceUserActionTools,
+    manage_workspace_groups: workspaceGroupActionTools,
+    manage_theme: themeActionTools
+  };
+  return sources.flatMap((source2) => factories[source2.name]?.(source2) ?? []);
 }
 var PREFACE = "Read-only catalog data, for clients that validate or build plans locally. ";
 var CATALOG_RESOURCES = [
@@ -4797,7 +4712,7 @@ Fix the configuration and restart this server; no tools will work until then.` }
     title: "ToolJet Connection Status",
     description: "Why this ToolJet MCP server is not configured, and how to fix it.",
     inputSchema: {},
-    annotations: { readOnlyHint: true, openWorldHint: false }
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
   }, async () => ({ content: [{ type: "text", text: message }], isError: true }));
   return server;
 }
@@ -4816,18 +4731,19 @@ function oauthHttpOptionsFromEnv() {
     return void 0;
   if (process.env.MCP_SHARED_TOKEN)
     throw new Error("Run public OAuth and internal MCP gateway modes in separate processes");
-  const required2 = (name) => {
+  const required = (name) => {
     const value = process.env[name]?.trim();
     if (!value)
       throw new Error(`${name} is required for MCP OAuth`);
     return value;
   };
   return {
-    issuer: required2("MCP_OAUTH_ISSUER"),
-    resourceUrl: required2("MCP_OAUTH_RESOURCE_URL"),
-    exchangeSecret: required2("MCP_OAUTH_EXCHANGE_SECRET"),
-    apiUrl: process.env.TOOLJET_URL?.trim() || required2("TOOLJET_DEPLOYMENT_URL"),
-    appUrl: required2("TOOLJET_DEPLOYMENT_URL"),
+    openaiAppsChallenge: process.env.MCP_OPENAI_APPS_CHALLENGE?.trim() || void 0,
+    issuer: required("MCP_OAUTH_ISSUER"),
+    resourceUrl: required("MCP_OAUTH_RESOURCE_URL"),
+    exchangeSecret: required("MCP_OAUTH_EXCHANGE_SECRET"),
+    apiUrl: process.env.TOOLJET_URL?.trim() || required("TOOLJET_DEPLOYMENT_URL"),
+    appUrl: required("TOOLJET_DEPLOYMENT_URL"),
     allowedOrigins: (process.env.MCP_OAUTH_ALLOWED_ORIGINS || "").split(",").map((s) => s.trim()).filter(Boolean)
   };
 }
@@ -4862,6 +4778,7 @@ function createOAuthHttpServer(options2) {
   const appUrl = checkedUrl(options2.appUrl, "appUrl");
   if (options2.exchangeSecret.length < 32)
     throw new Error("OAuth exchange secret must contain at least 32 characters");
+  const openaiAppsChallenge = options2.openaiAppsChallenge?.trim();
   const resource = new URL(resourceBase);
   const factory = options2.serverFactory ?? buildServer;
   const fetchImpl = options2.fetchImpl ?? fetch;
@@ -4884,6 +4801,20 @@ function createOAuthHttpServer(options2) {
     let exchangeFailure;
     void (async () => {
       const url = new URL(req.url || "/", "http://localhost");
+      if (url.pathname === "/.well-known/openai-apps-challenge" && openaiAppsChallenge) {
+        if (req.method !== "GET") {
+          res.setHeader("allow", "GET");
+          sendOAuthJson(res, 405, { error: "method_not_allowed" });
+          return;
+        }
+        res.writeHead(200, {
+          "content-type": "text/plain; charset=utf-8",
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff"
+        });
+        res.end(openaiAppsChallenge);
+        return;
+      }
       if (url.pathname === "/health" && req.method === "GET") {
         sendOAuthJson(res, 200, { status: "ok", transport: "streamable-http", authorization: "oauth" });
         return;

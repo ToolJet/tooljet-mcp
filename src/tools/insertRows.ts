@@ -10,7 +10,7 @@ export function insertRowsTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Seed rows into a ToolJet-DB table (so a generated app is not empty). rows is an array of objects keyed by ' +

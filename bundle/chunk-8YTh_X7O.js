@@ -2,6 +2,8 @@ import { createRequire } from "node:module";
 import { _ as __export, R as util_exports, a as _uppercase, b as _trim, cJ as treeifyError, c as _toUpperCase, e as _toLowerCase, cK as toJSONSchema, f as _startsWith, g as _slugify, h as _size, cS as registry, S as regexes_exports, i as _regex, j as _property, cU as prettifyError, k as _positive, l as _overwrite, n as _normalize, o as _nonpositive, p as _nonnegative, q as _negative, r as _multipleOf, s as _minSize, t as _minLength, u as _mime, v as _maxSize, w as _maxLength, x as _lte, y as _lt, z as _lowercase, A as _length, B as _includes, C as _gte, D as _gt, aY as globalRegistry, aR as formatError, aQ as flattenError, E as _endsWith, d6 as config, at as clone, dB as TimePrecision, dC as NEVER, dE as $output, dF as $input, dG as $brand, du as _coercedString, dv as _coercedNumber, dx as _coercedBoolean, dy as _coercedBigint, dw as _coercedDate, e5 as getComponentSchema, e6 as __commonJS, e7 as __require } from "./chunk-BEuHHGL1.js";
 import { x as xor, c as xid, _ as _void2, u as uuidv7, d as uuidv6, e as uuidv4, f as uuid, g as url, i as unknown, j as union, k as _undefined2, l as ulid, m as uint64, n as uint32, o as tuple, p as transform, q as templateLiteral, s as symbol, v as superRefine, w as success, y as stringbool, z as stringFormat, A as string, B as strictObject, C as set, D as safeParseAsync, E as safeParse, F as safeEncodeAsync, G as safeEncode, H as safeDecodeAsync, I as safeDecode, J as refine, K as record, L as readonly, M as promise, N as preprocess, O as prefault, P as pipe, Q as partialRecord, R as parseAsync, S as parse, T as optional, U as object, V as number, W as nullish, X as nullable, Y as _null2, Z as nonoptional, $ as never, a0 as nativeEnum, a1 as nanoid, a2 as nan, a3 as meta2, a4 as map, a5 as mac, a6 as looseRecord, a7 as looseObject, a8 as literal, a9 as lazy, aa as ksuid, ab as keyof, ac as jwt, ad as json, ae as iso_exports, af as ipv6, ag as ipv4, ah as invertCodec, ai as intersection, aj as int64, ak as int32, al as int, am as _instanceof, an as httpUrl, ao as hostname, ap as hex, aq as hash, ar as guid, as as _function, at as float64, au as float32, av as file, aw as exactOptional, ax as _enum, ay as encodeAsync, az as encode, aA as emoji, aB as email, aC as e164, aD as discriminatedUnion, aE as describe2, aF as decodeAsync, aG as decode, aH as date2$1, aI as custom, aJ as cuid2, aK as cuid, aL as codec, aM as cidrv6, aN as cidrv4, aO as check, aP as _catch, aQ as boolean, aR as bigint, aS as base64url, aT as base64, aU as array, aV as any, aW as _default, aX as _ZodString, aY as ZodXor, aZ as ZodXID, a_ as ZodVoid, a$ as ZodUnknown, b0 as ZodUnion, b1 as ZodUndefined, b2 as ZodUUID, b3 as ZodURL, b4 as ZodULID, b5 as ZodType, b6 as ZodTuple, b7 as ZodTransform, b8 as ZodTemplateLiteral, b9 as ZodSymbol, ba as ZodSuccess, bb as ZodStringFormat, bc as ZodString, bd as ZodSet, be as ZodRecord, bf as ZodRealError, bg as ZodReadonly, bh as ZodPromise, bi as ZodPreprocess, bj as ZodPrefault, bk as ZodPipe, bl as ZodOptional, bm as ZodObject, bn as ZodNumberFormat, bo as ZodNumber, bp as ZodNullable, bq as ZodNull, br as ZodNonOptional, bs as ZodNever, bt as ZodNanoID, bu as ZodNaN, bv as ZodMap, bw as ZodMAC, bx as ZodLiteral, by as ZodLazy, bz as ZodKSUID, bA as ZodJWT, bB as ZodIntersection, bC as ZodISOTime, bD as ZodISODuration, bE as ZodISODateTime, bF as ZodISODate, bG as ZodIPv6, bH as ZodIPv4, bI as ZodGUID, bJ as ZodFunction, bK as ZodFile, bL as ZodExactOptional, bM as ZodError, bN as ZodEnum, bO as ZodEmoji, bP as ZodEmail, bQ as ZodE164, bR as ZodDiscriminatedUnion, bS as ZodDefault, bT as ZodDate, bU as ZodCustomStringFormat, bV as ZodCustom, bW as ZodCodec, bX as ZodCatch, bY as ZodCUID2, bZ as ZodCUID, b_ as ZodCIDRv6, b$ as ZodCIDRv4, c0 as ZodBoolean, c1 as ZodBigIntFormat, c2 as ZodBigInt, c3 as ZodBase64URL, c4 as ZodBase64, c5 as ZodArray, c6 as ZodAny, c7 as checks_exports, c8 as schemas_exports } from "./chunk-4DDZMCNh.js";
 import { l as locales_exports, c as core_exports, e as en_default } from "./chunk-Dlrd_yJi.js";
+import { Script } from "node:vm";
+import { randomUUID } from "node:crypto";
 createRequire(import.meta.url);
 var external_exports = {};
 __export(external_exports, {
@@ -357,11 +359,11 @@ function detectVersion(schema, defaultTarget) {
   }
   return defaultTarget ?? "draft-2020-12";
 }
-function resolveRef(ref, ctx) {
-  if (!ref.startsWith("#")) {
+function resolveRef(ref2, ctx) {
+  if (!ref2.startsWith("#")) {
     throw new Error("External $ref is not supported, only local refs (#/...) are allowed");
   }
-  const path = ref.slice(1).split("/").filter(Boolean);
+  const path = ref2.slice(1).split("/").filter(Boolean);
   if (path.length === 0) {
     return ctx.rootSchema;
   }
@@ -369,11 +371,11 @@ function resolveRef(ref, ctx) {
   if (path[0] === defsKey) {
     const key = path[1];
     if (!key || !ctx.defs[key]) {
-      throw new Error(`Reference not found: ${ref}`);
+      throw new Error(`Reference not found: ${ref2}`);
     }
     return ctx.defs[key];
   }
-  throw new Error(`Reference not found: ${ref}`);
+  throw new Error(`Reference not found: ${ref2}`);
 }
 function convertBaseSchema(schema, ctx) {
   if (schema.not !== void 0) {
@@ -953,8 +955,355 @@ return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
   };
 }
 createRequire(import.meta.url);
-var COMPONENT_FX_GUIDANCE = "For properties/styles/validation with an FX toggle, use `{ value: <expression>, fxActive: true }` only for bindings/conditions/calculations the normal control cannot express. Keep defaults and panel-editable constants (including `{{true}}`/`{{false}}`, numbers, selections, colors) out of FX. For nested Table columns/buttons/options and KeyValuePair fields, add the property key (e.g. `columnVisibility`, `disableButton`, `fieldVisibility`, `isEditable`) to that object's `fxActiveFields`, preserving other entries. ";
-var COMPONENT_FX_UPDATE_GUIDANCE = COMPONENT_FX_GUIDANCE + "Updates must include both `value` and `fxActive`; revert with `{ value: <constant>, fxActive: false }`. For nested Table fields, remove only reverted property keys from `fxActiveFields`. KeyValuePair arrays merge by index; verify flag removals and report retained flags. ";
+var ref = external_exports.string().min(1).max(100);
+var base = { ref, existing_id: external_exports.string().uuid().optional(), label: external_exports.string().max(100).optional(), position: external_exports.object({ x: external_exports.number().finite(), y: external_exports.number().finite() }).optional() };
+var query = { name: external_exports.string().regex(/^[A-Za-z_$][\w$]*$/), datasource_id: external_exports.string().min(1), options: external_exports.record(external_exports.string(), external_exports.unknown()) };
+var agentModel = external_exports.object(query).strict();
+var nodeSchema = external_exports.discriminatedUnion("type", [
+  external_exports.object({ ...base, type: external_exports.literal("start") }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("javascript"), name: query.name, code: external_exports.string().min(1) }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("query"), ...query }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("loop"), name: query.name, iteration_values_code: external_exports.string().min(1), code: external_exports.string().min(1) }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("condition"), code: external_exports.string().min(1) }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("response"), code: external_exports.string().min(1), status_code: external_exports.number().int().min(100).max(599).optional() }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("agent"), system_prompt: external_exports.string().optional(), user_prompt: external_exports.string().optional(), output_format: external_exports.record(external_exports.string(), external_exports.unknown()).nullable().optional(), model: agentModel.nullable().optional() }).strict()
+]);
+var specSchema = external_exports.object({
+  schema_version: external_exports.literal(1).default(1),
+  nodes: external_exports.array(nodeSchema).max(200).default([]),
+  edges: external_exports.array(external_exports.object({ ref, existing_id: external_exports.string().optional(), from: ref, to: ref, port: external_exports.enum(["default", "success", "failure", "true", "false"]) }).strict()).max(500).default([]),
+  remove_node_ids: external_exports.array(external_exports.string()).default([]),
+  remove_edge_ids: external_exports.array(external_exports.string()).default([]),
+  test_parameters: external_exports.record(external_exports.string(), external_exports.unknown()).optional()
+}).strict();
+function assertWorkflowJavaScript(code, label) {
+  if (typeof code !== "string" || !code.trim())
+    throw new Error(`Missing JavaScript code in ${label}.`);
+  try {
+    new Script(`(async function() {${code}
+})`);
+  } catch {
+    throw new Error(`Invalid JavaScript syntax in ${label}.`);
+  }
+}
+function isAttachmentEdge(edge) {
+  return edge.targetHandle === "ai-model" || edge.targetHandle === "tool";
+}
+function controlFlowEdges(graph) {
+  return graph.edges.filter((edge) => !isAttachmentEdge(edge));
+}
+function definition(value) {
+  if (value == null)
+    return { nodes: [], edges: [], queries: [] };
+  const parsed = external_exports.object({
+    nodes: external_exports.array(external_exports.object({ id: external_exports.string(), type: external_exports.string(), data: external_exports.record(external_exports.string(), external_exports.unknown()) }).passthrough()).default([]),
+    edges: external_exports.array(external_exports.object({ id: external_exports.string(), source: external_exports.string(), target: external_exports.string(), sourceHandle: external_exports.string().nullable().optional(), targetHandle: external_exports.string().nullable().optional(), data: external_exports.record(external_exports.string(), external_exports.unknown()).optional() }).passthrough()).default([]),
+    queries: external_exports.array(external_exports.object({ id: external_exports.string(), idOnDefinition: external_exports.string() }).passthrough()).default([])
+  }).passthrough().parse(value);
+  return structuredClone(parsed);
+}
+function validateGraph(graph, queryIds) {
+  const errors = [], warnings = [];
+  const error = (code, path, message) => errors.push({ code, path, message });
+  const nodes = new Map(graph.nodes.map((n) => [n.id, n]));
+  if (nodes.size !== graph.nodes.length)
+    error("duplicate_node", "nodes", "Node IDs must be unique.");
+  if (new Set(graph.edges.map((e) => e.id)).size !== graph.edges.length)
+    error("duplicate_edge", "edges", "Edge IDs must be unique.");
+  const starts = graph.nodes.filter((n) => n.type === "input" && n.data.nodeType === "start");
+  if (starts.length !== 1)
+    error("start_count", "nodes", "Exactly one start node is required.");
+  const mappings = new Map(graph.queries.map((q) => [q.idOnDefinition, q.id]));
+  if (mappings.size !== graph.queries.length)
+    error("duplicate_mapping", "queries", "Query definition IDs must be unique.");
+  for (const mapping of graph.queries)
+    if (queryIds && !queryIds.has(mapping.id))
+      error("missing_query", "queries", `Query ${mapping.id} does not belong to this version.`);
+  for (const n of graph.nodes) {
+    if (n.type === "query" && !mappings.has(String(n.data.idOnDefinition)))
+      error("missing_mapping", `nodes.${n.id}`, "Query node has no query mapping.");
+    if (!["input", "query", "if-condition", "output", "agent"].includes(n.type))
+      warnings.push({ code: "unsupported_node", path: `nodes.${n.id}`, message: `Retained ${n.type} node; configuration not validated.` });
+  }
+  const flowEdges = controlFlowEdges(graph);
+  for (const edge of graph.edges) {
+    const source = nodes.get(edge.source), target = nodes.get(edge.target), path = `edges.${edge.id}`;
+    if (!source || !target) {
+      error("missing_endpoint", path, "Edge endpoint does not exist.");
+      continue;
+    }
+    if (isAttachmentEdge(edge)) {
+      if (edge.targetHandle === "ai-model" && !(source.type === "query" && source.data.isChildOfAgent === true && source.data.agentConnectionType === "ai-model" && target.type === "agent")) {
+        error("invalid_attachment", path, "AI model attachment must connect an Agent model query child to an Agent.");
+      }
+      continue;
+    }
+    if (target.type === "input")
+      error("start_inbound", path, "Start cannot have inbound edges.");
+    const ports = { input: [null, void 0], query: ["success", "failure"], "if-condition": ["true", "false"], output: [], agent: ["output"] };
+    if (ports[source.type] && !ports[source.type].includes(edge.sourceHandle))
+      error("invalid_port", path, `Invalid source port for ${source.type}.`);
+    if (source.type === "query" && edge.sourceHandle === "failure" && !source.data.errorHandler)
+      error("error_handler_disabled", path, "Failure edge requires query error handling.");
+  }
+  for (const agent of graph.nodes.filter((node) => node.type === "agent")) {
+    if (graph.edges.filter((edge) => edge.target === agent.id && edge.targetHandle === "ai-model").length > 1) {
+      error("duplicate_agent_model", `nodes.${agent.id}.model`, "Agent can have only one AI model attachment.");
+    }
+  }
+  const adjacency = new Map(graph.nodes.map((n) => [n.id, flowEdges.filter((e) => e.source === n.id).map((e) => e.target)]));
+  const visited = /* @__PURE__ */ new Set(), active = /* @__PURE__ */ new Set();
+  const visit = (id) => {
+    if (active.has(id))
+      return true;
+    if (visited.has(id))
+      return false;
+    visited.add(id);
+    active.add(id);
+    const cyclic = (adjacency.get(id) ?? []).some(visit);
+    active.delete(id);
+    return cyclic;
+  };
+  if (graph.nodes.some((n) => visit(n.id)))
+    error("cycle", "edges", "Cycles are unsupported in the basic node set.");
+  const reachable = /* @__PURE__ */ new Set();
+  const reach = (id) => {
+    if (reachable.has(id))
+      return;
+    reachable.add(id);
+    (adjacency.get(id) ?? []).forEach(reach);
+  };
+  starts.forEach((n) => reach(n.id));
+  for (const n of graph.nodes)
+    if (!reachable.has(n.id) && n.data.isChildOfAgent !== true)
+      warnings.push({ code: "unreachable", path: `nodes.${n.id}`, message: "Node is unreachable from start." });
+  return { errors, warnings, runtime_verified: false };
+}
+function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new Map()) {
+  const graph = structuredClone(current);
+  const node_ids = /* @__PURE__ */ Object.create(null), edge_ids = /* @__PURE__ */ Object.create(null);
+  const model_ids = /* @__PURE__ */ Object.create(null);
+  const query_nodes = [];
+  const checkUnique = (refs) => {
+    if (new Set(refs).size !== refs.length)
+      throw new Error("Duplicate logical refs.");
+  };
+  checkUnique(spec.nodes.map((n) => n.ref));
+  checkUnique(spec.edges.map((e) => e.ref));
+  for (const id of spec.remove_node_ids)
+    if (!graph.nodes.some((n) => n.id === id))
+      throw new Error(`Unknown node to remove: ${id}`);
+  for (const id of spec.remove_edge_ids)
+    if (!graph.edges.some((e) => e.id === id))
+      throw new Error(`Unknown edge to remove: ${id}`);
+  const removedNodeIds = new Set(spec.remove_node_ids);
+  const cascadedChildIds = /* @__PURE__ */ new Set();
+  for (const agentId of spec.remove_node_ids) {
+    for (const edge of graph.edges.filter((candidate) => candidate.target === agentId && candidate.targetHandle === "ai-model")) {
+      removedNodeIds.add(edge.source);
+      cascadedChildIds.add(edge.source);
+    }
+  }
+  const removedDefinitionIds = graph.nodes.filter((n) => removedNodeIds.has(n.id)).map((n) => n.data.idOnDefinition);
+  graph.nodes = graph.nodes.filter((n) => !removedNodeIds.has(n.id));
+  graph.edges = graph.edges.filter((e) => !spec.remove_edge_ids.includes(e.id) && !cascadedChildIds.has(e.source) && !cascadedChildIds.has(e.target));
+  const editedIds = /* @__PURE__ */ new Set();
+  for (const input of spec.nodes) {
+    if ("code" in input) {
+      try {
+        new Script(input.type === "condition" ? `(${input.code})` : `(async function() {${input.code}
+})`);
+      } catch {
+        throw new Error(`Invalid JavaScript syntax in node ${input.ref}.`);
+      }
+    }
+    if (input.type === "loop") {
+      try {
+        new Script(`(async function() {${input.iteration_values_code}
+})`);
+      } catch {
+        throw new Error(`Invalid iteration JavaScript syntax in node ${input.ref}.`);
+      }
+    }
+    const id = input.existing_id ?? ids?.node_ids[input.ref] ?? randomUUID();
+    if (editedIds.has(id))
+      throw new Error("Multiple node edits target the same ID.");
+    editedIds.add(id);
+    const old = graph.nodes.find((n) => n.id === id);
+    if (input.existing_id && !old)
+      throw new Error(`Unknown existing node: ${id}`);
+    const type = { start: "input", javascript: "query", query: "query", loop: "query", condition: "if-condition", response: "output", agent: "agent" }[input.type];
+    if (old && old.type !== type)
+      throw new Error("Changing node type is unsupported; remove and add explicitly.");
+    const data = { ...old?.data, label: input.label ?? old?.data.label ?? input.ref };
+    if (input.type !== "condition")
+      data.nodeType = input.type === "javascript" || input.type === "loop" ? "query" : input.type;
+    if (input.type === "condition" || input.type === "response")
+      data.code = input.code;
+    if (input.type === "response" && (input.status_code !== void 0 || data.statusCode === void 0)) {
+      data.statusCode = { fxActive: false, value: String(input.status_code ?? 200) };
+    }
+    if (input.type === "loop") {
+      data.looped = true;
+      data.iterationValuesCode = input.iteration_values_code;
+    }
+    if (input.type === "agent") {
+      const oldOptions = old?.data.options && typeof old.data.options === "object" && !Array.isArray(old.data.options) ? old.data.options : {};
+      data.nodeName = old?.data.nodeName ?? input.ref;
+      data.options = {
+        ...oldOptions,
+        systemPrompt: input.system_prompt ?? oldOptions.systemPrompt ?? "",
+        userPrompt: input.user_prompt ?? oldOptions.userPrompt ?? "",
+        outputFormat: input.output_format === void 0 ? oldOptions.outputFormat ?? null : input.output_format === null ? null : { example: input.output_format }
+      };
+      const attachments = graph.edges.filter((edge) => edge.target === id && edge.targetHandle === "ai-model");
+      if (attachments.length > 1)
+        throw new Error(`Agent ${input.ref} has multiple AI model attachments.`);
+      const attachment = attachments[0];
+      const child = attachment && graph.nodes.find((node2) => node2.id === attachment.source);
+      if (input.model === null && attachment) {
+        if (typeof child?.data.idOnDefinition === "string")
+          removedDefinitionIds.push(child.data.idOnDefinition);
+        graph.edges = graph.edges.filter((edge) => edge.id !== attachment.id);
+        graph.nodes = graph.nodes.filter((node2) => node2.id !== attachment.source);
+      } else if (input.model) {
+        const modelNodeId = child?.id ?? ids?.model_ids[input.ref]?.node_id ?? randomUUID();
+        const definitionId = typeof child?.data.idOnDefinition === "string" ? child.data.idOnDefinition : randomUUID();
+        const kind = datasourceKinds.get(input.model.datasource_id);
+        const modelNode = {
+          ...child,
+          id: modelNodeId,
+          type: "query",
+          sourcePosition: "right",
+          targetPosition: "left",
+          deletable: false,
+          data: { ...child?.data, idOnDefinition: definitionId, nodeType: "query", kind, isChildOfAgent: true, agentConnectionType: "ai-model" },
+          position: child?.position ?? { x: 100, y: 70 }
+        };
+        if (child)
+          graph.nodes[graph.nodes.indexOf(child)] = modelNode;
+        else
+          graph.nodes.push(modelNode);
+        const edgeId = attachment?.id ?? ids?.model_ids[input.ref]?.edge_id ?? randomUUID();
+        const modelEdge = { ...attachment, id: edgeId, source: modelNodeId, target: id, sourceHandle: "output", targetHandle: "ai-model", type: "custom", data: { direction: "vertical" } };
+        if (attachment)
+          graph.edges[graph.edges.indexOf(attachment)] = modelEdge;
+        else
+          graph.edges.push(modelEdge);
+        model_ids[input.ref] = { node_id: modelNodeId, edge_id: edgeId };
+        query_nodes.push({ role: "agent-model", parent_agent_id: id, node_id: modelNodeId, definition_id: definitionId, datasource_id: input.model.datasource_id, name: input.model.name, options: input.model.options });
+      }
+    }
+    if (input.type === "query" || input.type === "javascript" || input.type === "loop") {
+      const definitionId = typeof data.idOnDefinition === "string" ? data.idOnDefinition : randomUUID();
+      data.idOnDefinition = definitionId;
+      query_nodes.push({ role: "workflow-node", spec: input, node_id: id, definition_id: definitionId });
+    }
+    const node = { ...old, id, type, sourcePosition: "right", targetPosition: "left", deletable: false, data, position: input.position ?? old?.position ?? { x: 100 + graph.nodes.length * 320, y: 250 } };
+    if (old)
+      graph.nodes[graph.nodes.indexOf(old)] = node;
+    else
+      graph.nodes.push(node);
+    node_ids[input.ref] = id;
+  }
+  const resolve = (ref2) => node_ids[ref2] ?? (graph.nodes.some((n) => n.id === ref2) ? ref2 : void 0);
+  const editedEdges = /* @__PURE__ */ new Set();
+  for (const input of spec.edges) {
+    const id = input.existing_id ?? ids?.edge_ids[input.ref] ?? randomUUID();
+    if (editedEdges.has(id))
+      throw new Error("Multiple edge edits target the same ID.");
+    editedEdges.add(id);
+    const old = graph.edges.find((e) => e.id === id);
+    if (input.existing_id && !old)
+      throw new Error(`Unknown existing edge: ${id}`);
+    const source = resolve(input.from), target = resolve(input.to);
+    if (!source || !target)
+      throw new Error(`Unknown endpoint in edge ${input.ref}. Use a supplied ref or existing node ID.`);
+    const sourceNode = graph.nodes.find((node) => node.id === source);
+    const sourceHandle = input.port === "default" ? sourceNode?.type === "agent" ? "output" : null : input.port;
+    const edge = { ...old, id, source, target, sourceHandle, type: "custom" };
+    if (old)
+      graph.edges[graph.edges.indexOf(old)] = edge;
+    else
+      graph.edges.push(edge);
+    edge_ids[input.ref] = id;
+    if (input.port === "failure") {
+      const n = graph.nodes.find((n2) => n2.id === source);
+      if (n.type === "query")
+        n.data.errorHandler = true;
+    }
+  }
+  graph.queries = graph.queries.filter((q) => !removedDefinitionIds.includes(q.idOnDefinition) || graph.nodes.some((n) => n.data.idOnDefinition === q.idOnDefinition));
+  const depths = new Map(graph.nodes.map((n) => [n.id, 0]));
+  for (let pass = 0; pass < graph.nodes.length; pass++) {
+    let changed = false;
+    for (const edge of controlFlowEdges(graph)) {
+      const next = (depths.get(edge.source) ?? 0) + 1;
+      if (next > (depths.get(edge.target) ?? 0)) {
+        depths.set(edge.target, next);
+        changed = true;
+      }
+    }
+    if (!changed)
+      break;
+  }
+  const placed = graph.nodes.filter((n) => current.nodes.some((old) => old.id === n.id) || spec.nodes.some((input) => node_ids[input.ref] === n.id && input.position));
+  for (const n of graph.nodes.filter((n2) => !placed.includes(n2))) {
+    const x = 100 + (depths.get(n.id) ?? 0) * 320;
+    let y = 250;
+    while (placed.some((other) => other.position && Math.abs(other.position.x - x) < 300 && Math.abs(other.position.y - y) < 160))
+      y += 180;
+    n.position = { x, y };
+    placed.push(n);
+  }
+  if (spec.test_parameters !== void 0)
+    graph.defaultParams = JSON.stringify(spec.test_parameters);
+  return { graph, node_ids, edge_ids, model_ids, query_nodes };
+}
+var nodeCatalog = {
+  schema_version: 1,
+  runtime_context: {
+    inputs: "Read workflow inputs from startTrigger.params, for example startTrigger.params.left. A logical start-node ref does not create a JavaScript global.",
+    query_results: "Read a preceding query result as <persisted_query_name>.data, for example computeSum.data. There is no app-style queries namespace in workflow code.",
+    code: "JavaScript, condition and response code runs in a server-side function body. Return the result explicitly. Read only preceding nodes on the current execution path.",
+    example: {
+      query_name: "computeSum",
+      javascript: "return { sum: Number(startTrigger.params.left) + Number(startTrigger.params.right) };",
+      response: "return computeSum.data;"
+    }
+  },
+  nodes: [
+    { type: "start", renderer: "input", ports: ["default"] },
+    { type: "javascript", renderer: "query", ports: ["success", "failure"], fields: ["name", "code"] },
+    { type: "query", renderer: "query", ports: ["success", "failure"], fields: ["name", "datasource_id", "options"] },
+    { type: "loop", renderer: "query", ports: ["success", "failure"], fields: ["name", "iteration_values_code", "code"] },
+    { type: "condition", renderer: "if-condition", ports: ["true", "false"], fields: ["code"] },
+    { type: "response", renderer: "output", ports: [], fields: ["code", "status_code"] },
+    { type: "agent", renderer: "agent", ports: ["default"], fields: ["system_prompt", "user_prompt", "output_format", "model"] }
+  ],
+  edit_semantics: "Patch. Use existing_id to edit nodes/edges; edge endpoints may use existing node IDs. Omitted objects are preserved. Removal requires explicit IDs and incident edge removal.",
+  limitations: ["Agent tool connections are not authored", "No publishing or trigger setup", "No concurrent-edit protection", "No automatic execution during authoring", "Advanced nodes are preserved but not authored"]
+};
+createRequire(import.meta.url);
+var TableQuotaError = class extends Error {
+  code = "TJDB_TABLE_LIMIT_REACHED";
+  status = 451;
+  retryable = false;
+  constructor() {
+    super("The workspace has reached its ToolJet Database table limit. Stop creating tables. Ask the user to reuse existing tables, free table capacity, or increase the workspace allowance before continuing. Keep resources already created; do not delete tables automatically.");
+    this.name = "TableQuotaError";
+  }
+};
+function tableQuotaError(error) {
+  const seen = /* @__PURE__ */ new Set();
+  while (error instanceof Error && !seen.has(error)) {
+    if (error instanceof TableQuotaError)
+      return error;
+    seen.add(error);
+    error = error.cause;
+  }
+  return void 0;
+}
 createRequire(import.meta.url);
 var require_unicode = __commonJS({
   "node_modules/json5/lib/unicode.js"(exports, module) {
@@ -4792,7 +5141,7 @@ var require_parser = __commonJS({
   }
 });
 export {
-  COMPONENT_FX_UPDATE_GUIDANCE as C,
+  TableQuotaError as T,
   require_identity as a,
   require_Scalar as b,
   require_cst as c,
@@ -4808,8 +5157,15 @@ export {
   require_parse as m,
   require_util as n,
   external_exports as o,
-  COMPONENT_FX_GUIDANCE as p,
-  editContractSchema as q,
+  definition as p,
+  nodeCatalog as q,
   require_errors as r,
-  generateEditContract as s
+  specSchema as s,
+  tableQuotaError as t,
+  compileGraph as u,
+  validateGraph as v,
+  assertWorkflowJavaScript as w,
+  controlFlowEdges as x,
+  editContractSchema as y,
+  generateEditContract as z
 };

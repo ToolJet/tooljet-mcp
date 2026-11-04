@@ -15,7 +15,7 @@ export function insertRowsBatchTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Seed multiple ToolJet-DB tables in one call. Entries are processed in the listed order so parent rows can be inserted before ' +

@@ -1,14 +1,14 @@
 import { createRequire } from "node:module";
-import { J as JSONRPCMessageSchema, i as isInitializeRequest, a as isJSONRPCRequest, D as DEFAULT_NEGOTIATED_PROTOCOL_VERSION, S as SUPPORTED_PROTOCOL_VERSIONS, b as isJSONRPCResultResponse, c as isJSONRPCErrorResponse, p as peekAppPlan, d as consumeAppPlan, f as frozenAppRefusal, r as replaceView, e as replaceFingerprint, g as danglingAfterReplace, h as prepareQueryOptionsForWrite, m as matchPlannedPage, l as literalCanvasColor, j as prepareComponentBatch, k as replaceIds, n as expandQueryLifecycles, v as validateEvents, o as navigationReorders, q as persistedEventSpecs } from "./chunk-C-4D1Wqw.js";
+import { J as JSONRPCMessageSchema, i as isInitializeRequest, a as isJSONRPCRequest, D as DEFAULT_NEGOTIATED_PROTOCOL_VERSION, S as SUPPORTED_PROTOCOL_VERSIONS, b as isJSONRPCResultResponse, c as isJSONRPCErrorResponse, p as peekAppPlan, d as consumeAppPlan, f as frozenAppRefusal, r as replaceView, e as replaceFingerprint, g as danglingAfterReplace, h as prepareQueryOptionsForWrite, m as matchPlannedPage, j as prepareComponentBatch, k as replaceIds, l as expandQueryLifecycles, v as validateEvents, n as navigationReorders, o as resolveRef, q as persistedEventSpecs } from "./chunk-DVEwpOfg.js";
 import { e8 as __toESM, e6 as __commonJS } from "./chunk-BEuHHGL1.js";
-import { f as fail, o as ok, c as componentRef, e as completedPartialWrites, t as tableQuotaError, r as resolveRef, i as indexComponentReferences } from "./chunk-DTNK3HRU.js";
-import { o as external_exports } from "./chunk-8iUq0slz.js";
-import { h as assessQueryRead, L as LARGE_READ_ROW_THRESHOLD, r as resolveStaticBindings, j as resolvedReadRefusal, s as sameReadSource, k as extractRowCount, m as emptyViewerOnlyParams, o as emptyParamsNote, u as unresolvedNote, v as validateQueryOptions, i as issueMessages } from "./chunk-yxr8SUor.js";
+import { f as fail, o as ok, l as literalCanvasColor, c as componentRef, b as completedPartialWrites, i as indexComponentReferences } from "./chunk-zEby1wOD.js";
+import { o as external_exports, t as tableQuotaError } from "./chunk-8YTh_X7O.js";
+import { h as assessQueryRead, L as LARGE_READ_ROW_THRESHOLD, r as resolveStaticBindings, j as resolvedReadRefusal, s as sameReadSource, k as extractRowCount, m as emptyViewerOnlyParams, o as emptyParamsNote, u as unresolvedNote, v as validateQueryOptions, i as issueMessages } from "./chunk-944gmYue.js";
 import "node:http";
 import { Http2ServerRequest, constants } from "node:http2";
 import { Readable } from "node:stream";
-import { v as validateAppStructure, e as encodeComponentParent } from "./chunk-gznY6rD8.js";
-import { g as getDatasourceQuerySchema } from "./chunk-CsHFzbSc.js";
+import { v as validateAppStructure, e as encodeComponentParent } from "./chunk-CUSf2Ml4.js";
+import { g as getDatasourceQuerySchema } from "./chunk-wUGawh4I.js";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
@@ -1311,7 +1311,7 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
   return {
     name: "verify_page_render",
     title: "Verify Page Render",
-    annotations: { readOnlyHint: true, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
     description: `Render audit of one page or every page of an app in a headless browser at 1600x900, after the app is built. Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", "Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. Run it once per page before the handoff and review every finding; report unverified behavior explicitly. Opens the version being edited with the builder's ToolJet session, or a separate app-scoped OAuth viewer credential (limited to the viewer origin), so a private app is audited without being made public. Only saved, static, bounded read queries may run; writes, dynamic queries and queries requiring confirmation are blocked and reported as unverified. Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.`,
     inputSchema: {
       app_id: external_exports.string().regex(/^[A-Za-z0-9_-]+$/),
@@ -3193,7 +3193,7 @@ function applyAppPhaseTool(client) {
       readOnlyHint: false,
       // A plan page marked replace has its components and their events deleted before the plan's are created.
       destructiveHint: true,
-      openWorldHint: true
+      openWorldHint: false
     },
     description: "Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates tables/pages/queries in dependency order, seeds rows, creates independent page component batches concurrently, combines ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It then runs the proven read queries the phase created or updated once and reports them in read_check (failed: fix the query; inconclusive: the read takes a component value a browser-free run leaves empty; not_run: writes, remote or paid calls and RunJS, which are never run here). A failing read does not fail the phase. ToolJet has no cross-resource transaction: a rare upstream partial failure reports the completed stage/counts and never auto-deletes user data, except for a plan page marked replace: that page ends up holding exactly the plan's components. It is written as a difference: a component the plan leaves as it is is not rewritten, one that only moved is moved, one that changed is created again under its own id, and one the plan drops is deleted, with the events on the page's components replaced by the plan's (page events and query events only where the plan declares them again); queries the plan defines again are updated in place keeping their ids. A replace is refused before any write if the page changed since lint (any component, redefined query or related event edited), and every component and event ref is prepared before the first write. A replace is not atomic: a failure midway leaves the page to be repaired (the result says what was removed; there is no rollback), so use replace on draft or otherwise recoverable pages. The one-time token prevents an accidental retry from duplicating objects.",
     inputSchema: {

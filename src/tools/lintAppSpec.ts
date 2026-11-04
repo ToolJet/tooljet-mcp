@@ -28,7 +28,8 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
     // The dry run half of the governed phase: it never mutates ToolJet.
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
     },
     description:
       'Dry-run an exact app phase before any writes. It validates optional ToolJet DB tables/seed_data, datasource queries, ' +

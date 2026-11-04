@@ -20,7 +20,7 @@ export function addQueriesTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       "Create MANY queries in a single call (all share version_id). Prefer this over repeated add_query " +

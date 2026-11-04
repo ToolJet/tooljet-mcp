@@ -1,12 +1,33 @@
 import { createRequire } from "node:module";
-import { o as external_exports, p as COMPONENT_FX_GUIDANCE } from "./chunk-8iUq0slz.js";
-import { r as resolveRef$1, c as componentRef, v as validateTableBatch, n as normalizeComponentSpec, i as indexComponentReferences, a as normalizeType, b as booleanBindingValue, T as TOOLJET_DB_DATA_TYPES, f as fail, d as invalidSeedTimestamps, o as ok } from "./chunk-DTNK3HRU.js";
-import { p as lintComponentStateBindings, d as decodeComponentParent, q as minimumTextHeight, r as pageIconError, t as lintComponents, e as encodeComponentParent, v as validateAppStructure, a as componentNameSchema, c as componentSlotSchema, s as suggestedHtmlHeight, u as pageIconSchema, w as namespaceReads } from "./chunk-gznY6rD8.js";
+import { c as componentRef, v as validateTableBatch, i as indexComponentReferences, n as normalizeType, T as TOOLJET_DB_DATA_TYPES, f as fail, a as invalidSeedTimestamps, l as literalCanvasColor, o as ok } from "./chunk-zEby1wOD.js";
+import { l as lintComponentStateBindings, d as decodeComponentParent, S as STYLE_KEYS_IN_PROPERTIES, m as minimumTextHeight, P as PROPERTY_KEY_ALIASES, n as nearestCatalogKey, p as pageIconError, b as lintComponents, e as encodeComponentParent, v as validateAppStructure, c as componentNameSchema, f as componentSlotSchema, s as suggestedHtmlHeight, g as pageIconSchema, h as namespaceReads } from "./chunk-CUSf2Ml4.js";
 import { e5 as getComponentSchema } from "./chunk-BEuHHGL1.js";
-import { f as normalizeQueryToggles, t as toggleRewriteWarning, i as issueMessages, q as queryToggleIssues, e as normalizeQueryOptions, v as validateQueryOptions, p as parseExpression, g as arithmeticWriteWarning, b as bindingSpans } from "./chunk-yxr8SUor.js";
+import { f as normalizeQueryToggles, t as toggleRewriteWarning, i as issueMessages, q as queryToggleIssues, e as normalizeQueryOptions, v as validateQueryOptions, p as parseExpression, g as arithmeticWriteWarning, b as bindingSpans } from "./chunk-944gmYue.js";
+import { o as external_exports } from "./chunk-8YTh_X7O.js";
 import { randomUUID } from "node:crypto";
 import { j as union, A as string, V as number, a7 as looseObject, U as object, a8 as literal, i as unknown, ax as _enum, aU as array, ai as intersection, K as record, aQ as boolean, N as preprocess, T as optional, ae as iso_exports, aD as discriminatedUnion, aI as custom, Y as _null2 } from "./chunk-4DDZMCNh.js";
 createRequire(import.meta.url);
+function resolveRef$1(candidates, ref, kind, scope, describe = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
+  const byId = candidates.find((candidate) => candidate.id === ref);
+  if (byId)
+    return { ok: true, target: byId };
+  const byName = candidates.filter((candidate) => candidate.name === ref);
+  if (byName.length === 1)
+    return { ok: true, target: byName[0] };
+  if (byName.length > 1) {
+    return {
+      ok: false,
+      error: `${kind} name "${ref}" is ambiguous ${scope} (${byName.length} share it). Pass the id instead: ${byName.map((candidate) => candidate.id).join(", ")}.`
+    };
+  }
+  const available = candidates.map(describe).join(", ");
+  return {
+    ok: false,
+    // The "do not re-read" clause matters: the previous phrasing ("does not exist") invited exactly
+    // the re-read that caused the loop.
+    error: `No ${kind.toLowerCase()} with id or name "${ref}" ${scope}. Do not re-read \u2014 it currently holds: ${available || "(none)"}.`
+  };
+}
 var member = (n) => n && ["MemberExpression", "OptionalMemberExpression"].includes(n.type);
 var key = (n) => n.computed ? n.property?.type === "StringLiteral" ? n.property.value : void 0 : n.property?.name;
 var unwrap = (v) => v && typeof v === "object" && "value" in v ? v.value : v;
@@ -895,6 +916,378 @@ function unique$2(values, label, sourceName, warnings) {
   }
   return result;
 }
+function separateAdjacentClosingBraces(text) {
+  let out = "";
+  let i = 0;
+  const n = text.length;
+  while (i < n) {
+    if (!text.startsWith("{{", i)) {
+      out += text[i];
+      i += 1;
+      continue;
+    }
+    let j = i + 2;
+    let depth = 0;
+    let quote = null;
+    let expr = "";
+    let terminated = false;
+    while (j < n) {
+      const c = text[j];
+      if (quote) {
+        expr += c;
+        if (c === "\\" && j + 1 < n) {
+          expr += text[j + 1];
+          j += 2;
+          continue;
+        }
+        if (c === quote)
+          quote = null;
+        j += 1;
+        continue;
+      }
+      if (c === "'" || c === '"' || c === "`") {
+        quote = c;
+        expr += c;
+        j += 1;
+        continue;
+      }
+      if (c === "{") {
+        depth += 1;
+        expr += c;
+        j += 1;
+        continue;
+      }
+      if (c === "}") {
+        if (depth === 0 && text[j + 1] === "}") {
+          terminated = true;
+          break;
+        }
+        depth = Math.max(depth - 1, 0);
+        expr += c;
+        if (text[j + 1] === "}")
+          expr += " ";
+        j += 1;
+        continue;
+      }
+      expr += c;
+      j += 1;
+    }
+    if (!terminated) {
+      out += text.slice(i);
+      break;
+    }
+    out += `{{${expr}}}`;
+    i = j + 2;
+  }
+  return out;
+}
+function separateAdjacentClosingBracesDeep(value) {
+  if (typeof value === "string") {
+    if (!value.includes("{{"))
+      return { value, changed: false };
+    const fixed = separateAdjacentClosingBraces(value);
+    return { value: fixed, changed: fixed !== value };
+  }
+  if (Array.isArray(value)) {
+    let changed = false;
+    const next = value.map((item) => {
+      const result = separateAdjacentClosingBracesDeep(item);
+      changed ||= result.changed;
+      return result.value;
+    });
+    return { value: changed ? next : value, changed };
+  }
+  if (value && typeof value === "object") {
+    let changed = false;
+    const next = {};
+    for (const [key2, item] of Object.entries(value)) {
+      const result = separateAdjacentClosingBracesDeep(item);
+      changed ||= result.changed;
+      next[key2] = result.value;
+    }
+    return { value: changed ? next : value, changed };
+  }
+  return { value, changed: false };
+}
+function normalizeSection(section) {
+  if (!section)
+    return { value: void 0, patch: void 0 };
+  const value = {};
+  const patch = {};
+  for (const [key2, entry] of Object.entries(section)) {
+    const canonical2 = entry !== null && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry : { value: entry };
+    value[key2] = canonical2;
+    if (canonical2 !== entry)
+      patch[key2] = canonical2;
+  }
+  return {
+    value,
+    patch: Object.keys(patch).length ? patch : void 0
+  };
+}
+function propValue(properties, key2) {
+  const entry = properties[key2];
+  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+}
+function isTruthy(value) {
+  if (value === true || value === 1)
+    return true;
+  if (typeof value !== "string")
+    return false;
+  const compact = value.replace(/\s+/g, "").toLowerCase();
+  return compact === "true" || compact === "{{true}}" || compact === "1" || compact === "{{1}}";
+}
+function catalogDefault(type, key2, fallback) {
+  return getComponentSchema(type)?.properties.find((property) => property.key === key2)?.default ?? fallback;
+}
+var CLIENT_SERVER_BOOLEAN_KEYS = /* @__PURE__ */ new Set([
+  "serverSidePagination",
+  "serverSideSearch",
+  "serverSideSort",
+  "serverSideFilter"
+]);
+var STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS = 24;
+function isStrippableUnknownKey(type, section, key2, knownKeys) {
+  if (knownKeys.includes(key2))
+    return false;
+  if (type === "DropdownV2" && section === "properties" && ["value", "defaultValue"].includes(key2))
+    return false;
+  if (section === "properties" && STYLE_KEYS_IN_PROPERTIES.has(key2))
+    return false;
+  const aliasTarget = PROPERTY_KEY_ALIASES[key2.toLowerCase()];
+  if (aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget)))
+    return false;
+  if (nearestCatalogKey(key2, knownKeys))
+    return false;
+  return true;
+}
+function normalizeComponentSpec(component, options = {}) {
+  const normalizedSections = Object.fromEntries(["properties", "styles", "validation", "others"].map((section) => [
+    section,
+    normalizeSection(component[section])
+  ]));
+  const properties = { ...normalizedSections.properties.value ?? {} };
+  const propertyPatch = {};
+  const stylePatch = {};
+  const warnings = [];
+  const setProperty = (key2, value) => {
+    const current = properties[key2];
+    const wrapped = current && typeof current === "object" && !Array.isArray(current) ? { ...current, value } : { value };
+    properties[key2] = wrapped;
+    propertyPatch[key2] = wrapped;
+  };
+  const stylesValue = normalizedSections.styles.value ?? {};
+  let stylesChanged = false;
+  const setStyle = (key2, value) => {
+    const current = stylesValue[key2];
+    stylesValue[key2] = current && typeof current === "object" && !Array.isArray(current) ? { ...current, value } : { value };
+    stylePatch[key2] = stylesValue[key2];
+    normalizedSections.styles.value = stylesValue;
+  };
+  const schema = getComponentSchema(component.type);
+  const knownPropertyKeys = schema ? new Set(schema.properties.map((entry) => entry.key)) : void 0;
+  const knownStyleKeys = schema ? new Set(schema.styles.map((entry) => entry.key)) : void 0;
+  const aliasTargetFor = (key2) => {
+    if (knownPropertyKeys?.has(key2))
+      return void 0;
+    const target = PROPERTY_KEY_ALIASES[key2.toLowerCase()];
+    if (!target)
+      return void 0;
+    if (!schema)
+      return target;
+    return knownStyleKeys.has(target) || knownPropertyKeys.has(target) ? target : void 0;
+  };
+  for (const key2 of Object.keys(properties)) {
+    const aliasTarget = aliasTargetFor(key2);
+    const canonical2 = aliasTarget ?? key2;
+    const belongsInStyles = canonical2 !== "styles" && (STYLE_KEYS_IN_PROPERTIES.has(canonical2) || !!aliasTarget && !!knownStyleKeys?.has(canonical2) && !knownPropertyKeys?.has(canonical2));
+    if (!aliasTarget && !belongsInStyles)
+      continue;
+    if (belongsInStyles) {
+      if (stylesValue[canonical2] === void 0)
+        stylesValue[canonical2] = properties[key2];
+      delete properties[key2];
+      stylesChanged = true;
+      warnings.push(`${component.type} "${component.name}": moved ${aliasTarget ? `alias "${key2}"` : `style key "${key2}"`} to styles.${canonical2} (ToolJet reads it from styles, not properties).`);
+    } else if (canonical2 !== key2) {
+      if (properties[canonical2] === void 0)
+        properties[canonical2] = properties[key2];
+      delete properties[key2];
+      warnings.push(`${component.type} "${component.name}": renamed alias "${key2}" to "${canonical2}".`);
+    }
+  }
+  if (stylesChanged)
+    normalizedSections.styles.value = stylesValue;
+  if (options.stripUnknownKeys && component.type === "NumberInput") {
+    for (const key2 of ["minValue", "maxValue"]) {
+      const value = propValue(properties, key2);
+      if (value == null || typeof value === "string" && !value.trim())
+        continue;
+      const validation = normalizedSections.validation.value ?? {};
+      const current = propValue(validation, key2);
+      if (validation[key2] !== void 0 && current !== value)
+        continue;
+      validation[key2] = properties[key2];
+      normalizedSections.validation.value = validation;
+      normalizedSections.validation.patch = { ...normalizedSections.validation.patch, [key2]: validation[key2] };
+      delete properties[key2];
+      warnings.push(`NumberInput "${component.name}": moved properties.${key2} to validation.${key2}, where the renderer reads the bound.`);
+    }
+  }
+  for (const key2 of CLIENT_SERVER_BOOLEAN_KEYS) {
+    const current = propValue(properties, key2);
+    if (current !== "clientSide" && current !== "serverSide")
+      continue;
+    setProperty(key2, current === "serverSide");
+    warnings.push(`${component.name} "${key2}": normalized ${JSON.stringify(current)} to a boolean ToolJet binding.`);
+  }
+  if (component.type === "Table") {
+    if (properties.useDynamicColumn === void 0) {
+      setProperty("useDynamicColumn", catalogDefault("Table", "useDynamicColumn", "{{false}}"));
+    }
+    if (properties.columnData === void 0) {
+      setProperty("columnData", catalogDefault("Table", "columnData", "{{[{name: 'email', key: 'email', id: '1'}, {name: 'Full name', key: 'name', id: '2', isEditable: true}]}}"));
+    }
+    const columns = propValue(properties, "columns");
+    const dynamicColumns = isTruthy(propValue(properties, "useDynamicColumn"));
+    const autogenerateColumns = propValue(properties, "autogenerateColumns");
+    if (options.stripUnknownKeys && columns === void 0 && !dynamicColumns && isTruthy(autogenerateColumns) && typeof propValue(properties, "data") === "string" && /\bqueries(?:\.|\[)/.test(String(propValue(properties, "data")))) {
+      setProperty("columns", []);
+    }
+    if (Array.isArray(columns) && !dynamicColumns && !isTruthy(autogenerateColumns)) {
+      setProperty("autogenerateColumns", true);
+      if (autogenerateColumns !== void 0) {
+        warnings.push(`Table "${component.name}": normalized autogenerateColumns from false to true for runtime compatibility. Some ToolJet Table versions crash while generating transformations for explicit static columns when it is false. Project the data binding to intended keys and declare behavior-only keys with columnVisibility:false.`);
+      }
+    }
+    if (Array.isArray(columns)) {
+      let changedColumns = false;
+      const repairedColumns = columns.map((column) => {
+        if (options.stripUnknownKeys && column && typeof column === "object" && !Array.isArray(column) && column.columnType === "button" && Array.isArray(column.buttons)) {
+          const buttons = column.buttons.map((button) => {
+            if (!button || typeof button !== "object" || Array.isArray(button))
+              return button;
+            const b = button;
+            if (typeof b.label !== "string" || b.buttonLabel !== void 0)
+              return button;
+            const { label, ...rest } = b;
+            changedColumns = true;
+            warnings.push(`Table "${component.name}" action "${b.id}": moved label to buttonLabel, where the renderer reads the caption.`);
+            return { ...rest, buttonLabel: label };
+          });
+          column = { ...column, buttons };
+        }
+        if (column && typeof column === "object" && !Array.isArray(column) && column.columnType === "datepicker" && column.isDateSelectionEnabled === false && column.isTimeChecked !== true) {
+          changedColumns = true;
+          const entry = column;
+          warnings.push(`Table "${component.name}" date column "${entry.name ?? entry.key}": enabled date selection \u2014 a datepicker column with both date selection and time disabled renders blank regardless of the data.`);
+          return { ...entry, isDateSelectionEnabled: true };
+        }
+        return column;
+      });
+      if (changedColumns)
+        setProperty("columns", repairedColumns);
+    }
+  }
+  if (component.type === "KeyValuePair") {
+    const fields = propValue(properties, "fields");
+    if (Array.isArray(fields) && fields.length > 0) {
+      const explicitIds = new Set(fields.flatMap((field) => {
+        const id = field && typeof field === "object" ? field.id : void 0;
+        return typeof id === "string" && id.length > 0 ? [id] : [];
+      }));
+      const demoFields = catalogDefault("KeyValuePair", "fields", []);
+      const currentHistory = propValue(properties, "fieldDeletionHistory");
+      const deletionHistory = new Set(Array.isArray(currentHistory) ? currentHistory.filter((key2) => typeof key2 === "string" && key2.length > 0) : []);
+      const before = deletionHistory.size;
+      if (Array.isArray(demoFields)) {
+        for (const field of demoFields) {
+          if (!field || typeof field !== "object")
+            continue;
+          const { id, key: key2 } = field;
+          if (typeof key2 === "string" && !explicitIds.has(String(id ?? "")))
+            deletionHistory.add(key2);
+        }
+      }
+      if (deletionHistory.size > before || properties.fieldDeletionHistory === void 0) {
+        setProperty("fieldDeletionHistory", [...deletionHistory]);
+        warnings.push(`KeyValuePair "${component.name}": normalized fieldDeletionHistory so ToolJet does not append or positionally merge catalog demo fields into the explicit fields array.`);
+      }
+    }
+  }
+  if (component.type === "Statistics") {
+    const width = (component.layouts?.desktop ?? component.layout)?.width;
+    const iconName = propValue(properties, "icon");
+    const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propValue(properties, "iconVisibility") !== false && propValue(properties, "iconVisibility") !== "{{false}}";
+    const rawSize = propValue(stylesValue, "primaryValueSize") ?? propValue(properties, "primaryValueSize");
+    const sizeText = typeof rawSize === "string" ? rawSize.replace(/[{}]/g, "").trim() : rawSize;
+    const numericSize = typeof sizeText === "number" ? sizeText : typeof sizeText === "string" && /^\d+$/.test(sizeText) ? Number(sizeText) : void 0;
+    const rawValue = propValue(properties, "primaryValue");
+    const currencyValue = typeof rawValue === "string" && /minimumFractionDigits|style\s*:\s*['"]currency['"]|[$£€¥]/.test(rawValue);
+    const widthKnown = typeof width === "number";
+    const narrowTile = widthKnown && width < STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS;
+    const clipProne = iconVisible && narrowTile || currencyValue && (narrowTile || !widthKnown);
+    if (isTruthy(propValue(properties, "hideSecondary")) && (numericSize === void 0 || numericSize > 22) && clipProne) {
+      setStyle("primaryValueSize", "{{22}}");
+      warnings.push(`Statistics "${component.name}": set styles.primaryValueSize to 22 so the ${currencyValue ? "currency " : ""}value fits a value-only tile${widthKnown ? ` (${width} columns wide)` : ""} (larger sizes clip or wrap the value).`);
+    }
+  }
+  if (options.stripUnknownKeys) {
+    const schema2 = getComponentSchema(component.type);
+    if (schema2) {
+      const sections = [
+        ["properties", properties],
+        ["styles", normalizedSections.styles.value]
+      ];
+      for (const [section, sectionValue] of sections) {
+        if (!sectionValue)
+          continue;
+        const knownKeys = (schema2[section] ?? []).map((entry) => entry.key);
+        for (const key2 of Object.keys(sectionValue)) {
+          if (!isStrippableUnknownKey(component.type, section, key2, knownKeys))
+            continue;
+          delete sectionValue[key2];
+          warnings.push(`${component.type} "${component.name}": removed unknown ${section} key "${key2}" \u2014 ToolJet ignores it, so it is kept out of the saved definition rather than persisted as an unusable key.`);
+        }
+      }
+    }
+  }
+  const braceFixedKeys = [];
+  for (const key2 of Object.keys(properties)) {
+    const result = separateAdjacentClosingBracesDeep(propValue(properties, key2));
+    if (!result.changed)
+      continue;
+    setProperty(key2, result.value);
+    braceFixedKeys.push(`properties.${key2}`);
+  }
+  for (const key2 of Object.keys(stylesValue)) {
+    const result = separateAdjacentClosingBracesDeep(propValue(stylesValue, key2));
+    if (!result.changed)
+      continue;
+    setStyle(key2, result.value);
+    braceFixedKeys.push(`styles.${key2}`);
+  }
+  if (braceFixedKeys.length) {
+    warnings.push(`${component.type} "${component.name}": separated adjacent closing braces inside ${braceFixedKeys.join(", ")} (ToolJet ends a {{ }} expression at the first "}}", which would have left the component blank). Write nested closes as "} }" inside bindings.`);
+  }
+  const patch = Object.fromEntries(["properties", "styles", "validation", "others"].flatMap((section) => {
+    const envelopePatch = normalizedSections[section].patch ?? {};
+    const semanticPatch = section === "properties" ? propertyPatch : section === "styles" ? stylePatch : {};
+    const merged = { ...envelopePatch, ...semanticPatch };
+    return Object.keys(merged).length ? [[section, merged]] : [];
+  }));
+  return {
+    component: {
+      ...component,
+      properties,
+      ...normalizedSections.styles.value ? { styles: normalizedSections.styles.value } : {},
+      ...normalizedSections.validation.value ? { validation: normalizedSections.validation.value } : {},
+      ...normalizedSections.others.value ? { others: normalizedSections.others.value } : {}
+    },
+    patch,
+    warnings
+  };
+}
 function normalizePlannedLayouts(component) {
   const warnings = [];
   const label = `${component.type ?? "component"} "${component.name ?? "?"}"`;
@@ -1098,7 +1491,7 @@ function lintServerSidePaginationRace(pages, queries) {
   for (const query of queries)
     if (query.name)
       queryByName.set(query.name, query);
-  const propValue = (properties, key2) => {
+  const propValue2 = (properties, key2) => {
     const entry = properties?.[key2];
     return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
   };
@@ -1120,9 +1513,9 @@ function lintServerSidePaginationRace(pages, queries) {
       if (component.type !== "Table" || !component.name)
         continue;
       const properties = component.properties;
-      if (!isTrue(propValue(properties, "serverSidePagination")))
+      if (!isTrue(propValue2(properties, "serverSidePagination")))
         continue;
-      for (const queryName of referencedQueryNames(propValue(properties, "data"))) {
+      for (const queryName of referencedQueryNames(propValue2(properties, "data"))) {
         const query = queryByName.get(queryName);
         if (!query)
           continue;
@@ -1540,110 +1933,6 @@ function dropUnprefixedDuplicates(values) {
   return distinct.filter((value) => value.startsWith('Page "') || !stripped.has(value));
 }
 createRequire(import.meta.url);
-function asRecord(value) {
-  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
-}
-function bindingBoolean(value) {
-  return booleanBindingValue(value) ?? value;
-}
-function compactTheme(theme) {
-  if (!theme)
-    return null;
-  return {
-    ...typeof theme.id === "string" ? { id: theme.id } : {},
-    ...typeof theme.name === "string" ? { name: theme.name } : {},
-    ...typeof theme.isDefault === "boolean" ? { is_default: theme.isDefault } : {},
-    ...typeof theme.isBasic === "boolean" ? { is_basic: theme.isBasic } : {},
-    ...typeof theme.isDisabled === "boolean" ? { is_disabled: theme.isDisabled } : {}
-  };
-}
-function projectAppSettings(snapshot) {
-  const global = snapshot.global_settings ?? {};
-  const properties = pageSettingProperties(snapshot);
-  const disableMenu = asRecord(properties.disableMenu);
-  const theme = asRecord(global.theme);
-  return {
-    app_id: snapshot.app_id,
-    version_id: snapshot.version_id,
-    canvas: {
-      background_color: global.canvasBackgroundColor,
-      max_width: {
-        value: global.canvasMaxWidth,
-        unit: global.canvasMaxWidthType
-      },
-      mode: global.appMode
-    },
-    theme: compactTheme(theme),
-    header: {
-      hidden: properties.hideHeader,
-      logo_hidden: properties.hideLogo,
-      title: properties.name
-    },
-    navigation: {
-      hidden: bindingBoolean(disableMenu.value ?? properties.disableMenu),
-      position: properties.position,
-      style: properties.style,
-      collapsible: properties.collapsable
-    }
-  };
-}
-function pageSettingProperties(snapshot) {
-  return asRecord(asRecord(snapshot.page_settings).properties);
-}
-function projectJavascriptRuntime(snapshot) {
-  const global = snapshot.global_settings ?? {};
-  const raw = asRecord(global.libraries).javascript;
-  const entries = Array.isArray(raw) ? raw : [];
-  const script = asRecord(global.preloadedScript).javascript;
-  return {
-    configuration_state: raw === void 0 || Array.isArray(raw) && !raw.length ? "not_configured" : Array.isArray(raw) ? "configured" : "unknown",
-    total: Array.isArray(raw) ? raw.length : raw === void 0 ? 0 : null,
-    truncated: entries.length > 32,
-    libraries: entries.slice(0, 32).map((value) => {
-      const lib = asRecord(value);
-      let sourceUrl = null;
-      let redacted = false;
-      let https = false;
-      try {
-        if (typeof lib.url === "string" && lib.url.length <= 4096) {
-          const url = new URL(lib.url);
-          if (url.protocol === "https:" || url.protocol === "http:") {
-            https = url.protocol === "https:";
-            redacted = Boolean(url.username || url.password || url.search || url.hash);
-            url.username = "";
-            url.password = "";
-            url.search = "";
-            url.hash = "";
-            sourceUrl = url.toString();
-          }
-        }
-      } catch {
-      }
-      return {
-        name: typeof lib.name === "string" ? lib.name.slice(0, 128) : null,
-        enabled: typeof lib.enabled === "boolean" ? lib.enabled : null,
-        source_url: sourceUrl,
-        url_valid: sourceUrl !== null,
-        url_redacted: redacted,
-        https
-      };
-    }),
-    preloaded_script_present: typeof script === "string" ? Boolean(script.trim()) : null,
-    runtime_verified: false,
-    guidance: "Configuration is not proof of successful loading, export names, worker/CSP compatibility, or deployment support. In ToolJet versions with the native library loader, enabled HTTPS UMD/IIFE library exports are passed to RunJS as lexical parameters by their configured names, not guaranteed globalThis properties. Do not redeclare those parameter names with const/let. Preloaded script exports may add or override names; their code is intentionally omitted here. This MCP does not configure JavaScript libraries through update_app_settings. If required dependencies are missing, report the prerequisite and request supported setup instead of inventing globals or claiming OCR works. PDF.js rasterization, Tesseract worker initialization and actual image/PDF extraction still need runtime testing. Source URLs omit credentials, query strings and fragments; do not reuse redacted URLs as configuration."
-  };
-}
-async function literalCanvasColor(client, appId, versionId) {
-  if (!versionId || typeof client.getAppSettings !== "function")
-    return void 0;
-  try {
-    const snapshot = await client.getAppSettings(appId, versionId);
-    const colour = asRecord(snapshot.global_settings).canvasBackgroundColor;
-    return typeof colour === "string" && /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%deg]+\))$/i.test(colour.trim()) ? colour.trim() : void 0;
-  } catch {
-    return void 0;
-  }
-}
 var layoutSchema = external_exports.object({
   top: external_exports.number(),
   left: external_exports.number().describe("Columns in the immediate parent canvas, which has its own 43-column grid."),
@@ -2277,6 +2566,8 @@ function restatedQueryNames(summary, queries, tables, datasources) {
   }
   return restated;
 }
+var COMPONENT_FX_GUIDANCE = "For properties/styles/validation with an FX toggle, use `{ value: <expression>, fxActive: true }` only for bindings/conditions/calculations the normal control cannot express. Keep defaults and panel-editable constants (including `{{true}}`/`{{false}}`, numbers, selections, colors) out of FX. For nested Table columns/buttons/options and KeyValuePair fields, add the property key (e.g. `columnVisibility`, `disableButton`, `fieldVisibility`, `isEditable`) to that object's `fxActiveFields`, preserving other entries. ";
+var COMPONENT_FX_UPDATE_GUIDANCE = COMPONENT_FX_GUIDANCE + "Updates must include both `value` and `fxActive`; revert with `{ value: <constant>, fxActive: false }`. For nested Table fields, remove only reverted property keys from `fxActiveFields`. KeyValuePair arrays merge by index; verify flag removals and report retained flags. ";
 async function mapKeyRefusal(client, componentTypes) {
   if (![...componentTypes].includes("Map") || typeof client?.hasGoogleMapsKey !== "function")
     return void 0;
@@ -2301,7 +2592,8 @@ function lintAppSpecTool(client) {
     // The dry run half of the governed phase: it never mutates ToolJet.
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true
+      destructiveHint: false,
+      openWorldHint: false
     },
     description: "Dry-run an exact app phase before any writes. It validates optional ToolJet DB tables/seed_data, datasource queries, pages/components, events, and concise query lifecycles together. Give pages, queries, and components stable client_ref values; events use source_ref and targeted actions use target_ref. A query can use table_ref to resolve a planned/existing ToolJet DB table by its actual table_name into options.table_id (not a client_ref or alias). For each query use either the exact datasource_id or the exact unique datasource_name from list_datasources(version_id); names are pinned to IDs during this preflight, never guessed from kind. Set app_name when the target app should be renamed in the same governed phase. For repair/continuation phases, pass app_id so persisted page/component/query refs are included and can be targeted without redeclaring them. To rebuild an existing page whole, mark its plan page replace: true (with app_id): the plan is checked against the app with that page emptied, the page's own queries may be defined again (updated in place on apply), and a component another page, event or query still reads must be kept under its name. A Form submits through a Button inside it: set the Form's properties.buttonToSubmit to that Button's client_ref in the same plan (resolved to its id on apply). On success it returns a one-time 30-minute plan_token for apply_app_phase. Treat this call as an awaited barrier; it never mutates ToolJet. " + COMPONENT_FX_GUIDANCE,
     inputSchema: appPlanSchema.shape,
@@ -4263,18 +4555,17 @@ export {
   dbColumnTypeSchema as a6,
   componentInputSchema as a7,
   lintAppSpecTool as a8,
-  projectJavascriptRuntime as a9,
-  projectAppSettings as aa,
-  compactTheme as ab,
-  pageSettingProperties as ac,
-  containsExactValue as ad,
-  inspectUpdateCompatibility as ae,
-  normalizePlanBindingAliases as af,
-  containsNamedBinding as ag,
-  normalizePlannedLayouts as ah,
-  materializeRequiredDefaultChildren as ai,
-  mapKeyRefusal as aj,
-  persistedEventIds as ak,
+  containsExactValue as a9,
+  inspectUpdateCompatibility as aa,
+  normalizePlanBindingAliases as ab,
+  containsNamedBinding as ac,
+  normalizeComponentSpec as ad,
+  normalizePlannedLayouts as ae,
+  materializeRequiredDefaultChildren as af,
+  mapKeyRefusal as ag,
+  COMPONENT_FX_GUIDANCE as ah,
+  COMPONENT_FX_UPDATE_GUIDANCE as ai,
+  persistedEventIds as aj,
   isJSONRPCResultResponse as b,
   isJSONRPCErrorResponse as c,
   consumeAppPlan as d,
@@ -4285,10 +4576,10 @@ export {
   isInitializeRequest as i,
   prepareComponentBatch as j,
   replaceIds as k,
-  literalCanvasColor as l,
+  expandQueryLifecycles as l,
   matchPlannedPage as m,
-  expandQueryLifecycles as n,
-  navigationReorders as o,
+  navigationReorders as n,
+  resolveRef$1 as o,
   peekAppPlan as p,
   persistedEventSpecs as q,
   replaceView as r,

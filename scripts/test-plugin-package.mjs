@@ -32,6 +32,15 @@ try {
   assert.equal(client.getServerVersion().version, version);
   const { tools } = await client.listTools();
   assert(tools.some((tool) => tool.name === 'lint_app_spec'));
+  for (const tool of tools) {
+    for (const hint of ['readOnlyHint', 'destructiveHint', 'openWorldHint']) {
+      assert(Object.hasOwn(tool.annotations ?? {}, hint) && typeof tool.annotations[hint] === 'boolean', `${tool.name}.${hint}`);
+    }
+  }
+  // Fixed actions must be visible in the shipped bundle without a preceding discovery request.
+  for (const name of ['get_app_resource_permission', 'invite_workspace_user', 'delete_workspace_group', 'create_workspace_theme']) {
+    assert(tools.some(tool => tool.name === name && !tool.inputSchema.properties?.action), name);
+  }
   assert(tools.some((tool) => tool.name === 'list_workspace_folders' && tool.annotations?.readOnlyHint));
   assert(tools.find((tool) => tool.name === 'list_workspace_apps')?.inputSchema.properties?.folder_id);
   for (const [name, args] of [

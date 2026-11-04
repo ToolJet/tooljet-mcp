@@ -1,6 +1,6 @@
 import { renderAuditAvailable } from '../renderAuditAvailability.js';
 import { appVersionLifecycleTools } from './appVersionLifecycle.js';
-import { listWorkspaceGroupsTool, manageWorkspaceGroupsTool } from './workspaceGroupManagement.js';
+import { listWorkspaceGroupsTool, manageWorkspaceGroupsTool, workspaceGroupActionTools } from './workspaceGroupManagement.js';
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ToolJetClient } from '../tooljetClient.js';
@@ -67,13 +67,14 @@ import {
   type RuntimeFreshnessMonitor,
 } from '../runtimeFreshness.js';
 import { getRuntimeInfoTool } from './getRuntimeInfo.js';
-import { manageThemeTool } from './manageTheme.js';
-import { manageAppPermissionsTool } from './manageAppPermissions.js';
+import { manageThemeTool, themeActionTools } from './manageTheme.js';
+import { manageAppPermissionsTool, appPermissionActionTools } from './manageAppPermissions.js';
 import {
   listWorkspaceAppsTool,
   listWorkspaceFoldersTool,
   listWorkspaceUsersTool,
   manageWorkspaceUsersTool,
+  workspaceUserActionTools,
 } from './workspaceUserManagement.js';
 import { getWorkflowNodeCatalogTool } from './getWorkflowNodeCatalog.js';
 import { getWorkflowCapabilitiesTool } from './getWorkflowCapabilities.js';
@@ -96,7 +97,7 @@ export const LEGACY_SINGULAR_CREATE_TOOL_NAMES = new Set([
 ]);
 
 /* The HTTP transport builds a server per request and keeps it until the response closes, so every
-   open request held its own copy of all 73 input schemas: about 4.2 MB of zod closures each, which
+   open request held its own copy of all input schemas (73 at the time): about 4.2 MB of zod closures each, which
    took the hosted server to its heap limit at roughly 115 open requests. A tool's schema depends only
    on its name (the factories build it from constants, never from the client), so the first copy is
    kept for the process and the per-request copies become garbage at once. */
@@ -198,6 +199,8 @@ export function registerTools(
     manageThemeTool(client),
   ];
 
+  tools.push(...managementActionTools(tools));
+
   const exposedTools = includeLegacySingularCreateTools()
     ? tools
     : tools.filter((tool) => !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name));
@@ -224,4 +227,15 @@ export function registerTools(
       }) as any
     );
   }
+}
+
+/** Compatibility tools stay callable while each fixed operation is also exposed upfront. */
+export function managementActionTools(sources: ToolDef[]): ToolDef[] {
+  const factories: Record<string, (source: ToolDef) => ToolDef[]> = {
+    manage_app_permissions: appPermissionActionTools,
+    manage_workspace_users: workspaceUserActionTools,
+    manage_workspace_groups: workspaceGroupActionTools,
+    manage_theme: themeActionTools,
+  };
+  return sources.flatMap(source => factories[source.name]?.(source) ?? []);
 }

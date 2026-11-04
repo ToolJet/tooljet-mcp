@@ -139,7 +139,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
       readOnlyHint: false,
       // A plan page marked replace has its components and their events deleted before the plan's are created.
       destructiveHint: true,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates ' +

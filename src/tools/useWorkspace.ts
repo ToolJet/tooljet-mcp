@@ -8,7 +8,8 @@ export function useWorkspaceTool(client: ToolJetClient): ToolDef {
     title: 'Confirm Active Workspace',
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
     },
     description:
       'Confirm the ACTIVE workspace (organization). This server is scoped to a single workspace by its ' +

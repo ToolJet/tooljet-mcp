@@ -9,6 +9,7 @@ export function getRuntimeInfoTool(runtime: RuntimeFreshnessMonitor): ToolDef {
     // Reports this process’s own build identity; touches nothing outside it.
     annotations: {
       readOnlyHint: true,
+      destructiveHint: false,
       openWorldHint: false,
     },
     description:

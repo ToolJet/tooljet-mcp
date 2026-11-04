@@ -172,6 +172,7 @@ export function inspectDatasourceSchemaTool(client: ToolJetClient): ToolDef {
     // Invokes only plugin-advertised read-only metadata methods.
     annotations: {
       readOnlyHint: true,
+      destructiveHint: false,
       openWorldHint: true,
     },
     description:

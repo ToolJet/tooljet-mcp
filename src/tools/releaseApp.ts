@@ -9,7 +9,7 @@ export function releaseAppTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Release a specific ToolJet app version so it becomes the app\'s live released version. ' +

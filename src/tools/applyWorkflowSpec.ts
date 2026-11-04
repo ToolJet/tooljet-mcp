@@ -8,7 +8,7 @@ export function applyWorkflowSpecTool(client: ToolJetClient): ToolDef {
     name: 'apply_workflow_spec',
     title: 'Apply Workflow Spec',
     description: 'Apply a validated plan to an editable draft and verify readback. May edit/remove graph objects. Partial writes return IDs for recovery; never blindly retry creation. Does not execute or publish.',
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     inputSchema: applyWorkflowSpecInputSchema.shape,
     async handler(args: unknown) {
       try {

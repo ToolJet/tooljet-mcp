@@ -12,7 +12,7 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Change an existing query in place. `options` REPLACES the stored options wholesale — send the ' +

@@ -66,6 +66,14 @@ The ToolJet backend accepts `MCP_OAUTH_TRUSTED_PROXIES`, a comma-separated list 
 
 Backend registration permits 10 requests/minute per resolved address. Token/revoke requests that prove possession of a stored credential and satisfy client authentication use a separate 120/minute bucket per grant; viewer minting uses the verified delegation's grant. A client ID or unsigned claim cannot select someone else's bucket. Invalid credentials use address buckets and cannot spend verified-grant capacity, even when the same proxy or MCP process forwards both. The fixed-size anonymous and authenticated stores are separate and local to each backend replica; edge limits still need to handle volumetric traffic. IPv6 callers share address budgets within a /64. When a store fills, the oldest rate window is evicted so cache pressure cannot deny every new caller; this can relax limits under high churn and is another reason to enforce edge protection. Spent or revoked credentials cannot create grant buckets (the five-second valid refresh retry remains supported). A rejected request returns HTTP 429 with `Retry-After: 60`.
 
+## OpenAI domain verification
+
+For an OpenAI plugin submission, set `MCP_OPENAI_APPS_CHALLENGE` to the public challenge token shown by the submission portal. This is optional and separate from all OAuth credentials; never use the exchange secret as the challenge value or commit a portal token.
+
+Proxy `GET /.well-known/openai-apps-challenge` at the MCP origin root to this OAuth server, including when the MCP resource has a path prefix. When configured, the route responds without authentication with the trimmed token as `text/plain; charset=utf-8` and `Cache-Control: no-store`. Other methods return 405; an unset or blank value leaves the route at 404. Both HTTP entry points use this route in OAuth mode only.
+
+After deploying, verify the exact public URL returns the portal token, then complete domain verification and rescan tools in the portal. A local build or PR does not update the hosted scan. Remove the environment setting when the token should no longer be served.
+
 ## Workspace custom domains
 
 A workspace custom domain changes only human browser navigation and links. It does not change `MCP_OAUTH_ISSUER`, `MCP_OAUTH_RESOURCE_URL`, the API target receiving delegation credentials, or the canonical origin used by restricted render verification. Existing grants therefore remain usable when a browser domain is replaced or removed.
