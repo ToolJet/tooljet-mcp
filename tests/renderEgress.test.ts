@@ -66,7 +66,7 @@ describe('the render egress proxy', () => {
     expect(await viaProxy(p.server, `${allowed.url}/main.js`)).toMatchObject({ status: 200, body: 'ok' });
     expect((await viaProxy(p.server, `${other.url}/x.png`)).status).toBe(403);
     expect(other.seen).toEqual([]);
-    expect(blocked).toEqual([other.url]);
+    expect(blocked).toEqual([other.url.replace('http://', '')]);
   });
 
   it('checks each hop of a redirect: the redirect comes back, its off-allowlist target is refused', async () => {
@@ -101,6 +101,51 @@ describe('the render egress proxy', () => {
   });
 });
 
+/** A fake browser whose page, while loading, sends one request through its context's proxy (as Chrome would). */
+function proxiedBrowser(destination: string, { pageAsked }: { pageAsked: boolean }) {
+  let onRequest: ((request: { url: () => string }) => void) | undefined;
+  let proxyServer = '';
+  const context = {
+    route: vi.fn(), routeWebSocket: vi.fn(), close: vi.fn().mockResolvedValue(undefined),
+    on: vi.fn((event: string, cb: typeof onRequest) => { if (event === 'request') onRequest = cb; }),
+    newPage: vi.fn().mockResolvedValue({
+      goto: async () => {
+        if (pageAsked) onRequest?.({ url: () => `${destination}/hop.png` });
+        await viaProxy(proxyServer, `${destination}/hop.png`);
+        return { status: () => 200 };
+      },
+      waitForTimeout: vi.fn(), waitForFunction: vi.fn().mockResolvedValue(undefined),
+      url: () => 'http://viewer.test/applications/app1/home', evaluate: vi.fn().mockResolvedValue({ widgets: 1, findings: [] }),
+    }),
+  };
+  const browser = { newContext: vi.fn(async (options: any) => { proxyServer = options.proxy.server; return context; }), close: vi.fn() };
+  return async () => ({ chromium: { launch: vi.fn().mockResolvedValue(browser) } });
+}
+
+describe('which refused connections are findings', () => {
+  const target = [{ page: 'home', url: 'http://viewer.test/applications/app1/home' }];
+
+  it('one the page made (a redirect hop) is reported', async () => {
+    const outside = await origin((_req, res) => res.end('x'));
+    const [report] = await auditPages(target, {}, proxiedBrowser(outside.url, { pageAsked: true }));
+    expect(report.findings).toEqual([expect.objectContaining({ kind: 'unreachable', reason: 'redirect_blocked' })]);
+    expect(outside.seen).toEqual([]);
+  });
+
+  it('one Chrome made on its own is refused and logged, not reported', async () => {
+    const outside = await origin((_req, res) => res.end('x'));
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const [report] = await auditPages(target, {}, proxiedBrowser(outside.url, { pageAsked: false }));
+      expect(report.findings).toEqual([]);
+      expect(outside.seen).toEqual([]);
+      expect(log).toHaveBeenCalledWith(expect.stringContaining('did not make'));
+    } finally {
+      log.mockRestore();
+    }
+  });
+});
+
 describe('the render check uses the proxy', () => {
   it('launches the browser and every context behind it, loopback included', async () => {
     const context = {
@@ -126,6 +171,33 @@ describe('the render check uses the proxy', () => {
 */
 const playwrightPath = process.env.MCP_RENDER_AUDIT_PLAYWRIGHT;
 describe.skipIf(!playwrightPath || !existsSync(playwrightPath))('a static resource redirect in a real browser', () => {
+  it('a page whose own assets load and that asks for nothing outside the origins has no unreachable finding', async () => {
+    const cdn = await origin((_req, res) => res.writeHead(200, { 'content-type': 'text/javascript' }).end('window.cdnLoaded = true;'));
+    const app = await origin((req, res) => {
+      if (req.url?.startsWith('/applications/')) {
+        res.writeHead(200, { 'content-type': 'text/html' }).end(
+          `<!doctype html><html><head><link rel="stylesheet" href="/app.css"></head><body>` +
+            `<div data-cy="draggable-widget-x">x</div><img src="/own.png"><script src="/main.js"></script>` +
+            `<script src="${cdn.url}/lib.js"></script></body></html>`
+        );
+      } else if (req.url === '/app.css') res.writeHead(200, { 'content-type': 'text/css' }).end('body { margin: 0 }');
+      else if (req.url === '/main.js') res.writeHead(200, { 'content-type': 'text/javascript' }).end('window.mainLoaded = true;');
+      else res.writeHead(200, { 'content-type': 'image/png' }).end();
+    });
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const [report] = await auditPages([{ page: 'home', url: `${app.url}/applications/app1/home` }], {
+        allowedOrigins: new Set([app.url, cdn.url]), settleMs: 2500, chartWaitMs: 100, contentWaitMs: 2000,
+        executablePath: process.env.MCP_RENDER_AUDIT_EXECUTABLE, channel: process.env.MCP_RENDER_AUDIT_CHANNEL || 'chrome',
+      });
+      expect(report.findings.filter((f) => f.kind === 'unreachable')).toEqual([]);
+      expect(app.seen).toEqual(expect.arrayContaining(['/app.css', '/own.png', '/main.js']));
+      expect(cdn.seen).toEqual(['/lib.js']);
+    } finally {
+      log.mockRestore();
+    }
+  }, 60_000);
+
   it('is blocked, while the app origin\'s and an allowed CDN\'s own assets load', async () => {
     const outside = await origin((_req, res) => res.end('/* outside */'));
     const cdn = await origin((_req, res) => res.writeHead(200, { 'content-type': 'text/javascript' }).end('window.cdnLoaded = true;'));

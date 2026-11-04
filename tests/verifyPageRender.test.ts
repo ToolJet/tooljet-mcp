@@ -315,7 +315,8 @@ it('enables the Chromium sandbox and disables non-proxied WebRTC', async () => {
   const f = browserFixture();
   const launch = vi.fn().mockResolvedValue(f.browser);
   await auditPages(target, {}, async () => ({ chromium: { launch } }));
-  expect(launch).toHaveBeenCalledWith(expect.objectContaining({ chromiumSandbox: true, args: ['--force-webrtc-ip-handling-policy=disable_non_proxied_udp'] }));
+  expect(launch).toHaveBeenCalledWith(expect.objectContaining({ chromiumSandbox: true,
+    args: expect.arrayContaining(['--force-webrtc-ip-handling-policy=disable_non_proxied_udp', '--disable-sync', '--no-pings', '--disable-domain-reliability']) }));
 });
 it('shares per-grant admission across separate MCP tool instances before loading app data', async () => {
   vi.stubEnv('MCP_RENDER_AUDIT_MAX_BROWSERS', '2');

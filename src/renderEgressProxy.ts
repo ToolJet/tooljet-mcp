@@ -11,6 +11,17 @@ import { renderAuditUrlAllowed } from './renderAuditPolicy.js';
   a plain-HTTP request by its origin, an HTTPS or WebSocket tunnel (CONNECT) by host and port. Anything else gets
   403 and never leaves this machine.
 */
+/** host:port of an http(s) or ws(s) URL, the way blocked connections are named; undefined when it is not one. */
+export function connectionKey(value: string): string | undefined {
+  try {
+    const url = new URL(value);
+    if (!/^(https?|wss?):$/.test(url.protocol)) return undefined;
+    return `${url.hostname.toLowerCase()}:${url.port || defaultPort(url.protocol)}`;
+  } catch {
+    return undefined;
+  }
+}
+
 export interface EgressProxy {
   /** For Playwright's proxy option: http://127.0.0.1:<port>. */
   server: string;
@@ -54,6 +65,7 @@ const tunnelTarget = (authority: string | undefined): string | undefined => {
 
 const unbracket = (hostname: string): string => hostname.replace(/^\[|\]$/g, '');
 
+/** onBlocked gets each refused destination as host:port (connectionKey). */
 export async function startEgressProxy(origins: Set<string>, onBlocked: (destination: string) => void = () => {}): Promise<EgressProxy> {
   const tunnels = tunnelTargets(origins);
   const sockets = new Set<Duplex>();
@@ -85,7 +97,7 @@ export async function startEgressProxy(origins: Set<string>, onBlocked: (destina
       return;
     }
     if (url.protocol !== 'http:' || !renderAuditUrlAllowed(url.href, origins)) {
-      onBlocked(url.origin);
+      onBlocked(connectionKey(url.href) ?? url.origin);
       res.writeHead(403, { 'content-length': '0', connection: 'close' }).end();
       return;
     }
@@ -129,7 +141,7 @@ export async function startEgressProxy(origins: Set<string>, onBlocked: (destina
     }
     const asHttp = url.href.replace(/^ws:/i, 'http:');
     if (!/^(http|ws):$/i.test(url.protocol) || !renderAuditUrlAllowed(asHttp, origins)) {
-      refuseSocket(client, url.origin);
+      refuseSocket(client, connectionKey(url.href) ?? url.origin);
       return;
     }
     tunnel(client, url.hostname, Number(url.port || 80), (upstream) => {

@@ -7,7 +7,7 @@ import type { ToolJetClient } from '../tooljetClient.js';
 import type { ViewerSession } from '../auth.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { renderAuditBase, renderAuditOrigins, renderAuditUrlAllowed, renderAuditRequest, type RenderAuditQueries } from '../renderAuditPolicy.js';
-import { startEgressProxy, type EgressProxy } from '../renderEgressProxy.js';
+import { connectionKey, startEgressProxy, type EgressProxy } from '../renderEgressProxy.js';
 
 /**
  * Render audit: open a page in a headless browser and report what static checks cannot see. Built from
@@ -428,13 +428,26 @@ export async function auditPages(
     return { server: proxy.server, bypass: '<-loopback>' };
   };
   const closeProxies = () => Promise.all(proxies.splice(0).map((proxy) => proxy.close().catch(() => {})));
+  /*
+    Chrome's own traffic (Safe Browsing, sign-in, component and variations updates; www.google.com:443 on stack 2,
+    2026-11-04) also reaches the proxy, and reporting it made every page of every check read unreachable. It is still
+    refused, and logged here once per destination; only a destination one of the page's own requests went to is a
+    finding (see attributeProxyBlocks). Playwright already turns off background networking, component update, default
+    apps, first run, phishing detection, OptimizationHints, MediaRouter and Translate; the flags below cover the rest.
+  */
+  const logged = new Set<string>();
+  const logUnattributed = (destination: string) => {
+    if (logged.has(destination)) return;
+    logged.add(destination);
+    console.error(`tooljet-mcp: render check refused a connection the page did not make (${destination}); not reported as a finding`);
+  };
   const launch: Record<string, unknown> = { headless: true, chromiumSandbox: true,
-    args: ['--force-webrtc-ip-handling-policy=disable_non_proxied_udp'] };
+    args: ['--force-webrtc-ip-handling-policy=disable_non_proxied_udp', '--disable-sync', '--no-pings', '--disable-domain-reliability'] };
   if (options.executablePath) launch.executablePath = options.executablePath;
   else launch.channel = options.channel ?? 'chrome';
   let browser: any;
   try {
-    launch.proxy = await proxyFor();
+    launch.proxy = await proxyFor(logUnattributed);
     browser = await pw.chromium.launch(launch);
   } catch {
     await closeProxies();
@@ -459,12 +472,32 @@ export async function auditPages(
       if (blocks.length < 4 && !blocks.includes(line)) blocks.push(line);
       if (blockFindings.length < 4 && !blockFindings.some((f) => f.reason === finding.reason && f.detail === finding.detail)) blockFindings.push(finding);
     };
+    /*
+      What the proxy refused for this context, and where the context's own requests went (redirect hops included:
+      Playwright reports each hop as a request even though the route handler never sees it). A refusal is the page's
+      only when one of its requests went there; it is matched at the end, since the hop's request event can arrive after
+      the proxy has refused it.
+    */
+    const proxyBlocks = new Set<string>();
+    const pageConnections = new Set<string>();
+    const attributeProxyBlocks = () => {
+      for (const destination of proxyBlocks) {
+        if (pageConnections.has(destination)) {
+          block({ kind: 'unreachable', component: '-', reason: 'redirect_blocked',
+            detail: 'A redirect or connection to a destination outside the configured audit origins was blocked' }, `connection to ${destination}`);
+        } else logUnattributed(destination);
+      }
+      proxyBlocks.clear();
+    };
     try {
       const width = options.viewportWidth ?? 1600;
+      const proxy = await proxyFor((destination) => proxyBlocks.add(destination));
       // A phone width gets a phone's height; wider windows keep 900.
-      const proxy = await proxyFor((destination) => block({ kind: 'unreachable', component: '-', reason: 'redirect_blocked',
-        detail: 'A redirect or connection to a destination outside the configured audit origins was blocked' }, `connection to ${destination}`));
       ctx = await browser.newContext({ viewport: { width, height: width < 768 ? 812 : 900 }, serviceWorkers: 'block', proxy });
+      ctx.on?.('request', (request: any) => {
+        const key = connectionKey(String(request.url?.() ?? ''));
+        if (key) pageConnections.add(key);
+      });
       if (!ctx.routeWebSocket) {
         reports[index] = unreachable(p, 'browser_unavailable', 'The render audit requires Playwright 1.48+ for WebSocket interception');
         return;
@@ -588,6 +621,7 @@ export async function auditPages(
           .catch(() => undefined);
         await page.waitForTimeout(1500);
       }
+      attributeProxyBlocks();
       const landed: string = page.url();
       if (/\/(?:login|sign-in|signin)\b/i.test(new URL(landed).pathname)) {
         reports[index] = unreachable(p, 'auth_required', 'The viewer requires sign-in; private app rendering was not verified');
@@ -628,6 +662,7 @@ export async function auditPages(
         ? unreachable(p, 'no_widgets', 'No ToolJet widgets were found; the page may be empty, unauthenticated, or not loaded')
         : { page: p.page, url: p.url, widgets: result.widgets, findings: [...result.findings, ...blockFindings] };
     } catch (err) {
+      attributeProxyBlocks();
       // What failed, first line only: "could not load" alone left an audit that never ran undiagnosable.
       const why = String((err as Error)?.message ?? err).split('\n')[0]!.slice(0, 200);
       reports[index] = blocked ? { ...p, widgets: 0, findings: [{ ...blocked, kind: 'unreachable', detail: `${blocked.detail}; the audit then stopped: ${why}. Blocked: ${blocks.join('; ')}` }] }
