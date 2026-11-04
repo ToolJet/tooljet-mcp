@@ -2,6 +2,7 @@ import { htmlFedTextColumns, type HtmlFedQuery, type HtmlFedTable } from './html
 import type { AppSummary } from './tooljetClient.js';
 import { persistedEventSpecs, validateEvents } from './eventValidation.js';
 import { validateAppStructure } from './lint.js';
+import { unpinnedLibraries } from './libraryPack.js';
 import { issueMessages, validateQueryOptions } from './queryValidation.js';
 
 export interface PersistedAppValidation {
@@ -49,6 +50,15 @@ function scratchArtifactWarnings(summary: AppSummary): string[] {
     }
   }
   return warnings;
+}
+
+/** Errors for library components whose version doesn't pin their library: they draw an empty "Slot", on every page. */
+export function libraryPinErrors(summary: AppSummary, pins: Record<string, unknown>): string[] {
+  const components = (summary.pages ?? []).flatMap((page) => (page.components ?? []) as Array<{ name?: string; properties?: unknown }>);
+  return unpinnedLibraries(components, pins).map(({ library, components: names }) =>
+    `Library "${library}" is not pinned on this version, so ${names.length} of its components show an empty "Slot" ` +
+      `placeholder (${names.slice(0, 5).join(', ')}${names.length > 5 ? ', ...' : ''}). ` +
+      'Adding one of its components with add_components pins it.');
 }
 
 export function validatePersistedAppSummary(summary: AppSummary, options: { canvasColor?: string } = {}): PersistedAppValidation {

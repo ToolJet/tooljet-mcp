@@ -69,6 +69,55 @@ export function libraryPins(): Record<string, string> | undefined {
 
 type Section = Record<string, unknown>;
 
+const dashless = (id: string): string => id.replace(/-/g, '');
+
+const propertyValue = (properties: unknown, key: string): unknown => {
+  const entry = (properties as Section | undefined)?.[key];
+  return entry && typeof entry === 'object' && 'value' in entry ? (entry as { value?: unknown }).value : entry;
+};
+
+/** The correlation id a stored library component draws from. Not a code page's root: its build owns that pin. */
+function libraryCorrelationId(component: { properties?: unknown }): string | undefined {
+  const properties = component.properties;
+  const id = propertyValue(properties, 'correlationId');
+  return typeof id === 'string' && id && !propertyValue(properties, 'codePage') ? id : undefined;
+}
+
+/** A version's pin for a library: dashless, or dashed on a version saved before pins were normalised. */
+const isPinned = (pins: Record<string, unknown>, correlationId: string): boolean =>
+  pins[dashless(correlationId)] != null || pins[correlationId] != null;
+
+/** The pin entries a version still needs for these stored components, or undefined when it has them all. An existing
+ *  pin always stands: it is the version the builder chose. Libraries this server has no version for can't be pinned. */
+export function missingLibraryPins(
+  components: Array<{ properties?: unknown }>,
+  pins: Record<string, unknown>,
+): Record<string, string> | undefined {
+  const missing: Record<string, string> = {};
+  for (const component of components) {
+    const id = libraryCorrelationId(component);
+    if (!id || isPinned(pins, id)) continue;
+    const pack = libraryPacksAll().find((p) => !isBuiltin(p) && p.correlationId === id);
+    if (pack) missing[dashless(id)] = pack.version;
+  }
+  return Object.keys(missing).length ? missing : undefined;
+}
+
+/** The libraries of stored components with no pin on the version, each with its components' names. */
+export function unpinnedLibraries(
+  components: Array<{ name?: string; properties?: unknown }>,
+  pins: Record<string, unknown>,
+): Array<{ library: string; components: string[] }> {
+  const byLibrary = new Map<string, string[]>();
+  for (const component of components) {
+    const id = libraryCorrelationId(component);
+    if (!id || isPinned(pins, id)) continue;
+    const library = String(propertyValue(component.properties, 'libraryName') ?? id);
+    byLibrary.set(library, [...(byLibrary.get(library) ?? []), String(component.name ?? 'unnamed')]);
+  }
+  return [...byLibrary].map(([library, names]) => ({ library, components: names }));
+}
+
 /** A `Lib_*` component as ToolJet stores it: PackComponent naming its pack and component for a shipped pack, else
  *  LibraryComponent with the library identity in its properties. */
 export function toLibraryComponent<T extends { type: string; properties?: Section }>(spec: T): T {
