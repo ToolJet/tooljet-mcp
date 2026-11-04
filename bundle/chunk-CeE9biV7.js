@@ -1,20 +1,22 @@
 import { createRequire } from "node:module";
-import { b1 as external_exports, b4 as specSchema, bd as registerComponentSchemas, be as updateAppSettingsTool, bf as getComponentCatalogTool, b2 as nodeCatalog, b3 as validateGraph, bc as mapKeyRefusal, bg as readCatalogBytes, bh as allComponentSchemas } from "./chunk-DsdTCwqi.js";
-import { p as capabilityRequestSchema, x as getWorkflowCapabilities, y as lint, z as apply, A as deleteNode, B as prepareSqlDiscoveryQueries, C as editContractSchema, D as generateEditContract } from "./chunk-CWuyYxjg.js";
-import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, a as FLEX_GROW_DESCRIPTION, b as FLEX_WIDTH_PX_DESCRIPTION, d as FLEX_FILL_WIDTH_DESCRIPTION, m as createClient, o as registerPackDefinitions, q as listWorkspaceGroupsTool, t as manageWorkspaceGroupsTool, u as inspectDatasourceSchemaTool, w as updateComponentsTool, v as validateTableBatch, x as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec, C as COMPONENT_FX_GUIDANCE, y as appendedChildOrders, z as reparentAdditions, l as childOrderProperty } from "./chunk-BX9Vbj2u.js";
-import { M as McpServer } from "./chunk-CtPGpRoO.js";
-import { j as dbColumnTypeSchema, k as componentInputSchema, l as lintAppSpecTool, o as containsExactValue, b as prepareQueryOptionsForWrite, q as inspectUpdateCompatibility, s as normalizePlanBindingAliases, t as containsNamedBinding, u as normalizePlannedLayouts, w as materializeRequiredDefaultChildren, e as prepareComponentBatch, v as validateEvents, h as expandQueryLifecycles, i as persistedEventSpecs, x as persistedEventIds } from "./chunk-C_Y58zpH.js";
-import { c as codeAppScaffoldTool, a as codeAppReadFilesTool, b as codeAppWriteFilesTool, d as codeAppBuildTool, e as codeAppInstallTool, f as codeAppAddDependencyTool, g as applyAppPhaseTool, r as runQueryTool, h as runQueriesTool, n as noCodeIdentity, W as WebStandardStreamableHTTPServerTransport, i as getRequestListener, v as validatePersistedAppSummary, l as libraryPinErrors } from "./chunk-sfI_QCIW.js";
-import { e7 as ok, e9 as fail, ee as defaultPack, e6 as savedComponentLibrary, ea as COMPONENT_PACK_DESCRIPTION, ep as projectJavascriptRuntime, e8 as projectAppSettings, eq as compactTheme, eo as literalCanvasColor } from "./chunk-By54lwVj.js";
-import { v as verifyPageRenderTool } from "./chunk-cX12nbYF.js";
-import { F as pageIconSchema, c as componentSlotSchema, I as registerLibraryPacks, J as libraryPins, f as componentNameSchema, C as lintComponents, h as resolveParentRef, j as introducedLintFindings, K as lintRenderedGeometryBlocking, L as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, o as lintComponentSlots, k as lintComponentSpec, p as lintUnusableTextGeometry, M as lintNestedContainerWidths, q as lintStandardSingleLineInputHeight, s as lintTextGeometry, u as lintRenderedGeometry, N as FORM_SCHEMA_FIELD_TYPE_SET, O as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-D3MI2A-T.js";
-import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-Dwp0GyCm.js";
+import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, e as FLEX_GROW_DESCRIPTION, f as FLEX_WIDTH_PX_DESCRIPTION, g as FLEX_FILL_WIDTH_DESCRIPTION, t as createClient, u as registerPackDefinitions, w as listWorkspaceGroupsTool, x as manageWorkspaceGroupsTool, y as createAppTool, z as inspectDatasourceSchemaTool, A as manageThemeTool, B as capabilityRequestSchema, D as getWorkflowCapabilities, E as lint, G as apply, H as deleteNode, v as validateTableBatch, I as ToolJetHttpError, J as prepareSqlDiscoveryQueries, K as editContractSchema, L as generateEditContract, P as PartialWriteError, m as COMPONENT_FX_GUIDANCE, a as appendedChildOrders, b as reparentAdditions, c as childOrderProperty } from "./chunk-B7le-Q_T.js";
+import { g as getComponentCatalogTool, u as updateComponentsTool, r as resolveRef, n as normalizeComponentSpec, m as mapKeyRefusal } from "./chunk-CR8lGQ0p.js";
+import { M as McpServer } from "./chunk-BU-CrUqC.js";
+import { j as dbColumnTypeSchema, k as componentInputSchema, o as lintAppSpecTool, q as projectJavascriptRuntime, s as projectAppSettings, t as compactTheme, u as pageSettingProperties, l as literalCanvasColor, w as containsExactValue, b as prepareQueryOptionsForWrite, x as inspectUpdateCompatibility, y as normalizePlanBindingAliases, z as containsNamedBinding, A as normalizePlannedLayouts, B as materializeRequiredDefaultChildren, e as prepareComponentBatch, v as validateEvents, h as expandQueryLifecycles, i as persistedEventSpecs, C as persistedEventIds } from "./chunk-Do6OHOiG.js";
+import { c as codeAppScaffoldTool, a as codeAppReadFilesTool, b as codeAppWriteFilesTool, d as codeAppBuildTool, e as codeAppInstallTool, f as codeAppAddDependencyTool, g as applyAppPhaseTool, r as runQueryTool, h as runQueriesTool, n as noCodeIdentity, W as WebStandardStreamableHTTPServerTransport, i as getRequestListener, v as validatePersistedAppSummary, l as libraryPinErrors } from "./chunk-4-8h2Opo.js";
+import { v as verifyPageRenderTool } from "./chunk-BpA5l315.js";
+import { ea as ok, eb as fail } from "./chunk-CYLdCKx-.js";
+import { b0 as external_exports, bj as specSchema, bh as nodeCatalog, bi as validateGraph } from "./chunk-IinDkEBT.js";
+import { K as pageIconSchema, h as componentSlotSchema, O as registerLibraryPacks, s as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION, j as componentNameSchema, H as lintComponents, o as resolveParentRef, p as introducedLintFindings, Q as lintRenderedGeometryBlocking, R as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, u as lintComponentSlots, q as lintComponentSpec, v as lintUnusableTextGeometry, T as lintNestedContainerWidths, w as lintStandardSingleLineInputHeight, x as lintTextGeometry, y as lintRenderedGeometry, U as FORM_SCHEMA_FIELD_TYPE_SET, V as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-DgRXGydV.js";
+import { z as registerComponentSchemas, A as allComponentSchemas } from "./chunk-DADofzTT.js";
+import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-DXVhSqct.js";
+import { o as readCatalogBytes } from "./chunk-DiIMq7hT.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { createServer } from "node:http";
-import { statSync, readFileSync, accessSync, constants, existsSync } from "node:fs";
+import { statSync, readFileSync, accessSync, constants } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, resolve, basename, join } from "node:path";
+import { resolve, dirname, basename, join } from "node:path";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { mkdir, appendFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -955,345 +957,6 @@ function useWorkspaceTool(client) {
     }
   };
 }
-var ACCENT_MENU = [
-  { name: "Indigo", hex: "#4F46E5", fits: "software, analytics, internal tools" },
-  { name: "Violet", hex: "#7C3AED", fits: "creative, education, product teams" },
-  { name: "Fuchsia", hex: "#C026D3", fits: "consumer, beauty, events" },
-  { name: "Rose", hex: "#E11D48", fits: "hospitality, retail, food" },
-  { name: "Coral", hex: "#EA580C", fits: "logistics, field service, sports" },
-  { name: "Amber", hex: "#B45309", fits: "manufacturing, construction, real estate" },
-  { name: "Emerald", hex: "#059669", fits: "finance, sustainability, health" },
-  { name: "Teal", hex: "#0D9488", fits: "healthcare, travel, operations" },
-  { name: "Sky", hex: "#0284C7", fits: "support, IT, aviation, marine" }
-];
-var MENU_TEXT = ACCENT_MENU.map((a) => `${a.name} ${a.hex} (${a.fits})`).join(", ");
-var hsl = (hex) => {
-  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(hex.trim());
-  if (!m)
-    return null;
-  const full = m[1].length === 3 ? m[1].replace(/./g, (c) => c + c) : m[1];
-  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const l = (max + min) / 2;
-  const d = max - min;
-  if (d === 0)
-    return { h: 0, s: 0, l };
-  const s = d / (1 - Math.abs(2 * l - 1));
-  const h = max === r ? (g - b) / d % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
-  return { h: (h * 60 + 360) % 360, s, l };
-};
-var accentWarning = (definition) => {
-  const light = definition?.brand?.colors?.primary?.light;
-  if (typeof light !== "string")
-    return null;
-  const c = hsl(light);
-  if (!c)
-    return null;
-  const kind = c.l < 0.22 ? "near-black" : c.s < 0.2 ? "grey" : c.h >= 212 && c.h <= 226 && c.s > 0.75 && c.l >= 0.45 && c.l <= 0.66 ? "the stock blue" : null;
-  if (!kind)
-    return null;
-  return `The theme's primary ${light} is ${kind}, which reads plain. Unless the request names this colour or the brand uses it, pick an accent from the menu by the request's brand, industry or mood: ${MENU_TEXT}. Keep the canvas and neutrals light and lightly tinted toward it.`;
-};
-var THEME_LICENCE_USER_MESSAGE = "Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.";
-var colorPair = external_exports.object({
-  light: external_exports.string().trim().min(1).max(100).describe("Color used in light mode; hex is recommended."),
-  dark: external_exports.string().trim().min(1).max(100).describe("Color used in dark mode; hex is recommended.")
-}).strict();
-var themeDefinition = external_exports.object({
-  brand: external_exports.object({
-    colors: external_exports.object({
-      primary: colorPair,
-      secondary: colorPair.optional(),
-      tertiary: colorPair.optional()
-    }).strict()
-  }).strict(),
-  text: external_exports.object({
-    font: external_exports.string().trim().min(1).max(200),
-    colors: external_exports.object({
-      primary: colorPair,
-      placeholder: colorPair.optional(),
-      disabled: colorPair.optional()
-    }).strict()
-  }).strict(),
-  border: external_exports.object({
-    radius: external_exports.object({
-      default: external_exports.number().nonnegative(),
-      small: external_exports.number().nonnegative(),
-      large: external_exports.number().nonnegative()
-    }).strict(),
-    colors: external_exports.object({
-      default: colorPair,
-      weak: colorPair.optional(),
-      disabled: colorPair.optional()
-    }).strict()
-  }).strict(),
-  systemStatus: external_exports.object({
-    colors: external_exports.object({
-      success: colorPair,
-      error: colorPair.optional(),
-      warning: colorPair.optional()
-    }).strict()
-  }).strict(),
-  surface: external_exports.object({
-    colors: external_exports.object({
-      appBackground: colorPair,
-      surface1: colorPair,
-      surface2: colorPair,
-      surface3: colorPair
-    }).strict()
-  }).strict()
-}).strict();
-async function applyToApp(client, theme, args, definition) {
-  if (!args.app_id || !args.version_id)
-    return void 0;
-  const mode = args.app_mode ?? (paintsDarkCanvasInLightMode(definition) ? "dark" : void 0);
-  await client.updateAppSettings({
-    appId: args.app_id,
-    versionId: args.version_id,
-    globalSettings: { theme, ...mode ? { appMode: mode } : {} }
-  });
-  return { app_id: args.app_id, version_id: args.version_id, ...mode ? { app_mode: mode } : {} };
-}
-function requireValue(value, label) {
-  if (value === void 0)
-    throw new Error(`manage_theme requires ${label} for this action.`);
-  return value;
-}
-async function readTheme(client, themeId) {
-  const theme = (await client.listAppThemes()).find((candidate) => candidate.id === themeId);
-  if (!theme)
-    throw new Error(`Theme "${themeId}" is not available in the active workspace.`);
-  return theme;
-}
-function manageThemeTool(client) {
-  return {
-    name: "manage_theme",
-    title: "Manage Workspace Theme",
-    // list/create/rename are safe, but the same tool also deletes a theme, so the hint covers its widest action.
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: true
-    },
-    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. create with app_id and version_id also applies the theme to that app (in app_mode, else in dark mode when its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same name, so there is no need to list themes first. Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass include_definitions:true (or theme_id) to get a definition.",
-    inputSchema: {
-      action: external_exports.enum(["list", "create", "set_default", "update_definition", "rename", "delete"]),
-      theme_id: external_exports.string().uuid().optional(),
-      name: external_exports.string().trim().min(1).max(100).optional(),
-      definition: themeDefinition.optional(),
-      is_default: external_exports.boolean().optional(),
-      confirm: external_exports.boolean().optional(),
-      include_definitions: external_exports.boolean().optional(),
-      app_id: external_exports.string().uuid().optional().describe("create only: apply the theme to this app as well"),
-      version_id: external_exports.string().uuid().optional().describe("create only, with app_id: the app version to apply it to"),
-      app_mode: external_exports.enum(["light", "dark"]).optional().describe("create only, with app_id: open the app in this mode. Pass 'dark' when the request asks for a dark app: the theme's dark values then paint every surface, and ToolJet's own parts (tables, inputs) draw for them. Never paint dark backgrounds by hand on a light-mode app.")
-    },
-    async handler(args) {
-      try {
-        if (args.action === "list") {
-          const themes = await client.listAppThemes();
-          if (args.include_definitions)
-            return ok({ themes });
-          if (args.theme_id) {
-            const one = themes.find((theme) => theme.id === args.theme_id);
-            return one ? ok({ themes: [one] }) : fail(new Error(`Theme "${args.theme_id}" not found.`));
-          }
-          return ok({
-            themes: themes.map(({ id, name, isDefault, isBasic, isDisabled }) => ({ id, name, isDefault, isBasic, isDisabled })),
-            note: "Definitions omitted; pass include_definitions:true or theme_id to read one."
-          });
-        }
-        if (args.action === "create") {
-          const name = requireValue(args.name, "name");
-          if (name.length < 5)
-            throw new Error("Theme name must contain at least 5 characters.");
-          if (name === "ToolJet")
-            throw new Error('The reserved theme name "ToolJet" cannot be used.');
-          const existing = (await client.listAppThemes()).find((theme) => theme.name === name && !theme.isDisabled);
-          if (existing) {
-            const applied = await applyToApp(client, existing, args, existing.definition ?? args.definition);
-            return ok({
-              theme: existing,
-              reused: true,
-              ...applied ? { applied } : {},
-              warnings: [
-                `Theme "${name}" already exists in this workspace; returned it instead of creating a duplicate. ` + (applied ? "It is applied to the app." : "Apply it with update_app_settings, or use update_definition to change it.")
-              ]
-            });
-          }
-          try {
-            const created = await client.createAppTheme({
-              name,
-              definition: requireValue(args.definition, "definition"),
-              isDefault: args.is_default ?? false
-            });
-            const applied = await applyToApp(client, created, args, args.definition);
-            const accent = accentWarning(args.definition);
-            return ok({ theme: created, ...applied ? { applied } : {}, ...accent ? { warnings: [accent] } : {} });
-          } catch (error) {
-            if (error instanceof ToolJetHttpError && error.status === 451) {
-              return ok({
-                theme: null,
-                licensed: false,
-                user_message: THEME_LICENCE_USER_MESSAGE,
-                warnings: [
-                  "Custom themes are not included in this ToolJet plan (HTTP 451). The app keeps the workspace default theme. Do not retry theme creation or guess a theme id; build the app on the default theme and repeat `user_message` to the user in the closing handoff."
-                ]
-              });
-            }
-            throw error;
-          }
-        }
-        const themeId = requireValue(args.theme_id, "theme_id");
-        await readTheme(client, themeId);
-        if (args.action === "set_default") {
-          await client.setDefaultAppTheme(themeId, args.is_default ?? true);
-          return ok({ theme: await readTheme(client, themeId) });
-        }
-        if (args.action === "update_definition") {
-          await client.updateAppThemeDefinition(themeId, requireValue(args.definition, "definition"));
-          const accent = accentWarning(args.definition);
-          return ok({ theme: await readTheme(client, themeId), ...accent ? { warnings: [accent] } : {} });
-        }
-        if (args.action === "rename") {
-          await client.renameAppTheme(themeId, requireValue(args.name, "name"));
-          return ok({ theme: await readTheme(client, themeId) });
-        }
-        if (args.confirm !== true) {
-          throw new Error(`Deleting theme "${themeId}" requires confirm:true after exact-target user approval.`);
-        }
-        await client.deleteAppTheme(themeId);
-        return ok({ deleted: true, theme_id: themeId });
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-var STANDARD_PRIMARY = { brand: { colors: { primary: { light: "#2563EB" } } } };
-var here = dirname(fileURLToPath(import.meta.url));
-var standardThemeCandidates = [
-  resolve(here, "../../data/default-theme.json"),
-  resolve(here, "../data/default-theme.json")
-];
-var standardThemeCache;
-function loadStandardTheme() {
-  if (!standardThemeCache) {
-    const path = standardThemeCandidates.find((candidate) => existsSync(candidate));
-    if (!path) {
-      throw new Error(`standard theme file not found (looked in ${standardThemeCandidates.join(", ")})`);
-    }
-    standardThemeCache = JSON.parse(readFileSync(path, "utf8"));
-  }
-  return standardThemeCache;
-}
-var derivedThemeSchema = external_exports.object({
-  name: external_exports.string().trim().min(5).max(100),
-  definition: themeDefinition
-}).strict();
-async function resolveTheme(client, choice) {
-  const themes = await client.listAppThemes();
-  if (process.env.MCP_AGENT_PACK_LOOK === "own" && (choice === "standard" || choice === "workspace_default")) {
-    const basic = themes.find((theme) => theme.isBasic && !theme.isDisabled);
-    if (basic)
-      return basic;
-  }
-  const wanted = choice === "standard" ? loadStandardTheme() : typeof choice === "object" ? choice : void 0;
-  if (wanted) {
-    const existing = themes.find((theme) => theme.name === wanted.name && !theme.isDisabled);
-    if (existing)
-      return existing;
-    return client.createAppTheme({ name: wanted.name, definition: wanted.definition, isDefault: false });
-  }
-  const named = themes.find((theme) => theme.name === choice || theme.id === choice);
-  if (!named)
-    throw new Error(`Theme "${String(choice)}" is not available in the active workspace.`);
-  if (named.isDisabled)
-    throw new Error(`Theme "${named.name}" is disabled and cannot be selected.`);
-  return named;
-}
-function paintsDarkCanvasInLightMode(definition) {
-  const light = definition?.surface?.colors?.appBackground?.light;
-  const hex = typeof light === "string" ? /^#([0-9a-f]{6})$/i.exec(light.trim())?.[1] : void 0;
-  if (!hex)
-    return false;
-  const [r, g, b] = [0, 2, 4].map((at) => {
-    const channel = parseInt(hex.slice(at, at + 2), 16) / 255;
-    return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.18;
-}
-function createAppTool(client) {
-  return {
-    name: "create_app",
-    title: "Create App",
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: false,
-      openWorldHint: true
-    },
-    description: 'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, app_url (a backward-compatible alias for editor_url), and the theme that was applied. Honor explicit or selected themes first. Otherwise derive a theme from a brand, industry or customer type (see references/themes.md) and pass theme:{name, definition}; include complete brand, text, border, systemStatus and surface tokens with light/dark values, not a font-only or partial definition. It is created once per workspace by name and applied. Otherwise the app gets the standard theme ("ToolJet Modern": neutral greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. If a theme cannot be created (for example a licence gate) the app is still created and the result carries a theme warning. New apps are built in ToolJet UI 2.0 (component_library "ui2": types starting with Shad, laid out in FlexContainers); pass component_library "ui1" only when the user asks for the classic ToolJet widgets.',
-    inputSchema: {
-      name: external_exports.string().min(1),
-      theme: external_exports.union([external_exports.string().min(1), derivedThemeSchema]).optional(),
-      app_mode: external_exports.enum(["light", "dark"]).optional().describe("Open the app in this mode. Pass 'dark' when the request asks for a dark app, so the theme's dark values paint every surface; never paint dark backgrounds by hand on a light-mode app."),
-      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in, saved on the app (the components panel lists it). Default "ui2", ToolJet UI 2.0; "ui1" (ToolJet UI 1.0, the native widgets) only when the user asks for it.'),
-      component_pack: external_exports.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION)
-    },
-    async handler(args) {
-      try {
-        if (typeof args.theme === "object")
-          derivedThemeSchema.parse(args.theme);
-        const created = await client.createApp(args.name);
-        const componentLibrary = args.component_library ?? "ui2";
-        const choice = args.theme ?? "standard";
-        const pins = libraryPins();
-        const pinned = pins ? { customComponentLibraries: pins } : {};
-        const result = {
-          ...created,
-          component_library: componentLibrary,
-          ...componentLibrary === "ui2" && (args.component_pack || defaultPack()) ? { component_pack: (args.component_pack || defaultPack()).toLowerCase() } : {},
-          theme: { mode: "workspace_default" }
-        };
-        const savedLibrary = savedComponentLibrary(componentLibrary, args.component_pack);
-        const saveLibrary = () => Promise.resolve().then(() => client.updateAppSettings({
-          appId: created.app_id,
-          versionId: created.version_id,
-          globalSettings: { componentLibrary: savedLibrary, ...pinned }
-        })).catch((libraryErr) => {
-          result.component_library_warning = `Could not save component_library "${componentLibrary}": ${libraryErr instanceof Error ? libraryErr.message : String(libraryErr)}. Build in it anyway.`;
-        });
-        if (choice === "workspace_default") {
-          await saveLibrary();
-          return ok(result);
-        }
-        const label = typeof choice === "object" ? choice.name : choice;
-        try {
-          const theme = await resolveTheme(client, choice);
-          const appMode = args.app_mode ?? (typeof choice === "object" && paintsDarkCanvasInLightMode(choice.definition) ? "dark" : void 0);
-          await client.updateAppSettings({
-            appId: created.app_id,
-            versionId: created.version_id,
-            globalSettings: { theme, componentLibrary: savedLibrary, ...pinned, ...appMode ? { appMode } : {} }
-          });
-          const mode = choice === "standard" ? "standard" : typeof choice === "object" ? "derived" : "named";
-          const accentNote = mode === "standard" ? accentWarning(STANDARD_PRIMARY) : mode === "derived" ? accentWarning(choice.definition) : null;
-          result.theme = { mode, id: theme.id, name: theme.name, ...appMode ? { app_mode: appMode } : {}, ...accentNote ? { accent_note: accentNote } : {} };
-        } catch (themeErr) {
-          await saveLibrary();
-          result.theme = {
-            mode: "workspace_default",
-            warning: `Could not apply theme "${label}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
-          };
-        }
-        return ok(result);
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
 function createAppVersionTool(client) {
   return {
     name: "create_app_version",
@@ -1410,6 +1073,158 @@ function listAppThemesTool(client) {
     async handler() {
       try {
         return ok({ themes: (await client.listAppThemes()).map((theme) => compactTheme(theme)) });
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  };
+}
+var SETTING_KEYS = [
+  "canvas_background_color",
+  "canvas_max_width",
+  "app_mode",
+  "theme_id",
+  "hide_header",
+  "hide_logo",
+  "header_title",
+  "navigation_hidden",
+  "navigation_position",
+  "navigation_style",
+  "navigation_collapsible",
+  "component_library",
+  "component_pack"
+];
+function persistenceMismatches(args, snapshot2) {
+  const global = snapshot2.global_settings;
+  const page = pageSettingProperties(snapshot2);
+  const mismatches = [];
+  const expectEqual = (label, actual, expected) => {
+    if (actual !== expected)
+      mismatches.push(`${label} did not persist (expected ${JSON.stringify(expected)}, read back ${JSON.stringify(actual)})`);
+  };
+  if (args.canvas_background_color !== void 0)
+    expectEqual("canvas_background_color", global.canvasBackgroundColor, args.canvas_background_color);
+  if (args.canvas_max_width !== void 0) {
+    expectEqual("canvas_max_width.value", global.canvasMaxWidth, args.canvas_max_width.value);
+    expectEqual("canvas_max_width.unit", global.canvasMaxWidthType, args.canvas_max_width.unit);
+  }
+  if (args.app_mode !== void 0)
+    expectEqual("app_mode", global.appMode, args.app_mode);
+  if (args.component_library !== void 0 || args.component_pack !== void 0)
+    expectEqual("component_library", global.componentLibrary, savedComponentLibrary(args.component_library ?? "ui2", args.component_pack));
+  if (args.theme_id !== void 0) {
+    const theme = global.theme;
+    expectEqual("theme_id", theme?.id, args.theme_id);
+  }
+  if (args.hide_header !== void 0)
+    expectEqual("hide_header", page.hideHeader, args.hide_header);
+  if (args.hide_logo !== void 0)
+    expectEqual("hide_logo", page.hideLogo, args.hide_logo);
+  if (args.header_title !== void 0)
+    expectEqual("header_title", page.name, args.header_title);
+  if (args.navigation_hidden !== void 0) {
+    const disableMenu = page.disableMenu;
+    expectEqual("navigation_hidden", disableMenu?.value, `{{${args.navigation_hidden}}}`);
+  }
+  if (args.navigation_position !== void 0)
+    expectEqual("navigation_position", page.position, args.navigation_position);
+  if (args.navigation_style !== void 0)
+    expectEqual("navigation_style", page.style, args.navigation_style);
+  if (args.navigation_collapsible !== void 0)
+    expectEqual("navigation_collapsible", page.collapsable, args.navigation_collapsible);
+  return mismatches;
+}
+function updateAppSettingsTool(client) {
+  return {
+    name: "update_app_settings",
+    title: "Update App Settings",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
+    description: "Patch app-wide visual settings on the current editing version in one version update, then read them back. Supports canvas background/width/mode, a theme selected from list_app_themes, header/logo/title, and navigation visibility/layout. hide_header controls the app header/banner. The separate generated page-navigation menu can be positioned on the side or top; navigation_hidden hides that entire menu in either position. navigation_hidden:true also hides the app header and its logo (the app brings its own navigation and header), unless hide_header or hide_logo is passed as false. To hide only one non-Home page from that menu, use update_pages.hidden. Omitted fields are preserved. Every requested field is read back; the tool returns an error instead of success if any field did not persist.",
+    inputSchema: {
+      app_id: external_exports.string().min(1),
+      version_id: external_exports.string().min(1),
+      canvas_background_color: external_exports.string().max(200).optional(),
+      canvas_max_width: external_exports.object({
+        value: external_exports.number().positive().max(1e5),
+        unit: external_exports.enum(["%", "px"])
+      }).optional(),
+      app_mode: external_exports.enum(["auto", "light", "dark"]).optional(),
+      theme_id: external_exports.string().uuid().optional(),
+      hide_header: external_exports.boolean().optional().describe("Hide or show the app header/banner. This is separate from the generated page-navigation menu."),
+      hide_logo: external_exports.boolean().optional(),
+      header_title: external_exports.string().trim().min(1).max(32).optional(),
+      navigation_hidden: external_exports.boolean().optional().describe("Hide or show the entire generated page-navigation menu, whether it is positioned on the side or top. true also hides the app header and logo unless hide_header or hide_logo is false. To hide only one non-Home page from the menu, use update_pages.hidden."),
+      navigation_position: external_exports.enum(["side", "top"]).optional(),
+      navigation_style: external_exports.enum(["texticon", "text", "icon"]).optional(),
+      navigation_collapsible: external_exports.boolean().optional(),
+      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in: "ui1" ToolJet UI 1.0 (native widgets) or "ui2" ToolJet UI 2.0 (Shad* types). Change it only when the user asks to move the app to the other library.'),
+      component_pack: external_exports.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION)
+    },
+    async handler(requested) {
+      try {
+        const headerFollowsMenu = requested.navigation_hidden === true && (requested.hide_header === void 0 || requested.hide_logo === void 0);
+        const args = requested.navigation_hidden === true ? { ...requested, hide_header: requested.hide_header ?? true, hide_logo: requested.hide_logo ?? true } : requested;
+        const changed = SETTING_KEYS.filter((key) => args[key] !== void 0);
+        if (!changed.length)
+          throw new Error("update_app_settings requires at least one setting field.");
+        if (args.canvas_max_width?.unit === "%" && args.canvas_max_width.value > 100) {
+          throw new Error('canvas_max_width.value cannot exceed 100 when unit is "%".');
+        }
+        const current = await client.getAppSettings(args.app_id, args.version_id);
+        const currentPage = pageSettingProperties(current);
+        const finalPosition = args.navigation_position ?? currentPage.position;
+        const finalStyle = args.navigation_style ?? currentPage.style;
+        if (finalPosition === "top" && finalStyle === "icon") {
+          throw new Error('navigation_style "icon" is not supported when navigation_position is "top"; use "text" or "texticon".');
+        }
+        let theme;
+        if (args.theme_id) {
+          const themes = await client.listAppThemes();
+          const selected = themes.find((candidate) => candidate.id === args.theme_id);
+          if (!selected)
+            throw new Error(`Theme "${args.theme_id}" is not available in the active workspace.`);
+          if (selected.isDisabled)
+            throw new Error(`Theme "${selected.name}" is disabled and cannot be selected.`);
+          theme = selected;
+        }
+        const globalSettings = {
+          ...args.canvas_background_color !== void 0 ? { canvasBackgroundColor: args.canvas_background_color } : {},
+          ...args.canvas_max_width !== void 0 ? { canvasMaxWidth: args.canvas_max_width.value, canvasMaxWidthType: args.canvas_max_width.unit } : {},
+          ...args.app_mode !== void 0 ? { appMode: args.app_mode } : {},
+          ...theme ? { theme } : {},
+          // UI 2.0 is saved as the default pack ("pack:<id>"), as create_app does, so the panel shows that pack.
+          ...args.component_library !== void 0 || args.component_pack !== void 0 ? { componentLibrary: savedComponentLibrary(args.component_library ?? "ui2", args.component_pack) } : {}
+        };
+        const properties = {
+          ...args.hide_header !== void 0 ? { hideHeader: args.hide_header } : {},
+          ...args.hide_logo !== void 0 ? { hideLogo: args.hide_logo } : {},
+          ...args.header_title !== void 0 ? { name: args.header_title } : {},
+          ...args.navigation_hidden !== void 0 ? { disableMenu: { value: `{{${args.navigation_hidden}}}`, fxActive: false } } : {},
+          ...args.navigation_position !== void 0 ? { position: args.navigation_position } : {},
+          ...args.navigation_style !== void 0 ? { style: args.navigation_style } : {},
+          ...args.navigation_collapsible !== void 0 ? { collapsable: args.navigation_collapsible } : {}
+        };
+        await client.updateAppSettings({
+          appId: args.app_id,
+          versionId: args.version_id,
+          ...Object.keys(globalSettings).length ? { globalSettings } : {},
+          ...Object.keys(properties).length ? { pageSettings: { properties } } : {}
+        });
+        const persisted = await client.getAppSettings(args.app_id, args.version_id);
+        const mismatches = persistenceMismatches(args, persisted);
+        if (mismatches.length) {
+          throw new Error(`update_app_settings partially failed readback: ${mismatches.join("; ")}. Other requested fields may already have persisted; inspect get_app_settings before retrying.`);
+        }
+        return ok({
+          updated_fields: changed.length,
+          settings: projectAppSettings(persisted),
+          warnings: [],
+          ...headerFollowsMenu ? { note: "The page menu is hidden, so the app header and logo were hidden with it." } : {}
+        });
       } catch (error) {
         return fail(error);
       }
@@ -3954,10 +3769,53 @@ function getRuntimeInfoTool(runtime) {
     }
   };
 }
-function requireValue2(value, label) {
+function requireValue(value, label) {
   if (value === void 0)
     throw new Error(`${label} is required for this action.`);
   return value;
+}
+var CODE_PAGE_TRUE = /* @__PURE__ */ new Set([true, "true", "{{true}}"]);
+function codeScreens(summary) {
+  const pageIds = new Set(summary.pages.map((page) => page.id));
+  const screens = [];
+  for (const page of summary.pages) {
+    for (const component of page.components) {
+      const props = component.properties ?? {};
+      if (component.parent || !CODE_PAGE_TRUE.has(props.codePage?.value))
+        continue;
+      let routes = props.routes?.value;
+      if (typeof routes === "string") {
+        try {
+          routes = JSON.parse(routes);
+        } catch {
+          routes = [];
+        }
+      }
+      if (!Array.isArray(routes))
+        continue;
+      for (const route of routes) {
+        if (typeof route?.id !== "string" || typeof route?.path !== "string")
+          continue;
+        if (typeof route.pageId !== "string" || !pageIds.has(route.pageId))
+          continue;
+        screens.push({
+          route_id: route.id,
+          path: route.path,
+          ...typeof route.title === "string" ? { title: route.title } : {},
+          page_id: route.pageId,
+          code_page_id: page.id
+        });
+      }
+    }
+  }
+  return screens;
+}
+function findScreen(summary, route) {
+  const screens = codeScreens(summary);
+  const screen = screens.find((s) => s.route_id === route) ?? screens.find((s) => s.path === route);
+  if (screen)
+    return screen;
+  throw new Error(`No Code mode screen "${route}" in app "${summary.app_id}". ` + (screens.length ? `Its screens: ${screens.map((s) => `${s.route_id} (${s.path})`).join(", ")}.` : "The app has no Code mode screens."));
 }
 function findResource(summary, resourceType, resourceId) {
   if (resourceType === "page") {
@@ -4020,12 +3878,13 @@ function manageAppPermissionsTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "List eligible subjects, inspect, set, or clear server-enforced access for one app page, query, or component. Use list_subjects first and exact ids from get_app_summary; users/groups must already have access to the app. set restricts access to the selected users or groups. clear broadens access to every user who can access the app. Mutations require confirm:true after the user explicitly requests the exact access rule. ToolJet license gates still apply.",
+    description: "List eligible subjects, inspect, set, or clear server-enforced access for one app page, query, or component. Use list_subjects first and exact ids from get_app_summary; users/groups must already have access to the app. set restricts access to the selected users or groups. clear broadens access to every user who can access the app. Mutations require confirm:true after the user explicitly requests the exact access rule. ToolJet license gates still apply. Code mode screens: list_screens lists each route with its hidden page and access; pass route (its id or path from app.json) with resource_type page instead of resource_id. A screen limit hides the screen (navigation and direct links); the data it shows is protected only by limiting the queries that return it (resource_type query).",
     inputSchema: {
-      action: external_exports.enum(["list_subjects", "get", "set", "clear"]),
+      action: external_exports.enum(["list_subjects", "list_screens", "get", "set", "clear"]),
       app_id: external_exports.string().uuid(),
       resource_type: external_exports.enum(["page", "query", "component"]).optional(),
       resource_id: external_exports.string().uuid().optional(),
+      route: external_exports.string().min(1).max(200).optional().describe("A Code mode screen by route id or path (app.json routes), in place of resource_id for a page."),
       access_type: external_exports.enum(["users", "groups"]).optional(),
       user_ids: external_exports.array(external_exports.string().uuid()).min(1).max(100).optional(),
       group_ids: external_exports.array(external_exports.string().uuid()).min(1).max(100).optional(),
@@ -4036,10 +3895,28 @@ function manageAppPermissionsTool(client) {
         if (args.action === "list_subjects") {
           return ok({ app_id: args.app_id, ...await client.listAppPermissionSubjects(args.app_id) });
         }
-        const resourceType = requireValue2(args.resource_type, "resource_type");
-        const resourceId = requireValue2(args.resource_id, "resource_id");
+        if (args.action === "list_screens") {
+          const summary2 = await client.getAppSummary(args.app_id);
+          const screens = await Promise.all(codeScreens(summary2).map(async (screen2) => ({
+            ...screen2,
+            ...normalizePermission(await client.getAppPermission(args.app_id, "page", screen2.page_id))
+          })));
+          return ok({ app_id: args.app_id, screens });
+        }
+        if (args.route !== void 0 && args.resource_id !== void 0) {
+          throw new Error("Pass either route or resource_id, not both.");
+        }
+        if (args.route !== void 0 && args.resource_type !== void 0 && args.resource_type !== "page") {
+          throw new Error("route names a Code mode screen, whose access is a page permission: use resource_type page.");
+        }
+        const resourceType = args.route !== void 0 ? "page" : requireValue(args.resource_type, "resource_type");
         const summary = await client.getAppSummary(args.app_id);
-        const resource = findResource(summary, resourceType, resourceId);
+        const screen = args.route !== void 0 ? findScreen(summary, args.route) : void 0;
+        const resourceId = screen ? screen.page_id : requireValue(args.resource_id, "resource_id");
+        const resource = {
+          ...findResource(summary, resourceType, resourceId),
+          ...screen ? { screen: { route_id: screen.route_id, path: screen.path, title: screen.title } } : {}
+        };
         if (args.action === "get") {
           const permissions2 = await client.getAppPermission(args.app_id, resourceType, resourceId);
           return ok({ app_id: args.app_id, resource, ...normalizePermission(permissions2) });
@@ -4051,9 +3928,9 @@ function manageAppPermissionsTool(client) {
           await client.clearAppPermission(args.app_id, resourceType, resourceId);
           return ok({ app_id: args.app_id, resource, access: "all", permission_id: null });
         }
-        const accessType = requireValue2(args.access_type, "access_type");
+        const accessType = requireValue(args.access_type, "access_type");
         const subjectIds = accessType === "users" ? args.user_ids : args.group_ids;
-        requireValue2(subjectIds, accessType === "users" ? "user_ids" : "group_ids");
+        requireValue(subjectIds, accessType === "users" ? "user_ids" : "group_ids");
         if (accessType === "users" && args.group_ids !== void 0) {
           throw new Error("group_ids must be omitted when access_type is users.");
         }

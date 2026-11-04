@@ -1,5 +1,357 @@
 import { createRequire } from "node:module";
-import { eb as __commonJS, ec as __require } from "./chunk-By54lwVj.js";
+import { p as parseExpression } from "./chunk-B6PYEK0a.js";
+import { readFileSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { e5 as __commonJS, e6 as __require } from "./chunk-CYLdCKx-.js";
+createRequire(import.meta.url);
+var member = (n) => n?.type === "MemberExpression" || n?.type === "OptionalMemberExpression";
+var key = (n) => n.computed ? n.property?.type === "StringLiteral" ? n.property.value : void 0 : n.property?.name;
+var rootRef = (n) => {
+  if (!member(n) || !["components", "queries"].includes(n.object?.name) || n.object?.type !== "Identifier")
+    return;
+  const k = key(n);
+  return k ? `${n.object.name}.${k}` : void 0;
+};
+function walk(n, visit) {
+  if (!n || typeof n !== "object")
+    return;
+  if (Array.isArray(n)) {
+    for (const child of n)
+      walk(child, visit);
+    return;
+  }
+  visit(n);
+  for (const [key3, value] of Object.entries(n))
+    if (!["loc", "extra", "comments"].includes(key3))
+      walk(value, visit);
+}
+function lintUntrackedReactiveBindings(value, label) {
+  if (Array.isArray(value))
+    return value.flatMap((v) => lintUntrackedReactiveBindings(v, label));
+  if (value && typeof value === "object")
+    return Object.values(value).flatMap((v) => lintUntrackedReactiveBindings(v, label));
+  if (typeof value !== "string")
+    return [];
+  const match = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
+  if (!match)
+    return [];
+  let ast;
+  try {
+    ast = parseExpression(match[1]);
+  } catch {
+    return [];
+  }
+  const tracked = /* @__PURE__ */ new Set(), suspects = /* @__PURE__ */ new Set();
+  let shadowed = false;
+  walk(ast, (n) => {
+    if (n.params && /"(?:components|queries)"/.test(JSON.stringify(n.params)) || n.type === "VariableDeclarator" && /"(?:components|queries)"/.test(JSON.stringify(n.id)))
+      shadowed = true;
+    if (!member(n))
+      return;
+    const direct = rootRef(n.object);
+    if (direct && key(n))
+      tracked.add(direct);
+    if (n.object?.type === "LogicalExpression" && ["||", "??"].includes(n.object.operator)) {
+      const wrapped = rootRef(n.object.left);
+      if (wrapped && key(n))
+        suspects.add(wrapped);
+    }
+  });
+  if (shadowed)
+    return [];
+  return [...suspects].filter((ref) => !tracked.has(ref)).map((ref) => `${label}: a logical fallback wraps ${ref} before its exposed value is read. ToolJet cannot track this dependency, so filters/prefill may stay stale. Keep a complete optional chain, e.g. ${ref}?.value (use the actual exposed property). Valid JavaScript alone does not guarantee reactive updates. No expression was rewritten.`);
+}
+function lintQueryArrayMutations(value, label) {
+  if (Array.isArray(value))
+    return value.flatMap((v) => lintQueryArrayMutations(v, label));
+  if (value && typeof value === "object")
+    return Object.values(value).flatMap((v) => lintQueryArrayMutations(v, label));
+  if (typeof value !== "string")
+    return [];
+  const match = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
+  if (!match)
+    return [];
+  let ast;
+  try {
+    ast = parseExpression(match[1]);
+  } catch {
+    return [];
+  }
+  let shadowed = false;
+  const mutations = /* @__PURE__ */ new Set();
+  const queryData = (n) => {
+    if (n?.type === "LogicalExpression" && ["||", "??"].includes(n.operator) && n.right?.type === "ArrayExpression" && n.right.elements.length === 0)
+      return queryData(n.left);
+    const ref = member(n) && key(n) === "data" ? rootRef(n.object) : void 0;
+    return ref?.startsWith("queries.") ? ref : void 0;
+  };
+  walk(ast, (n) => {
+    if (n.params && /"queries"/.test(JSON.stringify(n.params)) || n.type === "VariableDeclarator" && /"queries"/.test(JSON.stringify(n.id)))
+      shadowed = true;
+    if (!["CallExpression", "OptionalCallExpression"].includes(n.type) || !member(n.callee) || !["sort", "reverse"].includes(key(n.callee)))
+      return;
+    const ref = queryData(n.callee.object);
+    if (ref)
+      mutations.add(`${ref}.data.${key(n.callee)}`);
+  });
+  if (shadowed)
+    return [];
+  return [...mutations].map((ref) => `${label}: ${ref}() mutates the shared query array inside a display binding. ToolJet state can be frozen, so this may throw and render an empty table even when the query has rows. Copy first with slice() or a spread, then sort/reverse the copy; a prior map/filter already creates a new array. No expression was rewritten.`);
+}
+var node = (v) => v !== null && typeof v === "object" && !Array.isArray(v) ? v : void 0;
+var member2 = (n) => n?.type === "MemberExpression" || n?.type === "OptionalMemberExpression";
+function key2(n) {
+  if (!n)
+    return;
+  const p = node(n.property ?? n.key);
+  if (!n.computed && p?.type === "Identifier")
+    return String(p.name);
+  if (p?.type === "StringLiteral")
+    return String(p.value);
+}
+function expression(value) {
+  if (typeof value !== "string")
+    return;
+  const m = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
+  if (!m)
+    return;
+  try {
+    return parseExpression(m[1]);
+  } catch {
+    return;
+  }
+}
+function walk2(value, visit) {
+  if (Array.isArray(value)) {
+    for (const child of value)
+      walk2(child, visit);
+    return;
+  }
+  const n = node(value);
+  if (!n)
+    return;
+  visit(n);
+  for (const [k, child] of Object.entries(n)) {
+    if (k !== "loc" && k !== "extra" && k !== "comments")
+      walk2(child, visit);
+  }
+}
+function projectedFields(c) {
+  if (c.type !== "Table")
+    return;
+  const raw = c.properties?.data;
+  const root = expression(node(raw) && "value" in node(raw) ? node(raw).value : raw);
+  if (root?.type !== "CallExpression")
+    return;
+  const callee = node(root.callee);
+  if (!member2(callee) || key2(callee) !== "map")
+    return;
+  const args = root.arguments;
+  if (!Array.isArray(args) || args.length !== 1)
+    return;
+  const callback = node(args[0]);
+  if (callback?.type !== "ArrowFunctionExpression")
+    return;
+  const body = node(callback.body);
+  if (body?.type !== "ObjectExpression" || !Array.isArray(body.properties))
+    return;
+  const keys = /* @__PURE__ */ new Map();
+  for (const prop of body.properties) {
+    const p = node(prop);
+    if (p?.type !== "ObjectProperty" || p.computed)
+      return;
+    const name = key2(p);
+    if (name === void 0 || name === "__proto__")
+      return;
+    keys.set(name, node(p.value));
+  }
+  return keys;
+}
+function lintSelectedRowProjections(components, extraSources = []) {
+  const tables = /* @__PURE__ */ new Map();
+  for (const c of components) {
+    if (!c.name)
+      continue;
+    tables.set(c.name, tables.has(c.name) ? void 0 : projectedFields(c));
+  }
+  const aliases = /* @__PURE__ */ new Map();
+  const singleAlias = (alias) => {
+    const names = aliases.get(alias);
+    return names?.size === 1 ? [...names][0] : void 0;
+  };
+  for (const source of extraSources) {
+    const action = node(source.value);
+    if (action?.actionId !== "set-custom-variable" || typeof action.key !== "string")
+      continue;
+    const selected = expression(action.value);
+    if (action.value === null || selected?.type === "NullLiteral")
+      continue;
+    const table = node(selected?.object), namespace = node(table?.object);
+    const name = member2(selected) && key2(selected) === "selectedRow" && member2(table) && namespace?.type === "Identifier" && namespace.name === "components" ? key2(table) : void 0;
+    if (!name)
+      aliases.set(action.key, void 0);
+    else if (!aliases.has(action.key))
+      aliases.set(action.key, /* @__PURE__ */ new Set([name]));
+    else
+      aliases.get(action.key)?.add(name);
+  }
+  if (extraSources.some((s) => /actions\s*(?:\.\s*(?:setVariable|unsetVariable)|\[\s*["'](?:setVariable|unsetVariable)["']\s*\])/.test(JSON.stringify(s.value))))
+    aliases.clear();
+  const warnings = /* @__PURE__ */ new Set();
+  const aliasOmissions = /* @__PURE__ */ new Map();
+  function inspect(value, label) {
+    if (Array.isArray(value)) {
+      for (const v of value)
+        inspect(v, label);
+      return;
+    }
+    if (node(value)) {
+      for (const v of Object.values(node(value)))
+        inspect(v, label);
+      return;
+    }
+    const root = expression(value);
+    if (!root)
+      return;
+    let shadowed = false;
+    walk2(root, (n) => {
+      if (Array.isArray(n.params) && /"(?:components|variables)"/.test(JSON.stringify(n.params)))
+        shadowed = true;
+      if (n.type === "VariableDeclarator" && /"(?:components|variables)"/.test(JSON.stringify(n.id)))
+        shadowed = true;
+    });
+    if (shadowed)
+      return;
+    walk2(root, (n) => {
+      if (!member2(n))
+        return;
+      const field = key2(n), selection = node(n.object), table = node(selection?.object), namespace = node(table?.object);
+      if (field && member2(selection) && table?.type === "Identifier" && table.name === "variables") {
+        const alias = key2(selection), names = alias ? aliases.get(alias) : void 0;
+        for (const name2 of names ?? []) {
+          const fields = tables.get(name2);
+          if (fields && !fields.has(field) && !["toString", "valueOf", "constructor", "hasOwnProperty", "__proto__", "isPrototypeOf", "propertyIsEnumerable", "toLocaleString"].includes(field)) {
+            const id = JSON.stringify([alias, name2]);
+            if (!aliasOmissions.has(id))
+              aliasOmissions.set(id, { alias, table: name2, fields: /* @__PURE__ */ new Set() });
+            aliasOmissions.get(id).fields.add(field);
+          }
+        }
+      }
+      if (!field || !member2(selection) || key2(selection) !== "selectedRow" || !member2(table) || namespace?.type !== "Identifier" || namespace.name !== "components")
+        return;
+      const name = key2(table), keys = name ? tables.get(name) : void 0;
+      if (!name || !keys || keys.has(field) || ["toString", "valueOf", "constructor", "hasOwnProperty", "__proto__", "isPrototypeOf", "propertyIsEnumerable", "toLocaleString"].includes(field))
+        return;
+      warnings.add(`${label}: reads components.${name}.selectedRow.${field}, but Table "${name}" has a closed map projection that omits "${field}". Preserve the raw field in the row (hide its column if needed), or look up the source record by its stable id. Check edit/review prefill and avoid overwriting omitted values with blanks. If the missing-field fallback is intentional, no change is required.`);
+    });
+  }
+  for (const c of components) {
+    const value = { p: c.properties, s: c.styles }, label = `Component "${c.name ?? c.id ?? "?"}"`;
+    inspect(value, label);
+    for (const warning of lintUntrackedReactiveBindings(value, label))
+      warnings.add(warning);
+    for (const warning of lintQueryArrayMutations(value, label))
+      warnings.add(warning);
+  }
+  for (const source of extraSources)
+    inspect(source.value, source.label);
+  for (const { alias, table, fields } of aliasOmissions.values()) {
+    warnings.add(`Bindings read ${[...fields].map((field) => `variables.${alias}.${field}`).join(", ")}; an event assigns that variable from Table "${table}" selectedRow, whose closed map projection omits ${[...fields].map((field) => `"${field}"`).join(", ")}. This edit can overwrite missing values with a blank/false default. Preserve raw fields or resolve the raw record by stable id before opening the editor; generate_edit_contract can provide that snapshot. Unknown runtime writes are not certified by this advisory.`);
+  }
+  const unwrap = (value) => node(value) && "value" in node(value) ? node(value).value : value;
+  for (const c of components) {
+    if (!["TextInput", "TextArea", "EmailInput", "PhoneInput"].includes(c.type ?? ""))
+      continue;
+    let selected = expression(unwrap(c.properties?.value));
+    if (selected?.type === "LogicalExpression" && ["||", "??"].includes(String(selected.operator)))
+      selected = node(selected.left);
+    if (!member2(selected))
+      continue;
+    const field = key2(selected), selection = node(selected?.object), owner = node(selection?.object), namespace = node(owner?.object);
+    if (!field || !member2(selection))
+      continue;
+    const tableName = owner?.type === "Identifier" && owner.name === "variables" ? singleAlias(key2(selection) ?? "") : key2(selection) === "selectedRow" && member2(owner) && namespace?.type === "Identifier" && namespace.name === "components" ? key2(owner) : void 0;
+    const projected = tableName ? tables.get(tableName)?.get(field) : void 0;
+    if (projected?.type !== "LogicalExpression" || !["||", "??"].includes(String(projected.operator)))
+      continue;
+    const fallback = node(projected.right);
+    if (fallback?.type !== "StringLiteral" || !String(fallback.value).trim())
+      continue;
+    warnings.add(`Component "${c.name ?? c.id ?? "?"}": editable value reads "${field}" from Table "${tableName}", whose projection replaces missing raw text with a non-empty display fallback. Saving another field can persist that label as real data. Keep raw text separate from display labels, or resolve the raw record by stable id; preserve untouched null/empty values. This is advisory, not a claim that every fallback is unintended.`);
+  }
+  for (const c of components) {
+    const property = c.type === "DatePickerV2" ? "defaultValue" : ["NumberInput", "CurrencyInput"].includes(c.type ?? "") ? "value" : void 0;
+    if (!property)
+      continue;
+    let selected = expression(unwrap(c.properties?.[property]));
+    if (selected?.type === "LogicalExpression" && ["||", "??"].includes(String(selected.operator)))
+      selected = node(selected.left);
+    if (!member2(selected))
+      continue;
+    const field = key2(selected), selection = node(selected?.object), table = node(selection?.object), namespace = node(table?.object);
+    if (!field || !member2(selection))
+      continue;
+    const tableName = table?.type === "Identifier" && table.name === "variables" ? singleAlias(key2(selection) ?? "") : key2(selection) === "selectedRow" && member2(table) && namespace?.type === "Identifier" && namespace.name === "components" ? key2(table) : void 0;
+    const value = tableName ? tables.get(tableName)?.get(field) : void 0;
+    if (!value)
+      continue;
+    const formats = [];
+    let localizedNumber = false;
+    walk2(value, (n) => {
+      if (n.type !== "CallExpression")
+        return;
+      const callee = node(n.callee);
+      if (!member2(callee))
+        return;
+      if (key2(callee) === "toLocaleString" || key2(callee) === "toFixed")
+        localizedNumber = true;
+      const args = n.arguments;
+      if (key2(callee) === "format" && Array.isArray(args) && node(args[0])?.type === "StringLiteral")
+        formats.push(String(node(args[0]).value));
+    });
+    const expected = unwrap(c.properties?.dateFormat) ?? "DD/MM/YYYY";
+    if (c.type === "DatePickerV2" && member2(value) && typeof expected === "string" && !expected.includes("{{")) {
+      const source = components.find((t) => t.type === "Table" && t.name === tableName);
+      const columns = unwrap(source?.properties?.columns);
+      const matches = Array.isArray(columns) ? columns.filter((col) => {
+        const entry = node(col);
+        return entry?.key === field && entry.columnType === "datepicker";
+      }) : [];
+      const parseFormat = matches.length === 1 ? node(matches[0])?.parseDateFormat : void 0;
+      const yearLast = /^(?:D{1,2}[^A-Za-z]+M{1,4}|M{1,4}[^A-Za-z]+D{1,2})[^A-Za-z]+Y{2,4}$/.test(expected);
+      if (typeof parseFormat === "string" && parseFormat.startsWith("YYYY-MM-DD") && !parseFormat.includes("{{") && yearLast) {
+        warnings.add(`Component "${c.name ?? c.id ?? "?"}": defaultValue reads raw ${tableName}.selectedRow.${field}; that Table column declares parseDateFormat "${parseFormat}", but the DatePickerV2 parses its default with dateFormat "${expected}". A name-only edit can silently change the date. Match the editor's input format or explicitly format the raw default before opening it; table display formatting does not convert selectedRow. Advisory only: verify the actual source value before changing it.`);
+      }
+    }
+    if (c.type === "DatePickerV2" && formats.some((f) => typeof expected === "string" && !expected.includes("{{") && f !== expected) || c.type !== "DatePickerV2" && localizedNumber) {
+      warnings.add(`Component "${c.name ?? c.id ?? "?"}": ${property} reads display-formatted ${tableName}.selectedRow.${field} into a typed ${c.type} editor${c.type === "DatePickerV2" ? ` (dateFormat ${String(expected)})` : ""}. Look up the raw record by stable id, or explicitly convert to the editor's input format. Preserve untouched fields on save; generate_edit_contract can provide raw-record defaults and changed-field-only payloads.`);
+    }
+  }
+  return [...warnings];
+}
+createRequire(import.meta.url);
+var FORMAT = "tooljet-catalog-parts-v1";
+var json = (value) => JSON.stringify(value, null, 2) + "\n";
+function readCatalog(file) {
+  const index = JSON.parse(readFileSync(file, "utf8"));
+  if (index.format !== FORMAT) return index;
+  const result = {};
+  for (const part of index.parts) {
+    if (!/^[\w-]+\/part-\d+\.json$/.test(part)) throw new Error(`Invalid catalog part: ${part}`);
+    const data = JSON.parse(readFileSync(resolve(dirname(file), part), "utf8"));
+    for (const [key3, value] of Object.entries(data)) {
+      if (Object.hasOwn(result, key3)) throw new Error(`Duplicate catalog key: ${key3}`);
+      Object.defineProperty(result, key3, { value, enumerable: true, writable: true, configurable: true });
+    }
+  }
+  return result;
+}
+function readCatalogBytes(file) {
+  const bytes = readFileSync(file);
+  const value = JSON.parse(bytes.toString("utf8"));
+  return value.format === FORMAT ? Buffer.from(json(readCatalog(file))) : bytes;
+}
 createRequire(import.meta.url);
 var require_identity = __commonJS({
   "node_modules/yaml/dist/nodes/identity.js"(exports) {
@@ -10,24 +362,24 @@ var require_identity = __commonJS({
     var SCALAR = /* @__PURE__ */ Symbol.for("yaml.scalar");
     var SEQ = /* @__PURE__ */ Symbol.for("yaml.seq");
     var NODE_TYPE = /* @__PURE__ */ Symbol.for("yaml.node.type");
-    var isAlias = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === ALIAS;
-    var isDocument = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === DOC;
-    var isMap = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === MAP;
-    var isPair = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === PAIR;
-    var isScalar = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === SCALAR;
-    var isSeq = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === SEQ;
-    function isCollection(node) {
-      if (node && typeof node === "object")
-        switch (node[NODE_TYPE]) {
+    var isAlias = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === ALIAS;
+    var isDocument = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === DOC;
+    var isMap = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === MAP;
+    var isPair = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === PAIR;
+    var isScalar = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === SCALAR;
+    var isSeq = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === SEQ;
+    function isCollection(node2) {
+      if (node2 && typeof node2 === "object")
+        switch (node2[NODE_TYPE]) {
           case MAP:
           case SEQ:
             return true;
         }
       return false;
     }
-    function isNode(node) {
-      if (node && typeof node === "object")
-        switch (node[NODE_TYPE]) {
+    function isNode(node2) {
+      if (node2 && typeof node2 === "object")
+        switch (node2[NODE_TYPE]) {
           case ALIAS:
           case MAP:
           case SCALAR:
@@ -36,7 +388,7 @@ var require_identity = __commonJS({
         }
       return false;
     }
-    var hasAnchor = (node) => (isScalar(node) || isCollection(node)) && !!node.anchor;
+    var hasAnchor = (node2) => (isScalar(node2) || isCollection(node2)) && !!node2.anchor;
     exports.ALIAS = ALIAS;
     exports.DOC = DOC;
     exports.MAP = MAP;
@@ -57,7 +409,7 @@ var require_identity = __commonJS({
 });
 var require_applyReviver = __commonJS({
   "node_modules/yaml/dist/doc/applyReviver.js"(exports) {
-    function applyReviver(reviver, obj, key, val) {
+    function applyReviver(reviver, obj, key3, val) {
       if (val && typeof val === "object") {
         if (Array.isArray(val)) {
           for (let i = 0, len = val.length; i < len; ++i) {
@@ -97,7 +449,7 @@ var require_applyReviver = __commonJS({
           }
         }
       }
-      return reviver.call(obj, key, val);
+      return reviver.call(obj, key3, val);
     }
     exports.applyReviver = applyReviver;
   }
@@ -855,27 +1207,27 @@ var require_stringifyString = __commonJS({
       return true;
     }
     function doubleQuotedString(value, ctx) {
-      const json = JSON.stringify(value);
+      const json2 = JSON.stringify(value);
       if (ctx.options.doubleQuotedAsJSON)
-        return json;
+        return json2;
       const { implicitKey } = ctx;
       const minMultiLineLength = ctx.options.doubleQuotedMinMultiLineLength;
       const indent = ctx.indent || (containsDocumentMarker(value) ? "  " : "");
       let str = "";
       let start = 0;
-      for (let i = 0, ch = json[i]; ch; ch = json[++i]) {
-        if (ch === " " && json[i + 1] === "\\" && json[i + 2] === "n") {
-          str += json.slice(start, i) + "\\ ";
+      for (let i = 0, ch = json2[i]; ch; ch = json2[++i]) {
+        if (ch === " " && json2[i + 1] === "\\" && json2[i + 2] === "n") {
+          str += json2.slice(start, i) + "\\ ";
           i += 1;
           start = i;
           ch = "\\";
         }
         if (ch === "\\")
-          switch (json[i + 1]) {
+          switch (json2[i + 1]) {
             case "u":
               {
-                str += json.slice(start, i);
-                const code = json.substr(i + 2, 4);
+                str += json2.slice(start, i);
+                const code = json2.substr(i + 2, 4);
                 switch (code) {
                   case "0000":
                     str += "\\0";
@@ -905,23 +1257,23 @@ var require_stringifyString = __commonJS({
                     if (code.substr(0, 2) === "00")
                       str += "\\x" + code.substr(2);
                     else
-                      str += json.substr(i, 6);
+                      str += json2.substr(i, 6);
                 }
                 i += 5;
                 start = i + 1;
               }
               break;
             case "n":
-              if (implicitKey || json[i + 2] === '"' || json.length < minMultiLineLength) {
+              if (implicitKey || json2[i + 2] === '"' || json2.length < minMultiLineLength) {
                 i += 1;
               } else {
-                str += json.slice(start, i) + "\n\n";
-                while (json[i + 2] === "\\" && json[i + 3] === "n" && json[i + 4] !== '"') {
+                str += json2.slice(start, i) + "\n\n";
+                while (json2[i + 2] === "\\" && json2[i + 3] === "n" && json2[i + 4] !== '"') {
                   str += "\n";
                   i += 2;
                 }
                 str += indent;
-                if (json[i + 2] === " ")
+                if (json2[i + 2] === " ")
                   str += "\\";
                 i += 1;
                 start = i + 1;
@@ -931,7 +1283,7 @@ var require_stringifyString = __commonJS({
               i += 1;
           }
       }
-      str = start ? str + json.slice(start) : json;
+      str = start ? str + json2.slice(start) : json2;
       return implicitKey ? str : foldFlowLines.foldFlowLines(str, indent, foldFlowLines.FOLD_QUOTED, getFoldOptions(ctx, false));
     }
     function singleQuotedString(value, ctx) {
@@ -1226,9 +1578,9 @@ var require_cst_scalar = __commonJS({
         ];
         if (!addEndtoBlockProps(props, "end" in token ? token.end : void 0))
           props.push({ type: "newline", offset: -1, indent, source: "\n" });
-        for (const key of Object.keys(token))
-          if (key !== "type" && key !== "offset")
-            delete token[key];
+        for (const key3 of Object.keys(token))
+          if (key3 !== "type" && key3 !== "offset")
+            delete token[key3];
         Object.assign(token, { type: "block-scalar", indent, props, source: body });
       }
     }
@@ -1276,9 +1628,9 @@ var require_cst_scalar = __commonJS({
         default: {
           const indent = "indent" in token ? token.indent : -1;
           const end = "end" in token && Array.isArray(token.end) ? token.end.filter((st) => st.type === "space" || st.type === "comment" || st.type === "newline") : [];
-          for (const key of Object.keys(token))
-            if (key !== "type" && key !== "offset")
-              delete token[key];
+          for (const key3 of Object.keys(token))
+            if (key3 !== "type" && key3 !== "offset")
+              delete token[key3];
           Object.assign(token, { type, indent, source, end });
         }
       }
@@ -1330,12 +1682,12 @@ var require_cst_stringify = __commonJS({
         }
       }
     }
-    function stringifyItem({ start, key, sep, value }) {
+    function stringifyItem({ start, key: key3, sep, value }) {
       let res = "";
       for (const st of start)
         res += st.source;
-      if (key)
-        res += stringifyToken(key);
+      if (key3)
+        res += stringifyToken(key3);
       if (sep)
         for (const st of sep)
           res += st.source;
@@ -2624,7 +2976,7 @@ var require_parser = __commonJS({
                   });
                 } else if (isFlowToken(it.key) && !includesToken(it.sep, "newline")) {
                   const start2 = getFirstKeyStartProps(it.start);
-                  const key = it.key;
+                  const key3 = it.key;
                   const sep = it.sep;
                   sep.push(this.sourceToken);
                   delete it.key;
@@ -2633,7 +2985,7 @@ var require_parser = __commonJS({
                     type: "block-map",
                     offset: this.offset,
                     indent: this.indent,
-                    items: [{ start: start2, key, sep }]
+                    items: [{ start: start2, key: key3, sep }]
                   });
                 } else if (start.length > 0) {
                   it.sep = it.sep.concat(start, this.sourceToken);
@@ -2962,17 +3314,20 @@ var require_parser = __commonJS({
   }
 });
 export {
-  require_identity as a,
-  require_Scalar as b,
-  require_cst as c,
-  require_lexer as d,
-  require_parser as e,
-  require_resolve_end as f,
-  require_toJS as g,
-  require_applyReviver as h,
-  require_Node as i,
-  require_stringifyString as j,
-  require_resolve_block_scalar as k,
-  require_resolve_flow_scalar as l,
-  require_errors as r
+  require_errors as a,
+  require_identity as b,
+  require_Scalar as c,
+  require_cst as d,
+  require_lexer as e,
+  require_parser as f,
+  require_resolve_end as g,
+  require_toJS as h,
+  require_applyReviver as i,
+  require_Node as j,
+  require_stringifyString as k,
+  require_resolve_block_scalar as l,
+  require_resolve_flow_scalar as m,
+  lintSelectedRowProjections as n,
+  readCatalogBytes as o,
+  readCatalog as r
 };

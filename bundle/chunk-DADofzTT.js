@@ -1,11 +1,12 @@
 import { createRequire } from "node:module";
-import { b1 as external_exports, b2 as nodeCatalog, b3 as validateGraph, b4 as specSchema, b5 as compileGraph, b6 as assertWorkflowJavaScript, b7 as controlFlowEdges, b8 as getComponentSchema } from "./chunk-DsdTCwqi.js";
-import { p as parseExpression, a as parse } from "./chunk-Brg6_25C.js";
-import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-Dwp0GyCm.js";
-import { r as require_moment } from "./chunk-CMlzbHLo.js";
-import { ed as __toESM, eb as __commonJS } from "./chunk-By54lwVj.js";
-import { randomUUID } from "node:crypto";
-import { isDeepStrictEqual } from "node:util";
+import { p as parseExpression, a as parse } from "./chunk-B6PYEK0a.js";
+import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-DXVhSqct.js";
+import { r as require_moment } from "./chunk-biiAHPpR.js";
+import { e7 as __toESM, e5 as __commonJS } from "./chunk-CYLdCKx-.js";
+import { r as readCatalog } from "./chunk-DiIMq7hT.js";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { resolve, dirname } from "node:path";
 createRequire(import.meta.url);
 var require_unicode = __commonJS({
   "node_modules/json5/lib/unicode.js"(exports, module) {
@@ -39,7 +40,7 @@ var require_util = __commonJS({
 var require_parse = __commonJS({
   "node_modules/json5/lib/parse.js"(exports, module) {
     var util = require_util();
-    var source2;
+    var source;
     var parseState;
     var stack;
     var pos;
@@ -49,7 +50,7 @@ var require_parse = __commonJS({
     var key;
     var root;
     module.exports = function parse2(text, reviver) {
-      source2 = String(text);
+      source = String(text);
       parseState = "start";
       stack = [];
       pos = 0;
@@ -67,8 +68,8 @@ var require_parse = __commonJS({
       }
       return root;
     };
-    function internalize(holder, name2, reviver) {
-      const value = holder[name2];
+    function internalize(holder, name, reviver) {
+      const value = holder[name];
       if (value != null && typeof value === "object") {
         if (Array.isArray(value)) {
           for (let i = 0; i < value.length; i++) {
@@ -101,7 +102,7 @@ var require_parse = __commonJS({
           }
         }
       }
-      return reviver.call(holder, name2, value);
+      return reviver.call(holder, name, value);
     }
     var lexState;
     var buffer;
@@ -122,8 +123,8 @@ var require_parse = __commonJS({
       }
     }
     function peek() {
-      if (source2[pos]) {
-        return String.fromCodePoint(source2.codePointAt(pos));
+      if (source[pos]) {
+        return String.fromCodePoint(source.codePointAt(pos));
       }
     }
     function read() {
@@ -231,15 +232,15 @@ var require_parse = __commonJS({
             return newToken("punctuator", read());
           case "n":
             read();
-            literal2("ull");
+            literal("ull");
             return newToken("null", null);
           case "t":
             read();
-            literal2("rue");
+            literal("rue");
             return newToken("boolean", true);
           case "f":
             read();
-            literal2("alse");
+            literal("alse");
             return newToken("boolean", false);
           case "-":
           case "+":
@@ -270,11 +271,11 @@ var require_parse = __commonJS({
             return;
           case "I":
             read();
-            literal2("nfinity");
+            literal("nfinity");
             return newToken("numeric", Infinity);
           case "N":
             read();
-            literal2("aN");
+            literal("aN");
             return newToken("numeric", NaN);
           case '"':
           case "'":
@@ -368,11 +369,11 @@ var require_parse = __commonJS({
             return;
           case "I":
             read();
-            literal2("nfinity");
+            literal("nfinity");
             return newToken("numeric", sign * Infinity);
           case "N":
             read();
-            literal2("aN");
+            literal("aN");
             return newToken("numeric", NaN);
         }
         throw invalidChar(read());
@@ -605,7 +606,7 @@ var require_parse = __commonJS({
         column
       };
     }
-    function literal2(s) {
+    function literal(s) {
       for (const c2 of s) {
         const p = peek();
         if (p !== c2) {
@@ -890,10 +891,10 @@ var require_stringify = __commonJS({
       let propertyList;
       let replacerFunc;
       let gap = "";
-      let quote2;
+      let quote;
       if (replacer != null && typeof replacer === "object" && !Array.isArray(replacer)) {
         space = replacer.space;
-        quote2 = replacer.quote;
+        quote = replacer.quote;
         replacer = replacer.replacer;
       }
       if (typeof replacer === "function") {
@@ -1009,7 +1010,7 @@ var require_stringify = __commonJS({
           }
           product += c;
         }
-        const quoteChar = quote2 || Object.keys(quotes).reduce((a, b) => quotes[a] < quotes[b] ? a : b);
+        const quoteChar = quote || Object.keys(quotes).reduce((a, b) => quotes[a] < quotes[b] ? a : b);
         product = product.replace(new RegExp(quoteChar, "g"), replacements[quoteChar]);
         return quoteChar + product + quoteChar;
       }
@@ -1109,7 +1110,7 @@ var require_lib = __commonJS({
     module.exports = JSON52;
   }
 });
-function assessRedisRead(options2, datasourceId) {
+function assessRedisRead(options, datasourceId) {
   const base = {
     datasourceKind: "redis",
     ...datasourceId ? { datasourceId } : {},
@@ -1119,7 +1120,7 @@ function assessRedisRead(options2, datasourceId) {
     selectStar: false,
     requiresCountPreflight: false
   };
-  const query = options2.query;
+  const query = options.query;
   if (typeof query !== "string" || !query || query.includes("{{") || /[\r\n\t\0]/.test(query)) {
     return { ...base, reason: "Redis needs one static space-delimited command in options.query." };
   }
@@ -1281,8 +1282,8 @@ var STRING_METHODS = {
 function unsupported() {
   throw new Unsupported();
 }
-function own(table, name2) {
-  return typeof name2 === "string" && Object.prototype.hasOwnProperty.call(table, name2) ? table[name2] : void 0;
+function own(table, name) {
+  return typeof name === "string" && Object.prototype.hasOwnProperty.call(table, name) ? table[name] : void 0;
 }
 function isUnit(v) {
   return typeof v === "string" && UNITS.has(v);
@@ -1410,13 +1411,13 @@ function interpret(node) {
     case "MemberExpression": {
       if (node.computed)
         return unsupported();
-      const name2 = node.property?.name;
+      const name = node.property?.name;
       if (node.object?.type === "Identifier" && node.object.name === "Math") {
-        const constant = own(MATH_CONSTANTS, name2);
+        const constant = own(MATH_CONSTANTS, name);
         return constant ?? unsupported();
       }
       const target = interpret(node.object);
-      if (typeof target === "string" && name2 === "length")
+      if (typeof target === "string" && name === "length")
         return target.length;
       return unsupported();
     }
@@ -1440,31 +1441,31 @@ function interpret(node) {
       }
       if (callee.type !== "MemberExpression" || callee.computed)
         return unsupported();
-      const name2 = callee.property?.name;
+      const name = callee.property?.name;
       const object2 = callee.object;
       if (object2.type === "Identifier" && object2.name === "moment") {
-        if (name2 === "utc")
+        if (name === "utc")
           return box(import_moment.default.utc(...momentArgs(args)));
-        if (name2 === "unix" && args.length === 1)
+        if (name === "unix" && args.length === 1)
           return box(import_moment.default.unix(num(args[0])));
         return unsupported();
       }
       if (object2.type === "Identifier" && object2.name === "Math") {
-        const fn = own(MATH_FNS, name2);
+        const fn = own(MATH_FNS, name);
         return fn ? fn(...args.map((a) => num(a))) : unsupported();
       }
-      if (object2.type === "Identifier" && object2.name === "Date" && name2 === "now" && args.length === 0)
+      if (object2.type === "Identifier" && object2.name === "Date" && name === "now" && args.length === 0)
         return Date.now();
-      if (object2.type === "Identifier" && object2.name === "JSON" && name2 === "stringify" && args.length === 1) {
+      if (object2.type === "Identifier" && object2.name === "JSON" && name === "stringify" && args.length === 1) {
         return JSON.stringify(primitive(args[0]));
       }
       const target = interpret(object2);
       if (isMoment(target)) {
-        const check = own(MOMENT_METHODS, name2);
+        const check = own(MOMENT_METHODS, name);
         if (!check || !check(args))
           return unsupported();
         const unwrapped = args.map((a) => isMoment(a) ? a.m : a);
-        const result = target.m[name2](...unwrapped);
+        const result = target.m[name](...unwrapped);
         if (import_moment.default.isMoment(result))
           return box(result);
         if (typeof result === "string" || typeof result === "number" || typeof result === "boolean")
@@ -1472,13 +1473,13 @@ function interpret(node) {
         return unsupported();
       }
       if (typeof target === "string") {
-        const fn = own(STRING_METHODS, name2);
+        const fn = own(STRING_METHODS, name);
         return fn ? fn(target, args) : unsupported();
       }
       if (typeof target === "number") {
-        if (name2 === "toFixed" && args.length <= 1)
+        if (name === "toFixed" && args.length <= 1)
           return target.toFixed(args[0] === void 0 ? 0 : capped(args[0], 100));
-        if (name2 === "toString" && args.length === 0)
+        if (name === "toString" && args.length === 0)
           return String(target);
         return unsupported();
       }
@@ -1489,7 +1490,7 @@ function interpret(node) {
   }
 }
 var SERVER_BINDING = /\{\{(.*?)\}\}/gs;
-function resolveStaticBindings(options2) {
+function resolveStaticBindings(options) {
   const resolved = {};
   const unresolved = [];
   const visit = (value) => {
@@ -1512,7 +1513,7 @@ function resolveStaticBindings(options2) {
     else if (value && typeof value === "object")
       Object.values(value).forEach(visit);
   };
-  visit(options2);
+  visit(options);
   return { resolved, unresolved };
 }
 function resolveString(text) {
@@ -1549,25 +1550,25 @@ function unresolvedNote(bindings) {
   const shown = bindings.slice(0, 3).map((b) => b.length > 60 ? `${b.slice(0, 57)}...` : b).join(", ");
   return `Browser-free run: ${bindings.length} binding(s) read live app state and ran as undefined (${shown}). Empty or failed results here do not show the viewer is wrong; check it in the viewer before rewriting the query.`;
 }
-function applyResolvedBindings(options2, resolved) {
-  if (typeof options2 === "string") {
-    if (!options2.includes("{{") || !options2.includes("}}"))
-      return options2;
-    const key = options2.replace(/\n/g, " ");
-    return Object.prototype.hasOwnProperty.call(resolved, key) ? resolved[key] : options2;
+function applyResolvedBindings(options, resolved) {
+  if (typeof options === "string") {
+    if (!options.includes("{{") || !options.includes("}}"))
+      return options;
+    const key = options.replace(/\n/g, " ");
+    return Object.prototype.hasOwnProperty.call(resolved, key) ? resolved[key] : options;
   }
-  if (Array.isArray(options2))
-    return options2.map((value) => applyResolvedBindings(value, resolved));
-  if (options2 && typeof options2 === "object") {
-    return Object.fromEntries(Object.entries(options2).map(([k, v]) => [k, applyResolvedBindings(v, resolved)]));
+  if (Array.isArray(options))
+    return options.map((value) => applyResolvedBindings(value, resolved));
+  if (options && typeof options === "object") {
+    return Object.fromEntries(Object.entries(options).map(([k, v]) => [k, applyResolvedBindings(v, resolved)]));
   }
-  return options2;
+  return options;
 }
 function resolvedBindingValues(resolved) {
   return Object.entries(resolved).filter(([key]) => /^\{\{(?:(?!\}\})[\s\S])*\}\}$/.test(key)).map(([, value]) => value);
 }
-function emptyViewerOnlyParams(options2, resolution) {
-  const params = options2 && typeof options2 === "object" ? options2.query_params : void 0;
+function emptyViewerOnlyParams(options, resolution) {
+  const params = options && typeof options === "object" ? options.query_params : void 0;
   if (!Array.isArray(params))
     return [];
   const filled = [];
@@ -1643,11 +1644,11 @@ var SERVICENOW_METADATA_READS = /* @__PURE__ */ new Set([
   "list_workflows",
   "list_flows"
 ]);
-function assessServiceNow(options2, datasourceId) {
+function assessServiceNow(options, datasourceId) {
   const identity = { datasourceKind: "servicenow", ...datasourceId ? { datasourceId } : {} };
-  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
-  const table = typeof options2.table === "string" ? options2.table.trim() : "";
-  const source2 = table ? { kind: "remote_endpoint", value: `servicenow:${table}` } : void 0;
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : void 0;
+  const table = typeof options.table === "string" ? options.table.trim() : "";
+  const source = table ? { kind: "remote_endpoint", value: `servicenow:${table}` } : void 0;
   const refuse = (reason) => ({
     provenRead: false,
     directSafe: false,
@@ -1668,7 +1669,7 @@ function assessServiceNow(options2, datasourceId) {
     selectStar: false,
     requiresCountPreflight: false,
     requiresRemoteReadConfirmation: true,
-    ...source2 ? { source: source2 } : {},
+    ...source ? { source } : {},
     ...identity
   };
   if (SERVICENOW_SINGLE_READS.has(operation)) {
@@ -1686,7 +1687,7 @@ function assessServiceNow(options2, datasourceId) {
       reason: `ServiceNow ${operation} reads remote metadata and consumes API quota.`
     };
   }
-  const maxRows = staticPositiveInteger(options2.sysparm_limit);
+  const maxRows = staticPositiveInteger(options.sysparm_limit);
   if (maxRows === void 0) {
     return {
       ...remote,
@@ -1712,7 +1713,7 @@ function assessServiceNow(options2, datasourceId) {
     reason: "ServiceNow list_records reads remote data and consumes API quota."
   };
 }
-function assessOpenapi(options2, datasourceId) {
+function assessOpenapi(options, datasourceId) {
   const identity = { datasourceKind: "openapi", ...datasourceId ? { datasourceId } : {} };
   const refuse = (reason) => ({
     provenRead: false,
@@ -1723,18 +1724,18 @@ function assessOpenapi(options2, datasourceId) {
     reason,
     ...identity
   });
-  const method = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
+  const method = typeof options.operation === "string" ? options.operation.toLowerCase() : void 0;
   if (method !== "get") {
     return refuse(`OpenAPI method ${method ?? "<missing>"} is not a proven read; only GET queries can be previewed.`);
   }
-  const path = typeof options2.path === "string" ? options2.path.trim() : "";
+  const path = typeof options.path === "string" ? options.path.trim() : "";
   if (!path || containsBinding(path)) {
     return refuse("OpenAPI preview requires a non-empty static path; dynamic endpoints must be verified in the viewer.");
   }
-  if (containsBinding(options2.params) || containsBinding(options2.host)) {
+  if (containsBinding(options.params) || containsBinding(options.host)) {
     return refuse("OpenAPI preview requires static host and parameters; binding-dependent requests must be verified in the viewer.");
   }
-  const host = typeof options2.host === "string" ? options2.host.trim() : "";
+  const host = typeof options.host === "string" ? options.host.trim() : "";
   return {
     provenRead: true,
     directSafe: false,
@@ -1778,11 +1779,11 @@ var FLUX_EGRESS_PACKAGES = [
   "influxdata/influxdb/secrets",
   "influxdata/influxdb/tasks"
 ];
-var FLUX_EGRESS_IMPORT = new RegExp(String.raw`(^|\n)\s*import\s+(?:[A-Za-z_][A-Za-z0-9_]*\s+)?"(?:` + FLUX_EGRESS_PACKAGES.map((name2) => name2.replace(/\//g, String.raw`\/`)).join("|") + String.raw`)"`);
+var FLUX_EGRESS_IMPORT = new RegExp(String.raw`(^|\n)\s*import\s+(?:[A-Za-z_][A-Za-z0-9_]*\s+)?"(?:` + FLUX_EGRESS_PACKAGES.map((name) => name.replace(/\//g, String.raw`\/`)).join("|") + String.raw`)"`);
 var FLUX_LIMIT = /(^|[^A-Za-z0-9_.])limit\s*\(\s*n\s*:\s*(\d+)/;
-function assessInflux(options2, datasourceId) {
+function assessInflux(options, datasourceId) {
   const identity = { datasourceKind: "influxdb", ...datasourceId ? { datasourceId } : {} };
-  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : void 0;
   const refuse = (reason) => ({
     provenRead: false,
     directSafe: false,
@@ -1812,7 +1813,7 @@ function assessInflux(options2, datasourceId) {
       reason: `InfluxDB ${operation} reads remote metadata without executing a query.`
     };
   }
-  const body = typeof options2.body === "string" ? options2.body : "";
+  const body = typeof options.body === "string" ? options.body : "";
   if (!body.trim())
     return refuse("InfluxDB query_data has no Flux body to classify.");
   if (FLUX_WRITE_CALL.test(body)) {
@@ -1823,8 +1824,8 @@ function assessInflux(options2, datasourceId) {
     return refuse(`InfluxDB query_data body imports ${egress[0].trim()}, which can send data out of InfluxDB or read secrets; that is not a read.`);
   }
   const bucket = body.match(/from\s*\(\s*bucket\s*:\s*"([^"]+)"/)?.[1];
-  const source2 = bucket ? { kind: "remote_endpoint", value: `influxdb:${bucket}` } : void 0;
-  const bounded = { ...remote, countOnly: false, ...source2 ? { source: source2 } : {} };
+  const source = bucket ? { kind: "remote_endpoint", value: `influxdb:${bucket}` } : void 0;
+  const bounded = { ...remote, countOnly: false, ...source ? { source } : {} };
   const maxRows = staticPositiveInteger(body.match(FLUX_LIMIT)?.[2]);
   if (maxRows === void 0) {
     return {
@@ -1843,9 +1844,9 @@ function assessInflux(options2, datasourceId) {
   }
   return { ...bounded, maxRows, reason: "InfluxDB query_data reads remote time-series data." };
 }
-function assessRestGet(options2, datasourceId) {
+function assessRestGet(options, datasourceId) {
   const identity = { datasourceKind: "restapi", ...datasourceId ? { datasourceId } : {} };
-  const method = typeof options2.method === "string" ? options2.method.toLowerCase() : void 0;
+  const method = typeof options.method === "string" ? options.method.toLowerCase() : void 0;
   if (method !== "get") {
     return {
       provenRead: false,
@@ -1857,7 +1858,7 @@ function assessRestGet(options2, datasourceId) {
       ...identity
     };
   }
-  const url = typeof options2.url === "string" ? options2.url.trim() : "";
+  const url = typeof options.url === "string" ? options.url.trim() : "";
   if (!url || containsBinding(url)) {
     return {
       provenRead: false,
@@ -1869,7 +1870,7 @@ function assessRestGet(options2, datasourceId) {
       ...identity
     };
   }
-  const requestFields = ["url_params", "headers", "cookies"].map((key) => options2[key]);
+  const requestFields = ["url_params", "headers", "cookies"].map((key) => options[key]);
   if (requestFields.some(containsBinding)) {
     return {
       provenRead: false,
@@ -1893,9 +1894,9 @@ function assessRestGet(options2, datasourceId) {
     ...identity
   };
 }
-function assessSupabase(options2, datasourceId) {
-  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
-  const table = operation === "count_rows" ? options2.count_table_name : options2.get_table_name;
+function assessSupabase(options, datasourceId) {
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : "";
+  const table = operation === "count_rows" ? options.count_table_name : options.get_table_name;
   const identity = { datasourceKind: "supabase", ...datasourceId ? { datasourceId } : {} };
   if (!["get_rows", "count_rows"].includes(operation) || typeof table !== "string" || !table.trim() || containsBinding(table)) {
     return {
@@ -1908,9 +1909,9 @@ function assessSupabase(options2, datasourceId) {
       ...identity
     };
   }
-  const source2 = { kind: "remote_endpoint", value: `supabase:${table.trim().toLowerCase()}` };
+  const source = { kind: "remote_endpoint", value: `supabase:${table.trim().toLowerCase()}` };
   if (operation === "count_rows") {
-    const countFilters = options2.count_filters;
+    const countFilters = options.count_filters;
     const fullSourceCount = countFilters == null || Array.isArray(countFilters) && countFilters.length === 0 || !!record(countFilters) && Object.keys(record(countFilters)).length === 0;
     return {
       provenRead: true,
@@ -1922,11 +1923,11 @@ function assessSupabase(options2, datasourceId) {
       fullSourceCount,
       simpleSourceRead: true,
       maxRows: 1,
-      source: source2,
+      source,
       ...identity
     };
   }
-  const maxRows = staticPositiveInteger(options2.get_limit);
+  const maxRows = staticPositiveInteger(options.get_limit);
   const unbounded = maxRows === void 0 || maxRows > LARGE_READ_ROW_THRESHOLD;
   return {
     provenRead: true,
@@ -1936,7 +1937,7 @@ function assessSupabase(options2, datasourceId) {
     requiresCountPreflight: unbounded,
     requiresRemoteReadConfirmation: true,
     simpleSourceRead: true,
-    source: source2,
+    source,
     maxRows,
     ...identity,
     ...unbounded ? { reason: `Supabase get_rows has no static get_limit at or below ${LARGE_READ_ROW_THRESHOLD}; set get_limit.` } : {}
@@ -1966,8 +1967,8 @@ function mongoPipelineWrites(pipeline) {
   const obj = record(pipeline);
   return !!obj && Object.entries(obj).some(([key, value]) => MONGO_WRITE_STAGES.includes(key) || mongoPipelineWrites(value));
 }
-function assessMongo(options2, datasourceId) {
-  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
+function assessMongo(options, datasourceId) {
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : "";
   const identity = { datasourceKind: "mongodb", ...datasourceId ? { datasourceId } : {} };
   const refuse = (reason) => ({
     provenRead: false,
@@ -1978,13 +1979,13 @@ function assessMongo(options2, datasourceId) {
     reason,
     ...identity
   });
-  const collection = options2.collection;
+  const collection = options.collection;
   if (typeof collection !== "string" || !collection.trim() || containsBinding(collection)) {
     return refuse("MongoDB collection is missing or not statically known.");
   }
-  const source2 = { kind: "gui_table", value: collection };
+  const source = { kind: "gui_table", value: collection };
   if (MONGO_COUNT_READS.has(operation)) {
-    const filter = options2.filter;
+    const filter = options.filter;
     const fullSourceCount = filter == null || filter === "" || !!record(filter) && Object.keys(record(filter)).length === 0 || typeof filter === "string" && ["{}", "{ }"].includes(filter.trim());
     return {
       provenRead: true,
@@ -1995,7 +1996,7 @@ function assessMongo(options2, datasourceId) {
       fullSourceCount,
       simpleSourceRead: true,
       maxRows: 1,
-      source: source2,
+      source,
       ...identity
     };
   }
@@ -2008,12 +2009,12 @@ function assessMongo(options2, datasourceId) {
       requiresCountPreflight: false,
       simpleSourceRead: true,
       maxRows: 1,
-      source: source2,
+      source,
       ...identity
     };
   }
   if (operation === "aggregate") {
-    const rawOptions = options2.options;
+    const rawOptions = options.options;
     const aggregateOptions = rawOptions == null || rawOptions === "" ? {} : mongoOptions(rawOptions);
     if (!aggregateOptions || containsBinding(rawOptions) || containsBinding(aggregateOptions)) {
       return refuse("MongoDB aggregate options must be a statically known JSON5 object.");
@@ -2021,7 +2022,7 @@ function assessMongo(options2, datasourceId) {
     if ("out" in aggregateOptions) {
       return refuse("MongoDB aggregate options.out adds a $out stage, which writes a collection.");
     }
-    let pipeline = options2.pipeline;
+    let pipeline = options.pipeline;
     if (containsBinding(pipeline))
       return refuse("MongoDB aggregate pipeline is not statically known.");
     if (typeof pipeline === "string") {
@@ -2045,7 +2046,7 @@ function assessMongo(options2, datasourceId) {
       countOnly: false,
       selectStar: false,
       requiresCountPreflight: maxRows2 === void 0 || maxRows2 > LARGE_READ_ROW_THRESHOLD,
-      source: source2,
+      source,
       maxRows: maxRows2,
       ...identity,
       ...maxRows2 === void 0 ? { reason: "MongoDB aggregate has no statically provable row limit; add a final {$limit: N} pipeline stage. options.limit does not bound aggregation output." } : {}
@@ -2058,7 +2059,7 @@ function assessMongo(options2, datasourceId) {
       countOnly: false,
       selectStar: false,
       requiresCountPreflight: true,
-      source: source2,
+      source,
       ...identity,
       reason: "MongoDB distinct ignores options.limit and array fields can yield multiple values per document. Use a bounded aggregate with a final $limit stage."
     };
@@ -2066,7 +2067,7 @@ function assessMongo(options2, datasourceId) {
   if (!MONGO_ROW_READS.has(operation)) {
     return refuse(`MongoDB operation ${operation || "<missing>"} is not a proven bounded read.`);
   }
-  const maxRows = staticPositiveInteger(mongoOptions(options2.options)?.limit);
+  const maxRows = staticPositiveInteger(mongoOptions(options.options)?.limit);
   if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
     return {
       provenRead: true,
@@ -2076,7 +2077,7 @@ function assessMongo(options2, datasourceId) {
       requiresCountPreflight: false,
       simpleSourceRead: true,
       maxRows,
-      source: source2,
+      source,
       ...identity
     };
   }
@@ -2088,7 +2089,7 @@ function assessMongo(options2, datasourceId) {
     requiresCountPreflight: true,
     simpleSourceRead: true,
     maxRows,
-    source: source2,
+    source,
     ...identity,
     reason: maxRows === void 0 ? `MongoDB ${operation} has no statically provable row limit; set options.limit.` : `MongoDB ${operation} can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
   };
@@ -2104,10 +2105,10 @@ function sheetsRangeRows(range) {
   const rows = Number(match[2]) - Number(match[1]) + 1;
   return rows > 0 ? rows : void 0;
 }
-function assessSheets(options2, datasourceId) {
-  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
+function assessSheets(options, datasourceId) {
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : "";
   const identity = { datasourceKind: "googlesheetsv2", ...datasourceId ? { datasourceId } : {} };
-  const spreadsheet = options2.spreadsheet_id;
+  const spreadsheet = options.spreadsheet_id;
   if (SHEETS_METADATA_READS.has(operation)) {
     return {
       provenRead: true,
@@ -2142,9 +2143,9 @@ function assessSheets(options2, datasourceId) {
       reason: "Google Sheets spreadsheet_id is missing or not statically known."
     };
   }
-  const sheet = typeof options2.sheet === "string" && options2.sheet.trim() ? `:${options2.sheet.trim()}` : "";
-  const source2 = { kind: "remote_endpoint", value: `googlesheets:${spreadsheet.trim()}${sheet}` };
-  const maxRows = operation === "read" ? sheetsRangeRows(options2.spreadsheet_range) : void 0;
+  const sheet = typeof options.sheet === "string" && options.sheet.trim() ? `:${options.sheet.trim()}` : "";
+  const source = { kind: "remote_endpoint", value: `googlesheets:${spreadsheet.trim()}${sheet}` };
+  const maxRows = operation === "read" ? sheetsRangeRows(options.spreadsheet_range) : void 0;
   const bounded = maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD;
   return {
     provenRead: true,
@@ -2153,16 +2154,16 @@ function assessSheets(options2, datasourceId) {
     selectStar: false,
     requiresCountPreflight: !bounded,
     requiresRemoteReadConfirmation: true,
-    source: source2,
+    source,
     maxRows,
     ...identity,
     ...bounded ? {} : { reason: maxRows === void 0 ? `Google Sheets ${operation} has no statically bounded row range; set spreadsheet_range to an explicit A1 range such as A1:D100.` : `Google Sheets range covers ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.` }
   };
 }
-function assessDynamo(options2, datasourceId) {
-  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
+function assessDynamo(options, datasourceId) {
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : "";
   const identity = { datasourceKind: "dynamodb", ...datasourceId ? { datasourceId } : {} };
-  const table = options2.table;
+  const table = options.table;
   const refuse = (reason) => ({
     provenRead: false,
     directSafe: false,
@@ -2178,7 +2179,7 @@ function assessDynamo(options2, datasourceId) {
   if (typeof table !== "string" || !table.trim() || containsBinding(table)) {
     return refuse("DynamoDB table is missing or not statically known.");
   }
-  const source2 = { kind: "gui_table", value: table.trim().toLowerCase() };
+  const source = { kind: "gui_table", value: table.trim().toLowerCase() };
   if (operation === "get_item" || operation === "describe_table") {
     return {
       provenRead: true,
@@ -2188,7 +2189,7 @@ function assessDynamo(options2, datasourceId) {
       requiresCountPreflight: false,
       simpleSourceRead: true,
       maxRows: 1,
-      source: source2,
+      source,
       ...identity
     };
   }
@@ -2199,13 +2200,13 @@ function assessDynamo(options2, datasourceId) {
     selectStar: false,
     requiresCountPreflight: true,
     simpleSourceRead: true,
-    source: source2,
+    source,
     ...identity,
     reason: `DynamoDB ${operation} has no statically provable row limit.`
   };
 }
-function assessCouch(options2, datasourceId) {
-  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
+function assessCouch(options, datasourceId) {
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : "";
   const identity = { datasourceKind: "couchdb", ...datasourceId ? { datasourceId } : {} };
   if (operation === "retrieve_record") {
     return {
@@ -2229,7 +2230,7 @@ function assessCouch(options2, datasourceId) {
       reason: `CouchDB operation ${operation || "<missing>"} is not a proven bounded read.`
     };
   }
-  const limit = operation === "find" ? mongoOptions(options2.body)?.limit : options2.limit;
+  const limit = operation === "find" ? mongoOptions(options.body)?.limit : options.limit;
   const maxRows = staticPositiveInteger(limit);
   if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
     return {
@@ -2261,17 +2262,17 @@ function sqlStatementText(sql, backslashEscapes) {
   for (let i = 0; i < sql.length; i++) {
     const char = sql[i];
     if (char === "'" || char === '"' || char === "`") {
-      const quote2 = char;
-      text += quote2 + quote2;
+      const quote = char;
+      text += quote + quote;
       let closed = false;
       while (++i < sql.length) {
         if (sql[i] === "\\" && backslashEscapes) {
           i++;
           continue;
         }
-        if (sql[i] !== quote2)
+        if (sql[i] !== quote)
           continue;
-        if (sql[i + 1] === quote2) {
+        if (sql[i + 1] === quote) {
           i++;
           continue;
         }
@@ -2314,10 +2315,10 @@ function mainStatementAfterCtes(sql) {
     return void 0;
   let i = head[0].length;
   for (let guard = 0; guard < 50; guard++) {
-    const name2 = /^\s*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\s*(?:\([^()]*\)\s*)?as\s+(?:not\s+)?(?:materialized\s+)?\(/i.exec(blank.slice(i));
-    if (!name2)
+    const name = /^\s*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\s*(?:\([^()]*\)\s*)?as\s+(?:not\s+)?(?:materialized\s+)?\(/i.exec(blank.slice(i));
+    if (!name)
       return void 0;
-    i += name2[0].length;
+    i += name[0].length;
     let depth = 1;
     while (i < blank.length && depth > 0) {
       if (blank[i] === "(")
@@ -2448,9 +2449,9 @@ function assessSql(sql, datasourceKind, datasourceId) {
   const countOnly = /^count\s*\([\s\S]+\)(?:\s+(?:as\s+)?[`"A-Za-z_$][\w$`"]*)?$/i.test(selectClause);
   const projectionClause = selectClause.replace(/^top\s*(?:\(\s*\d+\s*\)|\d+)\s+/i, "").trim();
   const selectStar = !countOnly && /(?:^|,)\s*(?:[`"A-Za-z_$][\w$`"]*\.)?\*\s*(?:,|$)/.test(projectionClause);
-  const source2 = sqlSource(compact);
+  const source = sqlSource(compact);
   const fromCount = compact.match(/\bfrom\b/gi)?.length ?? 0;
-  const simpleSourceRead = !!source2 && fromCount === 1 && !/\b(join|union|intersect|except)\b|\bfrom\s*\(|\bfrom\s+(?:[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\.)*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\s*\(/i.test(compact);
+  const simpleSourceRead = !!source && fromCount === 1 && !/\b(join|union|intersect|except)\b|\bfrom\s*\(|\bfrom\s+(?:[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\.)*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\s*\(/i.test(compact);
   const limit = compact.match(/\blimit\s+(\d+)\b/i);
   const top = selectClause.match(/^top\s*(?:\(\s*(\d+)\s*\)|(\d+))\s+/i);
   const fetch = compact.match(/\bfetch\s+(?:first|next)\s+(\d+)\s+rows?\s+only\b/i);
@@ -2464,7 +2465,7 @@ function assessSql(sql, datasourceKind, datasourceId) {
       countOnly: false,
       selectStar: true,
       requiresCountPreflight: false,
-      source: source2,
+      source,
       maxRows,
       simpleSourceRead,
       ...identity,
@@ -2489,7 +2490,7 @@ function assessSql(sql, datasourceKind, datasourceId) {
       countOnly: false,
       selectStar: false,
       requiresCountPreflight: false,
-      source: source2,
+      source,
       maxRows,
       ...identity
     };
@@ -2504,7 +2505,7 @@ function assessSql(sql, datasourceKind, datasourceId) {
       requiresBillableReadConfirmation: billableRead,
       fullSourceCount,
       simpleSourceRead,
-      source: source2,
+      source,
       maxRows: 1,
       ...identity
     };
@@ -2518,7 +2519,7 @@ function assessSql(sql, datasourceKind, datasourceId) {
       requiresCountPreflight: false,
       requiresBillableReadConfirmation: billableRead,
       simpleSourceRead,
-      source: source2,
+      source,
       maxRows,
       ...identity
     };
@@ -2531,24 +2532,24 @@ function assessSql(sql, datasourceKind, datasourceId) {
     requiresCountPreflight: true,
     requiresBillableReadConfirmation: billableRead,
     simpleSourceRead,
-    source: source2,
+    source,
     maxRows,
     ...identity,
     reason: maxRows === void 0 ? "Row-returning SQL has no static LIMIT." : `SQL can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
   };
 }
-function countAggregate(options2) {
-  const listRows = record(options2.list_rows);
+function countAggregate(options) {
+  const listRows = record(options.list_rows);
   const aggregates = record(listRows?.aggregates);
   const groupBy = record(listRows?.group_by);
   if (!aggregates || Object.keys(aggregates).length === 0 || groupBy && Object.keys(groupBy).length > 0)
     return false;
   return Object.values(aggregates).every((aggregate) => record(aggregate)?.aggFx === "count");
 }
-function fullToolJetDbCount(options2) {
-  if (!countAggregate(options2))
+function fullToolJetDbCount(options) {
+  if (!countAggregate(options))
     return false;
-  const listRows = record(options2.list_rows);
+  const listRows = record(options.list_rows);
   const aggregates = record(listRows.aggregates);
   if (Object.keys(aggregates).length !== 1)
     return false;
@@ -2568,36 +2569,36 @@ function fullToolJetDbCount(options2) {
     return false;
   });
 }
-function guiSource(kind, options2) {
-  if (kind === "tooljetdb" && typeof options2.table_id === "string") {
-    return { kind: "table_id", value: options2.table_id };
+function guiSource(kind, options) {
+  if (kind === "tooljetdb" && typeof options.table_id === "string") {
+    return { kind: "table_id", value: options.table_id };
   }
-  const table = typeof options2.table === "string" ? options2.table : void 0;
+  const table = typeof options.table === "string" ? options.table : void 0;
   if (!table)
     return void 0;
-  const schema = typeof options2.schema === "string" ? `${options2.schema}.` : "";
+  const schema = typeof options.schema === "string" ? `${options.schema}.` : "";
   return { kind: "gui_table", value: `${schema}${table}`.toLowerCase() };
 }
-function assessListRows(kind, options2, datasourceId) {
-  const source2 = guiSource(kind, options2);
+function assessListRows(kind, options, datasourceId) {
+  const source = guiSource(kind, options);
   const billableRead = BILLABLE_SCAN_SQL_KINDS.has(kind);
   const identity = { datasourceKind: kind, ...datasourceId ? { datasourceId } : {} };
-  if (kind === "tooljetdb" && countAggregate(options2)) {
+  if (kind === "tooljetdb" && countAggregate(options)) {
     return {
       provenRead: true,
       directSafe: true,
       countOnly: true,
       selectStar: false,
       requiresCountPreflight: false,
-      fullSourceCount: fullToolJetDbCount(options2),
+      fullSourceCount: fullToolJetDbCount(options),
       simpleSourceRead: true,
-      source: source2,
+      source,
       maxRows: 1,
       ...identity
     };
   }
-  const listRows = record(options2.list_rows);
-  const maxRows = staticPositiveInteger(listRows?.limit ?? options2.limit);
+  const listRows = record(options.list_rows);
+  const maxRows = staticPositiveInteger(listRows?.limit ?? options.limit);
   if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
     return {
       provenRead: true,
@@ -2607,7 +2608,7 @@ function assessListRows(kind, options2, datasourceId) {
       requiresCountPreflight: false,
       requiresBillableReadConfirmation: billableRead,
       simpleSourceRead: true,
-      source: source2,
+      source,
       maxRows,
       ...identity
     };
@@ -2620,7 +2621,7 @@ function assessListRows(kind, options2, datasourceId) {
     requiresCountPreflight: true,
     requiresBillableReadConfirmation: billableRead,
     simpleSourceRead: true,
-    source: source2,
+    source,
     maxRows,
     ...identity,
     reason: maxRows === void 0 ? "list_rows has no statically provable row limit." : `list_rows can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
@@ -2629,8 +2630,8 @@ function assessListRows(kind, options2, datasourceId) {
 function assessQueryRead(query) {
   const kind = query.kind?.toLowerCase();
   const datasourceId = query.data_source_id;
-  const options2 = record(query.options);
-  if (!kind || !options2) {
+  const options = record(query.options);
+  if (!kind || !options) {
     return {
       provenRead: false,
       directSafe: false,
@@ -2640,10 +2641,10 @@ function assessQueryRead(query) {
       reason: "Datasource kind/options are unavailable."
     };
   }
-  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : void 0;
   if (kind === "hubspot") {
-    const issue2 = hubspotQueryIssues(options2)[0];
-    const assessment = assessOpenapi({ ...options2, host: "https://api.hubapi.com" }, datasourceId);
+    const issue2 = hubspotQueryIssues(options)[0];
+    const assessment = assessOpenapi({ ...options, host: "https://api.hubapi.com" }, datasourceId);
     return {
       ...assessment,
       datasourceKind: "hubspot",
@@ -2651,8 +2652,8 @@ function assessQueryRead(query) {
     };
   }
   if (singleSpecRef(kind)) {
-    const issue2 = apiEndpointQueryIssues(kind, options2)[0];
-    const assessment = assessOpenapi({ ...options2, host: kind }, datasourceId);
+    const issue2 = apiEndpointQueryIssues(kind, options)[0];
+    const assessment = assessOpenapi({ ...options, host: kind }, datasourceId);
     return {
       ...assessment,
       datasourceKind: kind,
@@ -2660,30 +2661,30 @@ function assessQueryRead(query) {
     };
   }
   if (kind === "restapi")
-    return assessRestGet(options2, datasourceId);
+    return assessRestGet(options, datasourceId);
   if (kind === "openapi")
-    return assessOpenapi(options2, datasourceId);
+    return assessOpenapi(options, datasourceId);
   if (kind === "servicenow")
-    return assessServiceNow(options2, datasourceId);
+    return assessServiceNow(options, datasourceId);
   if (kind === "influxdb")
-    return assessInflux(options2, datasourceId);
+    return assessInflux(options, datasourceId);
   if (kind === "supabase")
-    return assessSupabase(options2, datasourceId);
+    return assessSupabase(options, datasourceId);
   if (kind === "mongodb")
-    return assessMongo(options2, datasourceId);
+    return assessMongo(options, datasourceId);
   if (kind === "redis")
-    return assessRedisRead(options2, datasourceId);
+    return assessRedisRead(options, datasourceId);
   if (kind === "googlesheetsv2")
-    return assessSheets(options2, datasourceId);
+    return assessSheets(options, datasourceId);
   if (kind === "dynamodb")
-    return assessDynamo(options2, datasourceId);
+    return assessDynamo(options, datasourceId);
   if (kind === "couchdb")
-    return assessCouch(options2, datasourceId);
+    return assessCouch(options, datasourceId);
   if (kind === "tooljetdb") {
     if (operation === "list_rows")
-      return assessListRows(kind, options2, datasourceId);
+      return assessListRows(kind, options, datasourceId);
     if (operation === "sql_execution") {
-      const sql = record(options2.sql_execution)?.sqlQuery;
+      const sql = record(options.sql_execution)?.sqlQuery;
       return typeof sql === "string" ? assessSql(sql, kind, datasourceId) : {
         provenRead: false,
         directSafe: false,
@@ -2703,9 +2704,9 @@ function assessQueryRead(query) {
     };
   }
   if (SQL_KINDS.has(kind)) {
-    if (operation === "list_rows" || options2.mode === "gui")
-      return assessListRows(kind, options2, datasourceId);
-    const sql = ["query", "sql_query", "sql", "presto_sql_query", "soql_query"].map((field) => options2[field]).find((value) => typeof value === "string" && !!value.trim());
+    if (operation === "list_rows" || options.mode === "gui")
+      return assessListRows(kind, options, datasourceId);
+    const sql = ["query", "sql_query", "sql", "presto_sql_query", "soql_query"].map((field) => options[field]).find((value) => typeof value === "string" && !!value.trim());
     return sql ? assessSql(sql, kind, datasourceId) : {
       provenRead: false,
       directSafe: false,
@@ -2775,16 +2776,16 @@ function staticToggle(value) {
   const match = STATIC_TOGGLE.exec(value);
   return match ? (match[1] ?? match[2]) === "true" : void 0;
 }
-function normalizeQueryToggles(options2) {
-  if (!isPlainObject(options2))
-    return options2;
-  let out = options2;
+function normalizeQueryToggles(options) {
+  if (!isPlainObject(options))
+    return options;
+  let out = options;
   for (const key of QUERY_TOGGLES) {
-    const value = staticToggle(options2[key]);
+    const value = staticToggle(options[key]);
     if (value === void 0)
       continue;
-    if (out === options2)
-      out = { ...options2 };
+    if (out === options)
+      out = { ...options };
     out[key] = value;
   }
   return out;
@@ -2800,14 +2801,14 @@ function describe(value) {
     return JSON.stringify(value);
   return `${typeof value} ${String(value)}`;
 }
-function queryToggleIssues(options2) {
-  if (!isPlainObject(options2))
+function queryToggleIssues(options) {
+  if (!isPlainObject(options))
     return [];
   const issues = [];
   for (const key of QUERY_TOGGLES) {
-    if (!(key in options2))
+    if (!(key in options))
       continue;
-    const value = options2[key];
+    const value = options[key];
     if (value === void 0 || typeof value === "boolean" || staticToggle(value) !== void 0)
       continue;
     const dynamic = typeof value === "string" ? " ToolJet does not evaluate it and treats any text as on. Run the query from an event instead when it depends on state." : "";
@@ -2825,12 +2826,12 @@ function toggleRewriteWarning(before, after) {
     return void 0;
   return `${changed.map((key) => `${key} ${JSON.stringify(before[key])} saved as ${String(after[key])}`).join(", ")}; ToolJet reads these as true/false and runs any text on load.`;
 }
-function assertPersistableQueryToggles(options2, subject) {
-  const issues = queryToggleIssues(options2);
-  const strings = isPlainObject(options2) ? QUERY_TOGGLES.filter((key) => typeof options2[key] === "string") : [];
+function assertPersistableQueryToggles(options, subject) {
+  const issues = queryToggleIssues(options);
+  const strings = isPlainObject(options) ? QUERY_TOGGLES.filter((key) => typeof options[key] === "string") : [];
   const messages = [
     ...issues.map((issue2) => issue2.message),
-    ...strings.filter((key) => !issues.some((issue2) => issue2.path === key)).map((key) => `${key} must be sent as a boolean, not ${JSON.stringify(options2[key])}.`)
+    ...strings.filter((key) => !issues.some((issue2) => issue2.path === key)).map((key) => `${key} must be sent as a boolean, not ${JSON.stringify(options[key])}.`)
   ];
   if (messages.length)
     throw new Error(`${subject}: ${messages.join(" ")}`);
@@ -2864,9 +2865,9 @@ function bindingSpans(value) {
 function primitiveWriteBindingEntries(value) {
   if (typeof value !== "string")
     return [];
-  const source2 = value.trim();
-  const spans = bindingSpans(source2);
-  if (spans.length !== 1 || spans[0].start !== 0 || spans[0].end !== source2.length)
+  const source = value.trim();
+  const spans = bindingSpans(source);
+  if (spans.length !== 1 || spans[0].start !== 0 || spans[0].end !== source.length)
     return [];
   try {
     const node = parseExpression(spans[0].body);
@@ -2885,10 +2886,10 @@ function primitiveWriteBindingEntries(value) {
   }
 }
 var object = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : void 0;
-function conditionalWriteWarning(kind, options2) {
-  if (kind !== "tooljetdb" || options2.operation !== "update_rows")
+function conditionalWriteWarning(kind, options) {
+  if (kind !== "tooljetdb" || options.operation !== "update_rows")
     return;
-  const update = object(options2.update_rows);
+  const update = object(options.update_rows);
   const written = new Set(Object.values(object(update?.columns) ?? {}).map(object).flatMap((c) => typeof c?.column === "string" ? [c.column] : []));
   const guarded = Object.values(object(update?.where_filters) ?? {}).map(object).filter((f) => typeof f?.column === "string" && written.has(f.column) && f.operator === "eq").map((f) => String(f.column));
   if (!guarded.length)
@@ -2916,10 +2917,10 @@ function property(n) {
   if (p?.type === "StringLiteral")
     return String(p.value);
 }
-function arithmeticWriteWarning(kind, options2) {
-  if (kind !== "tooljetdb" || options2.operation !== "update_rows")
+function arithmeticWriteWarning(kind, options) {
+  if (kind !== "tooljetdb" || options.operation !== "update_rows")
     return;
-  const update = object(options2.update_rows), columns = object(update?.columns);
+  const update = object(options.update_rows), columns = object(update?.columns);
   if (!columns)
     return;
   const filters = Object.values(object(update?.where_filters) ?? {}).map(object);
@@ -2999,17 +3000,17 @@ function parseField(value) {
     value = JSON.stringify(value);
   if (typeof value !== "string" || !value.trim())
     return void 0;
-  let source2 = "";
+  let source = "";
   let from = 0;
   for (const span of bindingSpans(value)) {
-    const quote2 = value[span.start - 1];
-    const quoted = (quote2 === '"' || quote2 === "'") && value[span.end] === quote2 && span.start - 1 >= from;
-    source2 += value.slice(from, quoted ? span.start - 1 : span.start) + `(${span.body})`;
+    const quote = value[span.start - 1];
+    const quoted = (quote === '"' || quote === "'") && value[span.end] === quote && span.start - 1 >= from;
+    source += value.slice(from, quoted ? span.start - 1 : span.start) + `(${span.body})`;
     from = quoted ? span.end + 1 : span.end;
   }
-  source2 += value.slice(from);
+  source += value.slice(from);
   try {
-    return unwrap(parseExpression(source2));
+    return unwrap(parseExpression(source));
   } catch {
     return void 0;
   }
@@ -3087,13 +3088,13 @@ function issue(path, field) {
     message: `$set replaces the whole "${field}" array with a value built from component data, so every save drops the elements and fields the components do not hold. Update the edited elements by path instead: { $set: { "${field}.$[el].<field>": ... } } with options { arrayFilters: [{ "el.<key>": ... }] }, matching a stable key field, and abort the save unless the element count is unchanged apart from explicit adds and deletes.`
   };
 }
-function mongoArrayReplacementIssues(options2) {
-  const operation = typeof options2.operation === "string" ? options2.operation : "";
+function mongoArrayReplacementIssues(options) {
+  const operation = typeof options.operation === "string" ? options.operation : "";
   const updates = [];
   if (UPDATE_OPERATIONS.has(operation))
-    updates.push({ path: "update", update: parseField(options2.update) });
+    updates.push({ path: "update", update: parseField(options.update) });
   if (operation === "bulk_write") {
-    const operations = parseField(options2.operations);
+    const operations = parseField(options.operations);
     if (operations?.type === "ArrayExpression") {
       operations.elements.forEach((op, index) => {
         for (const kind of BULK_UPDATES) {
@@ -3108,36 +3109,36 @@ function mongoArrayReplacementIssues(options2) {
 }
 var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 var ALIASES = { workflow_id: "workflowId", workflow_version_id: "workflowVersionId" };
-function normalizeWorkflowQueryOptions(options2) {
-  let normalized = options2;
+function normalizeWorkflowQueryOptions(options) {
+  let normalized = options;
   for (const [alias, field] of Object.entries(ALIASES)) {
-    if (!(alias in options2))
+    if (!(alias in options))
       continue;
-    if (options2[field] !== void 0 && options2[field] !== options2[alias])
+    if (options[field] !== void 0 && options[field] !== options[alias])
       continue;
-    if (normalized === options2)
-      normalized = { ...options2 };
+    if (normalized === options)
+      normalized = { ...options };
     if (normalized[field] === void 0)
       normalized[field] = normalized[alias];
     delete normalized[alias];
   }
   return normalized;
 }
-function workflowQueryIssues(options2) {
+function workflowQueryIssues(options) {
   const errors = [];
   for (const [alias, field] of Object.entries(ALIASES)) {
-    if (alias in options2 && options2[field] !== void 0 && options2[field] !== options2[alias])
+    if (alias in options && options[field] !== void 0 && options[field] !== options[alias])
       errors.push({
         code: "conflicting_workflow_target",
         path: alias,
         message: `Conflicting workflow selectors ${field} and ${alias}; specify one target.`
       });
   }
-  if ("sync_execution" in options2)
+  if ("sync_execution" in options)
     errors.push({ code: "invalid_workflow_option", path: "sync_execution", message: "Use the native syncExecution boolean, not sync_execution." });
-  options2 = normalizeWorkflowQueryOptions(options2);
+  options = normalizeWorkflowQueryOptions(options);
   for (const field of ["workflowId", "workflowVersionId"]) {
-    const value = options2[field];
+    const value = options[field];
     if (field === "workflowVersionId" && (value === void 0 || value === null))
       continue;
     if (typeof value !== "string" || !UUID.test(value))
@@ -3147,16 +3148,16 @@ function workflowQueryIssues(options2) {
         message: `Workflow query options.${field} must be a literal workflow ${field === "workflowId" ? "ID from list_workflows/get_workflow" : "version ID from list_app_versions/get_workflow"}. A query and its success/failure handlers do not establish the workflow mapping.`
       });
   }
-  if (options2.syncExecution !== void 0 && typeof options2.syncExecution !== "boolean") {
+  if (options.syncExecution !== void 0 && typeof options.syncExecution !== "boolean") {
     errors.push({ code: "invalid_workflow_option", path: "syncExecution", message: "Workflow query syncExecution must be a boolean." });
   }
-  if (options2.params !== void 0 && (!Array.isArray(options2.params) || options2.params.some((param) => !param || typeof param !== "object" || Array.isArray(param) || typeof param.key !== "string" || !Object.hasOwn(param, "value")))) {
+  if (options.params !== void 0 && (!Array.isArray(options.params) || options.params.some((param) => !param || typeof param !== "object" || Array.isArray(param) || typeof param.key !== "string" || !Object.hasOwn(param, "value")))) {
     errors.push({ code: "invalid_workflow_option", path: "params", message: "Workflow query params must be an array of {key, value} entries; values may contain app bindings." });
   }
   return errors;
 }
-function assertWorkflowQueryOptions(options2) {
-  const errors = workflowQueryIssues(options2);
+function assertWorkflowQueryOptions(options) {
+  const errors = workflowQueryIssues(options);
   if (errors.length)
     throw new Error(errors.map((error) => error.message).join(" "));
 }
@@ -3178,8 +3179,8 @@ function isTruthyStatic(value) {
 function isDynamicBinding(value) {
   return typeof value === "string" && value.includes("{{");
 }
-function valueAtPath(source2, path) {
-  let cursor = source2;
+function valueAtPath(source, path) {
+  let cursor = source;
   for (const segment of path.split(".")) {
     if (!isObject(cursor) || !Object.prototype.hasOwnProperty.call(cursor, segment))
       return void 0;
@@ -3202,8 +3203,8 @@ function describeOperationSelection(schema) {
   }
   return "This kind has a single unnamed query form; author it against the default contract.";
 }
-function operationFromOptions(options2, contracts, defaults) {
-  const operation = options2.operation ?? defaults.operation;
+function operationFromOptions(options, contracts, defaults) {
+  const operation = options.operation ?? defaults.operation;
   if (typeof operation === "string" && operation) {
     if (Object.prototype.hasOwnProperty.call(contracts, operation))
       return operation;
@@ -3211,7 +3212,7 @@ function operationFromOptions(options2, contracts, defaults) {
       return "default";
     return operation;
   }
-  const mode = options2.mode ?? defaults.mode;
+  const mode = options.mode ?? defaults.mode;
   if (typeof mode === "string" && mode && Object.prototype.hasOwnProperty.call(contracts, mode))
     return mode;
   if (Object.prototype.hasOwnProperty.call(contracts, "default"))
@@ -3219,7 +3220,7 @@ function operationFromOptions(options2, contracts, defaults) {
   const selectorMatches = Object.entries(contracts).filter(([, contract]) => contract.variants.some((variant) => {
     const selectors = Object.entries(variant.when);
     return selectors.length > 0 && selectors.every(([selector, accepted]) => {
-      const actual = options2[selector] ?? defaults[selector];
+      const actual = options[selector] ?? defaults[selector];
       return typeof actual === "string" && !isDynamicBinding(actual) && accepted.includes(actual);
     });
   }));
@@ -3227,9 +3228,9 @@ function operationFromOptions(options2, contracts, defaults) {
     return selectorMatches[0][0];
   return void 0;
 }
-function variantMatches(variant, options2) {
+function variantMatches(variant, options) {
   return Object.entries(variant.when).every(([selector, accepted]) => {
-    const actual = options2[selector];
+    const actual = options[selector];
     return actual === void 0 || isDynamicBinding(actual) || typeof actual === "string" && accepted.includes(actual);
   });
 }
@@ -3268,9 +3269,9 @@ function bindingStrings(value, path = "") {
     return [];
   return Object.entries(value).flatMap(([key, item]) => bindingStrings(item, path ? `${path}.${key}` : key));
 }
-function tableStateWarnings(options2) {
+function tableStateWarnings(options) {
   const warnings = [];
-  for (const binding of bindingStrings(options2)) {
+  for (const binding of bindingStrings(options)) {
     const match = binding.value.match(/components\.([A-Za-z_$][\w$]*)\.pageIndex\s*-\s*1/);
     if (!match)
       continue;
@@ -3354,22 +3355,22 @@ function bracketBalance(code) {
     const col = i - start;
     return (lines[l - 1] ?? "").slice(Math.max(0, col - 30), col + 30).trim();
   };
-  let quote2 = null;
+  let quote = null;
   for (let i = 0; i < code.length; i += 1) {
     const ch = code[i];
-    if (quote2) {
+    if (quote) {
       if (ch === "\\") {
         i += 1;
         continue;
       }
-      if (quote2 === "`" && ch === "$" && code[i + 1] === "{") {
+      if (quote === "`" && ch === "$" && code[i + 1] === "{") {
         stack.push({ ch: "${", line: lineOf(i), at: i });
-        quote2 = null;
+        quote = null;
         i += 1;
         continue;
       }
-      if (ch === quote2)
-        quote2 = null;
+      if (ch === quote)
+        quote = null;
       continue;
     }
     if (ch === "/" && code[i + 1] === "/") {
@@ -3383,7 +3384,7 @@ function bracketBalance(code) {
       continue;
     }
     if (ch === '"' || ch === "'" || ch === "`") {
-      quote2 = ch;
+      quote = ch;
       continue;
     }
     if (ch === "(" || ch === "[" || ch === "{")
@@ -3391,7 +3392,7 @@ function bracketBalance(code) {
     else if (ch === ")" || ch === "]" || ch === "}") {
       const top = stack.pop();
       if (top?.ch === "${" && ch === "}") {
-        quote2 = "`";
+        quote = "`";
         continue;
       }
       if (!top || top.ch !== pairs[ch]) {
@@ -3569,10 +3570,10 @@ var BINDING_KNOWN_NAMES = /* @__PURE__ */ new Set([
   "theme"
 ]);
 var FUNCTION_TYPES = /* @__PURE__ */ new Set(["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression", "ObjectMethod", "ClassMethod", "ClassPrivateMethod"]);
-function undeclaredNames(source2, known) {
+function undeclaredNames(source, known) {
   let ast;
   try {
-    ast = parse(source2, { sourceType: "script", errorRecovery: false });
+    ast = parse(source, { sourceType: "script", errorRecovery: false });
   } catch {
     return [];
   }
@@ -3600,7 +3601,7 @@ function undeclaredNames(source2, known) {
   };
   const used = [];
   const scopes = [];
-  const isDeclared = (name2) => scopes.some((scope) => scope.has(name2));
+  const isDeclared = (name) => scopes.some((scope) => scope.has(name));
   const walk2 = (node, parent, key) => {
     if (Array.isArray(node)) {
       for (const child of node)
@@ -3613,9 +3614,9 @@ function undeclaredNames(source2, known) {
       const p = parent?.type;
       const notARead = (p === "MemberExpression" || p === "OptionalMemberExpression") && key === "property" && !parent.computed || (p === "ObjectProperty" || p === "ObjectMethod" || p === "ClassMethod" || p === "ClassProperty" || p === "ClassPrivateProperty") && key === "key" && !parent.computed || (p === "LabeledStatement" || p === "BreakStatement" || p === "ContinueStatement") && key === "label" || p === "UnaryExpression" && parent.operator === "typeof" || p === "MetaProperty" || // a declaration's own name, a parameter or a pattern binding is not a read
       p === "VariableDeclarator" && key === "id" || p !== void 0 && FUNCTION_TYPES.has(p) && (key === "id" || key === "params") || (p === "ClassDeclaration" || p === "ClassExpression") && key === "id" || p === "CatchClause" && key === "param";
-      const name2 = String(node.name);
-      if (!notARead && !isDeclared(name2))
-        used.push(name2);
+      const name = String(node.name);
+      if (!notARead && !isDeclared(name))
+        used.push(name);
       return;
     }
     if (node.type === "Program" || FUNCTION_TYPES.has(node.type)) {
@@ -3681,17 +3682,17 @@ function undeclaredNames(source2, known) {
       walkPatternDefaults(pattern.argument);
   };
   walk2(ast);
-  return [...new Set(used.filter((name2) => !known.has(name2) && name2 !== "__runjs__" && name2 !== "__binding__"))];
+  return [...new Set(used.filter((name) => !known.has(name) && name !== "__runjs__" && name !== "__binding__"))];
 }
-function transformationWarnings(options2) {
+function transformationWarnings(options) {
   const warnings = [];
-  const bag = isObject(options2.transformations) ? options2.transformations : void 0;
+  const bag = isObject(options.transformations) ? options.transformations : void 0;
   const languages = bag ? Object.keys(bag).filter((key) => key === "javascript" || key === "python") : [];
-  const hasCode = languages.length > 0 || typeof options2.transformation === "string" && options2.transformation.trim() !== "";
+  const hasCode = languages.length > 0 || typeof options.transformation === "string" && options.transformation.trim() !== "";
   if (!hasCode)
     return warnings;
-  const enabled = isTruthyStatic(options2.enableTransformation);
-  const language = typeof options2.transformationLanguage === "string" ? options2.transformationLanguage : void 0;
+  const enabled = isTruthyStatic(options.enableTransformation);
+  const language = typeof options.transformationLanguage === "string" ? options.transformationLanguage : void 0;
   if (!enabled) {
     warnings.push({
       code: "transformation_not_enabled",
@@ -3714,13 +3715,13 @@ function transformationWarnings(options2) {
   }
   return warnings;
 }
-function influxTransformWarnings(kind, options2) {
+function influxTransformWarnings(kind, options) {
   if (kind !== "influxdb")
     return [];
-  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : void 0;
   if (operation !== "query_data")
     return [];
-  if (isTruthyStatic(options2.enableTransformation))
+  if (isTruthyStatic(options.enableTransformation))
     return [];
   return [{
     code: "influx_raw_csv_response",
@@ -3729,31 +3730,31 @@ function influxTransformWarnings(kind, options2) {
   }];
 }
 var TARGET_FIELD = /(^|_)(table|table_name|table_id|collection|collection_name|spreadsheet_id|base_id|bucket|bucket_name|index|index_name|container|url|endpoint|list_id|database_id|page_id|object_type|resource_name)$/i;
-function validateQueryOptions(kind, options2, executionContext = "app") {
+function validateQueryOptions(kind, options, executionContext = "app") {
   const errors = [];
-  errors.push(...queryToggleIssues(options2));
+  errors.push(...queryToggleIssues(options));
   if (kind === "workflows")
-    errors.push(...workflowQueryIssues(options2));
+    errors.push(...workflowQueryIssues(options));
   if (kind === "hubspot")
-    errors.push(...hubspotQueryIssues(options2).map((issue2) => ({ code: "invalid_hubspot_query", ...issue2 })));
-  errors.push(...apiEndpointQueryIssues(kind, options2).map((issue2) => ({ code: "invalid_api_endpoint_query", ...issue2 })));
-  if (kind === "hubspot" && options2.operation !== "get" && (isTruthyStatic(options2.runOnPageLoad) || isTruthyStatic(options2.runOnDependencyChange))) {
+    errors.push(...hubspotQueryIssues(options).map((issue2) => ({ code: "invalid_hubspot_query", ...issue2 })));
+  errors.push(...apiEndpointQueryIssues(kind, options).map((issue2) => ({ code: "invalid_api_endpoint_query", ...issue2 })));
+  if (kind === "hubspot" && options.operation !== "get" && (isTruthyStatic(options.runOnPageLoad) || isTruthyStatic(options.runOnDependencyChange))) {
     errors.push({ code: "automatic_hubspot_write", message: "HubSpot writes must run from an explicit user action, not on page load or dependency changes." });
   }
-  const warnings = tableStateWarnings(options2);
+  const warnings = tableStateWarnings(options);
   if (kind === "workflows") {
-    const normalized = normalizeWorkflowQueryOptions(options2);
-    if (normalized !== options2)
+    const normalized = normalizeWorkflowQueryOptions(options);
+    if (normalized !== options)
       warnings.push({ code: "legacy_workflow_selector", message: "Legacy workflow selector keys are equivalent to workflowId/workflowVersionId; writes use the native camelCase keys." });
-    options2 = normalized;
+    options = normalized;
   }
-  const conditionalWrite = conditionalWriteWarning(kind, options2);
+  const conditionalWrite = conditionalWriteWarning(kind, options);
   if (conditionalWrite)
     warnings.push({ code: "conditional_write_result", path: "update_rows", message: conditionalWrite });
   if (kind === "mongodb")
-    errors.push(...mongoArrayReplacementIssues(options2));
-  if (executionContext === "app" && kind === "runjs" && typeof options2.code === "string" && options2.code.trim()) {
-    const syntax = runjsSyntaxError(options2.code);
+    errors.push(...mongoArrayReplacementIssues(options));
+  if (executionContext === "app" && kind === "runjs" && typeof options.code === "string" && options.code.trim()) {
+    const syntax = runjsSyntaxError(options.code);
     if (syntax) {
       errors.push({
         code: "runjs_syntax_error",
@@ -3761,7 +3762,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
         message: `the JavaScript does not parse (${syntax}). ToolJet marks the query failed and every component bound to its data stays empty; fix the code before writing it.`
       });
     } else {
-      const undeclared = runjsUndeclaredNames(options2.code);
+      const undeclared = runjsUndeclaredNames(options.code);
       if (undeclared.length) {
         errors.push({
           code: "runjs_undeclared_name",
@@ -3771,39 +3772,39 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
       }
     }
   }
-  warnings.push(...transformationWarnings(options2));
-  warnings.push(...influxTransformWarnings(kind, options2));
-  if (typeof options2.query === "string") {
-    errors.push(...unquotedSqlBindingIssues(options2.query));
-    warnings.push(...interpolatedSqlBindingIssues(options2.query));
+  warnings.push(...transformationWarnings(options));
+  warnings.push(...influxTransformWarnings(kind, options));
+  if (typeof options.query === "string") {
+    errors.push(...unquotedSqlBindingIssues(options.query));
+    warnings.push(...interpolatedSqlBindingIssues(options.query));
   }
-  const readAssessment = assessQueryRead({ kind, options: options2 });
+  const readAssessment = assessQueryRead({ kind, options });
   if (readAssessment.selectStar) {
     warnings.push({
       code: "select_star_read",
-      path: typeof options2.query === "string" ? "query" : void 0,
+      path: typeof options.query === "string" ? "query" : void 0,
       message: "SELECT * will be refused by run_query. Inspect the table schema and select only the fields the app needs; this avoids unknown/wide columns and accidental sensitive-data reads."
     });
   }
   if (readAssessment.provenRead && readAssessment.requiresCountPreflight) {
     warnings.push({
       code: "unbounded_read",
-      path: typeof options2.query === "string" ? "query" : void 0,
+      path: typeof options.query === "string" ? "query" : void 0,
       message: `${readAssessment.reason ?? "This read is not statically bounded"} Count the same table before running it. Prefer a bounded preview and server-side pagination for large or growing datasets.`
     });
   }
-  const automaticRead = isTruthyStatic(options2.runOnPageLoad) || isTruthyStatic(options2.runOnDependencyChange);
+  const automaticRead = isTruthyStatic(options.runOnPageLoad) || isTruthyStatic(options.runOnDependencyChange);
   if (automaticRead && readAssessment.provenRead && readAssessment.requiresCountPreflight) {
     errors.push({
       code: "unsafe_automatic_unbounded_read",
-      path: isTruthyStatic(options2.runOnPageLoad) ? "runOnPageLoad" : "runOnDependencyChange",
+      path: isTruthyStatic(options.runOnPageLoad) ? "runOnPageLoad" : "runOnDependencyChange",
       message: "An unbounded read cannot run automatically on page load or dependency change. " + (readAssessment.reason ? `${readAssessment.reason} ` : `Add a static row limit at or below ${LARGE_READ_ROW_THRESHOLD}. `) + "Use server-side pagination for more, or run it only after an explicit user decision."
     });
   }
   if (automaticRead && readAssessment.requiresBillableReadConfirmation) {
     errors.push({
       code: "unsafe_automatic_billable_read",
-      path: isTruthyStatic(options2.runOnPageLoad) ? "runOnPageLoad" : "runOnDependencyChange",
+      path: isTruthyStatic(options.runOnPageLoad) ? "runOnPageLoad" : "runOnDependencyChange",
       message: "A potentially billable warehouse read cannot run automatically. Trigger it through an explicit user action, and use run_query user_confirmed_billable_read:true only after the user approves any MCP-side verification run."
     });
   }
@@ -3816,7 +3817,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
     return { kind, schemaFound: false, errors, warnings };
   }
   const operationHint = describeOperationSelection(schema);
-  const operation = operationFromOptions(options2, schema.contracts, schema.defaults);
+  const operation = operationFromOptions(options, schema.contracts, schema.defaults);
   if (!operation) {
     errors.push({
       code: "missing_operation",
@@ -3829,12 +3830,12 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
   if (!contract) {
     errors.push({
       code: "invalid_operation",
-      path: typeof options2.operation === "string" ? "operation" : "mode",
+      path: typeof options.operation === "string" ? "operation" : "mode",
       message: `Unknown operation/mode "${operation}" for datasource "${kind}". ${operationHint}`
     });
     return { kind, operation, schemaFound: true, errors, warnings };
   }
-  const matching = contract.variants.filter((variant) => variantMatches(variant, options2));
+  const matching = contract.variants.filter((variant) => variantMatches(variant, options));
   if (!matching.length) {
     const selectors = /* @__PURE__ */ new Map();
     for (const variant of contract.variants) {
@@ -3845,7 +3846,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
       }
     }
     for (const [selector, accepted] of selectors) {
-      const actual = options2[selector];
+      const actual = options[selector];
       if (typeof actual === "string" && !accepted.has(actual)) {
         errors.push({
           code: "invalid_selector_value",
@@ -3856,7 +3857,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
     }
     return { kind, operation, schemaFound: true, errors, warnings };
   }
-  const dynamicSelectors = [...new Set(contract.variants.flatMap((variant) => Object.keys(variant.when)).filter((selector) => isDynamicBinding(options2[selector])))];
+  const dynamicSelectors = [...new Set(contract.variants.flatMap((variant) => Object.keys(variant.when)).filter((selector) => isDynamicBinding(options[selector])))];
   for (const selector of dynamicSelectors) {
     warnings.push({
       code: "runtime_selector_binding",
@@ -3870,13 +3871,13 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
     for (const key of ["operation", "path", "params", "selectedOperation"])
       allowedTopLevel.add(key);
   const own2 = [...allowedTopLevel].filter((k) => !(k in COMMON_QUERY_OPTION_FIELDS));
-  for (const key of Object.keys(options2)) {
+  for (const key of Object.keys(options)) {
     if (allowedTopLevel.has(key))
       continue;
     const exactReplacement = KNOWN_IGNORED_KEYS[key];
     const nestedReplacement = suffixSuggestion(key, fields);
     const replacement = exactReplacement ?? nestedReplacement;
-    const meant = key.length >= 4 ? own2.filter((f) => f !== key && options2[f] === void 0 && (f.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(f.toLowerCase()))) : [];
+    const meant = key.length >= 4 ? own2.filter((f) => f !== key && options[f] === void 0 && (f.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(f.toLowerCase()))) : [];
     if (!replacement && meant.length === 1) {
       errors.push({
         code: "unknown_option_key",
@@ -3893,7 +3894,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
   }
   for (const root of allowedTopLevel) {
     const children = nestedChildren(fields, root);
-    const actual = options2[root];
+    const actual = options[root];
     if (!children.size || !isObject(actual))
       continue;
     for (const child of Object.keys(actual)) {
@@ -3906,10 +3907,10 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
       }
     }
   }
-  if (options2.mode !== "sql") {
+  if (options.mode !== "sql") {
     const targets = Object.keys(fields).filter((path) => !path.includes(".") && TARGET_FIELD.test(path) && !(path in COMMON_QUERY_OPTION_FIELDS));
     const set = targets.filter((path) => {
-      const v = options2[path];
+      const v = options[path];
       return v !== void 0 && v !== null && v !== "";
     });
     if (targets.length && !set.length) {
@@ -3918,7 +3919,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
   }
   const required = intersection(matching.map((variant) => variant.required));
   for (const path of required) {
-    const value = valueAtPath(options2, path);
+    const value = valueAtPath(options, path);
     if (value === void 0 || value === null || value === "") {
       errors.push({
         code: "missing_required_option",
@@ -3928,7 +3929,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
     }
   }
   for (const [path, field] of Object.entries(fields)) {
-    const value = valueAtPath(options2, path);
+    const value = valueAtPath(options, path);
     const arity = tupleArity(field);
     if (arity !== void 0 && value !== void 0 && !isDynamicBinding(value)) {
       if (!Array.isArray(value)) {
@@ -3960,7 +3961,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
   }
   if (kind === "tooljetdb" && (operation === "create_row" || operation === "update_rows")) {
     const columnsPath = operation === "create_row" ? "create_row" : "update_rows.columns";
-    const columns = valueAtPath(options2, columnsPath);
+    const columns = valueAtPath(options, columnsPath);
     const primitiveEntries = primitiveWriteBindingEntries(columns);
     if (primitiveEntries.length)
       errors.push({
@@ -3980,8 +3981,8 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
       }
     }
   }
-  if (kind !== "tooljetdb" && operation === "create_row" && isObject(valueAtPath(options2, "create_row"))) {
-    const createRow = valueAtPath(options2, "create_row");
+  if (kind !== "tooljetdb" && operation === "create_row" && isObject(valueAtPath(options, "create_row"))) {
+    const createRow = valueAtPath(options, "create_row");
     const columns = createRow.columns;
     const usable = isObject(columns) && Object.values(columns).some((clause) => isObject(clause) && typeof clause.column === "string" && clause.column !== "");
     if (!usable) {
@@ -3995,7 +3996,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
   }
   if (kind === "tooljetdb" && (operation === "update_rows" || operation === "delete_rows")) {
     const filtersPath = `${operation}.where_filters`;
-    const filters = valueAtPath(options2, filtersPath);
+    const filters = valueAtPath(options, filtersPath);
     if (isObject(filters) || Array.isArray(filters)) {
       const usable = Object.entries(filters).filter(([, clause]) => isObject(clause) && typeof clause.column === "string" && clause.column !== "" && typeof clause.operator === "string" && clause.operator !== "");
       if (usable.length === 0) {
@@ -4015,7 +4016,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
     }
   }
   if (kind === "tooljetdb" && ["list_rows", "update_rows", "delete_rows"].includes(operation)) {
-    const filters = valueAtPath(options2, `${operation}.where_filters`);
+    const filters = valueAtPath(options, `${operation}.where_filters`);
     if (isObject(filters) || Array.isArray(filters)) {
       for (const [mapKey, rawClause] of Object.entries(filters)) {
         const aliases = {
@@ -4066,7 +4067,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
     }
   }
   if (kind === "tooljetdb" && operation === "list_rows") {
-    const orderFilters = valueAtPath(options2, "list_rows.order_filters");
+    const orderFilters = valueAtPath(options, "list_rows.order_filters");
     if (isObject(orderFilters)) {
       for (const [mapKey, rawClause] of Object.entries(orderFilters)) {
         if (!isObject(rawClause) || typeof rawClause.id !== "string" || rawClause.id === mapKey)
@@ -4102,630 +4103,101 @@ function normalizeWriteColumnMap(columns) {
   return normalized;
 }
 function normalizeQueryOptions(kind, rawOptions) {
-  const options2 = normalizeQueryToggles(rawOptions);
+  const options = normalizeQueryToggles(rawOptions);
   if (kind === "workflows")
-    return normalizeWorkflowQueryOptions(options2);
-  if (kind === "mongodb" && isObject(options2)) {
-    let result = options2;
+    return normalizeWorkflowQueryOptions(options);
+  if (kind === "mongodb" && isObject(options)) {
+    let result = options;
     for (const field of ["filter", "options", "pipeline", "document", "documents", "update", "replacement", "operations"]) {
-      const value = options2[field];
+      const value = options[field];
       if (value !== null && typeof value === "object") {
-        if (result === options2)
-          result = { ...options2 };
+        if (result === options)
+          result = { ...options };
         result[field] = JSON.stringify(value);
       }
     }
     return result;
   }
-  if (kind !== "tooljetdb" || !isObject(options2))
-    return options2;
-  const operation = typeof options2.operation === "string" ? options2.operation : "";
+  if (kind !== "tooljetdb" || !isObject(options))
+    return options;
+  const operation = typeof options.operation === "string" ? options.operation : "";
   if (operation === "create_row") {
-    const normalized = normalizeWriteColumnMap(options2.create_row);
-    return normalized ? { ...options2, create_row: normalized } : options2;
+    const normalized = normalizeWriteColumnMap(options.create_row);
+    return normalized ? { ...options, create_row: normalized } : options;
   }
   if (operation === "update_rows") {
-    const updateRows = options2.update_rows;
+    const updateRows = options.update_rows;
     if (!isObject(updateRows))
-      return options2;
+      return options;
     const normalized = normalizeWriteColumnMap(updateRows.columns);
-    return normalized ? { ...options2, update_rows: { ...updateRows, columns: normalized } } : options2;
+    return normalized ? { ...options, update_rows: { ...updateRows, columns: normalized } } : options;
   }
-  return options2;
+  return options;
 }
 createRequire(import.meta.url);
-var capabilityRequestSchema = external_exports.object({
-  version_id: external_exports.string().uuid()
-}).strict();
-var datasourceCapabilitySchema = external_exports.enum(["query", "ai-model", "email"]);
-var workflowCapabilityReportSchema = external_exports.object({
-  version_id: external_exports.string().uuid(),
-  authorable_node_types: external_exports.array(external_exports.string()),
-  datasources: external_exports.array(external_exports.object({
-    id: external_exports.string(),
-    name: external_exports.string(),
-    kind: external_exports.string(),
-    capabilities: external_exports.array(datasourceCapabilitySchema)
-  }).strict())
-}).strict();
-var AI_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["openai", "anthropic", "gemini", "mistral_ai"]);
-var EMAIL_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["smtp", "sendgrid", "mailgun"]);
-function datasourceCapabilities(kind) {
-  const capabilities = ["query"];
-  if (AI_DATASOURCE_KINDS.has(kind))
-    capabilities.push("ai-model");
-  if (EMAIL_DATASOURCE_KINDS.has(kind))
-    capabilities.push("email");
-  return capabilities;
+var dataPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-schemas.json");
+var compatibilityPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-compatibility.json");
+var cache = null;
+var legacyReplacements = null;
+function load() {
+  if (!cache)
+    cache = readCatalog(dataPath);
+  return cache;
 }
-async function getWorkflowCapabilities(client, input) {
-  const { version_id } = capabilityRequestSchema.parse(input);
-  const datasources = await client.workflows.listDatasources(version_id);
-  return workflowCapabilityReportSchema.parse({
-    version_id,
-    authorable_node_types: nodeCatalog.nodes.map((node) => node.type),
-    datasources: datasources.map((datasource) => ({
-      id: datasource.id,
-      name: datasource.name,
-      kind: datasource.kind,
-      capabilities: datasourceCapabilities(datasource.kind)
-    }))
-  });
-}
-function workflowReadiness(graph, structuralErrors) {
-  if (structuralErrors.length)
-    return { runtime_readiness: "blocked", blockers: structuralErrors };
-  const adjacency = new Map(graph.nodes.map((node) => [node.id, []]));
-  for (const edge of controlFlowEdges(graph))
-    adjacency.get(edge.source)?.push(edge.target);
-  const reachable = /* @__PURE__ */ new Set();
-  const visit = (id) => {
-    if (reachable.has(id))
-      return;
-    reachable.add(id);
-    for (const target of adjacency.get(id) ?? [])
-      visit(target);
-  };
-  for (const start of graph.nodes.filter((node) => node.type === "input" && node.data.nodeType === "start"))
-    visit(start.id);
-  const blockers = [];
-  for (const agent of graph.nodes.filter((node) => node.type === "agent" && reachable.has(node.id))) {
-    const attachment = graph.edges.find((edge) => edge.target === agent.id && edge.targetHandle === "ai-model");
-    const child = attachment && graph.nodes.find((node) => node.id === attachment.source);
-    const definitionId = child?.data.idOnDefinition;
-    const mapping = typeof definitionId === "string" && graph.queries.find((query) => query.idOnDefinition === definitionId);
-    if (!attachment || !child || !mapping)
-      blockers.push({
-        code: "agent_missing_model",
-        path: `nodes.${agent.id}.model`,
-        message: "Reachable Agent requires one configured AI model attachment."
-      });
+function loadLegacyReplacements() {
+  if (!legacyReplacements) {
+    const compatibility = JSON.parse(readFileSync(compatibilityPath, "utf8"));
+    legacyReplacements = compatibility.legacyReplacements ?? {};
   }
-  return { runtime_readiness: blockers.length ? "draft_only" : "runnable", blockers };
+  return legacyReplacements;
 }
-var plans = /* @__PURE__ */ new Map();
-var TTL = 30 * 6e4;
-function prune() {
-  for (const [key, plan] of plans)
-    if (plan.expires <= Date.now())
-      plans.delete(key);
+function allComponentSchemas() {
+  return load();
 }
-async function prepare(client, workflowId, versionId, spec, ids) {
-  const snapshot = await client.get(workflowId, versionId);
-  if (!snapshot.editable)
-    throw new Error("Only editable draft workflow versions can be changed.");
-  const [queries, datasources] = await Promise.all([client.getQueries(versionId), client.listDatasources(versionId)]);
-  const compiled = compileGraph(snapshot.definition, spec, ids, new Map(datasources.map((datasource) => [datasource.id, datasource.kind])));
-  const warnings = [];
-  const writes = [];
-  const finalDefinitionIds = new Set(compiled.graph.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string"));
-  const removedDefinitionIds = new Set(snapshot.definition.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string" && !finalDefinitionIds.has(value)));
-  const deletions = [];
-  for (const mapping of snapshot.definition.queries) {
-    if (!removedDefinitionIds.has(mapping.idOnDefinition))
-      continue;
-    if (compiled.graph.queries.some((retained) => retained.id === mapping.id))
-      continue;
-    if (deletions.some((deletion) => deletion.query_id === mapping.id))
-      continue;
-    const node = snapshot.definition.nodes.find((candidate) => candidate.data.idOnDefinition === mapping.idOnDefinition);
-    if (!node)
-      continue;
-    if (!queries.some((query) => query.id === mapping.id))
-      throw new Error(`Query ${mapping.id} is missing from the target version.`);
-    deletions.push({ node_id: node.id, definition_id: mapping.idOnDefinition, query_id: mapping.id });
-  }
-  const claimedNames = /* @__PURE__ */ new Set();
-  for (const item of compiled.query_nodes) {
-    const existingMapping = snapshot.definition.queries.find((q) => q.idOnDefinition === item.definition_id);
-    const oldQuery = queries.find((q) => q.id === existingMapping?.id);
-    if (existingMapping && !oldQuery)
-      throw new Error(`Query ${existingMapping.id} is missing from the target version.`);
-    if (oldQuery && snapshot.definition.nodes.filter((n) => snapshot.definition.queries.some((q) => q.id === oldQuery.id && q.idOnDefinition === n.data.idOnDefinition)).length > 1)
-      throw new Error(`Query ${oldQuery.id} is shared by multiple nodes. Shared query editing is unsupported.`);
-    const input = item.role === "workflow-node" ? item.spec : void 0;
-    const datasource = item.role === "agent-model" ? datasources.find((d) => d.id === item.datasource_id) : input.type === "javascript" || input.type === "loop" ? datasources.find((d) => d.kind === "runjs") : datasources.find((d) => d.id === input.datasource_id);
-    const label = item.role === "agent-model" ? "Agent model" : `node ${input.ref}`;
-    if (!datasource)
-      throw new Error(`Datasource unavailable for ${label}.`);
-    if (item.role === "agent-model" && !AI_DATASOURCE_KINDS.has(datasource.kind))
-      throw new Error(`Datasource ${datasource.id} is not an AI model datasource.`);
-    const kind = datasource.kind;
-    const dataSourceId = datasource.id;
-    const name2 = item.role === "agent-model" ? item.name : input.name;
-    if (oldQuery && (oldQuery.kind !== kind || oldQuery.data_source_id !== dataSourceId))
-      throw new Error(item.role === "agent-model" ? "Changing an Agent model datasource is unsupported; remove the model first, then add its replacement in a second phase." : "Changing an existing query datasource is unsupported; add a new node.");
-    if (oldQuery?.name !== void 0 && oldQuery.name !== name2)
-      throw new Error(item.role === "agent-model" ? "Renaming an Agent model query is unsupported; remove the model first, then add its replacement in a second phase." : "Renaming existing queries is unsupported because code references cannot be rewritten safely.");
-    if (claimedNames.has(name2) || queries.some((q) => q.name === name2 && q.id !== oldQuery?.id))
-      throw new Error(`Duplicate query name: ${name2}`);
-    claimedNames.add(name2);
-    const requestedOptions = item.role === "agent-model" ? item.options : input.type === "javascript" || input.type === "loop" ? { ...oldQuery?.options ?? {}, code: input.code } : input.options;
-    const options2 = item.role === "agent-model" ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
-    if (item.role === "workflow-node" && kind === "runjs")
-      assertWorkflowJavaScript(options2.code, label);
-    if (item.role === "workflow-node") {
-      const validation2 = validateQueryOptions(kind, options2, "workflow");
-      if (validation2.errors.length)
-        throw new Error(issueMessages(validation2.errors).join(" "));
-      warnings.push(...issueMessages(validation2.warnings));
-    }
-    writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name: name2, dataSourceId: dataSourceId ?? "", kind, options: options2 });
-    if (!existingMapping && !compiled.graph.queries.some((mapping) => mapping.idOnDefinition === item.definition_id))
-      compiled.graph.queries.push({ idOnDefinition: item.definition_id, id: `pending:${item.node_id}` });
-  }
-  const queryIds = /* @__PURE__ */ new Set([...queries.map((q) => q.id), ...writes.filter((q) => !q.existing_id).map((q) => `pending:${q.node_id}`)]);
-  const validation = validateGraph(compiled.graph, queryIds);
-  const readiness = workflowReadiness(compiled.graph, validation.errors);
-  return { snapshot, compiled, writes, deletions, validation, readiness, warnings };
+function registerComponentSchemas(extra) {
+  const all = load();
+  for (const key of Object.keys(all))
+    if (/^Lib_[a-z0-9]+_/.test(key) && !(key in extra))
+      delete all[key];
+  Object.assign(all, extra);
 }
-async function lint(client, workflowId, versionId, spec, allowDraft = false) {
-  const prepared = await prepare(client, workflowId, versionId, spec);
-  if (prepared.validation.errors.length || prepared.readiness.runtime_readiness === "draft_only" && !allowDraft)
-    return { ...prepared.validation, ...prepared.readiness, query_warnings: prepared.warnings };
-  prune();
-  while (plans.size >= 200)
-    plans.delete(plans.keys().next().value);
-  const token = randomUUID();
-  plans.set(token, { scope: await client.planScope(), workflowId, versionId, spec: structuredClone(spec), ids: prepared.compiled, allowDraft, expires: Date.now() + TTL });
-  return {
-    plan_token: token,
-    expires_in_seconds: TTL / 1e3,
-    node_ids: prepared.compiled.node_ids,
-    edge_ids: prepared.compiled.edge_ids,
-    ...prepared.validation,
-    ...prepared.readiness,
-    query_warnings: prepared.warnings,
-    changes: { node_upserts: spec.nodes.length, edge_upserts: spec.edges.length, node_removals: spec.remove_node_ids, edge_removals: spec.remove_edge_ids, queries: [...prepared.writes.map((q) => ({ name: q.name, operation: q.existing_id ? "update" : "create" })), ...prepared.deletions.map((q) => ({ query_id: q.query_id, operation: "delete" }))] }
-  };
+function getCatalog() {
+  const legacy = loadLegacyReplacements();
+  return Object.values(load()).filter((c) => !legacy[c.type]).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
 }
-async function apply(client, token) {
-  prune();
-  const scope = await client.planScope();
-  const plan = plans.get(token);
-  if (!plan || plan.scope !== scope)
-    throw new Error("Unknown, expired, consumed, or differently scoped plan. Run lint_workflow_spec again.");
-  plans.delete(token);
-  const { compiled, snapshot, writes, deletions, validation, readiness } = await prepare(client, plan.workflowId, plan.versionId, plan.spec, plan.ids);
-  if (validation.errors.length)
-    throw new Error(JSON.stringify(validation.errors));
-  if (readiness.runtime_readiness === "draft_only" && !plan.allowDraft)
-    throw new Error(JSON.stringify(readiness.blockers));
-  const completed = [];
-  let phase = "queries";
-  let attemptedQuery;
-  try {
-    for (const write of writes) {
-      attemptedQuery = { name: write.name, node_id: write.node_id, existing_id: write.existing_id };
-      const result = write.existing_id ? await client.updateQuery({ queryId: write.existing_id, versionId: plan.versionId, name: write.name, options: write.options }) : await client.createWorkflowQuery({ workflowId: plan.workflowId, versionId: plan.versionId, name: write.name, dataSourceId: write.dataSourceId || void 0, kind: write.kind, options: write.options });
-      completed.push({ operation: write.existing_id ? "update" : "create", query_id: result.query_id, node_id: write.node_id });
-      compiled.graph.queries = compiled.graph.queries.filter((q) => q.idOnDefinition !== write.definition_id);
-      compiled.graph.queries.push({ idOnDefinition: write.definition_id, id: result.query_id });
-      attemptedQuery = void 0;
-    }
-    phase = "save";
-    await client.save(snapshot, compiled.graph);
-    phase = "readback";
-    const [saved, queries] = await Promise.all([client.get(plan.workflowId, plan.versionId), client.getQueries(plan.versionId)]);
-    const validation2 = validateGraph(saved.definition, new Set(queries.map((q) => q.id)));
-    if (!isDeepStrictEqual(saved.definition, compiled.graph))
-      throw new Error("Saved definition differs from the intended graph. Inspect get_workflow before retrying.");
-    for (const write of writes) {
-      const id = completed.find((q) => q.node_id === write.node_id).query_id;
-      const persisted = queries.find((q) => q.id === id);
-      if (!persisted || persisted.name !== write.name || persisted.kind !== write.kind || persisted.data_source_id !== write.dataSourceId || !isDeepStrictEqual(persisted.options, write.options))
-        throw new Error(`Query ${id} readback differs from intended datasource, kind, name, or options.`);
-    }
-    if (validation2.errors.length)
-      throw new Error(JSON.stringify(validation2.errors));
-    phase = "query_deletions";
-    for (const deletion of deletions) {
-      attemptedQuery = { name: deletion.query_id, node_id: deletion.node_id, existing_id: deletion.query_id };
-      await client.deleteQuery({ queryId: deletion.query_id, versionId: plan.versionId });
-      completed.push({ operation: "delete", query_id: deletion.query_id, node_id: deletion.node_id });
-      attemptedQuery = void 0;
-    }
-    return { workflow_id: plan.workflowId, version_id: plan.versionId, editor_url: saved.editor_url, node_ids: compiled.node_ids, edge_ids: compiled.edge_ids, completed, validation: validation2, ...readiness };
-  } catch (error) {
-    return {
-      failed: true,
-      workflow_id: plan.workflowId,
-      version_id: plan.versionId,
-      phase,
-      completed,
-      attempted_query: attemptedQuery,
-      node_ids: compiled.node_ids,
-      edge_ids: compiled.edge_ids,
-      graph_persistence: phase === "queries" ? "not_attempted" : phase === "save" ? "unknown" : "saved",
-      error: error instanceof Error ? error.message : String(error),
-      recovery: "Inspect get_workflow and its queries; reuse persisted IDs when replanning. Do not repeat creation blindly. No resources were automatically deleted."
-    };
-  }
+function getComponentSchema(type) {
+  return load()[type] ?? null;
 }
-async function deleteNode(client, workflowId, versionId, nodeId) {
-  const snapshot = await client.get(workflowId, versionId);
-  if (!snapshot.definition.nodes.some((node) => node.id === nodeId))
-    throw new Error(`Unknown workflow node: ${nodeId}`);
-  const spec = specSchema.parse({ remove_node_ids: [nodeId], remove_edge_ids: snapshot.definition.edges.filter((edge) => edge.source === nodeId || edge.target === nodeId).map((edge) => edge.id) });
-  const result = await lint(client, workflowId, versionId, spec, true);
-  if (!("plan_token" in result))
-    throw new Error(JSON.stringify({ errors: result.errors, blockers: result.blockers }));
-  return apply(client, result.plan_token);
-}
-createRequire(import.meta.url);
-var name = external_exports.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/).refine((v) => !["__proto__", "prototype", "constructor"].includes(v));
-var editContractSchema = external_exports.object({
-  source_query: name.describe("Already-loaded bounded raw row-array query; never a display projection."),
-  table_component: name,
-  id_field: name.default("id"),
-  prefix: name.describe("Unique prefix for generated snapshot/draft variables and RunJS query names."),
-  fields: external_exports.array(external_exports.object({
-    field: name,
-    component: name,
-    type: external_exports.enum(["text", "number", "date_only", "boolean"]),
-    required: external_exports.boolean().default(false),
-    nullable: external_exports.boolean().default(false).describe("Opt in to clearing to null; a user change event is also required."),
-    trim: external_exports.boolean().default(false),
-    choices: external_exports.union([
-      external_exports.array(external_exports.object({ label: external_exports.string(), value: external_exports.union([external_exports.string(), external_exports.number().finite()]) }).strict()).min(1).max(100),
-      external_exports.object({ query: name, value_field: name, label_field: name }).strict()
-    ]).optional().describe("Opt-in DropdownV2 for text/number fields: literal label/value options or an already-loaded bounded raw option query. Values must match the declared field type.")
-  })).min(1).max(40)
-}).strict();
-function canonical(value, field) {
-  if (value === void 0)
-    throw new Error(`Missing input: ${field.field}`);
-  if (value === null || value === "") {
-    if (field.required)
-      throw new Error(`Required field: ${field.field}`);
-    if (value === null && !field.nullable)
-      throw new Error(`Null not allowed: ${field.field}`);
-    return value;
-  }
-  if (field.type === "text") {
-    if (typeof value !== "string")
-      throw new Error(`Expected text: ${field.field}`);
-    if (field.required && !value.trim())
-      throw new Error(`Required field: ${field.field}`);
-    return field.trim ? value.trim() : value;
-  }
-  if (field.type === "boolean") {
-    if (typeof value !== "boolean")
-      throw new Error(`Expected boolean: ${field.field}`);
-    return value;
-  }
-  if (field.type === "number") {
-    if (typeof value !== "number" && typeof value !== "string" || typeof value === "string" && !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value) || !Number.isFinite(Number(value)))
-      throw new Error(`Expected finite number: ${field.field}`);
-    return Number(value);
-  }
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))?$/.test(value)) {
-    throw new Error(`Expected ISO date: ${field.field}`);
-  }
-  const day = value.slice(0, 10);
-  const parsed = /* @__PURE__ */ new Date(day + "T00:00:00Z");
-  if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== day || !Number.isFinite(Date.parse(value))) {
-    throw new Error(`Invalid date: ${field.field}`);
-  }
-  return day;
-}
-function generateEditContract(input) {
-  const spec = editContractSchema.parse(input);
-  for (const key of ["field", "component"]) {
-    if (new Set(spec.fields.map((f) => f[key])).size !== spec.fields.length)
-      throw new Error(`Duplicate ${key} in edit contract`);
-  }
-  if (spec.fields.some((f) => f.field === spec.id_field))
-    throw new Error("The stable primary key cannot be edited");
-  if (spec.fields.some((f) => f.required && f.nullable))
-    throw new Error("A required field cannot be nullable");
-  for (const f of spec.fields)
-    if (f.choices) {
-      if (!["text", "number"].includes(f.type))
-        throw new Error("Choices require a text or number field");
-      if (Array.isArray(f.choices)) {
-        if (f.choices.some((o) => typeof o.value !== (f.type === "text" ? "string" : "number")))
-          throw new Error("Choice values must match field type");
-        if (new Set(f.choices.map((o) => o.value)).size !== f.choices.length)
-          throw new Error("Duplicate choice value");
-      }
-    }
-  const snapshot = `${spec.prefix}Snapshot`, draft = `${spec.prefix}Draft`;
-  const openName = `${spec.prefix}Open`, prepareName = `${spec.prefix}Prepare`;
-  const q = JSON.stringify;
-  const helpers = `const canonical = ${canonical.toString()};
-const fields = ${q(spec.fields)};
-const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
-`;
-  const openCode = helpers + `await actions.setVariable(${q(snapshot)}, null);
-await actions.setVariable(${q(draft)}, null);
-const selection = components.${spec.table_component}.selectedRow;
-const id = selection && selection[${q(spec.id_field)}];
-if ((typeof id !== 'string' && typeof id !== 'number') || id === '' || (typeof id === 'number' && !Number.isFinite(id))) throw new Error('Select a record first');
-const rows = queries.${spec.source_query}.data;
-if (!Array.isArray(rows)) throw new Error('Raw records are not loaded');
-const matches = rows.filter(r => r && own(r, ${q(spec.id_field)}) && r[${q(spec.id_field)}] === id);
-if (matches.length !== 1) throw new Error('Expected exactly one raw record for the selected ID');
-const values = {};
-for (const field of fields) {
-  if (!own(matches[0], field.field)) throw new Error('Raw record omits: ' + field.field);
-  // Existing incomplete records must be openable for correction. Validate required
-  // values on Prepare, not before the user can edit them.
-  values[field.field] = canonical(matches[0][field.field], { ...field, required: false, nullable: true });
-}
-await actions.setVariable(${q(snapshot)}, { id, values });
-return { id };`;
-  const prepareCode = helpers + `const snapshot = variables.${snapshot};
-const draft = variables.${draft};
-const selection = components.${spec.table_component}.selectedRow;
-if (!snapshot || !selection || selection[${q(spec.id_field)}] !== snapshot.id) throw new Error('Reopen the selected record before saving');
-if (draft && draft.id !== snapshot.id) throw new Error('Draft belongs to another record');
-const changes = draft ? draft.values : {};
-if (!changes || typeof changes !== 'object' || Array.isArray(changes)) throw new Error('Invalid draft');
-const patch = {};
-for (const key of Object.keys(changes)) if (!fields.some(f => f.field === key)) throw new Error('Unknown draft field: ' + key);
-for (const field of fields) {
-  if (!own(snapshot.values, field.field)) throw new Error('Incomplete edit snapshot');
-  if (!own(changes, field.field)) {
-    canonical(snapshot.values[field.field], field);
-    continue;
-  }
-  const raw = changes[field.field];
-  let value = canonical(raw, field);
-  if (value === '' && field.type !== 'text') value = null;
-  if (value === '' || value === null) {
-    if (!field.nullable) throw new Error('Clearing is not allowed: ' + field.field);
-    value = null;
-  }
-  if (value !== snapshot.values[field.field]) patch[field.field] = value;
-}
-return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
-  const inputs = spec.fields.map((f) => {
-    const type = f.choices ? "DropdownV2" : { text: "TextInput", number: "NumberInput", date_only: "DatePickerV2", boolean: "Checkbox" }[f.type];
-    const initialKey = f.choices ? "schema" : ["date_only", "boolean"].includes(f.type) ? "defaultValue" : "value";
-    const exposed = f.type === "date_only" ? "selectedDate" : "value";
-    const trigger = f.choices || f.type === "date_only" ? "onSelect" : "onChange";
-    const schema = getComponentSchema(type);
-    if (!schema?.properties.some((p) => p.key === initialKey) || !schema.events?.some((e) => e.id === trigger))
-      throw new Error(`Unsupported edit adapter: ${type}`);
-    const initial = `variables.${snapshot} && variables.${snapshot}.values[${q(f.field)}]`;
-    let value = `{{${initial} != null ? variables.${snapshot}.values[${q(f.field)}] : ${f.type === "boolean" ? "false" : "''"}}}`;
-    if (f.choices) {
-      const options2 = Array.isArray(f.choices) ? q(f.choices) : `(queries.${f.choices.query}.data || []).map(r=>({label:r[${q(f.choices.label_field)}],value:r[${q(f.choices.value_field)}]}))`;
-      value = `{{(${options2}).map(option=>({label:option.label,value:option.value,visible:true,default:!!variables.${snapshot} && option.value === variables.${snapshot}.values[${q(f.field)}]}))}}`;
-    }
-    const exposedValue = `components.${f.component}.${exposed}`;
-    const changedValue = f.choices && f.nullable ? `(${exposedValue} == null ? null : ${exposedValue})` : exposedValue;
-    const draftValue = `{{({id:variables.${snapshot}.id,values:Object.assign({},variables.${draft} && variables.${draft}.id === variables.${snapshot}.id ? variables.${draft}.values : {},{${q(f.field)}:${changedValue}})})}}`;
-    return {
-      name: f.component,
-      type,
-      properties: { [initialKey]: value, ...f.choices ? { advanced: "{{true}}", showClearBtn: f.nullable } : {}, ...f.type === "date_only" ? { dateFormat: "YYYY-MM-DD" } : {} },
-      validation: { mandatory: f.required },
-      events: [{ source_ref: f.component, source_type: "component", trigger, action: {
-        actionId: "set-custom-variable",
-        key: draft,
-        value: draftValue,
-        runOnlyIf: `{{!!variables.${snapshot}}}`
-      } }]
-    };
-  });
-  return {
-    queries: [
-      { name: openName, kind: "runjs", options: { code: openCode } },
-      { name: prepareName, kind: "runjs", options: { code: prepareCode } }
-    ],
-    inputs,
-    mutation_contract: {
-      id: `{{queries.${prepareName}.data.id}}`,
-      patch: `{{queries.${prepareName}.data.patch}}`,
-      runOnlyIf: `{{queries.${prepareName}.data && queries.${prepareName}.data.changed === true}}`
-    },
-    wiring: [
-      `Run ${openName} on Edit; open the editor only on its success. Merge the returned input properties and change events into your native layout. Never use display selectedRow fields as defaults.`,
-      `Run ${prepareName} on Save; run a datasource-specific PATCH/update ONLY on its success and with mutation_contract.runOnlyIf. No change means no write. Bind the ID and patch from mutation_contract; never expand missing patch keys to null or empty strings.`,
-      "Gate Save while open/prepare/write are loading. Preserve the editor on failure. Refresh affected queries and close/reset only after the actual mutation succeeds; refresh actions are not assumed to complete in order."
-    ],
-    limitations: [
-      "Requires an already-loaded bounded raw row array and a single stable scalar ID. This generates wiring only; it does not create resources or persist data.",
-      "Only text, finite number, ISO date-only and boolean fields are covered; text/number fields can opt into dropdown choices. Required/nullable/trim are explicit opt-ins; domain constraints, authorization and optimistic concurrency must be enforced separately.",
-      "Dropdown option queries must already return bounded raw arrays with matching ID types and include the current value, including inactive owners when necessary. Missing options are not permission to clear stored relationships. Validate membership/authorization separately; this helper does not create or execute option queries.",
-      "Draft tracks native change events, not every displayed input value. Programmatic field changes must update the draft explicitly. Browser-verify that all change events fire, including both checkbox transitions."
-    ]
-  };
-}
-createRequire(import.meta.url);
-var DIALECTS = {
-  postgresql: { quote: "double", limit: "limit", metadata: "postgresql" },
-  mysql: { quote: "backtick", limit: "limit", metadata: "mysql" },
-  mssql: { quote: "bracket", limit: "top", metadata: "mssql" },
-  snowflake: { quote: "double", limit: "limit" },
-  bigquery: { quote: "backtick", limit: "limit" },
-  oracledb: { quote: "double", limit: "fetch" }
-};
-function assertIdentifier(identifier, label) {
-  if (!identifier.trim() || identifier.length > 256 || /[\0-\x1f\x7f;`"\[\]\\]/.test(identifier)) {
-    throw new Error(`${label} contains unsupported or unsafe identifier characters.`);
-  }
-}
-function quote(kind, identifier) {
-  assertIdentifier(identifier, "SQL identifier");
-  const style = DIALECTS[kind].quote;
-  if (style === "backtick")
-    return `\`${identifier}\``;
-  if (style === "bracket")
-    return `[${identifier}]`;
-  return `"${identifier}"`;
-}
-function literal(value) {
-  return `'${value.replaceAll("'", "''")}'`;
-}
-function source(kind, schema, table) {
-  return schema ? `${quote(kind, schema)}.${quote(kind, table)}` : quote(kind, table);
-}
-function boundedSelect(kind, projection, from, limit, distinct = false) {
-  const prefix = `SELECT ${distinct ? "DISTINCT " : ""}`;
-  if (DIALECTS[kind].limit === "top")
-    return `${prefix}TOP (${limit}) ${projection} FROM ${from}`;
-  if (DIALECTS[kind].limit === "fetch")
-    return `${prefix}${projection} FROM ${from} FETCH FIRST ${limit} ROWS ONLY`;
-  return `${prefix}${projection} FROM ${from} LIMIT ${limit}`;
-}
-function options(kind, query) {
-  return {
-    mode: "sql",
-    query,
-    ...!["snowflake"].includes(kind) ? { query_params: [] } : {},
-    runOnPageLoad: false
-  };
-}
-function metadataSql(kind, purpose, schema, table) {
-  const metadata = "metadata" in DIALECTS[kind] ? DIALECTS[kind].metadata : void 0;
-  if (!metadata)
-    return void 0;
-  if (purpose !== "views" && !table)
-    throw new Error(`${purpose} discovery requires table.`);
-  if (metadata !== "mysql" && !schema)
-    throw new Error(`${purpose} discovery for ${kind} requires schema.`);
-  const schemaFilter = metadata === "mysql" && !schema ? "DATABASE()" : literal(schema);
-  const tableFilter = table ? literal(table) : void 0;
-  if (metadata === "postgresql") {
-    if (purpose === "primary_keys")
-      return `SELECT kcu.column_name, kcu.ordinal_position, tc.constraint_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.ordinal_position`;
-    if (purpose === "foreign_keys")
-      return `SELECT kcu.constraint_name, kcu.column_name, ccu.table_schema AS referenced_schema, ccu.table_name AS referenced_table, ccu.column_name AS referenced_column FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_catalog = tc.constraint_catalog AND ccu.constraint_schema = tc.constraint_schema AND ccu.constraint_name = tc.constraint_name WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.constraint_name, kcu.ordinal_position`;
-    if (purpose === "indexes")
-      return `SELECT indexname AS index_name, indexdef AS definition FROM pg_indexes WHERE schemaname = ${schemaFilter} AND tablename = ${tableFilter} ORDER BY indexname`;
-    return `SELECT table_schema, table_name AS view_name FROM information_schema.views WHERE table_schema = ${schemaFilter} ORDER BY table_name`;
-  }
-  if (metadata === "mysql") {
-    if (purpose === "primary_keys")
-      return `SELECT column_name, ordinal_position, constraint_name FROM information_schema.key_column_usage WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} AND constraint_name = 'PRIMARY' ORDER BY ordinal_position`;
-    if (purpose === "foreign_keys")
-      return `SELECT constraint_name, column_name, referenced_table_schema AS referenced_schema, referenced_table_name AS referenced_table, referenced_column_name AS referenced_column FROM information_schema.key_column_usage WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} AND referenced_table_name IS NOT NULL ORDER BY constraint_name, ordinal_position`;
-    if (purpose === "indexes")
-      return `SELECT index_name, column_name, non_unique, seq_in_index FROM information_schema.statistics WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} ORDER BY index_name, seq_in_index`;
-    return `SELECT table_schema, table_name AS view_name FROM information_schema.views WHERE table_schema = ${schemaFilter} ORDER BY table_name`;
-  }
-  if (purpose === "primary_keys")
-    return `SELECT kcu.COLUMN_NAME AS column_name, kcu.ORDINAL_POSITION AS ordinal_position, tc.CONSTRAINT_NAME AS constraint_name FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA AND tc.TABLE_NAME = kcu.TABLE_NAME WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY' AND tc.TABLE_SCHEMA = ${schemaFilter} AND tc.TABLE_NAME = ${tableFilter} ORDER BY kcu.ORDINAL_POSITION`;
-  if (purpose === "foreign_keys")
-    return `SELECT fk.name AS constraint_name, pc.name AS column_name, rs.name AS referenced_schema, rt.name AS referenced_table, rc.name AS referenced_column FROM sys.foreign_key_columns fkc JOIN sys.foreign_keys fk ON fk.object_id = fkc.constraint_object_id JOIN sys.tables pt ON pt.object_id = fkc.parent_object_id JOIN sys.schemas ps ON ps.schema_id = pt.schema_id JOIN sys.columns pc ON pc.object_id = pt.object_id AND pc.column_id = fkc.parent_column_id JOIN sys.tables rt ON rt.object_id = fkc.referenced_object_id JOIN sys.schemas rs ON rs.schema_id = rt.schema_id JOIN sys.columns rc ON rc.object_id = rt.object_id AND rc.column_id = fkc.referenced_column_id WHERE ps.name = ${schemaFilter} AND pt.name = ${tableFilter} ORDER BY fk.name, fkc.constraint_column_id`;
-  if (purpose === "indexes")
-    return `SELECT i.name AS index_name, c.name AS column_name, i.is_unique, ic.key_ordinal FROM sys.indexes i JOIN sys.tables t ON t.object_id = i.object_id JOIN sys.schemas s ON s.schema_id = t.schema_id JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id WHERE s.name = ${schemaFilter} AND t.name = ${tableFilter} AND i.is_hypothetical = 0 ORDER BY i.name, ic.key_ordinal`;
-  return `SELECT TABLE_SCHEMA AS table_schema, TABLE_NAME AS view_name FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = ${schemaFilter} ORDER BY TABLE_NAME`;
-}
-function boundMetadata(kind, sql) {
-  if (DIALECTS[kind].limit === "top")
-    return sql.replace(/^SELECT\s+/i, "SELECT TOP (100) ");
-  if (DIALECTS[kind].limit === "fetch")
-    return `${sql} FETCH FIRST 100 ROWS ONLY`;
-  return `${sql} LIMIT 100`;
-}
-function safeName(value) {
-  return value.replace(/[^A-Za-z0-9_]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "table";
-}
-function prepareSqlDiscoveryQueries(args) {
-  if (!(args.kind in DIALECTS))
-    throw new Error(`Datasource kind "${args.kind}" is not supported by SQL discovery.`);
-  const kind = args.kind;
-  if (args.schema)
-    assertIdentifier(args.schema, "schema");
-  if (args.table)
-    assertIdentifier(args.table, "table");
-  for (const column of [...args.columns ?? [], ...args.distinctColumns ?? []])
-    assertIdentifier(column, "column");
-  const tablePurposes = args.purposes.filter((purpose) => purpose !== "views");
-  if (tablePurposes.length && !args.table)
-    throw new Error("Table-scoped SQL discovery requires table.");
-  if (args.purposes.includes("preview") && !args.columns?.length) {
-    throw new Error("Preview discovery requires one or more explicit columns; SELECT * is never generated.");
-  }
-  if (args.purposes.includes("distinct") && !args.distinctColumns?.length) {
-    throw new Error("Distinct discovery requires one or more explicit distinct_columns.");
-  }
-  const from = args.table ? source(kind, args.schema, args.table) : void 0;
-  const prefix = safeName(args.namePrefix ?? args.table ?? args.schema ?? "schema");
-  const queries = [];
-  const unsupported2 = [];
-  for (const purpose of [...new Set(args.purposes)]) {
-    let sql;
-    if (purpose === "count")
-      sql = `SELECT COUNT(*) AS row_count FROM ${from}`;
-    else if (purpose === "preview") {
-      sql = boundedSelect(kind, args.columns.map((column) => quote(kind, column)).join(", "), from, args.limit);
-    } else if (purpose === "distinct") {
-      sql = boundedSelect(kind, args.distinctColumns.map((column) => quote(kind, column)).join(", "), from, args.limit, true);
-    } else {
-      sql = metadataSql(kind, purpose, args.schema, args.table);
-      if (!sql) {
-        unsupported2.push({
-          purpose,
-          reason: `${args.kind} does not expose a verified ${purpose} selector and MCP has no curated read-only SQL contract for it yet.`
-        });
-        continue;
-      }
-      sql = boundMetadata(kind, sql);
-    }
-    queries.push({
-      purpose,
-      name: `${prefix}_${purpose}`,
-      datasource_id: args.datasourceId,
-      options: options(kind, sql)
-    });
-  }
-  return { queries, unsupported: unsupported2 };
+function getLegacyComponentReplacement(type) {
+  return loadLegacyReplacements()[type] ?? null;
 }
 export {
-  deleteNode as A,
-  prepareSqlDiscoveryQueries as B,
-  editContractSchema as C,
-  generateEditContract as D,
+  allComponentSchemas as A,
   LARGE_READ_ROW_THRESHOLD as L,
-  assertPersistableQueryToggles as a,
-  bindingSpans as b,
-  assertWorkflowQueryOptions as c,
-  normalizeQueryToggles as d,
-  normalizeQueryOptions as e,
-  arithmeticWriteWarning as f,
-  assessQueryRead as g,
-  resolveStaticBindings as h,
+  getCatalog as a,
+  getLegacyComponentReplacement as b,
+  bindingSpans as c,
+  assertPersistableQueryToggles as d,
+  assertWorkflowQueryOptions as e,
+  normalizeQueryOptions as f,
+  getComponentSchema as g,
+  normalizeQueryToggles as h,
   issueMessages as i,
-  resolvedReadRefusal as j,
-  extractRowCount as k,
+  arithmeticWriteWarning as j,
+  assessQueryRead as k,
   lintBindingNames as l,
-  emptyViewerOnlyParams as m,
+  resolveStaticBindings as m,
   normalizeWorkflowQueryOptions as n,
-  emptyParamsNote as o,
-  capabilityRequestSchema as p,
+  resolvedReadRefusal as o,
+  extractRowCount as p,
   queryToggleIssues as q,
   require_lib as r,
   sameReadSource as s,
   toggleRewriteWarning as t,
-  unresolvedNote as u,
+  emptyViewerOnlyParams as u,
   validateQueryOptions as v,
   workflowMappingMatches as w,
-  getWorkflowCapabilities as x,
-  lint as y,
-  apply as z
+  emptyParamsNote as x,
+  unresolvedNote as y,
+  registerComponentSchemas as z
 };

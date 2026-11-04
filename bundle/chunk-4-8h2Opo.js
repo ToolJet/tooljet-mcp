@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
-import { $ as JSONRPCMessageSchema, a0 as isInitializeRequest, e as isJSONRPCRequest, a1 as DEFAULT_NEGOTIATED_PROTOCOL_VERSION, Z as SUPPORTED_PROTOCOL_VERSIONS, i as isJSONRPCResultResponse, d as isJSONRPCErrorResponse } from "./chunk-cnuR2fe-.js";
-import { ed as __toESM, eb as __commonJS, e9 as fail, e7 as ok, eo as literalCanvasColor, ef as tableQuotaError } from "./chunk-By54lwVj.js";
-import { b1 as external_exports } from "./chunk-DsdTCwqi.js";
+import { $ as JSONRPCMessageSchema, a0 as isInitializeRequest, e as isJSONRPCRequest, a1 as DEFAULT_NEGOTIATED_PROTOCOL_VERSION, Z as SUPPORTED_PROTOCOL_VERSIONS, i as isJSONRPCResultResponse, d as isJSONRPCErrorResponse } from "./chunk-CPgx8ySR.js";
+import { e7 as __toESM, e5 as __commonJS, eb as fail, ea as ok, e8 as tableQuotaError } from "./chunk-CYLdCKx-.js";
+import { b0 as external_exports } from "./chunk-IinDkEBT.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { AsyncLocalStorage } from "node:async_hooks";
@@ -12,11 +12,12 @@ import { join, resolve, relative, sep, dirname } from "node:path";
 import "node:http";
 import { Http2ServerRequest, constants } from "node:http2";
 import { Readable } from "node:stream";
-import { p as peekAppPlan, c as consumeAppPlan, f as frozenAppRefusal, r as replaceView, a as replaceFingerprint, d as danglingAfterReplace, b as prepareQueryOptionsForWrite, m as matchPlannedPage, e as prepareComponentBatch, g as replaceIds, h as expandQueryLifecycles, v as validateEvents, n as navigationReorders, i as persistedEventSpecs } from "./chunk-C_Y58zpH.js";
-import { c as componentRef, h as completedPartialWrites, r as resolveRef, i as indexComponentReferences, j as isFlexContainerType, k as batchChildOrders, l as childOrderProperty } from "./chunk-BX9Vbj2u.js";
-import { E as validateAppStructure, H as unpinnedLibraries, d as decodeComponentParent, e as encodeComponentParent } from "./chunk-D3MI2A-T.js";
-import { L as LARGE_READ_ROW_THRESHOLD, g as assessQueryRead, h as resolveStaticBindings, j as resolvedReadRefusal, s as sameReadSource, k as extractRowCount, m as emptyViewerOnlyParams, o as emptyParamsNote, u as unresolvedNote, v as validateQueryOptions, i as issueMessages } from "./chunk-CWuyYxjg.js";
-import { g as getDatasourceQuerySchema } from "./chunk-Dwp0GyCm.js";
+import { p as peekAppPlan, c as consumeAppPlan, f as frozenAppRefusal, r as replaceView, a as replaceFingerprint, d as danglingAfterReplace, b as prepareQueryOptionsForWrite, m as matchPlannedPage, l as literalCanvasColor, e as prepareComponentBatch, g as replaceIds, h as expandQueryLifecycles, v as validateEvents, n as navigationReorders, i as persistedEventSpecs } from "./chunk-Do6OHOiG.js";
+import { r as resolveRef } from "./chunk-CR8lGQ0p.js";
+import { d as componentRef, o as completedPartialWrites, j as indexComponentReferences, i as isFlexContainerType, q as batchChildOrders, c as childOrderProperty } from "./chunk-B7le-Q_T.js";
+import { J as validateAppStructure, N as unpinnedLibraries, d as decodeComponentParent, e as encodeComponentParent } from "./chunk-DgRXGydV.js";
+import { L as LARGE_READ_ROW_THRESHOLD, k as assessQueryRead, m as resolveStaticBindings, o as resolvedReadRefusal, s as sameReadSource, p as extractRowCount, u as emptyViewerOnlyParams, x as emptyParamsNote, y as unresolvedNote, v as validateQueryOptions, i as issueMessages } from "./chunk-DADofzTT.js";
+import { g as getDatasourceQuerySchema } from "./chunk-DXVhSqct.js";
 import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
 var require_content_type = __commonJS({
@@ -1676,6 +1677,19 @@ async function followDraft(dir) {
 }
 var STYLESHEET = "frontend/src/styles/globals.css";
 var IMPORT_RE = /(?:^|[\s;])import\s+(?:[^'"]*?from\s+)?['"]([^'"]+\.css)['"]/gm;
+function nativeSelects(dir) {
+  const src = join(dir, "frontend", "src");
+  if (!existsSync(join(src, "components", "ui", "select.tsx")))
+    return [];
+  return listFiles(src).filter((rel) => rel.endsWith(".tsx") && !rel.startsWith("components/")).flatMap((rel) => readFileSync(join(src, rel), "utf8").split("\n").flatMap((line, i) => /<select[\s>]/.test(line) ? [`frontend/src/${rel}:${i + 1}`] : []));
+}
+function badRouteHandles(dir) {
+  const file = join(dir, "app.json");
+  if (!existsSync(file))
+    return [];
+  const routes = JSON.parse(readFileSync(file, "utf8")).routes ?? [];
+  return routes.map((route) => String(route.id)).filter((id) => !/^[a-z0-9][a-z0-9-]*$/.test(id)).map((id) => `app.json: route id "${id}" is not a valid handle: use lowercase letters, numbers and hyphens, such as "${id.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+/, "") || "page"}"`);
+}
 function missingStylesheet(dir) {
   const sheet = join(dir, STYLESHEET);
   if (!existsSync(sheet))
@@ -1698,7 +1712,7 @@ function codeAppBuildTool(context) {
     name: "code_app_build",
     title: "Build Code Mode App",
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-    description: "Refresh the typed hooks from the app's current queries (tooljet app pull), build the app's code (TypeScript, Tailwind, manifest), and check it against the app (tooljet app check: every useAppQuery name, route, link and page must exist) and the security scan (code rules such as external fetch, eval and token storage; secrets; vendored code). Returns ok and every error and security finding to fix. Repeat write and build until ok, then code_app_install." + USER_WORDS,
+    description: "Refresh the typed hooks from the app's current queries (tooljet app pull), build the app's code (TypeScript, Tailwind, manifest), and check it against the app (tooljet app check: every useAppQuery name, route, link and page must exist) and the security scan (code rules such as external fetch, eval and token storage; secrets; vendored code). Returns ok and every error, native control and security finding to fix. Repeat write and build until ok, then code_app_install." + USER_WORDS,
     inputSchema: { app_id: APP_ID, name: PROJECT_NAME },
     handler: inScope(context, async (args) => {
       try {
@@ -1712,7 +1726,9 @@ function codeAppBuildTool(context) {
         const check = await cli(dir, ["app", "check", "--offline", "--json"]);
         const report = parseReport(check.output);
         const unstyled = missingStylesheet(dir);
-        const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0 && !unstyled;
+        const selects = nativeSelects(dir);
+        const handles = badRouteHandles(dir);
+        const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0 && !unstyled && !handles.length;
         if (okBuild)
           prefetchFullScan(dir);
         return ok({
@@ -1722,7 +1738,8 @@ function codeAppBuildTool(context) {
           pull: pull.code === 0 ? "typed hooks refreshed" : pull.output.trim(),
           typescript_errors: tsErrors,
           build_output: build.code === 0 && tsErrors === 0 ? build.output.trim().split("\n").slice(-6).join("\n") : build.output.trim().slice(0, 12e3),
-          check: report?.problems ? [...unstyled ? [unstyled] : [], ...report.problems.map((p) => `${p.file}:${p.line}  ${p.message}`)] : unstyled ? [unstyled, check.output.trim().slice(0, 6e3)] : check.output.trim().slice(0, 6e3),
+          check: report?.problems ? [...handles, ...unstyled ? [unstyled] : [], ...report.problems.map((p) => `${p.file}:${p.line}  ${p.message}`)] : unstyled || handles.length ? [...handles, ...unstyled ? [unstyled] : [], check.output.trim().slice(0, 6e3)] : check.output.trim().slice(0, 6e3),
+          ...selects.length ? { native_controls: { fix: "Use Select from components/ui/select instead of a native <select>.", at: selects } } : {},
           // jsx-a11y recommended rules, warnings only (tooljet app check); fix them when they are cheap to fix.
           a11y_warnings: report?.accessibility?.length ?? Number(/(\d+) accessibility warnings?/.exec(check.output)?.[1] ?? 0),
           // The offline scan (no dependency network checks): fix critical and high before code_app_install.

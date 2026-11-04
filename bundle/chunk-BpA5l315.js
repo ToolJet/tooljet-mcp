@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
-import { e9 as fail, e7 as ok } from "./chunk-By54lwVj.js";
-import { g as assessQueryRead } from "./chunk-CWuyYxjg.js";
-import { b1 as external_exports } from "./chunk-DsdTCwqi.js";
+import { eb as fail, ea as ok } from "./chunk-CYLdCKx-.js";
+import { k as assessQueryRead } from "./chunk-DADofzTT.js";
+import { b0 as external_exports } from "./chunk-IinDkEBT.js";
 import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -94,6 +94,16 @@ function renderAuditRequest(url, method, saved) {
   }
   return { allowed: true, postData: JSON.stringify({ resolvedOptions: {} }) };
 }
+function connectionKey(value) {
+  try {
+    const url = new URL(value);
+    if (!/^(https?|wss?):$/.test(url.protocol))
+      return void 0;
+    return `${url.hostname.toLowerCase()}:${url.port || defaultPort(url.protocol)}`;
+  } catch {
+    return void 0;
+  }
+}
 var HOP_BY_HOP = ["proxy-connection", "proxy-authorization", "connection", "keep-alive", "te", "trailer", "upgrade"];
 var forwardHeaders = (headers) => {
   const out = { ...headers };
@@ -156,7 +166,7 @@ async function startEgressProxy(origins, onBlocked = () => {
       return;
     }
     if (url.protocol !== "http:" || !renderAuditUrlAllowed(url.href, origins)) {
-      onBlocked(url.origin);
+      onBlocked(connectionKey(url.href) ?? url.origin);
       res.writeHead(403, { "content-length": "0", connection: "close" }).end();
       return;
     }
@@ -198,7 +208,7 @@ async function startEgressProxy(origins, onBlocked = () => {
     }
     const asHttp = url.href.replace(/^ws:/i, "http:");
     if (!/^(http|ws):$/i.test(url.protocol) || !renderAuditUrlAllowed(asHttp, origins)) {
-      refuseSocket(client, url.origin);
+      refuseSocket(client, connectionKey(url.href) ?? url.origin);
       return;
     }
     tunnel(client, url.hostname, Number(url.port || 80), (upstream) => {
@@ -516,7 +526,7 @@ async function loadPlaywright() {
 }
 var STATIC_RESOURCES = /* @__PURE__ */ new Set(["script", "stylesheet", "image", "font"]);
 var socketHttpUrl = (url) => url.replace(/^ws(s?):/i, "http$1:");
-var INFORMATIONAL_KINDS = /* @__PURE__ */ new Set(["blocked_socket"]);
+var INFORMATIONAL_KINDS = /* @__PURE__ */ new Set(["blocked_socket", "blocked_query"]);
 var pathOf = (url) => {
   try {
     return new URL(url).pathname;
@@ -582,10 +592,17 @@ async function auditPages(pages, options = {}, driver = loadPlaywright) {
   };
   const closeProxies = () => Promise.all(proxies.splice(0).map((proxy) => proxy.close().catch(() => {
   })));
+  const logged = /* @__PURE__ */ new Set();
+  const logUnattributed = (destination) => {
+    if (logged.has(destination))
+      return;
+    logged.add(destination);
+    console.error(`tooljet-mcp: render check refused a connection the page did not make (${destination}); not reported as a finding`);
+  };
   const launch = {
     headless: true,
     chromiumSandbox: true,
-    args: ["--force-webrtc-ip-handling-policy=disable_non_proxied_udp"]
+    args: ["--force-webrtc-ip-handling-policy=disable_non_proxied_udp", "--disable-sync", "--no-pings", "--disable-domain-reliability"]
   };
   if (options.executablePath)
     launch.executablePath = options.executablePath;
@@ -593,7 +610,7 @@ async function auditPages(pages, options = {}, driver = loadPlaywright) {
     launch.channel = options.channel ?? "chrome";
   let browser;
   try {
-    launch.proxy = await proxyFor();
+    launch.proxy = await proxyFor(logUnattributed);
     browser = await pw.chromium.launch(launch);
   } catch {
     await closeProxies();
@@ -615,15 +632,31 @@ async function auditPages(pages, options = {}, driver = loadPlaywright) {
       if (blockFindings.length < 4 && !blockFindings.some((f) => f.reason === finding.reason && f.detail === finding.detail))
         blockFindings.push(finding);
     };
+    const proxyBlocks = /* @__PURE__ */ new Set();
+    const pageConnections = /* @__PURE__ */ new Set();
+    const attributeProxyBlocks = () => {
+      for (const destination of proxyBlocks) {
+        if (pageConnections.has(destination)) {
+          block({
+            kind: "unreachable",
+            component: "-",
+            reason: "redirect_blocked",
+            detail: "A redirect or connection to a destination outside the configured audit origins was blocked"
+          }, `connection to ${destination}`);
+        } else
+          logUnattributed(destination);
+      }
+      proxyBlocks.clear();
+    };
     try {
       const width = options.viewportWidth ?? 1600;
-      const proxy = await proxyFor((destination) => block({
-        kind: "unreachable",
-        component: "-",
-        reason: "redirect_blocked",
-        detail: "A redirect or connection to a destination outside the configured audit origins was blocked"
-      }, `connection to ${destination}`));
+      const proxy = await proxyFor((destination) => proxyBlocks.add(destination));
       ctx = await browser.newContext({ viewport: { width, height: width < 768 ? 812 : 900 }, serviceWorkers: "block", proxy });
+      ctx.on?.("request", (request2) => {
+        const key = connectionKey(String(request2.url?.() ?? ""));
+        if (key)
+          pageConnections.add(key);
+      });
       if (!ctx.routeWebSocket) {
         reports[index] = unreachable(p, "browser_unavailable", "The render audit requires Playwright 1.48+ for WebSocket interception");
         return;
@@ -682,7 +715,7 @@ async function auditPages(pages, options = {}, driver = loadPlaywright) {
           const policy = renderAuditRequest(url, request2.method(), options.savedQueries);
           if (!policy.allowed) {
             block({
-              kind: "unreachable",
+              kind: "blocked_query",
               component: "-",
               reason: "blocked_execution",
               detail: `${policy.detail} (${request2.method()} ${pathOf(url)})`
@@ -751,6 +784,7 @@ async function auditPages(pages, options = {}, driver = loadPlaywright) {
         }, void 0, { timeout: options.chartWaitMs ?? 2e4 }).catch(() => void 0);
         await page.waitForTimeout(1500);
       }
+      attributeProxyBlocks();
       const landed = page.url();
       if (/\/(?:login|sign-in|signin)\b/i.test(new URL(landed).pathname)) {
         reports[index] = unreachable(p, "auth_required", "The viewer requires sign-in; private app rendering was not verified");
@@ -784,6 +818,7 @@ async function auditPages(pages, options = {}, driver = loadPlaywright) {
       }
       reports[index] = result.widgets === 0 && blocked ? { page: p.page, url: p.url, widgets: 0, findings: [{ ...blocked, kind: "unreachable", detail: `${blocked.detail}; the page then showed no widgets. Blocked: ${blocks.join("; ")}` }] } : result.widgets === 0 ? unreachable(p, "no_widgets", "No ToolJet widgets were found; the page may be empty, unauthenticated, or not loaded") : { page: p.page, url: p.url, widgets: result.widgets, findings: [...result.findings, ...blockFindings] };
     } catch (err) {
+      attributeProxyBlocks();
       const why = String(err?.message ?? err).split("\n")[0].slice(0, 200);
       reports[index] = blocked ? { ...p, widgets: 0, findings: [{ ...blocked, kind: "unreachable", detail: `${blocked.detail}; the audit then stopped: ${why}. Blocked: ${blocks.join("; ")}` }] } : unreachable(p, "navigation_failed", `Could not load or inspect the viewer page: ${why}`);
     } finally {
@@ -811,12 +846,12 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
     name: "verify_page_render",
     title: "Verify Page Render",
     annotations: { readOnlyHint: true, openWorldHint: true },
-    description: 'Render audit of one page or every page of an app in a headless browser (1600x900 unless viewport_width is set), after the app is built. On an app in Code mode it checks inside the app: sideways scrolling, content cut off at the right edge, an empty app and placeholder text; pass route to open one route of it and viewport_width (375, 768, 1280) to check each width. An app in Code mode also gets an axe-core accessibility run (WCAG 2 A/AA; `accessibility` lists violations by impact) and a screenshot path. Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", "Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. Run it once per page before the handoff and review every finding; report unverified behavior explicitly. Opens the version being edited with the builder\'s ToolJet session, or a separate app-scoped OAuth viewer credential (limited to the viewer origin), so a private app is audited without being made public. Only saved, static, bounded read queries may run; writes, dynamic queries and queries requiring confirmation are blocked and reported as unverified. WebSockets to the ToolJet origin pass; any other WebSocket is closed and reported as a `blocked_socket` finding, which does not make `ok` false. Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.',
+    description: 'Render audit of one page or every page of an app in a headless browser (1600x900 unless viewport_width is set; 1280 with route), after the app is built. On an app in Code mode it checks inside the app: sideways scrolling, content cut off at the right edge, an empty app and placeholder text; pass route to open one route of it and viewport_width (375, 768, 1280) to check each width. An app in Code mode also gets an axe-core accessibility run (WCAG 2 A/AA; `accessibility` lists violations by impact) and a screenshot path. Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", "Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. Run it once per page before the handoff and review every finding; report unverified behavior explicitly. Opens the version being edited with the builder\'s ToolJet session, or a separate app-scoped OAuth viewer credential (limited to the viewer origin), so a private app is audited without being made public. Only saved, static, bounded read queries may run; writes, dynamic queries and queries requiring confirmation are blocked and reported as unverified. WebSockets to the ToolJet origin pass; any other WebSocket is closed and reported as a `blocked_socket` finding, which does not make `ok` false. Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.',
     inputSchema: {
       app_id: external_exports.string().regex(/^[A-Za-z0-9_-]+$/),
       page_handle: external_exports.string().optional().describe("one page handle; omit to audit every page"),
       viewer_url: external_exports.string().optional().describe("canonical viewer base URL; alternate origins require host configuration in MCP_RENDER_AUDIT_ALLOWED_ORIGINS"),
-      viewport_width: external_exports.number().int().min(320).max(2560).optional().describe("window width in px; default 1600"),
+      viewport_width: external_exports.number().int().min(320).max(2560).optional().describe("window width in px; default 1280 with route, else 1600"),
       route: external_exports.string().regex(/^\/[A-Za-z0-9_\-\/:.]*$/).optional().describe("a Code mode route path to open, such as /orders/36")
     },
     async handler(args) {
@@ -860,7 +895,7 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
           executablePath: process.env.MCP_RENDER_AUDIT_CHROME || void 0,
           allowedOrigins: origins,
           savedQueries: summary,
-          viewportWidth: args.viewport_width,
+          viewportWidth: args.viewport_width ?? (args.route ? 1280 : void 0),
           codePage: Boolean(args.route),
           // MCP_RENDER_AUDIT_SESSION=off keeps the browser unauthenticated (private apps are then reported unverified).
           session: process.env.MCP_RENDER_AUDIT_SESSION === "off" ? void 0 : client.browserRenderOrigin ? await client.viewerSession?.(args.app_id) : await client.viewerSession?.(args.app_id).catch(() => void 0)

@@ -1,10 +1,7 @@
 import { createRequire } from "node:module";
-import { _ as __export, R as util_exports, a as _uppercase, b as _trim, cJ as treeifyError, c as _toUpperCase, e as _toLowerCase, cK as toJSONSchema, f as _startsWith, g as _slugify, h as _size, cS as registry, S as regexes_exports, i as _regex, j as _property, cU as prettifyError, k as _positive, l as _overwrite, n as _normalize, o as _nonpositive, p as _nonnegative, q as _negative, r as _multipleOf, s as _minSize, t as _minLength, u as _mime, v as _maxSize, w as _maxLength, x as _lte, y as _lt, z as _lowercase, A as _length, B as _includes, C as _gte, D as _gt, aY as globalRegistry, aR as formatError, aQ as flattenError, E as _endsWith, d6 as config, at as clone, dB as TimePrecision, dC as NEVER, dE as $output, dF as $input, dG as $brand, du as _coercedString, dv as _coercedNumber, dx as _coercedBoolean, dy as _coercedBigint, dw as _coercedDate, e5 as pageSettingProperties, e6 as savedComponentLibrary, e7 as ok, e8 as projectAppSettings, e9 as fail, ea as COMPONENT_PACK_DESCRIPTION } from "./chunk-By54lwVj.js";
-import { readFileSync } from "node:fs";
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import { x as xor, c as xid, _ as _void2, u as uuidv7, d as uuidv6, e as uuidv4, f as uuid, g as url, i as unknown, j as union, k as _undefined2, l as ulid, m as uint64, n as uint32, o as tuple, p as transform, q as templateLiteral, s as symbol, v as superRefine, w as success, y as stringbool, z as stringFormat, A as string, B as strictObject, C as set, D as safeParseAsync, E as safeParse, F as safeEncodeAsync, G as safeEncode, H as safeDecodeAsync, I as safeDecode, J as refine, K as record, L as readonly, M as promise, N as preprocess, O as prefault, P as pipe, Q as partialRecord, R as parseAsync, S as parse, T as optional, U as object, V as number, W as nullish, X as nullable, Y as _null2, Z as nonoptional, $ as never, a0 as nativeEnum, a1 as nanoid, a2 as nan, a3 as meta2, a4 as map, a5 as mac, a6 as looseRecord, a7 as looseObject, a8 as literal, a9 as lazy, aa as ksuid, ab as keyof, ac as jwt, ad as json$1, ae as iso_exports, af as ipv6, ag as ipv4, ah as invertCodec, ai as intersection, aj as int64, ak as int32, al as int, am as _instanceof, an as httpUrl, ao as hostname, ap as hex, aq as hash, ar as guid, as as _function, at as float64, au as float32, av as file, aw as exactOptional, ax as _enum, ay as encodeAsync, az as encode, aA as emoji, aB as email, aC as e164, aD as discriminatedUnion, aE as describe2, aF as decodeAsync, aG as decode, aH as date2$1, aI as custom, aJ as cuid2, aK as cuid, aL as codec, aM as cidrv6, aN as cidrv4, aO as check, aP as _catch, aQ as boolean, aR as bigint, aS as base64url, aT as base64, aU as array, aV as any, aW as _default, aX as _ZodString, aY as ZodXor, aZ as ZodXID, a_ as ZodVoid, a$ as ZodUnknown, b0 as ZodUnion, b1 as ZodUndefined, b2 as ZodUUID, b3 as ZodURL, b4 as ZodULID, b5 as ZodType, b6 as ZodTuple, b7 as ZodTransform, b8 as ZodTemplateLiteral, b9 as ZodSymbol, ba as ZodSuccess, bb as ZodStringFormat, bc as ZodString, bd as ZodSet, be as ZodRecord, bf as ZodRealError, bg as ZodReadonly, bh as ZodPromise, bi as ZodPreprocess, bj as ZodPrefault, bk as ZodPipe, bl as ZodOptional, bm as ZodObject, bn as ZodNumberFormat, bo as ZodNumber, bp as ZodNullable, bq as ZodNull, br as ZodNonOptional, bs as ZodNever, bt as ZodNanoID, bu as ZodNaN, bv as ZodMap, bw as ZodMAC, bx as ZodLiteral, by as ZodLazy, bz as ZodKSUID, bA as ZodJWT, bB as ZodIntersection, bC as ZodISOTime, bD as ZodISODuration, bE as ZodISODateTime, bF as ZodISODate, bG as ZodIPv6, bH as ZodIPv4, bI as ZodGUID, bJ as ZodFunction, bK as ZodFile, bL as ZodExactOptional, bM as ZodError, bN as ZodEnum, bO as ZodEmoji, bP as ZodEmail, bQ as ZodE164, bR as ZodDiscriminatedUnion, bS as ZodDefault, bT as ZodDate, bU as ZodCustomStringFormat, bV as ZodCustom, bW as ZodCodec, bX as ZodCatch, bY as ZodCUID2, bZ as ZodCUID, b_ as ZodCIDRv6, b$ as ZodCIDRv4, c0 as ZodBoolean, c1 as ZodBigIntFormat, c2 as ZodBigInt, c3 as ZodBase64URL, c4 as ZodBase64, c5 as ZodArray, c6 as ZodAny, c7 as checks_exports, c8 as schemas_exports } from "./chunk-CWaaHqLh.js";
-import { l as locales_exports, c as core_exports, e as en_default } from "./chunk-vqtGCzS8.js";
+import { x as xor, c as xid, _ as _void2, u as uuidv7, d as uuidv6, e as uuidv4, f as uuid, g as url, i as unknown, j as union, k as _undefined2, l as ulid, m as uint64, n as uint32, o as tuple, p as transform, q as templateLiteral, s as symbol, v as superRefine, w as success, y as stringbool, z as stringFormat, A as string, B as strictObject, C as set, D as safeParseAsync, E as safeParse, F as safeEncodeAsync, G as safeEncode, H as safeDecodeAsync, I as safeDecode, J as refine, K as record, L as readonly, M as promise, N as preprocess, O as prefault, P as pipe, Q as partialRecord, R as parseAsync, S as parse, T as optional, U as object, V as number, W as nullish, X as nullable, Y as _null2, Z as nonoptional, $ as never, a0 as nativeEnum, a1 as nanoid, a2 as nan, a3 as meta2, a4 as map, a5 as mac, a6 as looseRecord, a7 as looseObject, a8 as literal, a9 as lazy, aa as ksuid, ab as keyof, ac as jwt, ad as json, ae as iso_exports, af as ipv6, ag as ipv4, ah as invertCodec, ai as intersection, aj as int64, ak as int32, al as int, am as _instanceof, an as httpUrl, ao as hostname, ap as hex, aq as hash, ar as guid, as as _function, at as float64, au as float32, av as file, aw as exactOptional, ax as _enum, ay as encodeAsync, az as encode, aA as emoji, aB as email, aC as e164, aD as discriminatedUnion, aE as describe2, aF as decodeAsync, aG as decode, aH as date2$1, aI as custom, aJ as cuid2, aK as cuid, aL as codec, aM as cidrv6, aN as cidrv4, aO as check, aP as _catch, aQ as boolean, aR as bigint, aS as base64url, aT as base64, aU as array, aV as any, aW as _default, aX as _ZodString, aY as ZodXor, aZ as ZodXID, a_ as ZodVoid, a$ as ZodUnknown, b0 as ZodUnion, b1 as ZodUndefined, b2 as ZodUUID, b3 as ZodURL, b4 as ZodULID, b5 as ZodType, b6 as ZodTuple, b7 as ZodTransform, b8 as ZodTemplateLiteral, b9 as ZodSymbol, ba as ZodSuccess, bb as ZodStringFormat, bc as ZodString, bd as ZodSet, be as ZodRecord, bf as ZodRealError, bg as ZodReadonly, bh as ZodPromise, bi as ZodPreprocess, bj as ZodPrefault, bk as ZodPipe, bl as ZodOptional, bm as ZodObject, bn as ZodNumberFormat, bo as ZodNumber, bp as ZodNullable, bq as ZodNull, br as ZodNonOptional, bs as ZodNever, bt as ZodNanoID, bu as ZodNaN, bv as ZodMap, bw as ZodMAC, bx as ZodLiteral, by as ZodLazy, bz as ZodKSUID, bA as ZodJWT, bB as ZodIntersection, bC as ZodISOTime, bD as ZodISODuration, bE as ZodISODateTime, bF as ZodISODate, bG as ZodIPv6, bH as ZodIPv4, bI as ZodGUID, bJ as ZodFunction, bK as ZodFile, bL as ZodExactOptional, bM as ZodError, bN as ZodEnum, bO as ZodEmoji, bP as ZodEmail, bQ as ZodE164, bR as ZodDiscriminatedUnion, bS as ZodDefault, bT as ZodDate, bU as ZodCustomStringFormat, bV as ZodCustom, bW as ZodCodec, bX as ZodCatch, bY as ZodCUID2, bZ as ZodCUID, b_ as ZodCIDRv6, b$ as ZodCIDRv4, c0 as ZodBoolean, c1 as ZodBigIntFormat, c2 as ZodBigInt, c3 as ZodBase64URL, c4 as ZodBase64, c5 as ZodArray, c6 as ZodAny, c7 as checks_exports, c8 as schemas_exports } from "./chunk-DKJgfGaK.js";
+import { l as locales_exports, c as core_exports, e as en_default } from "./chunk-Elhqd07Y.js";
+import { _ as __export, R as util_exports, a as _uppercase, b as _trim, cJ as treeifyError, c as _toUpperCase, e as _toLowerCase, cK as toJSONSchema, f as _startsWith, g as _slugify, h as _size, cS as registry, S as regexes_exports, i as _regex, j as _property, cU as prettifyError, k as _positive, l as _overwrite, n as _normalize, o as _nonpositive, p as _nonnegative, q as _negative, r as _multipleOf, s as _minSize, t as _minLength, u as _mime, v as _maxSize, w as _maxLength, x as _lte, y as _lt, z as _lowercase, A as _length, B as _includes, C as _gte, D as _gt, aY as globalRegistry, aR as formatError, aQ as flattenError, E as _endsWith, d6 as config, at as clone, dB as TimePrecision, dC as NEVER, dE as $output, dF as $input, dG as $brand, du as _coercedString, dv as _coercedNumber, dx as _coercedBoolean, dy as _coercedBigint, dw as _coercedDate } from "./chunk-CYLdCKx-.js";
 import { Script } from "node:vm";
 import { randomUUID } from "node:crypto";
 createRequire(import.meta.url);
@@ -152,7 +149,7 @@ __export(external_exports, {
   ipv4: () => ipv4,
   ipv6: () => ipv6,
   iso: () => iso_exports,
-  json: () => json$1,
+  json: () => json,
   jwt: () => jwt,
   keyof: () => keyof,
   ksuid: () => ksuid,
@@ -776,488 +773,6 @@ function date2(params) {
 }
 config(en_default());
 createRequire(import.meta.url);
-var SETTING_KEYS = [
-  "canvas_background_color",
-  "canvas_max_width",
-  "app_mode",
-  "theme_id",
-  "hide_header",
-  "hide_logo",
-  "header_title",
-  "navigation_hidden",
-  "navigation_position",
-  "navigation_style",
-  "navigation_collapsible",
-  "component_library",
-  "component_pack"
-];
-function persistenceMismatches(args, snapshot) {
-  const global = snapshot.global_settings;
-  const page = pageSettingProperties(snapshot);
-  const mismatches = [];
-  const expectEqual = (label, actual, expected) => {
-    if (actual !== expected)
-      mismatches.push(`${label} did not persist (expected ${JSON.stringify(expected)}, read back ${JSON.stringify(actual)})`);
-  };
-  if (args.canvas_background_color !== void 0)
-    expectEqual("canvas_background_color", global.canvasBackgroundColor, args.canvas_background_color);
-  if (args.canvas_max_width !== void 0) {
-    expectEqual("canvas_max_width.value", global.canvasMaxWidth, args.canvas_max_width.value);
-    expectEqual("canvas_max_width.unit", global.canvasMaxWidthType, args.canvas_max_width.unit);
-  }
-  if (args.app_mode !== void 0)
-    expectEqual("app_mode", global.appMode, args.app_mode);
-  if (args.component_library !== void 0 || args.component_pack !== void 0)
-    expectEqual("component_library", global.componentLibrary, savedComponentLibrary(args.component_library ?? "ui2", args.component_pack));
-  if (args.theme_id !== void 0) {
-    const theme = global.theme;
-    expectEqual("theme_id", theme?.id, args.theme_id);
-  }
-  if (args.hide_header !== void 0)
-    expectEqual("hide_header", page.hideHeader, args.hide_header);
-  if (args.hide_logo !== void 0)
-    expectEqual("hide_logo", page.hideLogo, args.hide_logo);
-  if (args.header_title !== void 0)
-    expectEqual("header_title", page.name, args.header_title);
-  if (args.navigation_hidden !== void 0) {
-    const disableMenu = page.disableMenu;
-    expectEqual("navigation_hidden", disableMenu?.value, `{{${args.navigation_hidden}}}`);
-  }
-  if (args.navigation_position !== void 0)
-    expectEqual("navigation_position", page.position, args.navigation_position);
-  if (args.navigation_style !== void 0)
-    expectEqual("navigation_style", page.style, args.navigation_style);
-  if (args.navigation_collapsible !== void 0)
-    expectEqual("navigation_collapsible", page.collapsable, args.navigation_collapsible);
-  return mismatches;
-}
-function updateAppSettingsTool(client) {
-  return {
-    name: "update_app_settings",
-    title: "Update App Settings",
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: true
-    },
-    description: "Patch app-wide visual settings on the current editing version in one version update, then read them back. Supports canvas background/width/mode, a theme selected from list_app_themes, header/logo/title, and navigation visibility/layout. hide_header controls the app header/banner. The separate generated page-navigation menu can be positioned on the side or top; navigation_hidden hides that entire menu in either position. navigation_hidden:true also hides the app header and its logo (the app brings its own navigation and header), unless hide_header or hide_logo is passed as false. To hide only one non-Home page from that menu, use update_pages.hidden. Omitted fields are preserved. Every requested field is read back; the tool returns an error instead of success if any field did not persist.",
-    inputSchema: {
-      app_id: external_exports.string().min(1),
-      version_id: external_exports.string().min(1),
-      canvas_background_color: external_exports.string().max(200).optional(),
-      canvas_max_width: external_exports.object({
-        value: external_exports.number().positive().max(1e5),
-        unit: external_exports.enum(["%", "px"])
-      }).optional(),
-      app_mode: external_exports.enum(["auto", "light", "dark"]).optional(),
-      theme_id: external_exports.string().uuid().optional(),
-      hide_header: external_exports.boolean().optional().describe("Hide or show the app header/banner. This is separate from the generated page-navigation menu."),
-      hide_logo: external_exports.boolean().optional(),
-      header_title: external_exports.string().trim().min(1).max(32).optional(),
-      navigation_hidden: external_exports.boolean().optional().describe("Hide or show the entire generated page-navigation menu, whether it is positioned on the side or top. true also hides the app header and logo unless hide_header or hide_logo is false. To hide only one non-Home page from the menu, use update_pages.hidden."),
-      navigation_position: external_exports.enum(["side", "top"]).optional(),
-      navigation_style: external_exports.enum(["texticon", "text", "icon"]).optional(),
-      navigation_collapsible: external_exports.boolean().optional(),
-      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in: "ui1" ToolJet UI 1.0 (native widgets) or "ui2" ToolJet UI 2.0 (Shad* types). Change it only when the user asks to move the app to the other library.'),
-      component_pack: external_exports.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION)
-    },
-    async handler(requested) {
-      try {
-        const headerFollowsMenu = requested.navigation_hidden === true && (requested.hide_header === void 0 || requested.hide_logo === void 0);
-        const args = requested.navigation_hidden === true ? { ...requested, hide_header: requested.hide_header ?? true, hide_logo: requested.hide_logo ?? true } : requested;
-        const changed = SETTING_KEYS.filter((key) => args[key] !== void 0);
-        if (!changed.length)
-          throw new Error("update_app_settings requires at least one setting field.");
-        if (args.canvas_max_width?.unit === "%" && args.canvas_max_width.value > 100) {
-          throw new Error('canvas_max_width.value cannot exceed 100 when unit is "%".');
-        }
-        const current = await client.getAppSettings(args.app_id, args.version_id);
-        const currentPage = pageSettingProperties(current);
-        const finalPosition = args.navigation_position ?? currentPage.position;
-        const finalStyle = args.navigation_style ?? currentPage.style;
-        if (finalPosition === "top" && finalStyle === "icon") {
-          throw new Error('navigation_style "icon" is not supported when navigation_position is "top"; use "text" or "texticon".');
-        }
-        let theme;
-        if (args.theme_id) {
-          const themes = await client.listAppThemes();
-          const selected = themes.find((candidate) => candidate.id === args.theme_id);
-          if (!selected)
-            throw new Error(`Theme "${args.theme_id}" is not available in the active workspace.`);
-          if (selected.isDisabled)
-            throw new Error(`Theme "${selected.name}" is disabled and cannot be selected.`);
-          theme = selected;
-        }
-        const globalSettings = {
-          ...args.canvas_background_color !== void 0 ? { canvasBackgroundColor: args.canvas_background_color } : {},
-          ...args.canvas_max_width !== void 0 ? { canvasMaxWidth: args.canvas_max_width.value, canvasMaxWidthType: args.canvas_max_width.unit } : {},
-          ...args.app_mode !== void 0 ? { appMode: args.app_mode } : {},
-          ...theme ? { theme } : {},
-          // UI 2.0 is saved as the default pack ("pack:<id>"), as create_app does, so the panel shows that pack.
-          ...args.component_library !== void 0 || args.component_pack !== void 0 ? { componentLibrary: savedComponentLibrary(args.component_library ?? "ui2", args.component_pack) } : {}
-        };
-        const properties = {
-          ...args.hide_header !== void 0 ? { hideHeader: args.hide_header } : {},
-          ...args.hide_logo !== void 0 ? { hideLogo: args.hide_logo } : {},
-          ...args.header_title !== void 0 ? { name: args.header_title } : {},
-          ...args.navigation_hidden !== void 0 ? { disableMenu: { value: `{{${args.navigation_hidden}}}`, fxActive: false } } : {},
-          ...args.navigation_position !== void 0 ? { position: args.navigation_position } : {},
-          ...args.navigation_style !== void 0 ? { style: args.navigation_style } : {},
-          ...args.navigation_collapsible !== void 0 ? { collapsable: args.navigation_collapsible } : {}
-        };
-        await client.updateAppSettings({
-          appId: args.app_id,
-          versionId: args.version_id,
-          ...Object.keys(globalSettings).length ? { globalSettings } : {},
-          ...Object.keys(properties).length ? { pageSettings: { properties } } : {}
-        });
-        const persisted = await client.getAppSettings(args.app_id, args.version_id);
-        const mismatches = persistenceMismatches(args, persisted);
-        if (mismatches.length) {
-          throw new Error(`update_app_settings partially failed readback: ${mismatches.join("; ")}. Other requested fields may already have persisted; inspect get_app_settings before retrying.`);
-        }
-        return ok({
-          updated_fields: changed.length,
-          settings: projectAppSettings(persisted),
-          warnings: [],
-          ...headerFollowsMenu ? { note: "The page menu is hidden, so the app header and logo were hidden with it." } : {}
-        });
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-createRequire(import.meta.url);
-async function mapKeyRefusal(client, componentTypes, library) {
-  if (![...componentTypes].includes("Map") || typeof client?.hasGoogleMapsKey !== "function")
-    return void 0;
-  let hasKey;
-  try {
-    hasKey = await client.hasGoogleMapsKey();
-  } catch {
-    return void 0;
-  }
-  if (hasKey !== false)
-    return void 0;
-  const noKey = "This ToolJet instance has no Google Maps API key (GOOGLE_MAPS_API_KEY), so a Map component shows a Google error instead of a map.";
-  const ui2Map = "Use ShadMap, the ToolJet UI 2.0 Map: OpenStreetMap tiles, no key, one marker per data row read through latField, lngField and idField, with onMarkerClick and selectedMarker.";
-  if (library === "ui2")
-    return `${noKey} ${ui2Map}`;
-  return `${noKey} In a ToolJet UI 2.0 app: ${ui2Map} In a UI 1.0 app, show the locations in a Table (a link column to https://www.google.com/maps?q=<lat>,<lng> opens each one), and tell the user in your reply that an in-app map needs the Google Maps API key on the instance.`;
-}
-createRequire(import.meta.url);
-var FORMAT = "tooljet-catalog-parts-v1";
-var json = (value) => JSON.stringify(value, null, 2) + "\n";
-function readCatalog(file2) {
-  const index = JSON.parse(readFileSync(file2, "utf8"));
-  if (index.format !== FORMAT) return index;
-  const result = {};
-  for (const part of index.parts) {
-    if (!/^[\w-]+\/part-\d+\.json$/.test(part)) throw new Error(`Invalid catalog part: ${part}`);
-    const data = JSON.parse(readFileSync(resolve(dirname(file2), part), "utf8"));
-    for (const [key, value] of Object.entries(data)) {
-      if (Object.hasOwn(result, key)) throw new Error(`Duplicate catalog key: ${key}`);
-      Object.defineProperty(result, key, { value, enumerable: true, writable: true, configurable: true });
-    }
-  }
-  return result;
-}
-function readCatalogBytes(file2) {
-  const bytes = readFileSync(file2);
-  const value = JSON.parse(bytes.toString("utf8"));
-  return value.format === FORMAT ? Buffer.from(json(readCatalog(file2))) : bytes;
-}
-createRequire(import.meta.url);
-var dataPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-schemas.json");
-var compatibilityPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-compatibility.json");
-var cache = null;
-var legacyReplacements = null;
-function load() {
-  if (!cache)
-    cache = readCatalog(dataPath);
-  return cache;
-}
-function loadLegacyReplacements() {
-  if (!legacyReplacements) {
-    const compatibility = JSON.parse(readFileSync(compatibilityPath, "utf8"));
-    legacyReplacements = compatibility.legacyReplacements ?? {};
-  }
-  return legacyReplacements;
-}
-function allComponentSchemas() {
-  return load();
-}
-function registerComponentSchemas(extra) {
-  const all = load();
-  for (const key of Object.keys(all))
-    if (/^Lib_[a-z0-9]+_/.test(key) && !(key in extra))
-      delete all[key];
-  Object.assign(all, extra);
-}
-function getCatalog() {
-  const legacy = loadLegacyReplacements();
-  return Object.values(load()).filter((c) => !legacy[c.type]).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
-}
-function getComponentSchema(type) {
-  return load()[type] ?? null;
-}
-function getLegacyComponentReplacement(type) {
-  return loadLegacyReplacements()[type] ?? null;
-}
-createRequire(import.meta.url);
-var CATALOG_SECTIONS = [
-  "overview",
-  "properties",
-  "styles",
-  "events",
-  "actions",
-  "exposedVariables",
-  "defaultChildren",
-  "renderingHints",
-  "authoringHints"
-];
-var DEFAULT_TYPED_SECTIONS = [
-  "overview",
-  "properties",
-  "events",
-  "actions"
-];
-var CATALOG_TYPE_ALIASES = /* @__PURE__ */ new Map([
-  ["gridview", {
-    type: "Listview",
-    note: 'ToolJet grid view is Listview with mode:"grid" (properties.mode.value); use type:"Listview" when creating it.'
-  }]
-]);
-function resolveCatalogType(requestedType) {
-  const alias = CATALOG_TYPE_ALIASES.get(requestedType.replace(/[\s_-]+/g, "").toLowerCase());
-  if (alias)
-    return { type: alias.type, alias: { requested_type: requestedType, note: alias.note } };
-  if (getComponentSchema(requestedType))
-    return { type: requestedType };
-  const wanted = requestedType.replace(/[\s_-]+/g, "").toLowerCase();
-  const types2 = getCatalog().map((entry) => entry.type);
-  const near = types2.find((type) => type.toLowerCase() === wanted) ?? types2.find((type) => type.toLowerCase().replace(/v\d+$/, "") === wanted);
-  return near ? { type: near, alias: { requested_type: requestedType, note: `There is no "${requestedType}"; this is ${near}. Use type "${near}".` } } : { type: requestedType };
-}
-var PACK_CONCEPTS = [
-  [/table|grid|datatable/i, ["ShadTable"]],
-  [/metric|stat|kpi/i, ["ShadStat", "ShadSparkline", "ShadSummaryStrip"]],
-  [/summary|figures|totals|strip|headline/i, ["ShadSummaryStrip"]],
-  [/recent|activity|feed|records?|orders|people|contacts|inbox/i, ["ShadRecordList"]],
-  [/card|panel|surface/i, ['FlexContainer (cardStyle "shadcnCard")', "ShadCardGrid"]],
-  [/gallery|tiles?|catalog|products?|cards|grid/i, ["ShadCardGrid"]],
-  [/hero|header|masthead|jumbotron|cover|welcome/i, ["ShadHero"]],
-  [/modal|dialog|sheet|drawer/i, ["ShadDialog"]],
-  [/dropdown|menu/i, ["ShadDropdownMenu", "ShadSelect", "ShadCombobox"]],
-  [/list/i, ["ShadListView", "ShadRecordList", "ShadKeyValue"]],
-  [/chat|message|assistant|conversation|copilot|bot|thread/i, ["ShadChat"]],
-  [/question|survey|quiz|onboarding|intake|wizard|poll|triage|form/i, ["ShadQuestionnaire"]],
-  [/chart|graph/i, ["ShadBarChart", "ShadLineChart", "ShadAreaChart", "ShadPieChart", "ShadComboChart", "ShadScatterChart", "ShadFunnelChart", "ShadHeatmapChart"]],
-  [/funnel|conversion/i, ["ShadFunnelChart"]],
-  [/scatter|bubble|correlation/i, ["ShadScatterChart"]],
-  [/heat|matrix|grid|calendar/i, ["ShadHeatmapChart"]],
-  [/board|kanban|pipeline|stage|trello|dispatch|grouped by/i, ["ShadKanban"]],
-  [/combo|composed|mixed|dual/i, ["ShadComboChart"]],
-  [/label|title|typography/i, ["ShadHeading", "ShadText"]],
-  [/date/i, ["ShadDatePicker", "ShadDateTimePicker", "ShadCalendar"]],
-  [/toast|notification|banner/i, ["ShadAlert"]],
-  [/divider/i, ["ShadSeparator"]],
-  [/schedule|scheduler|booking|reservation|roster|rota|shift|on.?call|resource|timeline.?view|gantt|availability|rooms?/i, ["ShadSchedule"]],
-  [/progress|goal|budget|quota|target|onboarding|checklist|capacity|completion/i, ["ShadProgressList", "ShadProgress"]],
-  [/map|geo|location|pins?$|markers?|route|locator|spatial|leaflet|places|zones?$|territor|geofence|dispatch|fleet/i, ["ShadMap"]]
-];
-function packSuggestions(requestedType) {
-  if (!/^Shad[A-Z]/.test(requestedType))
-    return [];
-  const rest = requestedType.slice(4);
-  return [...new Set(PACK_CONCEPTS.filter(([pattern]) => pattern.test(rest)).flatMap(([, types2]) => types2))];
-}
-function nearbyTypes(requestedType) {
-  const words = requestedType.split(/(?=[A-Z])|[\s_-]+/).map((word) => word.toLowerCase()).filter((word) => word.length >= 4);
-  return getCatalog().map((entry) => entry.type).filter((type) => words.some((word) => type.toLowerCase().includes(word))).slice(0, 6);
-}
-function selectEntries(entries, keys, detail) {
-  const selected = keys?.length ? entries.filter((entry) => keys.includes(entry.key)) : entries;
-  if (detail === "full" || keys?.length)
-    return selected;
-  return selected.map(({ key, valueType, valueTypes, allowedValues, requires, mutuallyExclusiveWith }) => ({
-    key,
-    ...valueType !== void 0 ? { valueType } : {},
-    ...valueTypes !== void 0 ? { valueTypes } : {},
-    ...allowedValues !== void 0 ? { allowedValues } : {},
-    ...requires !== void 0 ? { requires } : {},
-    ...mutuallyExclusiveWith !== void 0 ? { mutuallyExclusiveWith } : {}
-  }));
-}
-function selectSchema(schema, args) {
-  const detail = args.detail ?? "compact";
-  const sections = new Set(args.sections ?? DEFAULT_TYPED_SECTIONS);
-  const result = { type: schema.type };
-  if (sections.has("overview")) {
-    if (schema.name !== void 0)
-      result.name = schema.name;
-    if (schema.description !== void 0)
-      result.description = schema.description;
-    if (schema.defaultSize !== void 0)
-      result.defaultSize = schema.defaultSize;
-  }
-  if (sections.has("properties")) {
-    result.properties = selectEntries(schema.properties, args.property_keys, detail);
-  }
-  if (sections.has("styles")) {
-    result.styles = selectEntries(schema.styles, args.style_keys, detail);
-  }
-  if (sections.has("events") && schema.events !== void 0)
-    result.events = schema.events;
-  if (sections.has("actions") && schema.actions !== void 0)
-    result.actions = schema.actions;
-  if (sections.has("exposedVariables") && schema.exposedVariables !== void 0) {
-    result.exposedVariables = schema.exposedVariables;
-  }
-  if (sections.has("defaultChildren") && schema.defaultChildren !== void 0) {
-    result.defaultChildren = schema.defaultChildren;
-  }
-  if (sections.has("renderingHints") && schema.renderingHints !== void 0) {
-    result.renderingHints = schema.renderingHints;
-  }
-  if (sections.has("authoringHints") && schema.authoringHints !== void 0) {
-    result.authoringHints = schema.authoringHints;
-  }
-  return result;
-}
-function legacyNotice(type) {
-  const replacement = getLegacyComponentReplacement(type);
-  return replacement ? {
-    deprecated: true,
-    replacement,
-    deprecation_note: `"${type}" remains available only for inspecting or repairing existing apps. Use "${replacement}" for new components.`
-  } : {};
-}
-async function instanceNote(client, type) {
-  const refusal = type === "Map" ? await mapKeyRefusal(client, ["Map"]) : void 0;
-  return refusal ? { instance_note: refusal } : {};
-}
-function getComponentCatalogTool(client) {
-  return {
-    name: "get_component_catalog",
-    title: "Get Component Catalog",
-    // Served from the bundled catalog in data/; never reaches the ToolJet instance.
-    annotations: {
-      readOnlyHint: true,
-      openWorldHint: false
-    },
-    description: 'Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one component or types for a batch needed in the current page/phase. Typed reads default to detail:"compact" and the overview/properties/events/actions sections; compact property/style lists omit labels and defaults. Use detail:"full" or exact property_keys/style_keys only when those values are needed. Request renderingHints/authoringHints for layout-sensitive or nested components. Use requests when different types need different sections/keys in one call; top-level detail/sections/keys apply as defaults to every requested type, and the type/types/requests selectors may be combined. sections selects only overview, properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. GridView is a lookup alias for Listview mode:"grid"; component writes must still use type:"Listview". authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar contracts once and reuse them; never guess property/event/action ids.',
-    inputSchema: {
-      type: external_exports.string().optional(),
-      types: external_exports.array(external_exports.string()).min(1).max(25).optional(),
-      requests: external_exports.array(external_exports.object({
-        type: external_exports.string(),
-        detail: external_exports.enum(["compact", "full"]).optional(),
-        sections: external_exports.array(external_exports.enum(CATALOG_SECTIONS)).min(1).optional(),
-        property_keys: external_exports.array(external_exports.string()).min(1).optional(),
-        style_keys: external_exports.array(external_exports.string()).min(1).optional()
-      })).min(1).max(25).optional(),
-      detail: external_exports.enum(["compact", "full"]).optional(),
-      sections: external_exports.array(external_exports.enum(CATALOG_SECTIONS)).min(1).optional(),
-      property_keys: external_exports.array(external_exports.string()).min(1).optional(),
-      style_keys: external_exports.array(external_exports.string()).min(1).optional()
-    },
-    async handler(args) {
-      try {
-        const singleType = args?.type;
-        const typesList = args?.types ?? [];
-        const batch = args?.requests ?? [];
-        const hasSelector = !!singleType || typesList.length > 0 || batch.length > 0;
-        if (!hasSelector) {
-          if (args.detail || args.sections || args.property_keys || args.style_keys) {
-            return fail(new Error("Catalog detail/sections/key filters require `type`, `types`, or `requests`."));
-          }
-          return ok(getCatalog());
-        }
-        if (singleType && typesList.length === 0 && batch.length === 0) {
-          const resolved = resolveCatalogType(singleType);
-          const schema = getComponentSchema(resolved.type);
-          if (!schema) {
-            const near = nearbyTypes(singleType);
-            const suggested = [.../* @__PURE__ */ new Set([...packSuggestions(singleType), ...near])].slice(0, 6);
-            const packTypes = /^Shad[A-Z]/.test(singleType) ? getCatalog().map((entry) => entry.type).filter((type) => /^Shad[A-Z]/.test(type)) : [];
-            return ok({
-              error: `Unknown component type "${singleType}". Call with no argument to list valid types.`,
-              ...suggested.length ? { did_you_mean: suggested } : {},
-              ...packTypes.length ? { pack_types: packTypes } : {}
-            });
-          }
-          return ok({
-            ...selectSchema(schema, args),
-            ...legacyNotice(schema.type),
-            ...resolved.alias ? { alias: resolved.alias } : {},
-            ...await instanceNote(client, schema.type)
-          });
-        }
-        const withDefaults = (type, over) => ({
-          type,
-          detail: over?.detail ?? args.detail,
-          sections: over?.sections ?? args.sections,
-          property_keys: over?.property_keys ?? args.property_keys,
-          style_keys: over?.style_keys ?? args.style_keys
-        });
-        const ordered = [
-          ...batch.map((r) => withDefaults(r.type, r)),
-          ...typesList.map((t) => withDefaults(t)),
-          ...singleType ? [withDefaults(singleType)] : []
-        ];
-        const components = [];
-        const unknownTypes = [];
-        const componentByResolvedType = /* @__PURE__ */ new Map();
-        const seenUnknown = /* @__PURE__ */ new Set();
-        for (const request of ordered) {
-          if (!request.type)
-            continue;
-          const resolved = resolveCatalogType(request.type);
-          const schema = getComponentSchema(resolved.type);
-          if (!schema) {
-            if (!seenUnknown.has(request.type)) {
-              seenUnknown.add(request.type);
-              unknownTypes.push(request.type);
-            }
-            continue;
-          }
-          const existing = componentByResolvedType.get(resolved.type);
-          if (existing) {
-            if (resolved.alias) {
-              const requestedAliases = Array.isArray(existing.requested_aliases) ? existing.requested_aliases : [];
-              if (!requestedAliases.includes(request.type)) {
-                existing.requested_aliases = [...requestedAliases, request.type];
-              }
-            }
-            continue;
-          }
-          const component = {
-            ...selectSchema(schema, request),
-            ...legacyNotice(schema.type),
-            ...resolved.alias ? { alias: resolved.alias } : {},
-            ...resolved.alias ? { requested_aliases: [request.type] } : {},
-            ...await instanceNote(client, schema.type)
-          };
-          components.push(component);
-          componentByResolvedType.set(resolved.type, component);
-        }
-        const suggestions = Object.fromEntries(unknownTypes.map((type) => [type, [.../* @__PURE__ */ new Set([...packSuggestions(type), ...nearbyTypes(type)])].slice(0, 6)]).filter(([, near]) => near.length));
-        const guessedPack = unknownTypes.some((type) => /^Shad[A-Z]/.test(type));
-        return ok({
-          components,
-          unknown_types: unknownTypes,
-          ...Object.keys(suggestions).length ? { suggestions } : {},
-          ...guessedPack ? { pack_types: getCatalog().map((entry) => entry.type).filter((type) => /^Shad[A-Z]/.test(type)) } : {}
-        });
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
-createRequire(import.meta.url);
 var ref = external_exports.string().min(1).max(100);
 var base = { ref, existing_id: external_exports.string().uuid().optional(), label: external_exports.string().max(100).optional(), position: external_exports.object({ x: external_exports.number().finite(), y: external_exports.number().finite() }).optional() };
 var query = { name: external_exports.string().regex(/^[A-Za-z_$][\w$]*$/), datasource_id: external_exports.string().min(1), options: external_exports.record(external_exports.string(), external_exports.unknown()) };
@@ -1279,14 +794,14 @@ var specSchema = external_exports.object({
   remove_edge_ids: external_exports.array(external_exports.string()).default([]),
   test_parameters: external_exports.record(external_exports.string(), external_exports.unknown()).optional()
 }).strict();
-function assertWorkflowJavaScript(code2, label) {
+function assertWorkflowJavaScript(code2, label2) {
   if (typeof code2 !== "string" || !code2.trim())
-    throw new Error(`Missing JavaScript code in ${label}.`);
+    throw new Error(`Missing JavaScript code in ${label2}.`);
   try {
     new Script(`(async function() {${code2}
 })`);
   } catch {
-    throw new Error(`Invalid JavaScript syntax in ${label}.`);
+    throw new Error(`Invalid JavaScript syntax in ${label2}.`);
   }
 }
 function isAttachmentEdge(edge) {
@@ -1509,7 +1024,7 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
       graph.nodes.push(node);
     node_ids[input.ref] = id;
   }
-  const resolve2 = (ref2) => node_ids[ref2] ?? (graph.nodes.some((n) => n.id === ref2) ? ref2 : void 0);
+  const resolve = (ref2) => node_ids[ref2] ?? (graph.nodes.some((n) => n.id === ref2) ? ref2 : void 0);
   const editedEdges = /* @__PURE__ */ new Set();
   for (const input of spec.edges) {
     const id = input.existing_id ?? ids?.edge_ids[input.ref] ?? randomUUID();
@@ -1519,7 +1034,7 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
     const old = graph.edges.find((e) => e.id === id);
     if (input.existing_id && !old)
       throw new Error(`Unknown existing edge: ${id}`);
-    const source = resolve2(input.from), target = resolve2(input.to);
+    const source = resolve(input.from), target = resolve(input.to);
     if (!source || !target)
       throw new Error(`Unknown endpoint in edge ${input.ref}. Use a supplied ref or existing node ID.`);
     const sourceNode = graph.nodes.find((node) => node.id === source);
@@ -1587,6 +1102,1006 @@ var nodeCatalog = {
   edit_semantics: "Patch. Use existing_id to edit nodes/edges; edge endpoints may use existing node IDs. Omitted objects are preserved. Removal requires explicit IDs and incident edge removal.",
   limitations: ["Agent tool connections are not authored", "No publishing or trigger setup", "No concurrent-edit protection", "No automatic execution during authoring", "Advanced nodes are preserved but not authored"]
 };
+createRequire(import.meta.url);
+var VOID_TAGS = /* @__PURE__ */ new Set(["br", "img", "hr", "input", "meta", "link", "source", "wbr", "col"]);
+var INLINE_TAGS = /* @__PURE__ */ new Set([
+  "span",
+  "b",
+  "strong",
+  "i",
+  "em",
+  "a",
+  "small",
+  "code",
+  "u",
+  "s",
+  "sup",
+  "sub",
+  "abbr",
+  "time",
+  "mark",
+  "label",
+  "kbd",
+  "q",
+  "cite",
+  "var",
+  "bdi",
+  "font"
+]);
+var DEFAULT_FONT_SIZE = 14;
+var LINE_HEIGHT_FACTOR = 1.5;
+var GLYPH_WIDTH_FACTOR = 0.52;
+var TAG_DEFAULTS = {
+  h1: { fontSize: 32, marginBottom: 8 },
+  h2: { fontSize: 24, marginBottom: 8 },
+  h3: { fontSize: 20, marginBottom: 8 },
+  h4: { fontSize: 18, marginBottom: 8 },
+  h5: { fontSize: 16, marginBottom: 8 },
+  h6: { fontSize: 14, marginBottom: 8 },
+  p: { marginBottom: 16 },
+  ul: { marginBottom: 16 },
+  ol: { marginBottom: 16 },
+  hr: { marginTop: 16, marginBottom: 16 }
+};
+function stripHtmlBindings(raw) {
+  let repeats = false;
+  const trimmed = raw.trim();
+  const template = /^\{\{\s*`([\s\S]*)`\s*\}\}$/.exec(trimmed);
+  if (template) {
+    const body = template[1];
+    const html2 = replaceBalanced(body, "${", "}", (inner) => {
+      if (/\.map\s*\(/.test(inner)) {
+        repeats = true;
+        return "";
+      }
+      return "00";
+    });
+    return { html: html2, repeats };
+  }
+  const html = replaceBalanced(raw, "{{", "}}", (inner) => {
+    if (/\.map\s*\(/.test(inner)) {
+      repeats = true;
+      return "";
+    }
+    return "00";
+  });
+  return { html, repeats };
+}
+function replaceBalanced(src, open, close, fn) {
+  let out = "";
+  let i = 0;
+  while (i < src.length) {
+    const start = src.indexOf(open, i);
+    if (start < 0) {
+      out += src.slice(i);
+      break;
+    }
+    out += src.slice(i, start);
+    let depth = 0;
+    let j = start;
+    let end = -1;
+    while (j < src.length) {
+      if (src.startsWith(open, j)) {
+        depth += 1;
+        j += open.length;
+        continue;
+      }
+      if (src.startsWith(close, j)) {
+        depth -= 1;
+        if (depth === 0) {
+          end = j;
+          break;
+        }
+        j += close.length;
+        continue;
+      }
+      if (open === "${" && src[j] === "{")
+        depth += 1;
+      j += 1;
+    }
+    if (end < 0) {
+      out += src.slice(start);
+      break;
+    }
+    out += fn(src.slice(start + open.length, end));
+    i = end + close.length;
+  }
+  return out;
+}
+function parseStyle(text) {
+  const style = {};
+  if (!text)
+    return style;
+  for (const decl of text.split(";")) {
+    const idx = decl.indexOf(":");
+    if (idx < 0)
+      continue;
+    const key = decl.slice(0, idx).trim().toLowerCase();
+    const value = decl.slice(idx + 1).trim().replace(/\s*!important$/i, "");
+    if (key)
+      style[key] = value;
+  }
+  return style;
+}
+function parseAttrs(text) {
+  const attrs = {};
+  const re = /([a-zA-Z_:][-\w:.]*)\s*(?:=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
+  let m;
+  while (m = re.exec(text)) {
+    attrs[m[1].toLowerCase()] = m[2] ?? m[3] ?? m[4] ?? "";
+  }
+  return attrs;
+}
+function parseHtml(html) {
+  const root = { tag: "#root", style: {}, attrs: {}, children: [], text: "" };
+  const stack = [root];
+  const re = /<!--[\s\S]*?-->|<\/\s*([a-zA-Z][\w-]*)\s*>|<([a-zA-Z][\w-]*)((?:\s+[^>]*?)?)\s*(\/?)>|([^<]+)|</g;
+  let m;
+  while (m = re.exec(html)) {
+    if (m[0].startsWith("<!--"))
+      continue;
+    if (m[1]) {
+      const tag = m[1].toLowerCase();
+      for (let k = stack.length - 1; k > 0; k -= 1) {
+        if (stack[k].tag === tag) {
+          stack.length = k;
+          break;
+        }
+      }
+      continue;
+    }
+    if (m[2]) {
+      const tag = m[2].toLowerCase();
+      if (tag === "style" || tag === "script") {
+        const close = html.indexOf(`</${tag}`, re.lastIndex);
+        if (close >= 0)
+          re.lastIndex = close;
+        continue;
+      }
+      const attrs = parseAttrs(m[3] ?? "");
+      const node = { tag, style: parseStyle(attrs.style), attrs, children: [], text: "" };
+      stack[stack.length - 1].children.push(node);
+      if (!VOID_TAGS.has(tag) && !m[4])
+        stack.push(node);
+      continue;
+    }
+    if (m[5] !== void 0) {
+      const text = decodeEntities(m[5]);
+      if (text.trim() || /\s/.test(text)) {
+        stack[stack.length - 1].children.push({ tag: "#text", style: {}, attrs: {}, children: [], text });
+      }
+    }
+  }
+  return root;
+}
+function decodeEntities(text) {
+  return text.replace(/&nbsp;/g, "\xA0").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&[a-z]+;|&#\d+;/gi, "x");
+}
+function px(value, fontSize, base2 = 0) {
+  if (value === void 0)
+    return void 0;
+  const v = value.trim();
+  const m = /^(-?\d*\.?\d+)(px|em|rem|%|pt)?$/.exec(v);
+  if (!m)
+    return v === "0" ? 0 : void 0;
+  const n = parseFloat(m[1]);
+  switch (m[2]) {
+    case void 0:
+    case "px":
+      return n;
+    case "em":
+      return n * fontSize;
+    case "rem":
+      return n * 16;
+    case "pt":
+      return n * (4 / 3);
+    case "%":
+      return base2 ? n / 100 * base2 : void 0;
+    default:
+      return void 0;
+  }
+}
+function vertical(style, prop, fontSize) {
+  let top = 0;
+  let bottom = 0;
+  const shorthand = style[prop];
+  if (shorthand) {
+    const parts = shorthand.split(/\s+/).map((p) => px(p, fontSize) ?? 0);
+    if (parts.length === 1)
+      top = bottom = parts[0];
+    else if (parts.length === 2 || parts.length === 3) {
+      top = parts[0];
+      bottom = parts[2] ?? parts[0];
+    } else if (parts.length >= 4) {
+      top = parts[0];
+      bottom = parts[2];
+    }
+  }
+  const t = px(style[`${prop}-top`], fontSize);
+  const b = px(style[`${prop}-bottom`], fontSize);
+  if (t !== void 0)
+    top = t;
+  if (b !== void 0)
+    bottom = b;
+  return [top, bottom];
+}
+function horizontal(style, prop, fontSize) {
+  let left = 0;
+  let right = 0;
+  const shorthand = style[prop];
+  if (shorthand) {
+    const parts = shorthand.split(/\s+/).map((p) => px(p, fontSize) ?? 0);
+    if (parts.length === 1)
+      left = right = parts[0];
+    else if (parts.length === 2 || parts.length === 3)
+      left = right = parts[1];
+    else if (parts.length >= 4) {
+      right = parts[1];
+      left = parts[3];
+    }
+  }
+  const l = px(style[`${prop}-left`], fontSize);
+  const r = px(style[`${prop}-right`], fontSize);
+  if (l !== void 0)
+    left = l;
+  if (r !== void 0)
+    right = r;
+  return left + right;
+}
+function borderWidth(value) {
+  if (!value)
+    return 0;
+  if (/^(none|0)$/i.test(value.trim()))
+    return 0;
+  const m = /(\d*\.?\d+)px/.exec(value);
+  if (m)
+    return parseFloat(m[1]);
+  if (/\b(thin)\b/.test(value))
+    return 1;
+  if (/\b(medium)\b/.test(value))
+    return 3;
+  if (/\b(thick)\b/.test(value))
+    return 5;
+  return /\b(solid|dashed|dotted|double)\b/.test(value) ? 1 : 0;
+}
+function borders(style) {
+  const all = borderWidth(style.border);
+  const top = style["border-top"] !== void 0 ? borderWidth(style["border-top"]) : all;
+  const bottom = style["border-bottom"] !== void 0 ? borderWidth(style["border-bottom"]) : all;
+  const t = px(style["border-top-width"], 0);
+  const b = px(style["border-bottom-width"], 0);
+  return [t ?? top, b ?? bottom];
+}
+function gridColumns(value) {
+  if (!value)
+    return 1;
+  let count = 0;
+  const re = /repeat\(\s*(\d+|auto-fit|auto-fill)\s*,([^)]*)\)|[^\s,]+/g;
+  let m;
+  while (m = re.exec(value)) {
+    if (m[1]) {
+      const n = parseInt(m[1], 10);
+      const inner = (m[2] ?? "").trim().split(/\s+/).filter(Boolean).length || 1;
+      count += (Number.isFinite(n) ? n : 1) * inner;
+    } else
+      count += 1;
+  }
+  return Math.max(1, count);
+}
+function gapOf(style, axis, fontSize) {
+  const specific = px(style[`${axis}-gap`], fontSize);
+  if (specific !== void 0)
+    return specific;
+  const gap = style.gap ?? style["grid-gap"];
+  if (!gap)
+    return 0;
+  const parts = gap.split(/\s+/).map((p) => px(p, fontSize) ?? 0);
+  if (axis === "row")
+    return parts[0] ?? 0;
+  return parts[1] ?? parts[0] ?? 0;
+}
+function isInline(node) {
+  if (node.tag === "#text")
+    return true;
+  const display = node.style.display;
+  if (display) {
+    if (/^inline(?!-block|-flex|-grid)/.test(display))
+      return true;
+    return false;
+  }
+  return INLINE_TAGS.has(node.tag);
+}
+function isHidden(node) {
+  return node.style.display === "none" || node.style.visibility === "hidden";
+}
+function contextFor(node, parent) {
+  const defaults = TAG_DEFAULTS[node.tag];
+  let fontSize = px(node.style["font-size"], parent.fontSize) ?? defaults?.fontSize ?? parent.fontSize;
+  if (!fontSize || fontSize <= 0)
+    fontSize = parent.fontSize;
+  let lineHeight = parent.lineHeight;
+  const lh = node.style["line-height"];
+  if (lh !== void 0) {
+    const unitless = /^\d*\.?\d+$/.test(lh.trim());
+    const value = unitless ? parseFloat(lh) * fontSize : px(lh, fontSize);
+    if (value !== void 0)
+      lineHeight = value;
+    else if (lh.trim() === "normal")
+      lineHeight = fontSize * LINE_HEIGHT_FACTOR;
+  } else if (node.style["font-size"] || defaults?.fontSize || parent.lineHeight === 0) {
+    lineHeight = fontSize * LINE_HEIGHT_FACTOR;
+  }
+  return { fontSize, lineHeight, width: parent.width };
+}
+function inlineRunHeight(run, ctx) {
+  let maxLine = ctx.lineHeight;
+  const segments = [""];
+  const walk = (nodes, c) => {
+    for (const n of nodes) {
+      if (n.tag === "#text") {
+        segments[segments.length - 1] += n.text;
+      } else if (n.tag === "br") {
+        segments.push("");
+      } else if (n.tag === "img") {
+        const h = px(n.style.height, c.fontSize) ?? (n.attrs.height ? parseFloat(n.attrs.height) : void 0);
+        if (h)
+          maxLine = Math.max(maxLine, h);
+      } else {
+        const inner = contextFor(n, c);
+        const [pt, pb] = vertical(n.style, "padding", inner.fontSize);
+        maxLine = Math.max(maxLine, inner.lineHeight + pt + pb);
+        walk(n.children, inner);
+      }
+    }
+  };
+  walk(run, ctx);
+  let lines = 0;
+  for (const segment of segments) {
+    const text = segment.replace(/\s+/g, " ").trim();
+    if (!text) {
+      if (segments.length > 1)
+        lines += 1;
+      continue;
+    }
+    const textWidth = text.length * ctx.fontSize * GLYPH_WIDTH_FACTOR;
+    lines += Math.max(1, Math.ceil(textWidth / Math.max(ctx.width, 40)));
+  }
+  if (lines === 0)
+    return 0;
+  return lines * maxLine;
+}
+function blockHeight(node, parent) {
+  if (isHidden(node))
+    return 0;
+  const ctx = contextFor(node, parent);
+  const defaults = TAG_DEFAULTS[node.tag];
+  const [pt, pb] = vertical(node.style, "padding", ctx.fontSize);
+  const [bt, bb] = borders(node.style);
+  let [mt, mb] = vertical(node.style, "margin", ctx.fontSize);
+  if (node.style.margin === void 0 && node.style["margin-top"] === void 0 && defaults?.marginTop)
+    mt = defaults.marginTop;
+  if (node.style.margin === void 0 && node.style["margin-bottom"] === void 0 && defaults?.marginBottom)
+    mb = defaults.marginBottom;
+  const explicitWidth = px(node.style.width, ctx.fontSize, parent.width);
+  const innerWidth = Math.max(40, (explicitWidth ?? parent.width) - horizontal(node.style, "padding", ctx.fontSize));
+  const inner = { ...ctx, width: innerWidth };
+  let content;
+  if (node.tag === "hr")
+    content = 1;
+  else if (node.tag === "img")
+    content = px(node.style.height, ctx.fontSize) ?? 0;
+  else
+    content = childrenHeight(node, inner, px(node.style.height, ctx.fontSize) !== void 0);
+  const explicit = px(node.style.height, ctx.fontSize);
+  if (explicit !== void 0 && !/%|auto/.test(node.style.height ?? "")) {
+    const borderBox = node.style["box-sizing"] === "border-box";
+    const boxHeight = borderBox ? explicit : explicit + pt + pb + bt + bb;
+    const overflowHidden = /^(hidden|auto|scroll|clip)$/.test(node.style.overflow ?? node.style["overflow-y"] ?? "");
+    const full = content + pt + pb + bt + bb;
+    return (overflowHidden ? boxHeight : Math.max(boxHeight, full)) + mt + mb;
+  }
+  const minHeight = px(node.style["min-height"], ctx.fontSize);
+  let total = content + pt + pb + bt + bb;
+  if (minHeight !== void 0)
+    total = Math.max(total, node.style["box-sizing"] === "border-box" ? minHeight : minHeight + pt + pb);
+  return total + mt + mb;
+}
+function childrenHeight(node, ctx, pinned = false) {
+  const display = node.style.display ?? "";
+  const children = node.children.filter((c) => !isHidden(c));
+  if (/grid/.test(display))
+    return gridHeight(node, children, ctx);
+  if (/flex/.test(display))
+    return flexHeight(node, children, ctx, pinned);
+  if (node.tag === "tr")
+    return rowHeight(children, ctx);
+  let total = 0;
+  let run = [];
+  const flush = () => {
+    if (run.length)
+      total += inlineRunHeight(run, ctx);
+    run = [];
+  };
+  for (const child of children) {
+    if (isInline(child))
+      run.push(child);
+    else {
+      flush();
+      total += blockHeight(child, ctx);
+    }
+  }
+  flush();
+  return total;
+}
+function rowHeight(children, ctx) {
+  const cells = children.filter((c) => !isInline(c));
+  if (!cells.length)
+    return inlineRunHeight(children, ctx);
+  const width = Math.max(40, ctx.width / cells.length);
+  return Math.max(...cells.map((c) => blockHeight(c, { ...ctx, width })));
+}
+function gridHeight(node, children, ctx) {
+  const columns = gridColumns(node.style["grid-template-columns"]);
+  const rowGap = gapOf(node.style, "row", ctx.fontSize);
+  const colGap = gapOf(node.style, "column", ctx.fontSize);
+  const width = Math.max(40, (ctx.width - colGap * (columns - 1)) / columns);
+  const items = children.filter((c) => c.tag !== "#text" || c.text.trim());
+  if (!items.length)
+    return 0;
+  let total = 0;
+  for (let i = 0; i < items.length; i += columns) {
+    const row = items.slice(i, i + columns);
+    total += Math.max(...row.map((c) => isInline(c) ? inlineRunHeight([c], { ...ctx, width }) : blockHeight(c, { ...ctx, width })));
+    if (i + columns < items.length)
+      total += rowGap;
+  }
+  return total;
+}
+function flexHeight(node, children, ctx, pinned = false) {
+  const direction = node.style["flex-direction"] ?? "row";
+  const items = children.filter((c) => c.tag !== "#text" || c.text.trim());
+  if (!items.length)
+    return 0;
+  if (/column/.test(direction)) {
+    const gap2 = gapOf(node.style, "row", ctx.fontSize);
+    return items.reduce((sum, c, i) => sum + (isInline(c) ? inlineRunHeight([c], ctx) : blockHeight(c, ctx)) + (i ? gap2 : 0), 0);
+  }
+  const gap = gapOf(node.style, "column", ctx.fontSize);
+  const weights = items.map((c) => {
+    const flex = c.style.flex ?? c.style["flex-grow"];
+    const n = flex ? parseFloat(flex) : NaN;
+    return Number.isFinite(n) && n > 0 ? n : 1;
+  });
+  const totalWeight = weights.reduce((a, b) => a + b, 0);
+  const free = ctx.width - gap * (items.length - 1);
+  const stretched = pinned && !/^(flex-start|center|flex-end|baseline|start|end)$/.test(node.style["align-items"] ?? "");
+  return Math.max(...items.map((c, i) => {
+    const explicit = px(c.style.width, ctx.fontSize, ctx.width);
+    const width = Math.max(40, explicit ?? free * weights[i] / totalWeight);
+    if (isInline(c))
+      return inlineRunHeight([c], { ...ctx, width });
+    if (!stretched)
+      return blockHeight(c, { ...ctx, width });
+    const inner = contextFor(c, { ...ctx, width });
+    const [pt] = vertical(c.style, "padding", inner.fontSize);
+    const [bt] = borders(c.style);
+    const [mt] = vertical(c.style, "margin", inner.fontSize);
+    const innerWidth = Math.max(40, width - horizontal(c.style, "padding", inner.fontSize));
+    return mt + pt + bt + childrenHeight(c, { ...inner, width: innerWidth });
+  }));
+}
+function rootHeight(root, ctx) {
+  let total = 0;
+  let run = [];
+  const flush = () => {
+    if (run.length)
+      total += inlineRunHeight(run, ctx);
+    run = [];
+  };
+  for (const child of root.children.filter((c) => !isHidden(c))) {
+    if (isInline(child)) {
+      run.push(child);
+      continue;
+    }
+    flush();
+    const percentHeight = /%$/.test((child.style.height ?? "").trim());
+    if (!percentHeight) {
+      total += blockHeight(child, ctx);
+      continue;
+    }
+    const inner = contextFor(child, ctx);
+    const [pt] = vertical(child.style, "padding", inner.fontSize);
+    const [bt] = borders(child.style);
+    const [mt] = vertical(child.style, "margin", inner.fontSize);
+    const innerWidth = Math.max(40, ctx.width - horizontal(child.style, "padding", inner.fontSize));
+    const content = childrenHeight(child, { ...inner, width: innerWidth }, true);
+    const display = child.style.display ?? "";
+    const column = /column/.test(child.style["flex-direction"] ?? "");
+    const centred = /flex|grid/.test(display) && !column && /center/.test(child.style["align-items"] ?? child.style["align-content"] ?? "") || /flex/.test(display) && column && /center/.test(child.style["justify-content"] ?? "");
+    total += mt + (centred ? content : pt + bt + content);
+  }
+  flush();
+  return total;
+}
+function estimateHtmlHeight(rawHtml, widthPx) {
+  const { html, repeats } = stripHtmlBindings(rawHtml);
+  if (!html.trim())
+    return null;
+  const root = parseHtml(html);
+  const ctx = { fontSize: DEFAULT_FONT_SIZE, lineHeight: DEFAULT_FONT_SIZE * LINE_HEIGHT_FACTOR, width: Math.max(40, widthPx) };
+  const height = rootHeight(root, ctx);
+  if (!Number.isFinite(height) || height <= 0)
+    return null;
+  return { height: Math.round(height), lowerBound: repeats };
+}
+var GRID_COLUMNS = 43;
+function propVal(props, key) {
+  const p = props?.[key];
+  return p && typeof p === "object" && "value" in p ? p.value : p;
+}
+function truthy(v) {
+  if (typeof v === "boolean")
+    return v;
+  if (typeof v !== "string")
+    return false;
+  const s = v.trim().replace(/^\{\{\s*/, "").replace(/\s*\}\}$/, "").toLowerCase();
+  return s === "true";
+}
+function label(c) {
+  return c.name ?? c.id ?? "?";
+}
+function lintTableColumnsShape(c) {
+  if (c.type !== "Table")
+    return [];
+  const columns = propVal(c.properties, "columns");
+  if (columns === void 0 || columns === null || Array.isArray(columns))
+    return [];
+  if (typeof columns === "string") {
+    let parsesToArray = false;
+    try {
+      parsesToArray = Array.isArray(JSON.parse(columns));
+    } catch {
+      parsesToArray = false;
+    }
+    return [
+      `Table "${label(c)}": properties.columns.value is a JSON string${parsesToArray ? " that happens to parse as an array" : ""}. ToolJet stores it as text and the Table crashes on render ("Something went wrong"). Pass the column objects as a real array value: columns: { value: [ { key, name, columnType, ... } ] }.`
+    ];
+  }
+  return [
+    `Table "${label(c)}": properties.columns.value must be an array of column objects, not ${typeof columns}.`
+  ];
+}
+var MARKDOWN_SIGNS = /(^|\n)\s*#{1,6}\s+\S|\*\*[^*\n]+\*\*|(^|\n)\s*[-*]\s+\S|\[[^\]\n]+\]\([^)\n]+\)|(^|\n)\s*\d+\.\s+\S/;
+function lintTextFormat(c) {
+  if (c.type !== "Text")
+    return [];
+  const text = propVal(c.properties, "text");
+  if (typeof text !== "string")
+    return [];
+  const format = propVal(c.properties, "textFormat");
+  const effective = typeof format === "string" && format ? format : "html";
+  if (effective === "markdown")
+    return [];
+  const literal2 = text.replace(/\{\{[\s\S]*?\}\}/g, " ");
+  if (!MARKDOWN_SIGNS.test(literal2))
+    return [];
+  return [
+    `Text "${label(c)}": the text uses markdown (a "#" heading, **bold**, a list or a link) but textFormat is "${effective}", so it renders literally. Set properties.textFormat.value = "markdown", or write the heading as HTML / plain text.`
+  ];
+}
+var WIDTH_EXEMPT = /* @__PURE__ */ new Set(["Modal", "ModalV2", "ShadDialog", "Drawer"]);
+function lintOversizedWidths(components) {
+  const errors = [];
+  for (const c of components) {
+    if (!c.type || WIDTH_EXEMPT.has(c.type))
+      continue;
+    const rect = c.layouts?.desktop ?? c.layout;
+    if (!rect)
+      continue;
+    const width = typeof rect.width === "number" ? rect.width : void 0;
+    const left = typeof rect.left === "number" ? rect.left : 0;
+    if (width === void 0)
+      continue;
+    if (width > GRID_COLUMNS || left + width > GRID_COLUMNS) {
+      errors.push(`${c.type} "${label(c)}": desktop left ${left} + width ${width} exceeds ToolJet's ${GRID_COLUMNS}-column grid. Widths and lefts are grid columns, not pixels: a full-width row is left 2, width 39; a half is width 19; a quarter is width 9.`);
+    }
+  }
+  return errors;
+}
+function eventPayload(event) {
+  return event && typeof event === "object" ? event : void 0;
+}
+function queryTriggers(summary) {
+  const byId = new Map(summary.queries.map((q) => [q.id, q]));
+  const byName = new Map(summary.queries.flatMap((q) => q.name ? [[q.name, q]] : []));
+  const resolve = (ref2) => typeof ref2 === "string" ? byId.get(ref2) ?? byName.get(ref2) : void 0;
+  const triggers = /* @__PURE__ */ new Map();
+  for (const q of summary.queries) {
+    const options = q.options && typeof q.options === "object" ? q.options : {};
+    const automatic = truthy(propVal(options, "runOnPageLoad")) || truthy(propVal(options, "runOnDependencyChange"));
+    triggers.set(q.id, { automatic, manual: [] });
+  }
+  const chains = [];
+  for (const e of summary.events) {
+    const payload = eventPayload(e.event);
+    if (!payload || payload.actionId !== "run-query")
+      continue;
+    const target = resolve(payload.queryId ?? payload.queryName);
+    if (!target)
+      continue;
+    const entry = triggers.get(target.id);
+    if (!entry)
+      continue;
+    const trigger = String(payload.eventId ?? "");
+    if (e.target === "page" && trigger === "onPageLoad") {
+      entry.automatic = true;
+    } else if (e.target === "data_query" && trigger === "onDataQuerySuccess" && e.sourceId) {
+      chains.push([e.sourceId, target.id]);
+    } else {
+      entry.manual.push(`${e.target ?? "component"} ${trigger || "event"}`);
+    }
+  }
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [sourceId, targetId] of chains) {
+      const source = triggers.get(sourceId);
+      const target = triggers.get(targetId);
+      if (source?.automatic && target && !target.automatic) {
+        target.automatic = true;
+        changed = true;
+      }
+    }
+  }
+  return triggers;
+}
+var DATA_BOUND = /* @__PURE__ */ new Set(["Table", "ListView", "Chart", "Kanban"]);
+function lintUntriggeredDataQueries(summary) {
+  const errors = [];
+  const warnings = [];
+  if (!summary.queries.length)
+    return { errors, warnings };
+  const triggers = queryTriggers(summary);
+  const byName = new Map(summary.queries.flatMap((q) => q.name ? [[q.name, q]] : []));
+  for (const page of summary.pages) {
+    for (const c of page.components) {
+      if (!c.type || !DATA_BOUND.has(c.type))
+        continue;
+      const data = propVal(c.properties, "data");
+      if (typeof data !== "string")
+        continue;
+      const names = [...new Set([...data.matchAll(/\bqueries\.([A-Za-z_$][\w$]*)/g)].map((m) => m[1]))];
+      for (const name of names) {
+        const query2 = byName.get(name);
+        if (!query2)
+          continue;
+        const t = triggers.get(query2.id);
+        if (!t || t.automatic)
+          continue;
+        const who = `${c.type} "${c.name ?? c.id}"`;
+        if (t.manual.length) {
+          warnings.push(`${who} binds queries.${name}.data, but "${name}" only runs from ${[...new Set(t.manual)].join(", ")}, so the component is empty until then. If it should show data on open, set the query's runOnPageLoad: true or run it from the page's onPageLoad event.`);
+          continue;
+        }
+        const message = `${who} binds queries.${name}.data, but nothing runs "${name}": it has no runOnPageLoad, no page onPageLoad event, no success chain from a query that does, and no user event. It will show No data forever. Set the query's runOnPageLoad: true (or add a page onPageLoad run-query event).`;
+        if (c.type === "Table")
+          errors.push(message);
+        else
+          warnings.push(message);
+      }
+    }
+  }
+  return { errors, warnings };
+}
+var TOOLJETDB_WRITES = /* @__PURE__ */ new Set(["create_row", "update_rows", "delete_rows", "bulk_update_with_primary_key", "bulk_upsert_with_primary_key", "bulk_insert"]);
+function lintAutomaticWrites(summary) {
+  const triggers = queryTriggers(summary);
+  return summary.queries.flatMap((q) => {
+    const options = q.options && typeof q.options === "object" ? q.options : {};
+    const op = String(options.operation ?? "");
+    if (q.kind !== "tooljetdb" || !TOOLJETDB_WRITES.has(op) || !triggers.get(q.id)?.automatic)
+      return [];
+    return [`Query "${q.name ?? q.id}" writes (${op}) and runs on its own when the page opens, so every visit changes the data. Run it from a user action instead.`];
+  });
+}
+var HTML_PX_PER_COLUMN = 32;
+var HTML_WIDGET_HEIGHT_LOSS = 4;
+var HTML_HEIGHT_TOLERANCE = 8;
+function suggestedHtmlHeight(c) {
+  if (c.type !== "Html")
+    return null;
+  if (truthy(propVal(c.properties, "dynamicHeight")))
+    return null;
+  const raw = propVal(c.properties, "rawHtml");
+  if (typeof raw !== "string" || !raw.trim())
+    return null;
+  const rect = c.layouts?.desktop ?? c.layout;
+  const height = typeof rect?.height === "number" ? rect.height : void 0;
+  const width = typeof rect?.width === "number" ? rect.width : 39;
+  if (height === void 0)
+    return null;
+  const estimate = estimateHtmlHeight(raw, width * HTML_PX_PER_COLUMN);
+  if (!estimate)
+    return null;
+  const overflow = estimate.height - (height - HTML_WIDGET_HEIGHT_LOSS);
+  if (overflow <= HTML_HEIGHT_TOLERANCE)
+    return null;
+  return { from: height, to: Math.ceil((estimate.height + HTML_WIDGET_HEIGHT_LOSS + 8) / 10) * 10, needed: estimate.height };
+}
+var SELECTION_READ = /components(?:\.[A-Za-z_$][\w$]*|\[\s*['"][^'"]+['"]\s*\])\??\.(?:selectedRow|selectedRows\s*\[\s*0\s*\])\??\.[A-Za-z_$][\w$]*/;
+function lintUnguardedSelectionText(c) {
+  if (c.type !== "Html" && c.type !== "Text")
+    return [];
+  const key = c.type === "Html" ? "rawHtml" : "text";
+  const value = propVal(c.properties, key);
+  if (typeof value !== "string" || !value.includes("selectedRow"))
+    return [];
+  const bad = [];
+  for (const m of value.matchAll(/\{\{([\s\S]*?)\}\}/g)) {
+    const expr = m[1];
+    const read = expr.match(SELECTION_READ);
+    if (!read)
+      continue;
+    const hasFallback = /\?\?|\|\||\?[^.?][\s\S]*:/.test(expr);
+    if (!hasFallback)
+      bad.push(read[0]);
+  }
+  if (!bad.length)
+    return [];
+  return [
+    `${c.type} "${label(c)}": ${key} reads ${[...new Set(bad)].join(", ")} without a fallback. Until a row is selected that value is undefined and the page prints the word. Write (components.table?.selectedRow?.field ?? 'Select a row') or wrap the panel in a ternary on a stable selected-row key such as components.table?.selectedRow?.id. The row object itself may be empty but truthy.`
+  ];
+}
+function lintHtmlContentHeight(c) {
+  if (c.type !== "Html")
+    return [];
+  if (truthy(propVal(c.properties, "dynamicHeight")))
+    return [];
+  const raw = propVal(c.properties, "rawHtml");
+  if (typeof raw !== "string" || !raw.trim())
+    return [];
+  const rect = c.layouts?.desktop ?? c.layout;
+  const height = typeof rect?.height === "number" ? rect.height : void 0;
+  const width = typeof rect?.width === "number" ? rect.width : 39;
+  if (height === void 0)
+    return [];
+  const estimate = estimateHtmlHeight(raw, width * HTML_PX_PER_COLUMN);
+  if (!estimate)
+    return [];
+  const usable = height - HTML_WIDGET_HEIGHT_LOSS;
+  const overflow = estimate.height - usable;
+  if (overflow <= HTML_HEIGHT_TOLERANCE)
+    return [];
+  const suggested = Math.ceil((estimate.height + HTML_WIDGET_HEIGHT_LOSS + 8) / 10) * 10;
+  return [
+    `Html "${label(c)}": its markup needs about ${estimate.height}px${estimate.lowerBound ? " at least (a .map() repeats rows)" : ""} (paddings, margins, font sizes \xD7 1.5 line height and wrapped lines, summed from its inline CSS) but desktop height is ${height}px and the widget renders ${HTML_WIDGET_HEIGHT_LOSS}px shorter than authored. The bottom ${overflow}px is cut off behind a hidden scrollbar. Set height to ${suggested}px, or trim the padding and font sizes to fit the height you have. An Html block never grows to its content.`
+  ];
+}
+var SURFACE_TOKENS = /var\(--cc-(appBackground|surface1|surface2)-surface\)/;
+var LITERAL_SURFACE = /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%deg]+\))$/i;
+var CLEAR_SURFACE = /^(transparent|#[0-9a-f]{3}0|#[0-9a-f]{6}00)$|^rgba\([^)]*,\s*0(\.0+)?\s*\)$/i;
+var sameColour = (a, b) => a.replace(/\s+/g, "").toLowerCase() === b.replace(/\s+/g, "").toLowerCase();
+function surfaceAroundResolver(components, canvasColor) {
+  const find = (key) => components.find((o) => o.clientRef === key || o.id === key) ?? components.find((o) => typeof o.id === "string" && key.startsWith(`${o.id}-`)) ?? components.find((o) => o.name === key);
+  const canvas = typeof canvasColor === "string" && LITERAL_SURFACE.test(canvasColor.trim()) ? canvasColor.trim() : void 0;
+  return (c) => {
+    let current = c;
+    for (let depth = 0; depth < 12; depth++) {
+      const key = current.parentRef ?? current.parent;
+      if (!key)
+        return canvas;
+      const parent = find(key);
+      if (!parent)
+        return void 0;
+      const slot = current.slotName ?? current.slot_name ?? (typeof parent.id === "string" && key.startsWith(`${parent.id}-`) ? key.slice(parent.id.length + 1) : void 0);
+      const own = slot === "header" ? propVal(parent.styles, "headerBackgroundColor") : slot === "footer" ? propVal(parent.styles, "footerBackgroundColor") : void 0;
+      const raw = own ?? propVal(parent.styles, "backgroundColor");
+      const colour = typeof raw === "string" ? raw.trim() : "";
+      if (CLEAR_SURFACE.test(colour)) {
+        current = parent;
+        continue;
+      }
+      return LITERAL_SURFACE.test(colour) ? colour : void 0;
+    }
+    return void 0;
+  };
+}
+function lintHtmlRootSurface(c, surfaceAround) {
+  if (c.type !== "Html")
+    return [];
+  const raw = propVal(c.properties, "rawHtml");
+  if (typeof raw !== "string" || !raw.trim())
+    return [];
+  const { html } = stripHtmlBindings(raw);
+  const tree = parseHtml(html);
+  const roots = tree.children.filter((n) => n.tag !== "#text" || n.text.trim());
+  const who = `Html "${label(c)}"`;
+  const parented = Boolean(c.parent || c.parentRef);
+  const surface = surfaceAround ?? (parented ? "var(--cc-surface1-surface)" : "var(--cc-appBackground-surface)");
+  const template = `<div style="height:100%;box-sizing:border-box;margin:0;background:${surface}"> ...your markup... </div>`;
+  const why = "ToolJet's Html widget paints its box white underneath the markup, so on a tinted canvas anything the root does not cover shows as a white edge.";
+  if (roots.length !== 1 || roots[0].tag === "#text") {
+    return [
+      `${who}: rawHtml has ${roots.length} top-level nodes. ${why} Wrap everything in one root element: ${template}`
+    ];
+  }
+  const root = roots[0];
+  const style = root.style;
+  const problems = [];
+  const dynamic = truthy(propVal(c.properties, "dynamicHeight"));
+  const heightValue = (style.height ?? style["min-height"] ?? "").trim();
+  if (!dynamic && heightValue !== "100%") {
+    problems.push(heightValue ? `its height is "${heightValue}" instead of 100%, so the rest of the box stays white` : "it has no height:100%, so the box below the content stays white");
+  }
+  const background = (style.background ?? style["background-color"] ?? "").trim();
+  if (!background || /^(transparent|none|inherit|initial|unset)$/i.test(background)) {
+    problems.push(`it paints no background of its own, so the widget's white shows through; use ${surface}` + (parented ? " (or the surface2 token for a tinted rail)" : ""));
+  } else if (surfaceAround && sameColour(background, surfaceAround)) ;
+  else if (parented ? !SURFACE_TOKENS.test(background) : !/var\(--cc-appBackground-surface\)/.test(background)) {
+    problems.push(`its background is "${background.slice(0, 60)}" rather than the surface it sits on (${surface}); a tint, gradient or literal colour belongs on a child card so the root still matches the canvas around it`);
+  }
+  const radius = (style["border-radius"] ?? "").trim();
+  if (radius && !/^0(px)?$/.test(radius)) {
+    problems.push(`it has border-radius ${radius}, and the corners outside the curve show the widget's white`);
+  }
+  const margin = (style.margin ?? "").trim();
+  if (margin && !/^0(px)?(\s+0(px)?){0,3}$/.test(margin)) {
+    problems.push(`it has margin ${margin}, which leaves a white gap around it`);
+  }
+  const width = (style.width ?? "").trim();
+  if (width && !/^(100%|auto)$/.test(width)) {
+    problems.push(`its width is "${width}", which leaves white at the sides`);
+  }
+  if (!problems.length)
+    return [];
+  return [
+    `${who}: the root element ${problems.join("; ")}. ${why} Make the root a plain full-bleed box and move the card (tint, gradient, radius, padding, shadow) into a child element: ${template}`
+  ];
+}
+var DATA_BOUND_FOR_REFS = /* @__PURE__ */ new Set(["Table", "ListView", "Chart", "Kanban", "Statistics", "Text", "Html"]);
+var COMPONENT_REF = /components(?:\.([A-Za-z_$][\w$]*)|\[\s*(['"])((?:(?!\2).)+)\2\s*\])(\??\.)(value|selectedRow|selectedRowId|selectedRows|isValid|searchText|selectedOptionLabel|checked|filteredData|text)\b/g;
+function chartExpressionSurface(source) {
+  const stack = [];
+  let quote = "";
+  let text = "";
+  let lastGroupStart = -1;
+  for (let i = 0; i < source.length; i++) {
+    const ch = source[i];
+    if (quote) {
+      if (ch === "\\")
+        i++;
+      else if (ch === quote)
+        quote = "";
+      continue;
+    }
+    if (ch === "/" || ch === "`")
+      return void 0;
+    if (ch === "'" || ch === '"') {
+      quote = ch;
+      if (!stack.length)
+        text += "?";
+      continue;
+    }
+    if ("([{".includes(ch)) {
+      if (!stack.length) {
+        text += ch;
+        lastGroupStart = i;
+      }
+      stack.push(ch);
+    } else if (")]}".includes(ch)) {
+      if (stack.pop() !== { ")": "(", "]": "[", "}": "{" }[ch])
+        return void 0;
+      if (!stack.length)
+        text += ch;
+    } else if (!stack.length)
+      text += ch;
+  }
+  return quote || stack.length ? void 0 : { text, lastGroupStart };
+}
+function finalChartPointKeys(value) {
+  const binding = /^\s*\{\{([\s\S]*)\}\}\s*$/.exec(value);
+  if (!binding)
+    return void 0;
+  const expression = binding[1].trim();
+  const surface = chartExpressionSurface(expression);
+  if (!surface || !/^[A-Za-z_$][\w$]*(?:\s*\.\s*[A-Za-z_$][\w$]*|\s*\(\s*\)|\s*\[\s*\])*\s*\.\s*map\s*\(\s*\)$/.test(surface.text.trim()))
+    return void 0;
+  const callback = expression.slice(surface.lastGroupStart + 1, -1).trim();
+  const callbackSurface = chartExpressionSurface(callback);
+  if (!callbackSurface || !/^(?:[A-Za-z_$][\w$]*|\(\s*\))\s*=>\s*\(\s*\)$/.test(callbackSurface.text.trim()))
+    return void 0;
+  const object2 = callback.slice(callbackSurface.lastGroupStart + 1, -1).trim();
+  if (!object2.startsWith("{") || !object2.endsWith("}"))
+    return void 0;
+  const properties = chartExpressionSurface(object2.slice(1, -1));
+  if (!properties)
+    return void 0;
+  const keys = [];
+  for (const property of properties.text.split(",")) {
+    if (!property.trim())
+      continue;
+    const key = /^\s*([A-Za-z_$][\w$]*)\s*(?::|$)/.exec(property);
+    if (!key)
+      return void 0;
+    keys.push(key[1]);
+  }
+  return keys;
+}
+var BARE_QUERY_DATA_BINDING = /^\{\{\s*queries\.([A-Za-z_$][\w$]*)\??\.data(?:\??\.results)?\s*(?:\|\|\s*\[\]\s*)?\}\}$/;
+function lintChartDataShape(c) {
+  if (c.type !== "Chart")
+    return [];
+  const props = c.properties ?? {};
+  if (truthy(propVal(props, "plotFromJson")))
+    return [];
+  const value = propVal(props, "data");
+  if (typeof value !== "string" || !value.includes("{{"))
+    return [];
+  const keys = finalChartPointKeys(value);
+  if (!keys || keys.includes("x") && keys.includes("y"))
+    return [];
+  return [
+    `Chart "${label(c)}": data maps rows to {${keys.join(", ")}} but the Chart plots [{x, y}] only; any other key names draw an empty plot with no error. Name the category x and the number y.`
+  ];
+}
+var EMBEDDED_BINDING = /\{\{([\s\S]*?)\}\}/g;
+var BACKSLASH_QUOTE = /\\["']/;
+function lintEmbeddedBindingSyntax(c) {
+  if (c.type !== "Html" && c.type !== "Text")
+    return [];
+  const key = c.type === "Html" ? "rawHtml" : "text";
+  const value = propVal(c.properties, key);
+  if (typeof value !== "string" || !value.includes("{{"))
+    return [];
+  const errors = [];
+  for (const m of value.matchAll(EMBEDDED_BINDING)) {
+    const expr = m[1];
+    if (expr.includes("{{"))
+      continue;
+    let message = "";
+    try {
+      new Function(`return (
+${expr}
+);`);
+      continue;
+    } catch (error) {
+      if (!(error instanceof SyntaxError))
+        continue;
+      message = error.message;
+    }
+    const balanced = (expr.match(/\{/g) ?? []).length === (expr.match(/\}/g) ?? []).length;
+    const escaped = BACKSLASH_QUOTE.test(expr);
+    if (!balanced && !escaped)
+      continue;
+    const snippet = expr.length > 90 ? `${expr.slice(0, 90)}\u2026` : expr;
+    errors.push(`${c.type} "${label(c)}": ${key} contains a binding that is not valid JavaScript (${message}): {{${snippet}}}. ` + (escaped ? `Quotes inside {{ }} must not be backslash-escaped: the markup is a plain string, so write "Cancelled" or 'Cancelled', not \\"Cancelled\\". ` : "") + "A failed binding renders as nothing, which leaves the card or line blank.");
+  }
+  return errors;
+}
+function lintUnguardedComponentRefs(c) {
+  if (!c.type || !DATA_BOUND_FOR_REFS.has(c.type))
+    return [];
+  const props = c.properties ?? {};
+  const keys = c.type === "Html" ? ["rawHtml"] : c.type === "Text" ? ["text"] : ["data"];
+  const errors = [];
+  for (const key of keys) {
+    const value = propVal(props, key);
+    if (typeof value !== "string" || !value.includes("components"))
+      continue;
+    const bad = /* @__PURE__ */ new Set();
+    for (const m of value.matchAll(COMPONENT_REF)) {
+      if (m[4] === "?.")
+        continue;
+      const name = m[1] ?? m[3];
+      bad.add(m[1] ? `components.${name}.${m[5]}` : `components['${name}'].${m[5]}`);
+    }
+    if (!bad.size)
+      continue;
+    const fixes = [...bad].map((ref2) => `${ref2.replace(/\.([A-Za-z]+)$/, "?.$1")}`);
+    errors.push(`${c.type} "${label(c)}": ${key} reads ${[...bad].join(", ")} without optional chaining. The component evaluates when it mounts, before the inputs it references exist (queries already hold data after in-app navigation), so the reference throws and the ` + (c.type === "Table" ? "Table shows No data" : "binding fails") + " until a filter changes. Write " + fixes.join(", ") + " instead.");
+  }
+  return errors;
+}
 createRequire(import.meta.url);
 var Position = class {
   line;
@@ -2015,8 +2530,8 @@ var ExportedTokenType = class {
   prefix;
   postfix;
   binop;
-  constructor(label, conf = {}) {
-    this.label = label;
+  constructor(label2, conf = {}) {
+    this.label = label2;
     this.keyword = conf.keyword;
     this.beforeExpr = !!conf.beforeExpr;
     this.startsExpr = !!conf.startsExpr;
@@ -2935,24 +3450,30 @@ export {
   uppercaseF as ay,
   lowercaseA as az,
   isStrictBindOnlyReservedWord as b,
-  readCatalog as b0,
-  external_exports as b1,
-  nodeCatalog as b2,
-  validateGraph as b3,
-  specSchema as b4,
-  compileGraph as b5,
-  assertWorkflowJavaScript as b6,
-  controlFlowEdges as b7,
-  getComponentSchema as b8,
-  getCatalog as b9,
-  getLegacyComponentReplacement as ba,
-  definition as bb,
-  mapKeyRefusal as bc,
-  registerComponentSchemas as bd,
-  updateAppSettingsTool as be,
-  getComponentCatalogTool as bf,
-  readCatalogBytes as bg,
-  allComponentSchemas as bh,
+  external_exports as b0,
+  surfaceAroundResolver as b1,
+  lintOversizedWidths as b2,
+  lintHtmlContentHeight as b3,
+  lintHtmlRootSurface as b4,
+  lintUnguardedComponentRefs as b5,
+  lintEmbeddedBindingSyntax as b6,
+  lintChartDataShape as b7,
+  lintUnguardedSelectionText as b8,
+  lintTextFormat as b9,
+  lintTableColumnsShape as ba,
+  BARE_QUERY_DATA_BINDING as bb,
+  lintUntriggeredDataQueries as bc,
+  lintAutomaticWrites as bd,
+  parseHtml as be,
+  stripHtmlBindings as bf,
+  definition as bg,
+  nodeCatalog as bh,
+  validateGraph as bi,
+  specSchema as bj,
+  compileGraph as bk,
+  assertWorkflowJavaScript as bl,
+  controlFlowEdges as bm,
+  suggestedHtmlHeight as bn,
   isIdentifierChar as c,
   tokenIsLiteralPropertyName as d,
   ScopeFlag as e,

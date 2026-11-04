@@ -1,130 +1,5 @@
 import { createRequire } from "node:module";
 createRequire(import.meta.url);
-function staticBooleanBinding(value) {
-  return { value: `{{${value}}}`, fxActive: false };
-}
-function booleanBindingValue(value) {
-  if (typeof value === "boolean")
-    return value;
-  if (typeof value !== "string")
-    return void 0;
-  const match = /^\{\{\s*(true|false)\s*\}\}$/.exec(value);
-  return match ? match[1] === "true" : void 0;
-}
-function isCanonicalStaticBooleanBinding(value, expected) {
-  if (!value || typeof value !== "object" || Array.isArray(value))
-    return false;
-  const binding = value;
-  return binding.value === `{{${expected}}}` && binding.fxActive === false;
-}
-createRequire(import.meta.url);
-function asRecord(value) {
-  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
-}
-function bindingBoolean(value) {
-  return booleanBindingValue(value) ?? value;
-}
-function compactTheme(theme) {
-  if (!theme)
-    return null;
-  return {
-    ...typeof theme.id === "string" ? { id: theme.id } : {},
-    ...typeof theme.name === "string" ? { name: theme.name } : {},
-    ...typeof theme.isDefault === "boolean" ? { is_default: theme.isDefault } : {},
-    ...typeof theme.isBasic === "boolean" ? { is_basic: theme.isBasic } : {},
-    ...typeof theme.isDisabled === "boolean" ? { is_disabled: theme.isDisabled } : {}
-  };
-}
-function projectAppSettings(snapshot) {
-  const global = snapshot.global_settings ?? {};
-  const properties = pageSettingProperties(snapshot);
-  const disableMenu = asRecord(properties.disableMenu);
-  const theme = asRecord(global.theme);
-  return {
-    app_id: snapshot.app_id,
-    version_id: snapshot.version_id,
-    canvas: {
-      background_color: global.canvasBackgroundColor,
-      max_width: {
-        value: global.canvasMaxWidth,
-        unit: global.canvasMaxWidthType
-      },
-      mode: global.appMode
-    },
-    theme: compactTheme(theme),
-    // The saved component library (ToolJet UI 1.0 or 2.0); absent on apps from before the setting.
-    component_library: global.componentLibrary,
-    header: {
-      hidden: properties.hideHeader,
-      logo_hidden: properties.hideLogo,
-      title: properties.name
-    },
-    navigation: {
-      hidden: bindingBoolean(disableMenu.value ?? properties.disableMenu),
-      position: properties.position,
-      style: properties.style,
-      collapsible: properties.collapsable
-    }
-  };
-}
-function pageSettingProperties(snapshot) {
-  return asRecord(asRecord(snapshot.page_settings).properties);
-}
-function projectJavascriptRuntime(snapshot) {
-  const global = snapshot.global_settings ?? {};
-  const raw = asRecord(global.libraries).javascript;
-  const entries = Array.isArray(raw) ? raw : [];
-  const script = asRecord(global.preloadedScript).javascript;
-  return {
-    configuration_state: raw === void 0 || Array.isArray(raw) && !raw.length ? "not_configured" : Array.isArray(raw) ? "configured" : "unknown",
-    total: Array.isArray(raw) ? raw.length : raw === void 0 ? 0 : null,
-    truncated: entries.length > 32,
-    libraries: entries.slice(0, 32).map((value) => {
-      const lib = asRecord(value);
-      let sourceUrl = null;
-      let redacted = false;
-      let https = false;
-      try {
-        if (typeof lib.url === "string" && lib.url.length <= 4096) {
-          const url = new URL(lib.url);
-          if (url.protocol === "https:" || url.protocol === "http:") {
-            https = url.protocol === "https:";
-            redacted = Boolean(url.username || url.password || url.search || url.hash);
-            url.username = "";
-            url.password = "";
-            url.search = "";
-            url.hash = "";
-            sourceUrl = url.toString();
-          }
-        }
-      } catch {
-      }
-      return {
-        name: typeof lib.name === "string" ? lib.name.slice(0, 128) : null,
-        enabled: typeof lib.enabled === "boolean" ? lib.enabled : null,
-        source_url: sourceUrl,
-        url_valid: sourceUrl !== null,
-        url_redacted: redacted,
-        https
-      };
-    }),
-    preloaded_script_present: typeof script === "string" ? Boolean(script.trim()) : null,
-    runtime_verified: false,
-    guidance: "Configuration is not proof of successful loading, export names, worker/CSP compatibility, or deployment support. In ToolJet versions with the native library loader, enabled HTTPS UMD/IIFE library exports are passed to RunJS as lexical parameters by their configured names, not guaranteed globalThis properties. Do not redeclare those parameter names with const/let. Preloaded script exports may add or override names; their code is intentionally omitted here. This MCP does not configure JavaScript libraries through update_app_settings. If required dependencies are missing, report the prerequisite and request supported setup instead of inventing globals or claiming OCR works. PDF.js rasterization, Tesseract worker initialization and actual image/PDF extraction still need runtime testing. Source URLs omit credentials, query strings and fragments; do not reuse redacted URLs as configuration."
-  };
-}
-async function literalCanvasColor(client, appId, versionId) {
-  if (!versionId || typeof client.getAppSettings !== "function")
-    return void 0;
-  try {
-    const snapshot = await client.getAppSettings(appId, versionId);
-    const colour = asRecord(snapshot.global_settings).canvasBackgroundColor;
-    return typeof colour === "string" && /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%deg]+\))$/i.test(colour.trim()) ? colour.trim() : void 0;
-  } catch {
-    return void 0;
-  }
-}
-createRequire(import.meta.url);
 var TableQuotaError = class extends Error {
   code = "TJDB_TABLE_LIMIT_REACHED";
   status = 451;
@@ -159,69 +34,6 @@ function fail(err) {
     details: message
   } }) : `Error: ${message}`;
   return { content: [{ type: "text", text }], isError: true };
-}
-createRequire(import.meta.url);
-var defaultPack = () => {
-  const raw = process.env.MCP_AGENT_PACK;
-  return (raw === void 0 ? "shadcn" : raw).trim().toLowerCase() || void 0;
-};
-var savedComponentLibrary = (library, pack) => {
-  const chosen = pack?.trim().toLowerCase() || defaultPack();
-  return library === "ui2" && chosen ? `pack:${chosen}` : library;
-};
-var COMPONENT_PACK_DESCRIPTION = `The component pack a UI 2.0 app is built with, saved on the app (the components panel lists it): "shadcn" (Rocket 2.0, ToolJet's own look), "antd" (Ant Design) or "mui" (Material UI). Pass it when the user names a design system; then build with that pack's Lib_<pack>_* widgets. Omitted, the default pack.`;
-var COMPONENT_LIBRARY_NAMES = {
-  ui1: "ToolJet UI 1.0",
-  ui2: "ToolJet UI 2.0"
-};
-var isUi2Type = (type) => typeof type === "string" && /^Shad[A-Z]/.test(type);
-var isPackType = (type) => typeof type === "string" && /^Lib_[a-z0-9]+_/i.test(type);
-function resolveComponentLibrary(globalSettings, componentTypes) {
-  const settings = globalSettings;
-  const saved = settings?.componentLibrary ?? settings?.component_library;
-  if (saved === "ui1" || saved === "ui2")
-    return { library: saved, source: "saved" };
-  if (typeof saved === "string" && saved.startsWith("pack:") && saved.length > 5)
-    return { library: "ui2", source: "saved", pack: saved.slice(5) };
-  if (typeof saved === "string" && saved.startsWith("lib:"))
-    return { library: "ui1", source: "saved" };
-  for (const type of componentTypes)
-    if (isUi2Type(type) || isPackType(type))
-      return { library: "ui2", source: "inferred" };
-  return { library: "ui1", source: "inferred" };
-}
-var styleValue = (styles, key) => {
-  const entry = styles?.[key];
-  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
-};
-function nativeFitsUi2(component) {
-  if (component.type === "FlexContainer" || component.type === "Map")
-    return true;
-  return component.type === "Table" && styleValue(component.styles, "tableLook") !== "default";
-}
-function componentLibraryWarnings(library, pages, request) {
-  if (request?.trim())
-    return [];
-  const off = /* @__PURE__ */ new Map();
-  for (const page of pages ?? []) {
-    for (const component of page.components ?? []) {
-      const type = String(component.type ?? "");
-      const ui2Side = isUi2Type(type) || isPackType(type);
-      const mismatch = library.library === "ui1" ? ui2Side : !ui2Side && !nativeFitsUi2(component);
-      if (!mismatch)
-        continue;
-      off.set(type, [...off.get(type) ?? [], component.name ?? type]);
-    }
-  }
-  if (!off.size)
-    return [];
-  const listed = [...off].map(([type, names]) => `${type} (${names.slice(0, 3).join(", ")}${names.length > 3 ? ", ..." : ""})`).join("; ");
-  const how = library.source === "saved" ? "its saved library" : library.source === "inferred" ? "the library its widgets imply" : "new apps are; pass app_id to check the plan against an existing app";
-  const appName = COMPONENT_LIBRARY_NAMES[library.library];
-  const fix = library.library === "ui1" ? "Build with the native ToolJet types instead (Table, Chart, TextInput, DropdownV2, ModalV2, Container, ...)." : `Build with the UI 2.0 types instead: types whose names start with Shad, laid out in FlexContainers; ShadDialog for dialogs and side sheets; for tables ToolJet's Table (styles.tableLook "shadcn").`;
-  return [
-    `This app is built in ${appName} (${how}), and the plan adds widgets from the other library: ${listed}. ${fix} If the user asked for the other library in this request, keep the plan and put their words in component_library_request.`
-  ];
 }
 createRequire(import.meta.url);
 var _a$1;
@@ -5197,7 +5009,7 @@ function initializeContext(params) {
     external: params?.external ?? void 0
   };
 }
-function process$1(schema, ctx, _params = { path: [], schemaPath: [] }) {
+function process(schema, ctx, _params = { path: [], schemaPath: [] }) {
   var _a2;
   const def = schema._zod.def;
   const seen = ctx.seen.get(schema);
@@ -5234,7 +5046,7 @@ function process$1(schema, ctx, _params = { path: [], schemaPath: [] }) {
     if (parent) {
       if (!result.ref)
         result.ref = parent;
-      process$1(parent, ctx, params);
+      process(parent, ctx, params);
       ctx.seen.get(parent).isParent = true;
     }
   }
@@ -5521,14 +5333,14 @@ function isTransforming(_schema, _ctx) {
 }
 var createToJSONSchemaMethod = (schema, processors = {}) => (params) => {
   const ctx = initializeContext({ ...params, processors });
-  process$1(schema, ctx);
+  process(schema, ctx);
   extractDefs(ctx, schema);
   return finalize(ctx, schema);
 };
 var createStandardJSONSchemaMethod = (schema, io, processors = {}) => (params) => {
   const { libraryOptions, target } = params ?? {};
   const ctx = initializeContext({ ...libraryOptions ?? {}, target, io, processors });
-  process$1(schema, ctx);
+  process(schema, ctx);
   extractDefs(ctx, schema);
   return finalize(ctx, schema);
 };
@@ -5771,7 +5583,7 @@ var arrayProcessor = (schema, ctx, _json, params) => {
   if (typeof maximum === "number")
     json.maxItems = maximum;
   json.type = "array";
-  json.items = process$1(def.element, ctx, {
+  json.items = process(def.element, ctx, {
     ...params,
     path: [...params.path, "items"]
   });
@@ -5783,7 +5595,7 @@ var objectProcessor = (schema, ctx, _json, params) => {
   json.properties = {};
   const shape = def.shape;
   for (const key in shape) {
-    json.properties[key] = process$1(shape[key], ctx, {
+    json.properties[key] = process(shape[key], ctx, {
       ...params,
       path: [...params.path, "properties", key]
     });
@@ -5806,7 +5618,7 @@ var objectProcessor = (schema, ctx, _json, params) => {
     if (ctx.io === "output")
       json.additionalProperties = false;
   } else if (def.catchall) {
-    json.additionalProperties = process$1(def.catchall, ctx, {
+    json.additionalProperties = process(def.catchall, ctx, {
       ...params,
       path: [...params.path, "additionalProperties"]
     });
@@ -5815,7 +5627,7 @@ var objectProcessor = (schema, ctx, _json, params) => {
 var unionProcessor = (schema, ctx, json, params) => {
   const def = schema._zod.def;
   const isExclusive = def.inclusive === false;
-  const options = def.options.map((x, i) => process$1(x, ctx, {
+  const options = def.options.map((x, i) => process(x, ctx, {
     ...params,
     path: [...params.path, isExclusive ? "oneOf" : "anyOf", i]
   }));
@@ -5827,11 +5639,11 @@ var unionProcessor = (schema, ctx, json, params) => {
 };
 var intersectionProcessor = (schema, ctx, json, params) => {
   const def = schema._zod.def;
-  const a = process$1(def.left, ctx, {
+  const a = process(def.left, ctx, {
     ...params,
     path: [...params.path, "allOf", 0]
   });
-  const b = process$1(def.right, ctx, {
+  const b = process(def.right, ctx, {
     ...params,
     path: [...params.path, "allOf", 1]
   });
@@ -5848,11 +5660,11 @@ var tupleProcessor = (schema, ctx, _json, params) => {
   json.type = "array";
   const prefixPath = ctx.target === "draft-2020-12" ? "prefixItems" : "items";
   const restPath = ctx.target === "draft-2020-12" ? "items" : ctx.target === "openapi-3.0" ? "items" : "additionalItems";
-  const prefixItems = def.items.map((x, i) => process$1(x, ctx, {
+  const prefixItems = def.items.map((x, i) => process(x, ctx, {
     ...params,
     path: [...params.path, prefixPath, i]
   }));
-  const rest = def.rest ? process$1(def.rest, ctx, {
+  const rest = def.rest ? process(def.rest, ctx, {
     ...params,
     path: [...params.path, restPath, ...ctx.target === "openapi-3.0" ? [def.items.length] : []]
   }) : null;
@@ -5892,7 +5704,7 @@ var recordProcessor = (schema, ctx, _json, params) => {
   const keyBag = keyType._zod.bag;
   const patterns = keyBag?.patterns;
   if (def.mode === "loose" && patterns && patterns.size > 0) {
-    const valueSchema = process$1(def.valueType, ctx, {
+    const valueSchema = process(def.valueType, ctx, {
       ...params,
       path: [...params.path, "patternProperties", "*"]
     });
@@ -5902,12 +5714,12 @@ var recordProcessor = (schema, ctx, _json, params) => {
     }
   } else {
     if (ctx.target === "draft-07" || ctx.target === "draft-2020-12") {
-      json.propertyNames = process$1(def.keyType, ctx, {
+      json.propertyNames = process(def.keyType, ctx, {
         ...params,
         path: [...params.path, "propertyNames"]
       });
     }
-    json.additionalProperties = process$1(def.valueType, ctx, {
+    json.additionalProperties = process(def.valueType, ctx, {
       ...params,
       path: [...params.path, "additionalProperties"]
     });
@@ -5922,7 +5734,7 @@ var recordProcessor = (schema, ctx, _json, params) => {
 };
 var nullableProcessor = (schema, ctx, json, params) => {
   const def = schema._zod.def;
-  const inner = process$1(def.innerType, ctx, params);
+  const inner = process(def.innerType, ctx, params);
   const seen = ctx.seen.get(schema);
   if (ctx.target === "openapi-3.0") {
     seen.ref = def.innerType;
@@ -5933,20 +5745,20 @@ var nullableProcessor = (schema, ctx, json, params) => {
 };
 var nonoptionalProcessor = (schema, ctx, _json, params) => {
   const def = schema._zod.def;
-  process$1(def.innerType, ctx, params);
+  process(def.innerType, ctx, params);
   const seen = ctx.seen.get(schema);
   seen.ref = def.innerType;
 };
 var defaultProcessor = (schema, ctx, json, params) => {
   const def = schema._zod.def;
-  process$1(def.innerType, ctx, params);
+  process(def.innerType, ctx, params);
   const seen = ctx.seen.get(schema);
   seen.ref = def.innerType;
   json.default = JSON.parse(JSON.stringify(def.defaultValue));
 };
 var prefaultProcessor = (schema, ctx, json, params) => {
   const def = schema._zod.def;
-  process$1(def.innerType, ctx, params);
+  process(def.innerType, ctx, params);
   const seen = ctx.seen.get(schema);
   seen.ref = def.innerType;
   if (ctx.io === "input")
@@ -5954,7 +5766,7 @@ var prefaultProcessor = (schema, ctx, json, params) => {
 };
 var catchProcessor = (schema, ctx, json, params) => {
   const def = schema._zod.def;
-  process$1(def.innerType, ctx, params);
+  process(def.innerType, ctx, params);
   const seen = ctx.seen.get(schema);
   seen.ref = def.innerType;
   let catchValue;
@@ -5969,32 +5781,32 @@ var pipeProcessor = (schema, ctx, _json, params) => {
   const def = schema._zod.def;
   const inIsTransform = def.in._zod.traits.has("$ZodTransform");
   const innerType = ctx.io === "input" ? inIsTransform ? def.out : def.in : def.out;
-  process$1(innerType, ctx, params);
+  process(innerType, ctx, params);
   const seen = ctx.seen.get(schema);
   seen.ref = innerType;
 };
 var readonlyProcessor = (schema, ctx, json, params) => {
   const def = schema._zod.def;
-  process$1(def.innerType, ctx, params);
+  process(def.innerType, ctx, params);
   const seen = ctx.seen.get(schema);
   seen.ref = def.innerType;
   json.readOnly = true;
 };
 var promiseProcessor = (schema, ctx, _json, params) => {
   const def = schema._zod.def;
-  process$1(def.innerType, ctx, params);
+  process(def.innerType, ctx, params);
   const seen = ctx.seen.get(schema);
   seen.ref = def.innerType;
 };
 var optionalProcessor = (schema, ctx, _json, params) => {
   const def = schema._zod.def;
-  process$1(def.innerType, ctx, params);
+  process(def.innerType, ctx, params);
   const seen = ctx.seen.get(schema);
   seen.ref = def.innerType;
 };
 var lazyProcessor = (schema, ctx, _json, params) => {
   const innerType = schema._zod.innerType;
-  process$1(innerType, ctx, params);
+  process(innerType, ctx, params);
   const seen = ctx.seen.get(schema);
   seen.ref = innerType;
 };
@@ -6046,7 +5858,7 @@ function toJSONSchema(input, params) {
     const defs = {};
     for (const entry of registry2._idmap.entries()) {
       const [_, schema] = entry;
-      process$1(schema, ctx2);
+      process(schema, ctx2);
     }
     const schemas = {};
     const external = {
@@ -6069,7 +5881,7 @@ function toJSONSchema(input, params) {
     return { schemas };
   }
   const ctx = initializeContext({ ...params, processors: allProcessors });
-  process$1(input, ctx);
+  process(input, ctx);
   extractDefs(ctx, input);
   return finalize(ctx, input);
 }
@@ -6263,7 +6075,7 @@ export {
   safeDecodeAsync as cQ,
   safeDecode as cR,
   registry as cS,
-  process$1 as cT,
+  process as cT,
   prettifyError as cU,
   parseAsync as cV,
   parse as cW,
@@ -6367,28 +6179,15 @@ export {
   $ZodCheckBigIntFormat as e2,
   $ZodAsyncError as e3,
   allProcessors as e4,
-  pageSettingProperties as e5,
-  savedComponentLibrary as e6,
-  ok as e7,
-  projectAppSettings as e8,
-  fail as e9,
-  COMPONENT_PACK_DESCRIPTION as ea,
-  __commonJS as eb,
-  __require as ec,
-  __toESM as ed,
-  defaultPack as ee,
-  tableQuotaError as ef,
-  staticBooleanBinding as eg,
-  resolveComponentLibrary as eh,
-  TableQuotaError as ei,
-  booleanBindingValue as ej,
-  isCanonicalStaticBooleanBinding as ek,
-  normalizeParams as el,
-  defineLazy as em,
-  componentLibraryWarnings as en,
-  literalCanvasColor as eo,
-  projectJavascriptRuntime as ep,
-  compactTheme as eq,
+  __commonJS as e5,
+  __require as e6,
+  __toESM as e7,
+  tableQuotaError as e8,
+  TableQuotaError as e9,
+  ok as ea,
+  fail as eb,
+  normalizeParams as ec,
+  defineLazy as ed,
   _startsWith as f,
   _slugify as g,
   _size as h,

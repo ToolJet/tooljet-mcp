@@ -1,12 +1,12 @@
 import { createRequire } from "node:module";
-import { b8 as getComponentSchema, b1 as external_exports, bc as mapKeyRefusal } from "./chunk-DsdTCwqi.js";
-import { r as resolveRef$1, c as componentRef, p as packDefaultDefinition, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, a as FLEX_GROW_DESCRIPTION, b as FLEX_WIDTH_PX_DESCRIPTION, d as FLEX_FILL_WIDTH_DESCRIPTION, e as plannedCurrency, n as normalizeComponentSpec, i as indexComponentReferences, v as validateTableBatch, f as normalizeType, T as TOOLJET_DB_DATA_TYPES, g as invalidSeedTimestamps, C as COMPONENT_FX_GUIDANCE } from "./chunk-BX9Vbj2u.js";
-import { y as isModalV2Type, z as lintComponentStateBindings, r as retiredUi2Name, d as decodeComponentParent, A as minimumTextHeight, B as unifyChartAccents, f as componentNameSchema, c as componentSlotSchema, C as lintComponents, D as pageIconError, e as encodeComponentParent, E as validateAppStructure, F as pageIconSchema, G as namespaceReads } from "./chunk-D3MI2A-T.js";
-import { d as normalizeQueryToggles, t as toggleRewriteWarning, i as issueMessages, q as queryToggleIssues, e as normalizeQueryOptions, v as validateQueryOptions, f as arithmeticWriteWarning, b as bindingSpans } from "./chunk-CWuyYxjg.js";
-import { p as parseExpression } from "./chunk-Brg6_25C.js";
-import { n as suggestedHtmlHeight } from "./chunk-f43-efsm.js";
+import { d as componentRef, p as packDefaultDefinition, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, e as FLEX_GROW_DESCRIPTION, f as FLEX_WIDTH_PX_DESCRIPTION, g as FLEX_FILL_WIDTH_DESCRIPTION, j as indexComponentReferences, k as booleanBindingValue, v as validateTableBatch, n as normalizeType, T as TOOLJET_DB_DATA_TYPES, l as invalidSeedTimestamps, m as COMPONENT_FX_GUIDANCE } from "./chunk-B7le-Q_T.js";
+import { r as resolveRef$1, p as plannedCurrency, n as normalizeComponentSpec, m as mapKeyRefusal } from "./chunk-CR8lGQ0p.js";
+import { D as isModalV2Type, E as lintComponentStateBindings, g as retiredUi2Name, d as decodeComponentParent, F as minimumTextHeight, G as unifyChartAccents, j as componentNameSchema, h as componentSlotSchema, H as lintComponents, I as pageIconError, e as encodeComponentParent, J as validateAppStructure, K as pageIconSchema, r as resolveComponentLibrary, L as componentLibraryWarnings, M as namespaceReads } from "./chunk-DgRXGydV.js";
+import { h as normalizeQueryToggles, t as toggleRewriteWarning, i as issueMessages, q as queryToggleIssues, f as normalizeQueryOptions, v as validateQueryOptions, g as getComponentSchema, j as arithmeticWriteWarning, c as bindingSpans } from "./chunk-DADofzTT.js";
+import { p as parseExpression } from "./chunk-B6PYEK0a.js";
+import { b0 as external_exports, bn as suggestedHtmlHeight } from "./chunk-IinDkEBT.js";
 import { randomUUID } from "node:crypto";
-import { e9 as fail, eh as resolveComponentLibrary, en as componentLibraryWarnings, eo as literalCanvasColor, e7 as ok } from "./chunk-By54lwVj.js";
+import { eb as fail, ea as ok } from "./chunk-CYLdCKx-.js";
 createRequire(import.meta.url);
 var member = (n) => n && ["MemberExpression", "OptionalMemberExpression"].includes(n.type);
 var key = (n) => n.computed ? n.property?.type === "StringLiteral" ? n.property.value : void 0 : n.property?.name;
@@ -2145,6 +2145,112 @@ function normalizePlannedLayouts(component) {
   return { component: next, warnings };
 }
 createRequire(import.meta.url);
+function asRecord(value) {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+}
+function bindingBoolean(value) {
+  return booleanBindingValue(value) ?? value;
+}
+function compactTheme(theme) {
+  if (!theme)
+    return null;
+  return {
+    ...typeof theme.id === "string" ? { id: theme.id } : {},
+    ...typeof theme.name === "string" ? { name: theme.name } : {},
+    ...typeof theme.isDefault === "boolean" ? { is_default: theme.isDefault } : {},
+    ...typeof theme.isBasic === "boolean" ? { is_basic: theme.isBasic } : {},
+    ...typeof theme.isDisabled === "boolean" ? { is_disabled: theme.isDisabled } : {}
+  };
+}
+function projectAppSettings(snapshot) {
+  const global = snapshot.global_settings ?? {};
+  const properties = pageSettingProperties(snapshot);
+  const disableMenu = asRecord(properties.disableMenu);
+  const theme = asRecord(global.theme);
+  return {
+    app_id: snapshot.app_id,
+    version_id: snapshot.version_id,
+    canvas: {
+      background_color: global.canvasBackgroundColor,
+      max_width: {
+        value: global.canvasMaxWidth,
+        unit: global.canvasMaxWidthType
+      },
+      mode: global.appMode
+    },
+    theme: compactTheme(theme),
+    // The saved component library (ToolJet UI 1.0 or 2.0); absent on apps from before the setting.
+    component_library: global.componentLibrary,
+    header: {
+      hidden: properties.hideHeader,
+      logo_hidden: properties.hideLogo,
+      title: properties.name
+    },
+    navigation: {
+      hidden: bindingBoolean(disableMenu.value ?? properties.disableMenu),
+      position: properties.position,
+      style: properties.style,
+      collapsible: properties.collapsable
+    }
+  };
+}
+function pageSettingProperties(snapshot) {
+  return asRecord(asRecord(snapshot.page_settings).properties);
+}
+function projectJavascriptRuntime(snapshot) {
+  const global = snapshot.global_settings ?? {};
+  const raw = asRecord(global.libraries).javascript;
+  const entries = Array.isArray(raw) ? raw : [];
+  const script = asRecord(global.preloadedScript).javascript;
+  return {
+    configuration_state: raw === void 0 || Array.isArray(raw) && !raw.length ? "not_configured" : Array.isArray(raw) ? "configured" : "unknown",
+    total: Array.isArray(raw) ? raw.length : raw === void 0 ? 0 : null,
+    truncated: entries.length > 32,
+    libraries: entries.slice(0, 32).map((value) => {
+      const lib = asRecord(value);
+      let sourceUrl = null;
+      let redacted = false;
+      let https = false;
+      try {
+        if (typeof lib.url === "string" && lib.url.length <= 4096) {
+          const url = new URL(lib.url);
+          if (url.protocol === "https:" || url.protocol === "http:") {
+            https = url.protocol === "https:";
+            redacted = Boolean(url.username || url.password || url.search || url.hash);
+            url.username = "";
+            url.password = "";
+            url.search = "";
+            url.hash = "";
+            sourceUrl = url.toString();
+          }
+        }
+      } catch {
+      }
+      return {
+        name: typeof lib.name === "string" ? lib.name.slice(0, 128) : null,
+        enabled: typeof lib.enabled === "boolean" ? lib.enabled : null,
+        source_url: sourceUrl,
+        url_valid: sourceUrl !== null,
+        url_redacted: redacted,
+        https
+      };
+    }),
+    preloaded_script_present: typeof script === "string" ? Boolean(script.trim()) : null,
+    runtime_verified: false,
+    guidance: "Configuration is not proof of successful loading, export names, worker/CSP compatibility, or deployment support. In ToolJet versions with the native library loader, enabled HTTPS UMD/IIFE library exports are passed to RunJS as lexical parameters by their configured names, not guaranteed globalThis properties. Do not redeclare those parameter names with const/let. Preloaded script exports may add or override names; their code is intentionally omitted here. This MCP does not configure JavaScript libraries through update_app_settings. If required dependencies are missing, report the prerequisite and request supported setup instead of inventing globals or claiming OCR works. PDF.js rasterization, Tesseract worker initialization and actual image/PDF extraction still need runtime testing. Source URLs omit credentials, query strings and fragments; do not reuse redacted URLs as configuration."
+  };
+}
+async function literalCanvasColor(client, appId, versionId) {
+  if (!versionId || typeof client.getAppSettings !== "function")
+    return void 0;
+  try {
+    const snapshot = await client.getAppSettings(appId, versionId);
+    const colour = asRecord(snapshot.global_settings).canvasBackgroundColor;
+    return typeof colour === "string" && /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%deg]+\))$/i.test(colour.trim()) ? colour.trim() : void 0;
+  } catch {
+    return void 0;
+  }
+}
 var layoutSchema = external_exports.object({
   top: external_exports.number(),
   left: external_exports.number().describe("Columns in the immediate parent canvas, which has its own 43-column grid."),
@@ -4126,6 +4232,9 @@ function autoFitHtmlHeights(args) {
   return warnings;
 }
 export {
+  normalizePlannedLayouts as A,
+  materializeRequiredDefaultChildren as B,
+  persistedEventIds as C,
   replaceFingerprint as a,
   prepareQueryOptionsForWrite as b,
   consumeAppPlan as c,
@@ -4137,17 +4246,19 @@ export {
   persistedEventSpecs as i,
   dbColumnTypeSchema as j,
   componentInputSchema as k,
-  lintAppSpecTool as l,
+  literalCanvasColor as l,
   matchPlannedPage as m,
   navigationReorders as n,
-  containsExactValue as o,
+  lintAppSpecTool as o,
   peekAppPlan as p,
-  inspectUpdateCompatibility as q,
+  projectJavascriptRuntime as q,
   replaceView as r,
-  normalizePlanBindingAliases as s,
-  containsNamedBinding as t,
-  normalizePlannedLayouts as u,
+  projectAppSettings as s,
+  compactTheme as t,
+  pageSettingProperties as u,
   validateEvents as v,
-  materializeRequiredDefaultChildren as w,
-  persistedEventIds as x
+  containsExactValue as w,
+  inspectUpdateCompatibility as x,
+  normalizePlanBindingAliases as y,
+  containsNamedBinding as z
 };
