@@ -497,7 +497,8 @@ export function codeAppScaffoldTool(context: CodeContext): ToolDef {
         const owner = appIdOf(dir);
         if (!existing && owner && owner !== args.app_id)
           throw new Error(`project "${args.name}" belongs to app ${owner}; choose another name`);
-        if (!existsSync(join(dir, 'app.json'))) {
+        const created = !existsSync(join(dir, 'app.json'));
+        if (created) {
           mkdirSync(root(), { recursive: true });
           const init = await cli(root(), ['app', 'init', args.name, '--name', args.display_name, '--no-install']);
           if (init.code !== 0) throw new Error(`tooljet app init failed: ${init.output}`);
@@ -510,11 +511,13 @@ export function codeAppScaffoldTool(context: CodeContext): ToolDef {
         }
         const pull = await cli(dir, ['app', 'pull']);
         if (pull.code !== 0) throw new Error(`tooljet app pull failed: ${pull.output}`);
+        const restored = created ? await restoreStoredCode(dir) : {};
         const naming = await nameApp(context.client, dir, args.display_name);
-        if (!existing) rememberScaffold(dir);
+        if (!existing && !restored.stored_code) rememberScaffold(dir);
         return ok({
           project_dir: dir,
           ...naming,
+          ...restored,
           ...(existing ? { existing_project: existing, note: `This app already has a project, "${existing}"; it is used as is.` } : {}),
           files: listFiles(dir),
           app_json: JSON.parse(readFileSync(join(dir, 'app.json'), 'utf8')),
@@ -525,6 +528,40 @@ export function codeAppScaffoldTool(context: CodeContext): ToolDef {
         return fail(err);
       }
     }),
+  };
+}
+
+/*
+  A new project folder for an app that already has code on ToolJet (its folder was cleaned up, or this host never had
+  one): the folder starts as the template, with a new library id, so a plain source-pull refused to overwrite it and the
+  agent rebuilt the app from scratch over the stored code, then could not install it ("a library named ... already
+  exists"). The template holds nothing of anyone's, so ToolJet's
+  code replaces it here, its .tooljet/config.json naming the app's library, and the install step runs again when the
+  stored package.json differs from the template's.
+*/
+async function restoreStoredCode(dir: string): Promise<{ stored_code?: string; sync_warning?: string }> {
+  const manifest = join(dir, 'frontend', 'package.json');
+  const before = existsSync(manifest) ? readFileSync(manifest, 'utf8') : '';
+  const pull = await cli(dir, ['app', 'source-pull', '--force'], 60_000);
+  if (pull.code !== 0 && /\b(401|403)\b|unauthori[sz]ed|forbidden/i.test(pull.output)) throw new Error('ToolJet refused access to this app\'s stored code.');
+  if (pull.code !== 0) return { sync_warning: `Could not bring the app's stored code into the new project: ${pull.output.trim().slice(0, 300)}` };
+  if (/No source is stored/i.test(pull.output)) {
+    // Just checked: the first touch of this build need not ask again.
+    nothingStored.add(dir);
+    freshProjects.add(dir);
+    lastSynced.set(dir, Date.now());
+    return {};
+  }
+  if (!/Pulled revision|Already at revision/.test(pull.output)) return {};
+  if ((existsSync(manifest) ? readFileSync(manifest, 'utf8') : '') !== before) {
+    const install = await cli(dir, ['app', 'install']);
+    if (install.code !== 0) throw new Error(`tooljet app install failed after bringing the app's code down: ${install.output}`);
+  }
+  freshProjects.add(dir);
+  lastSynced.set(dir, Date.now());
+  return {
+    stored_code:
+      "This app already has code on ToolJet: the project now holds it, not the template. Read the files you change before writing them, and keep the app's existing screens.",
   };
 }
 
