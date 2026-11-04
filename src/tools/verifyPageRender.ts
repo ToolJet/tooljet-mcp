@@ -17,8 +17,9 @@ import { startEgressProxy, type EgressProxy } from '../renderEgressProxy.js';
  */
 
 export interface RenderFinding {
-  /** blocked_socket: a WebSocket to a third-party destination was closed; reported, but the render still counts. */
-  kind: 'empty_render' | 'placeholder_text' | 'clipped' | 'overlap' | 'overflow' | 'unreachable' | 'blocked_socket';
+  /** blocked_socket: a WebSocket to a third-party destination was closed; reported, but the render still counts.
+   *  blocked_query: the check did not run this query (a write, or a read with parameters); not a page defect. */
+  kind: 'empty_render' | 'placeholder_text' | 'clipped' | 'overlap' | 'overflow' | 'unreachable' | 'blocked_socket' | 'blocked_query';
   component: string;
   detail: string;
   reason?: 'browser_unavailable' | 'auth_required' | 'navigation_failed' | 'blocked_destination' | 'redirect_blocked' | 'blocked_execution' | 'no_widgets';
@@ -335,7 +336,7 @@ const STATIC_RESOURCES = new Set(['script', 'stylesheet', 'image', 'font']);
 const socketHttpUrl = (url: string): string => url.replace(/^ws(s?):/i, 'http$1:');
 
 /** Findings that report a blocked dependency without saying the page is wrong; they do not make `ok` false. */
-const INFORMATIONAL_KINDS = new Set<RenderFinding['kind']>(['blocked_socket']);
+const INFORMATIONAL_KINDS = new Set<RenderFinding['kind']>(['blocked_socket', 'blocked_query']);
 
 /** A URL's path, without its query string (which can carry ids and tokens). */
 const pathOf = (url: string): string => { try { return new URL(url).pathname; } catch { return '?'; } };
@@ -508,7 +509,7 @@ export async function auditPages(
         try {
           const policy = renderAuditRequest(url, request.method(), options.savedQueries);
           if (!policy.allowed) {
-            block({ kind: 'unreachable', component: '-', reason: 'blocked_execution',
+            block({ kind: 'blocked_query', component: '-', reason: 'blocked_execution',
               detail: `${policy.detail!} (${request.method()} ${pathOf(url)})` }, `${request.method()} ${pathOf(url)}`);
             await route.abort();
             return;
