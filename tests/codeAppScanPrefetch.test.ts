@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { codeAppBuildTool, codeAppInstallTool, prefetchedScanForTests, resetCodeSessionForTests } from '../src/tools/codeApp.js';
+import { codeContext, WORKSPACE } from './codeContext.js';
 
 /*
   A passing build starts the install's full scan in the background; the install uses it only when no project file
@@ -22,16 +23,16 @@ const replies = (r: Record<string, { code: number; output: unknown }>) => {
   process.env.FAKE_CLI_REPLIES = JSON.stringify(r);
 };
 const build = async () => {
-  const result = JSON.parse(text(await codeAppBuildTool().handler({ name: 'demo' })));
+  const result = JSON.parse(text(await codeAppBuildTool(codeContext()).handler({ name: 'demo' })));
   await prefetchedScanForTests(dir);
   return result;
 };
-const install = async () => text(await codeAppInstallTool().handler({ name: 'demo' }));
+const install = async () => text(await codeAppInstallTool(codeContext()).handler({ name: 'demo' }));
 
 beforeEach(() => {
   resetCodeSessionForTests();
   root = mkdtempSync(join(tmpdir(), 'code-app-scan-'));
-  dir = join(root, 'demo');
+  dir = join(root, WORKSPACE, 'demo');
   log = join(root, 'calls.log');
   writeFileSync(log, '');
   mkdirSync(join(dir, 'frontend', 'src', 'App'), { recursive: true });

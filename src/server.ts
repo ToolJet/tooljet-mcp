@@ -17,7 +17,11 @@ import { TOOLJET_MCP_VERSION } from './runtimeFreshness.js';
 /** Settles when the workspace's component packs are in the catalogue (or failed to load). */
 export let packsReady: Promise<string[]> = Promise.resolve([]);
 
-export function buildServer(identity?: RequestIdentity): McpServer {
+/**
+ * `hosted`: this request came over HTTP, so only the credential it brought may act for it. On stdio the process belongs to
+ * one build and its configured credential is that build's.
+ */
+export function buildServer(identity?: RequestIdentity, { hosted = false }: { hosted?: boolean } = {}): McpServer {
   const config = loadConfig(identity);
   const auth = createAuth(config);
   const client = createClient(auth, config);
@@ -37,7 +41,15 @@ export function buildServer(identity?: RequestIdentity): McpServer {
 
   const server = new McpServer({ name: 'tooljet-mcp', version: TOOLJET_MCP_VERSION });
 
-  registerTools(server, client);
+  registerTools(server, client, undefined, {
+    client,
+    workspaceId: () => auth.getOrganizationId(),
+    credential: hosted
+      ? { sessionToken: identity?.sessionToken, pat: identity?.pat }
+      : { sessionToken: config.sessionToken, pat: config.pat },
+    apiUrl: config.apiUrl,
+    appUrl: config.appUrl,
+  });
   registerCatalogResources(server);
 
   return server;

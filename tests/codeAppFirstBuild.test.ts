@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { codeAppInstallTool, codeAppReadFilesTool, codeAppScaffoldTool, codeAppWriteFilesTool, resetCodeSessionForTests } from '../src/tools/codeApp.js';
+import { codeContext, WORKSPACE } from './codeContext.js';
 
 /* The write path of a first build, from the 10 builds of 2026-11-03. */
 const APP = '11111111-1111-4111-8111-111111111111';
@@ -36,8 +37,8 @@ describe('a first build', () => {
   let log: string;
   const env = { ...process.env };
   const pulls = () => readFileSync(log, 'utf8').split('\n').filter((l) => l.startsWith('app source-pull')).length;
-  const write = (args: object) => codeAppWriteFilesTool().handler({ app_id: APP, ...args } as any).then(text);
-  const read = (paths: string[]) => codeAppReadFilesTool().handler({ app_id: APP, paths } as any);
+  const write = (args: object) => codeAppWriteFilesTool(codeContext()).handler({ app_id: APP, ...args } as any).then(text);
+  const read = (paths: string[]) => codeAppReadFilesTool(codeContext()).handler({ app_id: APP, paths } as any);
 
   beforeEach(async () => {
     resetCodeSessionForTests();
@@ -47,7 +48,7 @@ describe('a first build', () => {
     writeFileSync(join(root, 'cli.js'), FAKE_CLI);
     mkdirSync(join(root, 'apps'));
     Object.assign(process.env, { TOOLJET_CLI: join(root, 'cli.js'), TOOLJET_CODE_APP_ROOT: join(root, 'apps'), FAKE_CLI_LOG: log, FAKE_STORED: join(root, 'stored') });
-    await codeAppScaffoldTool().handler({ name: 'first', display_name: 'First', app_id: APP });
+    await codeAppScaffoldTool(codeContext()).handler({ name: 'first', display_name: 'First', app_id: APP });
     await read([ENTRY]);
   });
   afterEach(() => {
@@ -78,7 +79,7 @@ describe('a first build', () => {
     await write({ files: [{ path: 'frontend/src/App/a.tsx', content: 'a' }] });
     await write({ files: [{ path: 'frontend/src/App/b.tsx', content: 'b' }] });
     expect(pulls()).toBe(start);
-    expect(text(await codeAppInstallTool().handler({ app_id: APP } as any))).toMatch(/"linked":true/);
+    expect(text(await codeAppInstallTool(codeContext()).handler({ app_id: APP } as any))).toMatch(/"linked":true/);
     await write({ files: [{ path: 'frontend/src/App/c.tsx', content: 'c' }] });
     expect(pulls()).toBe(start + 1);
     await write({ files: [{ path: 'frontend/src/App/d.tsx', content: 'd' }] });

@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { codeAppInstallTool } from '../src/tools/codeApp.js';
+import { codeContext, WORKSPACE } from './codeContext.js';
 
 // A fake CLI: `app publish -v X` fails with the server's "already exists" for the versions in FAKE_TAKEN.
 const FAKE_CLI = `
@@ -33,8 +34,8 @@ describe('code_app_install', () => {
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'tj-mcp-install-'));
     writeFileSync(join(dir, 'cli.js'), FAKE_CLI);
-    mkdirSync(join(dir, 'apps', 'tasks', 'frontend', 'src'), { recursive: true });
-    writeFileSync(join(dir, 'apps', 'tasks', 'app.json'), '{}');
+    mkdirSync(join(dir, 'apps', WORKSPACE, 'tasks', 'frontend', 'src'), { recursive: true });
+    writeFileSync(join(dir, 'apps', WORKSPACE, 'tasks', 'app.json'), '{"appId":"app-1"}');
     process.env.TOOLJET_CLI = join(dir, 'cli.js');
     process.env.TOOLJET_CODE_APP_ROOT = join(dir, 'apps');
     process.env.FAKE_CLI_LOG = join(dir, 'cli.log');
@@ -45,7 +46,7 @@ describe('code_app_install', () => {
   });
 
   it('has no publish option and never runs tooljet app publish', async () => {
-    const tool = codeAppInstallTool();
+    const tool = codeAppInstallTool(codeContext());
     expect(Object.keys(tool.inputSchema)).toEqual(['app_id', 'name']);
     await tool.handler({ name: 'tasks', publish: true } as any);
     expect(calls()).toEqual([['app', 'dev', '--once', '--source', 'platform']]);
@@ -56,7 +57,7 @@ describe('code_app_install', () => {
 describe('Code mode tool descriptions', () => {
   it('end with the user vocabulary rule and do not teach internal words', async () => {
     const mod = await import('../src/tools/codeApp.js');
-    const tools = [mod.codeAppScaffoldTool(), mod.codeAppReadFilesTool(), mod.codeAppWriteFilesTool(), mod.codeAppBuildTool(), mod.codeAppInstallTool()];
+    const tools = [mod.codeAppScaffoldTool(codeContext()), mod.codeAppReadFilesTool(codeContext()), mod.codeAppWriteFilesTool(codeContext()), mod.codeAppBuildTool(codeContext()), mod.codeAppInstallTool(codeContext())];
     for (const tool of tools) {
       expect(tool.description.endsWith(mod.USER_WORDS)).toBe(true);
       const own = tool.description.slice(0, -mod.USER_WORDS.length);

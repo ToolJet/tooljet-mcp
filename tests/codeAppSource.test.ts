@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { codeAppInstallTool, codeAppReadFilesTool } from '../src/tools/codeApp.js';
+import { codeContext, WORKSPACE } from './codeContext.js';
 
 // A fake CLI that records its arguments and answers source-pull like the real one.
 const FAKE_CLI = `
@@ -29,8 +30,8 @@ describe('Code mode source on ToolJet', () => {
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'tj-mcp-source-'));
     writeFileSync(join(dir, 'cli.js'), FAKE_CLI);
-    mkdirSync(join(dir, 'apps', 'tasks', 'frontend', 'src'), { recursive: true });
-    writeFileSync(join(dir, 'apps', 'tasks', 'app.json'), '{}');
+    mkdirSync(join(dir, 'apps', WORKSPACE, 'tasks', 'frontend', 'src'), { recursive: true });
+    writeFileSync(join(dir, 'apps', WORKSPACE, 'tasks', 'app.json'), '{"appId":"app-1"}');
     process.env.TOOLJET_CLI = join(dir, 'cli.js');
     process.env.TOOLJET_CODE_APP_ROOT = join(dir, 'apps');
     process.env.FAKE_CLI_LOG = join(dir, 'cli.log');
@@ -41,21 +42,21 @@ describe('Code mode source on ToolJet', () => {
   });
 
   it('installs with the source stored on ToolJet, owner platform', async () => {
-    await codeAppInstallTool().handler({ name: 'tasks' } as any);
+    await codeAppInstallTool(codeContext()).handler({ name: 'tasks' } as any);
     expect(calls()).toEqual([['app', 'dev', '--once', '--source', 'platform']]);
   });
 
   it('brings Code panel edits down before reading, and says so', async () => {
     skipPull = false;
     process.env.FAKE_PULL = 'Pulled revision 3 (owner platform): 2 files written, 0 removed';
-    const read = result(await codeAppReadFilesTool().handler({ name: 'tasks' } as any));
+    const read = result(await codeAppReadFilesTool(codeContext()).handler({ name: 'tasks' } as any));
     expect(calls()[0]).toEqual(['app', 'source-pull']);
     expect(read.editor_edits).toMatch(/Pulled revision 3/);
     skipPull = true;
   });
 
   it('reads quietly when the project is already in step', async () => {
-    const read = result(await codeAppReadFilesTool().handler({ name: 'tasks' } as any));
+    const read = result(await codeAppReadFilesTool(codeContext()).handler({ name: 'tasks' } as any));
     expect(read).not.toHaveProperty('editor_edits');
     expect(read).not.toHaveProperty('sync_warning');
   });

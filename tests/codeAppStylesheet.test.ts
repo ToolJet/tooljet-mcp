@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { codeAppBuildTool, codeAppInstallTool, missingStylesheet, resetCodeSessionForTests } from '../src/tools/codeApp.js';
+import { codeContext, WORKSPACE } from './codeContext.js';
 
 // Purchase Approvals B1 (2026-11-02): the model rewrote App/index.tsx without `import '../styles/globals.css'` and the
 // app shipped unstyled; build, scan and render check all passed.
@@ -17,7 +18,7 @@ console.log('Already at revision 1 (owner platform)');
 describe('the app entry must import its stylesheet', () => {
   let dir: string;
   const env = { ...process.env };
-  const project = () => join(dir, 'apps', 'desk');
+  const project = () => join(dir, 'apps', WORKSPACE, 'desk');
   const entry = (body: string) => writeFileSync(join(project(), 'frontend/src/App/index.tsx'), body);
 
   beforeEach(() => {
@@ -63,14 +64,14 @@ describe('the app entry must import its stylesheet', () => {
 
   it('fails the build and refuses the install until the import is back', async () => {
     entry("export default function App() { return null; }\n");
-    const build = JSON.parse((await codeAppBuildTool().handler({ name: 'desk' } as any)).content[0].text);
+    const build = JSON.parse((await codeAppBuildTool(codeContext()).handler({ name: 'desk' } as any)).content[0].text);
     expect(build.ok).toBe(false);
     expect(build.check[0]).toMatch(/stylesheet is not imported/);
-    const install: any = await codeAppInstallTool().handler({ name: 'desk' } as any);
+    const install: any = await codeAppInstallTool(codeContext()).handler({ name: 'desk' } as any);
     expect(install.isError).toBe(true);
     expect(install.content[0].text).toMatch(/Not installed: .*stylesheet is not imported/);
     entry("import '../styles/globals.css';\nexport default function App() { return null; }\n");
-    expect(JSON.parse((await codeAppBuildTool().handler({ name: 'desk' } as any)).content[0].text).ok).toBe(true);
-    expect((await codeAppInstallTool().handler({ name: 'desk' } as any)).isError).toBeFalsy();
+    expect(JSON.parse((await codeAppBuildTool(codeContext()).handler({ name: 'desk' } as any)).content[0].text).ok).toBe(true);
+    expect((await codeAppInstallTool(codeContext()).handler({ name: 'desk' } as any)).isError).toBeFalsy();
   });
 });

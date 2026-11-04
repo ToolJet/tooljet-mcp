@@ -21,7 +21,7 @@ import { createTablesTool } from './createTables.js';
 import { addTableColumnTool } from './addTableColumn.js';
 import { dropTableColumnTool } from './dropTableColumn.js';
 import { dropTableTool } from './dropTable.js';
-import { codeAppScaffoldTool, codeAppReadFilesTool, codeAppWriteFilesTool, codeAppBuildTool, codeAppInstallTool, codeAppAddDependencyTool } from './codeApp.js';
+import { codeAppScaffoldTool, noCodeIdentity, type CodeContext, codeAppReadFilesTool, codeAppWriteFilesTool, codeAppBuildTool, codeAppInstallTool, codeAppAddDependencyTool } from './codeApp.js';
 import { getTableSchemaTool } from './getTableSchema.js';
 import { insertRowsTool } from './insertRows.js';
 import { insertRowsBatchTool } from './insertRowsBatch.js';
@@ -118,7 +118,8 @@ function includeLegacySingularCreateTools(): boolean {
 export function registerTools(
   server: McpServer,
   client: ToolJetClient,
-  runtime: RuntimeFreshnessMonitor = runtimeFreshness
+  runtime: RuntimeFreshnessMonitor = runtimeFreshness,
+  code: CodeContext = noCodeIdentity(client)
 ): void {
   const tools: ToolDef[] = [
     getWorkflowNodeCatalogTool(client),
@@ -133,12 +134,12 @@ export function registerTools(
     runWorkflowTool(client),
     getWorkflowExecutionTool(client),
     getRuntimeInfoTool(runtime),
-    codeAppScaffoldTool(client),
-    codeAppReadFilesTool(),
-    codeAppWriteFilesTool(),
-    codeAppBuildTool(),
-    codeAppInstallTool(),
-    codeAppAddDependencyTool(),
+    codeAppScaffoldTool(code),
+    codeAppReadFilesTool(code),
+    codeAppWriteFilesTool(code),
+    codeAppBuildTool(code),
+    codeAppInstallTool(code),
+    codeAppAddDependencyTool(code),
     listWorkspacesTool(client),
     useWorkspaceTool(client),
     manageAppPermissionsTool(client),

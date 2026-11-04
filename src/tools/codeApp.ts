@@ -1,12 +1,14 @@
 import { z } from 'zod';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { ok, fail, type ToolDef } from './types.js';
 import type { ToolJetClient } from '../tooljetClient.js';
+import { CLI_HOME_PREFIX, cleanOldProjects, touchProject, withBuildSlot } from '../codeBuildLimits.js';
 
 /*
   Code pages: a ToolJet app page whose whole UI is React code, kept in an app project (app.json + frontend/) and built
@@ -29,8 +31,12 @@ import type { ToolJetClient } from '../tooljetClient.js';
   parameters (`await useAppQuery('update').run({ id, status })`); queries themselves are created with add_queries.
 
   Environment: TOOLJET_CODE_APP_ROOT (where projects live, default ~/tooljet-code-apps), TOOLJET_CLI (the CLI entry
-  point, default `tooljet`), TOOLJET_SDK_SPEC (an npm spec for @tooljet/custom-component-sdk, for an unreleased SDK).
-  The CLI reaches ToolJet with this server's TOOLJET_URL and TOOLJET_PAT.
+  point, default `tooljet`), TOOLJET_SDK_SPEC (an npm spec for @tooljet/custom-component-sdk, for an unreleased SDK),
+  npm_config_registry (the registry installs use; a project's .npmrc is never read).
+
+  Isolation: the CLI runs in server mode, so no project code runs, with an
+  allowlisted environment and the request's own credential (CodeContext), never this process's. Projects live under
+  <root>/<workspace id>/, and every tool checks with ToolJet that the app belongs to the caller before it touches one.
 */
 
 const run = promisify(execFile);
@@ -43,7 +49,79 @@ const run = promisify(execFile);
 export const USER_WORDS =
   " Talk to the user about \"the app's code\" and its versions (v1, v2): one version line, as for any app. Never say code " +
   'version, revision, publishing code, bundle, library, manifest, root component, dev track or pin, and never show internal names, ids or paths.';
-const root = (): string => resolve(process.env.TOOLJET_CODE_APP_ROOT || join(homedir(), 'tooljet-code-apps'));
+
+/** Who a Code tool acts for: built per request on HTTP, once per process on stdio (server.ts). */
+export interface CodeContext {
+  client: Pick<ToolJetClient, 'getApp' | 'renameApp'>;
+  workspaceId(): Promise<string>;
+  /** The caller's own credential. On a hosted server, one configured on the process does not count. */
+  credential?: { sessionToken?: string; pat?: string };
+  apiUrl: string;
+  appUrl: string;
+}
+
+/** Callers that name no identity get tools that refuse: there is nothing to fall back on. */
+export const noCodeIdentity = (client: CodeContext['client']): CodeContext => ({
+  client,
+  workspaceId: async () => '',
+  apiUrl: '',
+  appUrl: '',
+});
+
+interface CodeScope extends CodeContext {
+  workspace: string;
+  authorized: Set<string>;
+}
+
+// Per call, so concurrent requests on one HTTP server never see each other's identity (and never through process.env).
+const scope = new AsyncLocalStorage<CodeScope>();
+const current = (): CodeScope => {
+  const active = scope.getStore();
+  if (!active) throw new Error('Code tools need a request identity');
+  return active;
+};
+
+const SAFE_WORKSPACE = /^[A-Za-z0-9-]{1,64}$/;
+
+/** Every Code tool's handler runs here: no credential or no workspace, no work. */
+const inScope = <A, R>(context: CodeContext, handler: (args: A) => Promise<R>) => async (args: A): Promise<R | ReturnType<typeof fail>> => {
+  try {
+    if (!context.credential?.sessionToken && !context.credential?.pat)
+      throw new Error('Code tools act for a signed-in user, and this request names none.');
+    const workspace = await context.workspaceId();
+    if (!SAFE_WORKSPACE.test(workspace)) throw new Error('This request has no valid workspace.');
+    return await scope.run({ ...context, workspace, authorized: authorizedFor(context) }, () => handler(args));
+  } catch (err) {
+    return fail(err);
+  }
+};
+
+export const inCodeScopeForTests = <R>(context: CodeContext, work: () => Promise<R>) => inScope(context, work)(undefined as never);
+
+const authorizations = new WeakMap<CodeContext, Set<string>>();
+const authorizedFor = (context: CodeContext): Set<string> => {
+  const known = authorizations.get(context) ?? new Set<string>();
+  authorizations.set(context, known);
+  return known;
+};
+
+/** ToolJet's answer, under the caller's own credential, is what says an app is theirs. A refusal stops the tool. */
+const authorizeApp = async (appId: string): Promise<void> => {
+  const active = current();
+  if (active.authorized.has(appId)) return;
+  let app: { organizationId?: string; organization_id?: string };
+  try {
+    app = await active.client.getApp(appId);
+  } catch {
+    throw new Error(`App ${appId} was not found in this workspace.`);
+  }
+  const owner = app?.organizationId ?? app?.organization_id;
+  if (!owner || owner !== active.workspace) throw new Error(`App ${appId} was not found in this workspace.`);
+  active.authorized.add(appId);
+};
+
+const baseRoot = (): string => resolve(process.env.TOOLJET_CODE_APP_ROOT || join(homedir(), 'tooljet-code-apps'));
+const root = (): string => join(baseRoot(), current().workspace);
 const NAME = /^[a-z][a-z0-9-]{1,40}$/;
 
 const projectDir = (name: string): string => {
@@ -59,33 +137,49 @@ const appIdOf = (dir: string): string | undefined => {
   }
 };
 
-/** The projects for an app, newest app.json first (older ones are leftovers of an earlier scaffold). */
-export const projectsForApp = (appId: string): string[] => {
-  if (!existsSync(root())) return [];
-  return readdirSync(root(), { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && NAME.test(entry.name) && appIdOf(join(root(), entry.name)) === appId)
+const projectsIn = (folder: string, appId: string): string[] => {
+  if (!existsSync(folder)) return [];
+  return readdirSync(folder, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && NAME.test(entry.name) && appIdOf(join(folder, entry.name)) === appId)
     .map((entry) => entry.name)
-    .sort((a, b) => statSync(join(root(), b, 'app.json')).mtimeMs - statSync(join(root(), a, 'app.json')).mtimeMs);
+    .sort((a, b) => statSync(join(folder, b, 'app.json')).mtimeMs - statSync(join(folder, a, 'app.json')).mtimeMs);
+};
+
+/** The projects for an app in the caller's workspace, newest app.json first (older ones are leftovers of an earlier scaffold). */
+export const projectsForApp = (appId: string): string[] => {
+  // A project from before the per-workspace folders moves in, once ToolJet has said the app is the caller's.
+  for (const name of projectsIn(baseRoot(), appId)) {
+    mkdirSync(root(), { recursive: true });
+    if (!existsSync(join(root(), name))) renameSync(join(baseRoot(), name), join(root(), name));
+  }
+  return projectsIn(root(), appId);
 };
 
 const APP_ID = z.string().uuid().optional().describe("The app's id: finds its project, so you never have to know the folder name");
 const PROJECT_NAME = z.string().regex(NAME).optional().describe('The project folder, when you know it; app_id is enough');
 
-/** A tool's project: by app_id (preferred), else by name. */
-const locateProject = (args: { name?: string; app_id?: string }): string => {
+/** A tool's project: by app_id (preferred), else by name. Either way, only one whose app is the caller's. */
+const locateProject = async (args: { name?: string; app_id?: string }): Promise<string> => {
+  let dir: string;
   if (args.app_id) {
+    await authorizeApp(args.app_id);
     const [found] = projectsForApp(args.app_id);
-    if (!found) throw new Error(`no Code mode project for app ${args.app_id} under ${root()}; call code_app_scaffold with this app_id`);
+    if (!found) throw new Error(`no Code mode project for app ${args.app_id}; call code_app_scaffold with this app_id`);
     if (args.name && args.name !== found) throw new Error(`app ${args.app_id}'s project is "${found}", not "${args.name}"`);
-    return join(root(), found);
+    dir = join(root(), found);
+  } else {
+    if (!args.name) throw new Error('give app_id (or the project name)');
+    dir = projectDir(args.name);
+    const legacy = join(baseRoot(), args.name);
+    const owner = appIdOf(existsSync(join(dir, 'app.json')) ? dir : legacy);
+    if (!owner) throw new Error(`no app project "${args.name}"; call code_app_scaffold first`);
+    await authorizeApp(owner);
+    if (!existsSync(join(dir, 'app.json'))) {
+      mkdirSync(root(), { recursive: true });
+      renameSync(legacy, dir);
+    }
   }
-  if (!args.name) throw new Error('give app_id (or the project name)');
-  return requireProject(args.name);
-};
-
-const requireProject = (name: string): string => {
-  const dir = projectDir(name);
-  if (!existsSync(join(dir, 'app.json'))) throw new Error(`no app project "${name}" under ${root()}; call code_app_scaffold first`);
+  touchProject(dir);
   return dir;
 };
 
@@ -114,18 +208,48 @@ const listFiles = (dir: string, base = dir, out: string[] = []): string[] => {
 
 const strip = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
 
-const cliEnv = () => ({
-  ...process.env,
-  FORCE_COLOR: '0',
-  // The CLI is oclif: under NODE_ENV=development it loads its TypeScript sources instead of the build and fails
-  // ("Unexpected token ':'"). A ToolJet server running in development passes that on to this MCP server.
-  NODE_ENV: 'production',
-  TOOLJET_URL: process.env.TOOLJET_URL ?? '',
-  TOOLJET_PAT: process.env.TOOLJET_PAT ?? '',
-  TOOLJET_APP_URL: process.env.TOOLJET_DEPLOYMENT_URL ?? process.env.TOOLJET_APP_URL ?? '',
+/** Non-secret settings the CLI and npm need from the host: network, certificates, locale. Nothing else crosses. */
+const HOST_ENV = ['PATH', 'TMPDIR', 'TEMP', 'TMP', 'LANG', 'LC_ALL', 'HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY', 'http_proxy', 'https_proxy', 'no_proxy',
+  'NODE_EXTRA_CA_CERTS', 'SSL_CERT_FILE', 'SSL_CERT_DIR', 'TOOLJET_SDK_SPEC', 'TOOLJET_APP_SCANNER_BIN'];
+const SECRET_NAME = /TOKEN|SECRET|PASSWORD|PASSWD|KEY|PAT$|CREDENTIAL|COOKIE/i;
+/** More names an operator lets through (a corporate setting), never one that looks like a secret. */
+const operatorEnv = (): string[] =>
+  (process.env.MCP_CODE_CLI_ENV_PASS ?? '').split(',').map((name) => name.trim()).filter((name) => name && !SECRET_NAME.test(name));
+
+// A home per process: nothing the CLI or npm keeps there (a stored login, an npm auth line) reaches another build.
+let cliHome: string | undefined;
+const buildHome = (): string => (cliHome ??= mkdtempSync(join(tmpdir(), CLI_HOME_PREFIX)));
+process.once('exit', () => {
+  if (cliHome) rmSync(cliHome, { recursive: true, force: true });
 });
 
-async function cli(cwd: string, args: string[], timeoutMs = 300_000): Promise<{ code: number; output: string }> {
+export const cliEnv = (): NodeJS.ProcessEnv => {
+  const active = current();
+  const env: NodeJS.ProcessEnv = {};
+  for (const name of [...HOST_ENV, ...operatorEnv()]) if (process.env[name] !== undefined) env[name] = process.env[name];
+  const { sessionToken, pat } = active.credential ?? {};
+  return {
+    ...env,
+    HOME: buildHome(),
+    USERPROFILE: buildHome(),
+    FORCE_COLOR: '0',
+    // The CLI is oclif: under NODE_ENV=development it loads its TypeScript sources instead of the build and fails
+    // ("Unexpected token ':'"). A ToolJet server running in development passes that on to this MCP server.
+    NODE_ENV: 'production',
+    TOOLJET_CLI_SERVER_MODE: '1',
+    TOOLJET_URL: active.apiUrl,
+    TOOLJET_APP_URL: process.env.TOOLJET_DEPLOYMENT_URL ?? active.appUrl,
+    ...(sessionToken ? { TOOLJET_SESSION_TOKEN: sessionToken, TOOLJET_WORKSPACE_ID: active.workspace } : { TOOLJET_PAT: pat }),
+    // npm's cache is by content hash, so projects can share it; a home per process alone would download everything each build.
+    npm_config_cache: process.env.MCP_CODE_NPM_CACHE ?? join(baseRoot(), '.npm-cache'),
+    ...(registry() ? { npm_config_registry: registry() } : {}),
+  };
+};
+const registry = (): string | undefined => process.env.npm_config_registry ?? process.env.NPM_CONFIG_REGISTRY;
+
+const COUNTED_COMMANDS = new Set(['library build', 'app dev', 'app install', 'app check']);
+
+const runCli = async (cwd: string, args: string[], timeoutMs: number): Promise<{ code: number; output: string }> => {
   const [cmd, pre] = process.env.TOOLJET_CLI ? ['node', [process.env.TOOLJET_CLI]] : ['tooljet', []];
   try {
     const { stdout, stderr } = await run(cmd, [...pre, ...args], { cwd, timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024, env: cliEnv() });
@@ -134,6 +258,30 @@ async function cli(cwd: string, args: string[], timeoutMs = 300_000): Promise<{ 
     const e = err as { stdout?: string; stderr?: string; code?: number; message?: string };
     return { code: typeof e.code === 'number' ? e.code : 1, output: strip((e.stdout ?? '') + (e.stderr ?? e.message ?? '')) };
   }
+};
+
+/*
+  A CLI that does not know server mode would run project code and say nothing, and the CLI and this server deploy
+  separately. So the first call asks it, and nothing runs on a no.
+*/
+let serverModeChecked: Promise<void> | undefined;
+const requireServerModeCli = (): Promise<void> => {
+  if (process.env.MCP_CODE_CLI_HANDSHAKE === '0') return Promise.resolve();
+  serverModeChecked ??= runCli(baseRoot(), ['app', 'server-mode'], 60_000).then((answer) => {
+    if (!answer.output.includes('tooljet-server-mode:1')) {
+      serverModeChecked = undefined;
+      throw new Error('This server\'s ToolJet CLI does not support server mode, so Code builds are off here. Update the CLI.');
+    }
+  });
+  return serverModeChecked;
+};
+
+async function cli(cwd: string, args: string[], timeoutMs = 300_000): Promise<{ code: number; output: string }> {
+  mkdirSync(baseRoot(), { recursive: true });
+  await requireServerModeCli();
+  const command = args.filter((a) => !a.startsWith('-')).slice(0, 2).join(' ');
+  if (!COUNTED_COMMANDS.has(command)) return runCli(cwd, args, timeoutMs);
+  return withBuildSlot(baseRoot(), current().workspace, () => runCli(cwd, args, timeoutMs));
 }
 
 const PLACEHOLDER_NAME = /^Untitled App\b/;
@@ -238,7 +386,7 @@ export const PACKAGE_NAME = /^(@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/
 /** An npm spec an agent may add: a registry name (optionally scoped) with an optional version, range or tag. */
 export const PACKAGE_SPEC = /^(@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*(@[A-Za-z0-9.^~<>=*| -]+)?$/;
 
-export function codeAppScaffoldTool(client?: Pick<ToolJetClient, 'renameApp'>): ToolDef {
+export function codeAppScaffoldTool(context: CodeContext): ToolDef {
   return {
     name: 'code_app_scaffold',
     title: 'Scaffold Code Mode App',
@@ -253,8 +401,11 @@ export function codeAppScaffoldTool(client?: Pick<ToolJetClient, 'renameApp'>): 
       display_name: z.string().min(1).max(100).describe("The app's name; an app still called \"Untitled App\" is renamed to it"),
       app_id: z.string().uuid().describe('The app from create_app'),
     },
-    async handler(args: { name: string; display_name: string; app_id: string }) {
+    handler: inScope(context, async (args: { name: string; display_name: string; app_id: string }) => {
       try {
+        // Before anything is created or installed: a stranger's app id costs no disk and no install.
+        await authorizeApp(args.app_id);
+        cleanOldProjects(baseRoot());
         // One project per app: an app that already has one gets it back, whatever name is asked for.
         const [existing] = projectsForApp(args.app_id);
         const dir = existing ? join(root(), existing) : projectDir(args.name);
@@ -274,7 +425,7 @@ export function codeAppScaffoldTool(client?: Pick<ToolJetClient, 'renameApp'>): 
         }
         const pull = await cli(dir, ['app', 'pull']);
         if (pull.code !== 0) throw new Error(`tooljet app pull failed: ${pull.output}`);
-        const naming = await nameApp(client, dir, args.display_name);
+        const naming = await nameApp(context.client, dir, args.display_name);
         if (!existing) rememberScaffold(dir);
         return ok({
           project_dir: dir,
@@ -288,7 +439,7 @@ export function codeAppScaffoldTool(client?: Pick<ToolJetClient, 'renameApp'>): 
       } catch (err) {
         return fail(err);
       }
-    },
+    }),
   };
 }
 
@@ -299,6 +450,8 @@ async function syncEditorEdits(dir: string, { force = false } = {}): Promise<{ e
   if (!force && nothingStored.has(dir)) return {};
   if (force) forgetSourceRevision(dir);
   const pull = await cli(dir, ['app', 'source-pull'], 60_000);
+  // A refusal is an answer about who is asking, so nothing goes on from a local copy. Anything else may be a passing fault.
+  if (pull.code !== 0 && /\b(401|403)\b|unauthori[sz]ed|forbidden/i.test(pull.output)) throw new Error('ToolJet refused access to this app\'s stored code.');
   if (pull.code !== 0) return { sync_warning: `Could not check the ToolJet editor for edits: ${pull.output.trim().slice(0, 300)}` };
   if (/No source is stored/i.test(pull.output)) nothingStored.add(dir);
   else nothingStored.delete(dir);
@@ -485,7 +638,7 @@ export const isRewrite = (before: string, after: string): boolean => {
   return changed > 20 && changed > 0.4 * size;
 };
 
-export function codeAppReadFilesTool(): ToolDef {
+export function codeAppReadFilesTool(context: CodeContext): ToolDef {
   return {
     name: 'code_app_read_files',
     title: 'Read Code Mode Files',
@@ -494,9 +647,9 @@ export function codeAppReadFilesTool(): ToolDef {
       'Read a Code mode project. Without paths, lists its files; with paths, returns their contents (app.json, frontend/...). ' +
       'Edits saved in the ToolJet Code panel since the last install are brought into the project first.' + USER_WORDS,
     inputSchema: { app_id: APP_ID, name: PROJECT_NAME, paths: z.array(z.string()).optional() },
-    async handler(args: { app_id?: string; name?: string; paths?: string[] }) {
+    handler: inScope(context, async (args: { app_id?: string; name?: string; paths?: string[] }) => {
       try {
-        const dir = locateProject(args);
+        const dir = await locateProject(args);
         if (!freshProjects.has(dir)) await followDraft(dir);
         const sync = !freshProjects.has(dir) ? await ensureFresh(dir) : syncedRecently(dir) ? {} : await syncEditorEdits(dir);
         if (!args.paths?.length) return ok({ project_dir: dir, ...sync, files: listFiles(dir) });
@@ -514,11 +667,11 @@ export function codeAppReadFilesTool(): ToolDef {
       } catch (err) {
         return fail(err);
       }
-    },
+    }),
   };
 }
 
-export function codeAppWriteFilesTool(): ToolDef {
+export function codeAppWriteFilesTool(context: CodeContext): ToolDef {
   return {
     name: 'code_app_write_files',
     title: 'Write Code Mode Files',
@@ -538,9 +691,9 @@ export function codeAppWriteFilesTool(): ToolDef {
         .describe('Targeted changes to existing files: each find must appear exactly once in the file as it is now'),
       rewrite: z.boolean().optional().describe('Allow files to replace most of an existing file (only when the request needs it)'),
     },
-    async handler(args: { app_id?: string; name?: string; files?: { path: string; content: string }[]; edits?: { path: string; find: string; replace: string }[]; rewrite?: boolean }) {
+    handler: inScope(context, async (args: { app_id?: string; name?: string; files?: { path: string; content: string }[]; edits?: { path: string; find: string; replace: string }[]; rewrite?: boolean }) => {
       try {
-        const dir = locateProject(args);
+        const dir = await locateProject(args);
         if (!args.files?.length && !args.edits?.length)
           throw new Error(
             `Nothing was written: this call had no files and no edits, so it sent no code${args.rewrite ? ' (rewrite: true only allows a rewrite, it carries none)' : ''}. ` +
@@ -594,7 +747,7 @@ export function codeAppWriteFilesTool(): ToolDef {
       } catch (err) {
         return fail(err);
       }
-    },
+    }),
   };
 }
 
@@ -648,7 +801,7 @@ export function missingStylesheet(dir: string): string | undefined {
   );
 }
 
-export function codeAppBuildTool(): ToolDef {
+export function codeAppBuildTool(context: CodeContext): ToolDef {
   return {
     name: 'code_app_build',
     title: 'Build Code Mode App',
@@ -659,9 +812,9 @@ export function codeAppBuildTool(): ToolDef {
       'and the security scan (code rules such as external fetch, eval and token storage; secrets; vendored code). ' +
       'Returns ok and every error and security finding to fix. Repeat write and build until ok, then code_app_install.' + USER_WORDS,
     inputSchema: { app_id: APP_ID, name: PROJECT_NAME },
-    async handler(args: { app_id?: string; name?: string }) {
+    handler: inScope(context, async (args: { app_id?: string; name?: string }) => {
       try {
-        const dir = locateProject(args);
+        const dir = await locateProject(args);
         const followed = await followDraft(dir);
         await ensureFresh(dir);
         const started = Date.now();
@@ -691,11 +844,11 @@ export function codeAppBuildTool(): ToolDef {
       } catch (err) {
         return fail(err);
       }
-    },
+    }),
   };
 }
 
-export function codeAppInstallTool(): ToolDef {
+export function codeAppInstallTool(context: CodeContext): ToolDef {
   return {
     name: 'code_app_install',
     title: 'Install Code Mode App',
@@ -708,9 +861,9 @@ export function codeAppInstallTool(): ToolDef {
       'call code_app_read_files to bring those edits down, reapply your change, and install again. ' +
       'This is the last step of a build or edit: saving the app version (release_app saves a draft first) freezes the code.' + USER_WORDS,
     inputSchema: { app_id: APP_ID, name: PROJECT_NAME },
-    async handler(args: { app_id?: string; name?: string }) {
+    handler: inScope(context, async (args: { app_id?: string; name?: string }) => {
       try {
-        const dir = locateProject(args);
+        const dir = await locateProject(args);
         const followed = await followDraft(dir);
         await ensureFresh(dir);
         nothingStored.delete(dir);
@@ -744,11 +897,11 @@ export function codeAppInstallTool(): ToolDef {
       } catch (err) {
         return fail(err);
       }
-    },
+    }),
   };
 }
 
-export function codeAppAddDependencyTool(): ToolDef {
+export function codeAppAddDependencyTool(context: CodeContext): ToolDef {
   return {
     name: 'code_app_add_dependency',
     title: 'Add Code Mode Dependency',
@@ -766,9 +919,9 @@ export function codeAppAddDependencyTool(): ToolDef {
       packages: z.array(z.string().regex(PACKAGE_SPEC)).max(10).describe('name, name@version or name@range, e.g. date-fns@4'),
       remove: z.array(z.string().regex(PACKAGE_NAME)).max(10).optional().describe('package names to take out of frontend/package.json (a replaced package)'),
     },
-    async handler(args: { app_id?: string; name?: string; packages: string[]; remove?: string[] }) {
+    handler: inScope(context, async (args: { app_id?: string; name?: string; packages: string[]; remove?: string[] }) => {
       try {
-        const dir = locateProject(args);
+        const dir = await locateProject(args);
         if (!args.packages.length && !args.remove?.length) throw new Error('Pass packages to add, or names to remove.');
         const vet = args.packages.length
           ? await cli(dir, ['app', 'vet', ...args.packages, '--json'])
@@ -803,6 +956,6 @@ export function codeAppAddDependencyTool(): ToolDef {
       } catch (err) {
         return fail(err);
       }
-    },
+    }),
   };
 }

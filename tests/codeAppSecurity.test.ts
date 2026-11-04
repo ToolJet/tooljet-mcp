@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { codeContext, WORKSPACE } from './codeContext.js';
 import {
   PACKAGE_SPEC,
   codeAppAddDependencyTool,
@@ -54,10 +55,10 @@ beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'code-app-security-'));
   log = join(root, 'calls.log');
   writeFileSync(log, '');
-  mkdirSync(join(root, 'demo', 'frontend'), { recursive: true });
-  writeFileSync(join(root, 'demo', 'app.json'), '{"appId":"app-1"}\n');
-  writeFileSync(join(root, 'demo', 'frontend', 'package.json'), JSON.stringify({ name: 'demo', dependencies: { react: '19.1.0' } }, null, 2) + '\n');
-  writeFileSync(join(root, 'demo', 'frontend', 'package-lock.json'), '{"before":true}\n');
+  mkdirSync(join(root, WORKSPACE, 'demo', 'frontend'), { recursive: true });
+  writeFileSync(join(root, WORKSPACE, 'demo', 'app.json'), '{"appId":"app-1"}\n');
+  writeFileSync(join(root, WORKSPACE, 'demo', 'frontend', 'package.json'), JSON.stringify({ name: 'demo', dependencies: { react: '19.1.0' } }, null, 2) + '\n');
+  writeFileSync(join(root, WORKSPACE, 'demo', 'frontend', 'package-lock.json'), '{"before":true}\n');
   Object.assign(process.env, { TOOLJET_CODE_APP_ROOT: root, TOOLJET_CLI: FAKE_CLI, FAKE_CLI_LOG: log });
 });
 afterEach(() => {
@@ -93,7 +94,7 @@ describe('code_app_build', () => {
       'library build': { code: 0, output: 'TypeScript compiled (0 errors)\nBuilt' },
       'app check': { code: 1, output: checkReport([finding('high')], [{ file: 'frontend/src/App/index.tsx', line: 9, message: 'no query "orders"' }]) },
     });
-    const result = JSON.parse(text(await codeAppBuildTool().handler({ name: 'demo' })));
+    const result = JSON.parse(text(await codeAppBuildTool(codeContext()).handler({ name: 'demo' })));
     expect(calls()).toContain('app check --offline --json');
     expect(result).toMatchObject({
       ok: false,
@@ -107,7 +108,7 @@ describe('code_app_build', () => {
 describe('code_app_install', () => {
   it('refuses on critical or high findings, lists them, and uploads nothing', async () => {
     replies({ 'app check': { code: 1, output: checkReport([finding('high'), finding('medium', { ruleId: 'tj-code/no-token-storage' })]) } });
-    const result = await codeAppInstallTool().handler({ name: 'demo' });
+    const result = await codeAppInstallTool(codeContext()).handler({ name: 'demo' });
     expect(result.isError).toBe(true);
     expect(text(result)).toMatch(/1 critical or high finding/);
     expect(text(result)).toMatch(/HIGH tj-code\/no-external-fetch frontend\/src\/App\/index.tsx:6/);
@@ -116,7 +117,7 @@ describe('code_app_install', () => {
   });
   it('refuses when the scan did not run', async () => {
     replies({ 'app check': { code: 1, output: { ok: false, problems: [], security: { error: 'The security scan did not run: x' } } } });
-    const result = await codeAppInstallTool().handler({ name: 'demo' });
+    const result = await codeAppInstallTool(codeContext()).handler({ name: 'demo' });
     expect(text(result)).toMatch(/did not run, so nothing was installed/);
     expect(calls()).toEqual(['app check --json']);
   });
@@ -125,15 +126,15 @@ describe('code_app_install', () => {
       'app check': { code: 0, output: checkReport([finding('medium')]) },
       'app dev': { code: 0, output: 'Linked\nOpen: http://tj.test/apps/app-1' },
     });
-    const result = JSON.parse(text(await codeAppInstallTool().handler({ name: 'demo' })));
+    const result = JSON.parse(text(await codeAppInstallTool(codeContext()).handler({ name: 'demo' })));
     expect(calls()).toEqual(['app check --json', 'app dev --once --source platform']);
     expect(result).toMatchObject({ linked: true, editor_url: 'http://tj.test/apps/app-1', security: { findings: [{ severity: 'medium' }] } });
   });
 });
 
 describe('code_app_add_dependency', () => {
-  const pkgFile = () => join(root, 'demo', 'frontend', 'package.json');
-  const lockFile = () => join(root, 'demo', 'frontend', 'package-lock.json');
+  const pkgFile = () => join(root, WORKSPACE, 'demo', 'frontend', 'package.json');
+  const lockFile = () => join(root, WORKSPACE, 'demo', 'frontend', 'package-lock.json');
 
   it('writes nothing when a package fails the check (malware, CVE or cooldown)', async () => {
     const before = readFileSync(pkgFile(), 'utf8');
@@ -148,7 +149,7 @@ describe('code_app_add_dependency', () => {
         },
       },
     });
-    const result = await codeAppAddDependencyTool().handler({ name: 'demo', packages: ['fresh-pkg'] });
+    const result = await codeAppAddDependencyTool(codeContext()).handler({ name: 'demo', packages: ['fresh-pkg'] });
     expect(result.isError).toBe(true);
     expect(text(result)).toMatch(/Not added: fresh-pkg@1.0.0 fails the package check/);
     expect(text(result)).toMatch(/HIGH tj-deps\/new-release fresh-pkg@1.0.0: published 2 days ago/);
@@ -157,7 +158,7 @@ describe('code_app_add_dependency', () => {
   });
   it('pins and installs packages that pass', async () => {
     replies({ 'app vet': { code: 0, output: { ok: true, gate: 'pass', packages: [{ name: 'date-fns', version: '4.1.0' }], findings: [], notRun: [] } } });
-    const result = JSON.parse(text(await codeAppAddDependencyTool().handler({ name: 'demo', packages: ['date-fns@4'] })));
+    const result = JSON.parse(text(await codeAppAddDependencyTool(codeContext()).handler({ name: 'demo', packages: ['date-fns@4'] })));
     expect(result.added).toEqual(['date-fns@4.1.0']);
     expect(JSON.parse(readFileSync(pkgFile(), 'utf8')).dependencies).toEqual({ 'date-fns': '4.1.0', react: '19.1.0' });
     expect(calls()).toEqual(['app vet date-fns@4 --json', 'app install']);
@@ -168,7 +169,7 @@ describe('code_app_add_dependency', () => {
       'app vet': { code: 0, output: { ok: true, packages: [{ name: 'date-fns', version: '4.1.0' }] } },
       'app install': { code: 1, output: 'npm ERR! network' },
     });
-    const result = await codeAppAddDependencyTool().handler({ name: 'demo', packages: ['date-fns'] });
+    const result = await codeAppAddDependencyTool(codeContext()).handler({ name: 'demo', packages: ['date-fns'] });
     expect(text(result)).toMatch(/install failed, package.json restored/);
     expect(readFileSync(pkgFile(), 'utf8')).toBe(before);
     expect(readFileSync(lockFile(), 'utf8')).toBe('{"before":true}\n');
@@ -177,7 +178,7 @@ describe('code_app_add_dependency', () => {
   it('upgrades a vulnerable package to a fixed version, found by app id', async () => {
     writeFileSync(pkgFile(), JSON.stringify({ name: 'demo', dependencies: { lodash: '4.17.20', react: '19.1.0' } }, null, 2) + '\n');
     replies({ 'app vet': { code: 0, output: { ok: true, packages: [{ name: 'lodash', version: '4.17.21' }], findings: [] } } });
-    const result = JSON.parse(text(await codeAppAddDependencyTool().handler({ app_id: 'app-1', packages: ['lodash@4.17.21'] } as any)));
+    const result = JSON.parse(text(await codeAppAddDependencyTool(codeContext()).handler({ app_id: 'app-1', packages: ['lodash@4.17.21'] } as any)));
     expect(result.added).toEqual(['lodash@4.17.21']);
     expect(JSON.parse(readFileSync(pkgFile(), 'utf8')).dependencies.lodash).toBe('4.17.21');
     expect(readFileSync(lockFile(), 'utf8')).toBe('{"installed":true}\n'); // refreshed by the install
@@ -185,21 +186,21 @@ describe('code_app_add_dependency', () => {
   it('replaces a package: removes the old one and adds the vetted replacement in one install', async () => {
     writeFileSync(pkgFile(), JSON.stringify({ name: 'demo', dependencies: { moment: '2.29.1', react: '19.1.0' } }, null, 2) + '\n');
     replies({ 'app vet': { code: 0, output: { ok: true, packages: [{ name: 'date-fns', version: '4.1.0' }], findings: [] } } });
-    const result = JSON.parse(text(await codeAppAddDependencyTool().handler({ name: 'demo', packages: ['date-fns@4'], remove: ['moment'] } as any)));
+    const result = JSON.parse(text(await codeAppAddDependencyTool(codeContext()).handler({ name: 'demo', packages: ['date-fns@4'], remove: ['moment'] } as any)));
     expect(result).toMatchObject({ added: ['date-fns@4.1.0'], removed: ['moment'] });
     expect(JSON.parse(readFileSync(pkgFile(), 'utf8')).dependencies).toEqual({ 'date-fns': '4.1.0', react: '19.1.0' });
     expect(calls()).toEqual(['app vet date-fns@4 --json', 'app install']);
   });
   it('removes a package without vetting anything', async () => {
     writeFileSync(pkgFile(), JSON.stringify({ name: 'demo', dependencies: { 'left-pad': '1.3.0', react: '19.1.0' } }, null, 2) + '\n');
-    const result = JSON.parse(text(await codeAppAddDependencyTool().handler({ name: 'demo', packages: [], remove: ['left-pad'] } as any)));
+    const result = JSON.parse(text(await codeAppAddDependencyTool(codeContext()).handler({ name: 'demo', packages: [], remove: ['left-pad'] } as any)));
     expect(result.removed).toEqual(['left-pad']);
     expect(JSON.parse(readFileSync(pkgFile(), 'utf8')).dependencies).toEqual({ react: '19.1.0' });
     expect(calls()).toEqual(['app install']);
   });
   it('refuses when the check could not run', async () => {
     replies({ 'app vet': { code: 1, output: 'Error: nope@9: no such package or version' } });
-    const result = await codeAppAddDependencyTool().handler({ name: 'demo', packages: ['nope@9'] });
+    const result = await codeAppAddDependencyTool(codeContext()).handler({ name: 'demo', packages: ['nope@9'] });
     expect(text(result)).toMatch(/did not run, so nothing was added: Error: nope@9/);
   });
 });
