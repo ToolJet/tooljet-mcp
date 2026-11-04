@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { codeAppBuildTool, codeAppReadFilesTool, codeAppScaffoldTool, inCodeScopeForTests, projectsForApp } from '../src/tools/codeApp.js';
-import { codeContext, WORKSPACE } from './codeContext.js';
+import { codeContext, DEPLOYMENT, WORKSPACE } from './codeContext.js';
 
 const APP = '11111111-1111-4111-8111-111111111111';
 const OTHER = '22222222-2222-4222-8222-222222222222';
@@ -12,7 +12,7 @@ describe('Code mode projects are found by app id', () => {
   let dir: string;
   const env = { ...process.env };
   const project = (name: string, appId: string, ageSeconds = 0) => {
-    const p = join(dir, 'apps', WORKSPACE, name);
+    const p = join(dir, 'apps', DEPLOYMENT, WORKSPACE, name);
     mkdirSync(join(p, 'frontend', 'src'), { recursive: true });
     writeFileSync(join(p, 'app.json'), JSON.stringify({ name, appId }));
     writeFileSync(join(p, 'frontend', 'src', 'tooljet.gen.ts'), '// hooks');
@@ -45,7 +45,7 @@ describe('Code mode projects are found by app id', () => {
 
   it('reads the app\'s project without a name', async () => {
     const read = result(await codeAppReadFilesTool(codeContext()).handler({ app_id: APP } as any));
-    expect(read.project_dir).toBe(join(dir, 'apps', WORKSPACE, 'todo-tasks'));
+    expect(read.project_dir).toBe(join(dir, 'apps', DEPLOYMENT, WORKSPACE, 'todo-tasks'));
   });
 
   it('says where to look instead of guessing', async () => {
@@ -71,7 +71,7 @@ describe('code_app_scaffold names an untitled app', () => {
   let dir: string;
   const env = { ...process.env };
   const setup = (appName: string) => {
-    const p = join(dir, 'apps', WORKSPACE, 'tasks');
+    const p = join(dir, 'apps', DEPLOYMENT, WORKSPACE, 'tasks');
     mkdirSync(join(p, 'frontend', 'src'), { recursive: true });
     mkdirSync(join(p, '.tooljet'), { recursive: true });
     writeFileSync(join(p, 'app.json'), JSON.stringify({ name: 'Tasks', appId: APP }));

@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { codeAppBuildTool, codeAppInstallTool, missingStylesheet, resetCodeSessionForTests } from '../src/tools/codeApp.js';
-import { codeContext, WORKSPACE } from './codeContext.js';
+import { codeContext, DEPLOYMENT, WORKSPACE } from './codeContext.js';
 
 // Purchase Approvals B1 (2026-11-02): the model rewrote App/index.tsx without `import '../styles/globals.css'` and the
 // app shipped unstyled; build, scan and render check all passed.
@@ -18,7 +18,7 @@ console.log('Already at revision 1 (owner platform)');
 describe('the app entry must import its stylesheet', () => {
   let dir: string;
   const env = { ...process.env };
-  const project = () => join(dir, 'apps', WORKSPACE, 'desk');
+  const project = () => join(dir, 'apps', DEPLOYMENT, WORKSPACE, 'desk');
   const entry = (body: string) => writeFileSync(join(project(), 'frontend/src/App/index.tsx'), body);
 
   beforeEach(() => {

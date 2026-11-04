@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { cleanOldProjects, withBuildSlot, BuildCapacityError, touchProject } from '../src/codeBuildLimits.js';
 import { codeAppBuildTool, codeAppInstallTool, codeAppReadFilesTool, codeAppScaffoldTool, codeAppWriteFilesTool, noCodeIdentity, resetCodeSessionForTests } from '../src/tools/codeApp.js';
-import { codeContext, WORKSPACE } from './codeContext.js';
+import { API_URL, codeContext, DEPLOYMENT, WORKSPACE } from './codeContext.js';
 
 /* The fake CLI records its arguments and whole environment. */
 const APP = '11111111-1111-4111-8111-111111111111';
@@ -29,8 +29,12 @@ let log: string;
 const env = { ...process.env };
 const calls = () => readFileSync(log, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line));
 const text = (r: any) => r.content[0].text as string;
-const project = (workspace: string | undefined, name: string, appId: string) => {
-  const dir = workspace ? join(root, 'apps', workspace, name) : join(root, 'apps', name);
+/** A project where this backend keeps it, or (workspace undefined) in the oldest shared folder. */
+const project = (workspace: string | undefined, name: string, appId: string) =>
+  makeProject(workspace ? join(root, 'apps', DEPLOYMENT, workspace, name) : join(root, 'apps', name), appId);
+/** A project in a per-workspace folder from before deployment folders. */
+const legacyProject = (workspace: string, name: string, appId: string) => makeProject(join(root, 'apps', workspace, name), appId);
+const makeProject = (dir: string, appId: string) => {
   mkdirSync(join(dir, 'frontend', 'src'), { recursive: true });
   writeFileSync(join(dir, 'app.json'), JSON.stringify({ appId }));
   writeFileSync(join(dir, 'frontend', 'src', 'App.tsx'), 'export default 1;');
@@ -47,6 +51,8 @@ beforeEach(() => {
   Object.assign(process.env, {
     TOOLJET_CLI: join(root, 'cli.js'), TOOLJET_CODE_APP_ROOT: join(root, 'apps'), FAKE_CLI_LOG: log,
     MCP_CODE_CLI_ENV_PASS: 'FAKE_CLI_LOG,FAKE_OLD_CLI,FAKE_PULL_REFUSED,MY_API_KEY',
+    // The folders from before deployment folders belong to this test's backend.
+    MCP_CODE_LEGACY_DEPLOYMENT_URL: API_URL,
   });
 });
 afterEach(() => {
@@ -143,7 +149,7 @@ describe('a project belongs to a workspace', () => {
     project(WORKSPACE, 'demo', APP);
     const out = text(await codeAppWriteFilesTool(other(async () => ({ organizationId: 'ws-2' }))).handler({ app_id: APP, files: [{ path: 'frontend/src/a.tsx', content: 'x' }] } as any));
     expect(out).toMatch(/not found in this workspace/);
-    expect(existsSync(join(root, 'apps', WORKSPACE, 'demo', 'frontend', 'src', 'a.tsx'))).toBe(false);
+    expect(existsSync(join(root, 'apps', DEPLOYMENT, WORKSPACE, 'demo', 'frontend', 'src', 'a.tsx'))).toBe(false);
   });
 
   it('by name: the project checks its own app, and another workspace\'s folder is not reachable', async () => {
@@ -165,15 +171,15 @@ describe('a project belongs to a workspace', () => {
     const context2 = codeContext({ workspaceId: async () => 'ws-2', client: { getApp: async () => ({ organizationId: 'ws-2' }) } as any });
     await codeAppScaffoldTool(codeContext()).handler({ name: 'tasks', display_name: 'Tasks', app_id: APP });
     await codeAppScaffoldTool(context2).handler({ name: 'tasks', display_name: 'Tasks', app_id: THEIRS });
-    expect(existsSync(join(root, 'apps', WORKSPACE, 'tasks', 'app.json'))).toBe(true);
-    expect(existsSync(join(root, 'apps', 'ws-2', 'tasks', 'app.json'))).toBe(true);
+    expect(existsSync(join(root, 'apps', DEPLOYMENT, WORKSPACE, 'tasks', 'app.json'))).toBe(true);
+    expect(existsSync(join(root, 'apps', DEPLOYMENT, 'ws-2', 'tasks', 'app.json'))).toBe(true);
   });
 
   it('a stranger\'s app id costs no install and no folder', async () => {
     const out = text(await codeAppScaffoldTool(other(async () => { throw new Error('404'); })).handler({ name: 'tasks', display_name: 'Tasks', app_id: APP }));
     expect(out).toMatch(/not found in this workspace/);
     expect(calls()).toEqual([]);
-    expect(existsSync(join(root, 'apps', WORKSPACE, 'tasks'))).toBe(false);
+    expect(existsSync(join(root, 'apps', DEPLOYMENT, WORKSPACE, 'tasks'))).toBe(false);
   });
 
   it('moves an older shared-folder project in, only for its owner', async () => {
@@ -182,7 +188,18 @@ describe('a project belongs to a workspace', () => {
     expect(existsSync(old)).toBe(true);
     await codeAppReadFilesTool(codeContext()).handler({ name: 'older' } as any);
     expect(existsSync(old)).toBe(false);
-    expect(existsSync(join(root, 'apps', WORKSPACE, 'older', 'app.json'))).toBe(true);
+    expect(existsSync(join(root, 'apps', DEPLOYMENT, WORKSPACE, 'older', 'app.json'))).toBe(true);
+  });
+
+  it('moves a per-workspace project from before deployment folders in, by app id and by name', async () => {
+    const byId = legacyProject(WORKSPACE, 'by-id', APP);
+    const out = JSON.parse(text(await codeAppReadFilesTool(codeContext()).handler({ app_id: APP } as any)));
+    expect(out.project_dir).toBe(join(root, 'apps', DEPLOYMENT, WORKSPACE, 'by-id'));
+    expect(existsSync(byId)).toBe(false);
+    const byName = legacyProject(WORKSPACE, 'by-name', THEIRS);
+    await codeAppReadFilesTool(codeContext()).handler({ name: 'by-name' } as any);
+    expect(existsSync(byName)).toBe(false);
+    expect(existsSync(join(root, 'apps', DEPLOYMENT, WORKSPACE, 'by-name', 'app.json'))).toBe(true);
   });
 
   it('stops when ToolJet refuses the stored code, rather than going on from the local copy', async () => {
@@ -253,7 +270,7 @@ describe('build limits', () => {
     const base = join(root, 'apps');
     project(WORKSPACE, 'demo', APP);
     let release!: () => void;
-    const holding = withBuildSlot(base, WORKSPACE, () => new Promise<void>((resolve) => { release = resolve; }));
+    const holding = withBuildSlot(base, `${DEPLOYMENT}.${WORKSPACE}`, () => new Promise<void>((resolve) => { release = resolve; }));
     await wait();
     expect(text(await codeAppInstallTool(codeContext()).handler({ app_id: APP } as any))).toMatch(/Too many builds/);
     release();
@@ -268,16 +285,18 @@ describe('old project folders', () => {
     utimesSync(file, then, then);
   };
 
-  it('removes only projects unused for the TTL, in workspace folders and the old shared one', () => {
+  it('removes only projects unused for the TTL, in deployment and workspace folders and the old shared one', () => {
     const base = join(root, 'apps');
     const old = project(WORKSPACE, 'old', APP);
     const recent = project(WORKSPACE, 'recent', APP);
     const flat = project(undefined, 'flat-old', APP);
-    for (const dir of [old, flat]) { touchProject(dir); age(join(dir, '.tooljet-last-used'), 20); }
+    const perWorkspace = legacyProject(WORKSPACE, 'ws-old', APP);
+    for (const dir of [old, flat, perWorkspace]) { touchProject(dir); age(join(dir, '.tooljet-last-used'), 20); }
     touchProject(recent);
     cleanOldProjects(base);
     expect(existsSync(old)).toBe(false);
     expect(existsSync(flat)).toBe(false);
+    expect(existsSync(perWorkspace)).toBe(false);
     expect(existsSync(recent)).toBe(true);
   });
 

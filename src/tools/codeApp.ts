@@ -32,11 +32,16 @@ import { CLI_HOME_PREFIX, cleanOldProjects, touchProject, withBuildSlot } from '
 
   Environment: TOOLJET_CODE_APP_ROOT (where projects live, default ~/tooljet-code-apps), TOOLJET_CLI (the CLI entry
   point, default `tooljet`), TOOLJET_SDK_SPEC (an npm spec for @tooljet/custom-component-sdk, for an unreleased SDK),
-  npm_config_registry (the registry installs use; a project's .npmrc is never read).
+  npm_config_registry (the registry installs use; a project's .npmrc is never read), MCP_CODE_APP_AUTH_TTL_MS (how long
+  ToolJet's answer on an app is kept, default 30 s), MCP_CODE_LEGACY_DEPLOYMENT_URL (the backend that folders from
+  before deployment folders belong to, default TOOLJET_URL).
 
   Isolation: the CLI runs in server mode, so no project code runs, with an
   allowlisted environment and the request's own credential (CodeContext), never this process's. Projects live under
-  <root>/<workspace id>/, and every tool checks with ToolJet that the app belongs to the caller before it touches one.
+  <root>/d_<deployment>/<workspace id>/, where the deployment is the ToolJet backend the request's credential is sent to
+  (two backends can hold the same workspace and app ids). Every tool checks with ToolJet that the app belongs to the
+  caller before it touches one, and every tool that writes to the project, installs or builds also needs ToolJet to say
+  the caller may edit the app. Reading a project needs view permission only.
 */
 
 const run = promisify(execFile);
@@ -52,7 +57,7 @@ export const USER_WORDS =
 
 /** Who a Code tool acts for: built per request on HTTP, once per process on stdio (server.ts). */
 export interface CodeContext {
-  client: Pick<ToolJetClient, 'getApp' | 'renameApp'>;
+  client: Pick<ToolJetClient, 'getApp' | 'canEditApp' | 'renameApp'>;
   workspaceId(): Promise<string>;
   /** The caller's own credential. On a hosted server, one configured on the process does not count. */
   credential?: { sessionToken?: string; pat?: string };
@@ -70,7 +75,9 @@ export const noCodeIdentity = (client: CodeContext['client']): CodeContext => ({
 
 interface CodeScope extends CodeContext {
   workspace: string;
-  authorized: Set<string>;
+  /** The folder name of the ToolJet backend this request is authenticated against (deploymentKey). */
+  deployment: string;
+  authorized: Map<string, Grant>;
 }
 
 // Per call, so concurrent requests on one HTTP server never see each other's identity (and never through process.env).
@@ -83,14 +90,33 @@ const current = (): CodeScope => {
 
 const SAFE_WORKSPACE = /^[A-Za-z0-9-]{1,64}$/;
 
+/*
+  The deployment a request acts on is the ToolJet backend its credential is sent to: apiUrl, which the HTTP layer
+  accepts only from MCP_ALLOWED_API_ORIGINS or a Gateway check, and stdio takes from its own configuration. ToolJet at
+  that address is what authorizes every app id, so a backend that copies another's workspace and app ids still gets a
+  folder of its own. The folder name is a hash: it cannot be a workspace id (no underscore) or a project name.
+*/
+export const deploymentKey = (apiUrl: string): string => {
+  let url: URL;
+  try {
+    url = new URL(apiUrl);
+  } catch {
+    throw new Error('This request names no valid ToolJet backend.');
+  }
+  if (!['http:', 'https:'].includes(url.protocol)) throw new Error('This request names no valid ToolJet backend.');
+  const canonical = `${url.protocol}//${url.host}${url.pathname.replace(/\/+$/, '')}`;
+  return `d_${createHash('sha256').update(canonical).digest('hex').slice(0, 24)}`;
+};
+
 /** Every Code tool's handler runs here: no credential or no workspace, no work. */
 const inScope = <A, R>(context: CodeContext, handler: (args: A) => Promise<R>) => async (args: A): Promise<R | ReturnType<typeof fail>> => {
   try {
     if (!context.credential?.sessionToken && !context.credential?.pat)
       throw new Error('Code tools act for a signed-in user, and this request names none.');
+    const deployment = deploymentKey(context.apiUrl);
     const workspace = await context.workspaceId();
     if (!SAFE_WORKSPACE.test(workspace)) throw new Error('This request has no valid workspace.');
-    return await scope.run({ ...context, workspace, authorized: authorizedFor(context) }, () => handler(args));
+    return await scope.run({ ...context, workspace, deployment, authorized: authorizedFor(context) }, () => handler(args));
   } catch (err) {
     return fail(err);
   }
@@ -98,17 +124,39 @@ const inScope = <A, R>(context: CodeContext, handler: (args: A) => Promise<R>) =
 
 export const inCodeScopeForTests = <R>(context: CodeContext, work: () => Promise<R>) => inScope(context, work)(undefined as never);
 
-const authorizations = new WeakMap<CodeContext, Set<string>>();
-const authorizedFor = (context: CodeContext): Set<string> => {
-  const known = authorizations.get(context) ?? new Set<string>();
+/** What ToolJet last said about the caller and an app, and when. */
+interface Grant {
+  edit: boolean;
+  at: number;
+}
+type Need = 'view' | 'edit';
+
+/*
+  A context lives for one HTTP request, or for a whole stdio process (one build). ToolJet's answer is kept for
+  MCP_CODE_APP_AUTH_TTL_MS (default 30 s), so a build's many writes do not each ask twice, and a permission taken away
+  mid-build stops the next tool call after that. 0 asks on every call.
+*/
+const grantTtlMs = (): number => {
+  const ttl = Number(process.env.MCP_CODE_APP_AUTH_TTL_MS ?? 30_000);
+  return Number.isFinite(ttl) && ttl >= 0 ? ttl : 30_000;
+};
+const authorizations = new WeakMap<CodeContext, Map<string, Grant>>();
+const authorizedFor = (context: CodeContext): Map<string, Grant> => {
+  const known = authorizations.get(context) ?? new Map<string, Grant>();
   authorizations.set(context, known);
   return known;
 };
 
-/** ToolJet's answer, under the caller's own credential, is what says an app is theirs. A refusal stops the tool. */
-const authorizeApp = async (appId: string): Promise<void> => {
+/**
+ * ToolJet's answer, under the caller's own credential, is what says an app is theirs (view) and that they may change it
+ * (edit). A refusal stops the tool before it touches the project.
+ */
+const authorizeApp = async (appId: string, need: Need): Promise<void> => {
   const active = current();
-  if (active.authorized.has(appId)) return;
+  const key = `${active.deployment}\0${appId}`;
+  const known = active.authorized.get(key);
+  if (known && Date.now() - known.at < grantTtlMs() && (need === 'view' || known.edit)) return;
+  active.authorized.delete(key);
   let app: { organizationId?: string; organization_id?: string };
   try {
     app = await active.client.getApp(appId);
@@ -117,11 +165,40 @@ const authorizeApp = async (appId: string): Promise<void> => {
   }
   const owner = app?.organizationId ?? app?.organization_id;
   if (!owner || owner !== active.workspace) throw new Error(`App ${appId} was not found in this workspace.`);
-  active.authorized.add(appId);
+  let edit = false;
+  if (need === 'edit') {
+    try {
+      edit = await active.client.canEditApp(appId);
+    } catch {
+      throw new Error(`ToolJet could not confirm that you can edit app ${appId}, so nothing was changed.`);
+    }
+    if (!edit) {
+      active.authorized.set(key, { edit: false, at: Date.now() });
+      throw new Error(`You can view app ${appId} but not edit it, so its code cannot be changed, built or installed here.`);
+    }
+  }
+  active.authorized.set(key, { edit, at: Date.now() });
 };
 
 const baseRoot = (): string => resolve(process.env.TOOLJET_CODE_APP_ROOT || join(homedir(), 'tooljet-code-apps'));
-const root = (): string => join(baseRoot(), current().workspace);
+const root = (): string => join(baseRoot(), current().deployment, current().workspace);
+
+/*
+  Folders from before deployment namespaces: <root>/<workspace id>/ and, older still, <root>/ itself. They carry no
+  deployment, so they belong to one: MCP_CODE_LEGACY_DEPLOYMENT_URL when set, else this process's configured TOOLJET_URL
+  (what every request used before a request could name its own backend). Only a request authenticated against that
+  backend, for an app ToolJet says is the caller's, moves one into its namespaced folder.
+*/
+const legacyFolders = (): string[] => {
+  const owner = process.env.MCP_CODE_LEGACY_DEPLOYMENT_URL || process.env.TOOLJET_URL || process.env.TOOLJET_DEPLOYMENT_URL ||
+    process.env.TOOLJET_APP_URL || 'http://localhost:3000';
+  try {
+    if (deploymentKey(owner) !== current().deployment) return [];
+  } catch {
+    return [];
+  }
+  return [join(baseRoot(), current().workspace), baseRoot()];
+};
 const NAME = /^[a-z][a-z0-9-]{1,40}$/;
 
 const projectDir = (name: string): string => {
@@ -147,10 +224,12 @@ const projectsIn = (folder: string, appId: string): string[] => {
 
 /** The projects for an app in the caller's workspace, newest app.json first (older ones are leftovers of an earlier scaffold). */
 export const projectsForApp = (appId: string): string[] => {
-  // A project from before the per-workspace folders moves in, once ToolJet has said the app is the caller's.
-  for (const name of projectsIn(baseRoot(), appId)) {
-    mkdirSync(root(), { recursive: true });
-    if (!existsSync(join(root(), name))) renameSync(join(baseRoot(), name), join(root(), name));
+  // A project from before the namespaced folders moves in, once ToolJet has said the app is the caller's.
+  for (const folder of legacyFolders()) {
+    for (const name of projectsIn(folder, appId)) {
+      mkdirSync(root(), { recursive: true });
+      if (!existsSync(join(root(), name))) renameSync(join(folder, name), join(root(), name));
+    }
   }
   return projectsIn(root(), appId);
 };
@@ -158,11 +237,14 @@ export const projectsForApp = (appId: string): string[] => {
 const APP_ID = z.string().uuid().optional().describe("The app's id: finds its project, so you never have to know the folder name");
 const PROJECT_NAME = z.string().regex(NAME).optional().describe('The project folder, when you know it; app_id is enough');
 
-/** A tool's project: by app_id (preferred), else by name. Either way, only one whose app is the caller's. */
-const locateProject = async (args: { name?: string; app_id?: string }): Promise<string> => {
+/**
+ * A tool's project: by app_id (preferred), else by name. Either way, only one whose app is the caller's, and for a tool
+ * that changes the project (need: 'edit'), only one whose app the caller may edit.
+ */
+const locateProject = async (args: { name?: string; app_id?: string }, need: Need): Promise<string> => {
   let dir: string;
   if (args.app_id) {
-    await authorizeApp(args.app_id);
+    await authorizeApp(args.app_id, need);
     const [found] = projectsForApp(args.app_id);
     if (!found) throw new Error(`no Code mode project for app ${args.app_id}; call code_app_scaffold with this app_id`);
     if (args.name && args.name !== found) throw new Error(`app ${args.app_id}'s project is "${found}", not "${args.name}"`);
@@ -170,11 +252,13 @@ const locateProject = async (args: { name?: string; app_id?: string }): Promise<
   } else {
     if (!args.name) throw new Error('give app_id (or the project name)');
     dir = projectDir(args.name);
-    const legacy = join(baseRoot(), args.name);
-    const owner = appIdOf(existsSync(join(dir, 'app.json')) ? dir : legacy);
+    const legacy = existsSync(join(dir, 'app.json'))
+      ? undefined
+      : legacyFolders().map((folder) => join(folder, args.name!)).find((candidate) => existsSync(join(candidate, 'app.json')));
+    const owner = appIdOf(legacy ?? dir);
     if (!owner) throw new Error(`no app project "${args.name}"; call code_app_scaffold first`);
-    await authorizeApp(owner);
-    if (!existsSync(join(dir, 'app.json'))) {
+    await authorizeApp(owner, need);
+    if (legacy) {
       mkdirSync(root(), { recursive: true });
       renameSync(legacy, dir);
     }
@@ -281,7 +365,7 @@ async function cli(cwd: string, args: string[], timeoutMs = 300_000): Promise<{ 
   await requireServerModeCli();
   const command = args.filter((a) => !a.startsWith('-')).slice(0, 2).join(' ');
   if (!COUNTED_COMMANDS.has(command)) return runCli(cwd, args, timeoutMs);
-  return withBuildSlot(baseRoot(), current().workspace, () => runCli(cwd, args, timeoutMs));
+  return withBuildSlot(baseRoot(), `${current().deployment}.${current().workspace}`, () => runCli(cwd, args, timeoutMs));
 }
 
 const PLACEHOLDER_NAME = /^Untitled App\b/;
@@ -403,8 +487,9 @@ export function codeAppScaffoldTool(context: CodeContext): ToolDef {
     },
     handler: inScope(context, async (args: { name: string; display_name: string; app_id: string }) => {
       try {
-        // Before anything is created or installed: a stranger's app id costs no disk and no install.
-        await authorizeApp(args.app_id);
+        // Before anything is created or installed: a stranger's app id, or one the caller can only view, costs no disk
+        // and no install.
+        await authorizeApp(args.app_id, 'edit');
         cleanOldProjects(baseRoot());
         // One project per app: an app that already has one gets it back, whatever name is asked for.
         const [existing] = projectsForApp(args.app_id);
@@ -649,7 +734,7 @@ export function codeAppReadFilesTool(context: CodeContext): ToolDef {
     inputSchema: { app_id: APP_ID, name: PROJECT_NAME, paths: z.array(z.string()).optional() },
     handler: inScope(context, async (args: { app_id?: string; name?: string; paths?: string[] }) => {
       try {
-        const dir = await locateProject(args);
+        const dir = await locateProject(args, 'view');
         if (!freshProjects.has(dir)) await followDraft(dir);
         const sync = !freshProjects.has(dir) ? await ensureFresh(dir) : syncedRecently(dir) ? {} : await syncEditorEdits(dir);
         if (!args.paths?.length) return ok({ project_dir: dir, ...sync, files: listFiles(dir) });
@@ -693,7 +778,7 @@ export function codeAppWriteFilesTool(context: CodeContext): ToolDef {
     },
     handler: inScope(context, async (args: { app_id?: string; name?: string; files?: { path: string; content: string }[]; edits?: { path: string; find: string; replace: string }[]; rewrite?: boolean }) => {
       try {
-        const dir = await locateProject(args);
+        const dir = await locateProject(args, 'edit');
         if (!args.files?.length && !args.edits?.length)
           throw new Error(
             `Nothing was written: this call had no files and no edits, so it sent no code${args.rewrite ? ' (rewrite: true only allows a rewrite, it carries none)' : ''}. ` +
@@ -814,7 +899,7 @@ export function codeAppBuildTool(context: CodeContext): ToolDef {
     inputSchema: { app_id: APP_ID, name: PROJECT_NAME },
     handler: inScope(context, async (args: { app_id?: string; name?: string }) => {
       try {
-        const dir = await locateProject(args);
+        const dir = await locateProject(args, 'edit');
         const followed = await followDraft(dir);
         await ensureFresh(dir);
         const started = Date.now();
@@ -863,7 +948,7 @@ export function codeAppInstallTool(context: CodeContext): ToolDef {
     inputSchema: { app_id: APP_ID, name: PROJECT_NAME },
     handler: inScope(context, async (args: { app_id?: string; name?: string }) => {
       try {
-        const dir = await locateProject(args);
+        const dir = await locateProject(args, 'edit');
         const followed = await followDraft(dir);
         await ensureFresh(dir);
         nothingStored.delete(dir);
@@ -921,7 +1006,7 @@ export function codeAppAddDependencyTool(context: CodeContext): ToolDef {
     },
     handler: inScope(context, async (args: { app_id?: string; name?: string; packages: string[]; remove?: string[] }) => {
       try {
-        const dir = await locateProject(args);
+        const dir = await locateProject(args, 'edit');
         if (!args.packages.length && !args.remove?.length) throw new Error('Pass packages to add, or names to remove.');
         const vet = args.packages.length
           ? await cli(dir, ['app', 'vet', ...args.packages, '--json'])

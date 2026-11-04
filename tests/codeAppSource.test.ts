@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { codeAppInstallTool, codeAppReadFilesTool } from '../src/tools/codeApp.js';
-import { codeContext, WORKSPACE } from './codeContext.js';
+import { codeContext, DEPLOYMENT, WORKSPACE } from './codeContext.js';
 
 // A fake CLI that records its arguments and answers source-pull like the real one.
 const FAKE_CLI = `
@@ -30,8 +30,8 @@ describe('Code mode source on ToolJet', () => {
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'tj-mcp-source-'));
     writeFileSync(join(dir, 'cli.js'), FAKE_CLI);
-    mkdirSync(join(dir, 'apps', WORKSPACE, 'tasks', 'frontend', 'src'), { recursive: true });
-    writeFileSync(join(dir, 'apps', WORKSPACE, 'tasks', 'app.json'), '{"appId":"app-1"}');
+    mkdirSync(join(dir, 'apps', DEPLOYMENT, WORKSPACE, 'tasks', 'frontend', 'src'), { recursive: true });
+    writeFileSync(join(dir, 'apps', DEPLOYMENT, WORKSPACE, 'tasks', 'app.json'), '{"appId":"app-1"}');
     process.env.TOOLJET_CLI = join(dir, 'cli.js');
     process.env.TOOLJET_CODE_APP_ROOT = join(dir, 'apps');
     process.env.FAKE_CLI_LOG = join(dir, 'cli.log');

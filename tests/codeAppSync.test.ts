@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { codeContext, WORKSPACE } from './codeContext.js';
+import { codeContext, DEPLOYMENT, WORKSPACE } from './codeContext.js';
 import {
   changedLines,
   codeAppInstallTool,
@@ -70,7 +70,7 @@ const QUEUE = (header: string, button: string) =>
 describe('Code mode edits start from the stored code', () => {
   let dir: string;
   const env = { ...process.env };
-  const project = () => join(dir, 'apps', WORKSPACE, 'desk');
+  const project = () => join(dir, 'apps', DEPLOYMENT, WORKSPACE, 'desk');
   const store = () => join(dir, 'store');
   const queue = 'frontend/src/App/QueuePage.tsx';
   const text = (r: any) => r.content[0].text as string;

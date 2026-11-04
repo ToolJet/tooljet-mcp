@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { codeContext, WORKSPACE } from './codeContext.js';
+import { codeContext, DEPLOYMENT, WORKSPACE } from './codeContext.js';
 import {
   PACKAGE_SPEC,
   codeAppAddDependencyTool,
@@ -55,10 +55,10 @@ beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'code-app-security-'));
   log = join(root, 'calls.log');
   writeFileSync(log, '');
-  mkdirSync(join(root, WORKSPACE, 'demo', 'frontend'), { recursive: true });
-  writeFileSync(join(root, WORKSPACE, 'demo', 'app.json'), '{"appId":"app-1"}\n');
-  writeFileSync(join(root, WORKSPACE, 'demo', 'frontend', 'package.json'), JSON.stringify({ name: 'demo', dependencies: { react: '19.1.0' } }, null, 2) + '\n');
-  writeFileSync(join(root, WORKSPACE, 'demo', 'frontend', 'package-lock.json'), '{"before":true}\n');
+  mkdirSync(join(root, DEPLOYMENT, WORKSPACE, 'demo', 'frontend'), { recursive: true });
+  writeFileSync(join(root, DEPLOYMENT, WORKSPACE, 'demo', 'app.json'), '{"appId":"app-1"}\n');
+  writeFileSync(join(root, DEPLOYMENT, WORKSPACE, 'demo', 'frontend', 'package.json'), JSON.stringify({ name: 'demo', dependencies: { react: '19.1.0' } }, null, 2) + '\n');
+  writeFileSync(join(root, DEPLOYMENT, WORKSPACE, 'demo', 'frontend', 'package-lock.json'), '{"before":true}\n');
   Object.assign(process.env, { TOOLJET_CODE_APP_ROOT: root, TOOLJET_CLI: FAKE_CLI, FAKE_CLI_LOG: log });
 });
 afterEach(() => {
@@ -133,8 +133,8 @@ describe('code_app_install', () => {
 });
 
 describe('code_app_add_dependency', () => {
-  const pkgFile = () => join(root, WORKSPACE, 'demo', 'frontend', 'package.json');
-  const lockFile = () => join(root, WORKSPACE, 'demo', 'frontend', 'package-lock.json');
+  const pkgFile = () => join(root, DEPLOYMENT, WORKSPACE, 'demo', 'frontend', 'package.json');
+  const lockFile = () => join(root, DEPLOYMENT, WORKSPACE, 'demo', 'frontend', 'package-lock.json');
 
   it('writes nothing when a package fails the check (malware, CVE or cooldown)', async () => {
     const before = readFileSync(pkgFile(), 'utf8');

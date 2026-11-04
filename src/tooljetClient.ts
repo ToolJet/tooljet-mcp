@@ -646,6 +646,8 @@ export interface ToolJetClient {
   releaseApp(appId: string, versionId: string): Promise<ReleaseAppResult>;
   renameApp(appId: string, versionId: string, name: string): Promise<void>;
   getApp(appId: string): Promise<any>;
+  /** Whether the caller may edit the app (ToolJet's own answer): true for an editor, false for a viewer or no access. */
+  canEditApp(appId: string): Promise<boolean>;
   getAppSummary(appId: string, versionId?: string): Promise<AppSummary>;
   listAppPermissionSubjects(appId: string): Promise<AppPermissionSubjects>;
   getAppPermission(
@@ -1193,6 +1195,19 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const res = await auth.authedFetch(`/api/apps/${appId}`);
     await assertOk(res, 'getApp');
     return res.json();
+  }
+
+  /*
+    GET /api/apps/:id/tables is authorized by the same ability as PUT /api/apps/:id (the apps module's UPDATE feature):
+    an editor of the app gets 200, a viewer 403, and an app outside the caller's workspace 404. It reads only the names
+    of the ToolJet DB tables the app uses, so it is the cheapest way to ask ToolJet whether this caller may edit the app.
+  */
+  async function canEditApp(appId: string): Promise<boolean> {
+    const res = await auth.authedFetch(`/api/apps/${encodeURIComponent(appId)}/tables`);
+    if (res.ok) return true;
+    if (res.status === 403 || res.status === 404) return false;
+    await assertOk(res, 'canEditApp');
+    return false;
   }
 
   // In GET /api/apps/:id, each placed component lives at pages[].components[<id>] as
@@ -3333,6 +3348,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     releaseApp,
     renameApp,
     getApp,
+    canEditApp,
     getAppSummary,
     listAppPermissionSubjects,
     getAppPermission,

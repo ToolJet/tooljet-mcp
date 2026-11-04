@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { codeAppInstallTool, followDraft, inCodeScopeForTests } from '../src/tools/codeApp.js';
-import { codeContext, WORKSPACE } from './codeContext.js';
+import { codeContext, DEPLOYMENT, WORKSPACE } from './codeContext.js';
 
 // A fake CLI: `app checkout --list` marks the pinned version with its status (FAKE_STATUS); --editing unpins it.
 const FAKE_CLI = `
@@ -29,7 +29,7 @@ console.log('Open: http://localhost/editor');
 describe('Code mode tools follow the draft after a Save version', () => {
   let dir: string;
   const env = { ...process.env };
-  const project = () => join(dir, 'apps', WORKSPACE, 'tasks');
+  const project = () => join(dir, 'apps', DEPLOYMENT, WORKSPACE, 'tasks');
   const calls = () => readFileSync(join(dir, 'cli.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l).slice(0, 3).join(' '));
 
   beforeEach(() => {

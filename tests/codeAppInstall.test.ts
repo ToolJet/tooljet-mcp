@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { codeAppInstallTool } from '../src/tools/codeApp.js';
-import { codeContext, WORKSPACE } from './codeContext.js';
+import { codeContext, DEPLOYMENT, WORKSPACE } from './codeContext.js';
 
 // A fake CLI: `app publish -v X` fails with the server's "already exists" for the versions in FAKE_TAKEN.
 const FAKE_CLI = `
@@ -34,8 +34,8 @@ describe('code_app_install', () => {
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'tj-mcp-install-'));
     writeFileSync(join(dir, 'cli.js'), FAKE_CLI);
-    mkdirSync(join(dir, 'apps', WORKSPACE, 'tasks', 'frontend', 'src'), { recursive: true });
-    writeFileSync(join(dir, 'apps', WORKSPACE, 'tasks', 'app.json'), '{"appId":"app-1"}');
+    mkdirSync(join(dir, 'apps', DEPLOYMENT, WORKSPACE, 'tasks', 'frontend', 'src'), { recursive: true });
+    writeFileSync(join(dir, 'apps', DEPLOYMENT, WORKSPACE, 'tasks', 'app.json'), '{"appId":"app-1"}');
     process.env.TOOLJET_CLI = join(dir, 'cli.js');
     process.env.TOOLJET_CODE_APP_ROOT = join(dir, 'apps');
     process.env.FAKE_CLI_LOG = join(dir, 'cli.log');

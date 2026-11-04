@@ -123,13 +123,20 @@ export function cleanOldProjects(root: string): void {
   writeFileSync(marker, '');
   const oldest = Date.now() - days * 86_400_000;
   const isProject = (dir: string) => existsSync(join(dir, 'app.json'));
+  // Projects sit at <root>/d_<deployment>/<workspace>/<name>, or at the older <root>/<workspace>/<name> and <root>/<name>.
+  const projects = (dir: string, depth: number): string[] => {
+    if (isProject(dir)) return [dir];
+    if (depth === 0) return [];
+    return readdirSync(dir, { withFileTypes: true })
+      .filter((e) => e.isDirectory() && !e.name.startsWith('.'))
+      .flatMap((e) => projects(join(dir, e.name), depth - 1));
+  };
   for (const entry of readdirSync(root, { withFileTypes: true })) {
     if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
     const dir = join(root, entry.name);
-    const folders = isProject(dir)
-      ? [dir]
-      : readdirSync(dir, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => join(dir, e.name)).filter(isProject);
-    for (const project of folders) if (lastUsed(project) < oldest) rmSync(project, { recursive: true, force: true });
+    for (const project of projects(dir, entry.name.startsWith('d_') ? 2 : 1)) {
+      if (lastUsed(project) < oldest) rmSync(project, { recursive: true, force: true });
+    }
   }
   for (const entry of readdirSync(tmpdir(), { withFileTypes: true })) {
     if (!entry.isDirectory() || !entry.name.startsWith(HOME_PREFIX)) continue;
