@@ -17,8 +17,9 @@ import { connectionKey, startEgressProxy, type EgressProxy } from '../renderEgre
  */
 
 export interface RenderFinding {
-  /** blocked_socket: a WebSocket to a third-party destination was closed; reported, but the render still counts. */
-  kind: 'empty_render' | 'placeholder_text' | 'clipped' | 'overlap' | 'overflow' | 'unreachable' | 'blocked_socket';
+  /** blocked_socket: a WebSocket to a third-party destination was closed; reported, but the render still counts.
+   *  blocked_query: the check did not run this query (a write, or a read with parameters); not a page defect. */
+  kind: 'empty_render' | 'placeholder_text' | 'clipped' | 'overlap' | 'overflow' | 'unreachable' | 'blocked_socket' | 'blocked_query';
   component: string;
   detail: string;
   reason?: 'browser_unavailable' | 'auth_required' | 'navigation_failed' | 'blocked_destination' | 'redirect_blocked' | 'blocked_execution' | 'no_widgets';
@@ -335,7 +336,7 @@ const STATIC_RESOURCES = new Set(['script', 'stylesheet', 'image', 'font']);
 const socketHttpUrl = (url: string): string => url.replace(/^ws(s?):/i, 'http$1:');
 
 /** Findings that report a blocked dependency without saying the page is wrong; they do not make `ok` false. */
-const INFORMATIONAL_KINDS = new Set<RenderFinding['kind']>(['blocked_socket']);
+const INFORMATIONAL_KINDS = new Set<RenderFinding['kind']>(['blocked_socket', 'blocked_query']);
 
 /** A URL's path, without its query string (which can carry ids and tokens). */
 const pathOf = (url: string): string => { try { return new URL(url).pathname; } catch { return '?'; } };
@@ -541,7 +542,7 @@ export async function auditPages(
         try {
           const policy = renderAuditRequest(url, request.method(), options.savedQueries);
           if (!policy.allowed) {
-            block({ kind: 'unreachable', component: '-', reason: 'blocked_execution',
+            block({ kind: 'blocked_query', component: '-', reason: 'blocked_execution',
               detail: `${policy.detail!} (${request.method()} ${pathOf(url)})` }, `${request.method()} ${pathOf(url)}`);
             await route.abort();
             return;
@@ -693,7 +694,7 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
     title: 'Verify Page Render',
     annotations: { readOnlyHint: true, openWorldHint: true },
     description:
-      'Render audit of one page or every page of an app in a headless browser (1600x900 unless viewport_width is set), after the app is built. ' +
+      'Render audit of one page or every page of an app in a headless browser (1600x900 unless viewport_width is set; 1280 with route), after the app is built. ' +
       'On an app in Code mode it checks inside the app: sideways scrolling, content cut off at the right edge, an empty app and placeholder ' +
       'text; pass route to open one route of it and viewport_width (375, 768, 1280) to check each width. An app in Code mode also gets ' +
       'an axe-core accessibility run (WCAG 2 A/AA; `accessibility` lists violations by impact) and a screenshot path. ' +
@@ -710,7 +711,7 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
       app_id: z.string().regex(/^[A-Za-z0-9_-]+$/),
       page_handle: z.string().optional().describe('one page handle; omit to audit every page'),
       viewer_url: z.string().optional().describe('canonical viewer base URL; alternate origins require host configuration in MCP_RENDER_AUDIT_ALLOWED_ORIGINS'),
-      viewport_width: z.number().int().min(320).max(2560).optional().describe('window width in px; default 1600'),
+      viewport_width: z.number().int().min(320).max(2560).optional().describe('window width in px; default 1280 with route, else 1600'),
       route: z.string().regex(/^\/[A-Za-z0-9_\-\/:.]*$/).optional().describe('a Code mode route path to open, such as /orders/36'),
     },
     async handler(args: { app_id: string; page_handle?: string; viewer_url?: string; viewport_width?: number; route?: string }) {
@@ -754,7 +755,7 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
           executablePath: process.env.MCP_RENDER_AUDIT_CHROME || undefined,
           allowedOrigins: origins,
           savedQueries: summary,
-          viewportWidth: args.viewport_width,
+          viewportWidth: args.viewport_width ?? (args.route ? 1280 : undefined),
           codePage: Boolean(args.route),
           // MCP_RENDER_AUDIT_SESSION=off keeps the browser unauthenticated (private apps are then reported unverified).
           session: process.env.MCP_RENDER_AUDIT_SESSION === 'off' ? undefined : client.browserRenderOrigin

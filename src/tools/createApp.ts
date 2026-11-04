@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import type { AppTheme, CreateAppResult, ToolJetClient } from '../tooljetClient.js';
 import { ok, fail, type ToolDef } from './types.js';
-import { themeDefinition } from './manageTheme.js';
+import { themeDefinition } from './themeDefinition.js';
 import { accentWarning } from '../themeAccent.js';
 import { COMPONENT_PACK_DESCRIPTION, defaultPack, savedComponentLibrary, type ComponentLibrary } from '../componentLibrary.js';
 import { libraryPins } from '../libraryPack.js';
