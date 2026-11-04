@@ -384,6 +384,25 @@ export interface CreateTablesParams {
   tables: CreateTableParams[];
 }
 
+/** Give every row the keys any row has, as null, for columns with no default (see insertRows). */
+export function alignSeedRowKeys(schema: SchemaColumn[], rows: Record<string, unknown>[]): void {
+  const noDefault = new Set(schema.filter((column) => column.defaultValue === undefined || column.defaultValue === null).map((column) => column.name));
+  const keys = new Set(rows.flatMap((row) => Object.keys(row)));
+  for (const key of keys) {
+    if (!noDefault.has(key)) continue;
+    for (const row of rows) if (!(key in row)) row[key] = null;
+  }
+}
+
+/** The rows from `start` that share the first row's keys, up to `limit`, so they can go up as one list. */
+export function sameKeysRun(rows: Record<string, unknown>[], start: number, limit: number): Record<string, unknown>[] {
+  const keysOf = (row: Record<string, unknown>) => Object.keys(row).sort().join('\0');
+  const keys = keysOf(rows[start]);
+  let end = start + 1;
+  while (end < rows.length && end - start < limit && keysOf(rows[end]) === keys) end++;
+  return rows.slice(start, end);
+}
+
 export interface SchemaColumn {
   name: string;
   type: string;
@@ -2450,9 +2469,15 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     // used to object-spread POST bodies while validating JSONB values, turning a list of rows into columns "0", "1",
     // ...; a server without that fix rejects the list, PostgREST writes nothing for a rejected statement, and the
     // rows then go one per request as before (one ~180 ms request a row was most of an apply, 2026-10-22).
+    //
+    // PostgREST rejects a list whose rows have different keys, which sent any batch with an optional column left out of
+    // some rows one row per request (7 of 46 seed calls and 188 s in 10 builds, 2026-11-03). So a key a row leaves out
+    // goes in as null when the column has no default, which is what leaving it out means. A column with a default keeps
+    // its default: rows that differ there go in separate lists, in order.
+    alignSeedRowKeys(schema, rows);
     let processedRows = 0;
     while (bulkInsertAccepted && rows.length - processedRows >= 2) {
-      const chunk = rows.slice(processedRows, processedRows + BULK_INSERT_ROWS);
+      const chunk = sameKeysRun(rows, processedRows, BULK_INSERT_ROWS);
       let res: Response;
       try {
         res = await insertRowViaProxy(table.id, chunk);
