@@ -8,10 +8,11 @@ import type {
 import { fail, ok, type ToolDef } from './types.js';
 
 type ManageAppPermissionsArgs = {
-  action: 'list_subjects' | 'get' | 'set' | 'clear';
+  action: 'list_subjects' | 'list_screens' | 'get' | 'set' | 'clear';
   app_id: string;
   resource_type?: AppPermissionResourceType;
   resource_id?: string;
+  route?: string;
   access_type?: AppPermissionAccessType;
   user_ids?: string[];
   group_ids?: string[];
@@ -21,6 +22,59 @@ type ManageAppPermissionsArgs = {
 function requireValue<T>(value: T | undefined, label: string): T {
   if (value === undefined) throw new Error(`${label} is required for this action.`);
   return value;
+}
+
+const CODE_PAGE_TRUE = new Set<unknown>([true, 'true', '{{true}}']);
+
+export type CodeScreen = { route_id: string; path: string; title?: string; page_id: string; code_page_id: string };
+
+/**
+ * The screens of an app's Code mode pages: each route of a code page's root component (`routes`, the registry the CLI
+ * writes) with the hidden page that carries its page permissions.
+ */
+export function codeScreens(summary: AppSummary): CodeScreen[] {
+  const pageIds = new Set(summary.pages.map((page) => page.id));
+  const screens: CodeScreen[] = [];
+  for (const page of summary.pages) {
+    for (const component of page.components) {
+      const props = (component.properties ?? {}) as Record<string, { value?: unknown } | undefined>;
+      if (component.parent || !CODE_PAGE_TRUE.has(props.codePage?.value)) continue;
+      let routes: unknown = props.routes?.value;
+      if (typeof routes === 'string') {
+        try {
+          routes = JSON.parse(routes);
+        } catch {
+          routes = [];
+        }
+      }
+      if (!Array.isArray(routes)) continue;
+      for (const route of routes as Array<Record<string, unknown>>) {
+        if (typeof route?.id !== 'string' || typeof route?.path !== 'string') continue;
+        if (typeof route.pageId !== 'string' || !pageIds.has(route.pageId)) continue;
+        screens.push({
+          route_id: route.id,
+          path: route.path,
+          ...(typeof route.title === 'string' ? { title: route.title } : {}),
+          page_id: route.pageId,
+          code_page_id: page.id,
+        });
+      }
+    }
+  }
+  return screens;
+}
+
+/** The hidden page of a Code mode screen, by its route id (`orders`) or path (`/orders/:id`). */
+export function findScreen(summary: AppSummary, route: string): CodeScreen {
+  const screens = codeScreens(summary);
+  const screen = screens.find((s) => s.route_id === route) ?? screens.find((s) => s.path === route);
+  if (screen) return screen;
+  throw new Error(
+    `No Code mode screen "${route}" in app "${summary.app_id}". ` +
+      (screens.length
+        ? `Its screens: ${screens.map((s) => `${s.route_id} (${s.path})`).join(', ')}.`
+        : 'The app has no Code mode screens.')
+  );
 }
 
 function findResource(summary: AppSummary, resourceType: AppPermissionResourceType, resourceId: string) {
@@ -97,12 +151,21 @@ export function manageAppPermissionsTool(client: ToolJetClient): ToolDef {
       'component. Use list_subjects first and exact ids from get_app_summary; users/groups must already have ' +
       'access to the app. set restricts access to the selected users or groups. clear broadens access to every ' +
       'user who can access the app. Mutations require confirm:true after the user explicitly requests the exact ' +
-      'access rule. ToolJet license gates still apply.',
+      'access rule. ToolJet license gates still apply. Code mode screens: list_screens lists each route with its ' +
+      'hidden page and access; pass route (its id or path from app.json) with resource_type page instead of ' +
+      'resource_id. A screen limit hides the screen (navigation and direct links); the data it shows is protected ' +
+      'only by limiting the queries that return it (resource_type query).',
     inputSchema: {
-      action: z.enum(['list_subjects', 'get', 'set', 'clear']),
+      action: z.enum(['list_subjects', 'list_screens', 'get', 'set', 'clear']),
       app_id: z.string().uuid(),
       resource_type: z.enum(['page', 'query', 'component']).optional(),
       resource_id: z.string().uuid().optional(),
+      route: z
+        .string()
+        .min(1)
+        .max(200)
+        .optional()
+        .describe('A Code mode screen by route id or path (app.json routes), in place of resource_id for a page.'),
       access_type: z.enum(['users', 'groups']).optional(),
       user_ids: z.array(z.string().uuid()).min(1).max(100).optional(),
       group_ids: z.array(z.string().uuid()).min(1).max(100).optional(),
@@ -114,10 +177,31 @@ export function manageAppPermissionsTool(client: ToolJetClient): ToolDef {
           return ok({ app_id: args.app_id, ...(await client.listAppPermissionSubjects(args.app_id)) });
         }
 
-        const resourceType = requireValue(args.resource_type, 'resource_type');
-        const resourceId = requireValue(args.resource_id, 'resource_id');
+        if (args.action === 'list_screens') {
+          const summary = await client.getAppSummary(args.app_id);
+          const screens = await Promise.all(
+            codeScreens(summary).map(async (screen) => ({
+              ...screen,
+              ...normalizePermission(await client.getAppPermission(args.app_id, 'page', screen.page_id)),
+            }))
+          );
+          return ok({ app_id: args.app_id, screens });
+        }
+
+        if (args.route !== undefined && args.resource_id !== undefined) {
+          throw new Error('Pass either route or resource_id, not both.');
+        }
+        if (args.route !== undefined && args.resource_type !== undefined && args.resource_type !== 'page') {
+          throw new Error('route names a Code mode screen, whose access is a page permission: use resource_type page.');
+        }
+        const resourceType = args.route !== undefined ? 'page' : requireValue(args.resource_type, 'resource_type');
         const summary = await client.getAppSummary(args.app_id);
-        const resource = findResource(summary, resourceType, resourceId);
+        const screen = args.route !== undefined ? findScreen(summary, args.route) : undefined;
+        const resourceId = screen ? screen.page_id : requireValue(args.resource_id, 'resource_id');
+        const resource = {
+          ...findResource(summary, resourceType, resourceId),
+          ...(screen ? { screen: { route_id: screen.route_id, path: screen.path, title: screen.title } } : {}),
+        };
 
         if (args.action === 'get') {
           const permissions = await client.getAppPermission(args.app_id, resourceType, resourceId);
