@@ -455,7 +455,10 @@ export async function auditPages(
       if (options.session) {
         // Only the viewer's own origin gets the session, and every request to any other origin is aborted below.
         if (typeof options.session === 'string') {
-          await ctx.addCookies([{ name: 'tj_auth_token', value: options.session, url: new URL(p.url).origin }]);
+          // Same-origin code runs in this page: it must not be able to read the session it is being checked with.
+          const origin = new URL(p.url).origin;
+          await ctx.addCookies([{ name: 'tj_auth_token', value: options.session, url: origin,
+            httpOnly: true, secure: origin.startsWith('https:'), sameSite: 'Lax' }]);
         } else {
           if (new URL(p.url).origin !== options.session.origin || options.session.expiresAt <= Date.now() / 1000) {
             reports[index] = unreachable(p, 'auth_required', 'The scoped viewer credential does not authorize this page origin or has expired');

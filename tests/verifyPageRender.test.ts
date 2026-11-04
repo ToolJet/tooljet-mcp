@@ -271,7 +271,13 @@ describe('render audit with the builder\'s session', () => {
     const f = browserFixture();
     (f.context as any).addCookies = vi.fn().mockResolvedValue(undefined);
     await auditPages(target, { session: 'tok123' }, f.driver);
-    expect((f.context as any).addCookies).toHaveBeenCalledWith([{ name: 'tj_auth_token', value: 'tok123', url: 'http://viewer.test' }]);
+    expect((f.context as any).addCookies).toHaveBeenCalledWith([{ name: 'tj_auth_token', value: 'tok123', url: 'http://viewer.test', httpOnly: true, secure: false, sameSite: 'Lax' }]);
+  });
+  it('marks the cookie Secure on https', async () => {
+    const f = browserFixture();
+    (f.context as any).addCookies = vi.fn().mockResolvedValue(undefined);
+    await auditPages([{ ...target[0], url: 'https://viewer.test/app' }], { session: 'tok123', allowedOrigins: new Set(['https://viewer.test']) as any }, f.driver);
+    expect((f.context as any).addCookies).toHaveBeenCalledWith([expect.objectContaining({ httpOnly: true, secure: true, sameSite: 'Lax' })]);
   });
   it('opens the edited version of every page with the session', async () => {
     const f = browserFixture();

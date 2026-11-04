@@ -214,13 +214,20 @@ describe('viewerSession for the render check', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
-  it.each([404, 401, 403])('falls back to the supplied session when the route answers %s, and keeps the build session', async (status) => {
+  it.each([404, 401, 403])('refuses, never the build session, when the route answers %s, and keeps the build session', async (status) => {
     const fetchImpl = vi.fn().mockResolvedValueOnce(mockResponse({ status })).mockResolvedValue(mockResponse({ json: { ok: true } }));
     const auth = createAuth(sessionConfig, fetchImpl as unknown as typeof fetch);
-    expect(await auth.viewerSession!('app-1')).toBe('SESSION_JWT');
+    await expect(auth.viewerSession!('app-1')).rejects.toThrow(/own read-only session/);
     // A refused render session never clears or "expires" the build's own session.
     await auth.authedFetch('/api/apps/app-1');
     expect(((fetchImpl.mock.calls[1][1] as RequestInit).headers as Headers).get('Cookie')).toBe('tj_auth_token=SESSION_JWT');
+  });
+
+  it('with a PAT, refuses rather than use the automation session when the pinned session cannot be minted', async () => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(sessionResponse('org1', 'AUTOMATION')).mockResolvedValue(mockResponse({ status: 403 }));
+    const auth = createAuth(config, fetchImpl as unknown as typeof fetch);
+    await auth.getOrganizationId();
+    await expect(auth.viewerSession!('app-1')).rejects.toThrow(/own read-only session/);
   });
 
   it('with a PAT, still mints the app-pinned session from the PAT and never calls the relay route', async () => {
@@ -260,8 +267,8 @@ describe('ai-render-session final contract (code-app-demo d103a8349a)', () => {
     expect(((fetchImpl.mock.calls[1][1] as RequestInit).headers as Headers).get('Cookie')).toBe('tj_auth_token=SESSION_JWT');
   });
 
-  it('falls back on a 403 refusal (another app, not an ai_builder session)', async () => {
+  it('refuses on a 403 refusal (another app, not an ai_builder session)', async () => {
     const fetchImpl = vi.fn().mockResolvedValueOnce(mockResponse({ status: 403, json: { message: 'This session cannot render another app' } }));
-    expect(await createAuth(sessionConfig, fetchImpl as unknown as typeof fetch).viewerSession!('app-2')).toBe('SESSION_JWT');
+    await expect(createAuth(sessionConfig, fetchImpl as unknown as typeof fetch).viewerSession!('app-2')).rejects.toThrow(/own read-only session/);
   });
 });

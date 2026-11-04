@@ -284,6 +284,8 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
     if (config.sessionToken) {
       const rendered = await aiRenderSession(appId);
       if (rendered) return rendered;
+      // Never the build's own session: rendered code runs in that browser.
+      throw new Error('The render check could not get its own read-only session.');
     }
     // A workspace token's own session is the automation session, whose ceiling excludes the viewer's boot reads
     // (session, app access, environments): the viewer then shows "App not found". The server mints a read-only
@@ -304,6 +306,8 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
           return body.authToken;
         }
       }
+      // Never the token's automation session: rendered code runs in that browser.
+      throw new Error('The render check could not get its own read-only session.');
     }
     if (!token) await login();
     return token;
