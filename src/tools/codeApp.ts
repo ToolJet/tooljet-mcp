@@ -913,6 +913,15 @@ export function nativeSelects(dir: string): string[] {
     readFileSync(join(src, rel), 'utf8').split('\n').flatMap((line, i) => (/<select[\s>]/.test(line) ? [`frontend/src/${rel}:${i + 1}`] : [])));
 }
 
+/** Route ids the install would refuse: each becomes a page handle. `new_lead` passed the build, then failed the install after the scan (2026-11-04). */
+export function badRouteHandles(dir: string): string[] {
+  const file = join(dir, 'app.json');
+  if (!existsSync(file)) return [];
+  const routes = (JSON.parse(readFileSync(file, 'utf8')) as { routes?: { id?: unknown }[] }).routes ?? [];
+  return routes.map((route) => String(route.id)).filter((id) => !/^[a-z0-9][a-z0-9-]*$/.test(id)).map(
+    (id) => `app.json: route id "${id}" is not a valid handle: use lowercase letters, numbers and hyphens, such as "${id.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+/, '') || 'page'}"`);
+}
+
 export function missingStylesheet(dir: string): string | undefined {
   const sheet = join(dir, STYLESHEET);
   if (!existsSync(sheet)) return undefined; // not this template: nothing to hold the project to
@@ -955,7 +964,8 @@ export function codeAppBuildTool(context: CodeContext): ToolDef {
         const report = parseReport<{ problems?: { file: string; line: number; message: string }[]; accessibility?: unknown[]; security?: SecurityReport }>(check.output);
         const unstyled = missingStylesheet(dir);
         const selects = nativeSelects(dir);
-        const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0 && !unstyled;
+        const handles = badRouteHandles(dir);
+        const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0 && !unstyled && !handles.length;
         if (okBuild) prefetchFullScan(dir);
         return ok({
           ...(followed ? { draft: followed } : {}),
@@ -965,8 +975,8 @@ export function codeAppBuildTool(context: CodeContext): ToolDef {
           typescript_errors: tsErrors,
           build_output: build.code === 0 && tsErrors === 0 ? build.output.trim().split('\n').slice(-6).join('\n') : build.output.trim().slice(0, 12_000),
           check: report?.problems
-            ? [...(unstyled ? [unstyled] : []), ...report.problems.map((p) => `${p.file}:${p.line}  ${p.message}`)]
-            : unstyled ? [unstyled, check.output.trim().slice(0, 6000)] : check.output.trim().slice(0, 6000),
+            ? [...handles, ...(unstyled ? [unstyled] : []), ...report.problems.map((p) => `${p.file}:${p.line}  ${p.message}`)]
+            : unstyled || handles.length ? [...handles, ...(unstyled ? [unstyled] : []), check.output.trim().slice(0, 6000)] : check.output.trim().slice(0, 6000),
           ...(selects.length ? { native_controls: { fix: 'Use Select from components/ui/select instead of a native <select>.', at: selects } } : {}),
           // jsx-a11y recommended rules, warnings only (tooljet app check); fix them when they are cheap to fix.
           a11y_warnings: report?.accessibility?.length ?? Number(/(\d+) accessibility warnings?/.exec(check.output)?.[1] ?? 0),
