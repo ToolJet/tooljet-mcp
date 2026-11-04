@@ -1,4 +1,4 @@
-import { reserveRenderAudit } from '../renderAuditCapacity.js';
+import { waitForRenderAudit } from '../renderAuditCapacity.js';
 import { z } from 'zod';
 import { mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -656,7 +656,7 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
       route: z.string().regex(/^\/[A-Za-z0-9_\-\/:.]*$/).optional().describe('a Code mode route path to open, such as /orders/36'),
     },
     async handler(args: { app_id: string; page_handle?: string; viewer_url?: string; viewport_width?: number; route?: string }) {
-      const release = reserveRenderAudit(client.renderAuditGrant);
+      const release = await waitForRenderAudit(client.renderAuditGrant);
       if (!release) return fail(new Error('Render verification is busy; rendering remains unverified. Retry shortly.'));
       try {
         if (!/^[A-Za-z0-9_-]+$/.test(args.app_id)) return fail(new Error('Invalid app id'));
