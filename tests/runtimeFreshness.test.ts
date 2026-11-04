@@ -25,6 +25,7 @@ describe('runtime freshness', () => {
   it('watches the bundle entry so a change to another dependency invalidates the runtime', () => {
     const entry = join(tmpdir(), 'plugin', 'bundle', 'index.js');
     expect(runtimeArtifactPath(pathToFileURL(join(tmpdir(), 'plugin', 'bundle', 'chunk-example.js')).href)).toBe(entry);
+    expect(runtimeArtifactPath(pathToFileURL(join(tmpdir(), 'plugin', 'bundle', 'chunk-example.mjs')).href)).toBe(join(tmpdir(), 'plugin', 'bundle', 'index.mjs'));
     const source = join(tmpdir(), 'plugin', 'dist', 'runtimeFreshness.js');
     expect(runtimeArtifactPath(pathToFileURL(source).href)).toBe(source);
   });

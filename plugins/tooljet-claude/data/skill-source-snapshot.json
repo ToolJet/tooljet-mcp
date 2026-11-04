@@ -1,0 +1,381 @@
+{
+  "source": "ToolJet/ToolJet",
+  "revision": "4c9b4f8b551a8d0ce686ca1bbb5be3dc8dca0005",
+  "grid": {
+    "columns": 43,
+    "rowSnapPx": 10,
+    "topAlignmentHeightIncrement": 20
+  },
+  "catalog": [
+    {
+      "type": "Accordion",
+      "name": "Accordion",
+      "description": "Group components"
+    },
+    {
+      "type": "AudioRecorder",
+      "name": "AudioRecorder",
+      "description": "Records audio"
+    },
+    {
+      "type": "BoundedBox",
+      "name": "BoundedBox",
+      "description": "An infinitely customizable image annotation widget"
+    },
+    {
+      "type": "Button",
+      "name": "Button",
+      "description": "Trigger actions: queries, alerts, set variables etc."
+    },
+    {
+      "type": "ButtonGroupV2",
+      "name": "ButtonGroup",
+      "description": "Group of buttons"
+    },
+    {
+      "type": "Calendar",
+      "name": "Calendar",
+      "description": "Display calendar events"
+    },
+    {
+      "type": "Camera",
+      "name": "Camera",
+      "description": "Captures video & photos from camera"
+    },
+    {
+      "type": "Cascader",
+      "name": "Cascader",
+      "description": "Hierarchical single item selector"
+    },
+    {
+      "type": "Chart",
+      "name": "Chart",
+      "description": "Visualize data"
+    },
+    {
+      "type": "Chat",
+      "name": "Chat",
+      "description": "Chat interface with message history"
+    },
+    {
+      "type": "Checkbox",
+      "name": "Checkbox",
+      "description": "Single checkbox toggle"
+    },
+    {
+      "type": "CircularProgressBar",
+      "name": "CircularProgressBar",
+      "description": "Show circular progress"
+    },
+    {
+      "type": "CodeEditor",
+      "name": "CodeEditor",
+      "description": "Edit source code"
+    },
+    {
+      "type": "ColorPicker",
+      "name": "ColorPicker",
+      "description": "Choose colors from a palette"
+    },
+    {
+      "type": "Container",
+      "name": "Container",
+      "description": "Group components"
+    },
+    {
+      "type": "CurrencyInput",
+      "name": "CurrencyInput",
+      "description": "Currency input field"
+    },
+    {
+      "type": "CustomComponent",
+      "name": "CustomComponent",
+      "description": "Create React components"
+    },
+    {
+      "type": "DatePickerV2",
+      "name": "DatePicker",
+      "description": "Choose date"
+    },
+    {
+      "type": "DaterangePicker",
+      "name": "DateRangePicker",
+      "description": "Choose date ranges"
+    },
+    {
+      "type": "DatetimePickerV2",
+      "name": "DatetimePicker",
+      "description": "Choose date and time"
+    },
+    {
+      "type": "Divider",
+      "name": "HorizontalDivider",
+      "description": "Separator between components"
+    },
+    {
+      "type": "DropdownV2",
+      "name": "Dropdown",
+      "description": "Single item selector"
+    },
+    {
+      "type": "EmailInput",
+      "name": "EmailInput",
+      "description": "Email input field"
+    },
+    {
+      "type": "FileButton",
+      "name": "FileButton",
+      "description": "A button that triggers file selection. Label updates to show selected file count after selection."
+    },
+    {
+      "type": "FileInput",
+      "name": "FileInput",
+      "description": "File input"
+    },
+    {
+      "type": "FilePicker",
+      "name": "FilePicker",
+      "description": "File Picker"
+    },
+    {
+      "type": "FlexContainer",
+      "name": "FlexContainer",
+      "description": "Auto-layout flex container"
+    },
+    {
+      "type": "Form",
+      "name": "Form",
+      "description": "Wrapper for multiple components"
+    },
+    {
+      "type": "Html",
+      "name": "Html",
+      "description": "View HTML content"
+    },
+    {
+      "type": "Icon",
+      "name": "Icon",
+      "description": "Icon"
+    },
+    {
+      "type": "IFrame",
+      "name": "Iframe",
+      "description": "Embed external content"
+    },
+    {
+      "type": "Image",
+      "name": "Image",
+      "description": "Show image files"
+    },
+    {
+      "type": "JSONEditor",
+      "name": "JSONEditor",
+      "description": "Edit JSON data"
+    },
+    {
+      "type": "JSONExplorer",
+      "name": "JSONExplorer",
+      "description": "Explore JSON data"
+    },
+    {
+      "type": "Kanban",
+      "name": "Kanban",
+      "description": "Task management board"
+    },
+    {
+      "type": "KeyValuePair",
+      "name": "KeyValuePair",
+      "description": "Display data in key-value format"
+    },
+    {
+      "type": "Link",
+      "name": "Link",
+      "description": "Add link to the text"
+    },
+    {
+      "type": "Listview",
+      "name": "Listview",
+      "description": "List multiple items"
+    },
+    {
+      "type": "Map",
+      "name": "Map",
+      "description": "Display map locations"
+    },
+    {
+      "type": "ModalV2",
+      "name": "Modal",
+      "description": "Show pop-up windows"
+    },
+    {
+      "type": "ModuleContainer",
+      "name": "ModuleContainer",
+      "description": "Module Container"
+    },
+    {
+      "type": "ModuleViewer",
+      "name": "ModuleViewer",
+      "description": "Module"
+    },
+    {
+      "type": "MultiselectV2",
+      "name": "Multiselect",
+      "description": "Multiple item selector"
+    },
+    {
+      "type": "Navigation",
+      "name": "Navigation",
+      "description": "Create custom navigation menus"
+    },
+    {
+      "type": "NumberInput",
+      "name": "NumberInput",
+      "description": "Numeric input field"
+    },
+    {
+      "type": "Pagination",
+      "name": "Pagination",
+      "description": "Navigate pages"
+    },
+    {
+      "type": "PasswordInput",
+      "name": "PasswordInput",
+      "description": "Secure text input"
+    },
+    {
+      "type": "PDF",
+      "name": "PDF",
+      "description": "Embed PDF documents"
+    },
+    {
+      "type": "PhoneInput",
+      "name": "PhoneInput",
+      "description": "Phone input field"
+    },
+    {
+      "type": "PopoverMenu",
+      "name": "PopoverMenu",
+      "description": "Popover Menu"
+    },
+    {
+      "type": "ProgressBar",
+      "name": "ProgressBar",
+      "description": "Show progress"
+    },
+    {
+      "type": "QrScanner",
+      "name": "QrScanner",
+      "description": "Scan QR codes and hold its data"
+    },
+    {
+      "type": "RadioButtonV2",
+      "name": "RadioButton",
+      "description": "Select one from multiple choices"
+    },
+    {
+      "type": "RangeSliderV2",
+      "name": "RangeSlider",
+      "description": "Adjust value range"
+    },
+    {
+      "type": "ReorderableList",
+      "name": "ReorderableList",
+      "description": "Reorderable List"
+    },
+    {
+      "type": "RichTextEditor",
+      "name": "RichTextEditor",
+      "description": "Rich text editor"
+    },
+    {
+      "type": "Spinner",
+      "name": "Spinner",
+      "description": "Indicate loading state"
+    },
+    {
+      "type": "StarRating",
+      "name": "StarRating",
+      "description": "Star rating"
+    },
+    {
+      "type": "Statistics",
+      "name": "Statistics",
+      "description": "Show key metrics"
+    },
+    {
+      "type": "Steps",
+      "name": "Steps",
+      "description": "Step-by-step navigation aid"
+    },
+    {
+      "type": "SvgImage",
+      "name": "SvgImage",
+      "description": "Display SVG graphics"
+    },
+    {
+      "type": "Table",
+      "name": "Table",
+      "description": "Display paginated tabular data"
+    },
+    {
+      "type": "Tabs",
+      "name": "Tabs",
+      "description": "Organize content in tabs"
+    },
+    {
+      "type": "Tags",
+      "name": "Tags",
+      "description": "Display tag labels"
+    },
+    {
+      "type": "TagsInput",
+      "name": "TagsInput",
+      "description": "Tag input with create, select, and delete functionality"
+    },
+    {
+      "type": "Text",
+      "name": "Text",
+      "description": "Display text or HTML"
+    },
+    {
+      "type": "TextArea",
+      "name": "Textarea",
+      "description": "Multi-line text input"
+    },
+    {
+      "type": "TextInput",
+      "name": "TextInput",
+      "description": "User text input field"
+    },
+    {
+      "type": "Timeline",
+      "name": "Timeline",
+      "description": "Show event timeline"
+    },
+    {
+      "type": "TimePicker",
+      "name": "TimePicker",
+      "description": "Choose date and time"
+    },
+    {
+      "type": "Timer",
+      "name": "Timer",
+      "description": "Countdown or stopwatch"
+    },
+    {
+      "type": "ToggleSwitchV2",
+      "name": "ToggleSwitch",
+      "description": "User-controlled on-off switch"
+    },
+    {
+      "type": "TreeSelect",
+      "name": "TreeSelect",
+      "description": "Hierarchical item selector"
+    },
+    {
+      "type": "VerticalDivider",
+      "name": "VerticalDivider",
+      "description": "Vertical line separator"
+    }
+  ]
+}

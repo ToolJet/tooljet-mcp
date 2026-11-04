@@ -16,6 +16,17 @@ jobs:
       - run: npm ci
       # Uses the pinned source snapshot; no ToolJet checkout or credentials required.
       - run: npm run build:skill-plugin
+      - name: Build the Claude directory package
+        run: npm run build:claude-plugin
+      - name: Test the extracted Claude package without installed dependencies
+        run: node scripts/test-claude-package.mjs
+      - name: Upload the Claude package for review (does not publish)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tooljet-claude-${{ github.sha }}
+          path: plugins/tooljet-claude/
+          include-hidden-files: true
+          if-no-files-found: error
       - name: Rebuild the Grok distribution from the shared skill
         run: npm run build:grok-plugin
       - name: Build Copilot package from the shared skill
@@ -26,8 +37,8 @@ jobs:
         run: npm run build:gemini-extension
       - name: Build Kiro power from the shared skill
         run: npm run build:kiro-power
-      - name: Verify generated Markdown is current
-        run: git diff --exit-code -- skill skills plugins
+      - name: Verify generated skills and Claude package are current
+        run: git diff --exit-code -- skill skills plugins .claude-plugin
       - name: Verify generated skill plugin has no untracked files
         run: test -z "$(git ls-files --others --exclude-standard -- plugins)"
       - name: Test Grok package boundaries

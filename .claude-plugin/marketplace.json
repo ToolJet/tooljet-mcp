@@ -9,9 +9,9 @@
   "plugins": [
     {
       "name": "tooljet-app-builder",
-      "source": "./",
+      "source": "./plugins/tooljet-claude",
       "description": "Build data-connected dashboards, internal tools and back-office apps in ToolJet, then refine them visually. Requires a ToolJet connection.",
-      "version": "0.12.0",
+      "version": "0.12.1",
       "author": {
         "name": "ToolJet"
       },

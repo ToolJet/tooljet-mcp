@@ -1,5 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { loadConfig, type RequestIdentity } from './config.js';
+import { loadConfig, type Config, type RequestIdentity } from './config.js';
 import { createAuth } from './auth.js';
 import { createClient } from './tooljetClient.js';
 import { registerTools } from './tools/index.js';
@@ -14,7 +14,11 @@ import { TOOLJET_MCP_VERSION } from './runtimeFreshness.js';
  * where the process itself belongs to one build and the credential comes from its environment.
  */
 export function buildServer(identity?: RequestIdentity): McpServer {
-  const config = loadConfig(identity);
+  return buildConfiguredServer(loadConfig(identity));
+}
+
+/** Hosts with an explicit configuration dialog supply a complete config without ambient credentials. */
+export function buildConfiguredServer(config: Config): McpServer {
   const auth = createAuth(config);
   const client = createClient(auth, config);
 

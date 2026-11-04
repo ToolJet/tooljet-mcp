@@ -218,35 +218,34 @@ Package metadata comes from `scripts/build-skill-plugin.mjs` and `package.json`.
 
 ## Install as a Claude Code plugin
 
-This repo is also a **self-contained Claude Code plugin** — installing it registers the MCP server *and* the `tooljet-app-builder` skill together. No `npm install`/build on the user's side: the entry (`bundle/index.js`), its readable ESM dependency chunks, and the runtime catalogs in `data/` are committed. Claude Code may still run its automatic lockfile install because the repository root contains `package.json` and `package-lock.json`; that separate directory review requirement remains.
+The Claude marketplace installs `plugins/tooljet-claude/`, a self-contained package with the MCP server and shared app-builder skill. It has no package manifest, lockfile, install hook, or runtime download. Node.js 20 or newer must already be installed.
 
-**Install (no marketplace needed):**
-```
-/plugin install github:ToolJet/tooljet-mcp
-```
-Or via the marketplace, which lets you get updates:
-```
+```text
 /plugin marketplace add ToolJet/tooljet-mcp
 /plugin install tooljet-app-builder@tooljet
 ```
-For local development you can also install from a path: `/plugin install path:/absolute/path/to/tooljet-mcp`.
 
-**Provide credentials.** A plugin cannot prompt for secrets, so the MCP server reads them from your environment (`TOOLJET_DEPLOYMENT_URL` defaults to localhost; `TOOLJET_URL` defaults to `TOOLJET_DEPLOYMENT_URL`). Before launching Claude Code:
+**Configure the connection in Claude.** The interactive plugin interface asks for the deployment URL, optional separate API URL, and PAT. The PAT field is sensitive and uses Claude's secure credential storage. Run `/plugin configure tooljet-app-builder@tooljet` to change it, then reload the plugin. Existing shell PAT/session settings are not reused by the Claude entry point. Noninteractive shell installation does not show the configuration dialog.
+
+The local package works in Claude Code and supported Cowork hosts. For claude.ai chat or ToolJet Cloud OAuth, use a hosted MCP connection and the separate skill-only package described above. Cloud OAuth, standalone environment-based MCP clients, and in-product session authentication remain supported by their existing entry points.
+
+**Build and validate:**
+
 ```bash
-export TOOLJET_DEPLOYMENT_URL="https://your-instance.tooljet.com"
-export TOOLJET_PAT="tj_pat_..."
-# only needed if the API lives on a different origin than TOOLJET_DEPLOYMENT_URL above:
-# export TOOLJET_URL="https://api.your-instance.tooljet.com"
+npm run generate:skill
+npm run build:plugin
+npm run build:claude-plugin
+node scripts/test-claude-package.mjs
+claude plugin validate plugins/tooljet-claude --strict --profile directory
 ```
-If `TOOLJET_DEPLOYMENT_URL` and `TOOLJET_PAT` are missing, the server exits during startup with a clear required-variable error. Set them and restart.
 
-**What ships / how it's built.** `bundle/index.js` loads content-hashed ESM chunks with all runtime dependencies included, so it runs with no `node_modules`. The build uses esbuild module boundaries and Rollup to keep readable files below 256 KiB. Babel is built from the pinned package's published source modules; see `scripts/vendor/README.md`. Component and datasource catalogs use small index files plus standalone JSON parts in `data/`; their public MCP resource payloads and hashes are unchanged. `npm run check:plugin-package` enforces file sizes, file count, and the absence of packed artifacts. These packaging checks do not replace Anthropic's security review. When deploying or uploading the runtime, copy the entire `bundle/` and `data/` directories, preserving their subdirectories. Direct catalog-file readers should use `lib/catalogFiles.js` or the MCP catalog resources instead of treating the catalog index as the complete schema. `generate:skill` writes both `skill/` and the packaged `skills/tooljet-app-builder/` from the same source, including every focused reference. Rebuild all of that after a source or catalog change with:
-```bash
-npm run generate:catalogs && npm run generate:skill && npm run build:plugin
-```
-The plugin manifest is `.claude-plugin/plugin.json` (declares the MCP server via `${CLAUDE_PLUGIN_ROOT}/bundle/index.js`); the marketplace catalog is `.claude-plugin/marketplace.json`.
+The maintained Claude metadata and installation guide live in `integrations/claude/`. The generator writes `plugins/tooljet-claude/` and the marketplace source path. It also keeps the root Claude manifest working for explicit repository/path installs; those installs include development files and can still trigger a lockfile review. Use the curated subfolder for the directory and `claude --plugin-dir ./plugins/tooljet-claude` for local verification.
 
-For skill-only changes, run `npm run generate:skill && npm run build:plugin`; no sibling checkout,
+**Directory source change:** distribute the contents of `plugins/tooljet-claude/` at the root of a dedicated distribution branch, preserving the existing plugin name and listing identity. An organization owner can then point the existing listing at that branch with an empty plugin path. Do not publish that branch until the package is reviewed and authorized for rollout. The [directory checklist](https://claude.com/docs/plugins/pre-submission-checklist#choices-a-reviewer-always-checks) documents an additional reviewer hold for non-shell server programs inside repository subfolders, so submitting the development subfolder itself can still require manual review. Merging this code alone does not change the portal source or clear a policy hold. The generated package version is independent of the embedded MCP server version. Never submit the development repository ZIP as the installable Claude package.
+
+Both runtimes use the same tools and catalogs. The Claude entry uses readable `.mjs` files so it needs no `package.json` to select ESM. Bundled dependencies retain their license notices. `npm run check:claude-package` checks the complete installed tree for file-size/count limits, portability, module references, icon, skill references, and configuration. `npm run check:plugin-package` also checks the remaining source tree. Keep the entire `bundle/` and `data/` trees together; catalog readers should use `lib/catalogFiles.js` or the MCP catalog resources. These local checks do not replace Anthropic's directory review.
+
+For skill-only changes, run `npm run generate:skill && npm run build:plugin && npm run build:claude-plugin`; no sibling checkout,
 MCP server, Python MCP package, or credentials are needed. Generation uses the pinned grid/widget
 snapshot in `data/skill-source-snapshot.json`. Refresh upstream facts explicitly with
 `TOOLJET_ROOT=/path/to/ToolJet node scripts/generate-skill.mjs --refresh-source-snapshot`, review the

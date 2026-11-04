@@ -1,386 +1,132 @@
+#!/usr/bin/env node
 import { createRequire } from "node:module";
-import { o as external_exports, q as editContractSchema, s as generateEditContract, p as COMPONENT_FX_GUIDANCE } from "./chunk-8iUq0slz.js";
-import { s as strictEntry, g as specSchema, h as createClient, l as listWorkspaceGroupsTool, m as manageWorkspaceGroupsTool, j as inspectDatasourceSchemaTool, u as updateComponentsTool, o as ok, k as nodeCatalog, f as fail, p as capabilityRequestSchema, q as getWorkflowCapabilities, w as lint, x as apply, y as deleteNode, z as validateGraph, v as validateTableBatch, A as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec } from "./chunk-DTNK3HRU.js";
-import { a6 as dbColumnTypeSchema, a7 as componentInputSchema, a8 as lintAppSpecTool, a9 as projectJavascriptRuntime, aa as projectAppSettings, ab as compactTheme, ac as pageSettingProperties, l as literalCanvasColor, ad as containsExactValue, h as prepareQueryOptionsForWrite, ae as inspectUpdateCompatibility, af as normalizePlanBindingAliases, ag as containsNamedBinding, ah as normalizePlannedLayouts, ai as materializeRequiredDefaultChildren, aj as mapKeyRefusal, j as prepareComponentBatch, v as validateEvents, n as expandQueryLifecycles, q as persistedEventSpecs, ak as persistedEventIds } from "./chunk-C-4D1Wqw.js";
-import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, W as WebStandardStreamableHTTPServerTransport, g as getRequestListener, c as validatePersistedAppSummary } from "./chunk-BmRxQuBQ.js";
-import { M as McpServer } from "./chunk-CPtKEQcN.js";
-import { u as pageIconSchema, c as componentSlotSchema, a as componentNameSchema, t as lintComponents, i as introducedLintFindings, x as lintRenderedGeometryBlocking, y as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, f as lintComponentSlots, l as lintComponentSpec, g as lintUnusableTextGeometry, z as lintNestedContainerWidths, h as lintStandardSingleLineInputHeight, j as lintTextGeometry, k as lintRenderedGeometry, F as FORM_SCHEMA_FIELD_TYPE_SET, A as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-gznY6rD8.js";
-import { ea as getCatalog, e5 as getComponentSchema, eb as getLegacyComponentReplacement, ee as readCatalogBytes } from "./chunk-BEuHHGL1.js";
-import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-CsHFzbSc.js";
-import { createHash } from "node:crypto";
-import { isIP } from "node:net";
-import { createServer } from "node:http";
+import { D as verifyPageRenderTool, o as ok, h as fail, E as capabilityRequestSchema, F as getWorkflowCapabilities, G as lint, H as apply, I as deleteNode, J as editContractSchema, K as generateEditContract, a as getCatalog, g as getComponentSchema, b as getLegacyComponentReplacement } from "./chunk-B1xVpwDC.mjs";
+import { s as strictEntry, o as createClient, q as listWorkspaceGroupsTool, t as manageWorkspaceGroupsTool, u as inspectDatasourceSchemaTool, v as validateTableBatch, w as ToolJetHttpError, p as prepareQueryOptionsForWrite, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec, a as normalizePlannedLayouts, b as materializeRequiredDefaultChildren, x as hasNonEmptyDefinition, d as validateEvents, e as expandQueryLifecycles, l as persistedEventSpecs, y as persistedEventIds } from "./chunk-B4EMQUpb.mjs";
+import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, p as projectJavascriptRuntime, e as projectAppSettings, f as compactTheme, g as pageSettingProperties, v as validatePersistedAppSummary, h as literalCanvasColor, i as containsExactValue, j as inspectUpdateCompatibility, n as normalizePlanBindingAliases, k as containsNamedBinding, m as mapKeyRefusal, C as COMPONENT_FX_GUIDANCE, o as prepareComponentBatch, q as COMPONENT_FX_UPDATE_GUIDANCE } from "./chunk-Bz2vloBy.mjs";
+import { b3 as external_exports, b6 as specSchema, b4 as nodeCatalog, b5 as validateGraph, bb as readCatalogBytes } from "./chunk-CSMyw4Vw.mjs";
+import { M as McpServer } from "./chunk-CHpcP7BO.mjs";
+import { $ as JSONRPCMessageSchema } from "./chunk-CGU5Day0.mjs";
+import "./chunk-C7DQc0-9.mjs";
+import { g as pageIconSchema, f as componentSlotSchema, c as componentNameSchema, b as lintComponents, i as introducedLintFindings, j as lintRenderedGeometryBlocking, k as lintRenderedGeometryAdvisory, o as componentNameError, d as decodeComponentParent, e as encodeComponentParent, s as suggestedHtmlHeight, q as lintComponentSpec, r as lintComponentSlots, t as lintUnusableTextGeometry, u as lintStandardSingleLineInputHeight, w as lintTextGeometry, x as lintRenderedGeometry, y as lintKanbanInteractions, z as lintNestedContainerWidths, F as FORM_SCHEMA_FIELD_TYPE_SET, A as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-PpmaHFhJ.mjs";
+import "./chunk-DsBZxR6O.mjs";
+import "./chunk-xehCgMYm.mjs";
+import "./chunk-DcxxRLvp.mjs";
+import { n as connectableDatasourceNames, o as getDatasourceCatalog, p as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-C3n37ePc.mjs";
+import "./chunk-GAqkxb6R.mjs";
+import "./chunk-DW9m0IHz.mjs";
+import "./chunk-BrOZjXs6.mjs";
+import "./chunk-BX4Jqaqv.mjs";
+import "./chunk-cQw4_eTk.mjs";
+import process2 from "node:process";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { mkdir, appendFile } from "node:fs/promises";
-import { dirname, resolve, basename, join } from "node:path";
+import { dirname, resolve, basename, extname, join } from "node:path";
 import { statSync, accessSync, constants, existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
+import "node:util";
+import "node:vm";
 createRequire(import.meta.url);
-function createExchangeLimiter(limit = 300, trustedProxyHops = 0) {
-  if (!Number.isInteger(limit) || limit < 1 || limit > 1e4 || !Number.isInteger(trustedProxyHops) || trustedProxyHops < 0 || trustedProxyHops > 10) {
-    throw new Error("Invalid MCP OAuth exchange rate limit or trusted proxy hop count");
+var STDIO_DEFAULT_MAX_BUFFER_SIZE = 10 * 1024 * 1024;
+var ReadBuffer = class {
+  constructor(options2) {
+    this._maxBufferSize = options2?.maxBufferSize ?? STDIO_DEFAULT_MAX_BUFFER_SIZE;
   }
-  const buckets = /* @__PURE__ */ new Map();
-  let nextSweep = 0;
-  const address = (req) => {
-    let ip = req.socket.remoteAddress || "unknown";
-    const forwarded = req.headers["x-forwarded-for"];
-    if (trustedProxyHops && typeof forwarded === "string") {
-      const chain = [...forwarded.split(",").map((value) => value.trim()), ip];
-      const candidate = chain[chain.length - 1 - trustedProxyHops];
-      if (candidate && isIP(candidate))
-        ip = candidate;
+  append(chunk) {
+    const newSize = (this._buffer?.length ?? 0) + chunk.length;
+    if (newSize > this._maxBufferSize) {
+      this.clear();
+      throw new Error(`ReadBuffer exceeded maximum size of ${this._maxBufferSize} bytes`);
     }
-    return ip;
-  };
-  return {
-    retryAfter(req, now = Date.now()) {
-      const bucket = buckets.get(address(req));
-      return bucket && bucket.reset > now && bucket.count >= limit ? Math.max(1, Math.ceil((bucket.reset - now) / 1e3)) : 0;
-    },
-    failed(req, now = Date.now()) {
-      if (now >= nextSweep) {
-        for (const [key, bucket2] of buckets)
-          if (bucket2.reset <= now)
-            buckets.delete(key);
-        nextSweep = now + 6e4;
-      }
-      const ip = address(req);
-      let bucket = buckets.get(ip);
-      if (!bucket || bucket.reset <= now) {
-        if (buckets.size >= 1e4)
-          buckets.delete(buckets.keys().next().value);
-        bucket = { count: 0, reset: now + 6e4 };
-        buckets.set(ip, bucket);
-      }
-      bucket.count++;
+    this._buffer = this._buffer ? Buffer.concat([this._buffer, chunk]) : chunk;
+  }
+  readMessage() {
+    if (!this._buffer) {
+      return null;
     }
-  };
-}
-function createVerifiedExchangeCache(ttlMs = 6e4, capacity = 1e4) {
-  const verified = /* @__PURE__ */ new Map();
-  const key = (token, resource) => createHash("sha256").update(resource).update("\0").update(token).digest("hex");
-  return {
-    has(token, resource, now = Date.now()) {
-      const id = key(token, resource);
-      const expires = verified.get(id);
-      if (expires !== void 0 && expires > now)
-        return true;
-      verified.delete(id);
-      return false;
-    },
-    remember(token, resource, now = Date.now()) {
-      const id = key(token, resource);
-      verified.delete(id);
-      if (verified.size >= capacity)
-        verified.delete(verified.keys().next().value);
-      verified.set(id, now + ttlMs);
-    },
-    forget(token, resource) {
-      verified.delete(key(token, resource));
+    const index = this._buffer.indexOf("\n");
+    if (index === -1) {
+      return null;
     }
-  };
-}
-var StreamableHTTPServerTransport = class {
-  constructor(options2 = {}) {
-    this._requestContext = /* @__PURE__ */ new WeakMap();
-    this._webStandardTransport = new WebStandardStreamableHTTPServerTransport(options2);
-    this._requestListener = getRequestListener(async (webRequest) => {
-      const context = this._requestContext.get(webRequest);
-      return this._webStandardTransport.handleRequest(webRequest, {
-        authInfo: context?.authInfo,
-        parsedBody: context?.parsedBody
-      });
-    }, { overrideGlobalObjects: false });
+    const line = this._buffer.toString("utf8", 0, index).replace(/\r$/, "");
+    this._buffer = this._buffer.subarray(index + 1);
+    return deserializeMessage(line);
   }
-  /**
-   * Gets the session ID for this transport instance.
-   */
-  get sessionId() {
-    return this._webStandardTransport.sessionId;
-  }
-  /**
-   * Sets callback for when the transport is closed.
-   */
-  set onclose(handler) {
-    this._webStandardTransport.onclose = handler;
-  }
-  get onclose() {
-    return this._webStandardTransport.onclose;
-  }
-  /**
-   * Sets callback for transport errors.
-   */
-  set onerror(handler) {
-    this._webStandardTransport.onerror = handler;
-  }
-  get onerror() {
-    return this._webStandardTransport.onerror;
-  }
-  /**
-   * Sets callback for incoming messages.
-   */
-  set onmessage(handler) {
-    this._webStandardTransport.onmessage = handler;
-  }
-  get onmessage() {
-    return this._webStandardTransport.onmessage;
-  }
-  /**
-   * Starts the transport. This is required by the Transport interface but is a no-op
-   * for the Streamable HTTP transport as connections are managed per-request.
-   */
-  async start() {
-    return this._webStandardTransport.start();
-  }
-  /**
-   * Closes the transport and all active connections.
-   */
-  async close() {
-    return this._webStandardTransport.close();
-  }
-  /**
-   * Sends a JSON-RPC message through the transport.
-   */
-  async send(message, options2) {
-    return this._webStandardTransport.send(message, options2);
-  }
-  /**
-   * Handles an incoming HTTP request, whether GET or POST.
-   *
-   * This method converts Node.js HTTP objects to Web Standard Request/Response
-   * and delegates to the underlying WebStandardStreamableHTTPServerTransport.
-   *
-   * @param req - Node.js IncomingMessage, optionally with auth property from middleware
-   * @param res - Node.js ServerResponse
-   * @param parsedBody - Optional pre-parsed body from body-parser middleware
-   */
-  async handleRequest(req, res, parsedBody) {
-    const authInfo = req.auth;
-    const handler = getRequestListener(async (webRequest) => {
-      return this._webStandardTransport.handleRequest(webRequest, {
-        authInfo,
-        parsedBody
-      });
-    }, { overrideGlobalObjects: false });
-    await handler(req, res);
-  }
-  /**
-   * Close an SSE stream for a specific request, triggering client reconnection.
-   * Use this to implement polling behavior during long-running operations -
-   * client will reconnect after the retry interval specified in the priming event.
-   */
-  closeSSEStream(requestId) {
-    this._webStandardTransport.closeSSEStream(requestId);
-  }
-  /**
-   * Close the standalone GET SSE stream, triggering client reconnection.
-   * Use this to implement polling behavior for server-initiated notifications.
-   */
-  closeStandaloneSSEStream() {
-    this._webStandardTransport.closeStandaloneSSEStream();
+  clear() {
+    this._buffer = void 0;
   }
 };
-var SESSION_TOKEN_HEADER = "x-tooljet-session";
-var WORKSPACE_ID_HEADER = "x-tooljet-workspace-id";
-var WORKSPACE_SLUG_HEADER = "x-tooljet-workspace-slug";
-var PAT_HEADER = "x-tooljet-pat";
-var BASE_URL_HEADER = "x-tooljet-url";
-var CUSTOMER_ID_HEADER = "x-tooljet-customer-id";
-var ALLOWED_API_ORIGINS_VAR = "MCP_ALLOWED_API_ORIGINS";
-var GATEWAY_URL_VAR = "MCP_GATEWAY_URL";
-var GATEWAY_TOKEN_VAR = "MCP_GATEWAY_TOKEN";
-function env(name) {
-  const value = process.env[name]?.trim();
-  return value ? value : void 0;
+function deserializeMessage(line) {
+  return JSONRPCMessageSchema.parse(JSON.parse(line));
 }
-function allowedApiOrigins() {
-  const raw = env(ALLOWED_API_ORIGINS_VAR);
-  if (!raw)
-    return [];
-  return raw.split(",").map((entry) => entry.trim()).filter(Boolean).map((entry) => {
-    let parsed;
-    try {
-      parsed = new URL(entry);
-    } catch {
-      throw new Error(`${ALLOWED_API_ORIGINS_VAR} contains an entry that is not a valid URL: "${entry}".`);
-    }
-    if (parsed.protocol !== "https:") {
-      throw new Error(`${ALLOWED_API_ORIGINS_VAR} entry "${entry}" must use https \u2014 it could never match a request.`);
-    }
-    return parsed.origin;
-  });
+function serializeMessage(message) {
+  return JSON.stringify(message) + "\n";
 }
-function readHeader(headers, name) {
-  const raw = headers[name] ?? headers[name.toLowerCase()];
-  const value = Array.isArray(raw) ? raw[0] : raw;
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : void 0;
-}
-var gatewayOriginCache = /* @__PURE__ */ new Map();
-var GATEWAY_CACHE_TTL_MS = 6e4;
-async function checkOriginWithGateway(customerId, origin) {
-  const cacheKey = `${customerId} ${origin}`;
-  const cached = gatewayOriginCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now())
-    return cached.allowed;
-  const gatewayUrl = env(GATEWAY_URL_VAR);
-  const gatewayToken = env(GATEWAY_TOKEN_VAR);
-  if (!gatewayUrl || !gatewayToken)
-    return false;
-  let allowed = false;
-  try {
-    const res = await fetch(new URL("/internal/mcp/verify-origin", gatewayUrl), {
-      method: "POST",
-      headers: { authorization: gatewayToken, "content-type": "application/json" },
-      body: JSON.stringify({ customer_id: customerId, origin }),
-      signal: AbortSignal.timeout(5e3)
-    });
-    if (res.ok) {
-      const body = await res.json();
-      allowed = body.allowed === true;
-    }
-  } catch {
-    allowed = false;
-  }
-  gatewayOriginCache.set(cacheKey, { allowed, expiresAt: Date.now() + GATEWAY_CACHE_TTL_MS });
-  return allowed;
-}
-var gatewayResolveCache = /* @__PURE__ */ new Map();
-async function resolveApiUrlFromGateway(customerId) {
-  const cached = gatewayResolveCache.get(customerId);
-  if (cached && cached.expiresAt > Date.now())
-    return cached.result;
-  const gatewayUrl = env(GATEWAY_URL_VAR);
-  const gatewayToken = env(GATEWAY_TOKEN_VAR);
-  let result = { url: void 0, verified: false };
-  if (gatewayUrl && gatewayToken) {
-    try {
-      const res = await fetch(new URL("/internal/mcp/verify-origin", gatewayUrl), {
-        method: "POST",
-        headers: { authorization: gatewayToken, "content-type": "application/json" },
-        body: JSON.stringify({ customer_id: customerId }),
-        signal: AbortSignal.timeout(5e3)
-      });
-      if (res.ok) {
-        const body = await res.json();
-        if ("host_name" in body) {
-          const path = body.subpath ? `/${body.subpath.replace(/^\/+|\/+$/g, "")}` : "";
-          result = { url: body.host_name ? `https://${body.host_name}${path}` : void 0, verified: true };
-        }
+var StdioServerTransport = class {
+  constructor(_stdin = process2.stdin, _stdout = process2.stdout, options2) {
+    this._stdin = _stdin;
+    this._stdout = _stdout;
+    this._started = false;
+    this._ondata = (chunk) => {
+      try {
+        this._readBuffer.append(chunk);
+        this.processReadBuffer();
+      } catch (error) {
+        this.onerror?.(error);
+        this.close().catch(() => {
+        });
       }
-    } catch {
-      result = { url: void 0, verified: false };
-    }
-  }
-  gatewayResolveCache.set(customerId, { result, expiresAt: Date.now() + GATEWAY_CACHE_TTL_MS });
-  return result;
-}
-async function validateApiUrl(raw, customerId) {
-  let parsed;
-  try {
-    parsed = new URL(raw);
-  } catch {
-    throw new Error(`${BASE_URL_HEADER} must be a valid absolute URL.`);
-  }
-  if (parsed.protocol !== "https:") {
-    throw new Error(`${BASE_URL_HEADER} must use https.`);
-  }
-  if (parsed.search || parsed.hash || parsed.username || parsed.password) {
-    throw new Error(`${BASE_URL_HEADER} must carry no query, hash, or credentials.`);
-  }
-  const inStaticList = allowedApiOrigins().includes(parsed.origin);
-  const verifiedViaGateway = !inStaticList && customerId ? await checkOriginWithGateway(customerId, parsed.origin) : false;
-  if (!inStaticList && !verifiedViaGateway) {
-    throw new Error(`${BASE_URL_HEADER} origin "${parsed.origin}" is not in ${ALLOWED_API_ORIGINS_VAR} and did not verify against the Gateway. Add it to that comma-separated list, or confirm ${CUSTOMER_ID_HEADER} is being sent.`);
-  }
-  const path = parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/$/, "");
-  return { apiUrl: parsed.origin + path, customerVerified: verifiedViaGateway ? true : void 0 };
-}
-async function identityFromHeaders(headers, { allowPat = true } = {}) {
-  const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
-  const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
-  const pat = readHeader(headers, PAT_HEADER);
-  const rawApiUrl = readHeader(headers, BASE_URL_HEADER);
-  const customerId = readHeader(headers, CUSTOMER_ID_HEADER);
-  let apiUrl;
-  let customerVerified;
-  if (rawApiUrl) {
-    const validated = await validateApiUrl(rawApiUrl, customerId);
-    apiUrl = validated.apiUrl;
-    customerVerified = validated.customerVerified;
-  } else if (customerId) {
-    const resolved = await resolveApiUrlFromGateway(customerId);
-    apiUrl = resolved.url;
-    customerVerified = resolved.verified ? true : void 0;
-  }
-  if (pat) {
-    if (!allowPat) {
-      throw new Error(`${PAT_HEADER} is not accepted by this server. It acts only on behalf of a signed-in user: send ${SESSION_TOKEN_HEADER} with ${WORKSPACE_ID_HEADER}.`);
-    }
-    if (sessionToken)
-      throw new Error(`Send either ${PAT_HEADER} or ${SESSION_TOKEN_HEADER}, not both.`);
-    return { pat, apiUrl, customerVerified };
-  }
-  if (!sessionToken && !workspaceId) {
-    return apiUrl || customerVerified ? { apiUrl, customerVerified } : void 0;
-  }
-  if (!sessionToken) {
-    throw new Error(`${WORKSPACE_ID_HEADER} was sent without ${SESSION_TOKEN_HEADER}.`);
-  }
-  if (!workspaceId) {
-    throw new Error(`${SESSION_TOKEN_HEADER} was sent without ${WORKSPACE_ID_HEADER}.`);
-  }
-  return {
-    sessionToken,
-    workspaceId,
-    workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER),
-    apiUrl,
-    customerVerified
-  };
-}
-function loadConfig(identity) {
-  const explicitApiUrl = env("TOOLJET_URL");
-  const explicitAppUrl = env("TOOLJET_DEPLOYMENT_URL") ?? env("TOOLJET_APP_URL");
-  const staticApiUrl = explicitApiUrl ?? explicitAppUrl ?? "http://localhost:3000";
-  if (identity) {
-    const apiUrl2 = identity.apiUrl ?? staticApiUrl;
-    const appUrl2 = identity.appUrl ?? explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? "http://localhost:8082";
-    const viewerUrl = identity.viewerUrl ?? appUrl2;
-    if (identity.pat)
-      return { apiUrl: apiUrl2, appUrl: appUrl2, viewerUrl, pat: identity.pat };
-    return {
-      apiUrl: apiUrl2,
-      appUrl: appUrl2,
-      viewerUrl,
-      sessionToken: identity.sessionToken,
-      isOAuthDelegation: identity.isOAuthDelegation,
-      oauthGrantId: identity.oauthGrantId,
-      workspaceId: identity.workspaceId,
-      workspaceSlug: identity.workspaceSlug
     };
+    this._onerror = (error) => {
+      this.onerror?.(error);
+    };
+    this._readBuffer = new ReadBuffer({ maxBufferSize: options2?.maxBufferSize });
   }
-  const apiUrl = staticApiUrl;
-  const appUrl = explicitAppUrl ?? explicitApiUrl ?? "http://localhost:8082";
-  const pat = env("TOOLJET_PAT");
-  const sessionToken = env("TOOLJET_SESSION_TOKEN");
-  const workspaceId = env("TOOLJET_WORKSPACE_ID");
-  if (!pat && !sessionToken) {
-    throw new Error(`TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal access token in ToolJet under Settings \u2192 Access tokens, in the workspace you want this server to act on, and set TOOLJET_PAT. A shared HTTP server instead receives the acting user per request via the ${SESSION_TOKEN_HEADER} header.`);
+  /**
+   * Starts listening for messages on stdin.
+   */
+  async start() {
+    if (this._started) {
+      throw new Error("StdioServerTransport already started! If using Server class, note that connect() calls start() automatically.");
+    }
+    this._started = true;
+    this._stdin.on("data", this._ondata);
+    this._stdin.on("error", this._onerror);
   }
-  if (sessionToken && !workspaceId) {
-    throw new Error("TOOLJET_WORKSPACE_ID is required alongside TOOLJET_SESSION_TOKEN.");
+  processReadBuffer() {
+    while (true) {
+      try {
+        const message = this._readBuffer.readMessage();
+        if (message === null) {
+          break;
+        }
+        this.onmessage?.(message);
+      } catch (error) {
+        this.onerror?.(error);
+      }
+    }
   }
-  return {
-    apiUrl,
-    appUrl,
-    viewerUrl: appUrl,
-    pat,
-    sessionToken,
-    workspaceId,
-    workspaceSlug: env("TOOLJET_WORKSPACE_SLUG")
-  };
-}
+  async close() {
+    this._stdin.off("data", this._ondata);
+    this._stdin.off("error", this._onerror);
+    const remainingDataListeners = this._stdin.listenerCount("data");
+    if (remainingDataListeners === 0) {
+      this._stdin.pause();
+    }
+    this._readBuffer.clear();
+    this.onclose?.();
+  }
+  send(message) {
+    return new Promise((resolve4) => {
+      const json = serializeMessage(message);
+      if (this._stdout.write(json)) {
+        resolve4();
+      } else {
+        this._stdout.once("drain", resolve4);
+      }
+    });
+  }
+};
 var storage = new AsyncLocalStorage();
 function recordHttpResponse(response) {
   const context = storage.getStore();
@@ -3241,6 +2987,198 @@ function addComponentBatchesTool(client) {
     }
   };
 }
+var DEFINITION_SECTIONS = ["properties", "styles", "validation", "general", "general_styles", "others"];
+var definitionSchema = strictEntry({
+  properties: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  general: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  general_styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  others: external_exports.record(external_exports.string(), external_exports.any()).optional()
+}, (key) => key === "layout" || key === "layouts" ? `definition."${key}" is not a component definition section; move/resize with update_layout instead.` : `definition."${key}" is not a component definition section; use one of ${DEFINITION_SECTIONS.join("/")}.`);
+var updateSchema2 = strictEntry({
+  component_id: external_exports.string(),
+  definition: definitionSchema.optional(),
+  name: componentNameSchema.optional(),
+  parent: external_exports.string().optional(),
+  slot_name: componentSlotSchema.optional()
+}, (key) => {
+  if (DEFINITION_SECTIONS.includes(key)) {
+    return `Update entry key "${key}" must be nested under \`definition\` (e.g. { component_id, definition: { ${key}: {...} } }); top-level ${key} would write nothing.`;
+  }
+  if (key === "layout" || key === "layouts") {
+    return `Update entry key "${key}" is not accepted by update_components; move/resize with update_layout instead.`;
+  }
+  return `Unknown update entry key "${key}"; accepted keys are component_id, definition, name, parent, slot_name.`;
+});
+function updateComponentsTool(client) {
+  return {
+    name: "update_components",
+    title: "Update Components",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
+    description: "Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves under `definition` (properties/styles/validation/others) \u2014 ToolJet deep-merges, so untouched values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. " + COMPONENT_FX_UPDATE_GUIDANCE + "NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container regions, or modal for Kanban card-click content; omit parent to keep the current parent. Unknown entry keys are rejected (a top-level properties/styles patch is an error, not a silent no-op), and an entry that changes nothing fails. Get component ids + current values from get_app_summary / get_component.",
+    inputSchema: {
+      app_id: external_exports.string(),
+      version_id: external_exports.string(),
+      page_id: external_exports.string(),
+      updates: external_exports.array(updateSchema2).min(1)
+    },
+    async handler(args) {
+      try {
+        const summary = await client.getAppSummary(args.app_id);
+        const page = summary.pages.find((candidate) => candidate.id === args.page_id);
+        if (!page)
+          return fail(new Error(`Page "${args.page_id}" does not exist in app "${args.app_id}".`));
+        const projected = new Map(page.components.map((component) => [component.id, component]));
+        const warnings = [];
+        const errors = [];
+        const changedComponents = [];
+        let placementChanged = false;
+        const layoutFixes = [];
+        const resolvedUpdates = [];
+        for (const update of args.updates) {
+          if (update.name !== void 0) {
+            const nameError = componentNameError(update.name);
+            if (nameError) {
+              errors.push(`Component "${update.component_id}": ${nameError}`);
+              continue;
+            }
+          }
+          const resolution = resolveRef(page.components, update.component_id, "Component", `on page "${args.page_id}"`);
+          if (!resolution.ok) {
+            errors.push(resolution.error);
+            continue;
+          }
+          if (resolution.warning)
+            warnings.push(resolution.warning);
+          const current = resolution.target;
+          const componentId = current.id;
+          if (update.definition && (update.name !== void 0 || update.parent !== void 0 || update.slot_name !== void 0)) {
+            errors.push(`Component "${update.component_id}": set EITHER definition OR name/parent/slot_name in one entry.`);
+            continue;
+          }
+          if (!hasNonEmptyDefinition(update.definition) && update.name === void 0 && update.parent === void 0 && update.slot_name === void 0) {
+            errors.push(`Component "${update.component_id}": nothing to update. Send the changed leaves under definition (properties/styles/validation/others) or a name/parent/slot_name change.`);
+            continue;
+          }
+          let parent = update.parent;
+          let slotName = update.slot_name;
+          if (slotName !== void 0) {
+            parent ??= current.parent ? decodeComponentParent(current.parent).parentId : void 0;
+            if (!parent) {
+              if (slotName === "body") {
+                warnings.push(`Component "${update.component_id}": slot_name:"body" ignored on a root component (it has no parent slots).`);
+                slotName = void 0;
+              } else {
+                errors.push(`Component "${update.component_id}": slot_name:"${slotName}" requires an existing or explicit parent.`);
+                continue;
+              }
+            }
+          }
+          const definition = update.definition;
+          const next = {
+            id: current.id,
+            name: update.name ?? current.name ?? current.id,
+            type: current.type,
+            properties: { ...current.properties ?? {}, ...definition?.properties ?? {} },
+            styles: { ...current.styles ?? {}, ...definition?.styles ?? {} },
+            layouts: current.layouts,
+            parent: parent !== void 0 ? encodeComponentParent(parent, slotName) : current.parent,
+            slotName
+          };
+          const normalized = normalizeComponentSpec({
+            name: next.name ?? current.id,
+            type: next.type ?? current.type ?? "",
+            properties: next.properties ?? {},
+            styles: next.styles,
+            validation: definition?.validation,
+            others: { ...current.others ?? {}, ...definition?.others ?? {} },
+            layouts: next.layouts,
+            parent: next.parent
+          });
+          const normalizedNext = { ...normalized.component, id: current.id };
+          const heightFix = update.definition ? suggestedHtmlHeight(normalizedNext) : null;
+          const desktopRect = current.layouts?.desktop;
+          if (heightFix && desktopRect && typeof desktopRect.top === "number") {
+            normalizedNext.layouts = { ...normalizedNext.layouts ?? {}, desktop: { ...desktopRect, height: heightFix.to } };
+            layoutFixes.push({ componentId: current.id, desktop: { ...desktopRect, height: heightFix.to } });
+            warnings.push(`Html "${normalizedNext.name ?? current.id}" needed about ${heightFix.needed}px for its new markup but was ${heightFix.from}px; its height is now ${heightFix.to}px. Anything within ${heightFix.to - heightFix.from}px below it now overlaps; move it down.`);
+          }
+          projected.set(current.id, normalizedNext);
+          if (update.definition)
+            changedComponents.push({ before: current, after: normalizedNext });
+          placementChanged ||= update.parent !== void 0 || update.slot_name !== void 0;
+          warnings.push(...onlyTouchedBraceNotes(normalized.warnings, definition));
+          let normalizedDefinition = update.definition;
+          if (update.definition && Object.keys(normalized.patch).length) {
+            normalizedDefinition = { ...update.definition };
+            for (const section of ["properties", "styles", "validation", "others"]) {
+              const sectionPatch = normalized.patch[section];
+              if (!sectionPatch)
+                continue;
+              normalizedDefinition[section] = {
+                ...update.definition[section] ?? {},
+                ...sectionPatch
+              };
+            }
+          }
+          resolvedUpdates.push({
+            componentId,
+            definition: normalizedDefinition,
+            name: update.name,
+            parent,
+            slotName: update.slot_name
+          });
+          if (!update.definition)
+            continue;
+          errors.push(...introducedLintFindings(lintComponentSpec(current).errors, lintComponentSpec(normalizedNext).errors));
+          warnings.push(...introducedLintFindings(lintComponentSpec(current).warnings, lintComponentSpec(normalizedNext).warnings));
+        }
+        const allComponents = [...projected.values()];
+        const introducedForChanged = (lint2) => changedComponents.flatMap(({ before, after }) => introducedLintFindings(lint2([before]), lint2([after])));
+        if (placementChanged) {
+          errors.push(...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(allComponents)));
+        }
+        errors.push(...introducedForChanged(lintUnusableTextGeometry));
+        if (errors.length)
+          return fail(new Error(`${errors.join(" ")} (Nothing was saved: refused before any write.)`));
+        warnings.push(...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)));
+        warnings.push(...introducedForChanged(lintTextGeometry));
+        warnings.push(...lintRenderedGeometry(allComponents));
+        warnings.push(...lintKanbanInteractions(allComponents));
+        const result = await client.updateComponents({
+          appId: args.app_id,
+          versionId: args.version_id,
+          pageId: args.page_id,
+          updates: resolvedUpdates
+        });
+        if (layoutFixes.length) {
+          await client.updateLayouts({ appId: args.app_id, versionId: args.version_id, pageId: args.page_id, layouts: layoutFixes });
+        }
+        return ok({ ...result, warnings: [...new Set(warnings)] });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+function onlyTouchedBraceNotes(warnings, definition) {
+  const touched = /* @__PURE__ */ new Set([
+    ...Object.keys(definition?.properties ?? {}).map((key) => `properties.${key}`),
+    ...Object.keys(definition?.styles ?? {}).map((key) => `styles.${key}`)
+  ]);
+  return warnings.flatMap((warning) => {
+    const m = /^(.*?: separated adjacent closing braces inside )(.+?)( \(ToolJet ends.*)$/s.exec(warning);
+    if (!m)
+      return [warning];
+    const keys = m[2].split(", ").filter((key) => touched.has(key));
+    return keys.length ? [`${m[1]}${keys.join(", ")}${m[3]}`] : [];
+  });
+}
 function deleteComponentsTool(client) {
   return {
     name: "delete_components",
@@ -3932,7 +3870,7 @@ function deleteEventTool(client) {
     }
   };
 }
-var TOOLJET_MCP_VERSION = "0.11.1";
+var TOOLJET_MCP_VERSION = "0.12.0";
 function snapshot(path) {
   try {
     const stat = statSync(path);
@@ -3948,7 +3886,7 @@ function snapshot(path) {
 }
 function runtimeArtifactPath(moduleUrl) {
   const file = fileURLToPath(moduleUrl);
-  return basename(dirname(file)) === "bundle" ? resolve(dirname(file), "index.js") : file;
+  return basename(dirname(file)) === "bundle" ? resolve(dirname(file), `index${extname(file)}`) : file;
 }
 var RuntimeFreshnessMonitor = class {
   artifactPath;
@@ -4585,7 +4523,7 @@ function sharedInputSchema(tool) {
 function includeLegacySingularCreateTools() {
   return /^(1|true|yes)$/i.test(process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS ?? "");
 }
-function registerTools(server, client, runtime = runtimeFreshness) {
+function registerTools(server2, client, runtime = runtimeFreshness) {
   const tools = [
     getWorkflowNodeCatalogTool(),
     getWorkflowCapabilitiesTool(client),
@@ -4669,7 +4607,7 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     if (tool.name === "verify_page_render" && !canRender)
       continue;
     const { name, handler } = tool;
-    server.registerTool(name, {
+    server2.registerTool(name, {
       title: tool.title,
       description: tool.description,
       inputSchema: sharedInputSchema(tool),
@@ -4765,11 +4703,11 @@ function payload(resource) {
   }
   return text;
 }
-function registerCatalogResources(server) {
+function registerCatalogResources(server2) {
   const catalog = listedCatalogVersion();
   for (const resource of CATALOG_RESOURCES) {
     const dataVersion = listedVersion(resource);
-    server.registerResource(resource.name, resource.uri, {
+    server2.registerResource(resource.name, resource.uri, {
       title: resource.title,
       description: resource.description,
       mimeType: "application/json",
@@ -4779,280 +4717,61 @@ function registerCatalogResources(server) {
     }));
   }
 }
-function buildServer(identity) {
-  const config = loadConfig(identity);
+function buildConfiguredServer(config) {
   const auth = createAuth(config);
   const client = createClient(auth, config);
-  const server = new McpServer({ name: "tooljet-mcp", version: TOOLJET_MCP_VERSION });
-  registerTools(server, client);
-  registerCatalogResources(server);
-  return server;
+  const server2 = new McpServer({ name: "tooljet-mcp", version: TOOLJET_MCP_VERSION });
+  registerTools(server2, client);
+  registerCatalogResources(server2);
+  return server2;
 }
 function buildUnconfiguredServer(reason) {
   const message = `tooljet-mcp cannot reach ToolJet: ${reason}`;
-  const server = new McpServer({ name: "tooljet-mcp", version: TOOLJET_MCP_VERSION }, { instructions: `${message}
+  const server2 = new McpServer({ name: "tooljet-mcp", version: TOOLJET_MCP_VERSION }, { instructions: `${message}
 
 Fix the configuration and restart this server; no tools will work until then.` });
-  server.registerTool("tooljet_status", {
+  server2.registerTool("tooljet_status", {
     title: "ToolJet Connection Status",
     description: "Why this ToolJet MCP server is not configured, and how to fix it.",
     inputSchema: {},
     annotations: { readOnlyHint: true, openWorldHint: false }
   }, async () => ({ content: [{ type: "text", text: message }], isError: true }));
-  return server;
+  return server2;
 }
-var INITIAL_SCOPES = ["apps", "data", "workflows", "workspace_users"];
-var OAUTH_MAX_BODY_BYTES = 15 * 1024 * 1024;
-function checkedUrl(value, name) {
-  const url = new URL(value);
-  const loopback = ["127.0.0.1", "[::1]", "localhost"].includes(url.hostname);
-  if (url.username || url.password || url.hash || url.search || url.protocol !== "https:" && !(url.protocol === "http:" && loopback)) {
-    throw new Error(`${name} must be HTTPS (HTTP is allowed only on loopback), without credentials, query or fragment`);
-  }
-  return url.href.replace(/\/$/, "");
-}
-function oauthHttpOptionsFromEnv() {
-  if (process.env.MCP_OAUTH_ENABLED !== "true")
-    return void 0;
-  if (process.env.MCP_SHARED_TOKEN)
-    throw new Error("Run public OAuth and internal MCP gateway modes in separate processes");
-  const required2 = (name) => {
-    const value = process.env[name]?.trim();
-    if (!value)
-      throw new Error(`${name} is required for MCP OAuth`);
-    return value;
+function claudePluginConfig(values) {
+  const value = (key) => {
+    const input = values[key]?.trim();
+    return input && !input.includes("${") ? input : void 0;
   };
-  return {
-    issuer: required2("MCP_OAUTH_ISSUER"),
-    resourceUrl: required2("MCP_OAUTH_RESOURCE_URL"),
-    exchangeSecret: required2("MCP_OAUTH_EXCHANGE_SECRET"),
-    apiUrl: process.env.TOOLJET_URL?.trim() || required2("TOOLJET_DEPLOYMENT_URL"),
-    appUrl: required2("TOOLJET_DEPLOYMENT_URL"),
-    allowedOrigins: (process.env.MCP_OAUTH_ALLOWED_ORIGINS || "").split(",").map((s) => s.trim()).filter(Boolean)
-  };
-}
-function sendOAuthJson(res, status, body) {
-  res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" });
-  res.end(JSON.stringify(body));
-}
-var BodyTooLarge = class extends Error {
-};
-async function readOAuthBody(req, maxBytes) {
-  const chunks = [];
-  let bytes = 0;
-  if (Number(req.headers["content-length"]) > maxBytes) {
-    req.resume();
-    throw new BodyTooLarge();
+  const pat = value("TOOLJET_CLAUDE_PAT");
+  const deployment = value("TOOLJET_CLAUDE_DEPLOYMENT_URL");
+  if (!pat || !deployment) {
+    throw new Error("Configure the ToolJet deployment URL and personal access token in the plugin configuration dialog, then reload the plugin.");
   }
-  for await (const chunk of req.iterator({ destroyOnReturn: false })) {
-    const part = Buffer.from(chunk);
-    bytes += part.length;
-    if (bytes > maxBytes) {
-      req.resume();
-      throw new BodyTooLarge();
+  const url = (input, label) => {
+    let parsed;
+    try {
+      parsed = new URL(input);
+    } catch {
+      throw new Error(`${label} must be an absolute HTTP or HTTPS URL.`);
     }
-    chunks.push(part);
-  }
-  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password || parsed.search || parsed.hash) {
+      throw new Error(`${label} must be an HTTP or HTTPS URL without embedded credentials, query parameters, or a fragment.`);
+    }
+    return input.replace(/\/+$/, "");
+  };
+  const appUrl = url(deployment, "Deployment URL");
+  const apiUrl = url(value("TOOLJET_CLAUDE_API_URL") ?? deployment, "API URL");
+  return { pat, apiUrl, appUrl, viewerUrl: appUrl };
 }
-function createOAuthHttpServer(options2) {
-  const issuer = checkedUrl(options2.issuer, "issuer");
-  const resourceBase = checkedUrl(options2.resourceUrl, "resourceUrl");
-  const apiUrl = checkedUrl(options2.apiUrl, "apiUrl");
-  const appUrl = checkedUrl(options2.appUrl, "appUrl");
-  if (options2.exchangeSecret.length < 32)
-    throw new Error("OAuth exchange secret must contain at least 32 characters");
-  const resource = new URL(resourceBase);
-  const factory = options2.serverFactory ?? buildServer;
-  const fetchImpl = options2.fetchImpl ?? fetch;
-  const maxBodyBytes = options2.maxBodyBytes ?? OAUTH_MAX_BODY_BYTES;
-  if (!Number.isSafeInteger(maxBodyBytes) || maxBodyBytes <= 0)
-    throw new Error("Invalid OAuth request body limit");
-  const allowedOrigins = new Set((options2.allowedOrigins || []).map((origin) => {
-    const checked = checkedUrl(origin, "allowedOrigin");
-    if (new URL(checked).origin !== checked)
-      throw new Error("OAuth allowed origins must not include a path");
-    return checked;
+var server;
+try {
+  server = buildConfiguredServer(claudePluginConfig({
+    TOOLJET_CLAUDE_PAT: process.env.TOOLJET_CLAUDE_PAT,
+    TOOLJET_CLAUDE_DEPLOYMENT_URL: process.env.TOOLJET_CLAUDE_DEPLOYMENT_URL,
+    TOOLJET_CLAUDE_API_URL: process.env.TOOLJET_CLAUDE_API_URL
   }));
-  const resourcePath = resource.pathname.replace(/\/$/, "");
-  const metadataPrefix = `/.well-known/oauth-protected-resource${resourcePath}/`;
-  const pathPrefix = `${resourcePath}/`;
-  const exchangeLimit = createExchangeLimiter(Number(process.env.MCP_OAUTH_EXCHANGE_RATE_LIMIT ?? 300), Number(process.env.MCP_OAUTH_TRUST_PROXY_HOPS ?? 0));
-  const verifiedExchanges = createVerifiedExchangeCache();
-  let exchangesInFlight = 0;
-  const httpServer = createServer((req, res) => {
-    let exchangeFailure;
-    void (async () => {
-      const url = new URL(req.url || "/", "http://localhost");
-      if (url.pathname === "/health" && req.method === "GET") {
-        sendOAuthJson(res, 200, { status: "ok", transport: "streamable-http", authorization: "oauth" });
-        return;
-      }
-      const metadata = url.pathname === metadataPrefix.slice(0, -1) || url.pathname.startsWith(metadataPrefix);
-      const prefix = metadata ? metadataPrefix : pathPrefix;
-      const shared = url.pathname === prefix.slice(0, -1);
-      const workspace = url.pathname.startsWith(prefix) ? url.pathname.slice(prefix.length) : "";
-      if (!shared && !/^[A-Za-z0-9_-]{1,128}$/.test(workspace)) {
-        sendOAuthJson(res, 404, { error: "not_found" });
-        return;
-      }
-      const canonicalResource = shared ? resourceBase : `${resourceBase}/${workspace}`;
-      const metadataUrl = `${resource.origin}${shared ? metadataPrefix.slice(0, -1) : metadataPrefix + workspace}`;
-      if (metadata && req.method === "GET") {
-        res.setHeader("access-control-allow-origin", "*");
-        sendOAuthJson(res, 200, {
-          resource: canonicalResource,
-          authorization_servers: [issuer],
-          scopes_supported: INITIAL_SCOPES,
-          bearer_methods_supported: ["header"],
-          resource_name: "ToolJet workspace"
-        });
-        return;
-      }
-      if (metadata) {
-        sendOAuthJson(res, 405, { error: "method_not_allowed" });
-        return;
-      }
-      const origin = req.headers.origin;
-      if (origin && !allowedOrigins.has(origin)) {
-        sendOAuthJson(res, 403, { error: "origin_not_allowed" });
-        return;
-      }
-      if (origin) {
-        res.setHeader("access-control-allow-origin", origin);
-        res.setHeader("vary", "Origin");
-        res.setHeader("access-control-expose-headers", "WWW-Authenticate, MCP-Session-Id, MCP-Protocol-Version");
-      }
-      if (req.method === "OPTIONS") {
-        res.setHeader("access-control-allow-methods", "POST, OPTIONS");
-        res.setHeader("access-control-allow-headers", "Authorization, Content-Type, MCP-Protocol-Version, MCP-Session-Id, Last-Event-ID");
-        res.writeHead(204).end();
-        return;
-      }
-      if (req.method !== "POST") {
-        res.setHeader("allow", "POST, OPTIONS");
-        sendOAuthJson(res, 405, { error: "method_not_allowed" });
-        return;
-      }
-      const token = /^Bearer (tj_oauth_at_[A-Za-z0-9_-]+)$/i.exec(req.headers.authorization || "")?.[1];
-      const challenge = (error) => res.setHeader("www-authenticate", `Bearer resource_metadata="${metadataUrl}", scope="${INITIAL_SCOPES.join(" ")}"` + (error ? `, error="${error}"` : ""));
-      if (!token || token.length > 4096 || url.searchParams.has("access_token")) {
-        challenge(token ? "invalid_token" : void 0);
-        sendOAuthJson(res, 401, { error: "invalid_token" });
-        return;
-      }
-      const retryAfter = verifiedExchanges.has(token, canonicalResource) ? 0 : exchangeLimit.retryAfter(req);
-      if (retryAfter) {
-        res.setHeader("retry-after", String(retryAfter));
-        sendOAuthJson(res, 429, { error: "temporarily_unavailable" });
-        return;
-      }
-      if (exchangesInFlight >= 64) {
-        res.setHeader("retry-after", "1");
-        sendOAuthJson(res, 503, { error: "temporarily_unavailable" });
-        return;
-      }
-      exchangeFailure = "exchange_request_failed";
-      exchangesInFlight++;
-      let exchange;
-      let exchangeBody;
-      try {
-        exchange = await fetchImpl(`${issuer}/exchange`, {
-          method: "POST",
-          redirect: "error",
-          signal: AbortSignal.timeout(1e4),
-          headers: { authorization: `Bearer ${options2.exchangeSecret}`, "content-type": "application/json" },
-          body: JSON.stringify({
-            grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
-            subject_token_type: "urn:ietf:params:oauth:token-type:access_token",
-            subject_token: token,
-            resource: canonicalResource
-          })
-        });
-        exchangeFailure = "invalid_delegation_response";
-        exchangeBody = await exchange.json().catch(() => void 0);
-      } finally {
-        exchangesInFlight--;
-      }
-      if (!exchange.ok) {
-        const errorCode = exchangeBody?.error;
-        const invalidToken = [400, 401, 403].includes(exchange.status) && typeof errorCode === "string" && ["invalid_token", "invalid_grant", "invalid_target"].includes(errorCode);
-        const unavailable = !invalidToken;
-        if (unavailable) {
-          const safeCode = ["invalid_client", "invalid_request", "server_error", "temporarily_unavailable"].find((code) => code === errorCode) ?? "unexpected_response";
-          console.error("[mcp-oauth] Credential exchange unavailable", { status: exchange.status, error: safeCode });
-        }
-        if (invalidToken) {
-          verifiedExchanges.forget(token, canonicalResource);
-          exchangeLimit.failed(req);
-          challenge("invalid_token");
-        }
-        sendOAuthJson(res, unavailable ? 503 : 401, { error: unavailable ? "temporarily_unavailable" : "invalid_token" });
-        return;
-      }
-      const credentials = exchangeBody;
-      if (!credentials || typeof credentials.access_token !== "string" || typeof credentials.organization_id !== "string" || typeof credentials.grant_id !== "string" || !credentials.grant_id) {
-        throw new Error("Invalid delegation response");
-      }
-      const browserUrl = typeof credentials.browser_url === "string" ? checkedUrl(credentials.browser_url, "browser_url") : appUrl;
-      verifiedExchanges.remember(token, canonicalResource);
-      exchangeFailure = void 0;
-      let requestBody;
-      if (req.method === "POST") {
-        try {
-          requestBody = await readOAuthBody(req, maxBodyBytes);
-        } catch (error) {
-          sendOAuthJson(res, error instanceof BodyTooLarge ? 413 : 400, {
-            error: error instanceof BodyTooLarge ? "request_too_large" : "invalid_request"
-          });
-          return;
-        }
-      }
-      const server = factory({
-        sessionToken: credentials.access_token,
-        isOAuthDelegation: true,
-        oauthGrantId: credentials.grant_id,
-        workspaceId: credentials.organization_id,
-        workspaceSlug: typeof credentials.organization_slug === "string" ? credentials.organization_slug : void 0,
-        apiUrl,
-        appUrl: browserUrl,
-        viewerUrl: appUrl
-      });
-      const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: void 0,
-        enableJsonResponse: true
-      });
-      res.once("close", () => {
-        void transport.close().catch(() => {
-        });
-        void server.close().catch(() => {
-        });
-      });
-      await server.connect(transport);
-      await transport.handleRequest(req, res, requestBody);
-    })().catch(() => {
-      if (exchangeFailure)
-        console.error("[mcp-oauth] Credential exchange unavailable", { error: exchangeFailure });
-      if (!res.headersSent)
-        sendOAuthJson(res, 503, { error: "temporarily_unavailable" });
-      else
-        res.end();
-    });
-  });
-  httpServer.requestTimeout = 6e4;
-  httpServer.headersTimeout = 15e3;
-  return httpServer;
+} catch (error) {
+  server = buildUnconfiguredServer(error instanceof Error ? error.message : "Invalid plugin configuration.");
 }
-export {
-  ALLOWED_API_ORIGINS_VAR as A,
-  BASE_URL_HEADER as B,
-  PAT_HEADER as P,
-  SESSION_TOKEN_HEADER as S,
-  buildUnconfiguredServer as a,
-  buildServer as b,
-  allowedApiOrigins as c,
-  createOAuthHttpServer as d,
-  StreamableHTTPServerTransport as e,
-  identityFromHeaders as i,
-  oauthHttpOptionsFromEnv as o
-};
+await server.connect(new StdioServerTransport());
