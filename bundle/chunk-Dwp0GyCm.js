@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { b0 as readCatalog } from "./chunk-C1LXenY0.js";
+import { b0 as readCatalog } from "./chunk-DsdTCwqi.js";
 import { r as require_errors, a as require_identity, b as require_Scalar, c as require_cst, d as require_lexer, e as require_parser, f as require_resolve_end, g as require_toJS, h as require_applyReviver, i as require_Node, j as require_stringifyString, k as require_resolve_block_scalar, l as require_resolve_flow_scalar } from "./chunk-D1qDCsF1.js";
 import { ed as __toESM, eb as __commonJS, ec as __require } from "./chunk-By54lwVj.js";
 import { fileURLToPath } from "node:url";

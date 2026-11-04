@@ -1,4 +1,5 @@
 import { createRequire } from "node:module";
+import { p as parseExpression } from "./chunk-Brg6_25C.js";
 createRequire(import.meta.url);
 var VOID_TAGS = /* @__PURE__ */ new Set(["br", "img", "hr", "input", "meta", "link", "source", "wbr", "col"]);
 var INLINE_TAGS = /* @__PURE__ */ new Set([
@@ -113,10 +114,10 @@ function parseStyle(text) {
     const idx = decl.indexOf(":");
     if (idx < 0)
       continue;
-    const key = decl.slice(0, idx).trim().toLowerCase();
+    const key3 = decl.slice(0, idx).trim().toLowerCase();
     const value = decl.slice(idx + 1).trim().replace(/\s*!important$/i, "");
-    if (key)
-      style[key] = value;
+    if (key3)
+      style[key3] = value;
   }
   return style;
 }
@@ -156,10 +157,10 @@ function parseHtml(html) {
         continue;
       }
       const attrs = parseAttrs(m[3] ?? "");
-      const node = { tag, style: parseStyle(attrs.style), attrs, children: [], text: "" };
-      stack[stack.length - 1].children.push(node);
+      const node2 = { tag, style: parseStyle(attrs.style), attrs, children: [], text: "" };
+      stack[stack.length - 1].children.push(node2);
       if (!VOID_TAGS.has(tag) && !m[4])
-        stack.push(node);
+        stack.push(node2);
       continue;
     }
     if (m[5] !== void 0) {
@@ -297,27 +298,27 @@ function gapOf(style, axis, fontSize) {
     return parts[0] ?? 0;
   return parts[1] ?? parts[0] ?? 0;
 }
-function isInline(node) {
-  if (node.tag === "#text")
+function isInline(node2) {
+  if (node2.tag === "#text")
     return true;
-  const display = node.style.display;
+  const display = node2.style.display;
   if (display) {
     if (/^inline(?!-block|-flex|-grid)/.test(display))
       return true;
     return false;
   }
-  return INLINE_TAGS.has(node.tag);
+  return INLINE_TAGS.has(node2.tag);
 }
-function isHidden(node) {
-  return node.style.display === "none" || node.style.visibility === "hidden";
+function isHidden(node2) {
+  return node2.style.display === "none" || node2.style.visibility === "hidden";
 }
-function contextFor(node, parent) {
-  const defaults = TAG_DEFAULTS[node.tag];
-  let fontSize = px(node.style["font-size"], parent.fontSize) ?? defaults?.fontSize ?? parent.fontSize;
+function contextFor(node2, parent) {
+  const defaults = TAG_DEFAULTS[node2.tag];
+  let fontSize = px(node2.style["font-size"], parent.fontSize) ?? defaults?.fontSize ?? parent.fontSize;
   if (!fontSize || fontSize <= 0)
     fontSize = parent.fontSize;
   let lineHeight = parent.lineHeight;
-  const lh = node.style["line-height"];
+  const lh = node2.style["line-height"];
   if (lh !== void 0) {
     const unitless = /^\d*\.?\d+$/.test(lh.trim());
     const value = unitless ? parseFloat(lh) * fontSize : px(lh, fontSize);
@@ -325,7 +326,7 @@ function contextFor(node, parent) {
       lineHeight = value;
     else if (lh.trim() === "normal")
       lineHeight = fontSize * LINE_HEIGHT_FACTOR;
-  } else if (node.style["font-size"] || defaults?.fontSize || parent.lineHeight === 0) {
+  } else if (node2.style["font-size"] || defaults?.fontSize || parent.lineHeight === 0) {
     lineHeight = fontSize * LINE_HEIGHT_FACTOR;
   }
   return { fontSize, lineHeight, width: parent.width };
@@ -333,7 +334,7 @@ function contextFor(node, parent) {
 function inlineRunHeight(run, ctx) {
   let maxLine = ctx.lineHeight;
   const segments = [""];
-  const walk = (nodes, c) => {
+  const walk3 = (nodes, c) => {
     for (const n of nodes) {
       if (n.tag === "#text") {
         segments[segments.length - 1] += n.text;
@@ -347,11 +348,11 @@ function inlineRunHeight(run, ctx) {
         const inner = contextFor(n, c);
         const [pt, pb] = vertical(n.style, "padding", inner.fontSize);
         maxLine = Math.max(maxLine, inner.lineHeight + pt + pb);
-        walk(n.children, inner);
+        walk3(n.children, inner);
       }
     }
   };
-  walk(run, ctx);
+  walk3(run, ctx);
   let lines = 0;
   for (const segment of segments) {
     const text = segment.replace(/\s+/g, " ").trim();
@@ -367,50 +368,50 @@ function inlineRunHeight(run, ctx) {
     return 0;
   return lines * maxLine;
 }
-function blockHeight(node, parent) {
-  if (isHidden(node))
+function blockHeight(node2, parent) {
+  if (isHidden(node2))
     return 0;
-  const ctx = contextFor(node, parent);
-  const defaults = TAG_DEFAULTS[node.tag];
-  const [pt, pb] = vertical(node.style, "padding", ctx.fontSize);
-  const [bt, bb] = borders(node.style);
-  let [mt, mb] = vertical(node.style, "margin", ctx.fontSize);
-  if (node.style.margin === void 0 && node.style["margin-top"] === void 0 && defaults?.marginTop)
+  const ctx = contextFor(node2, parent);
+  const defaults = TAG_DEFAULTS[node2.tag];
+  const [pt, pb] = vertical(node2.style, "padding", ctx.fontSize);
+  const [bt, bb] = borders(node2.style);
+  let [mt, mb] = vertical(node2.style, "margin", ctx.fontSize);
+  if (node2.style.margin === void 0 && node2.style["margin-top"] === void 0 && defaults?.marginTop)
     mt = defaults.marginTop;
-  if (node.style.margin === void 0 && node.style["margin-bottom"] === void 0 && defaults?.marginBottom)
+  if (node2.style.margin === void 0 && node2.style["margin-bottom"] === void 0 && defaults?.marginBottom)
     mb = defaults.marginBottom;
-  const explicitWidth = px(node.style.width, ctx.fontSize, parent.width);
-  const innerWidth = Math.max(40, (explicitWidth ?? parent.width) - horizontal(node.style, "padding", ctx.fontSize));
+  const explicitWidth = px(node2.style.width, ctx.fontSize, parent.width);
+  const innerWidth = Math.max(40, (explicitWidth ?? parent.width) - horizontal(node2.style, "padding", ctx.fontSize));
   const inner = { ...ctx, width: innerWidth };
   let content;
-  if (node.tag === "hr")
+  if (node2.tag === "hr")
     content = 1;
-  else if (node.tag === "img")
-    content = px(node.style.height, ctx.fontSize) ?? 0;
+  else if (node2.tag === "img")
+    content = px(node2.style.height, ctx.fontSize) ?? 0;
   else
-    content = childrenHeight(node, inner, px(node.style.height, ctx.fontSize) !== void 0);
-  const explicit = px(node.style.height, ctx.fontSize);
-  if (explicit !== void 0 && !/%|auto/.test(node.style.height ?? "")) {
-    const borderBox = node.style["box-sizing"] === "border-box";
+    content = childrenHeight(node2, inner, px(node2.style.height, ctx.fontSize) !== void 0);
+  const explicit = px(node2.style.height, ctx.fontSize);
+  if (explicit !== void 0 && !/%|auto/.test(node2.style.height ?? "")) {
+    const borderBox = node2.style["box-sizing"] === "border-box";
     const boxHeight = borderBox ? explicit : explicit + pt + pb + bt + bb;
-    const overflowHidden = /^(hidden|auto|scroll|clip)$/.test(node.style.overflow ?? node.style["overflow-y"] ?? "");
+    const overflowHidden = /^(hidden|auto|scroll|clip)$/.test(node2.style.overflow ?? node2.style["overflow-y"] ?? "");
     const full = content + pt + pb + bt + bb;
     return (overflowHidden ? boxHeight : Math.max(boxHeight, full)) + mt + mb;
   }
-  const minHeight = px(node.style["min-height"], ctx.fontSize);
+  const minHeight = px(node2.style["min-height"], ctx.fontSize);
   let total = content + pt + pb + bt + bb;
   if (minHeight !== void 0)
-    total = Math.max(total, node.style["box-sizing"] === "border-box" ? minHeight : minHeight + pt + pb);
+    total = Math.max(total, node2.style["box-sizing"] === "border-box" ? minHeight : minHeight + pt + pb);
   return total + mt + mb;
 }
-function childrenHeight(node, ctx, pinned = false) {
-  const display = node.style.display ?? "";
-  const children = node.children.filter((c) => !isHidden(c));
+function childrenHeight(node2, ctx, pinned = false) {
+  const display = node2.style.display ?? "";
+  const children = node2.children.filter((c) => !isHidden(c));
   if (/grid/.test(display))
-    return gridHeight(node, children, ctx);
+    return gridHeight(node2, children, ctx);
   if (/flex/.test(display))
-    return flexHeight(node, children, ctx, pinned);
-  if (node.tag === "tr")
+    return flexHeight(node2, children, ctx, pinned);
+  if (node2.tag === "tr")
     return rowHeight(children, ctx);
   let total = 0;
   let run = [];
@@ -437,10 +438,10 @@ function rowHeight(children, ctx) {
   const width = Math.max(40, ctx.width / cells.length);
   return Math.max(...cells.map((c) => blockHeight(c, { ...ctx, width })));
 }
-function gridHeight(node, children, ctx) {
-  const columns = gridColumns(node.style["grid-template-columns"]);
-  const rowGap = gapOf(node.style, "row", ctx.fontSize);
-  const colGap = gapOf(node.style, "column", ctx.fontSize);
+function gridHeight(node2, children, ctx) {
+  const columns = gridColumns(node2.style["grid-template-columns"]);
+  const rowGap = gapOf(node2.style, "row", ctx.fontSize);
+  const colGap = gapOf(node2.style, "column", ctx.fontSize);
   const width = Math.max(40, (ctx.width - colGap * (columns - 1)) / columns);
   const items = children.filter((c) => c.tag !== "#text" || c.text.trim());
   if (!items.length)
@@ -454,16 +455,16 @@ function gridHeight(node, children, ctx) {
   }
   return total;
 }
-function flexHeight(node, children, ctx, pinned = false) {
-  const direction = node.style["flex-direction"] ?? "row";
+function flexHeight(node2, children, ctx, pinned = false) {
+  const direction = node2.style["flex-direction"] ?? "row";
   const items = children.filter((c) => c.tag !== "#text" || c.text.trim());
   if (!items.length)
     return 0;
   if (/column/.test(direction)) {
-    const gap2 = gapOf(node.style, "row", ctx.fontSize);
+    const gap2 = gapOf(node2.style, "row", ctx.fontSize);
     return items.reduce((sum, c, i) => sum + (isInline(c) ? inlineRunHeight([c], ctx) : blockHeight(c, ctx)) + (i ? gap2 : 0), 0);
   }
-  const gap = gapOf(node.style, "column", ctx.fontSize);
+  const gap = gapOf(node2.style, "column", ctx.fontSize);
   const weights = items.map((c) => {
     const flex = c.style.flex ?? c.style["flex-grow"];
     const n = flex ? parseFloat(flex) : NaN;
@@ -471,7 +472,7 @@ function flexHeight(node, children, ctx, pinned = false) {
   });
   const totalWeight = weights.reduce((a, b) => a + b, 0);
   const free = ctx.width - gap * (items.length - 1);
-  const stretched = pinned && !/^(flex-start|center|flex-end|baseline|start|end)$/.test(node.style["align-items"] ?? "");
+  const stretched = pinned && !/^(flex-start|center|flex-end|baseline|start|end)$/.test(node2.style["align-items"] ?? "");
   return Math.max(...items.map((c, i) => {
     const explicit = px(c.style.width, ctx.fontSize, ctx.width);
     const width = Math.max(40, explicit ?? free * weights[i] / totalWeight);
@@ -532,8 +533,8 @@ function estimateHtmlHeight(rawHtml, widthPx) {
   return { height: Math.round(height), lowerBound: repeats };
 }
 var GRID_COLUMNS = 43;
-function propVal(props, key) {
-  const p = props?.[key];
+function propVal(props, key3) {
+  const p = props?.[key3];
   return p && typeof p === "object" && "value" in p ? p.value : p;
 }
 function truthy(v) {
@@ -729,8 +730,8 @@ var SELECTION_READ = /components(?:\.[A-Za-z_$][\w$]*|\[\s*['"][^'"]+['"]\s*\])\
 function lintUnguardedSelectionText(c) {
   if (c.type !== "Html" && c.type !== "Text")
     return [];
-  const key = c.type === "Html" ? "rawHtml" : "text";
-  const value = propVal(c.properties, key);
+  const key3 = c.type === "Html" ? "rawHtml" : "text";
+  const value = propVal(c.properties, key3);
   if (typeof value !== "string" || !value.includes("selectedRow"))
     return [];
   const bad = [];
@@ -746,7 +747,7 @@ function lintUnguardedSelectionText(c) {
   if (!bad.length)
     return [];
   return [
-    `${c.type} "${label(c)}": ${key} reads ${[...new Set(bad)].join(", ")} without a fallback. Until a row is selected that value is undefined and the page prints the word. Write (components.table?.selectedRow?.field ?? 'Select a row') or wrap the panel in a ternary on a stable selected-row key such as components.table?.selectedRow?.id. The row object itself may be empty but truthy.`
+    `${c.type} "${label(c)}": ${key3} reads ${[...new Set(bad)].join(", ")} without a fallback. Until a row is selected that value is undefined and the page prints the word. Write (components.table?.selectedRow?.field ?? 'Select a row') or wrap the panel in a ternary on a stable selected-row key such as components.table?.selectedRow?.id. The row object itself may be empty but truthy.`
   ];
 }
 function lintHtmlContentHeight(c) {
@@ -779,18 +780,18 @@ var LITERAL_SURFACE = /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%deg]+
 var CLEAR_SURFACE = /^(transparent|#[0-9a-f]{3}0|#[0-9a-f]{6}00)$|^rgba\([^)]*,\s*0(\.0+)?\s*\)$/i;
 var sameColour = (a, b) => a.replace(/\s+/g, "").toLowerCase() === b.replace(/\s+/g, "").toLowerCase();
 function surfaceAroundResolver(components, canvasColor) {
-  const find = (key) => components.find((o) => o.clientRef === key || o.id === key) ?? components.find((o) => typeof o.id === "string" && key.startsWith(`${o.id}-`)) ?? components.find((o) => o.name === key);
+  const find = (key3) => components.find((o) => o.clientRef === key3 || o.id === key3) ?? components.find((o) => typeof o.id === "string" && key3.startsWith(`${o.id}-`)) ?? components.find((o) => o.name === key3);
   const canvas = typeof canvasColor === "string" && LITERAL_SURFACE.test(canvasColor.trim()) ? canvasColor.trim() : void 0;
   return (c) => {
     let current = c;
     for (let depth = 0; depth < 12; depth++) {
-      const key = current.parentRef ?? current.parent;
-      if (!key)
+      const key3 = current.parentRef ?? current.parent;
+      if (!key3)
         return canvas;
-      const parent = find(key);
+      const parent = find(key3);
       if (!parent)
         return void 0;
-      const slot = current.slotName ?? current.slot_name ?? (typeof parent.id === "string" && key.startsWith(`${parent.id}-`) ? key.slice(parent.id.length + 1) : void 0);
+      const slot = current.slotName ?? current.slot_name ?? (typeof parent.id === "string" && key3.startsWith(`${parent.id}-`) ? key3.slice(parent.id.length + 1) : void 0);
       const own = slot === "header" ? propVal(parent.styles, "headerBackgroundColor") : slot === "footer" ? propVal(parent.styles, "footerBackgroundColor") : void 0;
       const raw = own ?? propVal(parent.styles, "backgroundColor");
       const colour = typeof raw === "string" ? raw.trim() : "";
@@ -899,11 +900,11 @@ function finalChartPointKeys(value) {
   const binding = /^\s*\{\{([\s\S]*)\}\}\s*$/.exec(value);
   if (!binding)
     return void 0;
-  const expression = binding[1].trim();
-  const surface = chartExpressionSurface(expression);
+  const expression2 = binding[1].trim();
+  const surface = chartExpressionSurface(expression2);
   if (!surface || !/^[A-Za-z_$][\w$]*(?:\s*\.\s*[A-Za-z_$][\w$]*|\s*\(\s*\)|\s*\[\s*\])*\s*\.\s*map\s*\(\s*\)$/.test(surface.text.trim()))
     return void 0;
-  const callback = expression.slice(surface.lastGroupStart + 1, -1).trim();
+  const callback = expression2.slice(surface.lastGroupStart + 1, -1).trim();
   const callbackSurface = chartExpressionSurface(callback);
   if (!callbackSurface || !/^(?:[A-Za-z_$][\w$]*|\(\s*\))\s*=>\s*\(\s*\)$/.test(callbackSurface.text.trim()))
     return void 0;
@@ -917,10 +918,10 @@ function finalChartPointKeys(value) {
   for (const property of properties.text.split(",")) {
     if (!property.trim())
       continue;
-    const key = /^\s*([A-Za-z_$][\w$]*)\s*(?::|$)/.exec(property);
-    if (!key)
+    const key3 = /^\s*([A-Za-z_$][\w$]*)\s*(?::|$)/.exec(property);
+    if (!key3)
       return void 0;
-    keys.push(key[1]);
+    keys.push(key3[1]);
   }
   return keys;
 }
@@ -946,8 +947,8 @@ var BACKSLASH_QUOTE = /\\["']/;
 function lintEmbeddedBindingSyntax(c) {
   if (c.type !== "Html" && c.type !== "Text")
     return [];
-  const key = c.type === "Html" ? "rawHtml" : "text";
-  const value = propVal(c.properties, key);
+  const key3 = c.type === "Html" ? "rawHtml" : "text";
+  const value = propVal(c.properties, key3);
   if (typeof value !== "string" || !value.includes("{{"))
     return [];
   const errors = [];
@@ -971,7 +972,7 @@ ${expr}
     if (!balanced && !escaped)
       continue;
     const snippet = expr.length > 90 ? `${expr.slice(0, 90)}\u2026` : expr;
-    errors.push(`${c.type} "${label(c)}": ${key} contains a binding that is not valid JavaScript (${message}): {{${snippet}}}. ` + (escaped ? `Quotes inside {{ }} must not be backslash-escaped: the markup is a plain string, so write "Cancelled" or 'Cancelled', not \\"Cancelled\\". ` : "") + "A failed binding renders as nothing, which leaves the card or line blank.");
+    errors.push(`${c.type} "${label(c)}": ${key3} contains a binding that is not valid JavaScript (${message}): {{${snippet}}}. ` + (escaped ? `Quotes inside {{ }} must not be backslash-escaped: the markup is a plain string, so write "Cancelled" or 'Cancelled', not \\"Cancelled\\". ` : "") + "A failed binding renders as nothing, which leaves the card or line blank.");
   }
   return errors;
 }
@@ -981,8 +982,8 @@ function lintUnguardedComponentRefs(c) {
   const props = c.properties ?? {};
   const keys = c.type === "Html" ? ["rawHtml"] : c.type === "Text" ? ["text"] : ["data"];
   const errors = [];
-  for (const key of keys) {
-    const value = propVal(props, key);
+  for (const key3 of keys) {
+    const value = propVal(props, key3);
     if (typeof value !== "string" || !value.includes("components"))
       continue;
     const bad = /* @__PURE__ */ new Set();
@@ -995,25 +996,353 @@ function lintUnguardedComponentRefs(c) {
     if (!bad.size)
       continue;
     const fixes = [...bad].map((ref) => `${ref.replace(/\.([A-Za-z]+)$/, "?.$1")}`);
-    errors.push(`${c.type} "${label(c)}": ${key} reads ${[...bad].join(", ")} without optional chaining. The component evaluates when it mounts, before the inputs it references exist (queries already hold data after in-app navigation), so the reference throws and the ` + (c.type === "Table" ? "Table shows No data" : "binding fails") + " until a filter changes. Write " + fixes.join(", ") + " instead.");
+    errors.push(`${c.type} "${label(c)}": ${key3} reads ${[...bad].join(", ")} without optional chaining. The component evaluates when it mounts, before the inputs it references exist (queries already hold data after in-app navigation), so the reference throws and the ` + (c.type === "Table" ? "Table shows No data" : "binding fails") + " until a filter changes. Write " + fixes.join(", ") + " instead.");
   }
   return errors;
 }
+createRequire(import.meta.url);
+var member = (n) => n?.type === "MemberExpression" || n?.type === "OptionalMemberExpression";
+var key = (n) => n.computed ? n.property?.type === "StringLiteral" ? n.property.value : void 0 : n.property?.name;
+var rootRef = (n) => {
+  if (!member(n) || !["components", "queries"].includes(n.object?.name) || n.object?.type !== "Identifier")
+    return;
+  const k = key(n);
+  return k ? `${n.object.name}.${k}` : void 0;
+};
+function walk(n, visit) {
+  if (!n || typeof n !== "object")
+    return;
+  if (Array.isArray(n)) {
+    for (const child of n)
+      walk(child, visit);
+    return;
+  }
+  visit(n);
+  for (const [key3, value] of Object.entries(n))
+    if (!["loc", "extra", "comments"].includes(key3))
+      walk(value, visit);
+}
+function lintUntrackedReactiveBindings(value, label2) {
+  if (Array.isArray(value))
+    return value.flatMap((v) => lintUntrackedReactiveBindings(v, label2));
+  if (value && typeof value === "object")
+    return Object.values(value).flatMap((v) => lintUntrackedReactiveBindings(v, label2));
+  if (typeof value !== "string")
+    return [];
+  const match = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
+  if (!match)
+    return [];
+  let ast;
+  try {
+    ast = parseExpression(match[1]);
+  } catch {
+    return [];
+  }
+  const tracked = /* @__PURE__ */ new Set(), suspects = /* @__PURE__ */ new Set();
+  let shadowed = false;
+  walk(ast, (n) => {
+    if (n.params && /"(?:components|queries)"/.test(JSON.stringify(n.params)) || n.type === "VariableDeclarator" && /"(?:components|queries)"/.test(JSON.stringify(n.id)))
+      shadowed = true;
+    if (!member(n))
+      return;
+    const direct = rootRef(n.object);
+    if (direct && key(n))
+      tracked.add(direct);
+    if (n.object?.type === "LogicalExpression" && ["||", "??"].includes(n.object.operator)) {
+      const wrapped = rootRef(n.object.left);
+      if (wrapped && key(n))
+        suspects.add(wrapped);
+    }
+  });
+  if (shadowed)
+    return [];
+  return [...suspects].filter((ref) => !tracked.has(ref)).map((ref) => `${label2}: a logical fallback wraps ${ref} before its exposed value is read. ToolJet cannot track this dependency, so filters/prefill may stay stale. Keep a complete optional chain, e.g. ${ref}?.value (use the actual exposed property). Valid JavaScript alone does not guarantee reactive updates. No expression was rewritten.`);
+}
+function lintQueryArrayMutations(value, label2) {
+  if (Array.isArray(value))
+    return value.flatMap((v) => lintQueryArrayMutations(v, label2));
+  if (value && typeof value === "object")
+    return Object.values(value).flatMap((v) => lintQueryArrayMutations(v, label2));
+  if (typeof value !== "string")
+    return [];
+  const match = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
+  if (!match)
+    return [];
+  let ast;
+  try {
+    ast = parseExpression(match[1]);
+  } catch {
+    return [];
+  }
+  let shadowed = false;
+  const mutations = /* @__PURE__ */ new Set();
+  const queryData = (n) => {
+    if (n?.type === "LogicalExpression" && ["||", "??"].includes(n.operator) && n.right?.type === "ArrayExpression" && n.right.elements.length === 0)
+      return queryData(n.left);
+    const ref = member(n) && key(n) === "data" ? rootRef(n.object) : void 0;
+    return ref?.startsWith("queries.") ? ref : void 0;
+  };
+  walk(ast, (n) => {
+    if (n.params && /"queries"/.test(JSON.stringify(n.params)) || n.type === "VariableDeclarator" && /"queries"/.test(JSON.stringify(n.id)))
+      shadowed = true;
+    if (!["CallExpression", "OptionalCallExpression"].includes(n.type) || !member(n.callee) || !["sort", "reverse"].includes(key(n.callee)))
+      return;
+    const ref = queryData(n.callee.object);
+    if (ref)
+      mutations.add(`${ref}.data.${key(n.callee)}`);
+  });
+  if (shadowed)
+    return [];
+  return [...mutations].map((ref) => `${label2}: ${ref}() mutates the shared query array inside a display binding. ToolJet state can be frozen, so this may throw and render an empty table even when the query has rows. Copy first with slice() or a spread, then sort/reverse the copy; a prior map/filter already creates a new array. No expression was rewritten.`);
+}
+var node = (v) => v !== null && typeof v === "object" && !Array.isArray(v) ? v : void 0;
+var member2 = (n) => n?.type === "MemberExpression" || n?.type === "OptionalMemberExpression";
+function key2(n) {
+  if (!n)
+    return;
+  const p = node(n.property ?? n.key);
+  if (!n.computed && p?.type === "Identifier")
+    return String(p.name);
+  if (p?.type === "StringLiteral")
+    return String(p.value);
+}
+function expression(value) {
+  if (typeof value !== "string")
+    return;
+  const m = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
+  if (!m)
+    return;
+  try {
+    return parseExpression(m[1]);
+  } catch {
+    return;
+  }
+}
+function walk2(value, visit) {
+  if (Array.isArray(value)) {
+    for (const child of value)
+      walk2(child, visit);
+    return;
+  }
+  const n = node(value);
+  if (!n)
+    return;
+  visit(n);
+  for (const [k, child] of Object.entries(n)) {
+    if (k !== "loc" && k !== "extra" && k !== "comments")
+      walk2(child, visit);
+  }
+}
+function projectedFields(c) {
+  if (c.type !== "Table")
+    return;
+  const raw = c.properties?.data;
+  const root = expression(node(raw) && "value" in node(raw) ? node(raw).value : raw);
+  if (root?.type !== "CallExpression")
+    return;
+  const callee = node(root.callee);
+  if (!member2(callee) || key2(callee) !== "map")
+    return;
+  const args = root.arguments;
+  if (!Array.isArray(args) || args.length !== 1)
+    return;
+  const callback = node(args[0]);
+  if (callback?.type !== "ArrowFunctionExpression")
+    return;
+  const body = node(callback.body);
+  if (body?.type !== "ObjectExpression" || !Array.isArray(body.properties))
+    return;
+  const keys = /* @__PURE__ */ new Map();
+  for (const prop of body.properties) {
+    const p = node(prop);
+    if (p?.type !== "ObjectProperty" || p.computed)
+      return;
+    const name = key2(p);
+    if (name === void 0 || name === "__proto__")
+      return;
+    keys.set(name, node(p.value));
+  }
+  return keys;
+}
+function lintSelectedRowProjections(components, extraSources = []) {
+  const tables = /* @__PURE__ */ new Map();
+  for (const c of components) {
+    if (!c.name)
+      continue;
+    tables.set(c.name, tables.has(c.name) ? void 0 : projectedFields(c));
+  }
+  const aliases = /* @__PURE__ */ new Map();
+  const singleAlias = (alias) => {
+    const names = aliases.get(alias);
+    return names?.size === 1 ? [...names][0] : void 0;
+  };
+  for (const source of extraSources) {
+    const action = node(source.value);
+    if (action?.actionId !== "set-custom-variable" || typeof action.key !== "string")
+      continue;
+    const selected = expression(action.value);
+    if (action.value === null || selected?.type === "NullLiteral")
+      continue;
+    const table = node(selected?.object), namespace = node(table?.object);
+    const name = member2(selected) && key2(selected) === "selectedRow" && member2(table) && namespace?.type === "Identifier" && namespace.name === "components" ? key2(table) : void 0;
+    if (!name)
+      aliases.set(action.key, void 0);
+    else if (!aliases.has(action.key))
+      aliases.set(action.key, /* @__PURE__ */ new Set([name]));
+    else
+      aliases.get(action.key)?.add(name);
+  }
+  if (extraSources.some((s) => /actions\s*(?:\.\s*(?:setVariable|unsetVariable)|\[\s*["'](?:setVariable|unsetVariable)["']\s*\])/.test(JSON.stringify(s.value))))
+    aliases.clear();
+  const warnings = /* @__PURE__ */ new Set();
+  const aliasOmissions = /* @__PURE__ */ new Map();
+  function inspect(value, label2) {
+    if (Array.isArray(value)) {
+      for (const v of value)
+        inspect(v, label2);
+      return;
+    }
+    if (node(value)) {
+      for (const v of Object.values(node(value)))
+        inspect(v, label2);
+      return;
+    }
+    const root = expression(value);
+    if (!root)
+      return;
+    let shadowed = false;
+    walk2(root, (n) => {
+      if (Array.isArray(n.params) && /"(?:components|variables)"/.test(JSON.stringify(n.params)))
+        shadowed = true;
+      if (n.type === "VariableDeclarator" && /"(?:components|variables)"/.test(JSON.stringify(n.id)))
+        shadowed = true;
+    });
+    if (shadowed)
+      return;
+    walk2(root, (n) => {
+      if (!member2(n))
+        return;
+      const field = key2(n), selection = node(n.object), table = node(selection?.object), namespace = node(table?.object);
+      if (field && member2(selection) && table?.type === "Identifier" && table.name === "variables") {
+        const alias = key2(selection), names = alias ? aliases.get(alias) : void 0;
+        for (const name2 of names ?? []) {
+          const fields = tables.get(name2);
+          if (fields && !fields.has(field) && !["toString", "valueOf", "constructor", "hasOwnProperty", "__proto__", "isPrototypeOf", "propertyIsEnumerable", "toLocaleString"].includes(field)) {
+            const id = JSON.stringify([alias, name2]);
+            if (!aliasOmissions.has(id))
+              aliasOmissions.set(id, { alias, table: name2, fields: /* @__PURE__ */ new Set() });
+            aliasOmissions.get(id).fields.add(field);
+          }
+        }
+      }
+      if (!field || !member2(selection) || key2(selection) !== "selectedRow" || !member2(table) || namespace?.type !== "Identifier" || namespace.name !== "components")
+        return;
+      const name = key2(table), keys = name ? tables.get(name) : void 0;
+      if (!name || !keys || keys.has(field) || ["toString", "valueOf", "constructor", "hasOwnProperty", "__proto__", "isPrototypeOf", "propertyIsEnumerable", "toLocaleString"].includes(field))
+        return;
+      warnings.add(`${label2}: reads components.${name}.selectedRow.${field}, but Table "${name}" has a closed map projection that omits "${field}". Preserve the raw field in the row (hide its column if needed), or look up the source record by its stable id. Check edit/review prefill and avoid overwriting omitted values with blanks. If the missing-field fallback is intentional, no change is required.`);
+    });
+  }
+  for (const c of components) {
+    const value = { p: c.properties, s: c.styles }, label2 = `Component "${c.name ?? c.id ?? "?"}"`;
+    inspect(value, label2);
+    for (const warning of lintUntrackedReactiveBindings(value, label2))
+      warnings.add(warning);
+    for (const warning of lintQueryArrayMutations(value, label2))
+      warnings.add(warning);
+  }
+  for (const source of extraSources)
+    inspect(source.value, source.label);
+  for (const { alias, table, fields } of aliasOmissions.values()) {
+    warnings.add(`Bindings read ${[...fields].map((field) => `variables.${alias}.${field}`).join(", ")}; an event assigns that variable from Table "${table}" selectedRow, whose closed map projection omits ${[...fields].map((field) => `"${field}"`).join(", ")}. This edit can overwrite missing values with a blank/false default. Preserve raw fields or resolve the raw record by stable id before opening the editor; generate_edit_contract can provide that snapshot. Unknown runtime writes are not certified by this advisory.`);
+  }
+  const unwrap = (value) => node(value) && "value" in node(value) ? node(value).value : value;
+  for (const c of components) {
+    if (!["TextInput", "TextArea", "EmailInput", "PhoneInput"].includes(c.type ?? ""))
+      continue;
+    let selected = expression(unwrap(c.properties?.value));
+    if (selected?.type === "LogicalExpression" && ["||", "??"].includes(String(selected.operator)))
+      selected = node(selected.left);
+    if (!member2(selected))
+      continue;
+    const field = key2(selected), selection = node(selected?.object), owner = node(selection?.object), namespace = node(owner?.object);
+    if (!field || !member2(selection))
+      continue;
+    const tableName = owner?.type === "Identifier" && owner.name === "variables" ? singleAlias(key2(selection) ?? "") : key2(selection) === "selectedRow" && member2(owner) && namespace?.type === "Identifier" && namespace.name === "components" ? key2(owner) : void 0;
+    const projected = tableName ? tables.get(tableName)?.get(field) : void 0;
+    if (projected?.type !== "LogicalExpression" || !["||", "??"].includes(String(projected.operator)))
+      continue;
+    const fallback = node(projected.right);
+    if (fallback?.type !== "StringLiteral" || !String(fallback.value).trim())
+      continue;
+    warnings.add(`Component "${c.name ?? c.id ?? "?"}": editable value reads "${field}" from Table "${tableName}", whose projection replaces missing raw text with a non-empty display fallback. Saving another field can persist that label as real data. Keep raw text separate from display labels, or resolve the raw record by stable id; preserve untouched null/empty values. This is advisory, not a claim that every fallback is unintended.`);
+  }
+  for (const c of components) {
+    const property = c.type === "DatePickerV2" ? "defaultValue" : ["NumberInput", "CurrencyInput"].includes(c.type ?? "") ? "value" : void 0;
+    if (!property)
+      continue;
+    let selected = expression(unwrap(c.properties?.[property]));
+    if (selected?.type === "LogicalExpression" && ["||", "??"].includes(String(selected.operator)))
+      selected = node(selected.left);
+    if (!member2(selected))
+      continue;
+    const field = key2(selected), selection = node(selected?.object), table = node(selection?.object), namespace = node(table?.object);
+    if (!field || !member2(selection))
+      continue;
+    const tableName = table?.type === "Identifier" && table.name === "variables" ? singleAlias(key2(selection) ?? "") : key2(selection) === "selectedRow" && member2(table) && namespace?.type === "Identifier" && namespace.name === "components" ? key2(table) : void 0;
+    const value = tableName ? tables.get(tableName)?.get(field) : void 0;
+    if (!value)
+      continue;
+    const formats = [];
+    let localizedNumber = false;
+    walk2(value, (n) => {
+      if (n.type !== "CallExpression")
+        return;
+      const callee = node(n.callee);
+      if (!member2(callee))
+        return;
+      if (key2(callee) === "toLocaleString" || key2(callee) === "toFixed")
+        localizedNumber = true;
+      const args = n.arguments;
+      if (key2(callee) === "format" && Array.isArray(args) && node(args[0])?.type === "StringLiteral")
+        formats.push(String(node(args[0]).value));
+    });
+    const expected = unwrap(c.properties?.dateFormat) ?? "DD/MM/YYYY";
+    if (c.type === "DatePickerV2" && member2(value) && typeof expected === "string" && !expected.includes("{{")) {
+      const source = components.find((t) => t.type === "Table" && t.name === tableName);
+      const columns = unwrap(source?.properties?.columns);
+      const matches = Array.isArray(columns) ? columns.filter((col) => {
+        const entry = node(col);
+        return entry?.key === field && entry.columnType === "datepicker";
+      }) : [];
+      const parseFormat = matches.length === 1 ? node(matches[0])?.parseDateFormat : void 0;
+      const yearLast = /^(?:D{1,2}[^A-Za-z]+M{1,4}|M{1,4}[^A-Za-z]+D{1,2})[^A-Za-z]+Y{2,4}$/.test(expected);
+      if (typeof parseFormat === "string" && parseFormat.startsWith("YYYY-MM-DD") && !parseFormat.includes("{{") && yearLast) {
+        warnings.add(`Component "${c.name ?? c.id ?? "?"}": defaultValue reads raw ${tableName}.selectedRow.${field}; that Table column declares parseDateFormat "${parseFormat}", but the DatePickerV2 parses its default with dateFormat "${expected}". A name-only edit can silently change the date. Match the editor's input format or explicitly format the raw default before opening it; table display formatting does not convert selectedRow. Advisory only: verify the actual source value before changing it.`);
+      }
+    }
+    if (c.type === "DatePickerV2" && formats.some((f) => typeof expected === "string" && !expected.includes("{{") && f !== expected) || c.type !== "DatePickerV2" && localizedNumber) {
+      warnings.add(`Component "${c.name ?? c.id ?? "?"}": ${property} reads display-formatted ${tableName}.selectedRow.${field} into a typed ${c.type} editor${c.type === "DatePickerV2" ? ` (dateFormat ${String(expected)})` : ""}. Look up the raw record by stable id, or explicitly convert to the editor's input format. Preserve untouched fields on save; generate_edit_contract can provide raw-record defaults and changed-field-only payloads.`);
+    }
+  }
+  return [...warnings];
+}
 export {
   BARE_QUERY_DATA_BINDING as B,
-  lintHtmlContentHeight as a,
-  lintHtmlRootSurface as b,
-  lintUnguardedComponentRefs as c,
-  lintEmbeddedBindingSyntax as d,
-  lintChartDataShape as e,
-  lintUnguardedSelectionText as f,
-  lintTextFormat as g,
-  lintTableColumnsShape as h,
-  lintUntriggeredDataQueries as i,
-  lintAutomaticWrites as j,
-  stripHtmlBindings as k,
-  lintOversizedWidths as l,
-  suggestedHtmlHeight as m,
+  lintOversizedWidths as a,
+  lintHtmlContentHeight as b,
+  lintHtmlRootSurface as c,
+  lintUnguardedComponentRefs as d,
+  lintEmbeddedBindingSyntax as e,
+  lintChartDataShape as f,
+  lintUnguardedSelectionText as g,
+  lintTextFormat as h,
+  lintTableColumnsShape as i,
+  lintUntriggeredDataQueries as j,
+  lintAutomaticWrites as k,
+  lintSelectedRowProjections as l,
+  stripHtmlBindings as m,
+  suggestedHtmlHeight as n,
   parseHtml as p,
   surfaceAroundResolver as s
 };

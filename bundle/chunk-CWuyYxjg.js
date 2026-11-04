@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
-import { b1 as external_exports, b2 as nodeCatalog, b3 as validateGraph, b4 as specSchema, b5 as compileGraph, b6 as assertWorkflowJavaScript, b7 as controlFlowEdges, b8 as getComponentSchema } from "./chunk-C1LXenY0.js";
-import { p as parseExpression, a as parse } from "./chunk-C-mOcraM.js";
-import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-BNuWox9h.js";
+import { b1 as external_exports, b2 as nodeCatalog, b3 as validateGraph, b4 as specSchema, b5 as compileGraph, b6 as assertWorkflowJavaScript, b7 as controlFlowEdges, b8 as getComponentSchema } from "./chunk-DsdTCwqi.js";
+import { p as parseExpression, a as parse } from "./chunk-Brg6_25C.js";
+import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-Dwp0GyCm.js";
 import { r as require_moment } from "./chunk-CMlzbHLo.js";
 import { ed as __toESM, eb as __commonJS } from "./chunk-By54lwVj.js";
 import { randomUUID } from "node:crypto";
@@ -46,7 +46,7 @@ var require_parse = __commonJS({
     var line;
     var column;
     var token;
-    var key3;
+    var key;
     var root;
     module.exports = function parse2(text, reviver) {
       source2 = String(text);
@@ -56,7 +56,7 @@ var require_parse = __commonJS({
       line = 1;
       column = 0;
       token = void 0;
-      key3 = void 0;
+      key = void 0;
       root = void 0;
       do {
         token = lex();
@@ -72,12 +72,12 @@ var require_parse = __commonJS({
       if (value != null && typeof value === "object") {
         if (Array.isArray(value)) {
           for (let i = 0; i < value.length; i++) {
-            const key22 = String(i);
-            const replacement = internalize(value, key22, reviver);
+            const key2 = String(i);
+            const replacement = internalize(value, key2, reviver);
             if (replacement === void 0) {
-              delete value[key22];
+              delete value[key2];
             } else {
-              Object.defineProperty(value, key22, {
+              Object.defineProperty(value, key2, {
                 value: replacement,
                 writable: true,
                 enumerable: true,
@@ -86,12 +86,12 @@ var require_parse = __commonJS({
             }
           }
         } else {
-          for (const key22 in value) {
-            const replacement = internalize(value, key22, reviver);
+          for (const key2 in value) {
+            const replacement = internalize(value, key2, reviver);
             if (replacement === void 0) {
-              delete value[key22];
+              delete value[key2];
             } else {
-              Object.defineProperty(value, key22, {
+              Object.defineProperty(value, key2, {
                 value: replacement,
                 writable: true,
                 enumerable: true,
@@ -710,7 +710,7 @@ var require_parse = __commonJS({
         switch (token.type) {
           case "identifier":
           case "string":
-            key3 = token.value;
+            key = token.value;
             parseState = "afterPropertyName";
             return;
           case "punctuator":
@@ -796,7 +796,7 @@ var require_parse = __commonJS({
         if (Array.isArray(parent)) {
           parent.push(value);
         } else {
-          Object.defineProperty(parent, key3, {
+          Object.defineProperty(parent, key, {
             value,
             writable: true,
             enumerable: true,
@@ -926,17 +926,17 @@ var require_stringify = __commonJS({
         gap = space.substr(0, 10);
       }
       return serializeProperty("", { "": value });
-      function serializeProperty(key3, holder) {
-        let value2 = holder[key3];
+      function serializeProperty(key, holder) {
+        let value2 = holder[key];
         if (value2 != null) {
           if (typeof value2.toJSON5 === "function") {
-            value2 = value2.toJSON5(key3);
+            value2 = value2.toJSON5(key);
           } else if (typeof value2.toJSON === "function") {
-            value2 = value2.toJSON(key3);
+            value2 = value2.toJSON(key);
           }
         }
         if (replacerFunc) {
-          value2 = replacerFunc.call(holder, key3, value2);
+          value2 = replacerFunc.call(holder, key, value2);
         }
         if (value2 instanceof Number) {
           value2 = Number(value2);
@@ -1022,15 +1022,15 @@ var require_stringify = __commonJS({
         indent = indent + gap;
         let keys = propertyList || Object.keys(value2);
         let partial = [];
-        for (const key3 of keys) {
-          const propertyString = serializeProperty(key3, value2);
+        for (const key of keys) {
+          const propertyString = serializeProperty(key, value2);
           if (propertyString !== void 0) {
-            let member3 = serializeKey(key3) + ":";
+            let member = serializeKey(key) + ":";
             if (gap !== "") {
-              member3 += " ";
+              member += " ";
             }
-            member3 += propertyString;
-            partial.push(member3);
+            member += propertyString;
+            partial.push(member);
           }
         }
         let final;
@@ -1051,20 +1051,20 @@ var require_stringify = __commonJS({
         indent = stepback;
         return final;
       }
-      function serializeKey(key3) {
-        if (key3.length === 0) {
-          return quoteString(key3);
+      function serializeKey(key) {
+        if (key.length === 0) {
+          return quoteString(key);
         }
-        const firstChar = String.fromCodePoint(key3.codePointAt(0));
+        const firstChar = String.fromCodePoint(key.codePointAt(0));
         if (!util.isIdStartChar(firstChar)) {
-          return quoteString(key3);
+          return quoteString(key);
         }
-        for (let i = firstChar.length; i < key3.length; i++) {
-          if (!util.isIdContinueChar(String.fromCodePoint(key3.codePointAt(i)))) {
-            return quoteString(key3);
+        for (let i = firstChar.length; i < key.length; i++) {
+          if (!util.isIdContinueChar(String.fromCodePoint(key.codePointAt(i)))) {
+            return quoteString(key);
           }
         }
-        return key3;
+        return key;
       }
       function serializeArray(value2) {
         if (stack.indexOf(value2) >= 0) {
@@ -1322,47 +1322,47 @@ function momentArgs(args) {
     unsupported();
   return args.map((a) => typeof a === "string" || typeof a === "number" ? a : unsupported());
 }
-function interpret(node2) {
-  switch (node2?.type) {
+function interpret(node) {
+  switch (node?.type) {
     case "StringLiteral":
     case "NumericLiteral":
     case "BooleanLiteral":
-      return node2.value;
+      return node.value;
     case "NullLiteral":
       return null;
     case "Identifier":
-      if (node2.name === "undefined")
+      if (node.name === "undefined")
         return void 0;
-      if (node2.name === "NaN")
+      if (node.name === "NaN")
         return NaN;
-      if (node2.name === "Infinity")
+      if (node.name === "Infinity")
         return Infinity;
       return unsupported();
     case "TemplateLiteral": {
       let out = "";
-      node2.quasis.forEach((q, i) => {
+      node.quasis.forEach((q, i) => {
         out += q.value.cooked ?? "";
-        if (i < node2.expressions.length)
-          out += String(primitive(interpret(node2.expressions[i])));
+        if (i < node.expressions.length)
+          out += String(primitive(interpret(node.expressions[i])));
       });
       return out;
     }
     case "UnaryExpression": {
-      const v = primitive(interpret(node2.argument));
-      if (node2.operator === "!")
+      const v = primitive(interpret(node.argument));
+      if (node.operator === "!")
         return !v;
-      if (node2.operator === "-")
+      if (node.operator === "-")
         return -num(v);
-      if (node2.operator === "+")
+      if (node.operator === "+")
         return typeof v === "string" ? Number(v) : num(v);
-      if (node2.operator === "typeof")
+      if (node.operator === "typeof")
         return typeof v;
       return unsupported();
     }
     case "BinaryExpression": {
-      const a = primitive(interpret(node2.left));
-      const b = primitive(interpret(node2.right));
-      switch (node2.operator) {
+      const a = primitive(interpret(node.left));
+      const b = primitive(interpret(node.right));
+      switch (node.operator) {
         case "+":
           return typeof a === "string" || typeof b === "string" ? String(a) + String(b) : num(a) + num(b);
         case "-":
@@ -1396,33 +1396,33 @@ function interpret(node2) {
       }
     }
     case "LogicalExpression": {
-      const l = interpret(node2.left);
-      if (node2.operator === "&&")
-        return l ? interpret(node2.right) : l;
-      if (node2.operator === "||")
-        return l ? l : interpret(node2.right);
-      if (node2.operator === "??")
-        return l ?? interpret(node2.right);
+      const l = interpret(node.left);
+      if (node.operator === "&&")
+        return l ? interpret(node.right) : l;
+      if (node.operator === "||")
+        return l ? l : interpret(node.right);
+      if (node.operator === "??")
+        return l ?? interpret(node.right);
       return unsupported();
     }
     case "ConditionalExpression":
-      return interpret(node2.test) ? interpret(node2.consequent) : interpret(node2.alternate);
+      return interpret(node.test) ? interpret(node.consequent) : interpret(node.alternate);
     case "MemberExpression": {
-      if (node2.computed)
+      if (node.computed)
         return unsupported();
-      const name2 = node2.property?.name;
-      if (node2.object?.type === "Identifier" && node2.object.name === "Math") {
+      const name2 = node.property?.name;
+      if (node.object?.type === "Identifier" && node.object.name === "Math") {
         const constant = own(MATH_CONSTANTS, name2);
         return constant ?? unsupported();
       }
-      const target = interpret(node2.object);
+      const target = interpret(node.object);
       if (typeof target === "string" && name2 === "length")
         return target.length;
       return unsupported();
     }
     case "CallExpression": {
-      const args = node2.arguments.map((a) => a.type === "SpreadElement" ? unsupported() : interpret(a));
-      const callee = node2.callee;
+      const args = node.arguments.map((a) => a.type === "SpreadElement" ? unsupported() : interpret(a));
+      const callee = node.callee;
       if (callee.type === "Identifier") {
         if (callee.name === "moment")
           return box((0, import_moment.default)(...momentArgs(args)));
@@ -1496,15 +1496,15 @@ function resolveStaticBindings(options2) {
     if (typeof value === "string") {
       if (!value.includes("{{") || !value.includes("}}"))
         return;
-      const key3 = value.replace(/\n/g, " ");
-      if (key3 in resolved || unresolved.includes(key3))
+      const key = value.replace(/\n/g, " ");
+      if (key in resolved || unresolved.includes(key))
         return;
       const outcome = resolveString(value);
       if (!outcome.ok) {
-        unresolved.push(key3);
+        unresolved.push(key);
         return;
       }
-      resolved[key3] = outcome.value;
+      resolved[key] = outcome.value;
       for (const [binding, v] of outcome.parts)
         resolved[binding.replace(/\n/g, " ")] = v;
     } else if (Array.isArray(value))
@@ -1531,11 +1531,11 @@ function resolveString(text) {
   let i = 0;
   return { ok: true, value: text.replace(SERVER_BINDING, () => String(parts[i++][1])), parts };
 }
-function evaluate(expression2) {
-  if (expression2.length > MAX_EXPRESSION_CHARS)
+function evaluate(expression) {
+  if (expression.length > MAX_EXPRESSION_CHARS)
     return { ok: false };
   try {
-    const value = interpret(parseExpression(expression2));
+    const value = interpret(parseExpression(expression));
     if (isMoment(value))
       return { ok: true, value: value.m.toISOString() };
     if (typeof value === "number" && !Number.isFinite(value))
@@ -1553,8 +1553,8 @@ function applyResolvedBindings(options2, resolved) {
   if (typeof options2 === "string") {
     if (!options2.includes("{{") || !options2.includes("}}"))
       return options2;
-    const key3 = options2.replace(/\n/g, " ");
-    return Object.prototype.hasOwnProperty.call(resolved, key3) ? resolved[key3] : options2;
+    const key = options2.replace(/\n/g, " ");
+    return Object.prototype.hasOwnProperty.call(resolved, key) ? resolved[key] : options2;
   }
   if (Array.isArray(options2))
     return options2.map((value) => applyResolvedBindings(value, resolved));
@@ -1564,7 +1564,7 @@ function applyResolvedBindings(options2, resolved) {
   return options2;
 }
 function resolvedBindingValues(resolved) {
-  return Object.entries(resolved).filter(([key3]) => /^\{\{(?:(?!\}\})[\s\S])*\}\}$/.test(key3)).map(([, value]) => value);
+  return Object.entries(resolved).filter(([key]) => /^\{\{(?:(?!\}\})[\s\S])*\}\}$/.test(key)).map(([, value]) => value);
 }
 function emptyViewerOnlyParams(options2, resolution) {
   const params = options2 && typeof options2 === "object" ? options2.query_params : void 0;
@@ -1574,11 +1574,11 @@ function emptyViewerOnlyParams(options2, resolution) {
   for (const pair of params) {
     if (!Array.isArray(pair) || typeof pair[1] !== "string")
       continue;
-    const key3 = pair[1].replace(/\n/g, " ");
-    if (!resolution.unresolved.includes(key3))
+    const key = pair[1].replace(/\n/g, " ");
+    if (!resolution.unresolved.includes(key))
       continue;
-    resolution.resolved[key3] = null;
-    resolution.unresolved = resolution.unresolved.filter((b) => b !== key3);
+    resolution.resolved[key] = null;
+    resolution.unresolved = resolution.unresolved.filter((b) => b !== key);
     filled.push(String(pair[0]));
   }
   return filled;
@@ -1869,7 +1869,7 @@ function assessRestGet(options2, datasourceId) {
       ...identity
     };
   }
-  const requestFields = ["url_params", "headers", "cookies"].map((key3) => options2[key3]);
+  const requestFields = ["url_params", "headers", "cookies"].map((key) => options2[key]);
   if (requestFields.some(containsBinding)) {
     return {
       provenRead: false,
@@ -1964,7 +1964,7 @@ function mongoPipelineWrites(pipeline) {
   if (Array.isArray(pipeline))
     return pipeline.some(mongoPipelineWrites);
   const obj = record(pipeline);
-  return !!obj && Object.entries(obj).some(([key3, value]) => MONGO_WRITE_STAGES.includes(key3) || mongoPipelineWrites(value));
+  return !!obj && Object.entries(obj).some(([key, value]) => MONGO_WRITE_STAGES.includes(key) || mongoPipelineWrites(value));
 }
 function assessMongo(options2, datasourceId) {
   const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : "";
@@ -2556,8 +2556,8 @@ function fullToolJetDbCount(options2) {
   if (aggregate?.column !== "id")
     return false;
   const ignoredForScope = /* @__PURE__ */ new Set(["aggregates", "group_by", "order_filters", "limit", "offset"]);
-  return Object.entries(listRows).every(([key3, value]) => {
-    if (ignoredForScope.has(key3))
+  return Object.entries(listRows).every(([key, value]) => {
+    if (ignoredForScope.has(key))
       return true;
     if (value === void 0 || value === null || value === "")
       return true;
@@ -2779,13 +2779,13 @@ function normalizeQueryToggles(options2) {
   if (!isPlainObject(options2))
     return options2;
   let out = options2;
-  for (const key3 of QUERY_TOGGLES) {
-    const value = staticToggle(options2[key3]);
+  for (const key of QUERY_TOGGLES) {
+    const value = staticToggle(options2[key]);
     if (value === void 0)
       continue;
     if (out === options2)
       out = { ...options2 };
-    out[key3] = value;
+    out[key] = value;
   }
   return out;
 }
@@ -2804,33 +2804,33 @@ function queryToggleIssues(options2) {
   if (!isPlainObject(options2))
     return [];
   const issues = [];
-  for (const key3 of QUERY_TOGGLES) {
-    if (!(key3 in options2))
+  for (const key of QUERY_TOGGLES) {
+    if (!(key in options2))
       continue;
-    const value = options2[key3];
+    const value = options2[key];
     if (value === void 0 || typeof value === "boolean" || staticToggle(value) !== void 0)
       continue;
     const dynamic = typeof value === "string" ? " ToolJet does not evaluate it and treats any text as on. Run the query from an event instead when it depends on state." : "";
     issues.push({
       code: "query_toggle_not_boolean",
-      path: key3,
-      message: `${key3} must be true or false (or left out), not ${describe(value)}.${dynamic}`
+      path: key,
+      message: `${key} must be true or false (or left out), not ${describe(value)}.${dynamic}`
     });
   }
   return issues;
 }
 function toggleRewriteWarning(before, after) {
-  const changed = QUERY_TOGGLES.filter((key3) => before?.[key3] !== after?.[key3]);
+  const changed = QUERY_TOGGLES.filter((key) => before?.[key] !== after?.[key]);
   if (!changed.length)
     return void 0;
-  return `${changed.map((key3) => `${key3} ${JSON.stringify(before[key3])} saved as ${String(after[key3])}`).join(", ")}; ToolJet reads these as true/false and runs any text on load.`;
+  return `${changed.map((key) => `${key} ${JSON.stringify(before[key])} saved as ${String(after[key])}`).join(", ")}; ToolJet reads these as true/false and runs any text on load.`;
 }
 function assertPersistableQueryToggles(options2, subject) {
   const issues = queryToggleIssues(options2);
-  const strings = isPlainObject(options2) ? QUERY_TOGGLES.filter((key3) => typeof options2[key3] === "string") : [];
+  const strings = isPlainObject(options2) ? QUERY_TOGGLES.filter((key) => typeof options2[key] === "string") : [];
   const messages = [
     ...issues.map((issue2) => issue2.message),
-    ...strings.filter((key3) => !issues.some((issue2) => issue2.path === key3)).map((key3) => `${key3} must be sent as a boolean, not ${JSON.stringify(options2[key3])}.`)
+    ...strings.filter((key) => !issues.some((issue2) => issue2.path === key)).map((key) => `${key} must be sent as a boolean, not ${JSON.stringify(options2[key])}.`)
   ];
   if (messages.length)
     throw new Error(`${subject}: ${messages.join(" ")}`);
@@ -2869,16 +2869,16 @@ function primitiveWriteBindingEntries(value) {
   if (spans.length !== 1 || spans[0].start !== 0 || spans[0].end !== source2.length)
     return [];
   try {
-    const node2 = parseExpression(spans[0].body);
-    if (node2.type !== "ObjectExpression")
+    const node = parseExpression(spans[0].body);
+    if (node.type !== "ObjectExpression")
       return [];
-    return node2.properties.flatMap((p) => {
+    return node.properties.flatMap((p) => {
       if (p.type !== "ObjectProperty" || p.computed)
         return [];
-      const key3 = p.key.type === "Identifier" ? p.key.name : p.key.type === "StringLiteral" || p.key.type === "NumericLiteral" ? String(p.key.value) : void 0;
-      if (!key3)
+      const key = p.key.type === "Identifier" ? p.key.name : p.key.type === "StringLiteral" || p.key.type === "NumericLiteral" ? String(p.key.value) : void 0;
+      if (!key)
         return [];
-      return ["StringLiteral", "NumericLiteral", "BooleanLiteral", "NullLiteral", "TemplateLiteral", "UnaryExpression"].includes(p.value.type) ? [key3] : [];
+      return ["StringLiteral", "NumericLiteral", "BooleanLiteral", "NullLiteral", "TemplateLiteral", "UnaryExpression"].includes(p.value.type) ? [key] : [];
     });
   } catch {
     return [];
@@ -2895,19 +2895,19 @@ function conditionalWriteWarning(kind, options2) {
     return;
   return `update_rows both checks and changes ${[...new Set(guarded)].map((x) => JSON.stringify(x)).join(", ")}. This can legitimately succeed with zero matching rows (stale value/state). An untransformed ToolJet DB update_rows returns the changed rows in queries.<name>.data (an empty array means no match); account for any query transformation. Before a dependent write, audit entry, status transition or success message, verify the result contains the intended row and expected count; do not treat onDataQuerySuccess alone as that proof. On no match, stop the dependent chain and show a conflict/reload message. Do not remove the predicate to make the write pass. This is advisory; callers may already handle the result.`;
 }
-function walk$1(v, visit) {
+function walk(v, visit) {
   if (Array.isArray(v)) {
     for (const x of v)
-      walk$1(x, visit);
+      walk(x, visit);
     return;
   }
   const n = object(v);
   if (!n)
     return;
   visit(n);
-  for (const [key3, child] of Object.entries(n))
-    if (!["loc", "extra", "comments"].includes(key3))
-      walk$1(child, visit);
+  for (const [key, child] of Object.entries(n))
+    if (!["loc", "extra", "comments"].includes(key))
+      walk(child, visit);
 }
 function property(n) {
   const p = object(n?.property);
@@ -2940,7 +2940,7 @@ function arithmeticWriteWarning(kind, options2) {
       continue;
     }
     let shadowed = false, found = false;
-    walk$1(ast, (n) => {
+    walk(ast, (n) => {
       if (Array.isArray(n.params) && /"components"/.test(JSON.stringify(n.params)))
         shadowed = true;
       if (n.type === "VariableDeclarator" && /"components"/.test(JSON.stringify(n.id)))
@@ -2948,13 +2948,13 @@ function arithmeticWriteWarning(kind, options2) {
     });
     if (shadowed)
       continue;
-    walk$1(ast, (n) => {
+    walk(ast, (n) => {
       if (n.type !== "BinaryExpression" || !["+", "-"].includes(String(n.operator)))
         return;
-      walk$1(n, (member3) => {
-        if (!["MemberExpression", "OptionalMemberExpression"].includes(String(member3.type)))
+      walk(n, (member) => {
+        if (!["MemberExpression", "OptionalMemberExpression"].includes(String(member.type)))
           return;
-        const selected = object(member3.object), table = object(selected?.object), namespace = object(table?.object);
+        const selected = object(member.object), table = object(selected?.object), namespace = object(table?.object);
         if (property(selected) === "selectedRow" && namespace?.type === "Identifier" && namespace.name === "components")
           found = true;
       });
@@ -2975,7 +2975,7 @@ var ELEMENT_PATH = /\$|\.\d+(\.|$)/;
 var isMember = (n) => n?.type === "MemberExpression" || n?.type === "OptionalMemberExpression";
 var propertyName = (n) => n.computed ? n.property?.type === "StringLiteral" ? n.property.value : void 0 : n.property?.name;
 var keyName = (p) => p.computed ? void 0 : p.key?.type === "Identifier" ? p.key.name : p.key?.type === "StringLiteral" ? p.key.value : void 0;
-var property2 = (n, key3) => n?.type === "ObjectExpression" ? n.properties.find((p) => p.type === "ObjectProperty" && keyName(p) === key3)?.value : void 0;
+var property2 = (n, key) => n?.type === "ObjectExpression" ? n.properties.find((p) => p.type === "ObjectProperty" && keyName(p) === key)?.value : void 0;
 function unwrap(n) {
   while (n?.type === "CallExpression") {
     if (isMember(n.callee) && n.callee.object?.name === "JSON" && propertyName(n.callee) === "stringify" && n.arguments.length >= 1) {
@@ -3019,10 +3019,10 @@ function referencesComponents(n) {
     return false;
   if (Array.isArray(n))
     return n.some(referencesComponents);
-  const node2 = n;
-  if (isMember(node2) && node2.object?.type === "Identifier" && node2.object.name === "components")
+  const node = n;
+  if (isMember(node) && node.object?.type === "Identifier" && node.object.name === "components")
     return true;
-  return Object.entries(node2).some(([key3, child]) => !["loc", "extra", "comments"].includes(key3) && referencesComponents(child));
+  return Object.entries(node).some(([key, child]) => !["loc", "extra", "comments"].includes(key) && referencesComponents(child));
 }
 function isArrayValue(raw) {
   const n = unwrap(raw);
@@ -3060,10 +3060,10 @@ function replacedArrayPaths(set, prefix = "") {
   return set.properties.flatMap((p) => {
     if (p.type !== "ObjectProperty")
       return [];
-    const key3 = keyName(p);
-    if (!key3)
+    const key = keyName(p);
+    if (!key)
       return [];
-    const path = prefix ? `${prefix}.${key3}` : key3;
+    const path = prefix ? `${prefix}.${key}` : key;
     if (ELEMENT_PATH.test(path))
       return [];
     if (isComponentArray(p.value))
@@ -3250,8 +3250,8 @@ function topLevelKeys(fields) {
 function nestedChildren(fields, root) {
   return new Set(Object.keys(fields).filter((path) => path.startsWith(`${root}.`)).map((path) => path.slice(root.length + 1).split(".")[0]));
 }
-function suffixSuggestion(key3, fields) {
-  const matches = Object.keys(fields).filter((path) => path.endsWith(`.${key3}`));
+function suffixSuggestion(key, fields) {
+  const matches = Object.keys(fields).filter((path) => path.endsWith(`.${key}`));
   return matches.length === 1 ? matches[0] : void 0;
 }
 function tupleArity(field) {
@@ -3266,7 +3266,7 @@ function bindingStrings(value, path = "") {
   }
   if (!isObject(value))
     return [];
-  return Object.entries(value).flatMap(([key3, item]) => bindingStrings(item, path ? `${path}.${key3}` : key3));
+  return Object.entries(value).flatMap(([key, item]) => bindingStrings(item, path ? `${path}.${key}` : key));
 }
 function tableStateWarnings(options2) {
   const warnings = [];
@@ -3517,39 +3517,39 @@ var RUNJS_KNOWN_NAMES = /* @__PURE__ */ new Set([
   "CustomEvent"
 ]);
 var isNode = (value) => !!value && typeof value === "object" && typeof value.type === "string";
-function patternNames(node2, out) {
-  if (!isNode(node2))
+function patternNames(node, out) {
+  if (!isNode(node))
     return;
-  if (node2.type === "Identifier")
-    out.add(String(node2.name));
-  else if (node2.type === "ObjectPattern")
-    for (const p of node2.properties)
+  if (node.type === "Identifier")
+    out.add(String(node.name));
+  else if (node.type === "ObjectPattern")
+    for (const p of node.properties)
       patternNames(p.type === "RestElement" ? p.argument : p.value, out);
-  else if (node2.type === "ArrayPattern")
-    for (const e of node2.elements)
+  else if (node.type === "ArrayPattern")
+    for (const e of node.elements)
       patternNames(e, out);
-  else if (node2.type === "RestElement")
-    patternNames(node2.argument, out);
-  else if (node2.type === "AssignmentPattern")
-    patternNames(node2.left, out);
+  else if (node.type === "RestElement")
+    patternNames(node.argument, out);
+  else if (node.type === "AssignmentPattern")
+    patternNames(node.left, out);
 }
 function runjsUndeclaredNames(code) {
   return undeclaredNames(`async function __runjs__(){
 ${code}
 }`, RUNJS_KNOWN_NAMES);
 }
-function bindingUndeclaredNames(expression2) {
-  if (/\b(components|queries)\.[0-9a-f]{8}-[0-9a-f]{4}-/i.test(expression2))
+function bindingUndeclaredNames(expression) {
+  if (/\b(components|queries)\.[0-9a-f]{8}-[0-9a-f]{4}-/i.test(expression))
     return [];
   return undeclaredNames(`(function __binding__(){ return (
-${expression2}
+${expression}
 ); })`, BINDING_KNOWN_NAMES);
 }
 function lintBindingNames(value, label, path = "") {
   if (Array.isArray(value))
     return value.flatMap((child, i) => lintBindingNames(child, label, `${path}[${i}]`));
   if (value && typeof value === "object") {
-    return Object.entries(value).flatMap(([key3, child]) => lintBindingNames(child, label, path ? `${path}.${key3}` : key3));
+    return Object.entries(value).flatMap(([key, child]) => lintBindingNames(child, label, path ? `${path}.${key}` : key));
   }
   if (typeof value !== "string" || !value.includes("{{"))
     return [];
@@ -3577,22 +3577,22 @@ function undeclaredNames(source2, known) {
     return [];
   }
   const declaredIn = (body, into) => {
-    const visit = (node2) => {
-      if (Array.isArray(node2)) {
-        node2.forEach(visit);
+    const visit = (node) => {
+      if (Array.isArray(node)) {
+        node.forEach(visit);
         return;
       }
-      if (!isNode(node2))
+      if (!isNode(node))
         return;
-      if (node2.type === "VariableDeclarator")
-        patternNames(node2.id, into);
-      if ((node2.type === "FunctionDeclaration" || node2.type === "ClassDeclaration") && isNode(node2.id))
-        into.add(String(node2.id.name));
-      if (node2.type === "CatchClause")
-        patternNames(node2.param, into);
-      if (FUNCTION_TYPES.has(node2.type))
+      if (node.type === "VariableDeclarator")
+        patternNames(node.id, into);
+      if ((node.type === "FunctionDeclaration" || node.type === "ClassDeclaration") && isNode(node.id))
+        into.add(String(node.id.name));
+      if (node.type === "CatchClause")
+        patternNames(node.param, into);
+      if (FUNCTION_TYPES.has(node.type))
         return;
-      for (const [k, v] of Object.entries(node2))
+      for (const [k, v] of Object.entries(node))
         if (k !== "loc" && k !== "extra" && !k.endsWith("Comments"))
           visit(v);
     };
@@ -3601,36 +3601,36 @@ function undeclaredNames(source2, known) {
   const used = [];
   const scopes = [];
   const isDeclared = (name2) => scopes.some((scope) => scope.has(name2));
-  const walk22 = (node2, parent, key3) => {
-    if (Array.isArray(node2)) {
-      for (const child of node2)
-        walk22(child, parent, key3);
+  const walk2 = (node, parent, key) => {
+    if (Array.isArray(node)) {
+      for (const child of node)
+        walk2(child, parent, key);
       return;
     }
-    if (!isNode(node2))
+    if (!isNode(node))
       return;
-    if (node2.type === "Identifier") {
+    if (node.type === "Identifier") {
       const p = parent?.type;
-      const notARead = (p === "MemberExpression" || p === "OptionalMemberExpression") && key3 === "property" && !parent.computed || (p === "ObjectProperty" || p === "ObjectMethod" || p === "ClassMethod" || p === "ClassProperty" || p === "ClassPrivateProperty") && key3 === "key" && !parent.computed || (p === "LabeledStatement" || p === "BreakStatement" || p === "ContinueStatement") && key3 === "label" || p === "UnaryExpression" && parent.operator === "typeof" || p === "MetaProperty" || // a declaration's own name, a parameter or a pattern binding is not a read
-      p === "VariableDeclarator" && key3 === "id" || p !== void 0 && FUNCTION_TYPES.has(p) && (key3 === "id" || key3 === "params") || (p === "ClassDeclaration" || p === "ClassExpression") && key3 === "id" || p === "CatchClause" && key3 === "param";
-      const name2 = String(node2.name);
+      const notARead = (p === "MemberExpression" || p === "OptionalMemberExpression") && key === "property" && !parent.computed || (p === "ObjectProperty" || p === "ObjectMethod" || p === "ClassMethod" || p === "ClassProperty" || p === "ClassPrivateProperty") && key === "key" && !parent.computed || (p === "LabeledStatement" || p === "BreakStatement" || p === "ContinueStatement") && key === "label" || p === "UnaryExpression" && parent.operator === "typeof" || p === "MetaProperty" || // a declaration's own name, a parameter or a pattern binding is not a read
+      p === "VariableDeclarator" && key === "id" || p !== void 0 && FUNCTION_TYPES.has(p) && (key === "id" || key === "params") || (p === "ClassDeclaration" || p === "ClassExpression") && key === "id" || p === "CatchClause" && key === "param";
+      const name2 = String(node.name);
       if (!notARead && !isDeclared(name2))
         used.push(name2);
       return;
     }
-    if (node2.type === "Program" || FUNCTION_TYPES.has(node2.type)) {
+    if (node.type === "Program" || FUNCTION_TYPES.has(node.type)) {
       const scope = /* @__PURE__ */ new Set();
-      if (FUNCTION_TYPES.has(node2.type)) {
-        if (node2.type === "FunctionExpression" && isNode(node2.id))
-          scope.add(String(node2.id.name));
-        for (const param of node2.params ?? [])
+      if (FUNCTION_TYPES.has(node.type)) {
+        if (node.type === "FunctionExpression" && isNode(node.id))
+          scope.add(String(node.id.name));
+        for (const param of node.params ?? [])
           patternNames(param, scope);
-        declaredIn(node2.body, scope);
+        declaredIn(node.body, scope);
       } else {
-        declaredIn(node2.body, scope);
+        declaredIn(node.body, scope);
       }
       scopes.push(scope);
-      for (const [k, v] of Object.entries(node2)) {
+      for (const [k, v] of Object.entries(node)) {
         if (k === "loc" || k === "extra" || k.endsWith("Comments"))
           continue;
         if (k === "params") {
@@ -3638,24 +3638,24 @@ function undeclaredNames(source2, known) {
             walkPatternDefaults(param);
           continue;
         }
-        walk22(v, node2, k);
+        walk2(v, node, k);
       }
       scopes.pop();
       return;
     }
-    if (node2.type === "VariableDeclarator") {
-      walkPatternDefaults(node2.id);
-      walk22(node2.init, node2, "init");
+    if (node.type === "VariableDeclarator") {
+      walkPatternDefaults(node.id);
+      walk2(node.init, node, "init");
       return;
     }
-    if (node2.type === "CatchClause") {
-      walk22(node2.body, node2, "body");
+    if (node.type === "CatchClause") {
+      walk2(node.body, node, "body");
       return;
     }
-    for (const [k, v] of Object.entries(node2)) {
+    for (const [k, v] of Object.entries(node)) {
       if (k === "loc" || k === "start" || k === "end" || k === "extra" || k.endsWith("Comments"))
         continue;
-      walk22(v, node2, k);
+      walk2(v, node, k);
     }
   };
   const walkPatternDefaults = (pattern) => {
@@ -3663,14 +3663,14 @@ function undeclaredNames(source2, known) {
       return;
     if (pattern.type === "AssignmentPattern") {
       walkPatternDefaults(pattern.left);
-      walk22(pattern.right, pattern, "right");
+      walk2(pattern.right, pattern, "right");
     } else if (pattern.type === "ObjectPattern")
       for (const p of pattern.properties) {
         if (p.type === "RestElement")
           walkPatternDefaults(p.argument);
         else {
           if (p.computed)
-            walk22(p.key, p, "computedKey");
+            walk2(p.key, p, "computedKey");
           walkPatternDefaults(p.value);
         }
       }
@@ -3680,13 +3680,13 @@ function undeclaredNames(source2, known) {
     else if (pattern.type === "RestElement")
       walkPatternDefaults(pattern.argument);
   };
-  walk22(ast);
+  walk2(ast);
   return [...new Set(used.filter((name2) => !known.has(name2) && name2 !== "__runjs__" && name2 !== "__binding__"))];
 }
 function transformationWarnings(options2) {
   const warnings = [];
   const bag = isObject(options2.transformations) ? options2.transformations : void 0;
-  const languages = bag ? Object.keys(bag).filter((key3) => key3 === "javascript" || key3 === "python") : [];
+  const languages = bag ? Object.keys(bag).filter((key) => key === "javascript" || key === "python") : [];
   const hasCode = languages.length > 0 || typeof options2.transformation === "string" && options2.transformation.trim() !== "";
   if (!hasCode)
     return warnings;
@@ -3867,28 +3867,28 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
   const fields = fieldMap(matching);
   const allowedTopLevel = topLevelKeys(fields);
   if (singleSpecRef(kind))
-    for (const key3 of ["operation", "path", "params", "selectedOperation"])
-      allowedTopLevel.add(key3);
+    for (const key of ["operation", "path", "params", "selectedOperation"])
+      allowedTopLevel.add(key);
   const own2 = [...allowedTopLevel].filter((k) => !(k in COMMON_QUERY_OPTION_FIELDS));
-  for (const key3 of Object.keys(options2)) {
-    if (allowedTopLevel.has(key3))
+  for (const key of Object.keys(options2)) {
+    if (allowedTopLevel.has(key))
       continue;
-    const exactReplacement = KNOWN_IGNORED_KEYS[key3];
-    const nestedReplacement = suffixSuggestion(key3, fields);
+    const exactReplacement = KNOWN_IGNORED_KEYS[key];
+    const nestedReplacement = suffixSuggestion(key, fields);
     const replacement = exactReplacement ?? nestedReplacement;
-    const meant = key3.length >= 4 ? own2.filter((f) => f !== key3 && options2[f] === void 0 && (f.toLowerCase().includes(key3.toLowerCase()) || key3.toLowerCase().includes(f.toLowerCase()))) : [];
+    const meant = key.length >= 4 ? own2.filter((f) => f !== key && options2[f] === void 0 && (f.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(f.toLowerCase()))) : [];
     if (!replacement && meant.length === 1) {
       errors.push({
         code: "unknown_option_key",
-        path: key3,
-        message: `Option key "${key3}" does not exist for ${kind}/${operation}; the field is "${meant[0]}". ToolJet drops "${key3}" and the query runs without it.`
+        path: key,
+        message: `Option key "${key}" does not exist for ${kind}/${operation}; the field is "${meant[0]}". ToolJet drops "${key}" and the query runs without it.`
       });
       continue;
     }
     warnings.push({
       code: replacement ? "ignored_or_misplaced_option_key" : "unknown_option_key",
-      path: key3,
-      message: replacement ? `Option key "${key3}" is not read at this location for ${kind}/${operation}; use "${replacement}".` : `Unknown option key "${key3}" for ${kind}/${operation}; ToolJet plugins may silently drop it.`
+      path: key,
+      message: replacement ? `Option key "${key}" is not read at this location for ${kind}/${operation}; use "${replacement}".` : `Unknown option key "${key}" for ${kind}/${operation}; ToolJet plugins may silently drop it.`
     });
   }
   for (const root of allowedTopLevel) {
@@ -4092,12 +4092,12 @@ function normalizeWriteColumnMap(columns) {
     return null;
   }
   const normalized = {};
-  entries.forEach(([key3, clause], index) => {
+  entries.forEach(([key, clause], index) => {
     if (isObject(clause) && typeof clause.column === "string" && clause.column !== "") {
       normalized[String(index)] = clause;
       return;
     }
-    normalized[String(index)] = { column: key3, value: clause };
+    normalized[String(index)] = { column: key, value: clause };
   });
   return normalized;
 }
@@ -4163,7 +4163,7 @@ async function getWorkflowCapabilities(client, input) {
   const datasources = await client.workflows.listDatasources(version_id);
   return workflowCapabilityReportSchema.parse({
     version_id,
-    authorable_node_types: nodeCatalog.nodes.map((node2) => node2.type),
+    authorable_node_types: nodeCatalog.nodes.map((node) => node.type),
     datasources: datasources.map((datasource) => ({
       id: datasource.id,
       name: datasource.name,
@@ -4175,7 +4175,7 @@ async function getWorkflowCapabilities(client, input) {
 function workflowReadiness(graph, structuralErrors) {
   if (structuralErrors.length)
     return { runtime_readiness: "blocked", blockers: structuralErrors };
-  const adjacency = new Map(graph.nodes.map((node2) => [node2.id, []]));
+  const adjacency = new Map(graph.nodes.map((node) => [node.id, []]));
   for (const edge of controlFlowEdges(graph))
     adjacency.get(edge.source)?.push(edge.target);
   const reachable = /* @__PURE__ */ new Set();
@@ -4186,12 +4186,12 @@ function workflowReadiness(graph, structuralErrors) {
     for (const target of adjacency.get(id) ?? [])
       visit(target);
   };
-  for (const start of graph.nodes.filter((node2) => node2.type === "input" && node2.data.nodeType === "start"))
+  for (const start of graph.nodes.filter((node) => node.type === "input" && node.data.nodeType === "start"))
     visit(start.id);
   const blockers = [];
-  for (const agent of graph.nodes.filter((node2) => node2.type === "agent" && reachable.has(node2.id))) {
+  for (const agent of graph.nodes.filter((node) => node.type === "agent" && reachable.has(node.id))) {
     const attachment = graph.edges.find((edge) => edge.target === agent.id && edge.targetHandle === "ai-model");
-    const child = attachment && graph.nodes.find((node2) => node2.id === attachment.source);
+    const child = attachment && graph.nodes.find((node) => node.id === attachment.source);
     const definitionId = child?.data.idOnDefinition;
     const mapping = typeof definitionId === "string" && graph.queries.find((query) => query.idOnDefinition === definitionId);
     if (!attachment || !child || !mapping)
@@ -4206,9 +4206,9 @@ function workflowReadiness(graph, structuralErrors) {
 var plans = /* @__PURE__ */ new Map();
 var TTL = 30 * 6e4;
 function prune() {
-  for (const [key3, plan] of plans)
+  for (const [key, plan] of plans)
     if (plan.expires <= Date.now())
-      plans.delete(key3);
+      plans.delete(key);
 }
 async function prepare(client, workflowId, versionId, spec, ids) {
   const snapshot = await client.get(workflowId, versionId);
@@ -4218,8 +4218,8 @@ async function prepare(client, workflowId, versionId, spec, ids) {
   const compiled = compileGraph(snapshot.definition, spec, ids, new Map(datasources.map((datasource) => [datasource.id, datasource.kind])));
   const warnings = [];
   const writes = [];
-  const finalDefinitionIds = new Set(compiled.graph.nodes.map((node2) => node2.data.idOnDefinition).filter((value) => typeof value === "string"));
-  const removedDefinitionIds = new Set(snapshot.definition.nodes.map((node2) => node2.data.idOnDefinition).filter((value) => typeof value === "string" && !finalDefinitionIds.has(value)));
+  const finalDefinitionIds = new Set(compiled.graph.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string"));
+  const removedDefinitionIds = new Set(snapshot.definition.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string" && !finalDefinitionIds.has(value)));
   const deletions = [];
   for (const mapping of snapshot.definition.queries) {
     if (!removedDefinitionIds.has(mapping.idOnDefinition))
@@ -4228,12 +4228,12 @@ async function prepare(client, workflowId, versionId, spec, ids) {
       continue;
     if (deletions.some((deletion) => deletion.query_id === mapping.id))
       continue;
-    const node2 = snapshot.definition.nodes.find((candidate) => candidate.data.idOnDefinition === mapping.idOnDefinition);
-    if (!node2)
+    const node = snapshot.definition.nodes.find((candidate) => candidate.data.idOnDefinition === mapping.idOnDefinition);
+    if (!node)
       continue;
     if (!queries.some((query) => query.id === mapping.id))
       throw new Error(`Query ${mapping.id} is missing from the target version.`);
-    deletions.push({ node_id: node2.id, definition_id: mapping.idOnDefinition, query_id: mapping.id });
+    deletions.push({ node_id: node.id, definition_id: mapping.idOnDefinition, query_id: mapping.id });
   }
   const claimedNames = /* @__PURE__ */ new Set();
   for (const item of compiled.query_nodes) {
@@ -4364,7 +4364,7 @@ async function apply(client, token) {
 }
 async function deleteNode(client, workflowId, versionId, nodeId) {
   const snapshot = await client.get(workflowId, versionId);
-  if (!snapshot.definition.nodes.some((node2) => node2.id === nodeId))
+  if (!snapshot.definition.nodes.some((node) => node.id === nodeId))
     throw new Error(`Unknown workflow node: ${nodeId}`);
   const spec = specSchema.parse({ remove_node_ids: [nodeId], remove_edge_ids: snapshot.definition.edges.filter((edge) => edge.source === nodeId || edge.target === nodeId).map((edge) => edge.id) });
   const result = await lint(client, workflowId, versionId, spec, true);
@@ -4431,9 +4431,9 @@ function canonical(value, field) {
 }
 function generateEditContract(input) {
   const spec = editContractSchema.parse(input);
-  for (const key3 of ["field", "component"]) {
-    if (new Set(spec.fields.map((f) => f[key3])).size !== spec.fields.length)
-      throw new Error(`Duplicate ${key3} in edit contract`);
+  for (const key of ["field", "component"]) {
+    if (new Set(spec.fields.map((f) => f[key])).size !== spec.fields.length)
+      throw new Error(`Duplicate ${key} in edit contract`);
   }
   if (spec.fields.some((f) => f.field === spec.id_field))
     throw new Error("The stable primary key cannot be edited");
@@ -4696,356 +4696,28 @@ function prepareSqlDiscoveryQueries(args) {
   }
   return { queries, unsupported: unsupported2 };
 }
-createRequire(import.meta.url);
-var member = (n) => n?.type === "MemberExpression" || n?.type === "OptionalMemberExpression";
-var key = (n) => n.computed ? n.property?.type === "StringLiteral" ? n.property.value : void 0 : n.property?.name;
-var rootRef = (n) => {
-  if (!member(n) || !["components", "queries"].includes(n.object?.name) || n.object?.type !== "Identifier")
-    return;
-  const k = key(n);
-  return k ? `${n.object.name}.${k}` : void 0;
-};
-function walk(n, visit) {
-  if (!n || typeof n !== "object")
-    return;
-  if (Array.isArray(n)) {
-    for (const child of n)
-      walk(child, visit);
-    return;
-  }
-  visit(n);
-  for (const [key3, value] of Object.entries(n))
-    if (!["loc", "extra", "comments"].includes(key3))
-      walk(value, visit);
-}
-function lintUntrackedReactiveBindings(value, label) {
-  if (Array.isArray(value))
-    return value.flatMap((v) => lintUntrackedReactiveBindings(v, label));
-  if (value && typeof value === "object")
-    return Object.values(value).flatMap((v) => lintUntrackedReactiveBindings(v, label));
-  if (typeof value !== "string")
-    return [];
-  const match = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
-  if (!match)
-    return [];
-  let ast;
-  try {
-    ast = parseExpression(match[1]);
-  } catch {
-    return [];
-  }
-  const tracked = /* @__PURE__ */ new Set(), suspects = /* @__PURE__ */ new Set();
-  let shadowed = false;
-  walk(ast, (n) => {
-    if (n.params && /"(?:components|queries)"/.test(JSON.stringify(n.params)) || n.type === "VariableDeclarator" && /"(?:components|queries)"/.test(JSON.stringify(n.id)))
-      shadowed = true;
-    if (!member(n))
-      return;
-    const direct = rootRef(n.object);
-    if (direct && key(n))
-      tracked.add(direct);
-    if (n.object?.type === "LogicalExpression" && ["||", "??"].includes(n.object.operator)) {
-      const wrapped = rootRef(n.object.left);
-      if (wrapped && key(n))
-        suspects.add(wrapped);
-    }
-  });
-  if (shadowed)
-    return [];
-  return [...suspects].filter((ref) => !tracked.has(ref)).map((ref) => `${label}: a logical fallback wraps ${ref} before its exposed value is read. ToolJet cannot track this dependency, so filters/prefill may stay stale. Keep a complete optional chain, e.g. ${ref}?.value (use the actual exposed property). Valid JavaScript alone does not guarantee reactive updates. No expression was rewritten.`);
-}
-function lintQueryArrayMutations(value, label) {
-  if (Array.isArray(value))
-    return value.flatMap((v) => lintQueryArrayMutations(v, label));
-  if (value && typeof value === "object")
-    return Object.values(value).flatMap((v) => lintQueryArrayMutations(v, label));
-  if (typeof value !== "string")
-    return [];
-  const match = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
-  if (!match)
-    return [];
-  let ast;
-  try {
-    ast = parseExpression(match[1]);
-  } catch {
-    return [];
-  }
-  let shadowed = false;
-  const mutations = /* @__PURE__ */ new Set();
-  const queryData = (n) => {
-    if (n?.type === "LogicalExpression" && ["||", "??"].includes(n.operator) && n.right?.type === "ArrayExpression" && n.right.elements.length === 0)
-      return queryData(n.left);
-    const ref = member(n) && key(n) === "data" ? rootRef(n.object) : void 0;
-    return ref?.startsWith("queries.") ? ref : void 0;
-  };
-  walk(ast, (n) => {
-    if (n.params && /"queries"/.test(JSON.stringify(n.params)) || n.type === "VariableDeclarator" && /"queries"/.test(JSON.stringify(n.id)))
-      shadowed = true;
-    if (!["CallExpression", "OptionalCallExpression"].includes(n.type) || !member(n.callee) || !["sort", "reverse"].includes(key(n.callee)))
-      return;
-    const ref = queryData(n.callee.object);
-    if (ref)
-      mutations.add(`${ref}.data.${key(n.callee)}`);
-  });
-  if (shadowed)
-    return [];
-  return [...mutations].map((ref) => `${label}: ${ref}() mutates the shared query array inside a display binding. ToolJet state can be frozen, so this may throw and render an empty table even when the query has rows. Copy first with slice() or a spread, then sort/reverse the copy; a prior map/filter already creates a new array. No expression was rewritten.`);
-}
-var node = (v) => v !== null && typeof v === "object" && !Array.isArray(v) ? v : void 0;
-var member2 = (n) => n?.type === "MemberExpression" || n?.type === "OptionalMemberExpression";
-function key2(n) {
-  if (!n)
-    return;
-  const p = node(n.property ?? n.key);
-  if (!n.computed && p?.type === "Identifier")
-    return String(p.name);
-  if (p?.type === "StringLiteral")
-    return String(p.value);
-}
-function expression(value) {
-  if (typeof value !== "string")
-    return;
-  const m = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
-  if (!m)
-    return;
-  try {
-    return parseExpression(m[1]);
-  } catch {
-    return;
-  }
-}
-function walk2(value, visit) {
-  if (Array.isArray(value)) {
-    for (const child of value)
-      walk2(child, visit);
-    return;
-  }
-  const n = node(value);
-  if (!n)
-    return;
-  visit(n);
-  for (const [k, child] of Object.entries(n)) {
-    if (k !== "loc" && k !== "extra" && k !== "comments")
-      walk2(child, visit);
-  }
-}
-function projectedFields(c) {
-  if (c.type !== "Table")
-    return;
-  const raw = c.properties?.data;
-  const root = expression(node(raw) && "value" in node(raw) ? node(raw).value : raw);
-  if (root?.type !== "CallExpression")
-    return;
-  const callee = node(root.callee);
-  if (!member2(callee) || key2(callee) !== "map")
-    return;
-  const args = root.arguments;
-  if (!Array.isArray(args) || args.length !== 1)
-    return;
-  const callback = node(args[0]);
-  if (callback?.type !== "ArrowFunctionExpression")
-    return;
-  const body = node(callback.body);
-  if (body?.type !== "ObjectExpression" || !Array.isArray(body.properties))
-    return;
-  const keys = /* @__PURE__ */ new Map();
-  for (const prop of body.properties) {
-    const p = node(prop);
-    if (p?.type !== "ObjectProperty" || p.computed)
-      return;
-    const name2 = key2(p);
-    if (name2 === void 0 || name2 === "__proto__")
-      return;
-    keys.set(name2, node(p.value));
-  }
-  return keys;
-}
-function lintSelectedRowProjections(components, extraSources = []) {
-  const tables = /* @__PURE__ */ new Map();
-  for (const c of components) {
-    if (!c.name)
-      continue;
-    tables.set(c.name, tables.has(c.name) ? void 0 : projectedFields(c));
-  }
-  const aliases = /* @__PURE__ */ new Map();
-  const singleAlias = (alias) => {
-    const names = aliases.get(alias);
-    return names?.size === 1 ? [...names][0] : void 0;
-  };
-  for (const source2 of extraSources) {
-    const action = node(source2.value);
-    if (action?.actionId !== "set-custom-variable" || typeof action.key !== "string")
-      continue;
-    const selected = expression(action.value);
-    if (action.value === null || selected?.type === "NullLiteral")
-      continue;
-    const table = node(selected?.object), namespace = node(table?.object);
-    const name2 = member2(selected) && key2(selected) === "selectedRow" && member2(table) && namespace?.type === "Identifier" && namespace.name === "components" ? key2(table) : void 0;
-    if (!name2)
-      aliases.set(action.key, void 0);
-    else if (!aliases.has(action.key))
-      aliases.set(action.key, /* @__PURE__ */ new Set([name2]));
-    else
-      aliases.get(action.key)?.add(name2);
-  }
-  if (extraSources.some((s) => /actions\s*(?:\.\s*(?:setVariable|unsetVariable)|\[\s*["'](?:setVariable|unsetVariable)["']\s*\])/.test(JSON.stringify(s.value))))
-    aliases.clear();
-  const warnings = /* @__PURE__ */ new Set();
-  const aliasOmissions = /* @__PURE__ */ new Map();
-  function inspect(value, label) {
-    if (Array.isArray(value)) {
-      for (const v of value)
-        inspect(v, label);
-      return;
-    }
-    if (node(value)) {
-      for (const v of Object.values(node(value)))
-        inspect(v, label);
-      return;
-    }
-    const root = expression(value);
-    if (!root)
-      return;
-    let shadowed = false;
-    walk2(root, (n) => {
-      if (Array.isArray(n.params) && /"(?:components|variables)"/.test(JSON.stringify(n.params)))
-        shadowed = true;
-      if (n.type === "VariableDeclarator" && /"(?:components|variables)"/.test(JSON.stringify(n.id)))
-        shadowed = true;
-    });
-    if (shadowed)
-      return;
-    walk2(root, (n) => {
-      if (!member2(n))
-        return;
-      const field = key2(n), selection = node(n.object), table = node(selection?.object), namespace = node(table?.object);
-      if (field && member2(selection) && table?.type === "Identifier" && table.name === "variables") {
-        const alias = key2(selection), names = alias ? aliases.get(alias) : void 0;
-        for (const name22 of names ?? []) {
-          const fields = tables.get(name22);
-          if (fields && !fields.has(field) && !["toString", "valueOf", "constructor", "hasOwnProperty", "__proto__", "isPrototypeOf", "propertyIsEnumerable", "toLocaleString"].includes(field)) {
-            const id = JSON.stringify([alias, name22]);
-            if (!aliasOmissions.has(id))
-              aliasOmissions.set(id, { alias, table: name22, fields: /* @__PURE__ */ new Set() });
-            aliasOmissions.get(id).fields.add(field);
-          }
-        }
-      }
-      if (!field || !member2(selection) || key2(selection) !== "selectedRow" || !member2(table) || namespace?.type !== "Identifier" || namespace.name !== "components")
-        return;
-      const name2 = key2(table), keys = name2 ? tables.get(name2) : void 0;
-      if (!name2 || !keys || keys.has(field) || ["toString", "valueOf", "constructor", "hasOwnProperty", "__proto__", "isPrototypeOf", "propertyIsEnumerable", "toLocaleString"].includes(field))
-        return;
-      warnings.add(`${label}: reads components.${name2}.selectedRow.${field}, but Table "${name2}" has a closed map projection that omits "${field}". Preserve the raw field in the row (hide its column if needed), or look up the source record by its stable id. Check edit/review prefill and avoid overwriting omitted values with blanks. If the missing-field fallback is intentional, no change is required.`);
-    });
-  }
-  for (const c of components) {
-    const value = { p: c.properties, s: c.styles }, label = `Component "${c.name ?? c.id ?? "?"}"`;
-    inspect(value, label);
-    for (const warning of lintUntrackedReactiveBindings(value, label))
-      warnings.add(warning);
-    for (const warning of lintQueryArrayMutations(value, label))
-      warnings.add(warning);
-  }
-  for (const source2 of extraSources)
-    inspect(source2.value, source2.label);
-  for (const { alias, table, fields } of aliasOmissions.values()) {
-    warnings.add(`Bindings read ${[...fields].map((field) => `variables.${alias}.${field}`).join(", ")}; an event assigns that variable from Table "${table}" selectedRow, whose closed map projection omits ${[...fields].map((field) => `"${field}"`).join(", ")}. This edit can overwrite missing values with a blank/false default. Preserve raw fields or resolve the raw record by stable id before opening the editor; generate_edit_contract can provide that snapshot. Unknown runtime writes are not certified by this advisory.`);
-  }
-  const unwrap2 = (value) => node(value) && "value" in node(value) ? node(value).value : value;
-  for (const c of components) {
-    if (!["TextInput", "TextArea", "EmailInput", "PhoneInput"].includes(c.type ?? ""))
-      continue;
-    let selected = expression(unwrap2(c.properties?.value));
-    if (selected?.type === "LogicalExpression" && ["||", "??"].includes(String(selected.operator)))
-      selected = node(selected.left);
-    if (!member2(selected))
-      continue;
-    const field = key2(selected), selection = node(selected?.object), owner = node(selection?.object), namespace = node(owner?.object);
-    if (!field || !member2(selection))
-      continue;
-    const tableName = owner?.type === "Identifier" && owner.name === "variables" ? singleAlias(key2(selection) ?? "") : key2(selection) === "selectedRow" && member2(owner) && namespace?.type === "Identifier" && namespace.name === "components" ? key2(owner) : void 0;
-    const projected = tableName ? tables.get(tableName)?.get(field) : void 0;
-    if (projected?.type !== "LogicalExpression" || !["||", "??"].includes(String(projected.operator)))
-      continue;
-    const fallback = node(projected.right);
-    if (fallback?.type !== "StringLiteral" || !String(fallback.value).trim())
-      continue;
-    warnings.add(`Component "${c.name ?? c.id ?? "?"}": editable value reads "${field}" from Table "${tableName}", whose projection replaces missing raw text with a non-empty display fallback. Saving another field can persist that label as real data. Keep raw text separate from display labels, or resolve the raw record by stable id; preserve untouched null/empty values. This is advisory, not a claim that every fallback is unintended.`);
-  }
-  for (const c of components) {
-    const property3 = c.type === "DatePickerV2" ? "defaultValue" : ["NumberInput", "CurrencyInput"].includes(c.type ?? "") ? "value" : void 0;
-    if (!property3)
-      continue;
-    let selected = expression(unwrap2(c.properties?.[property3]));
-    if (selected?.type === "LogicalExpression" && ["||", "??"].includes(String(selected.operator)))
-      selected = node(selected.left);
-    if (!member2(selected))
-      continue;
-    const field = key2(selected), selection = node(selected?.object), table = node(selection?.object), namespace = node(table?.object);
-    if (!field || !member2(selection))
-      continue;
-    const tableName = table?.type === "Identifier" && table.name === "variables" ? singleAlias(key2(selection) ?? "") : key2(selection) === "selectedRow" && member2(table) && namespace?.type === "Identifier" && namespace.name === "components" ? key2(table) : void 0;
-    const value = tableName ? tables.get(tableName)?.get(field) : void 0;
-    if (!value)
-      continue;
-    const formats = [];
-    let localizedNumber = false;
-    walk2(value, (n) => {
-      if (n.type !== "CallExpression")
-        return;
-      const callee = node(n.callee);
-      if (!member2(callee))
-        return;
-      if (key2(callee) === "toLocaleString" || key2(callee) === "toFixed")
-        localizedNumber = true;
-      const args = n.arguments;
-      if (key2(callee) === "format" && Array.isArray(args) && node(args[0])?.type === "StringLiteral")
-        formats.push(String(node(args[0]).value));
-    });
-    const expected = unwrap2(c.properties?.dateFormat) ?? "DD/MM/YYYY";
-    if (c.type === "DatePickerV2" && member2(value) && typeof expected === "string" && !expected.includes("{{")) {
-      const source2 = components.find((t) => t.type === "Table" && t.name === tableName);
-      const columns = unwrap2(source2?.properties?.columns);
-      const matches = Array.isArray(columns) ? columns.filter((col) => {
-        const entry = node(col);
-        return entry?.key === field && entry.columnType === "datepicker";
-      }) : [];
-      const parseFormat = matches.length === 1 ? node(matches[0])?.parseDateFormat : void 0;
-      const yearLast = /^(?:D{1,2}[^A-Za-z]+M{1,4}|M{1,4}[^A-Za-z]+D{1,2})[^A-Za-z]+Y{2,4}$/.test(expected);
-      if (typeof parseFormat === "string" && parseFormat.startsWith("YYYY-MM-DD") && !parseFormat.includes("{{") && yearLast) {
-        warnings.add(`Component "${c.name ?? c.id ?? "?"}": defaultValue reads raw ${tableName}.selectedRow.${field}; that Table column declares parseDateFormat "${parseFormat}", but the DatePickerV2 parses its default with dateFormat "${expected}". A name-only edit can silently change the date. Match the editor's input format or explicitly format the raw default before opening it; table display formatting does not convert selectedRow. Advisory only: verify the actual source value before changing it.`);
-      }
-    }
-    if (c.type === "DatePickerV2" && formats.some((f) => typeof expected === "string" && !expected.includes("{{") && f !== expected) || c.type !== "DatePickerV2" && localizedNumber) {
-      warnings.add(`Component "${c.name ?? c.id ?? "?"}": ${property3} reads display-formatted ${tableName}.selectedRow.${field} into a typed ${c.type} editor${c.type === "DatePickerV2" ? ` (dateFormat ${String(expected)})` : ""}. Look up the raw record by stable id, or explicitly convert to the editor's input format. Preserve untouched fields on save; generate_edit_contract can provide raw-record defaults and changed-field-only payloads.`);
-    }
-  }
-  return [...warnings];
-}
 export {
-  apply as A,
-  deleteNode as B,
-  prepareSqlDiscoveryQueries as C,
-  editContractSchema as D,
-  generateEditContract as E,
+  deleteNode as A,
+  prepareSqlDiscoveryQueries as B,
+  editContractSchema as C,
+  generateEditContract as D,
   LARGE_READ_ROW_THRESHOLD as L,
-  lintBindingNames as a,
+  assertPersistableQueryToggles as a,
   bindingSpans as b,
-  assertPersistableQueryToggles as c,
-  assertWorkflowQueryOptions as d,
-  normalizeQueryToggles as e,
-  normalizeQueryOptions as f,
-  arithmeticWriteWarning as g,
-  assessQueryRead as h,
+  assertWorkflowQueryOptions as c,
+  normalizeQueryToggles as d,
+  normalizeQueryOptions as e,
+  arithmeticWriteWarning as f,
+  assessQueryRead as g,
+  resolveStaticBindings as h,
   issueMessages as i,
-  resolveStaticBindings as j,
-  resolvedReadRefusal as k,
-  lintSelectedRowProjections as l,
-  extractRowCount as m,
+  resolvedReadRefusal as j,
+  extractRowCount as k,
+  lintBindingNames as l,
+  emptyViewerOnlyParams as m,
   normalizeWorkflowQueryOptions as n,
-  emptyViewerOnlyParams as o,
-  emptyParamsNote as p,
+  emptyParamsNote as o,
+  capabilityRequestSchema as p,
   queryToggleIssues as q,
   require_lib as r,
   sameReadSource as s,
@@ -5053,7 +4725,7 @@ export {
   unresolvedNote as u,
   validateQueryOptions as v,
   workflowMappingMatches as w,
-  capabilityRequestSchema as x,
-  getWorkflowCapabilities as y,
-  lint as z
+  getWorkflowCapabilities as x,
+  lint as y,
+  apply as z
 };

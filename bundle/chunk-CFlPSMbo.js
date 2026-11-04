@@ -1,10 +1,10 @@
 import { createRequire } from "node:module";
-import { b8 as getComponentSchema, b1 as external_exports, bc as mapKeyRefusal } from "./chunk-C1LXenY0.js";
-import { r as resolveRef$1, c as componentRef, p as packDefaultDefinition, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, a as FLEX_GROW_DESCRIPTION, b as FLEX_WIDTH_PX_DESCRIPTION, d as FLEX_FILL_WIDTH_DESCRIPTION, e as plannedCurrency, n as normalizeComponentSpec, i as indexComponentReferences, v as validateTableBatch, f as normalizeType, T as TOOLJET_DB_DATA_TYPES, g as invalidSeedTimestamps, C as COMPONENT_FX_GUIDANCE } from "./chunk-hyAmE1Rl.js";
-import { x as isModalV2Type, y as lintComponentStateBindings, r as retiredUi2Name, d as decodeComponentParent, z as minimumTextHeight, A as unifyChartAccents, f as componentNameSchema, c as componentSlotSchema, B as lintComponents, C as pageIconError, e as encodeComponentParent, D as validateAppStructure, E as pageIconSchema, F as namespaceReads } from "./chunk-BG-Wl49O.js";
-import { e as normalizeQueryToggles, t as toggleRewriteWarning, i as issueMessages, q as queryToggleIssues, f as normalizeQueryOptions, v as validateQueryOptions, g as arithmeticWriteWarning, b as bindingSpans } from "./chunk-DVQIMXVs.js";
-import { p as parseExpression } from "./chunk-C-mOcraM.js";
-import { m as suggestedHtmlHeight } from "./chunk-DzndRVyJ.js";
+import { b8 as getComponentSchema, b1 as external_exports, bc as mapKeyRefusal } from "./chunk-DsdTCwqi.js";
+import { r as resolveRef$1, c as componentRef, p as packDefaultDefinition, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, a as FLEX_GROW_DESCRIPTION, b as FLEX_WIDTH_PX_DESCRIPTION, d as FLEX_FILL_WIDTH_DESCRIPTION, e as plannedCurrency, n as normalizeComponentSpec, i as indexComponentReferences, v as validateTableBatch, f as normalizeType, T as TOOLJET_DB_DATA_TYPES, g as invalidSeedTimestamps, C as COMPONENT_FX_GUIDANCE } from "./chunk-D3gbHEVi.js";
+import { y as isModalV2Type, z as lintComponentStateBindings, r as retiredUi2Name, d as decodeComponentParent, A as minimumTextHeight, B as unifyChartAccents, f as componentNameSchema, c as componentSlotSchema, C as lintComponents, D as pageIconError, e as encodeComponentParent, E as validateAppStructure, F as pageIconSchema, G as namespaceReads } from "./chunk-D3MI2A-T.js";
+import { d as normalizeQueryToggles, t as toggleRewriteWarning, i as issueMessages, q as queryToggleIssues, e as normalizeQueryOptions, v as validateQueryOptions, f as arithmeticWriteWarning, b as bindingSpans } from "./chunk-CWuyYxjg.js";
+import { p as parseExpression } from "./chunk-Brg6_25C.js";
+import { n as suggestedHtmlHeight } from "./chunk-f43-efsm.js";
 import { randomUUID } from "node:crypto";
 import { e9 as fail, eh as resolveComponentLibrary, en as componentLibraryWarnings, eo as literalCanvasColor, e7 as ok } from "./chunk-By54lwVj.js";
 createRequire(import.meta.url);

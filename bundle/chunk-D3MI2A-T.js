@@ -1,9 +1,9 @@
 import { createRequire } from "node:module";
-import { r as require_lib, l as lintSelectedRowProjections, a as lintBindingNames, b as bindingSpans } from "./chunk-DVQIMXVs.js";
 import { ed as __toESM, ee as defaultPack } from "./chunk-By54lwVj.js";
-import { s as surfaceAroundResolver, l as lintOversizedWidths, a as lintHtmlContentHeight, b as lintHtmlRootSurface, c as lintUnguardedComponentRefs, d as lintEmbeddedBindingSyntax, e as lintChartDataShape, f as lintUnguardedSelectionText, g as lintTextFormat, h as lintTableColumnsShape, B as BARE_QUERY_DATA_BINDING, i as lintUntriggeredDataQueries, j as lintAutomaticWrites, p as parseHtml, k as stripHtmlBindings } from "./chunk-DzndRVyJ.js";
-import { b1 as external_exports, b8 as getComponentSchema, b9 as getCatalog, ba as getLegacyComponentReplacement } from "./chunk-C1LXenY0.js";
-import { p as parseExpression, a as parse } from "./chunk-C-mOcraM.js";
+import { s as surfaceAroundResolver, l as lintSelectedRowProjections, a as lintOversizedWidths, b as lintHtmlContentHeight, c as lintHtmlRootSurface, d as lintUnguardedComponentRefs, e as lintEmbeddedBindingSyntax, f as lintChartDataShape, g as lintUnguardedSelectionText, h as lintTextFormat, i as lintTableColumnsShape, B as BARE_QUERY_DATA_BINDING, j as lintUntriggeredDataQueries, k as lintAutomaticWrites, p as parseHtml, m as stripHtmlBindings } from "./chunk-f43-efsm.js";
+import { b1 as external_exports, b8 as getComponentSchema, b9 as getCatalog, ba as getLegacyComponentReplacement } from "./chunk-DsdTCwqi.js";
+import { r as require_lib, l as lintBindingNames, b as bindingSpans } from "./chunk-CWuyYxjg.js";
+import { p as parseExpression, a as parse } from "./chunk-Brg6_25C.js";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,6 +36,40 @@ var isLibraryPackType = (type) => !!packOfType(type);
 function libraryPins() {
   const packs = libraryPacksAll().filter((p) => !isBuiltin(p));
   return packs.length ? Object.fromEntries(packs.map((p) => [p.correlationId.replace(/-/g, ""), p.version])) : void 0;
+}
+var dashless = (id) => id.replace(/-/g, "");
+var propertyValue = (properties, key) => {
+  const entry = properties?.[key];
+  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+};
+function libraryCorrelationId(component) {
+  const properties = component.properties;
+  const id = propertyValue(properties, "correlationId");
+  return typeof id === "string" && id && !propertyValue(properties, "codePage") ? id : void 0;
+}
+var isPinned = (pins, correlationId) => pins[dashless(correlationId)] != null || pins[correlationId] != null;
+function missingLibraryPins(components, pins) {
+  const missing = {};
+  for (const component of components) {
+    const id = libraryCorrelationId(component);
+    if (!id || isPinned(pins, id))
+      continue;
+    const pack = libraryPacksAll().find((p) => !isBuiltin(p) && p.correlationId === id);
+    if (pack)
+      missing[dashless(id)] = pack.version;
+  }
+  return Object.keys(missing).length ? missing : void 0;
+}
+function unpinnedLibraries(components, pins) {
+  const byLibrary = /* @__PURE__ */ new Map();
+  for (const component of components) {
+    const id = libraryCorrelationId(component);
+    if (!id || isPinned(pins, id))
+      continue;
+    const library = String(propertyValue(component.properties, "libraryName") ?? id);
+    byLibrary.set(library, [...byLibrary.get(library) ?? [], String(component.name ?? "unnamed")]);
+  }
+  return [...byLibrary].map(([library, names]) => ({ library, components: names }));
 }
 function toLibraryComponent(spec) {
   const pack = packOfType(spec.type);
@@ -4310,19 +4344,21 @@ function lintInnerPageBands(summary) {
   return warnings;
 }
 export {
-  unifyChartAccents as A,
-  lintComponents as B,
-  pageIconError as C,
-  validateAppStructure as D,
-  pageIconSchema as E,
-  namespaceReads as F,
-  registerLibraryPacks as G,
-  libraryPins as H,
-  lintRenderedGeometryBlocking as I,
-  lintRenderedGeometryAdvisory as J,
-  lintNestedContainerWidths as K,
-  FORM_SCHEMA_FIELD_TYPE_SET as L,
-  SAFE_GENERATED_FORM_FIELD_TYPE_SET as M,
+  minimumTextHeight as A,
+  unifyChartAccents as B,
+  lintComponents as C,
+  pageIconError as D,
+  validateAppStructure as E,
+  pageIconSchema as F,
+  namespaceReads as G,
+  unpinnedLibraries as H,
+  registerLibraryPacks as I,
+  libraryPins as J,
+  lintRenderedGeometryBlocking as K,
+  lintRenderedGeometryAdvisory as L,
+  lintNestedContainerWidths as M,
+  FORM_SCHEMA_FIELD_TYPE_SET as N,
+  SAFE_GENERATED_FORM_FIELD_TYPE_SET as O,
   PROPERTY_KEY_ALIASES as P,
   STYLE_KEYS_IN_PROPERTIES as S,
   downgradeFlexForLibrary as a,
@@ -4337,18 +4373,18 @@ export {
   introducedLintFindings as j,
   lintComponentSpec as k,
   libraryTypeOf as l,
-  lintComponentSlots as m,
+  missingLibraryPins as m,
   nearestCatalogKey as n,
-  lintUnusableTextGeometry as o,
-  lintStandardSingleLineInputHeight as p,
-  lintTextGeometry as q,
+  lintComponentSlots as o,
+  lintUnusableTextGeometry as p,
+  lintStandardSingleLineInputHeight as q,
   retiredUi2Name as r,
-  lintRenderedGeometry as s,
+  lintTextGeometry as s,
   toLibraryComponent as t,
-  lintKanbanInteractions as u,
-  lintShadKanbanCards as v,
-  lintShadScheduleScale as w,
-  isModalV2Type as x,
-  lintComponentStateBindings as y,
-  minimumTextHeight as z
+  lintRenderedGeometry as u,
+  lintKanbanInteractions as v,
+  lintShadKanbanCards as w,
+  lintShadScheduleScale as x,
+  isModalV2Type as y,
+  lintComponentStateBindings as z
 };

@@ -1,13 +1,13 @@
 import { createRequire } from "node:module";
-import { b1 as external_exports, b4 as specSchema, bd as registerComponentSchemas, be as updateAppSettingsTool, bf as getComponentCatalogTool, b2 as nodeCatalog, b3 as validateGraph, bc as mapKeyRefusal, bg as readCatalogBytes, bh as allComponentSchemas } from "./chunk-C1LXenY0.js";
-import { x as capabilityRequestSchema, y as getWorkflowCapabilities, z as lint, A as apply, B as deleteNode, C as prepareSqlDiscoveryQueries, D as editContractSchema, E as generateEditContract } from "./chunk-DVQIMXVs.js";
-import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, a as FLEX_GROW_DESCRIPTION, b as FLEX_WIDTH_PX_DESCRIPTION, d as FLEX_FILL_WIDTH_DESCRIPTION, m as createClient, o as registerPackDefinitions, q as listWorkspaceGroupsTool, t as manageWorkspaceGroupsTool, u as inspectDatasourceSchemaTool, w as updateComponentsTool, v as validateTableBatch, x as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec, C as COMPONENT_FX_GUIDANCE, y as appendedChildOrders, z as reparentAdditions, l as childOrderProperty } from "./chunk-hyAmE1Rl.js";
-import { M as McpServer } from "./chunk-CMB-MoK9.js";
-import { j as dbColumnTypeSchema, k as componentInputSchema, l as lintAppSpecTool, o as containsExactValue, b as prepareQueryOptionsForWrite, q as inspectUpdateCompatibility, s as normalizePlanBindingAliases, t as containsNamedBinding, u as normalizePlannedLayouts, w as materializeRequiredDefaultChildren, e as prepareComponentBatch, v as validateEvents, h as expandQueryLifecycles, i as persistedEventSpecs, x as persistedEventIds } from "./chunk-B6s0SEcB.js";
-import { c as codeAppScaffoldTool, a as codeAppReadFilesTool, b as codeAppWriteFilesTool, d as codeAppBuildTool, e as codeAppInstallTool, f as codeAppAddDependencyTool, v as verifyPageRenderTool, g as applyAppPhaseTool, r as runQueryTool, h as runQueriesTool, W as WebStandardStreamableHTTPServerTransport, i as getRequestListener, j as validatePersistedAppSummary } from "./chunk-INEoNPju.js";
+import { b1 as external_exports, b4 as specSchema, bd as registerComponentSchemas, be as updateAppSettingsTool, bf as getComponentCatalogTool, b2 as nodeCatalog, b3 as validateGraph, bc as mapKeyRefusal, bg as readCatalogBytes, bh as allComponentSchemas } from "./chunk-DsdTCwqi.js";
+import { p as capabilityRequestSchema, x as getWorkflowCapabilities, y as lint, z as apply, A as deleteNode, B as prepareSqlDiscoveryQueries, C as editContractSchema, D as generateEditContract } from "./chunk-CWuyYxjg.js";
+import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, a as FLEX_GROW_DESCRIPTION, b as FLEX_WIDTH_PX_DESCRIPTION, d as FLEX_FILL_WIDTH_DESCRIPTION, m as createClient, o as registerPackDefinitions, q as listWorkspaceGroupsTool, t as manageWorkspaceGroupsTool, u as inspectDatasourceSchemaTool, w as updateComponentsTool, v as validateTableBatch, x as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec, C as COMPONENT_FX_GUIDANCE, y as appendedChildOrders, z as reparentAdditions, l as childOrderProperty } from "./chunk-D3gbHEVi.js";
+import { M as McpServer } from "./chunk-CtPGpRoO.js";
+import { j as dbColumnTypeSchema, k as componentInputSchema, l as lintAppSpecTool, o as containsExactValue, b as prepareQueryOptionsForWrite, q as inspectUpdateCompatibility, s as normalizePlanBindingAliases, t as containsNamedBinding, u as normalizePlannedLayouts, w as materializeRequiredDefaultChildren, e as prepareComponentBatch, v as validateEvents, h as expandQueryLifecycles, i as persistedEventSpecs, x as persistedEventIds } from "./chunk-CFlPSMbo.js";
+import { c as codeAppScaffoldTool, a as codeAppReadFilesTool, b as codeAppWriteFilesTool, d as codeAppBuildTool, e as codeAppInstallTool, f as codeAppAddDependencyTool, v as verifyPageRenderTool, g as applyAppPhaseTool, r as runQueryTool, h as runQueriesTool, W as WebStandardStreamableHTTPServerTransport, i as getRequestListener, j as validatePersistedAppSummary, l as libraryPinErrors } from "./chunk-WzDnlNqG.js";
 import { e7 as ok, e9 as fail, ee as defaultPack, e6 as savedComponentLibrary, ea as COMPONENT_PACK_DESCRIPTION, ep as projectJavascriptRuntime, e8 as projectAppSettings, eq as compactTheme, eo as literalCanvasColor } from "./chunk-By54lwVj.js";
-import { E as pageIconSchema, c as componentSlotSchema, G as registerLibraryPacks, H as libraryPins, f as componentNameSchema, B as lintComponents, h as resolveParentRef, j as introducedLintFindings, I as lintRenderedGeometryBlocking, J as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, m as lintComponentSlots, k as lintComponentSpec, o as lintUnusableTextGeometry, K as lintNestedContainerWidths, p as lintStandardSingleLineInputHeight, q as lintTextGeometry, s as lintRenderedGeometry, L as FORM_SCHEMA_FIELD_TYPE_SET, M as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-BG-Wl49O.js";
-import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-BNuWox9h.js";
+import { F as pageIconSchema, c as componentSlotSchema, I as registerLibraryPacks, J as libraryPins, f as componentNameSchema, C as lintComponents, h as resolveParentRef, j as introducedLintFindings, K as lintRenderedGeometryBlocking, L as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, o as lintComponentSlots, k as lintComponentSpec, p as lintUnusableTextGeometry, M as lintNestedContainerWidths, q as lintStandardSingleLineInputHeight, s as lintTextGeometry, u as lintRenderedGeometry, N as FORM_SCHEMA_FIELD_TYPE_SET, O as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-D3MI2A-T.js";
+import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-Dwp0GyCm.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { createServer } from "node:http";
@@ -2577,6 +2577,16 @@ function validateAppTool(client) {
           }
         }
         validation.checked.push("workflow target identity, workspace and explicit version ownership");
+        if (summary.version_id && libraryPinErrors(summary, {}).length) {
+          try {
+            const { global_settings: settings } = await client.getAppSettings(args.app_id, summary.version_id);
+            const pins = settings.customComponentLibraries;
+            validation.errors.push(...libraryPinErrors(summary, pins && typeof pins === "object" ? pins : {}));
+            validation.checked.push("library pins");
+          } catch {
+            validation.not_checked.push("library pins (the version settings could not be read)");
+          }
+        }
         validation.ok = validation.errors.length === 0;
         return ok(validation);
       } catch (err) {

@@ -1,15 +1,15 @@
 import { createRequire } from "node:module";
 import { ef as tableQuotaError, eg as staticBooleanBinding, eh as resolveComponentLibrary, ei as TableQuotaError, ej as booleanBindingValue, ek as isCanonicalStaticBooleanBinding, e7 as ok, e9 as fail } from "./chunk-By54lwVj.js";
-import { b1 as external_exports, bb as definition, b8 as getComponentSchema } from "./chunk-C1LXenY0.js";
-import { d as decodeComponentParent, e as encodeComponentParent, a as downgradeFlexForLibrary, b as assertPageIcon, i as isMisplacedStyleKey, t as toLibraryComponent, l as libraryTypeOf, P as PROPERTY_KEY_ALIASES, r as retiredUi2Name, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey, c as componentSlotSchema, f as componentNameSchema, g as componentNameError, h as resolveParentRef, j as introducedLintFindings, k as lintComponentSpec, m as lintComponentSlots, o as lintUnusableTextGeometry, p as lintStandardSingleLineInputHeight, q as lintTextGeometry, s as lintRenderedGeometry, u as lintKanbanInteractions, v as lintShadKanbanCards, w as lintShadScheduleScale } from "./chunk-BG-Wl49O.js";
-import { c as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches } from "./chunk-DVQIMXVs.js";
+import { b1 as external_exports, bb as definition, b8 as getComponentSchema } from "./chunk-DsdTCwqi.js";
+import { d as decodeComponentParent, e as encodeComponentParent, a as downgradeFlexForLibrary, b as assertPageIcon, i as isMisplacedStyleKey, t as toLibraryComponent, m as missingLibraryPins, l as libraryTypeOf, P as PROPERTY_KEY_ALIASES, r as retiredUi2Name, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey, c as componentSlotSchema, f as componentNameSchema, g as componentNameError, h as resolveParentRef, j as introducedLintFindings, k as lintComponentSpec, o as lintComponentSlots, p as lintUnusableTextGeometry, q as lintStandardSingleLineInputHeight, s as lintTextGeometry, u as lintRenderedGeometry, v as lintKanbanInteractions, w as lintShadKanbanCards, x as lintShadScheduleScale } from "./chunk-D3MI2A-T.js";
+import { a as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, c as assertWorkflowQueryOptions, w as workflowMappingMatches } from "./chunk-CWuyYxjg.js";
 import { randomUUID, createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-BNuWox9h.js";
-import { m as suggestedHtmlHeight } from "./chunk-DzndRVyJ.js";
+import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-Dwp0GyCm.js";
+import { n as suggestedHtmlHeight } from "./chunk-f43-efsm.js";
 createRequire(import.meta.url);
 function strictEntry(shape, describeUnknown) {
   return external_exports.strictObject(shape, {
@@ -2545,6 +2545,7 @@ function createClient(auth, config) {
     });
     await assertOk(res, "createComponents");
     const created = entries.map((e) => ({ component_id: e.id, name: e.spec.name }));
+    await pinWrittenLibraries(params.appId, params.versionId, Object.values(diff));
     let pageComponents = params.pageComponents;
     if (additions.length && !pageComponents) {
       const summary = await getAppSummary(params.appId, params.versionId).catch(() => void 0);
@@ -2561,6 +2562,28 @@ function createClient(auth, config) {
       }
     }
     return created;
+  }
+  const pinChecks = /* @__PURE__ */ new Map();
+  function pinWrittenLibraries(appId, versionId, components) {
+    const wanted = missingLibraryPins(components, {});
+    if (!wanted)
+      return Promise.resolve();
+    const fresh = Object.keys(wanted).filter((id) => !pinChecks.has(`${versionId}:${id}`));
+    const check = fresh.length ? (async () => {
+      const settings = await getAppSettings(appId, versionId);
+      const stored = settings.global_settings.customComponentLibraries;
+      const pins = stored && typeof stored === "object" ? stored : {};
+      const missing = missingLibraryPins(components, pins);
+      if (missing) {
+        await updateAppSettings({ appId, versionId, globalSettings: { customComponentLibraries: { ...pins, ...missing } } });
+      }
+    })().catch(() => {
+      for (const id of fresh)
+        pinChecks.delete(`${versionId}:${id}`);
+    }) : Promise.resolve();
+    for (const id of fresh)
+      pinChecks.set(`${versionId}:${id}`, check);
+    return Promise.all(Object.keys(wanted).map((id) => pinChecks.get(`${versionId}:${id}`)));
   }
   async function writeFlexChildOrders(appId, versionId, pageId, orders) {
     const diff = Object.fromEntries([...orders].map(([id, order]) => [

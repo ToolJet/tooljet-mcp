@@ -1,15 +1,15 @@
 import { createRequire } from "node:module";
-import { $ as JSONRPCMessageSchema, a0 as isInitializeRequest, e as isJSONRPCRequest, a1 as DEFAULT_NEGOTIATED_PROTOCOL_VERSION, Z as SUPPORTED_PROTOCOL_VERSIONS, i as isJSONRPCResultResponse, d as isJSONRPCErrorResponse } from "./chunk-D8ok0NvG.js";
+import { $ as JSONRPCMessageSchema, a0 as isInitializeRequest, e as isJSONRPCRequest, a1 as DEFAULT_NEGOTIATED_PROTOCOL_VERSION, Z as SUPPORTED_PROTOCOL_VERSIONS, i as isJSONRPCResultResponse, d as isJSONRPCErrorResponse } from "./chunk-cnuR2fe-.js";
 import { ed as __toESM, eb as __commonJS, e9 as fail, eo as literalCanvasColor, ef as tableQuotaError, e7 as ok } from "./chunk-By54lwVj.js";
 import "node:http";
 import { Http2ServerRequest, constants } from "node:http2";
 import { Readable } from "node:stream";
-import { p as peekAppPlan, c as consumeAppPlan, f as frozenAppRefusal, r as replaceView, a as replaceFingerprint, d as danglingAfterReplace, b as prepareQueryOptionsForWrite, m as matchPlannedPage, e as prepareComponentBatch, g as replaceIds, h as expandQueryLifecycles, v as validateEvents, n as navigationReorders, i as persistedEventSpecs } from "./chunk-B6s0SEcB.js";
-import { c as componentRef, h as completedPartialWrites, r as resolveRef, i as indexComponentReferences, j as isFlexContainerType, k as batchChildOrders, l as childOrderProperty } from "./chunk-hyAmE1Rl.js";
-import { D as validateAppStructure, d as decodeComponentParent, e as encodeComponentParent } from "./chunk-BG-Wl49O.js";
-import { L as LARGE_READ_ROW_THRESHOLD, h as assessQueryRead, j as resolveStaticBindings, k as resolvedReadRefusal, s as sameReadSource, m as extractRowCount, o as emptyViewerOnlyParams, p as emptyParamsNote, u as unresolvedNote, v as validateQueryOptions, i as issueMessages } from "./chunk-DVQIMXVs.js";
-import { g as getDatasourceQuerySchema } from "./chunk-BNuWox9h.js";
-import { b1 as external_exports } from "./chunk-C1LXenY0.js";
+import { p as peekAppPlan, c as consumeAppPlan, f as frozenAppRefusal, r as replaceView, a as replaceFingerprint, d as danglingAfterReplace, b as prepareQueryOptionsForWrite, m as matchPlannedPage, e as prepareComponentBatch, g as replaceIds, h as expandQueryLifecycles, v as validateEvents, n as navigationReorders, i as persistedEventSpecs } from "./chunk-CFlPSMbo.js";
+import { c as componentRef, h as completedPartialWrites, r as resolveRef, i as indexComponentReferences, j as isFlexContainerType, k as batchChildOrders, l as childOrderProperty } from "./chunk-D3gbHEVi.js";
+import { E as validateAppStructure, H as unpinnedLibraries, d as decodeComponentParent, e as encodeComponentParent } from "./chunk-D3MI2A-T.js";
+import { L as LARGE_READ_ROW_THRESHOLD, g as assessQueryRead, h as resolveStaticBindings, j as resolvedReadRefusal, s as sameReadSource, k as extractRowCount, m as emptyViewerOnlyParams, o as emptyParamsNote, u as unresolvedNote, v as validateQueryOptions, i as issueMessages } from "./chunk-CWuyYxjg.js";
+import { g as getDatasourceQuerySchema } from "./chunk-Dwp0GyCm.js";
+import { b1 as external_exports } from "./chunk-DsdTCwqi.js";
 import { randomUUID, createHash } from "node:crypto";
 import { readFileSync, mkdirSync, existsSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { resolve, dirname, join, relative, sep } from "node:path";
@@ -1953,6 +1953,10 @@ function scratchArtifactWarnings(summary) {
     }
   }
   return warnings;
+}
+function libraryPinErrors(summary, pins) {
+  const components = (summary.pages ?? []).flatMap((page) => page.components ?? []);
+  return unpinnedLibraries(components, pins).map(({ library, components: names }) => `Library "${library}" is not pinned on this version, so ${names.length} of its components show an empty "Slot" placeholder (${names.slice(0, 5).join(", ")}${names.length > 5 ? ", ..." : ""}). Adding one of its components with add_components pins it.`);
 }
 function validatePersistedAppSummary(summary, options = {}) {
   const structural = validateAppStructure(summary, options);
@@ -4608,6 +4612,7 @@ export {
   runQueriesTool as h,
   getRequestListener as i,
   validatePersistedAppSummary as j,
+  libraryPinErrors as l,
   runQueryTool as r,
   verifyPageRenderTool as v
 };
