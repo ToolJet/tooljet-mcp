@@ -190,6 +190,8 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - \`generate_form_schema({ table_name, mode, initial_values_binding?, include?, field_overrides? })\` → a ready-to-place Form \`properties\` block only for the layout-safe generated types: \`textinput\`, \`number\`, \`emailinput\`, \`password\`, \`datepicker\`, and \`checkbox\`. It rejects schemas needing Dropdown/Multiselect/TextArea/Radio/Toggle/StarRating/FilePicker and tells you to build the entire form from standalone components.
 
 - \`list_workspaces()\` → \`[{ id, name, slug, is_default, is_current, datasources_url }]\`. The workspaces (organizations) this user belongs to; \`datasources_url\` is the manual connection-repair page.
+- \`list_workspace_folders({ search_text? })\` lists visible front-end app folders in the current connection's workspace, returning \`{ folders: [{id,name,app_count}], meta: {total_count} }\`. Search matches folder names. Use a returned folder ID to inspect its apps.
+- \`list_workspace_apps({ page?, search_text?, folder_id? })\` lists front-end apps with \`folders: [{id,name}]\` on each app. Search matches app names and combines with \`folder_id\`; follow \`meta.total_pages\` for pagination. \`meta.workspace_folder_count\` counts visible folders; \`meta.folder_app_count\` counts matching apps in the selected folder (null without a filter). \`meta.total_count\` remains the workspace-wide count of matching apps even with \`folder_id\`; use \`meta.folder_app_count\` for the folder.
 - \`use_workspace(workspace_id)\` → switch the ACTIVE workspace for all later calls (apps/tables/datasources are scoped to it). Returns the now-active \`{ id, name, slug, datasources_url }\`.
 - \`create_app(name)\` → \`{ app_id, version_id, home_page_id, editor_url, viewer_url, app_url, datasources_url }\`. \`app_url\` is a backward-compatible alias for \`editor_url\`. Call first and keep the ids. Share \`editor_url\` so the user can follow authoring live. If a built-in browser is available, wait until the first meaningful page works, then open \`viewer_url\` and reuse that tab at page-level checkpoints. When no browser is available, share both links rather than calling the editor URL a viewer.
 - \`create_app_version({ app_id, version_name, version_from_id, version_description? })\` clones an exact source into a new draft and returns its \`version_id\`. Name conflicts fail without adopting any existing draft, including after a timeout. Inspect the versions and ask the user before choosing an existing version or another name. Inspect that version for cloned resource IDs before editing; never keep writing to the source.
@@ -1079,12 +1081,12 @@ Specs describe API shapes, not the account's custom fields or pipeline stage val
 `;
 const datasources = `# Datasources and query contracts
 
-Read this when selecting, connecting, introspecting, or authoring datasource queries. Fetch operation contracts on demand instead of loading unrelated datasource schemas.\n\n${datasourceRepair}\n\n${extractSection(fullSkill, '### Large-data read safety')}\n\n${extractSection(reference, '## Datasource query reference')}\n\n${restApiGuidance}\n\n${hubspotGuidance}\n`;
+Read this when replacing spreadsheets or selecting, connecting, introspecting, or authoring datasource queries. Fetch operation contracts on demand instead of loading unrelated datasource schemas.\n\n## Spreadsheet-to-app requests\n\nFor spreadsheet-to-app requests, inspect the data available to this client before planning the schema. A chat attachment is not automatically accessible through MCP. If the file is unavailable, request an accessible export or sample; do not claim an import succeeded. Confirm how formulas, macros, duplicates and relationships should be handled instead of assuming they convert automatically.\n\n${datasourceRepair}\n\n${extractSection(fullSkill, '### Large-data read safety')}\n\n${extractSection(reference, '## Datasource query reference')}\n\n${restApiGuidance}\n\n${hubspotGuidance}\n`;
 const security = makeReference(
   'Security and authorization boundaries',
   'Read this before adding sensitive data access, user-scoped behavior, permissions, or destructive writes.',
   routedSections.security
-);
+) + `\n\n## Sharing a team app\n\nFor team-sharing requests, verify the intended audience and access using the existing security and QA references. A viewer URL alone does not prove teammate access or authorize public sharing. Keep the requested platform choice; do not move an existing app from another product unless asked.\n`;
 const qa = makeReference(
   'Verification and browser QA',
   'Read this when a page or primary flow is ready to verify. It defines the bounded static, runtime, and visual checks required before claiming the work is complete.',
@@ -1099,7 +1101,7 @@ const components = `# Component contracts and specialized rendering\n\nRead this
 
 const skill = `---
 name: tooljet-app-builder
-description: "Build ToolJet apps end-to-end via tooljet-mcp: plan pages, create or reuse data/query/component resources, wire behavior, and verify the result. Use for ToolJet apps, dashboards, internal tools, or changes to existing ToolJet apps."
+description: "Build or update ToolJet dashboards, internal tools, back-office and team operations apps, including spreadsheet replacements. Requires a ToolJet MCP connection. Excludes one-off spreadsheet analysis, static charts, advice-only comparisons and standalone code projects outside ToolJet."
 metadata:
   generated_by: scripts/generate-skill.mjs
   sources: >-

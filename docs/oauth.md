@@ -50,6 +50,8 @@ For a container network with an HTTP-only internal ToolJet service, use the depl
 
 Proxy these paths to the MCP server:
 
+- `/mcp`: shared MCP requests; users choose a workspace during authorization.
+- `/.well-known/oauth-protected-resource/mcp`: shared resource metadata.
 - `/mcp/<workspace-id-or-slug>`: MCP requests.
 - `/.well-known/oauth-protected-resource/mcp/<workspace-id-or-slug>`: resource metadata.
 - `/health`: optional readiness check.
@@ -80,7 +82,17 @@ The public OAuth MCP process targets one trusted ToolJet Cloud installation and 
 
 ## Connect an AI client
 
-Add the workspace-specific URL in a client supporting HTTP MCP, OAuth Authorization Code with S256 PKCE, and a supported dynamic or previously registered client:
+Add the shared URL in a client supporting HTTP MCP, OAuth Authorization Code with S256 PKCE, and a supported dynamic or previously registered client:
+
+```text
+https://mcp.example.com/mcp
+```
+
+The browser offers ToolJet login followed by a workspace picker, or a workspace URL/ID/slug entry for users who need workspace-specific SSO. Only active memberships are listed. A sole workspace is preselected but still requires confirmation. Clicking **Continue** in the signed-in picker approves the displayed permissions for that account and creates a separate browser-bound request; simultaneous selections cannot change an existing request. If the live browser session satisfies the selected workspace's current login policy, authorization completes immediately. Otherwise, the user completes the required workspace login or SSO and authorization resumes for the same account without repeating consent. A live, policy-compatible session has no separate ten-minute login deadline; pending authorization requests still expire. Entering a workspace URL while signed out only selects the workspace and still requires explicit consent after login. Custom-domain bootstrap and SSO retain the same browser and workspace binding.
+
+The shared resource identifier remains unchanged through authorization, token exchange and refresh. Each grant is bound to one immutable workspace ID; authenticated MCP requests resolve that workspace from the grant. Changing the active workspace in ToolJet does not change a connection. Connecting another workspace requires a new authorization. Existing grant/artifact storage is reused; this addition has no database migration.
+
+Existing workspace-specific URLs continue to skip the picker and use their current login and consent flow:
 
 ```text
 https://mcp.example.com/mcp/<workspace-id>

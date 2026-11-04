@@ -71,6 +71,7 @@ import { manageThemeTool } from './manageTheme.js';
 import { manageAppPermissionsTool } from './manageAppPermissions.js';
 import {
   listWorkspaceAppsTool,
+  listWorkspaceFoldersTool,
   listWorkspaceUsersTool,
   manageWorkspaceUsersTool,
 } from './workspaceUserManagement.js';
@@ -136,6 +137,7 @@ export function registerTools(
     useWorkspaceTool(client),
     manageAppPermissionsTool(client),
     listWorkspaceAppsTool(client),
+    listWorkspaceFoldersTool(client),
     listWorkspaceUsersTool(client),
     manageWorkspaceUsersTool(client),
     listWorkspaceGroupsTool(client),
