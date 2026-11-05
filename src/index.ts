@@ -6,7 +6,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { buildServer, buildUnconfiguredServer, packsReady } from './server.js';
-import { readJsonBody } from './httpServer.js';
+import { isLoopbackHost, readJsonBody } from './httpServer.js';
 import { createOAuthHttpServer, oauthHttpOptionsFromEnv } from './oauthHttp.js';
 import { bearerValue, checkBearerToken } from './httpAuth.js';
 import { isBuildToken, mintAuthorized, mintBuildToken, mintSecret, resolveBuildToken, revokeBuildToken } from './buildTokens.js';
@@ -35,7 +35,7 @@ export interface GatewayHttpServer {
  * bearer auth, the user-session requirement, the request-URL requirement — with real HTTP requests,
  * the same way httpServer.ts's createHttpMcpServer is tested.
  */
-export function createGatewayHttpServer(): GatewayHttpServer {
+export function createGatewayHttpServer({ bindHost }: { bindHost?: string } = {}): GatewayHttpServer {
   const oauth = oauthHttpOptionsFromEnv();
   if (oauth) return { server: createOAuthHttpServer(oauth), gatewayMode: false };
   const sharedToken = process.env.MCP_SHARED_TOKEN;
@@ -67,6 +67,11 @@ export function createGatewayHttpServer(): GatewayHttpServer {
      different ToolJet backends, so a deployment can demand every request name its own via
      x-tooljet-url rather than silently writing into this process's static TOOLJET_URL. */
   const requireRequestUrl = gatewayMode && /^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_REQUEST_URL ?? '');
+
+  /* Direct mode bound beyond loopback (MCP_HTTP_HOST): the process's TOOLJET_PAT would act for anyone who can reach
+     the port, so every request must bring its own credential, which ToolJet checks. On loopback it stays the
+     operator's own server, where the configured credential is theirs. */
+  const requireRequestCredential = !gatewayMode && bindHost !== undefined && !isLoopbackHost(bindHost);
 
   /** POST mints a build token for the caller's own session; DELETE revokes one. Authorised by the
    *  mint secret, and the minted identity comes from this request's own headers, so a caller can only
@@ -203,14 +208,14 @@ export function createGatewayHttpServer(): GatewayHttpServer {
       return;
     }
 
-    // Direct mode with nothing to act as: no PAT on the request and none in the environment. Say so
-    // in the response rather than letting buildServer throw into a bare 500.
-    if (!gatewayMode && !hasUserCredential && !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN)) {
+    // Direct mode with nothing to act as: no PAT on the request and none in the environment (or one that may not be
+    // used off loopback). Say so in the response rather than letting buildServer throw into a bare 500.
+    if (!gatewayMode && !hasUserCredential && (requireRequestCredential || !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN))) {
       res
         .writeHead(401, { 'Content-Type': 'text/plain' })
         .end(
           `No ToolJet credential. Send your personal access token as \`Authorization: Bearer <token>\` ` +
-            `or in the ${PAT_HEADER} header, or set TOOLJET_PAT on this server. Create a token in ` +
+            `or in the ${PAT_HEADER} header${requireRequestCredential ? '' : ', or set TOOLJET_PAT on this server'}. Create a token in ` +
             'ToolJet under Settings → Access tokens.'
         );
       return;
@@ -286,7 +291,7 @@ async function serveHttp(): Promise<void> {
     throw new Error(`tooljet-mcp: invalid ${ALLOWED_API_ORIGINS_VAR}: ${reason}`);
   }
 
-  const { server: httpServer, gatewayMode } = createGatewayHttpServer();
+  const { server: httpServer, gatewayMode } = createGatewayHttpServer({ bindHost: process.env.MCP_HTTP_HOST });
   const host = process.env.MCP_HTTP_HOST ?? (gatewayMode ? '0.0.0.0' : '127.0.0.1');
 
   await new Promise<void>((resolve, reject) => {

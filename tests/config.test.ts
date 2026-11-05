@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { loadConfig, identityFromHeaders } from '../src/config.js';
 
 describe('loadConfig', () => {
@@ -13,6 +16,8 @@ describe('loadConfig', () => {
       'TOOLJET_WORKSPACE_SLUG',
     ])
       delete process.env[k];
+    // Never this machine's own `tooljet auth login`.
+    process.env.TOOLJET_CREDENTIALS_FILE = '/nonexistent/credentials.json';
   });
 
   it('applies defaults for URLs and reads the token', () => {
@@ -637,5 +642,40 @@ describe('blank environment variables count as unset', () => {
   it('treats a whitespace-only credential as missing rather than authenticating with it', () => {
     process.env.TOOLJET_PAT = '   ';
     expect(() => loadConfig()).toThrow(/TOOLJET_PAT is required/);
+  });
+});
+
+describe('loadConfig with the CLI\'s stored login (tooljet auth login)', () => {
+  let dir: string;
+  beforeEach(() => {
+    for (const k of ['TOOLJET_URL', 'TOOLJET_APP_URL', 'TOOLJET_DEPLOYMENT_URL', 'TOOLJET_PAT', 'TOOLJET_SESSION_TOKEN', 'TOOLJET_WORKSPACE_ID'])
+      delete process.env[k];
+    dir = mkdtempSync(join(tmpdir(), 'tj-creds-'));
+    const file = join(dir, 'credentials.json');
+    writeFileSync(file, JSON.stringify({ default: 'w1', workspaces: { w1: { url: 'https://tj.example.com', apiToken: 'tj_pat_stored', email: 'a@b.c' } } }));
+    process.env.TOOLJET_CREDENTIALS_FILE = file;
+  });
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+    delete process.env.TOOLJET_CREDENTIALS_FILE;
+  });
+
+  it('uses the stored instance and token when nothing else is configured', () => {
+    const c = loadConfig();
+    expect(c.apiUrl).toBe('https://tj.example.com');
+    expect(c.appUrl).toBe('https://tj.example.com');
+    expect(c.pat).toBe('tj_pat_stored');
+  });
+
+  it('prefers a token from the environment', () => {
+    process.env.TOOLJET_PAT = 'tj_pat_env';
+    expect(loadConfig().pat).toBe('tj_pat_env');
+  });
+
+  it('never sends the stored token to a different instance', () => {
+    process.env.TOOLJET_URL = 'https://other.example.com';
+    expect(() => loadConfig()).toThrow(/TOOLJET_PAT/);
+    process.env.TOOLJET_URL = 'https://tj.example.com/';
+    expect(loadConfig().pat).toBe('tj_pat_stored');
   });
 });

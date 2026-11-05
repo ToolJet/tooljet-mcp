@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { createHttpMcpServer } from './httpServer.js';
+import { createHttpMcpServer, standaloneHttpPolicy } from './httpServer.js';
 
 function readPort(): number {
   const rawPort = process.env.TOOLJET_MCP_HTTP_PORT ?? process.env.PORT ?? '3001';
@@ -15,7 +15,7 @@ function readPort(): number {
 async function main(): Promise<void> {
   const host = process.env.TOOLJET_MCP_HTTP_HOST ?? '127.0.0.1';
   const port = readPort();
-  const httpMcp = createHttpMcpServer();
+  const httpMcp = createHttpMcpServer(standaloneHttpPolicy(host));
 
   await new Promise<void>((resolve, reject) => {
     httpMcp.server.once('error', reject);
