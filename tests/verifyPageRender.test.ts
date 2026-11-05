@@ -61,7 +61,7 @@ const target = [{ page: 'home', url: 'http://viewer.test/applications/app1/home'
 
 describe('render audit query execution', () => {
   const savedQueries = { version_id: 'v-library', queries: [{ id: 'q-shelves', kind: 'postgresql',
-    data_source_id: 'ds-library', options: { query: 'SELECT shelf_id FROM shelves LIMIT 5' } }] };
+    data_source_id: 'ds-library', options: { mode: 'sql', query: 'SELECT shelf_id FROM shelves LIMIT 5' } }] };
   const run = 'http://viewer.test/api/data-queries/q-shelves/versions/v-library/run/env-dev?mode=view';
 
   it.each([run, 'http://viewer.test/api/data-queries/q-shelves/run'])('allows saved static bounded reads without option overrides: %s', async resource => {
@@ -88,10 +88,10 @@ describe('render audit query execution', () => {
   });
 
   it.each([
-    { kind: 'postgresql', options: { query: 'DELETE FROM shelves' } },
-    { kind: 'postgresql', options: { query: 'SELECT shelf_id FROM shelves' } },
-    { kind: 'postgresql', options: { query: 'SELECT shelf_id FROM shelves LIMIT 5 {{variables.tail}}' } },
-    { kind: 'postgresql', options: { query: 'SELECT shelf_id FROM shelves LIMIT 5', requestConfirmation: true } },
+    { kind: 'postgresql', options: { mode: 'sql', query: 'DELETE FROM shelves' } },
+    { kind: 'postgresql', options: { mode: 'sql', query: 'SELECT shelf_id FROM shelves' } },
+    { kind: 'postgresql', options: { mode: 'sql', query: 'SELECT shelf_id FROM shelves LIMIT 5 {{variables.tail}}' } },
+    { kind: 'postgresql', options: { mode: 'sql', query: 'SELECT shelf_id FROM shelves LIMIT 5', requestConfirmation: true } },
     { kind: 'bigquery', options: { query: 'SELECT shelf_id FROM shelves LIMIT 5' } },
     { kind: 'restapi', options: { method: 'get', url: 'https://catalogue.test/shelves?limit=5' } },
     { kind: 'runjs', options: { code: 'queries.removeShelf.run()' } },

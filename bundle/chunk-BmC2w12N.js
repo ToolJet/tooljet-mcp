@@ -1,14 +1,14 @@
 import { createRequire } from "node:module";
-import { b0 as external_exports, b3 as specSchema, b8 as getComponentCatalogTool, b1 as nodeCatalog, b2 as validateGraph } from "./chunk-Id3EmQoo.js";
-import { x as capabilityRequestSchema, y as getWorkflowCapabilities, z as lint, A as apply, B as deleteNode, C as editContractSchema, D as generateEditContract } from "./chunk-YVYQ0IWs.js";
-import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, g as FLEX_GROW_DESCRIPTION, j as FLEX_WIDTH_PX_DESCRIPTION, k as FLEX_FILL_WIDTH_DESCRIPTION, A as createClient, B as registerPackDefinitions, D as listWorkspaceGroupsTool, E as manageWorkspaceGroupsTool, G as createAppTool, H as inspectDatasourceSchemaTool, I as manageThemeTool, J as savedComponentLibrary, v as validateTableBatch, K as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec, x as COMPONENT_FX_GUIDANCE, b as appendedChildOrders, d as reparentAdditions, c as childOrderProperty } from "./chunk-CJ-RSCkU.js";
-import { c as componentInputSchema, u as updateComponentsTool, q as projectJavascriptRuntime, t as projectAppSettings, w as compactTheme, x as pageSettingProperties, l as literalCanvasColor, y as containsExactValue, e as prepareQueryOptionsForWrite, z as containsNamedBinding, A as normalizePlannedLayouts, B as materializeRequiredDefaultChildren, i as prepareComponentBatch, v as validateEvents, k as expandQueryLifecycles, o as persistedEventSpecs, C as persistedEventIds } from "./chunk-PrHHo-JD.js";
-import { K as dbColumnTypeSchema, N as codeAppScaffoldTool, O as codeAppReadFilesTool, Q as codeAppWriteFilesTool, U as codeAppBuildTool, V as codeAppInstallTool, W as codeAppAddDependencyTool, X as manageAppPermissionsTool, Y as lintAppSpecTool, Z as noCodeIdentity, _ as WebStandardStreamableHTTPServerTransport, $ as plannedTableSchema, a0 as inspectUpdateCompatibility, a1 as normalizePlanBindingAliases, a2 as browserUserBindings, a3 as isCodeModeApp, a4 as browserUserMessage } from "./chunk-BN50Dsl1.js";
-import { ej as registerComponentSchemas, e6 as ok, e5 as fail, e9 as mapKeyRefusal, ek as readCatalogBytes, el as allComponentSchemas } from "./chunk-CNzl5iHC.js";
-import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, g as getRequestListener, c as validatePersistedAppSummary } from "./chunk-ChErNDRS.js";
-import { M as McpServer } from "./chunk-BMzOi3eR.js";
-import { F as pageIconSchema, f as componentSlotSchema, H as registerLibraryPacks, g as componentNameSchema, C as lintComponents, j as resolveParentRef, k as introducedLintFindings, I as lintRenderedGeometryBlocking, J as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, o as lintComponentSlots, m as lintComponentSpec, p as lintUnusableTextGeometry, K as lintNestedContainerWidths, q as lintStandardSingleLineInputHeight, s as lintTextGeometry, u as lintRenderedGeometry, L as FORM_SCHEMA_FIELD_TYPE_SET, M as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-5_C98tAF.js";
-import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-hq1_aYNY.js";
+import { ej as registerComponentSchemas, e6 as ok, e5 as fail, ek as prepareSqlDiscoveryQueries, e9 as mapKeyRefusal, el as readCatalogBytes, em as allComponentSchemas } from "./chunk-DSzzr2p4.js";
+import { b0 as external_exports, b3 as specSchema, b8 as getComponentCatalogTool, b1 as nodeCatalog, b2 as validateGraph } from "./chunk-BK1olK4j.js";
+import { A as capabilityRequestSchema, B as getWorkflowCapabilities, C as lint, D as apply, E as deleteNode, F as editContractSchema, H as generateEditContract, k as resolveStaticBindings, x as emptyViewerOnlyParams, y as emptyParamsNote, z as unresolvedNote } from "./chunk-BQSkKlW7.js";
+import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, g as FLEX_GROW_DESCRIPTION, j as FLEX_WIDTH_PX_DESCRIPTION, k as FLEX_FILL_WIDTH_DESCRIPTION, A as createClient, B as registerPackDefinitions, D as listWorkspaceGroupsTool, E as manageWorkspaceGroupsTool, G as createAppTool, H as inspectDatasourceSchemaTool, I as manageThemeTool, J as savedComponentLibrary, v as validateTableBatch, K as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec, x as COMPONENT_FX_GUIDANCE, b as appendedChildOrders, d as reparentAdditions, c as childOrderProperty } from "./chunk-BNMLqNpt.js";
+import { c as componentInputSchema, u as updateComponentsTool, q as projectJavascriptRuntime, t as projectAppSettings, w as compactTheme, x as pageSettingProperties, l as literalCanvasColor, y as containsExactValue, e as prepareQueryOptionsForWrite, z as containsNamedBinding, A as normalizePlannedLayouts, B as materializeRequiredDefaultChildren, i as prepareComponentBatch, v as validateEvents, k as expandQueryLifecycles, o as persistedEventSpecs, C as persistedEventIds } from "./chunk-Biua2IrG.js";
+import { K as dbColumnTypeSchema, N as codeAppScaffoldTool, O as codeAppReadFilesTool, Q as codeAppWriteFilesTool, U as codeAppBuildTool, V as codeAppInstallTool, W as codeAppAddDependencyTool, X as manageAppPermissionsTool, Y as lintAppSpecTool, Z as noCodeIdentity, _ as WebStandardStreamableHTTPServerTransport, $ as plannedTableSchema, a0 as inspectUpdateCompatibility, a1 as normalizePlanBindingAliases, a2 as browserUserBindings, a3 as isCodeModeApp, a4 as browserUserMessage } from "./chunk-DuFrP3n2.js";
+import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, g as getRequestListener, b as validatePersistedAppSummary, c as autoReadPreflight, d as containsComponentBinding, q as queryResultBindingHint, f as failureRecovery, e as failureVerification, s as schemaNameHint } from "./chunk-D2yIooKQ.js";
+import { M as McpServer } from "./chunk-vB5YVPYG.js";
+import { F as pageIconSchema, f as componentSlotSchema, H as registerLibraryPacks, g as componentNameSchema, C as lintComponents, j as resolveParentRef, k as introducedLintFindings, I as lintRenderedGeometryBlocking, J as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, o as lintComponentSlots, m as lintComponentSpec, p as lintUnusableTextGeometry, K as lintNestedContainerWidths, q as lintStandardSingleLineInputHeight, s as lintTextGeometry, u as lintRenderedGeometry, L as FORM_SCHEMA_FIELD_TYPE_SET, M as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-CLJFCNyS.js";
+import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-DEG7vXOB.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { createServer } from "node:http";
@@ -85,9 +85,9 @@ function createVerifiedExchangeCache(ttlMs = 6e4, capacity = 1e4) {
   };
 }
 var StreamableHTTPServerTransport = class {
-  constructor(options2 = {}) {
+  constructor(options = {}) {
     this._requestContext = /* @__PURE__ */ new WeakMap();
-    this._webStandardTransport = new WebStandardStreamableHTTPServerTransport(options2);
+    this._webStandardTransport = new WebStandardStreamableHTTPServerTransport(options);
     this._requestListener = getRequestListener(async (webRequest) => {
       const context = this._requestContext.get(webRequest);
       return this._webStandardTransport.handleRequest(webRequest, {
@@ -145,8 +145,8 @@ var StreamableHTTPServerTransport = class {
   /**
    * Sends a JSON-RPC message through the transport.
    */
-  async send(message, options2) {
-    return this._webStandardTransport.send(message, options2);
+  async send(message, options) {
+    return this._webStandardTransport.send(message, options);
   }
   /**
    * Handles an incoming HTTP request, whether GET or POST.
@@ -1540,7 +1540,7 @@ function addQueriesTool(client) {
           if (prepared.errors.length)
             throw new Error(prepared.errors.join(" "));
           warnings.push(...prepared.warnings);
-          const { options: options2 } = prepared;
+          const { options } = prepared;
           const validation = prepared.validation;
           if (query.kind && query.kind !== datasource.kind) {
             warnings.push(`Query "${query.name}": caller kind "${query.kind}" was ignored; datasource kind is "${datasource.kind}".`);
@@ -1551,7 +1551,7 @@ function addQueriesTool(client) {
             operation: validation.operation,
             schema_found: validation.schemaFound
           });
-          return { query: { ...query, options: options2 }, kind: datasource.kind };
+          return { query: { ...query, options }, kind: datasource.kind };
         });
         warnings.push(...await inspectUpdateCompatibility(client, resolved.map(({ query, kind }) => ({
           name: query.name,
@@ -1644,7 +1644,7 @@ function codeAppDataTool(client) {
         if (queries?.length) {
           await refuseBrowserUser(client, args.app_id, queries);
           const datasources = await client.listDatasources(versionId);
-          const tooljetDb = datasources.find((source2) => source2.kind === "tooljetdb");
+          const tooljetDb = datasources.find((source) => source.kind === "tooljetdb");
           queries = queries.map(({ datasource_name, datasource_id, ...query }) => {
             if (datasource_id || datasource_name)
               return { ...query, ...datasource_id ? { datasource_id } : { datasource_name } };
@@ -2019,147 +2019,6 @@ function testDatasourceConnectionTool(client) {
     }
   };
 }
-var DIALECTS = {
-  postgresql: { quote: "double", limit: "limit", metadata: "postgresql" },
-  mysql: { quote: "backtick", limit: "limit", metadata: "mysql" },
-  mssql: { quote: "bracket", limit: "top", metadata: "mssql" },
-  snowflake: { quote: "double", limit: "limit" },
-  bigquery: { quote: "backtick", limit: "limit" },
-  oracledb: { quote: "double", limit: "fetch" }
-};
-function assertIdentifier(identifier, label) {
-  if (!identifier.trim() || identifier.length > 256 || /[\0-\x1f\x7f;`"\[\]\\]/.test(identifier)) {
-    throw new Error(`${label} contains unsupported or unsafe identifier characters.`);
-  }
-}
-function quote(kind, identifier) {
-  assertIdentifier(identifier, "SQL identifier");
-  const style = DIALECTS[kind].quote;
-  if (style === "backtick")
-    return `\`${identifier}\``;
-  if (style === "bracket")
-    return `[${identifier}]`;
-  return `"${identifier}"`;
-}
-function literal(value) {
-  return `'${value.replaceAll("'", "''")}'`;
-}
-function source(kind, schema, table) {
-  return schema ? `${quote(kind, schema)}.${quote(kind, table)}` : quote(kind, table);
-}
-function boundedSelect(kind, projection, from, limit, distinct = false) {
-  const prefix = `SELECT ${distinct ? "DISTINCT " : ""}`;
-  if (DIALECTS[kind].limit === "top")
-    return `${prefix}TOP (${limit}) ${projection} FROM ${from}`;
-  if (DIALECTS[kind].limit === "fetch")
-    return `${prefix}${projection} FROM ${from} FETCH FIRST ${limit} ROWS ONLY`;
-  return `${prefix}${projection} FROM ${from} LIMIT ${limit}`;
-}
-function options(kind, query) {
-  return {
-    mode: "sql",
-    query,
-    ...!["snowflake"].includes(kind) ? { query_params: [] } : {},
-    runOnPageLoad: false
-  };
-}
-function metadataSql(kind, purpose, schema, table) {
-  const metadata = "metadata" in DIALECTS[kind] ? DIALECTS[kind].metadata : void 0;
-  if (!metadata)
-    return void 0;
-  if (purpose !== "views" && !table)
-    throw new Error(`${purpose} discovery requires table.`);
-  if (metadata !== "mysql" && !schema)
-    throw new Error(`${purpose} discovery for ${kind} requires schema.`);
-  const schemaFilter = metadata === "mysql" && !schema ? "DATABASE()" : literal(schema);
-  const tableFilter = table ? literal(table) : void 0;
-  if (metadata === "postgresql") {
-    if (purpose === "primary_keys")
-      return `SELECT kcu.column_name, kcu.ordinal_position, tc.constraint_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.ordinal_position`;
-    if (purpose === "foreign_keys")
-      return `SELECT kcu.constraint_name, kcu.column_name, ccu.table_schema AS referenced_schema, ccu.table_name AS referenced_table, ccu.column_name AS referenced_column FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_catalog = tc.constraint_catalog AND ccu.constraint_schema = tc.constraint_schema AND ccu.constraint_name = tc.constraint_name WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.constraint_name, kcu.ordinal_position`;
-    if (purpose === "indexes")
-      return `SELECT indexname AS index_name, indexdef AS definition FROM pg_indexes WHERE schemaname = ${schemaFilter} AND tablename = ${tableFilter} ORDER BY indexname`;
-    return `SELECT table_schema, table_name AS view_name FROM information_schema.views WHERE table_schema = ${schemaFilter} ORDER BY table_name`;
-  }
-  if (metadata === "mysql") {
-    if (purpose === "primary_keys")
-      return `SELECT column_name, ordinal_position, constraint_name FROM information_schema.key_column_usage WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} AND constraint_name = 'PRIMARY' ORDER BY ordinal_position`;
-    if (purpose === "foreign_keys")
-      return `SELECT constraint_name, column_name, referenced_table_schema AS referenced_schema, referenced_table_name AS referenced_table, referenced_column_name AS referenced_column FROM information_schema.key_column_usage WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} AND referenced_table_name IS NOT NULL ORDER BY constraint_name, ordinal_position`;
-    if (purpose === "indexes")
-      return `SELECT index_name, column_name, non_unique, seq_in_index FROM information_schema.statistics WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} ORDER BY index_name, seq_in_index`;
-    return `SELECT table_schema, table_name AS view_name FROM information_schema.views WHERE table_schema = ${schemaFilter} ORDER BY table_name`;
-  }
-  if (purpose === "primary_keys")
-    return `SELECT kcu.COLUMN_NAME AS column_name, kcu.ORDINAL_POSITION AS ordinal_position, tc.CONSTRAINT_NAME AS constraint_name FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA AND tc.TABLE_NAME = kcu.TABLE_NAME WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY' AND tc.TABLE_SCHEMA = ${schemaFilter} AND tc.TABLE_NAME = ${tableFilter} ORDER BY kcu.ORDINAL_POSITION`;
-  if (purpose === "foreign_keys")
-    return `SELECT fk.name AS constraint_name, pc.name AS column_name, rs.name AS referenced_schema, rt.name AS referenced_table, rc.name AS referenced_column FROM sys.foreign_key_columns fkc JOIN sys.foreign_keys fk ON fk.object_id = fkc.constraint_object_id JOIN sys.tables pt ON pt.object_id = fkc.parent_object_id JOIN sys.schemas ps ON ps.schema_id = pt.schema_id JOIN sys.columns pc ON pc.object_id = pt.object_id AND pc.column_id = fkc.parent_column_id JOIN sys.tables rt ON rt.object_id = fkc.referenced_object_id JOIN sys.schemas rs ON rs.schema_id = rt.schema_id JOIN sys.columns rc ON rc.object_id = rt.object_id AND rc.column_id = fkc.referenced_column_id WHERE ps.name = ${schemaFilter} AND pt.name = ${tableFilter} ORDER BY fk.name, fkc.constraint_column_id`;
-  if (purpose === "indexes")
-    return `SELECT i.name AS index_name, c.name AS column_name, i.is_unique, ic.key_ordinal FROM sys.indexes i JOIN sys.tables t ON t.object_id = i.object_id JOIN sys.schemas s ON s.schema_id = t.schema_id JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id WHERE s.name = ${schemaFilter} AND t.name = ${tableFilter} AND i.is_hypothetical = 0 ORDER BY i.name, ic.key_ordinal`;
-  return `SELECT TABLE_SCHEMA AS table_schema, TABLE_NAME AS view_name FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = ${schemaFilter} ORDER BY TABLE_NAME`;
-}
-function boundMetadata(kind, sql) {
-  if (DIALECTS[kind].limit === "top")
-    return sql.replace(/^SELECT\s+/i, "SELECT TOP (100) ");
-  if (DIALECTS[kind].limit === "fetch")
-    return `${sql} FETCH FIRST 100 ROWS ONLY`;
-  return `${sql} LIMIT 100`;
-}
-function safeName(value) {
-  return value.replace(/[^A-Za-z0-9_]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "table";
-}
-function prepareSqlDiscoveryQueries(args) {
-  if (!(args.kind in DIALECTS))
-    throw new Error(`Datasource kind "${args.kind}" is not supported by SQL discovery.`);
-  const kind = args.kind;
-  if (args.schema)
-    assertIdentifier(args.schema, "schema");
-  if (args.table)
-    assertIdentifier(args.table, "table");
-  for (const column of [...args.columns ?? [], ...args.distinctColumns ?? []])
-    assertIdentifier(column, "column");
-  const tablePurposes = args.purposes.filter((purpose) => purpose !== "views");
-  if (tablePurposes.length && !args.table)
-    throw new Error("Table-scoped SQL discovery requires table.");
-  if (args.purposes.includes("preview") && !args.columns?.length) {
-    throw new Error("Preview discovery requires one or more explicit columns; SELECT * is never generated.");
-  }
-  if (args.purposes.includes("distinct") && !args.distinctColumns?.length) {
-    throw new Error("Distinct discovery requires one or more explicit distinct_columns.");
-  }
-  const from = args.table ? source(kind, args.schema, args.table) : void 0;
-  const prefix = safeName(args.namePrefix ?? args.table ?? args.schema ?? "schema");
-  const queries = [];
-  const unsupported = [];
-  for (const purpose of [...new Set(args.purposes)]) {
-    let sql;
-    if (purpose === "count")
-      sql = `SELECT COUNT(*) AS row_count FROM ${from}`;
-    else if (purpose === "preview") {
-      sql = boundedSelect(kind, args.columns.map((column) => quote(kind, column)).join(", "), from, args.limit);
-    } else if (purpose === "distinct") {
-      sql = boundedSelect(kind, args.distinctColumns.map((column) => quote(kind, column)).join(", "), from, args.limit, true);
-    } else {
-      sql = metadataSql(kind, purpose, args.schema, args.table);
-      if (!sql) {
-        unsupported.push({
-          purpose,
-          reason: `${args.kind} does not expose a verified ${purpose} selector and MCP has no curated read-only SQL contract for it yet.`
-        });
-        continue;
-      }
-      sql = boundMetadata(kind, sql);
-    }
-    queries.push({
-      purpose,
-      name: `${prefix}_${purpose}`,
-      datasource_id: args.datasourceId,
-      options: options(kind, sql)
-    });
-  }
-  return { queries, unsupported };
-}
 var purposes = ["count", "preview", "distinct", "primary_keys", "foreign_keys", "indexes", "views"];
 function prepareSqlDiscoveryQueriesTool(client) {
   return {
@@ -2271,12 +2130,12 @@ function bindingValue(prefix, column) {
   const access = `${prefix}[${JSON.stringify(column.name)}]`;
   return column.type.toLowerCase().includes("json") ? `{{JSON.stringify(${access})}}` : `{{${access}}}`;
 }
-function generateFormSchema(columns, options2) {
-  const exclude = new Set(options2.exclude ?? []);
+function generateFormSchema(columns, options) {
+  const exclude = new Set(options.exclude ?? []);
   const omitted = [];
   const byName = new Map(columns.map((column) => [column.name, column]));
   const seen = /* @__PURE__ */ new Set();
-  const ordered = options2.include ? options2.include.flatMap((name) => {
+  const ordered = options.include ? options.include.flatMap((name) => {
     if (seen.has(name))
       return [];
     seen.add(name);
@@ -2288,7 +2147,7 @@ function generateFormSchema(columns, options2) {
   const selected = ordered.filter((column) => {
     if (exclude.has(column.name))
       return false;
-    if (options2.mode === "create" && column.type.toLowerCase() === "serial") {
+    if (options.mode === "create" && column.type.toLowerCase() === "serial") {
       omitted.push({ name: column.name, reason: "generated serial column omitted from create form" });
       return false;
     }
@@ -2302,11 +2161,11 @@ function generateFormSchema(columns, options2) {
       Object.assign(field, { values: choices, displayValues: choices.map(String) });
     if (type === "datepicker")
       Object.assign(field, { enableDate: true, enableTime: true });
-    if (options2.mode === "edit" && column.isPrimaryKey)
+    if (options.mode === "edit" && column.isPrimaryKey)
       field.styles = { disabled: true };
-    if (options2.initialValuesBinding) {
-      field.value = bindingValue(options2.initialValuesBinding, column);
-    } else if (options2.mode === "create" && column.defaultValue !== void 0) {
+    if (options.initialValuesBinding) {
+      field.value = bindingValue(options.initialValuesBinding, column);
+    } else if (options.mode === "create" && column.defaultValue !== void 0) {
       if (column.type.toLowerCase().includes("json"))
         field.value = JSON.stringify(column.defaultValue);
       else if (type === "checkbox" && booleanDefault(column.defaultValue) !== void 0) {
@@ -2315,10 +2174,10 @@ function generateFormSchema(columns, options2) {
         field.value = "{{0}}";
       else
         field.value = column.defaultValue;
-    } else if (options2.mode === "create" && type === "datepicker") {
+    } else if (options.mode === "create" && type === "datepicker") {
       field.value = "{{null}}";
     }
-    field = mergeField(field, options2.fieldOverrides?.[column.name]);
+    field = mergeField(field, options.fieldOverrides?.[column.name]);
     const finalType = field.type;
     if (typeof finalType !== "string" || !FORM_SCHEMA_FIELD_TYPE_SET.has(finalType)) {
       throw new Error(`Form field "${column.name}" has unsupported type "${String(finalType)}".`);
@@ -2336,9 +2195,9 @@ function generateFormSchema(columns, options2) {
     throw new Error(`Generated ToolJet Form is not layout-safe for ${standaloneFields.join(", ")}. FormUtils does not pass label alignment through to generated fields; Dropdown/Multiselect labels do not align with inputs, and TextArea retains a literal "Label" and can render as a single-line control. Build the entire form from standalone components in one add_components call, set styles.alignment.value="top" on every labelled input, use a consistent two-column grid for compact fields, and make TextArea fields full-width. Generated Form is approved only for textinput, number, emailinput, password, datepicker, and checkbox fields.`);
   }
   const schema = {
-    title: options2.title ?? `${options2.mode === "create" ? "Create" : "Edit"} ${humanize(options2.tableName)}`,
+    title: options.title ?? `${options.mode === "create" ? "Create" : "Edit"} ${humanize(options.tableName)}`,
     properties: fields,
-    submitButton: { value: options2.submitLabel ?? (options2.mode === "create" ? "Create" : "Save changes") }
+    submitButton: { value: options.submitLabel ?? (options.mode === "create" ? "Create" : "Save changes") }
   };
   const recommendedCanvasHeight = Math.max(300, selected.length * 70);
   const recommendedFormHeight = recommendedCanvasHeight + 130;
@@ -2362,7 +2221,7 @@ function generateFormSchema(columns, options2) {
       default_value: column.defaultValue,
       foreign_keys: column.foreignKeys,
       generated_type: fields[column.name].type,
-      overridden: !!options2.fieldOverrides?.[column.name]
+      overridden: !!options.fieldOverrides?.[column.name]
     })),
     omitted_fields: omitted,
     layout_guidance: {
@@ -2491,8 +2350,8 @@ function validatePaths(paths, roots, label) {
     }
   }
 }
-function readPath(source2, segments) {
-  let cursor = source2;
+function readPath(source, segments) {
+  let cursor = source;
   for (const segment of segments) {
     if (cursor === null || typeof cursor !== "object" || !Object.prototype.hasOwnProperty.call(cursor, segment)) {
       return { found: false };
@@ -2513,11 +2372,11 @@ function writePath(target2, segments, value) {
   }
   cursor[segments.at(-1)] = value;
 }
-function pickPaths(source2, paths) {
+function pickPaths(source, paths) {
   const result = {};
   for (const path of paths) {
     const segments = path.split(".");
-    const selected = readPath(source2, segments);
+    const selected = readPath(source, segments);
     if (selected.found)
       writePath(result, segments, selected.value);
   }
@@ -2941,17 +2800,17 @@ function addQueryTool(client) {
         const prepared = prepareQueryOptionsForWrite(datasource.kind, args.options);
         if (prepared.errors.length)
           return fail(new Error(prepared.errors.join(" ")));
-        const { options: options2, warnings } = prepared;
+        const { options, warnings } = prepared;
         const validation = prepared.validation;
         if (args.kind && args.kind !== datasource.kind) {
           warnings.push(`Caller kind "${args.kind}" was ignored; datasource "${args.datasource_id}" is kind "${datasource.kind}".`);
         }
-        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name, kind: datasource.kind, options: options2 }]));
+        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name, kind: datasource.kind, options }]));
         const result = await client.createQuery({
           versionId: args.version_id,
           dataSourceId: args.datasource_id,
           name: args.name,
-          options: options2,
+          options,
           kind: datasource.kind
         });
         return ok({
@@ -3695,10 +3554,10 @@ function updateQueryTool(client) {
         if (prepared.errors.length)
           return fail(new Error(prepared.errors.join(" ")));
         const warnings = [...resolutionWarnings, ...prepared.warnings];
-        const { options: options2, validation } = prepared;
+        const { options, validation } = prepared;
         if (!kind)
           warnings.push("Query options were not contract-validated; pass app_id or kind on update_query.");
-        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name ?? args.query_id, kind, options: options2 }]));
+        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name ?? args.query_id, kind, options }]));
         if (args.datasource_id && args.datasource_id !== currentDatasourceId) {
           await client.updateQueryDatasource({
             queryId: args.query_id,
@@ -3711,7 +3570,7 @@ function updateQueryTool(client) {
           result = await client.updateQuery({
             queryId: args.query_id,
             versionId: args.version_id,
-            options: options2,
+            options,
             name: args.name
           });
         } catch (error) {
@@ -3815,6 +3674,107 @@ function deleteQueryTool(client) {
           query_name: query.name,
           source_events_deleted: sourceEventsDeleted
         });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+function runQueriesTool(client) {
+  return {
+    name: "run_queries",
+    title: "Run Queries",
+    // Executes whatever the queries hold against the customer datasource — which may write or delete.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
+    description: 'Run 1\u201310 already-created, proven read-only queries concurrently and return ordered per-query results. It runs only what the automatic read check may run: ToolJet DB list_rows (bounded at list_rows.limit) or one bounded SELECT in sql_execution, and PostgreSQL/MySQL/MariaDB/SQL Server/Oracle GUI list_rows bounded at the top-level limit or one bounded explicit-column SELECT in mode sql that calls only well-known pure functions. Every query is preflighted before any execution; if any is refused, none runs and the error names each refused query and why ("not checked automatically" means run that one with singular run_query). SELECT *, unbounded reads, mutations, RunJS, paid/remote API operations, and other kinds are refused \u2014 remote API reads (restapi, openapi, servicenow, influxdb) can never run here; use singular run_query with user_confirmed_remote_read. Metadata and the environment are loaded once. Returns {queries:[{query_id,name,status,data|message,warnings?}]}; one runtime failure does not hide other read results. Pass include_data:false to only confirm each query runs \u2014 the result drops the rows and returns {status,row_count} instead, for lightweight post-build verification. Use singular run_query with count_query_id for a count-first large-read preflight. Component-bound options receive the run_query viewer warning.',
+    inputSchema: {
+      query_ids: external_exports.array(external_exports.string()).min(1).max(10),
+      version_id: external_exports.string(),
+      environment_id: external_exports.string().optional(),
+      include_data: external_exports.boolean().optional().describe("Default true. Set false to verify execution without returning rows: each result keeps status/message/warnings and adds row_count, but omits data. Use for smoke checks that only need the run status.")
+    },
+    async handler(args) {
+      try {
+        if (new Set(args.query_ids).size !== args.query_ids.length) {
+          return fail(new Error("run_queries query_ids must be unique."));
+        }
+        const saved = await client.getQueries(args.version_id);
+        const byId = new Map(saved.map((query) => [query.id, query]));
+        const resolveWarnings = [];
+        const resolveErrors = [];
+        args = {
+          ...args,
+          query_ids: args.query_ids.map((queryId) => {
+            if (byId.has(queryId))
+              return queryId;
+            const resolution = resolveRef(saved, queryId, "Query", `on version "${args.version_id}"`);
+            if (!resolution.ok) {
+              resolveErrors.push(resolution.error);
+              return queryId;
+            }
+            if (resolution.warning)
+              resolveWarnings.push(resolution.warning);
+            return resolution.target.id;
+          })
+        };
+        if (resolveErrors.length)
+          return fail(new Error(resolveErrors.join(" ")));
+        const unsafe = args.query_ids.flatMap((queryId) => {
+          const verdict = autoReadPreflight(byId.get(queryId));
+          return verdict.run ? [] : [`${queryId}: ${verdict.reason}`];
+        });
+        if (unsafe.length) {
+          return fail(new Error(`run_queries refused ${unsafe.length === 1 ? "a query" : "queries"} before execution: ${unsafe.join("; ")}`));
+        }
+        const environmentId = args.environment_id ?? await client.getDevelopmentEnvironmentId();
+        const queries = await Promise.all(args.query_ids.map(async (queryId) => {
+          const query = byId.get(queryId);
+          const warnings = containsComponentBinding(query.options) ? ["Saved query options reference components.*. Browser-free run_queries does not resolve live component state; verify pagination/filter values in the viewer."] : [];
+          try {
+            const bindings = resolveStaticBindings(query.options);
+            const emptied = emptyViewerOnlyParams(query.options, bindings);
+            if (emptied.length)
+              warnings.push(emptyParamsNote(emptied));
+            const liveOnly = bindings.unresolved.filter((b) => !/components\./.test(b));
+            if (liveOnly.length)
+              warnings.push(unresolvedNote(liveOnly));
+            const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId, resolvedOptions: bindings.resolved });
+            const failed = result.status === "failed";
+            const bindingHint = queryResultBindingHint(query, result);
+            const recovery = failed ? failureRecovery(query, result) : void 0;
+            const verification = failed ? failureVerification(query, result) : void 0;
+            const schemaHint = failed ? await schemaNameHint(client, query, result) : void 0;
+            const shaped = args.include_data === false ? (() => {
+              const { data, ...rest } = result;
+              return Array.isArray(data) ? { ...rest, row_count: data.length } : bindingHint ? { ...rest, row_count: bindingHint.row_count } : rest;
+            })() : result;
+            return {
+              query_id: queryId,
+              ...query.name ? { name: query.name } : {},
+              ...shaped,
+              // What let it run, not a claim about its effects: the preflight is a static check (CM-37).
+              execution: { query_id: queryId, datasource_kind: query.kind, preflight: "automatic_read" },
+              ...bindingHint ? { binding_hint: bindingHint } : {},
+              ...warnings.length ? { warnings } : {},
+              ...recovery ? { recovery } : {},
+              ...verification ? { verification } : {},
+              ...schemaHint ? { schema_hint: schemaHint } : {}
+            };
+          } catch (error) {
+            const failure = { status: "failed", message: error instanceof Error ? error.message : String(error) };
+            return {
+              query_id: queryId,
+              ...query.name ? { name: query.name } : {},
+              ...failure,
+              ...warnings.length ? { warnings } : {}
+            };
+          }
+        }));
+        return ok({ queries });
       } catch (err) {
         return fail(err);
       }
@@ -3957,9 +3917,9 @@ var TOOLJET_MCP_VERSION = "0.11.1";
 function snapshot(path) {
   try {
     const stat = statSync(path);
-    const source2 = `${Math.round(stat.mtimeMs * 1e3)}:${stat.size}`;
+    const source = `${Math.round(stat.mtimeMs * 1e3)}:${stat.size}`;
     return {
-      buildId: createHash("sha256").update(source2).digest("hex").slice(0, 12),
+      buildId: createHash("sha256").update(source).digest("hex").slice(0, 12),
       modifiedMs: stat.mtimeMs,
       size: stat.size
     };
@@ -4774,20 +4734,20 @@ async function readOAuthBody(req, maxBytes) {
   }
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
-function createOAuthHttpServer(options2) {
-  const issuer = checkedUrl(options2.issuer, "issuer");
-  const resourceBase = checkedUrl(options2.resourceUrl, "resourceUrl");
-  const apiUrl = checkedUrl(options2.apiUrl, "apiUrl");
-  const appUrl = checkedUrl(options2.appUrl, "appUrl");
-  if (options2.exchangeSecret.length < 32)
+function createOAuthHttpServer(options) {
+  const issuer = checkedUrl(options.issuer, "issuer");
+  const resourceBase = checkedUrl(options.resourceUrl, "resourceUrl");
+  const apiUrl = checkedUrl(options.apiUrl, "apiUrl");
+  const appUrl = checkedUrl(options.appUrl, "appUrl");
+  if (options.exchangeSecret.length < 32)
     throw new Error("OAuth exchange secret must contain at least 32 characters");
   const resource = new URL(resourceBase);
-  const factory = options2.serverFactory ?? buildServer;
-  const fetchImpl = options2.fetchImpl ?? fetch;
-  const maxBodyBytes = options2.maxBodyBytes ?? OAUTH_MAX_BODY_BYTES;
+  const factory = options.serverFactory ?? buildServer;
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const maxBodyBytes = options.maxBodyBytes ?? OAUTH_MAX_BODY_BYTES;
   if (!Number.isSafeInteger(maxBodyBytes) || maxBodyBytes <= 0)
     throw new Error("Invalid OAuth request body limit");
-  const allowedOrigins = new Set((options2.allowedOrigins || []).map((origin) => {
+  const allowedOrigins = new Set((options.allowedOrigins || []).map((origin) => {
     const checked = checkedUrl(origin, "allowedOrigin");
     if (new URL(checked).origin !== checked)
       throw new Error("OAuth allowed origins must not include a path");
@@ -4879,7 +4839,7 @@ function createOAuthHttpServer(options2) {
           method: "POST",
           redirect: "error",
           signal: AbortSignal.timeout(1e4),
-          headers: { authorization: `Bearer ${options2.exchangeSecret}`, "content-type": "application/json" },
+          headers: { authorization: `Bearer ${options.exchangeSecret}`, "content-type": "application/json" },
           body: JSON.stringify({
             grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
             subject_token_type: "urn:ietf:params:oauth:token-type:access_token",

@@ -1,5 +1,5 @@
 import type { AppSummary } from './tooljetClient.js';
-import { assessQueryRead } from './queryExecutionSafety.js';
+import { autoReadPreflight } from './autoReadPreflight.js';
 
 /** Host-controlled allowlist. Private/self-hosted destinations are valid only when explicitly
  * configured; model-supplied viewer_url is never authority to expand browser network access. */
@@ -80,11 +80,8 @@ export function renderAuditRequest(
   const options = query.options as Record<string, unknown> | undefined;
   if (hasBinding(options)) return blocked('A query with dynamic bindings was blocked');
   if (options?.requestConfirmation || options?.request_confirmation) return blocked('A query requiring confirmation was blocked');
-  const read = assessQueryRead(query);
-  if (!read.provenRead || !read.directSafe || read.requiresCountPreflight ||
-      read.requiresRemoteReadConfirmation || read.requiresBillableReadConfirmation) {
-    return blocked('A query that is not a proven bounded read was blocked');
-  }
+  // The same preflight as every other run nobody asked for (autoReadPreflight.ts, CM-36/CM-37).
+  if (!autoReadPreflight(query).run) return blocked('A query that is not a proven bounded read was blocked');
   // Never forward browser-supplied options: the run endpoint can persist them. Static saved
   // options need no binding values, so neither overrides nor resolved SQL can cross this boundary.
   return { allowed: true, postData: JSON.stringify({ resolvedOptions: {} }) };
