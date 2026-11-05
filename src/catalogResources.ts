@@ -17,7 +17,7 @@ import { allComponentSchemas } from './catalog.js';
  * client that cached a version can skip the read.
  */
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readCatalogBytes } from '../lib/catalogFiles.js';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -78,7 +78,7 @@ const payloads = new Map<string, string>();
 // which are read before the first request, so the compiler plans with the packs this workspace has.
 // While the packs add nothing the file lacks it is the data file as it is, so the versions stay the file's.
 const readPart = (file: string): Buffer => {
-  const bytes = readFileSync(resolve(dataDir, file));
+  const bytes = readCatalogBytes(resolve(dataDir, file));
   if (file !== 'component-schemas.json') return bytes;
   const live = JSON.stringify(allComponentSchemas());
   return live === JSON.stringify(JSON.parse(bytes.toString('utf8'))) ? bytes : Buffer.from(live);

@@ -27,7 +27,8 @@ async function main(): Promise<void> {
 
   const address = httpMcp.server.address();
   const boundPort = typeof address === 'object' && address ? address.port : port;
-  console.error(`ToolJet MCP Streamable HTTP server listening at http://${host}:${boundPort}/mcp`);
+  const endpoint = process.env.MCP_OAUTH_ENABLED === 'true' ? '/mcp/<workspace-id>' : '/mcp';
+  console.error(`ToolJet MCP Streamable HTTP server listening at http://${host}:${boundPort}${endpoint}`);
 
   let shuttingDown = false;
   const shutdown = async (): Promise<void> => {

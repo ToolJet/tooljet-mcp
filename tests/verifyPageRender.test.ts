@@ -101,9 +101,20 @@ describe('render audit query execution', () => {
     expect(f.route.fetch).not.toHaveBeenCalled();
   });
 
-  it('passes the audited app queries into the authenticated browser gate', async () => {
+  it('refuses a browser audit before navigation when an old query uses an excluded datasource', async () => {
     const f = browserFixture({ resource: run, method: 'POST' });
-    const session = { ...client, getAppSummary: async () => ({ ...await client.getAppSummary(), ...savedQueries }) };
+    const session = { ...client, listDatasources: async () => [],
+      assertDatasourceAllowed: async () => { throw new Error('Sample data source is unavailable to AI.'); },
+      getAppSummary: async () => ({ ...await client.getAppSummary(), ...savedQueries }) };
+    const result = await verifyPageRenderTool(session as any, () => 'http://viewer.test', f.driver).handler({ app_id: 'app1' });
+    expect(result.isError).toBe(true);
+    expect(JSON.stringify(result)).toContain('Sample data source');
+    expect(f.route.fetch).not.toHaveBeenCalled();
+  });
+
+  it('allows verified app-local datasources even when absent from the global inventory', async () => {
+    const f = browserFixture({ resource: run, method: 'POST' });
+    const session = { ...client, listDatasources: async () => [], assertDatasourceAllowed: async () => undefined, getAppSummary: async () => ({ ...await client.getAppSummary(), ...savedQueries }) };
     const result = await verifyPageRenderTool(session as any, () => 'http://viewer.test', f.driver).handler({ app_id: 'app1' });
     expect(result.isError).toBeFalsy();
     expect(f.route.fetch).toHaveBeenCalled();
@@ -188,6 +199,25 @@ describe('render audit network boundary and honest results', () => {
 // session, scoped to the audit origins it may visit, and opens the version being edited (a released app's public URL
 // would show the old version).
 describe('render audit with the builder\'s session', () => {
+  it('uses a separate short-lived HttpOnly cookie for the app-pinned OAuth viewer', async () => {
+    const f = browserFixture();
+    (f.context as any).addCookies = vi.fn().mockResolvedValue(undefined);
+    const expiresAt = Math.floor(Date.now() / 1000) + 120;
+    const viewerSession = vi.fn().mockResolvedValue({ cookieName: 'tj_oauth_viewer', token: 'synthetic-viewer', origin: 'http://viewer.test', expiresAt });
+    const oauth = { ...client, browserRenderOrigin: 'http://viewer.test', viewerSession };
+    await verifyPageRenderTool(oauth, () => 'http://viewer.test', f.driver).handler({ app_id: 'app1' });
+    expect(viewerSession).toHaveBeenCalledWith('app1');
+    expect((f.context as any).addCookies).toHaveBeenCalledWith([{ name: 'tj_oauth_viewer', value: 'synthetic-viewer',
+      url: 'http://viewer.test', httpOnly: true, secure: false, sameSite: 'Lax', expires: expiresAt }]);
+  });
+  it.each(['https://other.test', 'http://viewer.test'])('rejects a viewer credential with wrong origin or expired lifetime: %s', async (origin) => {
+    const f = browserFixture();
+    (f.context as any).addCookies = vi.fn();
+    const [report] = await auditPages(target, { session: { cookieName: 'tj_oauth_viewer', token: 'synthetic-viewer', origin,
+      expiresAt: Math.floor(Date.now() / 1000) + (origin === 'http://viewer.test' ? -1 : 120) } }, f.driver);
+    expect(report.findings[0].reason).toBe('auth_required');
+    expect((f.context as any).addCookies).not.toHaveBeenCalled();
+  });
   it('adds the session cookie for the viewer origin only', async () => {
     const f = browserFixture();
     (f.context as any).addCookies = vi.fn().mockResolvedValue(undefined);
@@ -218,6 +248,39 @@ describe('render audit with the builder\'s session', () => {
   });
 });
 
+it('releases browser admission after a failed audit so the same grant can retry', async () => {
+  const failing = { ...client, renderAuditGrant: 'synthetic-limits-grant', getAppSummary: vi.fn().mockRejectedValueOnce(new Error('Synthetic unavailable summary')).mockResolvedValue({ pages: [{ handle: 'home' }] }) };
+  const f = browserFixture();
+  const tool = verifyPageRenderTool(failing as any, () => 'http://viewer.test', f.driver);
+  expect((await tool.handler({ app_id: 'app1' }) as any).isError).toBe(true);
+  expect(JSON.stringify(await tool.handler({ app_id: 'app1' }))).not.toContain('busy');
+  expect(f.browser.close).toHaveBeenCalledOnce();
+});
+it('enables the Chromium sandbox and disables non-proxied WebRTC', async () => {
+  const f = browserFixture();
+  const launch = vi.fn().mockResolvedValue(f.browser);
+  await auditPages(target, {}, async () => ({ chromium: { launch } }));
+  expect(launch).toHaveBeenCalledWith(expect.objectContaining({ chromiumSandbox: true, args: ['--force-webrtc-ip-handling-policy=disable_non_proxied_udp'] }));
+});
+it('shares per-grant admission across separate MCP tool instances before loading app data', async () => {
+  vi.stubEnv('MCP_RENDER_AUDIT_MAX_BROWSERS', '2');
+  let entered!: () => void; let release!: () => void;
+  const started = new Promise<void>(resolve => { entered = resolve; });
+  const resume = new Promise<void>(resolve => { release = resolve; });
+  const firstClient = { renderAuditGrant: 'synthetic-shared-grant', getAppSummary: async () => {
+    entered(); await resume; return { pages: [{ handle: 'home' }] };
+  } } as any;
+  const otherClient = { ...client, renderAuditGrant: firstClient.renderAuditGrant, getAppSummary: vi.fn(client.getAppSummary) } as any;
+  const f = browserFixture();
+  const first = verifyPageRenderTool(firstClient, () => 'http://viewer.test', f.driver).handler({ app_id: 'app1' });
+  try {
+    await started;
+    const rejected = await verifyPageRenderTool(otherClient, () => 'http://viewer.test', f.driver).handler({ app_id: 'app1' });
+    expect(JSON.stringify(rejected)).toContain('Render verification is busy');
+    expect(otherClient.getAppSummary).not.toHaveBeenCalled();
+  } finally { release(); await first; }
+  expect(JSON.stringify(await verifyPageRenderTool(otherClient, () => 'http://viewer.test', f.driver).handler({ app_id: 'app1' }))).not.toContain('busy');
+});
 describe('render audit static assets', () => {
   // A dev frontend's unminified bundles are tens of megabytes: fetching and fulfilling them killed Chrome two
   // seconds into every audit of the local viewer (2026-10-12), so the viewer's own static files pass through.

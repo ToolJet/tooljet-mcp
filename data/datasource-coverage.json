@@ -1,6 +1,6 @@
 {
-  "datasource_kinds": 97,
-  "contract_count": 493,
+  "datasource_kinds": 98,
+  "contract_count": 494,
   "kinds_with_named_operations": 73,
   "default_only_kinds": [
     "aftership",
@@ -26,6 +26,7 @@
     "spanner",
     "stripe",
     "ups",
+    "workflows",
     "xero"
   ],
   "remote_spec_operation_kinds": [
@@ -52,7 +53,8 @@
     "runjs",
     "runpy",
     "smtp",
-    "spanner"
+    "spanner",
+    "workflows"
   ],
   "user_supplied_schema_kinds": [
     "grpc",
@@ -61,9 +63,9 @@
   "unexplained_default_only_kinds": [],
   "spec_driven_kinds_without_spec_ref": [],
   "response_contracts": {
-    "total": 493,
+    "total": 494,
     "known": 86,
-    "runtime_dependent": 36,
+    "runtime_dependent": 37,
     "unknown": 371,
     "missing": 0,
     "known_percent": 17.4
@@ -170,6 +172,7 @@
     "ups": 1,
     "weaviate": 8,
     "woocommerce": 20,
+    "workflows": 1,
     "xero": 1,
     "zendesk": 6
   },
@@ -190,6 +193,6 @@
     "xero"
   ],
   "kinds_without_contracts": [],
-  "kinds_with_test_connection_flag": 97,
+  "kinds_with_test_connection_flag": 98,
   "kinds_supporting_test_connection": 69
 }

@@ -33,7 +33,14 @@ export function validateAppTool(client: ToolJetClient): ToolDef {
         const summary = args.version_id
           ? await client.getAppSummary(args.app_id, args.version_id)
           : await client.getAppSummary(args.app_id);
-        return ok(validatePersistedAppSummary(summary, { canvasColor: await literalCanvasColor(client, args.app_id, summary.version_id) }));
+        const validation = validatePersistedAppSummary(summary, { canvasColor: await literalCanvasColor(client, args.app_id, summary.version_id) });
+        for (const query of summary.queries.filter(query => query.kind === 'workflows')) {
+          try { await client.assertWorkflowQueryTarget(query.options as Record<string, unknown>); }
+          catch (error) { validation.errors.push(`Query "${query.name ?? query.id}": workflow target could not be verified. ${String(error)}`); }
+        }
+        validation.checked.push('workflow target identity, workspace and explicit version ownership');
+        validation.ok = validation.errors.length === 0;
+        return ok(validation);
       } catch (err) {
         return fail(err);
       }

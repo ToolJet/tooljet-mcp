@@ -1,7 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import { lint, apply, deleteNode } from '../../src/workflows/planner.js';
 import { definition, specSchema } from '../../src/workflows/graph.js';
-import type { WorkflowClient, WorkflowSnapshot } from '../../src/workflowClient.js';
+import { createWorkflowClient, type WorkflowClient, type WorkflowSnapshot } from '../../src/workflowClient.js';
+import type { Auth } from '../../src/auth.js';
+import type { Config } from '../../src/config.js';
 import type { QuerySummary } from '../../src/tooljetClient.js';
 const spec = () => specSchema.parse({ nodes: [{ ref: 'start', type: 'start' }, { ref: 'q', type: 'javascript', name: 'calculate', code: 'return 42;' }, { ref: 'r', type: 'response', code: 'return {ok:true};' }], edges: [{ ref: 'e1', from: 'start', to: 'q', port: 'default' }, { ref: 'e2', from: 'q', to: 'r', port: 'success' }] });
 function fixture() {
@@ -20,7 +22,48 @@ function fixture() {
   return { client, queries, setScope: () => { scope = crypto.randomUUID(); } };
 }
 async function token(client: WorkflowClient) { const result = await lint(client, 'w', 'v', spec()); expect(result).toHaveProperty('plan_token'); return (result as { plan_token: string }).plan_token; }
+function withIdentity(client: WorkflowClient, config: Config): WorkflowClient {
+  const auth = { getOrganizationId: async () => config.workspaceId } as Auth;
+  return { ...client, planScope: createWorkflowClient(auth, config, client).planScope };
+}
+const oauthIdentity = {
+  apiUrl: 'https://api.synthetic.example', appUrl: 'https://tooljet.synthetic.example',
+  workspaceId: 'org', sessionToken: 'synthetic-delegation-before', isOAuthDelegation: true, oauthGrantId: 'garden-grant',
+};
 describe('workflow planning and recovery', () => {
+  it('applies a linted OAuth plan after the delegation changes for the same approval', async () => {
+    const { client } = fixture();
+    const t = await token(withIdentity(client, oauthIdentity));
+    const renewed = withIdentity(client, { ...oauthIdentity, sessionToken: 'synthetic-delegation-after' });
+    const result = await apply(renewed, t);
+    expect(result).not.toHaveProperty('failed');
+    expect(client.createWorkflowQuery).toHaveBeenCalledOnce();
+    await expect(apply(renewed, t)).rejects.toThrow('consumed');
+  });
+  it.each([
+    { oauthGrantId: 'another-grant' },
+    { workspaceId: 'another-workspace' },
+    { apiUrl: 'https://another-api.synthetic.example' },
+    { isOAuthDelegation: false, sessionToken: undefined, pat: 'garden-grant' },
+  ])('rejects an OAuth plan under another authority: %j', async (change) => {
+    const { client } = fixture();
+    const t = await token(withIdentity(client, oauthIdentity));
+    await expect(apply(withIdentity(client, { ...oauthIdentity, ...change }), t)).rejects.toThrow('scoped');
+    expect(client.createWorkflowQuery).not.toHaveBeenCalled();
+  });
+  it('does not let different PATs share workflow plans in the same workspace', async () => {
+    const { client } = fixture();
+    const identity = { ...oauthIdentity, isOAuthDelegation: false, sessionToken: undefined, pat: 'synthetic-pat-one' };
+    const t = await token(withIdentity(client, identity));
+    await expect(apply(withIdentity(client, { ...identity, pat: 'synthetic-pat-two' }), t)).rejects.toThrow('scoped');
+    expect(client.createWorkflowQuery).not.toHaveBeenCalled();
+    expect(await apply(withIdentity(client, identity), t)).not.toHaveProperty('failed');
+  });
+  it('cannot issue an OAuth plan without a trusted approval identifier', async () => {
+    const { client } = fixture();
+    await expect(token(withIdentity(client, { ...oauthIdentity, oauthGrantId: undefined }))).rejects.toThrow('grant');
+    expect(client.createWorkflowQuery).not.toHaveBeenCalled();
+  });
   it('lint has no writes; apply persists mappings and verifies readback', async () => {
     const { client } = fixture(); const t = await token(client);
     expect(client.createWorkflowQuery).not.toHaveBeenCalled(); expect(client.save).not.toHaveBeenCalled();

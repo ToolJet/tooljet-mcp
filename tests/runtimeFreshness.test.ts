@@ -1,8 +1,9 @@
 import { mkdtempSync, writeFileSync, utimesSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { RuntimeFreshnessMonitor, staleRuntimeResult } from '../src/runtimeFreshness.js';
+import { RuntimeFreshnessMonitor, runtimeArtifactPath, staleRuntimeResult } from '../src/runtimeFreshness.js';
 import { registerTools } from '../src/tools/index.js';
 import type { ToolJetClient } from '../src/tooljetClient.js';
 
@@ -21,6 +22,12 @@ function runtimeFile(): string {
 }
 
 describe('runtime freshness', () => {
+  it('watches the bundle entry so a change to another dependency invalidates the runtime', () => {
+    const entry = join(tmpdir(), 'plugin', 'bundle', 'index.js');
+    expect(runtimeArtifactPath(pathToFileURL(join(tmpdir(), 'plugin', 'bundle', 'chunk-example.js')).href)).toBe(entry);
+    const source = join(tmpdir(), 'plugin', 'dist', 'runtimeFreshness.js');
+    expect(runtimeArtifactPath(pathToFileURL(source).href)).toBe(source);
+  });
   it('detects an emitted runtime changed after process startup', () => {
     const file = runtimeFile();
     const monitor = new RuntimeFreshnessMonitor(file);

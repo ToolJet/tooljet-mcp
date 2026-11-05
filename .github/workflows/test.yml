@@ -15,13 +15,68 @@ jobs:
           cache: npm
       - run: npm ci
       # Uses the pinned source snapshot; no ToolJet checkout or credentials required.
-      - run: npm run generate:skill
+      - run: npm run build:skill-plugin
+      - name: Rebuild the Grok distribution from the shared skill
+        run: npm run build:grok-plugin
+      - name: Build Copilot package from the shared skill
+        run: npm run build:copilot-plugin
+      - name: Build Cursor package from the shared skill
+        run: npm run build:cursor-plugin
+      - name: Build Gemini CLI extension from the shared skill
+        run: npm run build:gemini-extension
+      - name: Build Kiro power from the shared skill
+        run: npm run build:kiro-power
       - name: Verify generated Markdown is current
-        run: git diff --exit-code -- skill skills
+        run: git diff --exit-code -- skill skills plugins
+      - name: Verify generated skill plugin has no untracked files
+        run: test -z "$(git ls-files --others --exclude-standard -- plugins)"
+      - name: Test Grok package boundaries
+        run: node --test tests/grokPackage.test.mjs
+      - name: Upload generated Grok package for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: tooljet-grok-${{ github.sha }}
+          path: plugins/tooljet-grok/
+          include-hidden-files: true
+          if-no-files-found: error
+      - name: Test Copilot package boundaries
+        run: node --test tests/copilotPackage.test.mjs
+      - name: Test Cursor and registry boundaries
+        run: node --test tests/cursorRegistry.test.mjs
+      - name: Upload generated Copilot package for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: tooljet-copilot-${{ github.sha }}
+          path: plugins/tooljet-copilot/
+          if-no-files-found: error
+      - name: Upload generated Cursor package for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: tooljet-cursor-${{ github.sha }}
+          path: plugins/tooljet-cursor/
+          if-no-files-found: error
+      - name: Test Gemini and Kiro package boundaries
+        run: npx vitest run tests/skillPlugin.test.ts --maxWorkers=1
+      - name: Upload generated Gemini CLI extension for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: tooljet-gemini-${{ github.sha }}
+          path: plugins/tooljet-gemini/
+          if-no-files-found: error
+      - name: Upload generated Kiro power for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: tooljet-kiro-${{ github.sha }}
+          path: plugins/tooljet-kiro/
+          if-no-files-found: error
       - run: npm test
       - name: Build shipped bundle and verify MCP initialization
         run: npm run build:plugin
       - name: Verify committed bundle is current
         run: git diff --exit-code -- bundle
+      - name: Verify new bundle modules are committed
+        run: test -z "$(git ls-files --others --exclude-standard -- bundle)"
+      - name: Enforce directory file-size and file-count limits
+        run: npm run check:plugin-package
       - name: Check published package contents
         run: npm pack --dry-run

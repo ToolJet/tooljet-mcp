@@ -14,7 +14,7 @@ export function listWorkspaceAppsTool(client: ToolJetClient): ToolDef {
       openWorldHint: true,
     },
     description:
-      'List apps in the workspace pinned to the current ToolJet PAT. This cannot inspect or switch to another workspace.',
+      'List apps in the workspace pinned to the current ToolJet connection. This cannot inspect or switch to another workspace.',
     inputSchema: {
       page: z.number().int().positive().optional(),
       search_text: z.string().trim().max(100).optional(),
@@ -38,7 +38,7 @@ export function listWorkspaceUsersTool(client: ToolJetClient): ToolDef {
       openWorldHint: true,
     },
     description:
-      'List users in the workspace pinned to the current ToolJet PAT. Supports pagination, search, and status filtering.',
+      'List users in the workspace pinned to the current ToolJet connection. Supports pagination, search, and status filtering. OAuth connections require the workspace_users scope.',
     inputSchema: {
       page: z.number().int().positive().optional(),
       search_text: z.string().trim().max(100).optional(),
@@ -77,18 +77,19 @@ function required(value: string | undefined, label: string): string {
   return value;
 }
 
+const manageWorkspaceUsersInput = z.object({
+  action: z.enum(['invite', 'update', 'archive', 'unarchive']),
+  organization_user_id: z.string().uuid().optional(),
+  email: z.string().email().optional(),
+  first_name: z.string().trim().max(99).optional(),
+  last_name: z.string().trim().max(99).optional(),
+  role: userRole.optional(),
+  group_ids: z.array(z.string().uuid()).max(100).optional(),
+  user_metadata: z.record(z.string(), z.unknown()).optional(),
+  confirm: z.boolean().optional(),
+}).strict();
+
 export function manageWorkspaceUsersTool(client: ToolJetClient): ToolDef {
-  const schema = z.object({
-    action: z.enum(['invite', 'update', 'archive', 'unarchive']),
-    organization_user_id: z.string().uuid().optional(),
-    email: z.string().email().optional(),
-    first_name: z.string().trim().max(99).optional(),
-    last_name: z.string().trim().max(99).optional(),
-    role: userRole.optional(),
-    group_ids: z.array(z.string().uuid()).max(100).optional(),
-    user_metadata: z.record(z.string(), z.unknown()).optional(),
-    confirm: z.boolean().optional(),
-  }).strict();
   return {
     name: 'manage_workspace_users',
     title: 'Manage Workspace Users',
@@ -101,7 +102,7 @@ export function manageWorkspaceUsersTool(client: ToolJetClient): ToolDef {
       openWorldHint: true,
     },
     description:
-      'Manage users only in the workspace pinned to the current ToolJet PAT. Invite, update, archive, and unarchive ' +
+      'Manage users only in the workspace pinned to the current ToolJet connection. OAuth connections require the workspace_users scope. Invite, update, archive, and unarchive ' +
       'require confirm:true. Updates can change role, add existing custom group_ids while preserving all other memberships, ' +
       'and merge supplied user_metadata keys while preserving other keys. Empty group_ids never removes groups. ' +
       'first_name/last_name are only supported for invitations: editing an existing name requires a Super Admin in ToolJet ' +
@@ -109,11 +110,11 @@ export function manageWorkspaceUsersTool(client: ToolJetClient): ToolDef {
       'Use manage_workspace_groups remove_member for explicit membership removal. Updates cannot change email or passwords. ' +
       'Changing a role to end-user also transfers any apps owned by that user to the acting admin under ToolJet\'s existing behavior; disclose this before confirmation. ' +
       'Invite accepts email, optional names/role/group_ids; archive/unarchive accepts only organization_user_id. ' +
-      'Never substitute role or membership changes for a rejected name edit, or bypass the PAT owner\'s ToolJet permissions.',
-    inputSchema: schema.shape,
+      'Never substitute role or membership changes for a rejected name edit, or bypass the connection owner\'s ToolJet permissions.',
+    inputSchema: manageWorkspaceUsersInput.shape,
     async handler(input: ManageWorkspaceUsersArgs) {
       try {
-        const args = schema.parse(input);
+        const args = manageWorkspaceUsersInput.parse(input);
         const allowed = args.action === 'invite' ? ['email', 'first_name', 'last_name', 'role', 'group_ids'] :
           args.action === 'update' ? ['organization_user_id', 'first_name', 'last_name', 'role', 'group_ids', 'user_metadata'] : ['organization_user_id'];
         for (const key of Object.keys(args)) {

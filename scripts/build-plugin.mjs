@@ -2,42 +2,29 @@
 //
 //   node scripts/build-plugin.mjs
 //
-// Produces (all committed, so the plugin installs from git with no build/npm step):
-//   bundle/index.js                     — single-file esbuild bundle of the server (no node_modules)
+// Produces (all committed, so the runtime needs no build or installed dependencies):
+//   bundle/index.js                     — readable ESM entry and dependency chunks of the server (no node_modules)
 //   skills/tooljet-app-builder/          — the generated skill (SKILL.md + references)
 //   data component/datasource schemas + compatibility metadata — read at runtime as ../data
 //
 // The bundle is built from the tsc output (dist/), NOT src/, so the NodeNext `.js` import
 // specifiers resolve to real files (esbuild can't map `./foo.js` → `foo.ts` on its own).
-import { execSync, spawnSync } from 'node:child_process';
-import { mkdirSync, existsSync, readFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
+import { mkdirSync, existsSync, rmSync, writeFileSync } from 'node:fs';
+import { reviewableBundle } from './reviewable-bundle.mjs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const run = (cmd) => execSync(cmd, { cwd: root, stdio: 'inherit' });
 
-// 1. Compile TS → dist/ (real .js files with resolvable imports), then bundle to one file.
+// 1. Compile TS → dist/ (real .js files with resolvable imports), then bundle to readable modules.
 run('npm run build');
 run('node scripts/render-component-catalog.mjs');
+const modules = await reviewableBundle();
+rmSync(resolve(root, 'bundle'), { recursive: true, force: true });
 mkdirSync(resolve(root, 'bundle'), { recursive: true });
-run(
-  'npx --no-install esbuild dist/index.js --bundle --platform=node --format=esm ' +
-    // Isolated builds may share node_modules via a symlink. Keep module labels relative
-    // to this checkout instead of embedding the dependency directory's physical path.
-    '--outfile=bundle/index.js --legal-comments=none --preserve-symlinks --external:playwright-core ' +
-    // An ESM bundle has no `require`, so a CommonJS dependency calling require('process') (the
-    // `yaml` parser does) dies at import time with "Dynamic require ... is not supported" — the
-    // whole server fails to boot, and no unit test sees it because tests import src/, not this.
-    // Defining require via createRequire gives those calls a real one.
-    '--banner:js=\'import{createRequire as __cr}from"module";const require=__cr(import.meta.url);\''
-);
-
-// Reject home-directory and temporary-checkout paths before the artifact can be shipped.
-const bundle = readFileSync(resolve(root, 'bundle/index.js'), 'utf8');
-if (/(?:\/(?:Users|home)\/[^/\s"']+\/|\/(?:private\/)?(?:tmp|var\/folders)\/|[A-Za-z]:[\\/]+Users[\\/])/i.test(bundle)) {
-  throw new Error('build-plugin: generated bundle contains a machine-specific path. Check dependency symlinks and build inputs.');
-}
+for (const file of modules) writeFileSync(resolve(root, 'bundle', file.name), file.code);
 
 // 2. Runtime catalogs and compatibility metadata live at `../data/*.json`. Assert they ship.
 for (const f of ['component-schemas.json', 'component-compatibility.json', 'component-default-definitions.json', 'datasource-schemas.json', 'default-theme.json', 'page-icons.json']) {
@@ -70,28 +57,7 @@ for (const f of [
   }
 }
 
-// The bundle is the artifact that actually ships and runs; unit tests import src/ and never
-// execute it. A dependency that only breaks once bundled — a CommonJS package whose require()
-// cannot be resolved in an ESM bundle, say — therefore passes every test and still fails at
-// startup for every user. Handshake with it here so that can never leave this script.
-{
-  const probe = spawnSync(process.execPath, [resolve(root, 'bundle/index.js')], {
-    input: JSON.stringify({
-      jsonrpc: '2.0', id: 1, method: 'initialize',
-      params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'build-probe', version: '1' } },
-    }) + '\n',
-    encoding: 'utf8',
-    timeout: 30_000,
-    // No TOOLJET_PAT: the server is expected to answer initialize and report the missing
-    // credential in `instructions`. We are testing that it boots, not that it is configured.
-    env: { ...process.env, MCP_TRANSPORT: 'stdio', TOOLJET_PAT: '', TOOLJET_SESSION_TOKEN: '' },
-  });
-  const reply = (probe.stdout ?? '').split('\n').find((line) => line.includes('"result"'));
-  if (!reply || !reply.includes('"serverInfo"')) {
-    throw new Error(
-      `build-plugin: bundle/index.js does not start.\n${(probe.stderr || probe.stdout || '(no output)').slice(0, 1200)}`
-    );
-  }
-}
+// Verify the emitted module graph and catalogs without node_modules or real credentials.
+run('node scripts/test-plugin-package.mjs');
 
 console.log('✓ Plugin built: bundle/index.js + skills/tooljet-app-builder/ (data/ shipped from repo).');

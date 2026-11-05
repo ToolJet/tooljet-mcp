@@ -4,6 +4,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { buildServer } from './server.js';
+import { createOAuthHttpServer, oauthHttpOptionsFromEnv } from './oauthHttp.js';
 import { identityFromHeaders, type RequestIdentity } from './config.js';
 import { bearerValue } from './httpAuth.js';
 import { isBuildToken, mintAuthorized, mintBuildToken, mintSecret, resolveBuildToken, revokeBuildToken } from './buildTokens.js';
@@ -94,6 +95,18 @@ export async function readJsonBody(req: IncomingMessage, maxBodyBytes: number): 
 }
 
 export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcpServer {
+  const oauth = oauthHttpOptionsFromEnv();
+  if (oauth) {
+    const server = createOAuthHttpServer({ ...oauth, serverFactory: options.serverFactory });
+    return {
+      server,
+      sessionCount: () => 0,
+      close: () => new Promise<void>((resolve, reject) => {
+        if (!server.listening) return resolve();
+        server.close((error) => error ? reject(error) : resolve());
+      }),
+    };
+  }
   const serverFactory = options.serverFactory ?? buildServer;
   const maxBodyBytes = options.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES;
   const sessions = new Map<string, Session>();

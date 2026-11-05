@@ -12,7 +12,7 @@ export function useWorkspaceTool(client: ToolJetClient): ToolDef {
     },
     description:
       'Confirm the ACTIVE workspace (organization). This server is scoped to a single workspace by its ' +
-      'personal access token and cannot switch: passing that workspace id returns it, and any other id ' +
+      'connection credentials and cannot switch: passing that workspace id returns it, and any other id ' +
       'errors naming the one in use. Everything is created in that workspace, so there is nothing to ' +
       'select at setup — call list_workspaces if you need its id, name, slug or datasources_url.',
     inputSchema: {

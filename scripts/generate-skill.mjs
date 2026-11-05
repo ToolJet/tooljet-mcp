@@ -164,10 +164,10 @@ name: tooljet-app-builder
 description: "Build ToolJet apps end-to-end via the tooljet-mcp tools — create apps, add datasource queries, and add components bound to them. Use whenever asked to build/scaffold a ToolJet app, dashboard, or internal tool, or to add pages/components/queries. This is a KNOWLEDGE reference (component binding rules, canvas mechanics, query schemas); YOU make all layout and design decisions."
 metadata:
   generated_by: scripts/generate-skill.mjs
-  sources:
-    - Source-verified component binding rules (${componentList.length} components)
-    - ToolJet WidgetManager catalog (${catalog.length} built-in components)
-    - ToolJet appCanvasConstants (grid mechanics)
+  sources: >-
+    Source-verified component binding rules (${componentList.length} components);
+    ToolJet WidgetManager catalog (${catalog.length} built-in components);
+    ToolJet appCanvasConstants (grid mechanics)
 ---
 
 <!-- GENERATED FILE — do not edit by hand. Run \`node scripts/generate-skill.mjs\` to regenerate. -->
@@ -845,6 +845,8 @@ Nested \`Text\` clips to a single line. For multi-line title/description content
 
 \`add_queries\` works on **any ALREADY-CONNECTED datasource** — ToolJet DB, PostgreSQL, MySQL, MongoDB, ServiceNow, RunJS, etc. The query **kind is taken from the datasource automatically** (you don't pass it; call \`list_datasources\` to see each datasource's \`kind\`). Only the \`options\` differ per kind:
 
+**AI datasource restriction:** Never use the shared **Sample data source**, even when explicitly requested or when another connection fails. Do not offer, inspect, test, read, write, or save queries on it. For new app data, use **ToolJet Database**. If a requested external connection fails, offer repair or a clearly labelled ToolJet Database alternative; never substitute the Sample data source. This restriction concerns the connection, not synthetic sample rows in ToolJet Database.
+
 Workspace-connected datasources available to the current user and selected environment are automatically available to both existing and newly created apps. Do **not** look for or invent a per-app datasource linking step: after \`create_app\`, call \`list_datasources(version_id)\` and pass the returned \`id\` to \`add_queries\`. An expected source missing from \`datasources\` but present in \`connectable\` indicates the wrong workspace, insufficient permission, an unconnected source, or missing environment configuration—not a missing app attachment. A source missing from **both** is one ToolJet has no connector for: say that plainly rather than asking them to connect something that cannot be connected, and name a REST API datasource pointed at its HTTP API as the supported route. Use the returned workspace \`datasources_url\` or datasource \`settings_url\` for a user-owned repair handoff; never configure credentials or OAuth yourself.
 
 > **You can only use datasources that are already connected — these tools cannot create or connect a new datasource or third-party integration** (e.g. Strava, Stripe, a new REST API, a Google Sheet). If the user asks to build on a source that isn't in \`list_datasources\`:
@@ -992,6 +994,12 @@ const makeReference = (title, purpose, headings, document = fullSkill) => `# ${t
 
 const workflowBuilder = `## ToolJet workflow authoring
 
+### Link an existing workflow to an app
+
+Discover the workflow with \`list_workflows/get_workflow\`, then fetch \`get_datasource_query_schema({kind:"workflows"})\`. Create or update a query using the destination app's \`version_id\` and its available Workflows datasource ID. Set \`options.workflowId\` to the workflow ID (camelCase, a literal UUID); \`workflowVersionId\` optionally selects a workflow version, otherwise execution uses the released version, with the current backend falling back to the editing version for a never-released workflow. A newly created workflow draft is not automatically released; do not publish it without authorization. Use native \`params:[{key,value}]\` and \`syncExecution:true\` when success/failure should reflect completion. Query event handlers do not establish the workflow mapping. Preserve the complete options on update, inspect the saved query's workflow/version IDs, and run \`validate_app\` before claiming the app is linked. Check each app/workflow pair separately.
+
+### Author a workflow graph
+
 Use the workflow tools for a ToolJet automation graph, not for an app's page-level interaction flow. The supported authoring subset is Start, JavaScript, datasource query, Loop, condition, Agent, and response nodes.
 
 Use this capability-first sequence:
@@ -1028,7 +1036,7 @@ const workflows = makeReference(
 );
 const workflowBuilderReference = `# ToolJet workflow builder
 
-Read this only when creating, editing, validating, or running a ToolJet automation workflow. App Builder page and interaction guidance remains in workflows.md.
+Read this when linking a workflow to an app, or creating, editing, validating, or running a ToolJet automation workflow. App Builder page and interaction guidance remains in workflows.md.
 
 ${workflowBuilder}`;
 const uiLayout = makeReference(
@@ -1104,10 +1112,10 @@ name: tooljet-app-builder
 description: "Build ToolJet apps end-to-end via tooljet-mcp: plan pages, create or reuse data/query/component resources, wire behavior, and verify the result. Use for ToolJet apps, dashboards, internal tools, or changes to existing ToolJet apps."
 metadata:
   generated_by: scripts/generate-skill.mjs
-  sources:
-    - Source-verified component binding rules (${componentList.length} components)
-    - ToolJet WidgetManager catalog (${catalog.length} built-in components)
-    - ToolJet appCanvasConstants (grid mechanics)
+  sources: >-
+    Source-verified component binding rules (${componentList.length} components);
+    ToolJet WidgetManager catalog (${catalog.length} built-in components);
+    ToolJet appCanvasConstants (grid mechanics)
 ---
 
 <!-- GENERATED FILE — do not edit by hand. Run \`node scripts/generate-skill.mjs\` to regenerate every host package. -->
@@ -1115,6 +1123,8 @@ metadata:
 # ToolJet app builder
 
 Build only what ToolJet's real components, connected datasources, and MCP tools support. Never invent a property, action, integration, or successful result. User requirements override the adaptable quality defaults in the references.
+
+Use the selected ToolJet connection's tools; ask if missing or ambiguous. This skill never configures credentials.
 
 ## Existing app or website migrations
 
@@ -1159,12 +1169,14 @@ Detail: \`references/qa.md\`.
 
 ## Datasource repair handoff
 
-If a source is absent or a query fails, use its \`datasources_url\`, \`settings_url\`, or \`recovery.url\`. Open it in the built-in browser when available; otherwise send the link. Never enter credentials, authorize OAuth, test, or save the connection. If \`list_datasources\` marks it \`connectable\`, stop and hand off; if absent, report no connector and suggest REST API. Sample data only on request. See \`references/datasources.md\`.
+**Sample data source is forbidden for AI**, even on request. Use ToolJet Database; synthetic rows are allowed.
+
+For absent/failing sources, use \`datasources_url\`, \`settings_url\`, or \`recovery.url\`. Open it in the built-in browser when available; otherwise send the link. Never enter credentials, authorize OAuth, test, or save connections. For \`connectable\` sources, stop and hand off; if absent, report no connector and suggest REST API. See \`references/datasources.md\`.
 
 ## Load only the references the phase needs
 
 - \`references/workflows.md\` — tool selection, plan/apply, repair, reuse, deletion, silent-failure guardrails, FX visibility.
-- \`references/workflow-builder.md\` — workflow discovery, authoring, validation, and execution safety; only for workflow requests.
+- \`references/workflow-builder.md\` — link workflows to apps, workflow discovery, authoring, validation, and execution safety.
 - \`references/ui-layout.md\` — page design, canvas geometry, nested layouts, charts, and visual defaults.
 - \`references/tables.md\` — Table binding, row actions, sizing, and datasource-neutral server-side pagination.
 - \`references/forms.md\` — generated-vs-standalone forms, validation, uploads, and modal geometry.

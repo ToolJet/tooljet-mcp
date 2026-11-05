@@ -1,3 +1,4 @@
+import { indexComponentReferences } from './componentReferences.js';
 import { polishFlexRows } from './flexPolish.js';
 import { suggestedHtmlHeight, type ReadinessComponent } from './renderReadiness.js';
 import { z } from 'zod';
@@ -57,7 +58,11 @@ export interface PreparedComponentBatch {
 export function prepareComponentBatch(
   inputs: ComponentInput[],
   // flexContainerIds: FlexContainers already on the page, so children added to them by id are not linted as grid items.
-  options: { canvasColor?: string; flexContainerIds?: Iterable<string> } = {}
+  options: {
+    canvasColor?: string;
+    existingComponents?: Array<{ id: string; name?: string }>;
+    flexContainerIds?: Iterable<string>;
+  } = {}
 ): PreparedComponentBatch {
   const requested = inputs.map(({ client_ref, parent_ref, slot_name, ...component }) => ({
     ...component,
@@ -90,7 +95,8 @@ export function prepareComponentBatch(
   // Row alignment polish (flexPolish.ts), the same pass lint_app_spec runs.
   const polished = polishFlexRows(materialized.components);
   const expanded = { ...materialized, components: polished.components, warnings: [...materialized.warnings, ...polished.warnings] };
-  const lint = lintComponents(expanded.components, options);
+  const references = indexComponentReferences(expanded.components, options.existingComponents);
+  const lint = lintComponents(references.components, options);
   const lateListviewChildWarnings = requested.flatMap((component) =>
     component.parent && containsListItemBinding({
       properties: component.properties,
@@ -106,8 +112,8 @@ export function prepareComponentBatch(
       : []
   );
   return {
-    components: expanded.components,
-    errors: lint.errors,
+    components: references.components,
+    errors: [...references.errors, ...lint.errors],
     warnings: [
       ...normalized.flatMap((item) => item.warnings),
       ...expanded.warnings,
