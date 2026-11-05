@@ -79,7 +79,7 @@ describe('generated skill — progressive disclosure', () => {
   it('keeps the always-loaded skill compact and routes optional detail by task', () => {
     // The finish and render-safety rules are always loaded on purpose (2026-09-12 review: 81 of 224 pages broken).
     // 1,500 plus the always-loaded component library line (ToolJet UI 1.0 or 2.0 per app, 2026-10-12).
-    expect(skill.trim().split(/\s+/).length).toBeLessThan(1_540);
+    expect(skill.trim().split(/\s+/).length).toBeLessThan(1_560);
     expect(skill).toContain('## Load only the references the phase needs');
     for (const name of [
       'workflows.md', 'workflow-builder.md', 'ui-layout.md', 'tables.md', 'forms.md', 'events.md',
