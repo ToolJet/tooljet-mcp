@@ -1,4 +1,4 @@
-/* A ToolJet Table on a page built with the shadcn/ui pack draws in the pack's look (blind review, 2026-10-12: a clinic
+/* A ToolJet Table on a page built with the shadcn/ui pack draws in the pack's look (blind review, 2026-10-12: a test build
    agenda table came out in the ToolJet look, statuses as plain text and a wide empty last column, because the build
    left styles.tableLook out). A look the build set, "default" included, is kept, and so is any page without pack
    widgets. */

@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { eb as __commonJS, ec as __require } from "./chunk-addBGscc.js";
+import { eb as __commonJS, ec as __require } from "./chunk-COW2iNTB.js";
 createRequire(import.meta.url);
 var require_unicode = __commonJS({
   "node_modules/json5/lib/unicode.js"(exports, module) {

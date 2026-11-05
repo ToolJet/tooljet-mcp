@@ -1,14 +1,14 @@
 import { createRequire } from "node:module";
-import { b0 as external_exports, b3 as specSchema, b8 as getComponentCatalogTool, b1 as nodeCatalog, b2 as validateGraph } from "./chunk-CN1mtqtB.js";
-import { E as capabilityRequestSchema, F as getWorkflowCapabilities, G as lint, H as apply, I as deleteNode, J as prepareSqlDiscoveryQueries, K as editContractSchema, L as generateEditContract } from "./chunk-CR7sOYLa.js";
-import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, a as FLEX_GROW_DESCRIPTION, b as FLEX_WIDTH_PX_DESCRIPTION, d as FLEX_FILL_WIDTH_DESCRIPTION, t as createClient, u as registerPackDefinitions, w as listWorkspaceGroupsTool, x as manageWorkspaceGroupsTool, y as inspectDatasourceSchemaTool, z as updateComponentsTool, A as defaultPack, B as savedComponentLibrary, v as validateTableBatch, D as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec, C as COMPONENT_FX_GUIDANCE, E as appendedChildOrders, G as reparentAdditions, q as childOrderProperty } from "./chunk-BByd3MTf.js";
-import { j as dbColumnTypeSchema, k as componentInputSchema, o as lintAppSpecTool, q as projectJavascriptRuntime, s as projectAppSettings, t as compactTheme, u as pageSettingProperties, l as literalCanvasColor, w as containsExactValue, b as prepareQueryOptionsForWrite, x as inspectUpdateCompatibility, y as normalizePlanBindingAliases, z as containsNamedBinding, A as normalizePlannedLayouts, B as materializeRequiredDefaultChildren, e as prepareComponentBatch, v as validateEvents, h as expandQueryLifecycles, i as persistedEventSpecs, C as persistedEventIds } from "./chunk-CEMliPeW.js";
-import { ej as registerComponentSchemas, e6 as ok, e5 as fail, e9 as mapKeyRefusal, ek as readCatalogBytes, el as allComponentSchemas } from "./chunk-addBGscc.js";
-import { K as verifyPageRenderTool, W as WebStandardStreamableHTTPServerTransport, N as getRequestListener } from "./chunk-Cs9ekIng.js";
-import { a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, v as validatePersistedAppSummary } from "./chunk-DR3Siq1m.js";
-import { M as McpServer } from "./chunk-B3DGSma_.js";
-import { E as pageIconSchema, c as componentSlotSchema, G as registerLibraryPacks, H as libraryPins, f as componentNameSchema, B as lintComponents, h as resolveParentRef, j as introducedLintFindings, I as lintRenderedGeometryBlocking, J as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, m as lintComponentSlots, k as lintComponentSpec, o as lintUnusableTextGeometry, K as lintNestedContainerWidths, p as lintStandardSingleLineInputHeight, q as lintTextGeometry, s as lintRenderedGeometry, L as FORM_SCHEMA_FIELD_TYPE_SET, M as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-FlRx_OJe.js";
-import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-DGCi5LfA.js";
+import { ej as registerComponentSchemas, e6 as ok, e5 as fail, ek as prepareSqlDiscoveryQueries, e9 as mapKeyRefusal, el as readCatalogBytes, em as allComponentSchemas } from "./chunk-COW2iNTB.js";
+import { b0 as external_exports, b3 as specSchema, b8 as getComponentCatalogTool, b1 as nodeCatalog, b2 as validateGraph } from "./chunk-D-yEFdPv.js";
+import { E as capabilityRequestSchema, F as getWorkflowCapabilities, G as lint, H as apply, I as deleteNode, J as editContractSchema, K as generateEditContract } from "./chunk-BxMc6J_M.js";
+import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, a as FLEX_GROW_DESCRIPTION, b as FLEX_WIDTH_PX_DESCRIPTION, d as FLEX_FILL_WIDTH_DESCRIPTION, o as createClient, q as registerPackDefinitions, t as listWorkspaceGroupsTool, u as manageWorkspaceGroupsTool, w as inspectDatasourceSchemaTool, x as updateComponentsTool, v as validateTableBatch, y as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec, C as COMPONENT_FX_GUIDANCE, z as appendedChildOrders, A as reparentAdditions, m as childOrderProperty } from "./chunk-D3wPtvNy.js";
+import { j as dbColumnTypeSchema, k as componentInputSchema, o as lintAppSpecTool, q as projectJavascriptRuntime, s as projectAppSettings, t as compactTheme, u as pageSettingProperties, l as literalCanvasColor, w as containsExactValue, b as prepareQueryOptionsForWrite, x as inspectUpdateCompatibility, y as normalizePlanBindingAliases, z as containsNamedBinding, A as normalizePlannedLayouts, B as materializeRequiredDefaultChildren, e as prepareComponentBatch, v as validateEvents, h as expandQueryLifecycles, i as persistedEventSpecs, C as persistedEventIds } from "./chunk-DOdbIqZ5.js";
+import { K as verifyPageRenderTool, W as WebStandardStreamableHTTPServerTransport, N as getRequestListener } from "./chunk-B4bJ-UtR.js";
+import { a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, v as validatePersistedAppSummary, l as libraryPinErrors } from "./chunk-CLUEBM1C.js";
+import { M as McpServer } from "./chunk-D1aEcTJo.js";
+import { G as pageIconSchema, f as componentSlotSchema, K as registerLibraryPacks, L as libraryPins, M as defaultPack, N as savedComponentLibrary, O as COMPONENT_PACK_DESCRIPTION, g as componentNameSchema, D as lintComponents, j as resolveParentRef, k as introducedLintFindings, Q as lintRenderedGeometryBlocking, R as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, p as lintComponentSlots, o as lintComponentSpec, q as lintUnusableTextGeometry, T as lintNestedContainerWidths, s as lintStandardSingleLineInputHeight, u as lintTextGeometry, v as lintRenderedGeometry, U as FORM_SCHEMA_FIELD_TYPE_SET, V as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-D8GCORfd.js";
+import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-BOAy1nzn.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { createServer } from "node:http";
@@ -1149,7 +1149,8 @@ function createAppTool(client) {
       name: external_exports.string().min(1),
       theme: external_exports.union([external_exports.string().min(1), derivedThemeSchema]).optional(),
       app_mode: external_exports.enum(["light", "dark"]).optional().describe("Open the app in this mode. Pass 'dark' when the request asks for a dark app, so the theme's dark values paint every surface; never paint dark backgrounds by hand on a light-mode app."),
-      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in, saved on the app (the components panel lists it). Default "ui2", ToolJet UI 2.0; "ui1" (ToolJet UI 1.0, the native widgets) only when the user asks for it.')
+      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in, saved on the app (the components panel lists it). Default "ui2", ToolJet UI 2.0; "ui1" (ToolJet UI 1.0, the native widgets) only when the user asks for it.'),
+      component_pack: external_exports.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION)
     },
     async handler(args) {
       try {
@@ -1163,10 +1164,10 @@ function createAppTool(client) {
         const result = {
           ...created,
           component_library: componentLibrary,
-          ...componentLibrary === "ui2" && defaultPack() ? { component_pack: defaultPack() } : {},
+          ...componentLibrary === "ui2" && (args.component_pack || defaultPack()) ? { component_pack: (args.component_pack || defaultPack()).toLowerCase() } : {},
           theme: { mode: "workspace_default" }
         };
-        const savedLibrary = savedComponentLibrary(componentLibrary);
+        const savedLibrary = savedComponentLibrary(componentLibrary, args.component_pack);
         const saveLibrary = () => Promise.resolve().then(() => client.updateAppSettings({
           appId: created.app_id,
           versionId: created.version_id,
@@ -1338,7 +1339,8 @@ var SETTING_KEYS = [
   "navigation_position",
   "navigation_style",
   "navigation_collapsible",
-  "component_library"
+  "component_library",
+  "component_pack"
 ];
 function persistenceMismatches(args, snapshot2) {
   const global = snapshot2.global_settings;
@@ -1356,8 +1358,8 @@ function persistenceMismatches(args, snapshot2) {
   }
   if (args.app_mode !== void 0)
     expectEqual("app_mode", global.appMode, args.app_mode);
-  if (args.component_library !== void 0)
-    expectEqual("component_library", global.componentLibrary, savedComponentLibrary(args.component_library));
+  if (args.component_library !== void 0 || args.component_pack !== void 0)
+    expectEqual("component_library", global.componentLibrary, savedComponentLibrary(args.component_library ?? "ui2", args.component_pack));
   if (args.theme_id !== void 0) {
     const theme = global.theme;
     expectEqual("theme_id", theme?.id, args.theme_id);
@@ -1407,7 +1409,8 @@ function updateAppSettingsTool(client) {
       navigation_position: external_exports.enum(["side", "top"]).optional(),
       navigation_style: external_exports.enum(["texticon", "text", "icon"]).optional(),
       navigation_collapsible: external_exports.boolean().optional(),
-      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in: "ui1" ToolJet UI 1.0 (native widgets) or "ui2" ToolJet UI 2.0 (Shad* types). Change it only when the user asks to move the app to the other library.')
+      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in: "ui1" ToolJet UI 1.0 (native widgets) or "ui2" ToolJet UI 2.0 (Shad* types). Change it only when the user asks to move the app to the other library.'),
+      component_pack: external_exports.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION)
     },
     async handler(requested) {
       try {
@@ -1442,7 +1445,7 @@ function updateAppSettingsTool(client) {
           ...args.app_mode !== void 0 ? { appMode: args.app_mode } : {},
           ...theme ? { theme } : {},
           // UI 2.0 is saved as the default pack ("pack:<id>"), as create_app does, so the panel shows that pack.
-          ...args.component_library !== void 0 ? { componentLibrary: savedComponentLibrary(args.component_library) } : {}
+          ...args.component_library !== void 0 || args.component_pack !== void 0 ? { componentLibrary: savedComponentLibrary(args.component_library ?? "ui2", args.component_pack) } : {}
         };
         const properties = {
           ...args.hide_header !== void 0 ? { hideHeader: args.hide_header } : {},
@@ -2640,6 +2643,16 @@ function validateAppTool(client) {
           }
         }
         validation.checked.push("workflow target identity, workspace and explicit version ownership");
+        if (summary.version_id && libraryPinErrors(summary, {}).length) {
+          try {
+            const { global_settings: settings } = await client.getAppSettings(args.app_id, summary.version_id);
+            const pins = settings.customComponentLibraries;
+            validation.errors.push(...libraryPinErrors(summary, pins && typeof pins === "object" ? pins : {}));
+            validation.checked.push("library pins");
+          } catch {
+            validation.not_checked.push("library pins (the version settings could not be read)");
+          }
+        }
         validation.ok = validation.errors.length === 0;
         return ok(validation);
       } catch (err) {

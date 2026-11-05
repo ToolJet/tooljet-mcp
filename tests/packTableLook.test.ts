@@ -9,7 +9,7 @@ const look = (cs: ComponentSpec[], name: string) =>
   (cs.find((x) => x.name === name)?.styles?.tableLook as { value?: unknown } | undefined)?.value;
 
 describe('packTableLook', () => {
-  it('gives a Table on a page of pack widgets the shadcn look (a clinic table came out in the ToolJet look, status as plain text)', () => {
+  it('gives a Table on a page of pack widgets the shadcn look (a test build table came out in the ToolJet look, status as plain text)', () => {
     const { components, warnings } = packTableLook([c('hero', 'ShadHero'), c('stats', 'ShadStat'), c('agenda', 'Table')]);
     expect(look(components, 'agenda')).toBe('shadcn');
     expect(warnings.join(' ')).toContain('agenda');

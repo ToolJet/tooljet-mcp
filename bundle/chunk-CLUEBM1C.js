@@ -1,12 +1,12 @@
 import { createRequire } from "node:module";
-import { p as peekAppPlan, c as consumeAppPlan, f as frozenAppRefusal, r as replaceView, a as replaceFingerprint, d as danglingAfterReplace, b as prepareQueryOptionsForWrite, m as matchPlannedPage, l as literalCanvasColor, e as prepareComponentBatch, g as replaceIds, h as expandQueryLifecycles, v as validateEvents, n as navigationReorders, i as persistedEventSpecs } from "./chunk-CEMliPeW.js";
-import { e5 as fail, ef as tableQuotaError, e6 as ok } from "./chunk-addBGscc.js";
-import { c as componentRef, l as completedPartialWrites, r as resolveRef, i as indexComponentReferences, m as isFlexContainerType, o as batchChildOrders, q as childOrderProperty } from "./chunk-BByd3MTf.js";
-import { D as validateAppStructure, e as encodeComponentParent, d as decodeComponentParent } from "./chunk-FlRx_OJe.js";
-import { C as validateQueryOptions, y as issueMessages } from "./chunk-CR7sOYLa.js";
-import { L as LARGE_READ_ROW_THRESHOLD, a as assessQueryRead, b as resolveStaticBindings, c as resolvedReadRefusal, s as sameReadSource, e as extractRowCount, d as emptyViewerOnlyParams, f as emptyParamsNote, u as unresolvedNote } from "./chunk-CQ1QtaUb.js";
-import { g as getDatasourceQuerySchema } from "./chunk-DGCi5LfA.js";
-import { b0 as external_exports } from "./chunk-CN1mtqtB.js";
+import { p as peekAppPlan, c as consumeAppPlan, f as frozenAppRefusal, r as replaceView, a as replaceFingerprint, d as danglingAfterReplace, b as prepareQueryOptionsForWrite, m as matchPlannedPage, l as literalCanvasColor, e as prepareComponentBatch, g as replaceIds, h as expandQueryLifecycles, v as validateEvents, n as navigationReorders, i as persistedEventSpecs } from "./chunk-DOdbIqZ5.js";
+import { e5 as fail, ef as tableQuotaError, e6 as ok } from "./chunk-COW2iNTB.js";
+import { c as componentRef, j as completedPartialWrites, r as resolveRef, i as indexComponentReferences, k as isFlexContainerType, l as batchChildOrders, m as childOrderProperty } from "./chunk-D3wPtvNy.js";
+import { F as validateAppStructure, J as unpinnedLibraries, d as decodeComponentParent, e as encodeComponentParent } from "./chunk-D8GCORfd.js";
+import { C as validateQueryOptions, y as issueMessages } from "./chunk-BxMc6J_M.js";
+import { L as LARGE_READ_ROW_THRESHOLD, a as assessQueryRead, b as resolveStaticBindings, c as resolvedReadRefusal, s as sameReadSource, e as extractRowCount, d as emptyViewerOnlyParams, f as emptyParamsNote, u as unresolvedNote } from "./chunk-B6ef8g-7.js";
+import { g as getDatasourceQuerySchema } from "./chunk-BOAy1nzn.js";
+import { b0 as external_exports } from "./chunk-D-yEFdPv.js";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
@@ -52,6 +52,10 @@ function scratchArtifactWarnings(summary) {
     }
   }
   return warnings;
+}
+function libraryPinErrors(summary, pins) {
+  const components = (summary.pages ?? []).flatMap((page) => page.components ?? []);
+  return unpinnedLibraries(components, pins).map(({ library, components: names }) => `Library "${library}" is not pinned on this version, so ${names.length} of its components show an empty "Slot" placeholder (${names.slice(0, 5).join(", ")}${names.length > 5 ? ", ..." : ""}). Adding one of its components with add_components pins it.`);
 }
 function validatePersistedAppSummary(summary, options = {}) {
   const structural = validateAppStructure(summary, options);
@@ -221,7 +225,8 @@ function diffPageInPlace(stored, planned, definitions = bundledDefinitions(), ne
     if (childOrder)
       properties = { ...properties, childOrder: childOrderProperty(childOrder) };
     const { clientRef: _clientRef, parentRef: _parentRef, ...rest } = spec;
-    const resolved = { ...rest, properties, id, ...parent ? { parent } : {} };
+    const parentType = parent ? planned.find((other) => idOf.get(other) === decodeComponentParent(parent).parentId)?.type : void 0;
+    const resolved = { ...rest, properties, id, ...parent ? { parent } : {}, ...parentType ? { parentType } : {} };
     if (!parent)
       delete resolved.parent;
     const existing = storedByName.get(spec.name);
@@ -232,7 +237,7 @@ function diffPageInPlace(stored, planned, definitions = bundledDefinitions(), ne
     let why;
     if (existing.type !== spec.type)
       why = `type ${existing.type} -> ${spec.type}`;
-    else if ((existing.parent ?? void 0) !== (parent ? encodeComponentParent(parent, spec.slotName) : void 0))
+    else if ((existing.parent ?? void 0) !== (parent ? encodeComponentParent(parent, spec.slotName, parentType) : void 0))
       why = "parent";
     else if (!definitions[spec.type])
       why = "no default definition for this widget";
@@ -1381,6 +1386,7 @@ function withoutExistingEvents(planned, existing) {
 export {
   applyAppPhaseTool as a,
   runQueriesTool as b,
+  libraryPinErrors as l,
   runQueryTool as r,
   validatePersistedAppSummary as v
 };
