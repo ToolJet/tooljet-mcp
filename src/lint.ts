@@ -1400,9 +1400,17 @@ export function lintCanvasSideGutter(components: LintComponent[]): string[] {
   // it is adding, and a page-level "no side gutter" verdict from that has no context behind it.
   // Mirrors lintDesktopCanvasCoverage, which guards the same way.
   if (roots.length < 3) return [];
+  // A container painted its own colour across the canvas is a full-bleed band (an app header, a hero strip), as the
+  // page-margin polish treats it (flexPolish.ts): it is meant to touch the edges. The agent blocks a build on this
+  // warning, so a SkyLine header written edge to edge was moved back into the gutter (2026-11-01).
+  const band = (component: LintComponent) => {
+    if (!['FlexContainer', 'Container'].includes(component.type ?? '')) return false;
+    const colour = String(propVal(component.styles, 'backgroundColor') ?? '').trim().toLowerCase();
+    return !!colour && colour !== 'transparent' && !colour.startsWith('var(--cc-appbackground');
+  };
   const offenders = roots.filter((component) => {
     const rect = component.layouts?.desktop ?? component.layout;
-    if (!rect || typeof rect.left !== 'number' || typeof rect.width !== 'number') return false;
+    if (!rect || typeof rect.left !== 'number' || typeof rect.width !== 'number' || band(component)) return false;
     return rect.left < MIN_LEFT || rect.left + rect.width > MAX_RIGHT;
   });
   if (!offenders.length) return [];
