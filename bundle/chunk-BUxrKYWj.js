@@ -1,21 +1,22 @@
 import { createRequire } from "node:module";
 import { b0 as external_exports, b3 as specSchema, b8 as getComponentCatalogTool, b1 as nodeCatalog, b2 as validateGraph } from "./chunk-Id3EmQoo.js";
 import { x as capabilityRequestSchema, y as getWorkflowCapabilities, z as lint, A as apply, B as deleteNode, C as editContractSchema, D as generateEditContract } from "./chunk-YVYQ0IWs.js";
-import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, g as FLEX_GROW_DESCRIPTION, j as FLEX_WIDTH_PX_DESCRIPTION, k as FLEX_FILL_WIDTH_DESCRIPTION, A as createClient, B as registerPackDefinitions, D as listWorkspaceGroupsTool, E as manageWorkspaceGroupsTool, G as createAppTool, H as inspectDatasourceSchemaTool, I as manageThemeTool, J as savedComponentLibrary, v as validateTableBatch, K as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec, x as COMPONENT_FX_GUIDANCE, b as appendedChildOrders, d as reparentAdditions, c as childOrderProperty } from "./chunk-DuHQ4n9t.js";
-import { c as componentInputSchema, u as updateComponentsTool, q as projectJavascriptRuntime, t as projectAppSettings, w as compactTheme, x as pageSettingProperties, l as literalCanvasColor, y as containsExactValue, e as prepareQueryOptionsForWrite, z as containsNamedBinding, A as normalizePlannedLayouts, B as materializeRequiredDefaultChildren, i as prepareComponentBatch, v as validateEvents, k as expandQueryLifecycles, o as persistedEventSpecs, C as persistedEventIds } from "./chunk-BvP5_Gwz.js";
-import { K as dbColumnTypeSchema, N as codeAppScaffoldTool, O as codeAppReadFilesTool, Q as codeAppWriteFilesTool, U as codeAppBuildTool, V as codeAppInstallTool, W as codeAppAddDependencyTool, X as manageAppPermissionsTool, Y as lintAppSpecTool, Z as noCodeIdentity, _ as WebStandardStreamableHTTPServerTransport, $ as plannedTableSchema, a0 as inspectUpdateCompatibility, a1 as normalizePlanBindingAliases, a2 as browserUserBindings, a3 as isCodeModeApp, a4 as browserUserMessage } from "./chunk-BIT8wM4Y.js";
+import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, g as FLEX_GROW_DESCRIPTION, j as FLEX_WIDTH_PX_DESCRIPTION, k as FLEX_FILL_WIDTH_DESCRIPTION, A as createClient, B as registerPackDefinitions, D as listWorkspaceGroupsTool, E as manageWorkspaceGroupsTool, G as createAppTool, H as inspectDatasourceSchemaTool, I as manageThemeTool, J as savedComponentLibrary, v as validateTableBatch, K as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec, x as COMPONENT_FX_GUIDANCE, b as appendedChildOrders, d as reparentAdditions, c as childOrderProperty } from "./chunk-CJ-RSCkU.js";
+import { c as componentInputSchema, u as updateComponentsTool, q as projectJavascriptRuntime, t as projectAppSettings, w as compactTheme, x as pageSettingProperties, l as literalCanvasColor, y as containsExactValue, e as prepareQueryOptionsForWrite, z as containsNamedBinding, A as normalizePlannedLayouts, B as materializeRequiredDefaultChildren, i as prepareComponentBatch, v as validateEvents, k as expandQueryLifecycles, o as persistedEventSpecs, C as persistedEventIds } from "./chunk-PrHHo-JD.js";
+import { K as dbColumnTypeSchema, N as codeAppScaffoldTool, O as codeAppReadFilesTool, Q as codeAppWriteFilesTool, U as codeAppBuildTool, V as codeAppInstallTool, W as codeAppAddDependencyTool, X as manageAppPermissionsTool, Y as lintAppSpecTool, Z as noCodeIdentity, _ as WebStandardStreamableHTTPServerTransport, $ as plannedTableSchema, a0 as inspectUpdateCompatibility, a1 as normalizePlanBindingAliases, a2 as browserUserBindings, a3 as isCodeModeApp, a4 as browserUserMessage } from "./chunk-BN50Dsl1.js";
 import { ej as registerComponentSchemas, e6 as ok, e5 as fail, e9 as mapKeyRefusal, ek as readCatalogBytes, el as allComponentSchemas } from "./chunk-CNzl5iHC.js";
-import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, g as getRequestListener, c as validatePersistedAppSummary } from "./chunk-Bd0P48bZ.js";
-import { M as McpServer } from "./chunk-BCcX5xd3.js";
-import { F as pageIconSchema, f as componentSlotSchema, H as registerLibraryPacks, g as componentNameSchema, C as lintComponents, j as resolveParentRef, k as introducedLintFindings, I as lintRenderedGeometryBlocking, J as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, o as lintComponentSlots, m as lintComponentSpec, p as lintUnusableTextGeometry, K as lintNestedContainerWidths, q as lintStandardSingleLineInputHeight, s as lintTextGeometry, u as lintRenderedGeometry, L as FORM_SCHEMA_FIELD_TYPE_SET, M as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-BmzK1deX.js";
+import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, g as getRequestListener, c as validatePersistedAppSummary } from "./chunk-BnZ_jFeA.js";
+import { M as McpServer } from "./chunk-BMzOi3eR.js";
+import { F as pageIconSchema, f as componentSlotSchema, H as registerLibraryPacks, g as componentNameSchema, C as lintComponents, j as resolveParentRef, k as introducedLintFindings, I as lintRenderedGeometryBlocking, J as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, o as lintComponentSlots, m as lintComponentSpec, p as lintUnusableTextGeometry, K as lintNestedContainerWidths, q as lintStandardSingleLineInputHeight, s as lintTextGeometry, u as lintRenderedGeometry, L as FORM_SCHEMA_FIELD_TYPE_SET, M as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-5_C98tAF.js";
 import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-hq1_aYNY.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { createServer } from "node:http";
+import { statSync, readFileSync, accessSync, constants } from "node:fs";
+import { homedir } from "node:os";
+import { resolve, dirname, basename, join } from "node:path";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { mkdir, appendFile } from "node:fs/promises";
-import { resolve, dirname, basename, join } from "node:path";
-import { statSync, accessSync, constants } from "node:fs";
 import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
 function createExchangeLimiter(limit = 300, trustedProxyHops = 0) {
@@ -346,6 +347,33 @@ var CUSTOMER_ID_HEADER = "x-tooljet-customer-id";
 var ALLOWED_API_ORIGINS_VAR = "MCP_ALLOWED_API_ORIGINS";
 var GATEWAY_URL_VAR = "MCP_GATEWAY_URL";
 var GATEWAY_TOKEN_VAR = "MCP_GATEWAY_TOKEN";
+function storedCliLogin(explicitApiUrl) {
+  const file = env("TOOLJET_CREDENTIALS_FILE") ?? join(homedir(), ".tooljet", "credentials.json");
+  let store;
+  try {
+    store = JSON.parse(readFileSync(file, "utf8"));
+  } catch {
+    return void 0;
+  }
+  const entry = store?.default ? store.workspaces?.[store.default] : void 0;
+  if (!entry?.url || !entry.apiToken)
+    return void 0;
+  let origin;
+  try {
+    origin = new URL(entry.url).origin;
+  } catch {
+    return void 0;
+  }
+  if (explicitApiUrl) {
+    try {
+      if (new URL(explicitApiUrl).origin !== origin)
+        return void 0;
+    } catch {
+      return void 0;
+    }
+  }
+  return { apiUrl: origin, pat: entry.apiToken };
+}
 function env(name) {
   const value = process.env[name]?.trim();
   return value ? value : void 0;
@@ -518,11 +546,15 @@ function loadConfig(identity) {
   }
   const apiUrl = staticApiUrl;
   const appUrl = explicitAppUrl ?? explicitApiUrl ?? "http://localhost:8082";
-  const pat = env("TOOLJET_PAT");
   const sessionToken = env("TOOLJET_SESSION_TOKEN");
+  const stored = !env("TOOLJET_PAT") && !sessionToken ? storedCliLogin(explicitApiUrl) : void 0;
+  const pat = env("TOOLJET_PAT") ?? stored?.pat;
   const workspaceId = env("TOOLJET_WORKSPACE_ID");
+  if (stored) {
+    return { apiUrl: stored.apiUrl, appUrl: explicitAppUrl ?? stored.apiUrl, pat: stored.pat };
+  }
   if (!pat && !sessionToken) {
-    throw new Error(`TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal access token in ToolJet under Settings \u2192 Access tokens, in the workspace you want this server to act on, and set TOOLJET_PAT. A shared HTTP server instead receives the acting user per request via the ${SESSION_TOKEN_HEADER} header.`);
+    throw new Error(`TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal access token in ToolJet under Settings \u2192 Access tokens, in the workspace you want this server to act on, and set TOOLJET_PAT. A shared HTTP server instead receives the acting user per request via the ${SESSION_TOKEN_HEADER} header. Or sign in once with \`tooljet auth login\`.`);
   }
   if (sessionToken && !workspaceId) {
     throw new Error("TOOLJET_WORKSPACE_ID is required alongside TOOLJET_SESSION_TOKEN.");

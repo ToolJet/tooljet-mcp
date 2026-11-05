@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import { r as require_lib, l as lintSelectedRowProjections, a as lintBindingNames, b as bindingSpans } from "./chunk-YVYQ0IWs.js";
-import { s as surfaceAroundResolver, l as lintOversizedWidths, a as lintHtmlContentHeight, b as lintHtmlRootSurface, c as lintUnguardedComponentRefs, d as lintEmbeddedBindingSyntax, e as lintChartDataShape, f as lintUnguardedSelectionText, g as lintTextFormat, h as lintTableColumnsShape, B as BARE_QUERY_DATA_BINDING, i as lintUntriggeredDataQueries, j as lintAutomaticWrites, p as parseHtml, k as stripHtmlBindings } from "./chunk-DzndRVyJ.js";
 import { ed as __toESM, e8 as getComponentSchema, e7 as getCatalog, ea as getLegacyComponentReplacement } from "./chunk-CNzl5iHC.js";
+import { s as surfaceAroundResolver, l as lintOversizedWidths, a as lintHtmlContentHeight, b as lintHtmlRootSurface, c as lintUnguardedComponentRefs, d as lintEmbeddedBindingSyntax, e as lintChartDataShape, f as lintUnguardedSelectionText, g as lintTextFormat, h as lintTableColumnsShape, B as BARE_QUERY_DATA_BINDING, i as lintUntriggeredDataQueries, j as lintAutomaticWrites, p as parseHtml, k as stripHtmlBindings } from "./chunk-DzndRVyJ.js";
 import { p as parseExpression, a as parse } from "./chunk-BES_Brj6.js";
 import { b0 as external_exports } from "./chunk-Id3EmQoo.js";
 import { readFileSync } from "node:fs";

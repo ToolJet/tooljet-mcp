@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { ef as tableQuotaError, eg as TableQuotaError, e6 as ok, e5 as fail, e8 as getComponentSchema } from "./chunk-CNzl5iHC.js";
-import { d as decodeComponentParent, e as encodeComponentParent, a as downgradeFlexForLibrary, b as assertPageIcon, i as isMisplacedStyleKey, t as toLibraryComponent, l as libraryTypeOf, c as libraryPins, P as PROPERTY_KEY_ALIASES, r as retiredUi2Name, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey } from "./chunk-BmzK1deX.js";
+import { d as decodeComponentParent, e as encodeComponentParent, a as downgradeFlexForLibrary, b as assertPageIcon, i as isMisplacedStyleKey, t as toLibraryComponent, l as libraryTypeOf, c as libraryPins, P as PROPERTY_KEY_ALIASES, r as retiredUi2Name, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey } from "./chunk-5_C98tAF.js";
 import { b0 as external_exports, b7 as definition } from "./chunk-Id3EmQoo.js";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";

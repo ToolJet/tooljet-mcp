@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 import { createRequire } from "node:module";
-import { b as buildServer, a as buildUnconfiguredServer, p as packsReady, c as allowedApiOrigins, A as ALLOWED_API_ORIGINS_VAR, o as oauthHttpOptionsFromEnv, d as createOAuthHttpServer, i as identityFromHeaders, S as SESSION_TOKEN_HEADER, B as BASE_URL_HEADER, P as PAT_HEADER, e as StreamableHTTPServerTransport } from "./chunk-BIDKCBVh.js";
+import { b as buildServer, a as buildUnconfiguredServer, p as packsReady, c as allowedApiOrigins, A as ALLOWED_API_ORIGINS_VAR, o as oauthHttpOptionsFromEnv, d as createOAuthHttpServer, i as identityFromHeaders, S as SESSION_TOKEN_HEADER, B as BASE_URL_HEADER, P as PAT_HEADER, e as StreamableHTTPServerTransport } from "./chunk-BUxrKYWj.js";
 import "./chunk-Id3EmQoo.js";
 import "./chunk-YVYQ0IWs.js";
-import "./chunk-DuHQ4n9t.js";
-import "./chunk-BvP5_Gwz.js";
-import { a5 as JSONRPCMessageSchema } from "./chunk-BIT8wM4Y.js";
+import "./chunk-CJ-RSCkU.js";
+import "./chunk-PrHHo-JD.js";
+import { a5 as JSONRPCMessageSchema } from "./chunk-BN50Dsl1.js";
 import "./chunk-CNzl5iHC.js";
-import "./chunk-Bd0P48bZ.js";
-import "./chunk-BCcX5xd3.js";
+import "./chunk-BnZ_jFeA.js";
+import "./chunk-BMzOi3eR.js";
 import "./chunk-reJTxM_m.js";
-import "./chunk-DymzUCWQ.js";
-import "./chunk-BmzK1deX.js";
+import "./chunk-CXxJVKFQ.js";
+import "./chunk-5_C98tAF.js";
 import "./chunk-DzndRVyJ.js";
 import "./chunk-BES_Brj6.js";
 import "./chunk-hq1_aYNY.js";
@@ -28,13 +28,13 @@ import { fileURLToPath } from "node:url";
 import process2 from "node:process";
 import { timingSafeEqual, randomBytes } from "node:crypto";
 import "node:net";
+import "node:os";
+import "node:path";
 import "node:async_hooks";
 import "node:fs/promises";
-import "node:path";
 import "node:vm";
 import "node:util";
 import "node:child_process";
-import "node:os";
 import "node:http2";
 import "node:stream";
 import "node:dns/promises";
@@ -228,8 +228,12 @@ async function readJsonBody(req, maxBodyBytes) {
     throw new Error("Request body is required");
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
+function isLoopbackHost(host) {
+  const h = host.trim().toLowerCase().replace(/^\[|\]$/g, "");
+  return h === "localhost" || h === "::1" || /^127(\.\d{1,3}){3}$/.test(h) || /^::ffff:127(\.\d{1,3}){3}$/.test(h);
+}
 var MAX_REQUEST_BODY_BYTES = 64 * 1024 * 1024;
-function createGatewayHttpServer() {
+function createGatewayHttpServer({ bindHost } = {}) {
   const oauth = oauthHttpOptionsFromEnv();
   if (oauth)
     return { server: createOAuthHttpServer(oauth), gatewayMode: false };
@@ -237,6 +241,7 @@ function createGatewayHttpServer() {
   const gatewayMode = Boolean(sharedToken);
   const requireUserSession = gatewayMode && (/^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_USER_SESSION ?? "") || !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN));
   const requireRequestUrl = gatewayMode && /^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_REQUEST_URL ?? "");
+  const requireRequestCredential = !gatewayMode && bindHost !== void 0 && !isLoopbackHost(bindHost);
   const handleBuildTokenRequest = async (req, res) => {
     const secret = mintSecret();
     const json = (status, body) => {
@@ -329,8 +334,8 @@ function createGatewayHttpServer() {
       res.writeHead(400, { "Content-Type": "text/plain" }).end(`This server acts only on the backend named in the request: send the ${BASE_URL_HEADER} header. Refusing rather than falling back to a fixed TOOLJET_URL.`);
       return;
     }
-    if (!gatewayMode && !hasUserCredential && !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN)) {
-      res.writeHead(401, { "Content-Type": "text/plain" }).end(`No ToolJet credential. Send your personal access token as \`Authorization: Bearer <token>\` or in the ${PAT_HEADER} header, or set TOOLJET_PAT on this server. Create a token in ToolJet under Settings \u2192 Access tokens.`);
+    if (!gatewayMode && !hasUserCredential && (requireRequestCredential || !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN))) {
+      res.writeHead(401, { "Content-Type": "text/plain" }).end(`No ToolJet credential. Send your personal access token as \`Authorization: Bearer <token>\` or in the ${PAT_HEADER} header${requireRequestCredential ? "" : ", or set TOOLJET_PAT on this server"}. Create a token in ToolJet under Settings \u2192 Access tokens.`);
       return;
     }
     if (req.method !== "POST") {
@@ -378,7 +383,7 @@ async function serveHttp() {
     const reason = err instanceof Error ? err.message : String(err);
     throw new Error(`tooljet-mcp: invalid ${ALLOWED_API_ORIGINS_VAR}: ${reason}`);
   }
-  const { server: httpServer, gatewayMode } = createGatewayHttpServer();
+  const { server: httpServer, gatewayMode } = createGatewayHttpServer({ bindHost: process.env.MCP_HTTP_HOST });
   const host = process.env.MCP_HTTP_HOST ?? (gatewayMode ? "0.0.0.0" : "127.0.0.1");
   await new Promise((resolve, reject) => {
     httpServer.once("error", reject);
