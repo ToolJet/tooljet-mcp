@@ -96,3 +96,26 @@ export function runjsQueryReferences(code: string): string[] {
 export function runjsComponentReferences(code: string): string[] {
   return [...new Set(namespaceReads(code, 'components').map(read => read.name))];
 }
+
+/** Whether a RunJS body can never produce data: no `return` with a value at the top level (inside blocks, ifs, loops,
+ *  try and switch, not inside nested functions). ToolJet uses the body's top-level return as the query's data, so a
+ *  body written as an expression, `(() => { ...; return totals; })()`, computes everything and returns nothing: an IT
+ *  asset overview read every count from it and showed dashes (staging, 2026-10-29). False when the body does not
+ *  parse, so a syntax error is left to its own check. */
+export function runjsReturnsNothing(code: string): boolean {
+  let root: unknown;
+  try {
+    root = parse(code, { sourceType: 'script', allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true });
+  } catch {
+    return false;
+  }
+  const returns = (node: unknown): boolean => {
+    if (Array.isArray(node)) return node.some(returns);
+    if (!isNode(node)) return false;
+    if (node.type === 'ReturnStatement') return node.argument != null;
+    if (/Function|Class/.test(node.type)) return false;
+    return Object.entries(node).some(([key, child]) =>
+      !['leadingComments', 'trailingComments', 'innerComments', 'loc'].includes(key) && typeof child === 'object' && returns(child));
+  };
+  return !returns((root as { program?: unknown }).program);
+}
