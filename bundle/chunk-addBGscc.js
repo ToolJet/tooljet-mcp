@@ -3,6 +3,60 @@ import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
+async function mapKeyRefusal(client, componentTypes, library) {
+  if (![...componentTypes].includes("Map") || typeof client?.hasGoogleMapsKey !== "function")
+    return void 0;
+  let hasKey;
+  try {
+    hasKey = await client.hasGoogleMapsKey();
+  } catch {
+    return void 0;
+  }
+  if (hasKey !== false)
+    return void 0;
+  const noKey = "This ToolJet instance has no Google Maps API key (GOOGLE_MAPS_API_KEY), so a Map component shows a Google error instead of a map.";
+  const ui2Map = "Use ShadMap, the ToolJet UI 2.0 Map: OpenStreetMap tiles, no key, one marker per data row read through latField, lngField and idField, with onMarkerClick and selectedMarker.";
+  if (library === "ui2")
+    return `${noKey} ${ui2Map}`;
+  return `${noKey} In a ToolJet UI 2.0 app: ${ui2Map} In a UI 1.0 app, show the locations in a Table (a link column to https://www.google.com/maps?q=<lat>,<lng> opens each one), and tell the user in your reply that an in-app map needs the Google Maps API key on the instance.`;
+}
+createRequire(import.meta.url);
+var TableQuotaError = class extends Error {
+  code = "TJDB_TABLE_LIMIT_REACHED";
+  status = 451;
+  retryable = false;
+  constructor() {
+    super("The workspace has reached its ToolJet Database table limit. Stop creating tables. Ask the user to reuse existing tables, free table capacity, or increase the workspace allowance before continuing. Keep resources already created; do not delete tables automatically.");
+    this.name = "TableQuotaError";
+  }
+};
+function tableQuotaError(error) {
+  const seen = /* @__PURE__ */ new Set();
+  while (error instanceof Error && !seen.has(error)) {
+    if (error instanceof TableQuotaError)
+      return error;
+    seen.add(error);
+    error = error.cause;
+  }
+  return void 0;
+}
+createRequire(import.meta.url);
+function ok(value) {
+  return { content: [{ type: "text", text: JSON.stringify(value) }] };
+}
+function fail(err) {
+  const message = err instanceof Error ? err.message : String(err);
+  const quota = tableQuotaError(err);
+  const text = quota ? JSON.stringify({ error: {
+    code: quota.code,
+    status: quota.status,
+    retryable: quota.retryable,
+    message: quota.message,
+    details: message
+  } }) : `Error: ${message}`;
+  return { content: [{ type: "text", text }], isError: true };
+}
+createRequire(import.meta.url);
 var FORMAT = "tooljet-catalog-parts-v1";
 var json = (value) => JSON.stringify(value, null, 2) + "\n";
 function readCatalog(file) {
@@ -40,6 +94,16 @@ function loadLegacyReplacements() {
     legacyReplacements = compatibility.legacyReplacements ?? {};
   }
   return legacyReplacements;
+}
+function allComponentSchemas() {
+  return load();
+}
+function registerComponentSchemas(extra) {
+  const all = load();
+  for (const key of Object.keys(all))
+    if (/^Lib_[a-z0-9]+_/.test(key) && !(key in extra))
+      delete all[key];
+  Object.assign(all, extra);
 }
 function getCatalog() {
   const legacy = loadLegacyReplacements();
@@ -6195,16 +6259,23 @@ export {
   $ZodCheckBigIntFormat as e2,
   $ZodAsyncError as e3,
   allProcessors as e4,
-  getComponentSchema as e5,
-  __commonJS as e6,
-  __require as e7,
-  __toESM as e8,
-  readCatalog as e9,
-  getCatalog as ea,
-  getLegacyComponentReplacement as eb,
-  normalizeParams as ec,
-  defineLazy as ed,
-  readCatalogBytes as ee,
+  fail as e5,
+  ok as e6,
+  getCatalog as e7,
+  getComponentSchema as e8,
+  mapKeyRefusal as e9,
+  getLegacyComponentReplacement as ea,
+  __commonJS as eb,
+  __require as ec,
+  __toESM as ed,
+  readCatalog as ee,
+  tableQuotaError as ef,
+  TableQuotaError as eg,
+  normalizeParams as eh,
+  defineLazy as ei,
+  registerComponentSchemas as ej,
+  readCatalogBytes as ek,
+  allComponentSchemas as el,
   _startsWith as f,
   _slugify as g,
   _size as h,
