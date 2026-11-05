@@ -108,7 +108,7 @@ export async function reviewableBundle(entry = './dist/index.js') {
     result = await build({
       absWorkingDir: root, entryPoints, bundle: true, platform: 'node', target: 'node20',
       format: 'esm', outdir: 'bundle', chunkNames: 'chunk-[hash]', splitting: true,
-      write: false, metafile: true, preserveSymlinks: true, external: ['playwright-core'],
+      write: false, metafile: true, preserveSymlinks: true, external: ['playwright-core', 'axe-core'],
       legalComments: 'none', plugins: [plugin],
       define: { 'process.env.BABEL_8_BREAKING': 'false', 'process.env.IS_PUBLISH': 'true' },
       banner: { js: 'import { createRequire as __bundleRequire } from "node:module"; const require = __bundleRequire(import.meta.url);' },
