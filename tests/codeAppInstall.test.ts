@@ -47,7 +47,7 @@ describe('code_app_install', () => {
 
   it('has no publish option and never runs tooljet app publish', async () => {
     const tool = codeAppInstallTool(codeContext());
-    expect(Object.keys(tool.inputSchema)).toEqual(['app_id', 'name']);
+    expect(Object.keys(tool.inputSchema)).toEqual(['app_id', 'name', 'verify', 'widths', 'routes']);
     await tool.handler({ name: 'tasks', publish: true } as any);
     expect(calls()).toEqual([['app', 'dev', '--once', '--source', 'platform']]);
     expect(tool.description).not.toMatch(/publish: true|published code version/);

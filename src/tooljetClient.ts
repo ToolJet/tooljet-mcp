@@ -715,6 +715,8 @@ export interface ToolJetClient {
   assertDatasourceAllowed(dataSourceId: string, versionId?: string, environmentId?: string): Promise<void>;
   invokeDatasourceMethod(params: InvokeDatasourceMethodParams): Promise<RunQueryResult>;
   getDatasourceConnectionDetails(dataSourceId: string, environmentId?: string): Promise<DatasourceConnectionDetails>;
+  /** A workspace datasource's kind without a version: the identity already listed, else its own record. */
+  datasourceKind?(dataSourceId: string): Promise<string | undefined>;
   getPluginSpec(pluginKind: string, specName: string): Promise<string>;
   /** Which ToolJet server and workspace this client reads plugin specs from, for a cache shared across clients.
    *  Undefined when it cannot be established; such a client's specs are not cached. */
@@ -3250,6 +3252,11 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     };
   }
 
+  async function datasourceKind(dataSourceId: string): Promise<string | undefined> {
+    const known = datasourceIdentities.get(`${await auth.getOrganizationId()}:${dataSourceId}`);
+    return known?.kind ?? (await getDatasourceConnectionDetails(dataSourceId)).kind;
+  }
+
   /** Run ToolJet's own connection test for a saved datasource — the same call the datasource
    *  settings page makes. Options are the stored ones; a caller never supplies its own, so no
    *  credential passes through this process. */
@@ -3424,6 +3431,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     assertDatasourceAllowed,
     invokeDatasourceMethod,
     getDatasourceConnectionDetails,
+    datasourceKind,
     getPluginSpec,
     specCacheScope,
     testDatasourceConnection,

@@ -22,6 +22,7 @@ import { addTableColumnTool } from './addTableColumn.js';
 import { dropTableColumnTool } from './dropTableColumn.js';
 import { dropTableTool } from './dropTable.js';
 import { codeAppScaffoldTool, noCodeIdentity, type CodeContext, codeAppReadFilesTool, codeAppWriteFilesTool, codeAppBuildTool, codeAppInstallTool, codeAppAddDependencyTool } from './codeApp.js';
+import { codeAppDataTool } from './codeAppData.js';
 import { getTableSchemaTool } from './getTableSchema.js';
 import { insertRowsTool } from './insertRows.js';
 import { insertRowsBatchTool } from './insertRowsBatch.js';
@@ -121,6 +122,9 @@ export function registerTools(
   runtime: RuntimeFreshnessMonitor = runtimeFreshness,
   code: CodeContext = noCodeIdentity(client)
 ): void {
+  const viewerBase = () => process.env.TOOLJET_APP_URL || process.env.TOOLJET_DEPLOYMENT_URL || 'http://localhost:8082';
+  const verifyPageRender = verifyPageRenderTool(client, viewerBase);
+  const canRender = renderAuditAvailable();
   const tools: ToolDef[] = [
     getWorkflowNodeCatalogTool(client),
     getWorkflowCapabilitiesTool(client),
@@ -138,8 +142,10 @@ export function registerTools(
     codeAppReadFilesTool(code),
     codeAppWriteFilesTool(code),
     codeAppBuildTool(code),
-    codeAppInstallTool(code),
+    // verify: true renders each route through the same check verify_page_render runs.
+    codeAppInstallTool(code, canRender ? { render: verifyPageRender.handler, renderConcurrency: client.renderAuditGrant ? 1 : 2 } : {}),
     codeAppAddDependencyTool(code),
+    codeAppDataTool(client),
     listWorkspacesTool(client),
     useWorkspaceTool(client),
     manageAppPermissionsTool(client),
@@ -177,7 +183,7 @@ export function registerTools(
     getAppSummaryTool(client),
     getComponentTool(client),
     validateAppTool(client),
-    verifyPageRenderTool(client, () => process.env.TOOLJET_APP_URL || process.env.TOOLJET_DEPLOYMENT_URL || 'http://localhost:8082'),
+    verifyPageRender,
     lintAppSpecTool(client),
     applyAppPhaseTool(client),
     addPageTool(client),
@@ -208,7 +214,6 @@ export function registerTools(
     ? tools
     : tools.filter((tool) => !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name));
 
-  const canRender = renderAuditAvailable();
   for (const tool of exposedTools) {
     if (tool.name === 'verify_page_render' && !canRender) continue;
     // The callback takes the name and handler, not `tool`: holding the def would keep its own schema copy alive.

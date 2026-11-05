@@ -51,8 +51,9 @@ describe('Code mode projects are found by app id', () => {
   it('says where to look instead of guessing', async () => {
     const missing = text(await codeAppBuildTool(codeContext()).handler({ app_id: '33333333-3333-4333-8333-333333333333' } as any));
     expect(missing).toMatch(/call code_app_scaffold with this app_id/);
-    const wrong = text(await codeAppBuildTool(codeContext()).handler({ app_id: APP, name: 'expenses' } as any));
-    expect(wrong).toMatch(/project is "todo-tasks"/);
+    // The app id names the project: a different name beside it is ignored, not a refusal to send the call again.
+    const named = text(await codeAppBuildTool(codeContext()).handler({ app_id: APP, name: 'expenses' } as any));
+    expect(named).not.toMatch(/project is "todo-tasks"/);
   });
 
   it('scaffolding an app that has a project returns that project, never a second one', async () => {

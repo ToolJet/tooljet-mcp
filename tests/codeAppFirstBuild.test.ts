@@ -60,11 +60,14 @@ describe('a first build', () => {
     expect(await write({ files: [{ path: ENTRY, content: other }] })).toMatch(/"written"/);
   });
 
-  it('still asks for rewrite: true once the file holds code the agent wrote', async () => {
+  it('takes its own file whole again before the first install, and asks for rewrite: true after it', async () => {
     await write({ files: [{ path: ENTRY, content: other }] });
     const again = Array.from({ length: 60 }, (_, i) => `again ${i}`).join('\n');
-    expect(await write({ files: [{ path: ENTRY, content: again }] })).toMatch(/replaces most of the file/);
-    expect(await write({ files: [{ path: ENTRY, content: again }], rewrite: true })).toMatch(/"written"/);
+    expect(await write({ files: [{ path: ENTRY, content: again }] })).toMatch(/"written"/);
+    expect(text(await codeAppInstallTool(codeContext()).handler({ app_id: APP } as any))).toMatch(/"linked":true/);
+    const third = Array.from({ length: 60 }, (_, i) => `third ${i}`).join('\n');
+    expect(await write({ files: [{ path: ENTRY, content: third }] })).toMatch(/replaces most of the file/);
+    expect(await write({ files: [{ path: ENTRY, content: third }], rewrite: true })).toMatch(/"written"/);
   });
 
   it('says a call with no code sent no code, and that rewrite carries none', async () => {

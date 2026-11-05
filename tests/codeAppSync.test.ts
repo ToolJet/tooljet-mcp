@@ -145,6 +145,7 @@ describe('Code mode edits start from the stored code', () => {
   it('refuses a whole-file rewrite of an existing file for a small change, unless rewrite is asked for', async () => {
     const big = Array.from({ length: 60 }, (_, i) => `const line${i} = ${i};`).join('\n');
     await write({ files: [{ path: queue, content: big }] });
+    await install(); // the app now has stored code: a build's own file is guarded too (before it, see codeAppFirstBuild)
     await read([queue]);
     const regenerated = Array.from({ length: 60 }, (_, i) => `const row${i} = ${i};`).join('\n');
     const refused = await write({ files: [{ path: queue, content: regenerated }] });

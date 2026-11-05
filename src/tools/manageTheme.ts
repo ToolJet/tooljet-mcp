@@ -150,6 +150,14 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
         }
 
         if (args.action === 'create') {
+          // Every missing field in one answer: refused for its name, then for its primary, 20 Code builds had 33 failed
+          // creates (2026-11-04), each a model call over the whole context.
+          const missing = [
+            ...(args.name === undefined ? ['name (at least 5 characters, the brand or app, e.g. "Harbor Ledger")'] : []),
+            ...(args.definition === undefined && !definitionFromChoices(args)
+              ? ['primary (the accent as a hex colour, e.g. "#0f766e"; font and radius are optional)'] : []),
+          ];
+          if (missing.length) throw new Error(`manage_theme create needs ${missing.join(' and ')}. Send them together in one call.`);
           const name = requireValue(args.name, 'name');
           if (name.length < 5) throw new Error('Theme name must contain at least 5 characters.');
           if (name === 'ToolJet') throw new Error('The reserved theme name "ToolJet" cannot be used.');

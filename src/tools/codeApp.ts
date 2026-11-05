@@ -267,7 +267,8 @@ const locateProject = async (args: { name?: string; app_id?: string }, need: Nee
     await authorizeApp(args.app_id, need);
     const [found] = projectsForApp(args.app_id);
     if (!found) throw new Error(`no Code mode project for app ${args.app_id}; call code_app_scaffold with this app_id`);
-    if (args.name && args.name !== found) throw new Error(`app ${args.app_id}'s project is "${found}", not "${args.name}"`);
+    // The app id names the project; a different name beside it is a slip, not another project (3 install refusals in
+    // 20 builds, 2026-11-04, each costing a call to resend without it).
     dir = join(root(), found);
   } else {
     if (!args.name) throw new Error('give app_id (or the project name)');
@@ -616,6 +617,8 @@ const nothingStored = new Set<string>();
 /** The files as scaffolded, by project and path: replacing the template's own file is not a rewrite of anyone's work. */
 const scaffoldHashes = new Map<string, string>();
 const readHashes = new Map<string, string>();
+/** The files as this build last wrote them: replacing the build's own file whole is not a rewrite of anyone's work. */
+const ownWrites = new Map<string, string>();
 /*
   When each project last checked the stored code. Every read ran `tooljet app source-pull` (a CLI process and a request,
   1.6 to 2 s), and an edit reads 7 files on average, several in one turn (2026-11-02 traces). A read within
@@ -717,6 +720,7 @@ export function resetCodeSessionForTests(): void {
   nothingStored.clear();
   scaffoldHashes.clear();
   readHashes.clear();
+  ownWrites.clear();
   lastSynced.clear();
   prefetchedScans.clear();
   sdkCopied.clear();
@@ -871,6 +875,7 @@ export function codeAppWriteFilesTool(context: CodeContext): ToolDef {
     description:
       'Write into a Code mode project: app.json (name, codePage, routes [{id, path, title}]), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. ' +
       'To change an existing file, read it first (code_app_read_files) and pass edits: [{ path, find, replace }] with the exact text to change; ' +
+      'a file you wrote in this build needs no read first, and before the first install may be sent whole again. ' +
       'files: [{ path, content }] is for new files and for replacing a file still as the template left it, or for a rewrite the request needs (then rewrite: true, as well as the files). A write to a file that changed ' +
       'in the ToolJet editor since you read it is refused: read it again and apply your change to what is there. ' +
       'Read data with useAppQuery from ../tooljet.gen; write by awaiting a query\'s run({ ...parameters }); route with AppRouter, ' +
@@ -913,8 +918,12 @@ export function codeAppWriteFilesTool(context: CodeContext): ToolDef {
           if (why) refusals.push(why);
           const before = current(rel, full);
           const stillTemplate = before !== undefined && scaffoldHashes.get(readKey(dir, rel)) === sha(before);
-          if (!why && before !== undefined && !args.rewrite && !stillTemplate && isRewrite(before, file.content))
-            refusals.push(`${rel}: this replaces most of the file; change only what the request needs with edits (find/replace), or pass rewrite: true if the request really is a rewrite`);
+          // Until the first install stores the code, a file this build wrote may be sent whole again: 20 builds had 11
+          // whole-file writes of their own files refused (2026-11-04), 10 of them before the first install, and 7 were
+          // resent as rewrite: true with no files at all. After it, the guard against regenerating a file stands.
+          const ownFile = before !== undefined && nothingStored.has(dir) && ownWrites.get(readKey(dir, rel)) === sha(before);
+          if (!why && before !== undefined && !args.rewrite && !stillTemplate && !ownFile && isRewrite(before, file.content))
+            refusals.push(`${rel}: this replaces most of the file; change only what the request needs with edits (find/replace), or, if the request really is a rewrite, send these files again with rewrite: true in the same call`);
           next.set(rel, { full, content: file.content });
         }
         for (const edit of args.edits ?? []) {
@@ -934,6 +943,7 @@ export function codeAppWriteFilesTool(context: CodeContext): ToolDef {
           mkdirSync(dirname(full), { recursive: true });
           writeFileSync(full, content);
           readHashes.set(readKey(dir, rel), sha(content)); // the agent knows what it just wrote
+          ownWrites.set(readKey(dir, rel), sha(content));
           written.push(rel);
         }
         const types = await typeCheckAfterWrite(dir, written).catch(() => undefined);
@@ -1058,47 +1068,7 @@ export function codeAppBuildTool(context: CodeContext): ToolDef {
     handler: inScope(context, async (args: { app_id?: string; name?: string }) => {
       try {
         const dir = await locateProject(args, 'edit');
-        const followed = await followDraft(dir);
-        await ensureFresh(dir);
-        await copySdkIn(dir);
-        const started = Date.now();
-        const pull = await cli(dir, ['app', 'pull']);
-        const build = await cli(join(dir, 'frontend'), ['library', 'build']);
-        const tsErrors = Number(/TypeScript compiled \((\d+) errors\)/.exec(build.output)?.[1] ?? (build.code === 0 ? 0 : 1));
-        const problems = build.code === 0 && tsErrors === 0 ? [] : parseBuildProblems(build.output);
-        const check = await cli(dir, ['app', 'check', '--offline', '--json']);
-        const report = parseReport<{ problems?: { file: string; line: number; message: string }[]; accessibility?: unknown[]; security?: SecurityReport }>(check.output);
-        const unstyled = missingStylesheet(dir);
-        const selects = nativeSelects(dir);
-        const handles = badRouteHandles(dir);
-        const serverUser = await browserUserQueries(args.app_id ?? appIdOf(dir));
-        const extra = [...handles, ...(unstyled ? [unstyled] : []), ...sdkRedeclared(dir), ...serverUser];
-        const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0 && !extra.length;
-        if (okBuild) prefetchFullScan(dir);
-        return ok({
-          ...(followed ? { draft: followed } : {}),
-          ok: okBuild,
-          build_ms: Date.now() - started,
-          pull: pull.code === 0 ? 'typed hooks refreshed' : pull.output.trim(),
-          typescript_errors: tsErrors,
-          // Every error on one line, with the code it is on and, for the mistakes that recur, the fix (codeTypeErrors.ts);
-          // the raw output only when it holds no error this can read.
-          ...(problems.length ? { errors: formatProblems(problems) } : {}),
-          build_output:
-            build.code === 0 && tsErrors === 0
-              ? build.output.trim().split('\n').slice(-6).join('\n')
-              : problems.length
-                ? buildSummary(build.output)
-                : build.output.trim().slice(0, 12_000),
-          check: report?.problems
-            ? [...extra, ...report.problems.map((p) => `${p.file}:${p.line}  ${p.message}`)]
-            : extra.length ? [...extra, check.output.trim().slice(0, 6000)] : check.output.trim().slice(0, 6000),
-          ...(selects.length ? { native_controls: { fix: 'Use Select from components/ui/select instead of a native <select>.', at: selects } } : {}),
-          // jsx-a11y recommended rules, warnings only (tooljet app check); fix them when they are cheap to fix.
-          a11y_warnings: report?.accessibility?.length ?? Number(/(\d+) accessibility warnings?/.exec(check.output)?.[1] ?? 0),
-          // The offline scan (no dependency network checks): fix critical and high before code_app_install.
-          security: securitySummary(report?.security),
-        });
+        return ok(await buildProject(dir, args.app_id));
       } catch (err) {
         return fail(err);
       }
@@ -1106,7 +1076,109 @@ export function codeAppBuildTool(context: CodeContext): ToolDef {
   };
 }
 
-export function codeAppInstallTool(context: CodeContext): ToolDef {
+/** code_app_build's work and report, also the first step of code_app_install with verify. */
+async function buildProject(dir: string, appId: string | undefined): Promise<Record<string, unknown> & { ok: boolean }> {
+  const followed = await followDraft(dir);
+  await ensureFresh(dir);
+  await copySdkIn(dir);
+  const started = Date.now();
+  const pull = await cli(dir, ['app', 'pull']);
+  const build = await cli(join(dir, 'frontend'), ['library', 'build']);
+  const tsErrors = Number(/TypeScript compiled \((\d+) errors\)/.exec(build.output)?.[1] ?? (build.code === 0 ? 0 : 1));
+  const problems = build.code === 0 && tsErrors === 0 ? [] : parseBuildProblems(build.output);
+  const check = await cli(dir, ['app', 'check', '--offline', '--json']);
+  const report = parseReport<{ problems?: { file: string; line: number; message: string }[]; accessibility?: unknown[]; security?: SecurityReport }>(check.output);
+  const unstyled = missingStylesheet(dir);
+  const selects = nativeSelects(dir);
+  const handles = badRouteHandles(dir);
+  const serverUser = await browserUserQueries(appId ?? appIdOf(dir));
+  const extra = [...handles, ...(unstyled ? [unstyled] : []), ...sdkRedeclared(dir), ...serverUser];
+  const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0 && !extra.length;
+  if (okBuild) prefetchFullScan(dir);
+  return {
+    ...(followed ? { draft: followed } : {}),
+    ok: okBuild,
+    build_ms: Date.now() - started,
+    pull: pull.code === 0 ? 'typed hooks refreshed' : pull.output.trim(),
+    typescript_errors: tsErrors,
+    // Every error on one line, with the code it is on and, for the mistakes that recur, the fix (codeTypeErrors.ts);
+    // the raw output only when it holds no error this can read.
+    ...(problems.length ? { errors: formatProblems(problems) } : {}),
+    build_output:
+      build.code === 0 && tsErrors === 0
+        ? build.output.trim().split('\n').slice(-6).join('\n')
+        : problems.length
+          ? buildSummary(build.output)
+          : build.output.trim().slice(0, 12_000),
+    check: report?.problems
+      ? [...extra, ...report.problems.map((p) => `${p.file}:${p.line}  ${p.message}`)]
+      : extra.length ? [...extra, check.output.trim().slice(0, 6000)] : check.output.trim().slice(0, 6000),
+    ...(selects.length ? { native_controls: { fix: 'Use Select from components/ui/select instead of a native <select>.', at: selects } } : {}),
+    // jsx-a11y recommended rules, warnings only (tooljet app check); fix them when they are cheap to fix.
+    a11y_warnings: report?.accessibility?.length ?? Number(/(\d+) accessibility warnings?/.exec(check.output)?.[1] ?? 0),
+    // The offline scan (no dependency network checks): fix critical and high before code_app_install.
+    security: securitySummary(report?.security),
+  };
+}
+
+/** One route's render check (verify_page_render's handler), injected so this file needs no browser. */
+export type RenderRoute = (args: { app_id: string; route: string; viewport_width?: number }) => Promise<{ content: { type: string; text: string }[]; isError?: boolean }>;
+
+/** A route path as the render check opens it: each `:param` becomes 1, the first seeded row's usual id. */
+export const concreteRoute = (path: string): string => path.replace(/:[A-Za-z_][\w]*/g, '1');
+
+/** The routes app.json declares, as paths to open (each once), the home route first. */
+export function routesToCheck(dir: string): string[] {
+  let routes: { path?: unknown }[] = [];
+  try {
+    routes = (JSON.parse(readFileSync(join(dir, 'app.json'), 'utf8')) as { routes?: { path?: unknown }[] }).routes ?? [];
+  } catch {
+    routes = [];
+  }
+  const paths = routes.map((route) => (typeof route.path === 'string' && route.path.startsWith('/') ? concreteRoute(route.path) : undefined))
+    .filter((path): path is string => Boolean(path));
+  return [...new Set(paths.length ? paths : ['/'])].sort((a, b) => (a === '/' ? -1 : b === '/' ? 1 : 0));
+}
+
+/*
+  code_app_install with verify (2026-11-04): after the first install, a Code build spent 166 s in its fix loop, and only
+  13 s of it was type errors. The rest was separate code_app_build, code_app_install and verify_page_render calls, a
+  model call for each, each re-reading a 130k-token context. One call now builds, installs when the build is clean and
+  render-checks every route of app.json once, returning one report.
+*/
+async function renderRoutes(render: RenderRoute, appId: string, routes: string[], widths: number[], concurrency: number): Promise<Record<string, unknown>[]> {
+  const jobs = routes.flatMap((route) => widths.map((width) => ({ route, width })));
+  const out: Record<string, unknown>[] = new Array(jobs.length);
+  // At most the render pool's default size (2) at a time, one when each check needs its own approval (renderAuditGrant).
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    for (let index = next++; index < jobs.length; index = next++) {
+      const { route, width } = jobs[index]!;
+      const result = await render({ app_id: appId, route, ...(width !== 1280 ? { viewport_width: width } : {}) });
+      const text = result.content?.[0]?.text ?? '';
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        parsed = undefined;
+      }
+      out[index] = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+        ? { route, width, ...(parsed as Record<string, unknown>) }
+        : { route, width, ok: false, error: text.replace(/^Error:\s*/, '').slice(0, 500) };
+    }
+  };
+  await Promise.all(Array.from({ length: Math.max(1, Math.min(concurrency, jobs.length)) }, worker));
+  return out;
+}
+
+export interface InstallOptions {
+  /** The render check of one route (verify_page_render's handler); without it, verify builds and installs only. */
+  render?: RenderRoute;
+  /** How many routes render at once: 1 when every check needs its own approval. */
+  renderConcurrency?: number;
+}
+
+export function codeAppInstallTool(context: CodeContext, options: InstallOptions = {}): ToolDef {
   return {
     name: 'code_app_install',
     title: 'Install Code Mode App',
@@ -1117,45 +1189,95 @@ export function codeAppInstallTool(context: CodeContext): ToolDef {
       'ToolJet so the Code panel can edit it. Build first. Runs the full security scan first and refuses while it has critical or high findings, listing them. ' +
       'Returns the editor URL. If it says the source was edited in the ToolJet editor, ' +
       'call code_app_read_files to bring those edits down, reapply your change, and install again. ' +
+      'verify: true makes it one check round: the build (as code_app_build; on any error it stops there, not installed, listing every error), ' +
+      'the install, then the render check of every route in app.json (each once, at 1280 px unless widths says otherwise), in one report: ' +
+      'build, install, render [{ route, width, ok, pages: [{ findings, accessibility }] }]. ' +
       'This is the last step of a build or edit: saving the app version (release_app saves a draft first) freezes the code.' + USER_WORDS,
-    inputSchema: { app_id: APP_ID, name: PROJECT_NAME },
-    handler: inScope(context, async (args: { app_id?: string; name?: string }) => {
+    inputSchema: {
+      app_id: APP_ID,
+      name: PROJECT_NAME,
+      verify: z.boolean().optional().describe('Build, install and render-check every route, in this one call'),
+      widths: z.array(z.number().int().min(320).max(2560)).min(1).max(3).optional()
+        .describe('verify: the widths to check, default [1280]; add 375 and 768 only when phones or tablets were asked for'),
+      routes: z.array(z.string().regex(/^\/[A-Za-z0-9_\-\/.]*$/)).min(1).max(12).optional()
+        .describe('verify: the paths to open, default every route in app.json with each :param as 1 (e.g. only the routes that failed)'),
+    },
+    handler: inScope(context, async (args: { app_id?: string; name?: string; verify?: boolean; widths?: number[]; routes?: string[] }) => {
       try {
         const dir = await locateProject(args, 'edit');
-        const followed = await followDraft(dir);
-        await ensureFresh(dir);
-        nothingStored.delete(dir);
-        const unstyled = missingStylesheet(dir);
-        if (unstyled) return fail(new Error(`Not installed: ${unstyled} Then code_app_build and install again.`));
-        // The full scan, dependency checks included, before anything reaches the app.
-        const check = await fullScan(dir);
-        const security = parseReport<{ security?: SecurityReport }>(check.output)?.security;
-        if (!security || security.error)
-          throw new Error(`The security scan did not run, so nothing was installed: ${security?.error ?? check.output.trim().slice(0, 2000)}`);
-        const blocking = mustFix(security);
-        if (blocking.length)
-          return fail(
-            new Error(
-              `Not installed: the security scan has ${blocking.length} critical or high finding${blocking.length > 1 ? 's' : ''}. ` +
-                'Fix them in the code (or remove the package), code_app_build, then install again:\n' +
-                blocking.map((f) => `${f.severity.toUpperCase()} ${f.ruleId} ${f.package ?? f.location}: ${f.message}`).join('\n')
-            )
-          );
-        // Agent-built apps keep their source on ToolJet (owner platform) unless a repository owns it; the CLI refuses
-        // to take a repository-owned source over and to overwrite editor edits it has not pulled.
-        const result = await cli(dir, ['app', 'dev', '--once', '--source', 'platform']);
-        if (result.code !== 0) throw new Error(result.output.trim());
+        if (!args.verify) {
+          const installed = await installProject(dir);
+          return installed instanceof Error ? fail(installed) : ok(installed);
+        }
+        const built = await buildProject(dir, args.app_id);
+        if (!built.ok) {
+          return ok({
+            ...built,
+            installed: false,
+            next: 'Not installed: the build has errors. Fix every one in one round of writes, then code_app_install with verify: true again.',
+          });
+        }
+        const installed = await installProject(dir);
+        if (installed instanceof Error) return fail(installed);
+        const appId = args.app_id ?? appIdOf(dir);
+        const build = {
+          ok: true,
+          build_ms: built.build_ms,
+          typescript_errors: 0,
+          a11y_warnings: built.a11y_warnings,
+          ...(built.native_controls ? { native_controls: built.native_controls } : {}),
+        };
+        if (!options.render || !appId) return ok({ ...installed, installed: true, build, render: 'not available here: rendering is unverified' });
+        const routes = args.routes?.length ? [...new Set(args.routes)] : routesToCheck(dir);
+        const widths = args.widths?.length ? [...new Set(args.widths)] : [1280];
+        const render = await renderRoutes(options.render, appId, routes, widths, options.renderConcurrency ?? 2);
+        const failing = render.filter((entry) => entry.ok !== true).map((entry) => `${entry.route} at ${entry.width} px`);
         return ok({
-          ...(followed ? { draft: followed } : {}),
-          linked: true,
-          editor_url: /Open: (\S+)/.exec(result.output)?.[1] ?? null,
-          output: result.output.trim(),
-          security: securitySummary(security),
+          ...installed,
+          installed: true,
+          build,
+          render_ok: failing.length === 0,
+          render,
+          next: failing.length
+            ? `Fix what the render check found on ${failing.join(', ')} in one round of writes, then code_app_install with verify: true and routes set to those paths.`
+            : 'Built, installed, and every route renders cleanly.',
         });
       } catch (err) {
         return fail(err);
       }
     }),
+  };
+}
+
+/** The install itself: its result, or the refusal (an Error) to report. Throws when the scan or the CLI fails. */
+async function installProject(dir: string): Promise<Record<string, unknown> | Error> {
+  const followed = await followDraft(dir);
+  await ensureFresh(dir);
+  nothingStored.delete(dir);
+  const unstyled = missingStylesheet(dir);
+  if (unstyled) return new Error(`Not installed: ${unstyled} Then code_app_build and install again.`);
+  // The full scan, dependency checks included, before anything reaches the app.
+  const check = await fullScan(dir);
+  const security = parseReport<{ security?: SecurityReport }>(check.output)?.security;
+  if (!security || security.error)
+    throw new Error(`The security scan did not run, so nothing was installed: ${security?.error ?? check.output.trim().slice(0, 2000)}`);
+  const blocking = mustFix(security);
+  if (blocking.length)
+    return new Error(
+      `Not installed: the security scan has ${blocking.length} critical or high finding${blocking.length > 1 ? 's' : ''}. ` +
+        'Fix them in the code (or remove the package), code_app_build, then install again:\n' +
+        blocking.map((f) => `${f.severity.toUpperCase()} ${f.ruleId} ${f.package ?? f.location}: ${f.message}`).join('\n')
+    );
+  // Agent-built apps keep their source on ToolJet (owner platform) unless a repository owns it; the CLI refuses
+  // to take a repository-owned source over and to overwrite editor edits it has not pulled.
+  const result = await cli(dir, ['app', 'dev', '--once', '--source', 'platform']);
+  if (result.code !== 0) throw new Error(result.output.trim());
+  return {
+    ...(followed ? { draft: followed } : {}),
+    linked: true,
+    editor_url: /Open: (\S+)/.exec(result.output)?.[1] ?? null,
+    output: result.output.trim(),
+    security: securitySummary(security),
   };
 }
 
