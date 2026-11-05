@@ -1,8 +1,7 @@
 import type { ToolJetClient } from './tooljetClient.js';
 import { emptyViewerOnlyParams, resolveStaticBindings } from './staticBindings.js';
-import { batchSafeRead } from './tools/runQueries.js';
 import { containsComponentBinding, schemaNameHint } from './tools/runQuery.js';
-import { autoReadSqlRefusal, rawSqlOf } from './autoReadSql.js';
+import { NOT_CHECKED_AUTOMATICALLY, autoReadPreflight } from './autoReadPreflight.js';
 
 /**
  * The reads a phase wrote, run once after it is applied.
@@ -15,9 +14,13 @@ import { autoReadSqlRefusal, rawSqlOf } from './autoReadSql.js';
  * - `failed`: the read ran and the datasource refused it. The query needs fixing.
  * - `inconclusive`: the read takes a component's value, which a browser-free run leaves empty; it failed, and the
  *   failure may be about the missing value rather than the query.
- * - `not_run`: not a read this check may run, with the reason. A raw SQL read whose bound or functions this check
- *   cannot prove (autoReadSql.ts, CM-36) is not run either: it is neither passed nor failed, and says to run it
- *   explicitly.
+ * - `not_run`: not a read this check may run, with the reason. What runs is decided by autoReadPreflight.ts, the
+ *   same preflight run_queries uses: a raw SQL read whose bound or functions it cannot prove (CM-36), and a GUI query
+ *   that is not a bounded list_rows of a known connector (CM-37), are not run: neither passed nor failed, with a
+ *   reason that says to run it explicitly.
+ * - `queries`: one entry per query, in the order asked: `checked` (it ran; `outcome` passed, failed or
+ *   inconclusive), `refused` (the preflight would not run it) or `skipped` (over the per-phase cap). Only a checked
+ *   query with outcome passed is a passed check.
  *
  * It never fails the apply: the phase is already written, and the result says what to repair.
  */
@@ -29,7 +32,12 @@ export interface ReadCheck {
   failed: Array<{ name: string; message: string; schema_hint?: unknown }>;
   inconclusive: Array<{ name: string; message: string; note: string }>;
   not_run: Array<{ name: string; reason: string }>;
+  queries: ReadCheckEntry[];
 }
+
+export type ReadCheckEntry =
+  | { name: string; status: 'checked'; outcome: 'passed' | 'failed' | 'inconclusive' }
+  | { name: string; status: 'refused' | 'skipped'; reason: string };
 
 const MAX_READS = 10;
 const CLOCK_SKEW = /JWT issued at future/i;
@@ -42,21 +50,6 @@ const rowCount = (result: Record<string, unknown>): number | undefined => {
   return undefined;
 };
 
-/** Why an automatic run of this query's raw SQL is refused (saved text, then the text its bindings resolve to). */
-function rawSqlAutoRefusal(query: Parameters<typeof batchSafeRead>[0]): string | undefined {
-  const saved = rawSqlOf(query);
-  if (saved === undefined) return undefined;
-  const refusal = autoReadSqlRefusal(saved);
-  if (refusal) return refusal;
-  let resolved: string | undefined;
-  try {
-    resolved = rawSqlOf({ ...query, options: resolveStaticBindings(query.options).resolved as typeof query.options });
-  } catch {
-    return 'its bindings cannot be resolved without a browser';
-  }
-  return resolved === undefined || resolved === saved ? undefined : autoReadSqlRefusal(resolved);
-}
-
 export async function checkPlanReads(
   client: ToolJetClient,
   params: { versionId: string; queryIds: string[]; environmentId?: string; retryDelayMs?: number },
@@ -65,28 +58,32 @@ export async function checkPlanReads(
   if (!wanted.length) return undefined;
   const saved = await client.getQueries(params.versionId);
   const byId = new Map(saved.map((query) => [query.id, query]));
-  const check: ReadCheck = { ran: 0, rows: {}, failed: [], inconclusive: [], not_run: [] };
+  const check: ReadCheck = { ran: 0, rows: {}, failed: [], inconclusive: [], not_run: [], queries: [] };
+  const entries = new Map<string, ReadCheckEntry>();
   const runnable: string[] = [];
   for (const id of wanted) {
     const query = byId.get(id);
     if (!query) continue;
     const name = query.name ?? id;
-    const verdict = batchSafeRead(query);
-    const autoRefusal = verdict.safe ? rawSqlAutoRefusal(query) : undefined;
-    if (!verdict.safe) {
-      check.not_run.push({ name, reason: String(verdict.reason ?? 'not a proven bounded read').slice(0, REASON_CHARS) });
-    } else if (autoRefusal) {
-      check.not_run.push({
-        name,
-        reason: `not checked automatically, run it explicitly with run_query: ${autoRefusal}`,
-      });
+    const verdict = autoReadPreflight(query);
+    if (!verdict.run) {
+      // A refusal by the preflight's own rules keeps its whole reason: it is what to fix or how to run it.
+      const reason = verdict.reason.startsWith(NOT_CHECKED_AUTOMATICALLY) ? verdict.reason : verdict.reason.slice(0, REASON_CHARS);
+      check.not_run.push({ name, reason });
+      entries.set(id, { name, status: 'refused', reason });
     } else if (runnable.length >= MAX_READS) {
-      check.not_run.push({ name, reason: `only the first ${MAX_READS} reads of a phase are checked; run this one with run_queries` });
+      const reason = `only the first ${MAX_READS} reads of a phase are checked; run this one with run_queries`;
+      check.not_run.push({ name, reason });
+      entries.set(id, { name, status: 'skipped', reason });
     } else {
       runnable.push(id);
     }
   }
-  if (!runnable.length) return check;
+  const ledger = (): ReadCheck => {
+    check.queries = wanted.flatMap((id) => entries.get(id) ?? []);
+    return check;
+  };
+  if (!runnable.length) return ledger();
   const environmentId = params.environmentId ?? await client.getDevelopmentEnvironmentId();
   await Promise.all(runnable.map(async (id) => {
     const query = byId.get(id)!;
@@ -112,6 +109,7 @@ export async function checkPlanReads(
     if (result.status !== 'failed') {
       const rows = rowCount(result);
       if (rows !== undefined) check.rows[name] = rows;
+      entries.set(id, { name, status: 'checked', outcome: 'passed' });
       return;
     }
     const message = String(result.message ?? result.description ?? 'the query failed').slice(0, 600);
@@ -119,10 +117,12 @@ export async function checkPlanReads(
       check.inconclusive.push({ name, message,
         note: 'This query reads components.*, which a browser-free run leaves empty: the failure may be about the missing value. ' +
           'Check that the query also works when that input is empty, or give the input a default.' });
+      entries.set(id, { name, status: 'checked', outcome: 'inconclusive' });
       return;
     }
     const schemaHint = await schemaNameHint(client, query, result).catch(() => undefined);
     check.failed.push({ name, message, ...(schemaHint ? { schema_hint: schemaHint } : {}) });
+    entries.set(id, { name, status: 'checked', outcome: 'failed' });
   }));
-  return check;
+  return ledger();
 }

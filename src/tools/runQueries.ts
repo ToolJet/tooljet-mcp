@@ -1,45 +1,13 @@
 import { emptyParamsNote, emptyViewerOnlyParams, resolveStaticBindings, unresolvedNote } from '../staticBindings.js';
 import { z } from 'zod';
-import type { QuerySummary, ToolJetClient } from '../tooljetClient.js';
-import { assessQueryRead, resolvedReadRefusal } from '../queryExecutionSafety.js';
+import type { ToolJetClient } from '../tooljetClient.js';
+import { autoReadPreflight } from '../autoReadPreflight.js';
 import { containsComponentBinding, failureRecovery, failureVerification, schemaNameHint, queryResultBindingHint } from './runQuery.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { resolveRef } from '../refResolution.js';
 
-/** Conservative proof, not a guess: unknown/plugin/API operations stay on singular run_query.
- *
- *  A refusal here has to say what to do next, not just what went wrong. A query that IS a proven
- *  read but needs the user's approval (every remote API — restapi, servicenow, influxdb, openapi)
- *  is refused by this tool for a reason that reads like a verdict, so the caller concludes the
- *  query is unrunnable and retries the same tool instead of moving to singular run_query. Measured
- *  on real builds: two consecutive OpenAPI builds spent 15 attempts here and shipped apps whose
- *  components were bound to queries that had never once executed. */
-export function batchSafeRead(query: QuerySummary): { safe: boolean; reason?: string } {
-  const assessment = assessQueryRead(query);
-  if (assessment.provenRead && assessment.directSafe && !assessment.selectStar) {
-    const refusal = resolvedReadRefusal(query, assessment, resolveStaticBindings(query.options).resolved);
-    return refusal ? { safe: false, reason: refusal } : { safe: true };
-  }
-
-  // Proven read, held back only for confirmation: name the tool that can run it.
-  if (assessment.provenRead && assessment.requiresRemoteReadConfirmation) {
-    return {
-      safe: false,
-      reason:
-        `${assessment.reason ?? 'remote read'} run_queries cannot run remote reads at all. Use singular ` +
-        'run_query for this one: tell the user which saved query will run, and once they approve, call ' +
-        'run_query with user_confirmed_remote_read:true. Do not retry run_queries with it.',
-    };
-  }
-
-  return {
-    safe: false,
-    reason: assessment.reason ??
-      (assessment.requiresCountPreflight
-        ? 'read requires a count-first preflight through singular run_query'
-        : 'query is not a proven bounded read'),
-  };
-}
+// The general check, kept here for its callers; run_queries itself runs only what the automatic preflight allows.
+export { batchSafeRead } from '../autoReadPreflight.js';
 
 export function runQueriesTool(client: ToolJetClient): ToolDef {
   return {
@@ -53,9 +21,12 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
     },
     description:
       'Run 1–10 already-created, proven read-only queries concurrently and return ordered per-query ' +
-      'results. It currently accepts ToolJet DB list_rows/join_tables and SQL datasource list_rows or ' +
-      'one bounded explicit-column SELECT/SHOW/DESCRIBE/EXPLAIN read. Every query is preflighted before any execution; SELECT *, unbounded reads, mutations, ' +
-      'RunJS, paid/remote API operations, and unknown kinds are refused — remote API reads (restapi, openapi, '+
+      'results. It runs only what the automatic read check may run: ToolJet DB list_rows (bounded at list_rows.limit) ' +
+      'or one bounded SELECT in sql_execution, and PostgreSQL/MySQL/MariaDB/SQL Server/Oracle GUI list_rows bounded at ' +
+      'the top-level limit or one bounded explicit-column SELECT in mode sql that calls only well-known pure functions. ' +
+      'Every query is preflighted before any execution; if any is refused, none runs and the error names each refused ' +
+      'query and why ("not checked automatically" means run that one with singular run_query). SELECT *, unbounded reads, mutations, ' +
+      'RunJS, paid/remote API operations, and other kinds are refused — remote API reads (restapi, openapi, '+
       'servicenow, influxdb) can never run here; use singular run_query with user_confirmed_remote_read. '+
       'Metadata and the environment are ' +
       'loaded once. Returns {queries:[{query_id,name,status,data|message,warnings?}]}; one runtime failure ' +
@@ -101,9 +72,11 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
           }),
         };
         if (resolveErrors.length) return fail(new Error(resolveErrors.join(' ')));
+        // The same preflight as the automatic read check after apply (autoReadPreflight.ts): the agent's finish step and
+        // binding probes call this tool with nobody watching, and a query the apply check refused ran here (CM-36).
         const unsafe = args.query_ids.flatMap((queryId) => {
-          const verdict = batchSafeRead(byId.get(queryId)!);
-          return verdict.safe ? [] : [`${queryId}: ${verdict.reason}`];
+          const verdict = autoReadPreflight(byId.get(queryId)!);
+          return verdict.run ? [] : [`${queryId}: ${verdict.reason}`];
         });
         if (unsafe.length) {
           return fail(new Error(`run_queries refused ${unsafe.length === 1 ? 'a query' : 'queries'} before execution: ${unsafe.join('; ')}`));
@@ -142,7 +115,8 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
               query_id: queryId,
               ...(query.name ? { name: query.name } : {}),
               ...shaped,
-              execution: { query_id: queryId, datasource_kind: query.kind, read_only: true },
+              // What let it run, not a claim about its effects: the preflight is a static check (CM-37).
+              execution: { query_id: queryId, datasource_kind: query.kind, preflight: 'automatic_read' },
               ...(bindingHint ? { binding_hint: bindingHint } : {}),
               ...(warnings.length ? { warnings } : {}),
               ...(recovery ? { recovery } : {}),

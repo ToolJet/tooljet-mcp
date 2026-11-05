@@ -386,7 +386,8 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
           ...output.result,
           // Trusted execution evidence, separate from datasource-supplied data. No credentials,
           // URLs or row contents are needed for the agent's early migration/readiness checkpoint.
-          execution: { query_id: query.id, datasource_kind: query.kind, read_only: true },
+          // What let it run, not a claim about its effects: the read classifier is a static check (CM-37).
+          execution: { query_id: query.id, datasource_kind: query.kind, preflight: 'explicit_read' },
           ...(bindingHint ? { binding_hint: bindingHint } : {}),
           ...(preflight ? { preflight } : {}),
           ...(warnings.length ? { warnings } : {}),
