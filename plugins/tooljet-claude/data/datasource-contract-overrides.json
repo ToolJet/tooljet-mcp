@@ -1,0 +1,855 @@
+{
+  "anthropic": {
+    "operations": {
+      "chat": {
+        "response": {
+          "type": "array<object>",
+          "description": "Anthropic content blocks, commonly [{ type: \"text\", text: \"...\" }]."
+        }
+      },
+      "chat-v2": {
+        "response": {
+          "type": "array<object>",
+          "description": "Anthropic content blocks, commonly [{ type: \"text\", text: \"...\" }]."
+        }
+      }
+    }
+  },
+  "databricks": {
+    "response_groups": [
+      {
+        "operations": ["sql", "list_rows"],
+        "response": {
+          "type": "array<object>",
+          "description": "Rows returned by the Databricks statement result formatter."
+        }
+      },
+      {
+        "operations": ["create_row"],
+        "response": {
+          "type": "object",
+          "shape": { "rowsCreated": "number" }
+        }
+      },
+      {
+        "operations": ["update_rows", "upsert_rows", "delete_rows", "bulk_insert", "bulk_update_pkey", "bulk_upsert_pkey"],
+        "response": {
+          "type": "object",
+          "shape": { "rowsAffected": "number" }
+        }
+      }
+    ]
+  },
+  "mariadb": {
+    "response_groups": [
+      {
+        "operations": ["list_rows"],
+        "response": {
+          "type": "array<object>",
+          "description": "Rows returned by the MariaDB list query."
+        }
+      },
+      {
+        "operations": ["create_row"],
+        "response": {
+          "type": "object",
+          "shape": { "insertId": "number|null" }
+        }
+      },
+      {
+        "operations": ["update_rows", "upsert_rows", "delete_rows", "bulk_insert", "bulk_update_pkey", "bulk_upsert_pkey"],
+        "response": {
+          "type": "object",
+          "shape": { "affectedRows": "number" }
+        }
+      }
+    ]
+  },
+  "mssql": {
+    "response_groups": [
+      {
+        "operations": ["list_rows", "create_row", "update_rows", "upsert_rows"],
+        "response": {
+          "type": "array<object>",
+          "description": "Rows returned by the MSSQL query or OUTPUT clause."
+        }
+      },
+      {
+        "operations": ["delete_rows"],
+        "response": {
+          "type": "object",
+          "shape": { "deletedRecords": "number" }
+        }
+      },
+      {
+        "operations": ["bulk_insert", "bulk_update_pkey", "bulk_upsert_pkey"],
+        "response": {
+          "type": "object",
+          "shape": { "affectedRows": "number" }
+        }
+      }
+    ]
+  },
+  "mysql": {
+    "response_groups": [
+      {
+        "operations": ["list_rows", "create_row", "update_rows", "upsert_rows"],
+        "response": {
+          "type": "array<object>",
+          "description": "Rows returned by the MySQL query; write helpers select and return the affected rows."
+        }
+      },
+      {
+        "operations": ["delete_rows"],
+        "response": {
+          "type": "object",
+          "shape": { "deletedRecords": "number" }
+        }
+      },
+      {
+        "operations": ["bulk_insert", "bulk_update_pkey", "bulk_upsert_pkey"],
+        "response": {
+          "type": "array<object>",
+          "description": "An array of MySQL driver result packets, one per executed statement."
+        }
+      }
+    ]
+  },
+  "openai": {
+    "operations": {
+      "chat": {
+        "required": ["operation", "model", "prompt"],
+        "response": {
+          "type": "string|null",
+          "description": "The assistant message content, returned directly as the query data. This is not an OpenAI chat-completions response object."
+        }
+      },
+      "generate_embedding": {
+        "response": {
+          "type": "object",
+          "shape": {
+            "embedding": "array<number>"
+          }
+        }
+      },
+      "image_generation": {
+        "response": {
+          "type": "object",
+          "description": "ToolJet OpenAI image-generation result; inspect a successful run before binding nested fields."
+        }
+      }
+    }
+  },
+  "openapi": {
+    "notes": [
+      "The OpenAPI plugin ships an empty operations.json, so nothing is harvested and the whole request contract is curated here. Field paths and semantics are read from the plugin's run() and its QueryOptions type.",
+      "There is one operation per endpoint in the spec: `operation` is the HTTP method, not a plugin operation name. Discover paths, methods and their parameters with inspect_datasource_schema.",
+      "getEndpointSchema returns a ready `query_options` skeleton with the host filled in and all four param buckets present. Copy it and fill the buckets rather than assembling options by hand."
+    ],
+    "introspection_methods": ["listTables", "getEndpointSchema"],
+    "operations": {
+      "default": {
+        "required": ["host", "path", "operation", "params.request", "params.query", "params.header", "params.path"],
+        "fields": {
+          "host": {
+            "type": "string",
+            "label": "Host override",
+            "description": "Base URL for the request, with no trailing slash. The OpenAPI datasource form has no host field, so this is almost always required: the plugin resolves `sourceOptions.host || host`, and with neither set the query fails with \"Invalid URL\". Take it from the spec's servers[0].url — inspect_datasource_schema returns it as `host`, and omits it when the spec only declares a relative server URL, in which case supply the real origin.",
+            "example": "https://api.example.com"
+          },
+          "path": {
+            "type": "string",
+            "label": "Path",
+            "description": "The endpoint path template exactly as the spec writes it, placeholders included. Placeholders are substituted from params.path; one with no matching entry is sent literally.",
+            "example": "/pets/{petId}"
+          },
+          "operation": {
+            "type": "string",
+            "label": "HTTP method",
+            "description": "Lowercase HTTP method for this endpoint. It is sent as the request method and decides whether a body is attached: params.request is used only when operation is not \"get\".",
+            "allowedValues": ["get", "post", "put", "patch", "delete", "head", "options"],
+            "example": "get"
+          },
+          "params": {
+            "type": "object",
+            "label": "Parameters",
+            "description": "The four parameter buckets, split by where each value goes in the request. Send all four every time, using {} for the ones you do not need: the plugin destructures every bucket and calls Object.entries(params.path) unguarded, so an omitted bucket fails the query with \"Cannot convert undefined or null to object\".",
+            "shape": { "request": "object", "query": "object", "header": "object", "path": "object" }
+          },
+          "params.request": {
+            "type": "object",
+            "label": "Request body",
+            "description": "JSON request body, sent only when operation is not \"get\"; pass {} when there is no body. String values that parse as JSON are parsed first, and empty-string entries are dropped before sending.",
+            "example": { "name": "Fluffy", "status": "available" }
+          },
+          "params.query": {
+            "type": "object",
+            "label": "Query parameters",
+            "description": "Appended as the URL query string; pass {} when the endpoint takes no query parameters.",
+            "example": { "status": "available", "limit": "20" }
+          },
+          "params.header": {
+            "type": "object",
+            "label": "Headers",
+            "description": "Per-request headers; pass {} when there are none. Authentication is configured on the datasource, so do not set an Authorization header here.",
+            "example": { "Accept": "application/json" }
+          },
+          "params.path": {
+            "type": "object",
+            "label": "Path parameters",
+            "description": "Values substituted into the {placeholders} in `path`; keys are the placeholder names without braces. Pass {} when the path has no placeholders — this bucket is read unguarded and must always be present.",
+            "example": { "petId": "42" }
+          }
+        },
+        "response": {
+          "type": "object|array|string",
+          "status": "runtime-dependent",
+          "source": "remote-api",
+          "description": "queries.<name>.data is the remote response body directly — parsed JSON object/array, or text. It is not normalized into rows, and the spec's declared response schema is not enforced at runtime. Inspect a successful run, or the endpoint's response schema via inspect_datasource_schema, before binding nested fields."
+        }
+      }
+    }
+  },
+  "hubspot": {
+    "notes": [
+      "HubSpot selects endpoints from installed OpenAPI specs. Call inspect_datasource_schema listTables without schema to list spec groups, then pass schema to listTables/getEndpointSchema. Copy the returned query_options, including specType.",
+      "Use HTTP operation, path, params.path, params.query and params.request. hubspot_operation is editor metadata, not an executable endpoint.",
+      "Read CRM Properties and Pipelines endpoints to verify workspace-specific fields and stage IDs before configuring writes. Do not invent inventory fields or status values. Unsupported workflows must be reported."
+    ],
+    "introspection_methods": [
+      "listTables",
+      "getEndpointSchema"
+    ],
+    "operations": {
+      "default": {
+        "required": [
+          "operation",
+          "path",
+          "specType",
+          "params.path",
+          "params.query",
+          "params.request"
+        ],
+        "fields": {
+          "operation": {
+            "type": "string",
+            "allowedValues": [
+              "get",
+              "post",
+              "patch",
+              "put",
+              "delete"
+            ],
+            "description": "Lowercase HTTP method from getEndpointSchema. Only static GET is eligible for MCP read verification after user approval."
+          },
+          "path": {
+            "type": "string",
+            "description": "Static endpoint path from the installed spec, with placeholders populated through params.path."
+          },
+          "specType": {
+            "type": "string",
+            "description": "Exact serialized editor spec key returned by inspect_datasource_schema; preserve it when saving or updating queries."
+          },
+          "params.path": {
+            "type": "object",
+            "description": "Path placeholder values keyed by placeholder name; use {} if none."
+          },
+          "params.query": {
+            "type": "object",
+            "description": "Query parameters including pagination/properties; use {} if none."
+          },
+          "params.request": {
+            "type": "object",
+            "description": "JSON body. CRM writes generally wrap fields in {properties:{...}}. Use {} for reads."
+          },
+          "selectedOperation": {
+            "type": "object",
+            "description": "Optional editor metadata. Does not replace operation/path/params."
+          }
+        },
+        "response": {
+          "type": "object|array|string",
+          "status": "runtime-dependent",
+          "source": "remote-api",
+          "description": "The parsed HubSpot response body directly. CRM collection reads commonly expose data.results and nested record.properties. Inspect the endpoint response or a verified read; paginate using the endpoint contract."
+        }
+      }
+    }
+  },
+  "postgresql": {
+    "response_groups": [
+      {
+        "operations": ["sql", "list_rows", "create_row", "update_rows", "upsert_rows", "delete_rows", "bulk_insert", "bulk_update_pkey", "bulk_upsert_pkey"],
+        "response": {
+          "type": "array<object>",
+          "description": "PostgreSQL rows. GUI writes use RETURNING and return the affected rows; SQL mode returns the driver's rows array."
+        }
+      }
+    ]
+  },
+  "restapi": {
+    "response_groups": [
+      {
+        "operations": ["get", "post", "put", "patch", "delete"],
+        "response": {
+          "type": "object|array|string",
+          "status": "runtime-dependent",
+          "source": "tooljet-restapi-runtime",
+          "description": "queries.<name>.data is the remote response body directly: parsed JSON object/array, text, or base64 for supported binary responses. It is not normalized into rows.",
+          "metadata": {
+            "status": "known",
+            "description": "queries.<name>.metadata echoes the resolved request and response diagnostics with sensitive headers redacted.",
+            "shape": {
+              "request": {
+                "requestUrl": "string",
+                "url": "string",
+                "method": "string",
+                "headers": "record<string,unknown>",
+                "params": "record<string,unknown>"
+              },
+              "response": {
+                "statusCode": "number",
+                "headers": "record<string,unknown>"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "operations": {
+      "get": {
+        "notes": [
+          "The operation selector passed to get_datasource_query_schema is MCP metadata only. Persist method and url in the ToolJet query options; do not add an operation key.",
+          "Pagination is remote-API-specific. Put the API's page/limit/cursor parameters in url_params and bind totals or next cursors from data or metadata response headers."
+        ]
+      }
+    }
+  },
+  "snowflake": {
+    "response_groups": [
+      {
+        "operations": ["sql", "list_rows"],
+        "response": {
+          "type": "array<object>",
+          "description": "Rows returned by the Snowflake statement."
+        }
+      },
+      {
+        "operations": ["create_row"],
+        "response": {
+          "type": "object",
+          "shape": { "rowsCreated": "number" }
+        }
+      },
+      {
+        "operations": ["update_rows", "upsert_rows", "delete_rows", "bulk_insert", "bulk_update_pkey", "bulk_upsert_pkey"],
+        "response": {
+          "type": "object",
+          "shape": { "rowsAffected": "number" }
+        }
+      }
+    ]
+  },
+  "tooljetdb": {
+    "response_groups": [
+      {
+        "operations": ["list_rows", "create_row", "update_rows", "delete_rows"],
+        "response": {
+          "type": "array<object>",
+          "description": "Rows returned by ToolJet DB/PostgREST with return=representation."
+        }
+      },
+      {
+        "operations": ["join_tables"],
+        "response": {
+          "type": "object",
+          "shape": { "result": "array<object>" }
+        }
+      },
+      {
+        "operations": ["sql_execution"],
+        "response": {
+          "type": "object",
+          "shape": { "results": "array<object>" }
+        }
+      },
+      {
+        "operations": ["bulk_update_with_primary_key"],
+        "response": {
+          "type": "array<object>",
+          "description": "The rows updated by primary key."
+        }
+      },
+      {
+        "operations": ["bulk_upsert_with_primary_key"],
+        "response": {
+          "type": "object",
+          "shape": {
+            "inserted": "number",
+            "updated": "number",
+            "data": "array<object>"
+          }
+        }
+      }
+    ],
+    "operations": {
+      "list_rows": {
+        "response": {
+          "type": "array<object>",
+          "description": "Rows from the selected table. Aggregate fields are aliased as <table_name>_<column>_<aggFx>; grouped columns are returned alongside them."
+        },
+        "notes": [
+          "The map keys inside where_filters, aggregates, and group_by are caller-chosen stable ids. For order_filters, use the same stable value for the outer map key and the clause's inner id; a mismatch can silently disable sorting.",
+          "For generic server-side tables, bind limit/offset/filter values to the Table but keep these datasource-specific record shapes in the query contract."
+        ]
+      }
+    }
+  },
+  "servicenow": {
+    "response_groups": [
+      {
+        "operations": ["list_records"],
+        "response": {
+          "type": "array<object>",
+          "description": "The records themselves. The plugin unwraps ServiceNow's REST envelope, so queries.<q>.data IS the array; never bind queries.<q>.data.result. With sysparm_display_value=true, reference fields such as assignment_group, caller_id and assigned_to are objects { display_value, link }: bind <field>.display_value, or request sysparm_display_value=false to get sys_ids, or 'all' to get both."
+        }
+      },
+      {
+        "operations": ["get_record", "create_record", "update_record"],
+        "response": {
+          "type": "object",
+          "description": "The single record (ServiceNow's result object, unwrapped): bind queries.<q>.data.<field>, never data.result.<field>. Reference fields follow the same sysparm_display_value rule as list_records."
+        }
+      },
+      {
+        "operations": ["delete_record"],
+        "response": { "type": "object", "description": "Empty object on success (ServiceNow returns 204)." }
+      },
+      {
+        "operations": ["aggregate"],
+        "response": {
+          "type": "object",
+          "description": "ServiceNow stats result, unwrapped: data.stats.count (a string), data.stats.avg/sum/min/max keyed by field, or an array of { stats, groupby_fields } when sysparm_group_by is set."
+        }
+      },
+      {
+        "operations": ["list_tables", "get_table_schema", "get_field_choices"],
+        "response": { "type": "array<object>", "description": "Metadata rows, unwrapped from ServiceNow's result envelope." }
+      },
+      {
+        "operations": ["list_workflows", "list_flows"],
+        "response": { "type": "array<object>", "description": "Workflow or flow definitions, unwrapped." }
+      },
+      {
+        "operations": ["invoke_workflow"],
+        "response": {
+          "type": "object",
+          "description": "The MCP tools/call result, returned directly: queries.<q>.data.content contains the content blocks, and data.structuredContent may contain structured output when supplied by the workflow tool. Inspect the returned content before extracting workflow outputs; the plugin does not parse text blocks or expose outputs at data.outputs."
+        }
+      },
+      {
+        "operations": ["trigger_flow"],
+        "response": { "type": "object", "description": "Flow API response; outputs are at queries.<q>.data.outputs, not data.result.outputs." }
+      }
+    ],
+    "operations": {
+      "list_records": {
+        "notes": [
+          "Bind tables to queries.<q>.data directly. The REST `result` wrapper does not exist in ToolJet: queries.<q>.data.result is undefined and the table shows No data.",
+          "Every read must set a sysparm_limit; use sysparm_query for filters (for example active=true^priorityIN1,2) and sysparm_fields to keep rows small."
+        ]
+      }
+    }
+  },
+  "redis": {
+    "operations": {
+      "default": {
+        "required": [
+          "query"
+        ],
+        "fields": {
+          "query": {
+            "type": "string|binding",
+            "description": "One Redis command as a space-delimited string, e.g. PING, SCAN 0 MATCH cache:* COUNT 50, TYPE cache:one, GET cache:one, or HGETALL cache:one. The plugin splits on literal spaces; it does not parse shell quoting or multiline scripts."
+          }
+        },
+        "notes": [
+          "Redis uses one default query contract and no operation selector. An empty named-operations list does not mean the datasource is unavailable.",
+          "Discover actual keys with SCAN, then TYPE and type-appropriate reads. Continue the returned cursor until 0 if full discovery is needed; COUNT is a hint, not a guaranteed page size. Do not use KEYS for discovery.",
+          "Scalar and bounded range reads can run directly. SCAN and whole collection reads require singular run_query with confirmed read access, not run_queries. Writes only belong to explicit user actions.",
+          "Responses depend on the command: GET is string or null; HGETALL is an alternating field/value array; SCAN returns [cursor, keys]. Parse only the observed structure."
+        ]
+      }
+    }
+  },
+  "mongodb": {
+    "operations": {
+      "aggregate": {
+        "fields": {
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "pipeline": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}.",
+          "A final {$limit: N} pipeline stage bounds results; options.limit is ignored by aggregate. $out/$merge stages are writes and cannot be automatically verified."
+        ],
+        "response": {
+          "type": "array<object>",
+          "description": "Documents returned by the MongoDB cursor toArray() call."
+        }
+      },
+      "bulk_write": {
+        "fields": {
+          "operations": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}.",
+          "To edit elements of an embedded array, $set each field by element path (\"Assets.$[el].status\") and match the element by a stable key in options.arrayFilters ([{\"el.asset_id\": ...}]). Never $set a whole array rebuilt from component state: it replaces the stored array and drops what the components do not hold, and the linter refuses it."
+        ]
+      },
+      "count": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ],
+        "response": {
+          "type": "number",
+          "description": "The count returned by the MongoDB driver."
+        }
+      },
+      "count_total": {
+        "fields": {
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ],
+        "response": {
+          "type": "number",
+          "description": "The count returned by the MongoDB driver."
+        }
+      },
+      "create_collection": {
+        "fields": {
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
+      },
+      "delete_many": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
+      },
+      "delete_one": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
+      },
+      "distinct": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}.",
+          "options.limit does not bound distinct results. Prefer a group/unwind aggregation with a final $limit."
+        ]
+      },
+      "find_many": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ],
+        "response": {
+          "type": "array<object>",
+          "description": "Documents returned by the MongoDB cursor toArray() call."
+        }
+      },
+      "find_one": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ],
+        "response": {
+          "type": "object|null",
+          "description": "One matching document, or null when none matches."
+        }
+      },
+      "find_one_delete": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
+      },
+      "find_one_replace": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "replacement": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
+      },
+      "find_one_update": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "update": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}.",
+          "To edit elements of an embedded array, $set each field by element path (\"Assets.$[el].status\") and match the element by a stable key in options.arrayFilters ([{\"el.asset_id\": ...}]). Never $set a whole array rebuilt from component state: it replaces the stored array and drops what the components do not hold, and the linter refuses it."
+        ]
+      },
+      "insert_many": {
+        "fields": {
+          "documents": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
+      },
+      "insert_one": {
+        "fields": {
+          "document": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
+      },
+      "replace_one": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "replacement": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}."
+        ]
+      },
+      "update_many": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "update": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}.",
+          "To edit elements of an embedded array, $set each field by element path (\"Assets.$[el].status\") and match the element by a stable key in options.arrayFilters ([{\"el.asset_id\": ...}]). Never $set a whole array rebuilt from component state: it replaces the stored array and drops what the components do not hold, and the linter refuses it."
+        ]
+      },
+      "update_one": {
+        "fields": {
+          "filter": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "options": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          },
+          "update": {
+            "type": "string|binding",
+            "description": "JSON5 / Extended JSON text, not a JavaScript object. Use plain text such as {limit: 20}; dynamic expressions must return JSON.stringify(...)."
+          }
+        },
+        "notes": [
+          "The MongoDB plugin parses document fields with JSON5 then Extended JSON. Store JSON text; MCP normalizes literal objects/arrays to text. Do not wrap an object-returning expression in {{ }}.",
+          "To edit elements of an embedded array, $set each field by element path (\"Assets.$[el].status\") and match the element by a stable key in options.arrayFilters ([{\"el.asset_id\": ...}]). Never $set a whole array rebuilt from component state: it replaces the stored array and drops what the components do not hold, and the linter refuses it."
+        ]
+      }
+    }
+  },
+    "openrouter": {
+      "operations": {
+        "chat": {
+          "required": [
+            "operation",
+            "model",
+            "prompt"
+          ],
+          "response": {
+            "type": "object",
+            "description": "An object, NOT the bare string the OpenAI plugin returns and NOT an OpenAI chat-completions response: { message: string (the assistant text, bind this), finish_reason, model, provider (which provider actually served it, so it can differ from the model asked for when fallbacks are set), usage, id }."
+          },
+          "notes": [
+            "model is free text: OpenRouter carries hundreds of ids and the list changes. Populate a model picker from a list_models query rather than hard-coding options.",
+            "fallback_models is a comma-separated list of further ids to try when the first is down or rate limited. Every id must be a real model, or OpenRouter rejects the whole request."
+          ]
+        },
+        "generate_embedding": {
+          "required": [
+            "operation",
+            "model",
+            "input"
+          ],
+          "response": {
+            "type": "object",
+            "description": "{ embedding: array<number> for a single input, embeddings: array<array<number>>, model, usage }."
+          }
+        },
+        "list_models": {
+          "required": [
+            "operation"
+          ],
+          "response": {
+            "type": "object",
+            "description": "{ models: array<{ id, name, context_length, pricing }>, count }. Use it to populate a model dropdown rather than hard-coding ids, which change often."
+          }
+        }
+      }
+    },
+  "typesafe": {
+    "operations": {
+      "evaluate": {
+        "required": ["operation", "state", "questions"],
+        "response": {
+          "type": "object",
+          "description": "{ model, answers, usage }. answers is keyed by the question ids you sent, never by position, and every answer is a typed value, not text. A choice answer is { type: 'choice', choice: string (the winning option key), probabilities: record<option, number>, confidence: number 0-1 }. A noul (yes/no) answer is { type: 'noul', noul: number } where noul is the probability of yes from 0 to 1 and there is no separate confidence. A score answer is { type: 'score', score: number (probability-weighted position from 0 to levels-1), legend: record<index, level text>, probabilities: record<index, number>, confidence: number }. Bind queries.<q>.data.answers.<id>.choice, .noul or .score; show a score's level with data.answers.<id>.legend[Math.round(data.answers.<id>.score)]. usage carries input_tokens, output_tokens and cost."
+        },
+        "notes": [
+          "questions is a JSON map of question id to a typed question { type: 'choice' | 'noul' | 'score', instructions, criteria }. choice needs criteria as a map of at least two option keys to descriptions; score needs criteria as an ordered list of at least two levels written as concrete situations; noul takes instructions only. Question ids are for your bindings and are not sent to the model, so put the full meaning in instructions.",
+          "state is what the questions are about: pass a record or an object of named fields such as {{ { subject: components.table1.selectedRow.subject, body: components.table1.selectedRow.body } }} rather than whole rows or pages; the model reads literally and unrelated detail lowers accuracy. A plain string is sent as text.",
+          "Ask every independent question about the same state in one query: they run in parallel and one call costs a few hundred milliseconds. Use a second query only when an answer decides what state to fetch next.",
+          "Decide thresholds in code or bindings, not in the question: a noul of 0.5 means yes and no are equally likely, not a medium intensity, and a spread choice distribution means several options were acceptable.",
+          "model is optional. Blank uses jev-latest on a TypeSafe credential and typesafe/jev-1.13 on an OpenRouter credential; a bare name such as jev-1.13 is mapped to the right form for either credential.",
+          "The plugin validates question shapes before calling the API, so a malformed question fails with a message naming the question id; a 401 means the key for the selected credential mode is wrong."
+        ]
+      }
+    }
+  }
+}

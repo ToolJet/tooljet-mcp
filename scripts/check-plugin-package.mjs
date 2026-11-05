@@ -1,16 +1,18 @@
-// Inspect the files a Git checkout publishes, including newly generated files in CI.
+// Inspect repository text/binary boundaries, then the actual Claude install folder.
 import { execFileSync } from 'node:child_process';
 import { statSync, readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { MAX_FILE_BYTES } from './reviewable-bundle.mjs';
+import { checkClaudePackage } from './check-claude-package.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const files = [...new Set(execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], {
   cwd: root, encoding: 'utf8',
-}).split('\0').filter((file) => file && existsSync(resolve(root, file))))];
+}).split('\0').filter((file) => file && !file.startsWith('plugins/tooljet-claude/') && existsSync(resolve(root, file))))];
 const failures = [];
-if (files.length > 512) failures.push(`${files.length} files exceeds the 512-file inspection limit`);
+// The 512-file limit applies to the installed plugin folder, not development source.
+// checkClaudePackage below enforces it on the marketplace/directory target.
 for (const file of files) {
   const path = resolve(root, file);
   const stat = statSync(path);
@@ -22,4 +24,5 @@ for (const file of files) {
   }
 }
 if (failures.length) throw new Error(`Plugin packaging checks failed:\n${failures.join('\n')}`);
-console.log(`Plugin packaging: ${files.length} readable files, each below 256 KiB; no packed artifacts.`);
+console.log(`Repository: ${files.length} readable files, each below 256 KiB; no packed artifacts.`);
+console.log('Claude install folder:', checkClaudePackage(resolve(root, 'plugins/tooljet-claude')));

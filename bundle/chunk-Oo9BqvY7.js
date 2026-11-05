@@ -1,8 +1,8 @@
 import { createRequire } from "node:module";
 import { t as themeDefinition, h as createClient, j as listWorkspaceAppsTool, k as listWorkspaceFoldersTool, m as listWorkspaceUsersTool, p as manageWorkspaceUsersTool, q as inspectDatasourceSchemaTool, u as updateComponentsTool, s as manageThemeTool, x as datasourceMetadataTools, o as ok, f as fail, y as capabilityRequestSchema, z as getWorkflowCapabilities, A as lint, B as apply, D as deleteNode, E as paintsDarkCanvasInLightMode, F as projectJavascriptRuntime, G as projectAppSettings, H as compactTheme, I as pageSettingProperties, v as validateTableBatch, J as ToolJetHttpError, K as editContractSchema, L as generateEditContract, l as literalCanvasColor, r as resolveRef, P as PartialWriteError, d as normalizeComponentSpec, C as COMPONENT_FX_GUIDANCE, M as themeActionTools, N as workspaceUserActionTools, e as exposeActions } from "./chunk-Cm6A-Ye7.js";
-import { K as listWorkspaceGroupsTool, N as manageWorkspaceGroupsTool, O as verifyPageRenderTool, W as WebStandardStreamableHTTPServerTransport, Q as getRequestListener, U as workspaceGroupActionTools } from "./chunk-t62YCwCI.js";
+import { W as WebStandardStreamableHTTPServerTransport, K as getRequestListener, N as listWorkspaceGroupsTool, O as manageWorkspaceGroupsTool, Q as verifyPageRenderTool, U as workspaceGroupActionTools } from "./chunk-CzcK-hgl.js";
 import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, e as renameAppTool, v as validatePersistedAppSummary, f as containsExactValue, p as prepareQueryOptionsForWrite, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, g as containsNamedBinding, h as normalizePlannedLayouts, m as materializeRequiredDefaultChildren, j as mapKeyRefusal, k as prepareComponentBatch, o as validateEvents, q as expandQueryLifecycles, s as persistedEventSpecs, t as persistedEventIds } from "./chunk-DvDcM-Wj.js";
-import { M as McpServer } from "./chunk-mYONPs3z.js";
+import { M as McpServer } from "./chunk-C83phkMQ.js";
 import { p as external_exports, x as strictEntry, A as specSchema, E as nodeSchema, y as nodeCatalog, z as validateGraph, s as getCatalog, q as getComponentSchema, t as getLegacyComponentReplacement, F as readCatalogBytes } from "./chunk-C9d6UC58.js";
 import { p as pageIconSchema, c as componentSlotSchema, b as componentNameSchema, r as lintComponents, i as introducedLintFindings, x as lintRenderedGeometryBlocking, y as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, g as lintComponentSlots, l as lintComponentSpec, h as lintUnusableTextGeometry, z as lintNestedContainerWidths, j as lintStandardSingleLineInputHeight, k as lintTextGeometry, m as lintRenderedGeometry, F as FORM_SCHEMA_FIELD_TYPE_SET, A as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-Dp2c_mDp.js";
 import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-7Kp3wqfy.js";
@@ -11,7 +11,7 @@ import { isIP } from "node:net";
 import { createServer } from "node:http";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { mkdir, appendFile } from "node:fs/promises";
-import { dirname, resolve, basename, join } from "node:path";
+import { dirname, resolve, basename, extname, join } from "node:path";
 import { statSync, accessSync, constants, existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
@@ -3780,7 +3780,7 @@ function snapshot(path) {
 }
 function runtimeArtifactPath(moduleUrl) {
   const file = fileURLToPath(moduleUrl);
-  return basename(dirname(file)) === "bundle" ? resolve(dirname(file), "index.js") : file;
+  return basename(dirname(file)) === "bundle" ? resolve(dirname(file), `index${extname(file)}`) : file;
 }
 var RuntimeFreshnessMonitor = class {
   artifactPath;
@@ -4560,7 +4560,9 @@ function registerCatalogResources(server) {
   }
 }
 function buildServer(identity) {
-  const config = loadConfig(identity);
+  return buildConfiguredServer(loadConfig(identity));
+}
+function buildConfiguredServer(config) {
   const auth = createAuth(config);
   const client = createClient(auth, config);
   const server = new McpServer({ name: "tooljet-mcp", version: TOOLJET_MCP_VERSION });

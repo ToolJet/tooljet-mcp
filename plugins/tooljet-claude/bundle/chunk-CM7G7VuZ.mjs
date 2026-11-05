@@ -1,0 +1,495 @@
+import { createRequire } from "node:module";
+import { f as fail, o as ok } from "./chunk-ntbhSVhB.mjs";
+import { bd as external_exports } from "./chunk-DOMNI22J.mjs";
+import { f as assessQueryRead } from "./chunk-bAm-dTe9.mjs";
+createRequire(import.meta.url);
+var running = 0;
+var grants = /* @__PURE__ */ new Set();
+function reserveRenderAudit(grant) {
+  const configured = Number(process.env.MCP_RENDER_AUDIT_MAX_BROWSERS ?? 2);
+  const limit = Number.isInteger(configured) && configured >= 1 && configured <= 32 ? configured : 2;
+  if (running >= limit || grant && grants.has(grant))
+    return void 0;
+  running++;
+  if (grant)
+    grants.add(grant);
+  let released = false;
+  return () => {
+    if (released)
+      return;
+    released = true;
+    running--;
+    if (grant)
+      grants.delete(grant);
+  };
+}
+function httpUrl(value) {
+  const url = new URL(value);
+  if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) {
+    throw new Error("Render audit URLs must use HTTP(S) without embedded credentials");
+  }
+  return url;
+}
+function renderAuditOrigins(configuredBase, additional = "") {
+  return /* @__PURE__ */ new Set([httpUrl(configuredBase).origin, ...additional.split(",").map((s) => s.trim()).filter(Boolean).map((s) => httpUrl(s).origin)]);
+}
+function renderAuditUrlAllowed(value, origins) {
+  try {
+    return origins.has(httpUrl(value).origin);
+  } catch {
+    return false;
+  }
+}
+function renderAuditBase(configuredBase, override) {
+  const origins = renderAuditOrigins(configuredBase, process.env.MCP_RENDER_AUDIT_ALLOWED_ORIGINS);
+  const url = httpUrl(override ?? configuredBase);
+  if (!origins.has(url.origin))
+    throw new Error("viewer_url origin is not configured for render audits");
+  if (url.search || url.hash)
+    throw new Error("viewer_url must be a base URL without query or fragment");
+  return { base: url.href.replace(/\/$/, ""), origins };
+}
+function hasBinding(value) {
+  if (typeof value === "string")
+    return value.includes("{{");
+  if (Array.isArray(value))
+    return value.some(hasBinding);
+  return !!value && typeof value === "object" && Object.values(value).some(hasBinding);
+}
+function renderAuditRequest(url, method, saved) {
+  if (["GET", "HEAD", "OPTIONS"].includes(method))
+    return { allowed: true };
+  const blocked = (detail) => ({ allowed: false, detail: `${detail}; this behavior was not verified` });
+  if (method !== "POST" || !saved?.version_id)
+    return blocked("A potentially mutating request was blocked");
+  const parsed = httpUrl(url);
+  const match = parsed.pathname.match(/\/api\/data-queries\/([A-Za-z0-9_-]+)(?:\/versions\/([A-Za-z0-9_-]+))?\/run(?:\/([A-Za-z0-9_-]+))?$/);
+  if (!match || match[2] && (match[2] !== saved.version_id || !match[3] || parsed.searchParams.get("mode") !== "view") || !match[2] && match[3])
+    return blocked("An unverified query or mutating request was blocked");
+  const query = saved.queries.find((item) => item.id === match[1]);
+  if (!query)
+    return blocked("A query outside the audited app/version was blocked");
+  const options = query.options;
+  if (hasBinding(options))
+    return blocked("A query with dynamic bindings was blocked");
+  if (options?.requestConfirmation || options?.request_confirmation)
+    return blocked("A query requiring confirmation was blocked");
+  const read = assessQueryRead(query);
+  if (!read.provenRead || !read.directSafe || read.requiresCountPreflight || read.requiresRemoteReadConfirmation || read.requiresBillableReadConfirmation) {
+    return blocked("A query that is not a proven bounded read was blocked");
+  }
+  return { allowed: true, postData: JSON.stringify({ resolvedOptions: {} }) };
+}
+function auditScript() {
+  const widgets = Array.from(document.querySelectorAll('[data-cy^="draggable-widget-"]'));
+  const boxes = [];
+  const findings = [];
+  const seenNames = /* @__PURE__ */ new Set();
+  const bad = /\bundefined\b|\bNaN\b|\bnull\b|Invalid date|\bTab [123]\b|Select\.\.|\\n|\[object Object\]|\{\{|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}|%%|·\s*·|[$€£]\s?\d{5,}(?![,.]\d)/;
+  for (const el of widgets) {
+    const r = el.getBoundingClientRect();
+    if (r.width < 4 || r.height < 4)
+      continue;
+    const cy = el.getAttribute("data-cy") || "";
+    const type = (el.className.toString().match(/_tooljet-([A-Za-z0-9]+)/) || [])[1] || "?";
+    const name = `${type}:${cy.replace("draggable-widget-", "")}`;
+    if (seenNames.has(cy))
+      continue;
+    seenNames.add(cy);
+    const text = (el.innerText || "").trim();
+    boxes.push({ name, x: r.x, y: r.y, w: r.width, h: r.height, el });
+    const textual = /^(Html|Text|Statistics|Table|Tabs|Listview|Kanban|KeyValuePair|Timeline|Steps):/.test(name);
+    const emptyStateByName = /empty|placeholder|no_?data|nothing/i.test(cy);
+    if (textual && text.length === 0 && r.height > 30 && !emptyStateByName) {
+      findings.push({ kind: "empty_render", component: name, detail: `${Math.round(r.width)}x${Math.round(r.height)}px box renders no text (a multi-line binding or a broken expression)` });
+    }
+    const m = text.match(bad);
+    if (m)
+      findings.push({ kind: "placeholder_text", component: name, detail: `rendered text contains "${m[0]}"` });
+    let clippedHere = false;
+    for (const node of [el, ...Array.from(el.querySelectorAll("*"))]) {
+      const cs = getComputedStyle(node);
+      const hidden = cs.overflow === "hidden" || cs.overflowY === "hidden" || cs.overflowX === "hidden";
+      if (!hidden || (node.innerText || "").trim().length === 0)
+        continue;
+      if (node.scrollHeight > node.clientHeight + 6 && node.clientHeight > 12) {
+        findings.push({ kind: "clipped", component: name, detail: `"${(node.innerText || "").trim().slice(0, 40)}" needs ${node.scrollHeight}px but has ${node.clientHeight}px` });
+        clippedHere = true;
+        break;
+      }
+    }
+    if (!clippedHere && !/^(Table|Listview|Kanban|Container|Form|Tabs):/.test(name)) {
+      const leaves = Array.from(el.querySelectorAll("*")).filter((n) => n.children.length === 0 && (n.textContent || "").trim());
+      const overflow = Math.max(0, ...leaves.map((n) => n.getBoundingClientRect().bottom)) - (r.top + r.height);
+      if (overflow > 4) {
+        findings.push({ kind: "clipped", component: name, detail: `text runs ${Math.round(overflow)}px past the widget's bottom edge; the widget needs ${Math.round(r.height + overflow)}px` });
+        clippedHere = true;
+      }
+    }
+    if (/^Chart:/.test(name)) {
+      const tick = el.querySelector(".xtick text, .ytick text, .legendtext");
+      const family = tick ? getComputedStyle(tick).fontFamily.toLowerCase() : "";
+      if (family.includes("open sans") || family.includes("verdana")) {
+        findings.push({ kind: "placeholder_text", component: name, detail: "chart uses Plotly default styling (Open Sans/Verdana labels); draw it with plotFromJson and the house layout" });
+      }
+      const traces = el.querySelectorAll(".trace, .bars path, .slice, .scatterlayer path, .heatmaplayer image").length;
+      if (el.querySelector(".js-plotly-plot, .plot-container") && traces === 0) {
+        findings.push({ kind: "empty_render", component: name, detail: "chart has axes but no data trace; the query feeding it returned the wrong shape (a chart needs {data:[...], layout:{...}})" });
+      }
+      const slices = Array.from(el.querySelectorAll(".slice path, .pie path"));
+      const fills = new Set(slices.map((n) => (n.getAttribute("style") || "").match(/fill:\s*([^;]+)/)?.[1] ?? n.getAttribute("fill") ?? "").filter(Boolean));
+      if (fills.has("rgb(31, 119, 180)") && fills.has("rgb(255, 127, 14)")) {
+        findings.push({ kind: "placeholder_text", component: name, detail: "pie chart uses Plotly default rainbow colours; use the theme series palette" });
+      }
+      const drag = el.querySelector(".nsewdrag");
+      const dr = drag ? drag.getBoundingClientRect() : null;
+      if (dr) {
+        const cutLabels = Array.from(el.querySelectorAll(".bartext")).filter((t) => {
+          const tr = t.getBoundingClientRect();
+          if (tr.top >= dr.top - 1 && tr.right <= dr.right + 1)
+            return false;
+          let n = t.parentElement;
+          while (n && n !== el) {
+            if (n.getAttribute("clip-path"))
+              return true;
+            n = n.parentElement;
+          }
+          return false;
+        });
+        if (cutLabels.length)
+          findings.push({ kind: "clipped", component: name, detail: `${cutLabels.length} bar value label(s) are cut by the plot area (e.g. "${(cutLabels[0].textContent || "").trim()}"); set cliponaxis:false on the bar trace` });
+      }
+      const plotEl = el.querySelector(".js-plotly-plot");
+      for (const trace of plotEl?.data ?? []) {
+        if ((trace.type ?? "scatter") !== "bar" || !Array.isArray(trace.x))
+          continue;
+        const seen = /* @__PURE__ */ new Set();
+        const dup = trace.x.map(String).find((v) => seen.has(v) ? true : (seen.add(v), false));
+        if (dup !== void 0) {
+          findings.push({ kind: "placeholder_text", component: name, detail: `category "${dup}" appears more than once in a bar trace, so its bars stack and read as one taller bar; aggregate the rows per category in the query` });
+          break;
+        }
+      }
+      if (dr && r.height > 120 && dr.height < r.height * 0.55)
+        findings.push({ kind: "clipped", component: name, detail: `plot area is ${Math.round(dr.height)}px of a ${Math.round(r.height)}px chart (styles.padding is the Plotly margin on every side; set it to 16)` });
+      const rawLabels = Array.from(el.querySelectorAll(".bartext")).filter((t) => /^\d{5,}(\.\d+)?$/.test((t.textContent || "").trim()));
+      if (rawLabels.length)
+        findings.push({ kind: "placeholder_text", component: name, detail: `bar value labels are unformatted numbers (e.g. "${(rawLabels[0].textContent || "").trim()}"); format them with toLocaleString and the unit` });
+      const ticks = Array.from(el.querySelectorAll(".xaxislayer-above .xtick text, .xtick text"));
+      const runOff = ticks.filter((t) => t.getBoundingClientRect().bottom > r.bottom - 2);
+      if (runOff.length)
+        findings.push({ kind: "clipped", component: name, detail: `${runOff.length} category label(s) run off the bottom of the chart (e.g. "${(runOff[0].textContent || "").trim().slice(0, 30)}"); shorten the categories or draw horizontal bars (orientation 'h')` });
+    }
+    if (!clippedHere && /^Table:/.test(name)) {
+      const cut = [];
+      for (const cell of Array.from(el.querySelectorAll('td, [role="cell"], .td'))) {
+        const text2 = (cell.innerText || "").trim();
+        if (!text2)
+          continue;
+        const cellRect = cell.getBoundingClientRect();
+        const spill = Array.from(cell.querySelectorAll("*")).find((node) => {
+          if (!(node.innerText || "").trim() || node.children.length > 0)
+            return false;
+          const nr = node.getBoundingClientRect();
+          return nr.width > 0 && (nr.right > cellRect.right + 2 || nr.left < cellRect.left - 2);
+        });
+        if (spill) {
+          cut.push(text2.slice(0, 24));
+          if (cut.length >= 3)
+            break;
+          continue;
+        }
+        for (const node of [cell, ...Array.from(cell.querySelectorAll("*"))]) {
+          const cs = getComputedStyle(node);
+          if ((cs.overflow === "hidden" || cs.overflowX === "hidden") && cs.textOverflow !== "ellipsis" && node.scrollWidth > node.clientWidth + 4 && node.clientWidth > 20) {
+            cut.push(text2.slice(0, 24));
+            break;
+          }
+        }
+        if (cut.length >= 3)
+          break;
+      }
+      if (cut.length)
+        findings.push({ kind: "clipped", component: name, detail: `${cut.length}+ cells cut mid value (e.g. "${cut[0]}"); widen the column with columnSize or shorten the value` });
+      const rawHeaders = Array.from(el.querySelectorAll('th, [role="columnheader"], .th')).map((h) => (h.innerText || "").trim()).filter((text2) => /^[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(text2));
+      if (rawHeaders.length)
+        findings.push({ kind: "placeholder_text", component: name, detail: `${rawHeaders.length} column header(s) are raw field names (e.g. "${rawHeaders[0]}"); author the columns with readable names instead of letting ToolJet generate them` });
+      const scroller = Array.from(el.querySelectorAll("*")).find((node) => node.scrollWidth > node.clientWidth + 12 && node.clientWidth > 200 && /table/i.test(node.className.toString()));
+      if (scroller)
+        findings.push({ kind: "clipped", component: name, detail: `columns overflow the table by ${scroller.scrollWidth - scroller.clientWidth}px to the right (the columnSize values exceed the table width); show fewer columns or shrink them` });
+      const body = el.querySelector('.table-responsive, .tbody, tbody, [class*="table-body"]');
+      const rows = body ? Array.from(body.querySelectorAll('tr, [role="row"], .tr')) : [];
+      if (body && rows.length) {
+        const bodyBottom = body.getBoundingClientRect().bottom;
+        const sliced = rows.filter((row) => {
+          const rr = row.getBoundingClientRect();
+          return rr.top < bodyBottom - 4 && rr.bottom > bodyBottom + 6 && (row.innerText || "").trim().length > 0;
+        });
+        if (sliced.length)
+          findings.push({ kind: "clipped", component: name, detail: `a row is sliced by the table's bottom edge; size the table to whole rows (header 40 + rows x row height + footer) or enable pagination` });
+      }
+    }
+  }
+  for (let i = 0; i < boxes.length; i++) {
+    for (let j = i + 1; j < boxes.length; j++) {
+      const a = boxes[i];
+      const b = boxes[j];
+      if (a.name.startsWith("ModalV2:") || b.name.startsWith("ModalV2:"))
+        continue;
+      if (a.name.split(":")[1] === b.name.split(":")[1])
+        continue;
+      if (a.el.contains(b.el) || b.el.contains(a.el))
+        continue;
+      const ix = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+      const iy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+      if (ix > 8 && iy > 8)
+        findings.push({ kind: "overlap", component: `${a.name} and ${b.name}`, detail: `${Math.round(ix)}x${Math.round(iy)}px shared; move one` });
+    }
+  }
+  return { widgets: widgets.length, findings: findings.slice(0, 60) };
+}
+async function loadPlaywright() {
+  const explicit = process.env.MCP_RENDER_AUDIT_PLAYWRIGHT;
+  if (explicit) {
+    try {
+      const { pathToFileURL } = await import("node:url");
+      const { createRequire: createRequire2 } = await import("node:module");
+      const req = createRequire2(pathToFileURL(explicit.replace(/\/?$/, "/")).href);
+      return req(explicit);
+    } catch {
+    }
+  }
+  try {
+    const specifier = "playwright-core";
+    return await import(specifier);
+  } catch {
+    return null;
+  }
+}
+var pathOf = (url) => {
+  try {
+    return new URL(url).pathname;
+  } catch {
+    return "?";
+  }
+};
+async function auditPages(pages, options = {}, driver = loadPlaywright) {
+  const unreachable = (p, reason, detail) => ({ ...p, widgets: 0, findings: [{ kind: "unreachable", component: "-", reason, detail }] });
+  if (!pages.length)
+    return [];
+  const origins = options.allowedOrigins ?? renderAuditOrigins(pages[0].url);
+  if (pages.some((p) => !renderAuditUrlAllowed(p.url, origins))) {
+    return pages.map((p) => unreachable(p, "blocked_destination", "The requested viewer is outside the configured render-audit origins"));
+  }
+  const pw = await driver();
+  if (!pw) {
+    return pages.map((p) => unreachable(p, "browser_unavailable", "playwright-core is not installed on the MCP host; the render audit cannot run"));
+  }
+  const launch = {
+    headless: true,
+    chromiumSandbox: true,
+    args: ["--force-webrtc-ip-handling-policy=disable_non_proxied_udp"]
+  };
+  if (options.executablePath)
+    launch.executablePath = options.executablePath;
+  else
+    launch.channel = options.channel ?? "chrome";
+  let browser;
+  try {
+    browser = await pw.chromium.launch(launch);
+  } catch {
+    return pages.map((p) => unreachable(p, "browser_unavailable", "Chrome could not start on the MCP host; check the configured executable/channel"));
+  }
+  const concurrency = Math.max(1, Math.min(options.concurrency ?? 4, pages.length || 1));
+  const reports = new Array(pages.length);
+  const auditOne = async (index) => {
+    const p = pages[index];
+    let ctx;
+    let blocked;
+    const blocks = [];
+    const block = (finding, where) => {
+      blocked ??= finding;
+      const line = `${finding.reason}: ${where}`;
+      if (blocks.length < 4 && !blocks.includes(line))
+        blocks.push(line);
+    };
+    try {
+      ctx = await browser.newContext({ viewport: { width: 1600, height: 900 }, serviceWorkers: "block" });
+      if (!ctx.routeWebSocket) {
+        reports[index] = unreachable(p, "browser_unavailable", "The render audit requires Playwright 1.48+ for WebSocket interception");
+        return;
+      }
+      if (options.session) {
+        if (typeof options.session === "string") {
+          await ctx.addCookies([{ name: "tj_auth_token", value: options.session, url: new URL(p.url).origin }]);
+        } else {
+          if (new URL(p.url).origin !== options.session.origin || options.session.expiresAt <= Date.now() / 1e3) {
+            reports[index] = unreachable(p, "auth_required", "The scoped viewer credential does not authorize this page origin or has expired");
+            return;
+          }
+          await ctx.addCookies([{
+            name: "tj_oauth_viewer",
+            value: options.session.token,
+            url: options.session.origin,
+            httpOnly: true,
+            secure: options.session.origin.startsWith("https:"),
+            sameSite: "Lax",
+            expires: options.session.expiresAt
+          }]);
+        }
+      }
+      await ctx.routeWebSocket("**/*", (socket) => {
+        block({ kind: "unreachable", component: "-", reason: "blocked_destination", detail: "A WebSocket dependency was blocked; live behavior was not verified" }, `WebSocket ${pathOf(socket.url?.() ?? "")}`);
+        socket.close();
+      });
+      await ctx.route("**/*", async (route) => {
+        const request = route.request();
+        const url = request.url();
+        if (!renderAuditUrlAllowed(url, origins)) {
+          block({ kind: "unreachable", component: "-", reason: "blocked_destination", detail: "A navigation or resource outside the configured audit origins was blocked" }, `${request.method()} ${new URL(url).origin}`);
+          await route.abort();
+          return;
+        }
+        try {
+          const policy = renderAuditRequest(url, request.method(), options.savedQueries);
+          if (!policy.allowed) {
+            block({
+              kind: "unreachable",
+              component: "-",
+              reason: "blocked_execution",
+              detail: `${policy.detail} (${request.method()} ${pathOf(url)})`
+            }, `${request.method()} ${pathOf(url)}`);
+            await route.abort();
+            return;
+          }
+          const response2 = await route.fetch({
+            maxRedirects: 0,
+            maxRetries: 0,
+            timeout: 3e4,
+            ...policy.postData === void 0 ? {} : { postData: policy.postData }
+          });
+          try {
+            if (response2.status() >= 300 && response2.status() < 400 && response2.headers().location) {
+              const dest = new URL(response2.headers().location, url);
+              const signIn = renderAuditUrlAllowed(dest.href, origins) && /\/(?:login|sign-in|signin)\b/i.test(dest.pathname);
+              block({
+                kind: "unreachable",
+                component: "-",
+                reason: signIn ? "auth_required" : "redirect_blocked",
+                detail: signIn ? "The viewer requires sign-in; private app rendering was not verified" : "An HTTP redirect was blocked. Configure the canonical viewer/resource URL and its trusted origin"
+              }, `${request.method()} ${pathOf(url)} redirected`);
+              await route.abort();
+            } else
+              await route.fulfill({ response: response2 });
+          } finally {
+            await response2.dispose();
+          }
+        } catch {
+          block({ kind: "unreachable", component: "-", reason: "navigation_failed", detail: "A viewer resource could not be loaded; the audit is incomplete" }, `${request.method()} ${pathOf(url)}`);
+          await route.abort().catch(() => {
+          });
+        }
+      });
+      const page = await ctx.newPage();
+      const response = await page.goto(p.url, { waitUntil: "domcontentloaded", timeout: 6e4 });
+      if (response && response.status() >= 400) {
+        const status = response.status();
+        reports[index] = unreachable(p, [401, 403].includes(status) ? "auth_required" : "navigation_failed", "Viewer returned HTTP " + status);
+        return;
+      }
+      await page.waitForTimeout(options.settleMs ?? 6e3);
+      await page.waitForFunction(() => {
+        const charts = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart').length;
+        const plots = document.querySelectorAll('[data-cy^="draggable-widget-"]._tooljet-Chart .js-plotly-plot').length;
+        return charts === 0 || plots >= charts;
+      }, void 0, { timeout: options.chartWaitMs ?? 2e4 }).catch(() => void 0);
+      await page.waitForTimeout(1500);
+      const landed = page.url();
+      if (/\/(?:login|sign-in|signin)\b/i.test(new URL(landed).pathname)) {
+        reports[index] = unreachable(p, "auth_required", "The viewer requires sign-in; private app rendering was not verified");
+        return;
+      }
+      const result = await page.evaluate(auditScript);
+      reports[index] = result.widgets === 0 && blocked ? { page: p.page, url: p.url, widgets: 0, findings: [{ ...blocked, detail: `${blocked.detail}; the page then showed no widgets. Blocked: ${blocks.join("; ")}` }] } : result.widgets === 0 ? unreachable(p, "no_widgets", "No ToolJet widgets were found; the page may be empty, unauthenticated, or not loaded") : { page: p.page, url: p.url, widgets: result.widgets, findings: [...result.findings, ...blocked ? [blocked] : []] };
+    } catch (err) {
+      const why = String(err?.message ?? err).split("\n")[0].slice(0, 200);
+      reports[index] = blocked ? { ...p, widgets: 0, findings: [{ ...blocked, detail: `${blocked.detail}; the audit then stopped: ${why}. Blocked: ${blocks.join("; ")}` }] } : unreachable(p, "navigation_failed", `Could not load or inspect the viewer page: ${why}`);
+    } finally {
+      await ctx?.close().catch(() => {
+      });
+    }
+  };
+  try {
+    let next = 0;
+    const workers = Array.from({ length: concurrency }, async () => {
+      while (next < pages.length) {
+        const index = next++;
+        await auditOne(index);
+      }
+    });
+    await Promise.all(workers);
+  } finally {
+    await browser.close();
+  }
+  return reports;
+}
+function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
+  return {
+    name: "verify_page_render",
+    title: "Verify Page Render",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    description: `Render audit of one page or every page of an app in a headless browser at 1600x900, after the app is built. Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", "Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. Run it once per page before the handoff and review every finding; report unverified behavior explicitly. Opens the version being edited with the builder's ToolJet session, or a separate app-scoped OAuth viewer credential (limited to the viewer origin), so a private app is audited without being made public. Only saved, static, bounded read queries may run; writes, dynamic queries and queries requiring confirmation are blocked and reported as unverified. Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.`,
+    inputSchema: {
+      app_id: external_exports.string().regex(/^[A-Za-z0-9_-]+$/),
+      page_handle: external_exports.string().optional().describe("one page handle; omit to audit every page"),
+      viewer_url: external_exports.string().optional().describe("canonical viewer base URL; alternate origins require host configuration in MCP_RENDER_AUDIT_ALLOWED_ORIGINS")
+    },
+    async handler(args) {
+      const release = reserveRenderAudit(client.renderAuditGrant);
+      if (!release)
+        return fail(new Error("Render verification is busy; rendering remains unverified. Retry shortly."));
+      try {
+        if (!/^[A-Za-z0-9_-]+$/.test(args.app_id))
+          return fail(new Error("Invalid app id"));
+        const { base, origins } = renderAuditBase(viewerBase(), args.viewer_url);
+        if (client.browserRenderOrigin && new URL(base).origin !== client.browserRenderOrigin) {
+          return fail(new Error("OAuth render verification must use the configured ToolJet deployment origin"));
+        }
+        const summary = await client.getAppSummary(args.app_id);
+        const pages = summary.pages ?? [];
+        const version = await client.editingVersionName?.(args.app_id).catch(() => void 0);
+        const preview = version ? `?env=development&version=${encodeURIComponent(version)}` : "";
+        const targets = pages.filter((p) => !args.page_handle || p.handle === args.page_handle).map((p) => ({ page: p.handle ?? p.name ?? "home", url: `${base}/applications/${args.app_id}/${encodeURIComponent(p.handle ?? "home")}${preview}` }));
+        if (!targets.length)
+          return fail(new Error(`no page ${args.page_handle ?? ""} in app ${args.app_id}`));
+        if (summary.queries?.length) {
+          if (!summary.version_id)
+            return fail(new Error("Cannot verify datasource eligibility without an app version."));
+          if (summary.queries.some((query) => !query.data_source_id)) {
+            return fail(new Error("Cannot verify an app query datasource; refusing browser verification."));
+          }
+          await client.listDatasources(summary.version_id);
+          await Promise.all([...new Set(summary.queries.map((query) => query.data_source_id))].map((id) => client.assertDatasourceAllowed(id, summary.version_id)));
+        }
+        const options = {
+          channel: process.env.MCP_RENDER_AUDIT_CHANNEL || "chrome",
+          executablePath: process.env.MCP_RENDER_AUDIT_CHROME || void 0,
+          allowedOrigins: origins,
+          savedQueries: summary,
+          // MCP_RENDER_AUDIT_SESSION=off keeps the browser unauthenticated (private apps are then reported unverified).
+          session: process.env.MCP_RENDER_AUDIT_SESSION === "off" ? void 0 : client.browserRenderOrigin ? await client.viewerSession?.(args.app_id) : await client.viewerSession?.(args.app_id).catch(() => void 0)
+        };
+        const reports = await auditPages(targets, options, driver);
+        const total = reports.reduce((n, r) => n + r.findings.length, 0);
+        return ok({ pages: reports, ok: total === 0, findings: total });
+      } catch (err) {
+        return fail(err);
+      } finally {
+        release();
+      }
+    }
+  };
+}
+export {
+  verifyPageRenderTool as v
+};
