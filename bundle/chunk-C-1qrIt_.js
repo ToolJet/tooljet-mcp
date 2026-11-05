@@ -1,15 +1,136 @@
 import { createRequire } from "node:module";
-import { aA as tableQuotaError, aB as TableQuotaError, ay as ok, ax as fail } from "./chunk-D70UN33u.js";
-import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, e as definition } from "./chunk-Dlc8fT0Z.js";
-import { f as encodeComponentParent, t as downgradeFlexForLibrary, u as assertPageIcon, v as resolveComponentLibrary, i as isMisplacedStyleKey, w as toLibraryComponent, x as missingLibraryPins, d as decodeComponentParent, y as libraryTypeOf } from "./chunk-BAklDiyp.js";
-import { cp as assertPersistableQueryToggles, cq as normalizeWorkflowQueryOptions, cr as assertWorkflowQueryOptions, cs as workflowMappingMatches } from "./chunk-D7ePN5zJ.js";
-import { randomUUID, createHash } from "node:crypto";
-import { isDeepStrictEqual } from "node:util";
-import { readFileSync } from "node:fs";
+import { ef as tableQuotaError, eg as TableQuotaError, e6 as ok, e5 as fail, e8 as getComponentSchema } from "./chunk-CNzl5iHC.js";
+import { d as decodeComponentParent, e as encodeComponentParent, a as downgradeFlexForLibrary, b as assertPageIcon, r as resolveComponentLibrary, i as isMisplacedStyleKey, t as toLibraryComponent, m as missingLibraryPins, l as libraryTypeOf, c as libraryPins, f as defaultPack, s as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION, P as PROPERTY_KEY_ALIASES, g as retiredUi2Name, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey } from "./chunk-Bl5L2ACf.js";
+import { b0 as external_exports, b7 as definition } from "./chunk-Id3EmQoo.js";
+import { readFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { e as external_exports } from "./chunk-B2U2gFJI.js";
-import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-CYiXr8vL.js";
+import { c as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches } from "./chunk-4VsxWCKn.js";
+import { randomUUID, createHash } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
+import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-hq1_aYNY.js";
+createRequire(import.meta.url);
+function strictEntry(shape, describeUnknown) {
+  return external_exports.strictObject(shape, {
+    error: (issue) => issue.code === "unrecognized_keys" ? issue.keys.map(describeUnknown).join(" ") : void 0
+  });
+}
+function hasNonEmptyDefinition(definition2) {
+  if (!definition2)
+    return false;
+  return Object.values(definition2).some((section) => section !== null && typeof section === "object" && Object.keys(section).length > 0);
+}
+var FLEX_CONTAINER_TYPE = "FlexContainer";
+var FLEX_FILL_WIDTH_DESCRIPTION = "FlexContainer child only: true (the default) fills the free main-axis width; false uses widthPx. Ignored elsewhere.";
+var FLEX_WIDTH_PX_DESCRIPTION = "FlexContainer child only: fixed width in pixels, applied when fillWidth is false. Ignored elsewhere.";
+var FLEX_GROW_DESCRIPTION = "FlexContainer row child only: share of the free width among fill children (default 1; 2 beside 1 takes two thirds). Ignored elsewhere.";
+var FLEX_MIN_WIDTH_PX_DESCRIPTION = "FlexContainer row child only: narrowest a fill child may get, in pixels; in a wrapping row a narrower child moves to the next line. Ignored elsewhere.";
+function isFlexContainerType(type) {
+  return type === FLEX_CONTAINER_TYPE;
+}
+function storedChildOrder(properties) {
+  const entry = properties?.childOrder;
+  const value = Array.isArray(entry) ? entry : entry?.value;
+  return Array.isArray(value) ? value.filter((id) => typeof id === "string" && id.length > 0) : [];
+}
+function normalizeChildOrder(childOrder, actualChildIds) {
+  const actual = new Set(actualChildIds);
+  const seen = /* @__PURE__ */ new Set();
+  const normalized2 = [];
+  for (const id of [...childOrder.filter((id2) => actual.has(id2)), ...actualChildIds]) {
+    if (seen.has(id))
+      continue;
+    seen.add(id);
+    normalized2.push(id);
+  }
+  return normalized2;
+}
+function desktopRect(component) {
+  const desktop = component.layouts?.desktop;
+  return {
+    top: typeof desktop?.top === "number" ? desktop.top : 0,
+    left: typeof desktop?.left === "number" ? desktop.left : 0
+  };
+}
+function bodyParentId(parent) {
+  if (!parent)
+    return void 0;
+  const decoded = decodeComponentParent(parent);
+  return decoded.slotName === "body" ? decoded.parentId : void 0;
+}
+function currentChildOrder(container, page) {
+  const children = page.filter((component) => bodyParentId(component.parent) === container.id);
+  const stored = storedChildOrder(container.properties);
+  const storedSet = new Set(stored);
+  const unordered = children.filter((child) => !storedSet.has(child.id)).sort((a, b) => {
+    const ra = desktopRect(a), rb = desktopRect(b);
+    return ra.top - rb.top || ra.left - rb.left;
+  }).map((child) => child.id);
+  return normalizeChildOrder(stored, [...children.map((child) => child.id).filter((id) => storedSet.has(id)), ...unordered]);
+}
+function appendedChildOrders(page, additions) {
+  const byId = new Map(page.map((component) => [component.id, component]));
+  const added = /* @__PURE__ */ new Map();
+  for (const { parentId, childId } of additions) {
+    const container = byId.get(parentId);
+    if (!container || !isFlexContainerType(container.type))
+      continue;
+    const ids = added.get(parentId) ?? [];
+    if (!ids.includes(childId))
+      ids.push(childId);
+    added.set(parentId, ids);
+  }
+  const orders = /* @__PURE__ */ new Map();
+  for (const [parentId, newIds] of added) {
+    const container = byId.get(parentId);
+    const newSet = new Set(newIds);
+    const existing = currentChildOrder(container, page.filter((component) => !newSet.has(component.id)));
+    const stored = storedChildOrder(container.properties);
+    const next = normalizeChildOrder(stored, [...existing, ...newIds]);
+    if (next.length !== stored.length || next.some((id, index) => stored[index] !== id))
+      orders.set(parentId, next);
+  }
+  return orders;
+}
+function batchChildOrders(entries, explicit = /* @__PURE__ */ new Map(), resolveRef2 = () => void 0) {
+  const orders = /* @__PURE__ */ new Map();
+  for (const container of entries) {
+    if (!isFlexContainerType(container.type))
+      continue;
+    const children = entries.filter((entry) => entry.parentId === container.id).map((entry) => entry.id);
+    const authored = (explicit.get(container.id) ?? []).flatMap((ref) => typeof ref === "string" ? [resolveRef2(ref) ?? ref] : []);
+    orders.set(container.id, [.../* @__PURE__ */ new Set([...authored, ...children])]);
+  }
+  return orders;
+}
+function childOrderProperty(order) {
+  return { value: order };
+}
+function reparentAdditions(page, moves) {
+  const byId = new Map(page.map((component) => [component.id, component]));
+  return moves.flatMap(({ componentId, parent }) => {
+    if (parent === void 0)
+      return [];
+    const nextParent = bodyParentId(parent);
+    if (!nextParent || nextParent === bodyParentId(byId.get(componentId)?.parent))
+      return [];
+    return [{ parentId: nextParent, childId: componentId }];
+  });
+}
+function resolveAuthoredChildOrder(container, page, authored) {
+  const children = page.filter((component) => bodyParentId(component.parent) === container.id);
+  const unknown = [];
+  const ids = authored.flatMap((item) => {
+    const ref = typeof item === "string" ? item : String(item);
+    const child = children.find((candidate) => candidate.id === ref) ?? children.find((candidate) => candidate.name === ref);
+    if (!child) {
+      unknown.push(ref);
+      return [];
+    }
+    return [child.id];
+  });
+  return { order: normalizeChildOrder(ids, [...ids, ...currentChildOrder(container, page)]), unknown };
+}
 createRequire(import.meta.url);
 function componentRef(component) {
   return component.clientRef ?? component.name;
@@ -2789,6 +2910,10 @@ function createClient(auth, config) {
       options: body.options ?? {}
     };
   }
+  async function datasourceKind(dataSourceId) {
+    const known = datasourceIdentities.get(`${await auth.getOrganizationId()}:${dataSourceId}`);
+    return known?.kind ?? (await getDatasourceConnectionDetails(dataSourceId)).kind;
+  }
   async function testDatasourceConnection(params) {
     await assertDatasourceAllowed(params.dataSourceId, void 0, params.environmentId);
     const environmentId = params.environmentId ?? await getDevelopmentEnvironmentId();
@@ -2929,6 +3054,7 @@ function createClient(auth, config) {
     assertDatasourceAllowed,
     invokeDatasourceMethod,
     getDatasourceConnectionDetails,
+    datasourceKind,
     getPluginSpec,
     specCacheScope,
     testDatasourceConnection,
@@ -2941,6 +3067,398 @@ function pageOrderIndex(page) {
   if (typeof page?.pageGroupIndex === "number" && Number.isFinite(page.pageGroupIndex))
     return page.pageGroupIndex;
   return typeof page?.index === "number" ? page.index : void 0;
+}
+createRequire(import.meta.url);
+var colorPair = external_exports.object({
+  light: external_exports.string().trim().min(1).max(100).describe("Color used in light mode; hex is recommended."),
+  dark: external_exports.string().trim().min(1).max(100).describe("Color used in dark mode; hex is recommended.")
+}).strict();
+var themeDefinition = external_exports.object({
+  brand: external_exports.object({
+    colors: external_exports.object({
+      primary: colorPair,
+      secondary: colorPair.optional(),
+      tertiary: colorPair.optional()
+    }).strict()
+  }).strict(),
+  text: external_exports.object({
+    font: external_exports.string().trim().min(1).max(200),
+    colors: external_exports.object({
+      primary: colorPair,
+      placeholder: colorPair.optional(),
+      disabled: colorPair.optional()
+    }).strict()
+  }).strict(),
+  border: external_exports.object({
+    radius: external_exports.object({
+      default: external_exports.number().nonnegative(),
+      small: external_exports.number().nonnegative(),
+      large: external_exports.number().nonnegative()
+    }).strict(),
+    colors: external_exports.object({
+      default: colorPair,
+      weak: colorPair.optional(),
+      disabled: colorPair.optional()
+    }).strict()
+  }).strict(),
+  systemStatus: external_exports.object({
+    colors: external_exports.object({
+      success: colorPair,
+      error: colorPair.optional(),
+      warning: colorPair.optional()
+    }).strict()
+  }).strict(),
+  surface: external_exports.object({
+    colors: external_exports.object({
+      appBackground: colorPair,
+      surface1: colorPair,
+      surface2: colorPair,
+      surface3: colorPair
+    }).strict()
+  }).strict()
+}).strict();
+var ACCENT_MENU = [
+  { name: "Indigo", hex: "#4F46E5", fits: "software, analytics, internal tools" },
+  { name: "Violet", hex: "#7C3AED", fits: "creative, education, product teams" },
+  { name: "Fuchsia", hex: "#C026D3", fits: "consumer, beauty, events" },
+  { name: "Rose", hex: "#E11D48", fits: "hospitality, retail, food" },
+  { name: "Coral", hex: "#EA580C", fits: "logistics, field service, sports" },
+  { name: "Amber", hex: "#B45309", fits: "manufacturing, construction, real estate" },
+  { name: "Emerald", hex: "#059669", fits: "finance, sustainability, health" },
+  { name: "Teal", hex: "#0D9488", fits: "healthcare, travel, operations" },
+  { name: "Sky", hex: "#0284C7", fits: "support, IT, aviation, marine" }
+];
+var MENU_TEXT = ACCENT_MENU.map((a) => `${a.name} ${a.hex} (${a.fits})`).join(", ");
+var hsl = (hex2) => {
+  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(hex2.trim());
+  if (!m)
+    return null;
+  const full = m[1].length === 3 ? m[1].replace(/./g, (c) => c + c) : m[1];
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d === 0)
+    return { h: 0, s: 0, l };
+  const s = d / (1 - Math.abs(2 * l - 1));
+  const h = max === r ? (g - b) / d % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return { h: (h * 60 + 360) % 360, s, l };
+};
+var accentWarning = (definition2) => {
+  const light = definition2?.brand?.colors?.primary?.light;
+  if (typeof light !== "string")
+    return null;
+  const c = hsl(light);
+  if (!c)
+    return null;
+  const kind = c.l < 0.22 ? "near-black" : c.s < 0.2 ? "grey" : c.h >= 212 && c.h <= 226 && c.s > 0.75 && c.l >= 0.45 && c.l <= 0.66 ? "the stock blue" : null;
+  if (!kind)
+    return null;
+  return `The theme's primary ${light} is ${kind}, which reads plain. Unless the request names this colour or the brand uses it, pick an accent from the menu by the request's brand, industry or mood: ${MENU_TEXT}. Keep the canvas and neutrals light and lightly tinted toward it.`;
+};
+var STANDARD_PRIMARY = { brand: { colors: { primary: { light: "#2563EB" } } } };
+var here = dirname(fileURLToPath(import.meta.url));
+var standardThemeCandidates = [
+  resolve(here, "../../data/default-theme.json"),
+  resolve(here, "../data/default-theme.json")
+];
+var standardThemeCache;
+function loadStandardTheme() {
+  if (!standardThemeCache) {
+    const path = standardThemeCandidates.find((candidate) => existsSync(candidate));
+    if (!path) {
+      throw new Error(`standard theme file not found (looked in ${standardThemeCandidates.join(", ")})`);
+    }
+    standardThemeCache = JSON.parse(readFileSync(path, "utf8"));
+  }
+  return standardThemeCache;
+}
+var derivedThemeSchema = external_exports.object({
+  name: external_exports.string().trim().min(5).max(100),
+  definition: themeDefinition
+}).strict();
+async function resolveTheme(client, choice) {
+  const themes = await client.listAppThemes();
+  if (process.env.MCP_AGENT_PACK_LOOK === "own" && (choice === "standard" || choice === "workspace_default")) {
+    const basic = themes.find((theme) => theme.isBasic && !theme.isDisabled);
+    if (basic)
+      return basic;
+  }
+  const wanted = choice === "standard" ? loadStandardTheme() : typeof choice === "object" ? choice : void 0;
+  if (wanted) {
+    const existing = themes.find((theme) => theme.name === wanted.name && !theme.isDisabled);
+    if (existing)
+      return existing;
+    return client.createAppTheme({ name: wanted.name, definition: wanted.definition, isDefault: false });
+  }
+  const named = themes.find((theme) => theme.name === choice || theme.id === choice);
+  if (!named)
+    throw new Error(`Theme "${String(choice)}" is not available in the active workspace.`);
+  if (named.isDisabled)
+    throw new Error(`Theme "${named.name}" is disabled and cannot be selected.`);
+  return named;
+}
+function paintsDarkCanvasInLightMode(definition2) {
+  const light = definition2?.surface?.colors?.appBackground?.light;
+  const hex2 = typeof light === "string" ? /^#([0-9a-f]{6})$/i.exec(light.trim())?.[1] : void 0;
+  if (!hex2)
+    return false;
+  const [r, g, b] = [0, 2, 4].map((at) => {
+    const channel = parseInt(hex2.slice(at, at + 2), 16) / 255;
+    return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.18;
+}
+function createAppTool(client) {
+  return {
+    name: "create_app",
+    title: "Create App",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true
+    },
+    description: 'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, app_url (a backward-compatible alias for editor_url), and the theme that was applied. Honor explicit or selected themes first. Otherwise derive a theme from a brand, industry or customer type (see references/themes.md) and pass theme:{name, definition}; include complete brand, text, border, systemStatus and surface tokens with light/dark values, not a font-only or partial definition. It is created once per workspace by name and applied. Otherwise the app gets the standard theme ("ToolJet Modern": neutral greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. If a theme cannot be created (for example a licence gate) the app is still created and the result carries a theme warning. New apps are built in ToolJet UI 2.0 (component_library "ui2": types starting with Shad, laid out in FlexContainers); pass component_library "ui1" only when the user asks for the classic ToolJet widgets.',
+    inputSchema: {
+      name: external_exports.string().min(1),
+      theme: external_exports.union([external_exports.string().min(1), derivedThemeSchema]).optional(),
+      app_mode: external_exports.enum(["light", "dark"]).optional().describe("Open the app in this mode. Pass 'dark' when the request asks for a dark app, so the theme's dark values paint every surface; never paint dark backgrounds by hand on a light-mode app."),
+      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in, saved on the app (the components panel lists it). Default "ui2", ToolJet UI 2.0; "ui1" (ToolJet UI 1.0, the native widgets) only when the user asks for it.'),
+      component_pack: external_exports.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION)
+    },
+    async handler(args) {
+      try {
+        if (typeof args.theme === "object")
+          derivedThemeSchema.parse(args.theme);
+        const created = await client.createApp(args.name);
+        const componentLibrary = args.component_library ?? "ui2";
+        const choice = args.theme ?? "standard";
+        const pins = libraryPins();
+        const pinned = pins ? { customComponentLibraries: pins } : {};
+        const result = {
+          ...created,
+          component_library: componentLibrary,
+          ...componentLibrary === "ui2" && (args.component_pack || defaultPack()) ? { component_pack: (args.component_pack || defaultPack()).toLowerCase() } : {},
+          theme: { mode: "workspace_default" }
+        };
+        const savedLibrary = savedComponentLibrary(componentLibrary, args.component_pack);
+        const saveLibrary = () => Promise.resolve().then(() => client.updateAppSettings({
+          appId: created.app_id,
+          versionId: created.version_id,
+          globalSettings: { componentLibrary: savedLibrary, ...pinned }
+        })).catch((libraryErr) => {
+          result.component_library_warning = `Could not save component_library "${componentLibrary}": ${libraryErr instanceof Error ? libraryErr.message : String(libraryErr)}. Build in it anyway.`;
+        });
+        if (choice === "workspace_default") {
+          await saveLibrary();
+          return ok(result);
+        }
+        const label = typeof choice === "object" ? choice.name : choice;
+        try {
+          const theme = await resolveTheme(client, choice);
+          const appMode = args.app_mode ?? (typeof choice === "object" && paintsDarkCanvasInLightMode(choice.definition) ? "dark" : void 0);
+          await client.updateAppSettings({
+            appId: created.app_id,
+            versionId: created.version_id,
+            globalSettings: { theme, componentLibrary: savedLibrary, ...pinned, ...appMode ? { appMode } : {} }
+          });
+          const mode = choice === "standard" ? "standard" : typeof choice === "object" ? "derived" : "named";
+          const accentNote = mode === "standard" ? accentWarning(STANDARD_PRIMARY) : mode === "derived" ? accentWarning(choice.definition) : null;
+          result.theme = { mode, id: theme.id, name: theme.name, ...appMode ? { app_mode: appMode } : {}, ...accentNote ? { accent_note: accentNote } : {} };
+        } catch (themeErr) {
+          await saveLibrary();
+          result.theme = {
+            mode: "workspace_default",
+            warning: `Could not apply theme "${label}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
+          };
+        }
+        return ok(result);
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+var THEME_LICENCE_USER_MESSAGE = "Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.";
+async function applyToApp(client, theme, args, definition2) {
+  if (!args.app_id || !args.version_id)
+    return void 0;
+  const mode = args.app_mode ?? (paintsDarkCanvasInLightMode(definition2) ? "dark" : void 0);
+  await client.updateAppSettings({
+    appId: args.app_id,
+    versionId: args.version_id,
+    globalSettings: { theme, ...mode ? { appMode: mode } : {} }
+  });
+  return { app_id: args.app_id, version_id: args.version_id, ...mode ? { app_mode: mode } : {} };
+}
+var hex = (h, s, l) => {
+  const channel = (n) => {
+    const k = (n + h / 30) % 12;
+    return Math.round(255 * (l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, "0");
+  };
+  return `#${channel(0)}${channel(8)}${channel(4)}`;
+};
+function definitionFromChoices(args) {
+  const accent = args.primary ? hsl(args.primary) : null;
+  if (!args.primary || !accent)
+    return void 0;
+  const { h, s: sat, l } = accent;
+  const pair = (light, dark, hue = h) => ({ light: hex(hue, light[0], light[1]), dark: hex(hue, dark[0], dark[1]) });
+  const base = loadStandardTheme().definition;
+  const radius = args.radius ?? base.border.radius.default;
+  return {
+    brand: {
+      colors: {
+        primary: { light: args.primary, dark: hex(h, sat, Math.max(l, 0.62)) },
+        secondary: pair([0.45, 0.22], [0.4, 0.78]),
+        tertiary: pair([0.65, 0.42], [0.65, 0.68], (h + 35) % 360)
+      }
+    },
+    text: {
+      font: args.font ?? base.text.font,
+      colors: { primary: pair([0.28, 0.13], [0.18, 0.94]), placeholder: pair([0.12, 0.45], [0.1, 0.65]), disabled: pair([0.1, 0.68], [0.08, 0.45]) }
+    },
+    border: {
+      radius: { default: radius, small: Math.max(radius - 2, 0), large: radius + 4 },
+      colors: { default: pair([0.22, 0.86], [0.12, 0.24]), weak: pair([0.24, 0.91], [0.12, 0.19]), disabled: pair([0.16, 0.82], [0.1, 0.28]) }
+    },
+    systemStatus: base.systemStatus,
+    surface: {
+      colors: {
+        appBackground: pair([0.3, 0.965], [0.16, 0.075]),
+        surface1: { light: "#ffffff", dark: hex(h, 0.14, 0.11) },
+        surface2: pair([0.28, 0.94], [0.13, 0.145]),
+        surface3: pair([0.24, 0.9], [0.12, 0.19])
+      }
+    }
+  };
+}
+function requireValue(value, label) {
+  if (value === void 0)
+    throw new Error(`manage_theme requires ${label} for this action.`);
+  return value;
+}
+async function readTheme(client, themeId) {
+  const theme = (await client.listAppThemes()).find((candidate) => candidate.id === themeId);
+  if (!theme)
+    throw new Error(`Theme "${themeId}" is not available in the active workspace.`);
+  return theme;
+}
+function manageThemeTool(client) {
+  return {
+    name: "manage_theme",
+    title: "Manage Workspace Theme",
+    // list/create/rename are safe, but the same tool also deletes a theme, so the hint covers its widest action.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
+    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. create with app_id and version_id also applies the theme to that app (in app_mode, else in dark mode when its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same name, so there is no need to list themes first. Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass include_definitions:true (or theme_id) to get a definition.",
+    inputSchema: {
+      action: external_exports.enum(["list", "create", "set_default", "update_definition", "rename", "delete"]),
+      theme_id: external_exports.string().uuid().optional(),
+      name: external_exports.string().trim().min(1).max(100).optional(),
+      primary: external_exports.string().regex(/^#[0-9a-fA-F]{6}$/).optional().describe("create: the accent colour as a hex. With font and radius, this is all a theme needs; the rest is derived from its hue"),
+      font: external_exports.string().trim().min(1).max(100).optional().describe("create, with primary: one font family name"),
+      radius: external_exports.number().min(0).max(32).optional().describe("create, with primary: corner radius in px"),
+      definition: themeDefinition.optional(),
+      is_default: external_exports.boolean().optional(),
+      confirm: external_exports.boolean().optional(),
+      include_definitions: external_exports.boolean().optional(),
+      app_id: external_exports.string().uuid().optional().describe("create only: apply the theme to this app as well"),
+      version_id: external_exports.string().uuid().optional().describe("create only, with app_id: the app version to apply it to"),
+      app_mode: external_exports.enum(["light", "dark"]).optional().describe("create only, with app_id: open the app in this mode. Pass 'dark' when the request asks for a dark app: the theme's dark values then paint every surface, and ToolJet's own parts (tables, inputs) draw for them. Never paint dark backgrounds by hand on a light-mode app.")
+    },
+    async handler(args) {
+      try {
+        if (args.action === "list") {
+          const themes = await client.listAppThemes();
+          if (args.include_definitions)
+            return ok({ themes });
+          if (args.theme_id) {
+            const one = themes.find((theme) => theme.id === args.theme_id);
+            return one ? ok({ themes: [one] }) : fail(new Error(`Theme "${args.theme_id}" not found.`));
+          }
+          return ok({
+            themes: themes.map(({ id, name, isDefault, isBasic, isDisabled }) => ({ id, name, isDefault, isBasic, isDisabled })),
+            note: "Definitions omitted; pass include_definitions:true or theme_id to read one."
+          });
+        }
+        if (args.action === "create") {
+          const missing = [
+            ...args.name === void 0 ? ['name (at least 5 characters, the brand or app, e.g. "Harbor Ledger")'] : [],
+            ...args.definition === void 0 && !definitionFromChoices(args) ? ['primary (the accent as a hex colour, e.g. "#0f766e"; font and radius are optional)'] : []
+          ];
+          if (missing.length)
+            throw new Error(`manage_theme create needs ${missing.join(" and ")}. Send them together in one call.`);
+          const name = requireValue(args.name, "name");
+          if (name.length < 5)
+            throw new Error("Theme name must contain at least 5 characters.");
+          if (name === "ToolJet")
+            throw new Error('The reserved theme name "ToolJet" cannot be used.');
+          const existing = (await client.listAppThemes()).find((theme) => theme.name === name && !theme.isDisabled);
+          if (existing) {
+            const applied = await applyToApp(client, existing, args, existing.definition ?? args.definition);
+            return ok({
+              theme: existing,
+              reused: true,
+              ...applied ? { applied } : {},
+              warnings: [
+                `Theme "${name}" already exists in this workspace; returned it instead of creating a duplicate. ` + (applied ? "It is applied to the app." : "Apply it with update_app_settings, or use update_definition to change it.")
+              ]
+            });
+          }
+          try {
+            const definition2 = requireValue(args.definition ?? definitionFromChoices(args), "primary (a hex colour; font and radius are optional)");
+            const created = await client.createAppTheme({
+              name,
+              definition: definition2,
+              isDefault: args.is_default ?? false
+            });
+            const applied = await applyToApp(client, created, args, definition2);
+            const accent = accentWarning(definition2);
+            return ok({ theme: created, ...applied ? { applied } : {}, ...accent ? { warnings: [accent] } : {} });
+          } catch (error) {
+            if (error instanceof ToolJetHttpError && error.status === 451) {
+              return ok({
+                theme: null,
+                licensed: false,
+                user_message: THEME_LICENCE_USER_MESSAGE,
+                warnings: [
+                  "Custom themes are not included in this ToolJet plan (HTTP 451). The app keeps the workspace default theme. Do not retry theme creation or guess a theme id; build the app on the default theme and repeat `user_message` to the user in the closing handoff."
+                ]
+              });
+            }
+            throw error;
+          }
+        }
+        const themeId = requireValue(args.theme_id, "theme_id");
+        await readTheme(client, themeId);
+        if (args.action === "set_default") {
+          await client.setDefaultAppTheme(themeId, args.is_default ?? true);
+          return ok({ theme: await readTheme(client, themeId) });
+        }
+        if (args.action === "update_definition") {
+          await client.updateAppThemeDefinition(themeId, requireValue(args.definition, "definition"));
+          const accent = accentWarning(args.definition);
+          return ok({ theme: await readTheme(client, themeId), ...accent ? { warnings: [accent] } : {} });
+        }
+        if (args.action === "rename") {
+          await client.renameAppTheme(themeId, requireValue(args.name, "name"));
+          return ok({ theme: await readTheme(client, themeId) });
+        }
+        if (args.confirm !== true) {
+          throw new Error(`Deleting theme "${themeId}" requires confirm:true after exact-target user approval.`);
+        }
+        await client.deleteAppTheme(themeId);
+        return ok({ deleted: true, theme_id: themeId });
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  };
 }
 createRequire(import.meta.url);
 var listWorkspaceGroupsInput = external_exports.object({
@@ -3421,21 +3939,682 @@ function inspectDatasourceSchemaTool(client) {
     }
   };
 }
+createRequire(import.meta.url);
+var COMPONENT_FX_GUIDANCE = "For properties/styles/validation with an FX toggle, use `{ value: <expression>, fxActive: true }` only for bindings/conditions/calculations the normal control cannot express. Keep defaults and panel-editable constants (including `{{true}}`/`{{false}}`, numbers, selections, colors) out of FX. For nested Table columns/buttons/options and KeyValuePair fields, add the property key (e.g. `columnVisibility`, `disableButton`, `fieldVisibility`, `isEditable`) to that object's `fxActiveFields`, preserving other entries. ";
+var COMPONENT_FX_UPDATE_GUIDANCE = COMPONENT_FX_GUIDANCE + "Updates must include both `value` and `fxActive`; revert with `{ value: <constant>, fxActive: false }`. For nested Table fields, remove only reverted property keys from `fxActiveFields`. KeyValuePair arrays merge by index; verify flag removals and report retained flags. ";
+createRequire(import.meta.url);
+function separateAdjacentClosingBraces(text) {
+  let out = "";
+  let i = 0;
+  const n = text.length;
+  while (i < n) {
+    if (!text.startsWith("{{", i)) {
+      out += text[i];
+      i += 1;
+      continue;
+    }
+    let j = i + 2;
+    let depth = 0;
+    let quote = null;
+    let expr = "";
+    let terminated = false;
+    while (j < n) {
+      const c = text[j];
+      if (quote) {
+        expr += c;
+        if (c === "\\" && j + 1 < n) {
+          expr += text[j + 1];
+          j += 2;
+          continue;
+        }
+        if (c === quote)
+          quote = null;
+        j += 1;
+        continue;
+      }
+      if (c === "'" || c === '"' || c === "`") {
+        quote = c;
+        expr += c;
+        j += 1;
+        continue;
+      }
+      if (c === "{") {
+        depth += 1;
+        expr += c;
+        j += 1;
+        continue;
+      }
+      if (c === "}") {
+        if (depth === 0 && text[j + 1] === "}") {
+          terminated = true;
+          break;
+        }
+        depth = Math.max(depth - 1, 0);
+        expr += c;
+        if (text[j + 1] === "}")
+          expr += " ";
+        j += 1;
+        continue;
+      }
+      expr += c;
+      j += 1;
+    }
+    if (!terminated) {
+      out += text.slice(i);
+      break;
+    }
+    out += `{{${expr}}}`;
+    i = j + 2;
+  }
+  return out;
+}
+function separateAdjacentClosingBracesDeep(value) {
+  if (typeof value === "string") {
+    if (!value.includes("{{"))
+      return { value, changed: false };
+    const fixed = separateAdjacentClosingBraces(value);
+    return { value: fixed, changed: fixed !== value };
+  }
+  if (Array.isArray(value)) {
+    let changed = false;
+    const next = value.map((item) => {
+      const result = separateAdjacentClosingBracesDeep(item);
+      changed ||= result.changed;
+      return result.value;
+    });
+    return { value: changed ? next : value, changed };
+  }
+  if (value && typeof value === "object") {
+    let changed = false;
+    const next = {};
+    for (const [key, item] of Object.entries(value)) {
+      const result = separateAdjacentClosingBracesDeep(item);
+      changed ||= result.changed;
+      next[key] = result.value;
+    }
+    return { value: changed ? next : value, changed };
+  }
+  return { value, changed: false };
+}
+function normalizeSection(section) {
+  if (!section)
+    return { value: void 0, patch: void 0 };
+  const value = {};
+  const patch = {};
+  for (const [key, entry] of Object.entries(section)) {
+    const canonical = entry !== null && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry : { value: entry };
+    value[key] = canonical;
+    if (canonical !== entry)
+      patch[key] = canonical;
+  }
+  return {
+    value,
+    patch: Object.keys(patch).length ? patch : void 0
+  };
+}
+function propValue(properties, key) {
+  const entry = properties[key];
+  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+}
+function isTruthy(value) {
+  if (value === true || value === 1)
+    return true;
+  if (typeof value !== "string")
+    return false;
+  const compact = value.replace(/\s+/g, "").toLowerCase();
+  return compact === "true" || compact === "{{true}}" || compact === "1" || compact === "{{1}}";
+}
+function catalogDefault(type, key, fallback) {
+  return getComponentSchema(type)?.properties.find((property) => property.key === key)?.default ?? fallback;
+}
+var MONEY_WORDS = /\b(price|amount|cost|total|revenue|balance|fee|fees|spend|spent|salary|budget|paid|payment|invoice|subtotal|tax|refund|value|mrr|arr)\b/i;
+var PERSON_WORDS = /\b(customer|client|requester|requestor|owner|assignee|assigned to|contact|lead|member|patient|guest|organi[sz]er|employee|technician|tech|agent|rep|student|author|reporter|host|driver|candidate|applicant|tenant|buyer|seller|manager|person|attendee|trainer|coach|instructor|doctor|vet|veterinarian|nurse|resident|full name|customer name|contact name)\b/i;
+var UNIT_WORDS = /\b(min|mins|minutes?|hours?|hrs?|days?|weeks?|time|count|qty|quantity|servings?|units?|items?|points?|score|percent|pct|kg|lbs?|reps?|sets?|seats?|guests?|nights?|orders?|tickets?|visits?)\b/i;
+var COUNT_WORDS = /\b(min|mins|minutes?|hours?|hrs?|count|qty|quantity|servings?|units?|items?|points?|score|percent|pct|kg|lbs?|reps?|sets?|seats?|guests?|nights?|orders?|tickets?|visits?|jobs?|rate)\b/i;
+var STATE_WORDS = /\b(status|stage|state|priority|severity|availability|health|risk|condition)\b/i;
+var AMBIGUOUS_MONEY_WORDS = /\b(total|totals|value)\b/gi;
+var COUNTED_NOUNS = /\b(clients?|clientes?|customers?|users?|usu[aá]rios?|members?|membros?|miembros?|patients?|pacientes?|leads?|accounts?|contas?|cuentas?|vendors?|suppliers?|fornecedor(es)?|proveedor(es)?|employees?|funcion[aá]rios?|empleados?|staff|people|pessoas|personas|students?|alunos?|estudiantes?|contacts?|contatos?|contactos?|compan(y|ies)|empresas?|projects?|projetos?|proyectos?|tasks?|tarefas?|tareas?|bugs?|issues?|requests?|pedidos?|solicita[cç](ão|ões|ión|iones)|records?|registros?|rooms?|salas?|bookings?|reservations?|reservas?|appointments?|agendamentos?|consultas?|citas?|recipes?|receitas?|recetas?|ingredients?|ingredientes?|products?|produtos?|productos?|assets?|ativos?|devices?|dispositivos?|vehicles?|ve[ií]culos?|audits?|auditorias?|findings?|cases?|casos?|deals?|negócios?|events?|eventos?)\b/i;
+var countLabel = (label) => {
+  if (COUNT_WORDS.test(label))
+    return true;
+  return !MONEY_WORDS.test(label.replace(AMBIGUOUS_MONEY_WORDS, " ")) && COUNTED_NOUNS.test(label);
+};
+function plannedCurrency(components) {
+  for (const component of components) {
+    if (component.type !== "ShadStat")
+      continue;
+    const currency = propValue(component.properties ?? {}, "currency");
+    if (typeof currency === "string" && /^[A-Za-z]{3}$/.test(currency.trim()))
+      return currency.trim().toUpperCase();
+  }
+  return void 0;
+}
+var CLIENT_SERVER_BOOLEAN_KEYS = /* @__PURE__ */ new Set([
+  "serverSidePagination",
+  "serverSideSearch",
+  "serverSideSort",
+  "serverSideFilter"
+]);
+var STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS = 24;
+function isStrippableUnknownKey(type, section, key, knownKeys) {
+  if (knownKeys.includes(key))
+    return false;
+  if (section === "properties" && retiredUi2Name(type, "properties", key))
+    return false;
+  if (type === "DropdownV2" && section === "properties" && ["value", "defaultValue"].includes(key))
+    return false;
+  if (section === "properties" && STYLE_KEYS_IN_PROPERTIES.has(key))
+    return false;
+  const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+  if (aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget)))
+    return false;
+  if (nearestCatalogKey(key, knownKeys))
+    return false;
+  return true;
+}
+function packValueAsDefault(type, name, properties) {
+  if (!properties || properties.value === void 0)
+    return { properties };
+  const schema = type ? getComponentSchema(type) : void 0;
+  const keys = new Set((schema?.properties ?? []).map((entry) => entry.key));
+  if (!schema?.pack || !keys.has("defaultValue") || keys.has("value"))
+    return { properties };
+  const { value, ...rest } = properties;
+  if (rest.defaultValue !== void 0) {
+    return { properties: rest, warning: `${type} "${name}": dropped properties.value, the input's runtime value; it starts from defaultValue.` };
+  }
+  return {
+    properties: { ...rest, defaultValue: value },
+    warning: `${type} "${name}": moved properties.value to defaultValue, where the input takes its starting value from.`
+  };
+}
+function normalizeComponentSpec(component, options = {}) {
+  const normalizedSections = Object.fromEntries(["properties", "styles", "validation", "others"].map((section) => [
+    section,
+    normalizeSection(component[section])
+  ]));
+  const warnings = [];
+  const packValue = packValueAsDefault(component.type, component.name, normalizedSections.properties.value);
+  if (packValue.warning)
+    warnings.push(packValue.warning);
+  const properties = { ...packValue.properties ?? {} };
+  const propertyPatch = {};
+  const stylePatch = {};
+  const setProperty = (key, value) => {
+    const current = properties[key];
+    const wrapped = current && typeof current === "object" && !Array.isArray(current) ? { ...current, value } : { value };
+    properties[key] = wrapped;
+    propertyPatch[key] = wrapped;
+  };
+  const stylesValue = normalizedSections.styles.value ?? {};
+  let stylesChanged = false;
+  const setStyle = (key, value) => {
+    const current = stylesValue[key];
+    stylesValue[key] = current && typeof current === "object" && !Array.isArray(current) ? { ...current, value } : { value };
+    stylePatch[key] = stylesValue[key];
+    normalizedSections.styles.value = stylesValue;
+  };
+  const schema = getComponentSchema(component.type);
+  const knownPropertyKeys = schema ? new Set(schema.properties.map((entry) => entry.key)) : void 0;
+  const knownStyleKeys = schema ? new Set(schema.styles.map((entry) => entry.key)) : void 0;
+  const aliasTargetFor = (key) => {
+    if (knownPropertyKeys?.has(key))
+      return void 0;
+    const target = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+    if (!target)
+      return void 0;
+    if (!schema)
+      return target;
+    return knownStyleKeys.has(target) || knownPropertyKeys.has(target) ? target : void 0;
+  };
+  for (const key of Object.keys(properties)) {
+    const aliasTarget = aliasTargetFor(key);
+    const canonical = aliasTarget ?? key;
+    const belongsInStyles = canonical !== "styles" && (isMisplacedStyleKey(component.type, canonical) || !!aliasTarget && !!knownStyleKeys?.has(canonical) && !knownPropertyKeys?.has(canonical));
+    if (!aliasTarget && !belongsInStyles)
+      continue;
+    if (belongsInStyles) {
+      if (stylesValue[canonical] === void 0)
+        stylesValue[canonical] = properties[key];
+      delete properties[key];
+      stylesChanged = true;
+      warnings.push(`${component.type} "${component.name}": moved ${aliasTarget ? `alias "${key}"` : `style key "${key}"`} to styles.${canonical} (ToolJet reads it from styles, not properties).`);
+    } else if (canonical !== key) {
+      if (properties[canonical] === void 0)
+        properties[canonical] = properties[key];
+      delete properties[key];
+      warnings.push(`${component.type} "${component.name}": renamed alias "${key}" to "${canonical}".`);
+    }
+  }
+  if (schema && options.stripUnknownKeys) {
+    for (const key of Object.keys(stylesValue)) {
+      if (knownStyleKeys.has(key) || !knownPropertyKeys.has(key))
+        continue;
+      if (properties[key] === void 0) {
+        properties[key] = stylesValue[key];
+        propertyPatch[key] = stylesValue[key];
+      }
+      delete stylesValue[key];
+      stylesChanged = true;
+      warnings.push(`${component.type} "${component.name}": moved styles.${key} to properties.${key} (ToolJet reads it from properties for ${component.type}).`);
+    }
+  }
+  if (stylesChanged)
+    normalizedSections.styles.value = stylesValue;
+  if (options.stripUnknownKeys && component.type === "NumberInput") {
+    for (const key of ["minValue", "maxValue"]) {
+      const value = propValue(properties, key);
+      if (value == null || typeof value === "string" && !value.trim())
+        continue;
+      const validation = normalizedSections.validation.value ?? {};
+      const current = propValue(validation, key);
+      if (validation[key] !== void 0 && current !== value)
+        continue;
+      validation[key] = properties[key];
+      normalizedSections.validation.value = validation;
+      normalizedSections.validation.patch = { ...normalizedSections.validation.patch, [key]: validation[key] };
+      delete properties[key];
+      warnings.push(`NumberInput "${component.name}": moved properties.${key} to validation.${key}, where the renderer reads the bound.`);
+    }
+  }
+  for (const key of CLIENT_SERVER_BOOLEAN_KEYS) {
+    const current = propValue(properties, key);
+    if (current !== "clientSide" && current !== "serverSide")
+      continue;
+    setProperty(key, current === "serverSide");
+    warnings.push(`${component.name} "${key}": normalized ${JSON.stringify(current)} to a boolean ToolJet binding.`);
+  }
+  if (component.type === "FlexContainer") {
+    const card = propValue(properties, "cardStyle");
+    if (card === "shadcnCard" && !isTruthy(propValue(properties, "dynamicHeight"))) {
+      setProperty("dynamicHeight", "{{true}}");
+    }
+  }
+  if (component.type === "Table") {
+    const lookEntry0 = stylesValue.tableLook;
+    const look0 = lookEntry0 && typeof lookEntry0 === "object" ? lookEntry0.value : lookEntry0;
+    const height = (component.layouts?.desktop ?? component.layout)?.height;
+    const staticNumber = (v) => {
+      const m = typeof v === "number" ? String(v) : typeof v === "string" ? /^\s*(?:\{\{\s*)?(\d+)\s*(?:\}\})?\s*$/.exec(v)?.[1] : void 0;
+      return m !== void 0 ? Number(m) : void 0;
+    };
+    const isFalse = (v) => v === false || typeof v === "string" && /^\s*(\{\{\s*)?false(\s*\}\})?\s*$/.test(v);
+    if (look0 === "shadcn" && properties.dynamicHeight === void 0) {
+      setProperty("dynamicHeight", "{{true}}");
+    }
+    if (look0 === "shadcn" && typeof height === "number" && !isTruthy(propValue(properties, "dynamicHeight")) && !isTruthy(propValue(properties, "serverSidePagination")) && !isFalse(propValue(properties, "enablePagination"))) {
+      const rowsPerPage = staticNumber(propValue(properties, "rowsPerPage")) ?? 10;
+      const toolbar = isFalse(propValue(properties, "displaySearchBox")) ? 0 : 64;
+      const cellEntry = stylesValue.cellSize;
+      const cellSize = cellEntry && typeof cellEntry === "object" ? cellEntry.value : cellEntry;
+      const rowPx = cellSize === "condensed" ? 40 : 46;
+      const fit = Math.floor((height - toolbar - 41 - 47) / rowPx);
+      if (fit < rowsPerPage) {
+        if (fit >= 3) {
+          setProperty("rowsPerPage", `{{${fit}}}`);
+          warnings.push(`Table "${component.name}": height ${height}px fits ${fit} rows; rowsPerPage is now ${fit} so no row is cut off.`);
+        } else {
+          setProperty("dynamicHeight", "{{true}}");
+          warnings.push(`Table "${component.name}": height ${height}px fits fewer than 3 rows; dynamicHeight is on so the table fits its rows.`);
+        }
+      }
+    }
+    if (look0 === "shadcn" && properties.highlightSelectedRow === void 0 && !isTruthy(propValue(properties, "showBulkSelector")) && !isFalse(propValue(properties, "allowSelection"))) {
+      setProperty("highlightSelectedRow", "{{true}}");
+    }
+    if (properties.useDynamicColumn === void 0) {
+      setProperty("useDynamicColumn", catalogDefault("Table", "useDynamicColumn", "{{false}}"));
+    }
+    if (properties.columnData === void 0) {
+      setProperty("columnData", catalogDefault("Table", "columnData", "{{[{name: 'email', key: 'email', id: '1'}, {name: 'Full name', key: 'name', id: '2', isEditable: true}]}}"));
+    }
+    const columns = propValue(properties, "columns");
+    const dynamicColumns = isTruthy(propValue(properties, "useDynamicColumn"));
+    const autogenerateColumns = propValue(properties, "autogenerateColumns");
+    if (options.stripUnknownKeys && columns === void 0 && !dynamicColumns && isTruthy(autogenerateColumns) && typeof propValue(properties, "data") === "string" && /\bqueries(?:\.|\[)/.test(String(propValue(properties, "data")))) {
+      setProperty("columns", []);
+    }
+    if (Array.isArray(columns) && !dynamicColumns && !isTruthy(autogenerateColumns)) {
+      setProperty("autogenerateColumns", true);
+      if (autogenerateColumns !== void 0) {
+        warnings.push(`Table "${component.name}": normalized autogenerateColumns from false to true for runtime compatibility. Some ToolJet Table versions crash while generating transformations for explicit static columns when it is false. Project the data binding to intended keys and declare behavior-only keys with columnVisibility:false.`);
+      }
+    }
+    if (Array.isArray(columns)) {
+      const lookEntry = stylesValue.tableLook;
+      const shadcnLook = (lookEntry && typeof lookEntry === "object" ? lookEntry.value : lookEntry) === "shadcn";
+      const wrapNow = stylesValue.contentWrap?.value ?? stylesValue.contentWrap;
+      const multiLine = columns.some((c) => c && typeof c === "object" && !Array.isArray(c) && c.columnVisibility !== false && ["html", "text", "json", "image", "markdown"].includes(String(c.columnType)));
+      if (shadcnLook && multiLine && wrapNow === false)
+        setStyle("contentWrap", true);
+      else if (shadcnLook && !multiLine && wrapNow !== false)
+        setStyle("contentWrap", false);
+      let changedColumns = false;
+      const repairedColumns = columns.map((column) => {
+        if (options.stripUnknownKeys && column && typeof column === "object" && !Array.isArray(column) && column.columnType === "button" && Array.isArray(column.buttons)) {
+          const buttons = column.buttons.map((button) => {
+            if (!button || typeof button !== "object" || Array.isArray(button))
+              return button;
+            const b = button;
+            if (typeof b.label !== "string" || b.buttonLabel !== void 0)
+              return button;
+            const { label, ...rest } = b;
+            changedColumns = true;
+            warnings.push(`Table "${component.name}" action "${b.id}": moved label to buttonLabel, where the renderer reads the caption.`);
+            return { ...rest, buttonLabel: label };
+          });
+          column = { ...column, buttons };
+        }
+        if (column && typeof column === "object" && !Array.isArray(column) && column.columnType === "datepicker" && column.isDateSelectionEnabled === false && column.isTimeChecked !== true) {
+          changedColumns = true;
+          const entry = column;
+          warnings.push(`Table "${component.name}" date column "${entry.name ?? entry.key}": enabled date selection \u2014 a datepicker column with both date selection and time disabled renders blank regardless of the data.`);
+          return { ...entry, isDateSelectionEnabled: true };
+        }
+        if (shadcnLook && column && typeof column === "object" && !Array.isArray(column) && column.columnType === "datepicker" && !isTruthy(column.isEditable) && /^Y{4}[-/]MM[-/]DD$/.test(String(column.dateFormat ?? "").trim())) {
+          changedColumns = true;
+          const entry = column;
+          column = { ...entry, parseDateFormat: entry.parseDateFormat ?? entry.dateFormat, dateFormat: "MMM D, YYYY" };
+        }
+        if (column && typeof column === "object" && !Array.isArray(column) && column.columnType === "newMultiSelect" && !isTruthy(column.isEditable) && /^(status|severity|priority|stage|state|level|risk)$/i.test(String(column.key ?? column.name ?? "").replace(/[_\s-]+/g, ""))) {
+          changedColumns = true;
+          const entry = column;
+          warnings.push(`Table "${component.name}" column "${entry.name ?? entry.key}": a single state per row; columnType is now "select" (a multi-select shows "Select.." for a single value).`);
+          column = { ...entry, columnType: "select" };
+        }
+        if (shadcnLook && column && typeof column === "object" && !Array.isArray(column) && column.columnType === "number" && (column.horizontalAlignment === void 0 || column.thousandSeparator === void 0)) {
+          changedColumns = true;
+          const entry = column;
+          column = {
+            ...entry,
+            horizontalAlignment: entry.horizontalAlignment ?? "right",
+            thousandSeparator: entry.thousandSeparator ?? true
+          };
+        }
+        if (shadcnLook && column && typeof column === "object" && !Array.isArray(column)) {
+          const entry = column;
+          const words = `${String(entry.key ?? "")} ${String(entry.name ?? "")}`.replace(/[_-]+/g, " ");
+          const next = { ...entry };
+          if (entry.columnType === "number" && entry.decimalPlaces === void 0 && MONEY_WORDS.test(words) && !UNIT_WORDS.test(words)) {
+            next.decimalPlaces = 2;
+          }
+          if (["string", void 0].includes(entry.columnType) && entry.displayAsChip === void 0 && !isTruthy(entry.isEditable) && STATE_WORDS.test(words)) {
+            next.displayAsChip = true;
+          }
+          const size = Number(entry.columnSize);
+          const label = String(entry.name ?? entry.key ?? "");
+          if (Number.isFinite(size) && size > 0 && label) {
+            const email = /\be ?mail\b/i.test(words) ? 240 : 0;
+            const chip = next.displayAsChip === true || entry.displayAsChip === true ? 140 : 0;
+            const needed = Math.max(email, chip, Math.ceil(label.length * 7.5) + 32 + (isTruthy(entry.isEditable) ? 18 : 0));
+            if (size < needed)
+              next.columnSize = needed;
+          }
+          if (entry.columnType === "button" && Array.isArray(entry.buttons)) {
+            const buttons = entry.buttons.map((button) => {
+              if (!button || typeof button !== "object" || Array.isArray(button))
+                return button;
+              const b = button;
+              const bg = b.buttonBackgroundColor;
+              const defaultBg = bg === void 0 || ["#4368E3", "#4368e3", "var(--cc-primary-brand)"].includes(String(bg));
+              return (b.buttonType === void 0 || b.buttonType === "solid") && defaultBg ? { ...b, buttonType: "outline" } : button;
+            });
+            if (buttons.some((b, i) => b !== entry.buttons[i]))
+              next.buttons = buttons;
+          }
+          if (Object.keys(next).some((k) => next[k] !== entry[k])) {
+            changedColumns = true;
+            column = next;
+          }
+        }
+        return column;
+      });
+      if (shadcnLook) {
+        const visible = repairedColumns.filter((c) => !!c && typeof c === "object" && !Array.isArray(c) && c.columnVisibility !== false);
+        const width = (c) => Number(c.columnSize) > 0 ? Number(c.columnSize) : 120;
+        const total = visible.reduce((sum, c) => sum + width(c), 0);
+        if (visible.length > 1 && total > 1240) {
+          const factor = 1240 / total;
+          const floor = (c) => c.columnType === "button" ? 110 : Math.max(/\be ?mail\b/i.test(`${String(c.key ?? "")} ${String(c.name ?? "")}`.replace(/[_-]+/g, " ")) ? 240 : 64, Math.ceil(String(c.name ?? c.key ?? "").length * 7.5) + 32);
+          for (let i = 0; i < repairedColumns.length; i++) {
+            const c = repairedColumns[i];
+            if (!visible.includes(c))
+              continue;
+            repairedColumns[i] = { ...c, columnSize: Math.max(floor(c), Math.floor(width(c) * factor)) };
+          }
+          changedColumns = true;
+          warnings.push(`Table "${component.name}": its visible columns (${total}px) were wider than a page; they now scale to fit about 1240px.`);
+        }
+      }
+      if (shadcnLook) {
+        const index = repairedColumns.findIndex((c) => {
+          if (!c || typeof c !== "object" || Array.isArray(c))
+            return false;
+          const entry2 = c;
+          const words = `${String(entry2.key ?? "")} ${String(entry2.name ?? "")}`.replace(/[_-]+/g, " ");
+          return entry2.columnVisibility !== false && ["string", void 0].includes(entry2.columnType) && PERSON_WORDS.test(words) && !/\b(e ?mail|id|phone|count|type|notes?)\b/i.test(words);
+        });
+        const entry = index >= 0 ? repairedColumns[index] : void 0;
+        if (entry && entry.displayAvatar === void 0 && entry.displayAsChip === void 0 && !isTruthy(entry.isEditable)) {
+          repairedColumns[index] = { ...entry, displayAvatar: true };
+          changedColumns = true;
+        }
+      }
+      if (changedColumns)
+        setProperty("columns", repairedColumns);
+    }
+  }
+  const statFormat = propValue(properties, "valueFormat");
+  if (component.type === "ShadStat" && (statFormat === void 0 || statFormat === "auto")) {
+    const label = String(propValue(properties, "label") ?? "");
+    let value = propValue(properties, "value");
+    const moneyLabel = MONEY_WORDS.test(label.replace(/[_-]+/g, " ")) && !countLabel(label.replace(/[_-]+/g, " "));
+    const trailingFormat = /\.(?:toLocaleString\((?:[^()]|\([^()]*\))*\)|toFixed\(\s*\d*\s*\))\s*\}\}\s*$/;
+    if (moneyLabel && typeof value === "string" && trailingFormat.test(value) && !/[$€£₹¥]|Intl\.|currency/i.test(value)) {
+      value = value.replace(trailingFormat, "}}");
+      setProperty("value", value);
+    }
+    if (typeof value === "string" && /^\s*\{\{[\s\S]*\}\}\s*$/.test(value) && !/[$€£₹¥]|toLocaleString|toFixed|Intl\.|currency/i.test(value) && moneyLabel) {
+      setProperty("valueFormat", "currency");
+      if (options.currency && propValue(properties, "currency") === void 0)
+        setProperty("currency", options.currency);
+    }
+  }
+  if (component.type === "KeyValuePair") {
+    const fields = propValue(properties, "fields");
+    if (Array.isArray(fields) && fields.length > 0) {
+      const explicitIds = new Set(fields.flatMap((field) => {
+        const id = field && typeof field === "object" ? field.id : void 0;
+        return typeof id === "string" && id.length > 0 ? [id] : [];
+      }));
+      const demoFields = catalogDefault("KeyValuePair", "fields", []);
+      const currentHistory = propValue(properties, "fieldDeletionHistory");
+      const deletionHistory = new Set(Array.isArray(currentHistory) ? currentHistory.filter((key) => typeof key === "string" && key.length > 0) : []);
+      const before = deletionHistory.size;
+      if (Array.isArray(demoFields)) {
+        for (const field of demoFields) {
+          if (!field || typeof field !== "object")
+            continue;
+          const { id, key } = field;
+          if (typeof key === "string" && !explicitIds.has(String(id ?? "")))
+            deletionHistory.add(key);
+        }
+      }
+      if (deletionHistory.size > before || properties.fieldDeletionHistory === void 0) {
+        setProperty("fieldDeletionHistory", [...deletionHistory]);
+        warnings.push(`KeyValuePair "${component.name}": normalized fieldDeletionHistory so ToolJet does not append or positionally merge catalog demo fields into the explicit fields array.`);
+      }
+    }
+  }
+  if (component.type === "Statistics") {
+    const width = (component.layouts?.desktop ?? component.layout)?.width;
+    const iconName = propValue(properties, "icon");
+    const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propValue(properties, "iconVisibility") !== false && propValue(properties, "iconVisibility") !== "{{false}}";
+    const rawSize = propValue(stylesValue, "primaryValueSize") ?? propValue(properties, "primaryValueSize");
+    const sizeText = typeof rawSize === "string" ? rawSize.replace(/[{}]/g, "").trim() : rawSize;
+    const numericSize = typeof sizeText === "number" ? sizeText : typeof sizeText === "string" && /^\d+$/.test(sizeText) ? Number(sizeText) : void 0;
+    const rawValue = propValue(properties, "primaryValue");
+    const currencyValue = typeof rawValue === "string" && /minimumFractionDigits|style\s*:\s*['"]currency['"]|[$£€¥]/.test(rawValue);
+    const widthKnown = typeof width === "number";
+    const narrowTile = widthKnown && width < STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS;
+    const clipProne = iconVisible && narrowTile || currencyValue && (narrowTile || !widthKnown);
+    if (isTruthy(propValue(properties, "hideSecondary")) && (numericSize === void 0 || numericSize > 22) && clipProne) {
+      setStyle("primaryValueSize", "{{22}}");
+      warnings.push(`Statistics "${component.name}": set styles.primaryValueSize to 22 so the ${currencyValue ? "currency " : ""}value fits a value-only tile${widthKnown ? ` (${width} columns wide)` : ""} (larger sizes clip or wrap the value).`);
+    }
+  }
+  if (options.stripUnknownKeys) {
+    const schema2 = getComponentSchema(component.type);
+    if (schema2) {
+      const sections = [
+        ["properties", properties],
+        ["styles", normalizedSections.styles.value]
+      ];
+      for (const [section, sectionValue] of sections) {
+        if (!sectionValue)
+          continue;
+        const knownKeys = (schema2[section] ?? []).map((entry) => entry.key);
+        for (const key of Object.keys(sectionValue)) {
+          if (!isStrippableUnknownKey(component.type, section, key, knownKeys))
+            continue;
+          delete sectionValue[key];
+          warnings.push(`${component.type} "${component.name}": removed unknown ${section} key "${key}" \u2014 ToolJet ignores it, so it is kept out of the saved definition rather than persisted as an unusable key.`);
+        }
+      }
+    }
+  }
+  const braceFixedKeys = [];
+  for (const key of Object.keys(properties)) {
+    const result = separateAdjacentClosingBracesDeep(propValue(properties, key));
+    if (!result.changed)
+      continue;
+    setProperty(key, result.value);
+    braceFixedKeys.push(`properties.${key}`);
+  }
+  for (const key of Object.keys(stylesValue)) {
+    const result = separateAdjacentClosingBracesDeep(propValue(stylesValue, key));
+    if (!result.changed)
+      continue;
+    setStyle(key, result.value);
+    braceFixedKeys.push(`styles.${key}`);
+  }
+  if (braceFixedKeys.length) {
+    warnings.push(`${component.type} "${component.name}": separated adjacent closing braces inside ${braceFixedKeys.join(", ")} (ToolJet ends a {{ }} expression at the first "}}", which would have left the component blank). Write nested closes as "} }" inside bindings.`);
+  }
+  const booleanKeys = /* @__PURE__ */ new Set(["loadingState", "visibility", "disabledState"]);
+  for (const entry of schema?.properties ?? [])
+    if (entry.valueType === "boolean")
+      booleanKeys.add(entry.key);
+  const BARE_EXPRESSION = /^\s*!?\s*\(?\s*(queries|components|variables|globals|page|constants|parameters)\.[\w$]/;
+  const wrappedKeys = [];
+  for (const key of booleanKeys) {
+    const current = propValue(properties, key);
+    if (typeof current !== "string" || current.includes("{{") || !BARE_EXPRESSION.test(current))
+      continue;
+    const entry = properties[key];
+    const wrapped = { ...entry && typeof entry === "object" && !Array.isArray(entry) ? entry : {}, value: `{{${current.trim()}}}`, fxActive: true };
+    properties[key] = wrapped;
+    propertyPatch[key] = wrapped;
+    wrappedKeys.push(key);
+  }
+  if (wrappedKeys.length) {
+    warnings.push(`${component.type} "${component.name}": wrapped the bare expression in ${wrappedKeys.map((k) => `properties.${k}`).join(", ")} in {{ }}; without the braces ToolJet reads it as text, which counts as true (a table stays on its loading spinner).`);
+  }
+  const CODE_START = /^\s*(?:String|Number|Math|moment|Intl|JSON|Object|Array)\s*[.(]|^\s*[([!]|^\s*(?:queries|components|variables|globals|page|constants|parameters)\.[\w$]/;
+  const CODE_ROOT = /\b(?:queries|components|variables|globals|constants|parameters)\.[\w$]/;
+  const CODE_OPERATOR = /=>|\|\||&&|===|!==|\.length\b|\.(?:filter|map|reduce|toFixed|toLocaleString|find|some)\s*\(/;
+  const codeKeys = [];
+  const showsCode = /CodeEditor|Html|Markdown|RichText|Json/i.test(component.type ?? "");
+  for (const [key, entry] of Object.entries(showsCode ? {} : properties)) {
+    if (booleanKeys.has(key))
+      continue;
+    const current = propValue(properties, key);
+    if (typeof current !== "string" || current.includes("{{") || current.length > 2e3)
+      continue;
+    if (!CODE_START.test(current) || !CODE_ROOT.test(current) || !CODE_OPERATOR.test(current))
+      continue;
+    const wrapped = { ...entry && typeof entry === "object" && !Array.isArray(entry) ? entry : {}, value: `{{${current.trim()}}}` };
+    properties[key] = wrapped;
+    propertyPatch[key] = wrapped;
+    codeKeys.push(key);
+  }
+  if (codeKeys.length) {
+    warnings.push(`${component.type} "${component.name}": ${codeKeys.map((k) => `properties.${k}`).join(", ")} held a JavaScript expression without {{ }}, which shows the code on screen; it is now wrapped in {{ }}.`);
+  }
+  const patch = Object.fromEntries(["properties", "styles", "validation", "others"].flatMap((section) => {
+    const envelopePatch = normalizedSections[section].patch ?? {};
+    const semanticPatch = section === "properties" ? propertyPatch : section === "styles" ? stylePatch : {};
+    const merged = { ...envelopePatch, ...semanticPatch };
+    return Object.keys(merged).length ? [[section, merged]] : [];
+  }));
+  return {
+    component: {
+      ...component,
+      properties,
+      ...normalizedSections.styles.value ? { styles: normalizedSections.styles.value } : {},
+      ...normalizedSections.validation.value ? { validation: normalizedSections.validation.value } : {},
+      ...normalizedSections.others.value ? { others: normalizedSections.others.value } : {}
+    },
+    patch,
+    warnings
+  };
+}
+function resolveRef(candidates, ref, kind, scope, describe = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
+  const byId = candidates.find((candidate) => candidate.id === ref);
+  if (byId)
+    return { ok: true, target: byId };
+  const byName = candidates.filter((candidate) => candidate.name === ref);
+  if (byName.length === 1)
+    return { ok: true, target: byName[0] };
+  if (byName.length > 1) {
+    return {
+      ok: false,
+      error: `${kind} name "${ref}" is ambiguous ${scope} (${byName.length} share it). Pass the id instead: ${byName.map((candidate) => candidate.id).join(", ")}.`
+    };
+  }
+  const available = candidates.map(describe).join(", ");
+  return {
+    ok: false,
+    // The "do not re-read" clause matters: the previous phrasing ("does not exist") invited exactly
+    // the re-read that caused the loop.
+    error: `No ${kind.toLowerCase()} with id or name "${ref}" ${scope}. Do not re-read \u2014 it currently holds: ${available || "(none)"}.`
+  };
+}
 export {
+  listWorkspaceGroupsTool as A,
+  manageWorkspaceGroupsTool as B,
+  COMPONENT_FX_UPDATE_GUIDANCE as C,
+  createAppTool as D,
+  inspectDatasourceSchemaTool as E,
+  FLEX_MIN_WIDTH_PX_DESCRIPTION as F,
+  manageThemeTool as G,
+  ToolJetHttpError as H,
   PartialWriteError as P,
   TOOLJET_DB_DATA_TYPES as T,
-  invalidSeedTimestamps as a,
-  booleanBindingValue as b,
-  componentRef as c,
-  completedPartialWrites as d,
-  createClient as e,
-  inspectDatasourceSchemaTool as f,
-  ToolJetHttpError as g,
-  indexComponentReferences as i,
-  listWorkspaceGroupsTool as l,
-  manageWorkspaceGroupsTool as m,
-  normalizeType as n,
-  packDefaultDefinition as p,
-  registerPackDefinitions as r,
-  validateTableBatch as v
+  resolveAuthoredChildOrder as a,
+  appendedChildOrders as b,
+  childOrderProperty as c,
+  reparentAdditions as d,
+  componentRef as e,
+  packDefaultDefinition as f,
+  FLEX_GROW_DESCRIPTION as g,
+  hasNonEmptyDefinition as h,
+  isFlexContainerType as i,
+  FLEX_WIDTH_PX_DESCRIPTION as j,
+  FLEX_FILL_WIDTH_DESCRIPTION as k,
+  plannedCurrency as l,
+  indexComponentReferences as m,
+  normalizeComponentSpec as n,
+  booleanBindingValue as o,
+  packValueAsDefault as p,
+  normalizeType as q,
+  resolveRef as r,
+  strictEntry as s,
+  invalidSeedTimestamps as t,
+  COMPONENT_FX_GUIDANCE as u,
+  validateTableBatch as v,
+  completedPartialWrites as w,
+  batchChildOrders as x,
+  createClient as y,
+  registerPackDefinitions as z
 };

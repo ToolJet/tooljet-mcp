@@ -1,21 +1,20 @@
 import { createRequire } from "node:module";
-import { ay as ok, ax as fail, aD as prepareSqlDiscoveryQueries, aC as COMPONENT_FX_GUIDANCE } from "./chunk-D70UN33u.js";
-import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, f as FLEX_GROW_DESCRIPTION, g as FLEX_WIDTH_PX_DESCRIPTION, j as FLEX_FILL_WIDTH_DESCRIPTION, k as specSchema, l as getComponentCatalogTool, u as updateComponentsTool, o as nodeCatalog, q as capabilityRequestSchema, t as getWorkflowCapabilities, v as lint, w as apply, x as deleteNode, y as validateGraph, z as editContractSchema, A as generateEditContract, r as resolveRef, n as normalizeComponentSpec, m as mapKeyRefusal, d as appendedChildOrders, B as reparentAdditions, c as childOrderProperty } from "./chunk-Dlc8fT0Z.js";
-import { e as createClient, r as registerPackDefinitions, l as listWorkspaceGroupsTool, m as manageWorkspaceGroupsTool, f as inspectDatasourceSchemaTool, v as validateTableBatch, g as ToolJetHttpError, P as PartialWriteError } from "./chunk-BRL0__1q.js";
-import { j as dbColumnTypeSchema, k as componentInputSchema, o as lintAppSpecTool, q as projectJavascriptRuntime, s as projectAppSettings, t as compactTheme, u as pageSettingProperties, l as literalCanvasColor, w as containsExactValue, b as prepareQueryOptionsForWrite, x as inspectUpdateCompatibility, y as normalizePlanBindingAliases, z as containsNamedBinding, A as normalizePlannedLayouts, B as materializeRequiredDefaultChildren, e as prepareComponentBatch, v as validateEvents, h as expandQueryLifecycles, i as persistedEventSpecs, C as persistedEventIds } from "./chunk-EMVTmQsw.js";
-import { K as codeAppScaffoldTool, N as codeAppReadFilesTool, O as codeAppWriteFilesTool, Q as codeAppBuildTool, U as codeAppInstallTool, V as codeAppAddDependencyTool, W as manageAppPermissionsTool, X as noCodeIdentity, Y as WebStandardStreamableHTTPServerTransport, Z as getRequestListener, _ as browserUserBindings, $ as isCodeModeApp, a0 as browserUserMessage } from "./chunk-BFJPWDuz.js";
-import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, c as validatePersistedAppSummary, l as libraryPinErrors } from "./chunk-C27vTOow.js";
-import { M as McpServer } from "./chunk-C5AiGJL8.js";
-import { G as pageIconSchema, c as componentSlotSchema, K as registerLibraryPacks, L as libraryPins, M as defaultPack, N as savedComponentLibrary, O as COMPONENT_PACK_DESCRIPTION, a as componentNameSchema, D as lintComponents, e as resolveParentRef, g as introducedLintFindings, Q as lintRenderedGeometryBlocking, R as lintRenderedGeometryAdvisory, d as decodeComponentParent, f as encodeComponentParent, h as lintComponentSlots, l as lintComponentSpec, j as lintUnusableTextGeometry, T as lintNestedContainerWidths, k as lintStandardSingleLineInputHeight, m as lintTextGeometry, o as lintRenderedGeometry, U as FORM_SCHEMA_FIELD_TYPE_SET, V as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-BAklDiyp.js";
-import { N as registerComponentSchemas, O as readCatalogBytes, P as allComponentSchemas } from "./chunk-cuZ92804.js";
-import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-CYiXr8vL.js";
-import { e as external_exports } from "./chunk-B2U2gFJI.js";
+import { b0 as external_exports, b3 as specSchema, b8 as getComponentCatalogTool, b1 as nodeCatalog, b2 as validateGraph } from "./chunk-Id3EmQoo.js";
+import { x as capabilityRequestSchema, y as getWorkflowCapabilities, z as lint, A as apply, B as deleteNode, C as editContractSchema, D as generateEditContract } from "./chunk-4VsxWCKn.js";
+import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, g as FLEX_GROW_DESCRIPTION, j as FLEX_WIDTH_PX_DESCRIPTION, k as FLEX_FILL_WIDTH_DESCRIPTION, y as createClient, z as registerPackDefinitions, A as listWorkspaceGroupsTool, B as manageWorkspaceGroupsTool, D as createAppTool, E as inspectDatasourceSchemaTool, G as manageThemeTool, v as validateTableBatch, H as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec, u as COMPONENT_FX_GUIDANCE, b as appendedChildOrders, d as reparentAdditions, c as childOrderProperty } from "./chunk-C-1qrIt_.js";
+import { c as componentInputSchema, u as updateComponentsTool, q as projectJavascriptRuntime, t as projectAppSettings, w as compactTheme, x as pageSettingProperties, l as literalCanvasColor, y as containsExactValue, e as prepareQueryOptionsForWrite, z as containsNamedBinding, A as normalizePlannedLayouts, B as materializeRequiredDefaultChildren, i as prepareComponentBatch, v as validateEvents, k as expandQueryLifecycles, o as persistedEventSpecs, C as persistedEventIds } from "./chunk-D-eDHAqY.js";
+import { K as dbColumnTypeSchema, N as codeAppScaffoldTool, O as codeAppReadFilesTool, Q as codeAppWriteFilesTool, U as codeAppBuildTool, V as codeAppInstallTool, W as codeAppAddDependencyTool, X as manageAppPermissionsTool, Y as lintAppSpecTool, Z as noCodeIdentity, _ as WebStandardStreamableHTTPServerTransport, $ as plannedTableSchema, a0 as inspectUpdateCompatibility, a1 as normalizePlanBindingAliases, a2 as browserUserBindings, a3 as isCodeModeApp, a4 as browserUserMessage } from "./chunk-BWNH9-6U.js";
+import { ej as registerComponentSchemas, e6 as ok, e5 as fail, e9 as mapKeyRefusal, ek as readCatalogBytes, el as allComponentSchemas } from "./chunk-CNzl5iHC.js";
+import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, g as getRequestListener, c as validatePersistedAppSummary, l as libraryPinErrors } from "./chunk-BCmXtoI9.js";
+import { M as McpServer } from "./chunk-i2Akdfva.js";
+import { K as pageIconSchema, h as componentSlotSchema, O as registerLibraryPacks, s as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION, j as componentNameSchema, H as lintComponents, o as resolveParentRef, p as introducedLintFindings, Q as lintRenderedGeometryBlocking, R as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, u as lintComponentSlots, q as lintComponentSpec, v as lintUnusableTextGeometry, T as lintNestedContainerWidths, w as lintStandardSingleLineInputHeight, x as lintTextGeometry, y as lintRenderedGeometry, U as FORM_SCHEMA_FIELD_TYPE_SET, V as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-Bl5L2ACf.js";
+import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-hq1_aYNY.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { createServer } from "node:http";
-import { statSync, readFileSync, accessSync, constants, existsSync } from "node:fs";
+import { statSync, readFileSync, accessSync, constants } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, resolve, basename, join } from "node:path";
+import { resolve, dirname, basename, join } from "node:path";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { mkdir, appendFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -86,9 +85,9 @@ function createVerifiedExchangeCache(ttlMs = 6e4, capacity = 1e4) {
   };
 }
 var StreamableHTTPServerTransport = class {
-  constructor(options = {}) {
+  constructor(options2 = {}) {
     this._requestContext = /* @__PURE__ */ new WeakMap();
-    this._webStandardTransport = new WebStandardStreamableHTTPServerTransport(options);
+    this._webStandardTransport = new WebStandardStreamableHTTPServerTransport(options2);
     this._requestListener = getRequestListener(async (webRequest) => {
       const context = this._requestContext.get(webRequest);
       return this._webStandardTransport.handleRequest(webRequest, {
@@ -146,8 +145,8 @@ var StreamableHTTPServerTransport = class {
   /**
    * Sends a JSON-RPC message through the transport.
    */
-  async send(message, options) {
-    return this._webStandardTransport.send(message, options);
+  async send(message, options2) {
+    return this._webStandardTransport.send(message, options2);
   }
   /**
    * Handles an incoming HTTP request, whether GET or POST.
@@ -422,8 +421,8 @@ async function checkOriginWithGateway(customerId, origin) {
       signal: AbortSignal.timeout(5e3)
     });
     if (res.ok) {
-      const body = await res.json();
-      allowed = body.allowed === true;
+      const body2 = await res.json();
+      allowed = body2.allowed === true;
     }
   } catch {
     allowed = false;
@@ -448,10 +447,10 @@ async function resolveApiUrlFromGateway(customerId) {
         signal: AbortSignal.timeout(5e3)
       });
       if (res.ok) {
-        const body = await res.json();
-        if ("host_name" in body) {
-          const path = body.subpath ? `/${body.subpath.replace(/^\/+|\/+$/g, "")}` : "";
-          result = { url: body.host_name ? `https://${body.host_name}${path}` : void 0, verified: true };
+        const body2 = await res.json();
+        if ("host_name" in body2) {
+          const path = body2.subpath ? `/${body2.subpath.replace(/^\/+|\/+$/g, "")}` : "";
+          result = { url: body2.host_name ? `https://${body2.host_name}${path}` : void 0, verified: true };
         }
       }
     } catch {
@@ -647,14 +646,14 @@ function createAuth(config, fetchImpl = fetch) {
       const hint = res.status === 401 ? " \u2014 TOOLJET_PAT was rejected: check it is not expired or revoked, and that it was copied whole." : res.status === 404 ? " \u2014 this instance has no personal-access-token endpoint: it predates PAT support, or TOOLJET_URL is not the API origin. Upgrade the instance, or point TOOLJET_URL at one that has tokens." : "";
       throw new Error(`ToolJet PAT session exchange failed (HTTP ${res.status})${hint}${detail ? ` Response: ${detail}` : ""}`);
     }
-    const body = await res.json();
-    if (!body.authToken) {
+    const body2 = await res.json();
+    if (!body2.authToken) {
       throw new Error("ToolJet PAT session exchange succeeded but returned no authToken.");
     }
-    token = body.authToken;
-    workspaceId = body.organizationId;
-    workspaceSlug = body.organizationSlug ?? void 0;
-    workspaceName = body.organizationName ?? void 0;
+    token = body2.authToken;
+    workspaceId = body2.organizationId;
+    workspaceSlug = body2.organizationSlug ?? void 0;
+    workspaceName = body2.organizationName ?? void 0;
   }
   async function rawFetch(path, init) {
     const headers = new Headers(init?.headers);
@@ -695,8 +694,8 @@ function createAuth(config, fetchImpl = fetch) {
     if (!res.ok) {
       throw new Error(`ToolJet listWorkspaces failed (${res.status}): ${await res.text()}`);
     }
-    const body = await res.json();
-    return (body.organizations ?? []).map((o) => ({
+    const body2 = await res.json();
+    return (body2.organizations ?? []).map((o) => ({
       id: o.id,
       name: o.name,
       slug: o.slug,
@@ -765,16 +764,16 @@ function createAuth(config, fetchImpl = fetch) {
       });
       if (!res.ok)
         return void 0;
-      const body = await res.json();
-      if (!body.authToken)
+      const body2 = await res.json();
+      if (!body2.authToken)
         return void 0;
-      const expiresAt = typeof body.expiresAt === "number" ? body.expiresAt : Date.parse(String(body.expiresAt ?? ""));
+      const expiresAt = typeof body2.expiresAt === "number" ? body2.expiresAt : Date.parse(String(body2.expiresAt ?? ""));
       renderSession = {
-        token: body.authToken,
-        appId: body.appId,
+        token: body2.authToken,
+        appId: body2.appId,
         expiresAt: Number.isFinite(expiresAt) ? expiresAt : Date.now() + 5 * 6e4
       };
-      return body.authToken;
+      return body2.authToken;
     } catch {
       return void 0;
     }
@@ -790,15 +789,15 @@ function createAuth(config, fetchImpl = fetch) {
       });
       if (!response.ok)
         throw new Error(`OAuth viewer authorization failed (HTTP ${response.status}); rendering remains unverified`);
-      const body = await response.json();
-      if (typeof body.access_token !== "string" || !body.access_token || body.access_token === token || body.token_type !== "Bearer" || body.app_id !== appId || body.organization_id !== workspaceId || typeof body.expires_in !== "number" || !Number.isInteger(body.expires_in) || body.expires_in <= 0 || body.expires_in > 120) {
+      const body2 = await response.json();
+      if (typeof body2.access_token !== "string" || !body2.access_token || body2.access_token === token || body2.token_type !== "Bearer" || body2.app_id !== appId || body2.organization_id !== workspaceId || typeof body2.expires_in !== "number" || !Number.isInteger(body2.expires_in) || body2.expires_in <= 0 || body2.expires_in > 120) {
         throw new Error("Invalid scoped OAuth viewer credential");
       }
       return {
         cookieName: "tj_oauth_viewer",
-        token: body.access_token,
+        token: body2.access_token,
         origin: new URL(config.viewerUrl || config.appUrl).origin,
-        expiresAt: Math.floor(Date.now() / 1e3) + body.expires_in
+        expiresAt: Math.floor(Date.now() / 1e3) + body2.expires_in
       };
     }
     if (config.sessionToken) {
@@ -818,10 +817,10 @@ function createAuth(config, fetchImpl = fetch) {
       });
       recordHttpResponse(res);
       if (res.ok) {
-        const body = await res.json();
-        if (body.authToken) {
-          pinnedSessions.set(appId, body.authToken);
-          return body.authToken;
+        const body2 = await res.json();
+        if (body2.authToken) {
+          pinnedSessions.set(appId, body2.authToken);
+          return body2.authToken;
         }
       }
       throw new Error("The render check could not get its own read-only session.");
@@ -950,217 +949,6 @@ function useWorkspaceTool(client) {
     async handler(args) {
       try {
         return ok(await client.useWorkspace(args.workspace_id));
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
-var colorPair = external_exports.object({
-  light: external_exports.string().trim().min(1).max(100).describe("Color used in light mode; hex is recommended."),
-  dark: external_exports.string().trim().min(1).max(100).describe("Color used in dark mode; hex is recommended.")
-}).strict();
-var themeDefinition = external_exports.object({
-  brand: external_exports.object({
-    colors: external_exports.object({
-      primary: colorPair,
-      secondary: colorPair.optional(),
-      tertiary: colorPair.optional()
-    }).strict()
-  }).strict(),
-  text: external_exports.object({
-    font: external_exports.string().trim().min(1).max(200),
-    colors: external_exports.object({
-      primary: colorPair,
-      placeholder: colorPair.optional(),
-      disabled: colorPair.optional()
-    }).strict()
-  }).strict(),
-  border: external_exports.object({
-    radius: external_exports.object({
-      default: external_exports.number().nonnegative(),
-      small: external_exports.number().nonnegative(),
-      large: external_exports.number().nonnegative()
-    }).strict(),
-    colors: external_exports.object({
-      default: colorPair,
-      weak: colorPair.optional(),
-      disabled: colorPair.optional()
-    }).strict()
-  }).strict(),
-  systemStatus: external_exports.object({
-    colors: external_exports.object({
-      success: colorPair,
-      error: colorPair.optional(),
-      warning: colorPair.optional()
-    }).strict()
-  }).strict(),
-  surface: external_exports.object({
-    colors: external_exports.object({
-      appBackground: colorPair,
-      surface1: colorPair,
-      surface2: colorPair,
-      surface3: colorPair
-    }).strict()
-  }).strict()
-}).strict();
-var ACCENT_MENU = [
-  { name: "Indigo", hex: "#4F46E5", fits: "software, analytics, internal tools" },
-  { name: "Violet", hex: "#7C3AED", fits: "creative, education, product teams" },
-  { name: "Fuchsia", hex: "#C026D3", fits: "consumer, beauty, events" },
-  { name: "Rose", hex: "#E11D48", fits: "hospitality, retail, food" },
-  { name: "Coral", hex: "#EA580C", fits: "logistics, field service, sports" },
-  { name: "Amber", hex: "#B45309", fits: "manufacturing, construction, real estate" },
-  { name: "Emerald", hex: "#059669", fits: "finance, sustainability, health" },
-  { name: "Teal", hex: "#0D9488", fits: "healthcare, travel, operations" },
-  { name: "Sky", hex: "#0284C7", fits: "support, IT, aviation, marine" }
-];
-var MENU_TEXT = ACCENT_MENU.map((a) => `${a.name} ${a.hex} (${a.fits})`).join(", ");
-var hsl = (hex2) => {
-  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(hex2.trim());
-  if (!m)
-    return null;
-  const full = m[1].length === 3 ? m[1].replace(/./g, (c) => c + c) : m[1];
-  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const l = (max + min) / 2;
-  const d = max - min;
-  if (d === 0)
-    return { h: 0, s: 0, l };
-  const s = d / (1 - Math.abs(2 * l - 1));
-  const h = max === r ? (g - b) / d % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
-  return { h: (h * 60 + 360) % 360, s, l };
-};
-var accentWarning = (definition) => {
-  const light = definition?.brand?.colors?.primary?.light;
-  if (typeof light !== "string")
-    return null;
-  const c = hsl(light);
-  if (!c)
-    return null;
-  const kind = c.l < 0.22 ? "near-black" : c.s < 0.2 ? "grey" : c.h >= 212 && c.h <= 226 && c.s > 0.75 && c.l >= 0.45 && c.l <= 0.66 ? "the stock blue" : null;
-  if (!kind)
-    return null;
-  return `The theme's primary ${light} is ${kind}, which reads plain. Unless the request names this colour or the brand uses it, pick an accent from the menu by the request's brand, industry or mood: ${MENU_TEXT}. Keep the canvas and neutrals light and lightly tinted toward it.`;
-};
-var STANDARD_PRIMARY = { brand: { colors: { primary: { light: "#2563EB" } } } };
-var here = dirname(fileURLToPath(import.meta.url));
-var standardThemeCandidates = [
-  resolve(here, "../../data/default-theme.json"),
-  resolve(here, "../data/default-theme.json")
-];
-var standardThemeCache;
-function loadStandardTheme() {
-  if (!standardThemeCache) {
-    const path = standardThemeCandidates.find((candidate) => existsSync(candidate));
-    if (!path) {
-      throw new Error(`standard theme file not found (looked in ${standardThemeCandidates.join(", ")})`);
-    }
-    standardThemeCache = JSON.parse(readFileSync(path, "utf8"));
-  }
-  return standardThemeCache;
-}
-var derivedThemeSchema = external_exports.object({
-  name: external_exports.string().trim().min(5).max(100),
-  definition: themeDefinition
-}).strict();
-async function resolveTheme(client, choice) {
-  const themes = await client.listAppThemes();
-  if (process.env.MCP_AGENT_PACK_LOOK === "own" && (choice === "standard" || choice === "workspace_default")) {
-    const basic = themes.find((theme) => theme.isBasic && !theme.isDisabled);
-    if (basic)
-      return basic;
-  }
-  const wanted = choice === "standard" ? loadStandardTheme() : typeof choice === "object" ? choice : void 0;
-  if (wanted) {
-    const existing = themes.find((theme) => theme.name === wanted.name && !theme.isDisabled);
-    if (existing)
-      return existing;
-    return client.createAppTheme({ name: wanted.name, definition: wanted.definition, isDefault: false });
-  }
-  const named = themes.find((theme) => theme.name === choice || theme.id === choice);
-  if (!named)
-    throw new Error(`Theme "${String(choice)}" is not available in the active workspace.`);
-  if (named.isDisabled)
-    throw new Error(`Theme "${named.name}" is disabled and cannot be selected.`);
-  return named;
-}
-function paintsDarkCanvasInLightMode(definition) {
-  const light = definition?.surface?.colors?.appBackground?.light;
-  const hex2 = typeof light === "string" ? /^#([0-9a-f]{6})$/i.exec(light.trim())?.[1] : void 0;
-  if (!hex2)
-    return false;
-  const [r, g, b] = [0, 2, 4].map((at) => {
-    const channel = parseInt(hex2.slice(at, at + 2), 16) / 255;
-    return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.18;
-}
-function createAppTool(client) {
-  return {
-    name: "create_app",
-    title: "Create App",
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: false,
-      openWorldHint: true
-    },
-    description: 'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, app_url (a backward-compatible alias for editor_url), and the theme that was applied. Honor explicit or selected themes first. Otherwise derive a theme from a brand, industry or customer type (see references/themes.md) and pass theme:{name, definition}; include complete brand, text, border, systemStatus and surface tokens with light/dark values, not a font-only or partial definition. It is created once per workspace by name and applied. Otherwise the app gets the standard theme ("ToolJet Modern": neutral greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. If a theme cannot be created (for example a licence gate) the app is still created and the result carries a theme warning. New apps are built in ToolJet UI 2.0 (component_library "ui2": types starting with Shad, laid out in FlexContainers); pass component_library "ui1" only when the user asks for the classic ToolJet widgets.',
-    inputSchema: {
-      name: external_exports.string().min(1),
-      theme: external_exports.union([external_exports.string().min(1), derivedThemeSchema]).optional(),
-      app_mode: external_exports.enum(["light", "dark"]).optional().describe("Open the app in this mode. Pass 'dark' when the request asks for a dark app, so the theme's dark values paint every surface; never paint dark backgrounds by hand on a light-mode app."),
-      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in, saved on the app (the components panel lists it). Default "ui2", ToolJet UI 2.0; "ui1" (ToolJet UI 1.0, the native widgets) only when the user asks for it.'),
-      component_pack: external_exports.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION)
-    },
-    async handler(args) {
-      try {
-        if (typeof args.theme === "object")
-          derivedThemeSchema.parse(args.theme);
-        const created = await client.createApp(args.name);
-        const componentLibrary = args.component_library ?? "ui2";
-        const choice = args.theme ?? "standard";
-        const pins = libraryPins();
-        const pinned = pins ? { customComponentLibraries: pins } : {};
-        const result = {
-          ...created,
-          component_library: componentLibrary,
-          ...componentLibrary === "ui2" && (args.component_pack || defaultPack()) ? { component_pack: (args.component_pack || defaultPack()).toLowerCase() } : {},
-          theme: { mode: "workspace_default" }
-        };
-        const savedLibrary = savedComponentLibrary(componentLibrary, args.component_pack);
-        const saveLibrary = () => Promise.resolve().then(() => client.updateAppSettings({
-          appId: created.app_id,
-          versionId: created.version_id,
-          globalSettings: { componentLibrary: savedLibrary, ...pinned }
-        })).catch((libraryErr) => {
-          result.component_library_warning = `Could not save component_library "${componentLibrary}": ${libraryErr instanceof Error ? libraryErr.message : String(libraryErr)}. Build in it anyway.`;
-        });
-        if (choice === "workspace_default") {
-          await saveLibrary();
-          return ok(result);
-        }
-        const label = typeof choice === "object" ? choice.name : choice;
-        try {
-          const theme = await resolveTheme(client, choice);
-          const appMode = args.app_mode ?? (typeof choice === "object" && paintsDarkCanvasInLightMode(choice.definition) ? "dark" : void 0);
-          await client.updateAppSettings({
-            appId: created.app_id,
-            versionId: created.version_id,
-            globalSettings: { theme, componentLibrary: savedLibrary, ...pinned, ...appMode ? { appMode } : {} }
-          });
-          const mode = choice === "standard" ? "standard" : typeof choice === "object" ? "derived" : "named";
-          const accentNote = mode === "standard" ? accentWarning(STANDARD_PRIMARY) : mode === "derived" ? accentWarning(choice.definition) : null;
-          result.theme = { mode, id: theme.id, name: theme.name, ...appMode ? { app_mode: appMode } : {}, ...accentNote ? { accent_note: accentNote } : {} };
-        } catch (themeErr) {
-          await saveLibrary();
-          result.theme = {
-            mode: "workspace_default",
-            warning: `Could not apply theme "${label}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
-          };
-        }
-        return ok(result);
       } catch (err) {
         return fail(err);
       }
@@ -1707,6 +1495,206 @@ function dropTableTool(client) {
     }
   };
 }
+var querySchema = external_exports.object({
+  client_ref: external_exports.string().optional(),
+  datasource_id: external_exports.string(),
+  name: external_exports.string(),
+  options: external_exports.record(external_exports.string(), external_exports.any()),
+  kind: external_exports.string().optional()
+});
+function addQueriesTool(client) {
+  return {
+    name: "add_queries",
+    title: "Add Queries",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true
+    },
+    description: "Create MANY queries in a single call (all share version_id). Prefer this over repeated add_query when building an app. Each query names its own datasource_id and options. Call get_datasource_query_schema for the operations you use before constructing those options. The batch resolves datasource kinds once, contract-validates every query before any writes, and returns {queries,warnings,validation}. ToolJet has no query bulk transaction: a rare partial failure names every persisted query; do not retry the whole batch. Creates are serialized per version within this MCP client. Optional client_ref aliases declared in this batch are resolved in its query bindings/RunJS when unambiguous; existing runtime names take precedence. Pass app_id for a Code mode app: its queries must read the signed-in user as {{globals.server.currentUser.*}} (resolved on the server), and {{globals.currentUser.*}} (resolved in the browser) is refused.",
+    inputSchema: {
+      version_id: external_exports.string(),
+      app_id: external_exports.string().optional().describe("the app's id; in a Code mode app it enables the signed-in-user check"),
+      queries: external_exports.array(querySchema).min(1)
+    },
+    async handler(args) {
+      try {
+        await refuseBrowserUser(client, args.app_id, args.queries);
+        const datasources = await client.listDatasources(args.version_id);
+        const datasourceById = new Map(datasources.map((datasource) => [datasource.id, datasource]));
+        const warnings = [];
+        const queries = structuredClone(args.queries);
+        if (queries.some((query) => query.client_ref && query.client_ref !== query.name)) {
+          try {
+            const existing = await client.getQueries(args.version_id);
+            warnings.push(...normalizePlanBindingAliases({ queries }, { pages: [], queries: existing }, new Map(datasources.map((ds) => [ds.id, ds.kind]))));
+          } catch {
+            warnings.push("Batch query aliases were not normalized because existing query names could not be read. Use exact runtime names.");
+          }
+        }
+        const validations = [];
+        const resolved = queries.map((query) => {
+          const datasource = datasourceById.get(query.datasource_id);
+          if (!datasource) {
+            throw new Error(`Query "${query.name}": datasource "${query.datasource_id}" is not available on version "${args.version_id}".`);
+          }
+          const prepared = prepareQueryOptionsForWrite(datasource.kind, query.options, `Query "${query.name}"`);
+          if (prepared.errors.length)
+            throw new Error(prepared.errors.join(" "));
+          warnings.push(...prepared.warnings);
+          const { options: options2 } = prepared;
+          const validation = prepared.validation;
+          if (query.kind && query.kind !== datasource.kind) {
+            warnings.push(`Query "${query.name}": caller kind "${query.kind}" was ignored; datasource kind is "${datasource.kind}".`);
+          }
+          validations.push({
+            name: query.name,
+            kind: datasource.kind,
+            operation: validation.operation,
+            schema_found: validation.schemaFound
+          });
+          return { query: { ...query, options: options2 }, kind: datasource.kind };
+        });
+        warnings.push(...await inspectUpdateCompatibility(client, resolved.map(({ query, kind }) => ({
+          name: query.name,
+          kind,
+          options: query.options
+        }))));
+        const result = await client.createQueries({
+          versionId: args.version_id,
+          queries: resolved.map(({ query, kind }) => ({
+            dataSourceId: query.datasource_id,
+            name: query.name,
+            options: query.options,
+            kind
+          }))
+        });
+        return ok({ queries: result, warnings, validation: validations });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+async function refuseBrowserUser(client, appId, queries) {
+  const found = queries.map((query) => ({ name: query.name, paths: browserUserBindings(query.options) })).filter((query) => query.paths.length);
+  if (!found.length || !appId)
+    return;
+  if (!isCodeModeApp(await client.getApp(appId)))
+    return;
+  throw new Error(found.map((query) => browserUserMessage(query.name, query.paths)).join(" ") + " Nothing was written.");
+}
+var SEED_CHUNK = 40;
+var seedSchema = external_exports.object({
+  table_name: external_exports.string(),
+  rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1).max(200)
+});
+var querySchema2 = external_exports.object({
+  name: external_exports.string(),
+  table_ref: external_exports.string().optional().describe("A ToolJet DB table by its table_name (planned here or existing): the query reads or writes it"),
+  datasource_name: external_exports.string().optional().describe("Another datasource, by its exact name; leave out for ToolJet DB"),
+  options: external_exports.record(external_exports.string(), external_exports.any()),
+  update: external_exports.boolean().optional().describe("Redefine the app's query of this name in place, keeping its id")
+});
+var body = (result) => {
+  try {
+    return JSON.parse(result.content[0]?.text ?? "");
+  } catch {
+    return void 0;
+  }
+};
+function chunkSeeds(seeds = []) {
+  return seeds.flatMap((seed) => Array.from({ length: Math.ceil(seed.rows.length / SEED_CHUNK) }, (_, i) => ({
+    table_name: seed.table_name,
+    rows: seed.rows.slice(i * SEED_CHUNK, (i + 1) * SEED_CHUNK)
+  })));
+}
+function undeclaredParameters(queries = []) {
+  return queries.flatMap((query) => {
+    const declared = new Set((Array.isArray(query.options?.parameters) ? query.options.parameters : []).map((p) => p && typeof p === "object" ? String(p.name) : ""));
+    const { parameters: _declared, ...rest } = query.options ?? {};
+    const used = [...new Set([...JSON.stringify(rest).matchAll(/\bparameters\.([A-Za-z_$][\w$]*)/g)].map((m) => m[1]))];
+    const missing = used.filter((name) => !declared.has(name));
+    return missing.length ? [`Query "${query.name}" reads ${missing.map((n) => `parameters.${n}`).join(", ")} but does not declare ${missing.length > 1 ? "them" : "it"}: add ${missing.map((n) => `{ "name": "${n}", "defaultValue": "" }`).join(", ")} to its options.parameters.`] : [];
+  });
+}
+function codeAppDataTool(client) {
+  const lint2 = lintAppSpecTool(client);
+  const apply2 = applyAppPhaseTool(client);
+  return {
+    name: "code_app_data",
+    title: "Create Code Mode App Data",
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    description: "A Code mode app's data in one call: ToolJet DB tables, their sample rows and the app's queries. Everything is checked before anything is written (write shapes, required columns, seed keys, datasource contracts); on any error nothing is written and every error is listed, so fix them all and send the whole call again. Then the tables are created, seeded, the queries created, and each bounded read run once (read_check: rows per query, failed). A query with table_ref and no datasource_name is a ToolJet DB query on that table. Tables already in the workspace are not listed again: queries reach them by table_ref. Returns the table and query ids.",
+    inputSchema: {
+      app_id: external_exports.string().uuid(),
+      version_id: external_exports.string().uuid().optional().describe("Defaults to the app's editing version"),
+      tables: external_exports.array(plannedTableSchema).max(50).optional(),
+      seed_data: external_exports.array(seedSchema).max(50).optional(),
+      queries: external_exports.array(querySchema2).max(200).optional()
+    },
+    async handler(args) {
+      try {
+        if (![args.tables, args.seed_data, args.queries].some((items) => items?.length)) {
+          return fail(new Error("code_app_data needs at least one table, seed_data entry or query."));
+        }
+        const summary = await client.getAppSummary(args.app_id);
+        const versionId = args.version_id ?? summary.version_id;
+        if (!versionId)
+          return fail(new Error(`App ${args.app_id} has no editing version to add queries to.`));
+        let queries = args.queries;
+        if (queries?.length) {
+          await refuseBrowserUser(client, args.app_id, queries);
+          const datasources = await client.listDatasources(versionId);
+          const tooljetDb = datasources.find((source2) => source2.kind === "tooljetdb");
+          queries = queries.map(({ datasource_name, datasource_id, ...query }) => {
+            if (datasource_id || datasource_name)
+              return { ...query, ...datasource_id ? { datasource_id } : { datasource_name } };
+            if (!tooljetDb)
+              throw new Error(`Query "${query.name}": this workspace has no ToolJet DB datasource; name one with datasource_name.`);
+            return { ...query, datasource_id: tooljetDb.id };
+          });
+        }
+        const spec = {
+          app_id: args.app_id,
+          version_id: versionId,
+          ...args.tables?.length ? { tables: args.tables } : {},
+          ...args.seed_data?.length ? { seed_data: chunkSeeds(args.seed_data) } : {},
+          ...queries?.length ? { queries } : {}
+        };
+        const linted = await lint2.handler(spec);
+        const checked = body(linted);
+        if (linted.isError || !checked)
+          return linted;
+        const undeclared = undeclaredParameters(queries);
+        if (!checked.ok || !checked.plan_token || undeclared.length) {
+          return ok({
+            ok: false,
+            written: "nothing",
+            errors: [...undeclared, ...checked.errors ?? []],
+            ...checked.warnings?.length ? { warnings: checked.warnings } : {},
+            next: "Fix every error, then send the whole call again (tables, seed_data and queries together)."
+          });
+        }
+        const applied = await apply2.handler({ app_id: args.app_id, version_id: versionId, plan_token: checked.plan_token });
+        const result = body(applied);
+        if (applied.isError || !result)
+          return applied;
+        const warnings = [.../* @__PURE__ */ new Set([...checked.warnings ?? [], ...result.warnings ?? []])];
+        return ok({
+          applied: Object.fromEntries(Object.entries(result.applied ?? {}).filter(([key, n]) => ["tables", "seed_rows", "queries", "queries_updated"].includes(key) && n)),
+          tables: result.refs?.tables ?? {},
+          queries: result.refs?.queries ?? {},
+          ...result.read_check ? { read_check: result.read_check } : {},
+          ...result.validation && !result.validation.ok ? { validation_errors: result.validation.errors } : {},
+          ...warnings.length ? { warnings } : {}
+        });
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  };
+}
 function getTableSchemaTool(client) {
   return {
     name: "get_table_schema",
@@ -1788,7 +1776,7 @@ function seedPictureWarnings(tables) {
   }
   return warnings;
 }
-var seedSchema = external_exports.object({
+var seedSchema2 = external_exports.object({
   table_name: external_exports.string(),
   rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1).max(40)
 });
@@ -1803,7 +1791,7 @@ function insertRowsBatchTool(client) {
       openWorldHint: true
     },
     description: "Seed multiple ToolJet-DB tables in one call. Entries are processed in the listed order so parent rows can be inserted before foreign-key children. Writes are insert-only: omit generated serial keys; explicit duplicate keys fail rather than updating rows. Returns {tables:[{table_name,processed_rows}],processed_rows}. A partial failure reports completed table/row counts; do not retry completed seeds. Keep initial demo data representative and small; each table payload is capped at 40 rows so large fixtures must be split across compact calls.",
-    inputSchema: { tables: external_exports.array(seedSchema).min(1).max(50) },
+    inputSchema: { tables: external_exports.array(seedSchema2).min(1).max(50) },
     async handler(args) {
       try {
         const results = await client.insertRowsBatch({
@@ -1857,8 +1845,12 @@ async function resolveKind(client, request, fallbackVersionId, datasourceCache =
   }
   if (request.kind)
     return request.kind;
-  if (!versionId)
-    throw new Error("Resolving `datasource_id` requires `version_id`.");
+  if (!versionId) {
+    const kind = await client.datasourceKind?.(request.datasource_id).catch(() => void 0);
+    if (kind)
+      return kind;
+    throw new Error('Resolving `datasource_id` needs `version_id` (or pass `kind`, such as "tooljetdb").');
+  }
   const datasource = (await datasourcesFor(versionId)).find((item) => item.id === request.datasource_id);
   if (!datasource)
     throw new Error(`Datasource "${request.datasource_id}" is not available on version "${versionId}".`);
@@ -2029,6 +2021,147 @@ function testDatasourceConnectionTool(client) {
     }
   };
 }
+var DIALECTS = {
+  postgresql: { quote: "double", limit: "limit", metadata: "postgresql" },
+  mysql: { quote: "backtick", limit: "limit", metadata: "mysql" },
+  mssql: { quote: "bracket", limit: "top", metadata: "mssql" },
+  snowflake: { quote: "double", limit: "limit" },
+  bigquery: { quote: "backtick", limit: "limit" },
+  oracledb: { quote: "double", limit: "fetch" }
+};
+function assertIdentifier(identifier, label) {
+  if (!identifier.trim() || identifier.length > 256 || /[\0-\x1f\x7f;`"\[\]\\]/.test(identifier)) {
+    throw new Error(`${label} contains unsupported or unsafe identifier characters.`);
+  }
+}
+function quote(kind, identifier) {
+  assertIdentifier(identifier, "SQL identifier");
+  const style = DIALECTS[kind].quote;
+  if (style === "backtick")
+    return `\`${identifier}\``;
+  if (style === "bracket")
+    return `[${identifier}]`;
+  return `"${identifier}"`;
+}
+function literal(value) {
+  return `'${value.replaceAll("'", "''")}'`;
+}
+function source(kind, schema, table) {
+  return schema ? `${quote(kind, schema)}.${quote(kind, table)}` : quote(kind, table);
+}
+function boundedSelect(kind, projection, from, limit, distinct = false) {
+  const prefix = `SELECT ${distinct ? "DISTINCT " : ""}`;
+  if (DIALECTS[kind].limit === "top")
+    return `${prefix}TOP (${limit}) ${projection} FROM ${from}`;
+  if (DIALECTS[kind].limit === "fetch")
+    return `${prefix}${projection} FROM ${from} FETCH FIRST ${limit} ROWS ONLY`;
+  return `${prefix}${projection} FROM ${from} LIMIT ${limit}`;
+}
+function options(kind, query) {
+  return {
+    mode: "sql",
+    query,
+    ...!["snowflake"].includes(kind) ? { query_params: [] } : {},
+    runOnPageLoad: false
+  };
+}
+function metadataSql(kind, purpose, schema, table) {
+  const metadata = "metadata" in DIALECTS[kind] ? DIALECTS[kind].metadata : void 0;
+  if (!metadata)
+    return void 0;
+  if (purpose !== "views" && !table)
+    throw new Error(`${purpose} discovery requires table.`);
+  if (metadata !== "mysql" && !schema)
+    throw new Error(`${purpose} discovery for ${kind} requires schema.`);
+  const schemaFilter = metadata === "mysql" && !schema ? "DATABASE()" : literal(schema);
+  const tableFilter = table ? literal(table) : void 0;
+  if (metadata === "postgresql") {
+    if (purpose === "primary_keys")
+      return `SELECT kcu.column_name, kcu.ordinal_position, tc.constraint_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.ordinal_position`;
+    if (purpose === "foreign_keys")
+      return `SELECT kcu.constraint_name, kcu.column_name, ccu.table_schema AS referenced_schema, ccu.table_name AS referenced_table, ccu.column_name AS referenced_column FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_catalog = tc.constraint_catalog AND ccu.constraint_schema = tc.constraint_schema AND ccu.constraint_name = tc.constraint_name WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.constraint_name, kcu.ordinal_position`;
+    if (purpose === "indexes")
+      return `SELECT indexname AS index_name, indexdef AS definition FROM pg_indexes WHERE schemaname = ${schemaFilter} AND tablename = ${tableFilter} ORDER BY indexname`;
+    return `SELECT table_schema, table_name AS view_name FROM information_schema.views WHERE table_schema = ${schemaFilter} ORDER BY table_name`;
+  }
+  if (metadata === "mysql") {
+    if (purpose === "primary_keys")
+      return `SELECT column_name, ordinal_position, constraint_name FROM information_schema.key_column_usage WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} AND constraint_name = 'PRIMARY' ORDER BY ordinal_position`;
+    if (purpose === "foreign_keys")
+      return `SELECT constraint_name, column_name, referenced_table_schema AS referenced_schema, referenced_table_name AS referenced_table, referenced_column_name AS referenced_column FROM information_schema.key_column_usage WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} AND referenced_table_name IS NOT NULL ORDER BY constraint_name, ordinal_position`;
+    if (purpose === "indexes")
+      return `SELECT index_name, column_name, non_unique, seq_in_index FROM information_schema.statistics WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} ORDER BY index_name, seq_in_index`;
+    return `SELECT table_schema, table_name AS view_name FROM information_schema.views WHERE table_schema = ${schemaFilter} ORDER BY table_name`;
+  }
+  if (purpose === "primary_keys")
+    return `SELECT kcu.COLUMN_NAME AS column_name, kcu.ORDINAL_POSITION AS ordinal_position, tc.CONSTRAINT_NAME AS constraint_name FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA AND tc.TABLE_NAME = kcu.TABLE_NAME WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY' AND tc.TABLE_SCHEMA = ${schemaFilter} AND tc.TABLE_NAME = ${tableFilter} ORDER BY kcu.ORDINAL_POSITION`;
+  if (purpose === "foreign_keys")
+    return `SELECT fk.name AS constraint_name, pc.name AS column_name, rs.name AS referenced_schema, rt.name AS referenced_table, rc.name AS referenced_column FROM sys.foreign_key_columns fkc JOIN sys.foreign_keys fk ON fk.object_id = fkc.constraint_object_id JOIN sys.tables pt ON pt.object_id = fkc.parent_object_id JOIN sys.schemas ps ON ps.schema_id = pt.schema_id JOIN sys.columns pc ON pc.object_id = pt.object_id AND pc.column_id = fkc.parent_column_id JOIN sys.tables rt ON rt.object_id = fkc.referenced_object_id JOIN sys.schemas rs ON rs.schema_id = rt.schema_id JOIN sys.columns rc ON rc.object_id = rt.object_id AND rc.column_id = fkc.referenced_column_id WHERE ps.name = ${schemaFilter} AND pt.name = ${tableFilter} ORDER BY fk.name, fkc.constraint_column_id`;
+  if (purpose === "indexes")
+    return `SELECT i.name AS index_name, c.name AS column_name, i.is_unique, ic.key_ordinal FROM sys.indexes i JOIN sys.tables t ON t.object_id = i.object_id JOIN sys.schemas s ON s.schema_id = t.schema_id JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id WHERE s.name = ${schemaFilter} AND t.name = ${tableFilter} AND i.is_hypothetical = 0 ORDER BY i.name, ic.key_ordinal`;
+  return `SELECT TABLE_SCHEMA AS table_schema, TABLE_NAME AS view_name FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = ${schemaFilter} ORDER BY TABLE_NAME`;
+}
+function boundMetadata(kind, sql) {
+  if (DIALECTS[kind].limit === "top")
+    return sql.replace(/^SELECT\s+/i, "SELECT TOP (100) ");
+  if (DIALECTS[kind].limit === "fetch")
+    return `${sql} FETCH FIRST 100 ROWS ONLY`;
+  return `${sql} LIMIT 100`;
+}
+function safeName(value) {
+  return value.replace(/[^A-Za-z0-9_]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "table";
+}
+function prepareSqlDiscoveryQueries(args) {
+  if (!(args.kind in DIALECTS))
+    throw new Error(`Datasource kind "${args.kind}" is not supported by SQL discovery.`);
+  const kind = args.kind;
+  if (args.schema)
+    assertIdentifier(args.schema, "schema");
+  if (args.table)
+    assertIdentifier(args.table, "table");
+  for (const column of [...args.columns ?? [], ...args.distinctColumns ?? []])
+    assertIdentifier(column, "column");
+  const tablePurposes = args.purposes.filter((purpose) => purpose !== "views");
+  if (tablePurposes.length && !args.table)
+    throw new Error("Table-scoped SQL discovery requires table.");
+  if (args.purposes.includes("preview") && !args.columns?.length) {
+    throw new Error("Preview discovery requires one or more explicit columns; SELECT * is never generated.");
+  }
+  if (args.purposes.includes("distinct") && !args.distinctColumns?.length) {
+    throw new Error("Distinct discovery requires one or more explicit distinct_columns.");
+  }
+  const from = args.table ? source(kind, args.schema, args.table) : void 0;
+  const prefix = safeName(args.namePrefix ?? args.table ?? args.schema ?? "schema");
+  const queries = [];
+  const unsupported = [];
+  for (const purpose of [...new Set(args.purposes)]) {
+    let sql;
+    if (purpose === "count")
+      sql = `SELECT COUNT(*) AS row_count FROM ${from}`;
+    else if (purpose === "preview") {
+      sql = boundedSelect(kind, args.columns.map((column) => quote(kind, column)).join(", "), from, args.limit);
+    } else if (purpose === "distinct") {
+      sql = boundedSelect(kind, args.distinctColumns.map((column) => quote(kind, column)).join(", "), from, args.limit, true);
+    } else {
+      sql = metadataSql(kind, purpose, args.schema, args.table);
+      if (!sql) {
+        unsupported.push({
+          purpose,
+          reason: `${args.kind} does not expose a verified ${purpose} selector and MCP has no curated read-only SQL contract for it yet.`
+        });
+        continue;
+      }
+      sql = boundMetadata(kind, sql);
+    }
+    queries.push({
+      purpose,
+      name: `${prefix}_${purpose}`,
+      datasource_id: args.datasourceId,
+      options: options(kind, sql)
+    });
+  }
+  return { queries, unsupported };
+}
 var purposes = ["count", "preview", "distinct", "primary_keys", "foreign_keys", "indexes", "views"];
 function prepareSqlDiscoveryQueriesTool(client) {
   return {
@@ -2140,12 +2273,12 @@ function bindingValue(prefix, column) {
   const access = `${prefix}[${JSON.stringify(column.name)}]`;
   return column.type.toLowerCase().includes("json") ? `{{JSON.stringify(${access})}}` : `{{${access}}}`;
 }
-function generateFormSchema(columns, options) {
-  const exclude = new Set(options.exclude ?? []);
+function generateFormSchema(columns, options2) {
+  const exclude = new Set(options2.exclude ?? []);
   const omitted = [];
   const byName = new Map(columns.map((column) => [column.name, column]));
   const seen = /* @__PURE__ */ new Set();
-  const ordered = options.include ? options.include.flatMap((name) => {
+  const ordered = options2.include ? options2.include.flatMap((name) => {
     if (seen.has(name))
       return [];
     seen.add(name);
@@ -2157,7 +2290,7 @@ function generateFormSchema(columns, options) {
   const selected = ordered.filter((column) => {
     if (exclude.has(column.name))
       return false;
-    if (options.mode === "create" && column.type.toLowerCase() === "serial") {
+    if (options2.mode === "create" && column.type.toLowerCase() === "serial") {
       omitted.push({ name: column.name, reason: "generated serial column omitted from create form" });
       return false;
     }
@@ -2171,11 +2304,11 @@ function generateFormSchema(columns, options) {
       Object.assign(field, { values: choices, displayValues: choices.map(String) });
     if (type === "datepicker")
       Object.assign(field, { enableDate: true, enableTime: true });
-    if (options.mode === "edit" && column.isPrimaryKey)
+    if (options2.mode === "edit" && column.isPrimaryKey)
       field.styles = { disabled: true };
-    if (options.initialValuesBinding) {
-      field.value = bindingValue(options.initialValuesBinding, column);
-    } else if (options.mode === "create" && column.defaultValue !== void 0) {
+    if (options2.initialValuesBinding) {
+      field.value = bindingValue(options2.initialValuesBinding, column);
+    } else if (options2.mode === "create" && column.defaultValue !== void 0) {
       if (column.type.toLowerCase().includes("json"))
         field.value = JSON.stringify(column.defaultValue);
       else if (type === "checkbox" && booleanDefault(column.defaultValue) !== void 0) {
@@ -2184,10 +2317,10 @@ function generateFormSchema(columns, options) {
         field.value = "{{0}}";
       else
         field.value = column.defaultValue;
-    } else if (options.mode === "create" && type === "datepicker") {
+    } else if (options2.mode === "create" && type === "datepicker") {
       field.value = "{{null}}";
     }
-    field = mergeField(field, options.fieldOverrides?.[column.name]);
+    field = mergeField(field, options2.fieldOverrides?.[column.name]);
     const finalType = field.type;
     if (typeof finalType !== "string" || !FORM_SCHEMA_FIELD_TYPE_SET.has(finalType)) {
       throw new Error(`Form field "${column.name}" has unsupported type "${String(finalType)}".`);
@@ -2205,9 +2338,9 @@ function generateFormSchema(columns, options) {
     throw new Error(`Generated ToolJet Form is not layout-safe for ${standaloneFields.join(", ")}. FormUtils does not pass label alignment through to generated fields; Dropdown/Multiselect labels do not align with inputs, and TextArea retains a literal "Label" and can render as a single-line control. Build the entire form from standalone components in one add_components call, set styles.alignment.value="top" on every labelled input, use a consistent two-column grid for compact fields, and make TextArea fields full-width. Generated Form is approved only for textinput, number, emailinput, password, datepicker, and checkbox fields.`);
   }
   const schema = {
-    title: options.title ?? `${options.mode === "create" ? "Create" : "Edit"} ${humanize(options.tableName)}`,
+    title: options2.title ?? `${options2.mode === "create" ? "Create" : "Edit"} ${humanize(options2.tableName)}`,
     properties: fields,
-    submitButton: { value: options.submitLabel ?? (options.mode === "create" ? "Create" : "Save changes") }
+    submitButton: { value: options2.submitLabel ?? (options2.mode === "create" ? "Create" : "Save changes") }
   };
   const recommendedCanvasHeight = Math.max(300, selected.length * 70);
   const recommendedFormHeight = recommendedCanvasHeight + 130;
@@ -2231,7 +2364,7 @@ function generateFormSchema(columns, options) {
       default_value: column.defaultValue,
       foreign_keys: column.foreignKeys,
       generated_type: fields[column.name].type,
-      overridden: !!options.fieldOverrides?.[column.name]
+      overridden: !!options2.fieldOverrides?.[column.name]
     })),
     omitted_fields: omitted,
     layout_guidance: {
@@ -2360,8 +2493,8 @@ function validatePaths(paths, roots, label) {
     }
   }
 }
-function readPath(source, segments) {
-  let cursor = source;
+function readPath(source2, segments) {
+  let cursor = source2;
   for (const segment of segments) {
     if (cursor === null || typeof cursor !== "object" || !Object.prototype.hasOwnProperty.call(cursor, segment)) {
       return { found: false };
@@ -2382,11 +2515,11 @@ function writePath(target2, segments, value) {
   }
   cursor[segments.at(-1)] = value;
 }
-function pickPaths(source, paths) {
+function pickPaths(source2, paths) {
   const result = {};
   for (const path of paths) {
     const segments = path.split(".");
-    const selected = readPath(source, segments);
+    const selected = readPath(source2, segments);
     if (selected.found)
       writePath(result, segments, selected.value);
   }
@@ -2820,17 +2953,17 @@ function addQueryTool(client) {
         const prepared = prepareQueryOptionsForWrite(datasource.kind, args.options);
         if (prepared.errors.length)
           return fail(new Error(prepared.errors.join(" ")));
-        const { options, warnings } = prepared;
+        const { options: options2, warnings } = prepared;
         const validation = prepared.validation;
         if (args.kind && args.kind !== datasource.kind) {
           warnings.push(`Caller kind "${args.kind}" was ignored; datasource "${args.datasource_id}" is kind "${datasource.kind}".`);
         }
-        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name, kind: datasource.kind, options }]));
+        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name, kind: datasource.kind, options: options2 }]));
         const result = await client.createQuery({
           versionId: args.version_id,
           dataSourceId: args.datasource_id,
           name: args.name,
-          options,
+          options: options2,
           kind: datasource.kind
         });
         return ok({
@@ -2843,95 +2976,6 @@ function addQueryTool(client) {
       }
     }
   };
-}
-var querySchema = external_exports.object({
-  client_ref: external_exports.string().optional(),
-  datasource_id: external_exports.string(),
-  name: external_exports.string(),
-  options: external_exports.record(external_exports.string(), external_exports.any()),
-  kind: external_exports.string().optional()
-});
-function addQueriesTool(client) {
-  return {
-    name: "add_queries",
-    title: "Add Queries",
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: false,
-      openWorldHint: true
-    },
-    description: "Create MANY queries in a single call (all share version_id). Prefer this over repeated add_query when building an app. Each query names its own datasource_id and options. Call get_datasource_query_schema for the operations you use before constructing those options. The batch resolves datasource kinds once, contract-validates every query before any writes, and returns {queries,warnings,validation}. ToolJet has no query bulk transaction: a rare partial failure names every persisted query; do not retry the whole batch. Creates are serialized per version within this MCP client. Optional client_ref aliases declared in this batch are resolved in its query bindings/RunJS when unambiguous; existing runtime names take precedence. Pass app_id for a Code mode app: its queries must read the signed-in user as {{globals.server.currentUser.*}} (resolved on the server), and {{globals.currentUser.*}} (resolved in the browser) is refused.",
-    inputSchema: {
-      version_id: external_exports.string(),
-      app_id: external_exports.string().optional().describe("the app's id; in a Code mode app it enables the signed-in-user check"),
-      queries: external_exports.array(querySchema).min(1)
-    },
-    async handler(args) {
-      try {
-        await refuseBrowserUser(client, args.app_id, args.queries);
-        const datasources = await client.listDatasources(args.version_id);
-        const datasourceById = new Map(datasources.map((datasource) => [datasource.id, datasource]));
-        const warnings = [];
-        const queries = structuredClone(args.queries);
-        if (queries.some((query) => query.client_ref && query.client_ref !== query.name)) {
-          try {
-            const existing = await client.getQueries(args.version_id);
-            warnings.push(...normalizePlanBindingAliases({ queries }, { pages: [], queries: existing }, new Map(datasources.map((ds) => [ds.id, ds.kind]))));
-          } catch {
-            warnings.push("Batch query aliases were not normalized because existing query names could not be read. Use exact runtime names.");
-          }
-        }
-        const validations = [];
-        const resolved = queries.map((query) => {
-          const datasource = datasourceById.get(query.datasource_id);
-          if (!datasource) {
-            throw new Error(`Query "${query.name}": datasource "${query.datasource_id}" is not available on version "${args.version_id}".`);
-          }
-          const prepared = prepareQueryOptionsForWrite(datasource.kind, query.options, `Query "${query.name}"`);
-          if (prepared.errors.length)
-            throw new Error(prepared.errors.join(" "));
-          warnings.push(...prepared.warnings);
-          const { options } = prepared;
-          const validation = prepared.validation;
-          if (query.kind && query.kind !== datasource.kind) {
-            warnings.push(`Query "${query.name}": caller kind "${query.kind}" was ignored; datasource kind is "${datasource.kind}".`);
-          }
-          validations.push({
-            name: query.name,
-            kind: datasource.kind,
-            operation: validation.operation,
-            schema_found: validation.schemaFound
-          });
-          return { query: { ...query, options }, kind: datasource.kind };
-        });
-        warnings.push(...await inspectUpdateCompatibility(client, resolved.map(({ query, kind }) => ({
-          name: query.name,
-          kind,
-          options: query.options
-        }))));
-        const result = await client.createQueries({
-          versionId: args.version_id,
-          queries: resolved.map(({ query, kind }) => ({
-            dataSourceId: query.datasource_id,
-            name: query.name,
-            options: query.options,
-            kind
-          }))
-        });
-        return ok({ queries: result, warnings, validation: validations });
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
-async function refuseBrowserUser(client, appId, queries) {
-  const found = queries.map((query) => ({ name: query.name, paths: browserUserBindings(query.options) })).filter((query) => query.paths.length);
-  if (!found.length || !appId)
-    return;
-  if (!isCodeModeApp(await client.getApp(appId)))
-    return;
-  throw new Error(found.map((query) => browserUserMessage(query.name, query.paths)).join(" ") + " Nothing was written.");
 }
 var layoutSchema = external_exports.object({
   top: external_exports.number(),
@@ -3663,10 +3707,10 @@ function updateQueryTool(client) {
         if (prepared.errors.length)
           return fail(new Error(prepared.errors.join(" ")));
         const warnings = [...resolutionWarnings, ...prepared.warnings];
-        const { options, validation } = prepared;
+        const { options: options2, validation } = prepared;
         if (!kind)
           warnings.push("Query options were not contract-validated; pass app_id or kind on update_query.");
-        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name ?? args.query_id, kind, options }]));
+        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name ?? args.query_id, kind, options: options2 }]));
         if (args.datasource_id && args.datasource_id !== currentDatasourceId) {
           await client.updateQueryDatasource({
             queryId: args.query_id,
@@ -3679,7 +3723,7 @@ function updateQueryTool(client) {
           result = await client.updateQuery({
             queryId: args.query_id,
             versionId: args.version_id,
-            options,
+            options: options2,
             name: args.name
           });
         } catch (error) {
@@ -3925,9 +3969,9 @@ var TOOLJET_MCP_VERSION = "0.11.1";
 function snapshot(path) {
   try {
     const stat = statSync(path);
-    const source = `${Math.round(stat.mtimeMs * 1e3)}:${stat.size}`;
+    const source2 = `${Math.round(stat.mtimeMs * 1e3)}:${stat.size}`;
     return {
-      buildId: createHash("sha256").update(source).digest("hex").slice(0, 12),
+      buildId: createHash("sha256").update(source2).digest("hex").slice(0, 12),
       modifiedMs: stat.mtimeMs,
       size: stat.size
     };
@@ -3987,180 +4031,6 @@ function getRuntimeInfoTool(runtime) {
     inputSchema: { refresh: external_exports.boolean().optional().describe("Accepted for discoverability; runtime status is always fresh.") },
     async handler() {
       return ok(runtime.status());
-    }
-  };
-}
-var THEME_LICENCE_USER_MESSAGE = "Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.";
-async function applyToApp(client, theme, args, definition) {
-  if (!args.app_id || !args.version_id)
-    return void 0;
-  const mode = args.app_mode ?? (paintsDarkCanvasInLightMode(definition) ? "dark" : void 0);
-  await client.updateAppSettings({
-    appId: args.app_id,
-    versionId: args.version_id,
-    globalSettings: { theme, ...mode ? { appMode: mode } : {} }
-  });
-  return { app_id: args.app_id, version_id: args.version_id, ...mode ? { app_mode: mode } : {} };
-}
-var hex = (h, s, l) => {
-  const channel = (n) => {
-    const k = (n + h / 30) % 12;
-    return Math.round(255 * (l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, "0");
-  };
-  return `#${channel(0)}${channel(8)}${channel(4)}`;
-};
-function definitionFromChoices(args) {
-  const accent = args.primary ? hsl(args.primary) : null;
-  if (!args.primary || !accent)
-    return void 0;
-  const { h, s: sat, l } = accent;
-  const pair = (light, dark, hue = h) => ({ light: hex(hue, light[0], light[1]), dark: hex(hue, dark[0], dark[1]) });
-  const base = loadStandardTheme().definition;
-  const radius = args.radius ?? base.border.radius.default;
-  return {
-    brand: {
-      colors: {
-        primary: { light: args.primary, dark: hex(h, sat, Math.max(l, 0.62)) },
-        secondary: pair([0.45, 0.22], [0.4, 0.78]),
-        tertiary: pair([0.65, 0.42], [0.65, 0.68], (h + 35) % 360)
-      }
-    },
-    text: {
-      font: args.font ?? base.text.font,
-      colors: { primary: pair([0.28, 0.13], [0.18, 0.94]), placeholder: pair([0.12, 0.45], [0.1, 0.65]), disabled: pair([0.1, 0.68], [0.08, 0.45]) }
-    },
-    border: {
-      radius: { default: radius, small: Math.max(radius - 2, 0), large: radius + 4 },
-      colors: { default: pair([0.22, 0.86], [0.12, 0.24]), weak: pair([0.24, 0.91], [0.12, 0.19]), disabled: pair([0.16, 0.82], [0.1, 0.28]) }
-    },
-    systemStatus: base.systemStatus,
-    surface: {
-      colors: {
-        appBackground: pair([0.3, 0.965], [0.16, 0.075]),
-        surface1: { light: "#ffffff", dark: hex(h, 0.14, 0.11) },
-        surface2: pair([0.28, 0.94], [0.13, 0.145]),
-        surface3: pair([0.24, 0.9], [0.12, 0.19])
-      }
-    }
-  };
-}
-function requireValue(value, label) {
-  if (value === void 0)
-    throw new Error(`manage_theme requires ${label} for this action.`);
-  return value;
-}
-async function readTheme(client, themeId) {
-  const theme = (await client.listAppThemes()).find((candidate) => candidate.id === themeId);
-  if (!theme)
-    throw new Error(`Theme "${themeId}" is not available in the active workspace.`);
-  return theme;
-}
-function manageThemeTool(client) {
-  return {
-    name: "manage_theme",
-    title: "Manage Workspace Theme",
-    // list/create/rename are safe, but the same tool also deletes a theme, so the hint covers its widest action.
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: true
-    },
-    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. create with app_id and version_id also applies the theme to that app (in app_mode, else in dark mode when its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same name, so there is no need to list themes first. Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass include_definitions:true (or theme_id) to get a definition.",
-    inputSchema: {
-      action: external_exports.enum(["list", "create", "set_default", "update_definition", "rename", "delete"]),
-      theme_id: external_exports.string().uuid().optional(),
-      name: external_exports.string().trim().min(1).max(100).optional(),
-      primary: external_exports.string().regex(/^#[0-9a-fA-F]{6}$/).optional().describe("create: the accent colour as a hex. With font and radius, this is all a theme needs; the rest is derived from its hue"),
-      font: external_exports.string().trim().min(1).max(100).optional().describe("create, with primary: one font family name"),
-      radius: external_exports.number().min(0).max(32).optional().describe("create, with primary: corner radius in px"),
-      definition: themeDefinition.optional(),
-      is_default: external_exports.boolean().optional(),
-      confirm: external_exports.boolean().optional(),
-      include_definitions: external_exports.boolean().optional(),
-      app_id: external_exports.string().uuid().optional().describe("create only: apply the theme to this app as well"),
-      version_id: external_exports.string().uuid().optional().describe("create only, with app_id: the app version to apply it to"),
-      app_mode: external_exports.enum(["light", "dark"]).optional().describe("create only, with app_id: open the app in this mode. Pass 'dark' when the request asks for a dark app: the theme's dark values then paint every surface, and ToolJet's own parts (tables, inputs) draw for them. Never paint dark backgrounds by hand on a light-mode app.")
-    },
-    async handler(args) {
-      try {
-        if (args.action === "list") {
-          const themes = await client.listAppThemes();
-          if (args.include_definitions)
-            return ok({ themes });
-          if (args.theme_id) {
-            const one = themes.find((theme) => theme.id === args.theme_id);
-            return one ? ok({ themes: [one] }) : fail(new Error(`Theme "${args.theme_id}" not found.`));
-          }
-          return ok({
-            themes: themes.map(({ id, name, isDefault, isBasic, isDisabled }) => ({ id, name, isDefault, isBasic, isDisabled })),
-            note: "Definitions omitted; pass include_definitions:true or theme_id to read one."
-          });
-        }
-        if (args.action === "create") {
-          const name = requireValue(args.name, "name");
-          if (name.length < 5)
-            throw new Error("Theme name must contain at least 5 characters.");
-          if (name === "ToolJet")
-            throw new Error('The reserved theme name "ToolJet" cannot be used.');
-          const existing = (await client.listAppThemes()).find((theme) => theme.name === name && !theme.isDisabled);
-          if (existing) {
-            const applied = await applyToApp(client, existing, args, existing.definition ?? args.definition);
-            return ok({
-              theme: existing,
-              reused: true,
-              ...applied ? { applied } : {},
-              warnings: [
-                `Theme "${name}" already exists in this workspace; returned it instead of creating a duplicate. ` + (applied ? "It is applied to the app." : "Apply it with update_app_settings, or use update_definition to change it.")
-              ]
-            });
-          }
-          try {
-            const definition = requireValue(args.definition ?? definitionFromChoices(args), "primary (a hex colour; font and radius are optional)");
-            const created = await client.createAppTheme({
-              name,
-              definition,
-              isDefault: args.is_default ?? false
-            });
-            const applied = await applyToApp(client, created, args, definition);
-            const accent = accentWarning(definition);
-            return ok({ theme: created, ...applied ? { applied } : {}, ...accent ? { warnings: [accent] } : {} });
-          } catch (error) {
-            if (error instanceof ToolJetHttpError && error.status === 451) {
-              return ok({
-                theme: null,
-                licensed: false,
-                user_message: THEME_LICENCE_USER_MESSAGE,
-                warnings: [
-                  "Custom themes are not included in this ToolJet plan (HTTP 451). The app keeps the workspace default theme. Do not retry theme creation or guess a theme id; build the app on the default theme and repeat `user_message` to the user in the closing handoff."
-                ]
-              });
-            }
-            throw error;
-          }
-        }
-        const themeId = requireValue(args.theme_id, "theme_id");
-        await readTheme(client, themeId);
-        if (args.action === "set_default") {
-          await client.setDefaultAppTheme(themeId, args.is_default ?? true);
-          return ok({ theme: await readTheme(client, themeId) });
-        }
-        if (args.action === "update_definition") {
-          await client.updateAppThemeDefinition(themeId, requireValue(args.definition, "definition"));
-          const accent = accentWarning(args.definition);
-          return ok({ theme: await readTheme(client, themeId), ...accent ? { warnings: [accent] } : {} });
-        }
-        if (args.action === "rename") {
-          await client.renameAppTheme(themeId, requireValue(args.name, "name"));
-          return ok({ theme: await readTheme(client, themeId) });
-        }
-        if (args.confirm !== true) {
-          throw new Error(`Deleting theme "${themeId}" requires confirm:true after exact-target user approval.`);
-        }
-        await client.deleteAppTheme(themeId);
-        return ok({ deleted: true, theme_id: themeId });
-      } catch (error) {
-        return fail(error);
-      }
     }
   };
 }
@@ -4601,6 +4471,9 @@ function includeLegacySingularCreateTools() {
   return /^(1|true|yes)$/i.test(process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS ?? "");
 }
 function registerTools(server, client, runtime = runtimeFreshness, code = noCodeIdentity(client)) {
+  const viewerBase = () => process.env.TOOLJET_APP_URL || process.env.TOOLJET_DEPLOYMENT_URL || "http://localhost:8082";
+  const verifyPageRender = verifyPageRenderTool(client, viewerBase);
+  const canRender = renderAuditAvailable();
   const tools = [
     getWorkflowNodeCatalogTool(),
     getWorkflowCapabilitiesTool(client),
@@ -4618,8 +4491,10 @@ function registerTools(server, client, runtime = runtimeFreshness, code = noCode
     codeAppReadFilesTool(code),
     codeAppWriteFilesTool(code),
     codeAppBuildTool(code),
-    codeAppInstallTool(code),
+    // verify: true renders each route through the same check verify_page_render runs.
+    codeAppInstallTool(code, canRender ? { render: verifyPageRender.handler, renderConcurrency: client.renderAuditGrant ? 1 : 2 } : {}),
     codeAppAddDependencyTool(code),
+    codeAppDataTool(client),
     listWorkspacesTool(client),
     useWorkspaceTool(client),
     manageAppPermissionsTool(client),
@@ -4657,7 +4532,7 @@ function registerTools(server, client, runtime = runtimeFreshness, code = noCode
     getAppSummaryTool(client),
     getComponentTool(client),
     validateAppTool(client),
-    verifyPageRenderTool(client, () => process.env.TOOLJET_APP_URL || process.env.TOOLJET_DEPLOYMENT_URL || "http://localhost:8082"),
+    verifyPageRender,
     lintAppSpecTool(client),
     applyAppPhaseTool(client),
     addPageTool(client),
@@ -4684,7 +4559,6 @@ function registerTools(server, client, runtime = runtimeFreshness, code = noCode
     manageThemeTool(client)
   ];
   const exposedTools = includeLegacySingularCreateTools() ? tools : tools.filter((tool) => !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name));
-  const canRender = renderAuditAvailable();
   for (const tool of exposedTools) {
     if (tool.name === "verify_page_render" && !canRender)
       continue;
@@ -4888,9 +4762,9 @@ function oauthHttpOptionsFromEnv() {
     allowedOrigins: (process.env.MCP_OAUTH_ALLOWED_ORIGINS || "").split(",").map((s) => s.trim()).filter(Boolean)
   };
 }
-function sendOAuthJson(res, status, body) {
+function sendOAuthJson(res, status, body2) {
   res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" });
-  res.end(JSON.stringify(body));
+  res.end(JSON.stringify(body2));
 }
 var BodyTooLarge = class extends Error {
 };
@@ -4912,20 +4786,20 @@ async function readOAuthBody(req, maxBytes) {
   }
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
-function createOAuthHttpServer(options) {
-  const issuer = checkedUrl(options.issuer, "issuer");
-  const resourceBase = checkedUrl(options.resourceUrl, "resourceUrl");
-  const apiUrl = checkedUrl(options.apiUrl, "apiUrl");
-  const appUrl = checkedUrl(options.appUrl, "appUrl");
-  if (options.exchangeSecret.length < 32)
+function createOAuthHttpServer(options2) {
+  const issuer = checkedUrl(options2.issuer, "issuer");
+  const resourceBase = checkedUrl(options2.resourceUrl, "resourceUrl");
+  const apiUrl = checkedUrl(options2.apiUrl, "apiUrl");
+  const appUrl = checkedUrl(options2.appUrl, "appUrl");
+  if (options2.exchangeSecret.length < 32)
     throw new Error("OAuth exchange secret must contain at least 32 characters");
   const resource = new URL(resourceBase);
-  const factory = options.serverFactory ?? buildServer;
-  const fetchImpl = options.fetchImpl ?? fetch;
-  const maxBodyBytes = options.maxBodyBytes ?? OAUTH_MAX_BODY_BYTES;
+  const factory = options2.serverFactory ?? buildServer;
+  const fetchImpl = options2.fetchImpl ?? fetch;
+  const maxBodyBytes = options2.maxBodyBytes ?? OAUTH_MAX_BODY_BYTES;
   if (!Number.isSafeInteger(maxBodyBytes) || maxBodyBytes <= 0)
     throw new Error("Invalid OAuth request body limit");
-  const allowedOrigins = new Set((options.allowedOrigins || []).map((origin) => {
+  const allowedOrigins = new Set((options2.allowedOrigins || []).map((origin) => {
     const checked = checkedUrl(origin, "allowedOrigin");
     if (new URL(checked).origin !== checked)
       throw new Error("OAuth allowed origins must not include a path");
@@ -5017,7 +4891,7 @@ function createOAuthHttpServer(options) {
           method: "POST",
           redirect: "error",
           signal: AbortSignal.timeout(1e4),
-          headers: { authorization: `Bearer ${options.exchangeSecret}`, "content-type": "application/json" },
+          headers: { authorization: `Bearer ${options2.exchangeSecret}`, "content-type": "application/json" },
           body: JSON.stringify({
             grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
             subject_token_type: "urn:ietf:params:oauth:token-type:access_token",
