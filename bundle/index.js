@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { createRequire } from "node:module";
-import { b as buildServer, a as buildUnconfiguredServer, c as allowedApiOrigins, A as ALLOWED_API_ORIGINS_VAR, o as oauthHttpOptionsFromEnv, d as createOAuthHttpServer, i as identityFromHeaders, S as SESSION_TOKEN_HEADER, B as BASE_URL_HEADER, P as PAT_HEADER, e as StreamableHTTPServerTransport } from "./chunk-5BiPSONg.js";
+import { b as buildServer, a as buildUnconfiguredServer, c as allowedApiOrigins, A as ALLOWED_API_ORIGINS_VAR, o as oauthHttpOptionsFromEnv, d as createOAuthHttpServer, i as identityFromHeaders, S as SESSION_TOKEN_HEADER, B as BASE_URL_HEADER, P as PAT_HEADER, e as StreamableHTTPServerTransport } from "./chunk-BCl71Tyf.js";
 import "./chunk-Cm6A-Ye7.js";
 import { V as JSONRPCMessageSchema } from "./chunk-t62YCwCI.js";
-import "./chunk-BFAvWjgX.js";
+import "./chunk-DvDcM-Wj.js";
 import "./chunk-mYONPs3z.js";
 import "./chunk-DkjXy2l6.js";
 import "./chunk-DZx2PNqM.js";

@@ -35,5 +35,11 @@ jobs:
 
       - name: Scan committed history for secrets
         shell: bash
-        # Scan all history reachable from this push/PR commit, including its parents.
-        run: '"$RUNNER_TEMP/gitleaks-bin/gitleaks" git . --log-opts=HEAD --redact=100 --no-banner'
+        # Push/PR: all reachable history. Manual: all fetched branches and tags.
+        run: |
+          set -euo pipefail
+          scan_history=HEAD
+          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
+            scan_history=--all
+          fi
+          "$RUNNER_TEMP/gitleaks-bin/gitleaks" git . --log-opts="$scan_history" --redact=100 --no-banner

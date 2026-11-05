@@ -4,7 +4,7 @@ import { frozenAppRefusal } from '../frozenApp.js';
 import { peekAppPlan } from '../appPlanStore.js';
 import { tableQuotaError } from '../tableQuotaError.js';
 import { z } from 'zod';
-import type { AppPlanInput } from '../appPlanSchema.js';
+import { appPlanSchema, type AppPlanInput } from '../appPlanSchema.js';
 import { consumeAppPlan } from '../appPlanStore.js';
 import { validatePersistedAppSummary } from '../appValidation.js';
 import { prepareComponentBatch } from '../componentBatch.js';
@@ -25,7 +25,7 @@ import { checkPlanReads, type ReadCheck } from '../applyReadCheck.js';
 import { literalCanvasColor } from '../appSettings.js';
 import { lintAppSpecTool } from './lintAppSpec.js';
 
-const renameAppInput = z.object({ app_id: z.string().min(1), version_id: z.string().min(1), name: z.string().trim().min(1) }).strict();
+const renameAppInput = z.object({ app_id: z.string().min(1), version_id: z.string().min(1), name: appPlanSchema.shape.app_name.unwrap() }).strict();
 
 /** The app-metadata action used by apply_app_phase is also available independently. */
 export function renameAppTool(client: ToolJetClient): ToolDef {

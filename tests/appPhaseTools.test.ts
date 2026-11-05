@@ -13,6 +13,17 @@ function textOf(result: { content: Array<{ text: string }> }): any {
 describe('plan token + apply_app_phase', () => {
   beforeEach(() => clearAppPlansForTests());
 
+  it('rejects an overlong independent rename before reading or writing the app', async () => {
+    const client = { getAppSummary: vi.fn(), renameApp: vi.fn() };
+    const result = await renameAppTool(client as unknown as ToolJetClient).handler({
+      app_id: 'observatory-app', version_id: 'observatory-version', name: 'A'.repeat(101),
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toContain('100');
+    expect(client.getAppSummary).not.toHaveBeenCalled();
+    expect(client.renameApp).not.toHaveBeenCalled();
+  });
+
   it('renames an app independently without invoking another mutation or executor', async () => {
     let name = 'Observatory';
     const calls = {

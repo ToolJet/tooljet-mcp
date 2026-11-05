@@ -33,7 +33,8 @@ const mutationInputs = [
     return {
       name: `upsert_workflow_${type}_node`,
       title: `Upsert Workflow ${type[0]!.toUpperCase() + type.slice(1)} Node`,
-      description: `Create or edit one ${type} node in an editable workflow draft. Existing_id edits the same node; omission creates a node. Stores configuration and any associated query definition without executing its code or datasource operation.`,
+      description: `Create or edit one ${type} node in an editable workflow draft. Existing_id edits the same node; omission creates a node. Stores configuration and any associated query definition without executing its code or datasource operation.` +
+        (type === 'agent' ? ' Omitting model preserves its existing attachment. Setting model:null removes the connected model node, attachment edge, and associated query; the agent remains in the draft without a model.' : ''),
       schema: z.object({ ...workflowTargetShape, node: z.object(Object.fromEntries(Object.entries(node.shape).filter(([key]) => key !== 'type'))).strict(), allow_draft: z.boolean().default(true) }).strict(),
       spec: (args: any) => ({ nodes: [{ ...args.node, type }] }),
     };
@@ -46,7 +47,7 @@ const mutationInputs = [
   },
   {
     name: 'delete_workflow_edge', title: 'Delete Workflow Edge',
-    description: 'Remove one explicitly selected control-flow edge from an editable workflow draft, preserving nodes and other edges. Never executes the graph.',
+    description: 'Remove one explicitly selected edge from an editable workflow draft, including control-flow or agent attachment edges. Preserves all nodes and their queries, so removing an attachment leaves its model/tool node and query in place and may leave the draft unready. To remove a connected agent model and its query together, use upsert_workflow_agent_node with model:null instead. Never executes the graph.',
     schema: z.object({ ...workflowTargetShape, edge_id: z.string().min(1), allow_draft: z.boolean().default(true) }).strict(),
     spec: (args: any) => ({ remove_edge_ids: [args.edge_id] }),
   },

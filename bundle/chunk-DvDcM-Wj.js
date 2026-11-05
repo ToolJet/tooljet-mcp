@@ -70,6 +70,268 @@ function consumeAppPlan(planToken) {
   plans.delete(planToken);
   return plan;
 }
+var dbColumnTypeSchema = external_exports.string().describe("ToolJet DB types: string, integer, bigint, serial, number (double precision), boolean, timestamp, jsonb. Existing aliases text/varchar/int/float/decimal/double/bool/datetime/date/json and canonical API type names are accepted. numeric is unsupported; number/decimal are floating-point, not exact decimal. For money consider integer minor units.").refine((value) => TOOLJET_DB_DATA_TYPES.has(normalizeType(value)), {
+  message: "Unsupported ToolJet DB type. Use string, integer, bigint, serial, number (double precision), boolean, timestamp or jsonb. numeric is not supported. For money choose on purpose: integer cents where sums must be exact, or number shown with a currency format for prices; never swap one in silently."
+});
+var AUTO_MATERIALIZE_DEFAULTS = /* @__PURE__ */ new Set(["Kanban"]);
+var TOOLJET_DESKTOP_GRID_COLUMNS = 43;
+function wrappedValues(keys, defaults) {
+  if (!keys?.length)
+    return void 0;
+  return Object.fromEntries(keys.map((key2) => [key2, { value: defaults[key2] ?? "" }]));
+}
+function childLayout(child, parentType, index) {
+  const schema = getComponentSchema(child.componentName);
+  if (parentType === "Kanban" && child.componentName === "Text") {
+    return { top: index === 0 ? 12 : 44, left: 2, width: 39, height: child.layout?.height ?? 30 };
+  }
+  return {
+    top: child.layout?.top ?? 0,
+    left: child.layout?.left ?? 0,
+    width: child.layout?.width ?? (schema?.defaultSize?.width ?? 1) * 100 / TOOLJET_DESKTOP_GRID_COLUMNS,
+    height: child.layout?.height ?? schema?.defaultSize?.height ?? 40
+  };
+}
+function childName(parentName, child, index) {
+  const cardField = Object.values(child.defaultValue ?? {}).find((value) => typeof value === "string")?.match(/cardData\.([A-Za-z0-9_]+)/)?.[1];
+  const baseRole = cardField ?? child.accessorKey ?? child.componentName;
+  const role = baseRole.charAt(0).toUpperCase() + baseRole.slice(1) + (cardField ? "" : index + 1);
+  return `${parentName}Card${role}`;
+}
+function materializeRequiredDefaultChildren(input) {
+  const explicitParentRefs = new Set(input.flatMap((component) => component.parentRef && (!component.slotName || component.slotName === "body") ? [component.parentRef] : []));
+  const components = [];
+  const warnings = [];
+  let materializedChildren = 0;
+  input.forEach((original) => {
+    if (!AUTO_MATERIALIZE_DEFAULTS.has(original.type)) {
+      components.push(original);
+      return;
+    }
+    const schema = getComponentSchema(original.type);
+    const defaults = schema?.defaultChildren ?? [];
+    if (!defaults.length || explicitParentRefs.has(componentRef(original))) {
+      components.push(original);
+      return;
+    }
+    const clientRef = componentRef(original);
+    components.push(original);
+    defaults.forEach((child, childIndex) => {
+      const defaultValue = child.defaultValue ?? {};
+      components.push({
+        name: childName(original.name, child, childIndex),
+        type: child.componentName,
+        properties: wrappedValues(child.properties, defaultValue) ?? {},
+        styles: wrappedValues(child.styles, defaultValue),
+        layout: childLayout(child, original.type, childIndex),
+        parentRef: clientRef
+      });
+    });
+    materializedChildren += defaults.length;
+    warnings.push(`Kanban "${original.name}" had no explicit card children; materialized ${defaults.length} catalog default children so cards render content. For wrapped multi-line card text, use add_components with a Kanban client_ref and an explicit Html child using the matching parent_ref.`);
+  });
+  return { components, warnings, materializedChildren };
+}
+function normalizePlannedLayouts(component) {
+  const warnings = [];
+  const label = `${component.type ?? "component"} "${component.name ?? "?"}"`;
+  const targets = [];
+  if (component.layout)
+    targets.push(["layout", component.layout]);
+  if (component.layouts?.desktop)
+    targets.push(["desktop", component.layouts.desktop]);
+  if (component.layouts?.mobile)
+    targets.push(["mobile", component.layouts.mobile]);
+  if (!targets.length)
+    return { component, warnings };
+  const textMinimum = component.type === "Text" ? minimumTextHeight(component) : void 0;
+  const schema = component.type ? getComponentSchema(component.type) : void 0;
+  const compactHeight = schema?.renderingHints?.compactFormHeight ? schema?.defaultSize?.height : void 0;
+  const fixed = /* @__PURE__ */ new Map();
+  for (const [name, rect] of targets) {
+    if (typeof rect.height !== "number")
+      continue;
+    if (textMinimum !== void 0 && rect.height < textMinimum) {
+      fixed.set(name, { ...rect, height: textMinimum });
+      warnings.push(`${label}: raised ${name} height ${rect.height}px to ${textMinimum}px so one line of text renders.`);
+    } else if (compactHeight !== void 0 && rect.height > compactHeight) {
+      fixed.set(name, { ...rect, height: compactHeight });
+      warnings.push(`${label}: lowered ${name} height ${rect.height}px to the standard single-line ${compactHeight}px (oversizing does not enlarge the value text; a top label renders outside the box).`);
+    }
+  }
+  if (!fixed.size)
+    return { component, warnings };
+  const next = { ...component };
+  if (fixed.has("layout"))
+    next.layout = fixed.get("layout");
+  if (fixed.has("desktop") || fixed.has("mobile")) {
+    next.layouts = {
+      ...component.layouts,
+      ...fixed.has("desktop") ? { desktop: fixed.get("desktop") } : {},
+      ...fixed.has("mobile") ? { mobile: fixed.get("mobile") } : {}
+    };
+  }
+  return { component: next, warnings };
+}
+var layoutSchema = external_exports.object({
+  top: external_exports.number(),
+  left: external_exports.number().describe("Columns in the immediate parent canvas, which has its own 43-column grid."),
+  width: external_exports.number().describe("Columns out of 43 in the immediate parent canvas, independent of the parent outer width. Full width is 43. Container/Form/modal inset full rows use left 2, width 39; grid-mode Listview full rows use left 0, width 43."),
+  height: external_exports.number()
+});
+var componentInputSchema = external_exports.object({
+  name: componentNameSchema,
+  type: external_exports.string(),
+  properties: external_exports.record(external_exports.string(), external_exports.any()),
+  styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  others: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  layout: layoutSchema.optional(),
+  layouts: external_exports.object({ desktop: layoutSchema.optional(), mobile: layoutSchema.optional() }).optional(),
+  client_ref: external_exports.string().optional(),
+  parent_ref: external_exports.string().optional(),
+  parent: external_exports.string().optional(),
+  slot_name: componentSlotSchema.optional()
+});
+function containsListItemBinding(value) {
+  if (typeof value === "string")
+    return /\blistItem\b/.test(value);
+  if (Array.isArray(value))
+    return value.some(containsListItemBinding);
+  if (value && typeof value === "object") {
+    return Object.values(value).some(containsListItemBinding);
+  }
+  return false;
+}
+function prepareComponentBatch(inputs, options = {}) {
+  const requested = inputs.map(({ client_ref, parent_ref, slot_name, ...component }) => ({
+    ...component,
+    clientRef: client_ref,
+    parentRef: parent_ref,
+    slotName: slot_name
+  }));
+  const normalized = requested.map((component) => {
+    const definition = normalizeComponentSpec(component, { stripUnknownKeys: true });
+    const geometry = normalizePlannedLayouts(definition.component);
+    return { ...definition, component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
+  });
+  const heightFixes = [];
+  for (const result of normalized) {
+    const component = result.component;
+    const fix = suggestedHtmlHeight(component);
+    if (!fix)
+      continue;
+    for (const rect of [component.layout, component.layouts?.desktop])
+      if (rect && typeof rect.height === "number")
+        rect.height = fix.to;
+    heightFixes.push(`Html "${component.name ?? "?"}" needed about ${fix.needed}px for its markup but was ${fix.from}px; saved at ${fix.to}px. Anything placed within ${fix.to - fix.from}px below it now overlaps; move it down.`);
+  }
+  const expanded = materializeRequiredDefaultChildren(normalized.map((result) => result.component));
+  const references = indexComponentReferences(expanded.components, options.existingComponents);
+  const lint = lintComponents(references.components, options);
+  const lateListviewChildWarnings = requested.flatMap((component) => component.parent && containsListItemBinding({
+    properties: component.properties,
+    styles: component.styles,
+    validation: component.validation,
+    others: component.others
+  }) ? [
+    `Component "${component.name}" is being added under an existing parent and reads listItem. ToolJet can mount late-added Listview children with empty repeated values. Create the Listview and all listItem-bound children atomically in one component batch using client_ref/parent_ref.`
+  ] : []);
+  return {
+    components: references.components,
+    errors: [...references.errors, ...lint.errors],
+    warnings: [
+      ...normalized.flatMap((item) => item.warnings),
+      ...expanded.warnings,
+      ...lint.warnings,
+      ...heightFixes,
+      ...lateListviewChildWarnings
+    ]
+  };
+}
+var foreignKeyAction = external_exports.enum(["RESTRICT", "NO ACTION", "CASCADE", "SET NULL", "SET DEFAULT"]);
+var foreignKeySchema = external_exports.object({
+  columns: external_exports.array(external_exports.string()).min(1),
+  referencedTable: external_exports.string(),
+  referencedColumns: external_exports.array(external_exports.string()).min(1),
+  onDelete: foreignKeyAction.optional(),
+  onUpdate: foreignKeyAction.optional()
+});
+var columnSchema = external_exports.object({
+  name: external_exports.string(),
+  type: dbColumnTypeSchema,
+  primaryKey: external_exports.boolean().optional(),
+  notNull: external_exports.boolean().optional(),
+  unique: external_exports.boolean().optional(),
+  defaultValue: external_exports.any().optional(),
+  configurations: external_exports.record(external_exports.string(), external_exports.any()).optional()
+});
+var plannedTableSchema = external_exports.object({
+  table_name: external_exports.string(),
+  columns: external_exports.array(columnSchema).min(1),
+  foreign_keys: external_exports.array(foreignKeySchema).optional()
+});
+var plannedSeedSchema = external_exports.object({
+  table_name: external_exports.string(),
+  rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1).max(40)
+});
+var plannedQuerySchema = external_exports.object({
+  client_ref: external_exports.string().optional(),
+  datasource_id: external_exports.string().optional().describe("Exact id returned by list_datasources(version_id). Provide this OR datasource_name, not both."),
+  datasource_name: external_exports.string().optional().describe("Exact, case-sensitive unique name returned by list_datasources(version_id). Alternative to datasource_id; resolved and pinned to that id at lint time."),
+  name: external_exports.string(),
+  kind: external_exports.string().optional(),
+  /** Resolve this planned/existing ToolJet DB table name into options.table_id during lint/apply. */
+  table_ref: external_exports.string().optional().describe("Actual table_name of a planned or existing ToolJet DB table, not a client_ref, alias, or UUID."),
+  options: external_exports.record(external_exports.string(), external_exports.any()),
+  /** The app's query of this name is updated in place with this definition: see pageReplace.ts. */
+  update: external_exports.boolean().optional().describe("true: when the app already has a query of this name, it is updated in place with this definition, keeping its id and the events that run it, for every page that reads it (needs app_id). Without it, defining an existing name again is refused unless the definition is identical (then the existing query is used) or a replaced page owns it.")
+});
+var plannedPageSchema = external_exports.object({
+  client_ref: external_exports.string().optional(),
+  name: external_exports.string(),
+  icon: pageIconSchema,
+  hidden: external_exports.boolean().optional(),
+  /** The existing page of this name is replaced whole: see pageReplace.ts. */
+  replace: external_exports.boolean().optional().describe("true: the existing page of this name ends up holding exactly this plan's components and the events on them (needs app_id). It is written as a difference: a component the plan leaves as it is is not rewritten, one that only moved is moved, and one that changed keeps its id. Queries of that page the plan defines again are updated in place, keeping their ids. Refused when another page, event or query reads a component the plan drops. Not atomic: use it on draft or otherwise recoverable pages."),
+  components: external_exports.array(componentInputSchema).optional()
+});
+var plannedEventSchema = external_exports.object({
+  source_ref: external_exports.string(),
+  source_type: external_exports.enum(["component", "data_query", "page", "table_column", "table_action"]),
+  ref: external_exports.string().optional(),
+  trigger: external_exports.string(),
+  action: external_exports.record(external_exports.string(), external_exports.any()),
+  name: external_exports.string().optional()
+});
+var alertSchema = external_exports.object({
+  message: external_exports.string().min(1),
+  alert_type: external_exports.enum(["success", "info", "warning", "error"]).optional()
+});
+var plannedLifecycleSchema = external_exports.object({
+  query_ref: external_exports.string(),
+  before_refresh_actions: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).optional(),
+  refresh_query_refs: external_exports.array(external_exports.string()).optional(),
+  clear_component_refs: external_exports.array(external_exports.string()).optional(),
+  close_modal_ref: external_exports.string().optional(),
+  success_alert: alertSchema.optional(),
+  failure_alert: alertSchema.optional(),
+  success_actions: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).optional(),
+  failure_actions: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).optional()
+});
+var appPlanSchema = external_exports.object({
+  /** Existing app context for repair phases. Lets lint/apply resolve persisted refs safely. */
+  app_id: external_exports.string().optional(),
+  version_id: external_exports.string().optional(),
+  /** Rename the target app as part of the same governed phase. */
+  app_name: external_exports.string().trim().min(1).max(100).optional(),
+  tables: external_exports.array(plannedTableSchema).max(50).optional(),
+  seed_data: external_exports.array(plannedSeedSchema).max(50).optional(),
+  queries: external_exports.array(plannedQuerySchema).max(200).optional(),
+  pages: external_exports.array(plannedPageSchema).max(50).optional(),
+  events: external_exports.array(plannedEventSchema).max(1e3).optional(),
+  lifecycles: external_exports.array(plannedLifecycleSchema).max(200).optional()
+});
 var valueOf = (prop) => prop && typeof prop === "object" && "value" in prop ? prop.value : prop;
 function htmlFedTextColumns(table, queries) {
   if (table.type !== "Table")
@@ -833,182 +1095,6 @@ function validatePersistedAppSummary(summary, options = {}) {
     ],
     errors: [...new Set(errors)],
     warnings: [...new Set(warnings)]
-  };
-}
-var AUTO_MATERIALIZE_DEFAULTS = /* @__PURE__ */ new Set(["Kanban"]);
-var TOOLJET_DESKTOP_GRID_COLUMNS = 43;
-function wrappedValues(keys, defaults) {
-  if (!keys?.length)
-    return void 0;
-  return Object.fromEntries(keys.map((key2) => [key2, { value: defaults[key2] ?? "" }]));
-}
-function childLayout(child, parentType, index) {
-  const schema = getComponentSchema(child.componentName);
-  if (parentType === "Kanban" && child.componentName === "Text") {
-    return { top: index === 0 ? 12 : 44, left: 2, width: 39, height: child.layout?.height ?? 30 };
-  }
-  return {
-    top: child.layout?.top ?? 0,
-    left: child.layout?.left ?? 0,
-    width: child.layout?.width ?? (schema?.defaultSize?.width ?? 1) * 100 / TOOLJET_DESKTOP_GRID_COLUMNS,
-    height: child.layout?.height ?? schema?.defaultSize?.height ?? 40
-  };
-}
-function childName(parentName, child, index) {
-  const cardField = Object.values(child.defaultValue ?? {}).find((value) => typeof value === "string")?.match(/cardData\.([A-Za-z0-9_]+)/)?.[1];
-  const baseRole = cardField ?? child.accessorKey ?? child.componentName;
-  const role = baseRole.charAt(0).toUpperCase() + baseRole.slice(1) + (cardField ? "" : index + 1);
-  return `${parentName}Card${role}`;
-}
-function materializeRequiredDefaultChildren(input) {
-  const explicitParentRefs = new Set(input.flatMap((component) => component.parentRef && (!component.slotName || component.slotName === "body") ? [component.parentRef] : []));
-  const components = [];
-  const warnings = [];
-  let materializedChildren = 0;
-  input.forEach((original) => {
-    if (!AUTO_MATERIALIZE_DEFAULTS.has(original.type)) {
-      components.push(original);
-      return;
-    }
-    const schema = getComponentSchema(original.type);
-    const defaults = schema?.defaultChildren ?? [];
-    if (!defaults.length || explicitParentRefs.has(componentRef(original))) {
-      components.push(original);
-      return;
-    }
-    const clientRef = componentRef(original);
-    components.push(original);
-    defaults.forEach((child, childIndex) => {
-      const defaultValue = child.defaultValue ?? {};
-      components.push({
-        name: childName(original.name, child, childIndex),
-        type: child.componentName,
-        properties: wrappedValues(child.properties, defaultValue) ?? {},
-        styles: wrappedValues(child.styles, defaultValue),
-        layout: childLayout(child, original.type, childIndex),
-        parentRef: clientRef
-      });
-    });
-    materializedChildren += defaults.length;
-    warnings.push(`Kanban "${original.name}" had no explicit card children; materialized ${defaults.length} catalog default children so cards render content. For wrapped multi-line card text, use add_components with a Kanban client_ref and an explicit Html child using the matching parent_ref.`);
-  });
-  return { components, warnings, materializedChildren };
-}
-function normalizePlannedLayouts(component) {
-  const warnings = [];
-  const label = `${component.type ?? "component"} "${component.name ?? "?"}"`;
-  const targets = [];
-  if (component.layout)
-    targets.push(["layout", component.layout]);
-  if (component.layouts?.desktop)
-    targets.push(["desktop", component.layouts.desktop]);
-  if (component.layouts?.mobile)
-    targets.push(["mobile", component.layouts.mobile]);
-  if (!targets.length)
-    return { component, warnings };
-  const textMinimum = component.type === "Text" ? minimumTextHeight(component) : void 0;
-  const schema = component.type ? getComponentSchema(component.type) : void 0;
-  const compactHeight = schema?.renderingHints?.compactFormHeight ? schema?.defaultSize?.height : void 0;
-  const fixed = /* @__PURE__ */ new Map();
-  for (const [name, rect] of targets) {
-    if (typeof rect.height !== "number")
-      continue;
-    if (textMinimum !== void 0 && rect.height < textMinimum) {
-      fixed.set(name, { ...rect, height: textMinimum });
-      warnings.push(`${label}: raised ${name} height ${rect.height}px to ${textMinimum}px so one line of text renders.`);
-    } else if (compactHeight !== void 0 && rect.height > compactHeight) {
-      fixed.set(name, { ...rect, height: compactHeight });
-      warnings.push(`${label}: lowered ${name} height ${rect.height}px to the standard single-line ${compactHeight}px (oversizing does not enlarge the value text; a top label renders outside the box).`);
-    }
-  }
-  if (!fixed.size)
-    return { component, warnings };
-  const next = { ...component };
-  if (fixed.has("layout"))
-    next.layout = fixed.get("layout");
-  if (fixed.has("desktop") || fixed.has("mobile")) {
-    next.layouts = {
-      ...component.layouts,
-      ...fixed.has("desktop") ? { desktop: fixed.get("desktop") } : {},
-      ...fixed.has("mobile") ? { mobile: fixed.get("mobile") } : {}
-    };
-  }
-  return { component: next, warnings };
-}
-var layoutSchema = external_exports.object({
-  top: external_exports.number(),
-  left: external_exports.number().describe("Columns in the immediate parent canvas, which has its own 43-column grid."),
-  width: external_exports.number().describe("Columns out of 43 in the immediate parent canvas, independent of the parent outer width. Full width is 43. Container/Form/modal inset full rows use left 2, width 39; grid-mode Listview full rows use left 0, width 43."),
-  height: external_exports.number()
-});
-var componentInputSchema = external_exports.object({
-  name: componentNameSchema,
-  type: external_exports.string(),
-  properties: external_exports.record(external_exports.string(), external_exports.any()),
-  styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  others: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  layout: layoutSchema.optional(),
-  layouts: external_exports.object({ desktop: layoutSchema.optional(), mobile: layoutSchema.optional() }).optional(),
-  client_ref: external_exports.string().optional(),
-  parent_ref: external_exports.string().optional(),
-  parent: external_exports.string().optional(),
-  slot_name: componentSlotSchema.optional()
-});
-function containsListItemBinding(value) {
-  if (typeof value === "string")
-    return /\blistItem\b/.test(value);
-  if (Array.isArray(value))
-    return value.some(containsListItemBinding);
-  if (value && typeof value === "object") {
-    return Object.values(value).some(containsListItemBinding);
-  }
-  return false;
-}
-function prepareComponentBatch(inputs, options = {}) {
-  const requested = inputs.map(({ client_ref, parent_ref, slot_name, ...component }) => ({
-    ...component,
-    clientRef: client_ref,
-    parentRef: parent_ref,
-    slotName: slot_name
-  }));
-  const normalized = requested.map((component) => {
-    const definition = normalizeComponentSpec(component, { stripUnknownKeys: true });
-    const geometry = normalizePlannedLayouts(definition.component);
-    return { ...definition, component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
-  });
-  const heightFixes = [];
-  for (const result of normalized) {
-    const component = result.component;
-    const fix = suggestedHtmlHeight(component);
-    if (!fix)
-      continue;
-    for (const rect of [component.layout, component.layouts?.desktop])
-      if (rect && typeof rect.height === "number")
-        rect.height = fix.to;
-    heightFixes.push(`Html "${component.name ?? "?"}" needed about ${fix.needed}px for its markup but was ${fix.from}px; saved at ${fix.to}px. Anything placed within ${fix.to - fix.from}px below it now overlaps; move it down.`);
-  }
-  const expanded = materializeRequiredDefaultChildren(normalized.map((result) => result.component));
-  const references = indexComponentReferences(expanded.components, options.existingComponents);
-  const lint = lintComponents(references.components, options);
-  const lateListviewChildWarnings = requested.flatMap((component) => component.parent && containsListItemBinding({
-    properties: component.properties,
-    styles: component.styles,
-    validation: component.validation,
-    others: component.others
-  }) ? [
-    `Component "${component.name}" is being added under an existing parent and reads listItem. ToolJet can mount late-added Listview children with empty repeated values. Create the Listview and all listItem-bound children atomically in one component batch using client_ref/parent_ref.`
-  ] : []);
-  return {
-    components: references.components,
-    errors: [...references.errors, ...lint.errors],
-    warnings: [
-      ...normalized.flatMap((item) => item.warnings),
-      ...expanded.warnings,
-      ...lint.warnings,
-      ...heightFixes,
-      ...lateListviewChildWarnings
-    ]
   };
 }
 function expandQueryLifecycles(summary, lifecycles) {
@@ -2623,92 +2709,6 @@ function dropUnprefixedDuplicates(values) {
   const stripped = new Set(distinct.map((value) => value.replace(/^Page "[^"]*": /, "")).filter((value, i) => value !== distinct[i]));
   return distinct.filter((value) => value.startsWith('Page "') || !stripped.has(value));
 }
-var dbColumnTypeSchema = external_exports.string().describe("ToolJet DB types: string, integer, bigint, serial, number (double precision), boolean, timestamp, jsonb. Existing aliases text/varchar/int/float/decimal/double/bool/datetime/date/json and canonical API type names are accepted. numeric is unsupported; number/decimal are floating-point, not exact decimal. For money consider integer minor units.").refine((value) => TOOLJET_DB_DATA_TYPES.has(normalizeType(value)), {
-  message: "Unsupported ToolJet DB type. Use string, integer, bigint, serial, number (double precision), boolean, timestamp or jsonb. numeric is not supported. For money choose on purpose: integer cents where sums must be exact, or number shown with a currency format for prices; never swap one in silently."
-});
-var foreignKeyAction = external_exports.enum(["RESTRICT", "NO ACTION", "CASCADE", "SET NULL", "SET DEFAULT"]);
-var foreignKeySchema = external_exports.object({
-  columns: external_exports.array(external_exports.string()).min(1),
-  referencedTable: external_exports.string(),
-  referencedColumns: external_exports.array(external_exports.string()).min(1),
-  onDelete: foreignKeyAction.optional(),
-  onUpdate: foreignKeyAction.optional()
-});
-var columnSchema = external_exports.object({
-  name: external_exports.string(),
-  type: dbColumnTypeSchema,
-  primaryKey: external_exports.boolean().optional(),
-  notNull: external_exports.boolean().optional(),
-  unique: external_exports.boolean().optional(),
-  defaultValue: external_exports.any().optional(),
-  configurations: external_exports.record(external_exports.string(), external_exports.any()).optional()
-});
-var plannedTableSchema = external_exports.object({
-  table_name: external_exports.string(),
-  columns: external_exports.array(columnSchema).min(1),
-  foreign_keys: external_exports.array(foreignKeySchema).optional()
-});
-var plannedSeedSchema = external_exports.object({
-  table_name: external_exports.string(),
-  rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1).max(40)
-});
-var plannedQuerySchema = external_exports.object({
-  client_ref: external_exports.string().optional(),
-  datasource_id: external_exports.string().optional().describe("Exact id returned by list_datasources(version_id). Provide this OR datasource_name, not both."),
-  datasource_name: external_exports.string().optional().describe("Exact, case-sensitive unique name returned by list_datasources(version_id). Alternative to datasource_id; resolved and pinned to that id at lint time."),
-  name: external_exports.string(),
-  kind: external_exports.string().optional(),
-  /** Resolve this planned/existing ToolJet DB table name into options.table_id during lint/apply. */
-  table_ref: external_exports.string().optional().describe("Actual table_name of a planned or existing ToolJet DB table, not a client_ref, alias, or UUID."),
-  options: external_exports.record(external_exports.string(), external_exports.any()),
-  /** The app's query of this name is updated in place with this definition: see pageReplace.ts. */
-  update: external_exports.boolean().optional().describe("true: when the app already has a query of this name, it is updated in place with this definition, keeping its id and the events that run it, for every page that reads it (needs app_id). Without it, defining an existing name again is refused unless the definition is identical (then the existing query is used) or a replaced page owns it.")
-});
-var plannedPageSchema = external_exports.object({
-  client_ref: external_exports.string().optional(),
-  name: external_exports.string(),
-  icon: pageIconSchema,
-  hidden: external_exports.boolean().optional(),
-  /** The existing page of this name is replaced whole: see pageReplace.ts. */
-  replace: external_exports.boolean().optional().describe("true: the existing page of this name ends up holding exactly this plan's components and the events on them (needs app_id). It is written as a difference: a component the plan leaves as it is is not rewritten, one that only moved is moved, and one that changed keeps its id. Queries of that page the plan defines again are updated in place, keeping their ids. Refused when another page, event or query reads a component the plan drops. Not atomic: use it on draft or otherwise recoverable pages."),
-  components: external_exports.array(componentInputSchema).optional()
-});
-var plannedEventSchema = external_exports.object({
-  source_ref: external_exports.string(),
-  source_type: external_exports.enum(["component", "data_query", "page", "table_column", "table_action"]),
-  ref: external_exports.string().optional(),
-  trigger: external_exports.string(),
-  action: external_exports.record(external_exports.string(), external_exports.any()),
-  name: external_exports.string().optional()
-});
-var alertSchema = external_exports.object({
-  message: external_exports.string().min(1),
-  alert_type: external_exports.enum(["success", "info", "warning", "error"]).optional()
-});
-var plannedLifecycleSchema = external_exports.object({
-  query_ref: external_exports.string(),
-  before_refresh_actions: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).optional(),
-  refresh_query_refs: external_exports.array(external_exports.string()).optional(),
-  clear_component_refs: external_exports.array(external_exports.string()).optional(),
-  close_modal_ref: external_exports.string().optional(),
-  success_alert: alertSchema.optional(),
-  failure_alert: alertSchema.optional(),
-  success_actions: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).optional(),
-  failure_actions: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).optional()
-});
-var appPlanSchema = external_exports.object({
-  /** Existing app context for repair phases. Lets lint/apply resolve persisted refs safely. */
-  app_id: external_exports.string().optional(),
-  version_id: external_exports.string().optional(),
-  /** Rename the target app as part of the same governed phase. */
-  app_name: external_exports.string().trim().min(1).max(100).optional(),
-  tables: external_exports.array(plannedTableSchema).max(50).optional(),
-  seed_data: external_exports.array(plannedSeedSchema).max(50).optional(),
-  queries: external_exports.array(plannedQuerySchema).max(200).optional(),
-  pages: external_exports.array(plannedPageSchema).max(50).optional(),
-  events: external_exports.array(plannedEventSchema).max(1e3).optional(),
-  lifecycles: external_exports.array(plannedLifecycleSchema).max(200).optional()
-});
 function missingCreateRowColumns(options, columns) {
   if (options.operation !== "create_row")
     return;
@@ -3299,7 +3299,7 @@ function autoFitHtmlHeights(args) {
   }
   return warnings;
 }
-var renameAppInput = external_exports.object({ app_id: external_exports.string().min(1), version_id: external_exports.string().min(1), name: external_exports.string().trim().min(1) }).strict();
+var renameAppInput = external_exports.object({ app_id: external_exports.string().min(1), version_id: external_exports.string().min(1), name: appPlanSchema.shape.app_name.unwrap() }).strict();
 function renameAppTool(client) {
   const lint = lintAppSpecTool(client).handler;
   const apply = applyAppPhaseTool(client).handler;
