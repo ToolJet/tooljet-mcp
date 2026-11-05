@@ -498,7 +498,7 @@ export function codeAppScaffoldTool(context: CodeContext): ToolDef {
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     description:
       'Create the Code mode project for an app you created with create_app: app.json (the app and its routes, its screens) and ' +
-      'frontend/ (React + TypeScript on shadcn + Tailwind, react-router through AppRouter). Create the app\'s queries with add_queries ' +
+      'frontend/ (React + TypeScript on shadcn + Tailwind, react-router through AppRouter). Create the app\'s queries (code_app_data) ' +
       'BEFORE this, so the typed hooks it writes (frontend/src/tooljet.gen.ts: useAppQuery, row types, ROUTES, routePath, PAGES) list them. ' +
       'Returns the files and the generated hooks.' + USER_WORDS,
     inputSchema: {
@@ -543,7 +543,7 @@ export function codeAppScaffoldTool(context: CodeContext): ToolDef {
           files: listFiles(dir),
           app_json: JSON.parse(readFileSync(join(dir, 'app.json'), 'utf8')),
           generated_hooks: readFileSync(join(dir, 'frontend', 'src', 'tooljet.gen.ts'), 'utf8'),
-          next: 'Set the routes in app.json, write the screens under frontend/src/App/, then code_app_build until ok, then code_app_install.',
+          next: 'Set the routes in app.json, write the screens under frontend/src/App/, then code_app_install with verify: true.',
         });
       } catch (err) {
         return fail(err);
