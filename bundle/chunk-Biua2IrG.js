@@ -1,12 +1,12 @@
 import { createRequire } from "node:module";
-import { s as strictEntry, r as resolveRef$1, h as hasNonEmptyDefinition, i as isFlexContainerType, a as resolveAuthoredChildOrder, c as childOrderProperty, p as packValueAsDefault, n as normalizeComponentSpec, b as appendedChildOrders, d as reparentAdditions, C as COMPONENT_FX_UPDATE_GUIDANCE, e as componentRef, f as packDefaultDefinition, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, g as FLEX_GROW_DESCRIPTION, j as FLEX_WIDTH_PX_DESCRIPTION, k as FLEX_FILL_WIDTH_DESCRIPTION, l as plannedCurrency, m as indexComponentReferences, o as booleanBindingValue, v as validateTableBatch, q as normalizeType } from "./chunk-DuHQ4n9t.js";
-import { e5 as fail, e6 as ok, e8 as getComponentSchema } from "./chunk-CNzl5iHC.js";
-import { f as componentSlotSchema, g as componentNameSchema, h as componentNameError, j as resolveParentRef, d as decodeComponentParent, e as encodeComponentParent, k as introducedLintFindings, m as lintComponentSpec, o as lintComponentSlots, p as lintUnusableTextGeometry, q as lintStandardSingleLineInputHeight, s as lintTextGeometry, u as lintRenderedGeometry, v as lintKanbanInteractions, w as lintShadKanbanCards, x as lintShadScheduleScale, y as isModalV2Type, z as lintComponentStateBindings, r as retiredUi2Name, A as minimumTextHeight, B as unifyChartAccents, C as lintComponents, D as pageIconError, E as validateAppStructure } from "./chunk-BmzK1deX.js";
+import { s as strictEntry, r as resolveRef$1, h as hasNonEmptyDefinition, i as isFlexContainerType, a as resolveAuthoredChildOrder, c as childOrderProperty, p as packValueAsDefault, n as normalizeComponentSpec, b as appendedChildOrders, d as reparentAdditions, C as COMPONENT_FX_UPDATE_GUIDANCE, e as componentRef, f as packDefaultDefinition, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, g as FLEX_GROW_DESCRIPTION, j as FLEX_WIDTH_PX_DESCRIPTION, k as FLEX_FILL_WIDTH_DESCRIPTION, l as plannedCurrency, m as indexComponentReferences, o as booleanBindingValue, v as validateTableBatch, q as normalizeType } from "./chunk-BNMLqNpt.js";
+import { e5 as fail, e6 as ok, e8 as getComponentSchema } from "./chunk-DSzzr2p4.js";
+import { f as componentSlotSchema, g as componentNameSchema, h as componentNameError, j as resolveParentRef, d as decodeComponentParent, e as encodeComponentParent, k as introducedLintFindings, m as lintComponentSpec, o as lintComponentSlots, p as lintUnusableTextGeometry, q as lintStandardSingleLineInputHeight, s as lintTextGeometry, u as lintRenderedGeometry, v as lintKanbanInteractions, w as lintShadKanbanCards, x as lintShadScheduleScale, y as isModalV2Type, z as lintComponentStateBindings, r as retiredUi2Name, A as minimumTextHeight, B as unifyChartAccents, C as lintComponents, D as pageIconError, E as validateAppStructure } from "./chunk-CLJFCNyS.js";
 import { m as suggestedHtmlHeight } from "./chunk-DzndRVyJ.js";
-import { b0 as external_exports } from "./chunk-Id3EmQoo.js";
+import { b0 as external_exports } from "./chunk-BK1olK4j.js";
 import { randomUUID } from "node:crypto";
-import { e as normalizeQueryToggles, t as toggleRewriteWarning, i as issueMessages, q as queryToggleIssues, f as normalizeQueryOptions, v as validateQueryOptions } from "./chunk-YVYQ0IWs.js";
-import { p as parseExpression } from "./chunk-BES_Brj6.js";
+import { e as normalizeQueryToggles, t as toggleRewriteWarning, i as issueMessages, q as queryToggleIssues, f as normalizeQueryOptions, v as validateQueryOptions } from "./chunk-BQSkKlW7.js";
+import { p as parseExpression } from "./chunk-oXA2PxqX.js";
 createRequire(import.meta.url);
 var DEFINITION_SECTIONS = ["properties", "styles", "validation", "general", "general_styles", "others"];
 var definitionSchema = strictEntry({
