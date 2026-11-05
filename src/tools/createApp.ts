@@ -6,7 +6,7 @@ import type { AppTheme, CreateAppResult, ToolJetClient } from '../tooljetClient.
 import { ok, fail, type ToolDef } from './types.js';
 import { themeDefinition } from './manageTheme.js';
 import { accentWarning } from '../themeAccent.js';
-import { defaultPack, savedComponentLibrary, type ComponentLibrary } from '../componentLibrary.js';
+import { COMPONENT_PACK_DESCRIPTION, defaultPack, savedComponentLibrary, type ComponentLibrary } from '../componentLibrary.js';
 import { libraryPins } from '../libraryPack.js';
 
 // The standard theme's primary, for the accent note (a stock blue reads plain).
@@ -136,8 +136,9 @@ export function createAppTool(client: ToolJetClient): ToolDef {
       component_library: z.enum(['ui1', 'ui2']).optional().describe(
         'The component library the app is built in, saved on the app (the components panel lists it). Default "ui2", ' +
           'ToolJet UI 2.0; "ui1" (ToolJet UI 1.0, the native widgets) only when the user asks for it.'),
+      component_pack: z.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION),
     },
-    async handler(args: { name: string; theme?: string | DerivedTheme; app_mode?: 'light' | 'dark'; component_library?: ComponentLibrary }) {
+    async handler(args: { name: string; theme?: string | DerivedTheme; app_mode?: 'light' | 'dark'; component_library?: ComponentLibrary; component_pack?: string }) {
       try {
         // Internal callers can bypass MCP input validation. Reject incomplete themes before creating
         // even an empty app; a theme name alone does not prove that its requested palette was applied.
@@ -151,11 +152,11 @@ export function createAppTool(client: ToolJetClient): ToolDef {
         const result: CreateAppToolResult = {
           ...created,
           component_library: componentLibrary,
-          ...(componentLibrary === 'ui2' && defaultPack() ? { component_pack: defaultPack() } : {}),
+          ...(componentLibrary === 'ui2' && (args.component_pack || defaultPack()) ? { component_pack: (args.component_pack || defaultPack())!.toLowerCase() } : {}),
           theme: { mode: 'workspace_default' },
         };
         // What the app saves: a pack's "pack:<id>" for UI 2.0, so the components panel and later builds use that pack.
-        const savedLibrary = savedComponentLibrary(componentLibrary);
+        const savedLibrary = savedComponentLibrary(componentLibrary, args.component_pack);
         // Saved explicitly, not left to the server's default for new apps: older ToolJet servers create apps without it.
         // A failure never fails the call: the app exists, and a retried create_app would make a second one.
         const saveLibrary = () => Promise.resolve().then(() => client.updateAppSettings({

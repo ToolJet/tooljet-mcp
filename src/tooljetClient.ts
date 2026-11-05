@@ -12,7 +12,7 @@ import type { Auth, Workspace, ViewerSession } from './auth.js';
 import type { Config } from './config.js';
 import { isMisplacedStyleKey } from './lint.js';
 import { packDefaultDefinition } from './packDefaults.js';
-import { downgradeFlexForLibrary, libraryTypeOf, toLibraryComponent } from './libraryPack.js';
+import { downgradeFlexForLibrary, libraryTypeOf, missingLibraryPins, toLibraryComponent } from './libraryPack.js';
 import { assertPersistableQueryToggles } from './queryToggles.js';
 import { hasNonEmptyDefinition } from './strictEntry.js';
 import { decodeComponentParent, encodeComponentParent, type ComponentSlotName } from './componentParent.js';
@@ -301,6 +301,8 @@ export interface ComponentSpec {
   clientRef?: string;
   /** Parent another component in the same batch by its clientRef, or name when it has no clientRef. */
   parentRef?: string;
+  /** The parent's type when it is not in this batch: a pack widget stores even its body slot suffixed. */
+  parentType?: string;
   /** Parent an already-existing component by its ToolJet component id. */
   parent?: string;
   /** Logical parent slot. ToolJet stores header/footer as suffixed parent ids; the client translates it. */
@@ -2697,6 +2699,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const entries = params.components.map((spec) => ({ id: spec.id ?? randomUUID(), spec }));
     const refToId = new Map(entries.map((entry) => [componentRef(entry.spec), entry.id]));
     const diff: Record<string, unknown> = {};
+    // A pack widget's slots are stored suffixed, so a child needs its parent's type: from this batch, else as the
+    // caller passed it (an in-place page replace knows every planned component's type).
+    const typeById = new Map(entries.map((e) => [e.id, e.spec.type]));
     for (const e of entries) {
       if (e.spec.parent && e.spec.parentRef) {
         throw new Error(`createComponents "${e.spec.name}": set EITHER parent or parentRef, not both.`);
@@ -2711,7 +2716,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       if (e.spec.slotName && !resolvedParent) {
         throw new Error(`createComponents "${e.spec.name}": slotName requires parent or parentRef.`);
       }
-      if (resolvedParent) dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName);
+      if (resolvedParent) {
+        const parentType = typeById.get(resolvedParent) ?? e.spec.parentType;
+        dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName, parentType);
+      }
       // A Form submits when the Button whose component id is buttonToSubmit is clicked (Form.jsx); a plan names that
       // Button by its client ref (or its name when it has none), as lint checks, and ids are made here.
       const submit = e.spec.type === 'Form' ? (dto.properties as Record<string, { value?: unknown }> | undefined)?.buttonToSubmit : undefined;
@@ -2756,6 +2764,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     });
     await assertOk(res, 'createComponents');
     const created = entries.map((e) => ({ component_id: e.id, name: e.spec.name }));
+    await pinWrittenLibraries(params.appId, params.versionId, Object.values(diff) as Array<{ properties?: unknown }>);
     // Read after the create, so the page read never holds up or precedes the write.
     let pageComponents = params.pageComponents;
     if (additions.length && !pageComponents) {
@@ -2775,6 +2784,29 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       }
     }
     return created;
+  }
+
+  /** A library component draws only while its version pins the library, and only create_app used to write the pin, so
+   *  an app that started elsewhere drew empty Slots. Each version and library is checked once per client. A failure
+   *  never fails the write: the components exist, and validate_app reports the missing pin. */
+  const pinChecks = new Map<string, Promise<void>>();
+  function pinWrittenLibraries(appId: string, versionId: string, components: Array<{ properties?: unknown }>): Promise<unknown> {
+    const wanted = missingLibraryPins(components, {});
+    if (!wanted) return Promise.resolve();
+    const fresh = Object.keys(wanted).filter((id) => !pinChecks.has(`${versionId}:${id}`));
+    const check = fresh.length
+      ? (async () => {
+          const settings = await getAppSettings(appId, versionId);
+          const stored = settings.global_settings.customComponentLibraries;
+          const pins = (stored && typeof stored === 'object' ? stored : {}) as Record<string, unknown>;
+          const missing = missingLibraryPins(components, pins);
+          if (missing) {
+            await updateAppSettings({ appId, versionId, globalSettings: { customComponentLibraries: { ...pins, ...missing } } });
+          }
+        })().catch(() => { for (const id of fresh) pinChecks.delete(`${versionId}:${id}`); })
+      : Promise.resolve();
+    for (const id of fresh) pinChecks.set(`${versionId}:${id}`, check);
+    return Promise.all(Object.keys(wanted).map((id) => pinChecks.get(`${versionId}:${id}`)));
   }
 
   /** Persist FlexContainer child orders. The server merges arrays index by index for this widget, which is safe:

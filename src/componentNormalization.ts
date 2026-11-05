@@ -312,7 +312,7 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
       }
     }
     // Selection without bulk select draws a checkbox per row unless the selected row is highlighted: shadcn-look
-    // tables in an incident console, an energy dashboard and a clinic showed checkboxes nothing used. The row
+    // tables in several test builds showed checkboxes nothing used. The row
     // highlights instead; selectedRow works the same.
     if (
       look0 === 'shadcn' &&

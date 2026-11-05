@@ -22,9 +22,19 @@ export const defaultPack = (): string | undefined => {
   return (raw === undefined ? 'shadcn' : raw).trim().toLowerCase() || undefined;
 };
 
-/** The globalSettings.componentLibrary a new app saves: a pack's "pack:<id>" for UI 2.0 when a pack is the default. */
-export const savedComponentLibrary = (library: ComponentLibrary): string =>
-  library === 'ui2' && defaultPack() ? `pack:${defaultPack()}` : library;
+/** The globalSettings.componentLibrary an app saves: a pack's "pack:<id>" for UI 2.0, the pack asked for (create_app or
+ *  update_app_settings component_pack) or else the default one. */
+export const savedComponentLibrary = (library: ComponentLibrary, pack?: string): string => {
+  const chosen = pack?.trim().toLowerCase() || defaultPack();
+  return library === 'ui2' && chosen ? `pack:${chosen}` : library;
+};
+
+/** component_pack on create_app and update_app_settings: a shipped pack's id (shadcn is Rocket 2.0, antd Ant Design,
+ *  mui Material UI), whose Lib_<pack>_* widgets the app is then built with. */
+export const COMPONENT_PACK_DESCRIPTION =
+  'The component pack a UI 2.0 app is built with, saved on the app (the components panel lists it): "shadcn" (Rocket ' +
+  '2.0, ToolJet\'s own look), "antd" (Ant Design) or "mui" (Material UI). Pass it when the user names a design system; ' +
+  'then build with that pack\'s Lib_<pack>_* widgets. Omitted, the default pack.';
 
 export const COMPONENT_LIBRARY_NAMES: Record<ComponentLibrary, string> = {
   ui1: 'ToolJet UI 1.0',

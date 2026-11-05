@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { pageSettingProperties, projectAppSettings } from '../appSettings.js';
 import type { AppSettingsSnapshot, ToolJetClient } from '../tooljetClient.js';
 import { fail, ok, type ToolDef } from './types.js';
-import { savedComponentLibrary } from '../componentLibrary.js';
+import { COMPONENT_PACK_DESCRIPTION, savedComponentLibrary } from '../componentLibrary.js';
 
 type Args = {
   app_id: string;
@@ -19,12 +19,14 @@ type Args = {
   navigation_style?: 'texticon' | 'text' | 'icon';
   navigation_collapsible?: boolean;
   component_library?: 'ui1' | 'ui2';
+  component_pack?: string;
 };
 
 const SETTING_KEYS: Array<keyof Omit<Args, 'app_id' | 'version_id'>> = [
   'canvas_background_color', 'canvas_max_width', 'app_mode', 'theme_id', 'hide_header', 'hide_logo',
   'header_title', 'navigation_hidden', 'navigation_position', 'navigation_style', 'navigation_collapsible',
   'component_library',
+  'component_pack',
 ];
 
 function persistenceMismatches(args: Args, snapshot: AppSettingsSnapshot): string[] {
@@ -40,8 +42,8 @@ function persistenceMismatches(args: Args, snapshot: AppSettingsSnapshot): strin
     expectEqual('canvas_max_width.unit', global.canvasMaxWidthType, args.canvas_max_width.unit);
   }
   if (args.app_mode !== undefined) expectEqual('app_mode', global.appMode, args.app_mode);
-  if (args.component_library !== undefined)
-    expectEqual('component_library', global.componentLibrary, savedComponentLibrary(args.component_library));
+  if (args.component_library !== undefined || args.component_pack !== undefined)
+    expectEqual('component_library', global.componentLibrary, savedComponentLibrary(args.component_library ?? 'ui2', args.component_pack));
   if (args.theme_id !== undefined) {
     const theme = global.theme as Record<string, unknown> | undefined;
     expectEqual('theme_id', theme?.id, args.theme_id);
@@ -105,6 +107,7 @@ export function updateAppSettingsTool(client: ToolJetClient): ToolDef {
         'The component library the app is built in: "ui1" ToolJet UI 1.0 (native widgets) or "ui2" ToolJet UI 2.0 ' +
           '(Shad* types). Change it only when the user asks to move the app to the other library.'
       ),
+      component_pack: z.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION),
     },
     async handler(requested: Args) {
       try {
@@ -146,7 +149,8 @@ export function updateAppSettingsTool(client: ToolJetClient): ToolDef {
           ...(args.app_mode !== undefined ? { appMode: args.app_mode } : {}),
           ...(theme ? { theme } : {}),
           // UI 2.0 is saved as the default pack ("pack:<id>"), as create_app does, so the panel shows that pack.
-          ...(args.component_library !== undefined ? { componentLibrary: savedComponentLibrary(args.component_library) } : {}),
+          ...(args.component_library !== undefined || args.component_pack !== undefined
+            ? { componentLibrary: savedComponentLibrary(args.component_library ?? 'ui2', args.component_pack) } : {}),
         };
         const properties: Record<string, unknown> = {
           ...(args.hide_header !== undefined ? { hideHeader: args.hide_header } : {}),
