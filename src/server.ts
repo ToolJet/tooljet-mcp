@@ -1,5 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { loadConfig, type Config, type RequestIdentity } from './config.js';
+import { loadConfig, type RequestIdentity } from './config.js';
 import { createAuth } from './auth.js';
 import { createClient } from './tooljetClient.js';
 import { registerTools } from './tools/index.js';
@@ -14,11 +14,7 @@ import { TOOLJET_MCP_VERSION } from './runtimeFreshness.js';
  * where the process itself belongs to one build and the credential comes from its environment.
  */
 export function buildServer(identity?: RequestIdentity): McpServer {
-  return buildConfiguredServer(loadConfig(identity));
-}
-
-/** Hosts with an explicit configuration dialog supply a complete config without ambient credentials. */
-export function buildConfiguredServer(config: Config): McpServer {
+  const config = loadConfig(identity);
   const auth = createAuth(config);
   const client = createClient(auth, config);
 
@@ -51,7 +47,7 @@ export function buildUnconfiguredServer(reason: string): McpServer {
       title: 'ToolJet Connection Status',
       description: 'Why this ToolJet MCP server is not configured, and how to fix it.',
       inputSchema: {},
-      annotations: { readOnlyHint: true, openWorldHint: false },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     },
     async () => ({ content: [{ type: 'text' as const, text: message }], isError: true })
   );

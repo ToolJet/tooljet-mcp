@@ -11,7 +11,7 @@ export function updateEventsTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Edit existing event handlers (batch) — e.g. change an action or its params — instead of deleting ' +

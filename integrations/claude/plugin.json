@@ -1,8 +1,8 @@
 {
   "name": "tooljet-app-builder",
-  "version": "0.12.1",
+  "version": "0.13.1",
   "icon": "./assets/tooljet-icon.png",
-  "description": "Build data-connected dashboards, internal tools and back-office apps in ToolJet, then refine them visually. Requires a ToolJet connection.",
+  "description": "Build dashboards, internal tools and back-office apps in ToolJet Cloud through a secure OAuth connection, then refine them visually.",
   "author": {
     "name": "ToolJet"
   },
@@ -21,36 +21,9 @@
   ],
   "mcpServers": {
     "tooljet": {
-      "command": "node",
-      "args": [
-        "${CLAUDE_PLUGIN_ROOT}/bundle/index.mjs"
-      ],
-      "env": {
-        "TOOLJET_CLAUDE_API_URL": "${user_config.api_url}",
-        "TOOLJET_CLAUDE_DEPLOYMENT_URL": "${user_config.deployment_url}",
-        "TOOLJET_CLAUDE_PAT": "${user_config.personal_access_token}"
-      }
+      "type": "http",
+      "url": "https://mcp-oauth.tooljet.com/mcp"
     }
   },
-  "userConfig": {
-    "deployment_url": {
-      "type": "string",
-      "title": "ToolJet deployment URL",
-      "description": "The URL where you open your ToolJet instance. Your token is sent only to the API URL configured below, or this URL when the API URL is blank.",
-      "required": true
-    },
-    "api_url": {
-      "type": "string",
-      "title": "ToolJet API URL (optional)",
-      "description": "Leave blank when your API and frontend share the deployment URL. Set this only for a deployment with a separate API origin.",
-      "default": ""
-    },
-    "personal_access_token": {
-      "type": "string",
-      "title": "ToolJet personal access token",
-      "description": "Create a token in Settings → Access tokens in your intended workspace. The plugin acts with that token's permissions. Enter it here, never in chat.",
-      "required": true,
-      "sensitive": true
-    }
-  }
+  "privacyPolicyUrl": "https://tooljet.com/privacy"
 }

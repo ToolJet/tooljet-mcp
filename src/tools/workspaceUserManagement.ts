@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { ToolJetClient, WorkspaceUserRole, WorkspaceUserStatus } from '../tooljetClient.js';
-import { fail, ok, type ToolDef } from './types.js';
+import { exposeActions, fail, ok, type ActionTool, type ToolDef } from './types.js';
 
 const userRole = z.enum(['admin', 'builder', 'end-user']);
 const userStatus = z.enum(['active', 'archived', 'invited']);
@@ -22,7 +22,8 @@ export function listWorkspaceAppsTool(client: ToolJetClient): ToolDef {
     strictInput: true,
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
     },
     description:
       'List front-end apps in the workspace pinned to the current ToolJet connection, with pagination, app-name search, ' +
@@ -50,7 +51,8 @@ export function listWorkspaceFoldersTool(client: ToolJetClient): ToolDef {
     strictInput: true,
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
     },
     description:
       'List visible front-end app folders in the workspace pinned to the current ToolJet connection. ' +
@@ -76,7 +78,8 @@ export function listWorkspaceUsersTool(client: ToolJetClient): ToolDef {
     title: 'List Workspace Users',
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
     },
     description:
       'List users in the workspace pinned to the current ToolJet connection. Supports pagination, search, and status filtering. OAuth connections require the workspace_users scope.',
@@ -208,4 +211,25 @@ export function manageWorkspaceUsersTool(client: ToolJetClient): ToolDef {
       }
     },
   };
+}
+
+const workspaceUsers: ActionTool[] = [
+  { action: 'invite', name: 'invite_workspace_user', title: 'Invite Workspace User',
+    description: 'Send an email invitation to the pinned workspace. Requires confirm:true for the exact recipient and access. Role defaults to end-user; optional group_ids add existing custom groups. Requires workspace_users OAuth scope and ToolJet permissions. Do not automatically retry an uncertain send.',
+    required: ['email', 'confirm'], optional: ['first_name', 'last_name', 'role', 'group_ids'],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true } },
+  { action: 'update', name: 'update_workspace_user', title: 'Update Workspace User',
+    description: 'Change a workspace member role, add custom group memberships, or merge supplied metadata keys. Preserves other memberships and metadata; empty group_ids removes nothing. Changing role to end-user transfers owned apps to the acting admin: disclose before confirm:true. Cannot change names, email, or passwords. Requires workspace_users scope and ToolJet permissions; reads back updates.',
+    required: ['organization_user_id', 'confirm'], optional: ['role', 'group_ids', 'user_metadata'],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } },
+  { action: 'archive', name: 'archive_workspace_user', title: 'Archive Workspace User',
+    description: 'Archive the exact member of the pinned workspace and revoke their workspace access. Requires confirm:true, workspace_users OAuth scope, and ToolJet permissions.',
+    required: ['organization_user_id', 'confirm'], annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } },
+  { action: 'unarchive', name: 'unarchive_workspace_user', title: 'Unarchive Workspace User',
+    description: 'Restore an archived member to active status in the pinned workspace. Requires confirm:true, workspace_users OAuth scope, and ToolJet permissions.',
+    required: ['organization_user_id', 'confirm'], annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } },
+];
+
+export function workspaceUserActionTools(source: ToolDef): ToolDef[] {
+  return exposeActions(source, workspaceUsers);
 }

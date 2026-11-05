@@ -1,7 +1,0 @@
-{
-  "format": "tooljet-catalog-parts-v1",
-  "parts": [
-    "component-schemas/part-001.json",
-    "component-schemas/part-002.json"
-  ]
-}

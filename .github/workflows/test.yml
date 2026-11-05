@@ -18,7 +18,7 @@ jobs:
       - run: npm run build:skill-plugin
       - name: Build the Claude directory package
         run: npm run build:claude-plugin
-      - name: Test the extracted Claude package without installed dependencies
+      - name: Test the extracted Claude package and policy boundaries
         run: node scripts/test-claude-package.mjs
       - name: Upload the Claude package for review (does not publish)
         uses: actions/upload-artifact@v4

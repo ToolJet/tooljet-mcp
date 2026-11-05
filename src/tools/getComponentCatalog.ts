@@ -152,6 +152,7 @@ export function getComponentCatalogTool(client: ToolJetClient): ToolDef {
     // Served from the bundled catalog in data/; never reaches the ToolJet instance.
     annotations: {
       readOnlyHint: true,
+      destructiveHint: false,
       openWorldHint: false,
     },
     description:

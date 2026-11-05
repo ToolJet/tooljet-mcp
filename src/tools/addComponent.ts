@@ -28,7 +28,7 @@ export function addComponentTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Place a component on an app page. `name` is required. A Table binds data via ' +

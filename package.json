@@ -1,6 +1,6 @@
 {
   "name": "tooljet-mcp",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "main": "index.js",
   "type": "module",
   "directories": {
@@ -26,7 +26,7 @@
     "build:cursor-plugin": "node scripts/generate-skill.mjs && node scripts/build-cursor-plugin.mjs",
     "build:gemini-extension": "node scripts/generate-skill.mjs && node scripts/build-skill-plugin.mjs gemini",
     "build:kiro-power": "node scripts/generate-skill.mjs && node scripts/build-skill-plugin.mjs kiro",
-    "build:claude-plugin": "node scripts/build-claude-plugin.mjs",
+    "build:claude-plugin": "node scripts/generate-skill.mjs && node scripts/build-claude-plugin.mjs",
     "check:claude-package": "node scripts/check-claude-package.mjs"
   },
   "keywords": [],

@@ -2,8 +2,6 @@ import assert from 'node:assert/strict';
 import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { builtinModules } from 'node:module';
-import { parse } from '@babel/parser';
 
 export function checkClaudePackage(directory) {
   const root = resolve(directory);
@@ -24,11 +22,13 @@ export function checkClaudePackage(directory) {
   for (const file of files) {
     assert(!names.has(file.toLowerCase()), `Case-insensitive file collision: ${file}`);
     names.add(file.toLowerCase());
+    assert(/^(?:\.claude-plugin\/plugin\.json|README\.md|LICENSE|assets\/tooljet-icon\.png|skills\/tooljet-app-builder\/(?:SKILL\.md|references\/[\w-]+\.md|scripts\/browser-audit\.js))$/.test(file), `Unexpected package file: ${file}`);
     assert(!/(?:^|\/)(?:node_modules|package(?:-lock)?\.json|CLAUDE(?:\.local)?\.md|AGENTS\.md|\.env[^/]*|\.DS_Store|__MACOSX|\.git|\.npmrc)(?:\/|$)/i.test(file), `Development or credential file in package: ${file}`);
     assert(!/\.(?:zip|gz|wasm|node|pyc|exe|dll|dylib|so|bin|map)$/i.test(file), `Packed/binary artifact: ${file}`);
     assert(!/(?:^|\/)(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|\/|$)|[:]|[. ](?:\/|$)/i.test(file), `Nonportable filename: ${file}`);
     const bytes = readFileSync(resolve(root, file));
     if (file.endsWith('.png')) {
+      assert(bytes.length < 2 * 1024 * 1024, 'Icon must be under 2 MiB');
       assert.equal(bytes.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
       assert.equal(bytes.readUInt32BE(16), 512);
       assert.equal(bytes.readUInt32BE(20), 512);
@@ -39,49 +39,25 @@ export function checkClaudePackage(directory) {
     assert(!bytes.includes(0), `Non-text file: ${file}`);
     const text = bytes.toString('utf8');
     assert(!/(?:\/(?:Users|home)\/[^/\s"']+\/|\/(?:private\/)?(?:tmp|var\/folders)\/|[A-Za-z]:[\\/]+Users[\\/])/i.test(text), `Machine-specific path: ${file}`);
-    if (file.endsWith('.mjs')) {
-      const imports = [];
-      function visit(node) {
-        if (!node || typeof node !== 'object') return;
-        if (['ImportDeclaration', 'ExportNamedDeclaration', 'ExportAllDeclaration'].includes(node.type) && node.source) imports.push(node.source.value);
-        if (node.type === 'CallExpression' && (node.callee.type === 'Import' || node.callee.name === 'require') && node.arguments[0]?.type === 'StringLiteral') imports.push(node.arguments[0].value);
-        for (const value of Object.values(node)) {
-          if (Array.isArray(value)) value.forEach(visit);
-          else if (value && typeof value === 'object') visit(value);
-        }
-      }
-      visit(parse(text, { sourceType: 'module' }).program);
-      for (const specifier of imports) {
-        if (specifier.startsWith('.')) {
-          const target = resolve(root, dirname(file), specifier);
-          assert(target.startsWith(root + sep) && existsSync(target), `Missing or escaping module in ${file}: ${specifier}`);
-        } else {
-          // The optional browser renderer is intentionally absent in this dependency-free package.
-          assert(builtinModules.includes(specifier.replace(/^node:/, '')) || specifier === 'playwright-core', `Unbundled dependency: ${specifier}`);
-        }
-      }
-    }
   }
   const manifest = JSON.parse(readFileSync(resolve(root, '.claude-plugin/plugin.json'), 'utf8'));
   for (const path of [manifest.icon, './README.md', './LICENSE', './skills/tooljet-app-builder/SKILL.md']) {
     assert(typeof path === 'string' && path.startsWith('./') && !path.includes('..') && existsSync(resolve(root, path)), `Missing/invalid package path: ${path}`);
   }
-  assert.deepEqual(Object.keys(manifest.mcpServers), ['tooljet']);
-  const server = manifest.mcpServers.tooljet;
-  assert.equal(server.command, 'node');
-  assert.deepEqual(server.args, ['${CLAUDE_PLUGIN_ROOT}/bundle/index.mjs']);
-  for (const reference of Object.values(server.env)) {
-    const key = reference.match(/^\$\{user_config\.([a-z_]+)\}$/)?.[1];
-    assert(key && manifest.userConfig[key], 'Every setting must come from declared Claude userConfig');
-  }
-  assert(manifest.userConfig.personal_access_token.required && manifest.userConfig.personal_access_token.sensitive);
-  for (const key of ['hooks', 'dependencies', 'settings', 'user_config']) assert(!manifest[key], `Unexpected manifest key: ${key}`);
+  assert.deepEqual(manifest.mcpServers, {
+    tooljet: { type: 'http', url: 'https://mcp-oauth.tooljet.com/mcp' },
+  }, 'Claude must use the hosted OAuth connection without local commands or credentials');
+  const metadataKeys = new Set(['name', 'version', 'icon', 'description', 'author', 'homepage', 'repository', 'license', 'keywords', 'mcpServers', 'privacyPolicyUrl']);
+  for (const key of Object.keys(manifest)) assert(metadataKeys.has(key), `Unexpected manifest key: ${key}`);
+  assert.equal(manifest.name, 'tooljet-app-builder');
+  assert.equal(manifest.privacyPolicyUrl, 'https://tooljet.com/privacy');
+  assert(/^\d+\.\d+\.\d+$/.test(manifest.version), 'Invalid package version');
   const skillRoot = resolve(root, 'skills/tooljet-app-builder');
   const skill = readFileSync(resolve(skillRoot, 'SKILL.md'), 'utf8');
   for (const [reference] of skill.matchAll(/(?:references|scripts)\/[\w/-]+\.(?:md|js|json)/g)) {
     assert(existsSync(resolve(skillRoot, reference)), `Missing skill reference: ${reference}`);
   }
-  return { version: manifest.version, files: files.length, largestTextBytes: largest, rootInstall: false };
+  return { version: manifest.version, files: files.length, largestTextBytes: largest, transport: 'http' };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

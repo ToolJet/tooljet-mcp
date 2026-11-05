@@ -218,32 +218,28 @@ Package metadata comes from `scripts/build-skill-plugin.mjs` and `package.json`.
 
 ## Install as a Claude Code plugin
 
-The Claude marketplace installs `plugins/tooljet-claude/`, a self-contained package with the MCP server and shared app-builder skill. It has no package manifest, lockfile, install hook, or runtime download. Node.js 20 or newer must already be installed.
+The Claude marketplace installs `plugins/tooljet-claude/`: the shared app-builder skill and a remote connection to `https://mcp-oauth.tooljet.com/mcp`. It requires ToolJet Cloud and uses browser login, workspace selection, and OAuth consent. No local server, Node.js, dependency install, PAT, or shell credentials are needed.
 
 ```text
 /plugin marketplace add ToolJet/tooljet-mcp
 /plugin install tooljet-app-builder@tooljet
 ```
 
-**Configure the connection in Claude.** The interactive plugin interface asks for the deployment URL, optional separate API URL, and PAT. The PAT field is sensitive and uses Claude's secure credential storage. Run `/plugin configure tooljet-app-builder@tooljet` to change it, then reload the plugin. Existing shell PAT/session settings are not reused by the Claude entry point. Noninteractive shell installation does not show the configuration dialog.
-
-The local package works in Claude Code and supported Cowork hosts. For claude.ai chat or ToolJet Cloud OAuth, use a hosted MCP connection and the separate skill-only package described above. Cloud OAuth, standalone environment-based MCP clients, and in-product session authentication remain supported by their existing entry points.
+Open `/mcp` in Claude Code and authenticate the plugin's ToolJet connection. Existing local-plugin users must reconnect through OAuth. Self-hosted users can continue using the standalone MCP setup and the separate **ToolJet App Builder Skills** package above. See the [Claude package guide](integrations/claude/README.md) for data access, permissions, and disconnect instructions.
 
 **Build and validate:**
 
 ```bash
-npm run generate:skill
-npm run build:plugin
 npm run build:claude-plugin
 node scripts/test-claude-package.mjs
 claude plugin validate plugins/tooljet-claude --strict --profile directory
 ```
 
-The maintained Claude metadata and installation guide live in `integrations/claude/`. The generator writes `plugins/tooljet-claude/` and the marketplace source path. It also keeps the root Claude manifest working for explicit repository/path installs; those installs include development files and can still trigger a lockfile review. Use the curated subfolder for the directory and `claude --plugin-dir ./plugins/tooljet-claude` for local verification.
+The maintained metadata and guide live in `integrations/claude/`. Generation copies the canonical skill, focused references, browser audit helper, icon, and license into the package and updates the marketplace entry. The dedicated package contains no development manifests, lockfiles, runtime bundles, or catalogs. Its version is maintained in `integrations/claude/plugin.json`; `scripts/bump-version.sh` also updates it on releases.
 
-**Directory source change:** distribute the contents of `plugins/tooljet-claude/` at the root of a dedicated distribution branch, preserving the existing plugin name and listing identity. An organization owner can then point the existing listing at that branch with an empty plugin path. Do not publish that branch until the package is reviewed and authorized for rollout. The [directory checklist](https://claude.com/docs/plugins/pre-submission-checklist#choices-a-reviewer-always-checks) documents an additional reviewer hold for non-shell server programs inside repository subfolders, so submitting the development subfolder itself can still require manual review. Merging this code alone does not change the portal source or clear a policy hold. The generated package version is independent of the embedded MCP server version. Never submit the development repository ZIP as the installable Claude package.
+**Existing directory listing:** after merging, set its plugin path to `plugins/tooljet-claude` on `main`, preserving the listing identity. The development repository root is not the submission package: it still contains standalone-client configuration, source, and lockfiles. Merging this PR alone cannot change the listing's source path or clear an existing Anthropic policy hold. This remote package does not run a local server command, so the [directory checklist's additional subfolder-script hold](https://claude.com/docs/plugins/pre-submission-checklist#choices-a-reviewer-always-checks) does not apply. Local validation does not replace directory review.
 
-Both runtimes use the same tools and catalogs. The Claude entry uses readable `.mjs` files so it needs no `package.json` to select ESM. Bundled dependencies retain their license notices. `npm run check:claude-package` checks the complete installed tree for file-size/count limits, portability, module references, icon, skill references, and configuration. `npm run check:plugin-package` also checks the remaining source tree. Keep the entire `bundle/` and `data/` trees together; catalog readers should use `lib/catalogFiles.js` or the MCP catalog resources. These local checks do not replace Anthropic's directory review.
+`npm run check:claude-package` checks the complete installed tree for file-size/count limits, portability, icon and skill references, and a remote-only connection. CI tests the extracted archive and rejects reintroduced local servers, hooks, lockfiles, and credential configuration. Standalone clients still use the standard readable bundle and catalogs; keep the entire `bundle/` and `data/` trees together when distributing that runtime.
 
 For skill-only changes, run `npm run generate:skill && npm run build:plugin && npm run build:claude-plugin`; no sibling checkout,
 MCP server, Python MCP package, or credentials are needed. Generation uses the pinned grid/widget

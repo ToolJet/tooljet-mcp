@@ -10,8 +10,8 @@
     {
       "name": "tooljet-app-builder",
       "source": "./plugins/tooljet-claude",
-      "description": "Build data-connected dashboards, internal tools and back-office apps in ToolJet, then refine them visually. Requires a ToolJet connection.",
-      "version": "0.12.1",
+      "description": "Build dashboards, internal tools and back-office apps in ToolJet Cloud through a secure OAuth connection, then refine them visually.",
+      "version": "0.13.1",
       "author": {
         "name": "ToolJet"
       },
@@ -27,7 +27,7 @@
       "name": "tooljet-app-builder-skills",
       "source": "./plugins/tooljet-app-builder-skills",
       "description": "Build dashboards, internal tools and team operations apps using an existing ToolJet MCP connection. Guidance only; no bundled MCP server.",
-      "version": "0.12.0",
+      "version": "0.13.0",
       "author": {
         "name": "ToolJet"
       },

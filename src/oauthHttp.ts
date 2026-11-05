@@ -19,6 +19,8 @@ export interface OAuthHttpOptions {
   fetchImpl?: typeof fetch;
   serverFactory?: (identity: RequestIdentity) => McpServer;
   maxBodyBytes?: number;
+  /** Public domain-verification token, never an OAuth credential. */
+  openaiAppsChallenge?: string;
 }
 function checkedUrl(value: string, name: string): string {
   const url = new URL(value);
@@ -46,6 +48,7 @@ export function oauthHttpOptionsFromEnv(): OAuthHttpOptions | undefined {
     return value;
   };
   return {
+    openaiAppsChallenge: process.env.MCP_OPENAI_APPS_CHALLENGE?.trim() || undefined,
     issuer: required('MCP_OAUTH_ISSUER'),
     resourceUrl: required('MCP_OAUTH_RESOURCE_URL'),
     exchangeSecret: required('MCP_OAUTH_EXCHANGE_SECRET'),
@@ -92,6 +95,7 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
   const appUrl = checkedUrl(options.appUrl, 'appUrl');
   if (options.exchangeSecret.length < 32)
     throw new Error('OAuth exchange secret must contain at least 32 characters');
+  const openaiAppsChallenge = options.openaiAppsChallenge?.trim();
   const resource = new URL(resourceBase);
   const factory = options.serverFactory ?? buildServer;
   const fetchImpl = options.fetchImpl ?? fetch;
@@ -113,6 +117,17 @@ export function createOAuthHttpServer(options: OAuthHttpOptions): Server {
     let exchangeFailure: 'exchange_request_failed' | 'invalid_delegation_response' | undefined;
     void (async () => {
       const url = new URL(req.url || '/', 'http://localhost');
+      if (url.pathname === '/.well-known/openai-apps-challenge' && openaiAppsChallenge) {
+        if (req.method !== 'GET') {
+          res.setHeader('allow', 'GET');
+          sendOAuthJson(res, 405, { error: 'method_not_allowed' });
+          return;
+        }
+        res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store',
+          'x-content-type-options': 'nosniff' });
+        res.end(openaiAppsChallenge);
+        return;
+      }
       if (url.pathname === '/health' && req.method === 'GET') {
         sendOAuthJson(res, 200, { status: 'ok', transport: 'streamable-http', authorization: 'oauth' });
         return;

@@ -29,7 +29,7 @@ export function addTableColumnTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Add one column to an existing ToolJet DB table without recreating it. Supports the same type aliases, ' +

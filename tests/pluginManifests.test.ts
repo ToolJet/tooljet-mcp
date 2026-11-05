@@ -11,22 +11,23 @@ const read = (p: string) => JSON.parse(readFileSync(resolve(root, p), 'utf8'));
 
 const AGENT_PLUGIN = read('plugin.json');
 const CODEX_PLUGIN = read('.codex-plugin/plugin.json');
-const CLAUDE_PLUGIN = read('plugins/tooljet-claude/.claude-plugin/plugin.json');
+const CLAUDE_PLUGIN = read('.claude-plugin/plugin.json');
+const CLAUDE_DIRECTORY = read('plugins/tooljet-claude/.claude-plugin/plugin.json');
 const CLAUDE_MARKET = read('.claude-plugin/marketplace.json');
 const CODEX_MARKET = read('.agents/plugins/marketplace.json');
 
 describe('plugin manifests agree across ecosystems', () => {
   it('names the same plugin everywhere, so the documented install commands resolve', () => {
-    const names = [AGENT_PLUGIN.name, CODEX_PLUGIN.name, CLAUDE_PLUGIN.name];
+    const names = [AGENT_PLUGIN.name, CODEX_PLUGIN.name, CLAUDE_PLUGIN.name, CLAUDE_DIRECTORY.name];
     expect(new Set(names).size).toBe(1);
     expect(CLAUDE_MARKET.plugins.map((p: any) => p.name)).toContain(AGENT_PLUGIN.name);
     expect(CODEX_MARKET.plugins.map((p: any) => p.name)).toContain(AGENT_PLUGIN.name);
   });
 
-  it('versions the Claude distribution independently and keeps its marketplace current', () => {
-    expect(AGENT_PLUGIN.version).toBe(CODEX_PLUGIN.version);
-    expect(CLAUDE_MARKET.plugins.find((p: any) => p.name === CLAUDE_PLUGIN.name).version).toBe(CLAUDE_PLUGIN.version);
-    expect(CLAUDE_PLUGIN).toEqual(read('integrations/claude/plugin.json'));
+  it('keeps standard versions aligned and the independent Claude package current', () => {
+    expect(new Set([AGENT_PLUGIN.version, CODEX_PLUGIN.version, CLAUDE_PLUGIN.version]).size).toBe(1);
+    expect(CLAUDE_MARKET.plugins.find((p: any) => p.name === CLAUDE_DIRECTORY.name).version).toBe(CLAUDE_DIRECTORY.version);
+    expect(CLAUDE_DIRECTORY).toEqual(read('integrations/claude/plugin.json'));
   });
 
   it('declares the same MCP server in both filenames', () => {
@@ -34,13 +35,13 @@ describe('plugin manifests agree across ecosystems', () => {
   });
 
   it('points every manifest at a bundle that exists', () => {
-    const args: [string, string][] = [
-      ...read('mcp.json').mcpServers.tooljet.args.map((arg: string) => [root, arg]),
-      ...CLAUDE_PLUGIN.mcpServers.tooljet.args.map((arg: string) => [resolve(root, 'plugins/tooljet-claude'), arg]),
+    const args: string[] = [
+      ...read('mcp.json').mcpServers.tooljet.args,
+      ...CLAUDE_PLUGIN.mcpServers.tooljet.args,
     ];
-    for (const [directory, arg] of args) {
+    for (const arg of args) {
       const rel = arg.replace(/\$\{[A-Z_]+\}\//, '');
-      expect(existsSync(resolve(directory, rel)), `${arg} -> ${rel}`).toBe(true);
+      expect(existsSync(resolve(root, rel)), `${arg} -> ${rel}`).toBe(true);
     }
   });
 

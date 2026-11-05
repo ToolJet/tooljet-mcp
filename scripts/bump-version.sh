@@ -58,7 +58,7 @@ jq --arg v "$NEW" '.version = $v' .claude-plugin/plugin.json > .claude-plugin/pl
 jq --arg v "$NEW" '.version = $v' .codex-plugin/plugin.json > .codex-plugin/plugin.json.tmp && mv .codex-plugin/plugin.json.tmp .codex-plugin/plugin.json
 jq --arg v "$NEW" '.plugins |= map(if has("version") then .version = $v else . end)' .claude-plugin/marketplace.json > .claude-plugin/marketplace.json.tmp && mv .claude-plugin/marketplace.json.tmp .claude-plugin/marketplace.json
 jq --arg v "$NEW" '.version = $v | .packages[""].version = $v' package-lock.json > package-lock.json.tmp && mv package-lock.json.tmp package-lock.json
-for manifest in registry/server.json plugins/tooljet-app-builder-skills/plugin.json plugins/tooljet-app-builder-skills/.claude-plugin/plugin.json plugins/tooljet-app-builder-skills/.codex-plugin/plugin.json; do
+for manifest in integrations/claude/plugin.json plugins/tooljet-claude/.claude-plugin/plugin.json registry/server.json plugins/tooljet-app-builder-skills/plugin.json plugins/tooljet-app-builder-skills/.claude-plugin/plugin.json plugins/tooljet-app-builder-skills/.codex-plugin/plugin.json; do
   jq --arg v "$NEW" '.version = $v' "$manifest" > "$manifest.tmp" && mv "$manifest.tmp" "$manifest"
 done
 sed -i.bak "s/export const TOOLJET_MCP_VERSION = '.*';/export const TOOLJET_MCP_VERSION = '$NEW';/" src/runtimeFreshness.ts && rm -f src/runtimeFreshness.ts.bak
@@ -67,7 +67,7 @@ if [[ "$CURRENT_BRANCH" == "main" ]]; then
   git checkout -b "release/v$NEW"
 fi
 
-git add package.json package-lock.json plugin.json .claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json registry/server.json plugins/tooljet-app-builder-skills/plugin.json plugins/tooljet-app-builder-skills/.claude-plugin/plugin.json plugins/tooljet-app-builder-skills/.codex-plugin/plugin.json src/runtimeFreshness.ts
+git add integrations/claude/plugin.json plugins/tooljet-claude/.claude-plugin/plugin.json package.json package-lock.json plugin.json .claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json registry/server.json plugins/tooljet-app-builder-skills/plugin.json plugins/tooljet-app-builder-skills/.claude-plugin/plugin.json plugins/tooljet-app-builder-skills/.codex-plugin/plugin.json src/runtimeFreshness.ts
 git commit -m "Chore: bump version to $NEW"
 
 if [[ "$CURRENT_BRANCH" == "main" ]]; then
@@ -75,7 +75,9 @@ if [[ "$CURRENT_BRANCH" == "main" ]]; then
   git push -u origin "$BRANCH"
 
   gh pr create --base main --head "$BRANCH" --title "Chore: release v$NEW" --body "$(cat <<EOF
-Version bump only: \`$CURRENT\` → \`$NEW\`, across package/lock metadata, plugin manifests, marketplace entries, MCP Registry metadata and the runtime version. No catalog/skill/bundle regeneration — run those separately if this release needs fresh content too.
+Version bump only: \`$CURRENT\` → \`$NEW\`, across package/lock metadata, plugin manifests, marketplace entries, MCP Registry metadata and the runtime version. No catalog/skill/bundle regeneration.
+
+**Before merging:** \`npm run build:plugin && git add bundle && git commit -m "Chore: rebuild bundle for v$NEW"\`. Stage all of \`bundle/\`, not just \`index.js\`: the version constant lives in a chunk. Merge only on a green test check; \`tag-release.sh\` refuses otherwise.
 
 No tag yet — run \`scripts/tag-release.sh\` once this merges.
 EOF

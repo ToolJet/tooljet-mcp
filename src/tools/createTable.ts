@@ -30,7 +30,7 @@ export function createTableTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Create a ToolJet-DB table. Give table_name and columns (name, type, optional primaryKey/notNull/unique/defaultValue/configurations). ' +

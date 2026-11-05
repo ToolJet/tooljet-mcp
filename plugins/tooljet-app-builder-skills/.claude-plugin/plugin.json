@@ -1,6 +1,6 @@
 {
   "name": "tooljet-app-builder-skills",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Build dashboards, internal tools and team operations apps using an existing ToolJet MCP connection. Guidance only; no bundled MCP server.",
   "author": {
     "name": "ToolJet"

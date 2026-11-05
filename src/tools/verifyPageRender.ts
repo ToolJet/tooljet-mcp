@@ -361,7 +361,7 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
   return {
     name: 'verify_page_render',
     title: 'Verify Page Render',
-    annotations: { readOnlyHint: true, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
     description:
       'Render audit of one page or every page of an app in a headless browser at 1600x900, after the app is built. ' +
       'Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken ' +

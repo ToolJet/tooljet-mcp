@@ -1,6 +1,6 @@
 {
   "name": "tooljet-app-builder",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Build data-connected dashboards, internal tools and back-office apps in ToolJet, then refine them visually. Requires a ToolJet connection.",
   "author": {
     "name": "ToolJet"
