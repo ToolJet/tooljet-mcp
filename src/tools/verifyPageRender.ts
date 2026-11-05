@@ -278,18 +278,28 @@ function auditScript(): { widgets: number; findings: RenderFinding[] } {
  * `playwright-core` is optional: resolved from node_modules when installed, otherwise from the directory
  * named by MCP_RENDER_AUDIT_PLAYWRIGHT (a path to a playwright-core package). Bundles mark it external.
  */
+/** What only the page can measure about a code page's frame. */
+export interface CodeFrameOutside {
+  width: number;
+  scrollWidth: number;
+  clientWidth: number;
+  /** How far the frame runs past the bottom of the window. */
+  below: number;
+}
+
 /**
- * Runs inside the page: a code page draws its whole app in one same-origin iframe, which the widget walk cannot see
+ * Runs inside the page: a code page draws its whole app in one iframe, which the widget walk cannot see
  * into. Checks the frame's own document: nothing scrolls sideways, nothing sits past the right edge, the app drew
  * something, and no placeholder text shows. Returns null when the page has no code page.
  */
-export function codePageAuditScript(route?: string): RenderFinding[] | null {
-  const frame = document.querySelector('iframe[data-tj-code-page-frame]') as HTMLIFrameElement | null;
-  if (!frame) return null;
+export function codePageAuditScript(route?: string, outside?: CodeFrameOutside): RenderFinding[] | null {
+  // An isolated frame's document can't be read from the page, so this runs inside it, told what the page measured.
+  const frame = outside ? null : (document.querySelector('iframe[data-tj-code-page-frame]') as HTMLIFrameElement | null);
+  if (!outside && !frame) return null;
   const findings: RenderFinding[] = [];
-  const doc = frame.contentDocument;
-  const width = window.innerWidth;
-  const host = document.scrollingElement;
+  const doc = outside ? document : frame!.contentDocument;
+  const width = outside ? outside.width : window.innerWidth;
+  const host = outside ? outside : document.scrollingElement;
   if (host && host.scrollWidth > host.clientWidth + 1)
     findings.push({ kind: 'overflow', component: 'Code mode app', detail: `the page scrolls sideways at ${width}px (${host.scrollWidth}px wide)` });
   if (!doc || !doc.body) {
@@ -315,9 +325,9 @@ export function codePageAuditScript(route?: string): RenderFinding[] | null {
   const scroller = doc.scrollingElement;
   if (scroller && scroller.scrollWidth > scroller.clientWidth + 1)
     findings.push({ kind: 'overflow', component: 'Code mode app', detail: `the app scrolls sideways at ${width}px (${scroller.scrollWidth}px of content in ${scroller.clientWidth}px)` });
-  const frameRect = frame.getBoundingClientRect();
-  if (frameRect.bottom > window.innerHeight + 1)
-    findings.push({ kind: 'clipped', component: 'Code mode app', detail: `the app runs ${Math.round(frameRect.bottom - window.innerHeight)}px below the window` });
+  const below = outside ? outside.below : frame!.getBoundingClientRect().bottom - window.innerHeight;
+  if (below > 1)
+    findings.push({ kind: 'clipped', component: 'Code mode app', detail: `the app runs ${Math.round(below)}px below the window` });
   const describe = (el: Element) => {
     const id = el.getAttribute('data-testid') || el.id;
     const label = (el.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 40);
@@ -441,8 +451,49 @@ const STREAM_PATHS = /\/api\/code-page-security$/;
 /** The code page's frame has its app drawn (the widget can draw before the frame is attached). */
 function codeFrameDrawn(): boolean {
   const frame = document.querySelector('iframe[data-tj-code-page-frame]') as HTMLIFrameElement | null;
+  // An isolated frame's document can't be read from here: waitForIsolatedFrame has asked it directly.
+  if (frame?.hasAttribute('data-tj-code-page-isolated')) return true;
   const root = frame?.contentDocument?.getElementById('tj-frame-root');
   return !!root && root.children.length > 0;
+}
+
+/** An isolated code page's frame, asked through the browser's debugging protocol, which works on any origin. */
+async function isolatedFrame(page: any): Promise<any | null> {
+  const handle = await page.$('iframe[data-tj-code-page-frame][data-tj-code-page-isolated]');
+  return (await handle?.contentFrame()) ?? null;
+}
+
+/** Waits, within what's left of `untilMs`, for an isolated frame's app to draw. */
+async function waitForIsolatedFrame(page: any, untilMs: number): Promise<void> {
+  while (Date.now() < untilMs) {
+    const frame = await isolatedFrame(page).catch(() => null);
+    if (!frame) return;
+    const drawn = await frame
+      .evaluate(() => {
+        const root = document.getElementById('tj-frame-root');
+        return !!root && root.children.length > 0;
+      })
+      .catch(() => false);
+    if (drawn) return;
+    await page.waitForTimeout(100);
+  }
+}
+
+/** The findings for a page's code page, or null when it has none. An isolated frame is checked from inside. */
+async function auditCodePage(page: any, route?: string): Promise<RenderFinding[] | null> {
+  const frame = await isolatedFrame(page);
+  if (!frame) return page.evaluate(codePageAuditScript, route);
+  const outside: CodeFrameOutside = await page.evaluate(() => {
+    const el = document.querySelector('iframe[data-tj-code-page-frame]') as HTMLIFrameElement;
+    const host = document.scrollingElement;
+    return {
+      width: window.innerWidth,
+      scrollWidth: host?.scrollWidth ?? 0,
+      clientWidth: host?.clientWidth ?? 0,
+      below: el.getBoundingClientRect().bottom - window.innerHeight,
+    };
+  });
+  return frame.evaluate(`(${codePageAuditScript.toString()})(${route ? JSON.stringify(route) : 'undefined'}, ${JSON.stringify(outside)})`);
 }
 
 async function settleWhenQuiet(page: any, tracker: NetworkTracker, maxMs: number): Promise<void> {
@@ -649,19 +700,22 @@ export async function auditPages(
       // Wait for the page to draw before the settle: a widget, and on a Code mode page its frame's app. A dev-track Code
       // mode page drew its widget 3 to 4 s after load on an idle stack, and a fixed 6 s settle during a build read two
       // working pages as "no widgets" (Equipment checkout log, 2026-11-02). An empty page still ends as no_widgets.
+      const contentWaitMs = options.contentWaitMs ?? Number(process.env.MCP_RENDER_AUDIT_CONTENT_WAIT_MS || 30000);
+      const waitStarted = Date.now();
       await page
         .waitForFunction(
           () => {
             if (!document.querySelector('[data-cy^="draggable-widget-"]')) return false;
             const frame = document.querySelector('iframe[data-tj-code-page-frame]') as HTMLIFrameElement | null;
-            if (!frame) return true;
+            if (!frame || frame.hasAttribute('data-tj-code-page-isolated')) return true;
             const root = frame.contentDocument?.getElementById('tj-frame-root');
             return !!root && root.children.length > 0;
           },
           undefined,
-          { timeout: options.contentWaitMs ?? Number(process.env.MCP_RENDER_AUDIT_CONTENT_WAIT_MS || 30000) }
+          { timeout: contentWaitMs }
         )
         .catch(() => undefined);
+      await waitForIsolatedFrame(page, waitStarted + contentWaitMs);
       // A Code mode page settles when its network goes quiet; a ToolJet page keeps the fixed settle and chart wait.
       // The widget can draw before the code page's frame is attached, so a check with a route counts as Code mode as well.
       const codeFrame = network
@@ -693,7 +747,7 @@ export async function auditPages(
         return;
       }
       const result = (await page.evaluate(auditScript)) as { widgets: number; findings: RenderFinding[] };
-      const codePage = (await page.evaluate(codePageAuditScript, new URL(p.url).searchParams.get('route') || undefined)) as RenderFinding[] | null;
+      const codePage = await auditCodePage(page, new URL(p.url).searchParams.get('route') || undefined);
       if (Array.isArray(codePage)) {
         // The root widget is the code page's container; its own findings come from inside the frame.
         const accessibility = await axeInCodePage(page).catch(() => undefined);
