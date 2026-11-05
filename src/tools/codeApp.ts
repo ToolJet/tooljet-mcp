@@ -3,13 +3,14 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { ok, fail, type ToolDef } from './types.js';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { CLI_HOME_PREFIX, cleanOldProjects, touchProject, withBuildSlot } from '../codeBuildLimits.js';
 import { browserUserQueryProblems } from '../serverUserBindings.js';
+import { buildSummary, formatProblems, fromChecked, parseBuildProblems, type CheckedProblem } from '../codeTypeErrors.js';
 
 /*
   Code pages: a ToolJet app page whose whole UI is React code, kept in an app project (app.json + frontend/) and built
@@ -700,6 +701,56 @@ export function resetCodeSessionForTests(): void {
   readHashes.clear();
   lastSynced.clear();
   prefetchedScans.clear();
+  sdkCopied.clear();
+}
+
+/** Projects whose linked SDK this process has asked the CLI to copy in: once each, since an older CLI links it again. */
+const sdkCopied = new Set<string>();
+
+/**
+ * A project installed while the CLI linked a file: SDK (until 2026-11-04) has the SDK as a link out of the project,
+ * which a server-mode build may not read: TS2307 on every `ToolJet` import and `any` from every hook. `tooljet app
+ * install` copies it in.
+ */
+async function copySdkIn(dir: string): Promise<void> {
+  let linked = false;
+  try {
+    linked = lstatSync(join(dir, 'frontend', 'node_modules', '@tooljet', 'custom-component-sdk')).isSymbolicLink();
+  } catch {
+    return;
+  }
+  if (!linked || sdkCopied.has(dir)) return;
+  sdkCopied.add(dir);
+  await cli(dir, ['app', 'install'], 180_000);
+}
+
+const TYPE_CHECKED = /^frontend\/(src\/.*\.tsx?|.*\.css)$/;
+
+/**
+ * The type check after a write (`tooljet library typecheck`, incremental), so the next write fixes what this one broke
+ * before code_app_build is called. On with MCP_CODE_WRITE_TYPECHECK=1, off by default until an A/B says it pays: on a
+ * 5,000-line app it adds 0.85 s to a write (1.8 s the first time), and a build makes about 13 writes that touch code,
+ * so about 11 s a build, against about 0.4 failed build rounds a build left to save once the SDK's types are readable
+ * (2026-11-04). Nothing when the CLI has no such command or the check could not run: the build checks everything anyway.
+ */
+async function typeCheckAfterWrite(dir: string, written: string[]): Promise<Record<string, unknown> | undefined> {
+  if (process.env.MCP_CODE_WRITE_TYPECHECK !== '1' || !written.some((rel) => TYPE_CHECKED.test(rel))) return undefined;
+  await copySdkIn(dir);
+  const result = await cli(join(dir, 'frontend'), ['library', 'typecheck', '--json'], 30_000);
+  const report = parseReport<{ problems?: CheckedProblem[] }>(result.output);
+  if (!Array.isArray(report?.problems)) return undefined;
+  if (!report.problems.length) return { errors: 0 };
+  const problems = report.problems.map(fromChecked);
+  const unwritten = problems.filter((p) => p.code === 'TS2307' && /Cannot find module '\.{1,2}\//.test(p.message));
+  const rest = problems.filter((p) => !unwritten.includes(p));
+  return {
+    errors: problems.length,
+    ...(rest.length ? { fix: formatProblems(rest, 25) } : {}),
+    ...(unwritten.length
+      ? { not_written_yet: [...new Set(unwritten.map((p) => `${/'([^']+)'/.exec(p.message)?.[1]} (imported at ${p.at})`))] }
+      : {}),
+    note: 'Fix these in this round of writes, before code_app_build. An import of a file you have not written yet clears once you write it.',
+  };
 }
 
 /** Lines that differ between two versions of a file (a multiset count, enough to tell a small change from a rewrite). */
@@ -805,7 +856,8 @@ export function codeAppWriteFilesTool(context: CodeContext): ToolDef {
       'files: [{ path, content }] is for new files and for replacing a file still as the template left it, or for a rewrite the request needs (then rewrite: true, as well as the files). A write to a file that changed ' +
       'in the ToolJet editor since you read it is refused: read it again and apply your change to what is there. ' +
       'Read data with useAppQuery from ../tooljet.gen; write by awaiting a query\'s run({ ...parameters }); route with AppRouter, ' +
-      'react-router <Routes>/<Route> whose paths are exactly app.json\'s, and routePath(id, params). Then code_app_build.' + USER_WORDS,
+      'react-router <Routes>/<Route> whose paths are exactly app.json\'s, and routePath(id, params). ' +
+      'A type_check in the result lists the project\'s type errors after this write: fix them before code_app_build. Then code_app_build.' + USER_WORDS,
     inputSchema: {
       app_id: APP_ID,
       name: PROJECT_NAME,
@@ -866,7 +918,8 @@ export function codeAppWriteFilesTool(context: CodeContext): ToolDef {
           readHashes.set(readKey(dir, rel), sha(content)); // the agent knows what it just wrote
           written.push(rel);
         }
-        return ok({ project_dir: dir, ...sync, written });
+        const types = await typeCheckAfterWrite(dir, written).catch(() => undefined);
+        return ok({ project_dir: dir, ...sync, written, ...(types ? { type_check: types } : {}) });
       } catch (err) {
         return fail(err);
       }
@@ -923,6 +976,21 @@ export function badRouteHandles(dir: string): string[] {
     (id) => `app.json: route id "${id}" is not a valid handle: use lowercase letters, numbers and hyphens, such as "${id.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+/, '') || 'page'}"`);
 }
 
+const SDK_DECLARED = /declare\s+module\s+['"]@tooljet\/custom-component-sdk['"]/;
+
+/**
+ * Files that declare the SDK module themselves. While a server-mode build could not read the SDK's types (2026-11-04),
+ * 15 builds wrote one to get past TS2307, with guessed types: `error: string`, so `{rows.error}` compiled and would
+ * throw in React the first time a query failed. The declaration hides the real types, so the build is not ok with one.
+ */
+export function sdkRedeclared(dir: string): string[] {
+  const src = join(dir, 'frontend', 'src');
+  if (!existsSync(src)) return [];
+  return listFiles(src)
+    .filter((rel) => /\.tsx?$/.test(rel) && rel !== 'tooljet.gen.ts' && SDK_DECLARED.test(readFileSync(join(src, rel), 'utf8')))
+    .map((rel) => `frontend/src/${rel}: declares @tooljet/custom-component-sdk itself, which hides the SDK's real types; write the file without that declaration (the SDK has its own types), then fix what the build reports`);
+}
+
 export function missingStylesheet(dir: string): string | undefined {
   const sheet = join(dir, STYLESHEET);
   if (!existsSync(sheet)) return undefined; // not this template: nothing to hold the project to
@@ -966,24 +1034,27 @@ export function codeAppBuildTool(context: CodeContext): ToolDef {
       "Refresh the typed hooks from the app's current queries (tooljet app pull), build the app's code (TypeScript, Tailwind, " +
       'manifest), and check it against the app (tooljet app check: every useAppQuery name, route, link and page must exist) ' +
       'and the security scan (code rules such as external fetch, eval and token storage; secrets; vendored code). ' +
-      'Returns ok and every error, native control and security finding to fix. Repeat write and build until ok, then code_app_install.' + USER_WORDS,
+      'Returns ok and every error (errors: one line each, with the code and often the fix), native control and security finding to fix; ' +
+      'fix every one in one round of writes. Repeat write and build until ok, then code_app_install.' + USER_WORDS,
     inputSchema: { app_id: APP_ID, name: PROJECT_NAME },
     handler: inScope(context, async (args: { app_id?: string; name?: string }) => {
       try {
         const dir = await locateProject(args, 'edit');
         const followed = await followDraft(dir);
         await ensureFresh(dir);
+        await copySdkIn(dir);
         const started = Date.now();
         const pull = await cli(dir, ['app', 'pull']);
         const build = await cli(join(dir, 'frontend'), ['library', 'build']);
         const tsErrors = Number(/TypeScript compiled \((\d+) errors\)/.exec(build.output)?.[1] ?? (build.code === 0 ? 0 : 1));
+        const problems = build.code === 0 && tsErrors === 0 ? [] : parseBuildProblems(build.output);
         const check = await cli(dir, ['app', 'check', '--offline', '--json']);
         const report = parseReport<{ problems?: { file: string; line: number; message: string }[]; accessibility?: unknown[]; security?: SecurityReport }>(check.output);
         const unstyled = missingStylesheet(dir);
         const selects = nativeSelects(dir);
         const handles = badRouteHandles(dir);
         const serverUser = await browserUserQueries(args.app_id ?? appIdOf(dir));
-        const extra = [...handles, ...(unstyled ? [unstyled] : []), ...serverUser];
+        const extra = [...handles, ...(unstyled ? [unstyled] : []), ...sdkRedeclared(dir), ...serverUser];
         const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0 && !extra.length;
         if (okBuild) prefetchFullScan(dir);
         return ok({
@@ -992,7 +1063,15 @@ export function codeAppBuildTool(context: CodeContext): ToolDef {
           build_ms: Date.now() - started,
           pull: pull.code === 0 ? 'typed hooks refreshed' : pull.output.trim(),
           typescript_errors: tsErrors,
-          build_output: build.code === 0 && tsErrors === 0 ? build.output.trim().split('\n').slice(-6).join('\n') : build.output.trim().slice(0, 12_000),
+          // Every error on one line, with the code it is on and, for the mistakes that recur, the fix (codeTypeErrors.ts);
+          // the raw output only when it holds no error this can read.
+          ...(problems.length ? { errors: formatProblems(problems) } : {}),
+          build_output:
+            build.code === 0 && tsErrors === 0
+              ? build.output.trim().split('\n').slice(-6).join('\n')
+              : problems.length
+                ? buildSummary(build.output)
+                : build.output.trim().slice(0, 12_000),
           check: report?.problems
             ? [...extra, ...report.problems.map((p) => `${p.file}:${p.line}  ${p.message}`)]
             : extra.length ? [...extra, check.output.trim().slice(0, 6000)] : check.output.trim().slice(0, 6000),
