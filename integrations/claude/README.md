@@ -1,30 +1,31 @@
 # ToolJet App Builder
 
-Build data-connected dashboards, internal tools, and back-office applications in ToolJet Cloud, then refine them in the visual editor. This plugin includes the app-builder skill and connects to ToolJet's hosted MCP server using OAuth. It acts with your approved workspace permissions.
+Build data-connected dashboards, internal tools, and back-office applications in ToolJet, then refine them in the visual editor. This plugin includes the app-builder skill and a local MCP server. It uses your personal access token and respects the permissions of its workspace. Node.js 20 or newer must already be installed; the plugin does not download or install dependencies.
 
 ## Set up
 
-Install **ToolJet App Builder** from the Claude directory. In Claude Code, you can also use the ToolJet marketplace:
-
 ```text
-/plugin marketplace add ToolJet/tooljet-mcp
-/plugin install tooljet-app-builder@tooljet
+/plugin install tooljet-app-builder --marketplace ToolJet/tooljet-mcp
 ```
 
-Connect ToolJet when Claude prompts you. In Claude Code, open `/mcp`, select the plugin's ToolJet server, and authenticate. The browser opens ToolJet login and workspace selection. Review the account, workspace, and requested permissions before approving. No personal access token, shell environment variable, or local Node.js installation is needed. If migrating from the local plugin, reconnect through OAuth; existing PAT settings are not reused.
+Install `tooljet-app-builder@tooljet` from the ToolJet marketplace in Claude Code. In Claude's plugin configuration dialog, enter your ToolJet deployment URL and a personal access token created in **Settings → Access tokens** in the intended workspace. Enter the token only in the masked configuration field, never in a conversation. Claude stores sensitive configuration in its secure credential store.
 
-This package requires a ToolJet Cloud account. For self-hosted ToolJet, use the standalone MCP setup in the [repository documentation](https://github.com/ToolJet/tooljet-mcp#readme) with the separate **ToolJet App Builder Skills** package. Do not enable multiple ToolJet connections for the same task unless you explicitly need them.
+Leave the optional API URL blank when the frontend and API share an origin. For a split-origin deployment, enter the API URL explicitly. The token is sent to that API URL, or to the deployment URL when no API URL is configured. Use HTTPS for remote deployments. Local HTTP instances remain supported.
 
-## Use and data access
+To change these settings in Claude Code, run `/plugin configure tooljet-app-builder@tooljet`, then reload the plugin. The noninteractive shell install command does not open a configuration dialog; finish configuration in the interactive plugin interface. Existing environment-variable settings are not used by this package.
 
-Ask Claude to build or update a ToolJet application, or invoke `/tooljet-app-builder:tooljet-app-builder` in Claude Code. Confirm the target workspace and review destructive changes. The connection can read and modify apps, queries, data, workflows, and workspace users, subject to your approved scopes and current ToolJet permissions. Data returned by tools is available to Claude in your conversation.
+## Use
 
-MCP requests go to `https://mcp-oauth.tooljet.com/mcp`; authentication uses ToolJet at `https://app.tooljet.ai/api/mcp-oauth`. OAuth credentials are managed by Claude's connection flow. The plugin contains no credential reader, local server, install hook, or dependency download. The shared skill includes an optional readable browser audit script that Claude can use to inspect an app you ask it to verify; it is not run at installation or startup.
+Ask Claude to build or update a ToolJet application, or invoke `/tooljet-app-builder:tooljet-app-builder`. The skill loads the relevant references as needed. Review the workspace and proposed changes before making destructive edits. The MCP server supports catalog discovery, app structure, queries, components, layouts, events, permissions, and workflows subject to the ToolJet instance's capabilities.
 
-Each connection is bound to one workspace. To change workspaces, disconnect and authorize again. Revoke access in ToolJet's **Profile settings → Connected AI clients** for that workspace.
+The local server runs in Claude Code and supported Cowork hosts. It cannot run in claude.ai chat. For ToolJet Cloud OAuth, connect the hosted ToolJet MCP server through Claude's connector settings and use the separate **ToolJet App Builder Skills** package. That mode uses ToolJet login and consent rather than this package's PAT. Do not enable both connections for the same task.
 
-[Privacy policy](https://tooljet.com/privacy).
+## Data access
 
-## Package and support
+The local MCP server sends tool requests and the configured PAT to your explicitly configured ToolJet API. The PAT is exchanged for a session in its workspace; tools use that session and your existing permissions. Tool results are available to Claude in the conversation. No hosted ToolJet OAuth MCP endpoint is required. Revoke the token from your ToolJet workspace to remove access. The shared skill includes a readable browser audit helper for inspecting apps you ask Claude to verify; it does not run at installation or startup. [Privacy policy](https://tooljet.com/privacy).
 
-This package contains the shared skill and references, the remote MCP declaration, a ToolJet icon, and the license. Tool execution and runtime catalogs are provided by the hosted server. Source and issues: [ToolJet MCP](https://github.com/ToolJet/tooljet-mcp). Connection details: [OAuth documentation](https://github.com/ToolJet/tooljet-mcp/blob/main/docs/oauth.md).
+## Package
+
+This is a Claude plugin, not a Desktop MCPB extension. It ships readable JavaScript modules, runtime catalogs, the shared skill, an icon, and license notices. There are no install hooks, lockfiles, credential files, or dependency downloads. Repository development instructions are intentionally outside this installable folder. The plugin's package version is independent of the embedded MCP server version.
+
+Source and issues: [ToolJet MCP](https://github.com/ToolJet/tooljet-mcp). Hosted OAuth setup: [OAuth documentation](https://github.com/ToolJet/tooljet-mcp/blob/main/docs/oauth.md).

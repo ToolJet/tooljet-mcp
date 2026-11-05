@@ -10,7 +10,7 @@
     {
       "name": "tooljet-app-builder",
       "source": "./plugins/tooljet-claude",
-      "description": "Build dashboards, internal tools and back-office apps in ToolJet Cloud through a secure OAuth connection, then refine them visually.",
+      "description": "Build data-connected dashboards, internal tools and back-office apps in ToolJet, then refine them visually. Requires a ToolJet connection.",
       "version": "0.13.1",
       "author": {
         "name": "ToolJet"
