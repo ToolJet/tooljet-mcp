@@ -75,7 +75,9 @@ if [[ "$CURRENT_BRANCH" == "main" ]]; then
   git push -u origin "$BRANCH"
 
   gh pr create --base main --head "$BRANCH" --title "Chore: release v$NEW" --body "$(cat <<EOF
-Version bump only: \`$CURRENT\` → \`$NEW\`, across package/lock metadata, plugin manifests, marketplace entries, MCP Registry metadata and the runtime version. No catalog/skill/bundle regeneration — run those separately if this release needs fresh content too.
+Version bump only: \`$CURRENT\` → \`$NEW\`, across package/lock metadata, plugin manifests, marketplace entries, MCP Registry metadata and the runtime version. No catalog/skill/bundle regeneration.
+
+**Before merging:** \`npm run build:plugin && git add bundle && git commit -m "Chore: rebuild bundle for v$NEW"\`. Stage all of \`bundle/\`, not just \`index.js\`: the version constant lives in a chunk. Merge only on a green test check; \`tag-release.sh\` refuses otherwise.
 
 No tag yet — run \`scripts/tag-release.sh\` once this merges.
 EOF
