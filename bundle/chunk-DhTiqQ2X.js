@@ -2,13 +2,12 @@ import { createRequire } from "node:module";
 import { createServer, request } from "node:http";
 import { Http2ServerRequest, constants } from "node:http2";
 import { Readable } from "node:stream";
-import { g as peekAppPlan, h as consumeAppPlan, f as frozenAppRefusal, r as replaceView, b as replaceFingerprint, d as danglingAfterReplace, e as prepareQueryOptionsForWrite, m as matchPlannedPage, l as literalCanvasColor, i as prepareComponentBatch, j as replaceIds, k as expandQueryLifecycles, v as validateEvents, n as navigationReorders, o as persistedEventSpecs } from "./chunk-D-eDHAqY.js";
-import { e5 as fail, ef as tableQuotaError, e6 as ok } from "./chunk-CNzl5iHC.js";
-import { e as componentRef, w as completedPartialWrites, r as resolveRef, m as indexComponentReferences, i as isFlexContainerType, x as batchChildOrders, c as childOrderProperty } from "./chunk-C-1qrIt_.js";
-import { J as validateAppStructure, N as unpinnedLibraries, d as decodeComponentParent, e as encodeComponentParent } from "./chunk-Bl5L2ACf.js";
-import { L as LARGE_READ_ROW_THRESHOLD, h as assessQueryRead, j as resolveStaticBindings, k as resolvedReadRefusal, s as sameReadSource, m as extractRowCount, o as emptyViewerOnlyParams, p as emptyParamsNote, u as unresolvedNote, v as validateQueryOptions, i as issueMessages } from "./chunk-4VsxWCKn.js";
-import { g as getDatasourceQuerySchema } from "./chunk-hq1_aYNY.js";
-import { b0 as external_exports } from "./chunk-Id3EmQoo.js";
+import { g as peekAppPlan, h as consumeAppPlan, f as frozenAppRefusal, r as replaceView, b as replaceFingerprint, d as danglingAfterReplace, e as prepareQueryOptionsForWrite, i as matchPlannedPage, l as literalCanvasColor, j as prepareComponentBatch, k as replaceIds, n as expandQueryLifecycles, v as validateEvents, o as navigationReorders, q as persistedEventSpecs } from "./chunk-BEsFX7ki.js";
+import { s as assessQueryRead, u as resolvedReadRefusal, x as resolveStaticBindings, y as sqlConnectorPath, G as GUI_LIST_ROWS_KEYS, z as applyResolvedBindings, A as connectorLabel, S as SQL_DIALECT, h as fail, t as tableQuotaError, o as ok, L as LARGE_READ_ROW_THRESHOLD, B as sameReadSource, C as extractRowCount, D as emptyViewerOnlyParams, E as emptyParamsNote, F as unresolvedNote, v as validateQueryOptions, k as issueMessages } from "./chunk-DQ6nvnmd.js";
+import { e as componentRef, w as completedPartialWrites, r as resolveRef, m as indexComponentReferences, i as isFlexContainerType, x as batchChildOrders, c as childOrderProperty } from "./chunk-Dm6BaKQE.js";
+import { J as validateAppStructure, N as unpinnedLibraries, d as decodeComponentParent, e as encodeComponentParent } from "./chunk-CNCsCbKN.js";
+import { g as getDatasourceQuerySchema } from "./chunk-BozBrMhE.js";
+import { ax as external_exports } from "./chunk-Dakrk_ob.js";
 import { randomUUID } from "node:crypto";
 import { readFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
@@ -1049,6 +1048,545 @@ var getRequestListener = (fetchCallback, options = {}) => {
   };
 };
 createRequire(import.meta.url);
+var MAX_AUTO_ROWS = 1e3;
+var PURE_FUNCTIONS = /* @__PURE__ */ new Set([
+  // aggregates
+  "count",
+  "sum",
+  "avg",
+  "min",
+  "max",
+  "bool_and",
+  "bool_or",
+  "every",
+  "string_agg",
+  "array_agg",
+  "group_concat",
+  "json_agg",
+  "jsonb_agg",
+  "json_object_agg",
+  "jsonb_object_agg",
+  "stddev",
+  "stddev_pop",
+  "stddev_samp",
+  "variance",
+  "var_pop",
+  "var_samp",
+  "percentile_cont",
+  "percentile_disc",
+  "mode",
+  // window ranking
+  "row_number",
+  "rank",
+  "dense_rank",
+  "percent_rank",
+  "cume_dist",
+  "ntile",
+  "lag",
+  "lead",
+  "first_value",
+  "last_value",
+  "nth_value",
+  // conditional and casts
+  "coalesce",
+  "nullif",
+  "greatest",
+  "least",
+  "cast",
+  "ifnull",
+  "isnull",
+  "nvl",
+  "iif",
+  // strings
+  "lower",
+  "upper",
+  "trim",
+  "ltrim",
+  "rtrim",
+  "btrim",
+  "length",
+  "char_length",
+  "character_length",
+  "octet_length",
+  "substring",
+  "substr",
+  "left",
+  "right",
+  "concat",
+  "concat_ws",
+  "replace",
+  "position",
+  "strpos",
+  "split_part",
+  "lpad",
+  "rpad",
+  "initcap",
+  "reverse",
+  "format",
+  "to_char",
+  // numbers
+  "abs",
+  "round",
+  "floor",
+  "ceil",
+  "ceiling",
+  "trunc",
+  "mod",
+  "power",
+  "sqrt",
+  "sign",
+  "to_number",
+  // dates and times
+  "now",
+  "current_timestamp",
+  "current_date",
+  "date_trunc",
+  "date_part",
+  "extract",
+  "age",
+  "to_date",
+  "to_timestamp",
+  "date",
+  "year",
+  "month",
+  "day",
+  "datediff",
+  "dateadd",
+  "date_add",
+  "date_sub",
+  "date_format",
+  "make_date",
+  "make_interval",
+  "justify_interval",
+  // json reads
+  "json_extract_path_text",
+  "jsonb_extract_path_text",
+  "json_array_length",
+  "jsonb_array_length"
+]);
+var PAREN_KEYWORDS = /* @__PURE__ */ new Set([
+  "select",
+  "from",
+  "where",
+  "in",
+  "exists",
+  "on",
+  "using",
+  "as",
+  "and",
+  "or",
+  "not",
+  "any",
+  "all",
+  "some",
+  "values",
+  "case",
+  "when",
+  "then",
+  "else",
+  "between",
+  "distinct",
+  "having",
+  "limit",
+  "offset",
+  "lateral",
+  "order",
+  "group",
+  "with",
+  "array",
+  "row"
+]);
+var AGGREGATES = /* @__PURE__ */ new Set([
+  "count",
+  "sum",
+  "avg",
+  "min",
+  "max",
+  "bool_and",
+  "bool_or",
+  "every",
+  "string_agg",
+  "array_agg",
+  "group_concat",
+  "json_agg",
+  "jsonb_agg"
+]);
+var TEXT_FUNCTIONS = /* @__PURE__ */ new Set([
+  "lower",
+  "upper",
+  "trim",
+  "ltrim",
+  "rtrim",
+  "btrim",
+  "length",
+  "char_length",
+  "character_length",
+  "octet_length",
+  "substring",
+  "substr",
+  "left",
+  "right",
+  "replace",
+  "position",
+  "strpos",
+  "split_part",
+  "lpad",
+  "rpad",
+  "initcap",
+  "reverse"
+]);
+var NUMERIC_FUNCTIONS = /* @__PURE__ */ new Set(["abs", "round", "floor", "ceil", "ceiling", "trunc", "mod", "power", "sqrt", "sign"]);
+var TEXT_TYPES = /* @__PURE__ */ new Set(["text", "varchar", "character", "char", "bpchar", "name", "citext", "nvarchar", "nchar"]);
+var NUMERIC_TYPES = /* @__PURE__ */ new Set([
+  "numeric",
+  "decimal",
+  "int",
+  "integer",
+  "int2",
+  "int4",
+  "int8",
+  "smallint",
+  "bigint",
+  "real",
+  "float",
+  "float4",
+  "float8",
+  "double"
+]);
+var READ_HINTS = /* @__PURE__ */ new Set(["nolock", "readuncommitted"]);
+function maskSql(sql, dialect, backslashEscapes) {
+  const mysqlRules = dialect === void 0 || dialect === "mysql";
+  let out = "";
+  for (let i = 0; i < sql.length; i++) {
+    const ch = sql[i];
+    if (ch === "{" && sql[i + 1] === "{") {
+      const end = sql.indexOf("}}", i + 2);
+      if (end < 0)
+        return { refusal: "its {{ }} bindings do not close" };
+      out += "''";
+      i = end + 1;
+    } else if (ch === "'") {
+      let closed = false;
+      while (++i < sql.length) {
+        if (sql[i] === "\\" && backslashEscapes) {
+          i++;
+          continue;
+        }
+        if (sql[i] === "'") {
+          if (sql[i + 1] === "'") {
+            i++;
+            continue;
+          }
+          closed = true;
+          break;
+        }
+      }
+      if (!closed)
+        return { refusal: "a string literal does not close" };
+      out += "''";
+    } else if (ch === '"' || ch === "`" || ch === "[" && dialect === "mssql") {
+      const close = ch === "[" ? "]" : ch;
+      const end = sql.indexOf(close, i + 1);
+      if (end < 0)
+        return { refusal: "a quoted identifier does not close" };
+      out += " _q ";
+      i = end;
+    } else if (ch === "-" && sql[i + 1] === "-") {
+      if (mysqlRules && !/^[\s\x00-\x1f]$/.test(sql[i + 2] ?? "")) {
+        return { refusal: "it has -- without a space after it, which MySQL does not read as a comment" };
+      }
+      while (i < sql.length && sql[i] !== "\n")
+        i++;
+      out += " ";
+    } else if (ch === "#" && mysqlRules) {
+      return { refusal: "it has a #, which starts a comment in MySQL" };
+    } else if (ch === "/" && sql[i + 1] === "*") {
+      if (/^\/\*\s*(?:!|M!|\+)/.test(sql.slice(i)))
+        return { refusal: "it has an executable comment or optimizer hint (/*! */, /*M! */, /*+ */)" };
+      const end = sql.indexOf("*/", i + 2);
+      if (end < 0)
+        return { refusal: "a comment does not close" };
+      out += " ";
+      i = end + 1;
+    } else if (ch === "$" && /^\$[A-Za-z_]*\$/.test(sql.slice(i))) {
+      return { refusal: "it uses dollar quoting" };
+    } else
+      out += ch;
+  }
+  return { text: out.replace(/\s+/g, " ").trim().replace(/;\s*$/, "").trim().toLowerCase() };
+}
+function maskBothWays(sql, dialect) {
+  const plain = maskSql(sql, dialect, false);
+  const escaped = maskSql(sql, dialect, true);
+  if ("refusal" in plain)
+    return plain;
+  if ("refusal" in escaped)
+    return escaped;
+  if (plain.text !== escaped.text)
+    return { refusal: "its string literals read differently with and without backslash escapes" };
+  return plain;
+}
+function topLevel(sql) {
+  let depth = 0;
+  let out = "";
+  for (const ch of sql) {
+    if (ch === "(") {
+      if (depth === 0)
+        out += "(";
+      depth++;
+    } else if (ch === ")") {
+      depth--;
+      if (depth < 0)
+        return void 0;
+      if (depth === 0)
+        out += ")";
+    } else if (depth === 0)
+      out += ch;
+  }
+  return depth === 0 ? out : void 0;
+}
+var items = (clause) => clause.split(",").map((item) => item.trim()).filter(Boolean);
+function closingParen(sql, open) {
+  let depth = 0;
+  for (let i = open; i < sql.length; i++) {
+    if (sql[i] === "(")
+      depth++;
+    else if (sql[i] === ")" && --depth === 0)
+      return i;
+  }
+  return -1;
+}
+function keywordCallAllowed(name, sql, at, dialect) {
+  const before = sql.slice(0, at).trimEnd();
+  if (name === "filter" || name === "over")
+    return before.endsWith(")");
+  if (name === "by")
+    return /\b(?:order|group|partition)$/.test(before);
+  if (name === "join")
+    return /^join\s*\(\s*select\b/.test(sql.slice(at));
+  if (name === "top")
+    return (dialect === "mssql" || dialect === void 0) && /^select(?:\s+(?:distinct|all))?$/.test(before);
+  return false;
+}
+function impureCall(sql, dialect) {
+  const calls = sql.matchAll(/([a-z_][\w$]*(?:\s*\.\s*[a-z_][\w$]*)*|_q)\s*\(/g);
+  for (const call of calls) {
+    const name = call[1].replace(/\s+/g, "");
+    if (name.includes(".") || name === "_q")
+      return name;
+    if (PAREN_KEYWORDS.has(name))
+      continue;
+    if (["filter", "over", "by", "join", "top"].includes(name)) {
+      if (keywordCallAllowed(name, sql, call.index, dialect))
+        continue;
+      return name;
+    }
+    if (!PURE_FUNCTIONS.has(name))
+      return name;
+  }
+  return void 0;
+}
+function overloadedCall(sql) {
+  for (const call of sql.matchAll(/\b([a-z_][\w$]*)\s*\(/g)) {
+    const name = call[1];
+    const family = TEXT_FUNCTIONS.has(name) ? TEXT_TYPES : NUMERIC_FUNCTIONS.has(name) ? NUMERIC_TYPES : void 0;
+    if (!family)
+      continue;
+    const open = call.index + call[0].length - 1;
+    const close = closingParen(sql, open);
+    const args = sql.slice(open + 1, close < 0 ? void 0 : close);
+    const casts = [...args.matchAll(/::\s*([a-z_][\w$]*)/g), ...args.matchAll(/\bcast\s*\([^]*?\bas\s+([a-z_][\w$]*)/g)];
+    const foreign = casts.map((cast) => cast[1]).find((type) => !family.has(type));
+    if (foreign)
+      return `${name}() with an argument cast to ${foreign === "_q" ? "a quoted type" : foreign}`;
+  }
+  return void 0;
+}
+function topBound(masked) {
+  const head = masked.match(/^select\s+(?:(?:distinct|all)\s+)?top\b\s*(.*)$/);
+  if (!head)
+    return void 0;
+  const count = head[1].match(/^(?:\(\s*(\d+)\s*\)|(\d+)\b)\s*(.*)$/);
+  if (!count)
+    return { refusal: "its TOP is not a fixed row count" };
+  if (/^percent\b/.test(count[3]))
+    return { refusal: "its TOP is a PERCENT of the rows, not a fixed row count" };
+  if (/^with\s+ties\b/.test(count[3]))
+    return { refusal: "its TOP ... WITH TIES can return more rows than its count" };
+  return { rows: Number(count[1] ?? count[2]) };
+}
+function autoReadSqlRefusal(sql, dialect) {
+  const read = maskBothWays(sql, dialect);
+  if ("refusal" in read)
+    return `its SQL cannot be read with certainty: ${read.refusal}`;
+  const masked = read.text;
+  if (!masked || masked.includes(";"))
+    return "it is empty or has more than one statement";
+  const top = topLevel(masked);
+  if (top === void 0)
+    return "its parentheses do not balance";
+  if (/^with\b/.test(top))
+    return "a statement with a WITH list (CTE) is not run automatically";
+  if (!/^select\b/.test(top))
+    return "only a single SELECT is run automatically";
+  if (/\b(union|intersect|except)\b/.test(top))
+    return "UNION, INTERSECT and EXCEPT are not run automatically";
+  if (/\b(insert|update|delete|merge|upsert|truncate|drop|alter|create|grant|revoke|copy|call|exec|execute|into|lock)\b/.test(masked)) {
+    return "it contains a statement that writes or runs code";
+  }
+  if (/\bfor\s+(update|share|no\s+key\s+update|key\s+share)\b/.test(top))
+    return "a locking SELECT is not run automatically";
+  if (/\bnext\s+value\s+for\b/.test(masked))
+    return "it takes NEXT VALUE FOR a sequence, which advances it";
+  if (/:=/.test(masked))
+    return "it assigns a variable (:=)";
+  if (/\b(updlock|xlock|holdlock|tablock|tablockx|paglock|rowlock|serializable|repeatableread|readcommittedlock)\b/.test(masked)) {
+    return "it has a table hint that takes or holds locks";
+  }
+  for (const hint of masked.matchAll(/\bwith\s*\(([^()]*)\)/g)) {
+    const names = hint[1].split(",").map((name) => name.trim()).filter(Boolean);
+    if (!names.length || names.some((name) => !READ_HINTS.has(name)))
+      return `it has the table hint WITH (${hint[1].trim()}), which is not a plain read`;
+  }
+  if (/\boption\s*\(/.test(masked))
+    return "it has a query hint (OPTION (...))";
+  if (/\bwith\s+ties\b/.test(masked))
+    return "WITH TIES can return more rows than its limit";
+  const fn = impureCall(masked, dialect);
+  if (fn)
+    return `it calls ${fn}(), which is not a well-known pure function`;
+  const overload = overloadedCall(masked);
+  if (overload)
+    return `it calls ${overload}, which is not the built-in function's signature (another overload would run)`;
+  const limit = top.match(/\blimit\s+(\d+)(?:\s*,\s*(\d+))?(?:\s+offset\s+\d+)?$/) ?? top.match(/\boffset\s+\d+(?:\s+rows?)?\s+limit\s+(\d+)$/);
+  const fetch = top.match(/\bfetch\s+(?:first|next)\s+(\d+)\s+rows?\s+only$/);
+  const topN = topBound(masked);
+  if (topN && "refusal" in topN)
+    return topN.refusal;
+  const bounds = [limit ? Number(limit[2] ?? limit[1]) : void 0, fetch ? Number(fetch[1]) : void 0, topN?.rows].filter((n) => n !== void 0);
+  const bound = bounds.length ? Math.min(...bounds) : void 0;
+  if (bound !== void 0) {
+    return bound <= MAX_AUTO_ROWS ? void 0 : `its LIMIT ${bound} is above the ${MAX_AUTO_ROWS}-row automatic bound`;
+  }
+  if (/\b(limit|fetch|top)\b/.test(masked)) {
+    return "its row limit is not the final clause of the outer SELECT (a LIMIT in a subquery bounds nothing it returns)";
+  }
+  const from = top.search(/\bfrom\b/);
+  if (from < 0)
+    return void 0;
+  const projection = items(top.slice("select".length, from).replace(/^\s*distinct\b/, ""));
+  const aggregateOnly = projection.length > 0 && projection.every((item) => {
+    const m = item.match(/^([a-z_][\w$]*)\s*\(\)(?:\s+(?:as\s+)?[a-z_][\w$]*)?$/);
+    return !!m && AGGREGATES.has(m[1]);
+  });
+  if (aggregateOnly && !/\b(group\s+by|over)\b/.test(top.slice(from)))
+    return void 0;
+  return "it has no row limit on the outer SELECT";
+}
+var sqlDialectOf = (kind) => kind ? SQL_DIALECT[kind.toLowerCase()] : void 0;
+function batchSafeRead(query) {
+  const assessment = assessQueryRead(query);
+  if (assessment.provenRead && assessment.directSafe && !assessment.selectStar) {
+    const refusal = resolvedReadRefusal(query, assessment, resolveStaticBindings(query.options).resolved);
+    return refusal ? { safe: false, reason: refusal } : { safe: true };
+  }
+  if (assessment.provenRead && assessment.requiresRemoteReadConfirmation) {
+    return {
+      safe: false,
+      reason: `${assessment.reason ?? "remote read"} run_queries cannot run remote reads at all. Use singular run_query for this one: tell the user which saved query will run, and once they approve, call run_query with user_confirmed_remote_read:true. Do not retry run_queries with it.`
+    };
+  }
+  return {
+    safe: false,
+    reason: assessment.reason ?? (assessment.requiresCountPreflight ? "read requires a count-first preflight through singular run_query" : "query is not a proven bounded read")
+  };
+}
+var NOT_CHECKED_AUTOMATICALLY = "not checked automatically, run it explicitly with run_query: ";
+var AUTO_SQL_KINDS = /* @__PURE__ */ new Set(["postgresql", "mysql", "mariadb", "mssql", "oracledb"]);
+var MODE_REQUIRED = /* @__PURE__ */ new Set(["postgresql", "mysql", "mssql"]);
+var TOOLJETDB_LIST_ROWS_KEYS = /* @__PURE__ */ new Set(["limit", "offset", "where_filters", "order_filters", "aggregates", "group_by"]);
+var record = (value) => value && typeof value === "object" && !Array.isArray(value) ? value : void 0;
+var hasText = (value) => typeof value === "string" && !!value.trim();
+function sqlRefusal(kind, options, sql) {
+  if (!sql)
+    return "its SQL text is empty";
+  const dialect = sqlDialectOf(kind);
+  const saved = autoReadSqlRefusal(sql, dialect);
+  if (saved)
+    return saved;
+  let resolvedOptions;
+  try {
+    resolvedOptions = applyResolvedBindings(options, resolveStaticBindings(options).resolved);
+  } catch {
+    return "its bindings cannot be resolved without a browser";
+  }
+  const resolved = kind === "tooljetdb" ? record(resolvedOptions.sql_execution)?.sqlQuery : (() => {
+    const path = sqlConnectorPath(kind, resolvedOptions);
+    return path?.path === "sql" ? path.sql : void 0;
+  })();
+  if (typeof resolved !== "string")
+    return "its SQL text is not text once its bindings resolve";
+  if (resolved === sql)
+    return void 0;
+  const after = autoReadSqlRefusal(resolved, dialect);
+  return after ? `once its {{ }} bindings resolve, ${after}` : void 0;
+}
+function connectorRefusal(query) {
+  const kind = query.kind?.toLowerCase();
+  const options = record(query.options);
+  if (!kind || !options)
+    return "its datasource kind or options are unavailable";
+  if (kind === "tooljetdb") {
+    if (options.operation === "list_rows") {
+      if (options.limit !== void 0 || options.offset !== void 0) {
+        return "it has a top-level limit or offset, which ToolJet Database ignores (it reads list_rows.limit and list_rows.offset)";
+      }
+      const stray = Object.keys(record(options.list_rows) ?? {}).filter((key) => !TOOLJETDB_LIST_ROWS_KEYS.has(key));
+      return stray.length ? `its list_rows carries ${stray.join(", ")}, which ToolJet Database does not read` : void 0;
+    }
+    if (options.operation === "sql_execution")
+      return sqlRefusal(kind, options, record(options.sql_execution)?.sqlQuery);
+    return `ToolJet Database operation "${String(options.operation ?? "<missing>")}" is not one the automatic check runs`;
+  }
+  if (!AUTO_SQL_KINDS.has(kind)) {
+    return `automatic checks run only ToolJet Database, PostgreSQL, MySQL, MariaDB, SQL Server and Oracle queries, whose read and write branches are known; this is a ${kind} query`;
+  }
+  const label = connectorLabel(kind);
+  const mode = options.mode;
+  if (MODE_REQUIRED.has(kind) && mode !== "sql" && mode !== "gui") {
+    return `its mode is ${mode === void 0 ? "missing" : `"${String(mode)}"`}: ${label} runs a query only in mode "sql" or "gui"`;
+  }
+  if (mode !== void 0 && mode !== "sql" && mode !== "gui")
+    return `its mode "${String(mode)}" is neither "sql" nor "gui"`;
+  const path = sqlConnectorPath(kind, options);
+  if (path.path === "not_read")
+    return path.reason;
+  if (path.path === "gui_list_rows") {
+    if (hasText(options.query))
+      return "it is a GUI query that also carries SQL text in query; remove the one that is not meant to run";
+    const stray = Object.keys(record(options.list_rows) ?? {}).filter((key) => !GUI_LIST_ROWS_KEYS.has(key));
+    if (stray.includes("limit") || stray.includes("offset")) {
+      return `its row bound is in list_rows, which ${label} ignores (it applies only the top-level limit and offset), so it is unbounded`;
+    }
+    if (stray.length)
+      return `its list_rows carries ${stray.join(", ")}, which ${label} does not read`;
+    if (options.limit === void 0)
+      return `it has no top-level limit, which is where ${label} applies the row limit`;
+    return void 0;
+  }
+  if (hasText(options.operation)) {
+    return `it is a SQL query that also names the GUI operation "${String(options.operation)}"; remove the one that is not meant to run`;
+  }
+  return sqlRefusal(kind, options, path.sql);
+}
+function autoReadPreflight(query) {
+  const general = batchSafeRead(query);
+  if (!general.safe)
+    return { run: false, reason: String(general.reason ?? "not a proven bounded read") };
+  const refusal = connectorRefusal(query);
+  return refusal ? { run: false, reason: `${NOT_CHECKED_AUTOMATICALLY}${refusal}` } : { run: true };
+}
+createRequire(import.meta.url);
 var valueOf = (prop) => prop && typeof prop === "object" && "value" in prop ? prop.value : prop;
 function htmlFedTextColumns(table, queries) {
   if (table.type !== "Table")
@@ -1578,7 +2116,8 @@ function runQueryTool(client) {
           ...output.result,
           // Trusted execution evidence, separate from datasource-supplied data. No credentials,
           // URLs or row contents are needed for the agent's early migration/readiness checkpoint.
-          execution: { query_id: query.id, datasource_kind: query.kind, read_only: true },
+          // What let it run, not a claim about its effects: the read classifier is a static check (CM-37).
+          execution: { query_id: query.id, datasource_kind: query.kind, preflight: "explicit_read" },
           ...bindingHint ? { binding_hint: bindingHint } : {},
           ...preflight ? { preflight } : {},
           ...warnings.length ? { warnings } : {},
@@ -1586,123 +2125,6 @@ function runQueryTool(client) {
           ...verification ? { verification } : {},
           ...schemaHint ? { schema_hint: schemaHint } : {}
         });
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
-function batchSafeRead(query) {
-  const assessment = assessQueryRead(query);
-  if (assessment.provenRead && assessment.directSafe && !assessment.selectStar) {
-    const refusal = resolvedReadRefusal(query, assessment, resolveStaticBindings(query.options).resolved);
-    return refusal ? { safe: false, reason: refusal } : { safe: true };
-  }
-  if (assessment.provenRead && assessment.requiresRemoteReadConfirmation) {
-    return {
-      safe: false,
-      reason: `${assessment.reason ?? "remote read"} run_queries cannot run remote reads at all. Use singular run_query for this one: tell the user which saved query will run, and once they approve, call run_query with user_confirmed_remote_read:true. Do not retry run_queries with it.`
-    };
-  }
-  return {
-    safe: false,
-    reason: assessment.reason ?? (assessment.requiresCountPreflight ? "read requires a count-first preflight through singular run_query" : "query is not a proven bounded read")
-  };
-}
-function runQueriesTool(client) {
-  return {
-    name: "run_queries",
-    title: "Run Queries",
-    // Executes whatever the queries hold against the customer datasource — which may write or delete.
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: true
-    },
-    description: "Run 1\u201310 already-created, proven read-only queries concurrently and return ordered per-query results. It currently accepts ToolJet DB list_rows/join_tables and SQL datasource list_rows or one bounded explicit-column SELECT/SHOW/DESCRIBE/EXPLAIN read. Every query is preflighted before any execution; SELECT *, unbounded reads, mutations, RunJS, paid/remote API operations, and unknown kinds are refused \u2014 remote API reads (restapi, openapi, servicenow, influxdb) can never run here; use singular run_query with user_confirmed_remote_read. Metadata and the environment are loaded once. Returns {queries:[{query_id,name,status,data|message,warnings?}]}; one runtime failure does not hide other read results. Pass include_data:false to only confirm each query runs \u2014 the result drops the rows and returns {status,row_count} instead, for lightweight post-build verification. Use singular run_query with count_query_id for a count-first large-read preflight. Component-bound options receive the run_query viewer warning.",
-    inputSchema: {
-      query_ids: external_exports.array(external_exports.string()).min(1).max(10),
-      version_id: external_exports.string(),
-      environment_id: external_exports.string().optional(),
-      include_data: external_exports.boolean().optional().describe("Default true. Set false to verify execution without returning rows: each result keeps status/message/warnings and adds row_count, but omits data. Use for smoke checks that only need the run status.")
-    },
-    async handler(args) {
-      try {
-        if (new Set(args.query_ids).size !== args.query_ids.length) {
-          return fail(new Error("run_queries query_ids must be unique."));
-        }
-        const saved = await client.getQueries(args.version_id);
-        const byId = new Map(saved.map((query) => [query.id, query]));
-        const resolveWarnings = [];
-        const resolveErrors = [];
-        args = {
-          ...args,
-          query_ids: args.query_ids.map((queryId) => {
-            if (byId.has(queryId))
-              return queryId;
-            const resolution = resolveRef(saved, queryId, "Query", `on version "${args.version_id}"`);
-            if (!resolution.ok) {
-              resolveErrors.push(resolution.error);
-              return queryId;
-            }
-            if (resolution.warning)
-              resolveWarnings.push(resolution.warning);
-            return resolution.target.id;
-          })
-        };
-        if (resolveErrors.length)
-          return fail(new Error(resolveErrors.join(" ")));
-        const unsafe = args.query_ids.flatMap((queryId) => {
-          const verdict = batchSafeRead(byId.get(queryId));
-          return verdict.safe ? [] : [`${queryId}: ${verdict.reason}`];
-        });
-        if (unsafe.length) {
-          return fail(new Error(`run_queries refused ${unsafe.length === 1 ? "a query" : "queries"} before execution: ${unsafe.join("; ")}`));
-        }
-        const environmentId = args.environment_id ?? await client.getDevelopmentEnvironmentId();
-        const queries = await Promise.all(args.query_ids.map(async (queryId) => {
-          const query = byId.get(queryId);
-          const warnings = containsComponentBinding(query.options) ? ["Saved query options reference components.*. Browser-free run_queries does not resolve live component state; verify pagination/filter values in the viewer."] : [];
-          try {
-            const bindings = resolveStaticBindings(query.options);
-            const emptied = emptyViewerOnlyParams(query.options, bindings);
-            if (emptied.length)
-              warnings.push(emptyParamsNote(emptied));
-            const liveOnly = bindings.unresolved.filter((b) => !/components\./.test(b));
-            if (liveOnly.length)
-              warnings.push(unresolvedNote(liveOnly));
-            const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId, resolvedOptions: bindings.resolved });
-            const failed = result.status === "failed";
-            const bindingHint = queryResultBindingHint(query, result);
-            const recovery = failed ? failureRecovery(query, result) : void 0;
-            const verification = failed ? failureVerification(query, result) : void 0;
-            const schemaHint = failed ? await schemaNameHint(client, query, result) : void 0;
-            const shaped = args.include_data === false ? (() => {
-              const { data, ...rest } = result;
-              return Array.isArray(data) ? { ...rest, row_count: data.length } : bindingHint ? { ...rest, row_count: bindingHint.row_count } : rest;
-            })() : result;
-            return {
-              query_id: queryId,
-              ...query.name ? { name: query.name } : {},
-              ...shaped,
-              execution: { query_id: queryId, datasource_kind: query.kind, read_only: true },
-              ...bindingHint ? { binding_hint: bindingHint } : {},
-              ...warnings.length ? { warnings } : {},
-              ...recovery ? { recovery } : {},
-              ...verification ? { verification } : {},
-              ...schemaHint ? { schema_hint: schemaHint } : {}
-            };
-          } catch (error) {
-            const failure = { status: "failed", message: error instanceof Error ? error.message : String(error) };
-            return {
-              query_id: queryId,
-              ...query.name ? { name: query.name } : {},
-              ...failure,
-              ...warnings.length ? { warnings } : {}
-            };
-          }
-        }));
-        return ok({ queries });
       } catch (err) {
         return fail(err);
       }
@@ -1725,24 +2147,33 @@ async function checkPlanReads(client, params) {
     return void 0;
   const saved = await client.getQueries(params.versionId);
   const byId = new Map(saved.map((query) => [query.id, query]));
-  const check = { ran: 0, rows: {}, failed: [], inconclusive: [], not_run: [] };
+  const check = { ran: 0, rows: {}, failed: [], inconclusive: [], not_run: [], queries: [] };
+  const entries = /* @__PURE__ */ new Map();
   const runnable = [];
   for (const id of wanted) {
     const query = byId.get(id);
     if (!query)
       continue;
     const name = query.name ?? id;
-    const verdict = batchSafeRead(query);
-    if (!verdict.safe) {
-      check.not_run.push({ name, reason: String(verdict.reason ?? "not a proven bounded read").slice(0, REASON_CHARS) });
+    const verdict = autoReadPreflight(query);
+    if (!verdict.run) {
+      const reason = verdict.reason.startsWith(NOT_CHECKED_AUTOMATICALLY) ? verdict.reason : verdict.reason.slice(0, REASON_CHARS);
+      check.not_run.push({ name, reason });
+      entries.set(id, { name, status: "refused", reason });
     } else if (runnable.length >= MAX_READS) {
-      check.not_run.push({ name, reason: `only the first ${MAX_READS} reads of a phase are checked; run this one with run_queries` });
+      const reason = `only the first ${MAX_READS} reads of a phase are checked; run this one with run_queries`;
+      check.not_run.push({ name, reason });
+      entries.set(id, { name, status: "skipped", reason });
     } else {
       runnable.push(id);
     }
   }
-  if (!runnable.length)
+  const ledger = () => {
+    check.queries = wanted.flatMap((id) => entries.get(id) ?? []);
     return check;
+  };
+  if (!runnable.length)
+    return ledger();
   const environmentId = params.environmentId ?? await client.getDevelopmentEnvironmentId();
   await Promise.all(runnable.map(async (id) => {
     const query = byId.get(id);
@@ -1767,6 +2198,7 @@ async function checkPlanReads(client, params) {
       const rows = rowCount(result);
       if (rows !== void 0)
         check.rows[name] = rows;
+      entries.set(id, { name, status: "checked", outcome: "passed" });
       return;
     }
     const message = String(result.message ?? result.description ?? "the query failed").slice(0, 600);
@@ -1776,12 +2208,14 @@ async function checkPlanReads(client, params) {
         message,
         note: "This query reads components.*, which a browser-free run leaves empty: the failure may be about the missing value. Check that the query also works when that input is empty, or give the input a default."
       });
+      entries.set(id, { name, status: "checked", outcome: "inconclusive" });
       return;
     }
     const schemaHint = await schemaNameHint(client, query, result).catch(() => void 0);
     check.failed.push({ name, message, ...schemaHint ? { schema_hint: schemaHint } : {} });
+    entries.set(id, { name, status: "checked", outcome: "failed" });
   }));
-  return check;
+  return ledger();
 }
 function logicalRef(value) {
   return value.client_ref ?? value.name;
@@ -1872,12 +2306,12 @@ function applyAppPhaseTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates tables/pages/queries in dependency order, seeds rows, creates independent page component batches concurrently, combines ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It then runs the proven read queries the phase created or updated once and reports them in read_check (failed: fix the query; inconclusive: the read takes a component value a browser-free run leaves empty; not_run: writes, remote or paid calls and RunJS, which are never run here). A failing read does not fail the phase. ToolJet has no cross-resource transaction: a rare upstream partial failure reports the completed stage/counts and never auto-deletes user data, except for a plan page marked replace: that page ends up holding exactly the plan's components. It is written as a difference: a component the plan leaves as it is is not rewritten, one that only moved is moved, one that changed is created again under its own id, and one the plan drops is deleted, with the events on the page's components replaced by the plan's (page events and query events only where the plan declares them again); queries the plan defines again are updated in place keeping their ids. A replace is refused before any write if the page changed since lint (any component, redefined query or related event edited), and every component and event ref is prepared before the first write. A replace is not atomic: a failure midway leaves the page to be repaired (the result says what was removed; there is no rollback), so use replace on draft or otherwise recoverable pages. The one-time token prevents an accidental retry from duplicating objects.",
+    description: "Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates tables/pages/queries in dependency order, seeds rows, creates independent page component batches concurrently, combines ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It then runs the proven read queries the phase created or updated once and reports them in read_check (failed: fix the query; inconclusive: the read takes a component value a browser-free run leaves empty; not_run: writes, remote or paid calls, RunJS and reads the automatic check cannot prove, which are never run here; queries: each one checked, refused or skipped, and only checked with outcome passed is a pass). A failing read does not fail the phase. ToolJet has no cross-resource transaction: a rare upstream partial failure reports the completed stage/counts and never auto-deletes user data, except for a plan page marked replace: that page ends up holding exactly the plan's components. It is written as a difference: a component the plan leaves as it is is not rewritten, one that only moved is moved, one that changed is created again under its own id, and one the plan drops is deleted, with the events on the page's components replaced by the plan's (page events and query events only where the plan declares them again); queries the plan defines again are updated in place keeping their ids. A replace is refused before any write if the page changed since lint (any component, redefined query or related event edited), and every component and event ref is prepared before the first write. A replace is not atomic: a failure midway leaves the page to be repaired (the result says what was removed; there is no rollback), so use replace on draft or otherwise recoverable pages. The one-time token prevents an accidental retry from duplicating objects.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string().optional().describe("Defaults to the version the plan was linted for."),
       plan_token: external_exports.string(),
-      check_reads: external_exports.boolean().optional().describe("Default true: after the phase is written, the proven read queries it created or updated are run once and the result carries read_check {ran, rows, failed, inconclusive, not_run}. Writes, remote or paid calls and RunJS are never run. false skips the check.")
+      check_reads: external_exports.boolean().optional().describe("Default true: after the phase is written, the proven read queries it created or updated are run once and the result carries read_check {ran, rows, failed, inconclusive, not_run, queries}. Writes, remote or paid calls, RunJS and reads the automatic check cannot prove are never run. false skips the check.")
     },
     async handler(input) {
       const peeked = peekAppPlan(input.plan_token);
@@ -2505,10 +2939,8 @@ function renderAuditRequest(url, method, saved) {
     return blocked("A query with dynamic bindings was blocked");
   if (options?.requestConfirmation || options?.request_confirmation)
     return blocked("A query requiring confirmation was blocked");
-  const read = assessQueryRead(query);
-  if (!read.provenRead || !read.directSafe || read.requiresCountPreflight || read.requiresRemoteReadConfirmation || read.requiresBillableReadConfirmation) {
+  if (!autoReadPreflight(query).run)
     return blocked("A query that is not a proven bounded read was blocked");
-  }
   return { allowed: true, postData: JSON.stringify({ resolvedOptions: {} }) };
 }
 var INTERNAL = new BlockList();
@@ -2649,6 +3081,7 @@ async function startEgressProxy(origins, onBlocked = () => {
     socket.once("close", () => sockets.delete(socket));
   };
   const refuseSocket = (socket, destination) => {
+    socket.on("error", () => socket.destroy());
     onBlocked(destination);
     socket.end("HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
   };
@@ -2684,6 +3117,7 @@ async function startEgressProxy(origins, onBlocked = () => {
       return;
     }
     const port = Number(url.port || 80);
+    req.on("error", () => res.destroy());
     req.pause();
     void pin(url.hostname, port).then((address2) => {
       if (!address2) {
@@ -2705,8 +3139,9 @@ async function startEgressProxy(origins, onBlocked = () => {
       });
       req.pipe(upstream);
       req.resume();
-    });
+    }).catch(() => res.destroy());
   });
+  server.on("clientError", (_error, socket) => socket.destroy());
   server.on("connection", track);
   server.on("connect", (req, client, head) => {
     const target = tunnelTarget(req.url);
@@ -2719,7 +3154,7 @@ async function startEgressProxy(origins, onBlocked = () => {
       client.write("HTTP/1.1 200 Connection Established\r\n\r\n");
       if (head.length)
         upstream.write(head);
-    });
+    }).catch(() => client.destroy());
   });
   server.on("upgrade", (req, client, head) => {
     let url;
@@ -2743,7 +3178,7 @@ async function startEgressProxy(origins, onBlocked = () => {
       upstream.write(lines.join("\r\n") + "\r\n\r\n");
       if (head.length)
         upstream.write(head);
-    });
+    }).catch(() => client.destroy());
   });
   await new Promise((resolve2, reject) => {
     server.once("error", reject);
@@ -3438,10 +3873,15 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
 }
 export {
   applyAppPhaseTool as a,
-  runQueriesTool as b,
-  validatePersistedAppSummary as c,
+  validatePersistedAppSummary as b,
+  autoReadPreflight as c,
+  containsComponentBinding as d,
+  failureVerification as e,
+  failureRecovery as f,
   getRequestListener as g,
   libraryPinErrors as l,
+  queryResultBindingHint as q,
   runQueryTool as r,
+  schemaNameHint as s,
   verifyPageRenderTool as v
 };

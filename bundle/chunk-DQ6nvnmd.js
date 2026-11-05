@@ -1,11 +1,14 @@
 import { createRequire } from "node:module";
-import { b0 as external_exports, b1 as nodeCatalog, b2 as validateGraph, b3 as specSchema, b4 as compileGraph, b5 as assertWorkflowJavaScript, b6 as controlFlowEdges } from "./chunk-Id3EmQoo.js";
-import { p as parseExpression, a as parse } from "./chunk-BES_Brj6.js";
-import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-hq1_aYNY.js";
-import { r as require_moment } from "./chunk-CnZ2UwxJ.js";
-import { ed as __toESM, eb as __commonJS, e8 as getComponentSchema } from "./chunk-CNzl5iHC.js";
+import { ax as external_exports, ay as nodeCatalog, az as validateGraph, aA as specSchema, aB as compileGraph, aC as assertWorkflowJavaScript, aD as controlFlowEdges } from "./chunk-Dakrk_ob.js";
+import { p as parseExpression, a as parse, r as readCatalog } from "./chunk-ePnPD46e.js";
+import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-BozBrMhE.js";
+import { r as require_moment } from "./chunk-00I8NlQo.js";
+import { e7 as __toESM, e5 as __commonJS } from "./chunk-BJ6ur0AF.js";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { resolve, dirname } from "node:path";
 createRequire(import.meta.url);
 var require_unicode = __commonJS({
   "node_modules/json5/lib/unicode.js"(exports, module) {
@@ -48,8 +51,8 @@ var require_parse = __commonJS({
     var token;
     var key3;
     var root;
-    module.exports = function parse2(text, reviver) {
-      source = String(text);
+    module.exports = function parse2(text2, reviver) {
+      source = String(text2);
       parseState = "start";
       stack = [];
       pos = 0;
@@ -1515,8 +1518,8 @@ function resolveStaticBindings(options) {
   visit(options);
   return { resolved, unresolved };
 }
-function resolveString(text) {
-  const matches = [...text.matchAll(SERVER_BINDING)];
+function resolveString(text2) {
+  const matches = [...text2.matchAll(SERVER_BINDING)];
   if (!matches.length)
     return { ok: false };
   const parts = [];
@@ -1526,10 +1529,10 @@ function resolveString(text) {
       return { ok: false };
     parts.push([m[0], result.value]);
   }
-  if (matches.length === 1 && matches[0][0] === text.trim())
+  if (matches.length === 1 && matches[0][0] === text2.trim())
     return { ok: true, value: parts[0][1], parts: [] };
   let i = 0;
-  return { ok: true, value: text.replace(SERVER_BINDING, () => String(parts[i++][1])), parts };
+  return { ok: true, value: text2.replace(SERVER_BINDING, () => String(parts[i++][1])), parts };
 }
 function evaluate(expression2) {
   if (expression2.length > MAX_EXPRESSION_CHARS)
@@ -1585,6 +1588,86 @@ function emptyViewerOnlyParams(options, resolution) {
 }
 function emptyParamsNote(names) {
   return `Ran with ${names.map((n) => `:${n}`).join(", ")} = null: ${names.length > 1 ? "they come" : "it comes"} from the app (a component or a picked row), which is empty outside the viewer. The query works for the empty case; check a value in the viewer.`;
+}
+var LABELS = {
+  postgresql: "PostgreSQL",
+  mysql: "MySQL",
+  mssql: "SQL Server",
+  mariadb: "MariaDB",
+  oracledb: "Oracle",
+  snowflake: "Snowflake",
+  databricks: "Databricks",
+  bigquery: "BigQuery",
+  clickhouse: "ClickHouse",
+  cosmosdb: "Cosmos DB",
+  couchbase: "Couchbase",
+  salesforce: "Salesforce",
+  harperdb: "HarperDB"
+};
+var MODE_SWITCH = /* @__PURE__ */ new Set(["postgresql", "mysql", "mssql"]);
+var GUI_ELSE_SQL = /* @__PURE__ */ new Set(["mariadb", "oracledb", "snowflake", "databricks"]);
+var GUI_SQL_KINDS = /* @__PURE__ */ new Set([...MODE_SWITCH, ...GUI_ELSE_SQL]);
+var SQL_DIALECT = {
+  postgresql: "postgresql",
+  tooljetdb: "postgresql",
+  mysql: "mysql",
+  mariadb: "mysql",
+  mssql: "mssql",
+  oracledb: "oracle"
+};
+var SQL_OPERATION = {
+  clickhouse: { operation: "sql", field: "query" },
+  cosmosdb: { operation: "query_database", field: "query" },
+  couchbase: { operation: "query", field: "query" },
+  salesforce: { operation: "soql", field: "soql_query" }
+};
+var GUI_LIST_ROWS_KEYS = /* @__PURE__ */ new Set(["where_filters", "order_filters", "aggregates", "group_by"]);
+var text = (options, field) => {
+  const value = options[field];
+  return typeof value === "string" && value.trim() ? value : void 0;
+};
+var connectorLabel = (kind) => LABELS[kind] ?? kind;
+function sqlConnectorPath(kind, options) {
+  const label = connectorLabel(kind);
+  const mode = options.mode;
+  const operation = options.operation;
+  if (GUI_SQL_KINDS.has(kind)) {
+    if (mode === "gui") {
+      if (operation === "list_rows")
+        return { path: "gui_list_rows" };
+      return {
+        path: "not_read",
+        reason: typeof operation === "string" && operation ? `${label} GUI operation "${operation}" is not a read (only list_rows reads).` : `${label} GUI query names no operation; only list_rows reads.`
+      };
+    }
+    const field = kind === "databricks" && !text(options, "query") ? "sql_query" : "query";
+    return { path: "sql", field, sql: text(options, field) };
+  }
+  if (kind === "bigquery") {
+    if (mode === "sql" || operation === "query")
+      return { path: "sql", field: "query", sql: text(options, "query") };
+    return {
+      path: "not_read",
+      reason: `BigQuery runs SQL text only in mode "sql" or operation "query"; this query runs operation "${String(operation ?? "<missing>")}".`
+    };
+  }
+  if (kind === "harperdb") {
+    if (mode !== void 0 && mode !== "sql") {
+      return { path: "not_read", reason: `HarperDB runs SQL text only in mode "sql"; this query is in mode "${String(mode)}".` };
+    }
+    return { path: "sql", field: "sql_query", sql: text(options, "sql_query") };
+  }
+  const sqlOperation = SQL_OPERATION[kind];
+  if (sqlOperation) {
+    if (typeof operation === "string" && operation && operation !== sqlOperation.operation) {
+      return {
+        path: "not_read",
+        reason: `${label} runs SQL text only for operation "${sqlOperation.operation}"; this query runs operation "${operation}".`
+      };
+    }
+    return { path: "sql", field: sqlOperation.field, sql: text(options, sqlOperation.field) };
+  }
+  return void 0;
 }
 var LARGE_READ_ROW_THRESHOLD = 1e3;
 var SQL_KINDS = /* @__PURE__ */ new Set([
@@ -2257,12 +2340,12 @@ function stripSql(sql) {
   return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
 }
 function sqlStatementText(sql, backslashEscapes) {
-  let text = "";
+  let text2 = "";
   for (let i = 0; i < sql.length; i++) {
     const char = sql[i];
     if (char === "'" || char === '"' || char === "`") {
       const quote = char;
-      text += quote + quote;
+      text2 += quote + quote;
       let closed = false;
       while (++i < sql.length) {
         if (sql[i] === "\\" && backslashEscapes) {
@@ -2283,7 +2366,7 @@ function sqlStatementText(sql, backslashEscapes) {
     } else if (char === "-" && sql[i + 1] === "-") {
       while (i < sql.length && sql[i] !== "\n")
         i++;
-      text += " ";
+      text2 += " ";
     } else if (char === "/" && sql[i + 1] === "*") {
       if (sql[i + 2] === "!")
         return void 0;
@@ -2291,11 +2374,11 @@ function sqlStatementText(sql, backslashEscapes) {
       if (end < 0)
         return void 0;
       i = end + 1;
-      text += " ";
+      text2 += " ";
     } else
-      text += char;
+      text2 += char;
   }
-  return text.trim().replace(/;\s*$/, "").trim();
+  return text2.trim().replace(/;\s*$/, "").trim();
 }
 function normalizeSqlTable(raw) {
   return raw.split(".").map((part) => part.replace(/^[`"\[]|[`"\]]$/g, "")).join(".").toLowerCase();
@@ -2597,7 +2680,8 @@ function assessListRows(kind, options, datasourceId) {
     };
   }
   const listRows = record(options.list_rows);
-  const maxRows = staticPositiveInteger(listRows?.limit ?? options.limit);
+  const maxRows = staticPositiveInteger(kind === "tooljetdb" ? listRows?.limit : options.limit);
+  const misplaced = kind === "tooljetdb" ? options.limit !== void 0 && listRows?.limit === void 0 : listRows?.limit !== void 0 && options.limit === void 0;
   if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
     return {
       provenRead: true,
@@ -2623,7 +2707,7 @@ function assessListRows(kind, options, datasourceId) {
     source,
     maxRows,
     ...identity,
-    reason: maxRows === void 0 ? "list_rows has no statically provable row limit." : `list_rows can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+    reason: maxRows === void 0 ? misplaced ? kind === "tooljetdb" ? "list_rows has no statically provable row limit: ToolJet Database reads it from list_rows.limit and ignores a top-level limit." : `list_rows has no statically provable row limit: ${connectorLabel(kind)} reads it from the top-level limit and ignores list_rows.limit.` : "list_rows has no statically provable row limit." : `list_rows can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
   };
 }
 function assessQueryRead(query) {
@@ -2703,9 +2787,34 @@ function assessQueryRead(query) {
     };
   }
   if (SQL_KINDS.has(kind)) {
-    if (operation === "list_rows" || options.mode === "gui")
+    const path = sqlConnectorPath(kind, options);
+    if (path?.path === "not_read") {
+      return {
+        provenRead: false,
+        directSafe: false,
+        countOnly: false,
+        selectStar: false,
+        requiresCountPreflight: false,
+        reason: path.reason,
+        datasourceKind: kind,
+        ...datasourceId ? { datasourceId } : {}
+      };
+    }
+    if (path?.path === "gui_list_rows")
       return assessListRows(kind, options, datasourceId);
-    const sql = ["query", "sql_query", "sql", "presto_sql_query", "soql_query"].map((field) => options[field]).find((value) => typeof value === "string" && !!value.trim());
+    if (!path && operation === "list_rows") {
+      return {
+        provenRead: false,
+        directSafe: false,
+        countOnly: false,
+        selectStar: false,
+        requiresCountPreflight: false,
+        reason: `Datasource kind ${kind} has no GUI list_rows; its operation and options do not name a proven read.`,
+        datasourceKind: kind,
+        ...datasourceId ? { datasourceId } : {}
+      };
+    }
+    const sql = path ? path.sql : ["query", "sql_query", "sql", "presto_sql_query", "soql_query"].map((field) => options[field]).find((value) => typeof value === "string" && !!value.trim());
     return sql ? assessSql(sql, kind, datasourceId) : {
       provenRead: false,
       directSafe: false,
@@ -4373,6 +4482,43 @@ async function deleteNode(client, workflowId, versionId, nodeId) {
   return apply(client, result.plan_token);
 }
 createRequire(import.meta.url);
+var dataPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-schemas.json");
+var compatibilityPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-compatibility.json");
+var cache = null;
+var legacyReplacements = null;
+function load() {
+  if (!cache)
+    cache = readCatalog(dataPath);
+  return cache;
+}
+function loadLegacyReplacements() {
+  if (!legacyReplacements) {
+    const compatibility = JSON.parse(readFileSync(compatibilityPath, "utf8"));
+    legacyReplacements = compatibility.legacyReplacements ?? {};
+  }
+  return legacyReplacements;
+}
+function allComponentSchemas() {
+  return load();
+}
+function registerComponentSchemas(extra) {
+  const all = load();
+  for (const key3 of Object.keys(all))
+    if (/^Lib_[a-z0-9]+_/.test(key3) && !(key3 in extra))
+      delete all[key3];
+  Object.assign(all, extra);
+}
+function getCatalog() {
+  const legacy = loadLegacyReplacements();
+  return Object.values(load()).filter((c) => !legacy[c.type]).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
+}
+function getComponentSchema(type) {
+  return load()[type] ?? null;
+}
+function getLegacyComponentReplacement(type) {
+  return loadLegacyReplacements()[type] ?? null;
+}
+createRequire(import.meta.url);
 var name = external_exports.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/).refine((v) => !["__proto__", "prototype", "constructor"].includes(v));
 var editContractSchema = external_exports.object({
   source_query: name.describe("Already-loaded bounded raw row-array query; never a display projection."),
@@ -4553,6 +4699,42 @@ return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
       "Draft tracks native change events, not every displayed input value. Programmatic field changes must update the draft explicitly. Browser-verify that all change events fire, including both checkbox transitions."
     ]
   };
+}
+createRequire(import.meta.url);
+var TableQuotaError = class extends Error {
+  code = "TJDB_TABLE_LIMIT_REACHED";
+  status = 451;
+  retryable = false;
+  constructor() {
+    super("The workspace has reached its ToolJet Database table limit. Stop creating tables. Ask the user to reuse existing tables, free table capacity, or increase the workspace allowance before continuing. Keep resources already created; do not delete tables automatically.");
+    this.name = "TableQuotaError";
+  }
+};
+function tableQuotaError(error) {
+  const seen = /* @__PURE__ */ new Set();
+  while (error instanceof Error && !seen.has(error)) {
+    if (error instanceof TableQuotaError)
+      return error;
+    seen.add(error);
+    error = error.cause;
+  }
+  return void 0;
+}
+createRequire(import.meta.url);
+function ok(value) {
+  return { content: [{ type: "text", text: JSON.stringify(value) }] };
+}
+function fail(err) {
+  const message = err instanceof Error ? err.message : String(err);
+  const quota = tableQuotaError(err);
+  const text2 = quota ? JSON.stringify({ error: {
+    code: quota.code,
+    status: quota.status,
+    retryable: quota.retryable,
+    message: quota.message,
+    details: message
+  } }) : `Error: ${message}`;
+  return { content: [{ type: "text", text: text2 }], isError: true };
 }
 createRequire(import.meta.url);
 var member = (n) => n?.type === "MemberExpression" || n?.type === "OptionalMemberExpression";
@@ -4882,35 +5064,49 @@ function lintSelectedRowProjections(components, extraSources = []) {
   return [...warnings];
 }
 export {
-  apply as A,
-  deleteNode as B,
-  editContractSchema as C,
-  generateEditContract as D,
+  connectorLabel as A,
+  sameReadSource as B,
+  extractRowCount as C,
+  emptyViewerOnlyParams as D,
+  emptyParamsNote as E,
+  unresolvedNote as F,
+  GUI_LIST_ROWS_KEYS as G,
+  registerComponentSchemas as H,
+  capabilityRequestSchema as I,
+  getWorkflowCapabilities as J,
+  lint as K,
   LARGE_READ_ROW_THRESHOLD as L,
-  lintBindingNames as a,
-  bindingSpans as b,
-  assertPersistableQueryToggles as c,
-  assertWorkflowQueryOptions as d,
-  normalizeQueryToggles as e,
-  normalizeQueryOptions as f,
-  arithmeticWriteWarning as g,
-  assessQueryRead as h,
-  issueMessages as i,
-  resolveStaticBindings as j,
-  resolvedReadRefusal as k,
+  apply as M,
+  deleteNode as N,
+  editContractSchema as O,
+  generateEditContract as P,
+  allComponentSchemas as Q,
+  SQL_DIALECT as S,
+  TableQuotaError as T,
+  getCatalog as a,
+  getLegacyComponentReplacement as b,
+  lintBindingNames as c,
+  bindingSpans as d,
+  assertPersistableQueryToggles as e,
+  assertWorkflowQueryOptions as f,
+  getComponentSchema as g,
+  fail as h,
+  normalizeQueryToggles as i,
+  toggleRewriteWarning as j,
+  issueMessages as k,
   lintSelectedRowProjections as l,
-  extractRowCount as m,
+  normalizeQueryOptions as m,
   normalizeWorkflowQueryOptions as n,
-  emptyViewerOnlyParams as o,
-  emptyParamsNote as p,
+  ok as o,
+  arithmeticWriteWarning as p,
   queryToggleIssues as q,
   require_lib as r,
-  sameReadSource as s,
-  toggleRewriteWarning as t,
-  unresolvedNote as u,
+  assessQueryRead as s,
+  tableQuotaError as t,
+  resolvedReadRefusal as u,
   validateQueryOptions as v,
   workflowMappingMatches as w,
-  capabilityRequestSchema as x,
-  getWorkflowCapabilities as y,
-  lint as z
+  resolveStaticBindings as x,
+  sqlConnectorPath as y,
+  applyResolvedBindings as z
 };
