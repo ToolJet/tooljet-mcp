@@ -41,6 +41,17 @@ try {
   for (const name of ['get_app_resource_permission', 'invite_workspace_user', 'delete_workspace_group', 'create_workspace_theme']) {
     assert(tools.some(tool => tool.name === name && !tool.inputSchema.properties?.action), name);
   }
+  for (const name of ['list_datasource_schemas', 'list_datasource_tables', 'get_datasource_endpoint_schema']) {
+    const tool = tools.find(tool => tool.name === name);
+    assert(tool && !tool.inputSchema.properties?.method && !tool.inputSchema.properties?.requests, name);
+  }
+  assert(tools.some(tool => tool.name === 'rename_app'));
+  assert(tools.some(tool => tool.name === 'delete_workflow_edge'));
+  assert(tools.some(tool => tool.name === 'set_workflow_test_parameters'));
+  for (const type of ['start', 'javascript', 'query', 'loop', 'condition', 'response', 'agent']) {
+    const tool = tools.find(tool => tool.name === `upsert_workflow_${type}_node`);
+    assert(tool && !tool.inputSchema.properties?.node?.properties?.type, type);
+  }
   assert(tools.some((tool) => tool.name === 'list_workspace_folders' && tool.annotations?.readOnlyHint));
   assert(tools.find((tool) => tool.name === 'list_workspace_apps')?.inputSchema.properties?.folder_id);
   for (const [name, args] of [

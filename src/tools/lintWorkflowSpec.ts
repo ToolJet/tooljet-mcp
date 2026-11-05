@@ -7,7 +7,7 @@ export function lintWorkflowSpecTool(client: ToolJetClient): ToolDef {
   return {
     name: 'lint_workflow_spec',
     title: 'Lint Workflow Spec',
-    description: 'Validate graph edits, query options, and runtime prerequisites without executing or saving. Returns a scoped one-use plan token when runnable, or for an editable draft only when allow_draft is true. Omitted nodes/edges are preserved; removals require explicit IDs.',
+    description: 'Validate graph edits, query options, and runtime prerequisites without executing or saving the workflow. Reads graph/query/datasource metadata, compiles proposed configuration, and checks JavaScript syntax without evaluating it. Does not run nodes, invoke their datasource operations, or apply graph edits. Returns a scoped temporary one-use plan token when runnable, or for an editable draft only when allow_draft is true. Omitted nodes/edges are preserved; removals require explicit IDs.',
     annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     inputSchema: lintWorkflowSpecInputSchema.shape,
     async handler(args: unknown) {

@@ -1,12 +1,11 @@
 import { createRequire } from "node:module";
-import { o as external_exports, s as specSchema, q as nodeCatalog, v as validateGraph, y as editContractSchema, z as generateEditContract } from "./chunk-8YTh_X7O.js";
-import { t as themeDefinition, s as strictEntry, d as createClient, e as listWorkspaceAppsTool, g as listWorkspaceFoldersTool, h as listWorkspaceUsersTool, m as manageWorkspaceUsersTool, j as listWorkspaceGroupsTool, k as manageWorkspaceGroupsTool, p as inspectDatasourceSchemaTool, q as manageThemeTool, o as ok, f as fail, r as capabilityRequestSchema, u as getWorkflowCapabilities, w as lint, x as apply, y as deleteNode, z as paintsDarkCanvasInLightMode, A as projectJavascriptRuntime, B as projectAppSettings, C as compactTheme, D as pageSettingProperties, v as validateTableBatch, E as ToolJetHttpError, l as literalCanvasColor, P as PartialWriteError, F as hasNonEmptyDefinition, G as themeActionTools, H as workspaceGroupActionTools, I as workspaceUserActionTools, J as exposeActions } from "./chunk-zEby1wOD.js";
-import { a6 as dbColumnTypeSchema, a7 as componentInputSchema, a8 as lintAppSpecTool, a9 as containsExactValue, h as prepareQueryOptionsForWrite, aa as inspectUpdateCompatibility, ab as normalizePlanBindingAliases, o as resolveRef, ac as containsNamedBinding, ad as normalizeComponentSpec, ae as normalizePlannedLayouts, af as materializeRequiredDefaultChildren, ag as mapKeyRefusal, ah as COMPONENT_FX_GUIDANCE, j as prepareComponentBatch, ai as COMPONENT_FX_UPDATE_GUIDANCE, v as validateEvents, l as expandQueryLifecycles, q as persistedEventSpecs, aj as persistedEventIds } from "./chunk-DVEwpOfg.js";
-import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, W as WebStandardStreamableHTTPServerTransport, g as getRequestListener, c as validatePersistedAppSummary } from "./chunk-BwTaPq16.js";
-import { M as McpServer } from "./chunk-yTQfFEtN.js";
-import { g as pageIconSchema, f as componentSlotSchema, c as componentNameSchema, b as lintComponents, i as introducedLintFindings, j as lintRenderedGeometryBlocking, k as lintRenderedGeometryAdvisory, o as componentNameError, d as decodeComponentParent, e as encodeComponentParent, s as suggestedHtmlHeight, q as lintComponentSpec, r as lintComponentSlots, t as lintUnusableTextGeometry, u as lintStandardSingleLineInputHeight, w as lintTextGeometry, x as lintRenderedGeometry, y as lintKanbanInteractions, z as lintNestedContainerWidths, F as FORM_SCHEMA_FIELD_TYPE_SET, A as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-CUSf2Ml4.js";
-import { ea as getCatalog, e5 as getComponentSchema, eb as getLegacyComponentReplacement, ee as readCatalogBytes } from "./chunk-BEuHHGL1.js";
-import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-wUGawh4I.js";
+import { t as themeDefinition, h as createClient, j as listWorkspaceAppsTool, k as listWorkspaceFoldersTool, m as listWorkspaceUsersTool, p as manageWorkspaceUsersTool, q as inspectDatasourceSchemaTool, u as updateComponentsTool, s as manageThemeTool, x as datasourceMetadataTools, o as ok, f as fail, y as capabilityRequestSchema, z as getWorkflowCapabilities, A as lint, B as apply, D as deleteNode, E as paintsDarkCanvasInLightMode, F as projectJavascriptRuntime, G as projectAppSettings, H as compactTheme, I as pageSettingProperties, v as validateTableBatch, J as ToolJetHttpError, K as editContractSchema, L as generateEditContract, l as literalCanvasColor, r as resolveRef, P as PartialWriteError, d as normalizeComponentSpec, C as COMPONENT_FX_GUIDANCE, M as themeActionTools, N as workspaceUserActionTools, e as exposeActions } from "./chunk-Cm6A-Ye7.js";
+import { K as listWorkspaceGroupsTool, N as manageWorkspaceGroupsTool, O as verifyPageRenderTool, W as WebStandardStreamableHTTPServerTransport, Q as getRequestListener, U as workspaceGroupActionTools } from "./chunk-t62YCwCI.js";
+import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, e as renameAppTool, v as validatePersistedAppSummary, f as containsExactValue, p as prepareQueryOptionsForWrite, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, g as containsNamedBinding, h as normalizePlannedLayouts, m as materializeRequiredDefaultChildren, j as mapKeyRefusal, k as prepareComponentBatch, o as validateEvents, q as expandQueryLifecycles, s as persistedEventSpecs, t as persistedEventIds } from "./chunk-BFAvWjgX.js";
+import { M as McpServer } from "./chunk-mYONPs3z.js";
+import { p as external_exports, x as strictEntry, A as specSchema, E as nodeSchema, y as nodeCatalog, z as validateGraph, s as getCatalog, q as getComponentSchema, t as getLegacyComponentReplacement, F as readCatalogBytes } from "./chunk-C9d6UC58.js";
+import { p as pageIconSchema, c as componentSlotSchema, b as componentNameSchema, r as lintComponents, i as introducedLintFindings, x as lintRenderedGeometryBlocking, y as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, g as lintComponentSlots, l as lintComponentSpec, h as lintUnusableTextGeometry, z as lintNestedContainerWidths, j as lintStandardSingleLineInputHeight, k as lintTextGeometry, m as lintRenderedGeometry, F as FORM_SCHEMA_FIELD_TYPE_SET, A as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-Dp2c_mDp.js";
+import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-7Kp3wqfy.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { createServer } from "node:http";
@@ -2788,7 +2787,7 @@ function addQueriesTool(client) {
       destructiveHint: false,
       openWorldHint: false
     },
-    description: "Create MANY queries in a single call (all share version_id). Prefer this over repeated add_query when building an app. Each query names its own datasource_id and options. Call get_datasource_query_schema for the operations you use before constructing those options. The batch resolves datasource kinds once, contract-validates every query before any writes, and returns {queries,warnings,validation}. ToolJet has no query bulk transaction: a rare partial failure names every persisted query; do not retry the whole batch. Creates are serialized per version within this MCP client. Optional client_ref aliases declared in this batch are resolved in its query bindings/RunJS when unambiguous; existing runtime names take precedence.",
+    description: "Save query definitions in the ToolJet app editor; this is an authoring operation. It never executes the SQL, code, API requests, or datasource operations described by options. Options are stored configuration for later app use, not commands invoked during this call. Create MANY queries in a single call (all share version_id). Prefer this over repeated add_query when building an app. Each query names its own datasource_id and options. Call get_datasource_query_schema for the operations you use before constructing those options. The batch resolves datasource kinds once, contract-validates every query before any writes, and returns {queries,warnings,validation}. ToolJet has no query bulk transaction: a rare partial failure names every persisted query; do not retry the whole batch. Creates are serialized per version within this MCP client. Optional client_ref aliases declared in this batch are resolved in its query bindings/RunJS when unambiguous; existing runtime names take precedence.",
     inputSchema: {
       version_id: external_exports.string(),
       queries: external_exports.array(querySchema).min(1)
@@ -3072,198 +3071,6 @@ function addComponentBatchesTool(client) {
       });
     }
   };
-}
-var DEFINITION_SECTIONS = ["properties", "styles", "validation", "general", "general_styles", "others"];
-var definitionSchema = strictEntry({
-  properties: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  general: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  general_styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  others: external_exports.record(external_exports.string(), external_exports.any()).optional()
-}, (key) => key === "layout" || key === "layouts" ? `definition."${key}" is not a component definition section; move/resize with update_layout instead.` : `definition."${key}" is not a component definition section; use one of ${DEFINITION_SECTIONS.join("/")}.`);
-var updateSchema2 = strictEntry({
-  component_id: external_exports.string(),
-  definition: definitionSchema.optional(),
-  name: componentNameSchema.optional(),
-  parent: external_exports.string().optional(),
-  slot_name: componentSlotSchema.optional()
-}, (key) => {
-  if (DEFINITION_SECTIONS.includes(key)) {
-    return `Update entry key "${key}" must be nested under \`definition\` (e.g. { component_id, definition: { ${key}: {...} } }); top-level ${key} would write nothing.`;
-  }
-  if (key === "layout" || key === "layouts") {
-    return `Update entry key "${key}" is not accepted by update_components; move/resize with update_layout instead.`;
-  }
-  return `Unknown update entry key "${key}"; accepted keys are component_id, definition, name, parent, slot_name.`;
-});
-function updateComponentsTool(client) {
-  return {
-    name: "update_components",
-    title: "Update Components",
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: false
-    },
-    description: "Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves under `definition` (properties/styles/validation/others) \u2014 ToolJet deep-merges, so untouched values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. " + COMPONENT_FX_UPDATE_GUIDANCE + "NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container regions, or modal for Kanban card-click content; omit parent to keep the current parent. Unknown entry keys are rejected (a top-level properties/styles patch is an error, not a silent no-op), and an entry that changes nothing fails. Get component ids + current values from get_app_summary / get_component.",
-    inputSchema: {
-      app_id: external_exports.string(),
-      version_id: external_exports.string(),
-      page_id: external_exports.string(),
-      updates: external_exports.array(updateSchema2).min(1)
-    },
-    async handler(args) {
-      try {
-        const summary = await client.getAppSummary(args.app_id);
-        const page = summary.pages.find((candidate) => candidate.id === args.page_id);
-        if (!page)
-          return fail(new Error(`Page "${args.page_id}" does not exist in app "${args.app_id}".`));
-        const projected = new Map(page.components.map((component) => [component.id, component]));
-        const warnings = [];
-        const errors = [];
-        const changedComponents = [];
-        let placementChanged = false;
-        const layoutFixes = [];
-        const resolvedUpdates = [];
-        for (const update of args.updates) {
-          if (update.name !== void 0) {
-            const nameError = componentNameError(update.name);
-            if (nameError) {
-              errors.push(`Component "${update.component_id}": ${nameError}`);
-              continue;
-            }
-          }
-          const resolution = resolveRef(page.components, update.component_id, "Component", `on page "${args.page_id}"`);
-          if (!resolution.ok) {
-            errors.push(resolution.error);
-            continue;
-          }
-          if (resolution.warning)
-            warnings.push(resolution.warning);
-          const current = resolution.target;
-          const componentId = current.id;
-          if (update.definition && (update.name !== void 0 || update.parent !== void 0 || update.slot_name !== void 0)) {
-            errors.push(`Component "${update.component_id}": set EITHER definition OR name/parent/slot_name in one entry.`);
-            continue;
-          }
-          if (!hasNonEmptyDefinition(update.definition) && update.name === void 0 && update.parent === void 0 && update.slot_name === void 0) {
-            errors.push(`Component "${update.component_id}": nothing to update. Send the changed leaves under definition (properties/styles/validation/others) or a name/parent/slot_name change.`);
-            continue;
-          }
-          let parent = update.parent;
-          let slotName = update.slot_name;
-          if (slotName !== void 0) {
-            parent ??= current.parent ? decodeComponentParent(current.parent).parentId : void 0;
-            if (!parent) {
-              if (slotName === "body") {
-                warnings.push(`Component "${update.component_id}": slot_name:"body" ignored on a root component (it has no parent slots).`);
-                slotName = void 0;
-              } else {
-                errors.push(`Component "${update.component_id}": slot_name:"${slotName}" requires an existing or explicit parent.`);
-                continue;
-              }
-            }
-          }
-          const definition = update.definition;
-          const next = {
-            id: current.id,
-            name: update.name ?? current.name ?? current.id,
-            type: current.type,
-            properties: { ...current.properties ?? {}, ...definition?.properties ?? {} },
-            styles: { ...current.styles ?? {}, ...definition?.styles ?? {} },
-            layouts: current.layouts,
-            parent: parent !== void 0 ? encodeComponentParent(parent, slotName) : current.parent,
-            slotName
-          };
-          const normalized = normalizeComponentSpec({
-            name: next.name ?? current.id,
-            type: next.type ?? current.type ?? "",
-            properties: next.properties ?? {},
-            styles: next.styles,
-            validation: definition?.validation,
-            others: { ...current.others ?? {}, ...definition?.others ?? {} },
-            layouts: next.layouts,
-            parent: next.parent
-          });
-          const normalizedNext = { ...normalized.component, id: current.id };
-          const heightFix = update.definition ? suggestedHtmlHeight(normalizedNext) : null;
-          const desktopRect = current.layouts?.desktop;
-          if (heightFix && desktopRect && typeof desktopRect.top === "number") {
-            normalizedNext.layouts = { ...normalizedNext.layouts ?? {}, desktop: { ...desktopRect, height: heightFix.to } };
-            layoutFixes.push({ componentId: current.id, desktop: { ...desktopRect, height: heightFix.to } });
-            warnings.push(`Html "${normalizedNext.name ?? current.id}" needed about ${heightFix.needed}px for its new markup but was ${heightFix.from}px; its height is now ${heightFix.to}px. Anything within ${heightFix.to - heightFix.from}px below it now overlaps; move it down.`);
-          }
-          projected.set(current.id, normalizedNext);
-          if (update.definition)
-            changedComponents.push({ before: current, after: normalizedNext });
-          placementChanged ||= update.parent !== void 0 || update.slot_name !== void 0;
-          warnings.push(...onlyTouchedBraceNotes(normalized.warnings, definition));
-          let normalizedDefinition = update.definition;
-          if (update.definition && Object.keys(normalized.patch).length) {
-            normalizedDefinition = { ...update.definition };
-            for (const section of ["properties", "styles", "validation", "others"]) {
-              const sectionPatch = normalized.patch[section];
-              if (!sectionPatch)
-                continue;
-              normalizedDefinition[section] = {
-                ...update.definition[section] ?? {},
-                ...sectionPatch
-              };
-            }
-          }
-          resolvedUpdates.push({
-            componentId,
-            definition: normalizedDefinition,
-            name: update.name,
-            parent,
-            slotName: update.slot_name
-          });
-          if (!update.definition)
-            continue;
-          errors.push(...introducedLintFindings(lintComponentSpec(current).errors, lintComponentSpec(normalizedNext).errors));
-          warnings.push(...introducedLintFindings(lintComponentSpec(current).warnings, lintComponentSpec(normalizedNext).warnings));
-        }
-        const allComponents = [...projected.values()];
-        const introducedForChanged = (lint2) => changedComponents.flatMap(({ before, after }) => introducedLintFindings(lint2([before]), lint2([after])));
-        if (placementChanged) {
-          errors.push(...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(allComponents)));
-        }
-        errors.push(...introducedForChanged(lintUnusableTextGeometry));
-        if (errors.length)
-          return fail(new Error(`${errors.join(" ")} (Nothing was saved: refused before any write.)`));
-        warnings.push(...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)));
-        warnings.push(...introducedForChanged(lintTextGeometry));
-        warnings.push(...lintRenderedGeometry(allComponents));
-        warnings.push(...lintKanbanInteractions(allComponents));
-        const result = await client.updateComponents({
-          appId: args.app_id,
-          versionId: args.version_id,
-          pageId: args.page_id,
-          updates: resolvedUpdates
-        });
-        if (layoutFixes.length) {
-          await client.updateLayouts({ appId: args.app_id, versionId: args.version_id, pageId: args.page_id, layouts: layoutFixes });
-        }
-        return ok({ ...result, warnings: [...new Set(warnings)] });
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
-function onlyTouchedBraceNotes(warnings, definition) {
-  const touched = /* @__PURE__ */ new Set([
-    ...Object.keys(definition?.properties ?? {}).map((key) => `properties.${key}`),
-    ...Object.keys(definition?.styles ?? {}).map((key) => `styles.${key}`)
-  ]);
-  return warnings.flatMap((warning) => {
-    const m = /^(.*?: separated adjacent closing braces inside )(.+?)( \(ToolJet ends.*)$/s.exec(warning);
-    if (!m)
-      return [warning];
-    const keys = m[2].split(", ").filter((key) => touched.has(key));
-    return keys.length ? [`${m[1]}${keys.join(", ")}${m[3]}`] : [];
-  });
 }
 function deleteComponentsTool(client) {
   return {
@@ -3647,7 +3454,7 @@ function updateQueryTool(client) {
       destructiveHint: true,
       openWorldHint: false
     },
-    description: "Change an existing query in place. `options` REPLACES the stored options wholesale \u2014 send the FULL options object, not a partial. Pass app_id so the existing query kind is resolved and options are validated. To repoint a query, also pass datasource_id; validation happens before the datasource changes, and MCP attempts to roll back the source if the subsequent option update fails. The query toggles (runOnPageLoad, runOnDependencyChange, requestConfirmation, showSuccessNotification) must be true or false on every call.",
+    description: "Edit a stored query definition in the ToolJet app editor. Does not execute its SQL, code, API request, or datasource operation; options are saved configuration for later app use. Change an existing query in place. `options` REPLACES the stored options wholesale \u2014 send the FULL options object, not a partial. Pass app_id so the existing query kind is resolved and options are validated. To repoint a query, also pass datasource_id; validation happens before the datasource changes, and MCP attempts to roll back the source if the subsequent option update fails. The query toggles (runOnPageLoad, runOnDependencyChange, requestConfirmation, showSuccessNotification) must be true or false on every call.",
     inputSchema: {
       query_id: external_exports.string().optional().describe("the query id, or its name; with only name given, name picks the query"),
       version_id: external_exports.string(),
@@ -4312,7 +4119,7 @@ function lintWorkflowSpecTool(client) {
   return {
     name: "lint_workflow_spec",
     title: "Lint Workflow Spec",
-    description: "Validate graph edits, query options, and runtime prerequisites without executing or saving. Returns a scoped one-use plan token when runnable, or for an editable draft only when allow_draft is true. Omitted nodes/edges are preserved; removals require explicit IDs.",
+    description: "Validate graph edits, query options, and runtime prerequisites without executing or saving the workflow. Reads graph/query/datasource metadata, compiles proposed configuration, and checks JavaScript syntax without evaluating it. Does not run nodes, invoke their datasource operations, or apply graph edits. Returns a scoped temporary one-use plan token when runnable, or for an editable draft only when allow_draft is true. Omitted nodes/edges are preserved; removals require explicit IDs.",
     annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     inputSchema: lintWorkflowSpecInputSchema.shape,
     async handler(args) {
@@ -4329,7 +4136,7 @@ function applyWorkflowSpecTool(client) {
   return {
     name: "apply_workflow_spec",
     title: "Apply Workflow Spec",
-    description: "Apply a validated plan to an editable draft and verify readback. May edit/remove graph objects. Partial writes return IDs for recovery; never blindly retry creation. Does not execute or publish.",
+    description: "Apply a validated authoring plan to an editable draft and verify readback. Saves node/edge configuration, creates or updates the associated query definitions, removes explicitly deleted graph objects and their obsolete queries, and optionally saves test parameters. Does not execute node code, send datasource requests, run the workflow, or publish. The same authoring actions are individually exposed as upsert_workflow_<type>_node, upsert_workflow_edge, delete_workflow_edge, delete_workflow_node, and set_workflow_test_parameters. Partial writes return IDs for recovery; never blindly retry creation.",
     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     inputSchema: applyWorkflowSpecInputSchema.shape,
     async handler(args) {
@@ -4342,6 +4149,61 @@ function applyWorkflowSpecTool(client) {
       }
     }
   };
+}
+var mutationInputs = [
+  ...nodeSchema.options.map((node) => {
+    const type = node.shape.type.value;
+    return {
+      name: `upsert_workflow_${type}_node`,
+      title: `Upsert Workflow ${type[0].toUpperCase() + type.slice(1)} Node`,
+      description: `Create or edit one ${type} node in an editable workflow draft. Existing_id edits the same node; omission creates a node. Stores configuration and any associated query definition without executing its code or datasource operation.`,
+      schema: external_exports.object({ ...workflowTargetShape, node: external_exports.object(Object.fromEntries(Object.entries(node.shape).filter(([key]) => key !== "type"))).strict(), allow_draft: external_exports.boolean().default(true) }).strict(),
+      spec: (args) => ({ nodes: [{ ...args.node, type }] })
+    };
+  }),
+  {
+    name: "upsert_workflow_edge",
+    title: "Upsert Workflow Edge",
+    description: "Create or edit one control-flow edge in an editable workflow draft. Use existing node IDs for from/to; existing_id edits an edge. Never executes the graph.",
+    schema: external_exports.object({ ...workflowTargetShape, edge: specSchema.shape.edges.unwrap().element, allow_draft: external_exports.boolean().default(true) }).strict(),
+    spec: (args) => ({ edges: [args.edge] })
+  },
+  {
+    name: "delete_workflow_edge",
+    title: "Delete Workflow Edge",
+    description: "Remove one explicitly selected control-flow edge from an editable workflow draft, preserving nodes and other edges. Never executes the graph.",
+    schema: external_exports.object({ ...workflowTargetShape, edge_id: external_exports.string().min(1), allow_draft: external_exports.boolean().default(true) }).strict(),
+    spec: (args) => ({ remove_edge_ids: [args.edge_id] })
+  },
+  {
+    name: "set_workflow_test_parameters",
+    title: "Set Workflow Test Parameters",
+    description: "Replace the saved default test parameters of an editable workflow draft. Saves data only; does not start a test or execute the workflow.",
+    schema: external_exports.object({ ...workflowTargetShape, parameters: external_exports.record(external_exports.string(), external_exports.unknown()), allow_draft: external_exports.boolean().default(true) }).strict(),
+    spec: (args) => ({ test_parameters: args.parameters })
+  }
+];
+function workflowMutationTools(client) {
+  return mutationInputs.map(({ name, title, description, schema, spec }) => ({
+    name,
+    title,
+    description: description + " Uses the same scoped planning, validation, one-use token, partial-write reporting, and readback as apply_workflow_spec. allow_draft defaults true so an incomplete draft can be edited.",
+    strictInput: true,
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+    inputSchema: schema.shape,
+    async handler(input) {
+      try {
+        const args = schema.parse(input);
+        const planned = await lint(client.workflows, args.workflow_id, args.version_id, specSchema.parse(spec(args)), args.allow_draft);
+        if (!("plan_token" in planned))
+          return { ...ok(planned), isError: true };
+        const result = await apply(client.workflows, planned.plan_token);
+        return "failed" in result && result.failed ? { ...ok(result), isError: true } : ok(result);
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  }));
 }
 function deleteWorkflowNodeTool(client) {
   return {
@@ -4439,7 +4301,7 @@ function runWorkflowTool(client) {
   return {
     name: "run_workflow",
     title: "Run Workflow",
-    description: "Execute the explicitly selected workflow version/environment with real effects, including datasource writes and arbitrary code. Use only when execution is authorized. Never automatically retry a timeout: execution may have completed. Does not enable disabled workflows.",
+    description: "Start one execution of an existing saved ToolJet workflow version in the selected environment, passing its input data in params. This calls the workflow-run API; params are workflow data, not an operation selector or executable graph. The saved workflow itself can perform datasource writes, send requests, and execute arbitrary code, so authorize that workflow and its effects before calling. This tool does not author or modify the workflow, publish it, or enable a disabled workflow. Never automatically retry a timeout: execution may have completed.",
     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
     inputSchema: runWorkflowInputSchema.shape,
     async handler(args) {
@@ -4569,6 +4431,9 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     manageThemeTool(client)
   ];
   tools.push(...managementActionTools(tools));
+  tools.push(...datasourceMetadataTools(tools.find((tool) => tool.name === "inspect_datasource_schema")));
+  tools.push(...workflowMutationTools(client));
+  tools.push(renameAppTool(client));
   const exposedTools = includeLegacySingularCreateTools() ? tools : tools.filter((tool) => !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name));
   const canRender = renderAuditAvailable();
   for (const tool of exposedTools) {

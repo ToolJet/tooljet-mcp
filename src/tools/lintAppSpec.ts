@@ -32,6 +32,9 @@ export function lintAppSpecTool(client: ToolJetClient): ToolDef {
       openWorldHint: false,
     },
     description:
+      'Validate a proposed app definition and return diagnostics plus a temporary plan token. ' +
+      'Reads existing app/schema metadata only; does not apply the proposal, execute embedded SQL/code, ' +
+      'invoke datasource operations, or call the mutations described by the proposal. ' +
       'Dry-run an exact app phase before any writes. It validates optional ToolJet DB tables/seed_data, datasource queries, ' +
       'pages/components, events, and concise query lifecycles together. Give pages, queries, and components stable client_ref ' +
       'values; events use source_ref and targeted actions use target_ref. A query can use table_ref to resolve a planned/existing ' +

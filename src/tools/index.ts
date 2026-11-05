@@ -26,7 +26,7 @@ import { insertRowsTool } from './insertRows.js';
 import { insertRowsBatchTool } from './insertRowsBatch.js';
 import { getComponentCatalogTool } from './getComponentCatalog.js';
 import { getDatasourceQuerySchemaTool } from './getDatasourceQuerySchema.js';
-import { inspectDatasourceSchemaTool } from './inspectDatasourceSchema.js';
+import { inspectDatasourceSchemaTool, datasourceMetadataTools } from './inspectDatasourceSchema.js';
 import { testDatasourceConnectionTool } from './testDatasourceConnection.js';
 import { prepareSqlDiscoveryQueriesTool } from './prepareSqlDiscoveryQueries.js';
 import { generateFormSchemaTool } from './generateFormSchema.js';
@@ -37,7 +37,7 @@ import { getComponentTool } from './getComponent.js';
 import { validateAppTool } from './validateApp.js';
 import { verifyPageRenderTool } from './verifyPageRender.js';
 import { lintAppSpecTool } from './lintAppSpec.js';
-import { applyAppPhaseTool } from './applyAppPhase.js';
+import { applyAppPhaseTool, renameAppTool } from './applyAppPhase.js';
 import { addPageTool } from './addPage.js';
 import { addPagesTool } from './addPages.js';
 import { updatePagesTool } from './updatePages.js';
@@ -82,7 +82,7 @@ import { listWorkflowsTool } from './listWorkflows.js';
 import { createWorkflowTool } from './createWorkflow.js';
 import { getWorkflowTool } from './getWorkflow.js';
 import { lintWorkflowSpecTool } from './lintWorkflowSpec.js';
-import { applyWorkflowSpecTool } from './applyWorkflowSpec.js';
+import { applyWorkflowSpecTool, workflowMutationTools } from './applyWorkflowSpec.js';
 import { deleteWorkflowNodeTool } from './deleteWorkflowNode.js';
 import { validateWorkflowTool } from './validateWorkflow.js';
 import { runWorkflowTool } from './runWorkflow.js';
@@ -200,6 +200,9 @@ export function registerTools(
   ];
 
   tools.push(...managementActionTools(tools));
+  tools.push(...datasourceMetadataTools(tools.find(tool => tool.name === 'inspect_datasource_schema')!));
+  tools.push(...workflowMutationTools(client));
+  tools.push(renameAppTool(client));
 
   const exposedTools = includeLegacySingularCreateTools()
     ? tools

@@ -15,6 +15,8 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
       openWorldHint: false,
     },
     description:
+      'Edit a stored query definition in the ToolJet app editor. Does not execute its SQL, code, API request, ' +
+      'or datasource operation; options are saved configuration for later app use. ' +
       'Change an existing query in place. `options` REPLACES the stored options wholesale — send the ' +
       'FULL options object, not a partial. Pass app_id so the existing query kind is resolved and options are ' +
       'validated. To repoint a query, also pass datasource_id; validation happens before the datasource changes, ' +

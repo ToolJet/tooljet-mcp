@@ -69,7 +69,7 @@ export interface ActionTool extends Pick<ToolDef, 'name' | 'title' | 'descriptio
 const schemas = new Map<string, z.ZodObject>();
 
 /** Expose fixed operations without duplicating their authorization and confirmation checks. */
-export function exposeActions(source: ToolDef, definitions: ActionTool[]): ToolDef[] {
+export function exposeActions(source: ToolDef, definitions: ActionTool[], selector: 'action' | 'method' = 'action'): ToolDef[] {
   source.description += ' Individually exposed operations: ' + definitions.map(action => action.name).join(', ') + '.';
   const handler = source.handler;
   return definitions.map(({ action, required, optional = [], ...definition }) => {
@@ -77,7 +77,7 @@ export function exposeActions(source: ToolDef, definitions: ActionTool[]): ToolD
     if (!schema) {
       const fields: { -readonly [K in keyof z.ZodRawShape]: z.ZodRawShape[K] } = {};
       for (const key of [...required, ...optional]) {
-        if (key === 'action' || !source.inputSchema[key]) throw new Error(`Invalid action field: ${definition.name}.${key}`);
+        if (key === selector || !source.inputSchema[key]) throw new Error(`Invalid action field: ${definition.name}.${key}`);
         fields[key] = source.inputSchema[key];
       }
       schema = z.object(fields).required(Object.fromEntries(required.map(key => [key, true]))).strict();
@@ -92,7 +92,7 @@ export function exposeActions(source: ToolDef, definitions: ActionTool[]): ToolD
       async handler(args: unknown) {
         try {
           // Parse here too so direct callers cannot inject an action or irrelevant write fields.
-          return await handler({ ...input.parse(args), action });
+          return await handler({ ...input.parse(args), [selector]: action });
         } catch (error) {
           return fail(error);
         }

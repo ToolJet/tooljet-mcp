@@ -4,7 +4,7 @@ import { PartialWriteError } from '../src/tooljetClient.js';
 import type { AppSummary, EventSpec, ToolJetClient } from '../src/tooljetClient.js';
 import { clearAppPlansForTests } from '../src/appPlanStore.js';
 import { lintAppSpecTool } from '../src/tools/lintAppSpec.js';
-import { applyAppPhaseTool } from '../src/tools/applyAppPhase.js';
+import { applyAppPhaseTool, renameAppTool } from '../src/tools/applyAppPhase.js';
 
 function textOf(result: { content: Array<{ text: string }> }): any {
   return JSON.parse(result.content[0]!.text);
@@ -12,6 +12,29 @@ function textOf(result: { content: Array<{ text: string }> }): any {
 
 describe('plan token + apply_app_phase', () => {
   beforeEach(() => clearAppPlansForTests());
+
+  it('renames an app independently without invoking another mutation or executor', async () => {
+    let name = 'Observatory';
+    const calls = {
+      getAppSummary: vi.fn(async () => ({ app_id: 'observatory-app', version_id: 'observatory-version', name,
+        pages: [], queries: [], events: [] })),
+      listTables: vi.fn(async () => []),
+      getAppSettings: vi.fn(async () => ({})),
+      renameApp: vi.fn(async (_app: string, _version: string, next: string) => { name = next; }),
+    };
+    const client = new Proxy(calls, { get(target, key) {
+      if (key in target) return target[key as keyof typeof target];
+      throw new Error(`Unexpected rename API: ${String(key)}`);
+    } }) as unknown as ToolJetClient;
+    const tool = renameAppTool(client);
+    const args = { app_id: 'observatory-app', version_id: 'observatory-version', name: 'Orbital Atlas' };
+    const result = await tool.handler(args);
+    expect(result.isError, JSON.stringify(result)).not.toBe(true);
+    expect(textOf(result).applied.app_metadata).toBe(1);
+    expect(calls.renameApp).toHaveBeenCalledExactlyOnceWith('observatory-app', 'observatory-version', 'Orbital Atlas');
+    expect((await tool.handler({ ...args, queries: [{ name: 'unrelated-query' }] })).isError).toBe(true);
+    expect(calls.renameApp).toHaveBeenCalledOnce();
+  });
 
   it.each([
     { actionId: 'run-query', target_ref: 'create' },

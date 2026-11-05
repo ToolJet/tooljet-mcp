@@ -7,7 +7,7 @@ export function runWorkflowTool(client: ToolJetClient): ToolDef {
   return {
     name: 'run_workflow',
     title: 'Run Workflow',
-    description: 'Execute the explicitly selected workflow version/environment with real effects, including datasource writes and arbitrary code. Use only when execution is authorized. Never automatically retry a timeout: execution may have completed. Does not enable disabled workflows.',
+    description: 'Start one execution of an existing saved ToolJet workflow version in the selected environment, passing its input data in params. This calls the workflow-run API; params are workflow data, not an operation selector or executable graph. The saved workflow itself can perform datasource writes, send requests, and execute arbitrary code, so authorize that workflow and its effects before calling. This tool does not author or modify the workflow, publish it, or enable a disabled workflow. Never automatically retry a timeout: execution may have completed.',
     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
     inputSchema: runWorkflowInputSchema.shape,
     async handler(args: unknown) {

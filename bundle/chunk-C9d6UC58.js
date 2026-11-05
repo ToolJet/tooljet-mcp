@@ -1,9 +1,12 @@
 import { createRequire } from "node:module";
-import { _ as __export, R as util_exports, a as _uppercase, b as _trim, cJ as treeifyError, c as _toUpperCase, e as _toLowerCase, cK as toJSONSchema, f as _startsWith, g as _slugify, h as _size, cS as registry, S as regexes_exports, i as _regex, j as _property, cU as prettifyError, k as _positive, l as _overwrite, n as _normalize, o as _nonpositive, p as _nonnegative, q as _negative, r as _multipleOf, s as _minSize, t as _minLength, u as _mime, v as _maxSize, w as _maxLength, x as _lte, y as _lt, z as _lowercase, A as _length, B as _includes, C as _gte, D as _gt, aY as globalRegistry, aR as formatError, aQ as flattenError, E as _endsWith, d6 as config, at as clone, dB as TimePrecision, dC as NEVER, dE as $output, dF as $input, dG as $brand, du as _coercedString, dv as _coercedNumber, dx as _coercedBoolean, dy as _coercedBigint, dw as _coercedDate, e5 as getComponentSchema, e6 as __commonJS, e7 as __require } from "./chunk-BEuHHGL1.js";
-import { x as xor, c as xid, _ as _void2, u as uuidv7, d as uuidv6, e as uuidv4, f as uuid, g as url, i as unknown, j as union, k as _undefined2, l as ulid, m as uint64, n as uint32, o as tuple, p as transform, q as templateLiteral, s as symbol, v as superRefine, w as success, y as stringbool, z as stringFormat, A as string, B as strictObject, C as set, D as safeParseAsync, E as safeParse, F as safeEncodeAsync, G as safeEncode, H as safeDecodeAsync, I as safeDecode, J as refine, K as record, L as readonly, M as promise, N as preprocess, O as prefault, P as pipe, Q as partialRecord, R as parseAsync, S as parse, T as optional, U as object, V as number, W as nullish, X as nullable, Y as _null2, Z as nonoptional, $ as never, a0 as nativeEnum, a1 as nanoid, a2 as nan, a3 as meta2, a4 as map, a5 as mac, a6 as looseRecord, a7 as looseObject, a8 as literal, a9 as lazy, aa as ksuid, ab as keyof, ac as jwt, ad as json, ae as iso_exports, af as ipv6, ag as ipv4, ah as invertCodec, ai as intersection, aj as int64, ak as int32, al as int, am as _instanceof, an as httpUrl, ao as hostname, ap as hex, aq as hash, ar as guid, as as _function, at as float64, au as float32, av as file, aw as exactOptional, ax as _enum, ay as encodeAsync, az as encode, aA as emoji, aB as email, aC as e164, aD as discriminatedUnion, aE as describe2, aF as decodeAsync, aG as decode, aH as date2$1, aI as custom, aJ as cuid2, aK as cuid, aL as codec, aM as cidrv6, aN as cidrv4, aO as check, aP as _catch, aQ as boolean, aR as bigint, aS as base64url, aT as base64, aU as array, aV as any, aW as _default, aX as _ZodString, aY as ZodXor, aZ as ZodXID, a_ as ZodVoid, a$ as ZodUnknown, b0 as ZodUnion, b1 as ZodUndefined, b2 as ZodUUID, b3 as ZodURL, b4 as ZodULID, b5 as ZodType, b6 as ZodTuple, b7 as ZodTransform, b8 as ZodTemplateLiteral, b9 as ZodSymbol, ba as ZodSuccess, bb as ZodStringFormat, bc as ZodString, bd as ZodSet, be as ZodRecord, bf as ZodRealError, bg as ZodReadonly, bh as ZodPromise, bi as ZodPreprocess, bj as ZodPrefault, bk as ZodPipe, bl as ZodOptional, bm as ZodObject, bn as ZodNumberFormat, bo as ZodNumber, bp as ZodNullable, bq as ZodNull, br as ZodNonOptional, bs as ZodNever, bt as ZodNanoID, bu as ZodNaN, bv as ZodMap, bw as ZodMAC, bx as ZodLiteral, by as ZodLazy, bz as ZodKSUID, bA as ZodJWT, bB as ZodIntersection, bC as ZodISOTime, bD as ZodISODuration, bE as ZodISODateTime, bF as ZodISODate, bG as ZodIPv6, bH as ZodIPv4, bI as ZodGUID, bJ as ZodFunction, bK as ZodFile, bL as ZodExactOptional, bM as ZodError, bN as ZodEnum, bO as ZodEmoji, bP as ZodEmail, bQ as ZodE164, bR as ZodDiscriminatedUnion, bS as ZodDefault, bT as ZodDate, bU as ZodCustomStringFormat, bV as ZodCustom, bW as ZodCodec, bX as ZodCatch, bY as ZodCUID2, bZ as ZodCUID, b_ as ZodCIDRv6, b$ as ZodCIDRv4, c0 as ZodBoolean, c1 as ZodBigIntFormat, c2 as ZodBigInt, c3 as ZodBase64URL, c4 as ZodBase64, c5 as ZodArray, c6 as ZodAny, c7 as checks_exports, c8 as schemas_exports } from "./chunk-4DDZMCNh.js";
-import { l as locales_exports, c as core_exports, e as en_default } from "./chunk-Dlrd_yJi.js";
+import { x as xor, c as xid, _ as _void2, u as uuidv7, d as uuidv6, e as uuidv4, f as uuid, g as url, i as unknown, j as union, k as _undefined2, l as ulid, m as uint64, n as uint32, o as tuple, p as transform, q as templateLiteral, s as symbol, v as superRefine, w as success, y as stringbool, z as stringFormat, A as string, B as strictObject, C as set, D as safeParseAsync, E as safeParse, F as safeEncodeAsync, G as safeEncode, H as safeDecodeAsync, I as safeDecode, J as refine, K as record, L as readonly, M as promise, N as preprocess, O as prefault, P as pipe, Q as partialRecord, R as parseAsync, S as parse, T as optional, U as object, V as number, W as nullish, X as nullable, Y as _null2, Z as nonoptional, $ as never, a0 as nativeEnum, a1 as nanoid, a2 as nan, a3 as meta2, a4 as map, a5 as mac, a6 as looseRecord, a7 as looseObject, a8 as literal, a9 as lazy, aa as ksuid, ab as keyof, ac as jwt, ad as json$1, ae as iso_exports, af as ipv6, ag as ipv4, ah as invertCodec, ai as intersection, aj as int64, ak as int32, al as int, am as _instanceof, an as httpUrl, ao as hostname, ap as hex, aq as hash, ar as guid, as as _function, at as float64, au as float32, av as file, aw as exactOptional, ax as _enum, ay as encodeAsync, az as encode, aA as emoji, aB as email, aC as e164, aD as discriminatedUnion, aE as describe2, aF as decodeAsync, aG as decode, aH as date2$1, aI as custom, aJ as cuid2, aK as cuid, aL as codec, aM as cidrv6, aN as cidrv4, aO as check, aP as _catch, aQ as boolean, aR as bigint, aS as base64url, aT as base64, aU as array, aV as any, aW as _default, aX as _ZodString, aY as ZodXor, aZ as ZodXID, a_ as ZodVoid, a$ as ZodUnknown, b0 as ZodUnion, b1 as ZodUndefined, b2 as ZodUUID, b3 as ZodURL, b4 as ZodULID, b5 as ZodType, b6 as ZodTuple, b7 as ZodTransform, b8 as ZodTemplateLiteral, b9 as ZodSymbol, ba as ZodSuccess, bb as ZodStringFormat, bc as ZodString, bd as ZodSet, be as ZodRecord, bf as ZodRealError, bg as ZodReadonly, bh as ZodPromise, bi as ZodPreprocess, bj as ZodPrefault, bk as ZodPipe, bl as ZodOptional, bm as ZodObject, bn as ZodNumberFormat, bo as ZodNumber, bp as ZodNullable, bq as ZodNull, br as ZodNonOptional, bs as ZodNever, bt as ZodNanoID, bu as ZodNaN, bv as ZodMap, bw as ZodMAC, bx as ZodLiteral, by as ZodLazy, bz as ZodKSUID, bA as ZodJWT, bB as ZodIntersection, bC as ZodISOTime, bD as ZodISODuration, bE as ZodISODateTime, bF as ZodISODate, bG as ZodIPv6, bH as ZodIPv4, bI as ZodGUID, bJ as ZodFunction, bK as ZodFile, bL as ZodExactOptional, bM as ZodError, bN as ZodEnum, bO as ZodEmoji, bP as ZodEmail, bQ as ZodE164, bR as ZodDiscriminatedUnion, bS as ZodDefault, bT as ZodDate, bU as ZodCustomStringFormat, bV as ZodCustom, bW as ZodCodec, bX as ZodCatch, bY as ZodCUID2, bZ as ZodCUID, b_ as ZodCIDRv6, b$ as ZodCIDRv4, c0 as ZodBoolean, c1 as ZodBigIntFormat, c2 as ZodBigInt, c3 as ZodBase64URL, c4 as ZodBase64, c5 as ZodArray, c6 as ZodAny, c7 as checks_exports, c8 as schemas_exports } from "./chunk-BKvrrazZ.js";
+import { l as locales_exports, c as core_exports, e as en_default } from "./chunk-CsxSsz1U.js";
+import { _ as __export, R as util_exports, a as _uppercase, b as _trim, cJ as treeifyError, c as _toUpperCase, e as _toLowerCase, cK as toJSONSchema, f as _startsWith, g as _slugify, h as _size, cS as registry, S as regexes_exports, i as _regex, j as _property, cU as prettifyError, k as _positive, l as _overwrite, n as _normalize, o as _nonpositive, p as _nonnegative, q as _negative, r as _multipleOf, s as _minSize, t as _minLength, u as _mime, v as _maxSize, w as _maxLength, x as _lte, y as _lt, z as _lowercase, A as _length, B as _includes, C as _gte, D as _gt, aY as globalRegistry, aR as formatError, aQ as flattenError, E as _endsWith, d6 as config, at as clone, dB as TimePrecision, dC as NEVER, dE as $output, dF as $input, dG as $brand, du as _coercedString, dv as _coercedNumber, dx as _coercedBoolean, dy as _coercedBigint, dw as _coercedDate, e5 as __commonJS, e6 as __require } from "./chunk-DcxxRLvp.js";
 import { Script } from "node:vm";
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
 var external_exports = {};
 __export(external_exports, {
@@ -149,7 +152,7 @@ __export(external_exports, {
   ipv4: () => ipv4,
   ipv6: () => ipv6,
   iso: () => iso_exports,
-  json: () => json,
+  json: () => json$1,
   jwt: () => jwt,
   keyof: () => keyof,
   ksuid: () => ksuid,
@@ -773,186 +776,15 @@ function date2(params) {
 }
 config(en_default());
 createRequire(import.meta.url);
-var name = external_exports.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/).refine((v) => !["__proto__", "prototype", "constructor"].includes(v));
-var editContractSchema = external_exports.object({
-  source_query: name.describe("Already-loaded bounded raw row-array query; never a display projection."),
-  table_component: name,
-  id_field: name.default("id"),
-  prefix: name.describe("Unique prefix for generated snapshot/draft variables and RunJS query names."),
-  fields: external_exports.array(external_exports.object({
-    field: name,
-    component: name,
-    type: external_exports.enum(["text", "number", "date_only", "boolean"]),
-    required: external_exports.boolean().default(false),
-    nullable: external_exports.boolean().default(false).describe("Opt in to clearing to null; a user change event is also required."),
-    trim: external_exports.boolean().default(false),
-    choices: external_exports.union([
-      external_exports.array(external_exports.object({ label: external_exports.string(), value: external_exports.union([external_exports.string(), external_exports.number().finite()]) }).strict()).min(1).max(100),
-      external_exports.object({ query: name, value_field: name, label_field: name }).strict()
-    ]).optional().describe("Opt-in DropdownV2 for text/number fields: literal label/value options or an already-loaded bounded raw option query. Values must match the declared field type.")
-  })).min(1).max(40)
-}).strict();
-function canonical(value, field) {
-  if (value === void 0)
-    throw new Error(`Missing input: ${field.field}`);
-  if (value === null || value === "") {
-    if (field.required)
-      throw new Error(`Required field: ${field.field}`);
-    if (value === null && !field.nullable)
-      throw new Error(`Null not allowed: ${field.field}`);
-    return value;
-  }
-  if (field.type === "text") {
-    if (typeof value !== "string")
-      throw new Error(`Expected text: ${field.field}`);
-    if (field.required && !value.trim())
-      throw new Error(`Required field: ${field.field}`);
-    return field.trim ? value.trim() : value;
-  }
-  if (field.type === "boolean") {
-    if (typeof value !== "boolean")
-      throw new Error(`Expected boolean: ${field.field}`);
-    return value;
-  }
-  if (field.type === "number") {
-    if (typeof value !== "number" && typeof value !== "string" || typeof value === "string" && !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value) || !Number.isFinite(Number(value)))
-      throw new Error(`Expected finite number: ${field.field}`);
-    return Number(value);
-  }
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))?$/.test(value)) {
-    throw new Error(`Expected ISO date: ${field.field}`);
-  }
-  const day = value.slice(0, 10);
-  const parsed = /* @__PURE__ */ new Date(day + "T00:00:00Z");
-  if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== day || !Number.isFinite(Date.parse(value))) {
-    throw new Error(`Invalid date: ${field.field}`);
-  }
-  return day;
-}
-function generateEditContract(input) {
-  const spec = editContractSchema.parse(input);
-  for (const key of ["field", "component"]) {
-    if (new Set(spec.fields.map((f) => f[key])).size !== spec.fields.length)
-      throw new Error(`Duplicate ${key} in edit contract`);
-  }
-  if (spec.fields.some((f) => f.field === spec.id_field))
-    throw new Error("The stable primary key cannot be edited");
-  if (spec.fields.some((f) => f.required && f.nullable))
-    throw new Error("A required field cannot be nullable");
-  for (const f of spec.fields)
-    if (f.choices) {
-      if (!["text", "number"].includes(f.type))
-        throw new Error("Choices require a text or number field");
-      if (Array.isArray(f.choices)) {
-        if (f.choices.some((o) => typeof o.value !== (f.type === "text" ? "string" : "number")))
-          throw new Error("Choice values must match field type");
-        if (new Set(f.choices.map((o) => o.value)).size !== f.choices.length)
-          throw new Error("Duplicate choice value");
-      }
-    }
-  const snapshot = `${spec.prefix}Snapshot`, draft = `${spec.prefix}Draft`;
-  const openName = `${spec.prefix}Open`, prepareName = `${spec.prefix}Prepare`;
-  const q = JSON.stringify;
-  const helpers = `const canonical = ${canonical.toString()};
-const fields = ${q(spec.fields)};
-const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
-`;
-  const openCode = helpers + `await actions.setVariable(${q(snapshot)}, null);
-await actions.setVariable(${q(draft)}, null);
-const selection = components.${spec.table_component}.selectedRow;
-const id = selection && selection[${q(spec.id_field)}];
-if ((typeof id !== 'string' && typeof id !== 'number') || id === '' || (typeof id === 'number' && !Number.isFinite(id))) throw new Error('Select a record first');
-const rows = queries.${spec.source_query}.data;
-if (!Array.isArray(rows)) throw new Error('Raw records are not loaded');
-const matches = rows.filter(r => r && own(r, ${q(spec.id_field)}) && r[${q(spec.id_field)}] === id);
-if (matches.length !== 1) throw new Error('Expected exactly one raw record for the selected ID');
-const values = {};
-for (const field of fields) {
-  if (!own(matches[0], field.field)) throw new Error('Raw record omits: ' + field.field);
-  // Existing incomplete records must be openable for correction. Validate required
-  // values on Prepare, not before the user can edit them.
-  values[field.field] = canonical(matches[0][field.field], { ...field, required: false, nullable: true });
-}
-await actions.setVariable(${q(snapshot)}, { id, values });
-return { id };`;
-  const prepareCode = helpers + `const snapshot = variables.${snapshot};
-const draft = variables.${draft};
-const selection = components.${spec.table_component}.selectedRow;
-if (!snapshot || !selection || selection[${q(spec.id_field)}] !== snapshot.id) throw new Error('Reopen the selected record before saving');
-if (draft && draft.id !== snapshot.id) throw new Error('Draft belongs to another record');
-const changes = draft ? draft.values : {};
-if (!changes || typeof changes !== 'object' || Array.isArray(changes)) throw new Error('Invalid draft');
-const patch = {};
-for (const key of Object.keys(changes)) if (!fields.some(f => f.field === key)) throw new Error('Unknown draft field: ' + key);
-for (const field of fields) {
-  if (!own(snapshot.values, field.field)) throw new Error('Incomplete edit snapshot');
-  if (!own(changes, field.field)) {
-    canonical(snapshot.values[field.field], field);
-    continue;
-  }
-  const raw = changes[field.field];
-  let value = canonical(raw, field);
-  if (value === '' && field.type !== 'text') value = null;
-  if (value === '' || value === null) {
-    if (!field.nullable) throw new Error('Clearing is not allowed: ' + field.field);
-    value = null;
-  }
-  if (value !== snapshot.values[field.field]) patch[field.field] = value;
-}
-return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
-  const inputs = spec.fields.map((f) => {
-    const type = f.choices ? "DropdownV2" : { text: "TextInput", number: "NumberInput", date_only: "DatePickerV2", boolean: "Checkbox" }[f.type];
-    const initialKey = f.choices ? "schema" : ["date_only", "boolean"].includes(f.type) ? "defaultValue" : "value";
-    const exposed = f.type === "date_only" ? "selectedDate" : "value";
-    const trigger = f.choices || f.type === "date_only" ? "onSelect" : "onChange";
-    const schema = getComponentSchema(type);
-    if (!schema?.properties.some((p) => p.key === initialKey) || !schema.events?.some((e) => e.id === trigger))
-      throw new Error(`Unsupported edit adapter: ${type}`);
-    const initial = `variables.${snapshot} && variables.${snapshot}.values[${q(f.field)}]`;
-    let value = `{{${initial} != null ? variables.${snapshot}.values[${q(f.field)}] : ${f.type === "boolean" ? "false" : "''"}}}`;
-    if (f.choices) {
-      const options = Array.isArray(f.choices) ? q(f.choices) : `(queries.${f.choices.query}.data || []).map(r=>({label:r[${q(f.choices.label_field)}],value:r[${q(f.choices.value_field)}]}))`;
-      value = `{{(${options}).map(option=>({label:option.label,value:option.value,visible:true,default:!!variables.${snapshot} && option.value === variables.${snapshot}.values[${q(f.field)}]}))}}`;
-    }
-    const exposedValue = `components.${f.component}.${exposed}`;
-    const changedValue = f.choices && f.nullable ? `(${exposedValue} == null ? null : ${exposedValue})` : exposedValue;
-    const draftValue = `{{({id:variables.${snapshot}.id,values:Object.assign({},variables.${draft} && variables.${draft}.id === variables.${snapshot}.id ? variables.${draft}.values : {},{${q(f.field)}:${changedValue}})})}}`;
-    return {
-      name: f.component,
-      type,
-      properties: { [initialKey]: value, ...f.choices ? { advanced: "{{true}}", showClearBtn: f.nullable } : {}, ...f.type === "date_only" ? { dateFormat: "YYYY-MM-DD" } : {} },
-      validation: { mandatory: f.required },
-      events: [{ source_ref: f.component, source_type: "component", trigger, action: {
-        actionId: "set-custom-variable",
-        key: draft,
-        value: draftValue,
-        runOnlyIf: `{{!!variables.${snapshot}}}`
-      } }]
-    };
+function strictEntry(shape, describeUnknown) {
+  return external_exports.strictObject(shape, {
+    error: (issue) => issue.code === "unrecognized_keys" ? issue.keys.map(describeUnknown).join(" ") : void 0
   });
-  return {
-    queries: [
-      { name: openName, kind: "runjs", options: { code: openCode } },
-      { name: prepareName, kind: "runjs", options: { code: prepareCode } }
-    ],
-    inputs,
-    mutation_contract: {
-      id: `{{queries.${prepareName}.data.id}}`,
-      patch: `{{queries.${prepareName}.data.patch}}`,
-      runOnlyIf: `{{queries.${prepareName}.data && queries.${prepareName}.data.changed === true}}`
-    },
-    wiring: [
-      `Run ${openName} on Edit; open the editor only on its success. Merge the returned input properties and change events into your native layout. Never use display selectedRow fields as defaults.`,
-      `Run ${prepareName} on Save; run a datasource-specific PATCH/update ONLY on its success and with mutation_contract.runOnlyIf. No change means no write. Bind the ID and patch from mutation_contract; never expand missing patch keys to null or empty strings.`,
-      "Gate Save while open/prepare/write are loading. Preserve the editor on failure. Refresh affected queries and close/reset only after the actual mutation succeeds; refresh actions are not assumed to complete in order."
-    ],
-    limitations: [
-      "Requires an already-loaded bounded raw row array and a single stable scalar ID. This generates wiring only; it does not create resources or persist data.",
-      "Only text, finite number, ISO date-only and boolean fields are covered; text/number fields can opt into dropdown choices. Required/nullable/trim are explicit opt-ins; domain constraints, authorization and optimistic concurrency must be enforced separately.",
-      "Dropdown option queries must already return bounded raw arrays with matching ID types and include the current value, including inactive owners when necessary. Missing options are not permission to clear stored relationships. Validate membership/authorization separately; this helper does not create or execute option queries.",
-      "Draft tracks native change events, not every displayed input value. Programmatic field changes must update the draft explicitly. Browser-verify that all change events fire, including both checkbox transitions."
-    ]
-  };
+}
+function hasNonEmptyDefinition(definition2) {
+  if (!definition2)
+    return false;
+  return Object.values(definition2).some((section) => section !== null && typeof section === "object" && Object.keys(section).length > 0);
 }
 createRequire(import.meta.url);
 var ref = external_exports.string().min(1).max(100);
@@ -1206,7 +1038,7 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
       graph.nodes.push(node);
     node_ids[input.ref] = id;
   }
-  const resolve = (ref2) => node_ids[ref2] ?? (graph.nodes.some((n) => n.id === ref2) ? ref2 : void 0);
+  const resolve2 = (ref2) => node_ids[ref2] ?? (graph.nodes.some((n) => n.id === ref2) ? ref2 : void 0);
   const editedEdges = /* @__PURE__ */ new Set();
   for (const input of spec.edges) {
     const id = input.existing_id ?? ids?.edge_ids[input.ref] ?? randomUUID();
@@ -1216,7 +1048,7 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
     const old = graph.edges.find((e) => e.id === id);
     if (input.existing_id && !old)
       throw new Error(`Unknown existing edge: ${id}`);
-    const source = resolve(input.from), target = resolve(input.to);
+    const source = resolve2(input.from), target = resolve2(input.to);
     if (!source || !target)
       throw new Error(`Unknown endpoint in edge ${input.ref}. Use a supplied ref or existing node ID.`);
     const sourceNode = graph.nodes.find((node) => node.id === source);
@@ -1305,6 +1137,55 @@ function tableQuotaError(error) {
   return void 0;
 }
 createRequire(import.meta.url);
+var FORMAT = "tooljet-catalog-parts-v1";
+var json = (value) => JSON.stringify(value, null, 2) + "\n";
+function readCatalog(file2) {
+  const index = JSON.parse(readFileSync(file2, "utf8"));
+  if (index.format !== FORMAT) return index;
+  const result = {};
+  for (const part of index.parts) {
+    if (!/^[\w-]+\/part-\d+\.json$/.test(part)) throw new Error(`Invalid catalog part: ${part}`);
+    const data = JSON.parse(readFileSync(resolve(dirname(file2), part), "utf8"));
+    for (const [key, value] of Object.entries(data)) {
+      if (Object.hasOwn(result, key)) throw new Error(`Duplicate catalog key: ${key}`);
+      Object.defineProperty(result, key, { value, enumerable: true, writable: true, configurable: true });
+    }
+  }
+  return result;
+}
+function readCatalogBytes(file2) {
+  const bytes = readFileSync(file2);
+  const value = JSON.parse(bytes.toString("utf8"));
+  return value.format === FORMAT ? Buffer.from(json(readCatalog(file2))) : bytes;
+}
+createRequire(import.meta.url);
+var dataPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-schemas.json");
+var compatibilityPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-compatibility.json");
+var cache = null;
+var legacyReplacements = null;
+function load() {
+  if (!cache)
+    cache = readCatalog(dataPath);
+  return cache;
+}
+function loadLegacyReplacements() {
+  if (!legacyReplacements) {
+    const compatibility = JSON.parse(readFileSync(compatibilityPath, "utf8"));
+    legacyReplacements = compatibility.legacyReplacements ?? {};
+  }
+  return legacyReplacements;
+}
+function getCatalog() {
+  const legacy = loadLegacyReplacements();
+  return Object.values(load()).filter((c) => !legacy[c.type]).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
+}
+function getComponentSchema(type) {
+  return load()[type] ?? null;
+}
+function getLegacyComponentReplacement(type) {
+  return loadLegacyReplacements()[type] ?? null;
+}
+createRequire(import.meta.url);
 var require_unicode = __commonJS({
   "node_modules/json5/lib/unicode.js"(exports, module) {
     module.exports.Space_Separator = /[\u1680\u2000-\u200A\u202F\u205F\u3000]/;
@@ -1365,8 +1246,8 @@ var require_parse = __commonJS({
       }
       return root;
     };
-    function internalize(holder, name2, reviver) {
-      const value = holder[name2];
+    function internalize(holder, name, reviver) {
+      const value = holder[name];
       if (value != null && typeof value === "object") {
         if (Array.isArray(value)) {
           for (let i = 0; i < value.length; i++) {
@@ -1399,7 +1280,7 @@ var require_parse = __commonJS({
           }
         }
       }
-      return reviver.call(holder, name2, value);
+      return reviver.call(holder, name, value);
     }
     var lexState;
     var buffer;
@@ -2813,9 +2694,9 @@ var require_resolve_flow_scalar = __commonJS({
 var require_errors = __commonJS({
   "node_modules/yaml/dist/errors.js"(exports) {
     var YAMLError = class extends Error {
-      constructor(name2, pos, code, message) {
+      constructor(name, pos, code, message) {
         super();
-        this.name = name2;
+        this.name = name;
         this.code = code;
         this.message = message;
         this.pos = pos;
@@ -5141,31 +5022,37 @@ var require_parser = __commonJS({
   }
 });
 export {
+  specSchema as A,
+  compileGraph as B,
+  assertWorkflowJavaScript as C,
+  controlFlowEdges as D,
+  nodeSchema as E,
+  readCatalogBytes as F,
   TableQuotaError as T,
-  require_identity as a,
-  require_Scalar as b,
-  require_cst as c,
-  require_lexer as d,
-  require_parser as e,
-  require_resolve_end as f,
-  require_toJS as g,
-  require_applyReviver as h,
-  require_Node as i,
-  require_stringifyString as j,
-  require_resolve_block_scalar as k,
-  require_resolve_flow_scalar as l,
-  require_parse as m,
-  require_util as n,
-  external_exports as o,
-  definition as p,
-  nodeCatalog as q,
-  require_errors as r,
-  specSchema as s,
-  tableQuotaError as t,
-  compileGraph as u,
-  validateGraph as v,
-  assertWorkflowJavaScript as w,
-  controlFlowEdges as x,
-  editContractSchema as y,
-  generateEditContract as z
+  require_errors as a,
+  require_identity as b,
+  require_Scalar as c,
+  require_cst as d,
+  require_lexer as e,
+  require_parser as f,
+  require_resolve_end as g,
+  require_toJS as h,
+  require_applyReviver as i,
+  require_Node as j,
+  require_stringifyString as k,
+  require_resolve_block_scalar as l,
+  require_resolve_flow_scalar as m,
+  require_parse as n,
+  require_util as o,
+  external_exports as p,
+  getComponentSchema as q,
+  readCatalog as r,
+  getCatalog as s,
+  getLegacyComponentReplacement as t,
+  hasNonEmptyDefinition as u,
+  tableQuotaError as v,
+  definition as w,
+  strictEntry as x,
+  nodeCatalog as y,
+  validateGraph as z
 };

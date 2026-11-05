@@ -4,7 +4,7 @@ import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { getDatasourceQuerySchema } from '../datasourceCatalog.js';
 import { extractSpec, listEndpoints, endpointParameters, specHost, rankEndpoints, endpointTagCounts } from '../openapiSpec.js';
-import { ok, fail, type ToolDef } from './types.js';
+import { ok, fail, exposeActions, type ToolDef } from './types.js';
 
 const requestSchema = z.object({
   method: z.string().min(1),
@@ -17,6 +17,30 @@ const requestSchema = z.object({
 });
 
 type SchemaRequest = z.infer<typeof requestSchema>;
+
+/** Fixed metadata operations, advertised before a client performs any discovery. */
+export function datasourceMetadataTools(source: ToolDef): ToolDef[] {
+  const methods = [
+    ['listDatasets', 'list_datasource_datasets', 'List Datasource Datasets', 'List dataset names in a connected datasource.'],
+    ['listTables', 'list_datasource_tables', 'List Datasource Tables', 'List tables or API endpoint paths from a connected datasource; for HubSpot, an omitted schema lists spec groups.'],
+    ['listColumns', 'list_datasource_columns', 'List Datasource Columns', 'Read column definitions for one datasource table.'],
+    ['getSheets', 'list_datasource_sheets', 'List Datasource Sheets', 'List sheets in a connected spreadsheet datasource.'],
+    ['getSpreadsheets', 'list_datasource_spreadsheets', 'List Datasource Spreadsheets', 'List spreadsheets available to a connected datasource.'],
+    ['getEndpointSchema', 'get_datasource_endpoint_schema', 'Get Datasource Endpoint Schema', 'Read the request contract for one API endpoint from its specification; never send the endpoint request.'],
+    ['listCollections', 'list_datasource_collections', 'List Datasource Collections', 'List collection names in a connected document datasource.'],
+    ['listSchemas', 'list_datasource_schemas', 'List Datasource Schemas', 'List database schema names in a connected datasource.'],
+    ['getTenants', 'list_datasource_tenants', 'List Datasource Tenants', 'List tenant metadata available through a connected datasource.'],
+  ];
+  return exposeActions(source, methods.map(([action, name, title, description]) => ({
+    action: action!, name: name!, title: title!,
+    description: `${description} Uses the fixed ${action} metadata method, only when the datasource advertises it. ` +
+      'Does not execute saved queries, author resources, or invoke the API endpoints described by a returned schema. ' +
+      'schema/table/search/page/limit are selectors; args supplies datasource-specific selectors such as spreadsheet ID or endpoint HTTP method.',
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    required: ['version_id', 'datasource_id'],
+    optional: ['schema', 'table', 'search', 'page', 'limit', 'args'],
+  })), 'method');
+}
 
 function invokeArgs(request: SchemaRequest): Record<string, unknown> {
   const customValues =
