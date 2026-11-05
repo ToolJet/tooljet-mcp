@@ -1,9 +1,9 @@
 import { createRequire } from "node:module";
-import { s as surfaceAroundResolver, l as lintSelectedRowProjections, a as lintOversizedWidths, b as lintHtmlContentHeight, c as lintHtmlRootSurface, d as lintUnguardedComponentRefs, e as lintEmbeddedBindingSyntax, f as lintChartDataShape, g as lintUnguardedSelectionText, h as lintTextFormat, i as lintTableColumnsShape, B as BARE_QUERY_DATA_BINDING, j as lintBindingNames, k as lintUntriggeredDataQueries, m as lintAutomaticWrites, n as bindingSpans, p as parseHtml, o as stripHtmlBindings } from "./chunk-CR7sOYLa.js";
-import { ed as __toESM, e8 as getComponentSchema, e7 as getCatalog, ea as getLegacyComponentReplacement } from "./chunk-addBGscc.js";
-import { r as require_lib } from "./chunk-CQ1QtaUb.js";
-import { p as parseExpression, a as parse } from "./chunk-DyyCxCqH.js";
-import { b0 as external_exports } from "./chunk-CN1mtqtB.js";
+import { s as surfaceAroundResolver, l as lintSelectedRowProjections, a as lintOversizedWidths, b as lintHtmlContentHeight, c as lintHtmlRootSurface, d as lintUnguardedComponentRefs, e as lintEmbeddedBindingSyntax, f as lintChartDataShape, g as lintUnguardedSelectionText, h as lintTextFormat, i as lintTableColumnsShape, B as BARE_QUERY_DATA_BINDING, j as lintBindingNames, k as lintUntriggeredDataQueries, m as lintAutomaticWrites, n as bindingSpans, p as parseHtml, o as stripHtmlBindings } from "./chunk-BxMc6J_M.js";
+import { ed as __toESM, e8 as getComponentSchema, e7 as getCatalog, ea as getLegacyComponentReplacement } from "./chunk-COW2iNTB.js";
+import { r as require_lib } from "./chunk-B6ef8g-7.js";
+import { p as parseExpression, a as parse } from "./chunk-DpvBXwyI.js";
+import { b0 as external_exports } from "./chunk-D-yEFdPv.js";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,6 +26,7 @@ function libraryPacksAll() {
 function registerLibraryPacks(packs) {
   discovered = packs;
 }
+var serverLibraryPacks = () => discovered ?? [];
 function libraryPack() {
   return libraryPacksAll()[0] ?? null;
 }
@@ -35,6 +36,40 @@ var isLibraryPackType = (type) => !!packOfType(type);
 function libraryPins() {
   const packs = libraryPacksAll().filter((p) => !isBuiltin(p));
   return packs.length ? Object.fromEntries(packs.map((p) => [p.correlationId.replace(/-/g, ""), p.version])) : void 0;
+}
+var dashless = (id) => id.replace(/-/g, "");
+var propertyValue = (properties, key) => {
+  const entry = properties?.[key];
+  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+};
+function libraryCorrelationId(component) {
+  const properties = component.properties;
+  const id = propertyValue(properties, "correlationId");
+  return typeof id === "string" && id && !propertyValue(properties, "codePage") ? id : void 0;
+}
+var isPinned = (pins, correlationId) => pins[dashless(correlationId)] != null || pins[correlationId] != null;
+function missingLibraryPins(components, pins) {
+  const missing = {};
+  for (const component of components) {
+    const id = libraryCorrelationId(component);
+    if (!id || isPinned(pins, id))
+      continue;
+    const pack = libraryPacksAll().find((p) => !isBuiltin(p) && p.correlationId === id);
+    if (pack)
+      missing[dashless(id)] = pack.version;
+  }
+  return Object.keys(missing).length ? missing : void 0;
+}
+function unpinnedLibraries(components, pins) {
+  const byLibrary = /* @__PURE__ */ new Map();
+  for (const component of components) {
+    const id = libraryCorrelationId(component);
+    if (!id || isPinned(pins, id))
+      continue;
+    const library = String(propertyValue(component.properties, "libraryName") ?? id);
+    byLibrary.set(library, [...byLibrary.get(library) ?? [], String(component.name ?? "unnamed")]);
+  }
+  return [...byLibrary].map(([library, names]) => ({ library, components: names }));
 }
 function toLibraryComponent(spec) {
   const pack = packOfType(spec.type);
@@ -98,6 +133,68 @@ function downgradeFlexForLibrary(spec) {
       properties[key] = { value: map[value2] };
   }
   return { ...spec, properties };
+}
+var defaultPack = () => {
+  const raw = process.env.MCP_AGENT_PACK;
+  return (raw === void 0 ? "shadcn" : raw).trim().toLowerCase() || void 0;
+};
+var savedComponentLibrary = (library, pack) => {
+  const chosen = pack?.trim().toLowerCase() || defaultPack();
+  return library === "ui2" && chosen ? `pack:${chosen}` : library;
+};
+var COMPONENT_PACK_DESCRIPTION = `The component pack a UI 2.0 app is built with, saved on the app (the components panel lists it): "shadcn" (Rocket 2.0, ToolJet's own look), "antd" (Ant Design) or "mui" (Material UI). Pass it when the user names a design system; then build with that pack's Lib_<pack>_* widgets. Omitted, the default pack.`;
+var COMPONENT_LIBRARY_NAMES = {
+  ui1: "ToolJet UI 1.0",
+  ui2: "ToolJet UI 2.0"
+};
+var isUi2Type = (type) => typeof type === "string" && /^Shad[A-Z]/.test(type);
+var isPackType = (type) => typeof type === "string" && /^Lib_[a-z0-9]+_/i.test(type);
+function resolveComponentLibrary(globalSettings, componentTypes) {
+  const settings = globalSettings;
+  const saved = settings?.componentLibrary ?? settings?.component_library;
+  if (saved === "ui1" || saved === "ui2")
+    return { library: saved, source: "saved" };
+  if (typeof saved === "string" && saved.startsWith("pack:") && saved.length > 5)
+    return { library: "ui2", source: "saved", pack: saved.slice(5) };
+  if (typeof saved === "string" && saved.startsWith("lib:"))
+    return { library: "ui1", source: "saved" };
+  for (const type of componentTypes)
+    if (isUi2Type(type) || isPackType(type))
+      return { library: "ui2", source: "inferred" };
+  return { library: "ui1", source: "inferred" };
+}
+var styleValue = (styles, key) => {
+  const entry = styles?.[key];
+  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+};
+function nativeFitsUi2(component) {
+  if (component.type === "FlexContainer" || component.type === "Map")
+    return true;
+  return component.type === "Table" && styleValue(component.styles, "tableLook") !== "default";
+}
+function componentLibraryWarnings(library, pages, request) {
+  if (request?.trim())
+    return [];
+  const off = /* @__PURE__ */ new Map();
+  for (const page of pages ?? []) {
+    for (const component of page.components ?? []) {
+      const type = String(component.type ?? "");
+      const ui2Side = isUi2Type(type) || isPackType(type);
+      const mismatch = library.library === "ui1" ? ui2Side : !ui2Side && !nativeFitsUi2(component);
+      if (!mismatch)
+        continue;
+      off.set(type, [...off.get(type) ?? [], component.name ?? type]);
+    }
+  }
+  if (!off.size)
+    return [];
+  const listed = [...off].map(([type, names]) => `${type} (${names.slice(0, 3).join(", ")}${names.length > 3 ? ", ..." : ""})`).join("; ");
+  const how = library.source === "saved" ? "its saved library" : library.source === "inferred" ? "the library its widgets imply" : "new apps are; pass app_id to check the plan against an existing app";
+  const appName = COMPONENT_LIBRARY_NAMES[library.library];
+  const fix = library.library === "ui1" ? "Build with the native ToolJet types instead (Table, Chart, TextInput, DropdownV2, ModalV2, Container, ...)." : `Build with the UI 2.0 types instead: types whose names start with Shad, laid out in FlexContainers; ShadDialog for dialogs and side sheets; for tables ToolJet's Table (styles.tableLook "shadcn").`;
+  return [
+    `This app is built in ${appName} (${how}), and the plan adds widgets from the other library: ${listed}. ${fix} If the user asked for the other library in this request, keep the plan and put their words in component_library_request.`
+  ];
 }
 function isNode(value2) {
   return !!value2 && typeof value2 === "object" && typeof value2.type === "string";
@@ -904,7 +1001,12 @@ var componentSlotSchema = external_exports.union([
   external_exports.string().regex(LIBRARY_TAB_SLOT)
 ]);
 var ENCODED_SLOT_SUFFIXES = ["header", "footer", "modal"];
-function encodeComponentParent(parentId, slotName) {
+function isPackContainerType(type) {
+  return typeof type === "string" && (type.startsWith("Lib_") || type === "PackComponent" || type === "LibraryComponent");
+}
+function encodeComponentParent(parentId, slotName, parentType) {
+  if (isPackContainerType(parentType))
+    return `${decodeComponentParent(parentId).parentId}-${slotName ?? "body"}`;
   if (!slotName)
     return parentId;
   if (slotName === "body")
@@ -914,6 +1016,8 @@ function encodeComponentParent(parentId, slotName) {
   return tab ? `${base}-${tab[1]}` : `${base}-${slotName}`;
 }
 function decodeComponentParent(parentId) {
+  if (parentId.endsWith("-body"))
+    return { parentId: parentId.slice(0, -"-body".length), slotName: "body" };
   for (const slotName of ENCODED_SLOT_SUFFIXES) {
     const suffix = `-${slotName}`;
     if (parentId.endsWith(suffix)) {
@@ -2877,6 +2981,10 @@ function lintComponentSpec(spec, context = {}) {
   } else if (!componentSchema) {
     const suggestion = nearestCatalogKey(spec.type, getCatalog().map((entry) => entry.type));
     errors.push(`Component "${label}": unknown component type "${spec.type}"; ToolJet may persist an unusable component.` + (suggestion ? ` Did you mean "${suggestion}"?` : " Call get_component_catalog with no type to list supported types."));
+  } else if (/^Shad[A-Z]/.test(spec.type) && defaultPack() && serverLibraryPacks().length) {
+    const name = spec.type.slice(4);
+    const matches = serverLibraryPacks().filter((p) => p.components[name]).map((p) => `${p.prefix}${name}`);
+    errors.push(`Component "${label}": "${spec.type}" is not available on this ToolJet; UI 2.0 widgets draw as the app's component pack. ` + (matches.length ? `Write the app's pack component instead: ${matches.join(" or ")} (the one matching the app's pack).` : "Call get_component_catalog for the pack components."));
   } else {
     const replacement = getLegacyComponentReplacement(spec.type);
     if (replacement) {
@@ -4265,45 +4373,52 @@ function lintInnerPageBands(summary) {
   return warnings;
 }
 export {
-  unifyChartAccents as A,
-  lintComponents as B,
-  pageIconError as C,
-  validateAppStructure as D,
-  pageIconSchema as E,
-  namespaceReads as F,
-  registerLibraryPacks as G,
-  libraryPins as H,
-  lintRenderedGeometryBlocking as I,
-  lintRenderedGeometryAdvisory as J,
-  lintNestedContainerWidths as K,
-  FORM_SCHEMA_FIELD_TYPE_SET as L,
-  SAFE_GENERATED_FORM_FIELD_TYPE_SET as M,
+  lintComponentStateBindings as A,
+  minimumTextHeight as B,
+  unifyChartAccents as C,
+  lintComponents as D,
+  pageIconError as E,
+  validateAppStructure as F,
+  pageIconSchema as G,
+  componentLibraryWarnings as H,
+  namespaceReads as I,
+  unpinnedLibraries as J,
+  registerLibraryPacks as K,
+  libraryPins as L,
+  defaultPack as M,
+  savedComponentLibrary as N,
+  COMPONENT_PACK_DESCRIPTION as O,
   PROPERTY_KEY_ALIASES as P,
+  lintRenderedGeometryBlocking as Q,
+  lintRenderedGeometryAdvisory as R,
   STYLE_KEYS_IN_PROPERTIES as S,
+  lintNestedContainerWidths as T,
+  FORM_SCHEMA_FIELD_TYPE_SET as U,
+  SAFE_GENERATED_FORM_FIELD_TYPE_SET as V,
   downgradeFlexForLibrary as a,
   assertPageIcon as b,
-  componentSlotSchema as c,
+  retiredUi2Name as c,
   decodeComponentParent as d,
   encodeComponentParent as e,
-  componentNameSchema as f,
-  componentNameError as g,
-  resolveParentRef as h,
+  componentSlotSchema as f,
+  componentNameSchema as g,
+  componentNameError as h,
   isMisplacedStyleKey as i,
-  introducedLintFindings as j,
-  lintComponentSpec as k,
+  resolveParentRef as j,
+  introducedLintFindings as k,
   libraryTypeOf as l,
-  lintComponentSlots as m,
+  missingLibraryPins as m,
   nearestCatalogKey as n,
-  lintUnusableTextGeometry as o,
-  lintStandardSingleLineInputHeight as p,
-  lintTextGeometry as q,
-  retiredUi2Name as r,
-  lintRenderedGeometry as s,
+  lintComponentSpec as o,
+  lintComponentSlots as p,
+  lintUnusableTextGeometry as q,
+  resolveComponentLibrary as r,
+  lintStandardSingleLineInputHeight as s,
   toLibraryComponent as t,
-  lintKanbanInteractions as u,
-  lintShadKanbanCards as v,
-  lintShadScheduleScale as w,
-  isModalV2Type as x,
-  lintComponentStateBindings as y,
-  minimumTextHeight as z
+  lintTextGeometry as u,
+  lintRenderedGeometry as v,
+  lintKanbanInteractions as w,
+  lintShadKanbanCards as x,
+  lintShadScheduleScale as y,
+  isModalV2Type as z
 };
