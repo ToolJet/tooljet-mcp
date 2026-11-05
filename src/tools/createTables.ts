@@ -36,7 +36,7 @@ export function createTablesTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Create multiple ToolJet-DB tables in one call. The complete batch is preflighted before writes for duplicate/reserved names, ' +

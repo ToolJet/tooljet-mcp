@@ -19,7 +19,27 @@ jobs:
         with:
           fetch-depth: 0
 
+      # The CLI is MIT-licensed; the organization-only license requirement belongs
+      # to the action wrapper. Keep the same failing check without that dependency.
+      - name: Install pinned Gitleaks CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/gitleaks_8.30.1_linux_x64.tar.gz"
+          curl --fail --silent --show-error --location --retry 3 \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+            --output "$archive"
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $archive" | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/gitleaks-bin"
+          tar -xzf "$archive" -C "$RUNNER_TEMP/gitleaks-bin" gitleaks
+
       - name: Scan committed history for secrets
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        # Push/PR: all reachable history. Manual: all fetched branches and tags.
+        run: |
+          set -euo pipefail
+          scan_history=HEAD
+          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
+            scan_history=--all
+          fi
+          "$RUNNER_TEMP/gitleaks-bin/gitleaks" git . --log-opts="$scan_history" --redact=100 --no-banner

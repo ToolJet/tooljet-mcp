@@ -11,7 +11,8 @@ export function listTablesTool(client: ToolJetClient): ToolDef {
     title: 'List ToolJet DB Tables',
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
     },
     description:
       "List the ToolJet-DB tables in the workspace as { tables: [{ id, table_name }], total, shown }. A ToolJet-DB (tooljetdb) query's options require the table's `id` as `table_id` (NOT the table name) — call this to resolve a table name to its id before add_query. " +

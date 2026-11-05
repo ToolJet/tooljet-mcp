@@ -8,7 +8,8 @@ export function getTableSchemaTool(client: ToolJetClient): ToolDef {
     title: 'Get Table Schema',
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
     },
     description:
       "Get a ToolJet-DB table's columns, including primary/not-null/unique constraints, defaults, configurations, and foreign-key relationships. Use before building queries, " +

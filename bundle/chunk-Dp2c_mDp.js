@@ -1,7 +1,6 @@
 import { createRequire } from "node:module";
-import { e5 as getComponentSchema, ea as getCatalog, eb as getLegacyComponentReplacement } from "./chunk-BEuHHGL1.js";
-import { o as external_exports } from "./chunk-8iUq0slz.js";
-import { l as lintBindingNames, p as parseExpression, a as parse, b as bindingSpans } from "./chunk-yxr8SUor.js";
+import { p as external_exports, q as getComponentSchema, s as getCatalog, t as getLegacyComponentReplacement } from "./chunk-C9d6UC58.js";
+import { l as lintBindingNames, p as parseExpression, a as parse, b as bindingSpans } from "./chunk-DFfOcLmL.js";
 import { readFileSync } from "node:fs";
 createRequire(import.meta.url);
 var VOID_TAGS = /* @__PURE__ */ new Set(["br", "img", "hr", "input", "meta", "link", "source", "wbr", "col"]);
@@ -4541,27 +4540,27 @@ export {
   FORM_SCHEMA_FIELD_TYPE_SET as F,
   PROPERTY_KEY_ALIASES as P,
   STYLE_KEYS_IN_PROPERTIES as S,
-  componentNameSchema as a,
-  componentNameError as b,
+  assertPageIcon as a,
+  componentNameSchema as b,
   componentSlotSchema as c,
   decodeComponentParent as d,
   encodeComponentParent as e,
-  lintComponentSlots as f,
-  lintUnusableTextGeometry as g,
-  lintStandardSingleLineInputHeight as h,
+  componentNameError as f,
+  lintComponentSlots as g,
+  lintUnusableTextGeometry as h,
   introducedLintFindings as i,
-  lintTextGeometry as j,
-  lintRenderedGeometry as k,
+  lintStandardSingleLineInputHeight as j,
+  lintTextGeometry as k,
   lintComponentSpec as l,
-  lintKanbanInteractions as m,
+  lintRenderedGeometry as m,
   nearestCatalogKey as n,
-  assertPageIcon as o,
-  lintComponentStateBindings as p,
-  minimumTextHeight as q,
-  pageIconError as r,
+  lintKanbanInteractions as o,
+  pageIconSchema as p,
+  pageIconError as q,
+  lintComponents as r,
   suggestedHtmlHeight as s,
-  lintComponents as t,
-  pageIconSchema as u,
+  lintComponentStateBindings as t,
+  minimumTextHeight as u,
   validateAppStructure as v,
   namespaceReads as w,
   lintRenderedGeometryBlocking as x,

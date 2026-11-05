@@ -10,7 +10,7 @@ export function deletePageTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Permanently delete one non-Home page and its components. This is destructive: inspect the target, obtain explicit user ' +

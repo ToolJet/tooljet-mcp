@@ -11,7 +11,7 @@ export function deleteComponentsTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Permanently remove named components from one page. Inspect the targets and obtain explicit approval, then pass confirm:true. ' +

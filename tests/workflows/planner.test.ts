@@ -5,6 +5,8 @@ import { createWorkflowClient, type WorkflowClient, type WorkflowSnapshot } from
 import type { Auth } from '../../src/auth.js';
 import type { Config } from '../../src/config.js';
 import type { QuerySummary } from '../../src/tooljetClient.js';
+import type { ToolJetClient } from '../../src/tooljetClient.js';
+import { workflowMutationTools } from '../../src/tools/applyWorkflowSpec.js';
 const spec = () => specSchema.parse({ nodes: [{ ref: 'start', type: 'start' }, { ref: 'q', type: 'javascript', name: 'calculate', code: 'return 42;' }, { ref: 'r', type: 'response', code: 'return {ok:true};' }], edges: [{ ref: 'e1', from: 'start', to: 'q', port: 'default' }, { ref: 'e2', from: 'q', to: 'r', port: 'success' }] });
 function fixture() {
   let graph = definition({}); let scope = crypto.randomUUID();
@@ -31,6 +33,41 @@ const oauthIdentity = {
   workspaceId: 'org', sessionToken: 'synthetic-delegation-before', isOAuthDelegation: true, oauthGrantId: 'garden-grant',
 };
 describe('workflow planning and recovery', () => {
+  it('authors nodes, edges, and test parameters individually without executing code', async () => {
+    const { client } = fixture();
+    const run = vi.fn(() => { throw new Error('Authoring must not execute a workflow'); });
+    const tools = workflowMutationTools({ workflows: { ...client, run } } as unknown as ToolJetClient);
+    const target = { workflow_id: 'c1000000-0000-4000-8000-000000000001', version_id: 'c2000000-0000-4000-8000-000000000002' };
+    const call = async (name: string, args: object) => {
+      const result = await tools.find(t => t.name === name)!.handler({ ...target, ...args });
+      expect(result.isError, JSON.stringify(result)).not.toBe(true);
+      return JSON.parse(result.content[0]!.text);
+    };
+    const begin = await call('upsert_workflow_start_node', { node: { ref: 'launch' } });
+    const code = await call('upsert_workflow_javascript_node', { node: { ref: 'mass', name: 'computeMass', code: 'throw new Error("Stored code must not run during authoring");' } });
+    const link = await call('upsert_workflow_edge', { edge: { ref: 'launch-mass', from: begin.node_ids.launch, to: code.node_ids.mass, port: 'default' } });
+    expect((await client.get('w', 'v')).definition.edges).toHaveLength(1);
+    await call('delete_workflow_edge', { edge_id: link.edge_ids['launch-mass'] });
+    await call('set_workflow_test_parameters', { parameters: { radius: 6 } });
+    const saved = await client.get('w', 'v');
+    expect(saved.definition.edges).toHaveLength(0);
+    expect(saved.definition.defaultParams).toBe('{"radius":6}');
+    expect(client.createWorkflowQuery).toHaveBeenCalledOnce();
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it('workflow lint never evaluates embedded JavaScript or calls mutations', async () => {
+    const { client } = fixture();
+    const proposed = spec();
+    const node = proposed.nodes.find(n => n.type === 'javascript')!;
+    if (node.type === 'javascript') node.code = 'throw new Error("Validation must not execute embedded code");';
+    const allowed = new Set(['get', 'getQueries', 'listDatasources', 'planScope']);
+    const readOnly = new Proxy(client, { get(target, key) {
+      if (!allowed.has(String(key))) throw new Error(`Unexpected workflow API: ${String(key)}`);
+      return target[key as keyof WorkflowClient];
+    } });
+    expect(await lint(readOnly, 'w', 'v', proposed)).toHaveProperty('plan_token');
+  });
   it('applies a linted OAuth plan after the delegation changes for the same approval', async () => {
     const { client } = fixture();
     const t = await token(withIdentity(client, oauthIdentity));

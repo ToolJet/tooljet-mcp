@@ -7,7 +7,8 @@ export function listWorkspacesTool(client: ToolJetClient): ToolDef {
     title: 'List Workspaces',
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
     },
     description:
       'List the ToolJet workspaces (organizations) this user belongs to: [{ id, name, slug, datasources_url, is_default, ' +

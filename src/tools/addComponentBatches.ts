@@ -19,7 +19,7 @@ export function addComponentBatchesTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Place complete component batches on 2–20 pages concurrently. MCP normalizes and lints every page before any write, ' +
