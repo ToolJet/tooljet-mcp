@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { existsSync } from 'node:fs';
 import { createServer, request, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { connect, createServer as createTcpServer, type AddressInfo } from 'node:net';
-import { startEgressProxy, type EgressProxy } from '../src/renderEgressProxy.js';
+import { internalAddress, startEgressProxy, type EgressProxy, type EgressProxyOptions } from '../src/renderEgressProxy.js';
+import { renderAuditPrivateOrigins } from '../src/renderAuditPolicy.js';
 import { auditPages } from '../src/tools/verifyPageRender.js';
 
 /*
@@ -26,8 +27,8 @@ async function origin(handler: (req: IncomingMessage, res: ServerResponse) => vo
   return { url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`, seen };
 }
 
-async function proxy(origins: string[], blocked: string[] = []): Promise<EgressProxy> {
-  const started = await startEgressProxy(new Set(origins), (destination) => blocked.push(destination));
+async function proxy(origins: string[], blocked: string[] = [], options: EgressProxyOptions = {}): Promise<EgressProxy> {
+  const started = await startEgressProxy(new Set(origins), (destination) => blocked.push(destination), options);
   closers.push(started.close);
   return started;
 }
@@ -98,6 +99,96 @@ describe('the render egress proxy', () => {
     expect(await tunnelStatus(p.server, '169.254.169.254:443')).toBe('HTTP/1.1 403 Forbidden');
     expect(await tunnelStatus(p.server, `127.0.0.1:${port + 1}`)).toBe('HTTP/1.1 403 Forbidden');
     expect(blocked).toEqual(['169.254.169.254:443', `127.0.0.1:${port + 1}`]);
+  });
+});
+
+/** A fake DNS: each name answers the next entry of its list (the last one again once the list runs out), and counts lookups. */
+function fakeDns(answers: Record<string, string[][]>) {
+  const lookups: string[] = [];
+  const resolve = async (hostname: string) => {
+    lookups.push(hostname);
+    const list = answers[hostname];
+    if (!list) throw Object.assign(new Error('ENOTFOUND'), { code: 'ENOTFOUND' });
+    const n = lookups.filter((h) => h === hostname).length - 1;
+    return list[Math.min(n, list.length - 1)]!.map((address) => ({ address, family: address.includes(':') ? 6 : 4 }));
+  };
+  return { resolve, lookups };
+}
+
+describe('the render egress proxy checks where a host name resolves', () => {
+  it('knows the internal ranges, metadata and IPv6 forms of them included', () => {
+    for (const address of ['127.0.0.1', '10.1.2.3', '172.20.0.1', '192.168.1.1', '169.254.169.254', '100.100.100.200', '0.0.0.0',
+      '::1', '::', 'fd00:ec2::254', 'fe80::1', '::ffff:127.0.0.1', '::ffff:a9fe:a9fe', '64:ff9b::10.0.0.1', '224.0.0.1', 'not-an-ip'])
+      expect(internalAddress(address), address).toBe(true);
+    for (const address of ['93.184.216.34', '8.8.8.8', '2606:4700:4700::1111', '::ffff:8.8.8.8'])
+      expect(internalAddress(address), address).toBe(false);
+  });
+
+  it('refuses an allowed name that resolves to an internal address, over HTTP and CONNECT, and never connects', async () => {
+    const inside = await origin((_req, res) => res.end('internal service'));
+    const port = Number(new URL(inside.url).port);
+    const dns = fakeDns({ 'cdn.customer.example': [['127.0.0.1']] });
+    const blocked: string[] = [];
+    const p = await proxy([`http://cdn.customer.example:${port}`, `https://cdn.customer.example:${port}`], blocked, { resolve: dns.resolve });
+    expect((await viaProxy(p.server, `http://cdn.customer.example:${port}/x.js`)).status).toBe(403);
+    expect(await tunnelStatus(p.server, `cdn.customer.example:${port}`)).toBe('HTTP/1.1 403 Forbidden');
+    expect(inside.seen).toEqual([]);
+    expect(blocked).toEqual([`cdn.customer.example:${port}`, `cdn.customer.example:${port}`]);
+  });
+
+  it('refuses a name with any internal answer, even when another answer is public', async () => {
+    const dns = fakeDns({ 'mixed.example': [['93.184.216.34', '169.254.169.254']] });
+    const p = await proxy(['https://mixed.example'], [], { resolve: dns.resolve });
+    expect(await tunnelStatus(p.server, 'mixed.example:443')).toBe('HTTP/1.1 403 Forbidden');
+  });
+
+  it('refuses a name that does not resolve', async () => {
+    const p = await proxy(['https://gone.example'], [], { resolve: fakeDns({}).resolve });
+    expect(await tunnelStatus(p.server, 'gone.example:443')).toBe('HTTP/1.1 403 Forbidden');
+  });
+
+  it('lets the operator name an origin that lives on a private network, and connects to the address it resolved', async () => {
+    const inside = await origin((req, res) => res.end(`host ${req.headers.host}`));
+    const port = Number(new URL(inside.url).port);
+    const dns = fakeDns({ 'tooljet.internal': [['127.0.0.1']] });
+    const base = `http://tooljet.internal:${port}`;
+    const p = await proxy([base], [], { resolve: dns.resolve, privateOrigins: new Set([base]) });
+    expect(await viaProxy(p.server, `${base}/applications/a/home`)).toMatchObject({ status: 200, body: `host tooljet.internal:${port}` });
+    expect(dns.lookups).toEqual(['tooljet.internal']);
+  });
+
+  it('checks every connection against its own lookup, so a name rebound to an internal address later is refused', async () => {
+    const inside = await origin((_req, res) => res.end('reached'));
+    const port = Number(new URL(inside.url).port);
+    // 203.0.113.0/24 (a documentation range) first, then 127.0.0.1: both are refused before any socket opens.
+    const dns = fakeDns({ 'rebind.example': [['203.0.113.10'], ['127.0.0.1']] });
+    const p = await proxy([`http://rebind.example:${port}`], [], { resolve: dns.resolve });
+    expect((await viaProxy(p.server, `http://rebind.example:${port}/a`)).status).toBe(403);
+    expect((await viaProxy(p.server, `http://rebind.example:${port}/b`)).status).toBe(403);
+    expect(inside.seen).toEqual([]);
+    expect(dns.lookups).toEqual(['rebind.example', 'rebind.example']);
+  });
+
+  it('connects a public answer to that address, not to a fresh lookup of the name', async () => {
+    const tcp = createTcpServer((socket) => socket.end());
+    await new Promise<void>((resolve) => tcp.listen(0, '127.0.0.1', resolve));
+    closers.push(() => new Promise((resolve) => tcp.close(resolve)));
+    const port = (tcp.address() as AddressInfo).port;
+    // The name resolves only through the fake DNS; the system resolver has never heard of it. Marked private so the
+    // test can listen on loopback: what it shows is that the socket goes to the resolved address.
+    const dns = fakeDns({ 'pinned.example': [['127.0.0.1']] });
+    const p = await proxy([`https://pinned.example:${port}`], [], { resolve: dns.resolve, privateOrigins: new Set([`https://pinned.example:${port}`]) });
+    expect(await tunnelStatus(p.server, `pinned.example:${port}`)).toBe('HTTP/1.1 200 Connection Established');
+    expect(dns.lookups).toEqual(['pinned.example']);
+  });
+
+  it('takes the private origins from the configured ToolJet host, TOOLJET_URL and MCP_RENDER_AUDIT_PRIVATE_ORIGINS only', () => {
+    vi.stubEnv('TOOLJET_URL', 'http://tooljet-api.internal:3000');
+    vi.stubEnv('MCP_RENDER_AUDIT_PRIVATE_ORIGINS', 'http://grafana.internal:3000');
+    vi.stubEnv('MCP_RENDER_AUDIT_ALLOWED_ORIGINS', 'https://cdn.customer.example');
+    expect([...renderAuditPrivateOrigins('http://tooljet.internal:8082/')])
+      .toEqual(['http://tooljet.internal:8082', 'http://tooljet-api.internal:3000', 'http://grafana.internal:3000']);
+    vi.unstubAllEnvs();
   });
 });
 

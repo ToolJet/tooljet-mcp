@@ -20,6 +20,16 @@ export function renderAuditUrlAllowed(value: string, origins: Set<string>): bool
   try { return origins.has(httpUrl(value).origin); } catch { return false; }
 }
 
+/**
+ * Audit origins the egress proxy lets resolve to private or loopback addresses: the ToolJet host the check is
+ * configured for and this process's TOOLJET_URL (on a dev stack or a private network that is where they live), and
+ * MCP_RENDER_AUDIT_PRIVATE_ORIGINS. Any other allowed host name must resolve to public addresses (renderEgressProxy.ts).
+ */
+export function renderAuditPrivateOrigins(configuredBase: string): Set<string> {
+  const named = [process.env.TOOLJET_URL, process.env.MCP_RENDER_AUDIT_PRIVATE_ORIGINS].filter(Boolean).join(',');
+  return renderAuditOrigins(configuredBase, named);
+}
+
 export function renderAuditBase(configuredBase: string, override?: string): { base: string; origins: Set<string> } {
   const origins = renderAuditOrigins(configuredBase, process.env.MCP_RENDER_AUDIT_ALLOWED_ORIGINS);
   const url = httpUrl(override ?? configuredBase);

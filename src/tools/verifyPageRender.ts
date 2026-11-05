@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import type { ToolJetClient } from '../tooljetClient.js';
 import type { ViewerSession } from '../auth.js';
 import { ok, fail, type ToolDef } from './types.js';
-import { renderAuditBase, renderAuditOrigins, renderAuditUrlAllowed, renderAuditRequest, type RenderAuditQueries } from '../renderAuditPolicy.js';
+import { renderAuditBase, renderAuditOrigins, renderAuditPrivateOrigins, renderAuditUrlAllowed, renderAuditRequest, type RenderAuditQueries } from '../renderAuditPolicy.js';
 import { connectionKey, startEgressProxy, type EgressProxy } from '../renderEgressProxy.js';
 
 /**
@@ -397,6 +397,8 @@ async function settleWhenQuiet(page: any, tracker: NetworkTracker, maxMs: number
 export async function auditPages(
   pages: Array<{ page: string; url: string }>,
   options: { channel?: string; executablePath?: string; settleMs?: number; chartWaitMs?: number; concurrency?: number; allowedOrigins?: Set<string>;
+    /** Allowed origins that may resolve to private or loopback addresses (renderAuditPrivateOrigins). */
+    privateOrigins?: Set<string>;
     /** The builder's ToolJet session (tj_auth_token), set as a cookie for the viewer origin so a private app opens. */
     session?: ViewerSession; savedQueries?: RenderAuditQueries;
     /** Window width in px (default 1600); a code page is checked at 375, 768 and 1280. */
@@ -424,7 +426,7 @@ export async function auditPages(
   // so a block is reported on the page that caused it; the browser-wide one covers anything outside a context.
   const proxies: EgressProxy[] = [];
   const proxyFor = async (onBlocked?: (destination: string) => void) => {
-    const proxy = await startEgressProxy(origins, onBlocked);
+    const proxy = await startEgressProxy(origins, onBlocked, { privateOrigins: options.privateOrigins ?? renderAuditPrivateOrigins(pages[0].url) });
     proxies.push(proxy);
     return { server: proxy.server, bypass: '<-loopback>' };
   };
@@ -754,6 +756,7 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
           channel: process.env.MCP_RENDER_AUDIT_CHANNEL || 'chrome',
           executablePath: process.env.MCP_RENDER_AUDIT_CHROME || undefined,
           allowedOrigins: origins,
+          privateOrigins: renderAuditPrivateOrigins(viewerBase()),
           savedQueries: summary,
           viewportWidth: args.viewport_width ?? (args.route ? 1280 : undefined),
           codePage: Boolean(args.route),

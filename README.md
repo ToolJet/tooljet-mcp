@@ -169,6 +169,10 @@ network policy, HTTP errors and missing widgets.
 The configured ToolJet viewer origin is trusted, including an explicitly configured localhost or
 private/self-hosted address. Alternate viewer/API/CDN origins require the operator-controlled
 MCP_RENDER_AUDIT_ALLOWED_ORIGINS comma-separated list. A tool argument cannot extend it.
+The egress proxy resolves each allowed host name itself, connects to the address it got, and refuses
+private, loopback, link-local, metadata and reserved addresses, except for the configured viewer
+origin, TOOLJET_URL, origins written as an IP address or localhost, and the operator-controlled
+MCP_RENDER_AUDIT_PRIVATE_ORIGINS list (an allowed API or CDN origin on a private network goes there).
 All HTTP(S) resources use the same allowlist; HTTP redirects are not followed (configure canonical
 URLs), service workers are blocked, and WebSocket dependencies are reported as unverified.
 Use a dedicated browser container with infrastructure egress restrictions as defense in depth:
