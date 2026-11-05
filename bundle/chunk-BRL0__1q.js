@@ -1,136 +1,15 @@
 import { createRequire } from "node:module";
-import { e8 as tableQuotaError, e9 as TableQuotaError, ea as ok, eb as fail } from "./chunk-CYLdCKx-.js";
-import { d as decodeComponentParent, e as encodeComponentParent, a as downgradeFlexForLibrary, b as assertPageIcon, r as resolveComponentLibrary, i as isMisplacedStyleKey, t as toLibraryComponent, m as missingLibraryPins, l as libraryTypeOf, c as libraryPins, f as defaultPack, s as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION } from "./chunk-DgRXGydV.js";
-import { b0 as external_exports, bg as definition, bh as nodeCatalog, bi as validateGraph, bj as specSchema, bk as compileGraph, bl as assertWorkflowJavaScript, bm as controlFlowEdges } from "./chunk-IinDkEBT.js";
-import { readFileSync, existsSync } from "node:fs";
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import { d as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, e as assertWorkflowQueryOptions, w as workflowMappingMatches, f as normalizeQueryOptions, v as validateQueryOptions, i as issueMessages, g as getComponentSchema } from "./chunk-DADofzTT.js";
+import { aA as tableQuotaError, aB as TableQuotaError, ay as ok, ax as fail } from "./chunk-D70UN33u.js";
+import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, e as definition } from "./chunk-Dlc8fT0Z.js";
+import { f as encodeComponentParent, t as downgradeFlexForLibrary, u as assertPageIcon, v as resolveComponentLibrary, i as isMisplacedStyleKey, w as toLibraryComponent, x as missingLibraryPins, d as decodeComponentParent, y as libraryTypeOf } from "./chunk-BAklDiyp.js";
+import { cp as assertPersistableQueryToggles, cq as normalizeWorkflowQueryOptions, cr as assertWorkflowQueryOptions, cs as workflowMappingMatches } from "./chunk-D7ePN5zJ.js";
 import { randomUUID, createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-DXVhSqct.js";
-createRequire(import.meta.url);
-function strictEntry(shape, describeUnknown) {
-  return external_exports.strictObject(shape, {
-    error: (issue) => issue.code === "unrecognized_keys" ? issue.keys.map(describeUnknown).join(" ") : void 0
-  });
-}
-function hasNonEmptyDefinition(definition2) {
-  if (!definition2)
-    return false;
-  return Object.values(definition2).some((section) => section !== null && typeof section === "object" && Object.keys(section).length > 0);
-}
-var FLEX_CONTAINER_TYPE = "FlexContainer";
-var FLEX_FILL_WIDTH_DESCRIPTION = "FlexContainer child only: true (the default) fills the free main-axis width; false uses widthPx. Ignored elsewhere.";
-var FLEX_WIDTH_PX_DESCRIPTION = "FlexContainer child only: fixed width in pixels, applied when fillWidth is false. Ignored elsewhere.";
-var FLEX_GROW_DESCRIPTION = "FlexContainer row child only: share of the free width among fill children (default 1; 2 beside 1 takes two thirds). Ignored elsewhere.";
-var FLEX_MIN_WIDTH_PX_DESCRIPTION = "FlexContainer row child only: narrowest a fill child may get, in pixels; in a wrapping row a narrower child moves to the next line. Ignored elsewhere.";
-function isFlexContainerType(type) {
-  return type === FLEX_CONTAINER_TYPE;
-}
-function storedChildOrder(properties) {
-  const entry = properties?.childOrder;
-  const value = Array.isArray(entry) ? entry : entry?.value;
-  return Array.isArray(value) ? value.filter((id) => typeof id === "string" && id.length > 0) : [];
-}
-function normalizeChildOrder(childOrder, actualChildIds) {
-  const actual = new Set(actualChildIds);
-  const seen = /* @__PURE__ */ new Set();
-  const normalized2 = [];
-  for (const id of [...childOrder.filter((id2) => actual.has(id2)), ...actualChildIds]) {
-    if (seen.has(id))
-      continue;
-    seen.add(id);
-    normalized2.push(id);
-  }
-  return normalized2;
-}
-function desktopRect(component) {
-  const desktop = component.layouts?.desktop;
-  return {
-    top: typeof desktop?.top === "number" ? desktop.top : 0,
-    left: typeof desktop?.left === "number" ? desktop.left : 0
-  };
-}
-function bodyParentId(parent) {
-  if (!parent)
-    return void 0;
-  const decoded = decodeComponentParent(parent);
-  return decoded.slotName === "body" ? decoded.parentId : void 0;
-}
-function currentChildOrder(container, page) {
-  const children = page.filter((component) => bodyParentId(component.parent) === container.id);
-  const stored = storedChildOrder(container.properties);
-  const storedSet = new Set(stored);
-  const unordered = children.filter((child) => !storedSet.has(child.id)).sort((a, b) => {
-    const ra = desktopRect(a), rb = desktopRect(b);
-    return ra.top - rb.top || ra.left - rb.left;
-  }).map((child) => child.id);
-  return normalizeChildOrder(stored, [...children.map((child) => child.id).filter((id) => storedSet.has(id)), ...unordered]);
-}
-function appendedChildOrders(page, additions) {
-  const byId = new Map(page.map((component) => [component.id, component]));
-  const added = /* @__PURE__ */ new Map();
-  for (const { parentId, childId } of additions) {
-    const container = byId.get(parentId);
-    if (!container || !isFlexContainerType(container.type))
-      continue;
-    const ids = added.get(parentId) ?? [];
-    if (!ids.includes(childId))
-      ids.push(childId);
-    added.set(parentId, ids);
-  }
-  const orders = /* @__PURE__ */ new Map();
-  for (const [parentId, newIds] of added) {
-    const container = byId.get(parentId);
-    const newSet = new Set(newIds);
-    const existing = currentChildOrder(container, page.filter((component) => !newSet.has(component.id)));
-    const stored = storedChildOrder(container.properties);
-    const next = normalizeChildOrder(stored, [...existing, ...newIds]);
-    if (next.length !== stored.length || next.some((id, index) => stored[index] !== id))
-      orders.set(parentId, next);
-  }
-  return orders;
-}
-function batchChildOrders(entries, explicit = /* @__PURE__ */ new Map(), resolveRef = () => void 0) {
-  const orders = /* @__PURE__ */ new Map();
-  for (const container of entries) {
-    if (!isFlexContainerType(container.type))
-      continue;
-    const children = entries.filter((entry) => entry.parentId === container.id).map((entry) => entry.id);
-    const authored = (explicit.get(container.id) ?? []).flatMap((ref) => typeof ref === "string" ? [resolveRef(ref) ?? ref] : []);
-    orders.set(container.id, [.../* @__PURE__ */ new Set([...authored, ...children])]);
-  }
-  return orders;
-}
-function childOrderProperty(order) {
-  return { value: order };
-}
-function reparentAdditions(page, moves) {
-  const byId = new Map(page.map((component) => [component.id, component]));
-  return moves.flatMap(({ componentId, parent }) => {
-    if (parent === void 0)
-      return [];
-    const nextParent = bodyParentId(parent);
-    if (!nextParent || nextParent === bodyParentId(byId.get(componentId)?.parent))
-      return [];
-    return [{ parentId: nextParent, childId: componentId }];
-  });
-}
-function resolveAuthoredChildOrder(container, page, authored) {
-  const children = page.filter((component) => bodyParentId(component.parent) === container.id);
-  const unknown = [];
-  const ids = authored.flatMap((item) => {
-    const ref = typeof item === "string" ? item : String(item);
-    const child = children.find((candidate) => candidate.id === ref) ?? children.find((candidate) => candidate.name === ref);
-    if (!child) {
-      unknown.push(ref);
-      return [];
-    }
-    return [child.id];
-  });
-  return { order: normalizeChildOrder(ids, [...ids, ...currentChildOrder(container, page)]), unknown };
-}
+import { readFileSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { e as external_exports } from "./chunk-B2U2gFJI.js";
+import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-CYiXr8vL.js";
 createRequire(import.meta.url);
 function componentRef(component) {
   return component.clientRef ?? component.name;
@@ -175,11 +54,11 @@ function indexComponentReferences(components, existing = []) {
   return { refs, components: resolved, errors };
 }
 var SAMPLE_DATASOURCE_REFUSAL = "Sample data source is unavailable to AI. Do not inspect, test, read, write, or create queries on it. Use ToolJet Database for new app data, or another connected user-owned datasource.";
-function isSampleDatasource(source2) {
-  return String(source2.type ?? "").trim().toLowerCase() === "sample" || String(source2.name ?? "").toLowerCase().replace(/[\s_-]+/g, "") === "sampledatasource";
+function isSampleDatasource(source) {
+  return String(source.type ?? "").trim().toLowerCase() === "sample" || String(source.name ?? "").toLowerCase().replace(/[\s_-]+/g, "") === "sampledatasource";
 }
-function assertAiDatasource(source2) {
-  if (isSampleDatasource(source2))
+function assertAiDatasource(source) {
+  if (isSampleDatasource(source))
     throw new Error(SAMPLE_DATASOURCE_REFUSAL);
 }
 function createAppVersionLifecycle(auth, getApp) {
@@ -229,12 +108,12 @@ function createAppVersionLifecycle(auth, getApp) {
       return { id: e.id, name: e.name, priority: e.priority, enabled: e.enabled !== false };
     }).sort((a, b) => a.priority - b.priority);
   }
-  function environment(envs, name2) {
-    const matches = envs.filter((e) => e.name.toLowerCase() === name2.trim().toLowerCase());
+  function environment(envs, name) {
+    const matches = envs.filter((e) => e.name.toLowerCase() === name.trim().toLowerCase());
     if (matches.length !== 1)
-      throw new Error(`Unknown or ambiguous environment: ${name2}. Inspect list_app_versions.`);
+      throw new Error(`Unknown or ambiguous environment: ${name}. Inspect list_app_versions.`);
     if (!matches[0].enabled)
-      throw new Error(`Environment ${name2} is not enabled for this workspace.`);
+      throw new Error(`Environment ${name} is not enabled for this workspace.`);
     return matches[0];
   }
   function selection(appId, v, environmentId = v.environmentId) {
@@ -442,11 +321,11 @@ function createWorkflowClient(auth, config, queries) {
     for (const query of saved) {
       if (query.kind !== "workflows")
         continue;
-      const options2 = record(query.options);
-      const workflowId = required(options2.workflowId, "nested workflow ID");
+      const options = record(query.options);
+      const workflowId = required(options.workflowId, "nested workflow ID");
       if (!/^[A-Za-z0-9_-]+$/.test(workflowId))
         throw new Error("Cannot verify a dynamic nested workflow target.");
-      let childVersion = options2.workflowVersionId;
+      let childVersion = options.workflowVersionId;
       if (!childVersion) {
         const child2 = record(await request(`/api/apps/${encodeURIComponent(workflowId)}`));
         childVersion = child2.current_version_id ?? child2.currentVersionId;
@@ -477,8 +356,8 @@ function createWorkflowClient(auth, config, queries) {
       return request(`/api/apps?${new URLSearchParams({ type: "workflow", page: String(page), searchKey: search })}`);
     },
     get,
-    async create(name2) {
-      const created = record(await request("/api/workflows", { name: name2, type: "workflow" }));
+    async create(name) {
+      const created = record(await request("/api/workflows", { name, type: "workflow" }));
       const id = required(created.id, "created workflow ID");
       try {
         return await get(id);
@@ -844,14 +723,14 @@ function tableCreationLevels(tables) {
   const completed = /* @__PURE__ */ new Set();
   const levels = [];
   while (remaining.size) {
-    const ready = [...remaining].filter((name2) => [...dependencies.get(name2) ?? []].every((dependency) => completed.has(dependency)));
+    const ready = [...remaining].filter((name) => [...dependencies.get(name) ?? []].every((dependency) => completed.has(dependency)));
     if (!ready.length) {
-      throw new Error(`Table batch contains a circular foreign-key dependency: ${[...remaining].map((name2) => byName.get(name2)?.tableName ?? name2).join(", ")}. Create one side first, then add the circular foreign key as a column change.`);
+      throw new Error(`Table batch contains a circular foreign-key dependency: ${[...remaining].map((name) => byName.get(name)?.tableName ?? name).join(", ")}. Create one side first, then add the circular foreign key as a column change.`);
     }
-    levels.push(ready.map((name2) => byName.get(name2)));
-    ready.forEach((name2) => {
-      remaining.delete(name2);
-      completed.add(name2);
+    levels.push(ready.map((name) => byName.get(name)));
+    ready.forEach((name) => {
+      remaining.delete(name);
+      completed.add(name);
     });
   }
   return levels;
@@ -957,7 +836,7 @@ function completedPartialWrites(error) {
   return error instanceof PartialWriteError ? error.completed : [];
 }
 function assertAllowedToolJetDbColumnNames(operation, columns) {
-  const reserved = columns.map((column) => column.name).filter((name2) => TOOLJET_DB_RESERVED_COLUMN_NAMES.has(name2.toLowerCase()));
+  const reserved = columns.map((column) => column.name).filter((name) => TOOLJET_DB_RESERVED_COLUMN_NAMES.has(name.toLowerCase()));
   if (reserved.length) {
     throw new Error(`ToolJet ${operation} failed: reserved column name${reserved.length === 1 ? "" : "s"}: ${reserved.join(", ")}. Use a descriptive name such as step_action, result_comment, or item_condition.`);
   }
@@ -1130,11 +1009,11 @@ function createClient(auth, config) {
     });
     await assertOk(res, "updateWorkspaceGroupPermissions");
   }
-  async function duplicateWorkspaceGroup(groupId, options2) {
+  async function duplicateWorkspaceGroup(groupId, options) {
     const res = await auth.authedFetch(`${groupPath}/${groupId}/duplicate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(options2)
+      body: JSON.stringify(options)
     });
     await assertOk(res, "duplicateWorkspaceGroup");
     const created = await res.json();
@@ -1229,11 +1108,11 @@ function createClient(auth, config) {
       };
     });
   }
-  async function createWorkspaceGroup(name2) {
+  async function createWorkspaceGroup(name) {
     const res = await auth.authedFetch(groupPath, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name2 })
+      body: JSON.stringify({ name })
     });
     await assertOk(res, "createWorkspaceGroup");
     const created = await res.json();
@@ -1241,11 +1120,11 @@ function createClient(auth, config) {
       throw new Error("Create group response did not include an id.");
     return getWorkspaceGroup(created.id);
   }
-  async function renameWorkspaceGroup(groupId, name2) {
+  async function renameWorkspaceGroup(groupId, name) {
     const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name2 })
+      body: JSON.stringify({ name })
     });
     await assertOk(res, "renameWorkspaceGroup");
   }
@@ -1350,14 +1229,15 @@ function createClient(auth, config) {
     await assertOk(res, "getApp");
     return res.json();
   }
-  async function canEditApp(appId) {
-    const res = await auth.authedFetch(`/api/apps/${encodeURIComponent(appId)}/tables`);
-    if (res.ok)
-      return true;
+  async function codeSourceAccess(appId, versionId) {
+    const res = await auth.authedFetch(`/api/code-mode-source/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`);
     if (res.status === 403 || res.status === 404)
-      return false;
-    await assertOk(res, "canEditApp");
-    return false;
+      return { read: false, write: false };
+    await assertOk(res, "codeSourceAccess");
+    const body = await res.json().catch(() => null);
+    if (!body || typeof body !== "object")
+      throw new Error("codeSourceAccess: ToolJet sent no answer");
+    return { read: true, write: body.canWrite === true };
   }
   function projectComponent(id, entry) {
     const c = entry?.component ?? {};
@@ -1462,6 +1342,15 @@ function createClient(auth, config) {
       }))
     };
   }
+  async function getLicenseFeatureAccess() {
+    const res = await auth.authedFetch("/api/license/access");
+    await assertOk(res, "getLicenseFeatureAccess");
+    const body = await res.json();
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      throw new Error("ToolJet getLicenseFeatureAccess failed: expected an object response.");
+    }
+    return body;
+  }
   async function getAppPermission(appId, resourceType, resourceId) {
     const res = await auth.authedFetch(appPermissionPath(appId, resourceType, resourceId));
     await assertOk(res, "getAppPermission");
@@ -1543,8 +1432,8 @@ function createClient(auth, config) {
   async function updateAppThemeDefinition(themeId, definition2) {
     await updateAppTheme(themeId, "definition", { definition: definition2 }, "updateAppThemeDefinition");
   }
-  async function renameAppTheme(themeId, name2) {
-    await updateAppTheme(themeId, "name", { name: name2 }, "renameAppTheme");
+  async function renameAppTheme(themeId, name) {
+    await updateAppTheme(themeId, "name", { name }, "renameAppTheme");
   }
   async function deleteAppTheme(themeId) {
     const res = await auth.authedFetch(`/api/themes/${encodeURIComponent(themeId)}`, { method: "DELETE" });
@@ -1581,11 +1470,11 @@ function createClient(auth, config) {
   async function useWorkspace(workspaceId) {
     return auth.switchWorkspace(workspaceId);
   }
-  async function createApp(name2) {
+  async function createApp(name) {
     let createRes;
-    let finalName = name2;
+    let finalName = name;
     for (let attempt = 1; attempt <= 6; attempt++) {
-      finalName = attempt === 1 ? name2 : `${name2} ${attempt}`;
+      finalName = attempt === 1 ? name : `${name} ${attempt}`;
       createRes = await auth.authedFetch("/api/apps", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1782,16 +1671,16 @@ function createClient(auth, config) {
       promoted_to_environments: promotedToEnvironments
     };
   }
-  async function renameApp(appId, versionId, name2) {
+  async function renameApp(appId, versionId, name) {
     const res = await auth.authedFetch(`/api/apps/${appId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ app: { name: name2, editingVersionId: versionId } })
+      body: JSON.stringify({ app: { name, editingVersionId: versionId } })
     });
     await assertOk(res, "renameApp");
     const refreshed = await getApp(appId);
-    if (refreshed.name !== name2) {
-      throw new Error(`ToolJet renameApp failed: expected name "${name2}", received "${String(refreshed.name)}".`);
+    if (refreshed.name !== name) {
+      throw new Error(`ToolJet renameApp failed: expected name "${name}", received "${String(refreshed.name)}".`);
     }
   }
   async function listTables() {
@@ -1813,7 +1702,7 @@ function createClient(auth, config) {
       return typeof index === "number" && Number.isFinite(index) ? Math.max(highest, index) : highest;
     }, 0);
     const startIndex = Math.max(highestPersistedIndex, existingPages.length) + 1;
-    const handleOf = (name2) => name2.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "page";
+    const handleOf = (name) => name.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "page";
     const existingNames = new Set((app.pages ?? []).map((page) => String(page.name).toLowerCase()));
     const existingHandles = new Set((app.pages ?? []).map((page) => String(page.handle).toLowerCase()));
     const seenNames = /* @__PURE__ */ new Set();
@@ -1942,8 +1831,8 @@ function createClient(auth, config) {
     const requestedNames = new Map(updates.map((update) => [update.pageId, update.name]));
     const finalNames = pages.map((page) => {
       const kind = page.isPageGroup === true ? "group" : "page";
-      const name2 = String(requestedNames.get(String(page.id)) ?? page.name ?? "").trim().toLowerCase();
-      return `${kind}:${name2}`;
+      const name = String(requestedNames.get(String(page.id)) ?? page.name ?? "").trim().toLowerCase();
+      return `${kind}:${name}`;
     });
     if (new Set(finalNames).size !== finalNames.length) {
       throw new Error("ToolJet updatePages failed: page names must remain unique.");
@@ -2115,10 +2004,10 @@ function createClient(auth, config) {
     const res = await auth.authedFetch(`/api/data-sources/${orgId}/environments/${envId}/versions/${versionId}`);
     await assertOk(res, "listDatasources");
     const body = await res.json();
-    for (const source2 of body.data_sources) {
-      datasourceIdentities.set(`${orgId}:${source2.id}`, { name: source2.name, kind: source2.kind, type: source2.type });
+    for (const source of body.data_sources) {
+      datasourceIdentities.set(`${orgId}:${source.id}`, { name: source.name, kind: source.kind, type: source.type });
     }
-    return body.data_sources.filter((source2) => !isSampleDatasource(source2)).map((d) => ({
+    return body.data_sources.filter((source) => !isSampleDatasource(source)).map((d) => ({
       id: d.id,
       name: d.name,
       kind: d.kind,
@@ -2425,7 +2314,7 @@ function createClient(auth, config) {
     const batchCheck = (async () => {
       const datasources = await listDatasources(params.versionId);
       for (const query of params.queries) {
-        if (datasources.find((source2) => source2.id === query.dataSourceId)?.kind === "workflows")
+        if (datasources.find((source) => source.id === query.dataSourceId)?.kind === "workflows")
           await assertWorkflowQueryTarget(query.options);
       }
       await Promise.all(params.queries.map((q) => assertDatasourceAllowed(q.dataSourceId)));
@@ -2762,10 +2651,10 @@ function createClient(auth, config) {
     }
     return { query_id: params.queryId };
   }
-  async function verifyWorkflowMapping(queryId, versionId, options2) {
+  async function verifyWorkflowMapping(queryId, versionId, options) {
     try {
       const saved = await getQuery(queryId, versionId);
-      if (saved.kind !== "workflows" || !workflowMappingMatches(options2, saved.options)) {
+      if (saved.kind !== "workflows" || !workflowMappingMatches(options, saved.options)) {
         throw new Error("Saved workflow target differs from the requested mapping.");
       }
     } catch (error) {
@@ -2774,9 +2663,9 @@ function createClient(auth, config) {
   }
   async function assertWorkflowQueryTarget(raw) {
     assertWorkflowQueryOptions(raw);
-    const options2 = normalizeWorkflowQueryOptions(raw);
-    const workflowId = options2.workflowId;
-    const versionId = options2.workflowVersionId;
+    const options = normalizeWorkflowQueryOptions(raw);
+    const workflowId = options.workflowId;
+    const versionId = options.workflowVersionId;
     const path = versionId ? `/api/v2/apps/${encodeURIComponent(workflowId)}/versions/${encodeURIComponent(versionId)}` : `/api/apps/${encodeURIComponent(workflowId)}`;
     const response = await auth.authedFetch(path);
     await assertOk(response, "verify workflow query target");
@@ -2984,9 +2873,10 @@ function createClient(auth, config) {
     releaseApp,
     renameApp,
     getApp,
-    canEditApp,
+    codeSourceAccess,
     getAppSummary,
     listAppPermissionSubjects,
+    getLicenseFeatureAccess,
     getAppPermission,
     setAppPermission,
     clearAppPermission,
@@ -3051,955 +2941,6 @@ function pageOrderIndex(page) {
   if (typeof page?.pageGroupIndex === "number" && Number.isFinite(page.pageGroupIndex))
     return page.pageGroupIndex;
   return typeof page?.index === "number" ? page.index : void 0;
-}
-createRequire(import.meta.url);
-var colorPair = external_exports.object({
-  light: external_exports.string().trim().min(1).max(100).describe("Color used in light mode; hex is recommended."),
-  dark: external_exports.string().trim().min(1).max(100).describe("Color used in dark mode; hex is recommended.")
-}).strict();
-var themeDefinition = external_exports.object({
-  brand: external_exports.object({
-    colors: external_exports.object({
-      primary: colorPair,
-      secondary: colorPair.optional(),
-      tertiary: colorPair.optional()
-    }).strict()
-  }).strict(),
-  text: external_exports.object({
-    font: external_exports.string().trim().min(1).max(200),
-    colors: external_exports.object({
-      primary: colorPair,
-      placeholder: colorPair.optional(),
-      disabled: colorPair.optional()
-    }).strict()
-  }).strict(),
-  border: external_exports.object({
-    radius: external_exports.object({
-      default: external_exports.number().nonnegative(),
-      small: external_exports.number().nonnegative(),
-      large: external_exports.number().nonnegative()
-    }).strict(),
-    colors: external_exports.object({
-      default: colorPair,
-      weak: colorPair.optional(),
-      disabled: colorPair.optional()
-    }).strict()
-  }).strict(),
-  systemStatus: external_exports.object({
-    colors: external_exports.object({
-      success: colorPair,
-      error: colorPair.optional(),
-      warning: colorPair.optional()
-    }).strict()
-  }).strict(),
-  surface: external_exports.object({
-    colors: external_exports.object({
-      appBackground: colorPair,
-      surface1: colorPair,
-      surface2: colorPair,
-      surface3: colorPair
-    }).strict()
-  }).strict()
-}).strict();
-var ACCENT_MENU = [
-  { name: "Indigo", hex: "#4F46E5", fits: "software, analytics, internal tools" },
-  { name: "Violet", hex: "#7C3AED", fits: "creative, education, product teams" },
-  { name: "Fuchsia", hex: "#C026D3", fits: "consumer, beauty, events" },
-  { name: "Rose", hex: "#E11D48", fits: "hospitality, retail, food" },
-  { name: "Coral", hex: "#EA580C", fits: "logistics, field service, sports" },
-  { name: "Amber", hex: "#B45309", fits: "manufacturing, construction, real estate" },
-  { name: "Emerald", hex: "#059669", fits: "finance, sustainability, health" },
-  { name: "Teal", hex: "#0D9488", fits: "healthcare, travel, operations" },
-  { name: "Sky", hex: "#0284C7", fits: "support, IT, aviation, marine" }
-];
-var MENU_TEXT = ACCENT_MENU.map((a) => `${a.name} ${a.hex} (${a.fits})`).join(", ");
-var hsl = (hex2) => {
-  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(hex2.trim());
-  if (!m)
-    return null;
-  const full = m[1].length === 3 ? m[1].replace(/./g, (c) => c + c) : m[1];
-  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const l = (max + min) / 2;
-  const d = max - min;
-  if (d === 0)
-    return { h: 0, s: 0, l };
-  const s = d / (1 - Math.abs(2 * l - 1));
-  const h = max === r ? (g - b) / d % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
-  return { h: (h * 60 + 360) % 360, s, l };
-};
-var accentWarning = (definition2) => {
-  const light = definition2?.brand?.colors?.primary?.light;
-  if (typeof light !== "string")
-    return null;
-  const c = hsl(light);
-  if (!c)
-    return null;
-  const kind = c.l < 0.22 ? "near-black" : c.s < 0.2 ? "grey" : c.h >= 212 && c.h <= 226 && c.s > 0.75 && c.l >= 0.45 && c.l <= 0.66 ? "the stock blue" : null;
-  if (!kind)
-    return null;
-  return `The theme's primary ${light} is ${kind}, which reads plain. Unless the request names this colour or the brand uses it, pick an accent from the menu by the request's brand, industry or mood: ${MENU_TEXT}. Keep the canvas and neutrals light and lightly tinted toward it.`;
-};
-var STANDARD_PRIMARY = { brand: { colors: { primary: { light: "#2563EB" } } } };
-var here = dirname(fileURLToPath(import.meta.url));
-var standardThemeCandidates = [
-  resolve(here, "../../data/default-theme.json"),
-  resolve(here, "../data/default-theme.json")
-];
-var standardThemeCache;
-function loadStandardTheme() {
-  if (!standardThemeCache) {
-    const path = standardThemeCandidates.find((candidate) => existsSync(candidate));
-    if (!path) {
-      throw new Error(`standard theme file not found (looked in ${standardThemeCandidates.join(", ")})`);
-    }
-    standardThemeCache = JSON.parse(readFileSync(path, "utf8"));
-  }
-  return standardThemeCache;
-}
-var derivedThemeSchema = external_exports.object({
-  name: external_exports.string().trim().min(5).max(100),
-  definition: themeDefinition
-}).strict();
-async function resolveTheme(client, choice) {
-  const themes = await client.listAppThemes();
-  if (process.env.MCP_AGENT_PACK_LOOK === "own" && (choice === "standard" || choice === "workspace_default")) {
-    const basic = themes.find((theme) => theme.isBasic && !theme.isDisabled);
-    if (basic)
-      return basic;
-  }
-  const wanted = choice === "standard" ? loadStandardTheme() : typeof choice === "object" ? choice : void 0;
-  if (wanted) {
-    const existing = themes.find((theme) => theme.name === wanted.name && !theme.isDisabled);
-    if (existing)
-      return existing;
-    return client.createAppTheme({ name: wanted.name, definition: wanted.definition, isDefault: false });
-  }
-  const named = themes.find((theme) => theme.name === choice || theme.id === choice);
-  if (!named)
-    throw new Error(`Theme "${String(choice)}" is not available in the active workspace.`);
-  if (named.isDisabled)
-    throw new Error(`Theme "${named.name}" is disabled and cannot be selected.`);
-  return named;
-}
-function paintsDarkCanvasInLightMode(definition2) {
-  const light = definition2?.surface?.colors?.appBackground?.light;
-  const hex2 = typeof light === "string" ? /^#([0-9a-f]{6})$/i.exec(light.trim())?.[1] : void 0;
-  if (!hex2)
-    return false;
-  const [r, g, b] = [0, 2, 4].map((at) => {
-    const channel = parseInt(hex2.slice(at, at + 2), 16) / 255;
-    return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.18;
-}
-function createAppTool(client) {
-  return {
-    name: "create_app",
-    title: "Create App",
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: false,
-      openWorldHint: true
-    },
-    description: 'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, app_url (a backward-compatible alias for editor_url), and the theme that was applied. Honor explicit or selected themes first. Otherwise derive a theme from a brand, industry or customer type (see references/themes.md) and pass theme:{name, definition}; include complete brand, text, border, systemStatus and surface tokens with light/dark values, not a font-only or partial definition. It is created once per workspace by name and applied. Otherwise the app gets the standard theme ("ToolJet Modern": neutral greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. If a theme cannot be created (for example a licence gate) the app is still created and the result carries a theme warning. New apps are built in ToolJet UI 2.0 (component_library "ui2": types starting with Shad, laid out in FlexContainers); pass component_library "ui1" only when the user asks for the classic ToolJet widgets.',
-    inputSchema: {
-      name: external_exports.string().min(1),
-      theme: external_exports.union([external_exports.string().min(1), derivedThemeSchema]).optional(),
-      app_mode: external_exports.enum(["light", "dark"]).optional().describe("Open the app in this mode. Pass 'dark' when the request asks for a dark app, so the theme's dark values paint every surface; never paint dark backgrounds by hand on a light-mode app."),
-      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in, saved on the app (the components panel lists it). Default "ui2", ToolJet UI 2.0; "ui1" (ToolJet UI 1.0, the native widgets) only when the user asks for it.'),
-      component_pack: external_exports.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION)
-    },
-    async handler(args) {
-      try {
-        if (typeof args.theme === "object")
-          derivedThemeSchema.parse(args.theme);
-        const created = await client.createApp(args.name);
-        const componentLibrary = args.component_library ?? "ui2";
-        const choice = args.theme ?? "standard";
-        const pins = libraryPins();
-        const pinned = pins ? { customComponentLibraries: pins } : {};
-        const result = {
-          ...created,
-          component_library: componentLibrary,
-          ...componentLibrary === "ui2" && (args.component_pack || defaultPack()) ? { component_pack: (args.component_pack || defaultPack()).toLowerCase() } : {},
-          theme: { mode: "workspace_default" }
-        };
-        const savedLibrary = savedComponentLibrary(componentLibrary, args.component_pack);
-        const saveLibrary = () => Promise.resolve().then(() => client.updateAppSettings({
-          appId: created.app_id,
-          versionId: created.version_id,
-          globalSettings: { componentLibrary: savedLibrary, ...pinned }
-        })).catch((libraryErr) => {
-          result.component_library_warning = `Could not save component_library "${componentLibrary}": ${libraryErr instanceof Error ? libraryErr.message : String(libraryErr)}. Build in it anyway.`;
-        });
-        if (choice === "workspace_default") {
-          await saveLibrary();
-          return ok(result);
-        }
-        const label = typeof choice === "object" ? choice.name : choice;
-        try {
-          const theme = await resolveTheme(client, choice);
-          const appMode = args.app_mode ?? (typeof choice === "object" && paintsDarkCanvasInLightMode(choice.definition) ? "dark" : void 0);
-          await client.updateAppSettings({
-            appId: created.app_id,
-            versionId: created.version_id,
-            globalSettings: { theme, componentLibrary: savedLibrary, ...pinned, ...appMode ? { appMode } : {} }
-          });
-          const mode = choice === "standard" ? "standard" : typeof choice === "object" ? "derived" : "named";
-          const accentNote = mode === "standard" ? accentWarning(STANDARD_PRIMARY) : mode === "derived" ? accentWarning(choice.definition) : null;
-          result.theme = { mode, id: theme.id, name: theme.name, ...appMode ? { app_mode: appMode } : {}, ...accentNote ? { accent_note: accentNote } : {} };
-        } catch (themeErr) {
-          await saveLibrary();
-          result.theme = {
-            mode: "workspace_default",
-            warning: `Could not apply theme "${label}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
-          };
-        }
-        return ok(result);
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
-var THEME_LICENCE_USER_MESSAGE = "Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.";
-async function applyToApp(client, theme, args, definition2) {
-  if (!args.app_id || !args.version_id)
-    return void 0;
-  const mode = args.app_mode ?? (paintsDarkCanvasInLightMode(definition2) ? "dark" : void 0);
-  await client.updateAppSettings({
-    appId: args.app_id,
-    versionId: args.version_id,
-    globalSettings: { theme, ...mode ? { appMode: mode } : {} }
-  });
-  return { app_id: args.app_id, version_id: args.version_id, ...mode ? { app_mode: mode } : {} };
-}
-var hex = (h, s, l) => {
-  const channel = (n) => {
-    const k = (n + h / 30) % 12;
-    return Math.round(255 * (l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, "0");
-  };
-  return `#${channel(0)}${channel(8)}${channel(4)}`;
-};
-function definitionFromChoices(args) {
-  const accent = args.primary ? hsl(args.primary) : null;
-  if (!args.primary || !accent)
-    return void 0;
-  const { h, s: sat, l } = accent;
-  const pair = (light, dark, hue = h) => ({ light: hex(hue, light[0], light[1]), dark: hex(hue, dark[0], dark[1]) });
-  const base = loadStandardTheme().definition;
-  const radius = args.radius ?? base.border.radius.default;
-  return {
-    brand: {
-      colors: {
-        primary: { light: args.primary, dark: hex(h, sat, Math.max(l, 0.62)) },
-        secondary: pair([0.45, 0.22], [0.4, 0.78]),
-        tertiary: pair([0.65, 0.42], [0.65, 0.68], (h + 35) % 360)
-      }
-    },
-    text: {
-      font: args.font ?? base.text.font,
-      colors: { primary: pair([0.28, 0.13], [0.18, 0.94]), placeholder: pair([0.12, 0.45], [0.1, 0.65]), disabled: pair([0.1, 0.68], [0.08, 0.45]) }
-    },
-    border: {
-      radius: { default: radius, small: Math.max(radius - 2, 0), large: radius + 4 },
-      colors: { default: pair([0.22, 0.86], [0.12, 0.24]), weak: pair([0.24, 0.91], [0.12, 0.19]), disabled: pair([0.16, 0.82], [0.1, 0.28]) }
-    },
-    systemStatus: base.systemStatus,
-    surface: {
-      colors: {
-        appBackground: pair([0.3, 0.965], [0.16, 0.075]),
-        surface1: { light: "#ffffff", dark: hex(h, 0.14, 0.11) },
-        surface2: pair([0.28, 0.94], [0.13, 0.145]),
-        surface3: pair([0.24, 0.9], [0.12, 0.19])
-      }
-    }
-  };
-}
-function requireValue(value, label) {
-  if (value === void 0)
-    throw new Error(`manage_theme requires ${label} for this action.`);
-  return value;
-}
-async function readTheme(client, themeId) {
-  const theme = (await client.listAppThemes()).find((candidate) => candidate.id === themeId);
-  if (!theme)
-    throw new Error(`Theme "${themeId}" is not available in the active workspace.`);
-  return theme;
-}
-function manageThemeTool(client) {
-  return {
-    name: "manage_theme",
-    title: "Manage Workspace Theme",
-    // list/create/rename are safe, but the same tool also deletes a theme, so the hint covers its widest action.
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: true
-    },
-    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. create with app_id and version_id also applies the theme to that app (in app_mode, else in dark mode when its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same name, so there is no need to list themes first. Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass include_definitions:true (or theme_id) to get a definition.",
-    inputSchema: {
-      action: external_exports.enum(["list", "create", "set_default", "update_definition", "rename", "delete"]),
-      theme_id: external_exports.string().uuid().optional(),
-      name: external_exports.string().trim().min(1).max(100).optional(),
-      primary: external_exports.string().regex(/^#[0-9a-fA-F]{6}$/).optional().describe("create: the accent colour as a hex. With font and radius, this is all a theme needs; the rest is derived from its hue"),
-      font: external_exports.string().trim().min(1).max(100).optional().describe("create, with primary: one font family name"),
-      radius: external_exports.number().min(0).max(32).optional().describe("create, with primary: corner radius in px"),
-      definition: themeDefinition.optional(),
-      is_default: external_exports.boolean().optional(),
-      confirm: external_exports.boolean().optional(),
-      include_definitions: external_exports.boolean().optional(),
-      app_id: external_exports.string().uuid().optional().describe("create only: apply the theme to this app as well"),
-      version_id: external_exports.string().uuid().optional().describe("create only, with app_id: the app version to apply it to"),
-      app_mode: external_exports.enum(["light", "dark"]).optional().describe("create only, with app_id: open the app in this mode. Pass 'dark' when the request asks for a dark app: the theme's dark values then paint every surface, and ToolJet's own parts (tables, inputs) draw for them. Never paint dark backgrounds by hand on a light-mode app.")
-    },
-    async handler(args) {
-      try {
-        if (args.action === "list") {
-          const themes = await client.listAppThemes();
-          if (args.include_definitions)
-            return ok({ themes });
-          if (args.theme_id) {
-            const one = themes.find((theme) => theme.id === args.theme_id);
-            return one ? ok({ themes: [one] }) : fail(new Error(`Theme "${args.theme_id}" not found.`));
-          }
-          return ok({
-            themes: themes.map(({ id, name: name2, isDefault, isBasic, isDisabled }) => ({ id, name: name2, isDefault, isBasic, isDisabled })),
-            note: "Definitions omitted; pass include_definitions:true or theme_id to read one."
-          });
-        }
-        if (args.action === "create") {
-          const name2 = requireValue(args.name, "name");
-          if (name2.length < 5)
-            throw new Error("Theme name must contain at least 5 characters.");
-          if (name2 === "ToolJet")
-            throw new Error('The reserved theme name "ToolJet" cannot be used.');
-          const existing = (await client.listAppThemes()).find((theme) => theme.name === name2 && !theme.isDisabled);
-          if (existing) {
-            const applied = await applyToApp(client, existing, args, existing.definition ?? args.definition);
-            return ok({
-              theme: existing,
-              reused: true,
-              ...applied ? { applied } : {},
-              warnings: [
-                `Theme "${name2}" already exists in this workspace; returned it instead of creating a duplicate. ` + (applied ? "It is applied to the app." : "Apply it with update_app_settings, or use update_definition to change it.")
-              ]
-            });
-          }
-          try {
-            const definition2 = requireValue(args.definition ?? definitionFromChoices(args), "primary (a hex colour; font and radius are optional)");
-            const created = await client.createAppTheme({
-              name: name2,
-              definition: definition2,
-              isDefault: args.is_default ?? false
-            });
-            const applied = await applyToApp(client, created, args, definition2);
-            const accent = accentWarning(definition2);
-            return ok({ theme: created, ...applied ? { applied } : {}, ...accent ? { warnings: [accent] } : {} });
-          } catch (error) {
-            if (error instanceof ToolJetHttpError && error.status === 451) {
-              return ok({
-                theme: null,
-                licensed: false,
-                user_message: THEME_LICENCE_USER_MESSAGE,
-                warnings: [
-                  "Custom themes are not included in this ToolJet plan (HTTP 451). The app keeps the workspace default theme. Do not retry theme creation or guess a theme id; build the app on the default theme and repeat `user_message` to the user in the closing handoff."
-                ]
-              });
-            }
-            throw error;
-          }
-        }
-        const themeId = requireValue(args.theme_id, "theme_id");
-        await readTheme(client, themeId);
-        if (args.action === "set_default") {
-          await client.setDefaultAppTheme(themeId, args.is_default ?? true);
-          return ok({ theme: await readTheme(client, themeId) });
-        }
-        if (args.action === "update_definition") {
-          await client.updateAppThemeDefinition(themeId, requireValue(args.definition, "definition"));
-          const accent = accentWarning(args.definition);
-          return ok({ theme: await readTheme(client, themeId), ...accent ? { warnings: [accent] } : {} });
-        }
-        if (args.action === "rename") {
-          await client.renameAppTheme(themeId, requireValue(args.name, "name"));
-          return ok({ theme: await readTheme(client, themeId) });
-        }
-        if (args.confirm !== true) {
-          throw new Error(`Deleting theme "${themeId}" requires confirm:true after exact-target user approval.`);
-        }
-        await client.deleteAppTheme(themeId);
-        return ok({ deleted: true, theme_id: themeId });
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-createRequire(import.meta.url);
-var capabilityRequestSchema = external_exports.object({
-  version_id: external_exports.string().uuid()
-}).strict();
-var datasourceCapabilitySchema = external_exports.enum(["query", "ai-model", "email"]);
-var workflowCapabilityReportSchema = external_exports.object({
-  version_id: external_exports.string().uuid(),
-  authorable_node_types: external_exports.array(external_exports.string()),
-  datasources: external_exports.array(external_exports.object({
-    id: external_exports.string(),
-    name: external_exports.string(),
-    kind: external_exports.string(),
-    capabilities: external_exports.array(datasourceCapabilitySchema)
-  }).strict())
-}).strict();
-var AI_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["openai", "anthropic", "gemini", "mistral_ai"]);
-var EMAIL_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["smtp", "sendgrid", "mailgun"]);
-function datasourceCapabilities(kind) {
-  const capabilities = ["query"];
-  if (AI_DATASOURCE_KINDS.has(kind))
-    capabilities.push("ai-model");
-  if (EMAIL_DATASOURCE_KINDS.has(kind))
-    capabilities.push("email");
-  return capabilities;
-}
-async function getWorkflowCapabilities(client, input) {
-  const { version_id } = capabilityRequestSchema.parse(input);
-  const datasources = await client.workflows.listDatasources(version_id);
-  return workflowCapabilityReportSchema.parse({
-    version_id,
-    authorable_node_types: nodeCatalog.nodes.map((node) => node.type),
-    datasources: datasources.map((datasource) => ({
-      id: datasource.id,
-      name: datasource.name,
-      kind: datasource.kind,
-      capabilities: datasourceCapabilities(datasource.kind)
-    }))
-  });
-}
-function workflowReadiness(graph, structuralErrors) {
-  if (structuralErrors.length)
-    return { runtime_readiness: "blocked", blockers: structuralErrors };
-  const adjacency = new Map(graph.nodes.map((node) => [node.id, []]));
-  for (const edge of controlFlowEdges(graph))
-    adjacency.get(edge.source)?.push(edge.target);
-  const reachable = /* @__PURE__ */ new Set();
-  const visit = (id) => {
-    if (reachable.has(id))
-      return;
-    reachable.add(id);
-    for (const target of adjacency.get(id) ?? [])
-      visit(target);
-  };
-  for (const start of graph.nodes.filter((node) => node.type === "input" && node.data.nodeType === "start"))
-    visit(start.id);
-  const blockers = [];
-  for (const agent of graph.nodes.filter((node) => node.type === "agent" && reachable.has(node.id))) {
-    const attachment = graph.edges.find((edge) => edge.target === agent.id && edge.targetHandle === "ai-model");
-    const child = attachment && graph.nodes.find((node) => node.id === attachment.source);
-    const definitionId = child?.data.idOnDefinition;
-    const mapping = typeof definitionId === "string" && graph.queries.find((query) => query.idOnDefinition === definitionId);
-    if (!attachment || !child || !mapping)
-      blockers.push({
-        code: "agent_missing_model",
-        path: `nodes.${agent.id}.model`,
-        message: "Reachable Agent requires one configured AI model attachment."
-      });
-  }
-  return { runtime_readiness: blockers.length ? "draft_only" : "runnable", blockers };
-}
-var plans = /* @__PURE__ */ new Map();
-var TTL = 30 * 6e4;
-function prune() {
-  for (const [key, plan] of plans)
-    if (plan.expires <= Date.now())
-      plans.delete(key);
-}
-async function prepare(client, workflowId, versionId, spec, ids) {
-  const snapshot = await client.get(workflowId, versionId);
-  if (!snapshot.editable)
-    throw new Error("Only editable draft workflow versions can be changed.");
-  const [queries, datasources] = await Promise.all([client.getQueries(versionId), client.listDatasources(versionId)]);
-  const compiled = compileGraph(snapshot.definition, spec, ids, new Map(datasources.map((datasource) => [datasource.id, datasource.kind])));
-  const warnings = [];
-  const writes = [];
-  const finalDefinitionIds = new Set(compiled.graph.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string"));
-  const removedDefinitionIds = new Set(snapshot.definition.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string" && !finalDefinitionIds.has(value)));
-  const deletions = [];
-  for (const mapping of snapshot.definition.queries) {
-    if (!removedDefinitionIds.has(mapping.idOnDefinition))
-      continue;
-    if (compiled.graph.queries.some((retained) => retained.id === mapping.id))
-      continue;
-    if (deletions.some((deletion) => deletion.query_id === mapping.id))
-      continue;
-    const node = snapshot.definition.nodes.find((candidate) => candidate.data.idOnDefinition === mapping.idOnDefinition);
-    if (!node)
-      continue;
-    if (!queries.some((query) => query.id === mapping.id))
-      throw new Error(`Query ${mapping.id} is missing from the target version.`);
-    deletions.push({ node_id: node.id, definition_id: mapping.idOnDefinition, query_id: mapping.id });
-  }
-  const claimedNames = /* @__PURE__ */ new Set();
-  for (const item of compiled.query_nodes) {
-    const existingMapping = snapshot.definition.queries.find((q) => q.idOnDefinition === item.definition_id);
-    const oldQuery = queries.find((q) => q.id === existingMapping?.id);
-    if (existingMapping && !oldQuery)
-      throw new Error(`Query ${existingMapping.id} is missing from the target version.`);
-    if (oldQuery && snapshot.definition.nodes.filter((n) => snapshot.definition.queries.some((q) => q.id === oldQuery.id && q.idOnDefinition === n.data.idOnDefinition)).length > 1)
-      throw new Error(`Query ${oldQuery.id} is shared by multiple nodes. Shared query editing is unsupported.`);
-    const input = item.role === "workflow-node" ? item.spec : void 0;
-    const datasource = item.role === "agent-model" ? datasources.find((d) => d.id === item.datasource_id) : input.type === "javascript" || input.type === "loop" ? datasources.find((d) => d.kind === "runjs") : datasources.find((d) => d.id === input.datasource_id);
-    const label = item.role === "agent-model" ? "Agent model" : `node ${input.ref}`;
-    if (!datasource)
-      throw new Error(`Datasource unavailable for ${label}.`);
-    if (item.role === "agent-model" && !AI_DATASOURCE_KINDS.has(datasource.kind))
-      throw new Error(`Datasource ${datasource.id} is not an AI model datasource.`);
-    const kind = datasource.kind;
-    const dataSourceId = datasource.id;
-    const name2 = item.role === "agent-model" ? item.name : input.name;
-    if (oldQuery && (oldQuery.kind !== kind || oldQuery.data_source_id !== dataSourceId))
-      throw new Error(item.role === "agent-model" ? "Changing an Agent model datasource is unsupported; remove the model first, then add its replacement in a second phase." : "Changing an existing query datasource is unsupported; add a new node.");
-    if (oldQuery?.name !== void 0 && oldQuery.name !== name2)
-      throw new Error(item.role === "agent-model" ? "Renaming an Agent model query is unsupported; remove the model first, then add its replacement in a second phase." : "Renaming existing queries is unsupported because code references cannot be rewritten safely.");
-    if (claimedNames.has(name2) || queries.some((q) => q.name === name2 && q.id !== oldQuery?.id))
-      throw new Error(`Duplicate query name: ${name2}`);
-    claimedNames.add(name2);
-    const requestedOptions = item.role === "agent-model" ? item.options : input.type === "javascript" || input.type === "loop" ? { ...oldQuery?.options ?? {}, code: input.code } : input.options;
-    const options2 = item.role === "agent-model" ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
-    if (item.role === "workflow-node" && kind === "runjs")
-      assertWorkflowJavaScript(options2.code, label);
-    if (item.role === "workflow-node") {
-      const validation2 = validateQueryOptions(kind, options2, "workflow");
-      if (validation2.errors.length)
-        throw new Error(issueMessages(validation2.errors).join(" "));
-      warnings.push(...issueMessages(validation2.warnings));
-    }
-    writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name: name2, dataSourceId: dataSourceId ?? "", kind, options: options2 });
-    if (!existingMapping && !compiled.graph.queries.some((mapping) => mapping.idOnDefinition === item.definition_id))
-      compiled.graph.queries.push({ idOnDefinition: item.definition_id, id: `pending:${item.node_id}` });
-  }
-  const queryIds = /* @__PURE__ */ new Set([...queries.map((q) => q.id), ...writes.filter((q) => !q.existing_id).map((q) => `pending:${q.node_id}`)]);
-  const validation = validateGraph(compiled.graph, queryIds);
-  const readiness = workflowReadiness(compiled.graph, validation.errors);
-  return { snapshot, compiled, writes, deletions, validation, readiness, warnings };
-}
-async function lint(client, workflowId, versionId, spec, allowDraft = false) {
-  const prepared = await prepare(client, workflowId, versionId, spec);
-  if (prepared.validation.errors.length || prepared.readiness.runtime_readiness === "draft_only" && !allowDraft)
-    return { ...prepared.validation, ...prepared.readiness, query_warnings: prepared.warnings };
-  prune();
-  while (plans.size >= 200)
-    plans.delete(plans.keys().next().value);
-  const token = randomUUID();
-  plans.set(token, { scope: await client.planScope(), workflowId, versionId, spec: structuredClone(spec), ids: prepared.compiled, allowDraft, expires: Date.now() + TTL });
-  return {
-    plan_token: token,
-    expires_in_seconds: TTL / 1e3,
-    node_ids: prepared.compiled.node_ids,
-    edge_ids: prepared.compiled.edge_ids,
-    ...prepared.validation,
-    ...prepared.readiness,
-    query_warnings: prepared.warnings,
-    changes: { node_upserts: spec.nodes.length, edge_upserts: spec.edges.length, node_removals: spec.remove_node_ids, edge_removals: spec.remove_edge_ids, queries: [...prepared.writes.map((q) => ({ name: q.name, operation: q.existing_id ? "update" : "create" })), ...prepared.deletions.map((q) => ({ query_id: q.query_id, operation: "delete" }))] }
-  };
-}
-async function apply(client, token) {
-  prune();
-  const scope = await client.planScope();
-  const plan = plans.get(token);
-  if (!plan || plan.scope !== scope)
-    throw new Error("Unknown, expired, consumed, or differently scoped plan. Run lint_workflow_spec again.");
-  plans.delete(token);
-  const { compiled, snapshot, writes, deletions, validation, readiness } = await prepare(client, plan.workflowId, plan.versionId, plan.spec, plan.ids);
-  if (validation.errors.length)
-    throw new Error(JSON.stringify(validation.errors));
-  if (readiness.runtime_readiness === "draft_only" && !plan.allowDraft)
-    throw new Error(JSON.stringify(readiness.blockers));
-  const completed = [];
-  let phase = "queries";
-  let attemptedQuery;
-  try {
-    for (const write of writes) {
-      attemptedQuery = { name: write.name, node_id: write.node_id, existing_id: write.existing_id };
-      const result = write.existing_id ? await client.updateQuery({ queryId: write.existing_id, versionId: plan.versionId, name: write.name, options: write.options }) : await client.createWorkflowQuery({ workflowId: plan.workflowId, versionId: plan.versionId, name: write.name, dataSourceId: write.dataSourceId || void 0, kind: write.kind, options: write.options });
-      completed.push({ operation: write.existing_id ? "update" : "create", query_id: result.query_id, node_id: write.node_id });
-      compiled.graph.queries = compiled.graph.queries.filter((q) => q.idOnDefinition !== write.definition_id);
-      compiled.graph.queries.push({ idOnDefinition: write.definition_id, id: result.query_id });
-      attemptedQuery = void 0;
-    }
-    phase = "save";
-    await client.save(snapshot, compiled.graph);
-    phase = "readback";
-    const [saved, queries] = await Promise.all([client.get(plan.workflowId, plan.versionId), client.getQueries(plan.versionId)]);
-    const validation2 = validateGraph(saved.definition, new Set(queries.map((q) => q.id)));
-    if (!isDeepStrictEqual(saved.definition, compiled.graph))
-      throw new Error("Saved definition differs from the intended graph. Inspect get_workflow before retrying.");
-    for (const write of writes) {
-      const id = completed.find((q) => q.node_id === write.node_id).query_id;
-      const persisted = queries.find((q) => q.id === id);
-      if (!persisted || persisted.name !== write.name || persisted.kind !== write.kind || persisted.data_source_id !== write.dataSourceId || !isDeepStrictEqual(persisted.options, write.options))
-        throw new Error(`Query ${id} readback differs from intended datasource, kind, name, or options.`);
-    }
-    if (validation2.errors.length)
-      throw new Error(JSON.stringify(validation2.errors));
-    phase = "query_deletions";
-    for (const deletion of deletions) {
-      attemptedQuery = { name: deletion.query_id, node_id: deletion.node_id, existing_id: deletion.query_id };
-      await client.deleteQuery({ queryId: deletion.query_id, versionId: plan.versionId });
-      completed.push({ operation: "delete", query_id: deletion.query_id, node_id: deletion.node_id });
-      attemptedQuery = void 0;
-    }
-    return { workflow_id: plan.workflowId, version_id: plan.versionId, editor_url: saved.editor_url, node_ids: compiled.node_ids, edge_ids: compiled.edge_ids, completed, validation: validation2, ...readiness };
-  } catch (error) {
-    return {
-      failed: true,
-      workflow_id: plan.workflowId,
-      version_id: plan.versionId,
-      phase,
-      completed,
-      attempted_query: attemptedQuery,
-      node_ids: compiled.node_ids,
-      edge_ids: compiled.edge_ids,
-      graph_persistence: phase === "queries" ? "not_attempted" : phase === "save" ? "unknown" : "saved",
-      error: error instanceof Error ? error.message : String(error),
-      recovery: "Inspect get_workflow and its queries; reuse persisted IDs when replanning. Do not repeat creation blindly. No resources were automatically deleted."
-    };
-  }
-}
-async function deleteNode(client, workflowId, versionId, nodeId) {
-  const snapshot = await client.get(workflowId, versionId);
-  if (!snapshot.definition.nodes.some((node) => node.id === nodeId))
-    throw new Error(`Unknown workflow node: ${nodeId}`);
-  const spec = specSchema.parse({ remove_node_ids: [nodeId], remove_edge_ids: snapshot.definition.edges.filter((edge) => edge.source === nodeId || edge.target === nodeId).map((edge) => edge.id) });
-  const result = await lint(client, workflowId, versionId, spec, true);
-  if (!("plan_token" in result))
-    throw new Error(JSON.stringify({ errors: result.errors, blockers: result.blockers }));
-  return apply(client, result.plan_token);
-}
-createRequire(import.meta.url);
-var name = external_exports.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/).refine((v) => !["__proto__", "prototype", "constructor"].includes(v));
-var editContractSchema = external_exports.object({
-  source_query: name.describe("Already-loaded bounded raw row-array query; never a display projection."),
-  table_component: name,
-  id_field: name.default("id"),
-  prefix: name.describe("Unique prefix for generated snapshot/draft variables and RunJS query names."),
-  fields: external_exports.array(external_exports.object({
-    field: name,
-    component: name,
-    type: external_exports.enum(["text", "number", "date_only", "boolean"]),
-    required: external_exports.boolean().default(false),
-    nullable: external_exports.boolean().default(false).describe("Opt in to clearing to null; a user change event is also required."),
-    trim: external_exports.boolean().default(false),
-    choices: external_exports.union([
-      external_exports.array(external_exports.object({ label: external_exports.string(), value: external_exports.union([external_exports.string(), external_exports.number().finite()]) }).strict()).min(1).max(100),
-      external_exports.object({ query: name, value_field: name, label_field: name }).strict()
-    ]).optional().describe("Opt-in DropdownV2 for text/number fields: literal label/value options or an already-loaded bounded raw option query. Values must match the declared field type.")
-  })).min(1).max(40)
-}).strict();
-function canonical(value, field) {
-  if (value === void 0)
-    throw new Error(`Missing input: ${field.field}`);
-  if (value === null || value === "") {
-    if (field.required)
-      throw new Error(`Required field: ${field.field}`);
-    if (value === null && !field.nullable)
-      throw new Error(`Null not allowed: ${field.field}`);
-    return value;
-  }
-  if (field.type === "text") {
-    if (typeof value !== "string")
-      throw new Error(`Expected text: ${field.field}`);
-    if (field.required && !value.trim())
-      throw new Error(`Required field: ${field.field}`);
-    return field.trim ? value.trim() : value;
-  }
-  if (field.type === "boolean") {
-    if (typeof value !== "boolean")
-      throw new Error(`Expected boolean: ${field.field}`);
-    return value;
-  }
-  if (field.type === "number") {
-    if (typeof value !== "number" && typeof value !== "string" || typeof value === "string" && !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value) || !Number.isFinite(Number(value)))
-      throw new Error(`Expected finite number: ${field.field}`);
-    return Number(value);
-  }
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))?$/.test(value)) {
-    throw new Error(`Expected ISO date: ${field.field}`);
-  }
-  const day = value.slice(0, 10);
-  const parsed = /* @__PURE__ */ new Date(day + "T00:00:00Z");
-  if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== day || !Number.isFinite(Date.parse(value))) {
-    throw new Error(`Invalid date: ${field.field}`);
-  }
-  return day;
-}
-function generateEditContract(input) {
-  const spec = editContractSchema.parse(input);
-  for (const key of ["field", "component"]) {
-    if (new Set(spec.fields.map((f) => f[key])).size !== spec.fields.length)
-      throw new Error(`Duplicate ${key} in edit contract`);
-  }
-  if (spec.fields.some((f) => f.field === spec.id_field))
-    throw new Error("The stable primary key cannot be edited");
-  if (spec.fields.some((f) => f.required && f.nullable))
-    throw new Error("A required field cannot be nullable");
-  for (const f of spec.fields)
-    if (f.choices) {
-      if (!["text", "number"].includes(f.type))
-        throw new Error("Choices require a text or number field");
-      if (Array.isArray(f.choices)) {
-        if (f.choices.some((o) => typeof o.value !== (f.type === "text" ? "string" : "number")))
-          throw new Error("Choice values must match field type");
-        if (new Set(f.choices.map((o) => o.value)).size !== f.choices.length)
-          throw new Error("Duplicate choice value");
-      }
-    }
-  const snapshot = `${spec.prefix}Snapshot`, draft = `${spec.prefix}Draft`;
-  const openName = `${spec.prefix}Open`, prepareName = `${spec.prefix}Prepare`;
-  const q = JSON.stringify;
-  const helpers = `const canonical = ${canonical.toString()};
-const fields = ${q(spec.fields)};
-const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
-`;
-  const openCode = helpers + `await actions.setVariable(${q(snapshot)}, null);
-await actions.setVariable(${q(draft)}, null);
-const selection = components.${spec.table_component}.selectedRow;
-const id = selection && selection[${q(spec.id_field)}];
-if ((typeof id !== 'string' && typeof id !== 'number') || id === '' || (typeof id === 'number' && !Number.isFinite(id))) throw new Error('Select a record first');
-const rows = queries.${spec.source_query}.data;
-if (!Array.isArray(rows)) throw new Error('Raw records are not loaded');
-const matches = rows.filter(r => r && own(r, ${q(spec.id_field)}) && r[${q(spec.id_field)}] === id);
-if (matches.length !== 1) throw new Error('Expected exactly one raw record for the selected ID');
-const values = {};
-for (const field of fields) {
-  if (!own(matches[0], field.field)) throw new Error('Raw record omits: ' + field.field);
-  // Existing incomplete records must be openable for correction. Validate required
-  // values on Prepare, not before the user can edit them.
-  values[field.field] = canonical(matches[0][field.field], { ...field, required: false, nullable: true });
-}
-await actions.setVariable(${q(snapshot)}, { id, values });
-return { id };`;
-  const prepareCode = helpers + `const snapshot = variables.${snapshot};
-const draft = variables.${draft};
-const selection = components.${spec.table_component}.selectedRow;
-if (!snapshot || !selection || selection[${q(spec.id_field)}] !== snapshot.id) throw new Error('Reopen the selected record before saving');
-if (draft && draft.id !== snapshot.id) throw new Error('Draft belongs to another record');
-const changes = draft ? draft.values : {};
-if (!changes || typeof changes !== 'object' || Array.isArray(changes)) throw new Error('Invalid draft');
-const patch = {};
-for (const key of Object.keys(changes)) if (!fields.some(f => f.field === key)) throw new Error('Unknown draft field: ' + key);
-for (const field of fields) {
-  if (!own(snapshot.values, field.field)) throw new Error('Incomplete edit snapshot');
-  if (!own(changes, field.field)) {
-    canonical(snapshot.values[field.field], field);
-    continue;
-  }
-  const raw = changes[field.field];
-  let value = canonical(raw, field);
-  if (value === '' && field.type !== 'text') value = null;
-  if (value === '' || value === null) {
-    if (!field.nullable) throw new Error('Clearing is not allowed: ' + field.field);
-    value = null;
-  }
-  if (value !== snapshot.values[field.field]) patch[field.field] = value;
-}
-return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
-  const inputs = spec.fields.map((f) => {
-    const type = f.choices ? "DropdownV2" : { text: "TextInput", number: "NumberInput", date_only: "DatePickerV2", boolean: "Checkbox" }[f.type];
-    const initialKey = f.choices ? "schema" : ["date_only", "boolean"].includes(f.type) ? "defaultValue" : "value";
-    const exposed = f.type === "date_only" ? "selectedDate" : "value";
-    const trigger = f.choices || f.type === "date_only" ? "onSelect" : "onChange";
-    const schema = getComponentSchema(type);
-    if (!schema?.properties.some((p) => p.key === initialKey) || !schema.events?.some((e) => e.id === trigger))
-      throw new Error(`Unsupported edit adapter: ${type}`);
-    const initial = `variables.${snapshot} && variables.${snapshot}.values[${q(f.field)}]`;
-    let value = `{{${initial} != null ? variables.${snapshot}.values[${q(f.field)}] : ${f.type === "boolean" ? "false" : "''"}}}`;
-    if (f.choices) {
-      const options2 = Array.isArray(f.choices) ? q(f.choices) : `(queries.${f.choices.query}.data || []).map(r=>({label:r[${q(f.choices.label_field)}],value:r[${q(f.choices.value_field)}]}))`;
-      value = `{{(${options2}).map(option=>({label:option.label,value:option.value,visible:true,default:!!variables.${snapshot} && option.value === variables.${snapshot}.values[${q(f.field)}]}))}}`;
-    }
-    const exposedValue = `components.${f.component}.${exposed}`;
-    const changedValue = f.choices && f.nullable ? `(${exposedValue} == null ? null : ${exposedValue})` : exposedValue;
-    const draftValue = `{{({id:variables.${snapshot}.id,values:Object.assign({},variables.${draft} && variables.${draft}.id === variables.${snapshot}.id ? variables.${draft}.values : {},{${q(f.field)}:${changedValue}})})}}`;
-    return {
-      name: f.component,
-      type,
-      properties: { [initialKey]: value, ...f.choices ? { advanced: "{{true}}", showClearBtn: f.nullable } : {}, ...f.type === "date_only" ? { dateFormat: "YYYY-MM-DD" } : {} },
-      validation: { mandatory: f.required },
-      events: [{ source_ref: f.component, source_type: "component", trigger, action: {
-        actionId: "set-custom-variable",
-        key: draft,
-        value: draftValue,
-        runOnlyIf: `{{!!variables.${snapshot}}}`
-      } }]
-    };
-  });
-  return {
-    queries: [
-      { name: openName, kind: "runjs", options: { code: openCode } },
-      { name: prepareName, kind: "runjs", options: { code: prepareCode } }
-    ],
-    inputs,
-    mutation_contract: {
-      id: `{{queries.${prepareName}.data.id}}`,
-      patch: `{{queries.${prepareName}.data.patch}}`,
-      runOnlyIf: `{{queries.${prepareName}.data && queries.${prepareName}.data.changed === true}}`
-    },
-    wiring: [
-      `Run ${openName} on Edit; open the editor only on its success. Merge the returned input properties and change events into your native layout. Never use display selectedRow fields as defaults.`,
-      `Run ${prepareName} on Save; run a datasource-specific PATCH/update ONLY on its success and with mutation_contract.runOnlyIf. No change means no write. Bind the ID and patch from mutation_contract; never expand missing patch keys to null or empty strings.`,
-      "Gate Save while open/prepare/write are loading. Preserve the editor on failure. Refresh affected queries and close/reset only after the actual mutation succeeds; refresh actions are not assumed to complete in order."
-    ],
-    limitations: [
-      "Requires an already-loaded bounded raw row array and a single stable scalar ID. This generates wiring only; it does not create resources or persist data.",
-      "Only text, finite number, ISO date-only and boolean fields are covered; text/number fields can opt into dropdown choices. Required/nullable/trim are explicit opt-ins; domain constraints, authorization and optimistic concurrency must be enforced separately.",
-      "Dropdown option queries must already return bounded raw arrays with matching ID types and include the current value, including inactive owners when necessary. Missing options are not permission to clear stored relationships. Validate membership/authorization separately; this helper does not create or execute option queries.",
-      "Draft tracks native change events, not every displayed input value. Programmatic field changes must update the draft explicitly. Browser-verify that all change events fire, including both checkbox transitions."
-    ]
-  };
-}
-createRequire(import.meta.url);
-var DIALECTS = {
-  postgresql: { quote: "double", limit: "limit", metadata: "postgresql" },
-  mysql: { quote: "backtick", limit: "limit", metadata: "mysql" },
-  mssql: { quote: "bracket", limit: "top", metadata: "mssql" },
-  snowflake: { quote: "double", limit: "limit" },
-  bigquery: { quote: "backtick", limit: "limit" },
-  oracledb: { quote: "double", limit: "fetch" }
-};
-function assertIdentifier(identifier, label) {
-  if (!identifier.trim() || identifier.length > 256 || /[\0-\x1f\x7f;`"\[\]\\]/.test(identifier)) {
-    throw new Error(`${label} contains unsupported or unsafe identifier characters.`);
-  }
-}
-function quote(kind, identifier) {
-  assertIdentifier(identifier, "SQL identifier");
-  const style = DIALECTS[kind].quote;
-  if (style === "backtick")
-    return `\`${identifier}\``;
-  if (style === "bracket")
-    return `[${identifier}]`;
-  return `"${identifier}"`;
-}
-function literal(value) {
-  return `'${value.replaceAll("'", "''")}'`;
-}
-function source(kind, schema, table) {
-  return schema ? `${quote(kind, schema)}.${quote(kind, table)}` : quote(kind, table);
-}
-function boundedSelect(kind, projection, from, limit, distinct = false) {
-  const prefix = `SELECT ${distinct ? "DISTINCT " : ""}`;
-  if (DIALECTS[kind].limit === "top")
-    return `${prefix}TOP (${limit}) ${projection} FROM ${from}`;
-  if (DIALECTS[kind].limit === "fetch")
-    return `${prefix}${projection} FROM ${from} FETCH FIRST ${limit} ROWS ONLY`;
-  return `${prefix}${projection} FROM ${from} LIMIT ${limit}`;
-}
-function options(kind, query) {
-  return {
-    mode: "sql",
-    query,
-    ...!["snowflake"].includes(kind) ? { query_params: [] } : {},
-    runOnPageLoad: false
-  };
-}
-function metadataSql(kind, purpose, schema, table) {
-  const metadata = "metadata" in DIALECTS[kind] ? DIALECTS[kind].metadata : void 0;
-  if (!metadata)
-    return void 0;
-  if (purpose !== "views" && !table)
-    throw new Error(`${purpose} discovery requires table.`);
-  if (metadata !== "mysql" && !schema)
-    throw new Error(`${purpose} discovery for ${kind} requires schema.`);
-  const schemaFilter = metadata === "mysql" && !schema ? "DATABASE()" : literal(schema);
-  const tableFilter = table ? literal(table) : void 0;
-  if (metadata === "postgresql") {
-    if (purpose === "primary_keys")
-      return `SELECT kcu.column_name, kcu.ordinal_position, tc.constraint_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.ordinal_position`;
-    if (purpose === "foreign_keys")
-      return `SELECT kcu.constraint_name, kcu.column_name, ccu.table_schema AS referenced_schema, ccu.table_name AS referenced_table, ccu.column_name AS referenced_column FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_catalog = tc.constraint_catalog AND ccu.constraint_schema = tc.constraint_schema AND ccu.constraint_name = tc.constraint_name WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.constraint_name, kcu.ordinal_position`;
-    if (purpose === "indexes")
-      return `SELECT indexname AS index_name, indexdef AS definition FROM pg_indexes WHERE schemaname = ${schemaFilter} AND tablename = ${tableFilter} ORDER BY indexname`;
-    return `SELECT table_schema, table_name AS view_name FROM information_schema.views WHERE table_schema = ${schemaFilter} ORDER BY table_name`;
-  }
-  if (metadata === "mysql") {
-    if (purpose === "primary_keys")
-      return `SELECT column_name, ordinal_position, constraint_name FROM information_schema.key_column_usage WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} AND constraint_name = 'PRIMARY' ORDER BY ordinal_position`;
-    if (purpose === "foreign_keys")
-      return `SELECT constraint_name, column_name, referenced_table_schema AS referenced_schema, referenced_table_name AS referenced_table, referenced_column_name AS referenced_column FROM information_schema.key_column_usage WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} AND referenced_table_name IS NOT NULL ORDER BY constraint_name, ordinal_position`;
-    if (purpose === "indexes")
-      return `SELECT index_name, column_name, non_unique, seq_in_index FROM information_schema.statistics WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} ORDER BY index_name, seq_in_index`;
-    return `SELECT table_schema, table_name AS view_name FROM information_schema.views WHERE table_schema = ${schemaFilter} ORDER BY table_name`;
-  }
-  if (purpose === "primary_keys")
-    return `SELECT kcu.COLUMN_NAME AS column_name, kcu.ORDINAL_POSITION AS ordinal_position, tc.CONSTRAINT_NAME AS constraint_name FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA AND tc.TABLE_NAME = kcu.TABLE_NAME WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY' AND tc.TABLE_SCHEMA = ${schemaFilter} AND tc.TABLE_NAME = ${tableFilter} ORDER BY kcu.ORDINAL_POSITION`;
-  if (purpose === "foreign_keys")
-    return `SELECT fk.name AS constraint_name, pc.name AS column_name, rs.name AS referenced_schema, rt.name AS referenced_table, rc.name AS referenced_column FROM sys.foreign_key_columns fkc JOIN sys.foreign_keys fk ON fk.object_id = fkc.constraint_object_id JOIN sys.tables pt ON pt.object_id = fkc.parent_object_id JOIN sys.schemas ps ON ps.schema_id = pt.schema_id JOIN sys.columns pc ON pc.object_id = pt.object_id AND pc.column_id = fkc.parent_column_id JOIN sys.tables rt ON rt.object_id = fkc.referenced_object_id JOIN sys.schemas rs ON rs.schema_id = rt.schema_id JOIN sys.columns rc ON rc.object_id = rt.object_id AND rc.column_id = fkc.referenced_column_id WHERE ps.name = ${schemaFilter} AND pt.name = ${tableFilter} ORDER BY fk.name, fkc.constraint_column_id`;
-  if (purpose === "indexes")
-    return `SELECT i.name AS index_name, c.name AS column_name, i.is_unique, ic.key_ordinal FROM sys.indexes i JOIN sys.tables t ON t.object_id = i.object_id JOIN sys.schemas s ON s.schema_id = t.schema_id JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id WHERE s.name = ${schemaFilter} AND t.name = ${tableFilter} AND i.is_hypothetical = 0 ORDER BY i.name, ic.key_ordinal`;
-  return `SELECT TABLE_SCHEMA AS table_schema, TABLE_NAME AS view_name FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = ${schemaFilter} ORDER BY TABLE_NAME`;
-}
-function boundMetadata(kind, sql) {
-  if (DIALECTS[kind].limit === "top")
-    return sql.replace(/^SELECT\s+/i, "SELECT TOP (100) ");
-  if (DIALECTS[kind].limit === "fetch")
-    return `${sql} FETCH FIRST 100 ROWS ONLY`;
-  return `${sql} LIMIT 100`;
-}
-function safeName(value) {
-  return value.replace(/[^A-Za-z0-9_]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "table";
-}
-function prepareSqlDiscoveryQueries(args) {
-  if (!(args.kind in DIALECTS))
-    throw new Error(`Datasource kind "${args.kind}" is not supported by SQL discovery.`);
-  const kind = args.kind;
-  if (args.schema)
-    assertIdentifier(args.schema, "schema");
-  if (args.table)
-    assertIdentifier(args.table, "table");
-  for (const column of [...args.columns ?? [], ...args.distinctColumns ?? []])
-    assertIdentifier(column, "column");
-  const tablePurposes = args.purposes.filter((purpose) => purpose !== "views");
-  if (tablePurposes.length && !args.table)
-    throw new Error("Table-scoped SQL discovery requires table.");
-  if (args.purposes.includes("preview") && !args.columns?.length) {
-    throw new Error("Preview discovery requires one or more explicit columns; SELECT * is never generated.");
-  }
-  if (args.purposes.includes("distinct") && !args.distinctColumns?.length) {
-    throw new Error("Distinct discovery requires one or more explicit distinct_columns.");
-  }
-  const from = args.table ? source(kind, args.schema, args.table) : void 0;
-  const prefix = safeName(args.namePrefix ?? args.table ?? args.schema ?? "schema");
-  const queries = [];
-  const unsupported = [];
-  for (const purpose of [...new Set(args.purposes)]) {
-    let sql;
-    if (purpose === "count")
-      sql = `SELECT COUNT(*) AS row_count FROM ${from}`;
-    else if (purpose === "preview") {
-      sql = boundedSelect(kind, args.columns.map((column) => quote(kind, column)).join(", "), from, args.limit);
-    } else if (purpose === "distinct") {
-      sql = boundedSelect(kind, args.distinctColumns.map((column) => quote(kind, column)).join(", "), from, args.limit, true);
-    } else {
-      sql = metadataSql(kind, purpose, args.schema, args.table);
-      if (!sql) {
-        unsupported.push({
-          purpose,
-          reason: `${args.kind} does not expose a verified ${purpose} selector and MCP has no curated read-only SQL contract for it yet.`
-        });
-        continue;
-      }
-      sql = boundMetadata(kind, sql);
-    }
-    queries.push({
-      purpose,
-      name: `${prefix}_${purpose}`,
-      datasource_id: args.datasourceId,
-      options: options(kind, sql)
-    });
-  }
-  return { queries, unsupported };
 }
 createRequire(import.meta.url);
 var listWorkspaceGroupsInput = external_exports.object({
@@ -4255,14 +3196,14 @@ function specText(entry) {
   const raw = entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
   return typeof raw === "string" ? raw : void 0;
 }
-function parseSpecCached(options2) {
-  const key = specText(options2.spec) ?? specText(options2.definition);
+function parseSpecCached(options) {
+  const key = specText(options.spec) ?? specText(options.definition);
   if (key === void 0)
-    return extractSpec(options2);
+    return extractSpec(options);
   const hit = specCache.get(key);
   if (hit)
     return hit;
-  const parsed = extractSpec(options2);
+  const parsed = extractSpec(options);
   if (parsed) {
     if (specCache.size > 8)
       specCache.clear();
@@ -4480,48 +3421,21 @@ function inspectDatasourceSchemaTool(client) {
     }
   };
 }
-createRequire(import.meta.url);
-var COMPONENT_FX_GUIDANCE = "For properties/styles/validation with an FX toggle, use `{ value: <expression>, fxActive: true }` only for bindings/conditions/calculations the normal control cannot express. Keep defaults and panel-editable constants (including `{{true}}`/`{{false}}`, numbers, selections, colors) out of FX. For nested Table columns/buttons/options and KeyValuePair fields, add the property key (e.g. `columnVisibility`, `disableButton`, `fieldVisibility`, `isEditable`) to that object's `fxActiveFields`, preserving other entries. ";
-var COMPONENT_FX_UPDATE_GUIDANCE = COMPONENT_FX_GUIDANCE + "Updates must include both `value` and `fxActive`; revert with `{ value: <constant>, fxActive: false }`. For nested Table fields, remove only reverted property keys from `fxActiveFields`. KeyValuePair arrays merge by index; verify flag removals and report retained flags. ";
 export {
-  manageThemeTool as A,
-  capabilityRequestSchema as B,
-  COMPONENT_FX_UPDATE_GUIDANCE as C,
-  getWorkflowCapabilities as D,
-  lint as E,
-  FLEX_MIN_WIDTH_PX_DESCRIPTION as F,
-  apply as G,
-  deleteNode as H,
-  ToolJetHttpError as I,
-  prepareSqlDiscoveryQueries as J,
-  editContractSchema as K,
-  generateEditContract as L,
   PartialWriteError as P,
   TOOLJET_DB_DATA_TYPES as T,
-  appendedChildOrders as a,
-  reparentAdditions as b,
-  childOrderProperty as c,
-  componentRef as d,
-  FLEX_GROW_DESCRIPTION as e,
-  FLEX_WIDTH_PX_DESCRIPTION as f,
-  FLEX_FILL_WIDTH_DESCRIPTION as g,
-  hasNonEmptyDefinition as h,
-  isFlexContainerType as i,
-  indexComponentReferences as j,
-  booleanBindingValue as k,
-  invalidSeedTimestamps as l,
-  COMPONENT_FX_GUIDANCE as m,
+  invalidSeedTimestamps as a,
+  booleanBindingValue as b,
+  componentRef as c,
+  completedPartialWrites as d,
+  createClient as e,
+  inspectDatasourceSchemaTool as f,
+  ToolJetHttpError as g,
+  indexComponentReferences as i,
+  listWorkspaceGroupsTool as l,
+  manageWorkspaceGroupsTool as m,
   normalizeType as n,
-  completedPartialWrites as o,
   packDefaultDefinition as p,
-  batchChildOrders as q,
-  resolveAuthoredChildOrder as r,
-  strictEntry as s,
-  createClient as t,
-  registerPackDefinitions as u,
-  validateTableBatch as v,
-  listWorkspaceGroupsTool as w,
-  manageWorkspaceGroupsTool as x,
-  createAppTool as y,
-  inspectDatasourceSchemaTool as z
+  registerPackDefinitions as r,
+  validateTableBatch as v
 };
