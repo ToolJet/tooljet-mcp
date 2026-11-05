@@ -2,6 +2,7 @@ import type { ToolJetClient } from './tooljetClient.js';
 import { emptyViewerOnlyParams, resolveStaticBindings } from './staticBindings.js';
 import { batchSafeRead } from './tools/runQueries.js';
 import { containsComponentBinding, schemaNameHint } from './tools/runQuery.js';
+import { autoReadSqlRefusal, rawSqlOf } from './autoReadSql.js';
 
 /**
  * The reads a phase wrote, run once after it is applied.
@@ -14,7 +15,9 @@ import { containsComponentBinding, schemaNameHint } from './tools/runQuery.js';
  * - `failed`: the read ran and the datasource refused it. The query needs fixing.
  * - `inconclusive`: the read takes a component's value, which a browser-free run leaves empty; it failed, and the
  *   failure may be about the missing value rather than the query.
- * - `not_run`: not a read this check may run, with the reason.
+ * - `not_run`: not a read this check may run, with the reason. A raw SQL read whose bound or functions this check
+ *   cannot prove (autoReadSql.ts, CM-36) is not run either: it is neither passed nor failed, and says to run it
+ *   explicitly.
  *
  * It never fails the apply: the phase is already written, and the result says what to repair.
  */
@@ -39,6 +42,21 @@ const rowCount = (result: Record<string, unknown>): number | undefined => {
   return undefined;
 };
 
+/** Why an automatic run of this query's raw SQL is refused (saved text, then the text its bindings resolve to). */
+function rawSqlAutoRefusal(query: Parameters<typeof batchSafeRead>[0]): string | undefined {
+  const saved = rawSqlOf(query);
+  if (saved === undefined) return undefined;
+  const refusal = autoReadSqlRefusal(saved);
+  if (refusal) return refusal;
+  let resolved: string | undefined;
+  try {
+    resolved = rawSqlOf({ ...query, options: resolveStaticBindings(query.options).resolved as typeof query.options });
+  } catch {
+    return 'its bindings cannot be resolved without a browser';
+  }
+  return resolved === undefined || resolved === saved ? undefined : autoReadSqlRefusal(resolved);
+}
+
 export async function checkPlanReads(
   client: ToolJetClient,
   params: { versionId: string; queryIds: string[]; environmentId?: string; retryDelayMs?: number },
@@ -54,8 +72,14 @@ export async function checkPlanReads(
     if (!query) continue;
     const name = query.name ?? id;
     const verdict = batchSafeRead(query);
+    const autoRefusal = verdict.safe ? rawSqlAutoRefusal(query) : undefined;
     if (!verdict.safe) {
       check.not_run.push({ name, reason: String(verdict.reason ?? 'not a proven bounded read').slice(0, REASON_CHARS) });
+    } else if (autoRefusal) {
+      check.not_run.push({
+        name,
+        reason: `not checked automatically, run it explicitly with run_query: ${autoRefusal}`,
+      });
     } else if (runnable.length >= MAX_READS) {
       check.not_run.push({ name, reason: `only the first ${MAX_READS} reads of a phase are checked; run this one with run_queries` });
     } else {

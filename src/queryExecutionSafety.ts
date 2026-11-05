@@ -7,7 +7,7 @@ import { applyResolvedBindings, resolvedBindingValues } from './staticBindings.j
 
 export const LARGE_READ_ROW_THRESHOLD = 1000;
 
-const SQL_KINDS = new Set([
+export const SQL_KINDS = new Set([
   'postgresql', 'mysql', 'mariadb', 'mssql', 'sqlserver', 'cockroachdb', 'redshift',
   'snowflake', 'bigquery', 'clickhouse', 'oracle', 'oracledb', 'sqlite',
   'databricks', 'athena', 'awsredshift', 'harperdb', 'ibmdb', 'saphana',
