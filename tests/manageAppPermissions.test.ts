@@ -96,18 +96,21 @@ describe('Code mode screens in manage_app_permissions', () => {
     expect(result.access).toBe('groups');
   });
 
-  it('refuses a route with a query resource type, or with a resource id', async () => {
+  it('refuses a route with a query resource type, and reads a route with a resource id as two targets', async () => {
     const tool = manageAppPermissionsTool(clientWith());
     const asQuery = await tool.handler({ action: 'get', app_id: APP, route: 'payroll', resource_type: 'query' });
     expect(asQuery.isError).toBe(true);
-    const both = await tool.handler({ action: 'get', app_id: APP, route: 'payroll', resource_id: ORDERS_PAGE });
-    expect(both.isError).toBe(true);
+    expect(asQuery.content[0]!.text).toMatch(/leave resource_type out/);
+    const both = textOf(await tool.handler({ action: 'get', app_id: APP, route: 'payroll', resource_id: ORDERS_PAGE }));
+    expect(both.results.map((r: any) => r.resource.id)).toEqual([PAYROLL_PAGE, ORDERS_PAGE]);
   });
 });
 
 const MANAGERS = '77777777-7777-4777-8777-777777777777';
 const ADMIN = '88888888-8888-4888-8888-888888888888';
 const QUERY = '99999999-9999-4999-8999-999999999999';
+const QUERY2 = 'cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd';
+const USER = 'efefefef-efef-4fef-8fef-efefefefefef';
 
 const workspaceGroups = [
   { id: ADMIN, name: 'admin', type: 'default' },
@@ -155,7 +158,7 @@ describe('groups that cannot open the app (roles test, 2026-11-04)', () => {
 
   it('refuses a limit to a group that cannot open the app, naming the fix, and changes nothing', async () => {
     const client = roleClient();
-    const result = await manageAppPermissionsTool(client).handler(setManagers());
+    const result = await manageAppPermissionsTool(client).handler(setManagers({ grant_app_access: false }));
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toMatch(/Managers cannot open this app yet.*grant_app_access: true/);
     expect(client.writeWorkspaceGroupAccess).not.toHaveBeenCalled();
@@ -201,10 +204,95 @@ describe('groups that cannot open the app (roles test, 2026-11-04)', () => {
     expect(unknown.content[0]!.text).toMatch(/is not a group of this workspace/);
   });
 
-  it('takes grant_app_access only on a group set', async () => {
-    const result = await manageAppPermissionsTool(roleClient()).handler({ action: 'get', app_id: APP, resource_type: 'query', resource_id: QUERY, grant_app_access: true });
+  it('refuses grant_app_access on a limit to users', async () => {
+    const client = roleClient({ listAppPermissionSubjects: vi.fn().mockResolvedValue({ users: [{ id: USER, email: 'a@x.com' }], groups: [] }) });
+    const result = await manageAppPermissionsTool(client).handler({ action: 'set', app_id: APP, query: 'decide_manager', users: ['a@x.com'], grant_app_access: true });
     expect(result.isError).toBe(true);
-    expect(result.content[0]!.text).toMatch(/only to set with access_type groups/);
+    expect(result.content[0]!.text).toMatch(/grant_app_access applies only to a limit to groups/);
+    expect(client.setAppPermission).not.toHaveBeenCalled();
   });
 });
 
+describe('the minimal call a model sends (DeepSeek role build, 2026-11-04)', () => {
+  const app = {
+    ...summary,
+    name: 'Spend approvals',
+    queries: [
+      { id: QUERY, name: 'finance_queue', kind: 'tooljetdb' },
+      { id: QUERY2, name: 'finance_approve', kind: 'tooljetdb' },
+    ],
+  } as AppSummary;
+  const subjects = () =>
+    vi.fn()
+      .mockResolvedValueOnce({ users: [], groups: [{ id: ADMIN, name: 'admin' }] })
+      .mockResolvedValue({ users: [], groups: [{ id: ADMIN, name: 'admin' }, { id: GROUP, name: 'Finance' }, { id: MANAGERS, name: 'Managers' }] });
+  const client = (overrides: Partial<ToolJetClient> = {}) =>
+    clientWith({
+      getAppSummary: vi.fn().mockResolvedValue(app),
+      listWorkspaceGroups: vi.fn().mockResolvedValue(workspaceGroups),
+      listAppPermissionSubjects: subjects(),
+      writeWorkspaceGroupAccess: vi.fn().mockResolvedValue(undefined),
+      ...overrides,
+    });
+
+  it('limits a screen to a group by name, with no confirm, access_type or resource_type, granting app access', async () => {
+    const c = client();
+    const result = textOf(await manageAppPermissionsTool(c).handler({ action: 'set', app_id: APP, route: '/payroll', groups: ['finance'] }));
+    expect(c.writeWorkspaceGroupAccess).toHaveBeenCalledWith('POST', GROUP, 'app', undefined, expect.objectContaining({ groupId: GROUP }));
+    expect(c.setAppPermission).toHaveBeenCalledWith({ appId: APP, resourceType: 'page', resourceId: PAYROLL_PAGE, accessType: 'groups', subjectIds: [GROUP] });
+    expect(result.granted_app_access).toEqual([{ group_id: GROUP, name: 'Finance', rule_name: 'Spend approvals (view)' }]);
+    expect(result.note).toMatch(/Finance could not open this app, so it now has view access to this app only/);
+  });
+
+  it('limits several queries by name to several groups in one call', async () => {
+    const c = client();
+    const result = textOf(
+      await manageAppPermissionsTool(c).handler({ action: 'set', app_id: APP, queries: ['finance_queue', QUERY2], groups: ['Finance', 'Managers'] })
+    );
+    expect(c.writeWorkspaceGroupAccess).toHaveBeenCalledTimes(2);
+    expect(c.setAppPermission).toHaveBeenCalledTimes(2);
+    expect(c.setAppPermission).toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'query', resourceId: QUERY, subjectIds: [GROUP, MANAGERS] }));
+    expect(c.setAppPermission).toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'query', resourceId: QUERY2 }));
+    expect(result.results.map((r: any) => r.resource.name)).toEqual(['finance_queue', 'finance_approve']);
+  });
+
+  it('names every problem at once, with a call that works, and changes nothing', async () => {
+    const c = client();
+    const result = await manageAppPermissionsTool(c).handler({ action: 'set', app_id: APP, query: 'nope', groups: ['Auditors'] });
+    expect(result.isError).toBe(true);
+    const text = result.content[0]!.text;
+    expect(text).toMatch(/No query "nope" in this app\. Its queries: finance_queue, finance_approve\./);
+    expect(text).toMatch(/"Auditors" is not a group of this workspace\. Its groups: admin, Finance, Managers\./);
+    expect(text).toMatch(/A call that works: \{"action":"set","app_id":"[^"]+","query":"nope","groups":\["Auditors"\]\}/);
+    expect(c.setAppPermission).not.toHaveBeenCalled();
+    expect(c.writeWorkspaceGroupAccess).not.toHaveBeenCalled();
+  });
+
+  it('asks what to limit and for whom when both are missing', async () => {
+    const result = await manageAppPermissionsTool(client()).handler({ action: 'set', app_id: APP });
+    const text = result.content[0]!.text;
+    expect(text).toMatch(/Name what to limit.*Screens: \/, \/payroll\..*Queries: finance_queue, finance_approve/);
+    expect(text).toMatch(/Name who keeps access/);
+  });
+
+  it('still needs confirm for clear, and for set on an app that is not a Code mode app', async () => {
+    const c = client();
+    const clear = await manageAppPermissionsTool(c).handler({ action: 'clear', app_id: APP, route: '/payroll' });
+    expect(clear.content[0]!.text).toMatch(/clear opens the resource to everyone.*confirm:true/s);
+    expect(c.clearAppPermission).not.toHaveBeenCalled();
+    const visual = { ...app, pages: [{ id: ORDERS_PAGE, name: 'Orders', components: [] }] } as AppSummary;
+    const v = client({ getAppSummary: vi.fn().mockResolvedValue(visual) });
+    const set = await manageAppPermissionsTool(v).handler({ action: 'set', app_id: APP, query: 'finance_queue', groups: ['Finance'] });
+    expect(set.content[0]!.text).toMatch(/needs confirm:true/);
+    expect(set.content[0]!.text).toMatch(/"confirm":true/);
+    expect(v.setAppPermission).not.toHaveBeenCalled();
+    await manageAppPermissionsTool(v).handler({ action: 'set', app_id: APP, query: 'finance_queue', groups: ['admin'], confirm: true });
+    expect(v.setAppPermission).toHaveBeenCalled();
+  });
+
+  it('limits to users by email', async () => {
+    const c = client({ listAppPermissionSubjects: vi.fn().mockResolvedValue({ users: [{ id: USER, email: 'Mgr@x.com' }], groups: [] }) });
+    await manageAppPermissionsTool(c).handler({ action: 'set', app_id: APP, query: 'finance_queue', users: ['mgr@x.com'] });
+    expect(c.setAppPermission).toHaveBeenCalledWith(expect.objectContaining({ accessType: 'users', subjectIds: [USER] }));
+  });
+});
