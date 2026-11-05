@@ -1,5 +1,8 @@
 import { createRequire } from "node:module";
-import { e6 as __commonJS, e7 as __require } from "./chunk-BEuHHGL1.js";
+import { p as parseExpression } from "./chunk-DyyCxCqH.js";
+import { m as require_parse, n as require_util } from "./chunk-BpWU3H2R.js";
+import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues } from "./chunk-DGCi5LfA.js";
+import { eb as __commonJS, ec as __require, ed as __toESM } from "./chunk-addBGscc.js";
 createRequire(import.meta.url);
 var require_moment = __commonJS({
   "node_modules/moment/moment.js"(exports, module) {
@@ -193,7 +196,7 @@ var require_moment = __commonJS({
           updateInProgress = false;
         }
       }
-      function isMoment(obj) {
+      function isMoment2(obj) {
         return obj instanceof Moment || obj != null && obj._isAMomentObject != null;
       }
       function warn(msg) {
@@ -2261,7 +2264,7 @@ var require_moment = __commonJS({
         if (typeof input === "string") {
           config._i = input = config._locale.preparse(input);
         }
-        if (isMoment(input)) {
+        if (isMoment2(input)) {
           return new Moment(checkOverflow(input));
         } else if (isDate(input)) {
           config._d = input;
@@ -2352,7 +2355,7 @@ var require_moment = __commonJS({
           return createLocal();
         }
         for (i = 0; i < moments.length; ++i) {
-          if (isMoment(moments[i])) {
+          if (isMoment2(moments[i])) {
             res = moments[i];
             break;
           }
@@ -2361,7 +2364,7 @@ var require_moment = __commonJS({
           return createInvalid$1();
         }
         for (++i; i < moments.length; ++i) {
-          if (isMoment(moments[i]) && (!moments[i].isValid() || moments[i][fn](res))) {
+          if (isMoment2(moments[i]) && (!moments[i].isValid() || moments[i][fn](res))) {
             res = moments[i];
           }
         }
@@ -2485,7 +2488,7 @@ var require_moment = __commonJS({
         var res, diff2;
         if (model._isUTC) {
           res = model.clone();
-          diff2 = (isMoment(input) || isDate(input) ? input.valueOf() : createLocal(input).valueOf()) - res.valueOf();
+          diff2 = (isMoment2(input) || isDate(input) ? input.valueOf() : createLocal(input).valueOf()) - res.valueOf();
           res._d.setTime(res._d.valueOf() + diff2);
           hooks.updateOffset(res, false);
           return res;
@@ -2739,7 +2742,7 @@ var require_moment = __commonJS({
         return typeof input === "string" || input instanceof String;
       }
       function isMomentInput(input) {
-        return isMoment(input) || isDate(input) || isString(input) || isNumber(input) || isNumberOrStringArray(input) || isMomentInputObject(input) || input === null || input === void 0;
+        return isMoment2(input) || isDate(input) || isString(input) || isNumber(input) || isNumberOrStringArray(input) || isMomentInputObject(input) || input === null || input === void 0;
       }
       function isMomentInputObject(input) {
         var objectTest = isObject(input) && !isObjectEmpty(input), propertyTest = false, properties = [
@@ -2824,7 +2827,7 @@ var require_moment = __commonJS({
         return new Moment(this);
       }
       function isAfter(input, units) {
-        var localInput = isMoment(input) ? input : createLocal(input);
+        var localInput = isMoment2(input) ? input : createLocal(input);
         if (!(this.isValid() && localInput.isValid())) {
           return false;
         }
@@ -2836,7 +2839,7 @@ var require_moment = __commonJS({
         }
       }
       function isBefore(input, units) {
-        var localInput = isMoment(input) ? input : createLocal(input);
+        var localInput = isMoment2(input) ? input : createLocal(input);
         if (!(this.isValid() && localInput.isValid())) {
           return false;
         }
@@ -2848,7 +2851,7 @@ var require_moment = __commonJS({
         }
       }
       function isBetween(from2, to2, units, inclusivity) {
-        var localFrom = isMoment(from2) ? from2 : createLocal(from2), localTo = isMoment(to2) ? to2 : createLocal(to2);
+        var localFrom = isMoment2(from2) ? from2 : createLocal(from2), localTo = isMoment2(to2) ? to2 : createLocal(to2);
         if (!(this.isValid() && localFrom.isValid() && localTo.isValid())) {
           return false;
         }
@@ -2856,7 +2859,7 @@ var require_moment = __commonJS({
         return (inclusivity[0] === "(" ? this.isAfter(localFrom, units) : !this.isBefore(localFrom, units)) && (inclusivity[1] === ")" ? this.isBefore(localTo, units) : !this.isAfter(localTo, units));
       }
       function isSame(input, units) {
-        var localInput = isMoment(input) ? input : createLocal(input), inputMs;
+        var localInput = isMoment2(input) ? input : createLocal(input), inputMs;
         if (!(this.isValid() && localInput.isValid())) {
           return false;
         }
@@ -2966,16 +2969,16 @@ var require_moment = __commonJS({
         if (!this.isValid()) {
           return "moment.invalid(/* " + this._i + " */)";
         }
-        var func = "moment", zone = "", prefix2, year, datetime, suffix;
+        var func = "moment", zone = "", prefix, year, datetime, suffix;
         if (!this.isLocal()) {
           func = this.utcOffset() === 0 ? "moment.utc" : "moment.parseZone";
           zone = "Z";
         }
-        prefix2 = "[" + func + '("]';
+        prefix = "[" + func + '("]';
         year = 0 <= this.year() && this.year() <= 9999 ? "YYYY" : "YYYYYY";
         datetime = "-MM-DD[T]HH:mm:ss.SSS";
         suffix = zone + '[")]';
-        return this.format(prefix2 + year + datetime + suffix);
+        return this.format(prefix + year + datetime + suffix);
       }
       function format(inputString) {
         if (!inputString) {
@@ -2985,7 +2988,7 @@ var require_moment = __commonJS({
         return this.localeData().postformat(output);
       }
       function from(time, withoutSuffix) {
-        if (this.isValid() && (isMoment(time) && time.isValid() || createLocal(time).isValid())) {
+        if (this.isValid() && (isMoment2(time) && time.isValid() || createLocal(time).isValid())) {
           return createDuration({ to: this, from: time }).locale(this.locale()).humanize(!withoutSuffix);
         } else {
           return this.localeData().invalidDate();
@@ -2995,7 +2998,7 @@ var require_moment = __commonJS({
         return this.from(createLocal(), withoutSuffix);
       }
       function to(time, withoutSuffix) {
-        if (this.isValid() && (isMoment(time) && time.isValid() || createLocal(time).isValid())) {
+        if (this.isValid() && (isMoment2(time) && time.isValid() || createLocal(time).isValid())) {
           return createDuration({ from: this, to: time }).locale(this.locale()).humanize(!withoutSuffix);
         } else {
           return this.localeData().invalidDate();
@@ -4126,7 +4129,7 @@ var require_moment = __commonJS({
       hooks.locale = getSetGlobalLocale;
       hooks.invalid = createInvalid$1;
       hooks.duration = createDuration;
-      hooks.isMoment = isMoment;
+      hooks.isMoment = isMoment2;
       hooks.weekdays = listWeekdays;
       hooks.parseZone = createInZone;
       hooks.localeData = getLocale;
@@ -4167,1376 +4170,1897 @@ var require_moment = __commonJS({
   }
 });
 createRequire(import.meta.url);
-var Position = class {
-  line;
-  column;
-  index;
-  constructor(line, col, index) {
-    this.line = line;
-    this.column = col;
-    this.index = index;
+var require_stringify = __commonJS({
+  "node_modules/json5/lib/stringify.js"(exports, module) {
+    var util = require_util();
+    module.exports = function stringify(value, replacer, space) {
+      const stack = [];
+      let indent = "";
+      let propertyList;
+      let replacerFunc;
+      let gap = "";
+      let quote;
+      if (replacer != null && typeof replacer === "object" && !Array.isArray(replacer)) {
+        space = replacer.space;
+        quote = replacer.quote;
+        replacer = replacer.replacer;
+      }
+      if (typeof replacer === "function") {
+        replacerFunc = replacer;
+      } else if (Array.isArray(replacer)) {
+        propertyList = [];
+        for (const v of replacer) {
+          let item;
+          if (typeof v === "string") {
+            item = v;
+          } else if (typeof v === "number" || v instanceof String || v instanceof Number) {
+            item = String(v);
+          }
+          if (item !== void 0 && propertyList.indexOf(item) < 0) {
+            propertyList.push(item);
+          }
+        }
+      }
+      if (space instanceof Number) {
+        space = Number(space);
+      } else if (space instanceof String) {
+        space = String(space);
+      }
+      if (typeof space === "number") {
+        if (space > 0) {
+          space = Math.min(10, Math.floor(space));
+          gap = "          ".substr(0, space);
+        }
+      } else if (typeof space === "string") {
+        gap = space.substr(0, 10);
+      }
+      return serializeProperty("", { "": value });
+      function serializeProperty(key, holder) {
+        let value2 = holder[key];
+        if (value2 != null) {
+          if (typeof value2.toJSON5 === "function") {
+            value2 = value2.toJSON5(key);
+          } else if (typeof value2.toJSON === "function") {
+            value2 = value2.toJSON(key);
+          }
+        }
+        if (replacerFunc) {
+          value2 = replacerFunc.call(holder, key, value2);
+        }
+        if (value2 instanceof Number) {
+          value2 = Number(value2);
+        } else if (value2 instanceof String) {
+          value2 = String(value2);
+        } else if (value2 instanceof Boolean) {
+          value2 = value2.valueOf();
+        }
+        switch (value2) {
+          case null:
+            return "null";
+          case true:
+            return "true";
+          case false:
+            return "false";
+        }
+        if (typeof value2 === "string") {
+          return quoteString(value2);
+        }
+        if (typeof value2 === "number") {
+          return String(value2);
+        }
+        if (typeof value2 === "object") {
+          return Array.isArray(value2) ? serializeArray(value2) : serializeObject(value2);
+        }
+        return void 0;
+      }
+      function quoteString(value2) {
+        const quotes = {
+          "'": 0.1,
+          '"': 0.2
+        };
+        const replacements = {
+          "'": "\\'",
+          '"': '\\"',
+          "\\": "\\\\",
+          "\b": "\\b",
+          "\f": "\\f",
+          "\n": "\\n",
+          "\r": "\\r",
+          "	": "\\t",
+          "\v": "\\v",
+          "\0": "\\0",
+          "\u2028": "\\u2028",
+          "\u2029": "\\u2029"
+        };
+        let product = "";
+        for (let i = 0; i < value2.length; i++) {
+          const c = value2[i];
+          switch (c) {
+            case "'":
+            case '"':
+              quotes[c]++;
+              product += c;
+              continue;
+            case "\0":
+              if (util.isDigit(value2[i + 1])) {
+                product += "\\x00";
+                continue;
+              }
+          }
+          if (replacements[c]) {
+            product += replacements[c];
+            continue;
+          }
+          if (c < " ") {
+            let hexString = c.charCodeAt(0).toString(16);
+            product += "\\x" + ("00" + hexString).substring(hexString.length);
+            continue;
+          }
+          product += c;
+        }
+        const quoteChar = quote || Object.keys(quotes).reduce((a, b) => quotes[a] < quotes[b] ? a : b);
+        product = product.replace(new RegExp(quoteChar, "g"), replacements[quoteChar]);
+        return quoteChar + product + quoteChar;
+      }
+      function serializeObject(value2) {
+        if (stack.indexOf(value2) >= 0) {
+          throw TypeError("Converting circular structure to JSON5");
+        }
+        stack.push(value2);
+        let stepback = indent;
+        indent = indent + gap;
+        let keys = propertyList || Object.keys(value2);
+        let partial = [];
+        for (const key of keys) {
+          const propertyString = serializeProperty(key, value2);
+          if (propertyString !== void 0) {
+            let member = serializeKey(key) + ":";
+            if (gap !== "") {
+              member += " ";
+            }
+            member += propertyString;
+            partial.push(member);
+          }
+        }
+        let final;
+        if (partial.length === 0) {
+          final = "{}";
+        } else {
+          let properties;
+          if (gap === "") {
+            properties = partial.join(",");
+            final = "{" + properties + "}";
+          } else {
+            let separator = ",\n" + indent;
+            properties = partial.join(separator);
+            final = "{\n" + indent + properties + ",\n" + stepback + "}";
+          }
+        }
+        stack.pop();
+        indent = stepback;
+        return final;
+      }
+      function serializeKey(key) {
+        if (key.length === 0) {
+          return quoteString(key);
+        }
+        const firstChar = String.fromCodePoint(key.codePointAt(0));
+        if (!util.isIdStartChar(firstChar)) {
+          return quoteString(key);
+        }
+        for (let i = firstChar.length; i < key.length; i++) {
+          if (!util.isIdContinueChar(String.fromCodePoint(key.codePointAt(i)))) {
+            return quoteString(key);
+          }
+        }
+        return key;
+      }
+      function serializeArray(value2) {
+        if (stack.indexOf(value2) >= 0) {
+          throw TypeError("Converting circular structure to JSON5");
+        }
+        stack.push(value2);
+        let stepback = indent;
+        indent = indent + gap;
+        let partial = [];
+        for (let i = 0; i < value2.length; i++) {
+          const propertyString = serializeProperty(String(i), value2);
+          partial.push(propertyString !== void 0 ? propertyString : "null");
+        }
+        let final;
+        if (partial.length === 0) {
+          final = "[]";
+        } else {
+          if (gap === "") {
+            let properties = partial.join(",");
+            final = "[" + properties + "]";
+          } else {
+            let separator = ",\n" + indent;
+            let properties = partial.join(separator);
+            final = "[\n" + indent + properties + ",\n" + stepback + "]";
+          }
+        }
+        stack.pop();
+        indent = stepback;
+        return final;
+      }
+    };
   }
-};
-var SourceLocation = class {
-  start;
-  end;
-  filename;
-  identifierName;
-  constructor(start, end) {
-    this.start = start;
-    this.end = end;
+});
+var require_lib = __commonJS({
+  "node_modules/json5/lib/index.js"(exports, module) {
+    var parse = require_parse();
+    var stringify = require_stringify();
+    var JSON52 = {
+      parse,
+      stringify
+    };
+    module.exports = JSON52;
   }
-};
-function createPositionWithColumnOffset(position, columnOffset) {
-  const { line, column, index } = position;
-  return new Position(line, column + columnOffset, index + columnOffset);
+});
+function assessRedisRead(options, datasourceId) {
+  const base = {
+    datasourceKind: "redis",
+    ...datasourceId ? { datasourceId } : {},
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false
+  };
+  const query = options.query;
+  if (typeof query !== "string" || !query || query.includes("{{") || /[\r\n\t\0]/.test(query)) {
+    return { ...base, reason: "Redis needs one static space-delimited command in options.query." };
+  }
+  const [raw, ...args] = query.split(" ");
+  if (!raw || args.some((arg) => !arg)) {
+    return { ...base, reason: "Redis commands must use single spaces, matching the plugin parser." };
+  }
+  const command = raw.toUpperCase();
+  const scalarArity = {
+    PING: 0,
+    DBSIZE: 0,
+    GET: 1,
+    TYPE: 1,
+    TTL: 1,
+    PTTL: 1,
+    STRLEN: 1,
+    HLEN: 1,
+    LLEN: 1,
+    SCARD: 1,
+    ZCARD: 1,
+    HGET: 2,
+    HEXISTS: 2,
+    SISMEMBER: 2,
+    ZSCORE: 2
+  };
+  if (Object.hasOwn(scalarArity, command) && args.length === scalarArity[command]) {
+    return { ...base, provenRead: true, directSafe: true, maxRows: 1 };
+  }
+  if (["MGET", "EXISTS", "HMGET"].includes(command)) {
+    const fields = args.length - (command === "HMGET" ? 1 : 0);
+    if (fields > 0 && fields <= 1e3) {
+      return { ...base, provenRead: true, directSafe: true, maxRows: command === "EXISTS" ? 1 : fields };
+    }
+  }
+  if (["LRANGE", "ZRANGE"].includes(command) && args.length === 3 && /^\d+$/.test(args[1]) && /^\d+$/.test(args[2])) {
+    const start = Number(args[1]);
+    const end = Number(args[2]);
+    const maxRows = end - start + 1;
+    if (Number.isSafeInteger(start) && Number.isSafeInteger(end) && maxRows > 0 && maxRows <= 1e3) {
+      return { ...base, provenRead: true, directSafe: true, maxRows };
+    }
+  }
+  const scanOffset = command === "SCAN" ? 0 : ["HSCAN", "SSCAN", "ZSCAN"].includes(command) ? 1 : -1;
+  let scan = scanOffset >= 0 && args.length > scanOffset && /^\d+$/.test(args[scanOffset]);
+  const seen = /* @__PURE__ */ new Set();
+  if (scan) {
+    for (let i = scanOffset + 1; i < args.length; i += 2) {
+      const option = args[i].toUpperCase();
+      const value = args[i + 1];
+      if (!value || seen.has(option) || !["MATCH", "COUNT", ...command === "SCAN" ? ["TYPE"] : []].includes(option) || option === "COUNT" && (!/^\d+$/.test(value) || Number(value) < 1 || Number(value) > 1e3)) {
+        scan = false;
+        break;
+      }
+      seen.add(option);
+    }
+  }
+  if (scan || ["HGETALL", "HKEYS", "HVALS", "SMEMBERS"].includes(command) && args.length === 1) {
+    return {
+      ...base,
+      provenRead: true,
+      requiresRemoteReadConfirmation: true,
+      reason: "Redis collection/scan reads have no hard result bound. Use singular run_query with confirmed read access; SCAN COUNT is only a hint."
+    };
+  }
+  return { ...base, reason: `Redis command ${command} is not a supported bounded read. Writes, scripts, KEYS and administrative commands are not automatically executed.` };
 }
-var code = "BABEL_PARSER_SOURCETYPE_MODULE_REQUIRED";
-var module_errors_default = {
-  ImportMetaOutsideModule: {
-    message: `import.meta may appear only with 'sourceType: "module"'`,
-    code
-  },
-  ImportOutsideModule: {
-    message: `'import' and 'export' may appear only with 'sourceType: "module"'`,
-    code
-  }
+var import_json5 = __toESM(require_lib());
+var import_moment = __toESM(require_moment(), 1);
+var Unsupported = class extends Error {
 };
-var NodeDescriptions = {
-  ArrayPattern: "array destructuring pattern",
-  AssignmentExpression: "assignment expression",
-  AssignmentPattern: "assignment expression",
-  ArrowFunctionExpression: "arrow function expression",
-  ConditionalExpression: "conditional expression",
-  CatchClause: "catch clause",
-  ForOfStatement: "for-of statement",
-  ForInStatement: "for-in statement",
-  ForStatement: "for-loop",
-  FormalParameters: "function parameter list",
-  Identifier: "identifier",
-  ImportSpecifier: "import specifier",
-  ImportDefaultSpecifier: "import default specifier",
-  ImportNamespaceSpecifier: "import namespace specifier",
-  ObjectPattern: "object destructuring pattern",
-  ParenthesizedExpression: "parenthesized expression",
-  RestElement: "rest element",
-  UpdateExpression: {
-    true: "prefix operation",
-    false: "postfix operation"
-  },
-  VariableDeclarator: "variable declaration",
-  YieldExpression: "yield expression"
+var MAX_EXPRESSION_CHARS = 600;
+var MAX_PAD = 1e3;
+var MATH_FNS = {
+  floor: Math.floor,
+  ceil: Math.ceil,
+  round: Math.round,
+  abs: Math.abs,
+  trunc: Math.trunc,
+  sign: Math.sign,
+  min: Math.min,
+  max: Math.max,
+  pow: Math.pow,
+  sqrt: Math.sqrt
 };
-var toNodeDescription = (node) => node.type === "UpdateExpression" ? NodeDescriptions.UpdateExpression[`${node.prefix}`] : NodeDescriptions[node.type];
-var to_node_description_default = toNodeDescription;
-var standard_errors_default = {
-  AccessorIsGenerator: ({ kind }) => `A ${kind}ter cannot be a generator.`,
-  ArgumentsInClass: "'arguments' is only allowed in functions and class methods.",
-  AsyncFunctionInSingleStatementContext: "Async functions can only be declared at the top level or inside a block.",
-  AwaitBindingIdentifier: "Can not use 'await' as identifier inside an async function.",
-  AwaitBindingIdentifierInStaticBlock: "Can not use 'await' as identifier inside a static block.",
-  AwaitExpressionFormalParameter: "'await' is not allowed in async function parameters.",
-  AwaitUsingNotInAsyncContext: "'await using' is only allowed within async functions and at the top levels of modules.",
-  AwaitNotInAsyncContext: "'await' is only allowed within async functions and at the top levels of modules.",
-  BadGetterArity: "A 'get' accessor must not have any formal parameters.",
-  BadSetterArity: "A 'set' accessor must have exactly one formal parameter.",
-  BadSetterRestParameter: "A 'set' accessor function argument must not be a rest parameter.",
-  ConstructorClassField: "Classes may not have a field named 'constructor'.",
-  ConstructorClassPrivateField: "Classes may not have a private field named '#constructor'.",
-  ConstructorIsAccessor: "Class constructor may not be an accessor.",
-  ConstructorIsAsync: "Constructor can't be an async function.",
-  ConstructorIsGenerator: "Constructor can't be a generator.",
-  DeclarationMissingInitializer: ({
-    kind
-  }) => `Missing initializer in ${kind} declaration.`,
-  DecoratorArgumentsOutsideParentheses: "Decorator arguments must be moved inside parentheses: use '@(decorator(args))' instead of '@(decorator)(args)'.",
-  DecoratorBeforeExport: "Decorators must be placed *before* the 'export' keyword. Remove the 'decoratorsBeforeExport: true' option to use the 'export @decorator class {}' syntax.",
-  DecoratorsBeforeAfterExport: "Decorators can be placed *either* before or after the 'export' keyword, but not in both locations at the same time.",
-  DecoratorConstructor: "Decorators can't be used with a constructor. Did you mean '@dec class { ... }'?",
-  DecoratorExportClass: "Decorators must be placed *after* the 'export' keyword. Remove the 'decoratorsBeforeExport: false' option to use the '@decorator export class {}' syntax.",
-  DecoratorSemicolon: "Decorators must not be followed by a semicolon.",
-  DecoratorStaticBlock: "Decorators can't be used with a static block.",
-  DeferImportRequiresNamespace: 'Only `import defer * as x from "./module"` is valid.',
-  DeletePrivateField: "Deleting a private field is not allowed.",
-  DestructureNamedImport: "ES2015 named imports do not destructure. Use another statement for destructuring after the import.",
-  DuplicateConstructor: "Duplicate constructor in the same class.",
-  DuplicateDefaultExport: "Only one default export allowed per module.",
-  DuplicateExport: ({ exportName }) => `\`${exportName}\` has already been exported. Exported identifiers must be unique.`,
-  DuplicateProto: "Redefinition of __proto__ property.",
-  DuplicateRegExpFlags: "Duplicate regular expression flag.",
-  ElementAfterRest: "Rest element must be last element.",
-  EscapedCharNotAnIdentifier: "Invalid Unicode escape.",
-  ExportBindingIsString: ({
-    localName,
-    exportName
-  }) => `A string literal cannot be used as an exported binding without \`from\`.
-- Did you mean \`export { '${localName}' as '${exportName}' } from 'some-module'\`?`,
-  ExportDefaultFromAsIdentifier: "'from' is not allowed as an identifier after 'export default'.",
-  ForInOfLoopInitializer: ({
-    type
-  }) => `'${type === "ForInStatement" ? "for-in" : "for-of"}' loop variable declaration may not have an initializer.`,
-  ForInUsing: "For-in loop may not start with 'using' declaration.",
-  ForOfAsync: "The left-hand side of a for-of loop may not be 'async'.",
-  ForOfLet: "The left-hand side of a for-of loop may not start with 'let'.",
-  GeneratorInSingleStatementContext: "Generators can only be declared at the top level or inside a block.",
-  IllegalBreakContinue: ({
-    type
-  }) => `Unsyntactic ${type === "BreakStatement" ? "break" : "continue"}.`,
-  IllegalLanguageModeDirective: "Illegal 'use strict' directive in function with non-simple parameter list.",
-  IllegalReturn: "'return' outside of function.",
-  ImportAttributesUseAssert: "The `assert` keyword in import attributes is deprecated and it has been replaced by the `with` keyword. You can enable the `deprecatedImportAssert` parser plugin to suppress this error.",
-  ImportBindingIsString: ({ importName }) => `A string literal cannot be used as an imported binding.
-- Did you mean \`import { "${importName}" as foo }\`?`,
-  ImportCallArity: `\`import()\` requires exactly one or two arguments.`,
-  ImportCallNotNewExpression: "Cannot use new with import(...).",
-  ImportCallSpreadArgument: "`...` is not allowed in `import()`.",
-  ImportJSONBindingNotDefault: "A JSON module can only be imported with `default`.",
-  ImportReflectionHasAssertion: "`import module x` cannot have assertions.",
-  ImportReflectionNotBinding: 'Only `import module x from "./module"` is valid.',
-  IncompatibleRegExpUVFlags: "The 'u' and 'v' regular expression flags cannot be enabled at the same time.",
-  InvalidBigIntLiteral: "Invalid BigIntLiteral.",
-  InvalidCodePoint: "Code point out of bounds.",
-  InvalidCoverDiscardElement: "'void' must be followed by an expression when not used in a binding position.",
-  InvalidCoverInitializedName: "Invalid shorthand property initializer.",
-  InvalidDecimal: "Invalid decimal.",
-  InvalidDigit: ({ radix }) => `Expected number in radix ${radix}.`,
-  InvalidEscapeSequence: "Bad character escape sequence.",
-  InvalidEscapeSequenceTemplate: "Invalid escape sequence in template.",
-  InvalidEscapedReservedWord: ({ reservedWord }) => `Escape sequence in keyword ${reservedWord}.`,
-  InvalidIdentifier: ({ identifierName }) => `Invalid identifier ${identifierName}.`,
-  InvalidLhs: ({ ancestor }) => `Invalid left-hand side in ${to_node_description_default(ancestor)}.`,
-  InvalidLhsBinding: ({ ancestor }) => `Binding invalid left-hand side in ${to_node_description_default(ancestor)}.`,
-  InvalidLhsOptionalChaining: ({ ancestor }) => `Invalid optional chaining in the left-hand side of ${to_node_description_default(
-    ancestor
-  )}.`,
-  InvalidNumber: "Invalid number.",
-  InvalidOrMissingExponent: "Floating-point numbers require a valid exponent after the 'e'.",
-  InvalidOrUnexpectedToken: ({ unexpected }) => `Unexpected character '${unexpected}'.`,
-  InvalidParenthesizedAssignment: "Invalid parenthesized assignment pattern.",
-  InvalidPrivateFieldResolution: ({
-    identifierName
-  }) => `Private name #${identifierName} is not defined.`,
-  InvalidPropertyBindingPattern: "Binding member expression.",
-  InvalidRecordProperty: "Only properties and spread elements are allowed in record definitions.",
-  InvalidRestAssignmentPattern: "Invalid rest operator's argument.",
-  LabelRedeclaration: ({ labelName }) => `Label '${labelName}' is already declared.`,
-  LetInLexicalBinding: "'let' is disallowed as a lexically bound name.",
-  LineTerminatorBeforeArrow: "No line break is allowed before '=>'.",
-  MalformedRegExpFlags: "Invalid regular expression flag.",
-  MissingClassName: "A class name is required.",
-  MissingEqInAssignment: "Only '=' operator can be used for specifying default value.",
-  MissingSemicolon: "Missing semicolon.",
-  MissingPlugin: ({ missingPlugin }) => `This experimental syntax requires enabling the parser plugin: ${missingPlugin.map((name) => JSON.stringify(name)).join(", ")}.`,
-  // FIXME: Would be nice to make this "missingPlugins" instead.
-  // Also, seems like we can drop the "(s)" from the message and just make it "s".
-  MissingOneOfPlugins: ({ missingPlugin }) => `This experimental syntax requires enabling one of the following parser plugin(s): ${missingPlugin.map((name) => JSON.stringify(name)).join(", ")}.`,
-  MissingUnicodeEscape: "Expecting Unicode escape sequence \\uXXXX.",
-  MixingCoalesceWithLogical: "Nullish coalescing operator(??) requires parens when mixing with logical operators.",
-  ModuleAttributeDifferentFromType: "The only accepted module attribute is `type`.",
-  ModuleAttributeInvalidValue: "Only string literals are allowed as module attribute values.",
-  ModuleAttributesWithDuplicateKeys: ({ key }) => `Duplicate key "${key}" is not allowed in module attributes.`,
-  ModuleExportNameHasLoneSurrogate: ({
-    surrogateCharCode
-  }) => `An export name cannot include a lone surrogate, found '\\u${surrogateCharCode.toString(
-    16
-  )}'.`,
-  ModuleExportUndefined: ({ localName }) => `Export '${localName}' is not defined.`,
-  MultipleDefaultsInSwitch: "Multiple default clauses.",
-  NewlineAfterThrow: "Illegal newline after throw.",
-  NoCatchOrFinally: "Missing catch or finally clause.",
-  NumberIdentifier: "Identifier directly after number.",
-  NumericSeparatorInEscapeSequence: "Numeric separators are not allowed inside unicode escape sequences or hex escape sequences.",
-  ObsoleteAwaitStar: "'await*' has been removed from the async functions proposal. Use Promise.all() instead.",
-  OptionalChainingNoNew: "Constructors in/after an Optional Chain are not allowed.",
-  OptionalChainingNoTemplate: "Tagged Template Literals are not allowed in optionalChain.",
-  OverrideOnConstructor: "'override' modifier cannot appear on a constructor declaration.",
-  ParamDupe: "Argument name clash.",
-  PatternHasAccessor: "Object pattern can't contain getter or setter.",
-  PatternHasMethod: "Object pattern can't contain methods.",
-  PrivateInExpectedIn: ({ identifierName }) => `Private names are only allowed in property accesses (\`obj.#${identifierName}\`) or in \`in\` expressions (\`#${identifierName} in obj\`).`,
-  PrivateNameRedeclaration: ({ identifierName }) => `Duplicate private name #${identifierName}.`,
-  RecordExpressionBarIncorrectEndSyntaxType: "Record expressions ending with '|}' are only allowed when the 'syntaxType' option of the 'recordAndTuple' plugin is set to 'bar'.",
-  RecordExpressionBarIncorrectStartSyntaxType: "Record expressions starting with '{|' are only allowed when the 'syntaxType' option of the 'recordAndTuple' plugin is set to 'bar'.",
-  RecordExpressionHashIncorrectStartSyntaxType: "Record expressions starting with '#{' are only allowed when the 'syntaxType' option of the 'recordAndTuple' plugin is set to 'hash'.",
-  RecordNoProto: "'__proto__' is not allowed in Record expressions.",
-  RestTrailingComma: "Unexpected trailing comma after rest element.",
-  SloppyFunction: "In non-strict mode code, functions can only be declared at top level or inside a block.",
-  SloppyFunctionAnnexB: "In non-strict mode code, functions can only be declared at top level, inside a block, or as the body of an if statement.",
-  SourcePhaseImportRequiresDefault: 'Only `import source x from "./module"` is valid.',
-  StaticPrototype: "Classes may not have static property named prototype.",
-  SuperCallNotNewExpression: "Cannot use new with super(...).",
-  SuperNotAllowed: "`super()` is only valid inside a class constructor of a subclass. Maybe a typo in the method name ('constructor') or not extending another class?",
-  SuperPrivateField: "Private fields can't be accessed on super.",
-  TrailingDecorator: "Decorators must be attached to a class element.",
-  TupleExpressionBarIncorrectEndSyntaxType: "Tuple expressions ending with '|]' are only allowed when the 'syntaxType' option of the 'recordAndTuple' plugin is set to 'bar'.",
-  TupleExpressionBarIncorrectStartSyntaxType: "Tuple expressions starting with '[|' are only allowed when the 'syntaxType' option of the 'recordAndTuple' plugin is set to 'bar'.",
-  TupleExpressionHashIncorrectStartSyntaxType: "Tuple expressions starting with '#[' are only allowed when the 'syntaxType' option of the 'recordAndTuple' plugin is set to 'hash'.",
-  UnexpectedArgumentPlaceholder: "Unexpected argument placeholder.",
-  UnexpectedAwaitAfterPipelineBody: 'Unexpected "await" after pipeline body; await must have parentheses in minimal proposal.',
-  UnexpectedDigitAfterHash: "Unexpected digit after hash token.",
-  UnexpectedImportExport: "'import' and 'export' may only appear at the top level.",
-  UnexpectedKeyword: ({ keyword }) => `Unexpected keyword '${keyword}'.`,
-  UnexpectedLeadingDecorator: "Leading decorators must be attached to a class declaration.",
-  UnexpectedLexicalDeclaration: "Lexical declaration cannot appear in a single-statement context.",
-  UnexpectedNewTarget: "`new.target` can only be used in functions or class properties.",
-  UnexpectedNumericSeparator: "A numeric separator is only allowed between two digits.",
-  UnexpectedPrivateField: "Unexpected private name.",
-  UnexpectedReservedWord: ({ reservedWord }) => `Unexpected reserved word '${reservedWord}'.`,
-  UnexpectedSuper: "'super' is only allowed in object methods and classes.",
-  UnexpectedToken: ({
-    expected,
-    unexpected
-  }) => `Unexpected token${unexpected ? ` '${unexpected}'.` : ""}${expected ? `, expected "${expected}"` : ""}`,
-  UnexpectedTokenUnaryExponentiation: "Illegal expression. Wrap left hand side or entire exponentiation in parentheses.",
-  UnexpectedUsingDeclaration: "Using declaration cannot appear in the top level when source type is `script` or in the bare case statement.",
-  UnexpectedVoidPattern: "Unexpected void binding.",
-  UnsupportedDecoratorExport: "A decorated export must export a class declaration.",
-  UnsupportedDefaultExport: "Only expressions, functions or classes are allowed as the `default` export.",
-  UnsupportedImport: "`import` can only be used in `import()` or `import.meta`.",
-  UnsupportedMetaProperty: ({
-    target,
-    onlyValidPropertyName
-  }) => `The only valid meta property for ${target} is ${target}.${onlyValidPropertyName}.`,
-  UnsupportedParameterDecorator: "Decorators cannot be used to decorate parameters.",
-  UnsupportedPropertyDecorator: "Decorators cannot be used to decorate object literal properties.",
-  UnsupportedSuper: "'super' can only be used with function calls (i.e. super()) or in property accesses (i.e. super.prop or super[prop]).",
-  UnterminatedComment: "Unterminated comment.",
-  UnterminatedRegExp: "Unterminated regular expression.",
-  UnterminatedString: "Unterminated string constant.",
-  UnterminatedTemplate: "Unterminated template.",
-  UsingDeclarationExport: "Using declaration cannot be exported.",
-  UsingDeclarationHasBindingPattern: "Using declaration cannot have destructuring patterns.",
-  VarRedeclaration: ({ identifierName }) => `Identifier '${identifierName}' has already been declared.`,
-  VoidPatternCatchClauseParam: "A void binding can not be the catch clause parameter. Use `try { ... } catch { ... }` if you want to discard the caught error.",
-  VoidPatternInitializer: "A void binding may not have an initializer.",
-  YieldBindingIdentifier: "Can not use 'yield' as identifier inside a generator.",
-  YieldInParameter: "Yield expression is not allowed in formal parameters.",
-  YieldNotInGeneratorFunction: "'yield' is only allowed within generator functions.",
-  ZeroDigitNumericSeparator: "Numeric separator can not be used after leading 0."
-};
-var strict_mode_errors_default = {
-  StrictDelete: "Deleting local variable in strict mode.",
-  // `referenceName` is the StringValue[1] of an IdentifierReference[2], which
-  // is represented as just an `Identifier`[3] in the Babel AST.
-  // 1. https://tc39.es/ecma262/#sec-static-semantics-stringvalue
-  // 2. https://tc39.es/ecma262/#prod-IdentifierReference
-  // 3. https://github.com/babel/babel/blob/main/packages/babel-parser/ast/spec.md#identifier
-  StrictEvalArguments: ({ referenceName }) => `Assigning to '${referenceName}' in strict mode.`,
-  // `bindingName` is the StringValue[1] of a BindingIdentifier[2], which is
-  // represented as just an `Identifier`[3] in the Babel AST.
-  // 1. https://tc39.es/ecma262/#sec-static-semantics-stringvalue
-  // 2. https://tc39.es/ecma262/#prod-BindingIdentifier
-  // 3. https://github.com/babel/babel/blob/main/packages/babel-parser/ast/spec.md#identifier
-  StrictEvalArgumentsBinding: ({ bindingName }) => `Binding '${bindingName}' in strict mode.`,
-  StrictFunction: "In strict mode code, functions can only be declared at top level or inside a block.",
-  StrictNumericEscape: "The only valid numeric escape in strict mode is '\\0'.",
-  StrictOctalLiteral: "Legacy octal literals are not allowed in strict mode.",
-  StrictWith: "'with' in strict mode."
-};
-var parse_expression_errors_default = {
-  ParseExpressionEmptyInput: "Unexpected parseExpression() input: The input is empty or contains only comments.",
-  ParseExpressionExpectsEOF: ({ unexpected }) => `Unexpected parseExpression() input: The input should contain exactly one expression, but the first expression is followed by the unexpected character \`${String.fromCodePoint(unexpected)}\`.`
-};
-var UnparenthesizedPipeBodyDescriptions = /* @__PURE__ */ new Set([
-  "ArrowFunctionExpression",
-  "AssignmentExpression",
-  "ConditionalExpression",
-  "YieldExpression"
+var MATH_CONSTANTS = { PI: Math.PI, E: Math.E };
+var UNITS = /* @__PURE__ */ new Set([
+  "year",
+  "years",
+  "y",
+  "quarter",
+  "quarters",
+  "Q",
+  "month",
+  "months",
+  "M",
+  "week",
+  "weeks",
+  "w",
+  "isoWeek",
+  "isoWeeks",
+  "day",
+  "days",
+  "d",
+  "date",
+  "hour",
+  "hours",
+  "h",
+  "minute",
+  "minutes",
+  "m",
+  "second",
+  "seconds",
+  "s",
+  "millisecond",
+  "milliseconds",
+  "ms"
 ]);
-var pipeline_operator_errors_default = {
-  // This error is only used by the smart-mix proposal
-  PipeBodyIsTighter: "Unexpected yield after pipeline body; any yield expression acting as Hack-style pipe body must be parenthesized due to its loose operator precedence.",
-  PipeTopicRequiresHackPipes: 'Topic reference is used, but the pipelineOperator plugin was not passed a "proposal": "hack" or "smart" option.',
-  PipeTopicUnbound: "Topic reference is unbound; it must be inside a pipe body.",
-  PipeTopicUnconfiguredToken: ({ token }) => `Invalid topic token ${token}. In order to use ${token} as a topic reference, the pipelineOperator plugin must be configured with { "proposal": "hack", "topicToken": "${token}" }.`,
-  PipeTopicUnused: "Hack-style pipe body does not contain a topic reference; Hack-style pipes must use topic at least once.",
-  PipeUnparenthesizedBody: ({ type }) => `Hack-style pipe body cannot be an unparenthesized ${to_node_description_default({
-    type
-  })}; please wrap it in parentheses.`,
-  ...{
-    // Messages whose codes start with “Pipeline” or “PrimaryTopic”
-    // are retained for backwards compatibility
-    // with the deprecated smart-mix pipe operator proposal plugin.
-    // They are subject to removal in a future major version.
-    PipelineBodyNoArrow: 'Unexpected arrow "=>" after pipeline body; arrow function in pipeline body must be parenthesized.',
-    PipelineBodySequenceExpression: "Pipeline body may not be a comma-separated sequence expression.",
-    PipelineHeadSequenceExpression: "Pipeline head should not be a comma-separated sequence expression.",
-    PipelineTopicUnused: "Pipeline is in topic style but does not use topic reference.",
-    PrimaryTopicNotAllowed: "Topic reference was used in a lexical context without topic binding.",
-    PrimaryTopicRequiresSmartPipeline: 'Topic reference is used, but the pipelineOperator plugin was not passed a "proposal": "hack" or "smart" option.'
+var none = (a) => a.length === 0;
+var MOMENT_METHODS = {
+  add: (a) => a.length === 2 && typeof a[0] === "number" && isUnit(a[1]),
+  subtract: (a) => a.length === 2 && typeof a[0] === "number" && isUnit(a[1]),
+  startOf: (a) => a.length === 1 && isUnit(a[0]),
+  endOf: (a) => a.length === 1 && isUnit(a[0]),
+  format: (a) => a.length === 0 || a.length === 1 && typeof a[0] === "string",
+  toISOString: none,
+  valueOf: none,
+  unix: none,
+  utc: none,
+  local: none,
+  clone: none,
+  isValid: none,
+  year: none,
+  quarter: none,
+  month: none,
+  date: none,
+  day: none,
+  isoWeekday: none,
+  week: none,
+  isoWeek: none,
+  hour: none,
+  minute: none,
+  second: none,
+  daysInMonth: none,
+  diff: (a) => a.length >= 1 && a.length <= 3 && isDateLike(a[0]) && (a[1] === void 0 || isUnit(a[1])) && (a[2] === void 0 || typeof a[2] === "boolean"),
+  isBefore: (a) => a.length >= 1 && a.length <= 2 && isDateLike(a[0]) && (a[1] === void 0 || isUnit(a[1])),
+  isAfter: (a) => a.length >= 1 && a.length <= 2 && isDateLike(a[0]) && (a[1] === void 0 || isUnit(a[1])),
+  isSame: (a) => a.length >= 1 && a.length <= 2 && isDateLike(a[0]) && (a[1] === void 0 || isUnit(a[1]))
+};
+var STRING_METHODS = {
+  toUpperCase: (s, a) => a.length ? unsupported() : s.toUpperCase(),
+  toLowerCase: (s, a) => a.length ? unsupported() : s.toLowerCase(),
+  trim: (s, a) => a.length ? unsupported() : s.trim(),
+  // A length past the cap is not resolved: shortening it would give a different answer than JavaScript.
+  padStart: (s, a) => s.padStart(capped(a[0], MAX_PAD), str(a[1] ?? " ")),
+  padEnd: (s, a) => s.padEnd(capped(a[0], MAX_PAD), str(a[1] ?? " ")),
+  slice: (s, a) => s.slice(num(a[0] ?? 0), a[1] === void 0 ? void 0 : num(a[1])),
+  substring: (s, a) => s.substring(num(a[0] ?? 0), a[1] === void 0 ? void 0 : num(a[1]))
+};
+function unsupported() {
+  throw new Unsupported();
+}
+function own(table, name) {
+  return typeof name === "string" && Object.prototype.hasOwnProperty.call(table, name) ? table[name] : void 0;
+}
+function isUnit(v) {
+  return typeof v === "string" && UNITS.has(v);
+}
+function isDateLike(v) {
+  return isMoment(v) || typeof v === "string" || typeof v === "number";
+}
+function isMoment(v) {
+  return typeof v === "object" && v !== null && v.kind === "moment";
+}
+function num(v) {
+  if (typeof v !== "number" || !Number.isFinite(v) || Math.abs(v) > 1e9)
+    unsupported();
+  return v;
+}
+function capped(v, max) {
+  const n = num(v);
+  if (n < 0 || n > max)
+    unsupported();
+  return n;
+}
+function str(v) {
+  if (typeof v !== "string")
+    unsupported();
+  return v;
+}
+function primitive(v) {
+  if (isMoment(v))
+    unsupported();
+  return v;
+}
+function box(m) {
+  return { kind: "moment", m };
+}
+function momentArgs(args) {
+  if (args.length > 2)
+    unsupported();
+  return args.map((a) => typeof a === "string" || typeof a === "number" ? a : unsupported());
+}
+function interpret(node) {
+  switch (node?.type) {
+    case "StringLiteral":
+    case "NumericLiteral":
+    case "BooleanLiteral":
+      return node.value;
+    case "NullLiteral":
+      return null;
+    case "Identifier":
+      if (node.name === "undefined")
+        return void 0;
+      if (node.name === "NaN")
+        return NaN;
+      if (node.name === "Infinity")
+        return Infinity;
+      return unsupported();
+    case "TemplateLiteral": {
+      let out = "";
+      node.quasis.forEach((q, i) => {
+        out += q.value.cooked ?? "";
+        if (i < node.expressions.length)
+          out += String(primitive(interpret(node.expressions[i])));
+      });
+      return out;
+    }
+    case "UnaryExpression": {
+      const v = primitive(interpret(node.argument));
+      if (node.operator === "!")
+        return !v;
+      if (node.operator === "-")
+        return -num(v);
+      if (node.operator === "+")
+        return typeof v === "string" ? Number(v) : num(v);
+      if (node.operator === "typeof")
+        return typeof v;
+      return unsupported();
+    }
+    case "BinaryExpression": {
+      const a = primitive(interpret(node.left));
+      const b = primitive(interpret(node.right));
+      switch (node.operator) {
+        case "+":
+          return typeof a === "string" || typeof b === "string" ? String(a) + String(b) : num(a) + num(b);
+        case "-":
+          return num(a) - num(b);
+        case "*":
+          return num(a) * num(b);
+        case "/":
+          return num(a) / num(b);
+        case "%":
+          return num(a) % num(b);
+        case "===":
+          return a === b;
+        case "!==":
+          return a !== b;
+        case "==":
+          return a == b;
+        // eslint-disable-line eqeqeq
+        case "!=":
+          return a != b;
+        // eslint-disable-line eqeqeq
+        case "<":
+          return a < b;
+        case ">":
+          return a > b;
+        case "<=":
+          return a <= b;
+        case ">=":
+          return a >= b;
+        default:
+          return unsupported();
+      }
+    }
+    case "LogicalExpression": {
+      const l = interpret(node.left);
+      if (node.operator === "&&")
+        return l ? interpret(node.right) : l;
+      if (node.operator === "||")
+        return l ? l : interpret(node.right);
+      if (node.operator === "??")
+        return l ?? interpret(node.right);
+      return unsupported();
+    }
+    case "ConditionalExpression":
+      return interpret(node.test) ? interpret(node.consequent) : interpret(node.alternate);
+    case "MemberExpression": {
+      if (node.computed)
+        return unsupported();
+      const name = node.property?.name;
+      if (node.object?.type === "Identifier" && node.object.name === "Math") {
+        const constant = own(MATH_CONSTANTS, name);
+        return constant ?? unsupported();
+      }
+      const target = interpret(node.object);
+      if (typeof target === "string" && name === "length")
+        return target.length;
+      return unsupported();
+    }
+    case "CallExpression": {
+      const args = node.arguments.map((a) => a.type === "SpreadElement" ? unsupported() : interpret(a));
+      const callee = node.callee;
+      if (callee.type === "Identifier") {
+        if (callee.name === "moment")
+          return box((0, import_moment.default)(...momentArgs(args)));
+        if (callee.name === "String" && args.length === 1)
+          return String(primitive(args[0]));
+        if (callee.name === "Number" && args.length === 1)
+          return Number(primitive(args[0]));
+        if (callee.name === "parseInt" && args.length === 1)
+          return parseInt(str(args[0]));
+        if (callee.name === "parseInt" && args.length === 2)
+          return parseInt(str(args[0]), capped(args[1], 36));
+        if (callee.name === "parseFloat" && args.length === 1)
+          return parseFloat(str(args[0]));
+        return unsupported();
+      }
+      if (callee.type !== "MemberExpression" || callee.computed)
+        return unsupported();
+      const name = callee.property?.name;
+      const object = callee.object;
+      if (object.type === "Identifier" && object.name === "moment") {
+        if (name === "utc")
+          return box(import_moment.default.utc(...momentArgs(args)));
+        if (name === "unix" && args.length === 1)
+          return box(import_moment.default.unix(num(args[0])));
+        return unsupported();
+      }
+      if (object.type === "Identifier" && object.name === "Math") {
+        const fn = own(MATH_FNS, name);
+        return fn ? fn(...args.map((a) => num(a))) : unsupported();
+      }
+      if (object.type === "Identifier" && object.name === "Date" && name === "now" && args.length === 0)
+        return Date.now();
+      if (object.type === "Identifier" && object.name === "JSON" && name === "stringify" && args.length === 1) {
+        return JSON.stringify(primitive(args[0]));
+      }
+      const target = interpret(object);
+      if (isMoment(target)) {
+        const check = own(MOMENT_METHODS, name);
+        if (!check || !check(args))
+          return unsupported();
+        const unwrapped = args.map((a) => isMoment(a) ? a.m : a);
+        const result = target.m[name](...unwrapped);
+        if (import_moment.default.isMoment(result))
+          return box(result);
+        if (typeof result === "string" || typeof result === "number" || typeof result === "boolean")
+          return result;
+        return unsupported();
+      }
+      if (typeof target === "string") {
+        const fn = own(STRING_METHODS, name);
+        return fn ? fn(target, args) : unsupported();
+      }
+      if (typeof target === "number") {
+        if (name === "toFixed" && args.length <= 1)
+          return target.toFixed(args[0] === void 0 ? 0 : capped(args[0], 100));
+        if (name === "toString" && args.length === 0)
+          return String(target);
+        return unsupported();
+      }
+      return unsupported();
+    }
+    default:
+      return unsupported();
   }
-};
-var bind_operator_errors_default = {
-  UnsupportedBind: "Binding should be performed on object property.",
-  UnsupportedBindRHS: "The right-hand side of binding can not be super or import."
-};
-function defineHidden(obj, key, value) {
-  Object.defineProperty(obj, key, {
-    enumerable: false,
-    configurable: true,
-    value
+}
+var SERVER_BINDING = /\{\{(.*?)\}\}/gs;
+function resolveStaticBindings(options) {
+  const resolved = {};
+  const unresolved = [];
+  const visit = (value) => {
+    if (typeof value === "string") {
+      if (!value.includes("{{") || !value.includes("}}"))
+        return;
+      const key = value.replace(/\n/g, " ");
+      if (key in resolved || unresolved.includes(key))
+        return;
+      const outcome = resolveString(value);
+      if (!outcome.ok) {
+        unresolved.push(key);
+        return;
+      }
+      resolved[key] = outcome.value;
+      for (const [binding, v] of outcome.parts)
+        resolved[binding.replace(/\n/g, " ")] = v;
+    } else if (Array.isArray(value))
+      value.forEach(visit);
+    else if (value && typeof value === "object")
+      Object.values(value).forEach(visit);
+  };
+  visit(options);
+  return { resolved, unresolved };
+}
+function resolveString(text) {
+  const matches = [...text.matchAll(SERVER_BINDING)];
+  if (!matches.length)
+    return { ok: false };
+  const parts = [];
+  for (const m of matches) {
+    const result = evaluate(m[1]);
+    if (!result.ok)
+      return { ok: false };
+    parts.push([m[0], result.value]);
+  }
+  if (matches.length === 1 && matches[0][0] === text.trim())
+    return { ok: true, value: parts[0][1], parts: [] };
+  let i = 0;
+  return { ok: true, value: text.replace(SERVER_BINDING, () => String(parts[i++][1])), parts };
+}
+function evaluate(expression) {
+  if (expression.length > MAX_EXPRESSION_CHARS)
+    return { ok: false };
+  try {
+    const value = interpret(parseExpression(expression));
+    if (isMoment(value))
+      return { ok: true, value: value.m.toISOString() };
+    if (typeof value === "number" && !Number.isFinite(value))
+      return { ok: false };
+    return { ok: true, value };
+  } catch {
+    return { ok: false };
+  }
+}
+function unresolvedNote(bindings) {
+  const shown = bindings.slice(0, 3).map((b) => b.length > 60 ? `${b.slice(0, 57)}...` : b).join(", ");
+  return `Browser-free run: ${bindings.length} binding(s) read live app state and ran as undefined (${shown}). Empty or failed results here do not show the viewer is wrong; check it in the viewer before rewriting the query.`;
+}
+function applyResolvedBindings(options, resolved) {
+  if (typeof options === "string") {
+    if (!options.includes("{{") || !options.includes("}}"))
+      return options;
+    const key = options.replace(/\n/g, " ");
+    return Object.prototype.hasOwnProperty.call(resolved, key) ? resolved[key] : options;
+  }
+  if (Array.isArray(options))
+    return options.map((value) => applyResolvedBindings(value, resolved));
+  if (options && typeof options === "object") {
+    return Object.fromEntries(Object.entries(options).map(([k, v]) => [k, applyResolvedBindings(v, resolved)]));
+  }
+  return options;
+}
+function resolvedBindingValues(resolved) {
+  return Object.entries(resolved).filter(([key]) => /^\{\{(?:(?!\}\})[\s\S])*\}\}$/.test(key)).map(([, value]) => value);
+}
+function emptyViewerOnlyParams(options, resolution) {
+  const params = options && typeof options === "object" ? options.query_params : void 0;
+  if (!Array.isArray(params))
+    return [];
+  const filled = [];
+  for (const pair of params) {
+    if (!Array.isArray(pair) || typeof pair[1] !== "string")
+      continue;
+    const key = pair[1].replace(/\n/g, " ");
+    if (!resolution.unresolved.includes(key))
+      continue;
+    resolution.resolved[key] = null;
+    resolution.unresolved = resolution.unresolved.filter((b) => b !== key);
+    filled.push(String(pair[0]));
+  }
+  return filled;
+}
+function emptyParamsNote(names) {
+  return `Ran with ${names.map((n) => `:${n}`).join(", ")} = null: ${names.length > 1 ? "they come" : "it comes"} from the app (a component or a picked row), which is empty outside the viewer. The query works for the empty case; check a value in the viewer.`;
+}
+var LARGE_READ_ROW_THRESHOLD = 1e3;
+var SQL_KINDS = /* @__PURE__ */ new Set([
+  "postgresql",
+  "mysql",
+  "mariadb",
+  "mssql",
+  "sqlserver",
+  "cockroachdb",
+  "redshift",
+  "snowflake",
+  "bigquery",
+  "clickhouse",
+  "oracle",
+  "oracledb",
+  "sqlite",
+  "databricks",
+  "athena",
+  "awsredshift",
+  "harperdb",
+  "ibmdb",
+  "saphana",
+  // SQL dialects assessSql already parses; each keeps its SQL in one operation, and the write
+  // operations carry no SQL field, so they still fall through to a refusal.
+  "spanner",
+  "presto",
+  "cosmosdb",
+  "couchbase",
+  "salesforce"
+]);
+var BILLABLE_SCAN_SQL_KINDS = /* @__PURE__ */ new Set(["bigquery", "snowflake", "redshift", "awsredshift", "athena", "databricks"]);
+function record(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? value : void 0;
+}
+function staticPositiveInteger(value) {
+  if (typeof value === "number" && Number.isInteger(value) && value > 0)
+    return value;
+  if (typeof value !== "string")
+    return void 0;
+  const match = value.trim().match(/^(?:\{\{\s*)?(\d+)(?:\s*\}\})?$/);
+  return match ? Number(match[1]) : void 0;
+}
+function containsBinding(value) {
+  if (typeof value === "string")
+    return value.includes("{{");
+  if (Array.isArray(value))
+    return value.some(containsBinding);
+  return !!record(value) && Object.values(record(value)).some(containsBinding);
+}
+var SERVICENOW_ROW_READS = /* @__PURE__ */ new Set(["list_records"]);
+var SERVICENOW_SINGLE_READS = /* @__PURE__ */ new Set(["get_record", "aggregate"]);
+var SERVICENOW_METADATA_READS = /* @__PURE__ */ new Set([
+  "list_tables",
+  "get_table_schema",
+  "get_field_choices",
+  "list_workflows",
+  "list_flows"
+]);
+function assessServiceNow(options, datasourceId) {
+  const identity = { datasourceKind: "servicenow", ...datasourceId ? { datasourceId } : {} };
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : void 0;
+  const table = typeof options.table === "string" ? options.table.trim() : "";
+  const source = table ? { kind: "remote_endpoint", value: `servicenow:${table}` } : void 0;
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  if (!operation)
+    return refuse("ServiceNow query has no operation.");
+  if (!SERVICENOW_ROW_READS.has(operation) && !SERVICENOW_SINGLE_READS.has(operation) && !SERVICENOW_METADATA_READS.has(operation)) {
+    return refuse(`ServiceNow operation ${operation} is not a read; it can change ServiceNow state.`);
+  }
+  const remote = {
+    provenRead: true,
+    directSafe: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    requiresRemoteReadConfirmation: true,
+    ...source ? { source } : {},
+    ...identity
+  };
+  if (SERVICENOW_SINGLE_READS.has(operation)) {
+    return {
+      ...remote,
+      countOnly: operation === "aggregate",
+      maxRows: 1,
+      reason: `ServiceNow ${operation} reads remote data and consumes API quota.`
+    };
+  }
+  if (SERVICENOW_METADATA_READS.has(operation)) {
+    return {
+      ...remote,
+      countOnly: false,
+      reason: `ServiceNow ${operation} reads remote metadata and consumes API quota.`
+    };
+  }
+  const maxRows = staticPositiveInteger(options.sysparm_limit);
+  if (maxRows === void 0) {
+    return {
+      ...remote,
+      countOnly: false,
+      requiresCountPreflight: true,
+      reason: "ServiceNow list_records has no static sysparm_limit, so its result size cannot be bounded."
+    };
+  }
+  if (maxRows > LARGE_READ_ROW_THRESHOLD) {
+    return {
+      ...remote,
+      countOnly: false,
+      requiresCountPreflight: true,
+      maxRows,
+      reason: `ServiceNow list_records can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+    };
+  }
+  return {
+    ...remote,
+    countOnly: false,
+    maxRows,
+    simpleSourceRead: true,
+    reason: "ServiceNow list_records reads remote data and consumes API quota."
+  };
+}
+function assessOpenapi(options, datasourceId) {
+  const identity = { datasourceKind: "openapi", ...datasourceId ? { datasourceId } : {} };
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  const method = typeof options.operation === "string" ? options.operation.toLowerCase() : void 0;
+  if (method !== "get") {
+    return refuse(`OpenAPI method ${method ?? "<missing>"} is not a proven read; only GET queries can be previewed.`);
+  }
+  const path = typeof options.path === "string" ? options.path.trim() : "";
+  if (!path || containsBinding(path)) {
+    return refuse("OpenAPI preview requires a non-empty static path; dynamic endpoints must be verified in the viewer.");
+  }
+  if (containsBinding(options.params) || containsBinding(options.host)) {
+    return refuse("OpenAPI preview requires static host and parameters; binding-dependent requests must be verified in the viewer.");
+  }
+  const host = typeof options.host === "string" ? options.host.trim() : "";
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    requiresRemoteReadConfirmation: true,
+    source: { kind: "remote_endpoint", value: `${host}${path}` },
+    reason: "OpenAPI GET may expose remote data, consume quota, or return an unbounded payload.",
+    ...identity
+  };
+}
+var INFLUX_ROW_READS = /* @__PURE__ */ new Set(["query_data"]);
+var INFLUX_METADATA_READS = /* @__PURE__ */ new Set([
+  "list_buckets",
+  "retrieve_bucket",
+  "analyze_flux_query",
+  "abstract_syntax_tree",
+  "query_suggestions",
+  "query_suggestions_for_branching"
+]);
+var FLUX_WRITE_CALL = /(^|[^A-Za-z0-9_])(?:[A-Za-z_][A-Za-z0-9_]*\s*\.\s*)?(?:wideTo|to)\s*\(/;
+var FLUX_EGRESS_PACKAGES = [
+  "sql",
+  "kafka",
+  "mqtt",
+  "http",
+  "slack",
+  "pagerduty",
+  "discord",
+  "teams",
+  "telegram",
+  "bigpanda",
+  "opsgenie",
+  "sensu",
+  "servicenow",
+  "victorops",
+  "webexteams",
+  "zenoss",
+  "monitor",
+  "influxdata/influxdb/secrets",
+  "influxdata/influxdb/tasks"
+];
+var FLUX_EGRESS_IMPORT = new RegExp(String.raw`(^|\n)\s*import\s+(?:[A-Za-z_][A-Za-z0-9_]*\s+)?"(?:` + FLUX_EGRESS_PACKAGES.map((name) => name.replace(/\//g, String.raw`\/`)).join("|") + String.raw`)"`);
+var FLUX_LIMIT = /(^|[^A-Za-z0-9_.])limit\s*\(\s*n\s*:\s*(\d+)/;
+function assessInflux(options, datasourceId) {
+  const identity = { datasourceKind: "influxdb", ...datasourceId ? { datasourceId } : {} };
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : void 0;
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  if (!operation)
+    return refuse("InfluxDB query has no operation.");
+  if (!INFLUX_ROW_READS.has(operation) && !INFLUX_METADATA_READS.has(operation)) {
+    return refuse(`InfluxDB operation ${operation} is not a read; it can change InfluxDB state.`);
+  }
+  const remote = {
+    provenRead: true,
+    directSafe: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    requiresRemoteReadConfirmation: true,
+    ...identity
+  };
+  if (INFLUX_METADATA_READS.has(operation)) {
+    return {
+      ...remote,
+      countOnly: false,
+      reason: `InfluxDB ${operation} reads remote metadata without executing a query.`
+    };
+  }
+  const body = typeof options.body === "string" ? options.body : "";
+  if (!body.trim())
+    return refuse("InfluxDB query_data has no Flux body to classify.");
+  if (FLUX_WRITE_CALL.test(body)) {
+    return refuse("InfluxDB query_data body calls to()/wideTo(), which writes points or rows out of the query; that is not a read.");
+  }
+  const egress = body.match(FLUX_EGRESS_IMPORT);
+  if (egress) {
+    return refuse(`InfluxDB query_data body imports ${egress[0].trim()}, which can send data out of InfluxDB or read secrets; that is not a read.`);
+  }
+  const bucket = body.match(/from\s*\(\s*bucket\s*:\s*"([^"]+)"/)?.[1];
+  const source = bucket ? { kind: "remote_endpoint", value: `influxdb:${bucket}` } : void 0;
+  const bounded = { ...remote, countOnly: false, ...source ? { source } : {} };
+  const maxRows = staticPositiveInteger(body.match(FLUX_LIMIT)?.[2]);
+  if (maxRows === void 0) {
+    return {
+      ...bounded,
+      requiresCountPreflight: true,
+      reason: "InfluxDB Flux query has no static limit(n:), so the number of points it returns cannot be bounded."
+    };
+  }
+  if (maxRows > LARGE_READ_ROW_THRESHOLD) {
+    return {
+      ...bounded,
+      requiresCountPreflight: true,
+      maxRows,
+      reason: `InfluxDB Flux query can return up to ${maxRows} points, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+    };
+  }
+  return { ...bounded, maxRows, reason: "InfluxDB query_data reads remote time-series data." };
+}
+function assessRestGet(options, datasourceId) {
+  const identity = { datasourceKind: "restapi", ...datasourceId ? { datasourceId } : {} };
+  const method = typeof options.method === "string" ? options.method.toLowerCase() : void 0;
+  if (method !== "get") {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: `REST method ${method ?? "<missing>"} is not a proven read; only static GET queries can be previewed.`,
+      ...identity
+    };
+  }
+  const url = typeof options.url === "string" ? options.url.trim() : "";
+  if (!url || containsBinding(url)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "REST GET preview requires a non-empty static url; dynamic endpoints must be verified in the viewer.",
+      ...identity
+    };
+  }
+  const requestFields = ["url_params", "headers", "cookies"].map((key) => options[key]);
+  if (requestFields.some(containsBinding)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "REST GET preview requires static request parameters/headers/cookies; binding-dependent requests must be verified in the viewer.",
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    requiresRemoteReadConfirmation: true,
+    source: { kind: "remote_endpoint", value: url },
+    reason: "REST GET may expose remote data, consume quota, or return an unbounded payload.",
+    ...identity
+  };
+}
+function assessSupabase(options, datasourceId) {
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : "";
+  const table = operation === "count_rows" ? options.count_table_name : options.get_table_name;
+  const identity = { datasourceKind: "supabase", ...datasourceId ? { datasourceId } : {} };
+  if (!["get_rows", "count_rows"].includes(operation) || typeof table !== "string" || !table.trim() || containsBinding(table)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "Supabase operation is not a static row read.",
+      ...identity
+    };
+  }
+  const source = { kind: "remote_endpoint", value: `supabase:${table.trim().toLowerCase()}` };
+  if (operation === "count_rows") {
+    const countFilters = options.count_filters;
+    const fullSourceCount = countFilters == null || Array.isArray(countFilters) && countFilters.length === 0 || !!record(countFilters) && Object.keys(record(countFilters)).length === 0;
+    return {
+      provenRead: true,
+      directSafe: false,
+      countOnly: true,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresRemoteReadConfirmation: true,
+      fullSourceCount,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source,
+      ...identity
+    };
+  }
+  const maxRows = staticPositiveInteger(options.get_limit);
+  const unbounded = maxRows === void 0 || maxRows > LARGE_READ_ROW_THRESHOLD;
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: unbounded,
+    requiresRemoteReadConfirmation: true,
+    simpleSourceRead: true,
+    source,
+    maxRows,
+    ...identity,
+    ...unbounded ? { reason: `Supabase get_rows has no static get_limit at or below ${LARGE_READ_ROW_THRESHOLD}; set get_limit.` } : {}
+  };
+}
+var MONGO_ROW_READS = /* @__PURE__ */ new Set(["find_many"]);
+var MONGO_SINGLE_READS = /* @__PURE__ */ new Set(["find_one"]);
+var MONGO_COUNT_READS = /* @__PURE__ */ new Set(["count", "count_total"]);
+var MONGO_WRITE_STAGES = ["$out", "$merge"];
+function mongoOptions(raw) {
+  const direct = record(raw);
+  if (direct)
+    return direct;
+  if (typeof raw !== "string" || !raw.trim())
+    return void 0;
+  try {
+    if (containsBinding(raw))
+      return void 0;
+    return record(import_json5.default.parse(raw));
+  } catch {
+    return void 0;
+  }
+}
+function mongoPipelineWrites(pipeline) {
+  if (Array.isArray(pipeline))
+    return pipeline.some(mongoPipelineWrites);
+  const obj = record(pipeline);
+  return !!obj && Object.entries(obj).some(([key, value]) => MONGO_WRITE_STAGES.includes(key) || mongoPipelineWrites(value));
+}
+function assessMongo(options, datasourceId) {
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : "";
+  const identity = { datasourceKind: "mongodb", ...datasourceId ? { datasourceId } : {} };
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  const collection = options.collection;
+  if (typeof collection !== "string" || !collection.trim() || containsBinding(collection)) {
+    return refuse("MongoDB collection is missing or not statically known.");
+  }
+  const source = { kind: "gui_table", value: collection };
+  if (MONGO_COUNT_READS.has(operation)) {
+    const filter = options.filter;
+    const fullSourceCount = filter == null || filter === "" || !!record(filter) && Object.keys(record(filter)).length === 0 || typeof filter === "string" && ["{}", "{ }"].includes(filter.trim());
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: true,
+      selectStar: false,
+      requiresCountPreflight: false,
+      fullSourceCount,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source,
+      ...identity
+    };
+  }
+  if (MONGO_SINGLE_READS.has(operation)) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source,
+      ...identity
+    };
+  }
+  if (operation === "aggregate") {
+    const rawOptions = options.options;
+    const aggregateOptions = rawOptions == null || rawOptions === "" ? {} : mongoOptions(rawOptions);
+    if (!aggregateOptions || containsBinding(rawOptions) || containsBinding(aggregateOptions)) {
+      return refuse("MongoDB aggregate options must be a statically known JSON5 object.");
+    }
+    if ("out" in aggregateOptions) {
+      return refuse("MongoDB aggregate options.out adds a $out stage, which writes a collection.");
+    }
+    let pipeline = options.pipeline;
+    if (containsBinding(pipeline))
+      return refuse("MongoDB aggregate pipeline is not statically known.");
+    if (typeof pipeline === "string") {
+      try {
+        pipeline = import_json5.default.parse(pipeline);
+      } catch {
+        return refuse("MongoDB aggregate pipeline must be valid JSON5 array text.");
+      }
+    }
+    if (!Array.isArray(pipeline) || pipeline.some((stage) => !record(stage))) {
+      return refuse("MongoDB aggregate pipeline must be a statically known array of stages.");
+    }
+    if (mongoPipelineWrites(pipeline)) {
+      return refuse("MongoDB aggregate pipeline contains a $out/$merge stage, which writes a collection.");
+    }
+    const last = record(pipeline.at(-1));
+    const maxRows2 = last && Object.keys(last).length === 1 && typeof last.$limit === "number" ? staticPositiveInteger(last.$limit) : void 0;
+    return {
+      provenRead: true,
+      directSafe: maxRows2 !== void 0 && maxRows2 <= LARGE_READ_ROW_THRESHOLD,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: maxRows2 === void 0 || maxRows2 > LARGE_READ_ROW_THRESHOLD,
+      source,
+      maxRows: maxRows2,
+      ...identity,
+      ...maxRows2 === void 0 ? { reason: "MongoDB aggregate has no statically provable row limit; add a final {$limit: N} pipeline stage. options.limit does not bound aggregation output." } : {}
+    };
+  }
+  if (operation === "distinct") {
+    return {
+      provenRead: true,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: true,
+      source,
+      ...identity,
+      reason: "MongoDB distinct ignores options.limit and array fields can yield multiple values per document. Use a bounded aggregate with a final $limit stage."
+    };
+  }
+  if (!MONGO_ROW_READS.has(operation)) {
+    return refuse(`MongoDB operation ${operation || "<missing>"} is not a proven bounded read.`);
+  }
+  const maxRows = staticPositiveInteger(mongoOptions(options.options)?.limit);
+  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      simpleSourceRead: true,
+      maxRows,
+      source,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    simpleSourceRead: true,
+    maxRows,
+    source,
+    ...identity,
+    reason: maxRows === void 0 ? `MongoDB ${operation} has no statically provable row limit; set options.limit.` : `MongoDB ${operation} can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+  };
+}
+var SHEETS_METADATA_READS = /* @__PURE__ */ new Set(["info", "list_all_spreadsheets"]);
+var A1_ROW_RANGE = /^(?:[^!]*!)?[A-Z]*(\d+):[A-Z]*(\d+)$/i;
+function sheetsRangeRows(range) {
+  if (typeof range !== "string" || containsBinding(range))
+    return void 0;
+  const match = range.trim().match(A1_ROW_RANGE);
+  if (!match)
+    return void 0;
+  const rows = Number(match[2]) - Number(match[1]) + 1;
+  return rows > 0 ? rows : void 0;
+}
+function assessSheets(options, datasourceId) {
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : "";
+  const identity = { datasourceKind: "googlesheetsv2", ...datasourceId ? { datasourceId } : {} };
+  const spreadsheet = options.spreadsheet_id;
+  if (SHEETS_METADATA_READS.has(operation)) {
+    return {
+      provenRead: true,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresRemoteReadConfirmation: true,
+      maxRows: 1,
+      ...identity
+    };
+  }
+  if (operation !== "read" && operation !== "list_all") {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      ...identity,
+      reason: `Google Sheets operation ${operation || "<missing>"} is not a proven bounded read.`
+    };
+  }
+  if (typeof spreadsheet !== "string" || !spreadsheet.trim() || containsBinding(spreadsheet)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      ...identity,
+      reason: "Google Sheets spreadsheet_id is missing or not statically known."
+    };
+  }
+  const sheet = typeof options.sheet === "string" && options.sheet.trim() ? `:${options.sheet.trim()}` : "";
+  const source = { kind: "remote_endpoint", value: `googlesheets:${spreadsheet.trim()}${sheet}` };
+  const maxRows = operation === "read" ? sheetsRangeRows(options.spreadsheet_range) : void 0;
+  const bounded = maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD;
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: !bounded,
+    requiresRemoteReadConfirmation: true,
+    source,
+    maxRows,
+    ...identity,
+    ...bounded ? {} : { reason: maxRows === void 0 ? `Google Sheets ${operation} has no statically bounded row range; set spreadsheet_range to an explicit A1 range such as A1:D100.` : `Google Sheets range covers ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.` }
+  };
+}
+function assessDynamo(options, datasourceId) {
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : "";
+  const identity = { datasourceKind: "dynamodb", ...datasourceId ? { datasourceId } : {} };
+  const table = options.table;
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  if (!["get_item", "query_table", "scan_table", "describe_table"].includes(operation)) {
+    return refuse(`DynamoDB operation ${operation || "<missing>"} is not a proven bounded read.`);
+  }
+  if (typeof table !== "string" || !table.trim() || containsBinding(table)) {
+    return refuse("DynamoDB table is missing or not statically known.");
+  }
+  const source = { kind: "gui_table", value: table.trim().toLowerCase() };
+  if (operation === "get_item" || operation === "describe_table") {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    simpleSourceRead: true,
+    source,
+    ...identity,
+    reason: `DynamoDB ${operation} has no statically provable row limit.`
+  };
+}
+function assessCouch(options, datasourceId) {
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : "";
+  const identity = { datasourceKind: "couchdb", ...datasourceId ? { datasourceId } : {} };
+  if (operation === "retrieve_record") {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      maxRows: 1,
+      ...identity
+    };
+  }
+  if (!["list_records", "get_view", "find"].includes(operation)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      ...identity,
+      reason: `CouchDB operation ${operation || "<missing>"} is not a proven bounded read.`
+    };
+  }
+  const limit = operation === "find" ? mongoOptions(options.body)?.limit : options.limit;
+  const maxRows = staticPositiveInteger(limit);
+  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      maxRows,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    maxRows,
+    ...identity,
+    reason: maxRows === void 0 ? `CouchDB ${operation} has no statically provable row limit; set ${operation === "find" ? "limit in the request body" : "limit"}.` : `CouchDB ${operation} can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+  };
+}
+function stripSql(sql) {
+  return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
+}
+function sqlStatementText(sql, backslashEscapes) {
+  let text = "";
+  for (let i = 0; i < sql.length; i++) {
+    const char = sql[i];
+    if (char === "'" || char === '"' || char === "`") {
+      const quote = char;
+      text += quote + quote;
+      let closed = false;
+      while (++i < sql.length) {
+        if (sql[i] === "\\" && backslashEscapes) {
+          i++;
+          continue;
+        }
+        if (sql[i] !== quote)
+          continue;
+        if (sql[i + 1] === quote) {
+          i++;
+          continue;
+        }
+        closed = true;
+        break;
+      }
+      if (!closed)
+        return void 0;
+    } else if (char === "-" && sql[i + 1] === "-") {
+      while (i < sql.length && sql[i] !== "\n")
+        i++;
+      text += " ";
+    } else if (char === "/" && sql[i + 1] === "*") {
+      if (sql[i + 2] === "!")
+        return void 0;
+      const end = sql.indexOf("*/", i + 2);
+      if (end < 0)
+        return void 0;
+      i = end + 1;
+      text += " ";
+    } else
+      text += char;
+  }
+  return text.trim().replace(/;\s*$/, "").trim();
+}
+function normalizeSqlTable(raw) {
+  return raw.split(".").map((part) => part.replace(/^[`"\[]|[`"\]]$/g, "")).join(".").toLowerCase();
+}
+function sqlSource(sql) {
+  const match = sql.match(/\bfrom\s+((?:[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\.)*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?)/i);
+  return match ? { kind: "sql_table", value: normalizeSqlTable(match[1]) } : void 0;
+}
+function blankQuoted(sql) {
+  return sql.replace(/'(?:[^']|'')*'|"(?:[^"]|"")*"|`[^`]*`/g, (m) => " ".repeat(m.length));
+}
+function mainStatementAfterCtes(sql) {
+  const blank = blankQuoted(sql);
+  const head = /^with\s+(?:recursive\s+)?/i.exec(blank);
+  if (!head)
+    return void 0;
+  let i = head[0].length;
+  for (let guard = 0; guard < 50; guard++) {
+    const name = /^\s*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\s*(?:\([^()]*\)\s*)?as\s+(?:not\s+)?(?:materialized\s+)?\(/i.exec(blank.slice(i));
+    if (!name)
+      return void 0;
+    i += name[0].length;
+    let depth = 1;
+    while (i < blank.length && depth > 0) {
+      if (blank[i] === "(")
+        depth++;
+      else if (blank[i] === ")")
+        depth--;
+      i++;
+    }
+    if (depth !== 0)
+      return void 0;
+    const next = /^\s*,/.exec(blank.slice(i));
+    if (!next)
+      return sql.slice(i).trim();
+    i += next[0].length;
+  }
+  return void 0;
+}
+function assessSql(sql, datasourceKind, datasourceId) {
+  const compact = stripSql(sql);
+  const identity = { datasourceKind, ...datasourceId ? { datasourceId } : {} };
+  const unquoted = sqlStatementText(sql, false);
+  if (unquoted === void 0 || unquoted !== sqlStatementText(sql, true)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SQL quoting is ambiguous or unterminated; use doubled SQL quotes or query parameters",
+      ...identity
+    };
+  }
+  const entity = unquoted.match(/&(?:lt|gt|amp|quot|#39);/);
+  if (entity) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: `SQL contains the HTML entity ${entity[0]}; write the character itself (<, >, &) in the SQL`,
+      ...identity
+    };
+  }
+  if (!compact || unquoted.includes(";")) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SQL is empty or contains more than one statement",
+      ...identity
+    };
+  }
+  if (/^with\b/i.test(compact)) {
+    if (/\b(insert|update|delete|merge|upsert|truncate|drop|alter|create|grant|revoke|copy|call|exec|execute)\b/i.test(unquoted)) {
+      return {
+        provenRead: false,
+        directSafe: false,
+        countOnly: false,
+        selectStar: false,
+        requiresCountPreflight: false,
+        reason: "A WITH statement that writes or runs code is not a read",
+        ...identity
+      };
+    }
+    const main = mainStatementAfterCtes(compact);
+    if (!main || !/^select\b/i.test(main)) {
+      return {
+        provenRead: false,
+        directSafe: false,
+        countOnly: false,
+        selectStar: false,
+        requiresCountPreflight: false,
+        reason: "WITH statement: its final statement is not a SELECT that can be proven",
+        ...identity
+      };
+    }
+    const assessed = assessSql(main, datasourceKind, datasourceId);
+    return { ...assessed, simpleSourceRead: false, ...assessed.fullSourceCount ? { fullSourceCount: false } : {} };
+  }
+  if (/^(show\b|describe\b|desc\b|explain\s+(?:select\b|show\b))/i.test(compact)) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      ...identity
+    };
+  }
+  if (!/^select\b/i.test(compact)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SQL is not a single proven read statement",
+      ...identity
+    };
+  }
+  if (/\binto\s+(?:temp(?:orary)?\s+|unlogged\s+)?[`"\[]?[A-Za-z_$]/i.test(compact)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SELECT INTO creates or replaces data and is not a read-only query",
+      ...identity
+    };
+  }
+  if (/\bfor\s+(?:no\s+key\s+update|key\s+share|update|share)\b|\block\s+in\s+share\s+mode\b/i.test(compact)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "Locking SELECT statements are not side-effect-free reads",
+      ...identity
+    };
+  }
+  const fromIndex = compact.search(/\bfrom\b/i);
+  const selectClause = compact.slice("select".length, fromIndex >= 0 ? fromIndex : compact.length).trim();
+  const countOnly = /^count\s*\([\s\S]+\)(?:\s+(?:as\s+)?[`"A-Za-z_$][\w$`"]*)?$/i.test(selectClause);
+  const projectionClause = selectClause.replace(/^top\s*(?:\(\s*\d+\s*\)|\d+)\s+/i, "").trim();
+  const selectStar = !countOnly && /(?:^|,)\s*(?:[`"A-Za-z_$][\w$`"]*\.)?\*\s*(?:,|$)/.test(projectionClause);
+  const source = sqlSource(compact);
+  const fromCount = compact.match(/\bfrom\b/gi)?.length ?? 0;
+  const simpleSourceRead = !!source && fromCount === 1 && !/\b(join|union|intersect|except)\b|\bfrom\s*\(|\bfrom\s+(?:[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\.)*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\s*\(/i.test(compact);
+  const limit = compact.match(/\blimit\s+(\d+)\b/i);
+  const top = selectClause.match(/^top\s*(?:\(\s*(\d+)\s*\)|(\d+))\s+/i);
+  const fetch = compact.match(/\bfetch\s+(?:first|next)\s+(\d+)\s+rows?\s+only\b/i);
+  const maxRows = limit ? Number(limit[1]) : top ? Number(top[1] ?? top[2]) : fetch ? Number(fetch[1]) : void 0;
+  const billableRead = BILLABLE_SCAN_SQL_KINDS.has(datasourceKind) && fromIndex >= 0;
+  const fullSourceCount = countOnly && /^count\s*\(\s*\*\s*\)(?:\s+(?:as\s+)?[`"A-Za-z_$][\w$`"]*)?$/i.test(selectClause) && simpleSourceRead && !/\b(where|group\s+by|having|limit|offset)\b/i.test(compact);
+  if (selectStar) {
+    return {
+      provenRead: true,
+      directSafe: false,
+      countOnly: false,
+      selectStar: true,
+      requiresCountPreflight: false,
+      source,
+      maxRows,
+      simpleSourceRead,
+      ...identity,
+      reason: "SELECT * is refused. Inspect the schema and select only the required columns."
+    };
+  }
+  if (fromIndex < 0) {
+    if (/\b[A-Za-z_$][\w$.]*\s*\(/.test(selectClause)) {
+      return {
+        provenRead: false,
+        directSafe: false,
+        countOnly: false,
+        selectStar: false,
+        requiresCountPreflight: false,
+        reason: "Function-only SELECT statements cannot be proven side-effect-free",
+        ...identity
+      };
+    }
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      source,
+      maxRows,
+      ...identity
+    };
+  }
+  if (countOnly) {
+    return {
+      provenRead: true,
+      directSafe: !billableRead,
+      countOnly: true,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresBillableReadConfirmation: billableRead,
+      fullSourceCount,
+      simpleSourceRead,
+      source,
+      maxRows: 1,
+      ...identity
+    };
+  }
+  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true,
+      directSafe: !billableRead,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresBillableReadConfirmation: billableRead,
+      simpleSourceRead,
+      source,
+      maxRows,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    requiresBillableReadConfirmation: billableRead,
+    simpleSourceRead,
+    source,
+    maxRows,
+    ...identity,
+    reason: maxRows === void 0 ? "Row-returning SQL has no static LIMIT." : `SQL can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+  };
+}
+function countAggregate(options) {
+  const listRows = record(options.list_rows);
+  const aggregates = record(listRows?.aggregates);
+  const groupBy = record(listRows?.group_by);
+  if (!aggregates || Object.keys(aggregates).length === 0 || groupBy && Object.keys(groupBy).length > 0)
+    return false;
+  return Object.values(aggregates).every((aggregate) => record(aggregate)?.aggFx === "count");
+}
+function fullToolJetDbCount(options) {
+  if (!countAggregate(options))
+    return false;
+  const listRows = record(options.list_rows);
+  const aggregates = record(listRows.aggregates);
+  if (Object.keys(aggregates).length !== 1)
+    return false;
+  const aggregate = record(Object.values(aggregates)[0]);
+  if (aggregate?.column !== "id")
+    return false;
+  const ignoredForScope = /* @__PURE__ */ new Set(["aggregates", "group_by", "order_filters", "limit", "offset"]);
+  return Object.entries(listRows).every(([key, value]) => {
+    if (ignoredForScope.has(key))
+      return true;
+    if (value === void 0 || value === null || value === "")
+      return true;
+    if (Array.isArray(value))
+      return value.length === 0;
+    if (record(value))
+      return Object.keys(record(value)).length === 0;
+    return false;
   });
 }
-function toParseErrorConstructor({
-  toMessage,
-  code: code2,
-  reasonCode,
-  syntaxPlugin
-}) {
-  const hasMissingPlugin = reasonCode === "MissingPlugin" || reasonCode === "MissingOneOfPlugins";
-  {
-    const oldReasonCodes = {
-      AccessorCannotDeclareThisParameter: "AccesorCannotDeclareThisParameter",
-      AccessorCannotHaveTypeParameters: "AccesorCannotHaveTypeParameters",
-      ConstInitializerMustBeStringOrNumericLiteralOrLiteralEnumReference: "ConstInitiailizerMustBeStringOrNumericLiteralOrLiteralEnumReference",
-      SetAccessorCannotHaveOptionalParameter: "SetAccesorCannotHaveOptionalParameter",
-      SetAccessorCannotHaveRestParameter: "SetAccesorCannotHaveRestParameter",
-      SetAccessorCannotHaveReturnType: "SetAccesorCannotHaveReturnType"
+function guiSource(kind, options) {
+  if (kind === "tooljetdb" && typeof options.table_id === "string") {
+    return { kind: "table_id", value: options.table_id };
+  }
+  const table = typeof options.table === "string" ? options.table : void 0;
+  if (!table)
+    return void 0;
+  const schema = typeof options.schema === "string" ? `${options.schema}.` : "";
+  return { kind: "gui_table", value: `${schema}${table}`.toLowerCase() };
+}
+function assessListRows(kind, options, datasourceId) {
+  const source = guiSource(kind, options);
+  const billableRead = BILLABLE_SCAN_SQL_KINDS.has(kind);
+  const identity = { datasourceKind: kind, ...datasourceId ? { datasourceId } : {} };
+  if (kind === "tooljetdb" && countAggregate(options)) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: true,
+      selectStar: false,
+      requiresCountPreflight: false,
+      fullSourceCount: fullToolJetDbCount(options),
+      simpleSourceRead: true,
+      source,
+      maxRows: 1,
+      ...identity
     };
-    if (oldReasonCodes[reasonCode]) {
-      reasonCode = oldReasonCodes[reasonCode];
-    }
   }
-  return function constructor(loc, details) {
-    const error = new SyntaxError();
-    error.code = code2;
-    error.reasonCode = reasonCode;
-    error.loc = loc;
-    error.pos = loc.index;
-    error.syntaxPlugin = syntaxPlugin;
-    if (hasMissingPlugin) {
-      error.missingPlugin = details.missingPlugin;
-    }
-    defineHidden(error, "clone", function clone(overrides = {}) {
-      const { line, column, index } = overrides.loc ?? loc;
-      return constructor(new Position(line, column, index), {
-        ...details,
-        ...overrides.details
-      });
-    });
-    defineHidden(error, "details", details);
-    Object.defineProperty(error, "message", {
-      configurable: true,
-      get() {
-        const message = `${toMessage(details)} (${loc.line}:${loc.column})`;
-        this.message = message;
-        return message;
-      },
-      set(value) {
-        Object.defineProperty(this, "message", { value, writable: true });
-      }
-    });
-    return error;
+  const listRows = record(options.list_rows);
+  const maxRows = staticPositiveInteger(listRows?.limit ?? options.limit);
+  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true,
+      directSafe: !billableRead,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresBillableReadConfirmation: billableRead,
+      simpleSourceRead: true,
+      source,
+      maxRows,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    requiresBillableReadConfirmation: billableRead,
+    simpleSourceRead: true,
+    source,
+    maxRows,
+    ...identity,
+    reason: maxRows === void 0 ? "list_rows has no statically provable row limit." : `list_rows can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
   };
 }
-function ParseErrorEnum(argument, syntaxPlugin) {
-  if (Array.isArray(argument)) {
-    return (parseErrorTemplates) => ParseErrorEnum(parseErrorTemplates, argument[0]);
+function assessQueryRead(query) {
+  const kind = query.kind?.toLowerCase();
+  const datasourceId = query.data_source_id;
+  const options = record(query.options);
+  if (!kind || !options) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "Datasource kind/options are unavailable."
+    };
   }
-  const ParseErrorConstructors = {};
-  for (const reasonCode of Object.keys(argument)) {
-    const template = argument[reasonCode];
-    const { message, ...rest } = typeof template === "string" ? { message: () => template } : typeof template === "function" ? { message: template } : template;
-    const toMessage = typeof message === "string" ? () => message : message;
-    ParseErrorConstructors[reasonCode] = toParseErrorConstructor({
-      code: "BABEL_PARSER_SYNTAX_ERROR",
-      reasonCode,
-      toMessage,
-      ...syntaxPlugin ? { syntaxPlugin } : {},
-      ...rest
-    });
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : void 0;
+  if (kind === "hubspot") {
+    const issue = hubspotQueryIssues(options)[0];
+    const assessment = assessOpenapi({ ...options, host: "https://api.hubapi.com" }, datasourceId);
+    return {
+      ...assessment,
+      datasourceKind: "hubspot",
+      ...issue ? { provenRead: false, directSafe: false, requiresRemoteReadConfirmation: false, reason: issue.message } : { reason: assessment.reason?.replaceAll("OpenAPI", "HubSpot") }
+    };
   }
-  return ParseErrorConstructors;
-}
-var Errors = {
-  ...ParseErrorEnum(module_errors_default),
-  ...ParseErrorEnum(standard_errors_default),
-  ...ParseErrorEnum(strict_mode_errors_default),
-  ...ParseErrorEnum(parse_expression_errors_default),
-  ...ParseErrorEnum`pipelineOperator`(pipeline_operator_errors_default),
-  ...ParseErrorEnum`functionBind`(bind_operator_errors_default)
-};
-var TokContext = class {
-  constructor(token, preserveSpace) {
-    this.token = token;
-    this.preserveSpace = !!preserveSpace;
+  if (singleSpecRef(kind)) {
+    const issue = apiEndpointQueryIssues(kind, options)[0];
+    const assessment = assessOpenapi({ ...options, host: kind }, datasourceId);
+    return {
+      ...assessment,
+      datasourceKind: kind,
+      ...issue ? { provenRead: false, directSafe: false, requiresRemoteReadConfirmation: false, reason: issue.message } : { reason: assessment.reason?.replaceAll("OpenAPI", kind) }
+    };
   }
-  token;
-  preserveSpace;
-};
-var types = {
-  brace: new TokContext("{"),
-  // normal JavaScript expression
-  j_oTag: new TokContext("<tag"),
-  // JSX opening tag
-  j_cTag: new TokContext("</tag"),
-  // JSX closing tag
-  j_expr: new TokContext("<tag>...</tag>", true)
-  // JSX expressions
-};
-{
-  types.template = new TokContext("`", true);
-}
-var beforeExpr = true;
-var startsExpr = true;
-var isLoop = true;
-var isAssign = true;
-var prefix = true;
-var postfix = true;
-var ExportedTokenType = class {
-  label;
-  keyword;
-  beforeExpr;
-  startsExpr;
-  rightAssociative;
-  isLoop;
-  isAssign;
-  prefix;
-  postfix;
-  binop;
-  constructor(label, conf = {}) {
-    this.label = label;
-    this.keyword = conf.keyword;
-    this.beforeExpr = !!conf.beforeExpr;
-    this.startsExpr = !!conf.startsExpr;
-    this.rightAssociative = !!conf.rightAssociative;
-    this.isLoop = !!conf.isLoop;
-    this.isAssign = !!conf.isAssign;
-    this.prefix = !!conf.prefix;
-    this.postfix = !!conf.postfix;
-    this.binop = conf.binop != null ? conf.binop : null;
-    {
-      this.updateContext = null;
+  if (kind === "restapi")
+    return assessRestGet(options, datasourceId);
+  if (kind === "openapi")
+    return assessOpenapi(options, datasourceId);
+  if (kind === "servicenow")
+    return assessServiceNow(options, datasourceId);
+  if (kind === "influxdb")
+    return assessInflux(options, datasourceId);
+  if (kind === "supabase")
+    return assessSupabase(options, datasourceId);
+  if (kind === "mongodb")
+    return assessMongo(options, datasourceId);
+  if (kind === "redis")
+    return assessRedisRead(options, datasourceId);
+  if (kind === "googlesheetsv2")
+    return assessSheets(options, datasourceId);
+  if (kind === "dynamodb")
+    return assessDynamo(options, datasourceId);
+  if (kind === "couchdb")
+    return assessCouch(options, datasourceId);
+  if (kind === "tooljetdb") {
+    if (operation === "list_rows")
+      return assessListRows(kind, options, datasourceId);
+    if (operation === "sql_execution") {
+      const sql = record(options.sql_execution)?.sqlQuery;
+      return typeof sql === "string" ? assessSql(sql, kind, datasourceId) : {
+        provenRead: false,
+        directSafe: false,
+        countOnly: false,
+        selectStar: false,
+        requiresCountPreflight: false,
+        reason: "ToolJet DB SQL text is unavailable."
+      };
     }
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: `ToolJet DB operation ${operation ?? "<missing>"} is not a proven bounded read.`
+    };
   }
-};
-var keywords = /* @__PURE__ */ new Map();
-function createKeyword(name, options = {}) {
-  options.keyword = name;
-  const token = createToken(name, options);
-  keywords.set(name, token);
-  return token;
-}
-function createBinop(name, binop) {
-  return createToken(name, { beforeExpr, binop });
-}
-var tokenTypeCounter = -1;
-var tokenTypes = [];
-var tokenLabels = [];
-var tokenBinops = [];
-var tokenBeforeExprs = [];
-var tokenStartsExprs = [];
-var tokenPrefixes = [];
-function createToken(name, options = {}) {
-  ++tokenTypeCounter;
-  tokenLabels.push(name);
-  tokenBinops.push(options.binop ?? -1);
-  tokenBeforeExprs.push(options.beforeExpr ?? false);
-  tokenStartsExprs.push(options.startsExpr ?? false);
-  tokenPrefixes.push(options.prefix ?? false);
-  tokenTypes.push(new ExportedTokenType(name, options));
-  return tokenTypeCounter;
-}
-function createKeywordLike(name, options = {}) {
-  ++tokenTypeCounter;
-  keywords.set(name, tokenTypeCounter);
-  tokenLabels.push(name);
-  tokenBinops.push(options.binop ?? -1);
-  tokenBeforeExprs.push(options.beforeExpr ?? false);
-  tokenStartsExprs.push(options.startsExpr ?? false);
-  tokenPrefixes.push(options.prefix ?? false);
-  tokenTypes.push(new ExportedTokenType("name", options));
-  return tokenTypeCounter;
-}
-var tt = {
-  // Punctuation token types.
-  bracketL: createToken("[", { beforeExpr, startsExpr }),
-  // TODO: Remove this in Babel 8
-  bracketHashL: createToken("#[", { beforeExpr, startsExpr }),
-  // TODO: Remove this in Babel 8
-  bracketBarL: createToken("[|", { beforeExpr, startsExpr }),
-  bracketR: createToken("]"),
-  // TODO: Remove this in Babel 8
-  bracketBarR: createToken("|]"),
-  braceL: createToken("{", { beforeExpr, startsExpr }),
-  // TODO: Remove this in Babel 8
-  braceBarL: createToken("{|", { beforeExpr, startsExpr }),
-  // TODO: Remove this in Babel 8
-  braceHashL: createToken("#{", { beforeExpr, startsExpr }),
-  braceR: createToken("}"),
-  braceBarR: createToken("|}"),
-  parenL: createToken("(", { beforeExpr, startsExpr }),
-  parenR: createToken(")"),
-  comma: createToken(",", { beforeExpr }),
-  semi: createToken(";", { beforeExpr }),
-  colon: createToken(":", { beforeExpr }),
-  doubleColon: createToken("::", { beforeExpr }),
-  dot: createToken("."),
-  question: createToken("?", { beforeExpr }),
-  questionDot: createToken("?."),
-  arrow: createToken("=>", { beforeExpr }),
-  template: createToken("template"),
-  ellipsis: createToken("...", { beforeExpr }),
-  backQuote: createToken("`", { startsExpr }),
-  dollarBraceL: createToken("${", { beforeExpr, startsExpr }),
-  // start: isTemplate
-  templateTail: createToken("...`", { startsExpr }),
-  templateNonTail: createToken("...${", { beforeExpr, startsExpr }),
-  // end: isTemplate
-  at: createToken("@"),
-  hash: createToken("#", { startsExpr }),
-  // Special hashbang token.
-  interpreterDirective: createToken("#!..."),
-  // Operators. These carry several kinds of properties to help the
-  // parser use them properly (the presence of these properties is
-  // what categorizes them as operators).
-  //
-  // `binop`, when present, specifies that this operator is a binary
-  // operator, and will refer to its precedence.
-  //
-  // `prefix` and `postfix` mark the operator as a prefix or postfix
-  // unary operator.
-  //
-  // `isAssign` marks all of `=`, `+=`, `-=` etcetera, which act as
-  // binary operators with a very low precedence, that should result
-  // in AssignmentExpression nodes.
-  // start: isAssign
-  eq: createToken("=", { beforeExpr, isAssign }),
-  assign: createToken("_=", { beforeExpr, isAssign }),
-  slashAssign: createToken("_=", { beforeExpr, isAssign }),
-  // These are only needed to support % and ^ as a Hack-pipe topic token.
-  // When the proposal settles on a token, the others can be merged with
-  // tt.assign.
-  xorAssign: createToken("_=", { beforeExpr, isAssign }),
-  moduloAssign: createToken("_=", { beforeExpr, isAssign }),
-  // end: isAssign
-  incDec: createToken("++/--", { prefix, postfix, startsExpr }),
-  bang: createToken("!", { beforeExpr, prefix, startsExpr }),
-  tilde: createToken("~", { beforeExpr, prefix, startsExpr }),
-  // More possible topic tokens.
-  // When the proposal settles on a token, at least one of these may be removed.
-  doubleCaret: createToken("^^", { startsExpr }),
-  doubleAt: createToken("@@", { startsExpr }),
-  // start: isBinop
-  pipeline: createBinop("|>", 0),
-  nullishCoalescing: createBinop("??", 1),
-  logicalOR: createBinop("||", 1),
-  logicalAND: createBinop("&&", 2),
-  bitwiseOR: createBinop("|", 3),
-  bitwiseXOR: createBinop("^", 4),
-  bitwiseAND: createBinop("&", 5),
-  equality: createBinop("==/!=/===/!==", 6),
-  lt: createBinop("</>/<=/>=", 7),
-  gt: createBinop("</>/<=/>=", 7),
-  relational: createBinop("</>/<=/>=", 7),
-  bitShift: createBinop("<</>>/>>>", 8),
-  bitShiftL: createBinop("<</>>/>>>", 8),
-  bitShiftR: createBinop("<</>>/>>>", 8),
-  plusMin: createToken("+/-", { beforeExpr, binop: 9, prefix, startsExpr }),
-  // startsExpr: required by v8intrinsic plugin
-  modulo: createToken("%", { binop: 10, startsExpr }),
-  // unset `beforeExpr` as it can be `function *`
-  star: createToken("*", { binop: 10 }),
-  slash: createBinop("/", 10),
-  exponent: createToken("**", {
-    beforeExpr,
-    binop: 11,
-    rightAssociative: true
-  }),
-  // Keywords
-  // Don't forget to update packages/babel-helper-validator-identifier/src/keyword.js
-  // when new keywords are added
-  // start: isLiteralPropertyName
-  // start: isKeyword
-  _in: createKeyword("in", { beforeExpr, binop: 7 }),
-  _instanceof: createKeyword("instanceof", { beforeExpr, binop: 7 }),
-  // end: isBinop
-  _break: createKeyword("break"),
-  _case: createKeyword("case", { beforeExpr }),
-  _catch: createKeyword("catch"),
-  _continue: createKeyword("continue"),
-  _debugger: createKeyword("debugger"),
-  _default: createKeyword("default", { beforeExpr }),
-  _else: createKeyword("else", { beforeExpr }),
-  _finally: createKeyword("finally"),
-  _function: createKeyword("function", { startsExpr }),
-  _if: createKeyword("if"),
-  _return: createKeyword("return", { beforeExpr }),
-  _switch: createKeyword("switch"),
-  _throw: createKeyword("throw", { beforeExpr, prefix, startsExpr }),
-  _try: createKeyword("try"),
-  _var: createKeyword("var"),
-  _const: createKeyword("const"),
-  _with: createKeyword("with"),
-  _new: createKeyword("new", { beforeExpr, startsExpr }),
-  _this: createKeyword("this", { startsExpr }),
-  _super: createKeyword("super", { startsExpr }),
-  _class: createKeyword("class", { startsExpr }),
-  _extends: createKeyword("extends", { beforeExpr }),
-  _export: createKeyword("export"),
-  _import: createKeyword("import", { startsExpr }),
-  _null: createKeyword("null", { startsExpr }),
-  _true: createKeyword("true", { startsExpr }),
-  _false: createKeyword("false", { startsExpr }),
-  _typeof: createKeyword("typeof", { beforeExpr, prefix, startsExpr }),
-  _void: createKeyword("void", { beforeExpr, prefix, startsExpr }),
-  _delete: createKeyword("delete", { beforeExpr, prefix, startsExpr }),
-  // start: isLoop
-  _do: createKeyword("do", { isLoop, beforeExpr }),
-  _for: createKeyword("for", { isLoop }),
-  _while: createKeyword("while", { isLoop }),
-  // end: isLoop
-  // end: isKeyword
-  // Primary literals
-  // start: isIdentifier
-  _as: createKeywordLike("as", { startsExpr }),
-  _assert: createKeywordLike("assert", { startsExpr }),
-  _async: createKeywordLike("async", { startsExpr }),
-  _await: createKeywordLike("await", { startsExpr }),
-  _defer: createKeywordLike("defer", { startsExpr }),
-  _from: createKeywordLike("from", { startsExpr }),
-  _get: createKeywordLike("get", { startsExpr }),
-  _let: createKeywordLike("let", { startsExpr }),
-  _meta: createKeywordLike("meta", { startsExpr }),
-  _of: createKeywordLike("of", { startsExpr }),
-  _sent: createKeywordLike("sent", { startsExpr }),
-  _set: createKeywordLike("set", { startsExpr }),
-  _source: createKeywordLike("source", { startsExpr }),
-  _static: createKeywordLike("static", { startsExpr }),
-  _using: createKeywordLike("using", { startsExpr }),
-  _yield: createKeywordLike("yield", { startsExpr }),
-  // Flow and TypeScript Keywordlike
-  _asserts: createKeywordLike("asserts", { startsExpr }),
-  _checks: createKeywordLike("checks", { startsExpr }),
-  _exports: createKeywordLike("exports", { startsExpr }),
-  _global: createKeywordLike("global", { startsExpr }),
-  _implements: createKeywordLike("implements", { startsExpr }),
-  _intrinsic: createKeywordLike("intrinsic", { startsExpr }),
-  _infer: createKeywordLike("infer", { startsExpr }),
-  _is: createKeywordLike("is", { startsExpr }),
-  _mixins: createKeywordLike("mixins", { startsExpr }),
-  _proto: createKeywordLike("proto", { startsExpr }),
-  _require: createKeywordLike("require", { startsExpr }),
-  _satisfies: createKeywordLike("satisfies", { startsExpr }),
-  // start: isTSTypeOperator
-  _keyof: createKeywordLike("keyof", { startsExpr }),
-  _readonly: createKeywordLike("readonly", { startsExpr }),
-  _unique: createKeywordLike("unique", { startsExpr }),
-  // end: isTSTypeOperator
-  // start: isTSDeclarationStart
-  _abstract: createKeywordLike("abstract", { startsExpr }),
-  _declare: createKeywordLike("declare", { startsExpr }),
-  _enum: createKeywordLike("enum", { startsExpr }),
-  _module: createKeywordLike("module", { startsExpr }),
-  _namespace: createKeywordLike("namespace", { startsExpr }),
-  // start: isFlowInterfaceOrTypeOrOpaque
-  _interface: createKeywordLike("interface", { startsExpr }),
-  _type: createKeywordLike("type", { startsExpr }),
-  // end: isTSDeclarationStart
-  _opaque: createKeywordLike("opaque", { startsExpr }),
-  // end: isFlowInterfaceOrTypeOrOpaque
-  name: createToken("name", { startsExpr }),
-  // placeholder plugin
-  placeholder: createToken("%%", { startsExpr }),
-  // end: isIdentifier
-  string: createToken("string", { startsExpr }),
-  num: createToken("num", { startsExpr }),
-  bigint: createToken("bigint", { startsExpr }),
-  // TODO: Remove this in Babel 8
-  decimal: createToken("decimal", { startsExpr }),
-  // end: isLiteralPropertyName
-  regexp: createToken("regexp", { startsExpr }),
-  privateName: createToken("#name", { startsExpr }),
-  eof: createToken("eof"),
-  // jsx plugin
-  jsxName: createToken("jsxName"),
-  jsxText: createToken("jsxText", { beforeExpr }),
-  jsxTagStart: createToken("jsxTagStart", { startsExpr }),
-  jsxTagEnd: createToken("jsxTagEnd")
-};
-function tokenIsIdentifier(token) {
-  return token >= tt._as && token <= tt.placeholder;
-}
-function tokenKeywordOrIdentifierIsKeyword(token) {
-  return token <= tt._while;
-}
-function tokenIsKeywordOrIdentifier(token) {
-  return token >= tt._in && token <= tt.placeholder;
-}
-function tokenIsLiteralPropertyName(token) {
-  return token >= tt._in && token <= tt.decimal;
-}
-function tokenComesBeforeExpression(token) {
-  return tokenBeforeExprs[token];
-}
-function tokenCanStartExpression(token) {
-  return tokenStartsExprs[token];
-}
-function tokenIsAssignment(token) {
-  return token >= tt.eq && token <= tt.moduloAssign;
-}
-function tokenIsFlowInterfaceOrTypeOrOpaque(token) {
-  return token >= tt._interface && token <= tt._opaque;
-}
-function tokenIsLoop(token) {
-  return token >= tt._do && token <= tt._while;
-}
-function tokenIsKeyword(token) {
-  return token >= tt._in && token <= tt._while;
-}
-function tokenIsOperator(token) {
-  return token >= tt.pipeline && token <= tt._instanceof;
-}
-function tokenIsPostfix(token) {
-  return token === tt.incDec;
-}
-function tokenIsPrefix(token) {
-  return tokenPrefixes[token];
-}
-function tokenIsTSTypeOperator(token) {
-  return token >= tt._keyof && token <= tt._unique;
-}
-function tokenIsTSDeclarationStart(token) {
-  return token >= tt._abstract && token <= tt._type;
-}
-function tokenLabelName(token) {
-  return tokenLabels[token];
-}
-function tokenOperatorPrecedence(token) {
-  return tokenBinops[token];
-}
-function tokenIsRightAssociative(token) {
-  return token === tt.exponent;
-}
-function tokenIsTemplate(token) {
-  return token >= tt.templateTail && token <= tt.templateNonTail;
-}
-function getExportedToken(token) {
-  return tokenTypes[token];
-}
-{
-  tokenTypes[tt.braceR].updateContext = (context) => {
-    context.pop();
-  };
-  tokenTypes[tt.braceL].updateContext = tokenTypes[tt.braceHashL].updateContext = tokenTypes[tt.dollarBraceL].updateContext = (context) => {
-    context.push(types.brace);
-  };
-  tokenTypes[tt.backQuote].updateContext = (context) => {
-    if (context[context.length - 1] === types.template) {
-      context.pop();
-    } else {
-      context.push(types.template);
-    }
-  };
-  tokenTypes[tt.jsxTagStart].updateContext = (context) => {
-    context.push(types.j_expr, types.j_oTag);
+  if (SQL_KINDS.has(kind)) {
+    if (operation === "list_rows" || options.mode === "gui")
+      return assessListRows(kind, options, datasourceId);
+    const sql = ["query", "sql_query", "sql", "presto_sql_query", "soql_query"].map((field) => options[field]).find((value) => typeof value === "string" && !!value.trim());
+    return sql ? assessSql(sql, kind, datasourceId) : {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SQL text is unavailable."
+    };
+  }
+  return {
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason: `Datasource kind ${kind} has no proven read classifier.`
   };
 }
-var tab = 9;
-var lineFeed = 10;
-var carriageReturn = 13;
-var space = 32;
-var exclamationMark = 33;
-var quotationMark = 34;
-var numberSign = 35;
-var dollarSign = 36;
-var percentSign = 37;
-var ampersand = 38;
-var apostrophe = 39;
-var leftParenthesis = 40;
-var rightParenthesis = 41;
-var asterisk = 42;
-var plusSign = 43;
-var comma = 44;
-var dash = 45;
-var dot = 46;
-var slash = 47;
-var digit0 = 48;
-var digit1 = 49;
-var digit2 = 50;
-var digit3 = 51;
-var digit4 = 52;
-var digit5 = 53;
-var digit6 = 54;
-var digit7 = 55;
-var digit8 = 56;
-var digit9 = 57;
-var colon = 58;
-var semicolon = 59;
-var lessThan = 60;
-var equalsTo = 61;
-var greaterThan = 62;
-var questionMark = 63;
-var atSign = 64;
-var uppercaseA = 65;
-var uppercaseB = 66;
-var uppercaseE = 69;
-var uppercaseF = 70;
-var uppercaseO = 79;
-var uppercaseX = 88;
-var uppercaseZ = 90;
-var leftSquareBracket = 91;
-var backslash = 92;
-var rightSquareBracket = 93;
-var caret = 94;
-var underscore = 95;
-var graveAccent = 96;
-var lowercaseA = 97;
-var lowercaseB = 98;
-var lowercaseD = 100;
-var lowercaseE = 101;
-var lowercaseF = 102;
-var lowercaseG = 103;
-var lowercaseI = 105;
-var lowercaseM = 109;
-var lowercaseN = 110;
-var lowercaseO = 111;
-var lowercaseR = 114;
-var lowercaseS = 115;
-var lowercaseT = 116;
-var lowercaseU = 117;
-var lowercaseV = 118;
-var lowercaseX = 120;
-var lowercaseY = 121;
-var lowercaseZ = 122;
-var leftCurlyBrace = 123;
-var verticalBar = 124;
-var rightCurlyBrace = 125;
-var tilde = 126;
-var nonBreakingSpace = 160;
-var oghamSpaceMark = 5760;
-var lineSeparator = 8232;
-var paragraphSeparator = 8233;
-function isDigit(code2) {
-  return code2 >= digit0 && code2 <= digit9;
+function resolvedReadRefusal(query, before, resolved) {
+  if (!Object.keys(resolved).length)
+    return void 0;
+  const kind = query.kind?.toLowerCase() ?? "";
+  const sqlLike = SQL_KINDS.has(kind) || kind === "tooljetdb";
+  if (sqlLike && resolvedBindingValues(resolved).some((value) => typeof value === "string" && value.includes(";"))) {
+    return "after its {{ }} bindings are resolved, a binding value contains a statement separator (;). Bindings in SQL must supply values, not SQL; move the statement text into the saved query.";
+  }
+  const after = assessQueryRead({ ...query, options: applyResolvedBindings(query.options, resolved) });
+  const weaker = !after.provenRead || after.selectStar || before.directSafe && !after.directSafe || !before.requiresCountPreflight && after.requiresCountPreflight || !before.requiresBillableReadConfirmation && !!after.requiresBillableReadConfirmation || !before.requiresRemoteReadConfirmation && !!after.requiresRemoteReadConfirmation;
+  if (!weaker)
+    return void 0;
+  return `after its {{ }} bindings are resolved, it is no longer the same proven bounded read (${after.reason ?? "the resolved text changes the statement"}). Bindings must supply values, not SQL or query structure; move that text into the saved query.`;
 }
-var nonASCIIidentifierStartChars = "\xAA\xB5\xBA\xC0-\xD6\xD8-\xF6\xF8-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0370-\u0374\u0376\u0377\u037A-\u037D\u037F\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03F5\u03F7-\u0481\u048A-\u052F\u0531-\u0556\u0559\u0560-\u0588\u05D0-\u05EA\u05EF-\u05F2\u0620-\u064A\u066E\u066F\u0671-\u06D3\u06D5\u06E5\u06E6\u06EE\u06EF\u06FA-\u06FC\u06FF\u0710\u0712-\u072F\u074D-\u07A5\u07B1\u07CA-\u07EA\u07F4\u07F5\u07FA\u0800-\u0815\u081A\u0824\u0828\u0840-\u0858\u0860-\u086A\u0870-\u0887\u0889-\u088F\u08A0-\u08C9\u0904-\u0939\u093D\u0950\u0958-\u0961\u0971-\u0980\u0985-\u098C\u098F\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BD\u09CE\u09DC\u09DD\u09DF-\u09E1\u09F0\u09F1\u09FC\u0A05-\u0A0A\u0A0F\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32\u0A33\u0A35\u0A36\u0A38\u0A39\u0A59-\u0A5C\u0A5E\u0A72-\u0A74\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2\u0AB3\u0AB5-\u0AB9\u0ABD\u0AD0\u0AE0\u0AE1\u0AF9\u0B05-\u0B0C\u0B0F\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32\u0B33\u0B35-\u0B39\u0B3D\u0B5C\u0B5D\u0B5F-\u0B61\u0B71\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99\u0B9A\u0B9C\u0B9E\u0B9F\u0BA3\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BD0\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C39\u0C3D\u0C58-\u0C5A\u0C5C\u0C5D\u0C60\u0C61\u0C80\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBD\u0CDC-\u0CDE\u0CE0\u0CE1\u0CF1\u0CF2\u0D04-\u0D0C\u0D0E-\u0D10\u0D12-\u0D3A\u0D3D\u0D4E\u0D54-\u0D56\u0D5F-\u0D61\u0D7A-\u0D7F\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0E01-\u0E30\u0E32\u0E33\u0E40-\u0E46\u0E81\u0E82\u0E84\u0E86-\u0E8A\u0E8C-\u0EA3\u0EA5\u0EA7-\u0EB0\u0EB2\u0EB3\u0EBD\u0EC0-\u0EC4\u0EC6\u0EDC-\u0EDF\u0F00\u0F40-\u0F47\u0F49-\u0F6C\u0F88-\u0F8C\u1000-\u102A\u103F\u1050-\u1055\u105A-\u105D\u1061\u1065\u1066\u106E-\u1070\u1075-\u1081\u108E\u10A0-\u10C5\u10C7\u10CD\u10D0-\u10FA\u10FC-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u1380-\u138F\u13A0-\u13F5\u13F8-\u13FD\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16EE-\u16F8\u1700-\u1711\u171F-\u1731\u1740-\u1751\u1760-\u176C\u176E-\u1770\u1780-\u17B3\u17D7\u17DC\u1820-\u1878\u1880-\u18A8\u18AA\u18B0-\u18F5\u1900-\u191E\u1950-\u196D\u1970-\u1974\u1980-\u19AB\u19B0-\u19C9\u1A00-\u1A16\u1A20-\u1A54\u1AA7\u1B05-\u1B33\u1B45-\u1B4C\u1B83-\u1BA0\u1BAE\u1BAF\u1BBA-\u1BE5\u1C00-\u1C23\u1C4D-\u1C4F\u1C5A-\u1C7D\u1C80-\u1C8A\u1C90-\u1CBA\u1CBD-\u1CBF\u1CE9-\u1CEC\u1CEE-\u1CF3\u1CF5\u1CF6\u1CFA\u1D00-\u1DBF\u1E00-\u1F15\u1F18-\u1F1D\u1F20-\u1F45\u1F48-\u1F4D\u1F50-\u1F57\u1F59\u1F5B\u1F5D\u1F5F-\u1F7D\u1F80-\u1FB4\u1FB6-\u1FBC\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FCC\u1FD0-\u1FD3\u1FD6-\u1FDB\u1FE0-\u1FEC\u1FF2-\u1FF4\u1FF6-\u1FFC\u2071\u207F\u2090-\u209C\u2102\u2107\u210A-\u2113\u2115\u2118-\u211D\u2124\u2126\u2128\u212A-\u2139\u213C-\u213F\u2145-\u2149\u214E\u2160-\u2188\u2C00-\u2CE4\u2CEB-\u2CEE\u2CF2\u2CF3\u2D00-\u2D25\u2D27\u2D2D\u2D30-\u2D67\u2D6F\u2D80-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u3005-\u3007\u3021-\u3029\u3031-\u3035\u3038-\u303C\u3041-\u3096\u309B-\u309F\u30A1-\u30FA\u30FC-\u30FF\u3105-\u312F\u3131-\u318E\u31A0-\u31BF\u31F0-\u31FF\u3400-\u4DBF\u4E00-\uA48C\uA4D0-\uA4FD\uA500-\uA60C\uA610-\uA61F\uA62A\uA62B\uA640-\uA66E\uA67F-\uA69D\uA6A0-\uA6EF\uA717-\uA71F\uA722-\uA788\uA78B-\uA7DC\uA7F1-\uA801\uA803-\uA805\uA807-\uA80A\uA80C-\uA822\uA840-\uA873\uA882-\uA8B3\uA8F2-\uA8F7\uA8FB\uA8FD\uA8FE\uA90A-\uA925\uA930-\uA946\uA960-\uA97C\uA984-\uA9B2\uA9CF\uA9E0-\uA9E4\uA9E6-\uA9EF\uA9FA-\uA9FE\uAA00-\uAA28\uAA40-\uAA42\uAA44-\uAA4B\uAA60-\uAA76\uAA7A\uAA7E-\uAAAF\uAAB1\uAAB5\uAAB6\uAAB9-\uAABD\uAAC0\uAAC2\uAADB-\uAADD\uAAE0-\uAAEA\uAAF2-\uAAF4\uAB01-\uAB06\uAB09-\uAB0E\uAB11-\uAB16\uAB20-\uAB26\uAB28-\uAB2E\uAB30-\uAB5A\uAB5C-\uAB69\uAB70-\uABE2\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFB00-\uFB06\uFB13-\uFB17\uFB1D\uFB1F-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40\uFB41\uFB43\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE70-\uFE74\uFE76-\uFEFC\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC";
-var nonASCIIidentifierChars = "\xB7\u0300-\u036F\u0387\u0483-\u0487\u0591-\u05BD\u05BF\u05C1\u05C2\u05C4\u05C5\u05C7\u0610-\u061A\u064B-\u0669\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED\u06F0-\u06F9\u0711\u0730-\u074A\u07A6-\u07B0\u07C0-\u07C9\u07EB-\u07F3\u07FD\u0816-\u0819\u081B-\u0823\u0825-\u0827\u0829-\u082D\u0859-\u085B\u0897-\u089F\u08CA-\u08E1\u08E3-\u0903\u093A-\u093C\u093E-\u094F\u0951-\u0957\u0962\u0963\u0966-\u096F\u0981-\u0983\u09BC\u09BE-\u09C4\u09C7\u09C8\u09CB-\u09CD\u09D7\u09E2\u09E3\u09E6-\u09EF\u09FE\u0A01-\u0A03\u0A3C\u0A3E-\u0A42\u0A47\u0A48\u0A4B-\u0A4D\u0A51\u0A66-\u0A71\u0A75\u0A81-\u0A83\u0ABC\u0ABE-\u0AC5\u0AC7-\u0AC9\u0ACB-\u0ACD\u0AE2\u0AE3\u0AE6-\u0AEF\u0AFA-\u0AFF\u0B01-\u0B03\u0B3C\u0B3E-\u0B44\u0B47\u0B48\u0B4B-\u0B4D\u0B55-\u0B57\u0B62\u0B63\u0B66-\u0B6F\u0B82\u0BBE-\u0BC2\u0BC6-\u0BC8\u0BCA-\u0BCD\u0BD7\u0BE6-\u0BEF\u0C00-\u0C04\u0C3C\u0C3E-\u0C44\u0C46-\u0C48\u0C4A-\u0C4D\u0C55\u0C56\u0C62\u0C63\u0C66-\u0C6F\u0C81-\u0C83\u0CBC\u0CBE-\u0CC4\u0CC6-\u0CC8\u0CCA-\u0CCD\u0CD5\u0CD6\u0CE2\u0CE3\u0CE6-\u0CEF\u0CF3\u0D00-\u0D03\u0D3B\u0D3C\u0D3E-\u0D44\u0D46-\u0D48\u0D4A-\u0D4D\u0D57\u0D62\u0D63\u0D66-\u0D6F\u0D81-\u0D83\u0DCA\u0DCF-\u0DD4\u0DD6\u0DD8-\u0DDF\u0DE6-\u0DEF\u0DF2\u0DF3\u0E31\u0E34-\u0E3A\u0E47-\u0E4E\u0E50-\u0E59\u0EB1\u0EB4-\u0EBC\u0EC8-\u0ECE\u0ED0-\u0ED9\u0F18\u0F19\u0F20-\u0F29\u0F35\u0F37\u0F39\u0F3E\u0F3F\u0F71-\u0F84\u0F86\u0F87\u0F8D-\u0F97\u0F99-\u0FBC\u0FC6\u102B-\u103E\u1040-\u1049\u1056-\u1059\u105E-\u1060\u1062-\u1064\u1067-\u106D\u1071-\u1074\u1082-\u108D\u108F-\u109D\u135D-\u135F\u1369-\u1371\u1712-\u1715\u1732-\u1734\u1752\u1753\u1772\u1773\u17B4-\u17D3\u17DD\u17E0-\u17E9\u180B-\u180D\u180F-\u1819\u18A9\u1920-\u192B\u1930-\u193B\u1946-\u194F\u19D0-\u19DA\u1A17-\u1A1B\u1A55-\u1A5E\u1A60-\u1A7C\u1A7F-\u1A89\u1A90-\u1A99\u1AB0-\u1ABD\u1ABF-\u1ADD\u1AE0-\u1AEB\u1B00-\u1B04\u1B34-\u1B44\u1B50-\u1B59\u1B6B-\u1B73\u1B80-\u1B82\u1BA1-\u1BAD\u1BB0-\u1BB9\u1BE6-\u1BF3\u1C24-\u1C37\u1C40-\u1C49\u1C50-\u1C59\u1CD0-\u1CD2\u1CD4-\u1CE8\u1CED\u1CF4\u1CF7-\u1CF9\u1DC0-\u1DFF\u200C\u200D\u203F\u2040\u2054\u20D0-\u20DC\u20E1\u20E5-\u20F0\u2CEF-\u2CF1\u2D7F\u2DE0-\u2DFF\u302A-\u302F\u3099\u309A\u30FB\uA620-\uA629\uA66F\uA674-\uA67D\uA69E\uA69F\uA6F0\uA6F1\uA802\uA806\uA80B\uA823-\uA827\uA82C\uA880\uA881\uA8B4-\uA8C5\uA8D0-\uA8D9\uA8E0-\uA8F1\uA8FF-\uA909\uA926-\uA92D\uA947-\uA953\uA980-\uA983\uA9B3-\uA9C0\uA9D0-\uA9D9\uA9E5\uA9F0-\uA9F9\uAA29-\uAA36\uAA43\uAA4C\uAA4D\uAA50-\uAA59\uAA7B-\uAA7D\uAAB0\uAAB2-\uAAB4\uAAB7\uAAB8\uAABE\uAABF\uAAC1\uAAEB-\uAAEF\uAAF5\uAAF6\uABE3-\uABEA\uABEC\uABED\uABF0-\uABF9\uFB1E\uFE00-\uFE0F\uFE20-\uFE2F\uFE33\uFE34\uFE4D-\uFE4F\uFF10-\uFF19\uFF3F\uFF65";
-var nonASCIIidentifierStart = new RegExp(
-  "[" + nonASCIIidentifierStartChars + "]"
-);
-var nonASCIIidentifier = new RegExp(
-  "[" + nonASCIIidentifierStartChars + nonASCIIidentifierChars + "]"
-);
-nonASCIIidentifierStartChars = nonASCIIidentifierChars = null;
-var astralIdentifierStartCodes = [0, 11, 2, 25, 2, 18, 2, 1, 2, 14, 3, 13, 35, 122, 70, 52, 268, 28, 4, 48, 48, 31, 14, 29, 6, 37, 11, 29, 3, 35, 5, 7, 2, 4, 43, 157, 19, 35, 5, 35, 5, 39, 9, 51, 13, 10, 2, 14, 2, 6, 2, 1, 2, 10, 2, 14, 2, 6, 2, 1, 4, 51, 13, 310, 10, 21, 11, 7, 25, 5, 2, 41, 2, 8, 70, 5, 3, 0, 2, 43, 2, 1, 4, 0, 3, 22, 11, 22, 10, 30, 66, 18, 2, 1, 11, 21, 11, 25, 7, 25, 39, 55, 7, 1, 65, 0, 16, 3, 2, 2, 2, 28, 43, 28, 4, 28, 36, 7, 2, 27, 28, 53, 11, 21, 11, 18, 14, 17, 111, 72, 56, 50, 14, 50, 14, 35, 39, 27, 10, 22, 251, 41, 7, 1, 17, 5, 57, 28, 11, 0, 9, 21, 43, 17, 47, 20, 28, 22, 13, 52, 58, 1, 3, 0, 14, 44, 33, 24, 27, 35, 30, 0, 3, 0, 9, 34, 4, 0, 13, 47, 15, 3, 22, 0, 2, 0, 36, 17, 2, 24, 20, 1, 64, 6, 2, 0, 2, 3, 2, 14, 2, 9, 8, 46, 39, 7, 3, 1, 3, 21, 2, 6, 2, 1, 2, 4, 4, 0, 19, 0, 13, 4, 31, 9, 2, 0, 3, 0, 2, 37, 2, 0, 26, 0, 2, 0, 45, 52, 19, 3, 21, 2, 31, 47, 21, 1, 2, 0, 185, 46, 42, 3, 37, 47, 21, 0, 60, 42, 14, 0, 72, 26, 38, 6, 186, 43, 117, 63, 32, 7, 3, 0, 3, 7, 2, 1, 2, 23, 16, 0, 2, 0, 95, 7, 3, 38, 17, 0, 2, 0, 29, 0, 11, 39, 8, 0, 22, 0, 12, 45, 20, 0, 19, 72, 200, 32, 32, 8, 2, 36, 18, 0, 50, 29, 113, 6, 2, 1, 2, 37, 22, 0, 26, 5, 2, 1, 2, 31, 15, 0, 24, 43, 261, 18, 16, 0, 2, 12, 2, 33, 125, 0, 80, 921, 103, 110, 18, 195, 2637, 96, 16, 1071, 18, 5, 26, 3994, 6, 582, 6842, 29, 1763, 568, 8, 30, 18, 78, 18, 29, 19, 47, 17, 3, 32, 20, 6, 18, 433, 44, 212, 63, 33, 24, 3, 24, 45, 74, 6, 0, 67, 12, 65, 1, 2, 0, 15, 4, 10, 7381, 42, 31, 98, 114, 8702, 3, 2, 6, 2, 1, 2, 290, 16, 0, 30, 2, 3, 0, 15, 3, 9, 395, 2309, 106, 6, 12, 4, 8, 8, 9, 5991, 84, 2, 70, 2, 1, 3, 0, 3, 1, 3, 3, 2, 11, 2, 0, 2, 6, 2, 64, 2, 3, 3, 7, 2, 6, 2, 27, 2, 3, 2, 4, 2, 0, 4, 6, 2, 339, 3, 24, 2, 24, 2, 30, 2, 24, 2, 30, 2, 24, 2, 30, 2, 24, 2, 30, 2, 24, 2, 7, 1845, 30, 7, 5, 262, 61, 147, 44, 11, 6, 17, 0, 322, 29, 19, 43, 485, 27, 229, 29, 3, 0, 208, 30, 2, 2, 2, 1, 2, 6, 3, 4, 10, 1, 225, 6, 2, 3, 2, 1, 2, 14, 2, 196, 60, 67, 8, 0, 1205, 3, 2, 26, 2, 1, 2, 0, 3, 0, 2, 9, 2, 3, 2, 0, 2, 0, 7, 0, 5, 0, 2, 0, 2, 0, 2, 2, 2, 1, 2, 0, 3, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 1, 2, 0, 3, 3, 2, 6, 2, 3, 2, 3, 2, 0, 2, 9, 2, 16, 6, 2, 2, 4, 2, 16, 4421, 42719, 33, 4381, 3, 5773, 3, 7472, 16, 621, 2467, 541, 1507, 4938, 6, 8489];
-var astralIdentifierCodes = [509, 0, 227, 0, 150, 4, 294, 9, 1368, 2, 2, 1, 6, 3, 41, 2, 5, 0, 166, 1, 574, 3, 9, 9, 7, 9, 32, 4, 318, 1, 78, 5, 71, 10, 50, 3, 123, 2, 54, 14, 32, 10, 3, 1, 11, 3, 46, 10, 8, 0, 46, 9, 7, 2, 37, 13, 2, 9, 6, 1, 45, 0, 13, 2, 49, 13, 9, 3, 2, 11, 83, 11, 7, 0, 3, 0, 158, 11, 6, 9, 7, 3, 56, 1, 2, 6, 3, 1, 3, 2, 10, 0, 11, 1, 3, 6, 4, 4, 68, 8, 2, 0, 3, 0, 2, 3, 2, 4, 2, 0, 15, 1, 83, 17, 10, 9, 5, 0, 82, 19, 13, 9, 214, 6, 3, 8, 28, 1, 83, 16, 16, 9, 82, 12, 9, 9, 7, 19, 58, 14, 5, 9, 243, 14, 166, 9, 71, 5, 2, 1, 3, 3, 2, 0, 2, 1, 13, 9, 120, 6, 3, 6, 4, 0, 29, 9, 41, 6, 2, 3, 9, 0, 10, 10, 47, 15, 199, 7, 137, 9, 54, 7, 2, 7, 17, 9, 57, 21, 2, 13, 123, 5, 4, 0, 2, 1, 2, 6, 2, 0, 9, 9, 49, 4, 2, 1, 2, 4, 9, 9, 55, 9, 266, 3, 10, 1, 2, 0, 49, 6, 4, 4, 14, 10, 5350, 0, 7, 14, 11465, 27, 2343, 9, 87, 9, 39, 4, 60, 6, 26, 9, 535, 9, 470, 0, 2, 54, 8, 3, 82, 0, 12, 1, 19628, 1, 4178, 9, 519, 45, 3, 22, 543, 4, 4, 5, 9, 7, 3, 6, 31, 3, 149, 2, 1418, 49, 513, 54, 5, 49, 9, 0, 15, 0, 23, 4, 2, 14, 1361, 6, 2, 16, 3, 6, 2, 1, 2, 4, 101, 0, 161, 6, 10, 9, 357, 0, 62, 13, 499, 13, 245, 1, 2, 9, 233, 0, 3, 0, 8, 1, 6, 0, 475, 6, 110, 6, 6, 9, 4759, 9, 787719, 239];
-function isInAstralSet(code2, set) {
-  let pos = 65536;
-  for (let i = 0, length = set.length; i < length; i += 2) {
-    pos += set[i];
-    if (pos > code2) return false;
-    pos += set[i + 1];
-    if (pos >= code2) return true;
-  }
-  return false;
+function sameReadSource(target, count) {
+  return !!target.source && !!count.source && target.simpleSourceRead === true && count.fullSourceCount === true && !!target.datasourceId && target.datasourceId === count.datasourceId && target.datasourceKind === count.datasourceKind && target.source.kind === count.source.kind && target.source.value === count.source.value;
 }
-function isIdentifierStart(code2) {
-  if (code2 < uppercaseA) return code2 === dollarSign;
-  if (code2 <= uppercaseZ) return true;
-  if (code2 < lowercaseA) return code2 === underscore;
-  if (code2 <= lowercaseZ) return true;
-  if (code2 <= 65535) {
-    return code2 >= 170 && nonASCIIidentifierStart.test(String.fromCharCode(code2));
+function extractRowCount(result) {
+  if (result.status !== "ok")
+    return void 0;
+  let value = result.data;
+  if (typeof value === "number")
+    return Number.isSafeInteger(value) && value >= 0 ? value : void 0;
+  if (record(value)?.result !== void 0)
+    value = record(value).result;
+  if (Array.isArray(value)) {
+    if (value.length !== 1)
+      return void 0;
+    value = value[0];
   }
-  return isInAstralSet(code2, astralIdentifierStartCodes);
+  const row = record(value);
+  if (!row)
+    return void 0;
+  const numeric = Object.values(row).flatMap((candidate) => {
+    const parsed = typeof candidate === "number" ? candidate : typeof candidate === "string" && /^\d+$/.test(candidate.trim()) ? Number(candidate) : Number.NaN;
+    return Number.isSafeInteger(parsed) && parsed >= 0 ? [parsed] : [];
+  });
+  return numeric.length === 1 ? numeric[0] : void 0;
 }
-function isIdentifierChar(code2) {
-  if (code2 < digit0) return code2 === dollarSign;
-  if (code2 < colon) return true;
-  if (code2 < uppercaseA) return false;
-  if (code2 <= uppercaseZ) return true;
-  if (code2 < lowercaseA) return code2 === underscore;
-  if (code2 <= lowercaseZ) return true;
-  if (code2 <= 65535) {
-    return code2 >= 170 && nonASCIIidentifier.test(String.fromCharCode(code2));
-  }
-  return isInAstralSet(code2, astralIdentifierStartCodes) || isInAstralSet(code2, astralIdentifierCodes);
-}
-var reservedWords = {
-  keyword: [
-    "break",
-    "case",
-    "catch",
-    "continue",
-    "debugger",
-    "default",
-    "do",
-    "else",
-    "finally",
-    "for",
-    "function",
-    "if",
-    "return",
-    "switch",
-    "throw",
-    "try",
-    "var",
-    "const",
-    "while",
-    "with",
-    "new",
-    "this",
-    "super",
-    "class",
-    "extends",
-    "export",
-    "import",
-    "null",
-    "true",
-    "false",
-    "in",
-    "instanceof",
-    "typeof",
-    "void",
-    "delete"
-  ],
-  strict: [
-    "implements",
-    "interface",
-    "let",
-    "package",
-    "private",
-    "protected",
-    "public",
-    "static",
-    "yield"
-  ],
-  strictBind: ["eval", "arguments"]
-};
-var keywords2 = new Set(reservedWords.keyword);
-var reservedWordsStrictSet = new Set(reservedWords.strict);
-var reservedWordsStrictBindSet = new Set(reservedWords.strictBind);
-function isReservedWord(word, inModule) {
-  return inModule && word === "await" || word === "enum";
-}
-function isStrictReservedWord(word, inModule) {
-  return isReservedWord(word, inModule) || reservedWordsStrictSet.has(word);
-}
-function isStrictBindOnlyReservedWord(word) {
-  return reservedWordsStrictBindSet.has(word);
-}
-function isStrictBindReservedWord(word, inModule) {
-  return isStrictReservedWord(word, inModule) || isStrictBindOnlyReservedWord(word);
-}
-function isKeyword(word) {
-  return keywords2.has(word);
-}
-function isIteratorStart(current, next, next2) {
-  return current === atSign && next === atSign && isIdentifierStart(next2);
-}
-var reservedWordLikeSet = /* @__PURE__ */ new Set([
-  "break",
-  "case",
-  "catch",
-  "continue",
-  "debugger",
-  "default",
-  "do",
-  "else",
-  "finally",
-  "for",
-  "function",
-  "if",
-  "return",
-  "switch",
-  "throw",
-  "try",
-  "var",
-  "const",
-  "while",
-  "with",
-  "new",
-  "this",
-  "super",
-  "class",
-  "extends",
-  "export",
-  "import",
-  "null",
-  "true",
-  "false",
-  "in",
-  "instanceof",
-  "typeof",
-  "void",
-  "delete",
-  // strict
-  "implements",
-  "interface",
-  "let",
-  "package",
-  "private",
-  "protected",
-  "public",
-  "static",
-  "yield",
-  // strictBind
-  "eval",
-  "arguments",
-  // reservedWorkLike
-  "enum",
-  "await"
-]);
-function canBeReservedWord(word) {
-  return reservedWordLikeSet.has(word);
-}
-var ScopeFlag = /* @__PURE__ */ ((ScopeFlag2) => {
-  ScopeFlag2[ScopeFlag2["OTHER"] = 0] = "OTHER";
-  ScopeFlag2[ScopeFlag2["PROGRAM"] = 1] = "PROGRAM";
-  ScopeFlag2[ScopeFlag2["FUNCTION_BASE"] = 2] = "FUNCTION_BASE";
-  ScopeFlag2[ScopeFlag2["ARROW"] = 4] = "ARROW";
-  ScopeFlag2[ScopeFlag2["SIMPLE_CATCH"] = 8] = "SIMPLE_CATCH";
-  ScopeFlag2[ScopeFlag2["SUPER"] = 16] = "SUPER";
-  ScopeFlag2[ScopeFlag2["DIRECT_SUPER"] = 32] = "DIRECT_SUPER";
-  ScopeFlag2[ScopeFlag2["CLASS_BASE"] = 64] = "CLASS_BASE";
-  ScopeFlag2[ScopeFlag2["STATIC_BLOCK"] = 128] = "STATIC_BLOCK";
-  ScopeFlag2[ScopeFlag2["SWITCH"] = 256] = "SWITCH";
-  ScopeFlag2[ScopeFlag2["NEW_TARGET"] = 512] = "NEW_TARGET";
-  ScopeFlag2[ScopeFlag2["TS_MODULE"] = 1024] = "TS_MODULE";
-  ScopeFlag2[ScopeFlag2["FUNCTION"] = 514] = "FUNCTION";
-  ScopeFlag2[ScopeFlag2["CLASS"] = 576] = "CLASS";
-  ScopeFlag2[ScopeFlag2["VAR"] = 1667] = "VAR";
-  return ScopeFlag2;
-})(ScopeFlag || {});
-var BindingFlag = /* @__PURE__ */ ((BindingFlag2) => {
-  BindingFlag2[BindingFlag2["KIND_VALUE"] = 1] = "KIND_VALUE";
-  BindingFlag2[BindingFlag2["KIND_TYPE"] = 2] = "KIND_TYPE";
-  BindingFlag2[BindingFlag2["SCOPE_VAR"] = 4] = "SCOPE_VAR";
-  BindingFlag2[BindingFlag2["SCOPE_LEXICAL"] = 8] = "SCOPE_LEXICAL";
-  BindingFlag2[BindingFlag2["SCOPE_FUNCTION"] = 16] = "SCOPE_FUNCTION";
-  BindingFlag2[BindingFlag2["SCOPE_OUTSIDE"] = 32] = "SCOPE_OUTSIDE";
-  BindingFlag2[BindingFlag2["FLAG_NONE"] = 64] = "FLAG_NONE";
-  BindingFlag2[BindingFlag2["FLAG_CLASS"] = 128] = "FLAG_CLASS";
-  BindingFlag2[BindingFlag2["FLAG_TS_ENUM"] = 256] = "FLAG_TS_ENUM";
-  BindingFlag2[BindingFlag2["FLAG_TS_CONST_ENUM"] = 512] = "FLAG_TS_CONST_ENUM";
-  BindingFlag2[BindingFlag2["FLAG_TS_EXPORT_ONLY"] = 1024] = "FLAG_TS_EXPORT_ONLY";
-  BindingFlag2[BindingFlag2["FLAG_FLOW_DECLARE_FN"] = 2048] = "FLAG_FLOW_DECLARE_FN";
-  BindingFlag2[BindingFlag2["FLAG_TS_IMPORT"] = 4096] = "FLAG_TS_IMPORT";
-  BindingFlag2[BindingFlag2["FLAG_NO_LET_IN_LEXICAL"] = 8192] = "FLAG_NO_LET_IN_LEXICAL";
-  BindingFlag2[BindingFlag2["TYPE_CLASS"] = 8331] = "TYPE_CLASS";
-  BindingFlag2[BindingFlag2["TYPE_LEXICAL"] = 8201] = "TYPE_LEXICAL";
-  BindingFlag2[BindingFlag2["TYPE_CATCH_PARAM"] = 9] = "TYPE_CATCH_PARAM";
-  BindingFlag2[BindingFlag2["TYPE_VAR"] = 5] = "TYPE_VAR";
-  BindingFlag2[BindingFlag2["TYPE_FUNCTION"] = 17] = "TYPE_FUNCTION";
-  BindingFlag2[BindingFlag2["TYPE_TS_INTERFACE"] = 130] = "TYPE_TS_INTERFACE";
-  BindingFlag2[BindingFlag2["TYPE_TS_TYPE"] = 2] = "TYPE_TS_TYPE";
-  BindingFlag2[BindingFlag2["TYPE_TS_ENUM"] = 8459] = "TYPE_TS_ENUM";
-  BindingFlag2[BindingFlag2["TYPE_TS_AMBIENT"] = 1024] = "TYPE_TS_AMBIENT";
-  BindingFlag2[BindingFlag2["TYPE_NONE"] = 64] = "TYPE_NONE";
-  BindingFlag2[BindingFlag2["TYPE_OUTSIDE"] = 65] = "TYPE_OUTSIDE";
-  BindingFlag2[BindingFlag2["TYPE_TS_CONST_ENUM"] = 8971] = "TYPE_TS_CONST_ENUM";
-  BindingFlag2[BindingFlag2["TYPE_TS_NAMESPACE"] = 1024] = "TYPE_TS_NAMESPACE";
-  BindingFlag2[BindingFlag2["TYPE_TS_TYPE_IMPORT"] = 4098] = "TYPE_TS_TYPE_IMPORT";
-  BindingFlag2[BindingFlag2["TYPE_TS_VALUE_IMPORT"] = 4096] = "TYPE_TS_VALUE_IMPORT";
-  BindingFlag2[BindingFlag2["TYPE_FLOW_DECLARE_FN"] = 2048] = "TYPE_FLOW_DECLARE_FN";
-  return BindingFlag2;
-})(BindingFlag || {});
-var ClassElementType = /* @__PURE__ */ ((ClassElementType2) => {
-  ClassElementType2[ClassElementType2["OTHER"] = 0] = "OTHER";
-  ClassElementType2[ClassElementType2["FLAG_STATIC"] = 4] = "FLAG_STATIC";
-  ClassElementType2[ClassElementType2["KIND_GETTER"] = 2] = "KIND_GETTER";
-  ClassElementType2[ClassElementType2["KIND_SETTER"] = 1] = "KIND_SETTER";
-  ClassElementType2[ClassElementType2["KIND_ACCESSOR"] = 3] = "KIND_ACCESSOR";
-  ClassElementType2[ClassElementType2["STATIC_GETTER"] = 6] = "STATIC_GETTER";
-  ClassElementType2[ClassElementType2["STATIC_SETTER"] = 5] = "STATIC_SETTER";
-  ClassElementType2[
-    ClassElementType2["INSTANCE_GETTER"] = 2
-    /* KIND_GETTER */
-  ] = "INSTANCE_GETTER";
-  ClassElementType2[
-    ClassElementType2["INSTANCE_SETTER"] = 1
-    /* KIND_SETTER */
-  ] = "INSTANCE_SETTER";
-  return ClassElementType2;
-})(ClassElementType || {});
-createRequire(import.meta.url);
-var NameType = /* @__PURE__ */ ((NameType2) => {
-  NameType2[NameType2["Var"] = 1] = "Var";
-  NameType2[NameType2["Lexical"] = 2] = "Lexical";
-  NameType2[NameType2["Function"] = 4] = "Function";
-  return NameType2;
-})(NameType || {});
-var Scope = class {
-  flags = 0;
-  names = /* @__PURE__ */ new Map();
-  firstLexicalName = "";
-  constructor(flags) {
-    this.flags = flags;
-  }
-};
-var ScopeHandler = class {
-  parser;
-  scopeStack = [];
-  inModule;
-  undefinedExports = /* @__PURE__ */ new Map();
-  constructor(parser, inModule) {
-    this.parser = parser;
-    this.inModule = inModule;
-  }
-  get inTopLevel() {
-    return (this.currentScope().flags & ScopeFlag.PROGRAM) > 0;
-  }
-  get inFunction() {
-    return (this.currentVarScopeFlags() & ScopeFlag.FUNCTION_BASE) > 0;
-  }
-  get allowSuper() {
-    return (this.currentThisScopeFlags() & ScopeFlag.SUPER) > 0;
-  }
-  get allowDirectSuper() {
-    return (this.currentThisScopeFlags() & ScopeFlag.DIRECT_SUPER) > 0;
-  }
-  get allowNewTarget() {
-    return (this.currentThisScopeFlags() & ScopeFlag.NEW_TARGET) > 0;
-  }
-  get inClass() {
-    return (this.currentThisScopeFlags() & ScopeFlag.CLASS_BASE) > 0;
-  }
-  get inClassAndNotInNonArrowFunction() {
-    const flags = this.currentThisScopeFlags();
-    return (flags & ScopeFlag.CLASS_BASE) > 0 && (flags & ScopeFlag.FUNCTION_BASE) === 0;
-  }
-  get inStaticBlock() {
-    for (let i = this.scopeStack.length - 1; ; i--) {
-      const { flags } = this.scopeStack[i];
-      if (flags & ScopeFlag.STATIC_BLOCK) {
-        return true;
-      }
-      if (flags & (ScopeFlag.VAR | ScopeFlag.CLASS_BASE)) {
-        return false;
-      }
-    }
-  }
-  get inNonArrowFunction() {
-    return (this.currentThisScopeFlags() & ScopeFlag.FUNCTION_BASE) > 0;
-  }
-  get inBareCaseStatement() {
-    return (this.currentScope().flags & ScopeFlag.SWITCH) > 0;
-  }
-  get treatFunctionsAsVar() {
-    return this.treatFunctionsAsVarInScope(this.currentScope());
-  }
-  createScope(flags) {
-    return new Scope(flags);
-  }
-  enter(flags) {
-    this.scopeStack.push(this.createScope(flags));
-  }
-  exit() {
-    const scope = this.scopeStack.pop();
-    return scope.flags;
-  }
-  // The spec says:
-  // > At the top level of a function, or script, function declarations are
-  // > treated like var declarations rather than like lexical declarations.
-  treatFunctionsAsVarInScope(scope) {
-    return !!(scope.flags & (ScopeFlag.FUNCTION_BASE | ScopeFlag.STATIC_BLOCK) || !this.parser.inModule && scope.flags & ScopeFlag.PROGRAM);
-  }
-  declareName(name, bindingType, loc) {
-    let scope = this.currentScope();
-    if (bindingType & BindingFlag.SCOPE_LEXICAL || bindingType & BindingFlag.SCOPE_FUNCTION) {
-      this.checkRedeclarationInScope(scope, name, bindingType, loc);
-      let type = scope.names.get(name) || 0;
-      if (bindingType & BindingFlag.SCOPE_FUNCTION) {
-        type = type | 4;
-      } else {
-        if (!scope.firstLexicalName) {
-          scope.firstLexicalName = name;
-        }
-        type = type | 2;
-      }
-      scope.names.set(name, type);
-      if (bindingType & BindingFlag.SCOPE_LEXICAL) {
-        this.maybeExportDefined(scope, name);
-      }
-    } else if (bindingType & BindingFlag.SCOPE_VAR) {
-      for (let i = this.scopeStack.length - 1; i >= 0; --i) {
-        scope = this.scopeStack[i];
-        this.checkRedeclarationInScope(scope, name, bindingType, loc);
-        scope.names.set(
-          name,
-          (scope.names.get(name) || 0) | 1
-          /* Var */
-        );
-        this.maybeExportDefined(scope, name);
-        if (scope.flags & ScopeFlag.VAR) break;
-      }
-    }
-    if (this.parser.inModule && scope.flags & ScopeFlag.PROGRAM) {
-      this.undefinedExports.delete(name);
-    }
-  }
-  maybeExportDefined(scope, name) {
-    if (this.parser.inModule && scope.flags & ScopeFlag.PROGRAM) {
-      this.undefinedExports.delete(name);
-    }
-  }
-  checkRedeclarationInScope(scope, name, bindingType, loc) {
-    if (this.isRedeclaredInScope(scope, name, bindingType)) {
-      this.parser.raise(Errors.VarRedeclaration, loc, {
-        identifierName: name
-      });
-    }
-  }
-  isRedeclaredInScope(scope, name, bindingType) {
-    if (!(bindingType & BindingFlag.KIND_VALUE)) return false;
-    if (bindingType & BindingFlag.SCOPE_LEXICAL) {
-      return scope.names.has(name);
-    }
-    const type = scope.names.get(name) || 0;
-    if (bindingType & BindingFlag.SCOPE_FUNCTION) {
-      return (type & 2) > 0 || !this.treatFunctionsAsVarInScope(scope) && (type & 1) > 0;
-    }
-    return (type & 2) > 0 && // Annex B.3.4
-    // https://tc39.es/ecma262/#sec-variablestatements-in-catch-blocks
-    !(scope.flags & ScopeFlag.SIMPLE_CATCH && scope.firstLexicalName === name) || !this.treatFunctionsAsVarInScope(scope) && (type & 4) > 0;
-  }
-  checkLocalExport(id) {
-    const { name } = id;
-    const topLevelScope = this.scopeStack[0];
-    if (!topLevelScope.names.has(name)) {
-      this.undefinedExports.set(name, id.loc.start);
-    }
-  }
-  currentScope() {
-    return this.scopeStack[this.scopeStack.length - 1];
-  }
-  currentVarScopeFlags() {
-    for (let i = this.scopeStack.length - 1; ; i--) {
-      const { flags } = this.scopeStack[i];
-      if (flags & ScopeFlag.VAR) {
-        return flags;
-      }
-    }
-  }
-  // Could be useful for `arguments`, `this`, `new.target`, `super()`, `super.property`, and `super[property]`.
-  currentThisScopeFlags() {
-    for (let i = this.scopeStack.length - 1; ; i--) {
-      const { flags } = this.scopeStack[i];
-      if (flags & (ScopeFlag.VAR | ScopeFlag.CLASS_BASE) && !(flags & ScopeFlag.ARROW)) {
-        return flags;
-      }
-    }
-  }
-};
 export {
-  lowercaseO as $,
-  backslash as A,
-  BindingFlag as B,
-  dot as C,
-  equalsTo as D,
-  Errors as E,
-  verticalBar as F,
-  caret as G,
-  atSign as H,
-  questionMark as I,
-  numberSign as J,
-  tilde as K,
-  plusSign as L,
-  ampersand as M,
-  percentSign as N,
-  apostrophe as O,
-  quotationMark as P,
-  digit8 as Q,
-  digit7 as R,
-  SourceLocation as S,
-  digit6 as T,
-  digit5 as U,
-  digit4 as V,
-  digit3 as W,
-  digit2 as X,
-  digit1 as Y,
-  lowercaseX as Z,
-  uppercaseX as _,
-  rightCurlyBrace as a,
-  require_moment as a$,
-  uppercaseO as a0,
-  lowercaseB as a1,
-  uppercaseB as a2,
-  graveAccent as a3,
-  colon as a4,
-  comma as a5,
-  semicolon as a6,
-  rightParenthesis as a7,
-  leftParenthesis as a8,
-  createPositionWithColumnOffset as a9,
-  isDigit as aA,
-  ParseErrorEnum as aB,
-  tokenIsIdentifier as aC,
-  tokenIsKeywordOrIdentifier as aD,
-  tokenIsTSTypeOperator as aE,
-  tokenIsTSDeclarationStart as aF,
-  tokenIsTemplate as aG,
-  tokenCanStartExpression as aH,
-  tokenOperatorPrecedence as aI,
-  ScopeHandler as aJ,
-  NameType as aK,
-  Scope as aL,
-  tokenIsFlowInterfaceOrTypeOrOpaque as aM,
-  isIteratorStart as aN,
-  tokenIsLoop as aO,
-  tokenIsAssignment as aP,
-  tokenIsOperator as aQ,
-  tokenIsRightAssociative as aR,
-  UnparenthesizedPipeBodyDescriptions as aS,
-  tokenIsPrefix as aT,
-  tokenIsPostfix as aU,
-  canBeReservedWord as aV,
-  isKeyword as aW,
-  isReservedWord as aX,
-  isStrictReservedWord as aY,
-  getExportedToken as aZ,
-  tokenKeywordOrIdentifierIsKeyword as a_,
-  lowercaseV as aa,
-  lowercaseU as ab,
-  lowercaseN as ac,
-  lowercaseM as ad,
-  uppercaseE as ae,
-  lowercaseE as af,
-  Position as ag,
-  keywords as ah,
-  tokenLabelName as ai,
-  tokenIsKeyword as aj,
-  ClassElementType as ak,
-  types as al,
-  oghamSpaceMark as am,
-  lowercaseG as an,
-  lowercaseS as ao,
-  lowercaseI as ap,
-  lowercaseY as aq,
-  lowercaseD as ar,
-  underscore as as,
-  dollarSign as at,
-  lowercaseF as au,
-  lowercaseT as av,
-  lowercaseR as aw,
-  uppercaseA as ax,
-  uppercaseF as ay,
-  lowercaseA as az,
-  isStrictBindOnlyReservedWord as b,
-  tokenComesBeforeExpression as b0,
-  isIdentifierChar as c,
-  tokenIsLiteralPropertyName as d,
-  ScopeFlag as e,
-  dash as f,
-  greaterThan as g,
-  exclamationMark as h,
-  isStrictBindReservedWord as i,
-  asterisk as j,
-  lineSeparator as k,
-  lessThan as l,
-  lineFeed as m,
-  carriageReturn as n,
-  tab as o,
-  paragraphSeparator as p,
-  nonBreakingSpace as q,
-  rightSquareBracket as r,
-  slash as s,
-  tt as t,
-  space as u,
-  digit0 as v,
-  digit9 as w,
-  leftCurlyBrace as x,
-  leftSquareBracket as y,
-  isIdentifierStart as z
+  LARGE_READ_ROW_THRESHOLD as L,
+  assessQueryRead as a,
+  resolveStaticBindings as b,
+  resolvedReadRefusal as c,
+  emptyViewerOnlyParams as d,
+  extractRowCount as e,
+  emptyParamsNote as f,
+  require_lib as r,
+  sameReadSource as s,
+  unresolvedNote as u
 };
