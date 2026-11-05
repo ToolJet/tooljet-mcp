@@ -190,7 +190,7 @@ describe('validateQueryOptions', () => {
     ]));
 
     const billable = validateQueryOptions('bigquery', {
-      query: 'SELECT id FROM dataset.orders LIMIT 25', runOnDependencyChange: true,
+      mode: 'sql', query: 'SELECT id FROM dataset.orders LIMIT 25', runOnDependencyChange: true,
     });
     expect(billable.errors).toEqual(expect.arrayContaining([
       expect.objectContaining({ code: 'unsafe_automatic_billable_read', path: 'runOnDependencyChange' }),
