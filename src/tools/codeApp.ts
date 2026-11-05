@@ -9,6 +9,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 import { ok, fail, type ToolDef } from './types.js';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { CLI_HOME_PREFIX, cleanOldProjects, touchProject, withBuildSlot } from '../codeBuildLimits.js';
+import { browserUserQueryProblems } from '../serverUserBindings.js';
 
 /*
   Code pages: a ToolJet app page whose whole UI is React code, kept in an app project (app.json + frontend/) and built
@@ -57,7 +58,7 @@ export const USER_WORDS =
 
 /** Who a Code tool acts for: built per request on HTTP, once per process on stdio (server.ts). */
 export interface CodeContext {
-  client: Pick<ToolJetClient, 'getApp' | 'canEditApp' | 'renameApp'>;
+  client: Pick<ToolJetClient, 'getApp' | 'canEditApp' | 'renameApp'> & Partial<Pick<ToolJetClient, 'getAppSummary'>>;
   workspaceId(): Promise<string>;
   /** The caller's own credential. On a hosted server, one configured on the process does not count. */
   credential?: { sessionToken?: string; pat?: string };
@@ -940,6 +941,22 @@ export function missingStylesheet(dir: string): string | undefined {
   );
 }
 
+/**
+ * The app's queries that read the signed-in user in the browser ({{globals.currentUser.*}}): a viewer can send another
+ * user's email with the run. Part of the build check, so the build is not ok until they read
+ * {{globals.server.currentUser.*}}. A read that fails leaves the check to the other parts.
+ */
+async function browserUserQueries(appId: string | undefined): Promise<string[]> {
+  if (!appId) return [];
+  try {
+    // The summary, not getApp: getApp is the authorization read, and its answer is kept for the TTL.
+    const summary = await current().client.getAppSummary?.(appId);
+    return summary ? browserUserQueryProblems({ data_queries: summary.queries }).map((line) => `query check: ${line}`) : [];
+  } catch {
+    return [];
+  }
+}
+
 export function codeAppBuildTool(context: CodeContext): ToolDef {
   return {
     name: 'code_app_build',
@@ -965,7 +982,9 @@ export function codeAppBuildTool(context: CodeContext): ToolDef {
         const unstyled = missingStylesheet(dir);
         const selects = nativeSelects(dir);
         const handles = badRouteHandles(dir);
-        const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0 && !unstyled && !handles.length;
+        const serverUser = await browserUserQueries(args.app_id ?? appIdOf(dir));
+        const extra = [...handles, ...(unstyled ? [unstyled] : []), ...serverUser];
+        const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0 && !extra.length;
         if (okBuild) prefetchFullScan(dir);
         return ok({
           ...(followed ? { draft: followed } : {}),
@@ -975,8 +994,8 @@ export function codeAppBuildTool(context: CodeContext): ToolDef {
           typescript_errors: tsErrors,
           build_output: build.code === 0 && tsErrors === 0 ? build.output.trim().split('\n').slice(-6).join('\n') : build.output.trim().slice(0, 12_000),
           check: report?.problems
-            ? [...handles, ...(unstyled ? [unstyled] : []), ...report.problems.map((p) => `${p.file}:${p.line}  ${p.message}`)]
-            : unstyled || handles.length ? [...handles, ...(unstyled ? [unstyled] : []), check.output.trim().slice(0, 6000)] : check.output.trim().slice(0, 6000),
+            ? [...extra, ...report.problems.map((p) => `${p.file}:${p.line}  ${p.message}`)]
+            : extra.length ? [...extra, check.output.trim().slice(0, 6000)] : check.output.trim().slice(0, 6000),
           ...(selects.length ? { native_controls: { fix: 'Use Select from components/ui/select instead of a native <select>.', at: selects } } : {}),
           // jsx-a11y recommended rules, warnings only (tooljet app check); fix them when they are cheap to fix.
           a11y_warnings: report?.accessibility?.length ?? Number(/(\d+) accessibility warnings?/.exec(check.output)?.[1] ?? 0),

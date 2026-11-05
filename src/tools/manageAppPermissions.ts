@@ -2,8 +2,10 @@ import { z } from 'zod';
 import type {
   AppPermissionAccessType,
   AppPermissionResourceType,
+  AppPermissionSubjects,
   AppSummary,
   ToolJetClient,
+  WorkspaceGroup,
 } from '../tooljetClient.js';
 import { fail, ok, type ToolDef } from './types.js';
 
@@ -17,6 +19,7 @@ type ManageAppPermissionsArgs = {
   user_ids?: string[];
   group_ids?: string[];
   confirm?: boolean;
+  grant_app_access?: boolean;
 };
 
 function requireValue<T>(value: T | undefined, label: string): T {
@@ -135,6 +138,124 @@ function normalizePermission(permissions: Array<Record<string, unknown>>) {
   return { access: String(permission.type ?? 'unknown').toLowerCase(), permission_id: permission.id };
 }
 
+type SubjectGroup = { id: string; name?: string; type?: string; count?: number; can_open_app: boolean; disabled?: true };
+
+/** The plan's answer on what a build can protect, from the license features (unknown ones are left out). */
+function planLimits(features: Record<string, unknown> | undefined) {
+  if (!features) return undefined;
+  const known = Object.entries({
+    query_limits: features.appPermissionQuery,
+    screen_limits: features.appPermissionPages,
+    server_side_current_user: features.serverSideGlobalResolve,
+  }).filter(([, value]) => typeof value === 'boolean');
+  return known.length ? Object.fromEntries(known) : undefined;
+}
+
+/**
+ * Every group of the workspace, each marked with whether its members can open this app. ToolJet's own subject list
+ * (pages/user-groups) holds only the groups with an app access rule that covers it, so a custom group such as Finance
+ * was missing until someone gave it access in Workspace settings (roles test, 2026-11-04).
+ */
+async function subjectGroups(client: ToolJetClient, open: AppPermissionSubjects['groups']) {
+  const openIds = new Map(open.map((group) => [group.id, group]));
+  let workspace: WorkspaceGroup[] | undefined;
+  try {
+    workspace = await client.listWorkspaceGroups();
+  } catch {
+    workspace = undefined;
+  }
+  if (!workspace) {
+    return {
+      groups: open.map((group): SubjectGroup => ({ ...group, can_open_app: true })),
+      complete: false,
+    };
+  }
+  const groups = workspace.map((group): SubjectGroup => ({
+    id: group.id,
+    name: group.name,
+    type: group.type,
+    ...(typeof openIds.get(group.id)?.count === 'number' ? { count: openIds.get(group.id)!.count } : {}),
+    can_open_app: openIds.has(group.id),
+    ...(group.disabled ? { disabled: true as const } : {}),
+  }));
+  for (const group of open) if (!groups.some((known) => known.id === group.id)) groups.push({ ...group, can_open_app: true });
+  return { groups, complete: true };
+}
+
+/** The access rule a group gets for this one app: view, on the released app, nothing else. */
+function viewRule(appId: string, appName: string | undefined, groupId: string) {
+  return {
+    name: `${(appName || 'App').slice(0, 40)} (view)`,
+    type: 'app',
+    groupId,
+    isAll: false,
+    createResourcePermissionObject: {
+      canEdit: false,
+      canView: true,
+      hideFromDashboard: false,
+      canAccessDevelopment: false,
+      canAccessStaging: false,
+      canAccessProduction: false,
+      canAccessReleased: true,
+      resourcesToAdd: [{ appId }],
+    },
+  };
+}
+
+/**
+ * A limit to groups whose members cannot open the app would leave them with nothing. With grant_app_access, each such
+ * group first gets view access to this app only (the access rule Workspace settings > Groups creates); without it, the
+ * set is refused and says so.
+ */
+async function ensureGroupsCanOpen(
+  client: ToolJetClient,
+  appId: string,
+  appName: string | undefined,
+  groupIds: string[],
+  grant: boolean
+): Promise<Array<{ group_id: string; name?: string; rule_name: string }>> {
+  const subjects = await client.listAppPermissionSubjects(appId);
+  const openIds = new Set(subjects.groups.map((group) => group.id));
+  const missing = groupIds.filter((id) => !openIds.has(id));
+  if (!missing.length) return [];
+  const { groups, complete } = await subjectGroups(client, subjects.groups);
+  const byId = new Map(groups.map((group) => [group.id, group]));
+  const unknown = complete ? missing.filter((id) => !byId.has(id)) : [];
+  if (unknown.length) {
+    throw new Error(`${unknown.join(', ')} ${unknown.length > 1 ? 'are not groups' : 'is not a group'} of this workspace. Use list_subjects for the group ids. Nothing was changed.`);
+  }
+  const names = missing.map((id) => byId.get(id)?.name ?? id);
+  if (!grant) {
+    throw new Error(
+      `${names.join(', ')} cannot open this app yet, so a limit to ${missing.length > 1 ? 'them' : 'it'} would leave ` +
+        `${missing.length > 1 ? 'their' : 'its'} members without the screen or query. Pass grant_app_access: true with ` +
+        'confirm: true to give each of them view access to this app only (the released app), or give them access in ' +
+        'Workspace settings > Groups. Nothing was changed.'
+    );
+  }
+  const disabled = missing.filter((id) => byId.get(id)?.disabled);
+  if (disabled.length) {
+    throw new Error(
+      `${disabled.map((id) => byId.get(id)?.name ?? id).join(', ')} cannot be changed under the current plan, so it cannot be given access to this app. Nothing was changed.`
+    );
+  }
+  const granted: Array<{ group_id: string; name?: string; rule_name: string }> = [];
+  for (const id of missing) {
+    const rule = viewRule(appId, appName, id);
+    await client.writeWorkspaceGroupAccess('POST', id, 'app', undefined, rule);
+    granted.push({ group_id: id, ...(byId.get(id)?.name ? { name: byId.get(id)!.name } : {}), rule_name: rule.name });
+  }
+  const after = new Set((await client.listAppPermissionSubjects(appId)).groups.map((group) => group.id));
+  const still = missing.filter((id) => !after.has(id));
+  if (still.length) {
+    throw new Error(
+      `ToolJet did not confirm that ${still.map((id) => byId.get(id)?.name ?? id).join(', ')} can open this app after ` +
+        'the access rule was added, so no limit was set. Check the group in Workspace settings > Groups.'
+    );
+  }
+  return granted;
+}
+
 export function manageAppPermissionsTool(client: ToolJetClient): ToolDef {
   return {
     name: 'manage_app_permissions',
@@ -148,8 +269,11 @@ export function manageAppPermissionsTool(client: ToolJetClient): ToolDef {
     },
     description:
       'List eligible subjects, inspect, set, or clear server-enforced access for one app page, query, or ' +
-      'component. Use list_subjects first and exact ids from get_app_summary; users/groups must already have ' +
-      'access to the app. set restricts access to the selected users or groups. clear broadens access to every ' +
+      'component. Use list_subjects first and exact ids from get_app_summary. list_subjects lists every workspace ' +
+      'group with can_open_app, and plan says whether this plan enforces query and screen limits and resolves ' +
+      '{{globals.server.currentUser}} on the server. Users must already have access to the app; a group that cannot ' +
+      'open it is refused unless set has grant_app_access:true, which first gives that group view access to this app ' +
+      'only (released app). set restricts access to the selected users or groups. clear broadens access to every ' +
       'user who can access the app. Mutations require confirm:true after the user explicitly requests the exact ' +
       'access rule. ToolJet license gates still apply. Code mode screens: list_screens lists each route with its ' +
       'hidden page and access; pass route (its id or path from app.json) with resource_type page instead of ' +
@@ -170,11 +294,32 @@ export function manageAppPermissionsTool(client: ToolJetClient): ToolDef {
       user_ids: z.array(z.string().uuid()).min(1).max(100).optional(),
       group_ids: z.array(z.string().uuid()).min(1).max(100).optional(),
       confirm: z.boolean().optional(),
+      grant_app_access: z
+        .boolean()
+        .optional()
+        .describe('set with groups only: give each named group that cannot open the app view access to this app only first'),
     },
     async handler(args: ManageAppPermissionsArgs) {
       try {
         if (args.action === 'list_subjects') {
-          return ok({ app_id: args.app_id, ...(await client.listAppPermissionSubjects(args.app_id)) });
+          const [subjects, features] = await Promise.all([
+            client.listAppPermissionSubjects(args.app_id),
+            client.getLicenseFeatureAccess().catch(() => undefined),
+          ]);
+          const { groups, complete } = await subjectGroups(client, subjects.groups);
+          const plan = planLimits(features);
+          return ok({
+            app_id: args.app_id,
+            users: subjects.users,
+            groups,
+            ...(plan ? { plan } : {}),
+            note: complete
+              ? 'A group with can_open_app false cannot open the app: set with grant_app_access:true gives it view access to this app only first.'
+              : 'Only the groups that can open the app are listed: the workspace group list could not be read.',
+          });
+        }
+        if (args.grant_app_access !== undefined && (args.action !== 'set' || args.access_type !== 'groups')) {
+          throw new Error('grant_app_access applies only to set with access_type groups.');
         }
 
         if (args.action === 'list_screens') {
@@ -229,6 +374,10 @@ export function manageAppPermissionsTool(client: ToolJetClient): ToolDef {
         if (accessType === 'groups' && args.user_ids !== undefined) {
           throw new Error('user_ids must be omitted when access_type is groups.');
         }
+        const granted =
+          accessType === 'groups'
+            ? await ensureGroupsCanOpen(client, args.app_id, summary.name, [...new Set(subjectIds!)], args.grant_app_access === true)
+            : [];
         const permissions = await client.setAppPermission({
           appId: args.app_id,
           resourceType,
@@ -236,7 +385,12 @@ export function manageAppPermissionsTool(client: ToolJetClient): ToolDef {
           accessType,
           subjectIds: [...new Set(subjectIds)],
         });
-        return ok({ app_id: args.app_id, resource, ...normalizePermission(permissions) });
+        return ok({
+          app_id: args.app_id,
+          resource,
+          ...normalizePermission(permissions),
+          ...(granted.length ? { granted_app_access: granted } : {}),
+        });
       } catch (error) {
         return fail(error);
       }

@@ -47,6 +47,7 @@ const clientWith = (overrides: Partial<ToolJetClient> = {}) =>
       { id: 'perm', type: 'GROUP', groups: [{ permissionGroup: { id: GROUP, name: 'Finance' } }] },
     ]),
     clearAppPermission: vi.fn().mockResolvedValue(undefined),
+    listAppPermissionSubjects: vi.fn().mockResolvedValue({ users: [], groups: [{ id: GROUP, name: 'Finance', count: 2 }] }),
     ...overrides,
   }) as unknown as ToolJetClient;
 
@@ -103,3 +104,107 @@ describe('Code mode screens in manage_app_permissions', () => {
     expect(both.isError).toBe(true);
   });
 });
+
+const MANAGERS = '77777777-7777-4777-8777-777777777777';
+const ADMIN = '88888888-8888-4888-8888-888888888888';
+const QUERY = '99999999-9999-4999-8999-999999999999';
+
+const workspaceGroups = [
+  { id: ADMIN, name: 'admin', type: 'default' },
+  { id: GROUP, name: 'Finance', type: 'custom' },
+  { id: MANAGERS, name: 'Managers', type: 'custom' },
+];
+
+describe('groups that cannot open the app (roles test, 2026-11-04)', () => {
+  const withQuery = { ...summary, name: 'Spend approvals', queries: [{ id: QUERY, name: 'decide_manager', kind: 'tooljetdb' }] } as AppSummary;
+  const roleClient = (overrides: Partial<ToolJetClient> = {}) =>
+    clientWith({
+      getAppSummary: vi.fn().mockResolvedValue(withQuery),
+      listWorkspaceGroups: vi.fn().mockResolvedValue(workspaceGroups),
+      // Only the groups whose access rule covers the app, as ToolJet's pages/user-groups returns them.
+      listAppPermissionSubjects: vi.fn().mockResolvedValue({ users: [], groups: [{ id: ADMIN, name: 'admin', count: 1 }] }),
+      getLicenseFeatureAccess: vi.fn().mockResolvedValue({ appPermissionQuery: true, appPermissionPages: true, serverSideGlobalResolve: false }),
+      writeWorkspaceGroupAccess: vi.fn().mockResolvedValue(undefined),
+      ...overrides,
+    });
+  const setManagers = (extra: Record<string, unknown> = {}) => ({
+    action: 'set', app_id: APP, resource_type: 'query', resource_id: QUERY, access_type: 'groups', group_ids: [MANAGERS], confirm: true, ...extra,
+  });
+
+  it('list_subjects lists every workspace group, marking which can open the app, and what the plan enforces', async () => {
+    const result = textOf(await manageAppPermissionsTool(roleClient()).handler({ action: 'list_subjects', app_id: APP }));
+    expect(result.groups).toEqual([
+      { id: ADMIN, name: 'admin', type: 'default', count: 1, can_open_app: true },
+      { id: GROUP, name: 'Finance', type: 'custom', can_open_app: false },
+      { id: MANAGERS, name: 'Managers', type: 'custom', can_open_app: false },
+    ]);
+    expect(result.plan).toEqual({ query_limits: true, screen_limits: true, server_side_current_user: false });
+    expect(result.note).toMatch(/grant_app_access:true/);
+  });
+
+  it('list_subjects falls back to the groups that can open the app when the workspace list is refused', async () => {
+    const client = roleClient({
+      listWorkspaceGroups: vi.fn().mockRejectedValue(new Error('403')),
+      getLicenseFeatureAccess: vi.fn().mockRejectedValue(new Error('404')),
+    });
+    const result = textOf(await manageAppPermissionsTool(client).handler({ action: 'list_subjects', app_id: APP }));
+    expect(result.groups).toEqual([{ id: ADMIN, name: 'admin', count: 1, can_open_app: true }]);
+    expect(result.plan).toBeUndefined();
+    expect(result.note).toMatch(/could not be read/);
+  });
+
+  it('refuses a limit to a group that cannot open the app, naming the fix, and changes nothing', async () => {
+    const client = roleClient();
+    const result = await manageAppPermissionsTool(client).handler(setManagers());
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/Managers cannot open this app yet.*grant_app_access: true/);
+    expect(client.writeWorkspaceGroupAccess).not.toHaveBeenCalled();
+    expect(client.setAppPermission).not.toHaveBeenCalled();
+  });
+
+  it('with grant_app_access, gives the group view access to this app only, then sets the limit', async () => {
+    const subjects = vi.fn()
+      .mockResolvedValueOnce({ users: [], groups: [{ id: ADMIN, name: 'admin' }] })
+      .mockResolvedValueOnce({ users: [], groups: [{ id: ADMIN, name: 'admin' }, { id: MANAGERS, name: 'Managers' }] });
+    const client = roleClient({ listAppPermissionSubjects: subjects });
+    const result = textOf(await manageAppPermissionsTool(client).handler(setManagers({ grant_app_access: true })));
+    expect(client.writeWorkspaceGroupAccess).toHaveBeenCalledWith('POST', MANAGERS, 'app', undefined, {
+      name: 'Spend approvals (view)',
+      type: 'app',
+      groupId: MANAGERS,
+      isAll: false,
+      createResourcePermissionObject: {
+        canEdit: false, canView: true, hideFromDashboard: false, canAccessDevelopment: false, canAccessStaging: false,
+        canAccessProduction: false, canAccessReleased: true, resourcesToAdd: [{ appId: APP }],
+      },
+    });
+    expect(client.setAppPermission).toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'query', resourceId: QUERY, subjectIds: [MANAGERS] }));
+    expect(result.granted_app_access).toEqual([{ group_id: MANAGERS, name: 'Managers', rule_name: 'Spend approvals (view)' }]);
+  });
+
+  it('sets no limit when ToolJet does not confirm the grant', async () => {
+    const client = roleClient();
+    const result = await manageAppPermissionsTool(client).handler(setManagers({ grant_app_access: true }));
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/did not confirm that Managers can open this app/);
+    expect(client.setAppPermission).not.toHaveBeenCalled();
+  });
+
+  it('needs no grant for a group that can already open the app, and refuses an unknown group', async () => {
+    const client = roleClient();
+    await manageAppPermissionsTool(client).handler(setManagers({ group_ids: [ADMIN] }));
+    expect(client.writeWorkspaceGroupAccess).not.toHaveBeenCalled();
+    expect(client.setAppPermission).toHaveBeenCalled();
+    const unknown = await manageAppPermissionsTool(roleClient()).handler(
+      setManagers({ group_ids: ['abababab-abab-4bab-8bab-abababababab'], grant_app_access: true })
+    );
+    expect(unknown.content[0]!.text).toMatch(/is not a group of this workspace/);
+  });
+
+  it('takes grant_app_access only on a group set', async () => {
+    const result = await manageAppPermissionsTool(roleClient()).handler({ action: 'get', app_id: APP, resource_type: 'query', resource_id: QUERY, grant_app_access: true });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/only to set with access_type groups/);
+  });
+});
+

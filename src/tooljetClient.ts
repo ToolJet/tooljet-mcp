@@ -650,6 +650,8 @@ export interface ToolJetClient {
   canEditApp(appId: string): Promise<boolean>;
   getAppSummary(appId: string, versionId?: string): Promise<AppSummary>;
   listAppPermissionSubjects(appId: string): Promise<AppPermissionSubjects>;
+  /** The workspace's license features (GET /api/license/access): serverSideGlobalResolve, appPermissionQuery, ... */
+  getLicenseFeatureAccess(): Promise<Record<string, unknown>>;
   getAppPermission(
     appId: string,
     resourceType: AppPermissionResourceType,
@@ -1329,6 +1331,16 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         ...(typeof group.count === 'number' ? { count: group.count } : {}),
       })),
     };
+  }
+
+  async function getLicenseFeatureAccess(): Promise<Record<string, unknown>> {
+    const res = await auth.authedFetch('/api/license/access');
+    await assertOk(res, 'getLicenseFeatureAccess');
+    const body = await res.json();
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      throw new Error('ToolJet getLicenseFeatureAccess failed: expected an object response.');
+    }
+    return body as Record<string, unknown>;
   }
 
   async function getAppPermission(
@@ -3351,6 +3363,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     canEditApp,
     getAppSummary,
     listAppPermissionSubjects,
+    getLicenseFeatureAccess,
     getAppPermission,
     setAppPermission,
     clearAppPermission,
