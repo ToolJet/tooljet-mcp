@@ -646,8 +646,11 @@ export interface ToolJetClient {
   releaseApp(appId: string, versionId: string): Promise<ReleaseAppResult>;
   renameApp(appId: string, versionId: string, name: string): Promise<void>;
   getApp(appId: string): Promise<any>;
-  /** Whether the caller may edit the app (ToolJet's own answer): true for an editor, false for a viewer or no access. */
-  canEditApp(appId: string): Promise<boolean>;
+  /**
+   * What ToolJet's Code source API lets the caller do with the app's code (its own answer, public apps included): read
+   * for editors and for builders who can view the app, write for editors. Both false for an end user or no access.
+   */
+  codeSourceAccess(appId: string, versionId: string): Promise<{ read: boolean; write: boolean }>;
   getAppSummary(appId: string, versionId?: string): Promise<AppSummary>;
   listAppPermissionSubjects(appId: string): Promise<AppPermissionSubjects>;
   /** The workspace's license features (GET /api/license/access): serverSideGlobalResolve, appPermissionQuery, ... */
@@ -1200,16 +1203,21 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   /*
-    GET /api/apps/:id/tables is authorized by the same ability as PUT /api/apps/:id (the apps module's UPDATE feature):
-    an editor of the app gets 200, a viewer 403, and an app outside the caller's workspace 404. It reads only the names
-    of the ToolJet DB tables the app uses, so it is the cheapest way to ask ToolJet whether this caller may edit the app.
+    GET /api/code-mode-source/:id/versions/:versionId (no content) is authorized by the Code source module's GET_SOURCE
+    feature, which is checked on public apps too (shouldNotSkipPublicApp): editors and builders who can view the app get
+    200, with canWrite from WRITE_SOURCE (editors only); an end user gets 403, and an app outside the caller's workspace
+    or a backend without Code mode 404. The apps module's UPDATE check (GET /api/apps/:id/tables, used before) passes
+    for any workspace member on a public app, so it never said whether the caller may edit.
   */
-  async function canEditApp(appId: string): Promise<boolean> {
-    const res = await auth.authedFetch(`/api/apps/${encodeURIComponent(appId)}/tables`);
-    if (res.ok) return true;
-    if (res.status === 403 || res.status === 404) return false;
-    await assertOk(res, 'canEditApp');
-    return false;
+  async function codeSourceAccess(appId: string, versionId: string): Promise<{ read: boolean; write: boolean }> {
+    const res = await auth.authedFetch(
+      `/api/code-mode-source/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`
+    );
+    if (res.status === 403 || res.status === 404) return { read: false, write: false };
+    await assertOk(res, 'codeSourceAccess');
+    const body = (await res.json().catch(() => null)) as { canWrite?: unknown } | null;
+    if (!body || typeof body !== 'object') throw new Error('codeSourceAccess: ToolJet sent no answer');
+    return { read: true, write: body.canWrite === true };
   }
 
   // In GET /api/apps/:id, each placed component lives at pages[].components[<id>] as
@@ -3360,7 +3368,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     releaseApp,
     renameApp,
     getApp,
-    canEditApp,
+    codeSourceAccess,
     getAppSummary,
     listAppPermissionSubjects,
     getLicenseFeatureAccess,

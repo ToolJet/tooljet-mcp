@@ -6,11 +6,15 @@ import {
   codeAppAddDependencyTool, codeAppBuildTool, codeAppInstallTool, codeAppReadFilesTool, codeAppScaffoldTool, codeAppWriteFilesTool,
   deploymentKey, resetCodeSessionForTests,
 } from '../src/tools/codeApp.js';
-import { API_URL, codeContext, DEPLOYMENT, WORKSPACE } from './codeContext.js';
+import { createClient } from '../src/tooljetClient.js';
+import type { Auth } from '../src/auth.js';
+import type { Config } from '../src/config.js';
+import { API_URL, codeContext, DEPLOYMENT, VERSION, WORKSPACE } from './codeContext.js';
 
 /*
   Changing a retained project (writing files, adding or removing a package, building, installing, scaffolding) needs
-  ToolJet to say the caller may edit the app; reading it needs view only. ToolJet is asked again once a grant is older
+  ToolJet's Code source API to say the caller may write the app's code; reading it needs that API to say the caller may
+  read the code (an end user who can only use the app may not), whatever the process-wide project caches hold. ToolJet is asked again once a grant is older
   than MCP_CODE_APP_AUTH_TTL_MS. Projects are kept per ToolJet backend.
 */
 const APP = '11111111-1111-4111-8111-111111111111';
@@ -44,11 +48,18 @@ const projectAt = (dir: string) => {
 const project = () => projectAt(join(root, 'apps', DEPLOYMENT, WORKSPACE, 'demo'));
 const pkg = () => readFileSync(join(root, 'apps', DEPLOYMENT, WORKSPACE, 'demo', 'frontend', 'package.json'), 'utf8');
 
-/** A caller ToolJet lets view the app; `editor` says whether it may also edit it (a function: asked each time). */
-const caller = (editor: boolean | (() => boolean)) => {
-  const canEditApp = vi.fn(async () => (typeof editor === 'function' ? editor() : editor));
-  const getApp = vi.fn(async () => ({ organizationId: WORKSPACE }));
-  return { context: codeContext({ client: { getApp, canEditApp } as any }), canEditApp, getApp };
+/**
+ * A caller ToolJet lets view the app; `editor` says whether the source API lets it write the code (a function: asked
+ * each time), `reader` whether it serves the code at all (false for an end user).
+ */
+const caller = (editor: boolean | (() => boolean), reader: boolean | (() => boolean) = true) => {
+  const value = (v: boolean | (() => boolean)) => (typeof v === 'function' ? v() : v);
+  const codeSourceAccess = vi.fn(async () => {
+    const read = value(reader);
+    return { read, write: read && value(editor) };
+  });
+  const getApp = vi.fn(async () => ({ organizationId: WORKSPACE, editing_version: { id: VERSION } }));
+  return { context: codeContext({ client: { getApp, codeSourceAccess } as any }), codeSourceAccess, getApp };
 };
 
 beforeEach(() => {
@@ -104,17 +115,17 @@ describe('a caller who can only view the app', () => {
     expect(existsSync(join(root, 'apps', DEPLOYMENT, WORKSPACE, 'demo', 'frontend', 'src', 'New.tsx'))).toBe(false);
   });
 
-  it('can still read the project', async () => {
+  it('can still read the project when ToolJet serves it the code (a builder who views the app)', async () => {
     project();
-    const { context, canEditApp } = caller(false);
+    const { context, codeSourceAccess } = caller(false);
     const out = JSON.parse(text(await codeAppReadFilesTool(context).handler({ app_id: APP, paths: ['app.json'] } as any)));
     expect(out.files['app.json']).toContain(APP);
-    expect(canEditApp).not.toHaveBeenCalled();
+    expect(codeSourceAccess).toHaveBeenCalledWith(APP, VERSION);
   });
 
   it('is refused when ToolJet cannot say whether the caller may edit', async () => {
     project();
-    const context = codeContext({ client: { canEditApp: async () => { throw new Error('HTTP 500'); } } as any });
+    const context = codeContext({ client: { codeSourceAccess: async () => { throw new Error('HTTP 500'); } } as any });
     expect(text(await codeAppBuildTool(context).handler({ app_id: APP } as any))).toMatch(/could not confirm/);
     expect(calls()).toEqual([]);
   });
@@ -123,12 +134,12 @@ describe('a caller who can only view the app', () => {
 describe('an editor of the app', () => {
   it('adds and removes packages', async () => {
     project();
-    const { context, canEditApp } = caller(true);
+    const { context, codeSourceAccess } = caller(true);
     const out = JSON.parse(text(await codeAppAddDependencyTool(context).handler({ app_id: APP, packages: ['date-fns'], remove: ['left-pad'] } as any)));
     expect(out.added).toEqual(['date-fns@1.0.0']);
     expect(JSON.parse(pkg()).dependencies).toEqual({ 'date-fns': '1.0.0', react: '19.1.0' });
     expect(calls()).toEqual(['app vet date-fns --json', 'app install']);
-    expect(canEditApp).toHaveBeenCalledWith(APP);
+    expect(codeSourceAccess).toHaveBeenCalledWith(APP, VERSION);
   });
 
   it('builds', async () => {
@@ -140,13 +151,108 @@ describe('an editor of the app', () => {
   });
 });
 
+describe('an end user who can use the app but may not read its code', () => {
+  const builderAndEndUser = () => ({ builder: caller(true), endUser: caller(false, false) });
+
+  it('is refused a read on a cold cache, and nothing is pulled', async () => {
+    project();
+    const { endUser } = builderAndEndUser();
+    const out = text(await codeAppReadFilesTool(endUser.context).handler({ app_id: APP, paths: ['frontend/src/App.tsx'] } as any));
+    expect(out).toMatch(/does not let you read its code/);
+    expect(out).not.toContain('export default 1');
+    expect(calls()).toEqual([]);
+  });
+
+  it('is refused a read right after a builder synced the project in the same process (warm cache)', async () => {
+    project();
+    const { builder, endUser } = builderAndEndUser();
+    const read = JSON.parse(text(await codeAppReadFilesTool(builder.context).handler({ app_id: APP, paths: ['frontend/src/App.tsx'] } as any)));
+    expect(read.files['frontend/src/App.tsx']).toContain('export default 1');
+    // The builder's read left the project fresh, just synced and with nothing stored: none of it is a grant.
+    for (const args of [{ app_id: APP, paths: ['frontend/src/App.tsx'] }, { app_id: APP }, { name: 'demo', paths: ['app.json'] }]) {
+      const out = text(await codeAppReadFilesTool(endUser.context).handler(args as any));
+      expect(out).toMatch(/does not let you read its code/);
+      expect(out).not.toContain('export default 1');
+      expect(out).not.toContain('App.tsx');
+    }
+    expect(endUser.codeSourceAccess).toHaveBeenCalledTimes(3);
+  });
+
+  it('is refused every change too, and the builder can still read after it', async () => {
+    project();
+    const { builder, endUser } = builderAndEndUser();
+    await codeAppReadFilesTool(builder.context).handler({ app_id: APP } as any);
+    const before = pkg();
+    expect(text(await codeAppAddDependencyTool(endUser.context).handler({ app_id: APP, packages: [], remove: ['left-pad'] } as any))).toMatch(/not edit it or read its code/);
+    expect(pkg()).toBe(before);
+    const again = JSON.parse(text(await codeAppReadFilesTool(builder.context).handler({ app_id: APP, paths: ['app.json'] } as any)));
+    expect(again.files['app.json']).toContain(APP);
+  });
+
+  it('loses a read grant once ToolJet stops serving the code and the TTL has passed', async () => {
+    vi.stubEnv('MCP_CODE_APP_AUTH_TTL_MS', '0');
+    project();
+    let reader = true;
+    const { context } = caller(false, () => reader);
+    expect(JSON.parse(text(await codeAppReadFilesTool(context).handler({ app_id: APP, paths: ['app.json'] } as any))).files).toBeTruthy();
+    reader = false;
+    expect(text(await codeAppReadFilesTool(context).handler({ app_id: APP, paths: ['app.json'] } as any))).toMatch(/does not let you read its code/);
+  });
+
+  it('fails closed when ToolJet names no editing version to check against', async () => {
+    project();
+    const context = codeContext({ client: { getApp: async () => ({ organizationId: WORKSPACE }) } as any });
+    expect(text(await codeAppReadFilesTool(context).handler({ app_id: APP } as any))).toMatch(/could not confirm that you can read/);
+  });
+});
+
+describe('a workspace member viewing a public app', () => {
+  // GET /api/apps/:id/tables passed for any member on a public app; the source API checks public apps like private ones.
+  it('is refused a remove-only dependency change because the source API says it may not write', async () => {
+    project();
+    const before = pkg();
+    const { context, codeSourceAccess } = caller(false, true);
+    expect(text(await codeAppAddDependencyTool(context).handler({ app_id: APP, packages: [], remove: ['left-pad'] } as any))).toMatch(/view app .* but not edit it/);
+    expect(pkg()).toBe(before);
+    expect(calls()).toEqual([]);
+    expect(codeSourceAccess).toHaveBeenCalledWith(APP, VERSION);
+  });
+});
+
+describe('codeSourceAccess asks the Code source API', () => {
+  const clientWith = (respond: () => Response) => {
+    const authedFetch = vi.fn(async () => respond());
+    const client = createClient({ authedFetch, getOrganizationId: vi.fn() } as unknown as Auth, {} as Config);
+    return { client, authedFetch };
+  };
+
+  it('reads canWrite from the version summary, never the apps module', async () => {
+    const editor = clientWith(() => new Response(JSON.stringify({ exists: false, canWrite: true })));
+    expect(await editor.client.codeSourceAccess(APP, VERSION)).toEqual({ read: true, write: true });
+    expect(editor.authedFetch).toHaveBeenCalledWith(`/api/code-mode-source/${APP}/versions/${VERSION}`);
+    const viewer = clientWith(() => new Response(JSON.stringify({ exists: true, canWrite: false })));
+    expect(await viewer.client.codeSourceAccess(APP, VERSION)).toEqual({ read: true, write: false });
+    const odd = clientWith(() => new Response(JSON.stringify({ exists: true, canWrite: 'yes' })));
+    expect(await odd.client.codeSourceAccess(APP, VERSION)).toEqual({ read: true, write: false });
+  });
+
+  it('is no access on 403 and 404, and an error otherwise', async () => {
+    for (const status of [403, 404]) {
+      const { client } = clientWith(() => new Response('{}', { status }));
+      expect(await client.codeSourceAccess(APP, VERSION)).toEqual({ read: false, write: false });
+    }
+    const { client } = clientWith(() => new Response('{}', { status: 500 }));
+    await expect(client.codeSourceAccess(APP, VERSION)).rejects.toThrow();
+  });
+});
+
 describe('a grant is kept for a short time only', () => {
   it('reuses ToolJet\'s answer within the TTL', async () => {
     project();
-    const { context, canEditApp, getApp } = caller(true);
+    const { context, codeSourceAccess, getApp } = caller(true);
     await codeAppBuildTool(context).handler({ app_id: APP } as any);
     await codeAppBuildTool(context).handler({ app_id: APP } as any);
-    expect(canEditApp).toHaveBeenCalledOnce();
+    expect(codeSourceAccess).toHaveBeenCalledOnce();
     expect(getApp).toHaveBeenCalledOnce();
   });
 
@@ -154,21 +260,21 @@ describe('a grant is kept for a short time only', () => {
     vi.stubEnv('MCP_CODE_APP_AUTH_TTL_MS', '40');
     project();
     let editor = true;
-    const { context, canEditApp } = caller(() => editor);
+    const { context, codeSourceAccess } = caller(() => editor);
     expect(JSON.parse(text(await codeAppBuildTool(context).handler({ app_id: APP } as any))).typescript_errors).toBe(0);
     editor = false;
     await new Promise((resolve) => setTimeout(resolve, 60));
     const before = pkg();
     expect(text(await codeAppAddDependencyTool(context).handler({ app_id: APP, packages: [], remove: ['left-pad'] } as any))).toMatch(/not edit it/);
     expect(pkg()).toBe(before);
-    expect(canEditApp).toHaveBeenCalledTimes(2);
+    expect(codeSourceAccess).toHaveBeenCalledTimes(2);
   });
 
   it('refuses once the app itself is taken away and the TTL has passed', async () => {
     vi.stubEnv('MCP_CODE_APP_AUTH_TTL_MS', '0');
     project();
     let visible = true;
-    const context = codeContext({ client: { getApp: async () => { if (!visible) throw new Error('403'); return { organizationId: WORKSPACE }; } } as any });
+    const context = codeContext({ client: { getApp: async () => { if (!visible) throw new Error('403'); return { organizationId: WORKSPACE, editing_version: { id: VERSION } }; } } as any });
     await codeAppReadFilesTool(context).handler({ app_id: APP } as any);
     visible = false;
     expect(text(await codeAppReadFilesTool(context).handler({ app_id: APP } as any))).toMatch(/not found in this workspace/);

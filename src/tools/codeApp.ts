@@ -43,7 +43,8 @@ import { buildSummary, formatProblems, fromChecked, parseBuildProblems, type Che
   <root>/d_<deployment>/<workspace id>/, where the deployment is the ToolJet backend the request's credential is sent to
   (two backends can hold the same workspace and app ids). Every tool checks with ToolJet that the app belongs to the
   caller before it touches one, and every tool that writes to the project, installs or builds also needs ToolJet to say
-  the caller may edit the app. Reading a project needs view permission only.
+  the caller may edit the app. Reading a project needs ToolJet's source API to say the caller may read the app's code
+  (an end user who can only use the app may not), on every call, whatever the project caches hold.
 */
 
 const run = promisify(execFile);
@@ -59,7 +60,7 @@ export const USER_WORDS =
 
 /** Who a Code tool acts for: built per request on HTTP, once per process on stdio (server.ts). */
 export interface CodeContext {
-  client: Pick<ToolJetClient, 'getApp' | 'canEditApp' | 'renameApp'> & Partial<Pick<ToolJetClient, 'getAppSummary'>>;
+  client: Pick<ToolJetClient, 'getApp' | 'codeSourceAccess' | 'renameApp'> & Partial<Pick<ToolJetClient, 'getAppSummary'>>;
   workspaceId(): Promise<string>;
   /** The caller's own credential. On a hosted server, one configured on the process does not count. */
   credential?: { sessionToken?: string; pat?: string };
@@ -126,17 +127,23 @@ const inScope = <A, R>(context: CodeContext, handler: (args: A) => Promise<R>) =
 
 export const inCodeScopeForTests = <R>(context: CodeContext, work: () => Promise<R>) => inScope(context, work)(undefined as never);
 
-/** What ToolJet last said about the caller and an app, and when. */
+/** What ToolJet last said about the caller and an app's code, and when. */
 interface Grant {
+  /** ToolJet's source API serves this caller the app's code (editors, and builders who can view the app). */
+  read: boolean;
+  /** ToolJet's source API lets this caller write the app's code. */
   edit: boolean;
   at: number;
 }
-type Need = 'view' | 'edit';
+/** read: the project's files reach the caller; edit: the project is changed, built or installed. */
+type Need = 'read' | 'edit';
 
 /*
-  A context lives for one HTTP request, or for a whole stdio process (one build). ToolJet's answer is kept for
-  MCP_CODE_APP_AUTH_TTL_MS (default 30 s), so a build's many writes do not each ask twice, and a permission taken away
-  mid-build stops the next tool call after that. 0 asks on every call.
+  A context lives for one HTTP request, or for a whole stdio process (one build), and is one caller: its grants are kept
+  per context, by backend, workspace and app. ToolJet's answer is kept for MCP_CODE_APP_AUTH_TTL_MS (default 30 s), so
+  a build's many writes do not each ask twice, and a permission taken away mid-build stops the next tool call after
+  that. 0 asks on every call. The project caches below (freshProjects, lastSynced, ...) hold data only, never a grant:
+  every tool call asks this caller's grant first, however fresh the files are.
 */
 const grantTtlMs = (): number => {
   const ttl = Number(process.env.MCP_CODE_APP_AUTH_TTL_MS ?? 30_000);
@@ -150,16 +157,18 @@ const authorizedFor = (context: CodeContext): Map<string, Grant> => {
 };
 
 /**
- * ToolJet's answer, under the caller's own credential, is what says an app is theirs (view) and that they may change it
- * (edit). A refusal stops the tool before it touches the project.
+ * ToolJet's answers, under the caller's own credential: the app is in the caller's workspace (GET /api/apps/:id), and
+ * ToolJet's Code source API, which checks public apps like private ones, would serve (read) or accept (edit) this
+ * caller's source. App view is not enough: an end user can view an app whose code ToolJet never serves them, and on a
+ * public app the apps module's edit check passes for any member. A refusal stops the tool before it touches the project.
  */
 const authorizeApp = async (appId: string, need: Need): Promise<void> => {
   const active = current();
-  const key = `${active.deployment}\0${appId}`;
+  const key = `${active.deployment}\0${active.workspace}\0${appId}`;
   const known = active.authorized.get(key);
-  if (known && Date.now() - known.at < grantTtlMs() && (need === 'view' || known.edit)) return;
+  if (known && Date.now() - known.at < grantTtlMs() && known[need]) return;
   active.authorized.delete(key);
-  let app: { organizationId?: string; organization_id?: string };
+  let app: { organizationId?: string; organization_id?: string; editing_version?: { id?: string }; editingVersion?: { id?: string } };
   try {
     app = await active.client.getApp(appId);
   } catch {
@@ -167,19 +176,28 @@ const authorizeApp = async (appId: string, need: Need): Promise<void> => {
   }
   const owner = app?.organizationId ?? app?.organization_id;
   if (!owner || owner !== active.workspace) throw new Error(`App ${appId} was not found in this workspace.`);
-  let edit = false;
-  if (need === 'edit') {
-    try {
-      edit = await active.client.canEditApp(appId);
-    } catch {
-      throw new Error(`ToolJet could not confirm that you can edit app ${appId}, so nothing was changed.`);
-    }
-    if (!edit) {
-      active.authorized.set(key, { edit: false, at: Date.now() });
-      throw new Error(`You can view app ${appId} but not edit it, so its code cannot be changed, built or installed here.`);
-    }
+  const versionId = app?.editing_version?.id ?? app?.editingVersion?.id;
+  let access: { read: boolean; write: boolean };
+  try {
+    if (!versionId) throw new Error('no version');
+    access = await active.client.codeSourceAccess(appId, versionId);
+  } catch {
+    throw new Error(
+      need === 'edit'
+        ? `ToolJet could not confirm that you can edit app ${appId}, so nothing was changed.`
+        : `ToolJet could not confirm that you can read app ${appId}'s code, so nothing was read.`
+    );
   }
-  active.authorized.set(key, { edit, at: Date.now() });
+  const grant: Grant = { read: access.read, edit: access.read && access.write, at: Date.now() };
+  active.authorized.set(key, grant);
+  if (need === 'edit' && !grant.edit) {
+    throw new Error(
+      grant.read
+        ? `You can view app ${appId} but not edit it, so its code cannot be changed, built or installed here.`
+        : `You can view app ${appId} but not edit it or read its code, so its code cannot be changed, built or installed here.`
+    );
+  }
+  if (need === 'read' && !grant.read) throw new Error(`You can use app ${appId} but ToolJet does not let you read its code.`);
 };
 
 const baseRoot = (): string => resolve(process.env.TOOLJET_CODE_APP_ROOT || join(homedir(), 'tooljet-code-apps'));
@@ -240,8 +258,8 @@ const APP_ID = z.string().uuid().optional().describe("The app's id: finds its pr
 const PROJECT_NAME = z.string().regex(NAME).optional().describe('The project folder, when you know it; app_id is enough');
 
 /**
- * A tool's project: by app_id (preferred), else by name. Either way, only one whose app is the caller's, and for a tool
- * that changes the project (need: 'edit'), only one whose app the caller may edit.
+ * A tool's project: by app_id (preferred), else by name. Either way, only one whose code the caller may read, and for
+ * a tool that changes the project (need: 'edit'), only one whose app the caller may edit.
  */
 const locateProject = async (args: { name?: string; app_id?: string }, need: Need): Promise<string> => {
   let dir: string;
@@ -823,7 +841,7 @@ export function codeAppReadFilesTool(context: CodeContext): ToolDef {
     inputSchema: { app_id: APP_ID, name: PROJECT_NAME, paths: z.array(z.string()).optional() },
     handler: inScope(context, async (args: { app_id?: string; name?: string; paths?: string[] }) => {
       try {
-        const dir = await locateProject(args, 'view');
+        const dir = await locateProject(args, 'read');
         if (!freshProjects.has(dir)) await followDraft(dir);
         const sync = !freshProjects.has(dir) ? await ensureFresh(dir) : syncedRecently(dir) ? {} : await syncEditorEdits(dir);
         if (!args.paths?.length) return ok({ project_dir: dir, ...sync, files: listFiles(dir) });

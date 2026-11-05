@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { cleanOldProjects, withBuildSlot, BuildCapacityError, touchProject } from '../src/codeBuildLimits.js';
 import { codeAppBuildTool, codeAppInstallTool, codeAppReadFilesTool, codeAppScaffoldTool, codeAppWriteFilesTool, noCodeIdentity, resetCodeSessionForTests } from '../src/tools/codeApp.js';
-import { API_URL, codeContext, DEPLOYMENT, WORKSPACE } from './codeContext.js';
+import { API_URL, codeContext, DEPLOYMENT, VERSION, WORKSPACE } from './codeContext.js';
 
 /* The fake CLI records its arguments and whole environment. */
 const APP = '11111111-1111-4111-8111-111111111111';
@@ -88,7 +88,7 @@ describe('the environment the CLI runs in', () => {
     project('ws-2', 'two', THEIRS);
     await Promise.all([
       codeAppBuildTool(codeContext({ credential: { pat: 'first' } })).handler({ app_id: APP } as any),
-      codeAppBuildTool(codeContext({ credential: { pat: 'second' }, workspaceId: async () => 'ws-2', client: { getApp: async () => ({ organizationId: 'ws-2' }) } as any })).handler({ app_id: THEIRS } as any),
+      codeAppBuildTool(codeContext({ credential: { pat: 'second' }, workspaceId: async () => 'ws-2', client: { getApp: async () => ({ organizationId: 'ws-2', editing_version: { id: VERSION } }) } as any })).handler({ app_id: THEIRS } as any),
     ]);
     for (const call of calls()) {
       expect(call.env.TOOLJET_PAT).toBe(call.cwd.includes('ws-2') ? 'second' : 'first');
@@ -168,7 +168,7 @@ describe('a project belongs to a workspace', () => {
   });
 
   it('two workspaces can use one project name', async () => {
-    const context2 = codeContext({ workspaceId: async () => 'ws-2', client: { getApp: async () => ({ organizationId: 'ws-2' }) } as any });
+    const context2 = codeContext({ workspaceId: async () => 'ws-2', client: { getApp: async () => ({ organizationId: 'ws-2', editing_version: { id: VERSION } }) } as any });
     await codeAppScaffoldTool(codeContext()).handler({ name: 'tasks', display_name: 'Tasks', app_id: APP });
     await codeAppScaffoldTool(context2).handler({ name: 'tasks', display_name: 'Tasks', app_id: THEIRS });
     expect(existsSync(join(root, 'apps', DEPLOYMENT, WORKSPACE, 'tasks', 'app.json'))).toBe(true);
