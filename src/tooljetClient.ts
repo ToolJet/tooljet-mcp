@@ -625,8 +625,15 @@ export interface ToolJetClient {
   releaseApp(appId: string, versionId: string): Promise<ReleaseAppResult>;
   renameApp(appId: string, versionId: string, name: string): Promise<void>;
   getApp(appId: string): Promise<any>;
+  /**
+   * What ToolJet's Code source API lets the caller do with the app's code (its own answer, public apps included): read
+   * for editors and for builders who can view the app, write for editors. Both false for an end user or no access.
+   */
+  codeSourceAccess(appId: string, versionId: string): Promise<{ read: boolean; write: boolean }>;
   getAppSummary(appId: string, versionId?: string): Promise<AppSummary>;
   listAppPermissionSubjects(appId: string): Promise<AppPermissionSubjects>;
+  /** The workspace's license features (GET /api/license/access): serverSideGlobalResolve, appPermissionQuery, ... */
+  getLicenseFeatureAccess(): Promise<Record<string, unknown>>;
   getAppPermission(
     appId: string,
     resourceType: AppPermissionResourceType,
@@ -687,6 +694,8 @@ export interface ToolJetClient {
   assertDatasourceAllowed(dataSourceId: string, versionId?: string, environmentId?: string): Promise<void>;
   invokeDatasourceMethod(params: InvokeDatasourceMethodParams): Promise<RunQueryResult>;
   getDatasourceConnectionDetails(dataSourceId: string, environmentId?: string): Promise<DatasourceConnectionDetails>;
+  /** A workspace datasource's kind without a version: the identity already listed, else its own record. */
+  datasourceKind?(dataSourceId: string): Promise<string | undefined>;
   getPluginSpec(pluginKind: string, specName: string): Promise<string>;
   /** Which ToolJet server and workspace this client reads plugin specs from, for a cache shared across clients.
    *  Undefined when it cannot be established; such a client's specs are not cached. */
@@ -1174,6 +1183,24 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return res.json();
   }
 
+  /*
+    GET /api/code-mode-source/:id/versions/:versionId (no content) is authorized by the Code source module's GET_SOURCE
+    feature, which is checked on public apps too (shouldNotSkipPublicApp): editors and builders who can view the app get
+    200, with canWrite from WRITE_SOURCE (editors only); an end user gets 403, and an app outside the caller's workspace
+    or a backend without Code mode 404. The apps module's UPDATE check (GET /api/apps/:id/tables, used before) passes
+    for any workspace member on a public app, so it never said whether the caller may edit.
+  */
+  async function codeSourceAccess(appId: string, versionId: string): Promise<{ read: boolean; write: boolean }> {
+    const res = await auth.authedFetch(
+      `/api/code-mode-source/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`
+    );
+    if (res.status === 403 || res.status === 404) return { read: false, write: false };
+    await assertOk(res, 'codeSourceAccess');
+    const body = (await res.json().catch(() => null)) as { canWrite?: unknown } | null;
+    if (!body || typeof body !== 'object') throw new Error('codeSourceAccess: ToolJet sent no answer');
+    return { read: true, write: body.canWrite === true };
+  }
+
   // In GET /api/apps/:id, each placed component lives at pages[].components[<id>] as
   // { component: { name, component: <type>, definition: { properties, styles, others } }, layouts }.
   // `component.definition` holds the ACTUAL bound values; `component.properties`/`styles` is the full
@@ -1293,6 +1320,16 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         ...(typeof group.count === 'number' ? { count: group.count } : {}),
       })),
     };
+  }
+
+  async function getLicenseFeatureAccess(): Promise<Record<string, unknown>> {
+    const res = await auth.authedFetch('/api/license/access');
+    await assertOk(res, 'getLicenseFeatureAccess');
+    const body = await res.json();
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      throw new Error('ToolJet getLicenseFeatureAccess failed: expected an object response.');
+    }
+    return body as Record<string, unknown>;
   }
 
   async function getAppPermission(
@@ -3156,6 +3193,11 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     };
   }
 
+  async function datasourceKind(dataSourceId: string): Promise<string | undefined> {
+    const known = datasourceIdentities.get(`${await auth.getOrganizationId()}:${dataSourceId}`);
+    return known?.kind ?? (await getDatasourceConnectionDetails(dataSourceId)).kind;
+  }
+
   /** Run ToolJet's own connection test for a saved datasource — the same call the datasource
    *  settings page makes. Options are the stored ones; a caller never supplies its own, so no
    *  credential passes through this process. */
@@ -3274,8 +3316,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     releaseApp,
     renameApp,
     getApp,
+    codeSourceAccess,
     getAppSummary,
     listAppPermissionSubjects,
+    getLicenseFeatureAccess,
     getAppPermission,
     setAppPermission,
     clearAppPermission,
@@ -3328,6 +3372,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     assertDatasourceAllowed,
     invokeDatasourceMethod,
     getDatasourceConnectionDetails,
+    datasourceKind,
     getPluginSpec,
     specCacheScope,
     testDatasourceConnection,

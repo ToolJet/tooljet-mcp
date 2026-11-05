@@ -253,7 +253,7 @@ export function createGatewayHttpServer(): GatewayHttpServer {
     const readsResource = !!parsedBody && typeof parsedBody === 'object' && !Array.isArray(parsedBody) &&
       (parsedBody as { method?: unknown }).method === 'resources/read';
 
-    const server = buildServer(identity);
+    const server = buildServer(identity, { hosted: true });
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: readsResource });
     res.on('close', () => {
       transport.close();
