@@ -3932,7 +3932,7 @@ function deleteEventTool(client) {
     }
   };
 }
-var TOOLJET_MCP_VERSION = "0.11.1";
+var TOOLJET_MCP_VERSION = "0.12.1";
 function snapshot(path) {
   try {
     const stat = statSync(path);
