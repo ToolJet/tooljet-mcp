@@ -1,442 +1,14 @@
 import { createRequire } from "node:module";
-import { o as external_exports, C as COMPONENT_FX_UPDATE_GUIDANCE } from "./chunk-8iUq0slz.js";
-import { S as STYLE_KEYS_IN_PROPERTIES, P as PROPERTY_KEY_ALIASES, n as nearestCatalogKey, c as componentSlotSchema, a as componentNameSchema, b as componentNameError, d as decodeComponentParent, e as encodeComponentParent, s as suggestedHtmlHeight, i as introducedLintFindings, l as lintComponentSpec, f as lintComponentSlots, g as lintUnusableTextGeometry, h as lintStandardSingleLineInputHeight, j as lintTextGeometry, k as lintRenderedGeometry, m as lintKanbanInteractions, o as assertPageIcon } from "./chunk-gznY6rD8.js";
-import { e5 as getComponentSchema } from "./chunk-BEuHHGL1.js";
-import { c as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches, e as normalizeQueryOptions, v as validateQueryOptions, i as issueMessages } from "./chunk-yxr8SUor.js";
+import { ef as tableQuotaError, eg as TableQuotaError, e6 as ok, e5 as fail, e8 as getComponentSchema } from "./chunk-CNzl5iHC.js";
+import { d as decodeComponentParent, e as encodeComponentParent, a as downgradeFlexForLibrary, b as assertPageIcon, i as isMisplacedStyleKey, t as toLibraryComponent, l as libraryTypeOf, c as libraryPins, P as PROPERTY_KEY_ALIASES, r as retiredUi2Name, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey } from "./chunk-B9aEbA_o.js";
+import { b0 as external_exports, b7 as definition } from "./chunk-Id3EmQoo.js";
+import { readFileSync, existsSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { c as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches } from "./chunk-4VsxWCKn.js";
 import { randomUUID, createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-CsHFzbSc.js";
-import { Script } from "node:vm";
-createRequire(import.meta.url);
-function resolveRef(candidates, ref2, kind, scope, describe = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
-  const byId = candidates.find((candidate) => candidate.id === ref2);
-  if (byId)
-    return { ok: true, target: byId };
-  const byName = candidates.filter((candidate) => candidate.name === ref2);
-  if (byName.length === 1)
-    return { ok: true, target: byName[0] };
-  if (byName.length > 1) {
-    return {
-      ok: false,
-      error: `${kind} name "${ref2}" is ambiguous ${scope} (${byName.length} share it). Pass the id instead: ${byName.map((candidate) => candidate.id).join(", ")}.`
-    };
-  }
-  const available = candidates.map(describe).join(", ");
-  return {
-    ok: false,
-    // The "do not re-read" clause matters: the previous phrasing ("does not exist") invited exactly
-    // the re-read that caused the loop.
-    error: `No ${kind.toLowerCase()} with id or name "${ref2}" ${scope}. Do not re-read \u2014 it currently holds: ${available || "(none)"}.`
-  };
-}
-function separateAdjacentClosingBraces(text) {
-  let out = "";
-  let i = 0;
-  const n = text.length;
-  while (i < n) {
-    if (!text.startsWith("{{", i)) {
-      out += text[i];
-      i += 1;
-      continue;
-    }
-    let j = i + 2;
-    let depth = 0;
-    let quote = null;
-    let expr = "";
-    let terminated = false;
-    while (j < n) {
-      const c = text[j];
-      if (quote) {
-        expr += c;
-        if (c === "\\" && j + 1 < n) {
-          expr += text[j + 1];
-          j += 2;
-          continue;
-        }
-        if (c === quote)
-          quote = null;
-        j += 1;
-        continue;
-      }
-      if (c === "'" || c === '"' || c === "`") {
-        quote = c;
-        expr += c;
-        j += 1;
-        continue;
-      }
-      if (c === "{") {
-        depth += 1;
-        expr += c;
-        j += 1;
-        continue;
-      }
-      if (c === "}") {
-        if (depth === 0 && text[j + 1] === "}") {
-          terminated = true;
-          break;
-        }
-        depth = Math.max(depth - 1, 0);
-        expr += c;
-        if (text[j + 1] === "}")
-          expr += " ";
-        j += 1;
-        continue;
-      }
-      expr += c;
-      j += 1;
-    }
-    if (!terminated) {
-      out += text.slice(i);
-      break;
-    }
-    out += `{{${expr}}}`;
-    i = j + 2;
-  }
-  return out;
-}
-function separateAdjacentClosingBracesDeep(value) {
-  if (typeof value === "string") {
-    if (!value.includes("{{"))
-      return { value, changed: false };
-    const fixed = separateAdjacentClosingBraces(value);
-    return { value: fixed, changed: fixed !== value };
-  }
-  if (Array.isArray(value)) {
-    let changed = false;
-    const next = value.map((item) => {
-      const result = separateAdjacentClosingBracesDeep(item);
-      changed ||= result.changed;
-      return result.value;
-    });
-    return { value: changed ? next : value, changed };
-  }
-  if (value && typeof value === "object") {
-    let changed = false;
-    const next = {};
-    for (const [key, item] of Object.entries(value)) {
-      const result = separateAdjacentClosingBracesDeep(item);
-      changed ||= result.changed;
-      next[key] = result.value;
-    }
-    return { value: changed ? next : value, changed };
-  }
-  return { value, changed: false };
-}
-function normalizeSection(section) {
-  if (!section)
-    return { value: void 0, patch: void 0 };
-  const value = {};
-  const patch = {};
-  for (const [key, entry] of Object.entries(section)) {
-    const canonical = entry !== null && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry : { value: entry };
-    value[key] = canonical;
-    if (canonical !== entry)
-      patch[key] = canonical;
-  }
-  return {
-    value,
-    patch: Object.keys(patch).length ? patch : void 0
-  };
-}
-function propValue(properties, key) {
-  const entry = properties[key];
-  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
-}
-function isTruthy(value) {
-  if (value === true || value === 1)
-    return true;
-  if (typeof value !== "string")
-    return false;
-  const compact = value.replace(/\s+/g, "").toLowerCase();
-  return compact === "true" || compact === "{{true}}" || compact === "1" || compact === "{{1}}";
-}
-function catalogDefault(type, key, fallback) {
-  return getComponentSchema(type)?.properties.find((property) => property.key === key)?.default ?? fallback;
-}
-var CLIENT_SERVER_BOOLEAN_KEYS = /* @__PURE__ */ new Set([
-  "serverSidePagination",
-  "serverSideSearch",
-  "serverSideSort",
-  "serverSideFilter"
-]);
-var STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS = 24;
-function isStrippableUnknownKey(type, section, key, knownKeys) {
-  if (knownKeys.includes(key))
-    return false;
-  if (type === "DropdownV2" && section === "properties" && ["value", "defaultValue"].includes(key))
-    return false;
-  if (section === "properties" && STYLE_KEYS_IN_PROPERTIES.has(key))
-    return false;
-  const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
-  if (aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget)))
-    return false;
-  if (nearestCatalogKey(key, knownKeys))
-    return false;
-  return true;
-}
-function normalizeComponentSpec(component, options = {}) {
-  const normalizedSections = Object.fromEntries(["properties", "styles", "validation", "others"].map((section) => [
-    section,
-    normalizeSection(component[section])
-  ]));
-  const properties = { ...normalizedSections.properties.value ?? {} };
-  const propertyPatch = {};
-  const stylePatch = {};
-  const warnings = [];
-  const setProperty = (key, value) => {
-    const current = properties[key];
-    const wrapped = current && typeof current === "object" && !Array.isArray(current) ? { ...current, value } : { value };
-    properties[key] = wrapped;
-    propertyPatch[key] = wrapped;
-  };
-  const stylesValue = normalizedSections.styles.value ?? {};
-  let stylesChanged = false;
-  const setStyle = (key, value) => {
-    const current = stylesValue[key];
-    stylesValue[key] = current && typeof current === "object" && !Array.isArray(current) ? { ...current, value } : { value };
-    stylePatch[key] = stylesValue[key];
-    normalizedSections.styles.value = stylesValue;
-  };
-  const schema = getComponentSchema(component.type);
-  const knownPropertyKeys = schema ? new Set(schema.properties.map((entry) => entry.key)) : void 0;
-  const knownStyleKeys = schema ? new Set(schema.styles.map((entry) => entry.key)) : void 0;
-  const aliasTargetFor = (key) => {
-    if (knownPropertyKeys?.has(key))
-      return void 0;
-    const target = PROPERTY_KEY_ALIASES[key.toLowerCase()];
-    if (!target)
-      return void 0;
-    if (!schema)
-      return target;
-    return knownStyleKeys.has(target) || knownPropertyKeys.has(target) ? target : void 0;
-  };
-  for (const key of Object.keys(properties)) {
-    const aliasTarget = aliasTargetFor(key);
-    const canonical = aliasTarget ?? key;
-    const belongsInStyles = canonical !== "styles" && (STYLE_KEYS_IN_PROPERTIES.has(canonical) || !!aliasTarget && !!knownStyleKeys?.has(canonical) && !knownPropertyKeys?.has(canonical));
-    if (!aliasTarget && !belongsInStyles)
-      continue;
-    if (belongsInStyles) {
-      if (stylesValue[canonical] === void 0)
-        stylesValue[canonical] = properties[key];
-      delete properties[key];
-      stylesChanged = true;
-      warnings.push(`${component.type} "${component.name}": moved ${aliasTarget ? `alias "${key}"` : `style key "${key}"`} to styles.${canonical} (ToolJet reads it from styles, not properties).`);
-    } else if (canonical !== key) {
-      if (properties[canonical] === void 0)
-        properties[canonical] = properties[key];
-      delete properties[key];
-      warnings.push(`${component.type} "${component.name}": renamed alias "${key}" to "${canonical}".`);
-    }
-  }
-  if (stylesChanged)
-    normalizedSections.styles.value = stylesValue;
-  if (options.stripUnknownKeys && component.type === "NumberInput") {
-    for (const key of ["minValue", "maxValue"]) {
-      const value = propValue(properties, key);
-      if (value == null || typeof value === "string" && !value.trim())
-        continue;
-      const validation = normalizedSections.validation.value ?? {};
-      const current = propValue(validation, key);
-      if (validation[key] !== void 0 && current !== value)
-        continue;
-      validation[key] = properties[key];
-      normalizedSections.validation.value = validation;
-      normalizedSections.validation.patch = { ...normalizedSections.validation.patch, [key]: validation[key] };
-      delete properties[key];
-      warnings.push(`NumberInput "${component.name}": moved properties.${key} to validation.${key}, where the renderer reads the bound.`);
-    }
-  }
-  for (const key of CLIENT_SERVER_BOOLEAN_KEYS) {
-    const current = propValue(properties, key);
-    if (current !== "clientSide" && current !== "serverSide")
-      continue;
-    setProperty(key, current === "serverSide");
-    warnings.push(`${component.name} "${key}": normalized ${JSON.stringify(current)} to a boolean ToolJet binding.`);
-  }
-  if (component.type === "Table") {
-    if (properties.useDynamicColumn === void 0) {
-      setProperty("useDynamicColumn", catalogDefault("Table", "useDynamicColumn", "{{false}}"));
-    }
-    if (properties.columnData === void 0) {
-      setProperty("columnData", catalogDefault("Table", "columnData", "{{[{name: 'email', key: 'email', id: '1'}, {name: 'Full name', key: 'name', id: '2', isEditable: true}]}}"));
-    }
-    const columns = propValue(properties, "columns");
-    const dynamicColumns = isTruthy(propValue(properties, "useDynamicColumn"));
-    const autogenerateColumns = propValue(properties, "autogenerateColumns");
-    if (options.stripUnknownKeys && columns === void 0 && !dynamicColumns && isTruthy(autogenerateColumns) && typeof propValue(properties, "data") === "string" && /\bqueries(?:\.|\[)/.test(String(propValue(properties, "data")))) {
-      setProperty("columns", []);
-    }
-    if (Array.isArray(columns) && !dynamicColumns && !isTruthy(autogenerateColumns)) {
-      setProperty("autogenerateColumns", true);
-      if (autogenerateColumns !== void 0) {
-        warnings.push(`Table "${component.name}": normalized autogenerateColumns from false to true for runtime compatibility. Some ToolJet Table versions crash while generating transformations for explicit static columns when it is false. Project the data binding to intended keys and declare behavior-only keys with columnVisibility:false.`);
-      }
-    }
-    if (Array.isArray(columns)) {
-      let changedColumns = false;
-      const repairedColumns = columns.map((column) => {
-        if (options.stripUnknownKeys && column && typeof column === "object" && !Array.isArray(column) && column.columnType === "button" && Array.isArray(column.buttons)) {
-          const buttons = column.buttons.map((button) => {
-            if (!button || typeof button !== "object" || Array.isArray(button))
-              return button;
-            const b = button;
-            if (typeof b.label !== "string" || b.buttonLabel !== void 0)
-              return button;
-            const { label, ...rest } = b;
-            changedColumns = true;
-            warnings.push(`Table "${component.name}" action "${b.id}": moved label to buttonLabel, where the renderer reads the caption.`);
-            return { ...rest, buttonLabel: label };
-          });
-          column = { ...column, buttons };
-        }
-        if (column && typeof column === "object" && !Array.isArray(column) && column.columnType === "datepicker" && column.isDateSelectionEnabled === false && column.isTimeChecked !== true) {
-          changedColumns = true;
-          const entry = column;
-          warnings.push(`Table "${component.name}" date column "${entry.name ?? entry.key}": enabled date selection \u2014 a datepicker column with both date selection and time disabled renders blank regardless of the data.`);
-          return { ...entry, isDateSelectionEnabled: true };
-        }
-        return column;
-      });
-      if (changedColumns)
-        setProperty("columns", repairedColumns);
-    }
-  }
-  if (component.type === "KeyValuePair") {
-    const fields = propValue(properties, "fields");
-    if (Array.isArray(fields) && fields.length > 0) {
-      const explicitIds = new Set(fields.flatMap((field) => {
-        const id = field && typeof field === "object" ? field.id : void 0;
-        return typeof id === "string" && id.length > 0 ? [id] : [];
-      }));
-      const demoFields = catalogDefault("KeyValuePair", "fields", []);
-      const currentHistory = propValue(properties, "fieldDeletionHistory");
-      const deletionHistory = new Set(Array.isArray(currentHistory) ? currentHistory.filter((key) => typeof key === "string" && key.length > 0) : []);
-      const before = deletionHistory.size;
-      if (Array.isArray(demoFields)) {
-        for (const field of demoFields) {
-          if (!field || typeof field !== "object")
-            continue;
-          const { id, key } = field;
-          if (typeof key === "string" && !explicitIds.has(String(id ?? "")))
-            deletionHistory.add(key);
-        }
-      }
-      if (deletionHistory.size > before || properties.fieldDeletionHistory === void 0) {
-        setProperty("fieldDeletionHistory", [...deletionHistory]);
-        warnings.push(`KeyValuePair "${component.name}": normalized fieldDeletionHistory so ToolJet does not append or positionally merge catalog demo fields into the explicit fields array.`);
-      }
-    }
-  }
-  if (component.type === "Statistics") {
-    const width = (component.layouts?.desktop ?? component.layout)?.width;
-    const iconName = propValue(properties, "icon");
-    const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propValue(properties, "iconVisibility") !== false && propValue(properties, "iconVisibility") !== "{{false}}";
-    const rawSize = propValue(stylesValue, "primaryValueSize") ?? propValue(properties, "primaryValueSize");
-    const sizeText = typeof rawSize === "string" ? rawSize.replace(/[{}]/g, "").trim() : rawSize;
-    const numericSize = typeof sizeText === "number" ? sizeText : typeof sizeText === "string" && /^\d+$/.test(sizeText) ? Number(sizeText) : void 0;
-    const rawValue = propValue(properties, "primaryValue");
-    const currencyValue = typeof rawValue === "string" && /minimumFractionDigits|style\s*:\s*['"]currency['"]|[$£€¥]/.test(rawValue);
-    const widthKnown = typeof width === "number";
-    const narrowTile = widthKnown && width < STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS;
-    const clipProne = iconVisible && narrowTile || currencyValue && (narrowTile || !widthKnown);
-    if (isTruthy(propValue(properties, "hideSecondary")) && (numericSize === void 0 || numericSize > 22) && clipProne) {
-      setStyle("primaryValueSize", "{{22}}");
-      warnings.push(`Statistics "${component.name}": set styles.primaryValueSize to 22 so the ${currencyValue ? "currency " : ""}value fits a value-only tile${widthKnown ? ` (${width} columns wide)` : ""} (larger sizes clip or wrap the value).`);
-    }
-  }
-  if (options.stripUnknownKeys) {
-    const schema2 = getComponentSchema(component.type);
-    if (schema2) {
-      const sections = [
-        ["properties", properties],
-        ["styles", normalizedSections.styles.value]
-      ];
-      for (const [section, sectionValue] of sections) {
-        if (!sectionValue)
-          continue;
-        const knownKeys = (schema2[section] ?? []).map((entry) => entry.key);
-        for (const key of Object.keys(sectionValue)) {
-          if (!isStrippableUnknownKey(component.type, section, key, knownKeys))
-            continue;
-          delete sectionValue[key];
-          warnings.push(`${component.type} "${component.name}": removed unknown ${section} key "${key}" \u2014 ToolJet ignores it, so it is kept out of the saved definition rather than persisted as an unusable key.`);
-        }
-      }
-    }
-  }
-  const braceFixedKeys = [];
-  for (const key of Object.keys(properties)) {
-    const result = separateAdjacentClosingBracesDeep(propValue(properties, key));
-    if (!result.changed)
-      continue;
-    setProperty(key, result.value);
-    braceFixedKeys.push(`properties.${key}`);
-  }
-  for (const key of Object.keys(stylesValue)) {
-    const result = separateAdjacentClosingBracesDeep(propValue(stylesValue, key));
-    if (!result.changed)
-      continue;
-    setStyle(key, result.value);
-    braceFixedKeys.push(`styles.${key}`);
-  }
-  if (braceFixedKeys.length) {
-    warnings.push(`${component.type} "${component.name}": separated adjacent closing braces inside ${braceFixedKeys.join(", ")} (ToolJet ends a {{ }} expression at the first "}}", which would have left the component blank). Write nested closes as "} }" inside bindings.`);
-  }
-  const patch = Object.fromEntries(["properties", "styles", "validation", "others"].flatMap((section) => {
-    const envelopePatch = normalizedSections[section].patch ?? {};
-    const semanticPatch = section === "properties" ? propertyPatch : section === "styles" ? stylePatch : {};
-    const merged = { ...envelopePatch, ...semanticPatch };
-    return Object.keys(merged).length ? [[section, merged]] : [];
-  }));
-  return {
-    component: {
-      ...component,
-      properties,
-      ...normalizedSections.styles.value ? { styles: normalizedSections.styles.value } : {},
-      ...normalizedSections.validation.value ? { validation: normalizedSections.validation.value } : {},
-      ...normalizedSections.others.value ? { others: normalizedSections.others.value } : {}
-    },
-    patch,
-    warnings
-  };
-}
-createRequire(import.meta.url);
-var TableQuotaError = class extends Error {
-  code = "TJDB_TABLE_LIMIT_REACHED";
-  status = 451;
-  retryable = false;
-  constructor() {
-    super("The workspace has reached its ToolJet Database table limit. Stop creating tables. Ask the user to reuse existing tables, free table capacity, or increase the workspace allowance before continuing. Keep resources already created; do not delete tables automatically.");
-    this.name = "TableQuotaError";
-  }
-};
-function tableQuotaError(error) {
-  const seen = /* @__PURE__ */ new Set();
-  while (error instanceof Error && !seen.has(error)) {
-    if (error instanceof TableQuotaError)
-      return error;
-    seen.add(error);
-    error = error.cause;
-  }
-  return void 0;
-}
-createRequire(import.meta.url);
-function ok(value) {
-  return { content: [{ type: "text", text: JSON.stringify(value) }] };
-}
-function fail(err) {
-  const message = err instanceof Error ? err.message : String(err);
-  const quota = tableQuotaError(err);
-  const text = quota ? JSON.stringify({ error: {
-    code: quota.code,
-    status: quota.status,
-    retryable: quota.retryable,
-    message: quota.message,
-    details: message
-  } }) : `Error: ${message}`;
-  return { content: [{ type: "text", text }], isError: true };
-}
+import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-hq1_aYNY.js";
 createRequire(import.meta.url);
 function strictEntry(shape, describeUnknown) {
   return external_exports.strictObject(shape, {
@@ -448,529 +20,117 @@ function hasNonEmptyDefinition(definition2) {
     return false;
   return Object.values(definition2).some((section) => section !== null && typeof section === "object" && Object.keys(section).length > 0);
 }
-createRequire(import.meta.url);
-var DEFINITION_SECTIONS = ["properties", "styles", "validation", "general", "general_styles", "others"];
-var definitionSchema = strictEntry({
-  properties: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  general: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  general_styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  others: external_exports.record(external_exports.string(), external_exports.any()).optional()
-}, (key) => key === "layout" || key === "layouts" ? `definition."${key}" is not a component definition section; move/resize with update_layout instead.` : `definition."${key}" is not a component definition section; use one of ${DEFINITION_SECTIONS.join("/")}.`);
-var updateSchema = strictEntry({
-  component_id: external_exports.string(),
-  definition: definitionSchema.optional(),
-  name: componentNameSchema.optional(),
-  parent: external_exports.string().optional(),
-  slot_name: componentSlotSchema.optional()
-}, (key) => {
-  if (DEFINITION_SECTIONS.includes(key)) {
-    return `Update entry key "${key}" must be nested under \`definition\` (e.g. { component_id, definition: { ${key}: {...} } }); top-level ${key} would write nothing.`;
+var FLEX_CONTAINER_TYPE = "FlexContainer";
+var FLEX_FILL_WIDTH_DESCRIPTION = "FlexContainer child only: true (the default) fills the free main-axis width; false uses widthPx. Ignored elsewhere.";
+var FLEX_WIDTH_PX_DESCRIPTION = "FlexContainer child only: fixed width in pixels, applied when fillWidth is false. Ignored elsewhere.";
+var FLEX_GROW_DESCRIPTION = "FlexContainer row child only: share of the free width among fill children (default 1; 2 beside 1 takes two thirds). Ignored elsewhere.";
+var FLEX_MIN_WIDTH_PX_DESCRIPTION = "FlexContainer row child only: narrowest a fill child may get, in pixels; in a wrapping row a narrower child moves to the next line. Ignored elsewhere.";
+function isFlexContainerType(type) {
+  return type === FLEX_CONTAINER_TYPE;
+}
+function storedChildOrder(properties) {
+  const entry = properties?.childOrder;
+  const value = Array.isArray(entry) ? entry : entry?.value;
+  return Array.isArray(value) ? value.filter((id) => typeof id === "string" && id.length > 0) : [];
+}
+function normalizeChildOrder(childOrder, actualChildIds) {
+  const actual = new Set(actualChildIds);
+  const seen = /* @__PURE__ */ new Set();
+  const normalized2 = [];
+  for (const id of [...childOrder.filter((id2) => actual.has(id2)), ...actualChildIds]) {
+    if (seen.has(id))
+      continue;
+    seen.add(id);
+    normalized2.push(id);
   }
-  if (key === "layout" || key === "layouts") {
-    return `Update entry key "${key}" is not accepted by update_components; move/resize with update_layout instead.`;
-  }
-  return `Unknown update entry key "${key}"; accepted keys are component_id, definition, name, parent, slot_name.`;
-});
-function updateComponentsTool(client) {
+  return normalized2;
+}
+function desktopRect(component) {
+  const desktop = component.layouts?.desktop;
   return {
-    name: "update_components",
-    title: "Update Components",
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: true
-    },
-    description: "Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves under `definition` (properties/styles/validation/others) \u2014 ToolJet deep-merges, so untouched values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. " + COMPONENT_FX_UPDATE_GUIDANCE + "NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container regions, or modal for Kanban card-click content; omit parent to keep the current parent. Unknown entry keys are rejected (a top-level properties/styles patch is an error, not a silent no-op), and an entry that changes nothing fails. Get component ids + current values from get_app_summary / get_component.",
-    inputSchema: {
-      app_id: external_exports.string(),
-      version_id: external_exports.string(),
-      page_id: external_exports.string(),
-      updates: external_exports.array(updateSchema).min(1)
-    },
-    async handler(args) {
-      try {
-        const summary = await client.getAppSummary(args.app_id);
-        const page = summary.pages.find((candidate) => candidate.id === args.page_id);
-        if (!page)
-          return fail(new Error(`Page "${args.page_id}" does not exist in app "${args.app_id}".`));
-        const projected = new Map(page.components.map((component) => [component.id, component]));
-        const warnings = [];
-        const errors = [];
-        const changedComponents = [];
-        let placementChanged = false;
-        const layoutFixes = [];
-        const resolvedUpdates = [];
-        for (const update of args.updates) {
-          if (update.name !== void 0) {
-            const nameError = componentNameError(update.name);
-            if (nameError) {
-              errors.push(`Component "${update.component_id}": ${nameError}`);
-              continue;
-            }
-          }
-          const resolution = resolveRef(page.components, update.component_id, "Component", `on page "${args.page_id}"`);
-          if (!resolution.ok) {
-            errors.push(resolution.error);
-            continue;
-          }
-          if (resolution.warning)
-            warnings.push(resolution.warning);
-          const current = resolution.target;
-          const componentId = current.id;
-          if (update.definition && (update.name !== void 0 || update.parent !== void 0 || update.slot_name !== void 0)) {
-            errors.push(`Component "${update.component_id}": set EITHER definition OR name/parent/slot_name in one entry.`);
-            continue;
-          }
-          if (!hasNonEmptyDefinition(update.definition) && update.name === void 0 && update.parent === void 0 && update.slot_name === void 0) {
-            errors.push(`Component "${update.component_id}": nothing to update. Send the changed leaves under definition (properties/styles/validation/others) or a name/parent/slot_name change.`);
-            continue;
-          }
-          let parent = update.parent;
-          let slotName = update.slot_name;
-          if (slotName !== void 0) {
-            parent ??= current.parent ? decodeComponentParent(current.parent).parentId : void 0;
-            if (!parent) {
-              if (slotName === "body") {
-                warnings.push(`Component "${update.component_id}": slot_name:"body" ignored on a root component (it has no parent slots).`);
-                slotName = void 0;
-              } else {
-                errors.push(`Component "${update.component_id}": slot_name:"${slotName}" requires an existing or explicit parent.`);
-                continue;
-              }
-            }
-          }
-          const definition2 = update.definition;
-          const next = {
-            id: current.id,
-            name: update.name ?? current.name ?? current.id,
-            type: current.type,
-            properties: { ...current.properties ?? {}, ...definition2?.properties ?? {} },
-            styles: { ...current.styles ?? {}, ...definition2?.styles ?? {} },
-            layouts: current.layouts,
-            parent: parent !== void 0 ? encodeComponentParent(parent, slotName) : current.parent,
-            slotName
-          };
-          const normalized2 = normalizeComponentSpec({
-            name: next.name ?? current.id,
-            type: next.type ?? current.type ?? "",
-            properties: next.properties ?? {},
-            styles: next.styles,
-            validation: definition2?.validation,
-            others: { ...current.others ?? {}, ...definition2?.others ?? {} },
-            layouts: next.layouts,
-            parent: next.parent
-          });
-          const normalizedNext = { ...normalized2.component, id: current.id };
-          const heightFix = update.definition ? suggestedHtmlHeight(normalizedNext) : null;
-          const desktopRect = current.layouts?.desktop;
-          if (heightFix && desktopRect && typeof desktopRect.top === "number") {
-            normalizedNext.layouts = { ...normalizedNext.layouts ?? {}, desktop: { ...desktopRect, height: heightFix.to } };
-            layoutFixes.push({ componentId: current.id, desktop: { ...desktopRect, height: heightFix.to } });
-            warnings.push(`Html "${normalizedNext.name ?? current.id}" needed about ${heightFix.needed}px for its new markup but was ${heightFix.from}px; its height is now ${heightFix.to}px. Anything within ${heightFix.to - heightFix.from}px below it now overlaps; move it down.`);
-          }
-          projected.set(current.id, normalizedNext);
-          if (update.definition)
-            changedComponents.push({ before: current, after: normalizedNext });
-          placementChanged ||= update.parent !== void 0 || update.slot_name !== void 0;
-          warnings.push(...onlyTouchedBraceNotes(normalized2.warnings, definition2));
-          let normalizedDefinition = update.definition;
-          if (update.definition && Object.keys(normalized2.patch).length) {
-            normalizedDefinition = { ...update.definition };
-            for (const section of ["properties", "styles", "validation", "others"]) {
-              const sectionPatch = normalized2.patch[section];
-              if (!sectionPatch)
-                continue;
-              normalizedDefinition[section] = {
-                ...update.definition[section] ?? {},
-                ...sectionPatch
-              };
-            }
-          }
-          resolvedUpdates.push({
-            componentId,
-            definition: normalizedDefinition,
-            name: update.name,
-            parent,
-            slotName: update.slot_name
-          });
-          if (!update.definition)
-            continue;
-          errors.push(...introducedLintFindings(lintComponentSpec(current).errors, lintComponentSpec(normalizedNext).errors));
-          warnings.push(...introducedLintFindings(lintComponentSpec(current).warnings, lintComponentSpec(normalizedNext).warnings));
-        }
-        const allComponents = [...projected.values()];
-        const introducedForChanged = (lint2) => changedComponents.flatMap(({ before, after }) => introducedLintFindings(lint2([before]), lint2([after])));
-        if (placementChanged) {
-          errors.push(...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(allComponents)));
-        }
-        errors.push(...introducedForChanged(lintUnusableTextGeometry));
-        if (errors.length)
-          return fail(new Error(`${errors.join(" ")} (Nothing was saved: refused before any write.)`));
-        warnings.push(...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)));
-        warnings.push(...introducedForChanged(lintTextGeometry));
-        warnings.push(...lintRenderedGeometry(allComponents));
-        warnings.push(...lintKanbanInteractions(allComponents));
-        const result = await client.updateComponents({
-          appId: args.app_id,
-          versionId: args.version_id,
-          pageId: args.page_id,
-          updates: resolvedUpdates
-        });
-        if (layoutFixes.length) {
-          await client.updateLayouts({ appId: args.app_id, versionId: args.version_id, pageId: args.page_id, layouts: layoutFixes });
-        }
-        return ok({ ...result, warnings: [...new Set(warnings)] });
-      } catch (err) {
-        return fail(err);
-      }
-    }
+    top: typeof desktop?.top === "number" ? desktop.top : 0,
+    left: typeof desktop?.left === "number" ? desktop.left : 0
   };
 }
-function onlyTouchedBraceNotes(warnings, definition2) {
-  const touched = /* @__PURE__ */ new Set([
-    ...Object.keys(definition2?.properties ?? {}).map((key) => `properties.${key}`),
-    ...Object.keys(definition2?.styles ?? {}).map((key) => `styles.${key}`)
-  ]);
-  return warnings.flatMap((warning) => {
-    const m = /^(.*?: separated adjacent closing braces inside )(.+?)( \(ToolJet ends.*)$/s.exec(warning);
-    if (!m)
-      return [warning];
-    const keys = m[2].split(", ").filter((key) => touched.has(key));
-    return keys.length ? [`${m[1]}${keys.join(", ")}${m[3]}`] : [];
+function bodyParentId(parent) {
+  if (!parent)
+    return void 0;
+  const decoded = decodeComponentParent(parent);
+  return decoded.slotName === "body" ? decoded.parentId : void 0;
+}
+function currentChildOrder(container, page) {
+  const children = page.filter((component) => bodyParentId(component.parent) === container.id);
+  const stored = storedChildOrder(container.properties);
+  const storedSet = new Set(stored);
+  const unordered = children.filter((child) => !storedSet.has(child.id)).sort((a, b) => {
+    const ra = desktopRect(a), rb = desktopRect(b);
+    return ra.top - rb.top || ra.left - rb.left;
+  }).map((child) => child.id);
+  return normalizeChildOrder(stored, [...children.map((child) => child.id).filter((id) => storedSet.has(id)), ...unordered]);
+}
+function appendedChildOrders(page, additions) {
+  const byId = new Map(page.map((component) => [component.id, component]));
+  const added = /* @__PURE__ */ new Map();
+  for (const { parentId, childId } of additions) {
+    const container = byId.get(parentId);
+    if (!container || !isFlexContainerType(container.type))
+      continue;
+    const ids = added.get(parentId) ?? [];
+    if (!ids.includes(childId))
+      ids.push(childId);
+    added.set(parentId, ids);
+  }
+  const orders = /* @__PURE__ */ new Map();
+  for (const [parentId, newIds] of added) {
+    const container = byId.get(parentId);
+    const newSet = new Set(newIds);
+    const existing = currentChildOrder(container, page.filter((component) => !newSet.has(component.id)));
+    const stored = storedChildOrder(container.properties);
+    const next = normalizeChildOrder(stored, [...existing, ...newIds]);
+    if (next.length !== stored.length || next.some((id, index) => stored[index] !== id))
+      orders.set(parentId, next);
+  }
+  return orders;
+}
+function batchChildOrders(entries, explicit = /* @__PURE__ */ new Map(), resolveRef2 = () => void 0) {
+  const orders = /* @__PURE__ */ new Map();
+  for (const container of entries) {
+    if (!isFlexContainerType(container.type))
+      continue;
+    const children = entries.filter((entry) => entry.parentId === container.id).map((entry) => entry.id);
+    const authored = (explicit.get(container.id) ?? []).flatMap((ref) => typeof ref === "string" ? [resolveRef2(ref) ?? ref] : []);
+    orders.set(container.id, [.../* @__PURE__ */ new Set([...authored, ...children])]);
+  }
+  return orders;
+}
+function childOrderProperty(order) {
+  return { value: order };
+}
+function reparentAdditions(page, moves) {
+  const byId = new Map(page.map((component) => [component.id, component]));
+  return moves.flatMap(({ componentId, parent }) => {
+    if (parent === void 0)
+      return [];
+    const nextParent = bodyParentId(parent);
+    if (!nextParent || nextParent === bodyParentId(byId.get(componentId)?.parent))
+      return [];
+    return [{ parentId: nextParent, childId: componentId }];
   });
 }
-createRequire(import.meta.url);
-var ref = external_exports.string().min(1).max(100);
-var base = { ref, existing_id: external_exports.string().uuid().optional(), label: external_exports.string().max(100).optional(), position: external_exports.object({ x: external_exports.number().finite(), y: external_exports.number().finite() }).optional() };
-var query = { name: external_exports.string().regex(/^[A-Za-z_$][\w$]*$/), datasource_id: external_exports.string().min(1), options: external_exports.record(external_exports.string(), external_exports.unknown()) };
-var agentModel = external_exports.object(query).strict();
-var nodeSchema = external_exports.discriminatedUnion("type", [
-  external_exports.object({ ...base, type: external_exports.literal("start") }).strict(),
-  external_exports.object({ ...base, type: external_exports.literal("javascript"), name: query.name, code: external_exports.string().min(1) }).strict(),
-  external_exports.object({ ...base, type: external_exports.literal("query"), ...query }).strict(),
-  external_exports.object({ ...base, type: external_exports.literal("loop"), name: query.name, iteration_values_code: external_exports.string().min(1), code: external_exports.string().min(1) }).strict(),
-  external_exports.object({ ...base, type: external_exports.literal("condition"), code: external_exports.string().min(1) }).strict(),
-  external_exports.object({ ...base, type: external_exports.literal("response"), code: external_exports.string().min(1), status_code: external_exports.number().int().min(100).max(599).optional() }).strict(),
-  external_exports.object({ ...base, type: external_exports.literal("agent"), system_prompt: external_exports.string().optional(), user_prompt: external_exports.string().optional(), output_format: external_exports.record(external_exports.string(), external_exports.unknown()).nullable().optional(), model: agentModel.nullable().optional() }).strict()
-]);
-var specSchema = external_exports.object({
-  schema_version: external_exports.literal(1).default(1),
-  nodes: external_exports.array(nodeSchema).max(200).default([]),
-  edges: external_exports.array(external_exports.object({ ref, existing_id: external_exports.string().optional(), from: ref, to: ref, port: external_exports.enum(["default", "success", "failure", "true", "false"]) }).strict()).max(500).default([]),
-  remove_node_ids: external_exports.array(external_exports.string()).default([]),
-  remove_edge_ids: external_exports.array(external_exports.string()).default([]),
-  test_parameters: external_exports.record(external_exports.string(), external_exports.unknown()).optional()
-}).strict();
-function assertWorkflowJavaScript(code, label) {
-  if (typeof code !== "string" || !code.trim())
-    throw new Error(`Missing JavaScript code in ${label}.`);
-  try {
-    new Script(`(async function() {${code}
-})`);
-  } catch {
-    throw new Error(`Invalid JavaScript syntax in ${label}.`);
-  }
+function resolveAuthoredChildOrder(container, page, authored) {
+  const children = page.filter((component) => bodyParentId(component.parent) === container.id);
+  const unknown = [];
+  const ids = authored.flatMap((item) => {
+    const ref = typeof item === "string" ? item : String(item);
+    const child = children.find((candidate) => candidate.id === ref) ?? children.find((candidate) => candidate.name === ref);
+    if (!child) {
+      unknown.push(ref);
+      return [];
+    }
+    return [child.id];
+  });
+  return { order: normalizeChildOrder(ids, [...ids, ...currentChildOrder(container, page)]), unknown };
 }
-function isAttachmentEdge(edge) {
-  return edge.targetHandle === "ai-model" || edge.targetHandle === "tool";
-}
-function controlFlowEdges(graph) {
-  return graph.edges.filter((edge) => !isAttachmentEdge(edge));
-}
-function definition(value) {
-  if (value == null)
-    return { nodes: [], edges: [], queries: [] };
-  const parsed = external_exports.object({
-    nodes: external_exports.array(external_exports.object({ id: external_exports.string(), type: external_exports.string(), data: external_exports.record(external_exports.string(), external_exports.unknown()) }).passthrough()).default([]),
-    edges: external_exports.array(external_exports.object({ id: external_exports.string(), source: external_exports.string(), target: external_exports.string(), sourceHandle: external_exports.string().nullable().optional(), targetHandle: external_exports.string().nullable().optional(), data: external_exports.record(external_exports.string(), external_exports.unknown()).optional() }).passthrough()).default([]),
-    queries: external_exports.array(external_exports.object({ id: external_exports.string(), idOnDefinition: external_exports.string() }).passthrough()).default([])
-  }).passthrough().parse(value);
-  return structuredClone(parsed);
-}
-function validateGraph(graph, queryIds) {
-  const errors = [], warnings = [];
-  const error = (code, path, message) => errors.push({ code, path, message });
-  const nodes = new Map(graph.nodes.map((n) => [n.id, n]));
-  if (nodes.size !== graph.nodes.length)
-    error("duplicate_node", "nodes", "Node IDs must be unique.");
-  if (new Set(graph.edges.map((e) => e.id)).size !== graph.edges.length)
-    error("duplicate_edge", "edges", "Edge IDs must be unique.");
-  const starts = graph.nodes.filter((n) => n.type === "input" && n.data.nodeType === "start");
-  if (starts.length !== 1)
-    error("start_count", "nodes", "Exactly one start node is required.");
-  const mappings = new Map(graph.queries.map((q) => [q.idOnDefinition, q.id]));
-  if (mappings.size !== graph.queries.length)
-    error("duplicate_mapping", "queries", "Query definition IDs must be unique.");
-  for (const mapping of graph.queries)
-    if (queryIds && !queryIds.has(mapping.id))
-      error("missing_query", "queries", `Query ${mapping.id} does not belong to this version.`);
-  for (const n of graph.nodes) {
-    if (n.type === "query" && !mappings.has(String(n.data.idOnDefinition)))
-      error("missing_mapping", `nodes.${n.id}`, "Query node has no query mapping.");
-    if (!["input", "query", "if-condition", "output", "agent"].includes(n.type))
-      warnings.push({ code: "unsupported_node", path: `nodes.${n.id}`, message: `Retained ${n.type} node; configuration not validated.` });
-  }
-  const flowEdges = controlFlowEdges(graph);
-  for (const edge of graph.edges) {
-    const source = nodes.get(edge.source), target = nodes.get(edge.target), path = `edges.${edge.id}`;
-    if (!source || !target) {
-      error("missing_endpoint", path, "Edge endpoint does not exist.");
-      continue;
-    }
-    if (isAttachmentEdge(edge)) {
-      if (edge.targetHandle === "ai-model" && !(source.type === "query" && source.data.isChildOfAgent === true && source.data.agentConnectionType === "ai-model" && target.type === "agent")) {
-        error("invalid_attachment", path, "AI model attachment must connect an Agent model query child to an Agent.");
-      }
-      continue;
-    }
-    if (target.type === "input")
-      error("start_inbound", path, "Start cannot have inbound edges.");
-    const ports = { input: [null, void 0], query: ["success", "failure"], "if-condition": ["true", "false"], output: [], agent: ["output"] };
-    if (ports[source.type] && !ports[source.type].includes(edge.sourceHandle))
-      error("invalid_port", path, `Invalid source port for ${source.type}.`);
-    if (source.type === "query" && edge.sourceHandle === "failure" && !source.data.errorHandler)
-      error("error_handler_disabled", path, "Failure edge requires query error handling.");
-  }
-  for (const agent of graph.nodes.filter((node) => node.type === "agent")) {
-    if (graph.edges.filter((edge) => edge.target === agent.id && edge.targetHandle === "ai-model").length > 1) {
-      error("duplicate_agent_model", `nodes.${agent.id}.model`, "Agent can have only one AI model attachment.");
-    }
-  }
-  const adjacency = new Map(graph.nodes.map((n) => [n.id, flowEdges.filter((e) => e.source === n.id).map((e) => e.target)]));
-  const visited = /* @__PURE__ */ new Set(), active = /* @__PURE__ */ new Set();
-  const visit = (id) => {
-    if (active.has(id))
-      return true;
-    if (visited.has(id))
-      return false;
-    visited.add(id);
-    active.add(id);
-    const cyclic = (adjacency.get(id) ?? []).some(visit);
-    active.delete(id);
-    return cyclic;
-  };
-  if (graph.nodes.some((n) => visit(n.id)))
-    error("cycle", "edges", "Cycles are unsupported in the basic node set.");
-  const reachable = /* @__PURE__ */ new Set();
-  const reach = (id) => {
-    if (reachable.has(id))
-      return;
-    reachable.add(id);
-    (adjacency.get(id) ?? []).forEach(reach);
-  };
-  starts.forEach((n) => reach(n.id));
-  for (const n of graph.nodes)
-    if (!reachable.has(n.id) && n.data.isChildOfAgent !== true)
-      warnings.push({ code: "unreachable", path: `nodes.${n.id}`, message: "Node is unreachable from start." });
-  return { errors, warnings, runtime_verified: false };
-}
-function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new Map()) {
-  const graph = structuredClone(current);
-  const node_ids = /* @__PURE__ */ Object.create(null), edge_ids = /* @__PURE__ */ Object.create(null);
-  const model_ids = /* @__PURE__ */ Object.create(null);
-  const query_nodes = [];
-  const checkUnique = (refs) => {
-    if (new Set(refs).size !== refs.length)
-      throw new Error("Duplicate logical refs.");
-  };
-  checkUnique(spec.nodes.map((n) => n.ref));
-  checkUnique(spec.edges.map((e) => e.ref));
-  for (const id of spec.remove_node_ids)
-    if (!graph.nodes.some((n) => n.id === id))
-      throw new Error(`Unknown node to remove: ${id}`);
-  for (const id of spec.remove_edge_ids)
-    if (!graph.edges.some((e) => e.id === id))
-      throw new Error(`Unknown edge to remove: ${id}`);
-  const removedNodeIds = new Set(spec.remove_node_ids);
-  const cascadedChildIds = /* @__PURE__ */ new Set();
-  for (const agentId of spec.remove_node_ids) {
-    for (const edge of graph.edges.filter((candidate) => candidate.target === agentId && candidate.targetHandle === "ai-model")) {
-      removedNodeIds.add(edge.source);
-      cascadedChildIds.add(edge.source);
-    }
-  }
-  const removedDefinitionIds = graph.nodes.filter((n) => removedNodeIds.has(n.id)).map((n) => n.data.idOnDefinition);
-  graph.nodes = graph.nodes.filter((n) => !removedNodeIds.has(n.id));
-  graph.edges = graph.edges.filter((e) => !spec.remove_edge_ids.includes(e.id) && !cascadedChildIds.has(e.source) && !cascadedChildIds.has(e.target));
-  const editedIds = /* @__PURE__ */ new Set();
-  for (const input of spec.nodes) {
-    if ("code" in input) {
-      try {
-        new Script(input.type === "condition" ? `(${input.code})` : `(async function() {${input.code}
-})`);
-      } catch {
-        throw new Error(`Invalid JavaScript syntax in node ${input.ref}.`);
-      }
-    }
-    if (input.type === "loop") {
-      try {
-        new Script(`(async function() {${input.iteration_values_code}
-})`);
-      } catch {
-        throw new Error(`Invalid iteration JavaScript syntax in node ${input.ref}.`);
-      }
-    }
-    const id = input.existing_id ?? ids?.node_ids[input.ref] ?? randomUUID();
-    if (editedIds.has(id))
-      throw new Error("Multiple node edits target the same ID.");
-    editedIds.add(id);
-    const old = graph.nodes.find((n) => n.id === id);
-    if (input.existing_id && !old)
-      throw new Error(`Unknown existing node: ${id}`);
-    const type = { start: "input", javascript: "query", query: "query", loop: "query", condition: "if-condition", response: "output", agent: "agent" }[input.type];
-    if (old && old.type !== type)
-      throw new Error("Changing node type is unsupported; remove and add explicitly.");
-    const data = { ...old?.data, label: input.label ?? old?.data.label ?? input.ref };
-    if (input.type !== "condition")
-      data.nodeType = input.type === "javascript" || input.type === "loop" ? "query" : input.type;
-    if (input.type === "condition" || input.type === "response")
-      data.code = input.code;
-    if (input.type === "response" && (input.status_code !== void 0 || data.statusCode === void 0)) {
-      data.statusCode = { fxActive: false, value: String(input.status_code ?? 200) };
-    }
-    if (input.type === "loop") {
-      data.looped = true;
-      data.iterationValuesCode = input.iteration_values_code;
-    }
-    if (input.type === "agent") {
-      const oldOptions = old?.data.options && typeof old.data.options === "object" && !Array.isArray(old.data.options) ? old.data.options : {};
-      data.nodeName = old?.data.nodeName ?? input.ref;
-      data.options = {
-        ...oldOptions,
-        systemPrompt: input.system_prompt ?? oldOptions.systemPrompt ?? "",
-        userPrompt: input.user_prompt ?? oldOptions.userPrompt ?? "",
-        outputFormat: input.output_format === void 0 ? oldOptions.outputFormat ?? null : input.output_format === null ? null : { example: input.output_format }
-      };
-      const attachments = graph.edges.filter((edge) => edge.target === id && edge.targetHandle === "ai-model");
-      if (attachments.length > 1)
-        throw new Error(`Agent ${input.ref} has multiple AI model attachments.`);
-      const attachment = attachments[0];
-      const child = attachment && graph.nodes.find((node2) => node2.id === attachment.source);
-      if (input.model === null && attachment) {
-        if (typeof child?.data.idOnDefinition === "string")
-          removedDefinitionIds.push(child.data.idOnDefinition);
-        graph.edges = graph.edges.filter((edge) => edge.id !== attachment.id);
-        graph.nodes = graph.nodes.filter((node2) => node2.id !== attachment.source);
-      } else if (input.model) {
-        const modelNodeId = child?.id ?? ids?.model_ids[input.ref]?.node_id ?? randomUUID();
-        const definitionId = typeof child?.data.idOnDefinition === "string" ? child.data.idOnDefinition : randomUUID();
-        const kind = datasourceKinds.get(input.model.datasource_id);
-        const modelNode = {
-          ...child,
-          id: modelNodeId,
-          type: "query",
-          sourcePosition: "right",
-          targetPosition: "left",
-          deletable: false,
-          data: { ...child?.data, idOnDefinition: definitionId, nodeType: "query", kind, isChildOfAgent: true, agentConnectionType: "ai-model" },
-          position: child?.position ?? { x: 100, y: 70 }
-        };
-        if (child)
-          graph.nodes[graph.nodes.indexOf(child)] = modelNode;
-        else
-          graph.nodes.push(modelNode);
-        const edgeId = attachment?.id ?? ids?.model_ids[input.ref]?.edge_id ?? randomUUID();
-        const modelEdge = { ...attachment, id: edgeId, source: modelNodeId, target: id, sourceHandle: "output", targetHandle: "ai-model", type: "custom", data: { direction: "vertical" } };
-        if (attachment)
-          graph.edges[graph.edges.indexOf(attachment)] = modelEdge;
-        else
-          graph.edges.push(modelEdge);
-        model_ids[input.ref] = { node_id: modelNodeId, edge_id: edgeId };
-        query_nodes.push({ role: "agent-model", parent_agent_id: id, node_id: modelNodeId, definition_id: definitionId, datasource_id: input.model.datasource_id, name: input.model.name, options: input.model.options });
-      }
-    }
-    if (input.type === "query" || input.type === "javascript" || input.type === "loop") {
-      const definitionId = typeof data.idOnDefinition === "string" ? data.idOnDefinition : randomUUID();
-      data.idOnDefinition = definitionId;
-      query_nodes.push({ role: "workflow-node", spec: input, node_id: id, definition_id: definitionId });
-    }
-    const node = { ...old, id, type, sourcePosition: "right", targetPosition: "left", deletable: false, data, position: input.position ?? old?.position ?? { x: 100 + graph.nodes.length * 320, y: 250 } };
-    if (old)
-      graph.nodes[graph.nodes.indexOf(old)] = node;
-    else
-      graph.nodes.push(node);
-    node_ids[input.ref] = id;
-  }
-  const resolve = (ref2) => node_ids[ref2] ?? (graph.nodes.some((n) => n.id === ref2) ? ref2 : void 0);
-  const editedEdges = /* @__PURE__ */ new Set();
-  for (const input of spec.edges) {
-    const id = input.existing_id ?? ids?.edge_ids[input.ref] ?? randomUUID();
-    if (editedEdges.has(id))
-      throw new Error("Multiple edge edits target the same ID.");
-    editedEdges.add(id);
-    const old = graph.edges.find((e) => e.id === id);
-    if (input.existing_id && !old)
-      throw new Error(`Unknown existing edge: ${id}`);
-    const source = resolve(input.from), target = resolve(input.to);
-    if (!source || !target)
-      throw new Error(`Unknown endpoint in edge ${input.ref}. Use a supplied ref or existing node ID.`);
-    const sourceNode = graph.nodes.find((node) => node.id === source);
-    const sourceHandle = input.port === "default" ? sourceNode?.type === "agent" ? "output" : null : input.port;
-    const edge = { ...old, id, source, target, sourceHandle, type: "custom" };
-    if (old)
-      graph.edges[graph.edges.indexOf(old)] = edge;
-    else
-      graph.edges.push(edge);
-    edge_ids[input.ref] = id;
-    if (input.port === "failure") {
-      const n = graph.nodes.find((n2) => n2.id === source);
-      if (n.type === "query")
-        n.data.errorHandler = true;
-    }
-  }
-  graph.queries = graph.queries.filter((q) => !removedDefinitionIds.includes(q.idOnDefinition) || graph.nodes.some((n) => n.data.idOnDefinition === q.idOnDefinition));
-  const depths = new Map(graph.nodes.map((n) => [n.id, 0]));
-  for (let pass = 0; pass < graph.nodes.length; pass++) {
-    let changed = false;
-    for (const edge of controlFlowEdges(graph)) {
-      const next = (depths.get(edge.source) ?? 0) + 1;
-      if (next > (depths.get(edge.target) ?? 0)) {
-        depths.set(edge.target, next);
-        changed = true;
-      }
-    }
-    if (!changed)
-      break;
-  }
-  const placed = graph.nodes.filter((n) => current.nodes.some((old) => old.id === n.id) || spec.nodes.some((input) => node_ids[input.ref] === n.id && input.position));
-  for (const n of graph.nodes.filter((n2) => !placed.includes(n2))) {
-    const x = 100 + (depths.get(n.id) ?? 0) * 320;
-    let y = 250;
-    while (placed.some((other) => other.position && Math.abs(other.position.x - x) < 300 && Math.abs(other.position.y - y) < 160))
-      y += 180;
-    n.position = { x, y };
-    placed.push(n);
-  }
-  if (spec.test_parameters !== void 0)
-    graph.defaultParams = JSON.stringify(spec.test_parameters);
-  return { graph, node_ids, edge_ids, model_ids, query_nodes };
-}
-var nodeCatalog = {
-  schema_version: 1,
-  runtime_context: {
-    inputs: "Read workflow inputs from startTrigger.params, for example startTrigger.params.left. A logical start-node ref does not create a JavaScript global.",
-    query_results: "Read a preceding query result as <persisted_query_name>.data, for example computeSum.data. There is no app-style queries namespace in workflow code.",
-    code: "JavaScript, condition and response code runs in a server-side function body. Return the result explicitly. Read only preceding nodes on the current execution path.",
-    example: {
-      query_name: "computeSum",
-      javascript: "return { sum: Number(startTrigger.params.left) + Number(startTrigger.params.right) };",
-      response: "return computeSum.data;"
-    }
-  },
-  nodes: [
-    { type: "start", renderer: "input", ports: ["default"] },
-    { type: "javascript", renderer: "query", ports: ["success", "failure"], fields: ["name", "code"] },
-    { type: "query", renderer: "query", ports: ["success", "failure"], fields: ["name", "datasource_id", "options"] },
-    { type: "loop", renderer: "query", ports: ["success", "failure"], fields: ["name", "iteration_values_code", "code"] },
-    { type: "condition", renderer: "if-condition", ports: ["true", "false"], fields: ["code"] },
-    { type: "response", renderer: "output", ports: [], fields: ["code", "status_code"] },
-    { type: "agent", renderer: "agent", ports: ["default"], fields: ["system_prompt", "user_prompt", "output_format", "model"] }
-  ],
-  edit_semantics: "Patch. Use existing_id to edit nodes/edges; edge endpoints may use existing node IDs. Omitted objects are preserved. Removal requires explicit IDs and incident edge removal.",
-  limitations: ["Agent tool connections are not authored", "No publishing or trigger setup", "No concurrent-edit protection", "No automatic execution during authoring", "Advanced nodes are preserved but not authored"]
-};
 createRequire(import.meta.url);
 function componentRef(component) {
   return component.clientRef ?? component.name;
@@ -981,20 +141,20 @@ function indexComponentReferences(components, existing = []) {
   const names = /* @__PURE__ */ new Set();
   const persisted = /* @__PURE__ */ new Map();
   for (const component of existing) {
-    for (const ref2 of new Set([component.id, component.name].filter((key) => Boolean(key)))) {
-      const ids = persisted.get(ref2) ?? /* @__PURE__ */ new Set();
+    for (const ref of new Set([component.id, component.name].filter((key) => Boolean(key)))) {
+      const ids = persisted.get(ref) ?? /* @__PURE__ */ new Set();
       ids.add(component.id);
-      persisted.set(ref2, ids);
+      persisted.set(ref, ids);
     }
   }
   for (const component of components) {
-    const ref2 = componentRef(component);
-    if (!ref2.trim())
+    const ref = componentRef(component);
+    if (!ref.trim())
       errors.push(`Component "${component.name}": client_ref must not be empty.`);
-    if (refs.has(ref2) || persisted.has(ref2))
-      errors.push(`Duplicate component client_ref/name "${ref2}".`);
+    if (refs.has(ref) || persisted.has(ref))
+      errors.push(`Duplicate component client_ref/name "${ref}".`);
     else
-      refs.set(ref2, component);
+      refs.set(ref, component);
     if (names.has(component.name))
       errors.push(`Duplicate component name "${component.name}" in batch.`);
     names.add(component.name);
@@ -1021,6 +181,64 @@ function isSampleDatasource(source) {
 function assertAiDatasource(source) {
   if (isSampleDatasource(source))
     throw new Error(SAMPLE_DATASOURCE_REFUSAL);
+}
+var defaultPack = () => {
+  const raw = process.env.MCP_AGENT_PACK;
+  return (raw === void 0 ? "shadcn" : raw).trim().toLowerCase() || void 0;
+};
+var savedComponentLibrary = (library) => library === "ui2" && defaultPack() ? `pack:${defaultPack()}` : library;
+var COMPONENT_LIBRARY_NAMES = {
+  ui1: "ToolJet UI 1.0",
+  ui2: "ToolJet UI 2.0"
+};
+var isUi2Type = (type) => typeof type === "string" && /^Shad[A-Z]/.test(type);
+var isPackType = (type) => typeof type === "string" && /^Lib_[a-z0-9]+_/i.test(type);
+function resolveComponentLibrary(globalSettings, componentTypes) {
+  const settings = globalSettings;
+  const saved = settings?.componentLibrary ?? settings?.component_library;
+  if (saved === "ui1" || saved === "ui2")
+    return { library: saved, source: "saved" };
+  if (typeof saved === "string" && saved.startsWith("pack:") && saved.length > 5)
+    return { library: "ui2", source: "saved", pack: saved.slice(5) };
+  if (typeof saved === "string" && saved.startsWith("lib:"))
+    return { library: "ui1", source: "saved" };
+  for (const type of componentTypes)
+    if (isUi2Type(type) || isPackType(type))
+      return { library: "ui2", source: "inferred" };
+  return { library: "ui1", source: "inferred" };
+}
+var styleValue = (styles, key) => {
+  const entry = styles?.[key];
+  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+};
+function nativeFitsUi2(component) {
+  if (component.type === "FlexContainer" || component.type === "Map")
+    return true;
+  return component.type === "Table" && styleValue(component.styles, "tableLook") !== "default";
+}
+function componentLibraryWarnings(library, pages, request) {
+  if (request?.trim())
+    return [];
+  const off = /* @__PURE__ */ new Map();
+  for (const page of pages ?? []) {
+    for (const component of page.components ?? []) {
+      const type = String(component.type ?? "");
+      const ui2Side = isUi2Type(type) || isPackType(type);
+      const mismatch = library.library === "ui1" ? ui2Side : !ui2Side && !nativeFitsUi2(component);
+      if (!mismatch)
+        continue;
+      off.set(type, [...off.get(type) ?? [], component.name ?? type]);
+    }
+  }
+  if (!off.size)
+    return [];
+  const listed = [...off].map(([type, names]) => `${type} (${names.slice(0, 3).join(", ")}${names.length > 3 ? ", ..." : ""})`).join("; ");
+  const how = library.source === "saved" ? "its saved library" : library.source === "inferred" ? "the library its widgets imply" : "new apps are; pass app_id to check the plan against an existing app";
+  const appName = COMPONENT_LIBRARY_NAMES[library.library];
+  const fix = library.library === "ui1" ? "Build with the native ToolJet types instead (Table, Chart, TextInput, DropdownV2, ModalV2, Container, ...)." : `Build with the UI 2.0 types instead: types whose names start with Shad, laid out in FlexContainers; ShadDialog for dialogs and side sheets; for tables ToolJet's Table (styles.tableLook "shadcn").`;
+  return [
+    `This app is built in ${appName} (${how}), and the plan adds widgets from the other library: ${listed}. ${fix} If the user asked for the other library in this request, keep the plan and put their words in component_library_request.`
+  ];
 }
 function createAppVersionLifecycle(auth, getApp) {
   const enc = encodeURIComponent;
@@ -1270,19 +488,19 @@ function createWorkflowClient(auth, config, queries) {
       throw new Error("Cannot verify all nested workflow datasources; refusing AI execution.");
     visited.add(versionId);
     const saved = await queries.getQueries(versionId);
-    const savedIds = new Set(saved.map((query2) => query2.id));
+    const savedIds = new Set(saved.map((query) => query.id));
     if (graph.queries.some((mapping) => !savedIds.has(mapping.id))) {
       throw new Error("Workflow definition references a query outside its version; refusing AI execution.");
     }
-    if (saved.some((query2) => !query2.data_source_id))
+    if (saved.some((query) => !query.data_source_id))
       throw new Error("Cannot verify a workflow query datasource; refusing AI execution.");
     if (saved.length)
       await queries.listDatasources(versionId);
-    await Promise.all([...new Set(saved.map((query2) => query2.data_source_id))].map((id) => queries.assertDatasourceAllowed(id, versionId, environmentId)));
-    for (const query2 of saved) {
-      if (query2.kind !== "workflows")
+    await Promise.all([...new Set(saved.map((query) => query.data_source_id))].map((id) => queries.assertDatasourceAllowed(id, versionId, environmentId)));
+    for (const query of saved) {
+      if (query.kind !== "workflows")
         continue;
-      const options = record(query2.options);
+      const options = record(query.options);
       const workflowId = required(options.workflowId, "nested workflow ID");
       if (!/^[A-Za-z0-9_-]+$/.test(workflowId))
         throw new Error("Cannot verify a dynamic nested workflow target.");
@@ -1356,13 +574,67 @@ function createWorkflowClient(auth, config, queries) {
       return request("/api/workflow_executions", { executeUsing: "version", appVersionId: versionId, appId: workflowId, environmentId, params });
     },
     async execution(id, page = 1, perPage = 20) {
-      const base2 = `/api/workflow_executions/${encodeURIComponent(id)}`;
-      const response = record(await request(`${base2}/status`));
+      const base = `/api/workflow_executions/${encodeURIComponent(id)}`;
+      const response = record(await request(`${base}/status`));
       const status = { status: response.status, logs: response.logs };
-      const nodes = await request(`${base2}/nodes?${new URLSearchParams({ page: String(page), per_page: String(perPage) })}`);
+      const nodes = await request(`${base}/nodes?${new URLSearchParams({ page: String(page), per_page: String(perPage) })}`);
       return { execution_id: id, status, nodes, page, per_page: perPage };
     }
   };
+}
+var cached;
+var SAMPLE_BLANKS = {
+  ShadHero: { eyebrow: "", subtitle: "", meta: "{{[]}}", actionLabel: "" },
+  ShadCardGrid: { badgeField: "", descriptionField: "", metaFields: "" },
+  ShadRecordList: { metaFields: "", valueField: "", valueFormat: "auto" },
+  // The sample's budget fields (spent, budget, note, status) are not a build's data: the config's own names stand.
+  ShadProgressList: {
+    labelField: "label",
+    valueField: "value",
+    targetField: "target",
+    captionField: "",
+    statusField: "",
+    valueFormat: "auto"
+  },
+  ShadSchedule: { resourceField: "resource", resourceTitle: "" },
+  // The sample's delivery stops (customer, address, eta, driver) are not a build's data: no rows, generic fields.
+  ShadMap: { data: "{{[]}}", titleField: "name", subtitleField: "", popupFields: "" },
+  // 'auto' reads money from a figure's label; the 'currency' default showed counts of rooms as dollars.
+  ShadSummaryStrip: { valueFormat: "auto" },
+  ShadTags: { tags: "{{[]}}", tagColors: "{{{}}}" },
+  ShadAvatar: { names: "" },
+  ShadLink: { linkTarget: "" },
+  ShadCombobox: { searchPlaceholder: "Search..." },
+  ShadMultiselect: { searchPlaceholder: "Search..." },
+  ShadTagsInput: { suggestions: "{{[]}}" },
+  // The sample greeting talks about orders, invoices and deliveries; a build's chat starts from its own history.
+  ShadChat: { initialChat: "{{[]}}" },
+  // The sample's 'set up your workspace' line is not a build's; completeTitle alone reads fine.
+  ShadQuestionnaire: { completeText: "" }
+};
+function registerPackDefinitions(extra) {
+  packDefaultDefinition("");
+  Object.assign(cached ?? (cached = {}), extra);
+}
+function packDefaultDefinition(type) {
+  if (!cached) {
+    try {
+      const path = resolve(dirname(fileURLToPath(import.meta.url)), "../data/pack-default-definitions.json");
+      cached = JSON.parse(readFileSync(path, "utf8")).definitions ?? {};
+      for (const [type2, blanks] of Object.entries(SAMPLE_BLANKS)) {
+        const def = cached[type2];
+        if (!def?.properties)
+          continue;
+        for (const [key, value] of Object.entries(blanks)) {
+          if (key in def.properties)
+            def.properties[key] = { ...def.properties[key], value };
+        }
+      }
+    } catch {
+      cached = {};
+    }
+  }
+  return cached[type];
 }
 var TOOLJET_DB_RESERVED_COLUMN_NAMES = /* @__PURE__ */ new Set([
   "abort",
@@ -1832,20 +1104,20 @@ function createClient(auth, config) {
   let developmentEnvironmentIdPromise;
   const datasourceManagementUrl = (workspaceSlug, datasourceId) => `${config.appUrl}/${encodeURIComponent(workspaceSlug)}/data-sources` + (datasourceId ? `/${encodeURIComponent(datasourceId)}` : "");
   async function listWorkspaceApps(params = {}) {
-    const query2 = new URLSearchParams({ page: String(params.page ?? 1), type: "front-end" });
+    const query = new URLSearchParams({ page: String(params.page ?? 1), type: "front-end" });
     if (params.searchText)
-      query2.set("searchKey", params.searchText);
-    const res = await auth.authedFetch(`/api/apps?${query2}`);
+      query.set("searchKey", params.searchText);
+    const res = await auth.authedFetch(`/api/apps?${query}`);
     await assertOk(res, "listWorkspaceApps");
     return await res.json();
   }
   async function listWorkspaceUsers(params = {}) {
-    const query2 = new URLSearchParams({ page: String(params.page ?? 1) });
+    const query = new URLSearchParams({ page: String(params.page ?? 1) });
     if (params.searchText)
-      query2.set("searchText", params.searchText);
+      query.set("searchText", params.searchText);
     if (params.status)
-      query2.set("status", params.status);
-    const res = await auth.authedFetch(`/api/organization-users?${query2}`);
+      query.set("status", params.status);
+    const res = await auth.authedFetch(`/api/organization-users?${query}`);
     await assertOk(res, "listWorkspaceUsers");
     const data = await res.json();
     if (!Array.isArray(data?.users) || !Number.isInteger(data?.meta?.total_pages) || data.meta.total_pages < 0) {
@@ -2108,6 +1380,16 @@ function createClient(auth, config) {
     await assertOk(res, "getApp");
     return res.json();
   }
+  async function codeSourceAccess(appId, versionId) {
+    const res = await auth.authedFetch(`/api/code-mode-source/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`);
+    if (res.status === 403 || res.status === 404)
+      return { read: false, write: false };
+    await assertOk(res, "codeSourceAccess");
+    const body = await res.json().catch(() => null);
+    if (!body || typeof body !== "object")
+      throw new Error("codeSourceAccess: ToolJet sent no answer");
+    return { read: true, write: body.canWrite === true };
+  }
   function projectComponent(id, entry) {
     const c = entry?.component ?? {};
     const def = c.definition ?? {};
@@ -2116,7 +1398,9 @@ function createClient(auth, config) {
     return {
       id,
       name: c.name,
-      type: c.component,
+      // A component of the published library reads back as its Lib_* type, so the catalogue checks its events,
+      // actions and properties (libraryPack.ts).
+      type: libraryTypeOf({ type: c.component, properties: def.properties }) ?? c.component,
       layouts: entry?.layouts,
       properties: def.properties,
       styles: def.styles,
@@ -2165,10 +1449,13 @@ function createClient(auth, config) {
       event: e.event,
       ...typeof e.index === "number" ? { index: e.index } : {}
     }));
+    const globalSettings = full.editing_version?.global_settings ?? full.editing_version?.globalSettings ?? full.editingVersion?.globalSettings ?? full.global_settings ?? full.globalSettings;
+    const componentLibrary = resolveComponentLibrary(globalSettings, pages.flatMap((page) => page.components.map((component) => component.type)));
     return {
       app_id: full.id,
       name: full.name,
       version_id: full.editing_version?.id,
+      component_library: componentLibrary,
       ...full.should_freeze_editor === true ? { editor_frozen: true } : {},
       ...typeof full.editorEnvironment?.name === "string" ? { environment: full.editorEnvironment.name } : {},
       pages,
@@ -2205,6 +1492,15 @@ function createClient(auth, config) {
         ...typeof group.count === "number" ? { count: group.count } : {}
       }))
     };
+  }
+  async function getLicenseFeatureAccess() {
+    const res = await auth.authedFetch("/api/license/access");
+    await assertOk(res, "getLicenseFeatureAccess");
+    const body = await res.json();
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      throw new Error("ToolJet getLicenseFeatureAccess failed: expected an object response.");
+    }
+    return body;
   }
   async function getAppPermission(appId, resourceType, resourceId) {
     const res = await auth.authedFetch(appPermissionPath(appId, resourceType, resourceId));
@@ -2567,11 +1863,11 @@ function createClient(auth, config) {
       if (existingNames.has(nameKey) || seenNames.has(nameKey)) {
         throw new Error(`ToolJet createPages failed: duplicate page name "${page.name}".`);
       }
-      const base2 = handleOf(page.name);
-      let handle = base2;
+      const base = handleOf(page.name);
+      let handle = base;
       for (let suffix = 2; existingHandles.has(handle) || seenHandles.has(handle); suffix++) {
         const tail = `-${suffix}`;
-        handle = `${base2.slice(0, 50 - tail.length)}${tail}`;
+        handle = `${base.slice(0, 50 - tail.length)}${tail}`;
       }
       seenNames.add(nameKey);
       seenHandles.add(handle);
@@ -2773,8 +2069,8 @@ function createClient(auth, config) {
       if (!existing.sourceId || !existing.target || typeof existing.index !== "number")
         continue;
       const raw = existing.event && typeof existing.event === "object" && !Array.isArray(existing.event) ? existing.event : void 0;
-      const ref2 = typeof raw?.ref === "string" ? raw.ref : "";
-      const sourceKey = `${existing.target}:${existing.sourceId}:${ref2}`;
+      const ref = typeof raw?.ref === "string" ? raw.ref : "";
+      const sourceKey = `${existing.target}:${existing.sourceId}:${ref}`;
       indexBySource[sourceKey] = Math.max(indexBySource[sourceKey] ?? 0, existing.index + 1);
     }
     const events = params.events.map((e) => {
@@ -2844,11 +2140,11 @@ function createClient(auth, config) {
     await getDatasourceConnectionDetails(dataSourceId, environmentId);
   }
   async function assertQueryDatasourceAllowed(queryId, versionId, environmentId) {
-    const query2 = await getQuery(queryId, versionId);
-    if (!query2.data_source_id)
+    const query = await getQuery(queryId, versionId);
+    if (!query.data_source_id)
       throw new Error("Cannot verify the saved query datasource; refusing AI access.");
-    await assertDatasourceAllowed(query2.data_source_id, versionId, environmentId);
-    return query2;
+    await assertDatasourceAllowed(query.data_source_id, versionId, environmentId);
+    return query;
   }
   async function listDatasources(versionId) {
     const [orgId, orgSlug, envId] = await Promise.all([
@@ -2997,6 +2293,7 @@ function createClient(auth, config) {
   }
   const SCHEMA_CACHE_RETRY_DELAYS_MS = [300, 600, 1200, 2400, 4e3];
   const INSERT_ATTEMPT_TIMEOUT_MS = 45e3;
+  const BULK_INSERT_ROWS = 500;
   const UNKNOWN_INSERT_OUTCOME = "Insert outcome unknown: the row may already have been inserted. Verify persisted rows before retrying; do not replay the whole batch.";
   async function hasRows(tableId) {
     try {
@@ -3036,10 +2333,13 @@ function createClient(auth, config) {
       const body = await res.clone().text().catch(() => "");
       if (!/PGRST205|schema cache/i.test(body))
         return res;
-      await new Promise((resolve) => setTimeout(resolve, SCHEMA_CACHE_RETRY_DELAYS_MS[schemaWaits]));
+      if (Array.isArray(row) && /['"]0['"] column|column ['"]0['"]/i.test(body))
+        return res;
+      await new Promise((resolve2) => setTimeout(resolve2, SCHEMA_CACHE_RETRY_DELAYS_MS[schemaWaits]));
       schemaWaits += 1;
     }
   }
+  let bulkInsertAccepted = true;
   async function insertRows(params) {
     if (!params.rows.length)
       return { processed_rows: 0 };
@@ -3056,7 +2356,29 @@ function createClient(auth, config) {
     if (!table)
       throw new Error(`insertRows: ToolJet DB table "${params.tableName}" was not found in the active workspace.`);
     let processedRows = 0;
+    while (bulkInsertAccepted && rows.length - processedRows >= 2) {
+      const chunk = rows.slice(processedRows, processedRows + BULK_INSERT_ROWS);
+      let res;
+      try {
+        res = await insertRowViaProxy(table.id, chunk);
+      } catch (error) {
+        if (!processedRows)
+          throw error;
+        throw new PartialWriteError("insertRows", [{ processed_rows: processedRows }], [
+          `rows ${processedRows + 1}-${processedRows + chunk.length}/${rows.length}: ${error instanceof Error ? error.message : String(error)}`
+        ]);
+      }
+      if (res.ok) {
+        processedRows += chunk.length;
+        continue;
+      }
+      if (/['"]0['"] column|column ['"]0['"]/i.test(await res.clone().text().catch(() => "")))
+        bulkInsertAccepted = false;
+      break;
+    }
     for (const [index, row] of rows.entries()) {
+      if (index < processedRows)
+        continue;
       try {
         const res = await insertRowViaProxy(table.id, row);
         await assertOk(res, "insertRows");
@@ -3098,8 +2420,8 @@ function createClient(auth, config) {
   async function createQuery(params, batchCheck) {
     const previous = queryCreateTails.get(params.versionId);
     let release;
-    const tail = new Promise((resolve) => {
-      release = resolve;
+    const tail = new Promise((resolve2) => {
+      release = resolve2;
     });
     queryCreateTails.set(params.versionId, tail);
     await previous;
@@ -3141,9 +2463,9 @@ function createClient(auth, config) {
   async function createQueries(params) {
     const batchCheck = (async () => {
       const datasources = await listDatasources(params.versionId);
-      for (const query2 of params.queries) {
-        if (datasources.find((source) => source.id === query2.dataSourceId)?.kind === "workflows")
-          await assertWorkflowQueryTarget(query2.options);
+      for (const query of params.queries) {
+        if (datasources.find((source) => source.id === query.dataSourceId)?.kind === "workflows")
+          await assertWorkflowQueryTarget(query.options);
       }
       await Promise.all(params.queries.map((q) => assertDatasourceAllowed(q.dataSourceId)));
       return void 0;
@@ -3162,17 +2484,67 @@ function createClient(auth, config) {
     return completed;
   }
   function buildComponentDto(spec) {
-    const misplaced = Object.keys(spec.properties ?? {}).filter((k) => STYLE_KEYS_IN_PROPERTIES.has(k));
+    const misplaced = Object.keys(spec.properties ?? {}).filter((k) => isMisplacedStyleKey(spec.type, k));
     if (misplaced.length) {
       throw new Error(`Component "${spec.name}": style keys ${JSON.stringify(misplaced)} were placed under \`properties\`, where ToolJet silently ignores them. Move them to the top-level \`styles\` object instead.`);
     }
+    const pack = packDefaultDefinition(spec.type);
+    if (pack) {
+      const ownData = spec.properties?.data !== void 0;
+      const sample = (entry) => {
+        const value = entry?.value;
+        return typeof value === "string" && /^\{\{\s*[[{]/.test(value);
+      };
+      const sampleField = (key) => /Chart$|^ShadSparkline$/.test(spec.type) && [
+        "xField",
+        "yFields",
+        "categoryField",
+        "valueField",
+        "nameField",
+        "barFields",
+        "lineFields",
+        "rightAxisFields",
+        "yField",
+        "sizeField",
+        "groupField",
+        "stageField",
+        "xLabel",
+        "yLabel",
+        "seriesLabels"
+      ].includes(key);
+      const packProperties = Object.fromEntries(Object.entries(pack.properties ?? {}).filter(([key, entry]) => !(ownData && (sample(entry) || sampleField(key)))));
+      spec = {
+        ...spec,
+        properties: { ...packProperties, ...spec.properties ?? {} },
+        styles: { ...pack.styles ?? {}, ...spec.styles ?? {} },
+        others: { ...pack.others ?? {}, ...spec.others ?? {} }
+      };
+    }
+    spec = downgradeFlexForLibrary(toLibraryComponent(spec));
     const dto = {
       name: spec.name,
       type: spec.type,
-      properties: spec.properties,
-      styles: spec.styles ?? {},
+      // A FlexContainer grows with its children unless the author fixes its height: with dynamic height off, a row or
+      // card whose children grew scrolled inside or clipped them (Air India fleet build, 2026-10-09).
+      // ToolJet gives a FlexContainer the UI 2.0 layout only when it carries layoutVersion '2', and the server adds no
+      // defaults on create, so the MCP writes it, with Equal heights on, as the widget's default definition does.
+      properties: spec.type === "FlexContainer" ? {
+        dynamicHeight: { value: "{{true}}" },
+        layoutVersion: { value: "2" },
+        equalHeights: { value: "{{true}}" },
+        ...spec.properties ?? {}
+      } : spec.properties,
+      // A FlexContainer is layout: invisible unless the author gives it a surface (cardStyle 'shadcnCard', or a
+      // background or border). ToolJet's own default draws every row and column as a bordered box.
+      styles: spec.type === "FlexContainer" ? { backgroundColor: { value: "transparent" }, borderColor: { value: "transparent" }, ...spec.styles ?? {} } : spec.styles ?? {},
       validation: spec.validation ?? {},
-      others: spec.others ?? {}
+      // Device visibility defaults, as a drag and drop sets them. The server fills these for its own widget types but
+      // not for types it has no defaults for, which then count as hidden on desktop.
+      others: { showOnDesktop: { value: "{{true}}" }, showOnMobile: { value: "{{false}}" }, ...spec.others ?? {} },
+      // The editor always sends these two sections. For a widget type the server has no defaults for (for example
+      // the UI 2.0 widgets) an omitted section is stored as null, and one null section stops the page loading.
+      general: {},
+      generalStyles: { boxShadow: { value: "0px 0px 0px 0px #00000040" } }
     };
     const desktop = spec.layouts?.desktop ?? spec.layout;
     const mobile = spec.layouts?.mobile ?? spec.layout;
@@ -3209,13 +2581,59 @@ function createClient(auth, config) {
       }
       diff[e.id] = dto;
     }
+    const batchIds = new Set(entries.map((e) => e.id));
+    const flexEntries = entries.map((e) => ({
+      id: e.id,
+      type: e.spec.type,
+      parentId: bodyParentId(diff[e.id].parent)
+    }));
+    const explicitOrders = new Map(entries.filter((e) => isFlexContainerType(e.spec.type) && e.spec.properties?.childOrder !== void 0).map((e) => {
+      const raw = e.spec.properties.childOrder;
+      const value = Array.isArray(raw) ? raw : raw?.value;
+      return [e.id, Array.isArray(value) ? value : []];
+    }));
+    const nameToId = new Map(entries.map((e) => [e.spec.name, e.id]));
+    const orders = batchChildOrders(flexEntries, explicitOrders, (ref) => refToId.get(ref) ?? nameToId.get(ref));
+    for (const [id, order] of orders) {
+      const dto = diff[id];
+      dto.properties = { ...dto.properties ?? {}, childOrder: childOrderProperty(order) };
+    }
+    const additions = flexEntries.flatMap((e) => e.parentId && !batchIds.has(e.parentId) ? [{ parentId: e.parentId, childId: e.id }] : []);
+    let pageComponents = params.pageComponents;
+    if (additions.length && !pageComponents) {
+      const summary = await getAppSummary(params.appId, params.versionId);
+      pageComponents = summary.pages.find((page) => page.id === params.pageId)?.components ?? [];
+    }
+    const appended = additions.length ? appendedChildOrders(pageComponents ?? [], additions) : /* @__PURE__ */ new Map();
     const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/components`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ is_user_switched_version: false, pageId: params.pageId, diff })
     });
     await assertOk(res, "createComponents");
-    return entries.map((e) => ({ component_id: e.id, name: e.spec.name }));
+    const created = entries.map((e) => ({ component_id: e.id, name: e.spec.name }));
+    if (appended.size) {
+      try {
+        await writeFlexChildOrders(params.appId, params.versionId, params.pageId, appended);
+      } catch (err) {
+        throw new PartialWriteError("createComponents", created, [
+          `FlexContainer child order (${[...appended.keys()].join(", ")}): ${err instanceof Error ? err.message : String(err)}. The components exist; set the container's childOrder with update_components.`
+        ], err);
+      }
+    }
+    return created;
+  }
+  async function writeFlexChildOrders(appId, versionId, pageId, orders) {
+    const diff = Object.fromEntries([...orders].map(([id, order]) => [
+      id,
+      { component: { definition: { properties: { childOrder: childOrderProperty(order) } } } }
+    ]));
+    const res = await auth.authedFetch(`/api/v2/apps/${appId}/versions/${versionId}/components`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_user_switched_version: false, pageId, diff })
+    });
+    await assertOk(res, "writeFlexChildOrders");
   }
   async function createComponent(params) {
     const [r] = await createComponents({
@@ -3252,7 +2670,9 @@ function createClient(auth, config) {
         throw new Error(`updateComponents "${u.componentId}": slotName requires parent.`);
       }
       if (hasDef) {
-        diff[u.componentId] = { component: { definition: u.definition } };
+        const definition2 = u.definition;
+        const properties = definition2?.properties ? downgradeFlexForLibrary({ type: "FlexContainer", properties: definition2.properties }).properties : void 0;
+        diff[u.componentId] = { component: { definition: properties ? { ...definition2, properties } : u.definition } };
       } else {
         diff[u.componentId] = {
           component: {
@@ -3269,6 +2689,26 @@ function createClient(auth, config) {
     });
     await assertOk(res, "updateComponents");
     return { updated: params.updates.length };
+  }
+  async function listComponentLibraries() {
+    const res = await auth.authedFetch("/api/custom-component-libraries");
+    await assertOk(res, "listComponentLibraries");
+    const body = await res.json();
+    return Array.isArray(body) ? body : body?.libraries ?? [];
+  }
+  async function listBuiltinPacks() {
+    const res = await auth.authedFetch("/api/builtin-packs");
+    if (!res.ok)
+      return null;
+    const body = await res.json();
+    if (!Array.isArray(body))
+      return null;
+    const packs = body;
+    return Promise.all(packs.map(async (info) => {
+      const file = await auth.authedFetch(`/api/builtin-packs/${encodeURIComponent(info.pack)}/${encodeURIComponent(info.hash)}/manifest.json`);
+      const manifest = file.ok ? await file.json() : null;
+      return { info, manifest };
+    }));
   }
   async function deleteComponents(params) {
     const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/components`, {
@@ -3312,8 +2752,8 @@ function createClient(auth, config) {
   }
   async function updateQuery(params) {
     assertPersistableQueryToggles(params.options, `ToolJet updateQuery refused query "${params.queryId}"`);
-    const query2 = await assertQueryDatasourceAllowed(params.queryId, params.versionId);
-    if (query2.kind === "workflows") {
+    const query = await assertQueryDatasourceAllowed(params.queryId, params.versionId);
+    if (query.kind === "workflows") {
       params = { ...params, options: normalizeWorkflowQueryOptions(params.options) };
       await assertWorkflowQueryTarget(params.options);
     }
@@ -3326,11 +2766,11 @@ function createClient(auth, config) {
       body: JSON.stringify(body)
     });
     await assertOk(res, "updateQuery");
-    if (query2.kind === "workflows") {
+    if (query.kind === "workflows") {
       try {
         await verifyWorkflowMapping(params.queryId, params.versionId, params.options);
       } catch (error) {
-        throw new PartialWriteError("updateQuery", [{ query_id: params.queryId, datasource_id: query2.data_source_id }], [String(error)]);
+        throw new PartialWriteError("updateQuery", [{ query_id: params.queryId, datasource_id: query.data_source_id }], [String(error)]);
       }
     }
     return { query_id: params.queryId };
@@ -3392,16 +2832,16 @@ function createClient(auth, config) {
     await assertOk(res, "getQueries");
     const body = await res.json();
     const orgSlug = await auth.getOrganizationSlug();
-    return (body.data_queries ?? []).map((query2) => ({
-      ...query2,
-      ...query2.data_source_id ? { datasource_settings_url: datasourceManagementUrl(orgSlug, query2.data_source_id) } : {}
+    return (body.data_queries ?? []).map((query) => ({
+      ...query,
+      ...query.data_source_id ? { datasource_settings_url: datasourceManagementUrl(orgSlug, query.data_source_id) } : {}
     }));
   }
   async function getQuery(queryId, versionId) {
-    const query2 = (await getQueries(versionId)).find((candidate) => candidate.id === queryId);
-    if (!query2)
+    const query = (await getQueries(versionId)).find((candidate) => candidate.id === queryId);
+    if (!query)
       throw new Error(`ToolJet getQuery failed: query ${queryId} not found in version ${versionId}`);
-    return query2;
+    return query;
   }
   async function runQuery(params) {
     await assertQueryDatasourceAllowed(params.queryId, params.versionId, params.environmentId);
@@ -3472,6 +2912,10 @@ function createClient(auth, config) {
       ...pluginId ? { pluginId } : {},
       options: body.options ?? {}
     };
+  }
+  async function datasourceKind(dataSourceId) {
+    const known = datasourceIdentities.get(`${await auth.getOrganizationId()}:${dataSourceId}`);
+    return known?.kind ?? (await getDatasourceConnectionDetails(dataSourceId)).kind;
   }
   async function testDatasourceConnection(params) {
     await assertDatasourceAllowed(params.dataSourceId, void 0, params.environmentId);
@@ -3557,8 +3001,10 @@ function createClient(auth, config) {
     releaseApp,
     renameApp,
     getApp,
+    codeSourceAccess,
     getAppSummary,
     listAppPermissionSubjects,
+    getLicenseFeatureAccess,
     getAppPermission,
     setAppPermission,
     clearAppPermission,
@@ -3598,6 +3044,8 @@ function createClient(auth, config) {
     createComponents,
     updateComponents,
     deleteComponents,
+    listComponentLibraries,
+    listBuiltinPacks,
     updateLayouts,
     updateQuery,
     updateQueryDatasource,
@@ -3609,6 +3057,7 @@ function createClient(auth, config) {
     assertDatasourceAllowed,
     invokeDatasourceMethod,
     getDatasourceConnectionDetails,
+    datasourceKind,
     getPluginSpec,
     specCacheScope,
     testDatasourceConnection,
@@ -3621,6 +3070,397 @@ function pageOrderIndex(page) {
   if (typeof page?.pageGroupIndex === "number" && Number.isFinite(page.pageGroupIndex))
     return page.pageGroupIndex;
   return typeof page?.index === "number" ? page.index : void 0;
+}
+createRequire(import.meta.url);
+var colorPair = external_exports.object({
+  light: external_exports.string().trim().min(1).max(100).describe("Color used in light mode; hex is recommended."),
+  dark: external_exports.string().trim().min(1).max(100).describe("Color used in dark mode; hex is recommended.")
+}).strict();
+var themeDefinition = external_exports.object({
+  brand: external_exports.object({
+    colors: external_exports.object({
+      primary: colorPair,
+      secondary: colorPair.optional(),
+      tertiary: colorPair.optional()
+    }).strict()
+  }).strict(),
+  text: external_exports.object({
+    font: external_exports.string().trim().min(1).max(200),
+    colors: external_exports.object({
+      primary: colorPair,
+      placeholder: colorPair.optional(),
+      disabled: colorPair.optional()
+    }).strict()
+  }).strict(),
+  border: external_exports.object({
+    radius: external_exports.object({
+      default: external_exports.number().nonnegative(),
+      small: external_exports.number().nonnegative(),
+      large: external_exports.number().nonnegative()
+    }).strict(),
+    colors: external_exports.object({
+      default: colorPair,
+      weak: colorPair.optional(),
+      disabled: colorPair.optional()
+    }).strict()
+  }).strict(),
+  systemStatus: external_exports.object({
+    colors: external_exports.object({
+      success: colorPair,
+      error: colorPair.optional(),
+      warning: colorPair.optional()
+    }).strict()
+  }).strict(),
+  surface: external_exports.object({
+    colors: external_exports.object({
+      appBackground: colorPair,
+      surface1: colorPair,
+      surface2: colorPair,
+      surface3: colorPair
+    }).strict()
+  }).strict()
+}).strict();
+var ACCENT_MENU = [
+  { name: "Indigo", hex: "#4F46E5", fits: "software, analytics, internal tools" },
+  { name: "Violet", hex: "#7C3AED", fits: "creative, education, product teams" },
+  { name: "Fuchsia", hex: "#C026D3", fits: "consumer, beauty, events" },
+  { name: "Rose", hex: "#E11D48", fits: "hospitality, retail, food" },
+  { name: "Coral", hex: "#EA580C", fits: "logistics, field service, sports" },
+  { name: "Amber", hex: "#B45309", fits: "manufacturing, construction, real estate" },
+  { name: "Emerald", hex: "#059669", fits: "finance, sustainability, health" },
+  { name: "Teal", hex: "#0D9488", fits: "healthcare, travel, operations" },
+  { name: "Sky", hex: "#0284C7", fits: "support, IT, aviation, marine" }
+];
+var MENU_TEXT = ACCENT_MENU.map((a) => `${a.name} ${a.hex} (${a.fits})`).join(", ");
+var hsl = (hex2) => {
+  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(hex2.trim());
+  if (!m)
+    return null;
+  const full = m[1].length === 3 ? m[1].replace(/./g, (c) => c + c) : m[1];
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d === 0)
+    return { h: 0, s: 0, l };
+  const s = d / (1 - Math.abs(2 * l - 1));
+  const h = max === r ? (g - b) / d % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return { h: (h * 60 + 360) % 360, s, l };
+};
+var accentWarning = (definition2) => {
+  const light = definition2?.brand?.colors?.primary?.light;
+  if (typeof light !== "string")
+    return null;
+  const c = hsl(light);
+  if (!c)
+    return null;
+  const kind = c.l < 0.22 ? "near-black" : c.s < 0.2 ? "grey" : c.h >= 212 && c.h <= 226 && c.s > 0.75 && c.l >= 0.45 && c.l <= 0.66 ? "the stock blue" : null;
+  if (!kind)
+    return null;
+  return `The theme's primary ${light} is ${kind}, which reads plain. Unless the request names this colour or the brand uses it, pick an accent from the menu by the request's brand, industry or mood: ${MENU_TEXT}. Keep the canvas and neutrals light and lightly tinted toward it.`;
+};
+var STANDARD_PRIMARY = { brand: { colors: { primary: { light: "#2563EB" } } } };
+var here = dirname(fileURLToPath(import.meta.url));
+var standardThemeCandidates = [
+  resolve(here, "../../data/default-theme.json"),
+  resolve(here, "../data/default-theme.json")
+];
+var standardThemeCache;
+function loadStandardTheme() {
+  if (!standardThemeCache) {
+    const path = standardThemeCandidates.find((candidate) => existsSync(candidate));
+    if (!path) {
+      throw new Error(`standard theme file not found (looked in ${standardThemeCandidates.join(", ")})`);
+    }
+    standardThemeCache = JSON.parse(readFileSync(path, "utf8"));
+  }
+  return standardThemeCache;
+}
+var derivedThemeSchema = external_exports.object({
+  name: external_exports.string().trim().min(5).max(100),
+  definition: themeDefinition
+}).strict();
+async function resolveTheme(client, choice) {
+  const themes = await client.listAppThemes();
+  if (process.env.MCP_AGENT_PACK_LOOK === "own" && (choice === "standard" || choice === "workspace_default")) {
+    const basic = themes.find((theme) => theme.isBasic && !theme.isDisabled);
+    if (basic)
+      return basic;
+  }
+  const wanted = choice === "standard" ? loadStandardTheme() : typeof choice === "object" ? choice : void 0;
+  if (wanted) {
+    const existing = themes.find((theme) => theme.name === wanted.name && !theme.isDisabled);
+    if (existing)
+      return existing;
+    return client.createAppTheme({ name: wanted.name, definition: wanted.definition, isDefault: false });
+  }
+  const named = themes.find((theme) => theme.name === choice || theme.id === choice);
+  if (!named)
+    throw new Error(`Theme "${String(choice)}" is not available in the active workspace.`);
+  if (named.isDisabled)
+    throw new Error(`Theme "${named.name}" is disabled and cannot be selected.`);
+  return named;
+}
+function paintsDarkCanvasInLightMode(definition2) {
+  const light = definition2?.surface?.colors?.appBackground?.light;
+  const hex2 = typeof light === "string" ? /^#([0-9a-f]{6})$/i.exec(light.trim())?.[1] : void 0;
+  if (!hex2)
+    return false;
+  const [r, g, b] = [0, 2, 4].map((at) => {
+    const channel = parseInt(hex2.slice(at, at + 2), 16) / 255;
+    return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.18;
+}
+function createAppTool(client) {
+  return {
+    name: "create_app",
+    title: "Create App",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true
+    },
+    description: 'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, app_url (a backward-compatible alias for editor_url), and the theme that was applied. Honor explicit or selected themes first. Otherwise derive a theme from a brand, industry or customer type (see references/themes.md) and pass theme:{name, definition}; include complete brand, text, border, systemStatus and surface tokens with light/dark values, not a font-only or partial definition. It is created once per workspace by name and applied. Otherwise the app gets the standard theme ("ToolJet Modern": neutral greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. If a theme cannot be created (for example a licence gate) the app is still created and the result carries a theme warning. New apps are built in ToolJet UI 2.0 (component_library "ui2": types starting with Shad, laid out in FlexContainers); pass component_library "ui1" only when the user asks for the classic ToolJet widgets.',
+    inputSchema: {
+      name: external_exports.string().min(1),
+      theme: external_exports.union([external_exports.string().min(1), derivedThemeSchema]).optional(),
+      app_mode: external_exports.enum(["light", "dark"]).optional().describe("Open the app in this mode. Pass 'dark' when the request asks for a dark app, so the theme's dark values paint every surface; never paint dark backgrounds by hand on a light-mode app."),
+      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in, saved on the app (the components panel lists it). Default "ui2", ToolJet UI 2.0; "ui1" (ToolJet UI 1.0, the native widgets) only when the user asks for it.')
+    },
+    async handler(args) {
+      try {
+        if (typeof args.theme === "object")
+          derivedThemeSchema.parse(args.theme);
+        const created = await client.createApp(args.name);
+        const componentLibrary = args.component_library ?? "ui2";
+        const choice = args.theme ?? "standard";
+        const pins = libraryPins();
+        const pinned = pins ? { customComponentLibraries: pins } : {};
+        const result = {
+          ...created,
+          component_library: componentLibrary,
+          ...componentLibrary === "ui2" && defaultPack() ? { component_pack: defaultPack() } : {},
+          theme: { mode: "workspace_default" }
+        };
+        const savedLibrary = savedComponentLibrary(componentLibrary);
+        const saveLibrary = () => Promise.resolve().then(() => client.updateAppSettings({
+          appId: created.app_id,
+          versionId: created.version_id,
+          globalSettings: { componentLibrary: savedLibrary, ...pinned }
+        })).catch((libraryErr) => {
+          result.component_library_warning = `Could not save component_library "${componentLibrary}": ${libraryErr instanceof Error ? libraryErr.message : String(libraryErr)}. Build in it anyway.`;
+        });
+        if (choice === "workspace_default") {
+          await saveLibrary();
+          return ok(result);
+        }
+        const label = typeof choice === "object" ? choice.name : choice;
+        try {
+          const theme = await resolveTheme(client, choice);
+          const appMode = args.app_mode ?? (typeof choice === "object" && paintsDarkCanvasInLightMode(choice.definition) ? "dark" : void 0);
+          await client.updateAppSettings({
+            appId: created.app_id,
+            versionId: created.version_id,
+            globalSettings: { theme, componentLibrary: savedLibrary, ...pinned, ...appMode ? { appMode } : {} }
+          });
+          const mode = choice === "standard" ? "standard" : typeof choice === "object" ? "derived" : "named";
+          const accentNote = mode === "standard" ? accentWarning(STANDARD_PRIMARY) : mode === "derived" ? accentWarning(choice.definition) : null;
+          result.theme = { mode, id: theme.id, name: theme.name, ...appMode ? { app_mode: appMode } : {}, ...accentNote ? { accent_note: accentNote } : {} };
+        } catch (themeErr) {
+          await saveLibrary();
+          result.theme = {
+            mode: "workspace_default",
+            warning: `Could not apply theme "${label}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
+          };
+        }
+        return ok(result);
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+var THEME_LICENCE_USER_MESSAGE = "Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.";
+async function applyToApp(client, theme, args, definition2) {
+  if (!args.app_id || !args.version_id)
+    return void 0;
+  const mode = args.app_mode ?? (paintsDarkCanvasInLightMode(definition2) ? "dark" : void 0);
+  await client.updateAppSettings({
+    appId: args.app_id,
+    versionId: args.version_id,
+    globalSettings: { theme, ...mode ? { appMode: mode } : {} }
+  });
+  return { app_id: args.app_id, version_id: args.version_id, ...mode ? { app_mode: mode } : {} };
+}
+var hex = (h, s, l) => {
+  const channel = (n) => {
+    const k = (n + h / 30) % 12;
+    return Math.round(255 * (l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, "0");
+  };
+  return `#${channel(0)}${channel(8)}${channel(4)}`;
+};
+function definitionFromChoices(args) {
+  const accent = args.primary ? hsl(args.primary) : null;
+  if (!args.primary || !accent)
+    return void 0;
+  const { h, s: sat, l } = accent;
+  const pair = (light, dark, hue = h) => ({ light: hex(hue, light[0], light[1]), dark: hex(hue, dark[0], dark[1]) });
+  const base = loadStandardTheme().definition;
+  const radius = args.radius ?? base.border.radius.default;
+  return {
+    brand: {
+      colors: {
+        primary: { light: args.primary, dark: hex(h, sat, Math.max(l, 0.62)) },
+        secondary: pair([0.45, 0.22], [0.4, 0.78]),
+        tertiary: pair([0.65, 0.42], [0.65, 0.68], (h + 35) % 360)
+      }
+    },
+    text: {
+      font: args.font ?? base.text.font,
+      colors: { primary: pair([0.28, 0.13], [0.18, 0.94]), placeholder: pair([0.12, 0.45], [0.1, 0.65]), disabled: pair([0.1, 0.68], [0.08, 0.45]) }
+    },
+    border: {
+      radius: { default: radius, small: Math.max(radius - 2, 0), large: radius + 4 },
+      colors: { default: pair([0.22, 0.86], [0.12, 0.24]), weak: pair([0.24, 0.91], [0.12, 0.19]), disabled: pair([0.16, 0.82], [0.1, 0.28]) }
+    },
+    systemStatus: base.systemStatus,
+    surface: {
+      colors: {
+        appBackground: pair([0.3, 0.965], [0.16, 0.075]),
+        surface1: { light: "#ffffff", dark: hex(h, 0.14, 0.11) },
+        surface2: pair([0.28, 0.94], [0.13, 0.145]),
+        surface3: pair([0.24, 0.9], [0.12, 0.19])
+      }
+    }
+  };
+}
+function requireValue(value, label) {
+  if (value === void 0)
+    throw new Error(`manage_theme requires ${label} for this action.`);
+  return value;
+}
+async function readTheme(client, themeId) {
+  const theme = (await client.listAppThemes()).find((candidate) => candidate.id === themeId);
+  if (!theme)
+    throw new Error(`Theme "${themeId}" is not available in the active workspace.`);
+  return theme;
+}
+function manageThemeTool(client) {
+  return {
+    name: "manage_theme",
+    title: "Manage Workspace Theme",
+    // list/create/rename are safe, but the same tool also deletes a theme, so the hint covers its widest action.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
+    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. create with app_id and version_id also applies the theme to that app (in app_mode, else in dark mode when its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same name, so there is no need to list themes first. Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass include_definitions:true (or theme_id) to get a definition.",
+    inputSchema: {
+      action: external_exports.enum(["list", "create", "set_default", "update_definition", "rename", "delete"]),
+      theme_id: external_exports.string().uuid().optional(),
+      name: external_exports.string().trim().min(1).max(100).optional(),
+      primary: external_exports.string().regex(/^#[0-9a-fA-F]{6}$/).optional().describe("create: the accent colour as a hex. With font and radius, this is all a theme needs; the rest is derived from its hue"),
+      font: external_exports.string().trim().min(1).max(100).optional().describe("create, with primary: one font family name"),
+      radius: external_exports.number().min(0).max(32).optional().describe("create, with primary: corner radius in px"),
+      definition: themeDefinition.optional(),
+      is_default: external_exports.boolean().optional(),
+      confirm: external_exports.boolean().optional(),
+      include_definitions: external_exports.boolean().optional(),
+      app_id: external_exports.string().uuid().optional().describe("create only: apply the theme to this app as well"),
+      version_id: external_exports.string().uuid().optional().describe("create only, with app_id: the app version to apply it to"),
+      app_mode: external_exports.enum(["light", "dark"]).optional().describe("create only, with app_id: open the app in this mode. Pass 'dark' when the request asks for a dark app: the theme's dark values then paint every surface, and ToolJet's own parts (tables, inputs) draw for them. Never paint dark backgrounds by hand on a light-mode app.")
+    },
+    async handler(args) {
+      try {
+        if (args.action === "list") {
+          const themes = await client.listAppThemes();
+          if (args.include_definitions)
+            return ok({ themes });
+          if (args.theme_id) {
+            const one = themes.find((theme) => theme.id === args.theme_id);
+            return one ? ok({ themes: [one] }) : fail(new Error(`Theme "${args.theme_id}" not found.`));
+          }
+          return ok({
+            themes: themes.map(({ id, name, isDefault, isBasic, isDisabled }) => ({ id, name, isDefault, isBasic, isDisabled })),
+            note: "Definitions omitted; pass include_definitions:true or theme_id to read one."
+          });
+        }
+        if (args.action === "create") {
+          const missing = [
+            ...args.name === void 0 ? ['name (at least 5 characters, the brand or app, e.g. "Harbor Ledger")'] : [],
+            ...args.definition === void 0 && !definitionFromChoices(args) ? ['primary (the accent as a hex colour, e.g. "#0f766e"; font and radius are optional)'] : []
+          ];
+          if (missing.length)
+            throw new Error(`manage_theme create needs ${missing.join(" and ")}. Send them together in one call.`);
+          const name = requireValue(args.name, "name");
+          if (name.length < 5)
+            throw new Error("Theme name must contain at least 5 characters.");
+          if (name === "ToolJet")
+            throw new Error('The reserved theme name "ToolJet" cannot be used.');
+          const existing = (await client.listAppThemes()).find((theme) => theme.name === name && !theme.isDisabled);
+          if (existing) {
+            const applied = await applyToApp(client, existing, args, existing.definition ?? args.definition);
+            return ok({
+              theme: existing,
+              reused: true,
+              ...applied ? { applied } : {},
+              warnings: [
+                `Theme "${name}" already exists in this workspace; returned it instead of creating a duplicate. ` + (applied ? "It is applied to the app." : "Apply it with update_app_settings, or use update_definition to change it.")
+              ]
+            });
+          }
+          try {
+            const definition2 = requireValue(args.definition ?? definitionFromChoices(args), "primary (a hex colour; font and radius are optional)");
+            const created = await client.createAppTheme({
+              name,
+              definition: definition2,
+              isDefault: args.is_default ?? false
+            });
+            const applied = await applyToApp(client, created, args, definition2);
+            const accent = accentWarning(definition2);
+            return ok({ theme: created, ...applied ? { applied } : {}, ...accent ? { warnings: [accent] } : {} });
+          } catch (error) {
+            if (error instanceof ToolJetHttpError && error.status === 451) {
+              return ok({
+                theme: null,
+                licensed: false,
+                user_message: THEME_LICENCE_USER_MESSAGE,
+                warnings: [
+                  "Custom themes are not included in this ToolJet plan (HTTP 451). The app keeps the workspace default theme. Do not retry theme creation or guess a theme id; build the app on the default theme and repeat `user_message` to the user in the closing handoff."
+                ]
+              });
+            }
+            throw error;
+          }
+        }
+        const themeId = requireValue(args.theme_id, "theme_id");
+        await readTheme(client, themeId);
+        if (args.action === "set_default") {
+          await client.setDefaultAppTheme(themeId, args.is_default ?? true);
+          return ok({ theme: await readTheme(client, themeId) });
+        }
+        if (args.action === "update_definition") {
+          await client.updateAppThemeDefinition(themeId, requireValue(args.definition, "definition"));
+          const accent = accentWarning(args.definition);
+          return ok({ theme: await readTheme(client, themeId), ...accent ? { warnings: [accent] } : {} });
+        }
+        if (args.action === "rename") {
+          await client.renameAppTheme(themeId, requireValue(args.name, "name"));
+          return ok({ theme: await readTheme(client, themeId) });
+        }
+        if (args.confirm !== true) {
+          throw new Error(`Deleting theme "${themeId}" requires confirm:true after exact-target user approval.`);
+        }
+        await client.deleteAppTheme(themeId);
+        return ok({ deleted: true, theme_id: themeId });
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  };
 }
 createRequire(import.meta.url);
 var listWorkspaceGroupsInput = external_exports.object({
@@ -4102,272 +3942,684 @@ function inspectDatasourceSchemaTool(client) {
   };
 }
 createRequire(import.meta.url);
-var capabilityRequestSchema = external_exports.object({
-  version_id: external_exports.string().uuid()
-}).strict();
-var datasourceCapabilitySchema = external_exports.enum(["query", "ai-model", "email"]);
-var workflowCapabilityReportSchema = external_exports.object({
-  version_id: external_exports.string().uuid(),
-  authorable_node_types: external_exports.array(external_exports.string()),
-  datasources: external_exports.array(external_exports.object({
-    id: external_exports.string(),
-    name: external_exports.string(),
-    kind: external_exports.string(),
-    capabilities: external_exports.array(datasourceCapabilitySchema)
-  }).strict())
-}).strict();
-var AI_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["openai", "anthropic", "gemini", "mistral_ai"]);
-var EMAIL_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["smtp", "sendgrid", "mailgun"]);
-function datasourceCapabilities(kind) {
-  const capabilities = ["query"];
-  if (AI_DATASOURCE_KINDS.has(kind))
-    capabilities.push("ai-model");
-  if (EMAIL_DATASOURCE_KINDS.has(kind))
-    capabilities.push("email");
-  return capabilities;
-}
-async function getWorkflowCapabilities(client, input) {
-  const { version_id } = capabilityRequestSchema.parse(input);
-  const datasources = await client.workflows.listDatasources(version_id);
-  return workflowCapabilityReportSchema.parse({
-    version_id,
-    authorable_node_types: nodeCatalog.nodes.map((node) => node.type),
-    datasources: datasources.map((datasource) => ({
-      id: datasource.id,
-      name: datasource.name,
-      kind: datasource.kind,
-      capabilities: datasourceCapabilities(datasource.kind)
-    }))
-  });
-}
-function workflowReadiness(graph, structuralErrors) {
-  if (structuralErrors.length)
-    return { runtime_readiness: "blocked", blockers: structuralErrors };
-  const adjacency = new Map(graph.nodes.map((node) => [node.id, []]));
-  for (const edge of controlFlowEdges(graph))
-    adjacency.get(edge.source)?.push(edge.target);
-  const reachable = /* @__PURE__ */ new Set();
-  const visit = (id) => {
-    if (reachable.has(id))
-      return;
-    reachable.add(id);
-    for (const target of adjacency.get(id) ?? [])
-      visit(target);
-  };
-  for (const start of graph.nodes.filter((node) => node.type === "input" && node.data.nodeType === "start"))
-    visit(start.id);
-  const blockers = [];
-  for (const agent of graph.nodes.filter((node) => node.type === "agent" && reachable.has(node.id))) {
-    const attachment = graph.edges.find((edge) => edge.target === agent.id && edge.targetHandle === "ai-model");
-    const child = attachment && graph.nodes.find((node) => node.id === attachment.source);
-    const definitionId = child?.data.idOnDefinition;
-    const mapping = typeof definitionId === "string" && graph.queries.find((query2) => query2.idOnDefinition === definitionId);
-    if (!attachment || !child || !mapping)
-      blockers.push({
-        code: "agent_missing_model",
-        path: `nodes.${agent.id}.model`,
-        message: "Reachable Agent requires one configured AI model attachment."
-      });
-  }
-  return { runtime_readiness: blockers.length ? "draft_only" : "runnable", blockers };
-}
-var plans = /* @__PURE__ */ new Map();
-var TTL = 30 * 6e4;
-function prune() {
-  for (const [key, plan] of plans)
-    if (plan.expires <= Date.now())
-      plans.delete(key);
-}
-async function prepare(client, workflowId, versionId, spec, ids) {
-  const snapshot = await client.get(workflowId, versionId);
-  if (!snapshot.editable)
-    throw new Error("Only editable draft workflow versions can be changed.");
-  const [queries, datasources] = await Promise.all([client.getQueries(versionId), client.listDatasources(versionId)]);
-  const compiled = compileGraph(snapshot.definition, spec, ids, new Map(datasources.map((datasource) => [datasource.id, datasource.kind])));
-  const warnings = [];
-  const writes = [];
-  const finalDefinitionIds = new Set(compiled.graph.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string"));
-  const removedDefinitionIds = new Set(snapshot.definition.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string" && !finalDefinitionIds.has(value)));
-  const deletions = [];
-  for (const mapping of snapshot.definition.queries) {
-    if (!removedDefinitionIds.has(mapping.idOnDefinition))
+var COMPONENT_FX_GUIDANCE = "For properties/styles/validation with an FX toggle, use `{ value: <expression>, fxActive: true }` only for bindings/conditions/calculations the normal control cannot express. Keep defaults and panel-editable constants (including `{{true}}`/`{{false}}`, numbers, selections, colors) out of FX. For nested Table columns/buttons/options and KeyValuePair fields, add the property key (e.g. `columnVisibility`, `disableButton`, `fieldVisibility`, `isEditable`) to that object's `fxActiveFields`, preserving other entries. ";
+var COMPONENT_FX_UPDATE_GUIDANCE = COMPONENT_FX_GUIDANCE + "Updates must include both `value` and `fxActive`; revert with `{ value: <constant>, fxActive: false }`. For nested Table fields, remove only reverted property keys from `fxActiveFields`. KeyValuePair arrays merge by index; verify flag removals and report retained flags. ";
+createRequire(import.meta.url);
+function separateAdjacentClosingBraces(text) {
+  let out = "";
+  let i = 0;
+  const n = text.length;
+  while (i < n) {
+    if (!text.startsWith("{{", i)) {
+      out += text[i];
+      i += 1;
       continue;
-    if (compiled.graph.queries.some((retained) => retained.id === mapping.id))
-      continue;
-    if (deletions.some((deletion) => deletion.query_id === mapping.id))
-      continue;
-    const node = snapshot.definition.nodes.find((candidate) => candidate.data.idOnDefinition === mapping.idOnDefinition);
-    if (!node)
-      continue;
-    if (!queries.some((query2) => query2.id === mapping.id))
-      throw new Error(`Query ${mapping.id} is missing from the target version.`);
-    deletions.push({ node_id: node.id, definition_id: mapping.idOnDefinition, query_id: mapping.id });
-  }
-  const claimedNames = /* @__PURE__ */ new Set();
-  for (const item of compiled.query_nodes) {
-    const existingMapping = snapshot.definition.queries.find((q) => q.idOnDefinition === item.definition_id);
-    const oldQuery = queries.find((q) => q.id === existingMapping?.id);
-    if (existingMapping && !oldQuery)
-      throw new Error(`Query ${existingMapping.id} is missing from the target version.`);
-    if (oldQuery && snapshot.definition.nodes.filter((n) => snapshot.definition.queries.some((q) => q.id === oldQuery.id && q.idOnDefinition === n.data.idOnDefinition)).length > 1)
-      throw new Error(`Query ${oldQuery.id} is shared by multiple nodes. Shared query editing is unsupported.`);
-    const input = item.role === "workflow-node" ? item.spec : void 0;
-    const datasource = item.role === "agent-model" ? datasources.find((d) => d.id === item.datasource_id) : input.type === "javascript" || input.type === "loop" ? datasources.find((d) => d.kind === "runjs") : datasources.find((d) => d.id === input.datasource_id);
-    const label = item.role === "agent-model" ? "Agent model" : `node ${input.ref}`;
-    if (!datasource)
-      throw new Error(`Datasource unavailable for ${label}.`);
-    if (item.role === "agent-model" && !AI_DATASOURCE_KINDS.has(datasource.kind))
-      throw new Error(`Datasource ${datasource.id} is not an AI model datasource.`);
-    const kind = datasource.kind;
-    const dataSourceId = datasource.id;
-    const name = item.role === "agent-model" ? item.name : input.name;
-    if (oldQuery && (oldQuery.kind !== kind || oldQuery.data_source_id !== dataSourceId))
-      throw new Error(item.role === "agent-model" ? "Changing an Agent model datasource is unsupported; remove the model first, then add its replacement in a second phase." : "Changing an existing query datasource is unsupported; add a new node.");
-    if (oldQuery?.name !== void 0 && oldQuery.name !== name)
-      throw new Error(item.role === "agent-model" ? "Renaming an Agent model query is unsupported; remove the model first, then add its replacement in a second phase." : "Renaming existing queries is unsupported because code references cannot be rewritten safely.");
-    if (claimedNames.has(name) || queries.some((q) => q.name === name && q.id !== oldQuery?.id))
-      throw new Error(`Duplicate query name: ${name}`);
-    claimedNames.add(name);
-    const requestedOptions = item.role === "agent-model" ? item.options : input.type === "javascript" || input.type === "loop" ? { ...oldQuery?.options ?? {}, code: input.code } : input.options;
-    const options = item.role === "agent-model" ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
-    if (item.role === "workflow-node" && kind === "runjs")
-      assertWorkflowJavaScript(options.code, label);
-    if (item.role === "workflow-node") {
-      const validation2 = validateQueryOptions(kind, options, "workflow");
-      if (validation2.errors.length)
-        throw new Error(issueMessages(validation2.errors).join(" "));
-      warnings.push(...issueMessages(validation2.warnings));
     }
-    writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name, dataSourceId: dataSourceId ?? "", kind, options });
-    if (!existingMapping && !compiled.graph.queries.some((mapping) => mapping.idOnDefinition === item.definition_id))
-      compiled.graph.queries.push({ idOnDefinition: item.definition_id, id: `pending:${item.node_id}` });
+    let j = i + 2;
+    let depth = 0;
+    let quote = null;
+    let expr = "";
+    let terminated = false;
+    while (j < n) {
+      const c = text[j];
+      if (quote) {
+        expr += c;
+        if (c === "\\" && j + 1 < n) {
+          expr += text[j + 1];
+          j += 2;
+          continue;
+        }
+        if (c === quote)
+          quote = null;
+        j += 1;
+        continue;
+      }
+      if (c === "'" || c === '"' || c === "`") {
+        quote = c;
+        expr += c;
+        j += 1;
+        continue;
+      }
+      if (c === "{") {
+        depth += 1;
+        expr += c;
+        j += 1;
+        continue;
+      }
+      if (c === "}") {
+        if (depth === 0 && text[j + 1] === "}") {
+          terminated = true;
+          break;
+        }
+        depth = Math.max(depth - 1, 0);
+        expr += c;
+        if (text[j + 1] === "}")
+          expr += " ";
+        j += 1;
+        continue;
+      }
+      expr += c;
+      j += 1;
+    }
+    if (!terminated) {
+      out += text.slice(i);
+      break;
+    }
+    out += `{{${expr}}}`;
+    i = j + 2;
   }
-  const queryIds = /* @__PURE__ */ new Set([...queries.map((q) => q.id), ...writes.filter((q) => !q.existing_id).map((q) => `pending:${q.node_id}`)]);
-  const validation = validateGraph(compiled.graph, queryIds);
-  const readiness = workflowReadiness(compiled.graph, validation.errors);
-  return { snapshot, compiled, writes, deletions, validation, readiness, warnings };
+  return out;
 }
-async function lint(client, workflowId, versionId, spec, allowDraft = false) {
-  const prepared = await prepare(client, workflowId, versionId, spec);
-  if (prepared.validation.errors.length || prepared.readiness.runtime_readiness === "draft_only" && !allowDraft)
-    return { ...prepared.validation, ...prepared.readiness, query_warnings: prepared.warnings };
-  prune();
-  while (plans.size >= 200)
-    plans.delete(plans.keys().next().value);
-  const token = randomUUID();
-  plans.set(token, { scope: await client.planScope(), workflowId, versionId, spec: structuredClone(spec), ids: prepared.compiled, allowDraft, expires: Date.now() + TTL });
+function separateAdjacentClosingBracesDeep(value) {
+  if (typeof value === "string") {
+    if (!value.includes("{{"))
+      return { value, changed: false };
+    const fixed = separateAdjacentClosingBraces(value);
+    return { value: fixed, changed: fixed !== value };
+  }
+  if (Array.isArray(value)) {
+    let changed = false;
+    const next = value.map((item) => {
+      const result = separateAdjacentClosingBracesDeep(item);
+      changed ||= result.changed;
+      return result.value;
+    });
+    return { value: changed ? next : value, changed };
+  }
+  if (value && typeof value === "object") {
+    let changed = false;
+    const next = {};
+    for (const [key, item] of Object.entries(value)) {
+      const result = separateAdjacentClosingBracesDeep(item);
+      changed ||= result.changed;
+      next[key] = result.value;
+    }
+    return { value: changed ? next : value, changed };
+  }
+  return { value, changed: false };
+}
+function normalizeSection(section) {
+  if (!section)
+    return { value: void 0, patch: void 0 };
+  const value = {};
+  const patch = {};
+  for (const [key, entry] of Object.entries(section)) {
+    const canonical = entry !== null && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry : { value: entry };
+    value[key] = canonical;
+    if (canonical !== entry)
+      patch[key] = canonical;
+  }
   return {
-    plan_token: token,
-    expires_in_seconds: TTL / 1e3,
-    node_ids: prepared.compiled.node_ids,
-    edge_ids: prepared.compiled.edge_ids,
-    ...prepared.validation,
-    ...prepared.readiness,
-    query_warnings: prepared.warnings,
-    changes: { node_upserts: spec.nodes.length, edge_upserts: spec.edges.length, node_removals: spec.remove_node_ids, edge_removals: spec.remove_edge_ids, queries: [...prepared.writes.map((q) => ({ name: q.name, operation: q.existing_id ? "update" : "create" })), ...prepared.deletions.map((q) => ({ query_id: q.query_id, operation: "delete" }))] }
+    value,
+    patch: Object.keys(patch).length ? patch : void 0
   };
 }
-async function apply(client, token) {
-  prune();
-  const scope = await client.planScope();
-  const plan = plans.get(token);
-  if (!plan || plan.scope !== scope)
-    throw new Error("Unknown, expired, consumed, or differently scoped plan. Run lint_workflow_spec again.");
-  plans.delete(token);
-  const { compiled, snapshot, writes, deletions, validation, readiness } = await prepare(client, plan.workflowId, plan.versionId, plan.spec, plan.ids);
-  if (validation.errors.length)
-    throw new Error(JSON.stringify(validation.errors));
-  if (readiness.runtime_readiness === "draft_only" && !plan.allowDraft)
-    throw new Error(JSON.stringify(readiness.blockers));
-  const completed = [];
-  let phase = "queries";
-  let attemptedQuery;
-  try {
-    for (const write of writes) {
-      attemptedQuery = { name: write.name, node_id: write.node_id, existing_id: write.existing_id };
-      const result = write.existing_id ? await client.updateQuery({ queryId: write.existing_id, versionId: plan.versionId, name: write.name, options: write.options }) : await client.createWorkflowQuery({ workflowId: plan.workflowId, versionId: plan.versionId, name: write.name, dataSourceId: write.dataSourceId || void 0, kind: write.kind, options: write.options });
-      completed.push({ operation: write.existing_id ? "update" : "create", query_id: result.query_id, node_id: write.node_id });
-      compiled.graph.queries = compiled.graph.queries.filter((q) => q.idOnDefinition !== write.definition_id);
-      compiled.graph.queries.push({ idOnDefinition: write.definition_id, id: result.query_id });
-      attemptedQuery = void 0;
+function propValue(properties, key) {
+  const entry = properties[key];
+  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+}
+function isTruthy(value) {
+  if (value === true || value === 1)
+    return true;
+  if (typeof value !== "string")
+    return false;
+  const compact = value.replace(/\s+/g, "").toLowerCase();
+  return compact === "true" || compact === "{{true}}" || compact === "1" || compact === "{{1}}";
+}
+function catalogDefault(type, key, fallback) {
+  return getComponentSchema(type)?.properties.find((property) => property.key === key)?.default ?? fallback;
+}
+var MONEY_WORDS = /\b(price|amount|cost|total|revenue|balance|fee|fees|spend|spent|salary|budget|paid|payment|invoice|subtotal|tax|refund|value|mrr|arr)\b/i;
+var PERSON_WORDS = /\b(customer|client|requester|requestor|owner|assignee|assigned to|contact|lead|member|patient|guest|organi[sz]er|employee|technician|tech|agent|rep|student|author|reporter|host|driver|candidate|applicant|tenant|buyer|seller|manager|person|attendee|trainer|coach|instructor|doctor|vet|veterinarian|nurse|resident|full name|customer name|contact name)\b/i;
+var UNIT_WORDS = /\b(min|mins|minutes?|hours?|hrs?|days?|weeks?|time|count|qty|quantity|servings?|units?|items?|points?|score|percent|pct|kg|lbs?|reps?|sets?|seats?|guests?|nights?|orders?|tickets?|visits?)\b/i;
+var COUNT_WORDS = /\b(min|mins|minutes?|hours?|hrs?|count|qty|quantity|servings?|units?|items?|points?|score|percent|pct|kg|lbs?|reps?|sets?|seats?|guests?|nights?|orders?|tickets?|visits?|jobs?|rate)\b/i;
+var STATE_WORDS = /\b(status|stage|state|priority|severity|availability|health|risk|condition)\b/i;
+var AMBIGUOUS_MONEY_WORDS = /\b(total|totals|value)\b/gi;
+var COUNTED_NOUNS = /\b(clients?|clientes?|customers?|users?|usu[aá]rios?|members?|membros?|miembros?|patients?|pacientes?|leads?|accounts?|contas?|cuentas?|vendors?|suppliers?|fornecedor(es)?|proveedor(es)?|employees?|funcion[aá]rios?|empleados?|staff|people|pessoas|personas|students?|alunos?|estudiantes?|contacts?|contatos?|contactos?|compan(y|ies)|empresas?|projects?|projetos?|proyectos?|tasks?|tarefas?|tareas?|bugs?|issues?|requests?|pedidos?|solicita[cç](ão|ões|ión|iones)|records?|registros?|rooms?|salas?|bookings?|reservations?|reservas?|appointments?|agendamentos?|consultas?|citas?|recipes?|receitas?|recetas?|ingredients?|ingredientes?|products?|produtos?|productos?|assets?|ativos?|devices?|dispositivos?|vehicles?|ve[ií]culos?|audits?|auditorias?|findings?|cases?|casos?|deals?|negócios?|events?|eventos?)\b/i;
+var countLabel = (label) => {
+  if (COUNT_WORDS.test(label))
+    return true;
+  return !MONEY_WORDS.test(label.replace(AMBIGUOUS_MONEY_WORDS, " ")) && COUNTED_NOUNS.test(label);
+};
+function plannedCurrency(components) {
+  for (const component of components) {
+    if (component.type !== "ShadStat")
+      continue;
+    const currency = propValue(component.properties ?? {}, "currency");
+    if (typeof currency === "string" && /^[A-Za-z]{3}$/.test(currency.trim()))
+      return currency.trim().toUpperCase();
+  }
+  return void 0;
+}
+var CLIENT_SERVER_BOOLEAN_KEYS = /* @__PURE__ */ new Set([
+  "serverSidePagination",
+  "serverSideSearch",
+  "serverSideSort",
+  "serverSideFilter"
+]);
+var STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS = 24;
+function isStrippableUnknownKey(type, section, key, knownKeys) {
+  if (knownKeys.includes(key))
+    return false;
+  if (section === "properties" && retiredUi2Name(type, "properties", key))
+    return false;
+  if (type === "DropdownV2" && section === "properties" && ["value", "defaultValue"].includes(key))
+    return false;
+  if (section === "properties" && STYLE_KEYS_IN_PROPERTIES.has(key))
+    return false;
+  const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+  if (aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget)))
+    return false;
+  if (nearestCatalogKey(key, knownKeys))
+    return false;
+  return true;
+}
+function packValueAsDefault(type, name, properties) {
+  if (!properties || properties.value === void 0)
+    return { properties };
+  const schema = type ? getComponentSchema(type) : void 0;
+  const keys = new Set((schema?.properties ?? []).map((entry) => entry.key));
+  if (!schema?.pack || !keys.has("defaultValue") || keys.has("value"))
+    return { properties };
+  const { value, ...rest } = properties;
+  if (rest.defaultValue !== void 0) {
+    return { properties: rest, warning: `${type} "${name}": dropped properties.value, the input's runtime value; it starts from defaultValue.` };
+  }
+  return {
+    properties: { ...rest, defaultValue: value },
+    warning: `${type} "${name}": moved properties.value to defaultValue, where the input takes its starting value from.`
+  };
+}
+function normalizeComponentSpec(component, options = {}) {
+  const normalizedSections = Object.fromEntries(["properties", "styles", "validation", "others"].map((section) => [
+    section,
+    normalizeSection(component[section])
+  ]));
+  const warnings = [];
+  const packValue = packValueAsDefault(component.type, component.name, normalizedSections.properties.value);
+  if (packValue.warning)
+    warnings.push(packValue.warning);
+  const properties = { ...packValue.properties ?? {} };
+  const propertyPatch = {};
+  const stylePatch = {};
+  const setProperty = (key, value) => {
+    const current = properties[key];
+    const wrapped = current && typeof current === "object" && !Array.isArray(current) ? { ...current, value } : { value };
+    properties[key] = wrapped;
+    propertyPatch[key] = wrapped;
+  };
+  const stylesValue = normalizedSections.styles.value ?? {};
+  let stylesChanged = false;
+  const setStyle = (key, value) => {
+    const current = stylesValue[key];
+    stylesValue[key] = current && typeof current === "object" && !Array.isArray(current) ? { ...current, value } : { value };
+    stylePatch[key] = stylesValue[key];
+    normalizedSections.styles.value = stylesValue;
+  };
+  const schema = getComponentSchema(component.type);
+  const knownPropertyKeys = schema ? new Set(schema.properties.map((entry) => entry.key)) : void 0;
+  const knownStyleKeys = schema ? new Set(schema.styles.map((entry) => entry.key)) : void 0;
+  const aliasTargetFor = (key) => {
+    if (knownPropertyKeys?.has(key))
+      return void 0;
+    const target = PROPERTY_KEY_ALIASES[key.toLowerCase()];
+    if (!target)
+      return void 0;
+    if (!schema)
+      return target;
+    return knownStyleKeys.has(target) || knownPropertyKeys.has(target) ? target : void 0;
+  };
+  for (const key of Object.keys(properties)) {
+    const aliasTarget = aliasTargetFor(key);
+    const canonical = aliasTarget ?? key;
+    const belongsInStyles = canonical !== "styles" && (isMisplacedStyleKey(component.type, canonical) || !!aliasTarget && !!knownStyleKeys?.has(canonical) && !knownPropertyKeys?.has(canonical));
+    if (!aliasTarget && !belongsInStyles)
+      continue;
+    if (belongsInStyles) {
+      if (stylesValue[canonical] === void 0)
+        stylesValue[canonical] = properties[key];
+      delete properties[key];
+      stylesChanged = true;
+      warnings.push(`${component.type} "${component.name}": moved ${aliasTarget ? `alias "${key}"` : `style key "${key}"`} to styles.${canonical} (ToolJet reads it from styles, not properties).`);
+    } else if (canonical !== key) {
+      if (properties[canonical] === void 0)
+        properties[canonical] = properties[key];
+      delete properties[key];
+      warnings.push(`${component.type} "${component.name}": renamed alias "${key}" to "${canonical}".`);
     }
-    phase = "save";
-    await client.save(snapshot, compiled.graph);
-    phase = "readback";
-    const [saved, queries] = await Promise.all([client.get(plan.workflowId, plan.versionId), client.getQueries(plan.versionId)]);
-    const validation2 = validateGraph(saved.definition, new Set(queries.map((q) => q.id)));
-    if (!isDeepStrictEqual(saved.definition, compiled.graph))
-      throw new Error("Saved definition differs from the intended graph. Inspect get_workflow before retrying.");
-    for (const write of writes) {
-      const id = completed.find((q) => q.node_id === write.node_id).query_id;
-      const persisted = queries.find((q) => q.id === id);
-      if (!persisted || persisted.name !== write.name || persisted.kind !== write.kind || persisted.data_source_id !== write.dataSourceId || !isDeepStrictEqual(persisted.options, write.options))
-        throw new Error(`Query ${id} readback differs from intended datasource, kind, name, or options.`);
+  }
+  if (schema && options.stripUnknownKeys) {
+    for (const key of Object.keys(stylesValue)) {
+      if (knownStyleKeys.has(key) || !knownPropertyKeys.has(key))
+        continue;
+      if (properties[key] === void 0) {
+        properties[key] = stylesValue[key];
+        propertyPatch[key] = stylesValue[key];
+      }
+      delete stylesValue[key];
+      stylesChanged = true;
+      warnings.push(`${component.type} "${component.name}": moved styles.${key} to properties.${key} (ToolJet reads it from properties for ${component.type}).`);
     }
-    if (validation2.errors.length)
-      throw new Error(JSON.stringify(validation2.errors));
-    phase = "query_deletions";
-    for (const deletion of deletions) {
-      attemptedQuery = { name: deletion.query_id, node_id: deletion.node_id, existing_id: deletion.query_id };
-      await client.deleteQuery({ queryId: deletion.query_id, versionId: plan.versionId });
-      completed.push({ operation: "delete", query_id: deletion.query_id, node_id: deletion.node_id });
-      attemptedQuery = void 0;
+  }
+  if (stylesChanged)
+    normalizedSections.styles.value = stylesValue;
+  if (options.stripUnknownKeys && component.type === "NumberInput") {
+    for (const key of ["minValue", "maxValue"]) {
+      const value = propValue(properties, key);
+      if (value == null || typeof value === "string" && !value.trim())
+        continue;
+      const validation = normalizedSections.validation.value ?? {};
+      const current = propValue(validation, key);
+      if (validation[key] !== void 0 && current !== value)
+        continue;
+      validation[key] = properties[key];
+      normalizedSections.validation.value = validation;
+      normalizedSections.validation.patch = { ...normalizedSections.validation.patch, [key]: validation[key] };
+      delete properties[key];
+      warnings.push(`NumberInput "${component.name}": moved properties.${key} to validation.${key}, where the renderer reads the bound.`);
     }
-    return { workflow_id: plan.workflowId, version_id: plan.versionId, editor_url: saved.editor_url, node_ids: compiled.node_ids, edge_ids: compiled.edge_ids, completed, validation: validation2, ...readiness };
-  } catch (error) {
+  }
+  for (const key of CLIENT_SERVER_BOOLEAN_KEYS) {
+    const current = propValue(properties, key);
+    if (current !== "clientSide" && current !== "serverSide")
+      continue;
+    setProperty(key, current === "serverSide");
+    warnings.push(`${component.name} "${key}": normalized ${JSON.stringify(current)} to a boolean ToolJet binding.`);
+  }
+  if (component.type === "FlexContainer") {
+    const card = propValue(properties, "cardStyle");
+    if (card === "shadcnCard" && !isTruthy(propValue(properties, "dynamicHeight"))) {
+      setProperty("dynamicHeight", "{{true}}");
+    }
+  }
+  if (component.type === "Table") {
+    const lookEntry0 = stylesValue.tableLook;
+    const look0 = lookEntry0 && typeof lookEntry0 === "object" ? lookEntry0.value : lookEntry0;
+    const height = (component.layouts?.desktop ?? component.layout)?.height;
+    const staticNumber = (v) => {
+      const m = typeof v === "number" ? String(v) : typeof v === "string" ? /^\s*(?:\{\{\s*)?(\d+)\s*(?:\}\})?\s*$/.exec(v)?.[1] : void 0;
+      return m !== void 0 ? Number(m) : void 0;
+    };
+    const isFalse = (v) => v === false || typeof v === "string" && /^\s*(\{\{\s*)?false(\s*\}\})?\s*$/.test(v);
+    if (look0 === "shadcn" && properties.dynamicHeight === void 0) {
+      setProperty("dynamicHeight", "{{true}}");
+    }
+    if (look0 === "shadcn" && typeof height === "number" && !isTruthy(propValue(properties, "dynamicHeight")) && !isTruthy(propValue(properties, "serverSidePagination")) && !isFalse(propValue(properties, "enablePagination"))) {
+      const rowsPerPage = staticNumber(propValue(properties, "rowsPerPage")) ?? 10;
+      const toolbar = isFalse(propValue(properties, "displaySearchBox")) ? 0 : 64;
+      const cellEntry = stylesValue.cellSize;
+      const cellSize = cellEntry && typeof cellEntry === "object" ? cellEntry.value : cellEntry;
+      const rowPx = cellSize === "condensed" ? 40 : 46;
+      const fit = Math.floor((height - toolbar - 41 - 47) / rowPx);
+      if (fit < rowsPerPage) {
+        if (fit >= 3) {
+          setProperty("rowsPerPage", `{{${fit}}}`);
+          warnings.push(`Table "${component.name}": height ${height}px fits ${fit} rows; rowsPerPage is now ${fit} so no row is cut off.`);
+        } else {
+          setProperty("dynamicHeight", "{{true}}");
+          warnings.push(`Table "${component.name}": height ${height}px fits fewer than 3 rows; dynamicHeight is on so the table fits its rows.`);
+        }
+      }
+    }
+    if (look0 === "shadcn" && properties.highlightSelectedRow === void 0 && !isTruthy(propValue(properties, "showBulkSelector")) && !isFalse(propValue(properties, "allowSelection"))) {
+      setProperty("highlightSelectedRow", "{{true}}");
+    }
+    if (properties.useDynamicColumn === void 0) {
+      setProperty("useDynamicColumn", catalogDefault("Table", "useDynamicColumn", "{{false}}"));
+    }
+    if (properties.columnData === void 0) {
+      setProperty("columnData", catalogDefault("Table", "columnData", "{{[{name: 'email', key: 'email', id: '1'}, {name: 'Full name', key: 'name', id: '2', isEditable: true}]}}"));
+    }
+    const columns = propValue(properties, "columns");
+    const dynamicColumns = isTruthy(propValue(properties, "useDynamicColumn"));
+    const autogenerateColumns = propValue(properties, "autogenerateColumns");
+    if (options.stripUnknownKeys && columns === void 0 && !dynamicColumns && isTruthy(autogenerateColumns) && typeof propValue(properties, "data") === "string" && /\bqueries(?:\.|\[)/.test(String(propValue(properties, "data")))) {
+      setProperty("columns", []);
+    }
+    if (Array.isArray(columns) && !dynamicColumns && !isTruthy(autogenerateColumns)) {
+      setProperty("autogenerateColumns", true);
+      if (autogenerateColumns !== void 0) {
+        warnings.push(`Table "${component.name}": normalized autogenerateColumns from false to true for runtime compatibility. Some ToolJet Table versions crash while generating transformations for explicit static columns when it is false. Project the data binding to intended keys and declare behavior-only keys with columnVisibility:false.`);
+      }
+    }
+    if (Array.isArray(columns)) {
+      const lookEntry = stylesValue.tableLook;
+      const shadcnLook = (lookEntry && typeof lookEntry === "object" ? lookEntry.value : lookEntry) === "shadcn";
+      const wrapNow = stylesValue.contentWrap?.value ?? stylesValue.contentWrap;
+      const multiLine = columns.some((c) => c && typeof c === "object" && !Array.isArray(c) && c.columnVisibility !== false && ["html", "text", "json", "image", "markdown"].includes(String(c.columnType)));
+      if (shadcnLook && multiLine && wrapNow === false)
+        setStyle("contentWrap", true);
+      else if (shadcnLook && !multiLine && wrapNow !== false)
+        setStyle("contentWrap", false);
+      let changedColumns = false;
+      const repairedColumns = columns.map((column) => {
+        if (options.stripUnknownKeys && column && typeof column === "object" && !Array.isArray(column) && column.columnType === "button" && Array.isArray(column.buttons)) {
+          const buttons = column.buttons.map((button) => {
+            if (!button || typeof button !== "object" || Array.isArray(button))
+              return button;
+            const b = button;
+            if (typeof b.label !== "string" || b.buttonLabel !== void 0)
+              return button;
+            const { label, ...rest } = b;
+            changedColumns = true;
+            warnings.push(`Table "${component.name}" action "${b.id}": moved label to buttonLabel, where the renderer reads the caption.`);
+            return { ...rest, buttonLabel: label };
+          });
+          column = { ...column, buttons };
+        }
+        if (column && typeof column === "object" && !Array.isArray(column) && column.columnType === "datepicker" && column.isDateSelectionEnabled === false && column.isTimeChecked !== true) {
+          changedColumns = true;
+          const entry = column;
+          warnings.push(`Table "${component.name}" date column "${entry.name ?? entry.key}": enabled date selection \u2014 a datepicker column with both date selection and time disabled renders blank regardless of the data.`);
+          return { ...entry, isDateSelectionEnabled: true };
+        }
+        if (shadcnLook && column && typeof column === "object" && !Array.isArray(column) && column.columnType === "datepicker" && !isTruthy(column.isEditable) && /^Y{4}[-/]MM[-/]DD$/.test(String(column.dateFormat ?? "").trim())) {
+          changedColumns = true;
+          const entry = column;
+          column = { ...entry, parseDateFormat: entry.parseDateFormat ?? entry.dateFormat, dateFormat: "MMM D, YYYY" };
+        }
+        if (column && typeof column === "object" && !Array.isArray(column) && column.columnType === "newMultiSelect" && !isTruthy(column.isEditable) && /^(status|severity|priority|stage|state|level|risk)$/i.test(String(column.key ?? column.name ?? "").replace(/[_\s-]+/g, ""))) {
+          changedColumns = true;
+          const entry = column;
+          warnings.push(`Table "${component.name}" column "${entry.name ?? entry.key}": a single state per row; columnType is now "select" (a multi-select shows "Select.." for a single value).`);
+          column = { ...entry, columnType: "select" };
+        }
+        if (shadcnLook && column && typeof column === "object" && !Array.isArray(column) && column.columnType === "number" && (column.horizontalAlignment === void 0 || column.thousandSeparator === void 0)) {
+          changedColumns = true;
+          const entry = column;
+          column = {
+            ...entry,
+            horizontalAlignment: entry.horizontalAlignment ?? "right",
+            thousandSeparator: entry.thousandSeparator ?? true
+          };
+        }
+        if (shadcnLook && column && typeof column === "object" && !Array.isArray(column)) {
+          const entry = column;
+          const words = `${String(entry.key ?? "")} ${String(entry.name ?? "")}`.replace(/[_-]+/g, " ");
+          const next = { ...entry };
+          if (entry.columnType === "number" && entry.decimalPlaces === void 0 && MONEY_WORDS.test(words) && !UNIT_WORDS.test(words)) {
+            next.decimalPlaces = 2;
+          }
+          if (["string", void 0].includes(entry.columnType) && entry.displayAsChip === void 0 && !isTruthy(entry.isEditable) && STATE_WORDS.test(words)) {
+            next.displayAsChip = true;
+          }
+          const size = Number(entry.columnSize);
+          const label = String(entry.name ?? entry.key ?? "");
+          if (Number.isFinite(size) && size > 0 && label) {
+            const email = /\be ?mail\b/i.test(words) ? 240 : 0;
+            const chip = next.displayAsChip === true || entry.displayAsChip === true ? 140 : 0;
+            const needed = Math.max(email, chip, Math.ceil(label.length * 7.5) + 32 + (isTruthy(entry.isEditable) ? 18 : 0));
+            if (size < needed)
+              next.columnSize = needed;
+          }
+          if (entry.columnType === "button" && Array.isArray(entry.buttons)) {
+            const buttons = entry.buttons.map((button) => {
+              if (!button || typeof button !== "object" || Array.isArray(button))
+                return button;
+              const b = button;
+              const bg = b.buttonBackgroundColor;
+              const defaultBg = bg === void 0 || ["#4368E3", "#4368e3", "var(--cc-primary-brand)"].includes(String(bg));
+              return (b.buttonType === void 0 || b.buttonType === "solid") && defaultBg ? { ...b, buttonType: "outline" } : button;
+            });
+            if (buttons.some((b, i) => b !== entry.buttons[i]))
+              next.buttons = buttons;
+          }
+          if (Object.keys(next).some((k) => next[k] !== entry[k])) {
+            changedColumns = true;
+            column = next;
+          }
+        }
+        return column;
+      });
+      if (shadcnLook) {
+        const visible = repairedColumns.filter((c) => !!c && typeof c === "object" && !Array.isArray(c) && c.columnVisibility !== false);
+        const width = (c) => Number(c.columnSize) > 0 ? Number(c.columnSize) : 120;
+        const total = visible.reduce((sum, c) => sum + width(c), 0);
+        if (visible.length > 1 && total > 1240) {
+          const factor = 1240 / total;
+          const floor = (c) => c.columnType === "button" ? 110 : Math.max(/\be ?mail\b/i.test(`${String(c.key ?? "")} ${String(c.name ?? "")}`.replace(/[_-]+/g, " ")) ? 240 : 64, Math.ceil(String(c.name ?? c.key ?? "").length * 7.5) + 32);
+          for (let i = 0; i < repairedColumns.length; i++) {
+            const c = repairedColumns[i];
+            if (!visible.includes(c))
+              continue;
+            repairedColumns[i] = { ...c, columnSize: Math.max(floor(c), Math.floor(width(c) * factor)) };
+          }
+          changedColumns = true;
+          warnings.push(`Table "${component.name}": its visible columns (${total}px) were wider than a page; they now scale to fit about 1240px.`);
+        }
+      }
+      if (shadcnLook) {
+        const index = repairedColumns.findIndex((c) => {
+          if (!c || typeof c !== "object" || Array.isArray(c))
+            return false;
+          const entry2 = c;
+          const words = `${String(entry2.key ?? "")} ${String(entry2.name ?? "")}`.replace(/[_-]+/g, " ");
+          return entry2.columnVisibility !== false && ["string", void 0].includes(entry2.columnType) && PERSON_WORDS.test(words) && !/\b(e ?mail|id|phone|count|type|notes?)\b/i.test(words);
+        });
+        const entry = index >= 0 ? repairedColumns[index] : void 0;
+        if (entry && entry.displayAvatar === void 0 && entry.displayAsChip === void 0 && !isTruthy(entry.isEditable)) {
+          repairedColumns[index] = { ...entry, displayAvatar: true };
+          changedColumns = true;
+        }
+      }
+      if (changedColumns)
+        setProperty("columns", repairedColumns);
+    }
+  }
+  const statFormat = propValue(properties, "valueFormat");
+  if (component.type === "ShadStat" && (statFormat === void 0 || statFormat === "auto")) {
+    const label = String(propValue(properties, "label") ?? "");
+    let value = propValue(properties, "value");
+    const moneyLabel = MONEY_WORDS.test(label.replace(/[_-]+/g, " ")) && !countLabel(label.replace(/[_-]+/g, " "));
+    const trailingFormat = /\.(?:toLocaleString\((?:[^()]|\([^()]*\))*\)|toFixed\(\s*\d*\s*\))\s*\}\}\s*$/;
+    if (moneyLabel && typeof value === "string" && trailingFormat.test(value) && !/[$€£₹¥]|Intl\.|currency/i.test(value)) {
+      value = value.replace(trailingFormat, "}}");
+      setProperty("value", value);
+    }
+    if (typeof value === "string" && /^\s*\{\{[\s\S]*\}\}\s*$/.test(value) && !/[$€£₹¥]|toLocaleString|toFixed|Intl\.|currency/i.test(value) && moneyLabel) {
+      setProperty("valueFormat", "currency");
+      if (options.currency && propValue(properties, "currency") === void 0)
+        setProperty("currency", options.currency);
+    }
+  }
+  if (component.type === "KeyValuePair") {
+    const fields = propValue(properties, "fields");
+    if (Array.isArray(fields) && fields.length > 0) {
+      const explicitIds = new Set(fields.flatMap((field) => {
+        const id = field && typeof field === "object" ? field.id : void 0;
+        return typeof id === "string" && id.length > 0 ? [id] : [];
+      }));
+      const demoFields = catalogDefault("KeyValuePair", "fields", []);
+      const currentHistory = propValue(properties, "fieldDeletionHistory");
+      const deletionHistory = new Set(Array.isArray(currentHistory) ? currentHistory.filter((key) => typeof key === "string" && key.length > 0) : []);
+      const before = deletionHistory.size;
+      if (Array.isArray(demoFields)) {
+        for (const field of demoFields) {
+          if (!field || typeof field !== "object")
+            continue;
+          const { id, key } = field;
+          if (typeof key === "string" && !explicitIds.has(String(id ?? "")))
+            deletionHistory.add(key);
+        }
+      }
+      if (deletionHistory.size > before || properties.fieldDeletionHistory === void 0) {
+        setProperty("fieldDeletionHistory", [...deletionHistory]);
+        warnings.push(`KeyValuePair "${component.name}": normalized fieldDeletionHistory so ToolJet does not append or positionally merge catalog demo fields into the explicit fields array.`);
+      }
+    }
+  }
+  if (component.type === "Statistics") {
+    const width = (component.layouts?.desktop ?? component.layout)?.width;
+    const iconName = propValue(properties, "icon");
+    const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propValue(properties, "iconVisibility") !== false && propValue(properties, "iconVisibility") !== "{{false}}";
+    const rawSize = propValue(stylesValue, "primaryValueSize") ?? propValue(properties, "primaryValueSize");
+    const sizeText = typeof rawSize === "string" ? rawSize.replace(/[{}]/g, "").trim() : rawSize;
+    const numericSize = typeof sizeText === "number" ? sizeText : typeof sizeText === "string" && /^\d+$/.test(sizeText) ? Number(sizeText) : void 0;
+    const rawValue = propValue(properties, "primaryValue");
+    const currencyValue = typeof rawValue === "string" && /minimumFractionDigits|style\s*:\s*['"]currency['"]|[$£€¥]/.test(rawValue);
+    const widthKnown = typeof width === "number";
+    const narrowTile = widthKnown && width < STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS;
+    const clipProne = iconVisible && narrowTile || currencyValue && (narrowTile || !widthKnown);
+    if (isTruthy(propValue(properties, "hideSecondary")) && (numericSize === void 0 || numericSize > 22) && clipProne) {
+      setStyle("primaryValueSize", "{{22}}");
+      warnings.push(`Statistics "${component.name}": set styles.primaryValueSize to 22 so the ${currencyValue ? "currency " : ""}value fits a value-only tile${widthKnown ? ` (${width} columns wide)` : ""} (larger sizes clip or wrap the value).`);
+    }
+  }
+  if (options.stripUnknownKeys) {
+    const schema2 = getComponentSchema(component.type);
+    if (schema2) {
+      const sections = [
+        ["properties", properties],
+        ["styles", normalizedSections.styles.value]
+      ];
+      for (const [section, sectionValue] of sections) {
+        if (!sectionValue)
+          continue;
+        const knownKeys = (schema2[section] ?? []).map((entry) => entry.key);
+        for (const key of Object.keys(sectionValue)) {
+          if (!isStrippableUnknownKey(component.type, section, key, knownKeys))
+            continue;
+          delete sectionValue[key];
+          warnings.push(`${component.type} "${component.name}": removed unknown ${section} key "${key}" \u2014 ToolJet ignores it, so it is kept out of the saved definition rather than persisted as an unusable key.`);
+        }
+      }
+    }
+  }
+  const braceFixedKeys = [];
+  for (const key of Object.keys(properties)) {
+    const result = separateAdjacentClosingBracesDeep(propValue(properties, key));
+    if (!result.changed)
+      continue;
+    setProperty(key, result.value);
+    braceFixedKeys.push(`properties.${key}`);
+  }
+  for (const key of Object.keys(stylesValue)) {
+    const result = separateAdjacentClosingBracesDeep(propValue(stylesValue, key));
+    if (!result.changed)
+      continue;
+    setStyle(key, result.value);
+    braceFixedKeys.push(`styles.${key}`);
+  }
+  if (braceFixedKeys.length) {
+    warnings.push(`${component.type} "${component.name}": separated adjacent closing braces inside ${braceFixedKeys.join(", ")} (ToolJet ends a {{ }} expression at the first "}}", which would have left the component blank). Write nested closes as "} }" inside bindings.`);
+  }
+  const booleanKeys = /* @__PURE__ */ new Set(["loadingState", "visibility", "disabledState"]);
+  for (const entry of schema?.properties ?? [])
+    if (entry.valueType === "boolean")
+      booleanKeys.add(entry.key);
+  const BARE_EXPRESSION = /^\s*!?\s*\(?\s*(queries|components|variables|globals|page|constants|parameters)\.[\w$]/;
+  const wrappedKeys = [];
+  for (const key of booleanKeys) {
+    const current = propValue(properties, key);
+    if (typeof current !== "string" || current.includes("{{") || !BARE_EXPRESSION.test(current))
+      continue;
+    const entry = properties[key];
+    const wrapped = { ...entry && typeof entry === "object" && !Array.isArray(entry) ? entry : {}, value: `{{${current.trim()}}}`, fxActive: true };
+    properties[key] = wrapped;
+    propertyPatch[key] = wrapped;
+    wrappedKeys.push(key);
+  }
+  if (wrappedKeys.length) {
+    warnings.push(`${component.type} "${component.name}": wrapped the bare expression in ${wrappedKeys.map((k) => `properties.${k}`).join(", ")} in {{ }}; without the braces ToolJet reads it as text, which counts as true (a table stays on its loading spinner).`);
+  }
+  const CODE_START = /^\s*(?:String|Number|Math|moment|Intl|JSON|Object|Array)\s*[.(]|^\s*[([!]|^\s*(?:queries|components|variables|globals|page|constants|parameters)\.[\w$]/;
+  const CODE_ROOT = /\b(?:queries|components|variables|globals|constants|parameters)\.[\w$]/;
+  const CODE_OPERATOR = /=>|\|\||&&|===|!==|\.length\b|\.(?:filter|map|reduce|toFixed|toLocaleString|find|some)\s*\(/;
+  const codeKeys = [];
+  const showsCode = /CodeEditor|Html|Markdown|RichText|Json/i.test(component.type ?? "");
+  for (const [key, entry] of Object.entries(showsCode ? {} : properties)) {
+    if (booleanKeys.has(key))
+      continue;
+    const current = propValue(properties, key);
+    if (typeof current !== "string" || current.includes("{{") || current.length > 2e3)
+      continue;
+    if (!CODE_START.test(current) || !CODE_ROOT.test(current) || !CODE_OPERATOR.test(current))
+      continue;
+    const wrapped = { ...entry && typeof entry === "object" && !Array.isArray(entry) ? entry : {}, value: `{{${current.trim()}}}` };
+    properties[key] = wrapped;
+    propertyPatch[key] = wrapped;
+    codeKeys.push(key);
+  }
+  if (codeKeys.length) {
+    warnings.push(`${component.type} "${component.name}": ${codeKeys.map((k) => `properties.${k}`).join(", ")} held a JavaScript expression without {{ }}, which shows the code on screen; it is now wrapped in {{ }}.`);
+  }
+  const patch = Object.fromEntries(["properties", "styles", "validation", "others"].flatMap((section) => {
+    const envelopePatch = normalizedSections[section].patch ?? {};
+    const semanticPatch = section === "properties" ? propertyPatch : section === "styles" ? stylePatch : {};
+    const merged = { ...envelopePatch, ...semanticPatch };
+    return Object.keys(merged).length ? [[section, merged]] : [];
+  }));
+  return {
+    component: {
+      ...component,
+      properties,
+      ...normalizedSections.styles.value ? { styles: normalizedSections.styles.value } : {},
+      ...normalizedSections.validation.value ? { validation: normalizedSections.validation.value } : {},
+      ...normalizedSections.others.value ? { others: normalizedSections.others.value } : {}
+    },
+    patch,
+    warnings
+  };
+}
+function resolveRef(candidates, ref, kind, scope, describe = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
+  const byId = candidates.find((candidate) => candidate.id === ref);
+  if (byId)
+    return { ok: true, target: byId };
+  const byName = candidates.filter((candidate) => candidate.name === ref);
+  if (byName.length === 1)
+    return { ok: true, target: byName[0] };
+  if (byName.length > 1) {
     return {
-      failed: true,
-      workflow_id: plan.workflowId,
-      version_id: plan.versionId,
-      phase,
-      completed,
-      attempted_query: attemptedQuery,
-      node_ids: compiled.node_ids,
-      edge_ids: compiled.edge_ids,
-      graph_persistence: phase === "queries" ? "not_attempted" : phase === "save" ? "unknown" : "saved",
-      error: error instanceof Error ? error.message : String(error),
-      recovery: "Inspect get_workflow and its queries; reuse persisted IDs when replanning. Do not repeat creation blindly. No resources were automatically deleted."
+      ok: false,
+      error: `${kind} name "${ref}" is ambiguous ${scope} (${byName.length} share it). Pass the id instead: ${byName.map((candidate) => candidate.id).join(", ")}.`
     };
   }
-}
-async function deleteNode(client, workflowId, versionId, nodeId) {
-  const snapshot = await client.get(workflowId, versionId);
-  if (!snapshot.definition.nodes.some((node) => node.id === nodeId))
-    throw new Error(`Unknown workflow node: ${nodeId}`);
-  const spec = specSchema.parse({ remove_node_ids: [nodeId], remove_edge_ids: snapshot.definition.edges.filter((edge) => edge.source === nodeId || edge.target === nodeId).map((edge) => edge.id) });
-  const result = await lint(client, workflowId, versionId, spec, true);
-  if (!("plan_token" in result))
-    throw new Error(JSON.stringify({ errors: result.errors, blockers: result.blockers }));
-  return apply(client, result.plan_token);
+  const available = candidates.map(describe).join(", ");
+  return {
+    ok: false,
+    // The "do not re-read" clause matters: the previous phrasing ("does not exist") invited exactly
+    // the re-read that caused the loop.
+    error: `No ${kind.toLowerCase()} with id or name "${ref}" ${scope}. Do not re-read \u2014 it currently holds: ${available || "(none)"}.`
+  };
 }
 export {
-  ToolJetHttpError as A,
+  createClient as A,
+  registerPackDefinitions as B,
+  COMPONENT_FX_UPDATE_GUIDANCE as C,
+  listWorkspaceGroupsTool as D,
+  manageWorkspaceGroupsTool as E,
+  FLEX_MIN_WIDTH_PX_DESCRIPTION as F,
+  createAppTool as G,
+  inspectDatasourceSchemaTool as H,
+  manageThemeTool as I,
+  savedComponentLibrary as J,
+  ToolJetHttpError as K,
   PartialWriteError as P,
   TOOLJET_DB_DATA_TYPES as T,
-  normalizeType as a,
-  booleanBindingValue as b,
-  componentRef as c,
-  invalidSeedTimestamps as d,
-  completedPartialWrites as e,
-  fail as f,
-  specSchema as g,
-  createClient as h,
-  indexComponentReferences as i,
-  inspectDatasourceSchemaTool as j,
-  nodeCatalog as k,
-  listWorkspaceGroupsTool as l,
-  manageWorkspaceGroupsTool as m,
+  resolveAuthoredChildOrder as a,
+  appendedChildOrders as b,
+  childOrderProperty as c,
+  reparentAdditions as d,
+  componentRef as e,
+  packDefaultDefinition as f,
+  FLEX_GROW_DESCRIPTION as g,
+  hasNonEmptyDefinition as h,
+  isFlexContainerType as i,
+  FLEX_WIDTH_PX_DESCRIPTION as j,
+  FLEX_FILL_WIDTH_DESCRIPTION as k,
+  plannedCurrency as l,
+  indexComponentReferences as m,
   normalizeComponentSpec as n,
-  ok as o,
-  capabilityRequestSchema as p,
-  getWorkflowCapabilities as q,
+  booleanBindingValue as o,
+  packValueAsDefault as p,
+  normalizeType as q,
   resolveRef as r,
   strictEntry as s,
-  tableQuotaError as t,
-  updateComponentsTool as u,
+  resolveComponentLibrary as t,
+  componentLibraryWarnings as u,
   validateTableBatch as v,
-  lint as w,
-  apply as x,
-  deleteNode as y,
-  validateGraph as z
+  invalidSeedTimestamps as w,
+  COMPONENT_FX_GUIDANCE as x,
+  completedPartialWrites as y,
+  batchChildOrders as z
 };

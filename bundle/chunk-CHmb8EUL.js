@@ -1,19 +1,21 @@
 import { createRequire } from "node:module";
-import { o as external_exports, q as editContractSchema, s as generateEditContract, p as COMPONENT_FX_GUIDANCE } from "./chunk-8iUq0slz.js";
-import { s as strictEntry, g as specSchema, h as createClient, l as listWorkspaceGroupsTool, m as manageWorkspaceGroupsTool, j as inspectDatasourceSchemaTool, u as updateComponentsTool, o as ok, k as nodeCatalog, f as fail, p as capabilityRequestSchema, q as getWorkflowCapabilities, w as lint, x as apply, y as deleteNode, z as validateGraph, v as validateTableBatch, A as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec } from "./chunk-DbFNT0Gf.js";
-import { a6 as dbColumnTypeSchema, a7 as componentInputSchema, a8 as lintAppSpecTool, a9 as projectJavascriptRuntime, aa as projectAppSettings, ab as compactTheme, ac as pageSettingProperties, l as literalCanvasColor, ad as containsExactValue, h as prepareQueryOptionsForWrite, ae as inspectUpdateCompatibility, af as normalizePlanBindingAliases, ag as containsNamedBinding, ah as normalizePlannedLayouts, ai as materializeRequiredDefaultChildren, aj as mapKeyRefusal, j as prepareComponentBatch, v as validateEvents, n as expandQueryLifecycles, q as persistedEventSpecs, ak as persistedEventIds } from "./chunk-pMEylbpx.js";
-import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, W as WebStandardStreamableHTTPServerTransport, g as getRequestListener, c as validatePersistedAppSummary } from "./chunk-JCMmiPv2.js";
-import { M as McpServer } from "./chunk-DiCiME0d.js";
-import { u as pageIconSchema, c as componentSlotSchema, a as componentNameSchema, t as lintComponents, i as introducedLintFindings, x as lintRenderedGeometryBlocking, y as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, f as lintComponentSlots, l as lintComponentSpec, g as lintUnusableTextGeometry, z as lintNestedContainerWidths, h as lintStandardSingleLineInputHeight, j as lintTextGeometry, k as lintRenderedGeometry, F as FORM_SCHEMA_FIELD_TYPE_SET, A as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-gznY6rD8.js";
-import { ea as getCatalog, e5 as getComponentSchema, eb as getLegacyComponentReplacement, ee as readCatalogBytes } from "./chunk-BEuHHGL1.js";
-import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-CsHFzbSc.js";
+import { b0 as external_exports, b3 as specSchema, b8 as getComponentCatalogTool, b1 as nodeCatalog, b2 as validateGraph } from "./chunk-Id3EmQoo.js";
+import { x as capabilityRequestSchema, y as getWorkflowCapabilities, z as lint, A as apply, B as deleteNode, C as editContractSchema, D as generateEditContract } from "./chunk-4VsxWCKn.js";
+import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, g as FLEX_GROW_DESCRIPTION, j as FLEX_WIDTH_PX_DESCRIPTION, k as FLEX_FILL_WIDTH_DESCRIPTION, A as createClient, B as registerPackDefinitions, D as listWorkspaceGroupsTool, E as manageWorkspaceGroupsTool, G as createAppTool, H as inspectDatasourceSchemaTool, I as manageThemeTool, J as savedComponentLibrary, v as validateTableBatch, K as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec, x as COMPONENT_FX_GUIDANCE, b as appendedChildOrders, d as reparentAdditions, c as childOrderProperty } from "./chunk-DU7PARuL.js";
+import { c as componentInputSchema, u as updateComponentsTool, q as projectJavascriptRuntime, t as projectAppSettings, w as compactTheme, x as pageSettingProperties, l as literalCanvasColor, y as containsExactValue, e as prepareQueryOptionsForWrite, z as containsNamedBinding, A as normalizePlannedLayouts, B as materializeRequiredDefaultChildren, i as prepareComponentBatch, v as validateEvents, k as expandQueryLifecycles, o as persistedEventSpecs, C as persistedEventIds } from "./chunk-BUBDvZl9.js";
+import { K as dbColumnTypeSchema, N as codeAppScaffoldTool, O as codeAppReadFilesTool, Q as codeAppWriteFilesTool, U as codeAppBuildTool, V as codeAppInstallTool, W as codeAppAddDependencyTool, X as manageAppPermissionsTool, Y as lintAppSpecTool, Z as noCodeIdentity, _ as WebStandardStreamableHTTPServerTransport, $ as plannedTableSchema, a0 as inspectUpdateCompatibility, a1 as normalizePlanBindingAliases, a2 as browserUserBindings, a3 as isCodeModeApp, a4 as browserUserMessage } from "./chunk-ing0zeLX.js";
+import { ej as registerComponentSchemas, e6 as ok, e5 as fail, e9 as mapKeyRefusal, ek as readCatalogBytes, el as allComponentSchemas } from "./chunk-CNzl5iHC.js";
+import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, g as getRequestListener, c as validatePersistedAppSummary } from "./chunk-9poYPDr1.js";
+import { M as McpServer } from "./chunk-BJ3o-4GL.js";
+import { F as pageIconSchema, f as componentSlotSchema, H as registerLibraryPacks, g as componentNameSchema, C as lintComponents, j as resolveParentRef, k as introducedLintFindings, I as lintRenderedGeometryBlocking, J as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, o as lintComponentSlots, m as lintComponentSpec, p as lintUnusableTextGeometry, K as lintNestedContainerWidths, q as lintStandardSingleLineInputHeight, s as lintTextGeometry, u as lintRenderedGeometry, L as FORM_SCHEMA_FIELD_TYPE_SET, M as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-B9aEbA_o.js";
+import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-hq1_aYNY.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { createServer } from "node:http";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { mkdir, appendFile } from "node:fs/promises";
-import { dirname, resolve, basename, join } from "node:path";
-import { statSync, accessSync, constants, existsSync, readFileSync } from "node:fs";
+import { resolve, dirname, basename, join } from "node:path";
+import { statSync, accessSync, constants } from "node:fs";
 import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
 function createExchangeLimiter(limit = 300, trustedProxyHops = 0) {
@@ -181,6 +183,160 @@ var StreamableHTTPServerTransport = class {
     this._webStandardTransport.closeStandaloneSSEStream();
   }
 };
+var words = (s) => s.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
+var eventLabel = (s) => words(s).replace(/ (\w)/g, (_, c) => ` ${c.toLowerCase()}`);
+var VALUE_TYPE = { string: "string", number: "number", boolean: "boolean", array: "array", object: "object", enumeration: "string" };
+var stamp = (p) => {
+  if (p.default === void 0)
+    return p.type === "boolean" ? "{{false}}" : "";
+  if (p.type === "boolean")
+    return `{{${p.default}}}`;
+  if (p.type === "enumeration" || p.type === "string")
+    return String(p.default);
+  return `{{${JSON.stringify(p.default)}}}`;
+};
+var SAMPLE_TEXT = /^(eyebrow|subtitle|description|meta|actionLabel|secondaryActionLabel|asideValue|asideLabel|changeLabel|change)$/;
+function packFromLibrary(lib) {
+  const manifest = lib.manifest;
+  if (!manifest || manifest.manifestVersion !== 2 || !manifest.components)
+    return null;
+  const packId = (manifest.pack || lib.name).toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return packFromManifest(packId, lib.name, lib.revisions?.[0]?.version ?? "", manifest, {
+    kind: "library",
+    libraryId: lib.id,
+    correlationId: lib.correlationId
+  });
+}
+function packFromBuiltin(info, manifest) {
+  if (!manifest?.components)
+    return null;
+  const packId = info.pack.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return packFromManifest(packId, info.displayName || info.pack, info.version ?? "", manifest, {
+    kind: "builtin",
+    libraryId: "",
+    correlationId: "",
+    serverPack: info.pack
+  });
+}
+function packFromManifest(packId, libraryName, version, manifest, identity) {
+  const { serverPack, ...packIdentity } = identity;
+  if (!manifest.components)
+    return null;
+  const lib = { name: libraryName };
+  const prefix = `Lib_${packId}_`;
+  const schemas = {};
+  const definitions = {};
+  const components = {};
+  for (const [name, entry] of Object.entries(manifest.components)) {
+    const type = `${prefix}${name}`;
+    const allProps = entry.props ?? [];
+    const runtimeValue = (p) => p.name === "value" && p.inspector === "hidden" && allProps.some((q) => q.name === "defaultValue");
+    const props = allProps.filter((p) => !runtimeValue(p));
+    const fits = entry.fit === true;
+    components[name] = {
+      type,
+      props: props.map((p) => p.name),
+      events: (entry.events ?? []).map((e) => e.name),
+      styles: (entry.styles ?? []).map((s) => s.name),
+      actions: (entry.actions ?? []).map((a) => a.name),
+      fit: fits,
+      ...entry.role ? { role: entry.role } : {},
+      ...entry.roleProps ? { roleProps: entry.roleProps } : {},
+      ...entry.roleEvents ? { roleEvents: entry.roleEvents } : {},
+      ...entry.roleActions ? { roleActions: entry.roleActions } : {}
+    };
+    schemas[type] = {
+      type,
+      name: type,
+      // Read by the AI compiler, which plans in roles and resolves a role to this pack's component (libSwap.ts).
+      pack: {
+        id: packId,
+        component: name,
+        ...entry.role ? { role: entry.role } : {},
+        ...entry.roleProps ? { roleProps: entry.roleProps } : {},
+        ...entry.roleEvents ? { roleEvents: entry.roleEvents } : {},
+        ...entry.roleActions ? { roleActions: entry.roleActions } : {},
+        ...entry.roleValues ? { roleValues: entry.roleValues } : {},
+        ...entry.labelCase ? { labelCase: entry.labelCase } : {},
+        slots: entry.slots ?? [],
+        ...manifest.surface ? { surface: manifest.surface } : {},
+        ...manifest.themeMode ? { themeMode: manifest.themeMode } : {}
+      },
+      description: [
+        `${entry.displayName ?? words(name)} from the ${lib.name} pack.`,
+        entry.usage,
+        fits ? "Sizes to its content in the app (Dynamic height on)." : "Drawn at the height you give it."
+      ].filter(Boolean).join(" "),
+      defaultSize: { width: entry.defaultWidth ?? 6, height: (entry.defaultHeight ?? 4) * 10 },
+      properties: [
+        ...props.map((p) => ({
+          key: p.name,
+          label: p.label ?? words(p.name),
+          valueType: VALUE_TYPE[p.type] ?? "string",
+          ...p.default !== void 0 ? { default: stamp(p) } : {},
+          ...p.enumValues ? { allowedValues: p.enumValues } : {},
+          ...p.description ? { description: p.description } : {}
+        })),
+        { key: "visibility", label: "Visibility", valueType: "boolean", default: "{{true}}" },
+        { key: "loadingState", label: "Loading state", valueType: "boolean", default: "{{false}}" },
+        { key: "disabledState", label: "Disable", valueType: "boolean", default: "{{false}}" },
+        { key: "dynamicHeight", label: "Dynamic height", valueType: "boolean", default: fits ? "{{true}}" : "{{false}}" }
+      ],
+      styles: [
+        ...(entry.styles ?? []).map((s) => ({ key: s.name, label: s.label ?? words(s.name), valueType: VALUE_TYPE[s.type] ?? "string" })),
+        { key: "boxShadow", label: "Box shadow", valueType: "string" }
+      ],
+      events: (entry.events ?? []).map((e) => ({ id: e.name, label: e.displayName ?? eventLabel(e.name) })),
+      actions: [
+        ...(entry.actions ?? []).map((a) => ({
+          handle: a.name,
+          displayName: a.displayName ?? words(a.name),
+          ...a.params?.length ? { params: a.params.map((p) => ({ handle: p.handle, displayName: p.displayName ?? words(p.handle) })) } : {}
+        })),
+        { handle: "setVisibility", displayName: "Set visibility", params: [{ handle: "visibility", displayName: "Value", defaultValue: "{{false}}" }] },
+        { handle: "setLoading", displayName: "Set loading", params: [{ handle: "loading", displayName: "Value", defaultValue: "{{false}}" }] },
+        { handle: "setDisable", displayName: "Set disable", params: [{ handle: "disable", displayName: "Value", defaultValue: "{{false}}" }] }
+      ],
+      exposedVariables: [
+        ...allProps.map((p) => ({ name: p.name, ...p.default !== void 0 ? { default: p.default } : {} })),
+        { name: "isVisible", default: true },
+        { name: "isLoading", default: false },
+        { name: "isDisabled", default: false },
+        ...entry.validation ? [{ name: "isValid", default: true }, { name: "isMandatory", default: false }] : []
+      ]
+    };
+    definitions[type] = {
+      properties: {
+        ...Object.fromEntries(props.map((p) => [p.name, { value: SAMPLE_TEXT.test(p.name) && p.type !== "boolean" ? p.type === "array" ? "{{[]}}" : "" : stamp(p) }])),
+        visibility: { value: "{{true}}" },
+        loadingState: { value: "{{false}}" },
+        disabledState: { value: "{{false}}" },
+        dynamicHeight: { value: fits ? "{{true}}" : "{{false}}" }
+      },
+      styles: { boxShadow: { value: "0px 0px 0px 0px #00000040" } },
+      others: { showOnDesktop: { value: "{{true}}" }, showOnMobile: { value: "{{false}}" } }
+    };
+  }
+  return {
+    pack: { pack: serverPack ?? packId, prefix, ...packIdentity, libraryName, version, components },
+    schemas,
+    definitions
+  };
+}
+async function loadInstalledPacks(listLibraries, listBuiltin) {
+  let packs = [];
+  const builtin = listBuiltin ? await listBuiltin().catch(() => null) : null;
+  if (builtin?.length)
+    packs = builtin.map((b) => packFromBuiltin(b.info, b.manifest)).filter((p) => !!p);
+  if (!packs.length)
+    packs = (await listLibraries()).map(packFromLibrary).filter((p) => !!p);
+  if (!packs.length)
+    return [];
+  registerComponentSchemas(Object.assign({}, ...packs.map((p) => p.schemas)));
+  registerPackDefinitions(Object.assign({}, ...packs.map((p) => p.definitions)));
+  registerLibraryPacks(packs.map((p) => p.pack));
+  return packs.map((p) => `${p.pack.libraryName} ${p.pack.version}`);
+}
 var SESSION_TOKEN_HEADER = "x-tooljet-session";
 var WORKSPACE_ID_HEADER = "x-tooljet-workspace-id";
 var WORKSPACE_SLUG_HEADER = "x-tooljet-workspace-slug";
@@ -237,8 +393,8 @@ async function checkOriginWithGateway(customerId, origin) {
       signal: AbortSignal.timeout(5e3)
     });
     if (res.ok) {
-      const body = await res.json();
-      allowed = body.allowed === true;
+      const body2 = await res.json();
+      allowed = body2.allowed === true;
     }
   } catch {
     allowed = false;
@@ -263,10 +419,10 @@ async function resolveApiUrlFromGateway(customerId) {
         signal: AbortSignal.timeout(5e3)
       });
       if (res.ok) {
-        const body = await res.json();
-        if ("host_name" in body) {
-          const path = body.subpath ? `/${body.subpath.replace(/^\/+|\/+$/g, "")}` : "";
-          result = { url: body.host_name ? `https://${body.host_name}${path}` : void 0, verified: true };
+        const body2 = await res.json();
+        if ("host_name" in body2) {
+          const path = body2.subpath ? `/${body2.subpath.replace(/^\/+|\/+$/g, "")}` : "";
+          result = { url: body2.host_name ? `https://${body2.host_name}${path}` : void 0, verified: true };
         }
       }
     } catch {
@@ -458,14 +614,14 @@ function createAuth(config, fetchImpl = fetch) {
       const hint = res.status === 401 ? " \u2014 TOOLJET_PAT was rejected: check it is not expired or revoked, and that it was copied whole." : res.status === 404 ? " \u2014 this instance has no personal-access-token endpoint: it predates PAT support, or TOOLJET_URL is not the API origin. Upgrade the instance, or point TOOLJET_URL at one that has tokens." : "";
       throw new Error(`ToolJet PAT session exchange failed (HTTP ${res.status})${hint}${detail ? ` Response: ${detail}` : ""}`);
     }
-    const body = await res.json();
-    if (!body.authToken) {
+    const body2 = await res.json();
+    if (!body2.authToken) {
       throw new Error("ToolJet PAT session exchange succeeded but returned no authToken.");
     }
-    token = body.authToken;
-    workspaceId = body.organizationId;
-    workspaceSlug = body.organizationSlug ?? void 0;
-    workspaceName = body.organizationName ?? void 0;
+    token = body2.authToken;
+    workspaceId = body2.organizationId;
+    workspaceSlug = body2.organizationSlug ?? void 0;
+    workspaceName = body2.organizationName ?? void 0;
   }
   async function rawFetch(path, init) {
     const headers = new Headers(init?.headers);
@@ -506,8 +662,8 @@ function createAuth(config, fetchImpl = fetch) {
     if (!res.ok) {
       throw new Error(`ToolJet listWorkspaces failed (${res.status}): ${await res.text()}`);
     }
-    const body = await res.json();
-    return (body.organizations ?? []).map((o) => ({
+    const body2 = await res.json();
+    return (body2.organizations ?? []).map((o) => ({
       id: o.id,
       name: o.name,
       slug: o.slug,
@@ -560,6 +716,36 @@ function createAuth(config, fetchImpl = fetch) {
     }
     return current;
   }
+  const pinnedSessions = /* @__PURE__ */ new Map();
+  let renderSession;
+  const RENDER_SESSION_MARGIN_MS = 6e4;
+  async function aiRenderSession(appId) {
+    if (renderSession && renderSession.expiresAt - RENDER_SESSION_MARGIN_MS > Date.now() && (!appId || !renderSession.appId || renderSession.appId === appId))
+      return renderSession.token;
+    try {
+      if (!token)
+        await login();
+      const res = await rawFetch("/api/personal-access-tokens/ai-render-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(appId ? { appId } : {})
+      });
+      if (!res.ok)
+        return void 0;
+      const body2 = await res.json();
+      if (!body2.authToken)
+        return void 0;
+      const expiresAt = typeof body2.expiresAt === "number" ? body2.expiresAt : Date.parse(String(body2.expiresAt ?? ""));
+      renderSession = {
+        token: body2.authToken,
+        appId: body2.appId,
+        expiresAt: Number.isFinite(expiresAt) ? expiresAt : Date.now() + 5 * 6e4
+      };
+      return body2.authToken;
+    } catch {
+      return void 0;
+    }
+  }
   async function viewerSession(appId) {
     if (config.isOAuthDelegation) {
       if (!appId || !/^[A-Za-z0-9_-]+$/.test(appId))
@@ -571,16 +757,41 @@ function createAuth(config, fetchImpl = fetch) {
       });
       if (!response.ok)
         throw new Error(`OAuth viewer authorization failed (HTTP ${response.status}); rendering remains unverified`);
-      const body = await response.json();
-      if (typeof body.access_token !== "string" || !body.access_token || body.access_token === token || body.token_type !== "Bearer" || body.app_id !== appId || body.organization_id !== workspaceId || typeof body.expires_in !== "number" || !Number.isInteger(body.expires_in) || body.expires_in <= 0 || body.expires_in > 120) {
+      const body2 = await response.json();
+      if (typeof body2.access_token !== "string" || !body2.access_token || body2.access_token === token || body2.token_type !== "Bearer" || body2.app_id !== appId || body2.organization_id !== workspaceId || typeof body2.expires_in !== "number" || !Number.isInteger(body2.expires_in) || body2.expires_in <= 0 || body2.expires_in > 120) {
         throw new Error("Invalid scoped OAuth viewer credential");
       }
       return {
         cookieName: "tj_oauth_viewer",
-        token: body.access_token,
+        token: body2.access_token,
         origin: new URL(config.viewerUrl || config.appUrl).origin,
-        expiresAt: Math.floor(Date.now() / 1e3) + body.expires_in
+        expiresAt: Math.floor(Date.now() / 1e3) + body2.expires_in
       };
+    }
+    if (config.sessionToken) {
+      const rendered = await aiRenderSession(appId);
+      if (rendered)
+        return rendered;
+      throw new Error("The render check could not get its own read-only session.");
+    }
+    if (appId && config.pat && !config.sessionToken) {
+      const cached = pinnedSessions.get(appId);
+      if (cached)
+        return cached;
+      const res = await fetchImpl(`${config.apiUrl}/api/personal-access-tokens/session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.pat}` },
+        body: JSON.stringify({ appId })
+      });
+      recordHttpResponse(res);
+      if (res.ok) {
+        const body2 = await res.json();
+        if (body2.authToken) {
+          pinnedSessions.set(appId, body2.authToken);
+          return body2.authToken;
+        }
+      }
+      throw new Error("The render check could not get its own read-only session.");
     }
     if (!token)
       await login();
@@ -706,273 +917,6 @@ function useWorkspaceTool(client) {
     async handler(args) {
       try {
         return ok(await client.useWorkspace(args.workspace_id));
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
-var THEME_LICENCE_USER_MESSAGE = "Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.";
-var colorPair = external_exports.object({
-  light: external_exports.string().trim().min(1).max(100).describe("Color used in light mode; hex is recommended."),
-  dark: external_exports.string().trim().min(1).max(100).describe("Color used in dark mode; hex is recommended.")
-}).strict();
-var themeDefinition = external_exports.object({
-  brand: external_exports.object({
-    colors: external_exports.object({
-      primary: colorPair,
-      secondary: colorPair.optional(),
-      tertiary: colorPair.optional()
-    }).strict()
-  }).strict(),
-  text: external_exports.object({
-    font: external_exports.string().trim().min(1).max(200),
-    colors: external_exports.object({
-      primary: colorPair,
-      placeholder: colorPair.optional(),
-      disabled: colorPair.optional()
-    }).strict()
-  }).strict(),
-  border: external_exports.object({
-    radius: external_exports.object({
-      default: external_exports.number().nonnegative(),
-      small: external_exports.number().nonnegative(),
-      large: external_exports.number().nonnegative()
-    }).strict(),
-    colors: external_exports.object({
-      default: colorPair,
-      weak: colorPair.optional(),
-      disabled: colorPair.optional()
-    }).strict()
-  }).strict(),
-  systemStatus: external_exports.object({
-    colors: external_exports.object({
-      success: colorPair,
-      error: colorPair.optional(),
-      warning: colorPair.optional()
-    }).strict()
-  }).strict(),
-  surface: external_exports.object({
-    colors: external_exports.object({
-      appBackground: colorPair,
-      surface1: colorPair,
-      surface2: colorPair,
-      surface3: colorPair
-    }).strict()
-  }).strict()
-}).strict();
-async function applyToApp(client, theme, args, definition) {
-  if (!args.app_id || !args.version_id)
-    return void 0;
-  const dark = paintsDarkCanvasInLightMode(definition);
-  await client.updateAppSettings({
-    appId: args.app_id,
-    versionId: args.version_id,
-    globalSettings: { theme, ...dark ? { appMode: "dark" } : {} }
-  });
-  return { app_id: args.app_id, version_id: args.version_id, ...dark ? { app_mode: "dark" } : {} };
-}
-function requireValue(value, label) {
-  if (value === void 0)
-    throw new Error(`manage_theme requires ${label} for this action.`);
-  return value;
-}
-async function readTheme(client, themeId) {
-  const theme = (await client.listAppThemes()).find((candidate) => candidate.id === themeId);
-  if (!theme)
-    throw new Error(`Theme "${themeId}" is not available in the active workspace.`);
-  return theme;
-}
-function manageThemeTool(client) {
-  return {
-    name: "manage_theme",
-    title: "Manage Workspace Theme",
-    // list/create/rename are safe, but the same tool also deletes a theme, so the hint covers its widest action.
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: true
-    },
-    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. create with app_id and version_id also applies the theme to that app (in dark mode when its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same name, so there is no need to list themes first. Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass include_definitions:true (or theme_id) to get a definition.",
-    inputSchema: {
-      action: external_exports.enum(["list", "create", "set_default", "update_definition", "rename", "delete"]),
-      theme_id: external_exports.string().uuid().optional(),
-      name: external_exports.string().trim().min(1).max(100).optional(),
-      definition: themeDefinition.optional(),
-      is_default: external_exports.boolean().optional(),
-      confirm: external_exports.boolean().optional(),
-      include_definitions: external_exports.boolean().optional(),
-      app_id: external_exports.string().uuid().optional().describe("create only: apply the theme to this app as well"),
-      version_id: external_exports.string().uuid().optional().describe("create only, with app_id: the app version to apply it to")
-    },
-    async handler(args) {
-      try {
-        if (args.action === "list") {
-          const themes = await client.listAppThemes();
-          if (args.include_definitions)
-            return ok({ themes });
-          if (args.theme_id) {
-            const one = themes.find((theme) => theme.id === args.theme_id);
-            return one ? ok({ themes: [one] }) : fail(new Error(`Theme "${args.theme_id}" not found.`));
-          }
-          return ok({
-            themes: themes.map(({ id, name, isDefault, isBasic, isDisabled }) => ({ id, name, isDefault, isBasic, isDisabled })),
-            note: "Definitions omitted; pass include_definitions:true or theme_id to read one."
-          });
-        }
-        if (args.action === "create") {
-          const name = requireValue(args.name, "name");
-          if (name.length < 5)
-            throw new Error("Theme name must contain at least 5 characters.");
-          if (name === "ToolJet")
-            throw new Error('The reserved theme name "ToolJet" cannot be used.');
-          const existing = (await client.listAppThemes()).find((theme) => theme.name === name && !theme.isDisabled);
-          if (existing) {
-            const applied = await applyToApp(client, existing, args, existing.definition ?? args.definition);
-            return ok({
-              theme: existing,
-              reused: true,
-              ...applied ? { applied } : {},
-              warnings: [
-                `Theme "${name}" already exists in this workspace; returned it instead of creating a duplicate. ` + (applied ? "It is applied to the app." : "Apply it with update_app_settings, or use update_definition to change it.")
-              ]
-            });
-          }
-          try {
-            const created = await client.createAppTheme({
-              name,
-              definition: requireValue(args.definition, "definition"),
-              isDefault: args.is_default ?? false
-            });
-            const applied = await applyToApp(client, created, args, args.definition);
-            return ok({ theme: created, ...applied ? { applied } : {} });
-          } catch (error) {
-            if (error instanceof ToolJetHttpError && error.status === 451) {
-              return ok({
-                theme: null,
-                licensed: false,
-                user_message: THEME_LICENCE_USER_MESSAGE,
-                warnings: [
-                  "Custom themes are not included in this ToolJet plan (HTTP 451). The app keeps the workspace default theme. Do not retry theme creation or guess a theme id; build the app on the default theme and repeat `user_message` to the user in the closing handoff."
-                ]
-              });
-            }
-            throw error;
-          }
-        }
-        const themeId = requireValue(args.theme_id, "theme_id");
-        await readTheme(client, themeId);
-        if (args.action === "set_default") {
-          await client.setDefaultAppTheme(themeId, args.is_default ?? true);
-          return ok({ theme: await readTheme(client, themeId) });
-        }
-        if (args.action === "update_definition") {
-          await client.updateAppThemeDefinition(themeId, requireValue(args.definition, "definition"));
-          return ok({ theme: await readTheme(client, themeId) });
-        }
-        if (args.action === "rename") {
-          await client.renameAppTheme(themeId, requireValue(args.name, "name"));
-          return ok({ theme: await readTheme(client, themeId) });
-        }
-        if (args.confirm !== true) {
-          throw new Error(`Deleting theme "${themeId}" requires confirm:true after exact-target user approval.`);
-        }
-        await client.deleteAppTheme(themeId);
-        return ok({ deleted: true, theme_id: themeId });
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-var here = dirname(fileURLToPath(import.meta.url));
-var standardThemeCandidates = [
-  resolve(here, "../../data/default-theme.json"),
-  resolve(here, "../data/default-theme.json")
-];
-var standardThemeCache;
-function loadStandardTheme() {
-  if (!standardThemeCache) {
-    const path = standardThemeCandidates.find((candidate) => existsSync(candidate));
-    if (!path) {
-      throw new Error(`standard theme file not found (looked in ${standardThemeCandidates.join(", ")})`);
-    }
-    standardThemeCache = JSON.parse(readFileSync(path, "utf8"));
-  }
-  return standardThemeCache;
-}
-var derivedThemeSchema = external_exports.object({
-  name: external_exports.string().trim().min(5).max(100),
-  definition: themeDefinition
-}).strict();
-async function resolveTheme(client, choice) {
-  const themes = await client.listAppThemes();
-  const wanted = choice === "standard" ? loadStandardTheme() : typeof choice === "object" ? choice : void 0;
-  if (wanted) {
-    const existing = themes.find((theme) => theme.name === wanted.name && !theme.isDisabled);
-    if (existing)
-      return existing;
-    return client.createAppTheme({ name: wanted.name, definition: wanted.definition, isDefault: false });
-  }
-  const named = themes.find((theme) => theme.name === choice || theme.id === choice);
-  if (!named)
-    throw new Error(`Theme "${String(choice)}" is not available in the active workspace.`);
-  if (named.isDisabled)
-    throw new Error(`Theme "${named.name}" is disabled and cannot be selected.`);
-  return named;
-}
-function paintsDarkCanvasInLightMode(definition) {
-  const light = definition?.surface?.colors?.appBackground?.light;
-  const hex = typeof light === "string" ? /^#([0-9a-f]{6})$/i.exec(light.trim())?.[1] : void 0;
-  if (!hex)
-    return false;
-  const [r, g, b] = [0, 2, 4].map((at) => {
-    const channel = parseInt(hex.slice(at, at + 2), 16) / 255;
-    return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.18;
-}
-function createAppTool(client) {
-  return {
-    name: "create_app",
-    title: "Create App",
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: false,
-      openWorldHint: true
-    },
-    description: 'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, app_url (a backward-compatible alias for editor_url), and the theme that was applied. Honor explicit or selected themes first. Otherwise derive a theme from a brand, industry or customer type (see references/themes.md) and pass theme:{name, definition}; include complete brand, text, border, systemStatus and surface tokens with light/dark values, not a font-only or partial definition. It is created once per workspace by name and applied. Otherwise the app gets the standard theme ("ToolJet Modern": neutral greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. If a theme cannot be created (for example a licence gate) the app is still created and the result carries a theme warning.',
-    inputSchema: {
-      name: external_exports.string().min(1),
-      theme: external_exports.union([external_exports.string().min(1), derivedThemeSchema]).optional()
-    },
-    async handler(args) {
-      try {
-        if (typeof args.theme === "object")
-          derivedThemeSchema.parse(args.theme);
-        const created = await client.createApp(args.name);
-        const choice = args.theme ?? "standard";
-        const result = { ...created, theme: { mode: "workspace_default" } };
-        if (choice === "workspace_default")
-          return ok(result);
-        const label = typeof choice === "object" ? choice.name : choice;
-        try {
-          const theme = await resolveTheme(client, choice);
-          const dark = typeof choice === "object" && paintsDarkCanvasInLightMode(choice.definition);
-          await client.updateAppSettings({
-            appId: created.app_id,
-            versionId: created.version_id,
-            globalSettings: { theme, ...dark ? { appMode: "dark" } : {} }
-          });
-          const mode = choice === "standard" ? "standard" : typeof choice === "object" ? "derived" : "named";
-          result.theme = { mode, id: theme.id, name: theme.name, ...dark ? { app_mode: "dark" } : {} };
-        } catch (themeErr) {
-          result.theme = {
-            mode: "workspace_default",
-            warning: `Could not apply theme "${label}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
-          };
-        }
-        return ok(result);
       } catch (err) {
         return fail(err);
       }
@@ -1112,7 +1056,8 @@ var SETTING_KEYS = [
   "navigation_hidden",
   "navigation_position",
   "navigation_style",
-  "navigation_collapsible"
+  "navigation_collapsible",
+  "component_library"
 ];
 function persistenceMismatches(args, snapshot2) {
   const global = snapshot2.global_settings;
@@ -1130,6 +1075,8 @@ function persistenceMismatches(args, snapshot2) {
   }
   if (args.app_mode !== void 0)
     expectEqual("app_mode", global.appMode, args.app_mode);
+  if (args.component_library !== void 0)
+    expectEqual("component_library", global.componentLibrary, savedComponentLibrary(args.component_library));
   if (args.theme_id !== void 0) {
     const theme = global.theme;
     expectEqual("theme_id", theme?.id, args.theme_id);
@@ -1161,7 +1108,7 @@ function updateAppSettingsTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Patch app-wide visual settings on the current editing version in one version update, then read them back. Supports canvas background/width/mode, a theme selected from list_app_themes, header/logo/title, and navigation visibility/layout. hide_header controls the app header/banner. The separate generated page-navigation menu can be positioned on the side or top; navigation_hidden hides that entire menu in either position. To hide only one non-Home page from that menu, use update_pages.hidden. Omitted fields are preserved. Every requested field is read back; the tool returns an error instead of success if any field did not persist.",
+    description: "Patch app-wide visual settings on the current editing version in one version update, then read them back. Supports canvas background/width/mode, a theme selected from list_app_themes, header/logo/title, and navigation visibility/layout. hide_header controls the app header/banner. The separate generated page-navigation menu can be positioned on the side or top; navigation_hidden hides that entire menu in either position. navigation_hidden:true also hides the app header and its logo (the app brings its own navigation and header), unless hide_header or hide_logo is passed as false. To hide only one non-Home page from that menu, use update_pages.hidden. Omitted fields are preserved. Every requested field is read back; the tool returns an error instead of success if any field did not persist.",
     inputSchema: {
       app_id: external_exports.string().min(1),
       version_id: external_exports.string().min(1),
@@ -1175,13 +1122,16 @@ function updateAppSettingsTool(client) {
       hide_header: external_exports.boolean().optional().describe("Hide or show the app header/banner. This is separate from the generated page-navigation menu."),
       hide_logo: external_exports.boolean().optional(),
       header_title: external_exports.string().trim().min(1).max(32).optional(),
-      navigation_hidden: external_exports.boolean().optional().describe("Hide or show the entire generated page-navigation menu, whether it is positioned on the side or top. To hide only one non-Home page from the menu, use update_pages.hidden."),
+      navigation_hidden: external_exports.boolean().optional().describe("Hide or show the entire generated page-navigation menu, whether it is positioned on the side or top. true also hides the app header and logo unless hide_header or hide_logo is false. To hide only one non-Home page from the menu, use update_pages.hidden."),
       navigation_position: external_exports.enum(["side", "top"]).optional(),
       navigation_style: external_exports.enum(["texticon", "text", "icon"]).optional(),
-      navigation_collapsible: external_exports.boolean().optional()
+      navigation_collapsible: external_exports.boolean().optional(),
+      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in: "ui1" ToolJet UI 1.0 (native widgets) or "ui2" ToolJet UI 2.0 (Shad* types). Change it only when the user asks to move the app to the other library.')
     },
-    async handler(args) {
+    async handler(requested) {
       try {
+        const headerFollowsMenu = requested.navigation_hidden === true && (requested.hide_header === void 0 || requested.hide_logo === void 0);
+        const args = requested.navigation_hidden === true ? { ...requested, hide_header: requested.hide_header ?? true, hide_logo: requested.hide_logo ?? true } : requested;
         const changed = SETTING_KEYS.filter((key) => args[key] !== void 0);
         if (!changed.length)
           throw new Error("update_app_settings requires at least one setting field.");
@@ -1209,7 +1159,9 @@ function updateAppSettingsTool(client) {
           ...args.canvas_background_color !== void 0 ? { canvasBackgroundColor: args.canvas_background_color } : {},
           ...args.canvas_max_width !== void 0 ? { canvasMaxWidth: args.canvas_max_width.value, canvasMaxWidthType: args.canvas_max_width.unit } : {},
           ...args.app_mode !== void 0 ? { appMode: args.app_mode } : {},
-          ...theme ? { theme } : {}
+          ...theme ? { theme } : {},
+          // UI 2.0 is saved as the default pack ("pack:<id>"), as create_app does, so the panel shows that pack.
+          ...args.component_library !== void 0 ? { componentLibrary: savedComponentLibrary(args.component_library) } : {}
         };
         const properties = {
           ...args.hide_header !== void 0 ? { hideHeader: args.hide_header } : {},
@@ -1234,7 +1186,8 @@ function updateAppSettingsTool(client) {
         return ok({
           updated_fields: changed.length,
           settings: projectAppSettings(persisted),
-          warnings: []
+          warnings: [],
+          ...headerFollowsMenu ? { note: "The page menu is hidden, so the app header and logo were hidden with it." } : {}
         });
       } catch (error) {
         return fail(error);
@@ -1508,6 +1461,206 @@ function dropTableTool(client) {
     }
   };
 }
+var querySchema = external_exports.object({
+  client_ref: external_exports.string().optional(),
+  datasource_id: external_exports.string(),
+  name: external_exports.string(),
+  options: external_exports.record(external_exports.string(), external_exports.any()),
+  kind: external_exports.string().optional()
+});
+function addQueriesTool(client) {
+  return {
+    name: "add_queries",
+    title: "Add Queries",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: true
+    },
+    description: "Create MANY queries in a single call (all share version_id). Prefer this over repeated add_query when building an app. Each query names its own datasource_id and options. Call get_datasource_query_schema for the operations you use before constructing those options. The batch resolves datasource kinds once, contract-validates every query before any writes, and returns {queries,warnings,validation}. ToolJet has no query bulk transaction: a rare partial failure names every persisted query; do not retry the whole batch. Creates are serialized per version within this MCP client. Optional client_ref aliases declared in this batch are resolved in its query bindings/RunJS when unambiguous; existing runtime names take precedence. Pass app_id for a Code mode app: its queries must read the signed-in user as {{globals.server.currentUser.*}} (resolved on the server), and {{globals.currentUser.*}} (resolved in the browser) is refused.",
+    inputSchema: {
+      version_id: external_exports.string(),
+      app_id: external_exports.string().optional().describe("the app's id; in a Code mode app it enables the signed-in-user check"),
+      queries: external_exports.array(querySchema).min(1)
+    },
+    async handler(args) {
+      try {
+        await refuseBrowserUser(client, args.app_id, args.queries);
+        const datasources = await client.listDatasources(args.version_id);
+        const datasourceById = new Map(datasources.map((datasource) => [datasource.id, datasource]));
+        const warnings = [];
+        const queries = structuredClone(args.queries);
+        if (queries.some((query) => query.client_ref && query.client_ref !== query.name)) {
+          try {
+            const existing = await client.getQueries(args.version_id);
+            warnings.push(...normalizePlanBindingAliases({ queries }, { pages: [], queries: existing }, new Map(datasources.map((ds) => [ds.id, ds.kind]))));
+          } catch {
+            warnings.push("Batch query aliases were not normalized because existing query names could not be read. Use exact runtime names.");
+          }
+        }
+        const validations = [];
+        const resolved = queries.map((query) => {
+          const datasource = datasourceById.get(query.datasource_id);
+          if (!datasource) {
+            throw new Error(`Query "${query.name}": datasource "${query.datasource_id}" is not available on version "${args.version_id}".`);
+          }
+          const prepared = prepareQueryOptionsForWrite(datasource.kind, query.options, `Query "${query.name}"`);
+          if (prepared.errors.length)
+            throw new Error(prepared.errors.join(" "));
+          warnings.push(...prepared.warnings);
+          const { options: options2 } = prepared;
+          const validation = prepared.validation;
+          if (query.kind && query.kind !== datasource.kind) {
+            warnings.push(`Query "${query.name}": caller kind "${query.kind}" was ignored; datasource kind is "${datasource.kind}".`);
+          }
+          validations.push({
+            name: query.name,
+            kind: datasource.kind,
+            operation: validation.operation,
+            schema_found: validation.schemaFound
+          });
+          return { query: { ...query, options: options2 }, kind: datasource.kind };
+        });
+        warnings.push(...await inspectUpdateCompatibility(client, resolved.map(({ query, kind }) => ({
+          name: query.name,
+          kind,
+          options: query.options
+        }))));
+        const result = await client.createQueries({
+          versionId: args.version_id,
+          queries: resolved.map(({ query, kind }) => ({
+            dataSourceId: query.datasource_id,
+            name: query.name,
+            options: query.options,
+            kind
+          }))
+        });
+        return ok({ queries: result, warnings, validation: validations });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+async function refuseBrowserUser(client, appId, queries) {
+  const found = queries.map((query) => ({ name: query.name, paths: browserUserBindings(query.options) })).filter((query) => query.paths.length);
+  if (!found.length || !appId)
+    return;
+  if (!isCodeModeApp(await client.getApp(appId)))
+    return;
+  throw new Error(found.map((query) => browserUserMessage(query.name, query.paths)).join(" ") + " Nothing was written.");
+}
+var SEED_CHUNK = 40;
+var seedSchema = external_exports.object({
+  table_name: external_exports.string(),
+  rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1).max(200)
+});
+var querySchema2 = external_exports.object({
+  name: external_exports.string(),
+  table_ref: external_exports.string().optional().describe("A ToolJet DB table by its table_name (planned here or existing): the query reads or writes it"),
+  datasource_name: external_exports.string().optional().describe("Another datasource, by its exact name; leave out for ToolJet DB"),
+  options: external_exports.record(external_exports.string(), external_exports.any()),
+  update: external_exports.boolean().optional().describe("Redefine the app's query of this name in place, keeping its id")
+});
+var body = (result) => {
+  try {
+    return JSON.parse(result.content[0]?.text ?? "");
+  } catch {
+    return void 0;
+  }
+};
+function chunkSeeds(seeds = []) {
+  return seeds.flatMap((seed) => Array.from({ length: Math.ceil(seed.rows.length / SEED_CHUNK) }, (_, i) => ({
+    table_name: seed.table_name,
+    rows: seed.rows.slice(i * SEED_CHUNK, (i + 1) * SEED_CHUNK)
+  })));
+}
+function undeclaredParameters(queries = []) {
+  return queries.flatMap((query) => {
+    const declared = new Set((Array.isArray(query.options?.parameters) ? query.options.parameters : []).map((p) => p && typeof p === "object" ? String(p.name) : ""));
+    const { parameters: _declared, ...rest } = query.options ?? {};
+    const used = [...new Set([...JSON.stringify(rest).matchAll(/\bparameters\.([A-Za-z_$][\w$]*)/g)].map((m) => m[1]))];
+    const missing = used.filter((name) => !declared.has(name));
+    return missing.length ? [`Query "${query.name}" reads ${missing.map((n) => `parameters.${n}`).join(", ")} but does not declare ${missing.length > 1 ? "them" : "it"}: add ${missing.map((n) => `{ "name": "${n}", "defaultValue": "" }`).join(", ")} to its options.parameters.`] : [];
+  });
+}
+function codeAppDataTool(client) {
+  const lint2 = lintAppSpecTool(client);
+  const apply2 = applyAppPhaseTool(client);
+  return {
+    name: "code_app_data",
+    title: "Create Code Mode App Data",
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    description: "A Code mode app's data in one call: ToolJet DB tables, their sample rows and the app's queries. Everything is checked before anything is written (write shapes, required columns, seed keys, datasource contracts); on any error nothing is written and every error is listed, so fix them all and send the whole call again. Then the tables are created, seeded, the queries created, and each bounded read run once (read_check: rows per query, failed). A query with table_ref and no datasource_name is a ToolJet DB query on that table. Tables already in the workspace are not listed again: queries reach them by table_ref. Returns the table and query ids.",
+    inputSchema: {
+      app_id: external_exports.string().uuid(),
+      version_id: external_exports.string().uuid().optional().describe("Defaults to the app's editing version"),
+      tables: external_exports.array(plannedTableSchema).max(50).optional(),
+      seed_data: external_exports.array(seedSchema).max(50).optional(),
+      queries: external_exports.array(querySchema2).max(200).optional()
+    },
+    async handler(args) {
+      try {
+        if (![args.tables, args.seed_data, args.queries].some((items) => items?.length)) {
+          return fail(new Error("code_app_data needs at least one table, seed_data entry or query."));
+        }
+        const summary = await client.getAppSummary(args.app_id);
+        const versionId = args.version_id ?? summary.version_id;
+        if (!versionId)
+          return fail(new Error(`App ${args.app_id} has no editing version to add queries to.`));
+        let queries = args.queries;
+        if (queries?.length) {
+          await refuseBrowserUser(client, args.app_id, queries);
+          const datasources = await client.listDatasources(versionId);
+          const tooljetDb = datasources.find((source2) => source2.kind === "tooljetdb");
+          queries = queries.map(({ datasource_name, datasource_id, ...query }) => {
+            if (datasource_id || datasource_name)
+              return { ...query, ...datasource_id ? { datasource_id } : { datasource_name } };
+            if (!tooljetDb)
+              throw new Error(`Query "${query.name}": this workspace has no ToolJet DB datasource; name one with datasource_name.`);
+            return { ...query, datasource_id: tooljetDb.id };
+          });
+        }
+        const spec = {
+          app_id: args.app_id,
+          version_id: versionId,
+          ...args.tables?.length ? { tables: args.tables } : {},
+          ...args.seed_data?.length ? { seed_data: chunkSeeds(args.seed_data) } : {},
+          ...queries?.length ? { queries } : {}
+        };
+        const linted = await lint2.handler(spec);
+        const checked = body(linted);
+        if (linted.isError || !checked)
+          return linted;
+        const undeclared = undeclaredParameters(queries);
+        if (!checked.ok || !checked.plan_token || undeclared.length) {
+          return ok({
+            ok: false,
+            written: "nothing",
+            errors: [...undeclared, ...checked.errors ?? []],
+            ...checked.warnings?.length ? { warnings: checked.warnings } : {},
+            next: "Fix every error, then send the whole call again (tables, seed_data and queries together)."
+          });
+        }
+        const applied = await apply2.handler({ app_id: args.app_id, version_id: versionId, plan_token: checked.plan_token });
+        const result = body(applied);
+        if (applied.isError || !result)
+          return applied;
+        const warnings = [.../* @__PURE__ */ new Set([...checked.warnings ?? [], ...result.warnings ?? []])];
+        return ok({
+          applied: Object.fromEntries(Object.entries(result.applied ?? {}).filter(([key, n]) => ["tables", "seed_rows", "queries", "queries_updated"].includes(key) && n)),
+          tables: result.refs?.tables ?? {},
+          queries: result.refs?.queries ?? {},
+          ...result.read_check ? { read_check: result.read_check } : {},
+          ...result.validation && !result.validation.ok ? { validation_errors: result.validation.errors } : {},
+          ...warnings.length ? { warnings } : {}
+        });
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  };
+}
 function getTableSchemaTool(client) {
   return {
     name: "get_table_schema",
@@ -1551,7 +1704,45 @@ function insertRowsTool(client) {
     }
   };
 }
-var seedSchema = external_exports.object({
+var PICTURE_COLUMN = /image|photo|picture|cover|avatar|thumbnail|thumb|img|logo/i;
+var PICTURE_URL = /\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i;
+var PICTURE_HOST = /(^|\.)(images\.unsplash\.com|images\.pexels\.com|cdn\.pixabay\.com)$/i;
+var isPicture = (column, value) => {
+  if (typeof value !== "string")
+    return false;
+  const v = value.trim();
+  if (/^data:image\//i.test(v))
+    return true;
+  if (!/^https?:\/\//i.test(v))
+    return false;
+  try {
+    const url = new URL(v);
+    return PICTURE_HOST.test(url.hostname) || PICTURE_URL.test(url.pathname) || PICTURE_COLUMN.test(column);
+  } catch {
+    return false;
+  }
+};
+function seedPictureWarnings(tables) {
+  const warnings = [];
+  for (const { table_name: table, rows } of tables) {
+    const columns = new Set(rows.flatMap((row) => Object.keys(row ?? {})));
+    for (const column of columns) {
+      const pictures = rows.map((row) => row?.[column]).filter((value) => isPicture(column, value));
+      if (!pictures.length)
+        continue;
+      if (pictures.some((p) => /^data:image\//i.test(p.trim()))) {
+        warnings.push(`${table}.${column} holds drawn data: images, which read as placeholder art; use the records' own picture URLs, or leave the picture out.`);
+        continue;
+      }
+      const distinct = new Set(pictures.map((p) => p.trim())).size;
+      if (pictures.length >= 4 && distinct * 3 <= pictures.length) {
+        warnings.push(`${table}.${column}: ${pictures.length} rows share ${distinct} picture${distinct === 1 ? "" : "s"}; a picture repeated across records reads as placeholder art: give each row its own, or leave the picture out.`);
+      }
+    }
+  }
+  return warnings;
+}
+var seedSchema2 = external_exports.object({
   table_name: external_exports.string(),
   rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1).max(40)
 });
@@ -1566,222 +1757,20 @@ function insertRowsBatchTool(client) {
       openWorldHint: true
     },
     description: "Seed multiple ToolJet-DB tables in one call. Entries are processed in the listed order so parent rows can be inserted before foreign-key children. Writes are insert-only: omit generated serial keys; explicit duplicate keys fail rather than updating rows. Returns {tables:[{table_name,processed_rows}],processed_rows}. A partial failure reports completed table/row counts; do not retry completed seeds. Keep initial demo data representative and small; each table payload is capped at 40 rows so large fixtures must be split across compact calls.",
-    inputSchema: { tables: external_exports.array(seedSchema).min(1).max(50) },
+    inputSchema: { tables: external_exports.array(seedSchema2).min(1).max(50) },
     async handler(args) {
       try {
         const results = await client.insertRowsBatch({
           tables: args.tables.map((table) => ({ tableName: table.table_name, rows: table.rows }))
         });
+        const warnings = seedPictureWarnings(args.tables);
         return ok({
           tables: results,
-          processed_rows: results.reduce((total, result) => total + result.processed_rows, 0)
+          processed_rows: results.reduce((total, result) => total + result.processed_rows, 0),
+          ...warnings.length ? { warnings } : {}
         });
       } catch (error) {
         return fail(error);
-      }
-    }
-  };
-}
-var CATALOG_SECTIONS = [
-  "overview",
-  "properties",
-  "styles",
-  "events",
-  "actions",
-  "exposedVariables",
-  "defaultChildren",
-  "renderingHints",
-  "authoringHints"
-];
-var DEFAULT_TYPED_SECTIONS = [
-  "overview",
-  "properties",
-  "events",
-  "actions"
-];
-var CATALOG_TYPE_ALIASES = /* @__PURE__ */ new Map([
-  ["gridview", {
-    type: "Listview",
-    note: 'ToolJet grid view is Listview with mode:"grid" (properties.mode.value); use type:"Listview" when creating it.'
-  }]
-]);
-function resolveCatalogType(requestedType) {
-  const alias = CATALOG_TYPE_ALIASES.get(requestedType.replace(/[\s_-]+/g, "").toLowerCase());
-  if (alias)
-    return { type: alias.type, alias: { requested_type: requestedType, note: alias.note } };
-  if (getComponentSchema(requestedType))
-    return { type: requestedType };
-  const wanted = requestedType.replace(/[\s_-]+/g, "").toLowerCase();
-  const types = getCatalog().map((entry) => entry.type);
-  const near = types.find((type) => type.toLowerCase() === wanted) ?? types.find((type) => type.toLowerCase().replace(/v\d+$/, "") === wanted);
-  return near ? { type: near, alias: { requested_type: requestedType, note: `There is no "${requestedType}"; this is ${near}. Use type "${near}".` } } : { type: requestedType };
-}
-function nearbyTypes(requestedType) {
-  const words = requestedType.split(/(?=[A-Z])|[\s_-]+/).map((word) => word.toLowerCase()).filter((word) => word.length >= 4);
-  return getCatalog().map((entry) => entry.type).filter((type) => words.some((word) => type.toLowerCase().includes(word))).slice(0, 6);
-}
-function selectEntries(entries, keys, detail) {
-  const selected = keys?.length ? entries.filter((entry) => keys.includes(entry.key)) : entries;
-  if (detail === "full" || keys?.length)
-    return selected;
-  return selected.map(({ key, valueType, allowedValues, requires, mutuallyExclusiveWith }) => ({
-    key,
-    ...valueType !== void 0 ? { valueType } : {},
-    ...allowedValues !== void 0 ? { allowedValues } : {},
-    ...requires !== void 0 ? { requires } : {},
-    ...mutuallyExclusiveWith !== void 0 ? { mutuallyExclusiveWith } : {}
-  }));
-}
-function selectSchema(schema, args) {
-  const detail = args.detail ?? "compact";
-  const sections = new Set(args.sections ?? DEFAULT_TYPED_SECTIONS);
-  const result = { type: schema.type };
-  if (sections.has("overview")) {
-    if (schema.name !== void 0)
-      result.name = schema.name;
-    if (schema.description !== void 0)
-      result.description = schema.description;
-    if (schema.defaultSize !== void 0)
-      result.defaultSize = schema.defaultSize;
-  }
-  if (sections.has("properties")) {
-    result.properties = selectEntries(schema.properties, args.property_keys, detail);
-  }
-  if (sections.has("styles")) {
-    result.styles = selectEntries(schema.styles, args.style_keys, detail);
-  }
-  if (sections.has("events") && schema.events !== void 0)
-    result.events = schema.events;
-  if (sections.has("actions") && schema.actions !== void 0)
-    result.actions = schema.actions;
-  if (sections.has("exposedVariables") && schema.exposedVariables !== void 0) {
-    result.exposedVariables = schema.exposedVariables;
-  }
-  if (sections.has("defaultChildren") && schema.defaultChildren !== void 0) {
-    result.defaultChildren = schema.defaultChildren;
-  }
-  if (sections.has("renderingHints") && schema.renderingHints !== void 0) {
-    result.renderingHints = schema.renderingHints;
-  }
-  if (sections.has("authoringHints") && schema.authoringHints !== void 0) {
-    result.authoringHints = schema.authoringHints;
-  }
-  return result;
-}
-function legacyNotice(type) {
-  const replacement = getLegacyComponentReplacement(type);
-  return replacement ? {
-    deprecated: true,
-    replacement,
-    deprecation_note: `"${type}" remains available only for inspecting or repairing existing apps. Use "${replacement}" for new components.`
-  } : {};
-}
-async function instanceNote(client, type) {
-  const refusal = type === "Map" ? await mapKeyRefusal(client, ["Map"]) : void 0;
-  return refusal ? { instance_note: refusal } : {};
-}
-function getComponentCatalogTool(client) {
-  return {
-    name: "get_component_catalog",
-    title: "Get Component Catalog",
-    // Served from the bundled catalog in data/; never reaches the ToolJet instance.
-    annotations: {
-      readOnlyHint: true,
-      openWorldHint: false
-    },
-    description: 'Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one component or types for a batch needed in the current page/phase. Typed reads default to detail:"compact" and the overview/properties/events/actions sections; compact property/style lists omit labels and defaults. Use detail:"full" or exact property_keys/style_keys only when those values are needed. Request renderingHints/authoringHints for layout-sensitive or nested components. Use requests when different types need different sections/keys in one call; top-level detail/sections/keys apply as defaults to every requested type, and the type/types/requests selectors may be combined. sections selects only overview, properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. GridView is a lookup alias for Listview mode:"grid"; component writes must still use type:"Listview". authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar contracts once and reuse them; never guess property/event/action ids.',
-    inputSchema: {
-      type: external_exports.string().optional(),
-      types: external_exports.array(external_exports.string()).min(1).max(25).optional(),
-      requests: external_exports.array(external_exports.object({
-        type: external_exports.string(),
-        detail: external_exports.enum(["compact", "full"]).optional(),
-        sections: external_exports.array(external_exports.enum(CATALOG_SECTIONS)).min(1).optional(),
-        property_keys: external_exports.array(external_exports.string()).min(1).optional(),
-        style_keys: external_exports.array(external_exports.string()).min(1).optional()
-      })).min(1).max(25).optional(),
-      detail: external_exports.enum(["compact", "full"]).optional(),
-      sections: external_exports.array(external_exports.enum(CATALOG_SECTIONS)).min(1).optional(),
-      property_keys: external_exports.array(external_exports.string()).min(1).optional(),
-      style_keys: external_exports.array(external_exports.string()).min(1).optional()
-    },
-    async handler(args) {
-      try {
-        const singleType = args?.type;
-        const typesList = args?.types ?? [];
-        const batch = args?.requests ?? [];
-        const hasSelector = !!singleType || typesList.length > 0 || batch.length > 0;
-        if (!hasSelector) {
-          if (args.detail || args.sections || args.property_keys || args.style_keys) {
-            return fail(new Error("Catalog detail/sections/key filters require `type`, `types`, or `requests`."));
-          }
-          return ok(getCatalog());
-        }
-        if (singleType && typesList.length === 0 && batch.length === 0) {
-          const resolved = resolveCatalogType(singleType);
-          const schema = getComponentSchema(resolved.type);
-          if (!schema) {
-            const near = nearbyTypes(singleType);
-            return ok({ error: `Unknown component type "${singleType}". Call with no argument to list valid types.`, ...near.length ? { did_you_mean: near } : {} });
-          }
-          return ok({
-            ...selectSchema(schema, args),
-            ...legacyNotice(schema.type),
-            ...resolved.alias ? { alias: resolved.alias } : {},
-            ...await instanceNote(client, schema.type)
-          });
-        }
-        const withDefaults = (type, over) => ({
-          type,
-          detail: over?.detail ?? args.detail,
-          sections: over?.sections ?? args.sections,
-          property_keys: over?.property_keys ?? args.property_keys,
-          style_keys: over?.style_keys ?? args.style_keys
-        });
-        const ordered = [
-          ...batch.map((r) => withDefaults(r.type, r)),
-          ...typesList.map((t) => withDefaults(t)),
-          ...singleType ? [withDefaults(singleType)] : []
-        ];
-        const components = [];
-        const unknownTypes = [];
-        const componentByResolvedType = /* @__PURE__ */ new Map();
-        const seenUnknown = /* @__PURE__ */ new Set();
-        for (const request of ordered) {
-          if (!request.type)
-            continue;
-          const resolved = resolveCatalogType(request.type);
-          const schema = getComponentSchema(resolved.type);
-          if (!schema) {
-            if (!seenUnknown.has(request.type)) {
-              seenUnknown.add(request.type);
-              unknownTypes.push(request.type);
-            }
-            continue;
-          }
-          const existing = componentByResolvedType.get(resolved.type);
-          if (existing) {
-            if (resolved.alias) {
-              const requestedAliases = Array.isArray(existing.requested_aliases) ? existing.requested_aliases : [];
-              if (!requestedAliases.includes(request.type)) {
-                existing.requested_aliases = [...requestedAliases, request.type];
-              }
-            }
-            continue;
-          }
-          const component = {
-            ...selectSchema(schema, request),
-            ...legacyNotice(schema.type),
-            ...resolved.alias ? { alias: resolved.alias } : {},
-            ...resolved.alias ? { requested_aliases: [request.type] } : {},
-            ...await instanceNote(client, schema.type)
-          };
-          components.push(component);
-          componentByResolvedType.set(resolved.type, component);
-        }
-        return ok({ components, unknown_types: unknownTypes });
-      } catch (err) {
-        return fail(err);
       }
     }
   };
@@ -1822,8 +1811,12 @@ async function resolveKind(client, request, fallbackVersionId, datasourceCache =
   }
   if (request.kind)
     return request.kind;
-  if (!versionId)
-    throw new Error("Resolving `datasource_id` requires `version_id`.");
+  if (!versionId) {
+    const kind = await client.datasourceKind?.(request.datasource_id).catch(() => void 0);
+    if (kind)
+      return kind;
+    throw new Error('Resolving `datasource_id` needs `version_id` (or pass `kind`, such as "tooljetdb").');
+  }
   const datasource = (await datasourcesFor(versionId)).find((item) => item.id === request.datasource_id);
   if (!datasource)
     throw new Error(`Datasource "${request.datasource_id}" is not available on version "${versionId}".`);
@@ -2435,7 +2428,7 @@ function getAppTool(client) {
     }
   };
 }
-var APP_FIELDS = ["app_id", "name", "version_id", "editor_frozen", "environment"];
+var APP_FIELDS = ["app_id", "name", "version_id", "editor_frozen", "environment", "component_library"];
 var PAGE_FIELDS = ["id", "name", "handle", "icon", "hidden", "index", "is_page_group", "page_group_id"];
 var COMPONENT_FIELDS = [
   "id",
@@ -2571,7 +2564,7 @@ function getAppSummaryTool(client) {
       readOnlyHint: true,
       openWorldHint: true
     },
-    description: `Selective, bounded inspection of an app \u2014 use this instead of get_app. Pass version_id after create_app_version to inspect that exact version instead of the server's default editing version. By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. Field roots: app(app_id/name/version_id), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component(id/name/type/layouts/properties/styles/validation/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.`,
+    description: `Selective, bounded inspection of an app \u2014 use this instead of get_app. Pass version_id after create_app_version to inspect that exact version instead of the server's default editing version. By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. component_library says which library the app is built in: {library:"ui1"} is ToolJet UI 1.0 (the native widgets), {library:"ui2"} is ToolJet UI 2.0 (types starting with Shad, laid out in FlexContainers); source "saved" is the app's setting, "inferred" is read from its widgets. Build in that library unless the user asks for the other. Field roots: app(app_id/name/version_id/component_library), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component(id/name/type/layouts/properties/styles/validation/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.`,
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string().min(1).optional(),
@@ -2940,85 +2933,6 @@ function addQueryTool(client) {
     }
   };
 }
-var querySchema = external_exports.object({
-  client_ref: external_exports.string().optional(),
-  datasource_id: external_exports.string(),
-  name: external_exports.string(),
-  options: external_exports.record(external_exports.string(), external_exports.any()),
-  kind: external_exports.string().optional()
-});
-function addQueriesTool(client) {
-  return {
-    name: "add_queries",
-    title: "Add Queries",
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: false,
-      openWorldHint: true
-    },
-    description: "Create MANY queries in a single call (all share version_id). Prefer this over repeated add_query when building an app. Each query names its own datasource_id and options. Call get_datasource_query_schema for the operations you use before constructing those options. The batch resolves datasource kinds once, contract-validates every query before any writes, and returns {queries,warnings,validation}. ToolJet has no query bulk transaction: a rare partial failure names every persisted query; do not retry the whole batch. Creates are serialized per version within this MCP client. Optional client_ref aliases declared in this batch are resolved in its query bindings/RunJS when unambiguous; existing runtime names take precedence.",
-    inputSchema: {
-      version_id: external_exports.string(),
-      queries: external_exports.array(querySchema).min(1)
-    },
-    async handler(args) {
-      try {
-        const datasources = await client.listDatasources(args.version_id);
-        const datasourceById = new Map(datasources.map((datasource) => [datasource.id, datasource]));
-        const warnings = [];
-        const queries = structuredClone(args.queries);
-        if (queries.some((query) => query.client_ref && query.client_ref !== query.name)) {
-          try {
-            const existing = await client.getQueries(args.version_id);
-            warnings.push(...normalizePlanBindingAliases({ queries }, { pages: [], queries: existing }, new Map(datasources.map((ds) => [ds.id, ds.kind]))));
-          } catch {
-            warnings.push("Batch query aliases were not normalized because existing query names could not be read. Use exact runtime names.");
-          }
-        }
-        const validations = [];
-        const resolved = queries.map((query) => {
-          const datasource = datasourceById.get(query.datasource_id);
-          if (!datasource) {
-            throw new Error(`Query "${query.name}": datasource "${query.datasource_id}" is not available on version "${args.version_id}".`);
-          }
-          const prepared = prepareQueryOptionsForWrite(datasource.kind, query.options, `Query "${query.name}"`);
-          if (prepared.errors.length)
-            throw new Error(prepared.errors.join(" "));
-          warnings.push(...prepared.warnings);
-          const { options: options2 } = prepared;
-          const validation = prepared.validation;
-          if (query.kind && query.kind !== datasource.kind) {
-            warnings.push(`Query "${query.name}": caller kind "${query.kind}" was ignored; datasource kind is "${datasource.kind}".`);
-          }
-          validations.push({
-            name: query.name,
-            kind: datasource.kind,
-            operation: validation.operation,
-            schema_found: validation.schemaFound
-          });
-          return { query: { ...query, options: options2 }, kind: datasource.kind };
-        });
-        warnings.push(...await inspectUpdateCompatibility(client, resolved.map(({ query, kind }) => ({
-          name: query.name,
-          kind,
-          options: query.options
-        }))));
-        const result = await client.createQueries({
-          versionId: args.version_id,
-          queries: resolved.map(({ query, kind }) => ({
-            dataSourceId: query.datasource_id,
-            name: query.name,
-            options: query.options,
-            kind
-          }))
-        });
-        return ok({ queries: result, warnings, validation: validations });
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
 var layoutSchema = external_exports.object({
   top: external_exports.number(),
   left: external_exports.number(),
@@ -3118,7 +3032,7 @@ function addComponentsTool(client) {
       destructiveHint: false,
       openWorldHint: true
     },
-    description: "Place MANY components on one page in a single call (all share app_id/version_id/page_id). Prefer this over repeated add_component when building an app \u2014 it is one request. Returns [{ component_id, name }]. Note: the batch is atomic \u2014 if one component is invalid (e.g. missing name), the whole call fails; fix that component and retry. Property/style/validation/other leaves may be supplied as concise raw values or canonical `{ value: ... }` envelopes; MCP persists the canonical ToolJet shape. " + COMPONENT_FX_GUIDANCE + 'IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, \u2026) in each component\u2019s top-level `styles` object, NOT under `properties` \u2014 ToolJet silently ignores styles nested in properties (and this tool will reject them). Provide either `layout` (one rectangle for both resolutions) or `layouts:{desktop,mobile}`. To create a modal/container and its children atomically, give the parent a unique `client_ref` and each child the matching `parent_ref`; child bindings may also use unique client_ref aliases declared in this batch; MCP resolves them to runtime names when existing names can be checked, without overriding an existing runtime name. coordinates are relative to that parent, with a fresh 43-column grid in each nested canvas. A full-row child uses width 43 even in a narrow parent. Container/Form/modal slots may use left 2, width 39 for insets; grid-mode Listview full rows use left 0, width 43. For ModalV2/Form/Container native regions, set child `slot_name` to `header`, `body`, or `footer`; body is the default. A Kanban with no explicit child automatically gets its catalog card children so cards are not blank; supplying a child with its `parent_ref` suppresses those defaults (use Html for wrapped multi-line card content). For the Kanban card-click modal, parent its detail controls to the Kanban with slot_name:"modal"; these do not replace card children.',
+    description: "Place MANY components on one page in a single call (all share app_id/version_id/page_id). Prefer this over repeated add_component when building an app \u2014 it is one request. Returns [{ component_id, name }]. Note: the batch is atomic \u2014 if one component is invalid (e.g. missing name), the whole call fails; fix that component and retry. Property/style/validation/other leaves may be supplied as concise raw values or canonical `{ value: ... }` envelopes; MCP persists the canonical ToolJet shape. " + COMPONENT_FX_GUIDANCE + 'IMPORTANT: put native styling (textSize, fontWeight, textColor, backgroundColor, borderRadius, \u2026) in each component\u2019s top-level `styles` object, NOT under `properties` \u2014 ToolJet silently ignores styles nested in properties (and this tool will reject them). Provide either `layout` (one rectangle for both resolutions) or `layouts:{desktop,mobile}`. To create a modal/container and its children atomically, give the parent a unique `client_ref` and each child the matching `parent_ref`; child bindings may also use unique client_ref aliases declared in this batch; MCP resolves them to runtime names when existing names can be checked, without overriding an existing runtime name. coordinates are relative to that parent, with a fresh 43-column grid in each nested canvas. A full-row child uses width 43 even in a narrow parent. Container/Form/modal slots may use left 2, width 39 for insets; grid-mode Listview full rows use left 0, width 43. For ModalV2/Form/Container native regions, set child `slot_name` to `header`, `body`, or `footer`; body is the default. A Kanban with no explicit child automatically gets its catalog card children so cards are not blank; supplying a child with its `parent_ref` suppresses those defaults (use Html for wrapped multi-line card content). For the Kanban card-click modal, parent its detail controls to the Kanban with slot_name:"modal"; these do not replace card children. FlexContainer children render in request order (MCP writes the container childOrder), ignore top/left, fill the width unless the child layout sets fillWidth:false with widthPx, and keep their px height.',
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -3139,7 +3053,25 @@ function addComponentsTool(client) {
       }
       if (summary)
         pageWarnings.push(...normalizePlanBindingAliases({ pages: [{ components: inputs }] }, summary));
-      const prepared = prepareComponentBatch(inputs, { canvasColor: await literalCanvasColor(client, args.app_id, summary?.version_id ?? args.version_id) });
+      const existingPage = summary?.pages.find((candidate) => candidate.id === args.page_id);
+      if (existingPage) {
+        const parentErrors = [];
+        for (const input of inputs) {
+          if (typeof input.parent !== "string" || !input.parent)
+            continue;
+          const resolved = resolveParentRef(existingPage.components, input.parent);
+          if (resolved.ok)
+            input.parent = resolved.parent;
+          else
+            parentErrors.push(`Component "${input.name ?? "?"}": ${resolved.error}`);
+        }
+        if (parentErrors.length)
+          return fail(new Error(parentErrors.join(" ")));
+      }
+      const prepared = prepareComponentBatch(inputs, {
+        canvasColor: await literalCanvasColor(client, args.app_id, summary?.version_id ?? args.version_id),
+        flexContainerIds: existingPage?.components.filter((component) => component.type === "FlexContainer").map((component) => component.id)
+      });
       if (prepared.errors.length)
         return fail(new Error(prepared.errors.join(" ")));
       try {
@@ -3161,7 +3093,9 @@ function addComponentsTool(client) {
           appId: args.app_id,
           versionId: args.version_id,
           pageId: args.page_id,
-          components: prepared.components
+          components: prepared.components,
+          // Lets a child added to an existing FlexContainer join its childOrder without another page read.
+          pageComponents: existingPage?.components
         });
         return ok({
           components: result,
@@ -3199,19 +3133,48 @@ function addComponentBatchesTool(client) {
       }
       const pages = structuredClone(args.pages);
       const aliasWarnings = [];
-      if (pages.some((page) => page.components.some((c) => c.client_ref && c.client_ref !== c.name))) {
+      const needsAliases = pages.some((page) => page.components.some((c) => c.client_ref && c.client_ref !== c.name));
+      const targetsExistingParent = pages.some((page) => page.components.some((c) => c.parent));
+      let summary;
+      if (needsAliases || targetsExistingParent) {
         try {
-          const summary = await client.getAppSummary(args.app_id);
+          summary = await client.getAppSummary(args.app_id);
           if (summary.version_id && summary.version_id !== args.version_id) {
             return fail(new Error("Cannot normalize this write against a different editing version. Refresh the app version."));
           }
-          aliasWarnings.push(...normalizePlanBindingAliases({ pages }, summary));
+          if (needsAliases)
+            aliasWarnings.push(...normalizePlanBindingAliases({ pages }, summary));
         } catch {
-          aliasWarnings.push("Batch component aliases were not normalized because existing names could not be read. Use exact runtime names.");
+          if (needsAliases)
+            aliasWarnings.push("Batch component aliases were not normalized because existing names could not be read. Use exact runtime names.");
         }
       }
+      const pageComponentsOf = (pageId) => summary?.pages.find((page) => page.id === pageId)?.components;
+      const parentErrors = [];
+      for (const page of pages) {
+        const existing = pageComponentsOf(page.page_id);
+        if (!existing)
+          continue;
+        for (const component of page.components) {
+          if (typeof component.parent !== "string" || !component.parent)
+            continue;
+          const resolved = resolveParentRef(existing, component.parent);
+          if (resolved.ok)
+            component.parent = resolved.parent;
+          else
+            parentErrors.push(`Page ${page.page_id}: Component "${component.name ?? "?"}": ${resolved.error}`);
+        }
+      }
+      if (parentErrors.length)
+        return fail(new Error(`${parentErrors.join(" ")} (Nothing was saved: refused before any write.)`));
       const canvasColor = await literalCanvasColor(client, args.app_id, args.version_id);
-      const prepared = pages.map((page) => ({ ...page, prepared: prepareComponentBatch(page.components, { canvasColor }) }));
+      const prepared = pages.map((page) => ({
+        ...page,
+        prepared: prepareComponentBatch(page.components, {
+          canvasColor,
+          flexContainerIds: (pageComponentsOf(page.page_id) ?? []).filter((c) => c.type === "FlexContainer").map((c) => c.id)
+        })
+      }));
       const errors = prepared.flatMap((page) => page.prepared.errors.map((error) => `Page ${page.page_id}: ${error}`));
       const mapRefusal = await mapKeyRefusal(client, pages.flatMap((page) => page.components.map((c) => String(c.type))));
       if (mapRefusal)
@@ -3224,7 +3187,8 @@ function addComponentBatchesTool(client) {
           appId: args.app_id,
           versionId: args.version_id,
           pageId: page.page_id,
-          components: page.prepared.components
+          components: page.prepared.components,
+          pageComponents: pageComponentsOf(page.page_id)
         }),
         warnings: page.prepared.warnings
       })));
@@ -3333,7 +3297,16 @@ function deleteComponentsTool(client) {
     }
   };
 }
-var rect = external_exports.object({ top: external_exports.number(), left: external_exports.number(), width: external_exports.number(), height: external_exports.number() });
+var rect = external_exports.object({
+  top: external_exports.number(),
+  left: external_exports.number(),
+  width: external_exports.number(),
+  height: external_exports.number(),
+  fillWidth: external_exports.boolean().optional().describe(FLEX_FILL_WIDTH_DESCRIPTION),
+  widthPx: external_exports.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION),
+  grow: external_exports.number().positive().optional().describe(FLEX_GROW_DESCRIPTION),
+  minWidthPx: external_exports.number().nonnegative().optional().describe(FLEX_MIN_WIDTH_PX_DESCRIPTION)
+});
 var RECT_KEYS = /* @__PURE__ */ new Set(["top", "left", "width", "height"]);
 var layoutEntrySchema = strictEntry({
   component_id: external_exports.string(),
@@ -3362,7 +3335,7 @@ function updateLayoutTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Move / resize existing components (batch) without touching their properties. `left`/`width` are in the immediate parent canvas's own 43-column grid, including nested containers; `top`/`height` are pixels. Full rows use width 43, independent of the parent outer width. Container/Form/modal insets may use left 2, width 39; grid-mode Listview full rows use left 0, width 43. Provide desktop and/or mobile per component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` (header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent.",
+    description: "Move / resize existing components (batch) without touching their properties. `left`/`width` are in the immediate parent canvas's own 43-column grid, including nested containers; `top`/`height` are pixels. Full rows use width 43, independent of the parent outer width. Container/Form/modal insets may use left 2, width 39; grid-mode Listview full rows use left 0, width 43. Provide desktop and/or mobile per component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` (header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent. A FlexContainer child takes its width from fillWidth/widthPx, not width/left; a component reparented into a FlexContainer is appended to its childOrder.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string(),
@@ -3471,6 +3444,21 @@ function updateLayoutTool(client) {
             slotName: l.slot_name
           }))
         });
+        const appended = appendedChildOrders(page.components, reparentAdditions(page.components, resolvedLayouts.map((layout) => ({
+          componentId: layout.component_id,
+          parent: layout.parent !== void 0 ? encodeComponentParent(layout.parent, layout.slot_name) : void 0
+        }))));
+        if (appended.size) {
+          await client.updateComponents({
+            appId: args.app_id,
+            versionId: args.version_id,
+            pageId: args.page_id,
+            updates: [...appended].map(([componentId, order]) => ({
+              componentId,
+              definition: { properties: { childOrder: childOrderProperty(order) } }
+            }))
+          });
+        }
         return ok({ ...result, warnings });
       } catch (err) {
         return fail(err);
@@ -3623,7 +3611,7 @@ function updateQueryTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Change an existing query in place. `options` REPLACES the stored options wholesale \u2014 send the FULL options object, not a partial. Pass app_id so the existing query kind is resolved and options are validated. To repoint a query, also pass datasource_id; validation happens before the datasource changes, and MCP attempts to roll back the source if the subsequent option update fails. The query toggles (runOnPageLoad, runOnDependencyChange, requestConfirmation, showSuccessNotification) must be true or false on every call.",
+    description: "Change an existing query in place. `options` REPLACES the stored options wholesale \u2014 send the FULL options object, not a partial. Pass app_id so the existing query kind is resolved and options are validated. To repoint a query, also pass datasource_id; validation happens before the datasource changes, and MCP attempts to roll back the source if the subsequent option update fails. The query toggles (runOnPageLoad, runOnDependencyChange, requestConfirmation, showSuccessNotification) must be true or false on every call. In a Code mode app (pass app_id), {{globals.currentUser.*}} in options is refused: use {{globals.server.currentUser.*}}.",
     inputSchema: {
       query_id: external_exports.string().optional().describe("the query id, or its name; with only name given, name picks the query"),
       version_id: external_exports.string(),
@@ -3670,6 +3658,7 @@ function updateQueryTool(client) {
           }
           kind = datasource.kind;
         }
+        await refuseBrowserUser(client, args.app_id, [{ name: args.name ?? input.query_id ?? args.query_id, options: args.options }]);
         const prepared = prepareQueryOptionsForWrite(kind, args.options);
         if (prepared.errors.length)
           return fail(new Error(prepared.errors.join(" ")));
@@ -3932,7 +3921,7 @@ function deleteEventTool(client) {
     }
   };
 }
-var TOOLJET_MCP_VERSION = "0.11.0";
+var TOOLJET_MCP_VERSION = "0.11.1";
 function snapshot(path) {
   try {
     const stat = statSync(path);
@@ -3998,126 +3987,6 @@ function getRuntimeInfoTool(runtime) {
     inputSchema: { refresh: external_exports.boolean().optional().describe("Accepted for discoverability; runtime status is always fresh.") },
     async handler() {
       return ok(runtime.status());
-    }
-  };
-}
-function requireValue2(value, label) {
-  if (value === void 0)
-    throw new Error(`${label} is required for this action.`);
-  return value;
-}
-function findResource(summary, resourceType, resourceId) {
-  if (resourceType === "page") {
-    const page = summary.pages.find((candidate) => candidate.id === resourceId);
-    if (page)
-      return { type: resourceType, id: page.id, name: page.name };
-  } else if (resourceType === "query") {
-    const query = summary.queries.find((candidate) => candidate.id === resourceId);
-    if (query)
-      return { type: resourceType, id: query.id, name: query.name };
-  } else {
-    for (const page of summary.pages) {
-      const component = page.components.find((candidate) => candidate.id === resourceId);
-      if (component) {
-        return {
-          type: resourceType,
-          id: component.id,
-          name: component.name,
-          component_type: component.type,
-          page_id: page.id,
-          page_name: page.name
-        };
-      }
-    }
-  }
-  throw new Error(`${resourceType} "${resourceId}" does not belong to app "${summary.app_id}". Use get_app_summary and do not guess resource ids.`);
-}
-function normalizePermission(permissions) {
-  const permission = permissions[0];
-  if (!permission)
-    return { access: "all", permission_id: null };
-  if (permission.type === "SINGLE") {
-    return {
-      access: "users",
-      permission_id: permission.id,
-      users: (Array.isArray(permission.users) ? permission.users : []).map((entry) => entry?.user).filter(Boolean).map((user) => ({
-        id: user.id,
-        name: [user.firstName, user.lastName].filter(Boolean).join(" ") || void 0,
-        email: user.email
-      }))
-    };
-  }
-  if (permission.type === "GROUP") {
-    return {
-      access: "groups",
-      permission_id: permission.id,
-      groups: (Array.isArray(permission.groups) ? permission.groups : []).map((entry) => entry?.permissionGroup).filter(Boolean).map((group) => ({ id: group.id, name: group.name }))
-    };
-  }
-  return { access: String(permission.type ?? "unknown").toLowerCase(), permission_id: permission.id };
-}
-function manageAppPermissionsTool(client) {
-  return {
-    name: "manage_app_permissions",
-    title: "Manage App Permissions",
-    // get/list_subjects only read, but set overwrites an access rule and clear broadens access to
-    // every user who can reach the app, so the hint covers its widest action.
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: true
-    },
-    description: "List eligible subjects, inspect, set, or clear server-enforced access for one app page, query, or component. Use list_subjects first and exact ids from get_app_summary; users/groups must already have access to the app. set restricts access to the selected users or groups. clear broadens access to every user who can access the app. Mutations require confirm:true after the user explicitly requests the exact access rule. ToolJet license gates still apply.",
-    inputSchema: {
-      action: external_exports.enum(["list_subjects", "get", "set", "clear"]),
-      app_id: external_exports.string().uuid(),
-      resource_type: external_exports.enum(["page", "query", "component"]).optional(),
-      resource_id: external_exports.string().uuid().optional(),
-      access_type: external_exports.enum(["users", "groups"]).optional(),
-      user_ids: external_exports.array(external_exports.string().uuid()).min(1).max(100).optional(),
-      group_ids: external_exports.array(external_exports.string().uuid()).min(1).max(100).optional(),
-      confirm: external_exports.boolean().optional()
-    },
-    async handler(args) {
-      try {
-        if (args.action === "list_subjects") {
-          return ok({ app_id: args.app_id, ...await client.listAppPermissionSubjects(args.app_id) });
-        }
-        const resourceType = requireValue2(args.resource_type, "resource_type");
-        const resourceId = requireValue2(args.resource_id, "resource_id");
-        const summary = await client.getAppSummary(args.app_id);
-        const resource = findResource(summary, resourceType, resourceId);
-        if (args.action === "get") {
-          const permissions2 = await client.getAppPermission(args.app_id, resourceType, resourceId);
-          return ok({ app_id: args.app_id, resource, ...normalizePermission(permissions2) });
-        }
-        if (args.confirm !== true) {
-          throw new Error(`${args.action} permission for ${resourceType} "${resource.name ?? resource.id}" requires confirm:true after explicit approval of the exact access rule.`);
-        }
-        if (args.action === "clear") {
-          await client.clearAppPermission(args.app_id, resourceType, resourceId);
-          return ok({ app_id: args.app_id, resource, access: "all", permission_id: null });
-        }
-        const accessType = requireValue2(args.access_type, "access_type");
-        const subjectIds = accessType === "users" ? args.user_ids : args.group_ids;
-        requireValue2(subjectIds, accessType === "users" ? "user_ids" : "group_ids");
-        if (accessType === "users" && args.group_ids !== void 0) {
-          throw new Error("group_ids must be omitted when access_type is users.");
-        }
-        if (accessType === "groups" && args.user_ids !== void 0) {
-          throw new Error("user_ids must be omitted when access_type is groups.");
-        }
-        const permissions = await client.setAppPermission({
-          appId: args.app_id,
-          resourceType,
-          resourceId,
-          accessType,
-          subjectIds: [...new Set(subjectIds)]
-        });
-        return ok({ app_id: args.app_id, resource, ...normalizePermission(permissions) });
-      } catch (error) {
-        return fail(error);
-      }
     }
   };
 }
@@ -4557,7 +4426,10 @@ function sharedInputSchema(tool) {
 function includeLegacySingularCreateTools() {
   return /^(1|true|yes)$/i.test(process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS ?? "");
 }
-function registerTools(server, client, runtime = runtimeFreshness) {
+function registerTools(server, client, runtime = runtimeFreshness, code = noCodeIdentity(client)) {
+  const viewerBase = () => process.env.TOOLJET_APP_URL || process.env.TOOLJET_DEPLOYMENT_URL || "http://localhost:8082";
+  const verifyPageRender = verifyPageRenderTool(client, viewerBase);
+  const canRender = renderAuditAvailable();
   const tools = [
     getWorkflowNodeCatalogTool(),
     getWorkflowCapabilitiesTool(client),
@@ -4571,6 +4443,14 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     runWorkflowTool(client),
     getWorkflowExecutionTool(client),
     getRuntimeInfoTool(runtime),
+    codeAppScaffoldTool(code),
+    codeAppReadFilesTool(code),
+    codeAppWriteFilesTool(code),
+    codeAppBuildTool(code),
+    // verify: true renders each route through the same check verify_page_render runs.
+    codeAppInstallTool(code, canRender ? { render: verifyPageRender.handler, renderConcurrency: client.renderAuditGrant ? 1 : 2 } : {}),
+    codeAppAddDependencyTool(code),
+    codeAppDataTool(client),
     listWorkspacesTool(client),
     useWorkspaceTool(client),
     manageAppPermissionsTool(client),
@@ -4608,7 +4488,7 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     getAppSummaryTool(client),
     getComponentTool(client),
     validateAppTool(client),
-    verifyPageRenderTool(client, () => process.env.TOOLJET_APP_URL || process.env.TOOLJET_DEPLOYMENT_URL || "http://localhost:8082"),
+    verifyPageRender,
     lintAppSpecTool(client),
     applyAppPhaseTool(client),
     addPageTool(client),
@@ -4635,7 +4515,6 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     manageThemeTool(client)
   ];
   const exposedTools = includeLegacySingularCreateTools() ? tools : tools.filter((tool) => !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name));
-  const canRender = renderAuditAvailable();
   for (const tool of exposedTools) {
     if (tool.name === "verify_page_render" && !canRender)
       continue;
@@ -4688,8 +4567,15 @@ var CATALOG_RESOURCES = [
 var dataDir = resolve(dirname(fileURLToPath(import.meta.url)), "../data");
 var versions = /* @__PURE__ */ new Map();
 var payloads = /* @__PURE__ */ new Map();
+var readPart = (file) => {
+  const bytes = readCatalogBytes(resolve(dataDir, file));
+  if (file !== "component-schemas.json")
+    return bytes;
+  const live = JSON.stringify(allComponentSchemas());
+  return live === JSON.stringify(JSON.parse(bytes.toString("utf8"))) ? bytes : Buffer.from(live);
+};
 function readData(resource) {
-  const bytes = readCatalogBytes(resolve(dataDir, resource.file));
+  const bytes = readPart(resource.file);
   const dataVersion = createHash("sha256").update(bytes).digest("hex").slice(0, 12);
   versions.set(resource.file, dataVersion);
   return { bytes, dataVersion };
@@ -4708,7 +4594,7 @@ var catalogVersionCache;
 function catalogVersion() {
   catalogVersionCache ??= catalogVersionOf(CATALOG_RESOURCES.map((resource) => ({
     file: resource.file,
-    bytes: readCatalogBytes(resolve(dataDir, resource.file))
+    bytes: readPart(resource.file)
   })));
   return catalogVersionCache;
 }
@@ -4736,26 +4622,56 @@ function payload(resource) {
   }
   return text;
 }
+var metadataOf = (resource, catalog) => {
+  const dataVersion = listedVersion(resource);
+  return {
+    title: resource.title,
+    description: resource.description,
+    mimeType: "application/json",
+    ...dataVersion ? { _meta: { data_version: dataVersion, ...catalog ? { catalog_version: catalog } : {} } } : {}
+  };
+};
+var registered = [];
+function refreshCatalogResources() {
+  versions.clear();
+  payloads.clear();
+  catalogVersionCache = void 0;
+  const catalog = listedCatalogVersion();
+  for (const { resource, handle } of registered)
+    handle.update({ metadata: metadataOf(resource, catalog) });
+}
 function registerCatalogResources(server) {
   const catalog = listedCatalogVersion();
   for (const resource of CATALOG_RESOURCES) {
-    const dataVersion = listedVersion(resource);
-    server.registerResource(resource.name, resource.uri, {
-      title: resource.title,
-      description: resource.description,
-      mimeType: "application/json",
-      ...dataVersion ? { _meta: { data_version: dataVersion, ...catalog ? { catalog_version: catalog } : {} } } : {}
-    }, async () => ({
+    const handle = server.registerResource(resource.name, resource.uri, metadataOf(resource, catalog), async () => ({
       contents: [{ uri: resource.uri, mimeType: "application/json", text: payload(resource) }]
     }));
+    registered.push({ resource, handle });
   }
 }
-function buildServer(identity) {
+var packsReady = Promise.resolve([]);
+function buildServer(identity, { hosted = false } = {}) {
   const config = loadConfig(identity);
   const auth = createAuth(config);
   const client = createClient(auth, config);
+  packsReady = loadInstalledPacks(() => client.listComponentLibraries(), () => client.listBuiltinPacks()).then((packs) => {
+    if (packs.length) {
+      refreshCatalogResources();
+      console.error(`tooljet-mcp: component packs: ${packs.join(", ")}`);
+    }
+    return packs;
+  }).catch((err) => {
+    console.error(`tooljet-mcp: component packs not read: ${err instanceof Error ? err.message : String(err)}`);
+    return [];
+  });
   const server = new McpServer({ name: "tooljet-mcp", version: TOOLJET_MCP_VERSION });
-  registerTools(server, client);
+  registerTools(server, client, void 0, {
+    client,
+    workspaceId: () => auth.getOrganizationId(),
+    credential: hosted ? { sessionToken: identity?.sessionToken, pat: identity?.pat } : { sessionToken: config.sessionToken, pat: config.pat },
+    apiUrl: config.apiUrl,
+    appUrl: config.appUrl
+  });
   registerCatalogResources(server);
   return server;
 }
@@ -4802,9 +4718,9 @@ function oauthHttpOptionsFromEnv() {
     allowedOrigins: (process.env.MCP_OAUTH_ALLOWED_ORIGINS || "").split(",").map((s) => s.trim()).filter(Boolean)
   };
 }
-function sendOAuthJson(res, status, body) {
+function sendOAuthJson(res, status, body2) {
   res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" });
-  res.end(JSON.stringify(body));
+  res.end(JSON.stringify(body2));
 }
 var BodyTooLarge = class extends Error {
 };
@@ -5024,5 +4940,6 @@ export {
   createOAuthHttpServer as d,
   StreamableHTTPServerTransport as e,
   identityFromHeaders as i,
-  oauthHttpOptionsFromEnv as o
+  oauthHttpOptionsFromEnv as o,
+  packsReady as p
 };

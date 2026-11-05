@@ -1,12 +1,886 @@
 import { createRequire } from "node:module";
-import { m as require_parse, n as require_util } from "./chunk-8iUq0slz.js";
-import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-CsHFzbSc.js";
-import { a$ as require_moment, aB as ParseErrorEnum, aJ as ScopeHandler, aZ as getExportedToken, t as tt, N as percentSign, ai as tokenLabelName, aC as tokenIsIdentifier, a as rightCurlyBrace, g as greaterThan, M as ampersand, x as leftCurlyBrace, l as lessThan, n as carriageReturn, m as lineFeed, E as Errors, J as numberSign, Z as lowercaseX, a6 as semicolon, c as isIdentifierChar, f as dash, aj as tokenIsKeyword, al as types, h as exclamationMark, z as isIdentifierStart, P as quotationMark, O as apostrophe, b0 as tokenComesBeforeExpression } from "./chunk-CPO3lpSy.js";
-import { g as getOptions, O as OptionFlags, t as typescript_default, i as isNewLine } from "./chunk-qhyW4MeS.js";
-import { f as flow_default } from "./chunk-CLeJ853_.js";
-import { S as StatementParser } from "./chunk-BjOFSCcG.js";
-import { e8 as __toESM, e6 as __commonJS } from "./chunk-BEuHHGL1.js";
+import { b0 as external_exports, b1 as nodeCatalog, b2 as validateGraph, b3 as specSchema, b4 as compileGraph, b5 as assertWorkflowJavaScript, b6 as controlFlowEdges } from "./chunk-Id3EmQoo.js";
+import { p as parseExpression, a as parse } from "./chunk-BES_Brj6.js";
+import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-hq1_aYNY.js";
+import { r as require_moment } from "./chunk-CnZ2UwxJ.js";
+import { ed as __toESM, eb as __commonJS, e8 as getComponentSchema } from "./chunk-CNzl5iHC.js";
+import { randomUUID } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 createRequire(import.meta.url);
+var require_unicode = __commonJS({
+  "node_modules/json5/lib/unicode.js"(exports, module) {
+    module.exports.Space_Separator = /[\u1680\u2000-\u200A\u202F\u205F\u3000]/;
+    module.exports.ID_Start = /[\xAA\xB5\xBA\xC0-\xD6\xD8-\xF6\xF8-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0370-\u0374\u0376\u0377\u037A-\u037D\u037F\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03F5\u03F7-\u0481\u048A-\u052F\u0531-\u0556\u0559\u0561-\u0587\u05D0-\u05EA\u05F0-\u05F2\u0620-\u064A\u066E\u066F\u0671-\u06D3\u06D5\u06E5\u06E6\u06EE\u06EF\u06FA-\u06FC\u06FF\u0710\u0712-\u072F\u074D-\u07A5\u07B1\u07CA-\u07EA\u07F4\u07F5\u07FA\u0800-\u0815\u081A\u0824\u0828\u0840-\u0858\u0860-\u086A\u08A0-\u08B4\u08B6-\u08BD\u0904-\u0939\u093D\u0950\u0958-\u0961\u0971-\u0980\u0985-\u098C\u098F\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BD\u09CE\u09DC\u09DD\u09DF-\u09E1\u09F0\u09F1\u09FC\u0A05-\u0A0A\u0A0F\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32\u0A33\u0A35\u0A36\u0A38\u0A39\u0A59-\u0A5C\u0A5E\u0A72-\u0A74\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2\u0AB3\u0AB5-\u0AB9\u0ABD\u0AD0\u0AE0\u0AE1\u0AF9\u0B05-\u0B0C\u0B0F\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32\u0B33\u0B35-\u0B39\u0B3D\u0B5C\u0B5D\u0B5F-\u0B61\u0B71\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99\u0B9A\u0B9C\u0B9E\u0B9F\u0BA3\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BD0\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C39\u0C3D\u0C58-\u0C5A\u0C60\u0C61\u0C80\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBD\u0CDE\u0CE0\u0CE1\u0CF1\u0CF2\u0D05-\u0D0C\u0D0E-\u0D10\u0D12-\u0D3A\u0D3D\u0D4E\u0D54-\u0D56\u0D5F-\u0D61\u0D7A-\u0D7F\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0E01-\u0E30\u0E32\u0E33\u0E40-\u0E46\u0E81\u0E82\u0E84\u0E87\u0E88\u0E8A\u0E8D\u0E94-\u0E97\u0E99-\u0E9F\u0EA1-\u0EA3\u0EA5\u0EA7\u0EAA\u0EAB\u0EAD-\u0EB0\u0EB2\u0EB3\u0EBD\u0EC0-\u0EC4\u0EC6\u0EDC-\u0EDF\u0F00\u0F40-\u0F47\u0F49-\u0F6C\u0F88-\u0F8C\u1000-\u102A\u103F\u1050-\u1055\u105A-\u105D\u1061\u1065\u1066\u106E-\u1070\u1075-\u1081\u108E\u10A0-\u10C5\u10C7\u10CD\u10D0-\u10FA\u10FC-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u1380-\u138F\u13A0-\u13F5\u13F8-\u13FD\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16EE-\u16F8\u1700-\u170C\u170E-\u1711\u1720-\u1731\u1740-\u1751\u1760-\u176C\u176E-\u1770\u1780-\u17B3\u17D7\u17DC\u1820-\u1877\u1880-\u1884\u1887-\u18A8\u18AA\u18B0-\u18F5\u1900-\u191E\u1950-\u196D\u1970-\u1974\u1980-\u19AB\u19B0-\u19C9\u1A00-\u1A16\u1A20-\u1A54\u1AA7\u1B05-\u1B33\u1B45-\u1B4B\u1B83-\u1BA0\u1BAE\u1BAF\u1BBA-\u1BE5\u1C00-\u1C23\u1C4D-\u1C4F\u1C5A-\u1C7D\u1C80-\u1C88\u1CE9-\u1CEC\u1CEE-\u1CF1\u1CF5\u1CF6\u1D00-\u1DBF\u1E00-\u1F15\u1F18-\u1F1D\u1F20-\u1F45\u1F48-\u1F4D\u1F50-\u1F57\u1F59\u1F5B\u1F5D\u1F5F-\u1F7D\u1F80-\u1FB4\u1FB6-\u1FBC\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FCC\u1FD0-\u1FD3\u1FD6-\u1FDB\u1FE0-\u1FEC\u1FF2-\u1FF4\u1FF6-\u1FFC\u2071\u207F\u2090-\u209C\u2102\u2107\u210A-\u2113\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u212F-\u2139\u213C-\u213F\u2145-\u2149\u214E\u2160-\u2188\u2C00-\u2C2E\u2C30-\u2C5E\u2C60-\u2CE4\u2CEB-\u2CEE\u2CF2\u2CF3\u2D00-\u2D25\u2D27\u2D2D\u2D30-\u2D67\u2D6F\u2D80-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u2E2F\u3005-\u3007\u3021-\u3029\u3031-\u3035\u3038-\u303C\u3041-\u3096\u309D-\u309F\u30A1-\u30FA\u30FC-\u30FF\u3105-\u312E\u3131-\u318E\u31A0-\u31BA\u31F0-\u31FF\u3400-\u4DB5\u4E00-\u9FEA\uA000-\uA48C\uA4D0-\uA4FD\uA500-\uA60C\uA610-\uA61F\uA62A\uA62B\uA640-\uA66E\uA67F-\uA69D\uA6A0-\uA6EF\uA717-\uA71F\uA722-\uA788\uA78B-\uA7AE\uA7B0-\uA7B7\uA7F7-\uA801\uA803-\uA805\uA807-\uA80A\uA80C-\uA822\uA840-\uA873\uA882-\uA8B3\uA8F2-\uA8F7\uA8FB\uA8FD\uA90A-\uA925\uA930-\uA946\uA960-\uA97C\uA984-\uA9B2\uA9CF\uA9E0-\uA9E4\uA9E6-\uA9EF\uA9FA-\uA9FE\uAA00-\uAA28\uAA40-\uAA42\uAA44-\uAA4B\uAA60-\uAA76\uAA7A\uAA7E-\uAAAF\uAAB1\uAAB5\uAAB6\uAAB9-\uAABD\uAAC0\uAAC2\uAADB-\uAADD\uAAE0-\uAAEA\uAAF2-\uAAF4\uAB01-\uAB06\uAB09-\uAB0E\uAB11-\uAB16\uAB20-\uAB26\uAB28-\uAB2E\uAB30-\uAB5A\uAB5C-\uAB65\uAB70-\uABE2\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFB00-\uFB06\uFB13-\uFB17\uFB1D\uFB1F-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40\uFB41\uFB43\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE70-\uFE74\uFE76-\uFEFC\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC]|\uD800[\uDC00-\uDC0B\uDC0D-\uDC26\uDC28-\uDC3A\uDC3C\uDC3D\uDC3F-\uDC4D\uDC50-\uDC5D\uDC80-\uDCFA\uDD40-\uDD74\uDE80-\uDE9C\uDEA0-\uDED0\uDF00-\uDF1F\uDF2D-\uDF4A\uDF50-\uDF75\uDF80-\uDF9D\uDFA0-\uDFC3\uDFC8-\uDFCF\uDFD1-\uDFD5]|\uD801[\uDC00-\uDC9D\uDCB0-\uDCD3\uDCD8-\uDCFB\uDD00-\uDD27\uDD30-\uDD63\uDE00-\uDF36\uDF40-\uDF55\uDF60-\uDF67]|\uD802[\uDC00-\uDC05\uDC08\uDC0A-\uDC35\uDC37\uDC38\uDC3C\uDC3F-\uDC55\uDC60-\uDC76\uDC80-\uDC9E\uDCE0-\uDCF2\uDCF4\uDCF5\uDD00-\uDD15\uDD20-\uDD39\uDD80-\uDDB7\uDDBE\uDDBF\uDE00\uDE10-\uDE13\uDE15-\uDE17\uDE19-\uDE33\uDE60-\uDE7C\uDE80-\uDE9C\uDEC0-\uDEC7\uDEC9-\uDEE4\uDF00-\uDF35\uDF40-\uDF55\uDF60-\uDF72\uDF80-\uDF91]|\uD803[\uDC00-\uDC48\uDC80-\uDCB2\uDCC0-\uDCF2]|\uD804[\uDC03-\uDC37\uDC83-\uDCAF\uDCD0-\uDCE8\uDD03-\uDD26\uDD50-\uDD72\uDD76\uDD83-\uDDB2\uDDC1-\uDDC4\uDDDA\uDDDC\uDE00-\uDE11\uDE13-\uDE2B\uDE80-\uDE86\uDE88\uDE8A-\uDE8D\uDE8F-\uDE9D\uDE9F-\uDEA8\uDEB0-\uDEDE\uDF05-\uDF0C\uDF0F\uDF10\uDF13-\uDF28\uDF2A-\uDF30\uDF32\uDF33\uDF35-\uDF39\uDF3D\uDF50\uDF5D-\uDF61]|\uD805[\uDC00-\uDC34\uDC47-\uDC4A\uDC80-\uDCAF\uDCC4\uDCC5\uDCC7\uDD80-\uDDAE\uDDD8-\uDDDB\uDE00-\uDE2F\uDE44\uDE80-\uDEAA\uDF00-\uDF19]|\uD806[\uDCA0-\uDCDF\uDCFF\uDE00\uDE0B-\uDE32\uDE3A\uDE50\uDE5C-\uDE83\uDE86-\uDE89\uDEC0-\uDEF8]|\uD807[\uDC00-\uDC08\uDC0A-\uDC2E\uDC40\uDC72-\uDC8F\uDD00-\uDD06\uDD08\uDD09\uDD0B-\uDD30\uDD46]|\uD808[\uDC00-\uDF99]|\uD809[\uDC00-\uDC6E\uDC80-\uDD43]|[\uD80C\uD81C-\uD820\uD840-\uD868\uD86A-\uD86C\uD86F-\uD872\uD874-\uD879][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC2E]|\uD811[\uDC00-\uDE46]|\uD81A[\uDC00-\uDE38\uDE40-\uDE5E\uDED0-\uDEED\uDF00-\uDF2F\uDF40-\uDF43\uDF63-\uDF77\uDF7D-\uDF8F]|\uD81B[\uDF00-\uDF44\uDF50\uDF93-\uDF9F\uDFE0\uDFE1]|\uD821[\uDC00-\uDFEC]|\uD822[\uDC00-\uDEF2]|\uD82C[\uDC00-\uDD1E\uDD70-\uDEFB]|\uD82F[\uDC00-\uDC6A\uDC70-\uDC7C\uDC80-\uDC88\uDC90-\uDC99]|\uD835[\uDC00-\uDC54\uDC56-\uDC9C\uDC9E\uDC9F\uDCA2\uDCA5\uDCA6\uDCA9-\uDCAC\uDCAE-\uDCB9\uDCBB\uDCBD-\uDCC3\uDCC5-\uDD05\uDD07-\uDD0A\uDD0D-\uDD14\uDD16-\uDD1C\uDD1E-\uDD39\uDD3B-\uDD3E\uDD40-\uDD44\uDD46\uDD4A-\uDD50\uDD52-\uDEA5\uDEA8-\uDEC0\uDEC2-\uDEDA\uDEDC-\uDEFA\uDEFC-\uDF14\uDF16-\uDF34\uDF36-\uDF4E\uDF50-\uDF6E\uDF70-\uDF88\uDF8A-\uDFA8\uDFAA-\uDFC2\uDFC4-\uDFCB]|\uD83A[\uDC00-\uDCC4\uDD00-\uDD43]|\uD83B[\uDE00-\uDE03\uDE05-\uDE1F\uDE21\uDE22\uDE24\uDE27\uDE29-\uDE32\uDE34-\uDE37\uDE39\uDE3B\uDE42\uDE47\uDE49\uDE4B\uDE4D-\uDE4F\uDE51\uDE52\uDE54\uDE57\uDE59\uDE5B\uDE5D\uDE5F\uDE61\uDE62\uDE64\uDE67-\uDE6A\uDE6C-\uDE72\uDE74-\uDE77\uDE79-\uDE7C\uDE7E\uDE80-\uDE89\uDE8B-\uDE9B\uDEA1-\uDEA3\uDEA5-\uDEA9\uDEAB-\uDEBB]|\uD869[\uDC00-\uDED6\uDF00-\uDFFF]|\uD86D[\uDC00-\uDF34\uDF40-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEA1\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0]|\uD87E[\uDC00-\uDE1D]/;
+    module.exports.ID_Continue = /[\xAA\xB5\xBA\xC0-\xD6\xD8-\xF6\xF8-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0300-\u0374\u0376\u0377\u037A-\u037D\u037F\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03F5\u03F7-\u0481\u0483-\u0487\u048A-\u052F\u0531-\u0556\u0559\u0561-\u0587\u0591-\u05BD\u05BF\u05C1\u05C2\u05C4\u05C5\u05C7\u05D0-\u05EA\u05F0-\u05F2\u0610-\u061A\u0620-\u0669\u066E-\u06D3\u06D5-\u06DC\u06DF-\u06E8\u06EA-\u06FC\u06FF\u0710-\u074A\u074D-\u07B1\u07C0-\u07F5\u07FA\u0800-\u082D\u0840-\u085B\u0860-\u086A\u08A0-\u08B4\u08B6-\u08BD\u08D4-\u08E1\u08E3-\u0963\u0966-\u096F\u0971-\u0983\u0985-\u098C\u098F\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BC-\u09C4\u09C7\u09C8\u09CB-\u09CE\u09D7\u09DC\u09DD\u09DF-\u09E3\u09E6-\u09F1\u09FC\u0A01-\u0A03\u0A05-\u0A0A\u0A0F\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32\u0A33\u0A35\u0A36\u0A38\u0A39\u0A3C\u0A3E-\u0A42\u0A47\u0A48\u0A4B-\u0A4D\u0A51\u0A59-\u0A5C\u0A5E\u0A66-\u0A75\u0A81-\u0A83\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2\u0AB3\u0AB5-\u0AB9\u0ABC-\u0AC5\u0AC7-\u0AC9\u0ACB-\u0ACD\u0AD0\u0AE0-\u0AE3\u0AE6-\u0AEF\u0AF9-\u0AFF\u0B01-\u0B03\u0B05-\u0B0C\u0B0F\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32\u0B33\u0B35-\u0B39\u0B3C-\u0B44\u0B47\u0B48\u0B4B-\u0B4D\u0B56\u0B57\u0B5C\u0B5D\u0B5F-\u0B63\u0B66-\u0B6F\u0B71\u0B82\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99\u0B9A\u0B9C\u0B9E\u0B9F\u0BA3\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BBE-\u0BC2\u0BC6-\u0BC8\u0BCA-\u0BCD\u0BD0\u0BD7\u0BE6-\u0BEF\u0C00-\u0C03\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C39\u0C3D-\u0C44\u0C46-\u0C48\u0C4A-\u0C4D\u0C55\u0C56\u0C58-\u0C5A\u0C60-\u0C63\u0C66-\u0C6F\u0C80-\u0C83\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBC-\u0CC4\u0CC6-\u0CC8\u0CCA-\u0CCD\u0CD5\u0CD6\u0CDE\u0CE0-\u0CE3\u0CE6-\u0CEF\u0CF1\u0CF2\u0D00-\u0D03\u0D05-\u0D0C\u0D0E-\u0D10\u0D12-\u0D44\u0D46-\u0D48\u0D4A-\u0D4E\u0D54-\u0D57\u0D5F-\u0D63\u0D66-\u0D6F\u0D7A-\u0D7F\u0D82\u0D83\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0DCA\u0DCF-\u0DD4\u0DD6\u0DD8-\u0DDF\u0DE6-\u0DEF\u0DF2\u0DF3\u0E01-\u0E3A\u0E40-\u0E4E\u0E50-\u0E59\u0E81\u0E82\u0E84\u0E87\u0E88\u0E8A\u0E8D\u0E94-\u0E97\u0E99-\u0E9F\u0EA1-\u0EA3\u0EA5\u0EA7\u0EAA\u0EAB\u0EAD-\u0EB9\u0EBB-\u0EBD\u0EC0-\u0EC4\u0EC6\u0EC8-\u0ECD\u0ED0-\u0ED9\u0EDC-\u0EDF\u0F00\u0F18\u0F19\u0F20-\u0F29\u0F35\u0F37\u0F39\u0F3E-\u0F47\u0F49-\u0F6C\u0F71-\u0F84\u0F86-\u0F97\u0F99-\u0FBC\u0FC6\u1000-\u1049\u1050-\u109D\u10A0-\u10C5\u10C7\u10CD\u10D0-\u10FA\u10FC-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u135D-\u135F\u1380-\u138F\u13A0-\u13F5\u13F8-\u13FD\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16EE-\u16F8\u1700-\u170C\u170E-\u1714\u1720-\u1734\u1740-\u1753\u1760-\u176C\u176E-\u1770\u1772\u1773\u1780-\u17D3\u17D7\u17DC\u17DD\u17E0-\u17E9\u180B-\u180D\u1810-\u1819\u1820-\u1877\u1880-\u18AA\u18B0-\u18F5\u1900-\u191E\u1920-\u192B\u1930-\u193B\u1946-\u196D\u1970-\u1974\u1980-\u19AB\u19B0-\u19C9\u19D0-\u19D9\u1A00-\u1A1B\u1A20-\u1A5E\u1A60-\u1A7C\u1A7F-\u1A89\u1A90-\u1A99\u1AA7\u1AB0-\u1ABD\u1B00-\u1B4B\u1B50-\u1B59\u1B6B-\u1B73\u1B80-\u1BF3\u1C00-\u1C37\u1C40-\u1C49\u1C4D-\u1C7D\u1C80-\u1C88\u1CD0-\u1CD2\u1CD4-\u1CF9\u1D00-\u1DF9\u1DFB-\u1F15\u1F18-\u1F1D\u1F20-\u1F45\u1F48-\u1F4D\u1F50-\u1F57\u1F59\u1F5B\u1F5D\u1F5F-\u1F7D\u1F80-\u1FB4\u1FB6-\u1FBC\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FCC\u1FD0-\u1FD3\u1FD6-\u1FDB\u1FE0-\u1FEC\u1FF2-\u1FF4\u1FF6-\u1FFC\u203F\u2040\u2054\u2071\u207F\u2090-\u209C\u20D0-\u20DC\u20E1\u20E5-\u20F0\u2102\u2107\u210A-\u2113\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u212F-\u2139\u213C-\u213F\u2145-\u2149\u214E\u2160-\u2188\u2C00-\u2C2E\u2C30-\u2C5E\u2C60-\u2CE4\u2CEB-\u2CF3\u2D00-\u2D25\u2D27\u2D2D\u2D30-\u2D67\u2D6F\u2D7F-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u2DE0-\u2DFF\u2E2F\u3005-\u3007\u3021-\u302F\u3031-\u3035\u3038-\u303C\u3041-\u3096\u3099\u309A\u309D-\u309F\u30A1-\u30FA\u30FC-\u30FF\u3105-\u312E\u3131-\u318E\u31A0-\u31BA\u31F0-\u31FF\u3400-\u4DB5\u4E00-\u9FEA\uA000-\uA48C\uA4D0-\uA4FD\uA500-\uA60C\uA610-\uA62B\uA640-\uA66F\uA674-\uA67D\uA67F-\uA6F1\uA717-\uA71F\uA722-\uA788\uA78B-\uA7AE\uA7B0-\uA7B7\uA7F7-\uA827\uA840-\uA873\uA880-\uA8C5\uA8D0-\uA8D9\uA8E0-\uA8F7\uA8FB\uA8FD\uA900-\uA92D\uA930-\uA953\uA960-\uA97C\uA980-\uA9C0\uA9CF-\uA9D9\uA9E0-\uA9FE\uAA00-\uAA36\uAA40-\uAA4D\uAA50-\uAA59\uAA60-\uAA76\uAA7A-\uAAC2\uAADB-\uAADD\uAAE0-\uAAEF\uAAF2-\uAAF6\uAB01-\uAB06\uAB09-\uAB0E\uAB11-\uAB16\uAB20-\uAB26\uAB28-\uAB2E\uAB30-\uAB5A\uAB5C-\uAB65\uAB70-\uABEA\uABEC\uABED\uABF0-\uABF9\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFB00-\uFB06\uFB13-\uFB17\uFB1D-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40\uFB41\uFB43\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE00-\uFE0F\uFE20-\uFE2F\uFE33\uFE34\uFE4D-\uFE4F\uFE70-\uFE74\uFE76-\uFEFC\uFF10-\uFF19\uFF21-\uFF3A\uFF3F\uFF41-\uFF5A\uFF66-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC]|\uD800[\uDC00-\uDC0B\uDC0D-\uDC26\uDC28-\uDC3A\uDC3C\uDC3D\uDC3F-\uDC4D\uDC50-\uDC5D\uDC80-\uDCFA\uDD40-\uDD74\uDDFD\uDE80-\uDE9C\uDEA0-\uDED0\uDEE0\uDF00-\uDF1F\uDF2D-\uDF4A\uDF50-\uDF7A\uDF80-\uDF9D\uDFA0-\uDFC3\uDFC8-\uDFCF\uDFD1-\uDFD5]|\uD801[\uDC00-\uDC9D\uDCA0-\uDCA9\uDCB0-\uDCD3\uDCD8-\uDCFB\uDD00-\uDD27\uDD30-\uDD63\uDE00-\uDF36\uDF40-\uDF55\uDF60-\uDF67]|\uD802[\uDC00-\uDC05\uDC08\uDC0A-\uDC35\uDC37\uDC38\uDC3C\uDC3F-\uDC55\uDC60-\uDC76\uDC80-\uDC9E\uDCE0-\uDCF2\uDCF4\uDCF5\uDD00-\uDD15\uDD20-\uDD39\uDD80-\uDDB7\uDDBE\uDDBF\uDE00-\uDE03\uDE05\uDE06\uDE0C-\uDE13\uDE15-\uDE17\uDE19-\uDE33\uDE38-\uDE3A\uDE3F\uDE60-\uDE7C\uDE80-\uDE9C\uDEC0-\uDEC7\uDEC9-\uDEE6\uDF00-\uDF35\uDF40-\uDF55\uDF60-\uDF72\uDF80-\uDF91]|\uD803[\uDC00-\uDC48\uDC80-\uDCB2\uDCC0-\uDCF2]|\uD804[\uDC00-\uDC46\uDC66-\uDC6F\uDC7F-\uDCBA\uDCD0-\uDCE8\uDCF0-\uDCF9\uDD00-\uDD34\uDD36-\uDD3F\uDD50-\uDD73\uDD76\uDD80-\uDDC4\uDDCA-\uDDCC\uDDD0-\uDDDA\uDDDC\uDE00-\uDE11\uDE13-\uDE37\uDE3E\uDE80-\uDE86\uDE88\uDE8A-\uDE8D\uDE8F-\uDE9D\uDE9F-\uDEA8\uDEB0-\uDEEA\uDEF0-\uDEF9\uDF00-\uDF03\uDF05-\uDF0C\uDF0F\uDF10\uDF13-\uDF28\uDF2A-\uDF30\uDF32\uDF33\uDF35-\uDF39\uDF3C-\uDF44\uDF47\uDF48\uDF4B-\uDF4D\uDF50\uDF57\uDF5D-\uDF63\uDF66-\uDF6C\uDF70-\uDF74]|\uD805[\uDC00-\uDC4A\uDC50-\uDC59\uDC80-\uDCC5\uDCC7\uDCD0-\uDCD9\uDD80-\uDDB5\uDDB8-\uDDC0\uDDD8-\uDDDD\uDE00-\uDE40\uDE44\uDE50-\uDE59\uDE80-\uDEB7\uDEC0-\uDEC9\uDF00-\uDF19\uDF1D-\uDF2B\uDF30-\uDF39]|\uD806[\uDCA0-\uDCE9\uDCFF\uDE00-\uDE3E\uDE47\uDE50-\uDE83\uDE86-\uDE99\uDEC0-\uDEF8]|\uD807[\uDC00-\uDC08\uDC0A-\uDC36\uDC38-\uDC40\uDC50-\uDC59\uDC72-\uDC8F\uDC92-\uDCA7\uDCA9-\uDCB6\uDD00-\uDD06\uDD08\uDD09\uDD0B-\uDD36\uDD3A\uDD3C\uDD3D\uDD3F-\uDD47\uDD50-\uDD59]|\uD808[\uDC00-\uDF99]|\uD809[\uDC00-\uDC6E\uDC80-\uDD43]|[\uD80C\uD81C-\uD820\uD840-\uD868\uD86A-\uD86C\uD86F-\uD872\uD874-\uD879][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC2E]|\uD811[\uDC00-\uDE46]|\uD81A[\uDC00-\uDE38\uDE40-\uDE5E\uDE60-\uDE69\uDED0-\uDEED\uDEF0-\uDEF4\uDF00-\uDF36\uDF40-\uDF43\uDF50-\uDF59\uDF63-\uDF77\uDF7D-\uDF8F]|\uD81B[\uDF00-\uDF44\uDF50-\uDF7E\uDF8F-\uDF9F\uDFE0\uDFE1]|\uD821[\uDC00-\uDFEC]|\uD822[\uDC00-\uDEF2]|\uD82C[\uDC00-\uDD1E\uDD70-\uDEFB]|\uD82F[\uDC00-\uDC6A\uDC70-\uDC7C\uDC80-\uDC88\uDC90-\uDC99\uDC9D\uDC9E]|\uD834[\uDD65-\uDD69\uDD6D-\uDD72\uDD7B-\uDD82\uDD85-\uDD8B\uDDAA-\uDDAD\uDE42-\uDE44]|\uD835[\uDC00-\uDC54\uDC56-\uDC9C\uDC9E\uDC9F\uDCA2\uDCA5\uDCA6\uDCA9-\uDCAC\uDCAE-\uDCB9\uDCBB\uDCBD-\uDCC3\uDCC5-\uDD05\uDD07-\uDD0A\uDD0D-\uDD14\uDD16-\uDD1C\uDD1E-\uDD39\uDD3B-\uDD3E\uDD40-\uDD44\uDD46\uDD4A-\uDD50\uDD52-\uDEA5\uDEA8-\uDEC0\uDEC2-\uDEDA\uDEDC-\uDEFA\uDEFC-\uDF14\uDF16-\uDF34\uDF36-\uDF4E\uDF50-\uDF6E\uDF70-\uDF88\uDF8A-\uDFA8\uDFAA-\uDFC2\uDFC4-\uDFCB\uDFCE-\uDFFF]|\uD836[\uDE00-\uDE36\uDE3B-\uDE6C\uDE75\uDE84\uDE9B-\uDE9F\uDEA1-\uDEAF]|\uD838[\uDC00-\uDC06\uDC08-\uDC18\uDC1B-\uDC21\uDC23\uDC24\uDC26-\uDC2A]|\uD83A[\uDC00-\uDCC4\uDCD0-\uDCD6\uDD00-\uDD4A\uDD50-\uDD59]|\uD83B[\uDE00-\uDE03\uDE05-\uDE1F\uDE21\uDE22\uDE24\uDE27\uDE29-\uDE32\uDE34-\uDE37\uDE39\uDE3B\uDE42\uDE47\uDE49\uDE4B\uDE4D-\uDE4F\uDE51\uDE52\uDE54\uDE57\uDE59\uDE5B\uDE5D\uDE5F\uDE61\uDE62\uDE64\uDE67-\uDE6A\uDE6C-\uDE72\uDE74-\uDE77\uDE79-\uDE7C\uDE7E\uDE80-\uDE89\uDE8B-\uDE9B\uDEA1-\uDEA3\uDEA5-\uDEA9\uDEAB-\uDEBB]|\uD869[\uDC00-\uDED6\uDF00-\uDFFF]|\uD86D[\uDC00-\uDF34\uDF40-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEA1\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0]|\uD87E[\uDC00-\uDE1D]|\uDB40[\uDD00-\uDDEF]/;
+  }
+});
+var require_util = __commonJS({
+  "node_modules/json5/lib/util.js"(exports, module) {
+    var unicode = require_unicode();
+    module.exports = {
+      isSpaceSeparator(c) {
+        return typeof c === "string" && unicode.Space_Separator.test(c);
+      },
+      isIdStartChar(c) {
+        return typeof c === "string" && (c >= "a" && c <= "z" || c >= "A" && c <= "Z" || c === "$" || c === "_" || unicode.ID_Start.test(c));
+      },
+      isIdContinueChar(c) {
+        return typeof c === "string" && (c >= "a" && c <= "z" || c >= "A" && c <= "Z" || c >= "0" && c <= "9" || c === "$" || c === "_" || c === "\u200C" || c === "\u200D" || unicode.ID_Continue.test(c));
+      },
+      isDigit(c) {
+        return typeof c === "string" && /[0-9]/.test(c);
+      },
+      isHexDigit(c) {
+        return typeof c === "string" && /[0-9A-Fa-f]/.test(c);
+      }
+    };
+  }
+});
+var require_parse = __commonJS({
+  "node_modules/json5/lib/parse.js"(exports, module) {
+    var util = require_util();
+    var source;
+    var parseState;
+    var stack;
+    var pos;
+    var line;
+    var column;
+    var token;
+    var key3;
+    var root;
+    module.exports = function parse2(text, reviver) {
+      source = String(text);
+      parseState = "start";
+      stack = [];
+      pos = 0;
+      line = 1;
+      column = 0;
+      token = void 0;
+      key3 = void 0;
+      root = void 0;
+      do {
+        token = lex();
+        parseStates[parseState]();
+      } while (token.type !== "eof");
+      if (typeof reviver === "function") {
+        return internalize({ "": root }, "", reviver);
+      }
+      return root;
+    };
+    function internalize(holder, name2, reviver) {
+      const value = holder[name2];
+      if (value != null && typeof value === "object") {
+        if (Array.isArray(value)) {
+          for (let i = 0; i < value.length; i++) {
+            const key22 = String(i);
+            const replacement = internalize(value, key22, reviver);
+            if (replacement === void 0) {
+              delete value[key22];
+            } else {
+              Object.defineProperty(value, key22, {
+                value: replacement,
+                writable: true,
+                enumerable: true,
+                configurable: true
+              });
+            }
+          }
+        } else {
+          for (const key22 in value) {
+            const replacement = internalize(value, key22, reviver);
+            if (replacement === void 0) {
+              delete value[key22];
+            } else {
+              Object.defineProperty(value, key22, {
+                value: replacement,
+                writable: true,
+                enumerable: true,
+                configurable: true
+              });
+            }
+          }
+        }
+      }
+      return reviver.call(holder, name2, value);
+    }
+    var lexState;
+    var buffer;
+    var doubleQuote;
+    var sign;
+    var c;
+    function lex() {
+      lexState = "default";
+      buffer = "";
+      doubleQuote = false;
+      sign = 1;
+      for (; ; ) {
+        c = peek();
+        const token2 = lexStates[lexState]();
+        if (token2) {
+          return token2;
+        }
+      }
+    }
+    function peek() {
+      if (source[pos]) {
+        return String.fromCodePoint(source.codePointAt(pos));
+      }
+    }
+    function read() {
+      const c2 = peek();
+      if (c2 === "\n") {
+        line++;
+        column = 0;
+      } else if (c2) {
+        column += c2.length;
+      } else {
+        column++;
+      }
+      if (c2) {
+        pos += c2.length;
+      }
+      return c2;
+    }
+    var lexStates = {
+      default() {
+        switch (c) {
+          case "	":
+          case "\v":
+          case "\f":
+          case " ":
+          case "\xA0":
+          case "\uFEFF":
+          case "\n":
+          case "\r":
+          case "\u2028":
+          case "\u2029":
+            read();
+            return;
+          case "/":
+            read();
+            lexState = "comment";
+            return;
+          case void 0:
+            read();
+            return newToken("eof");
+        }
+        if (util.isSpaceSeparator(c)) {
+          read();
+          return;
+        }
+        return lexStates[parseState]();
+      },
+      comment() {
+        switch (c) {
+          case "*":
+            read();
+            lexState = "multiLineComment";
+            return;
+          case "/":
+            read();
+            lexState = "singleLineComment";
+            return;
+        }
+        throw invalidChar(read());
+      },
+      multiLineComment() {
+        switch (c) {
+          case "*":
+            read();
+            lexState = "multiLineCommentAsterisk";
+            return;
+          case void 0:
+            throw invalidChar(read());
+        }
+        read();
+      },
+      multiLineCommentAsterisk() {
+        switch (c) {
+          case "*":
+            read();
+            return;
+          case "/":
+            read();
+            lexState = "default";
+            return;
+          case void 0:
+            throw invalidChar(read());
+        }
+        read();
+        lexState = "multiLineComment";
+      },
+      singleLineComment() {
+        switch (c) {
+          case "\n":
+          case "\r":
+          case "\u2028":
+          case "\u2029":
+            read();
+            lexState = "default";
+            return;
+          case void 0:
+            read();
+            return newToken("eof");
+        }
+        read();
+      },
+      value() {
+        switch (c) {
+          case "{":
+          case "[":
+            return newToken("punctuator", read());
+          case "n":
+            read();
+            literal("ull");
+            return newToken("null", null);
+          case "t":
+            read();
+            literal("rue");
+            return newToken("boolean", true);
+          case "f":
+            read();
+            literal("alse");
+            return newToken("boolean", false);
+          case "-":
+          case "+":
+            if (read() === "-") {
+              sign = -1;
+            }
+            lexState = "sign";
+            return;
+          case ".":
+            buffer = read();
+            lexState = "decimalPointLeading";
+            return;
+          case "0":
+            buffer = read();
+            lexState = "zero";
+            return;
+          case "1":
+          case "2":
+          case "3":
+          case "4":
+          case "5":
+          case "6":
+          case "7":
+          case "8":
+          case "9":
+            buffer = read();
+            lexState = "decimalInteger";
+            return;
+          case "I":
+            read();
+            literal("nfinity");
+            return newToken("numeric", Infinity);
+          case "N":
+            read();
+            literal("aN");
+            return newToken("numeric", NaN);
+          case '"':
+          case "'":
+            doubleQuote = read() === '"';
+            buffer = "";
+            lexState = "string";
+            return;
+        }
+        throw invalidChar(read());
+      },
+      identifierNameStartEscape() {
+        if (c !== "u") {
+          throw invalidChar(read());
+        }
+        read();
+        const u = unicodeEscape();
+        switch (u) {
+          case "$":
+          case "_":
+            break;
+          default:
+            if (!util.isIdStartChar(u)) {
+              throw invalidIdentifier();
+            }
+            break;
+        }
+        buffer += u;
+        lexState = "identifierName";
+      },
+      identifierName() {
+        switch (c) {
+          case "$":
+          case "_":
+          case "\u200C":
+          case "\u200D":
+            buffer += read();
+            return;
+          case "\\":
+            read();
+            lexState = "identifierNameEscape";
+            return;
+        }
+        if (util.isIdContinueChar(c)) {
+          buffer += read();
+          return;
+        }
+        return newToken("identifier", buffer);
+      },
+      identifierNameEscape() {
+        if (c !== "u") {
+          throw invalidChar(read());
+        }
+        read();
+        const u = unicodeEscape();
+        switch (u) {
+          case "$":
+          case "_":
+          case "\u200C":
+          case "\u200D":
+            break;
+          default:
+            if (!util.isIdContinueChar(u)) {
+              throw invalidIdentifier();
+            }
+            break;
+        }
+        buffer += u;
+        lexState = "identifierName";
+      },
+      sign() {
+        switch (c) {
+          case ".":
+            buffer = read();
+            lexState = "decimalPointLeading";
+            return;
+          case "0":
+            buffer = read();
+            lexState = "zero";
+            return;
+          case "1":
+          case "2":
+          case "3":
+          case "4":
+          case "5":
+          case "6":
+          case "7":
+          case "8":
+          case "9":
+            buffer = read();
+            lexState = "decimalInteger";
+            return;
+          case "I":
+            read();
+            literal("nfinity");
+            return newToken("numeric", sign * Infinity);
+          case "N":
+            read();
+            literal("aN");
+            return newToken("numeric", NaN);
+        }
+        throw invalidChar(read());
+      },
+      zero() {
+        switch (c) {
+          case ".":
+            buffer += read();
+            lexState = "decimalPoint";
+            return;
+          case "e":
+          case "E":
+            buffer += read();
+            lexState = "decimalExponent";
+            return;
+          case "x":
+          case "X":
+            buffer += read();
+            lexState = "hexadecimal";
+            return;
+        }
+        return newToken("numeric", sign * 0);
+      },
+      decimalInteger() {
+        switch (c) {
+          case ".":
+            buffer += read();
+            lexState = "decimalPoint";
+            return;
+          case "e":
+          case "E":
+            buffer += read();
+            lexState = "decimalExponent";
+            return;
+        }
+        if (util.isDigit(c)) {
+          buffer += read();
+          return;
+        }
+        return newToken("numeric", sign * Number(buffer));
+      },
+      decimalPointLeading() {
+        if (util.isDigit(c)) {
+          buffer += read();
+          lexState = "decimalFraction";
+          return;
+        }
+        throw invalidChar(read());
+      },
+      decimalPoint() {
+        switch (c) {
+          case "e":
+          case "E":
+            buffer += read();
+            lexState = "decimalExponent";
+            return;
+        }
+        if (util.isDigit(c)) {
+          buffer += read();
+          lexState = "decimalFraction";
+          return;
+        }
+        return newToken("numeric", sign * Number(buffer));
+      },
+      decimalFraction() {
+        switch (c) {
+          case "e":
+          case "E":
+            buffer += read();
+            lexState = "decimalExponent";
+            return;
+        }
+        if (util.isDigit(c)) {
+          buffer += read();
+          return;
+        }
+        return newToken("numeric", sign * Number(buffer));
+      },
+      decimalExponent() {
+        switch (c) {
+          case "+":
+          case "-":
+            buffer += read();
+            lexState = "decimalExponentSign";
+            return;
+        }
+        if (util.isDigit(c)) {
+          buffer += read();
+          lexState = "decimalExponentInteger";
+          return;
+        }
+        throw invalidChar(read());
+      },
+      decimalExponentSign() {
+        if (util.isDigit(c)) {
+          buffer += read();
+          lexState = "decimalExponentInteger";
+          return;
+        }
+        throw invalidChar(read());
+      },
+      decimalExponentInteger() {
+        if (util.isDigit(c)) {
+          buffer += read();
+          return;
+        }
+        return newToken("numeric", sign * Number(buffer));
+      },
+      hexadecimal() {
+        if (util.isHexDigit(c)) {
+          buffer += read();
+          lexState = "hexadecimalInteger";
+          return;
+        }
+        throw invalidChar(read());
+      },
+      hexadecimalInteger() {
+        if (util.isHexDigit(c)) {
+          buffer += read();
+          return;
+        }
+        return newToken("numeric", sign * Number(buffer));
+      },
+      string() {
+        switch (c) {
+          case "\\":
+            read();
+            buffer += escape();
+            return;
+          case '"':
+            if (doubleQuote) {
+              read();
+              return newToken("string", buffer);
+            }
+            buffer += read();
+            return;
+          case "'":
+            if (!doubleQuote) {
+              read();
+              return newToken("string", buffer);
+            }
+            buffer += read();
+            return;
+          case "\n":
+          case "\r":
+            throw invalidChar(read());
+          case "\u2028":
+          case "\u2029":
+            separatorChar(c);
+            break;
+          case void 0:
+            throw invalidChar(read());
+        }
+        buffer += read();
+      },
+      start() {
+        switch (c) {
+          case "{":
+          case "[":
+            return newToken("punctuator", read());
+        }
+        lexState = "value";
+      },
+      beforePropertyName() {
+        switch (c) {
+          case "$":
+          case "_":
+            buffer = read();
+            lexState = "identifierName";
+            return;
+          case "\\":
+            read();
+            lexState = "identifierNameStartEscape";
+            return;
+          case "}":
+            return newToken("punctuator", read());
+          case '"':
+          case "'":
+            doubleQuote = read() === '"';
+            lexState = "string";
+            return;
+        }
+        if (util.isIdStartChar(c)) {
+          buffer += read();
+          lexState = "identifierName";
+          return;
+        }
+        throw invalidChar(read());
+      },
+      afterPropertyName() {
+        if (c === ":") {
+          return newToken("punctuator", read());
+        }
+        throw invalidChar(read());
+      },
+      beforePropertyValue() {
+        lexState = "value";
+      },
+      afterPropertyValue() {
+        switch (c) {
+          case ",":
+          case "}":
+            return newToken("punctuator", read());
+        }
+        throw invalidChar(read());
+      },
+      beforeArrayValue() {
+        if (c === "]") {
+          return newToken("punctuator", read());
+        }
+        lexState = "value";
+      },
+      afterArrayValue() {
+        switch (c) {
+          case ",":
+          case "]":
+            return newToken("punctuator", read());
+        }
+        throw invalidChar(read());
+      },
+      end() {
+        throw invalidChar(read());
+      }
+    };
+    function newToken(type, value) {
+      return {
+        type,
+        value,
+        line,
+        column
+      };
+    }
+    function literal(s) {
+      for (const c2 of s) {
+        const p = peek();
+        if (p !== c2) {
+          throw invalidChar(read());
+        }
+        read();
+      }
+    }
+    function escape() {
+      const c2 = peek();
+      switch (c2) {
+        case "b":
+          read();
+          return "\b";
+        case "f":
+          read();
+          return "\f";
+        case "n":
+          read();
+          return "\n";
+        case "r":
+          read();
+          return "\r";
+        case "t":
+          read();
+          return "	";
+        case "v":
+          read();
+          return "\v";
+        case "0":
+          read();
+          if (util.isDigit(peek())) {
+            throw invalidChar(read());
+          }
+          return "\0";
+        case "x":
+          read();
+          return hexEscape();
+        case "u":
+          read();
+          return unicodeEscape();
+        case "\n":
+        case "\u2028":
+        case "\u2029":
+          read();
+          return "";
+        case "\r":
+          read();
+          if (peek() === "\n") {
+            read();
+          }
+          return "";
+        case "1":
+        case "2":
+        case "3":
+        case "4":
+        case "5":
+        case "6":
+        case "7":
+        case "8":
+        case "9":
+          throw invalidChar(read());
+        case void 0:
+          throw invalidChar(read());
+      }
+      return read();
+    }
+    function hexEscape() {
+      let buffer2 = "";
+      let c2 = peek();
+      if (!util.isHexDigit(c2)) {
+        throw invalidChar(read());
+      }
+      buffer2 += read();
+      c2 = peek();
+      if (!util.isHexDigit(c2)) {
+        throw invalidChar(read());
+      }
+      buffer2 += read();
+      return String.fromCodePoint(parseInt(buffer2, 16));
+    }
+    function unicodeEscape() {
+      let buffer2 = "";
+      let count = 4;
+      while (count-- > 0) {
+        const c2 = peek();
+        if (!util.isHexDigit(c2)) {
+          throw invalidChar(read());
+        }
+        buffer2 += read();
+      }
+      return String.fromCodePoint(parseInt(buffer2, 16));
+    }
+    var parseStates = {
+      start() {
+        if (token.type === "eof") {
+          throw invalidEOF();
+        }
+        push();
+      },
+      beforePropertyName() {
+        switch (token.type) {
+          case "identifier":
+          case "string":
+            key3 = token.value;
+            parseState = "afterPropertyName";
+            return;
+          case "punctuator":
+            pop();
+            return;
+          case "eof":
+            throw invalidEOF();
+        }
+      },
+      afterPropertyName() {
+        if (token.type === "eof") {
+          throw invalidEOF();
+        }
+        parseState = "beforePropertyValue";
+      },
+      beforePropertyValue() {
+        if (token.type === "eof") {
+          throw invalidEOF();
+        }
+        push();
+      },
+      beforeArrayValue() {
+        if (token.type === "eof") {
+          throw invalidEOF();
+        }
+        if (token.type === "punctuator" && token.value === "]") {
+          pop();
+          return;
+        }
+        push();
+      },
+      afterPropertyValue() {
+        if (token.type === "eof") {
+          throw invalidEOF();
+        }
+        switch (token.value) {
+          case ",":
+            parseState = "beforePropertyName";
+            return;
+          case "}":
+            pop();
+        }
+      },
+      afterArrayValue() {
+        if (token.type === "eof") {
+          throw invalidEOF();
+        }
+        switch (token.value) {
+          case ",":
+            parseState = "beforeArrayValue";
+            return;
+          case "]":
+            pop();
+        }
+      },
+      end() {
+      }
+    };
+    function push() {
+      let value;
+      switch (token.type) {
+        case "punctuator":
+          switch (token.value) {
+            case "{":
+              value = {};
+              break;
+            case "[":
+              value = [];
+              break;
+          }
+          break;
+        case "null":
+        case "boolean":
+        case "numeric":
+        case "string":
+          value = token.value;
+          break;
+      }
+      if (root === void 0) {
+        root = value;
+      } else {
+        const parent = stack[stack.length - 1];
+        if (Array.isArray(parent)) {
+          parent.push(value);
+        } else {
+          Object.defineProperty(parent, key3, {
+            value,
+            writable: true,
+            enumerable: true,
+            configurable: true
+          });
+        }
+      }
+      if (value !== null && typeof value === "object") {
+        stack.push(value);
+        if (Array.isArray(value)) {
+          parseState = "beforeArrayValue";
+        } else {
+          parseState = "beforePropertyName";
+        }
+      } else {
+        const current = stack[stack.length - 1];
+        if (current == null) {
+          parseState = "end";
+        } else if (Array.isArray(current)) {
+          parseState = "afterArrayValue";
+        } else {
+          parseState = "afterPropertyValue";
+        }
+      }
+    }
+    function pop() {
+      stack.pop();
+      const current = stack[stack.length - 1];
+      if (current == null) {
+        parseState = "end";
+      } else if (Array.isArray(current)) {
+        parseState = "afterArrayValue";
+      } else {
+        parseState = "afterPropertyValue";
+      }
+    }
+    function invalidChar(c2) {
+      if (c2 === void 0) {
+        return syntaxError(`JSON5: invalid end of input at ${line}:${column}`);
+      }
+      return syntaxError(`JSON5: invalid character '${formatChar(c2)}' at ${line}:${column}`);
+    }
+    function invalidEOF() {
+      return syntaxError(`JSON5: invalid end of input at ${line}:${column}`);
+    }
+    function invalidIdentifier() {
+      column -= 5;
+      return syntaxError(`JSON5: invalid identifier character at ${line}:${column}`);
+    }
+    function separatorChar(c2) {
+      console.warn(`JSON5: '${formatChar(c2)}' in strings is not valid ECMAScript; consider escaping`);
+    }
+    function formatChar(c2) {
+      const replacements = {
+        "'": "\\'",
+        '"': '\\"',
+        "\\": "\\\\",
+        "\b": "\\b",
+        "\f": "\\f",
+        "\n": "\\n",
+        "\r": "\\r",
+        "	": "\\t",
+        "\v": "\\v",
+        "\0": "\\0",
+        "\u2028": "\\u2028",
+        "\u2029": "\\u2029"
+      };
+      if (replacements[c2]) {
+        return replacements[c2];
+      }
+      if (c2 < " ") {
+        const hexString = c2.charCodeAt(0).toString(16);
+        return "\\x" + ("00" + hexString).substring(hexString.length);
+      }
+      return c2;
+    }
+    function syntaxError(message) {
+      const err = new SyntaxError(message);
+      err.lineNumber = line;
+      err.columnNumber = column;
+      return err;
+    }
+  }
+});
 var require_stringify = __commonJS({
   "node_modules/json5/lib/stringify.js"(exports, module) {
     var util = require_util();
@@ -52,17 +926,17 @@ var require_stringify = __commonJS({
         gap = space.substr(0, 10);
       }
       return serializeProperty("", { "": value });
-      function serializeProperty(key, holder) {
-        let value2 = holder[key];
+      function serializeProperty(key3, holder) {
+        let value2 = holder[key3];
         if (value2 != null) {
           if (typeof value2.toJSON5 === "function") {
-            value2 = value2.toJSON5(key);
+            value2 = value2.toJSON5(key3);
           } else if (typeof value2.toJSON === "function") {
-            value2 = value2.toJSON(key);
+            value2 = value2.toJSON(key3);
           }
         }
         if (replacerFunc) {
-          value2 = replacerFunc.call(holder, key, value2);
+          value2 = replacerFunc.call(holder, key3, value2);
         }
         if (value2 instanceof Number) {
           value2 = Number(value2);
@@ -148,15 +1022,15 @@ var require_stringify = __commonJS({
         indent = indent + gap;
         let keys = propertyList || Object.keys(value2);
         let partial = [];
-        for (const key of keys) {
-          const propertyString = serializeProperty(key, value2);
+        for (const key3 of keys) {
+          const propertyString = serializeProperty(key3, value2);
           if (propertyString !== void 0) {
-            let member = serializeKey(key) + ":";
+            let member3 = serializeKey(key3) + ":";
             if (gap !== "") {
-              member += " ";
+              member3 += " ";
             }
-            member += propertyString;
-            partial.push(member);
+            member3 += propertyString;
+            partial.push(member3);
           }
         }
         let final;
@@ -177,20 +1051,20 @@ var require_stringify = __commonJS({
         indent = stepback;
         return final;
       }
-      function serializeKey(key) {
-        if (key.length === 0) {
-          return quoteString(key);
+      function serializeKey(key3) {
+        if (key3.length === 0) {
+          return quoteString(key3);
         }
-        const firstChar = String.fromCodePoint(key.codePointAt(0));
+        const firstChar = String.fromCodePoint(key3.codePointAt(0));
         if (!util.isIdStartChar(firstChar)) {
-          return quoteString(key);
+          return quoteString(key3);
         }
-        for (let i = firstChar.length; i < key.length; i++) {
-          if (!util.isIdContinueChar(String.fromCodePoint(key.codePointAt(i)))) {
-            return quoteString(key);
+        for (let i = firstChar.length; i < key3.length; i++) {
+          if (!util.isIdContinueChar(String.fromCodePoint(key3.codePointAt(i)))) {
+            return quoteString(key3);
           }
         }
-        return key;
+        return key3;
       }
       function serializeArray(value2) {
         if (stack.indexOf(value2) >= 0) {
@@ -314,1747 +1188,6 @@ function assessRedisRead(options, datasourceId) {
 }
 var import_json5 = __toESM(require_lib());
 var import_moment = __toESM(require_moment(), 1);
-var { defineProperty } = Object;
-var toUnenumerable = (object2, key) => {
-  if (object2) {
-    defineProperty(object2, key, { enumerable: false, value: object2[key] });
-  }
-};
-function toESTreeLocation(node) {
-  toUnenumerable(node.loc.start, "index");
-  toUnenumerable(node.loc.end, "index");
-  return node;
-}
-var estree_default = (superClass) => class ESTreeParserMixin extends superClass {
-  parse() {
-    const file = toESTreeLocation(super.parse());
-    if (this.optionFlags & OptionFlags.Tokens) {
-      file.tokens = file.tokens.map(toESTreeLocation);
-    }
-    return file;
-  }
-  // @ts-expect-error ESTree plugin changes node types
-  parseRegExpLiteral({ pattern, flags }) {
-    let regex = null;
-    try {
-      regex = new RegExp(pattern, flags);
-    } catch (_) {
-    }
-    const node = this.estreeParseLiteral(regex);
-    node.regex = { pattern, flags };
-    return node;
-  }
-  // @ts-expect-error ESTree plugin changes node types
-  parseBigIntLiteral(value) {
-    let bigInt;
-    try {
-      bigInt = BigInt(value);
-    } catch {
-      bigInt = null;
-    }
-    const node = this.estreeParseLiteral(bigInt);
-    node.bigint = String(node.value || value);
-    return node;
-  }
-  // @ts-expect-error ESTree plugin changes node types
-  parseDecimalLiteral(value) {
-    const decimal = null;
-    const node = this.estreeParseLiteral(decimal);
-    node.decimal = String(node.value || value);
-    return node;
-  }
-  estreeParseLiteral(value) {
-    return this.parseLiteral(value, "Literal");
-  }
-  // @ts-expect-error ESTree plugin changes node types
-  parseStringLiteral(value) {
-    return this.estreeParseLiteral(value);
-  }
-  parseNumericLiteral(value) {
-    return this.estreeParseLiteral(value);
-  }
-  // @ts-expect-error ESTree plugin changes node types
-  parseNullLiteral() {
-    return this.estreeParseLiteral(null);
-  }
-  parseBooleanLiteral(value) {
-    return this.estreeParseLiteral(value);
-  }
-  // https://github.com/estree/estree/blob/master/es2020.md#chainexpression
-  estreeParseChainExpression(node, endLoc) {
-    const chain = this.startNodeAtNode(node);
-    chain.expression = node;
-    return this.finishNodeAt(chain, "ChainExpression", endLoc);
-  }
-  // Cast a Directive to an ExpressionStatement. Mutates the input Directive.
-  directiveToStmt(directive) {
-    const expression = directive.value;
-    delete directive.value;
-    this.castNodeTo(expression, "Literal");
-    expression.raw = expression.extra.raw;
-    expression.value = expression.extra.expressionValue;
-    const stmt = this.castNodeTo(directive, "ExpressionStatement");
-    stmt.expression = expression;
-    stmt.directive = expression.extra.rawValue;
-    delete expression.extra;
-    return stmt;
-  }
-  /**
-   * The TS-ESLint always define optional AST properties, here we provide the
-   * default value for such properties immediately after `finishNode` was invoked.
-   * This hook will be implemented by the typescript plugin.
-   *
-   * Note: This hook should be manually invoked when we change the `type` of a given AST
-   * node, to ensure that the optional properties are correctly filled.
-   * @param node The AST node finished by finishNode
-   */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  fillOptionalPropertiesForTSESLint(node) {
-  }
-  cloneEstreeStringLiteral(node) {
-    const { start, end, loc, range, raw, value } = node;
-    const cloned = Object.create(node.constructor.prototype);
-    cloned.type = "Literal";
-    cloned.start = start;
-    cloned.end = end;
-    cloned.loc = loc;
-    cloned.range = range;
-    cloned.raw = raw;
-    cloned.value = value;
-    return cloned;
-  }
-  // ==================================
-  // Overrides
-  // ==================================
-  initFunction(node, isAsync) {
-    super.initFunction(node, isAsync);
-    node.expression = false;
-  }
-  checkDeclaration(node) {
-    if (node != null && this.isObjectProperty(node)) {
-      this.checkDeclaration(node.value);
-    } else {
-      super.checkDeclaration(node);
-    }
-  }
-  getObjectOrClassMethodParams(method) {
-    return method.value.params;
-  }
-  isValidDirective(stmt) {
-    return stmt.type === "ExpressionStatement" && stmt.expression.type === "Literal" && typeof stmt.expression.value === "string" && !stmt.expression.extra?.parenthesized;
-  }
-  parseBlockBody(node, allowDirectives, topLevel, end, afterBlockParse) {
-    super.parseBlockBody(
-      node,
-      allowDirectives,
-      topLevel,
-      end,
-      afterBlockParse
-    );
-    const directiveStatements = node.directives.map(
-      (d) => this.directiveToStmt(d)
-    );
-    node.body = directiveStatements.concat(node.body);
-    delete node.directives;
-  }
-  parsePrivateName() {
-    const node = super.parsePrivateName();
-    {
-      if (!this.getPluginOption("estree", "classFeatures")) {
-        return node;
-      }
-    }
-    return this.convertPrivateNameToPrivateIdentifier(node);
-  }
-  convertPrivateNameToPrivateIdentifier(node) {
-    const name = super.getPrivateNameSV(node);
-    delete node.id;
-    node.name = name;
-    return this.castNodeTo(node, "PrivateIdentifier");
-  }
-  // @ts-expect-error ESTree plugin changes node types
-  isPrivateName(node) {
-    {
-      if (!this.getPluginOption("estree", "classFeatures")) {
-        return super.isPrivateName(node);
-      }
-    }
-    return node.type === "PrivateIdentifier";
-  }
-  // @ts-expect-error ESTree plugin changes node types
-  getPrivateNameSV(node) {
-    {
-      if (!this.getPluginOption("estree", "classFeatures")) {
-        return super.getPrivateNameSV(node);
-      }
-    }
-    return node.name;
-  }
-  // @ts-expect-error plugin may override interfaces
-  parseLiteral(value, type) {
-    const node = super.parseLiteral(value, type);
-    node.raw = node.extra.raw;
-    delete node.extra;
-    return node;
-  }
-  parseFunctionBody(node, allowExpression, isMethod = false) {
-    super.parseFunctionBody(node, allowExpression, isMethod);
-    node.expression = node.body.type !== "BlockStatement";
-  }
-  // @ts-expect-error plugin may override interfaces
-  parseMethod(node, isGenerator, isAsync, isConstructor, allowDirectSuper, type, inClassScope = false) {
-    let funcNode = this.startNode();
-    funcNode.kind = node.kind;
-    funcNode = super.parseMethod(
-      funcNode,
-      isGenerator,
-      isAsync,
-      isConstructor,
-      allowDirectSuper,
-      type,
-      inClassScope
-    );
-    delete funcNode.kind;
-    const { typeParameters } = node;
-    if (typeParameters) {
-      delete node.typeParameters;
-      funcNode.typeParameters = typeParameters;
-      this.resetStartLocationFromNode(funcNode, typeParameters);
-    }
-    const valueNode = this.castNodeTo(
-      funcNode,
-      "FunctionExpression"
-    );
-    node.value = valueNode;
-    if (type === "ClassPrivateMethod") {
-      node.computed = false;
-    }
-    if (type === "ObjectMethod") {
-      if (node.kind === "method") {
-        node.kind = "init";
-      }
-      node.shorthand = false;
-      return this.finishNode(
-        // @ts-expect-error cast methods to estree types
-        node,
-        "Property"
-      );
-    } else {
-      return this.finishNode(
-        // @ts-expect-error cast methods to estree types
-        node,
-        "MethodDefinition"
-      );
-    }
-  }
-  nameIsConstructor(key) {
-    if (key.type === "Literal") return key.value === "constructor";
-    return super.nameIsConstructor(key);
-  }
-  parseClassProperty(...args) {
-    const propertyNode = super.parseClassProperty(...args);
-    {
-      if (!this.getPluginOption("estree", "classFeatures")) {
-        return propertyNode;
-      }
-    }
-    {
-      this.castNodeTo(propertyNode, "PropertyDefinition");
-    }
-    return propertyNode;
-  }
-  parseClassPrivateProperty(...args) {
-    const propertyNode = super.parseClassPrivateProperty(...args);
-    {
-      if (!this.getPluginOption("estree", "classFeatures")) {
-        return propertyNode;
-      }
-    }
-    {
-      this.castNodeTo(propertyNode, "PropertyDefinition");
-    }
-    propertyNode.computed = false;
-    return propertyNode;
-  }
-  parseClassAccessorProperty(node) {
-    const accessorPropertyNode = super.parseClassAccessorProperty(node);
-    {
-      if (!this.getPluginOption("estree", "classFeatures")) {
-        return accessorPropertyNode;
-      }
-    }
-    if (accessorPropertyNode.abstract && this.hasPlugin("typescript")) {
-      delete accessorPropertyNode.abstract;
-      this.castNodeTo(accessorPropertyNode, "TSAbstractAccessorProperty");
-    } else {
-      this.castNodeTo(accessorPropertyNode, "AccessorProperty");
-    }
-    return accessorPropertyNode;
-  }
-  parseObjectProperty(prop, startLoc, isPattern, refExpressionErrors) {
-    const node = super.parseObjectProperty(
-      prop,
-      startLoc,
-      isPattern,
-      refExpressionErrors
-    );
-    if (node) {
-      node.kind = "init";
-      this.castNodeTo(node, "Property");
-    }
-    return node;
-  }
-  finishObjectProperty(node) {
-    node.kind = "init";
-    return this.finishNode(
-      node,
-      "Property"
-    );
-  }
-  isValidLVal(type, disallowCallExpression, isUnparenthesizedInAssign, binding) {
-    return type === "Property" ? "value" : super.isValidLVal(
-      type,
-      disallowCallExpression,
-      isUnparenthesizedInAssign,
-      binding
-    );
-  }
-  isAssignable(node, isBinding) {
-    if (node != null && this.isObjectProperty(node)) {
-      return this.isAssignable(node.value, isBinding);
-    }
-    return super.isAssignable(node, isBinding);
-  }
-  toAssignable(node, isLHS = false) {
-    if (node != null && this.isObjectProperty(node)) {
-      const { key, value } = node;
-      if (this.isPrivateName(key)) {
-        this.classScope.usePrivateName(
-          this.getPrivateNameSV(key),
-          key.loc.start
-        );
-      }
-      this.toAssignable(value, isLHS);
-    } else {
-      super.toAssignable(node, isLHS);
-    }
-  }
-  toAssignableObjectExpressionProp(prop, isLast, isLHS) {
-    if (prop.type === "Property" && (prop.kind === "get" || prop.kind === "set")) {
-      this.raise(Errors.PatternHasAccessor, prop.key);
-    } else if (prop.type === "Property" && prop.method) {
-      this.raise(Errors.PatternHasMethod, prop.key);
-    } else {
-      super.toAssignableObjectExpressionProp(prop, isLast, isLHS);
-    }
-  }
-  finishCallExpression(unfinished, optional) {
-    const node = super.finishCallExpression(unfinished, optional);
-    if (node.callee.type === "Import") {
-      this.castNodeTo(node, "ImportExpression");
-      node.source = node.arguments[0];
-      node.options = node.arguments[1] ?? null;
-      {
-        node.attributes = node.arguments[1] ?? null;
-      }
-      delete node.arguments;
-      delete node.callee;
-    } else if (node.type === "OptionalCallExpression") {
-      this.castNodeTo(node, "CallExpression");
-    } else {
-      node.optional = false;
-    }
-    return node;
-  }
-  toReferencedArguments(node) {
-    if (node.type === "ImportExpression") {
-      return;
-    }
-    super.toReferencedArguments(node);
-  }
-  parseExport(unfinished, decorators) {
-    const exportStartLoc = this.state.lastTokStartLoc;
-    const node = super.parseExport(unfinished, decorators);
-    switch (node.type) {
-      case "ExportAllDeclaration":
-        node.exported = null;
-        break;
-      case "ExportNamedDeclaration":
-        if (node.specifiers.length === 1 && node.specifiers[0].type === "ExportNamespaceSpecifier") {
-          this.castNodeTo(node, "ExportAllDeclaration");
-          node.exported = node.specifiers[0].exported;
-          delete node.specifiers;
-        }
-      // fallthrough
-      case "ExportDefaultDeclaration":
-        {
-          const { declaration } = node;
-          if (declaration?.type === "ClassDeclaration" && // @ts-expect-error comparing undefined and number
-          declaration.decorators?.length > 0 && // decorator comes before export
-          declaration.start === node.start) {
-            this.resetStartLocation(
-              node,
-              // For compatibility with ESLint's keyword-spacing rule, which assumes that an
-              // export declaration must start with export.
-              // https://github.com/babel/babel/issues/15085
-              // Here we reset export declaration's start to be the start of the export token
-              exportStartLoc
-            );
-          }
-        }
-        break;
-    }
-    return node;
-  }
-  stopParseSubscript(base, state) {
-    const node = super.stopParseSubscript(base, state);
-    if (state.optionalChainMember) {
-      return this.estreeParseChainExpression(node, base.loc.end);
-    }
-    return node;
-  }
-  parseMember(base, startLoc, state, computed, optional) {
-    const node = super.parseMember(base, startLoc, state, computed, optional);
-    if (node.type === "OptionalMemberExpression") {
-      this.castNodeTo(node, "MemberExpression");
-    } else {
-      node.optional = false;
-    }
-    return node;
-  }
-  isOptionalMemberExpression(node) {
-    if (node.type === "ChainExpression") {
-      return node.expression.type === "MemberExpression";
-    }
-    return super.isOptionalMemberExpression(node);
-  }
-  hasPropertyAsPrivateName(node) {
-    if (node.type === "ChainExpression") {
-      node = node.expression;
-    }
-    return super.hasPropertyAsPrivateName(node);
-  }
-  // @ts-expect-error ESTree plugin changes node types
-  isObjectProperty(node) {
-    return node.type === "Property" && node.kind === "init" && !node.method;
-  }
-  // @ts-expect-error ESTree plugin changes node types
-  isObjectMethod(node) {
-    return node.type === "Property" && (node.method || node.kind === "get" || node.kind === "set");
-  }
-  /* ============================================================ *
-   * parser/node.ts                                               *
-   * ============================================================ */
-  castNodeTo(node, type) {
-    const result = super.castNodeTo(node, type);
-    this.fillOptionalPropertiesForTSESLint(result);
-    return result;
-  }
-  cloneIdentifier(node) {
-    const cloned = super.cloneIdentifier(node);
-    this.fillOptionalPropertiesForTSESLint(cloned);
-    return cloned;
-  }
-  cloneStringLiteral(node) {
-    if (node.type === "Literal") {
-      return this.cloneEstreeStringLiteral(node);
-    }
-    return super.cloneStringLiteral(node);
-  }
-  finishNodeAt(node, type, endLoc) {
-    return toESTreeLocation(super.finishNodeAt(node, type, endLoc));
-  }
-  // Override for TS-ESLint that does not allow optional AST properties
-  finishNode(node, type) {
-    const result = super.finishNode(node, type);
-    this.fillOptionalPropertiesForTSESLint(result);
-    return result;
-  }
-  resetStartLocation(node, startLoc) {
-    super.resetStartLocation(node, startLoc);
-    toESTreeLocation(node);
-  }
-  resetEndLocation(node, endLoc = this.state.lastTokEndLoc) {
-    super.resetEndLocation(node, endLoc);
-    toESTreeLocation(node);
-  }
-};
-var entities = {
-  // @ts-expect-error __proto__ is not an actual property: https://github.com/microsoft/TypeScript/issues/38385
-  __proto__: null,
-  quot: '"',
-  amp: "&",
-  apos: "'",
-  lt: "<",
-  gt: ">",
-  nbsp: "\xA0",
-  iexcl: "\xA1",
-  cent: "\xA2",
-  pound: "\xA3",
-  curren: "\xA4",
-  yen: "\xA5",
-  brvbar: "\xA6",
-  sect: "\xA7",
-  uml: "\xA8",
-  copy: "\xA9",
-  ordf: "\xAA",
-  laquo: "\xAB",
-  not: "\xAC",
-  shy: "\xAD",
-  reg: "\xAE",
-  macr: "\xAF",
-  deg: "\xB0",
-  plusmn: "\xB1",
-  sup2: "\xB2",
-  sup3: "\xB3",
-  acute: "\xB4",
-  micro: "\xB5",
-  para: "\xB6",
-  middot: "\xB7",
-  cedil: "\xB8",
-  sup1: "\xB9",
-  ordm: "\xBA",
-  raquo: "\xBB",
-  frac14: "\xBC",
-  frac12: "\xBD",
-  frac34: "\xBE",
-  iquest: "\xBF",
-  Agrave: "\xC0",
-  Aacute: "\xC1",
-  Acirc: "\xC2",
-  Atilde: "\xC3",
-  Auml: "\xC4",
-  Aring: "\xC5",
-  AElig: "\xC6",
-  Ccedil: "\xC7",
-  Egrave: "\xC8",
-  Eacute: "\xC9",
-  Ecirc: "\xCA",
-  Euml: "\xCB",
-  Igrave: "\xCC",
-  Iacute: "\xCD",
-  Icirc: "\xCE",
-  Iuml: "\xCF",
-  ETH: "\xD0",
-  Ntilde: "\xD1",
-  Ograve: "\xD2",
-  Oacute: "\xD3",
-  Ocirc: "\xD4",
-  Otilde: "\xD5",
-  Ouml: "\xD6",
-  times: "\xD7",
-  Oslash: "\xD8",
-  Ugrave: "\xD9",
-  Uacute: "\xDA",
-  Ucirc: "\xDB",
-  Uuml: "\xDC",
-  Yacute: "\xDD",
-  THORN: "\xDE",
-  szlig: "\xDF",
-  agrave: "\xE0",
-  aacute: "\xE1",
-  acirc: "\xE2",
-  atilde: "\xE3",
-  auml: "\xE4",
-  aring: "\xE5",
-  aelig: "\xE6",
-  ccedil: "\xE7",
-  egrave: "\xE8",
-  eacute: "\xE9",
-  ecirc: "\xEA",
-  euml: "\xEB",
-  igrave: "\xEC",
-  iacute: "\xED",
-  icirc: "\xEE",
-  iuml: "\xEF",
-  eth: "\xF0",
-  ntilde: "\xF1",
-  ograve: "\xF2",
-  oacute: "\xF3",
-  ocirc: "\xF4",
-  otilde: "\xF5",
-  ouml: "\xF6",
-  divide: "\xF7",
-  oslash: "\xF8",
-  ugrave: "\xF9",
-  uacute: "\xFA",
-  ucirc: "\xFB",
-  uuml: "\xFC",
-  yacute: "\xFD",
-  thorn: "\xFE",
-  yuml: "\xFF",
-  OElig: "\u0152",
-  oelig: "\u0153",
-  Scaron: "\u0160",
-  scaron: "\u0161",
-  Yuml: "\u0178",
-  fnof: "\u0192",
-  circ: "\u02C6",
-  tilde: "\u02DC",
-  Alpha: "\u0391",
-  Beta: "\u0392",
-  Gamma: "\u0393",
-  Delta: "\u0394",
-  Epsilon: "\u0395",
-  Zeta: "\u0396",
-  Eta: "\u0397",
-  Theta: "\u0398",
-  Iota: "\u0399",
-  Kappa: "\u039A",
-  Lambda: "\u039B",
-  Mu: "\u039C",
-  Nu: "\u039D",
-  Xi: "\u039E",
-  Omicron: "\u039F",
-  Pi: "\u03A0",
-  Rho: "\u03A1",
-  Sigma: "\u03A3",
-  Tau: "\u03A4",
-  Upsilon: "\u03A5",
-  Phi: "\u03A6",
-  Chi: "\u03A7",
-  Psi: "\u03A8",
-  Omega: "\u03A9",
-  alpha: "\u03B1",
-  beta: "\u03B2",
-  gamma: "\u03B3",
-  delta: "\u03B4",
-  epsilon: "\u03B5",
-  zeta: "\u03B6",
-  eta: "\u03B7",
-  theta: "\u03B8",
-  iota: "\u03B9",
-  kappa: "\u03BA",
-  lambda: "\u03BB",
-  mu: "\u03BC",
-  nu: "\u03BD",
-  xi: "\u03BE",
-  omicron: "\u03BF",
-  pi: "\u03C0",
-  rho: "\u03C1",
-  sigmaf: "\u03C2",
-  sigma: "\u03C3",
-  tau: "\u03C4",
-  upsilon: "\u03C5",
-  phi: "\u03C6",
-  chi: "\u03C7",
-  psi: "\u03C8",
-  omega: "\u03C9",
-  thetasym: "\u03D1",
-  upsih: "\u03D2",
-  piv: "\u03D6",
-  ensp: "\u2002",
-  emsp: "\u2003",
-  thinsp: "\u2009",
-  zwnj: "\u200C",
-  zwj: "\u200D",
-  lrm: "\u200E",
-  rlm: "\u200F",
-  ndash: "\u2013",
-  mdash: "\u2014",
-  lsquo: "\u2018",
-  rsquo: "\u2019",
-  sbquo: "\u201A",
-  ldquo: "\u201C",
-  rdquo: "\u201D",
-  bdquo: "\u201E",
-  dagger: "\u2020",
-  Dagger: "\u2021",
-  bull: "\u2022",
-  hellip: "\u2026",
-  permil: "\u2030",
-  prime: "\u2032",
-  Prime: "\u2033",
-  lsaquo: "\u2039",
-  rsaquo: "\u203A",
-  oline: "\u203E",
-  frasl: "\u2044",
-  euro: "\u20AC",
-  image: "\u2111",
-  weierp: "\u2118",
-  real: "\u211C",
-  trade: "\u2122",
-  alefsym: "\u2135",
-  larr: "\u2190",
-  uarr: "\u2191",
-  rarr: "\u2192",
-  darr: "\u2193",
-  harr: "\u2194",
-  crarr: "\u21B5",
-  lArr: "\u21D0",
-  uArr: "\u21D1",
-  rArr: "\u21D2",
-  dArr: "\u21D3",
-  hArr: "\u21D4",
-  forall: "\u2200",
-  part: "\u2202",
-  exist: "\u2203",
-  empty: "\u2205",
-  nabla: "\u2207",
-  isin: "\u2208",
-  notin: "\u2209",
-  ni: "\u220B",
-  prod: "\u220F",
-  sum: "\u2211",
-  minus: "\u2212",
-  lowast: "\u2217",
-  radic: "\u221A",
-  prop: "\u221D",
-  infin: "\u221E",
-  ang: "\u2220",
-  and: "\u2227",
-  or: "\u2228",
-  cap: "\u2229",
-  cup: "\u222A",
-  int: "\u222B",
-  there4: "\u2234",
-  sim: "\u223C",
-  cong: "\u2245",
-  asymp: "\u2248",
-  ne: "\u2260",
-  equiv: "\u2261",
-  le: "\u2264",
-  ge: "\u2265",
-  sub: "\u2282",
-  sup: "\u2283",
-  nsub: "\u2284",
-  sube: "\u2286",
-  supe: "\u2287",
-  oplus: "\u2295",
-  otimes: "\u2297",
-  perp: "\u22A5",
-  sdot: "\u22C5",
-  lceil: "\u2308",
-  rceil: "\u2309",
-  lfloor: "\u230A",
-  rfloor: "\u230B",
-  lang: "\u2329",
-  rang: "\u232A",
-  loz: "\u25CA",
-  spades: "\u2660",
-  clubs: "\u2663",
-  hearts: "\u2665",
-  diams: "\u2666"
-};
-var xhtml_default = entities;
-var JsxErrors = ParseErrorEnum`jsx`({
-  AttributeIsEmpty: "JSX attributes must only be assigned a non-empty expression.",
-  MissingClosingTagElement: ({ openingTagName }) => `Expected corresponding JSX closing tag for <${openingTagName}>.`,
-  MissingClosingTagFragment: "Expected corresponding JSX closing tag for <>.",
-  UnexpectedSequenceExpression: "Sequence expressions cannot be directly nested inside JSX. Did you mean to wrap it in parentheses (...)?",
-  // FIXME: Unify with Errors.UnexpectedToken
-  UnexpectedToken: ({
-    unexpected,
-    HTMLEntity
-  }) => `Unexpected token \`${unexpected}\`. Did you mean \`${HTMLEntity}\` or \`{'${unexpected}'}\`?`,
-  UnsupportedJsxValue: "JSX value should be either an expression or a quoted JSX text.",
-  UnterminatedJsxContent: "Unterminated JSX contents.",
-  UnwrappedAdjacentJSXElements: "Adjacent JSX elements must be wrapped in an enclosing tag. Did you want a JSX fragment <>...</>?"
-});
-function isFragment(object2) {
-  return object2 ? object2.type === "JSXOpeningFragment" || object2.type === "JSXClosingFragment" : false;
-}
-function getQualifiedJSXName(object2) {
-  if (object2.type === "JSXIdentifier") {
-    return object2.name;
-  }
-  if (object2.type === "JSXNamespacedName") {
-    return object2.namespace.name + ":" + object2.name.name;
-  }
-  if (object2.type === "JSXMemberExpression") {
-    return getQualifiedJSXName(object2.object) + "." + getQualifiedJSXName(object2.property);
-  }
-  throw new Error("Node had unexpected type: " + object2.type);
-}
-var jsx_default = (superClass) => class JSXParserMixin extends superClass {
-  // Reads inline JSX contents token.
-  jsxReadToken() {
-    let out = "";
-    let chunkStart = this.state.pos;
-    for (; ; ) {
-      if (this.state.pos >= this.length) {
-        throw this.raise(
-          JsxErrors.UnterminatedJsxContent,
-          this.state.startLoc
-        );
-      }
-      const ch = this.input.charCodeAt(this.state.pos);
-      switch (ch) {
-        case lessThan:
-        case leftCurlyBrace:
-          if (this.state.pos === this.state.start) {
-            if (ch === lessThan && this.state.canStartJSXElement) {
-              ++this.state.pos;
-              this.finishToken(tt.jsxTagStart);
-            } else {
-              super.getTokenFromCode(ch);
-            }
-            return;
-          }
-          out += this.input.slice(chunkStart, this.state.pos);
-          this.finishToken(tt.jsxText, out);
-          return;
-        case ampersand:
-          out += this.input.slice(chunkStart, this.state.pos);
-          out += this.jsxReadEntity();
-          chunkStart = this.state.pos;
-          break;
-        case greaterThan:
-        case rightCurlyBrace:
-        /* falls through */
-        default:
-          if (isNewLine(ch)) {
-            out += this.input.slice(chunkStart, this.state.pos);
-            out += this.jsxReadNewLine(true);
-            chunkStart = this.state.pos;
-          } else {
-            ++this.state.pos;
-          }
-      }
-    }
-  }
-  jsxReadNewLine(normalizeCRLF) {
-    const ch = this.input.charCodeAt(this.state.pos);
-    let out;
-    ++this.state.pos;
-    if (ch === carriageReturn && this.input.charCodeAt(this.state.pos) === lineFeed) {
-      ++this.state.pos;
-      out = normalizeCRLF ? "\n" : "\r\n";
-    } else {
-      out = String.fromCharCode(ch);
-    }
-    ++this.state.curLine;
-    this.state.lineStart = this.state.pos;
-    return out;
-  }
-  jsxReadString(quote) {
-    let out = "";
-    let chunkStart = ++this.state.pos;
-    for (; ; ) {
-      if (this.state.pos >= this.length) {
-        throw this.raise(Errors.UnterminatedString, this.state.startLoc);
-      }
-      const ch = this.input.charCodeAt(this.state.pos);
-      if (ch === quote) break;
-      if (ch === ampersand) {
-        out += this.input.slice(chunkStart, this.state.pos);
-        out += this.jsxReadEntity();
-        chunkStart = this.state.pos;
-      } else if (isNewLine(ch)) {
-        out += this.input.slice(chunkStart, this.state.pos);
-        out += this.jsxReadNewLine(false);
-        chunkStart = this.state.pos;
-      } else {
-        ++this.state.pos;
-      }
-    }
-    out += this.input.slice(chunkStart, this.state.pos++);
-    this.finishToken(tt.string, out);
-  }
-  jsxReadEntity() {
-    const startPos = ++this.state.pos;
-    if (this.codePointAtPos(this.state.pos) === numberSign) {
-      ++this.state.pos;
-      let radix = 10;
-      if (this.codePointAtPos(this.state.pos) === lowercaseX) {
-        radix = 16;
-        ++this.state.pos;
-      }
-      const codePoint = this.readInt(
-        radix,
-        /* len */
-        void 0,
-        /* forceLen */
-        false,
-        /* allowNumSeparator */
-        "bail"
-      );
-      if (codePoint !== null && this.codePointAtPos(this.state.pos) === semicolon) {
-        ++this.state.pos;
-        return String.fromCodePoint(codePoint);
-      }
-    } else {
-      let count = 0;
-      let semi = false;
-      while (count++ < 10 && this.state.pos < this.length && !(semi = this.codePointAtPos(this.state.pos) === semicolon)) {
-        ++this.state.pos;
-      }
-      if (semi) {
-        const desc = this.input.slice(startPos, this.state.pos);
-        const entity = xhtml_default[desc];
-        ++this.state.pos;
-        if (entity) {
-          return entity;
-        }
-      }
-    }
-    this.state.pos = startPos;
-    return "&";
-  }
-  // Read a JSX identifier (valid tag or attribute name).
-  //
-  // Optimized version since JSX identifiers can"t contain
-  // escape characters and so can be read as single slice.
-  // Also assumes that first character was already checked
-  // by isIdentifierStart in readToken.
-  jsxReadWord() {
-    let ch;
-    const start = this.state.pos;
-    do {
-      ch = this.input.charCodeAt(++this.state.pos);
-    } while (isIdentifierChar(ch) || ch === dash);
-    this.finishToken(tt.jsxName, this.input.slice(start, this.state.pos));
-  }
-  // Parse next token as JSX identifier
-  jsxParseIdentifier() {
-    const node = this.startNode();
-    if (this.match(tt.jsxName)) {
-      node.name = this.state.value;
-    } else if (tokenIsKeyword(this.state.type)) {
-      node.name = tokenLabelName(this.state.type);
-    } else {
-      this.unexpected();
-    }
-    this.next();
-    return this.finishNode(node, "JSXIdentifier");
-  }
-  // Parse namespaced identifier.
-  jsxParseNamespacedName() {
-    const startLoc = this.state.startLoc;
-    const name = this.jsxParseIdentifier();
-    if (!this.eat(tt.colon)) return name;
-    const node = this.startNodeAt(startLoc);
-    node.namespace = name;
-    node.name = this.jsxParseIdentifier();
-    return this.finishNode(node, "JSXNamespacedName");
-  }
-  // Parses element name in any form - namespaced, member
-  // or single identifier.
-  jsxParseElementName() {
-    const startLoc = this.state.startLoc;
-    let node = this.jsxParseNamespacedName();
-    if (node.type === "JSXNamespacedName") {
-      return node;
-    }
-    while (this.eat(tt.dot)) {
-      const newNode = this.startNodeAt(startLoc);
-      newNode.object = node;
-      newNode.property = this.jsxParseIdentifier();
-      node = this.finishNode(newNode, "JSXMemberExpression");
-    }
-    return node;
-  }
-  // Parses any type of JSX attribute value.
-  jsxParseAttributeValue() {
-    let node;
-    switch (this.state.type) {
-      case tt.braceL:
-        node = this.startNode();
-        this.setContext(types.brace);
-        this.next();
-        node = this.jsxParseExpressionContainer(node, types.j_oTag);
-        if (node.expression.type === "JSXEmptyExpression") {
-          this.raise(JsxErrors.AttributeIsEmpty, node);
-        }
-        return node;
-      case tt.jsxTagStart:
-      case tt.string:
-        return this.parseExprAtom();
-      default:
-        throw this.raise(JsxErrors.UnsupportedJsxValue, this.state.startLoc);
-    }
-  }
-  // JSXEmptyExpression is unique type since it doesn't actually parse anything,
-  // and so it should start at the end of last read token (left brace) and finish
-  // at the beginning of the next one (right brace).
-  jsxParseEmptyExpression() {
-    const node = this.startNodeAt(this.state.lastTokEndLoc);
-    return this.finishNodeAt(node, "JSXEmptyExpression", this.state.startLoc);
-  }
-  // Parse JSX spread child
-  jsxParseSpreadChild(node) {
-    this.next();
-    node.expression = this.parseExpression();
-    this.setContext(types.j_expr);
-    this.state.canStartJSXElement = true;
-    this.expect(tt.braceR);
-    return this.finishNode(node, "JSXSpreadChild");
-  }
-  // Parses JSX expression enclosed into curly brackets.
-  jsxParseExpressionContainer(node, previousContext) {
-    if (this.match(tt.braceR)) {
-      node.expression = this.jsxParseEmptyExpression();
-    } else {
-      const expression = this.parseExpression();
-      node.expression = expression;
-    }
-    this.setContext(previousContext);
-    this.state.canStartJSXElement = true;
-    this.expect(tt.braceR);
-    return this.finishNode(node, "JSXExpressionContainer");
-  }
-  // Parses following JSX attribute name-value pair.
-  jsxParseAttribute() {
-    const node = this.startNode();
-    if (this.match(tt.braceL)) {
-      this.setContext(types.brace);
-      this.next();
-      this.expect(tt.ellipsis);
-      node.argument = this.parseMaybeAssignAllowIn();
-      this.setContext(types.j_oTag);
-      this.state.canStartJSXElement = true;
-      this.expect(tt.braceR);
-      return this.finishNode(node, "JSXSpreadAttribute");
-    }
-    node.name = this.jsxParseNamespacedName();
-    node.value = this.eat(tt.eq) ? this.jsxParseAttributeValue() : null;
-    return this.finishNode(node, "JSXAttribute");
-  }
-  // Parses JSX opening tag starting after "<".
-  jsxParseOpeningElementAt(startLoc) {
-    const node = this.startNodeAt(
-      startLoc
-    );
-    if (this.eat(tt.jsxTagEnd)) {
-      return this.finishNode(node, "JSXOpeningFragment");
-    }
-    node.name = this.jsxParseElementName();
-    return this.jsxParseOpeningElementAfterName(
-      node
-    );
-  }
-  jsxParseOpeningElementAfterName(node) {
-    const attributes = [];
-    while (!this.match(tt.slash) && !this.match(tt.jsxTagEnd)) {
-      attributes.push(this.jsxParseAttribute());
-    }
-    node.attributes = attributes;
-    node.selfClosing = this.eat(tt.slash);
-    this.expect(tt.jsxTagEnd);
-    return this.finishNode(node, "JSXOpeningElement");
-  }
-  // Parses JSX closing tag starting after "</".
-  jsxParseClosingElementAt(startLoc) {
-    const node = this.startNodeAt(
-      startLoc
-    );
-    if (this.eat(tt.jsxTagEnd)) {
-      return this.finishNode(node, "JSXClosingFragment");
-    }
-    node.name = this.jsxParseElementName();
-    this.expect(tt.jsxTagEnd);
-    return this.finishNode(node, "JSXClosingElement");
-  }
-  // Parses entire JSX element, including it"s opening tag
-  // (starting after "<"), attributes, contents and closing tag.
-  jsxParseElementAt(startLoc) {
-    const node = this.startNodeAt(startLoc);
-    const children = [];
-    const openingElement = this.jsxParseOpeningElementAt(startLoc);
-    let closingElement = null;
-    if (!openingElement.selfClosing) {
-      contents: for (; ; ) {
-        switch (this.state.type) {
-          case tt.jsxTagStart:
-            startLoc = this.state.startLoc;
-            this.next();
-            if (this.eat(tt.slash)) {
-              closingElement = this.jsxParseClosingElementAt(startLoc);
-              break contents;
-            }
-            children.push(this.jsxParseElementAt(startLoc));
-            break;
-          case tt.jsxText:
-            children.push(this.parseLiteral(this.state.value, "JSXText"));
-            break;
-          case tt.braceL: {
-            const node2 = this.startNode();
-            this.setContext(types.brace);
-            this.next();
-            if (this.match(tt.ellipsis)) {
-              children.push(this.jsxParseSpreadChild(node2));
-            } else {
-              children.push(
-                this.jsxParseExpressionContainer(node2, types.j_expr)
-              );
-            }
-            break;
-          }
-          // istanbul ignore next - should never happen
-          default:
-            this.unexpected();
-        }
-      }
-      if (isFragment(openingElement) && !isFragment(closingElement) && closingElement !== null) {
-        this.raise(JsxErrors.MissingClosingTagFragment, closingElement);
-      } else if (!isFragment(openingElement) && isFragment(closingElement)) {
-        this.raise(JsxErrors.MissingClosingTagElement, closingElement, {
-          openingTagName: getQualifiedJSXName(openingElement.name)
-        });
-      } else if (!isFragment(openingElement) && !isFragment(closingElement)) {
-        if (getQualifiedJSXName(closingElement.name) !== getQualifiedJSXName(openingElement.name)) {
-          this.raise(JsxErrors.MissingClosingTagElement, closingElement, {
-            openingTagName: getQualifiedJSXName(openingElement.name)
-          });
-        }
-      }
-    }
-    if (isFragment(openingElement)) {
-      node.openingFragment = openingElement;
-      node.closingFragment = closingElement;
-    } else {
-      node.openingElement = openingElement;
-      node.closingElement = closingElement;
-    }
-    node.children = children;
-    if (this.match(tt.lt)) {
-      throw this.raise(
-        JsxErrors.UnwrappedAdjacentJSXElements,
-        this.state.startLoc
-      );
-    }
-    return isFragment(openingElement) ? this.finishNode(node, "JSXFragment") : this.finishNode(node, "JSXElement");
-  }
-  // Parses entire JSX element from current position.
-  jsxParseElement() {
-    const startLoc = this.state.startLoc;
-    this.next();
-    return this.jsxParseElementAt(startLoc);
-  }
-  setContext(newContext) {
-    const { context } = this.state;
-    context[context.length - 1] = newContext;
-  }
-  // ==================================
-  // Overrides
-  // ==================================
-  parseExprAtom(refExpressionErrors) {
-    if (this.match(tt.jsxTagStart)) {
-      return this.jsxParseElement();
-    } else if (this.match(tt.lt) && this.input.charCodeAt(this.state.pos) !== exclamationMark) {
-      this.replaceToken(tt.jsxTagStart);
-      return this.jsxParseElement();
-    } else {
-      return super.parseExprAtom(refExpressionErrors);
-    }
-  }
-  skipSpace() {
-    const curContext = this.curContext();
-    if (!curContext.preserveSpace) super.skipSpace();
-  }
-  getTokenFromCode(code) {
-    const context = this.curContext();
-    if (context === types.j_expr) {
-      this.jsxReadToken();
-      return;
-    }
-    if (context === types.j_oTag || context === types.j_cTag) {
-      if (isIdentifierStart(code)) {
-        this.jsxReadWord();
-        return;
-      }
-      if (code === greaterThan) {
-        ++this.state.pos;
-        this.finishToken(tt.jsxTagEnd);
-        return;
-      }
-      if ((code === quotationMark || code === apostrophe) && context === types.j_oTag) {
-        this.jsxReadString(code);
-        return;
-      }
-    }
-    if (code === lessThan && this.state.canStartJSXElement && this.input.charCodeAt(this.state.pos + 1) !== exclamationMark) {
-      ++this.state.pos;
-      this.finishToken(tt.jsxTagStart);
-      return;
-    }
-    super.getTokenFromCode(code);
-  }
-  updateContext(prevType) {
-    const { context, type } = this.state;
-    if (type === tt.slash && prevType === tt.jsxTagStart) {
-      context.splice(-2, 2, types.j_cTag);
-      this.state.canStartJSXElement = false;
-    } else if (type === tt.jsxTagStart) {
-      context.push(types.j_oTag);
-    } else if (type === tt.jsxTagEnd) {
-      const out = context[context.length - 1];
-      if (out === types.j_oTag && prevType === tt.slash || out === types.j_cTag) {
-        context.pop();
-        this.state.canStartJSXElement = context[context.length - 1] === types.j_expr;
-      } else {
-        this.setContext(types.j_expr);
-        this.state.canStartJSXElement = true;
-      }
-    } else {
-      this.state.canStartJSXElement = tokenComesBeforeExpression(type);
-    }
-  }
-};
-var PlaceholderErrors = ParseErrorEnum`placeholders`({
-  ClassNameIsRequired: "A class name is required.",
-  UnexpectedSpace: "Unexpected space in placeholder."
-});
-var placeholders_default = (superClass) => class PlaceholdersParserMixin extends superClass {
-  parsePlaceholder(expectedNode) {
-    if (this.match(tt.placeholder)) {
-      const node = this.startNode();
-      this.next();
-      this.assertNoSpace();
-      node.name = super.parseIdentifier(
-        /* liberal */
-        true
-      );
-      this.assertNoSpace();
-      this.expect(tt.placeholder);
-      return this.finishPlaceholder(node, expectedNode);
-    }
-  }
-  finishPlaceholder(node, expectedNode) {
-    let placeholder = node;
-    if (!placeholder.expectedNode || !placeholder.type) {
-      placeholder = this.finishNode(
-        placeholder,
-        "Placeholder"
-      );
-    }
-    placeholder.expectedNode = expectedNode;
-    return placeholder;
-  }
-  /* ============================================================ *
-   * tokenizer/index.ts                                           *
-   * ============================================================ */
-  getTokenFromCode(code) {
-    if (code === percentSign && this.input.charCodeAt(this.state.pos + 1) === percentSign) {
-      this.finishOp(tt.placeholder, 2);
-    } else {
-      super.getTokenFromCode(code);
-    }
-  }
-  /* ============================================================ *
-   * parser/expression.ts                                         *
-   * ============================================================ */
-  parseExprAtom(refExpressionErrors) {
-    return this.parsePlaceholder("Expression") || super.parseExprAtom(refExpressionErrors);
-  }
-  parseIdentifier(liberal) {
-    return this.parsePlaceholder("Identifier") || super.parseIdentifier(liberal);
-  }
-  checkReservedWord(word, startLoc, checkKeywords, isBinding) {
-    if (word !== void 0) {
-      super.checkReservedWord(word, startLoc, checkKeywords, isBinding);
-    }
-  }
-  /* ============================================================ *
-   * parser/node.ts                                               *
-   * ============================================================ */
-  cloneIdentifier(node) {
-    const cloned = super.cloneIdentifier(node);
-    if (cloned.type === "Placeholder") {
-      cloned.expectedNode = node.expectedNode;
-    }
-    return cloned;
-  }
-  cloneStringLiteral(node) {
-    if (node.type === "Placeholder") {
-      return this.cloneIdentifier(node);
-    }
-    return super.cloneStringLiteral(node);
-  }
-  /* ============================================================ *
-   * parser/lval.ts                                               *
-   * ============================================================ */
-  parseBindingAtom() {
-    return this.parsePlaceholder("Pattern") || super.parseBindingAtom();
-  }
-  isValidLVal(type, disallowCallExpression, isParenthesized, binding) {
-    return type === "Placeholder" || super.isValidLVal(
-      type,
-      disallowCallExpression,
-      isParenthesized,
-      binding
-    );
-  }
-  toAssignable(node, isLHS) {
-    if (node && node.type === "Placeholder" && node.expectedNode === "Expression") {
-      node.expectedNode = "Pattern";
-    } else {
-      super.toAssignable(node, isLHS);
-    }
-  }
-  /* ============================================================ *
-   * parser/statement.ts                                          *
-   * ============================================================ */
-  chStartsBindingIdentifier(ch, pos) {
-    if (super.chStartsBindingIdentifier(ch, pos)) {
-      return true;
-    }
-    const next = this.nextTokenStart();
-    if (this.input.charCodeAt(next) === percentSign && this.input.charCodeAt(next + 1) === percentSign) {
-      return true;
-    }
-    return false;
-  }
-  verifyBreakContinue(node, isBreak) {
-    if (node.label?.type === "Placeholder") return;
-    super.verifyBreakContinue(node, isBreak);
-  }
-  // @ts-expect-error Plugin will override parser interface
-  parseExpressionStatement(node, expr) {
-    if (expr.type !== "Placeholder" || expr.extra?.parenthesized) {
-      return super.parseExpressionStatement(node, expr);
-    }
-    if (this.match(tt.colon)) {
-      const stmt = node;
-      stmt.label = this.finishPlaceholder(expr, "Identifier");
-      this.next();
-      stmt.body = super.parseStatementOrSloppyAnnexBFunctionDeclaration();
-      return this.finishNode(stmt, "LabeledStatement");
-    }
-    this.semicolon();
-    const stmtPlaceholder = node;
-    stmtPlaceholder.name = expr.name;
-    return this.finishPlaceholder(stmtPlaceholder, "Statement");
-  }
-  parseBlock(allowDirectives, createNewLexicalScope, afterBlockParse) {
-    return this.parsePlaceholder("BlockStatement") || super.parseBlock(
-      allowDirectives,
-      createNewLexicalScope,
-      afterBlockParse
-    );
-  }
-  parseFunctionId(requireId) {
-    return this.parsePlaceholder("Identifier") || super.parseFunctionId(requireId);
-  }
-  // @ts-expect-error Plugin will override parser interface
-  parseClass(node, isStatement, optionalId) {
-    const type = isStatement ? "ClassDeclaration" : "ClassExpression";
-    this.next();
-    const oldStrict = this.state.strict;
-    const placeholder = this.parsePlaceholder("Identifier");
-    if (placeholder) {
-      if (this.match(tt._extends) || this.match(tt.placeholder) || this.match(tt.braceL)) {
-        node.id = placeholder;
-      } else if (optionalId || !isStatement) {
-        node.id = null;
-        node.body = this.finishPlaceholder(placeholder, "ClassBody");
-        return this.finishNode(node, type);
-      } else {
-        throw this.raise(
-          PlaceholderErrors.ClassNameIsRequired,
-          this.state.startLoc
-        );
-      }
-    } else {
-      this.parseClassId(node, isStatement, optionalId);
-    }
-    super.parseClassSuper(node);
-    node.body = this.parsePlaceholder("ClassBody") || super.parseClassBody(!!node.superClass, oldStrict);
-    return this.finishNode(node, type);
-  }
-  parseExport(node, decorators) {
-    const placeholder = this.parsePlaceholder("Identifier");
-    if (!placeholder) return super.parseExport(node, decorators);
-    const node2 = node;
-    if (!this.isContextual(tt._from) && !this.match(tt.comma)) {
-      node2.specifiers = [];
-      node2.source = null;
-      node2.declaration = this.finishPlaceholder(placeholder, "Declaration");
-      return this.finishNode(node2, "ExportNamedDeclaration");
-    }
-    this.expectPlugin("exportDefaultFrom");
-    const specifier = this.startNode();
-    specifier.exported = placeholder;
-    node2.specifiers = [this.finishNode(specifier, "ExportDefaultSpecifier")];
-    return super.parseExport(node2, decorators);
-  }
-  isExportDefaultSpecifier() {
-    if (this.match(tt._default)) {
-      const next = this.nextTokenStart();
-      if (this.isUnparsedContextual(next, "from")) {
-        if (this.input.startsWith(
-          tokenLabelName(tt.placeholder),
-          this.nextTokenStartSince(next + 4)
-        )) {
-          return true;
-        }
-      }
-    }
-    return super.isExportDefaultSpecifier();
-  }
-  maybeParseExportDefaultSpecifier(node, maybeDefaultIdentifier) {
-    if (node.specifiers?.length) {
-      return true;
-    }
-    return super.maybeParseExportDefaultSpecifier(
-      node,
-      maybeDefaultIdentifier
-    );
-  }
-  checkExport(node) {
-    const { specifiers } = node;
-    if (specifiers?.length) {
-      node.specifiers = specifiers.filter(
-        // @ts-expect-error placeholder typings
-        (node2) => node2.exported.type === "Placeholder"
-      );
-    }
-    super.checkExport(node);
-    node.specifiers = specifiers;
-  }
-  parseImport(node) {
-    const placeholder = this.parsePlaceholder("Identifier");
-    if (!placeholder) return super.parseImport(node);
-    node.specifiers = [];
-    if (!this.isContextual(tt._from) && !this.match(tt.comma)) {
-      node.source = this.finishPlaceholder(placeholder, "StringLiteral");
-      this.semicolon();
-      return this.finishNode(node, "ImportDeclaration");
-    }
-    const specifier = this.startNodeAtNode(placeholder);
-    specifier.local = placeholder;
-    node.specifiers.push(
-      this.finishNode(specifier, "ImportDefaultSpecifier")
-    );
-    if (this.eat(tt.comma)) {
-      const hasStarImport = this.maybeParseStarImportSpecifier(node);
-      if (!hasStarImport) this.parseNamedImportSpecifiers(node);
-    }
-    this.expectContextual(tt._from);
-    node.source = this.parseImportSource();
-    this.semicolon();
-    return this.finishNode(node, "ImportDeclaration");
-  }
-  parseImportSource() {
-    return this.parsePlaceholder("StringLiteral") || super.parseImportSource();
-  }
-  // Throws if the current token and the prev one are separated by a space.
-  assertNoSpace() {
-    if (this.state.start > this.offsetToSourcePos(this.state.lastTokEndLoc.index)) {
-      this.raise(
-        PlaceholderErrors.UnexpectedSpace,
-        this.state.lastTokEndLoc
-      );
-    }
-  }
-};
-var v8intrinsic_default = (superClass) => class V8IntrinsicMixin extends superClass {
-  parseV8Intrinsic() {
-    if (this.match(tt.modulo)) {
-      const v8IntrinsicStartLoc = this.state.startLoc;
-      const node = this.startNode();
-      this.next();
-      if (tokenIsIdentifier(this.state.type)) {
-        const name = this.parseIdentifierName();
-        const identifier = this.createIdentifier(node, name);
-        this.castNodeTo(identifier, "V8IntrinsicIdentifier");
-        if (this.match(tt.parenL)) {
-          return identifier;
-        }
-      }
-      this.unexpected(v8IntrinsicStartLoc);
-    }
-  }
-  /* ============================================================ *
-   * parser/expression.js                                         *
-   * ============================================================ */
-  parseExprAtom(refExpressionErrors) {
-    return this.parseV8Intrinsic() || super.parseExprAtom(refExpressionErrors);
-  }
-};
-var PIPELINE_PROPOSALS = ["minimal", "fsharp", "hack", "smart"];
-var TOPIC_TOKENS = ["^^", "@@", "^", "%", "#"];
-function validatePlugins(pluginsMap) {
-  if (pluginsMap.has("decorators")) {
-    if (pluginsMap.has("decorators-legacy")) {
-      throw new Error(
-        "Cannot use the decorators and decorators-legacy plugin together"
-      );
-    }
-    const decoratorsBeforeExport = pluginsMap.get("decorators").decoratorsBeforeExport;
-    if (decoratorsBeforeExport != null && typeof decoratorsBeforeExport !== "boolean") {
-      throw new Error(
-        "'decoratorsBeforeExport' must be a boolean, if specified."
-      );
-    }
-    const allowCallParenthesized = pluginsMap.get("decorators").allowCallParenthesized;
-    if (allowCallParenthesized != null && typeof allowCallParenthesized !== "boolean") {
-      throw new Error("'allowCallParenthesized' must be a boolean.");
-    }
-  }
-  if (pluginsMap.has("flow") && pluginsMap.has("typescript")) {
-    throw new Error("Cannot combine flow and typescript plugins.");
-  }
-  if (pluginsMap.has("placeholders") && pluginsMap.has("v8intrinsic")) {
-    throw new Error("Cannot combine placeholders and v8intrinsic plugins.");
-  }
-  if (pluginsMap.has("pipelineOperator")) {
-    const proposal = pluginsMap.get("pipelineOperator").proposal;
-    if (!PIPELINE_PROPOSALS.includes(proposal)) {
-      const proposalList = PIPELINE_PROPOSALS.map((p) => `"${p}"`).join(", ");
-      throw new Error(
-        `"pipelineOperator" requires "proposal" option whose value must be one of: ${proposalList}.`
-      );
-    }
-    if (proposal === "hack") {
-      if (pluginsMap.has("placeholders")) {
-        throw new Error(
-          "Cannot combine placeholders plugin and Hack-style pipes."
-        );
-      }
-      if (pluginsMap.has("v8intrinsic")) {
-        throw new Error(
-          "Cannot combine v8intrinsic plugin and Hack-style pipes."
-        );
-      }
-      const topicToken = pluginsMap.get("pipelineOperator").topicToken;
-      if (!TOPIC_TOKENS.includes(topicToken)) {
-        const tokenList = TOPIC_TOKENS.map((t) => `"${t}"`).join(", ");
-        throw new Error(
-          `"pipelineOperator" in "proposal": "hack" mode also requires a "topicToken" option whose value must be one of: ${tokenList}.`
-        );
-      }
-      {
-        if (topicToken === "#" && pluginsMap.get("recordAndTuple")?.syntaxType === "hash") {
-          throw new Error(
-            `Plugin conflict between \`["pipelineOperator", { proposal: "hack", topicToken: "#" }]\` and \`${JSON.stringify(["recordAndTuple", pluginsMap.get("recordAndTuple")])}\`.`
-          );
-        }
-      }
-    } else if (proposal === "smart" && pluginsMap.get("recordAndTuple")?.syntaxType === "hash") {
-      throw new Error(
-        `Plugin conflict between \`["pipelineOperator", { proposal: "smart" }]\` and \`${JSON.stringify(["recordAndTuple", pluginsMap.get("recordAndTuple")])}\`.`
-      );
-    }
-  }
-  if (pluginsMap.has("moduleAttributes")) {
-    {
-      if (pluginsMap.has("deprecatedImportAssert") || pluginsMap.has("importAssertions")) {
-        throw new Error(
-          "Cannot combine importAssertions, deprecatedImportAssert and moduleAttributes plugins."
-        );
-      }
-      const moduleAttributesVersionPluginOption = pluginsMap.get("moduleAttributes").version;
-      if (moduleAttributesVersionPluginOption !== "may-2020") {
-        throw new Error(
-          "The 'moduleAttributes' plugin requires a 'version' option, representing the last proposal update. Currently, the only supported value is 'may-2020'."
-        );
-      }
-    }
-  }
-  if (pluginsMap.has("importAssertions")) {
-    if (pluginsMap.has("deprecatedImportAssert")) {
-      throw new Error(
-        "Cannot combine importAssertions and deprecatedImportAssert plugins."
-      );
-    }
-  }
-  if (pluginsMap.has("deprecatedImportAssert")) ;
-  else if (pluginsMap.has("importAttributes") && pluginsMap.get("importAttributes").deprecatedAssertSyntax) {
-    {
-      pluginsMap.set("deprecatedImportAssert", {});
-    }
-  }
-  if (pluginsMap.has("recordAndTuple")) {
-    {
-      const syntaxType = pluginsMap.get("recordAndTuple").syntaxType;
-      if (syntaxType != null) {
-        const RECORD_AND_TUPLE_SYNTAX_TYPES = ["hash", "bar"];
-        if (!RECORD_AND_TUPLE_SYNTAX_TYPES.includes(syntaxType)) {
-          throw new Error(
-            "The 'syntaxType' option of the 'recordAndTuple' plugin must be one of: " + RECORD_AND_TUPLE_SYNTAX_TYPES.map((p) => `'${p}'`).join(", ")
-          );
-        }
-      }
-    }
-  }
-  if (pluginsMap.has("asyncDoExpressions") && !pluginsMap.has("doExpressions")) {
-    const error = new Error(
-      "'asyncDoExpressions' requires 'doExpressions', please add 'doExpressions' to parser plugins."
-    );
-    error.missingPlugins = "doExpressions";
-    throw error;
-  }
-  if (pluginsMap.has("optionalChainingAssign") && pluginsMap.get("optionalChainingAssign").version !== "2023-07") {
-    throw new Error(
-      "The 'optionalChainingAssign' plugin requires a 'version' option, representing the last proposal update. Currently, the only supported value is '2023-07'."
-    );
-  }
-  if (pluginsMap.has("discardBinding") && pluginsMap.get("discardBinding").syntaxType !== "void") {
-    throw new Error(
-      "The 'discardBinding' plugin requires a 'syntaxType' option. Currently the only supported value is 'void'."
-    );
-  }
-}
-var mixinPlugins = {
-  estree: estree_default,
-  jsx: jsx_default,
-  flow: flow_default,
-  typescript: typescript_default,
-  v8intrinsic: v8intrinsic_default,
-  placeholders: placeholders_default
-};
-var mixinPluginNames = Object.keys(mixinPlugins);
-var Parser = class extends StatementParser {
-  constructor(options, input, pluginsMap) {
-    const normalizedOptions = getOptions(options);
-    super(normalizedOptions, input);
-    this.options = normalizedOptions;
-    this.initializeScopes();
-    this.plugins = pluginsMap;
-    this.filename = normalizedOptions.sourceFilename;
-    this.startIndex = normalizedOptions.startIndex;
-    let optionFlags = 0;
-    if (normalizedOptions.allowAwaitOutsideFunction) {
-      optionFlags |= OptionFlags.AllowAwaitOutsideFunction;
-    }
-    if (normalizedOptions.allowReturnOutsideFunction) {
-      optionFlags |= OptionFlags.AllowReturnOutsideFunction;
-    }
-    if (normalizedOptions.allowImportExportEverywhere) {
-      optionFlags |= OptionFlags.AllowImportExportEverywhere;
-    }
-    if (normalizedOptions.allowSuperOutsideMethod) {
-      optionFlags |= OptionFlags.AllowSuperOutsideMethod;
-    }
-    if (normalizedOptions.allowUndeclaredExports) {
-      optionFlags |= OptionFlags.AllowUndeclaredExports;
-    }
-    if (normalizedOptions.allowNewTargetOutsideFunction) {
-      optionFlags |= OptionFlags.AllowNewTargetOutsideFunction;
-    }
-    if (normalizedOptions.allowYieldOutsideFunction) {
-      optionFlags |= OptionFlags.AllowYieldOutsideFunction;
-    }
-    if (normalizedOptions.ranges) {
-      optionFlags |= OptionFlags.Ranges;
-    }
-    if (normalizedOptions.tokens) {
-      optionFlags |= OptionFlags.Tokens;
-    }
-    if (normalizedOptions.createImportExpressions) {
-      optionFlags |= OptionFlags.CreateImportExpressions;
-    }
-    if (normalizedOptions.createParenthesizedExpressions) {
-      optionFlags |= OptionFlags.CreateParenthesizedExpressions;
-    }
-    if (normalizedOptions.errorRecovery) {
-      optionFlags |= OptionFlags.ErrorRecovery;
-    }
-    if (normalizedOptions.attachComment) {
-      optionFlags |= OptionFlags.AttachComment;
-    }
-    if (normalizedOptions.annexB) {
-      optionFlags |= OptionFlags.AnnexB;
-    }
-    this.optionFlags = optionFlags;
-  }
-  // This can be overwritten, for example, by the TypeScript plugin.
-  getScopeHandler() {
-    return ScopeHandler;
-  }
-  parse() {
-    this.enterInitialScopes();
-    const file = this.startNode();
-    const program = this.startNode();
-    this.nextToken();
-    file.errors = null;
-    const result = this.parseTopLevel(file, program);
-    result.errors = this.state.errors;
-    result.comments.length = this.state.commentsLen;
-    return result;
-  }
-};
-function parse(input, options) {
-  if (options?.sourceType === "unambiguous") {
-    options = {
-      ...options
-    };
-    try {
-      options.sourceType = "module";
-      const parser = getParser(options, input);
-      const ast = parser.parse();
-      if (parser.sawUnambiguousESM) {
-        return ast;
-      }
-      if (parser.ambiguousScriptDifferentAst) {
-        try {
-          options.sourceType = "script";
-          return getParser(options, input).parse();
-        } catch {
-        }
-      } else {
-        ast.program.sourceType = "script";
-      }
-      return ast;
-    } catch (moduleError) {
-      try {
-        options.sourceType = "script";
-        return getParser(options, input).parse();
-      } catch {
-      }
-      throw moduleError;
-    }
-  } else {
-    return getParser(options, input).parse();
-  }
-}
-function parseExpression(input, options) {
-  const parser = getParser(options, input);
-  if (parser.options.strictMode) {
-    parser.state.strict = true;
-  }
-  return parser.getExpression();
-}
-function generateExportedTokenTypes(internalTokenTypes2) {
-  const tokenTypes = {};
-  for (const typeName of Object.keys(
-    internalTokenTypes2
-  )) {
-    tokenTypes[typeName] = getExportedToken(internalTokenTypes2[typeName]);
-  }
-  return tokenTypes;
-}
-generateExportedTokenTypes(tt);
-function getParser(options, input) {
-  let cls = Parser;
-  const pluginsMap = /* @__PURE__ */ new Map();
-  if (options?.plugins) {
-    for (const plugin of options.plugins) {
-      let name, opts;
-      if (typeof plugin === "string") {
-        name = plugin;
-      } else {
-        [name, opts] = plugin;
-      }
-      if (!pluginsMap.has(name)) {
-        pluginsMap.set(name, opts || {});
-      }
-    }
-    validatePlugins(pluginsMap);
-    cls = getParserClass(pluginsMap);
-  }
-  return new cls(options, input, pluginsMap);
-}
-var parserClassCache = /* @__PURE__ */ new Map();
-function getParserClass(pluginsMap) {
-  const pluginList = [];
-  for (const name of mixinPluginNames) {
-    if (pluginsMap.has(name)) {
-      pluginList.push(name);
-    }
-  }
-  const key = pluginList.join("|");
-  let cls = parserClassCache.get(key);
-  if (!cls) {
-    cls = Parser;
-    for (const plugin of pluginList) {
-      cls = mixinPlugins[plugin](cls);
-    }
-    parserClassCache.set(key, cls);
-  }
-  return cls;
-}
 var Unsupported = class extends Error {
 };
 var MAX_EXPRESSION_CHARS = 600;
@@ -2148,8 +1281,8 @@ var STRING_METHODS = {
 function unsupported() {
   throw new Unsupported();
 }
-function own(table, name) {
-  return typeof name === "string" && Object.prototype.hasOwnProperty.call(table, name) ? table[name] : void 0;
+function own(table, name2) {
+  return typeof name2 === "string" && Object.prototype.hasOwnProperty.call(table, name2) ? table[name2] : void 0;
 }
 function isUnit(v) {
   return typeof v === "string" && UNITS.has(v);
@@ -2189,47 +1322,47 @@ function momentArgs(args) {
     unsupported();
   return args.map((a) => typeof a === "string" || typeof a === "number" ? a : unsupported());
 }
-function interpret(node) {
-  switch (node?.type) {
+function interpret(node2) {
+  switch (node2?.type) {
     case "StringLiteral":
     case "NumericLiteral":
     case "BooleanLiteral":
-      return node.value;
+      return node2.value;
     case "NullLiteral":
       return null;
     case "Identifier":
-      if (node.name === "undefined")
+      if (node2.name === "undefined")
         return void 0;
-      if (node.name === "NaN")
+      if (node2.name === "NaN")
         return NaN;
-      if (node.name === "Infinity")
+      if (node2.name === "Infinity")
         return Infinity;
       return unsupported();
     case "TemplateLiteral": {
       let out = "";
-      node.quasis.forEach((q, i) => {
+      node2.quasis.forEach((q, i) => {
         out += q.value.cooked ?? "";
-        if (i < node.expressions.length)
-          out += String(primitive(interpret(node.expressions[i])));
+        if (i < node2.expressions.length)
+          out += String(primitive(interpret(node2.expressions[i])));
       });
       return out;
     }
     case "UnaryExpression": {
-      const v = primitive(interpret(node.argument));
-      if (node.operator === "!")
+      const v = primitive(interpret(node2.argument));
+      if (node2.operator === "!")
         return !v;
-      if (node.operator === "-")
+      if (node2.operator === "-")
         return -num(v);
-      if (node.operator === "+")
+      if (node2.operator === "+")
         return typeof v === "string" ? Number(v) : num(v);
-      if (node.operator === "typeof")
+      if (node2.operator === "typeof")
         return typeof v;
       return unsupported();
     }
     case "BinaryExpression": {
-      const a = primitive(interpret(node.left));
-      const b = primitive(interpret(node.right));
-      switch (node.operator) {
+      const a = primitive(interpret(node2.left));
+      const b = primitive(interpret(node2.right));
+      switch (node2.operator) {
         case "+":
           return typeof a === "string" || typeof b === "string" ? String(a) + String(b) : num(a) + num(b);
         case "-":
@@ -2263,33 +1396,33 @@ function interpret(node) {
       }
     }
     case "LogicalExpression": {
-      const l = interpret(node.left);
-      if (node.operator === "&&")
-        return l ? interpret(node.right) : l;
-      if (node.operator === "||")
-        return l ? l : interpret(node.right);
-      if (node.operator === "??")
-        return l ?? interpret(node.right);
+      const l = interpret(node2.left);
+      if (node2.operator === "&&")
+        return l ? interpret(node2.right) : l;
+      if (node2.operator === "||")
+        return l ? l : interpret(node2.right);
+      if (node2.operator === "??")
+        return l ?? interpret(node2.right);
       return unsupported();
     }
     case "ConditionalExpression":
-      return interpret(node.test) ? interpret(node.consequent) : interpret(node.alternate);
+      return interpret(node2.test) ? interpret(node2.consequent) : interpret(node2.alternate);
     case "MemberExpression": {
-      if (node.computed)
+      if (node2.computed)
         return unsupported();
-      const name = node.property?.name;
-      if (node.object?.type === "Identifier" && node.object.name === "Math") {
-        const constant = own(MATH_CONSTANTS, name);
+      const name2 = node2.property?.name;
+      if (node2.object?.type === "Identifier" && node2.object.name === "Math") {
+        const constant = own(MATH_CONSTANTS, name2);
         return constant ?? unsupported();
       }
-      const target = interpret(node.object);
-      if (typeof target === "string" && name === "length")
+      const target = interpret(node2.object);
+      if (typeof target === "string" && name2 === "length")
         return target.length;
       return unsupported();
     }
     case "CallExpression": {
-      const args = node.arguments.map((a) => a.type === "SpreadElement" ? unsupported() : interpret(a));
-      const callee = node.callee;
+      const args = node2.arguments.map((a) => a.type === "SpreadElement" ? unsupported() : interpret(a));
+      const callee = node2.callee;
       if (callee.type === "Identifier") {
         if (callee.name === "moment")
           return box((0, import_moment.default)(...momentArgs(args)));
@@ -2307,31 +1440,31 @@ function interpret(node) {
       }
       if (callee.type !== "MemberExpression" || callee.computed)
         return unsupported();
-      const name = callee.property?.name;
+      const name2 = callee.property?.name;
       const object2 = callee.object;
       if (object2.type === "Identifier" && object2.name === "moment") {
-        if (name === "utc")
+        if (name2 === "utc")
           return box(import_moment.default.utc(...momentArgs(args)));
-        if (name === "unix" && args.length === 1)
+        if (name2 === "unix" && args.length === 1)
           return box(import_moment.default.unix(num(args[0])));
         return unsupported();
       }
       if (object2.type === "Identifier" && object2.name === "Math") {
-        const fn = own(MATH_FNS, name);
+        const fn = own(MATH_FNS, name2);
         return fn ? fn(...args.map((a) => num(a))) : unsupported();
       }
-      if (object2.type === "Identifier" && object2.name === "Date" && name === "now" && args.length === 0)
+      if (object2.type === "Identifier" && object2.name === "Date" && name2 === "now" && args.length === 0)
         return Date.now();
-      if (object2.type === "Identifier" && object2.name === "JSON" && name === "stringify" && args.length === 1) {
+      if (object2.type === "Identifier" && object2.name === "JSON" && name2 === "stringify" && args.length === 1) {
         return JSON.stringify(primitive(args[0]));
       }
       const target = interpret(object2);
       if (isMoment(target)) {
-        const check = own(MOMENT_METHODS, name);
+        const check = own(MOMENT_METHODS, name2);
         if (!check || !check(args))
           return unsupported();
         const unwrapped = args.map((a) => isMoment(a) ? a.m : a);
-        const result = target.m[name](...unwrapped);
+        const result = target.m[name2](...unwrapped);
         if (import_moment.default.isMoment(result))
           return box(result);
         if (typeof result === "string" || typeof result === "number" || typeof result === "boolean")
@@ -2339,13 +1472,13 @@ function interpret(node) {
         return unsupported();
       }
       if (typeof target === "string") {
-        const fn = own(STRING_METHODS, name);
+        const fn = own(STRING_METHODS, name2);
         return fn ? fn(target, args) : unsupported();
       }
       if (typeof target === "number") {
-        if (name === "toFixed" && args.length <= 1)
+        if (name2 === "toFixed" && args.length <= 1)
           return target.toFixed(args[0] === void 0 ? 0 : capped(args[0], 100));
-        if (name === "toString" && args.length === 0)
+        if (name2 === "toString" && args.length === 0)
           return String(target);
         return unsupported();
       }
@@ -2363,15 +1496,15 @@ function resolveStaticBindings(options) {
     if (typeof value === "string") {
       if (!value.includes("{{") || !value.includes("}}"))
         return;
-      const key = value.replace(/\n/g, " ");
-      if (key in resolved || unresolved.includes(key))
+      const key3 = value.replace(/\n/g, " ");
+      if (key3 in resolved || unresolved.includes(key3))
         return;
       const outcome = resolveString(value);
       if (!outcome.ok) {
-        unresolved.push(key);
+        unresolved.push(key3);
         return;
       }
-      resolved[key] = outcome.value;
+      resolved[key3] = outcome.value;
       for (const [binding, v] of outcome.parts)
         resolved[binding.replace(/\n/g, " ")] = v;
     } else if (Array.isArray(value))
@@ -2398,11 +1531,11 @@ function resolveString(text) {
   let i = 0;
   return { ok: true, value: text.replace(SERVER_BINDING, () => String(parts[i++][1])), parts };
 }
-function evaluate(expression) {
-  if (expression.length > MAX_EXPRESSION_CHARS)
+function evaluate(expression2) {
+  if (expression2.length > MAX_EXPRESSION_CHARS)
     return { ok: false };
   try {
-    const value = interpret(parseExpression(expression));
+    const value = interpret(parseExpression(expression2));
     if (isMoment(value))
       return { ok: true, value: value.m.toISOString() };
     if (typeof value === "number" && !Number.isFinite(value))
@@ -2420,8 +1553,8 @@ function applyResolvedBindings(options, resolved) {
   if (typeof options === "string") {
     if (!options.includes("{{") || !options.includes("}}"))
       return options;
-    const key = options.replace(/\n/g, " ");
-    return Object.prototype.hasOwnProperty.call(resolved, key) ? resolved[key] : options;
+    const key3 = options.replace(/\n/g, " ");
+    return Object.prototype.hasOwnProperty.call(resolved, key3) ? resolved[key3] : options;
   }
   if (Array.isArray(options))
     return options.map((value) => applyResolvedBindings(value, resolved));
@@ -2431,7 +1564,7 @@ function applyResolvedBindings(options, resolved) {
   return options;
 }
 function resolvedBindingValues(resolved) {
-  return Object.entries(resolved).filter(([key]) => /^\{\{(?:(?!\}\})[\s\S])*\}\}$/.test(key)).map(([, value]) => value);
+  return Object.entries(resolved).filter(([key3]) => /^\{\{(?:(?!\}\})[\s\S])*\}\}$/.test(key3)).map(([, value]) => value);
 }
 function emptyViewerOnlyParams(options, resolution) {
   const params = options && typeof options === "object" ? options.query_params : void 0;
@@ -2441,11 +1574,11 @@ function emptyViewerOnlyParams(options, resolution) {
   for (const pair of params) {
     if (!Array.isArray(pair) || typeof pair[1] !== "string")
       continue;
-    const key = pair[1].replace(/\n/g, " ");
-    if (!resolution.unresolved.includes(key))
+    const key3 = pair[1].replace(/\n/g, " ");
+    if (!resolution.unresolved.includes(key3))
       continue;
-    resolution.resolved[key] = null;
-    resolution.unresolved = resolution.unresolved.filter((b) => b !== key);
+    resolution.resolved[key3] = null;
+    resolution.unresolved = resolution.unresolved.filter((b) => b !== key3);
     filled.push(String(pair[0]));
   }
   return filled;
@@ -2645,7 +1778,7 @@ var FLUX_EGRESS_PACKAGES = [
   "influxdata/influxdb/secrets",
   "influxdata/influxdb/tasks"
 ];
-var FLUX_EGRESS_IMPORT = new RegExp(String.raw`(^|\n)\s*import\s+(?:[A-Za-z_][A-Za-z0-9_]*\s+)?"(?:` + FLUX_EGRESS_PACKAGES.map((name) => name.replace(/\//g, String.raw`\/`)).join("|") + String.raw`)"`);
+var FLUX_EGRESS_IMPORT = new RegExp(String.raw`(^|\n)\s*import\s+(?:[A-Za-z_][A-Za-z0-9_]*\s+)?"(?:` + FLUX_EGRESS_PACKAGES.map((name2) => name2.replace(/\//g, String.raw`\/`)).join("|") + String.raw`)"`);
 var FLUX_LIMIT = /(^|[^A-Za-z0-9_.])limit\s*\(\s*n\s*:\s*(\d+)/;
 function assessInflux(options, datasourceId) {
   const identity = { datasourceKind: "influxdb", ...datasourceId ? { datasourceId } : {} };
@@ -2736,7 +1869,7 @@ function assessRestGet(options, datasourceId) {
       ...identity
     };
   }
-  const requestFields = ["url_params", "headers", "cookies"].map((key) => options[key]);
+  const requestFields = ["url_params", "headers", "cookies"].map((key3) => options[key3]);
   if (requestFields.some(containsBinding)) {
     return {
       provenRead: false,
@@ -2831,7 +1964,7 @@ function mongoPipelineWrites(pipeline) {
   if (Array.isArray(pipeline))
     return pipeline.some(mongoPipelineWrites);
   const obj = record(pipeline);
-  return !!obj && Object.entries(obj).some(([key, value]) => MONGO_WRITE_STAGES.includes(key) || mongoPipelineWrites(value));
+  return !!obj && Object.entries(obj).some(([key3, value]) => MONGO_WRITE_STAGES.includes(key3) || mongoPipelineWrites(value));
 }
 function assessMongo(options, datasourceId) {
   const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : "";
@@ -3181,10 +2314,10 @@ function mainStatementAfterCtes(sql) {
     return void 0;
   let i = head[0].length;
   for (let guard = 0; guard < 50; guard++) {
-    const name = /^\s*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\s*(?:\([^()]*\)\s*)?as\s+(?:not\s+)?(?:materialized\s+)?\(/i.exec(blank.slice(i));
-    if (!name)
+    const name2 = /^\s*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\s*(?:\([^()]*\)\s*)?as\s+(?:not\s+)?(?:materialized\s+)?\(/i.exec(blank.slice(i));
+    if (!name2)
       return void 0;
-    i += name[0].length;
+    i += name2[0].length;
     let depth = 1;
     while (i < blank.length && depth > 0) {
       if (blank[i] === "(")
@@ -3423,8 +2556,8 @@ function fullToolJetDbCount(options) {
   if (aggregate?.column !== "id")
     return false;
   const ignoredForScope = /* @__PURE__ */ new Set(["aggregates", "group_by", "order_filters", "limit", "offset"]);
-  return Object.entries(listRows).every(([key, value]) => {
-    if (ignoredForScope.has(key))
+  return Object.entries(listRows).every(([key3, value]) => {
+    if (ignoredForScope.has(key3))
       return true;
     if (value === void 0 || value === null || value === "")
       return true;
@@ -3646,13 +2779,13 @@ function normalizeQueryToggles(options) {
   if (!isPlainObject(options))
     return options;
   let out = options;
-  for (const key of QUERY_TOGGLES) {
-    const value = staticToggle(options[key]);
+  for (const key3 of QUERY_TOGGLES) {
+    const value = staticToggle(options[key3]);
     if (value === void 0)
       continue;
     if (out === options)
       out = { ...options };
-    out[key] = value;
+    out[key3] = value;
   }
   return out;
 }
@@ -3671,33 +2804,33 @@ function queryToggleIssues(options) {
   if (!isPlainObject(options))
     return [];
   const issues = [];
-  for (const key of QUERY_TOGGLES) {
-    if (!(key in options))
+  for (const key3 of QUERY_TOGGLES) {
+    if (!(key3 in options))
       continue;
-    const value = options[key];
+    const value = options[key3];
     if (value === void 0 || typeof value === "boolean" || staticToggle(value) !== void 0)
       continue;
     const dynamic = typeof value === "string" ? " ToolJet does not evaluate it and treats any text as on. Run the query from an event instead when it depends on state." : "";
     issues.push({
       code: "query_toggle_not_boolean",
-      path: key,
-      message: `${key} must be true or false (or left out), not ${describe(value)}.${dynamic}`
+      path: key3,
+      message: `${key3} must be true or false (or left out), not ${describe(value)}.${dynamic}`
     });
   }
   return issues;
 }
 function toggleRewriteWarning(before, after) {
-  const changed = QUERY_TOGGLES.filter((key) => before?.[key] !== after?.[key]);
+  const changed = QUERY_TOGGLES.filter((key3) => before?.[key3] !== after?.[key3]);
   if (!changed.length)
     return void 0;
-  return `${changed.map((key) => `${key} ${JSON.stringify(before[key])} saved as ${String(after[key])}`).join(", ")}; ToolJet reads these as true/false and runs any text on load.`;
+  return `${changed.map((key3) => `${key3} ${JSON.stringify(before[key3])} saved as ${String(after[key3])}`).join(", ")}; ToolJet reads these as true/false and runs any text on load.`;
 }
 function assertPersistableQueryToggles(options, subject) {
   const issues = queryToggleIssues(options);
-  const strings = isPlainObject(options) ? QUERY_TOGGLES.filter((key) => typeof options[key] === "string") : [];
+  const strings = isPlainObject(options) ? QUERY_TOGGLES.filter((key3) => typeof options[key3] === "string") : [];
   const messages = [
     ...issues.map((issue2) => issue2.message),
-    ...strings.filter((key) => !issues.some((issue2) => issue2.path === key)).map((key) => `${key} must be sent as a boolean, not ${JSON.stringify(options[key])}.`)
+    ...strings.filter((key3) => !issues.some((issue2) => issue2.path === key3)).map((key3) => `${key3} must be sent as a boolean, not ${JSON.stringify(options[key3])}.`)
   ];
   if (messages.length)
     throw new Error(`${subject}: ${messages.join(" ")}`);
@@ -3736,16 +2869,16 @@ function primitiveWriteBindingEntries(value) {
   if (spans.length !== 1 || spans[0].start !== 0 || spans[0].end !== source.length)
     return [];
   try {
-    const node = parseExpression(spans[0].body);
-    if (node.type !== "ObjectExpression")
+    const node2 = parseExpression(spans[0].body);
+    if (node2.type !== "ObjectExpression")
       return [];
-    return node.properties.flatMap((p) => {
+    return node2.properties.flatMap((p) => {
       if (p.type !== "ObjectProperty" || p.computed)
         return [];
-      const key = p.key.type === "Identifier" ? p.key.name : p.key.type === "StringLiteral" || p.key.type === "NumericLiteral" ? String(p.key.value) : void 0;
-      if (!key)
+      const key3 = p.key.type === "Identifier" ? p.key.name : p.key.type === "StringLiteral" || p.key.type === "NumericLiteral" ? String(p.key.value) : void 0;
+      if (!key3)
         return [];
-      return ["StringLiteral", "NumericLiteral", "BooleanLiteral", "NullLiteral", "TemplateLiteral", "UnaryExpression"].includes(p.value.type) ? [key] : [];
+      return ["StringLiteral", "NumericLiteral", "BooleanLiteral", "NullLiteral", "TemplateLiteral", "UnaryExpression"].includes(p.value.type) ? [key3] : [];
     });
   } catch {
     return [];
@@ -3762,19 +2895,19 @@ function conditionalWriteWarning(kind, options) {
     return;
   return `update_rows both checks and changes ${[...new Set(guarded)].map((x) => JSON.stringify(x)).join(", ")}. This can legitimately succeed with zero matching rows (stale value/state). An untransformed ToolJet DB update_rows returns the changed rows in queries.<name>.data (an empty array means no match); account for any query transformation. Before a dependent write, audit entry, status transition or success message, verify the result contains the intended row and expected count; do not treat onDataQuerySuccess alone as that proof. On no match, stop the dependent chain and show a conflict/reload message. Do not remove the predicate to make the write pass. This is advisory; callers may already handle the result.`;
 }
-function walk(v, visit) {
+function walk$1(v, visit) {
   if (Array.isArray(v)) {
     for (const x of v)
-      walk(x, visit);
+      walk$1(x, visit);
     return;
   }
   const n = object(v);
   if (!n)
     return;
   visit(n);
-  for (const [key, child] of Object.entries(n))
-    if (!["loc", "extra", "comments"].includes(key))
-      walk(child, visit);
+  for (const [key3, child] of Object.entries(n))
+    if (!["loc", "extra", "comments"].includes(key3))
+      walk$1(child, visit);
 }
 function property(n) {
   const p = object(n?.property);
@@ -3807,7 +2940,7 @@ function arithmeticWriteWarning(kind, options) {
       continue;
     }
     let shadowed = false, found = false;
-    walk(ast, (n) => {
+    walk$1(ast, (n) => {
       if (Array.isArray(n.params) && /"components"/.test(JSON.stringify(n.params)))
         shadowed = true;
       if (n.type === "VariableDeclarator" && /"components"/.test(JSON.stringify(n.id)))
@@ -3815,13 +2948,13 @@ function arithmeticWriteWarning(kind, options) {
     });
     if (shadowed)
       continue;
-    walk(ast, (n) => {
+    walk$1(ast, (n) => {
       if (n.type !== "BinaryExpression" || !["+", "-"].includes(String(n.operator)))
         return;
-      walk(n, (member) => {
-        if (!["MemberExpression", "OptionalMemberExpression"].includes(String(member.type)))
+      walk$1(n, (member3) => {
+        if (!["MemberExpression", "OptionalMemberExpression"].includes(String(member3.type)))
           return;
-        const selected = object(member.object), table = object(selected?.object), namespace = object(table?.object);
+        const selected = object(member3.object), table = object(selected?.object), namespace = object(table?.object);
         if (property(selected) === "selectedRow" && namespace?.type === "Identifier" && namespace.name === "components")
           found = true;
       });
@@ -3842,7 +2975,7 @@ var ELEMENT_PATH = /\$|\.\d+(\.|$)/;
 var isMember = (n) => n?.type === "MemberExpression" || n?.type === "OptionalMemberExpression";
 var propertyName = (n) => n.computed ? n.property?.type === "StringLiteral" ? n.property.value : void 0 : n.property?.name;
 var keyName = (p) => p.computed ? void 0 : p.key?.type === "Identifier" ? p.key.name : p.key?.type === "StringLiteral" ? p.key.value : void 0;
-var property2 = (n, key) => n?.type === "ObjectExpression" ? n.properties.find((p) => p.type === "ObjectProperty" && keyName(p) === key)?.value : void 0;
+var property2 = (n, key3) => n?.type === "ObjectExpression" ? n.properties.find((p) => p.type === "ObjectProperty" && keyName(p) === key3)?.value : void 0;
 function unwrap(n) {
   while (n?.type === "CallExpression") {
     if (isMember(n.callee) && n.callee.object?.name === "JSON" && propertyName(n.callee) === "stringify" && n.arguments.length >= 1) {
@@ -3886,10 +3019,10 @@ function referencesComponents(n) {
     return false;
   if (Array.isArray(n))
     return n.some(referencesComponents);
-  const node = n;
-  if (isMember(node) && node.object?.type === "Identifier" && node.object.name === "components")
+  const node2 = n;
+  if (isMember(node2) && node2.object?.type === "Identifier" && node2.object.name === "components")
     return true;
-  return Object.entries(node).some(([key, child]) => !["loc", "extra", "comments"].includes(key) && referencesComponents(child));
+  return Object.entries(node2).some(([key3, child]) => !["loc", "extra", "comments"].includes(key3) && referencesComponents(child));
 }
 function isArrayValue(raw) {
   const n = unwrap(raw);
@@ -3927,10 +3060,10 @@ function replacedArrayPaths(set, prefix = "") {
   return set.properties.flatMap((p) => {
     if (p.type !== "ObjectProperty")
       return [];
-    const key = keyName(p);
-    if (!key)
+    const key3 = keyName(p);
+    if (!key3)
       return [];
-    const path = prefix ? `${prefix}.${key}` : key;
+    const path = prefix ? `${prefix}.${key3}` : key3;
     if (ELEMENT_PATH.test(path))
       return [];
     if (isComponentArray(p.value))
@@ -4117,8 +3250,8 @@ function topLevelKeys(fields) {
 function nestedChildren(fields, root) {
   return new Set(Object.keys(fields).filter((path) => path.startsWith(`${root}.`)).map((path) => path.slice(root.length + 1).split(".")[0]));
 }
-function suffixSuggestion(key, fields) {
-  const matches = Object.keys(fields).filter((path) => path.endsWith(`.${key}`));
+function suffixSuggestion(key3, fields) {
+  const matches = Object.keys(fields).filter((path) => path.endsWith(`.${key3}`));
   return matches.length === 1 ? matches[0] : void 0;
 }
 function tupleArity(field) {
@@ -4133,7 +3266,7 @@ function bindingStrings(value, path = "") {
   }
   if (!isObject(value))
     return [];
-  return Object.entries(value).flatMap(([key, item]) => bindingStrings(item, path ? `${path}.${key}` : key));
+  return Object.entries(value).flatMap(([key3, item]) => bindingStrings(item, path ? `${path}.${key3}` : key3));
 }
 function tableStateWarnings(options) {
   const warnings = [];
@@ -4384,39 +3517,39 @@ var RUNJS_KNOWN_NAMES = /* @__PURE__ */ new Set([
   "CustomEvent"
 ]);
 var isNode = (value) => !!value && typeof value === "object" && typeof value.type === "string";
-function patternNames(node, out) {
-  if (!isNode(node))
+function patternNames(node2, out) {
+  if (!isNode(node2))
     return;
-  if (node.type === "Identifier")
-    out.add(String(node.name));
-  else if (node.type === "ObjectPattern")
-    for (const p of node.properties)
+  if (node2.type === "Identifier")
+    out.add(String(node2.name));
+  else if (node2.type === "ObjectPattern")
+    for (const p of node2.properties)
       patternNames(p.type === "RestElement" ? p.argument : p.value, out);
-  else if (node.type === "ArrayPattern")
-    for (const e of node.elements)
+  else if (node2.type === "ArrayPattern")
+    for (const e of node2.elements)
       patternNames(e, out);
-  else if (node.type === "RestElement")
-    patternNames(node.argument, out);
-  else if (node.type === "AssignmentPattern")
-    patternNames(node.left, out);
+  else if (node2.type === "RestElement")
+    patternNames(node2.argument, out);
+  else if (node2.type === "AssignmentPattern")
+    patternNames(node2.left, out);
 }
 function runjsUndeclaredNames(code) {
   return undeclaredNames(`async function __runjs__(){
 ${code}
 }`, RUNJS_KNOWN_NAMES);
 }
-function bindingUndeclaredNames(expression) {
-  if (/\b(components|queries)\.[0-9a-f]{8}-[0-9a-f]{4}-/i.test(expression))
+function bindingUndeclaredNames(expression2) {
+  if (/\b(components|queries)\.[0-9a-f]{8}-[0-9a-f]{4}-/i.test(expression2))
     return [];
   return undeclaredNames(`(function __binding__(){ return (
-${expression}
+${expression2}
 ); })`, BINDING_KNOWN_NAMES);
 }
 function lintBindingNames(value, label, path = "") {
   if (Array.isArray(value))
     return value.flatMap((child, i) => lintBindingNames(child, label, `${path}[${i}]`));
   if (value && typeof value === "object") {
-    return Object.entries(value).flatMap(([key, child]) => lintBindingNames(child, label, path ? `${path}.${key}` : key));
+    return Object.entries(value).flatMap(([key3, child]) => lintBindingNames(child, label, path ? `${path}.${key3}` : key3));
   }
   if (typeof value !== "string" || !value.includes("{{"))
     return [];
@@ -4444,22 +3577,22 @@ function undeclaredNames(source, known) {
     return [];
   }
   const declaredIn = (body, into) => {
-    const visit = (node) => {
-      if (Array.isArray(node)) {
-        node.forEach(visit);
+    const visit = (node2) => {
+      if (Array.isArray(node2)) {
+        node2.forEach(visit);
         return;
       }
-      if (!isNode(node))
+      if (!isNode(node2))
         return;
-      if (node.type === "VariableDeclarator")
-        patternNames(node.id, into);
-      if ((node.type === "FunctionDeclaration" || node.type === "ClassDeclaration") && isNode(node.id))
-        into.add(String(node.id.name));
-      if (node.type === "CatchClause")
-        patternNames(node.param, into);
-      if (FUNCTION_TYPES.has(node.type))
+      if (node2.type === "VariableDeclarator")
+        patternNames(node2.id, into);
+      if ((node2.type === "FunctionDeclaration" || node2.type === "ClassDeclaration") && isNode(node2.id))
+        into.add(String(node2.id.name));
+      if (node2.type === "CatchClause")
+        patternNames(node2.param, into);
+      if (FUNCTION_TYPES.has(node2.type))
         return;
-      for (const [k, v] of Object.entries(node))
+      for (const [k, v] of Object.entries(node2))
         if (k !== "loc" && k !== "extra" && !k.endsWith("Comments"))
           visit(v);
     };
@@ -4467,37 +3600,37 @@ function undeclaredNames(source, known) {
   };
   const used = [];
   const scopes = [];
-  const isDeclared = (name) => scopes.some((scope) => scope.has(name));
-  const walk2 = (node, parent, key) => {
-    if (Array.isArray(node)) {
-      for (const child of node)
-        walk2(child, parent, key);
+  const isDeclared = (name2) => scopes.some((scope) => scope.has(name2));
+  const walk22 = (node2, parent, key3) => {
+    if (Array.isArray(node2)) {
+      for (const child of node2)
+        walk22(child, parent, key3);
       return;
     }
-    if (!isNode(node))
+    if (!isNode(node2))
       return;
-    if (node.type === "Identifier") {
+    if (node2.type === "Identifier") {
       const p = parent?.type;
-      const notARead = (p === "MemberExpression" || p === "OptionalMemberExpression") && key === "property" && !parent.computed || (p === "ObjectProperty" || p === "ObjectMethod" || p === "ClassMethod" || p === "ClassProperty" || p === "ClassPrivateProperty") && key === "key" && !parent.computed || (p === "LabeledStatement" || p === "BreakStatement" || p === "ContinueStatement") && key === "label" || p === "UnaryExpression" && parent.operator === "typeof" || p === "MetaProperty" || // a declaration's own name, a parameter or a pattern binding is not a read
-      p === "VariableDeclarator" && key === "id" || p !== void 0 && FUNCTION_TYPES.has(p) && (key === "id" || key === "params") || (p === "ClassDeclaration" || p === "ClassExpression") && key === "id" || p === "CatchClause" && key === "param";
-      const name = String(node.name);
-      if (!notARead && !isDeclared(name))
-        used.push(name);
+      const notARead = (p === "MemberExpression" || p === "OptionalMemberExpression") && key3 === "property" && !parent.computed || (p === "ObjectProperty" || p === "ObjectMethod" || p === "ClassMethod" || p === "ClassProperty" || p === "ClassPrivateProperty") && key3 === "key" && !parent.computed || (p === "LabeledStatement" || p === "BreakStatement" || p === "ContinueStatement") && key3 === "label" || p === "UnaryExpression" && parent.operator === "typeof" || p === "MetaProperty" || // a declaration's own name, a parameter or a pattern binding is not a read
+      p === "VariableDeclarator" && key3 === "id" || p !== void 0 && FUNCTION_TYPES.has(p) && (key3 === "id" || key3 === "params") || (p === "ClassDeclaration" || p === "ClassExpression") && key3 === "id" || p === "CatchClause" && key3 === "param";
+      const name2 = String(node2.name);
+      if (!notARead && !isDeclared(name2))
+        used.push(name2);
       return;
     }
-    if (node.type === "Program" || FUNCTION_TYPES.has(node.type)) {
+    if (node2.type === "Program" || FUNCTION_TYPES.has(node2.type)) {
       const scope = /* @__PURE__ */ new Set();
-      if (FUNCTION_TYPES.has(node.type)) {
-        if (node.type === "FunctionExpression" && isNode(node.id))
-          scope.add(String(node.id.name));
-        for (const param of node.params ?? [])
+      if (FUNCTION_TYPES.has(node2.type)) {
+        if (node2.type === "FunctionExpression" && isNode(node2.id))
+          scope.add(String(node2.id.name));
+        for (const param of node2.params ?? [])
           patternNames(param, scope);
-        declaredIn(node.body, scope);
+        declaredIn(node2.body, scope);
       } else {
-        declaredIn(node.body, scope);
+        declaredIn(node2.body, scope);
       }
       scopes.push(scope);
-      for (const [k, v] of Object.entries(node)) {
+      for (const [k, v] of Object.entries(node2)) {
         if (k === "loc" || k === "extra" || k.endsWith("Comments"))
           continue;
         if (k === "params") {
@@ -4505,24 +3638,24 @@ function undeclaredNames(source, known) {
             walkPatternDefaults(param);
           continue;
         }
-        walk2(v, node, k);
+        walk22(v, node2, k);
       }
       scopes.pop();
       return;
     }
-    if (node.type === "VariableDeclarator") {
-      walkPatternDefaults(node.id);
-      walk2(node.init, node, "init");
+    if (node2.type === "VariableDeclarator") {
+      walkPatternDefaults(node2.id);
+      walk22(node2.init, node2, "init");
       return;
     }
-    if (node.type === "CatchClause") {
-      walk2(node.body, node, "body");
+    if (node2.type === "CatchClause") {
+      walk22(node2.body, node2, "body");
       return;
     }
-    for (const [k, v] of Object.entries(node)) {
+    for (const [k, v] of Object.entries(node2)) {
       if (k === "loc" || k === "start" || k === "end" || k === "extra" || k.endsWith("Comments"))
         continue;
-      walk2(v, node, k);
+      walk22(v, node2, k);
     }
   };
   const walkPatternDefaults = (pattern) => {
@@ -4530,14 +3663,14 @@ function undeclaredNames(source, known) {
       return;
     if (pattern.type === "AssignmentPattern") {
       walkPatternDefaults(pattern.left);
-      walk2(pattern.right, pattern, "right");
+      walk22(pattern.right, pattern, "right");
     } else if (pattern.type === "ObjectPattern")
       for (const p of pattern.properties) {
         if (p.type === "RestElement")
           walkPatternDefaults(p.argument);
         else {
           if (p.computed)
-            walk2(p.key, p, "computedKey");
+            walk22(p.key, p, "computedKey");
           walkPatternDefaults(p.value);
         }
       }
@@ -4547,13 +3680,13 @@ function undeclaredNames(source, known) {
     else if (pattern.type === "RestElement")
       walkPatternDefaults(pattern.argument);
   };
-  walk2(ast);
-  return [...new Set(used.filter((name) => !known.has(name) && name !== "__runjs__" && name !== "__binding__"))];
+  walk22(ast);
+  return [...new Set(used.filter((name2) => !known.has(name2) && name2 !== "__runjs__" && name2 !== "__binding__"))];
 }
 function transformationWarnings(options) {
   const warnings = [];
   const bag = isObject(options.transformations) ? options.transformations : void 0;
-  const languages = bag ? Object.keys(bag).filter((key) => key === "javascript" || key === "python") : [];
+  const languages = bag ? Object.keys(bag).filter((key3) => key3 === "javascript" || key3 === "python") : [];
   const hasCode = languages.length > 0 || typeof options.transformation === "string" && options.transformation.trim() !== "";
   if (!hasCode)
     return warnings;
@@ -4734,28 +3867,28 @@ function validateQueryOptions(kind, options, executionContext = "app") {
   const fields = fieldMap(matching);
   const allowedTopLevel = topLevelKeys(fields);
   if (singleSpecRef(kind))
-    for (const key of ["operation", "path", "params", "selectedOperation"])
-      allowedTopLevel.add(key);
+    for (const key3 of ["operation", "path", "params", "selectedOperation"])
+      allowedTopLevel.add(key3);
   const own2 = [...allowedTopLevel].filter((k) => !(k in COMMON_QUERY_OPTION_FIELDS));
-  for (const key of Object.keys(options)) {
-    if (allowedTopLevel.has(key))
+  for (const key3 of Object.keys(options)) {
+    if (allowedTopLevel.has(key3))
       continue;
-    const exactReplacement = KNOWN_IGNORED_KEYS[key];
-    const nestedReplacement = suffixSuggestion(key, fields);
+    const exactReplacement = KNOWN_IGNORED_KEYS[key3];
+    const nestedReplacement = suffixSuggestion(key3, fields);
     const replacement = exactReplacement ?? nestedReplacement;
-    const meant = key.length >= 4 ? own2.filter((f) => f !== key && options[f] === void 0 && (f.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(f.toLowerCase()))) : [];
+    const meant = key3.length >= 4 ? own2.filter((f) => f !== key3 && options[f] === void 0 && (f.toLowerCase().includes(key3.toLowerCase()) || key3.toLowerCase().includes(f.toLowerCase()))) : [];
     if (!replacement && meant.length === 1) {
       errors.push({
         code: "unknown_option_key",
-        path: key,
-        message: `Option key "${key}" does not exist for ${kind}/${operation}; the field is "${meant[0]}". ToolJet drops "${key}" and the query runs without it.`
+        path: key3,
+        message: `Option key "${key3}" does not exist for ${kind}/${operation}; the field is "${meant[0]}". ToolJet drops "${key3}" and the query runs without it.`
       });
       continue;
     }
     warnings.push({
       code: replacement ? "ignored_or_misplaced_option_key" : "unknown_option_key",
-      path: key,
-      message: replacement ? `Option key "${key}" is not read at this location for ${kind}/${operation}; use "${replacement}".` : `Unknown option key "${key}" for ${kind}/${operation}; ToolJet plugins may silently drop it.`
+      path: key3,
+      message: replacement ? `Option key "${key3}" is not read at this location for ${kind}/${operation}; use "${replacement}".` : `Unknown option key "${key3}" for ${kind}/${operation}; ToolJet plugins may silently drop it.`
     });
   }
   for (const root of allowedTopLevel) {
@@ -4959,12 +4092,12 @@ function normalizeWriteColumnMap(columns) {
     return null;
   }
   const normalized = {};
-  entries.forEach(([key, clause], index) => {
+  entries.forEach(([key3, clause], index) => {
     if (isObject(clause) && typeof clause.column === "string" && clause.column !== "") {
       normalized[String(index)] = clause;
       return;
     }
-    normalized[String(index)] = { column: key, value: clause };
+    normalized[String(index)] = { column: key3, value: clause };
   });
   return normalized;
 }
@@ -5000,29 +4133,784 @@ function normalizeQueryOptions(kind, rawOptions) {
   }
   return options;
 }
+createRequire(import.meta.url);
+var capabilityRequestSchema = external_exports.object({
+  version_id: external_exports.string().uuid()
+}).strict();
+var datasourceCapabilitySchema = external_exports.enum(["query", "ai-model", "email"]);
+var workflowCapabilityReportSchema = external_exports.object({
+  version_id: external_exports.string().uuid(),
+  authorable_node_types: external_exports.array(external_exports.string()),
+  datasources: external_exports.array(external_exports.object({
+    id: external_exports.string(),
+    name: external_exports.string(),
+    kind: external_exports.string(),
+    capabilities: external_exports.array(datasourceCapabilitySchema)
+  }).strict())
+}).strict();
+var AI_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["openai", "anthropic", "gemini", "mistral_ai"]);
+var EMAIL_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["smtp", "sendgrid", "mailgun"]);
+function datasourceCapabilities(kind) {
+  const capabilities = ["query"];
+  if (AI_DATASOURCE_KINDS.has(kind))
+    capabilities.push("ai-model");
+  if (EMAIL_DATASOURCE_KINDS.has(kind))
+    capabilities.push("email");
+  return capabilities;
+}
+async function getWorkflowCapabilities(client, input) {
+  const { version_id } = capabilityRequestSchema.parse(input);
+  const datasources = await client.workflows.listDatasources(version_id);
+  return workflowCapabilityReportSchema.parse({
+    version_id,
+    authorable_node_types: nodeCatalog.nodes.map((node2) => node2.type),
+    datasources: datasources.map((datasource) => ({
+      id: datasource.id,
+      name: datasource.name,
+      kind: datasource.kind,
+      capabilities: datasourceCapabilities(datasource.kind)
+    }))
+  });
+}
+function workflowReadiness(graph, structuralErrors) {
+  if (structuralErrors.length)
+    return { runtime_readiness: "blocked", blockers: structuralErrors };
+  const adjacency = new Map(graph.nodes.map((node2) => [node2.id, []]));
+  for (const edge of controlFlowEdges(graph))
+    adjacency.get(edge.source)?.push(edge.target);
+  const reachable = /* @__PURE__ */ new Set();
+  const visit = (id) => {
+    if (reachable.has(id))
+      return;
+    reachable.add(id);
+    for (const target of adjacency.get(id) ?? [])
+      visit(target);
+  };
+  for (const start of graph.nodes.filter((node2) => node2.type === "input" && node2.data.nodeType === "start"))
+    visit(start.id);
+  const blockers = [];
+  for (const agent of graph.nodes.filter((node2) => node2.type === "agent" && reachable.has(node2.id))) {
+    const attachment = graph.edges.find((edge) => edge.target === agent.id && edge.targetHandle === "ai-model");
+    const child = attachment && graph.nodes.find((node2) => node2.id === attachment.source);
+    const definitionId = child?.data.idOnDefinition;
+    const mapping = typeof definitionId === "string" && graph.queries.find((query) => query.idOnDefinition === definitionId);
+    if (!attachment || !child || !mapping)
+      blockers.push({
+        code: "agent_missing_model",
+        path: `nodes.${agent.id}.model`,
+        message: "Reachable Agent requires one configured AI model attachment."
+      });
+  }
+  return { runtime_readiness: blockers.length ? "draft_only" : "runnable", blockers };
+}
+var plans = /* @__PURE__ */ new Map();
+var TTL = 30 * 6e4;
+function prune() {
+  for (const [key3, plan] of plans)
+    if (plan.expires <= Date.now())
+      plans.delete(key3);
+}
+async function prepare(client, workflowId, versionId, spec, ids) {
+  const snapshot = await client.get(workflowId, versionId);
+  if (!snapshot.editable)
+    throw new Error("Only editable draft workflow versions can be changed.");
+  const [queries, datasources] = await Promise.all([client.getQueries(versionId), client.listDatasources(versionId)]);
+  const compiled = compileGraph(snapshot.definition, spec, ids, new Map(datasources.map((datasource) => [datasource.id, datasource.kind])));
+  const warnings = [];
+  const writes = [];
+  const finalDefinitionIds = new Set(compiled.graph.nodes.map((node2) => node2.data.idOnDefinition).filter((value) => typeof value === "string"));
+  const removedDefinitionIds = new Set(snapshot.definition.nodes.map((node2) => node2.data.idOnDefinition).filter((value) => typeof value === "string" && !finalDefinitionIds.has(value)));
+  const deletions = [];
+  for (const mapping of snapshot.definition.queries) {
+    if (!removedDefinitionIds.has(mapping.idOnDefinition))
+      continue;
+    if (compiled.graph.queries.some((retained) => retained.id === mapping.id))
+      continue;
+    if (deletions.some((deletion) => deletion.query_id === mapping.id))
+      continue;
+    const node2 = snapshot.definition.nodes.find((candidate) => candidate.data.idOnDefinition === mapping.idOnDefinition);
+    if (!node2)
+      continue;
+    if (!queries.some((query) => query.id === mapping.id))
+      throw new Error(`Query ${mapping.id} is missing from the target version.`);
+    deletions.push({ node_id: node2.id, definition_id: mapping.idOnDefinition, query_id: mapping.id });
+  }
+  const claimedNames = /* @__PURE__ */ new Set();
+  for (const item of compiled.query_nodes) {
+    const existingMapping = snapshot.definition.queries.find((q) => q.idOnDefinition === item.definition_id);
+    const oldQuery = queries.find((q) => q.id === existingMapping?.id);
+    if (existingMapping && !oldQuery)
+      throw new Error(`Query ${existingMapping.id} is missing from the target version.`);
+    if (oldQuery && snapshot.definition.nodes.filter((n) => snapshot.definition.queries.some((q) => q.id === oldQuery.id && q.idOnDefinition === n.data.idOnDefinition)).length > 1)
+      throw new Error(`Query ${oldQuery.id} is shared by multiple nodes. Shared query editing is unsupported.`);
+    const input = item.role === "workflow-node" ? item.spec : void 0;
+    const datasource = item.role === "agent-model" ? datasources.find((d) => d.id === item.datasource_id) : input.type === "javascript" || input.type === "loop" ? datasources.find((d) => d.kind === "runjs") : datasources.find((d) => d.id === input.datasource_id);
+    const label = item.role === "agent-model" ? "Agent model" : `node ${input.ref}`;
+    if (!datasource)
+      throw new Error(`Datasource unavailable for ${label}.`);
+    if (item.role === "agent-model" && !AI_DATASOURCE_KINDS.has(datasource.kind))
+      throw new Error(`Datasource ${datasource.id} is not an AI model datasource.`);
+    const kind = datasource.kind;
+    const dataSourceId = datasource.id;
+    const name2 = item.role === "agent-model" ? item.name : input.name;
+    if (oldQuery && (oldQuery.kind !== kind || oldQuery.data_source_id !== dataSourceId))
+      throw new Error(item.role === "agent-model" ? "Changing an Agent model datasource is unsupported; remove the model first, then add its replacement in a second phase." : "Changing an existing query datasource is unsupported; add a new node.");
+    if (oldQuery?.name !== void 0 && oldQuery.name !== name2)
+      throw new Error(item.role === "agent-model" ? "Renaming an Agent model query is unsupported; remove the model first, then add its replacement in a second phase." : "Renaming existing queries is unsupported because code references cannot be rewritten safely.");
+    if (claimedNames.has(name2) || queries.some((q) => q.name === name2 && q.id !== oldQuery?.id))
+      throw new Error(`Duplicate query name: ${name2}`);
+    claimedNames.add(name2);
+    const requestedOptions = item.role === "agent-model" ? item.options : input.type === "javascript" || input.type === "loop" ? { ...oldQuery?.options ?? {}, code: input.code } : input.options;
+    const options = item.role === "agent-model" ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
+    if (item.role === "workflow-node" && kind === "runjs")
+      assertWorkflowJavaScript(options.code, label);
+    if (item.role === "workflow-node") {
+      const validation2 = validateQueryOptions(kind, options, "workflow");
+      if (validation2.errors.length)
+        throw new Error(issueMessages(validation2.errors).join(" "));
+      warnings.push(...issueMessages(validation2.warnings));
+    }
+    writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name: name2, dataSourceId: dataSourceId ?? "", kind, options });
+    if (!existingMapping && !compiled.graph.queries.some((mapping) => mapping.idOnDefinition === item.definition_id))
+      compiled.graph.queries.push({ idOnDefinition: item.definition_id, id: `pending:${item.node_id}` });
+  }
+  const queryIds = /* @__PURE__ */ new Set([...queries.map((q) => q.id), ...writes.filter((q) => !q.existing_id).map((q) => `pending:${q.node_id}`)]);
+  const validation = validateGraph(compiled.graph, queryIds);
+  const readiness = workflowReadiness(compiled.graph, validation.errors);
+  return { snapshot, compiled, writes, deletions, validation, readiness, warnings };
+}
+async function lint(client, workflowId, versionId, spec, allowDraft = false) {
+  const prepared = await prepare(client, workflowId, versionId, spec);
+  if (prepared.validation.errors.length || prepared.readiness.runtime_readiness === "draft_only" && !allowDraft)
+    return { ...prepared.validation, ...prepared.readiness, query_warnings: prepared.warnings };
+  prune();
+  while (plans.size >= 200)
+    plans.delete(plans.keys().next().value);
+  const token = randomUUID();
+  plans.set(token, { scope: await client.planScope(), workflowId, versionId, spec: structuredClone(spec), ids: prepared.compiled, allowDraft, expires: Date.now() + TTL });
+  return {
+    plan_token: token,
+    expires_in_seconds: TTL / 1e3,
+    node_ids: prepared.compiled.node_ids,
+    edge_ids: prepared.compiled.edge_ids,
+    ...prepared.validation,
+    ...prepared.readiness,
+    query_warnings: prepared.warnings,
+    changes: { node_upserts: spec.nodes.length, edge_upserts: spec.edges.length, node_removals: spec.remove_node_ids, edge_removals: spec.remove_edge_ids, queries: [...prepared.writes.map((q) => ({ name: q.name, operation: q.existing_id ? "update" : "create" })), ...prepared.deletions.map((q) => ({ query_id: q.query_id, operation: "delete" }))] }
+  };
+}
+async function apply(client, token) {
+  prune();
+  const scope = await client.planScope();
+  const plan = plans.get(token);
+  if (!plan || plan.scope !== scope)
+    throw new Error("Unknown, expired, consumed, or differently scoped plan. Run lint_workflow_spec again.");
+  plans.delete(token);
+  const { compiled, snapshot, writes, deletions, validation, readiness } = await prepare(client, plan.workflowId, plan.versionId, plan.spec, plan.ids);
+  if (validation.errors.length)
+    throw new Error(JSON.stringify(validation.errors));
+  if (readiness.runtime_readiness === "draft_only" && !plan.allowDraft)
+    throw new Error(JSON.stringify(readiness.blockers));
+  const completed = [];
+  let phase = "queries";
+  let attemptedQuery;
+  try {
+    for (const write of writes) {
+      attemptedQuery = { name: write.name, node_id: write.node_id, existing_id: write.existing_id };
+      const result = write.existing_id ? await client.updateQuery({ queryId: write.existing_id, versionId: plan.versionId, name: write.name, options: write.options }) : await client.createWorkflowQuery({ workflowId: plan.workflowId, versionId: plan.versionId, name: write.name, dataSourceId: write.dataSourceId || void 0, kind: write.kind, options: write.options });
+      completed.push({ operation: write.existing_id ? "update" : "create", query_id: result.query_id, node_id: write.node_id });
+      compiled.graph.queries = compiled.graph.queries.filter((q) => q.idOnDefinition !== write.definition_id);
+      compiled.graph.queries.push({ idOnDefinition: write.definition_id, id: result.query_id });
+      attemptedQuery = void 0;
+    }
+    phase = "save";
+    await client.save(snapshot, compiled.graph);
+    phase = "readback";
+    const [saved, queries] = await Promise.all([client.get(plan.workflowId, plan.versionId), client.getQueries(plan.versionId)]);
+    const validation2 = validateGraph(saved.definition, new Set(queries.map((q) => q.id)));
+    if (!isDeepStrictEqual(saved.definition, compiled.graph))
+      throw new Error("Saved definition differs from the intended graph. Inspect get_workflow before retrying.");
+    for (const write of writes) {
+      const id = completed.find((q) => q.node_id === write.node_id).query_id;
+      const persisted = queries.find((q) => q.id === id);
+      if (!persisted || persisted.name !== write.name || persisted.kind !== write.kind || persisted.data_source_id !== write.dataSourceId || !isDeepStrictEqual(persisted.options, write.options))
+        throw new Error(`Query ${id} readback differs from intended datasource, kind, name, or options.`);
+    }
+    if (validation2.errors.length)
+      throw new Error(JSON.stringify(validation2.errors));
+    phase = "query_deletions";
+    for (const deletion of deletions) {
+      attemptedQuery = { name: deletion.query_id, node_id: deletion.node_id, existing_id: deletion.query_id };
+      await client.deleteQuery({ queryId: deletion.query_id, versionId: plan.versionId });
+      completed.push({ operation: "delete", query_id: deletion.query_id, node_id: deletion.node_id });
+      attemptedQuery = void 0;
+    }
+    return { workflow_id: plan.workflowId, version_id: plan.versionId, editor_url: saved.editor_url, node_ids: compiled.node_ids, edge_ids: compiled.edge_ids, completed, validation: validation2, ...readiness };
+  } catch (error) {
+    return {
+      failed: true,
+      workflow_id: plan.workflowId,
+      version_id: plan.versionId,
+      phase,
+      completed,
+      attempted_query: attemptedQuery,
+      node_ids: compiled.node_ids,
+      edge_ids: compiled.edge_ids,
+      graph_persistence: phase === "queries" ? "not_attempted" : phase === "save" ? "unknown" : "saved",
+      error: error instanceof Error ? error.message : String(error),
+      recovery: "Inspect get_workflow and its queries; reuse persisted IDs when replanning. Do not repeat creation blindly. No resources were automatically deleted."
+    };
+  }
+}
+async function deleteNode(client, workflowId, versionId, nodeId) {
+  const snapshot = await client.get(workflowId, versionId);
+  if (!snapshot.definition.nodes.some((node2) => node2.id === nodeId))
+    throw new Error(`Unknown workflow node: ${nodeId}`);
+  const spec = specSchema.parse({ remove_node_ids: [nodeId], remove_edge_ids: snapshot.definition.edges.filter((edge) => edge.source === nodeId || edge.target === nodeId).map((edge) => edge.id) });
+  const result = await lint(client, workflowId, versionId, spec, true);
+  if (!("plan_token" in result))
+    throw new Error(JSON.stringify({ errors: result.errors, blockers: result.blockers }));
+  return apply(client, result.plan_token);
+}
+createRequire(import.meta.url);
+var name = external_exports.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/).refine((v) => !["__proto__", "prototype", "constructor"].includes(v));
+var editContractSchema = external_exports.object({
+  source_query: name.describe("Already-loaded bounded raw row-array query; never a display projection."),
+  table_component: name,
+  id_field: name.default("id"),
+  prefix: name.describe("Unique prefix for generated snapshot/draft variables and RunJS query names."),
+  fields: external_exports.array(external_exports.object({
+    field: name,
+    component: name,
+    type: external_exports.enum(["text", "number", "date_only", "boolean"]),
+    required: external_exports.boolean().default(false),
+    nullable: external_exports.boolean().default(false).describe("Opt in to clearing to null; a user change event is also required."),
+    trim: external_exports.boolean().default(false),
+    choices: external_exports.union([
+      external_exports.array(external_exports.object({ label: external_exports.string(), value: external_exports.union([external_exports.string(), external_exports.number().finite()]) }).strict()).min(1).max(100),
+      external_exports.object({ query: name, value_field: name, label_field: name }).strict()
+    ]).optional().describe("Opt-in DropdownV2 for text/number fields: literal label/value options or an already-loaded bounded raw option query. Values must match the declared field type.")
+  })).min(1).max(40)
+}).strict();
+function canonical(value, field) {
+  if (value === void 0)
+    throw new Error(`Missing input: ${field.field}`);
+  if (value === null || value === "") {
+    if (field.required)
+      throw new Error(`Required field: ${field.field}`);
+    if (value === null && !field.nullable)
+      throw new Error(`Null not allowed: ${field.field}`);
+    return value;
+  }
+  if (field.type === "text") {
+    if (typeof value !== "string")
+      throw new Error(`Expected text: ${field.field}`);
+    if (field.required && !value.trim())
+      throw new Error(`Required field: ${field.field}`);
+    return field.trim ? value.trim() : value;
+  }
+  if (field.type === "boolean") {
+    if (typeof value !== "boolean")
+      throw new Error(`Expected boolean: ${field.field}`);
+    return value;
+  }
+  if (field.type === "number") {
+    if (typeof value !== "number" && typeof value !== "string" || typeof value === "string" && !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value) || !Number.isFinite(Number(value)))
+      throw new Error(`Expected finite number: ${field.field}`);
+    return Number(value);
+  }
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))?$/.test(value)) {
+    throw new Error(`Expected ISO date: ${field.field}`);
+  }
+  const day = value.slice(0, 10);
+  const parsed = /* @__PURE__ */ new Date(day + "T00:00:00Z");
+  if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== day || !Number.isFinite(Date.parse(value))) {
+    throw new Error(`Invalid date: ${field.field}`);
+  }
+  return day;
+}
+function generateEditContract(input) {
+  const spec = editContractSchema.parse(input);
+  for (const key3 of ["field", "component"]) {
+    if (new Set(spec.fields.map((f) => f[key3])).size !== spec.fields.length)
+      throw new Error(`Duplicate ${key3} in edit contract`);
+  }
+  if (spec.fields.some((f) => f.field === spec.id_field))
+    throw new Error("The stable primary key cannot be edited");
+  if (spec.fields.some((f) => f.required && f.nullable))
+    throw new Error("A required field cannot be nullable");
+  for (const f of spec.fields)
+    if (f.choices) {
+      if (!["text", "number"].includes(f.type))
+        throw new Error("Choices require a text or number field");
+      if (Array.isArray(f.choices)) {
+        if (f.choices.some((o) => typeof o.value !== (f.type === "text" ? "string" : "number")))
+          throw new Error("Choice values must match field type");
+        if (new Set(f.choices.map((o) => o.value)).size !== f.choices.length)
+          throw new Error("Duplicate choice value");
+      }
+    }
+  const snapshot = `${spec.prefix}Snapshot`, draft = `${spec.prefix}Draft`;
+  const openName = `${spec.prefix}Open`, prepareName = `${spec.prefix}Prepare`;
+  const q = JSON.stringify;
+  const helpers = `const canonical = ${canonical.toString()};
+const fields = ${q(spec.fields)};
+const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+`;
+  const openCode = helpers + `await actions.setVariable(${q(snapshot)}, null);
+await actions.setVariable(${q(draft)}, null);
+const selection = components.${spec.table_component}.selectedRow;
+const id = selection && selection[${q(spec.id_field)}];
+if ((typeof id !== 'string' && typeof id !== 'number') || id === '' || (typeof id === 'number' && !Number.isFinite(id))) throw new Error('Select a record first');
+const rows = queries.${spec.source_query}.data;
+if (!Array.isArray(rows)) throw new Error('Raw records are not loaded');
+const matches = rows.filter(r => r && own(r, ${q(spec.id_field)}) && r[${q(spec.id_field)}] === id);
+if (matches.length !== 1) throw new Error('Expected exactly one raw record for the selected ID');
+const values = {};
+for (const field of fields) {
+  if (!own(matches[0], field.field)) throw new Error('Raw record omits: ' + field.field);
+  // Existing incomplete records must be openable for correction. Validate required
+  // values on Prepare, not before the user can edit them.
+  values[field.field] = canonical(matches[0][field.field], { ...field, required: false, nullable: true });
+}
+await actions.setVariable(${q(snapshot)}, { id, values });
+return { id };`;
+  const prepareCode = helpers + `const snapshot = variables.${snapshot};
+const draft = variables.${draft};
+const selection = components.${spec.table_component}.selectedRow;
+if (!snapshot || !selection || selection[${q(spec.id_field)}] !== snapshot.id) throw new Error('Reopen the selected record before saving');
+if (draft && draft.id !== snapshot.id) throw new Error('Draft belongs to another record');
+const changes = draft ? draft.values : {};
+if (!changes || typeof changes !== 'object' || Array.isArray(changes)) throw new Error('Invalid draft');
+const patch = {};
+for (const key of Object.keys(changes)) if (!fields.some(f => f.field === key)) throw new Error('Unknown draft field: ' + key);
+for (const field of fields) {
+  if (!own(snapshot.values, field.field)) throw new Error('Incomplete edit snapshot');
+  if (!own(changes, field.field)) {
+    canonical(snapshot.values[field.field], field);
+    continue;
+  }
+  const raw = changes[field.field];
+  let value = canonical(raw, field);
+  if (value === '' && field.type !== 'text') value = null;
+  if (value === '' || value === null) {
+    if (!field.nullable) throw new Error('Clearing is not allowed: ' + field.field);
+    value = null;
+  }
+  if (value !== snapshot.values[field.field]) patch[field.field] = value;
+}
+return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
+  const inputs = spec.fields.map((f) => {
+    const type = f.choices ? "DropdownV2" : { text: "TextInput", number: "NumberInput", date_only: "DatePickerV2", boolean: "Checkbox" }[f.type];
+    const initialKey = f.choices ? "schema" : ["date_only", "boolean"].includes(f.type) ? "defaultValue" : "value";
+    const exposed = f.type === "date_only" ? "selectedDate" : "value";
+    const trigger = f.choices || f.type === "date_only" ? "onSelect" : "onChange";
+    const schema = getComponentSchema(type);
+    if (!schema?.properties.some((p) => p.key === initialKey) || !schema.events?.some((e) => e.id === trigger))
+      throw new Error(`Unsupported edit adapter: ${type}`);
+    const initial = `variables.${snapshot} && variables.${snapshot}.values[${q(f.field)}]`;
+    let value = `{{${initial} != null ? variables.${snapshot}.values[${q(f.field)}] : ${f.type === "boolean" ? "false" : "''"}}}`;
+    if (f.choices) {
+      const options = Array.isArray(f.choices) ? q(f.choices) : `(queries.${f.choices.query}.data || []).map(r=>({label:r[${q(f.choices.label_field)}],value:r[${q(f.choices.value_field)}]}))`;
+      value = `{{(${options}).map(option=>({label:option.label,value:option.value,visible:true,default:!!variables.${snapshot} && option.value === variables.${snapshot}.values[${q(f.field)}]}))}}`;
+    }
+    const exposedValue = `components.${f.component}.${exposed}`;
+    const changedValue = f.choices && f.nullable ? `(${exposedValue} == null ? null : ${exposedValue})` : exposedValue;
+    const draftValue = `{{({id:variables.${snapshot}.id,values:Object.assign({},variables.${draft} && variables.${draft}.id === variables.${snapshot}.id ? variables.${draft}.values : {},{${q(f.field)}:${changedValue}})})}}`;
+    return {
+      name: f.component,
+      type,
+      properties: { [initialKey]: value, ...f.choices ? { advanced: "{{true}}", showClearBtn: f.nullable } : {}, ...f.type === "date_only" ? { dateFormat: "YYYY-MM-DD" } : {} },
+      validation: { mandatory: f.required },
+      events: [{ source_ref: f.component, source_type: "component", trigger, action: {
+        actionId: "set-custom-variable",
+        key: draft,
+        value: draftValue,
+        runOnlyIf: `{{!!variables.${snapshot}}}`
+      } }]
+    };
+  });
+  return {
+    queries: [
+      { name: openName, kind: "runjs", options: { code: openCode } },
+      { name: prepareName, kind: "runjs", options: { code: prepareCode } }
+    ],
+    inputs,
+    mutation_contract: {
+      id: `{{queries.${prepareName}.data.id}}`,
+      patch: `{{queries.${prepareName}.data.patch}}`,
+      runOnlyIf: `{{queries.${prepareName}.data && queries.${prepareName}.data.changed === true}}`
+    },
+    wiring: [
+      `Run ${openName} on Edit; open the editor only on its success. Merge the returned input properties and change events into your native layout. Never use display selectedRow fields as defaults.`,
+      `Run ${prepareName} on Save; run a datasource-specific PATCH/update ONLY on its success and with mutation_contract.runOnlyIf. No change means no write. Bind the ID and patch from mutation_contract; never expand missing patch keys to null or empty strings.`,
+      "Gate Save while open/prepare/write are loading. Preserve the editor on failure. Refresh affected queries and close/reset only after the actual mutation succeeds; refresh actions are not assumed to complete in order."
+    ],
+    limitations: [
+      "Requires an already-loaded bounded raw row array and a single stable scalar ID. This generates wiring only; it does not create resources or persist data.",
+      "Only text, finite number, ISO date-only and boolean fields are covered; text/number fields can opt into dropdown choices. Required/nullable/trim are explicit opt-ins; domain constraints, authorization and optimistic concurrency must be enforced separately.",
+      "Dropdown option queries must already return bounded raw arrays with matching ID types and include the current value, including inactive owners when necessary. Missing options are not permission to clear stored relationships. Validate membership/authorization separately; this helper does not create or execute option queries.",
+      "Draft tracks native change events, not every displayed input value. Programmatic field changes must update the draft explicitly. Browser-verify that all change events fire, including both checkbox transitions."
+    ]
+  };
+}
+createRequire(import.meta.url);
+var member = (n) => n?.type === "MemberExpression" || n?.type === "OptionalMemberExpression";
+var key = (n) => n.computed ? n.property?.type === "StringLiteral" ? n.property.value : void 0 : n.property?.name;
+var rootRef = (n) => {
+  if (!member(n) || !["components", "queries"].includes(n.object?.name) || n.object?.type !== "Identifier")
+    return;
+  const k = key(n);
+  return k ? `${n.object.name}.${k}` : void 0;
+};
+function walk(n, visit) {
+  if (!n || typeof n !== "object")
+    return;
+  if (Array.isArray(n)) {
+    for (const child of n)
+      walk(child, visit);
+    return;
+  }
+  visit(n);
+  for (const [key3, value] of Object.entries(n))
+    if (!["loc", "extra", "comments"].includes(key3))
+      walk(value, visit);
+}
+function lintUntrackedReactiveBindings(value, label) {
+  if (Array.isArray(value))
+    return value.flatMap((v) => lintUntrackedReactiveBindings(v, label));
+  if (value && typeof value === "object")
+    return Object.values(value).flatMap((v) => lintUntrackedReactiveBindings(v, label));
+  if (typeof value !== "string")
+    return [];
+  const match = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
+  if (!match)
+    return [];
+  let ast;
+  try {
+    ast = parseExpression(match[1]);
+  } catch {
+    return [];
+  }
+  const tracked = /* @__PURE__ */ new Set(), suspects = /* @__PURE__ */ new Set();
+  let shadowed = false;
+  walk(ast, (n) => {
+    if (n.params && /"(?:components|queries)"/.test(JSON.stringify(n.params)) || n.type === "VariableDeclarator" && /"(?:components|queries)"/.test(JSON.stringify(n.id)))
+      shadowed = true;
+    if (!member(n))
+      return;
+    const direct = rootRef(n.object);
+    if (direct && key(n))
+      tracked.add(direct);
+    if (n.object?.type === "LogicalExpression" && ["||", "??"].includes(n.object.operator)) {
+      const wrapped = rootRef(n.object.left);
+      if (wrapped && key(n))
+        suspects.add(wrapped);
+    }
+  });
+  if (shadowed)
+    return [];
+  return [...suspects].filter((ref) => !tracked.has(ref)).map((ref) => `${label}: a logical fallback wraps ${ref} before its exposed value is read. ToolJet cannot track this dependency, so filters/prefill may stay stale. Keep a complete optional chain, e.g. ${ref}?.value (use the actual exposed property). Valid JavaScript alone does not guarantee reactive updates. No expression was rewritten.`);
+}
+function lintQueryArrayMutations(value, label) {
+  if (Array.isArray(value))
+    return value.flatMap((v) => lintQueryArrayMutations(v, label));
+  if (value && typeof value === "object")
+    return Object.values(value).flatMap((v) => lintQueryArrayMutations(v, label));
+  if (typeof value !== "string")
+    return [];
+  const match = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
+  if (!match)
+    return [];
+  let ast;
+  try {
+    ast = parseExpression(match[1]);
+  } catch {
+    return [];
+  }
+  let shadowed = false;
+  const mutations = /* @__PURE__ */ new Set();
+  const queryData = (n) => {
+    if (n?.type === "LogicalExpression" && ["||", "??"].includes(n.operator) && n.right?.type === "ArrayExpression" && n.right.elements.length === 0)
+      return queryData(n.left);
+    const ref = member(n) && key(n) === "data" ? rootRef(n.object) : void 0;
+    return ref?.startsWith("queries.") ? ref : void 0;
+  };
+  walk(ast, (n) => {
+    if (n.params && /"queries"/.test(JSON.stringify(n.params)) || n.type === "VariableDeclarator" && /"queries"/.test(JSON.stringify(n.id)))
+      shadowed = true;
+    if (!["CallExpression", "OptionalCallExpression"].includes(n.type) || !member(n.callee) || !["sort", "reverse"].includes(key(n.callee)))
+      return;
+    const ref = queryData(n.callee.object);
+    if (ref)
+      mutations.add(`${ref}.data.${key(n.callee)}`);
+  });
+  if (shadowed)
+    return [];
+  return [...mutations].map((ref) => `${label}: ${ref}() mutates the shared query array inside a display binding. ToolJet state can be frozen, so this may throw and render an empty table even when the query has rows. Copy first with slice() or a spread, then sort/reverse the copy; a prior map/filter already creates a new array. No expression was rewritten.`);
+}
+var node = (v) => v !== null && typeof v === "object" && !Array.isArray(v) ? v : void 0;
+var member2 = (n) => n?.type === "MemberExpression" || n?.type === "OptionalMemberExpression";
+function key2(n) {
+  if (!n)
+    return;
+  const p = node(n.property ?? n.key);
+  if (!n.computed && p?.type === "Identifier")
+    return String(p.name);
+  if (p?.type === "StringLiteral")
+    return String(p.value);
+}
+function expression(value) {
+  if (typeof value !== "string")
+    return;
+  const m = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
+  if (!m)
+    return;
+  try {
+    return parseExpression(m[1]);
+  } catch {
+    return;
+  }
+}
+function walk2(value, visit) {
+  if (Array.isArray(value)) {
+    for (const child of value)
+      walk2(child, visit);
+    return;
+  }
+  const n = node(value);
+  if (!n)
+    return;
+  visit(n);
+  for (const [k, child] of Object.entries(n)) {
+    if (k !== "loc" && k !== "extra" && k !== "comments")
+      walk2(child, visit);
+  }
+}
+function projectedFields(c) {
+  if (c.type !== "Table")
+    return;
+  const raw = c.properties?.data;
+  const root = expression(node(raw) && "value" in node(raw) ? node(raw).value : raw);
+  if (root?.type !== "CallExpression")
+    return;
+  const callee = node(root.callee);
+  if (!member2(callee) || key2(callee) !== "map")
+    return;
+  const args = root.arguments;
+  if (!Array.isArray(args) || args.length !== 1)
+    return;
+  const callback = node(args[0]);
+  if (callback?.type !== "ArrowFunctionExpression")
+    return;
+  const body = node(callback.body);
+  if (body?.type !== "ObjectExpression" || !Array.isArray(body.properties))
+    return;
+  const keys = /* @__PURE__ */ new Map();
+  for (const prop of body.properties) {
+    const p = node(prop);
+    if (p?.type !== "ObjectProperty" || p.computed)
+      return;
+    const name2 = key2(p);
+    if (name2 === void 0 || name2 === "__proto__")
+      return;
+    keys.set(name2, node(p.value));
+  }
+  return keys;
+}
+function lintSelectedRowProjections(components, extraSources = []) {
+  const tables = /* @__PURE__ */ new Map();
+  for (const c of components) {
+    if (!c.name)
+      continue;
+    tables.set(c.name, tables.has(c.name) ? void 0 : projectedFields(c));
+  }
+  const aliases = /* @__PURE__ */ new Map();
+  const singleAlias = (alias) => {
+    const names = aliases.get(alias);
+    return names?.size === 1 ? [...names][0] : void 0;
+  };
+  for (const source of extraSources) {
+    const action = node(source.value);
+    if (action?.actionId !== "set-custom-variable" || typeof action.key !== "string")
+      continue;
+    const selected = expression(action.value);
+    if (action.value === null || selected?.type === "NullLiteral")
+      continue;
+    const table = node(selected?.object), namespace = node(table?.object);
+    const name2 = member2(selected) && key2(selected) === "selectedRow" && member2(table) && namespace?.type === "Identifier" && namespace.name === "components" ? key2(table) : void 0;
+    if (!name2)
+      aliases.set(action.key, void 0);
+    else if (!aliases.has(action.key))
+      aliases.set(action.key, /* @__PURE__ */ new Set([name2]));
+    else
+      aliases.get(action.key)?.add(name2);
+  }
+  if (extraSources.some((s) => /actions\s*(?:\.\s*(?:setVariable|unsetVariable)|\[\s*["'](?:setVariable|unsetVariable)["']\s*\])/.test(JSON.stringify(s.value))))
+    aliases.clear();
+  const warnings = /* @__PURE__ */ new Set();
+  const aliasOmissions = /* @__PURE__ */ new Map();
+  function inspect(value, label) {
+    if (Array.isArray(value)) {
+      for (const v of value)
+        inspect(v, label);
+      return;
+    }
+    if (node(value)) {
+      for (const v of Object.values(node(value)))
+        inspect(v, label);
+      return;
+    }
+    const root = expression(value);
+    if (!root)
+      return;
+    let shadowed = false;
+    walk2(root, (n) => {
+      if (Array.isArray(n.params) && /"(?:components|variables)"/.test(JSON.stringify(n.params)))
+        shadowed = true;
+      if (n.type === "VariableDeclarator" && /"(?:components|variables)"/.test(JSON.stringify(n.id)))
+        shadowed = true;
+    });
+    if (shadowed)
+      return;
+    walk2(root, (n) => {
+      if (!member2(n))
+        return;
+      const field = key2(n), selection = node(n.object), table = node(selection?.object), namespace = node(table?.object);
+      if (field && member2(selection) && table?.type === "Identifier" && table.name === "variables") {
+        const alias = key2(selection), names = alias ? aliases.get(alias) : void 0;
+        for (const name22 of names ?? []) {
+          const fields = tables.get(name22);
+          if (fields && !fields.has(field) && !["toString", "valueOf", "constructor", "hasOwnProperty", "__proto__", "isPrototypeOf", "propertyIsEnumerable", "toLocaleString"].includes(field)) {
+            const id = JSON.stringify([alias, name22]);
+            if (!aliasOmissions.has(id))
+              aliasOmissions.set(id, { alias, table: name22, fields: /* @__PURE__ */ new Set() });
+            aliasOmissions.get(id).fields.add(field);
+          }
+        }
+      }
+      if (!field || !member2(selection) || key2(selection) !== "selectedRow" || !member2(table) || namespace?.type !== "Identifier" || namespace.name !== "components")
+        return;
+      const name2 = key2(table), keys = name2 ? tables.get(name2) : void 0;
+      if (!name2 || !keys || keys.has(field) || ["toString", "valueOf", "constructor", "hasOwnProperty", "__proto__", "isPrototypeOf", "propertyIsEnumerable", "toLocaleString"].includes(field))
+        return;
+      warnings.add(`${label}: reads components.${name2}.selectedRow.${field}, but Table "${name2}" has a closed map projection that omits "${field}". Preserve the raw field in the row (hide its column if needed), or look up the source record by its stable id. Check edit/review prefill and avoid overwriting omitted values with blanks. If the missing-field fallback is intentional, no change is required.`);
+    });
+  }
+  for (const c of components) {
+    const value = { p: c.properties, s: c.styles }, label = `Component "${c.name ?? c.id ?? "?"}"`;
+    inspect(value, label);
+    for (const warning of lintUntrackedReactiveBindings(value, label))
+      warnings.add(warning);
+    for (const warning of lintQueryArrayMutations(value, label))
+      warnings.add(warning);
+  }
+  for (const source of extraSources)
+    inspect(source.value, source.label);
+  for (const { alias, table, fields } of aliasOmissions.values()) {
+    warnings.add(`Bindings read ${[...fields].map((field) => `variables.${alias}.${field}`).join(", ")}; an event assigns that variable from Table "${table}" selectedRow, whose closed map projection omits ${[...fields].map((field) => `"${field}"`).join(", ")}. This edit can overwrite missing values with a blank/false default. Preserve raw fields or resolve the raw record by stable id before opening the editor; generate_edit_contract can provide that snapshot. Unknown runtime writes are not certified by this advisory.`);
+  }
+  const unwrap2 = (value) => node(value) && "value" in node(value) ? node(value).value : value;
+  for (const c of components) {
+    if (!["TextInput", "TextArea", "EmailInput", "PhoneInput"].includes(c.type ?? ""))
+      continue;
+    let selected = expression(unwrap2(c.properties?.value));
+    if (selected?.type === "LogicalExpression" && ["||", "??"].includes(String(selected.operator)))
+      selected = node(selected.left);
+    if (!member2(selected))
+      continue;
+    const field = key2(selected), selection = node(selected?.object), owner = node(selection?.object), namespace = node(owner?.object);
+    if (!field || !member2(selection))
+      continue;
+    const tableName = owner?.type === "Identifier" && owner.name === "variables" ? singleAlias(key2(selection) ?? "") : key2(selection) === "selectedRow" && member2(owner) && namespace?.type === "Identifier" && namespace.name === "components" ? key2(owner) : void 0;
+    const projected = tableName ? tables.get(tableName)?.get(field) : void 0;
+    if (projected?.type !== "LogicalExpression" || !["||", "??"].includes(String(projected.operator)))
+      continue;
+    const fallback = node(projected.right);
+    if (fallback?.type !== "StringLiteral" || !String(fallback.value).trim())
+      continue;
+    warnings.add(`Component "${c.name ?? c.id ?? "?"}": editable value reads "${field}" from Table "${tableName}", whose projection replaces missing raw text with a non-empty display fallback. Saving another field can persist that label as real data. Keep raw text separate from display labels, or resolve the raw record by stable id; preserve untouched null/empty values. This is advisory, not a claim that every fallback is unintended.`);
+  }
+  for (const c of components) {
+    const property3 = c.type === "DatePickerV2" ? "defaultValue" : ["NumberInput", "CurrencyInput"].includes(c.type ?? "") ? "value" : void 0;
+    if (!property3)
+      continue;
+    let selected = expression(unwrap2(c.properties?.[property3]));
+    if (selected?.type === "LogicalExpression" && ["||", "??"].includes(String(selected.operator)))
+      selected = node(selected.left);
+    if (!member2(selected))
+      continue;
+    const field = key2(selected), selection = node(selected?.object), table = node(selection?.object), namespace = node(table?.object);
+    if (!field || !member2(selection))
+      continue;
+    const tableName = table?.type === "Identifier" && table.name === "variables" ? singleAlias(key2(selection) ?? "") : key2(selection) === "selectedRow" && member2(table) && namespace?.type === "Identifier" && namespace.name === "components" ? key2(table) : void 0;
+    const value = tableName ? tables.get(tableName)?.get(field) : void 0;
+    if (!value)
+      continue;
+    const formats = [];
+    let localizedNumber = false;
+    walk2(value, (n) => {
+      if (n.type !== "CallExpression")
+        return;
+      const callee = node(n.callee);
+      if (!member2(callee))
+        return;
+      if (key2(callee) === "toLocaleString" || key2(callee) === "toFixed")
+        localizedNumber = true;
+      const args = n.arguments;
+      if (key2(callee) === "format" && Array.isArray(args) && node(args[0])?.type === "StringLiteral")
+        formats.push(String(node(args[0]).value));
+    });
+    const expected = unwrap2(c.properties?.dateFormat) ?? "DD/MM/YYYY";
+    if (c.type === "DatePickerV2" && member2(value) && typeof expected === "string" && !expected.includes("{{")) {
+      const source = components.find((t) => t.type === "Table" && t.name === tableName);
+      const columns = unwrap2(source?.properties?.columns);
+      const matches = Array.isArray(columns) ? columns.filter((col) => {
+        const entry = node(col);
+        return entry?.key === field && entry.columnType === "datepicker";
+      }) : [];
+      const parseFormat = matches.length === 1 ? node(matches[0])?.parseDateFormat : void 0;
+      const yearLast = /^(?:D{1,2}[^A-Za-z]+M{1,4}|M{1,4}[^A-Za-z]+D{1,2})[^A-Za-z]+Y{2,4}$/.test(expected);
+      if (typeof parseFormat === "string" && parseFormat.startsWith("YYYY-MM-DD") && !parseFormat.includes("{{") && yearLast) {
+        warnings.add(`Component "${c.name ?? c.id ?? "?"}": defaultValue reads raw ${tableName}.selectedRow.${field}; that Table column declares parseDateFormat "${parseFormat}", but the DatePickerV2 parses its default with dateFormat "${expected}". A name-only edit can silently change the date. Match the editor's input format or explicitly format the raw default before opening it; table display formatting does not convert selectedRow. Advisory only: verify the actual source value before changing it.`);
+      }
+    }
+    if (c.type === "DatePickerV2" && formats.some((f) => typeof expected === "string" && !expected.includes("{{") && f !== expected) || c.type !== "DatePickerV2" && localizedNumber) {
+      warnings.add(`Component "${c.name ?? c.id ?? "?"}": ${property3} reads display-formatted ${tableName}.selectedRow.${field} into a typed ${c.type} editor${c.type === "DatePickerV2" ? ` (dateFormat ${String(expected)})` : ""}. Look up the raw record by stable id, or explicitly convert to the editor's input format. Preserve untouched fields on save; generate_edit_contract can provide raw-record defaults and changed-field-only payloads.`);
+    }
+  }
+  return [...warnings];
+}
 export {
+  apply as A,
+  deleteNode as B,
+  editContractSchema as C,
+  generateEditContract as D,
   LARGE_READ_ROW_THRESHOLD as L,
-  parse as a,
+  lintBindingNames as a,
   bindingSpans as b,
   assertPersistableQueryToggles as c,
   assertWorkflowQueryOptions as d,
-  normalizeQueryOptions as e,
-  normalizeQueryToggles as f,
+  normalizeQueryToggles as e,
+  normalizeQueryOptions as f,
   arithmeticWriteWarning as g,
   assessQueryRead as h,
   issueMessages as i,
-  resolvedReadRefusal as j,
-  extractRowCount as k,
-  lintBindingNames as l,
-  emptyViewerOnlyParams as m,
+  resolveStaticBindings as j,
+  resolvedReadRefusal as k,
+  lintSelectedRowProjections as l,
+  extractRowCount as m,
   normalizeWorkflowQueryOptions as n,
-  emptyParamsNote as o,
-  parseExpression as p,
+  emptyViewerOnlyParams as o,
+  emptyParamsNote as p,
   queryToggleIssues as q,
-  resolveStaticBindings as r,
+  require_lib as r,
   sameReadSource as s,
   toggleRewriteWarning as t,
   unresolvedNote as u,
   validateQueryOptions as v,
-  workflowMappingMatches as w
+  workflowMappingMatches as w,
+  capabilityRequestSchema as x,
+  getWorkflowCapabilities as y,
+  lint as z
 };
