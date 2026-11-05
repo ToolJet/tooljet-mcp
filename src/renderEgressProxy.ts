@@ -160,7 +160,9 @@ export async function startEgressProxy(
     sockets.add(socket);
     socket.once('close', () => sockets.delete(socket));
   };
+  // A client that resets a refused socket raises ECONNRESET on it; unheard, that error ends the whole MCP server.
   const refuseSocket = (socket: Duplex, destination: string) => {
+    socket.on('error', () => socket.destroy());
     onBlocked(destination);
     socket.end('HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n');
   };
@@ -196,6 +198,7 @@ export async function startEgressProxy(
       return;
     }
     const port = Number(url.port || 80);
+    req.on('error', () => res.destroy());
     req.pause();
     void pin(url.hostname, port).then((address) => {
       if (!address) {
@@ -219,9 +222,12 @@ export async function startEgressProxy(
       });
       req.pipe(upstream);
       req.resume();
-    });
+    }).catch(() => res.destroy());
   });
 
+  // A connection that fails before a request is parsed lands here; without a listener Node only resets it, but a
+  // listener keeps that true if a default ever changes.
+  server.on('clientError', (_error, socket) => socket.destroy());
   server.on('connection', track);
   server.on('connect', (req: IncomingMessage, client: Duplex, head: Buffer) => {
     const target = tunnelTarget(req.url);
@@ -233,7 +239,7 @@ export async function startEgressProxy(
     void tunnel(client, target.slice(0, at), Number(target.slice(at + 1)), target, (upstream) => {
       client.write('HTTP/1.1 200 Connection Established\r\n\r\n');
       if (head.length) upstream.write(head);
-    });
+    }).catch(() => client.destroy());
   });
   // A WebSocket over plain HTTP may come as an absolute-form upgrade request rather than a tunnel.
   server.on('upgrade', (req: IncomingMessage, client: Duplex, head: Buffer) => {
@@ -256,7 +262,7 @@ export async function startEgressProxy(
       }
       upstream.write(lines.join('\r\n') + '\r\n\r\n');
       if (head.length) upstream.write(head);
-    });
+    }).catch(() => client.destroy());
   });
 
   await new Promise<void>((resolve, reject) => {

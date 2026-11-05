@@ -312,3 +312,37 @@ describe.skipIf(!playwrightPath || !existsSync(playwrightPath))('a static resour
     expect(report.findings).toEqual(expect.arrayContaining([expect.objectContaining({ reason: 'redirect_blocked' })]));
   }, 60_000);
 });
+
+describe('the proxy survives clients that reset', () => {
+  /** Sends `request` and resets the connection as soon as the proxy answers, before it finishes closing. */
+  const resetOnAnswer = (proxyServer: string, request: string): Promise<void> =>
+    new Promise((resolve) => {
+      const p = new URL(proxyServer);
+      const socket = connect(Number(p.port), p.hostname, () => socket.write(request));
+      socket.on('error', () => {});
+      socket.once('data', () => {
+        socket.resetAndDestroy();
+        resolve();
+      });
+      socket.once('close', () => resolve());
+    });
+
+  it('a refused tunnel or upgrade reset by the client does not take the server down', async () => {
+    const site = await origin((_req, res) => res.end('ok'));
+    const blocked: string[] = [];
+    const started = await proxy([site.url], blocked);
+    const uncaught = vi.fn();
+    process.on('uncaughtException', uncaught);
+    try {
+      for (let i = 0; i < 20; i++) {
+        await resetOnAnswer(started.server, 'CONNECT 203.0.113.9:443 HTTP/1.1\r\nHost: 203.0.113.9:443\r\n\r\n');
+        await resetOnAnswer(started.server, 'GET ws://203.0.113.9/socket HTTP/1.1\r\nHost: 203.0.113.9\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n');
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(uncaught).not.toHaveBeenCalled();
+      expect((await viaProxy(started.server, `${site.url}/after`)).status).toBe(200);
+    } finally {
+      process.off('uncaughtException', uncaught);
+    }
+  });
+});
