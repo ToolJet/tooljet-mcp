@@ -16,8 +16,26 @@ export function renderAuditOrigins(configuredBase: string, additional = ''): Set
     .filter(Boolean).map((s) => httpUrl(s).origin)]);
 }
 
+/** The document a Code mode app's frame runs in, on the deployment's sandbox domain. Nothing else exists on that domain. */
+function isSandboxFrameDocument(url: URL, configured = process.env.CODE_MODE_SANDBOX_URL): boolean {
+  if (!configured || !url.pathname.endsWith('/api/code-frame/frame.html')) return false;
+  try {
+    const sandbox = new URL(configured.replace('*.', 'wildcard.'));
+    const host = sandbox.hostname.replace(/^wildcard\./, '');
+    const hostMatches = configured.includes('*.') ? url.hostname.endsWith(`.${host}`) : url.hostname === host;
+    return hostMatches && url.protocol === sandbox.protocol && url.port === sandbox.port;
+  } catch {
+    return false;
+  }
+}
+
 export function renderAuditUrlAllowed(value: string, origins: Set<string>): boolean {
-  try { return origins.has(httpUrl(value).origin); } catch { return false; }
+  try {
+    const url = httpUrl(value);
+    return origins.has(url.origin) || isSandboxFrameDocument(url);
+  } catch {
+    return false;
+  }
 }
 
 /**
