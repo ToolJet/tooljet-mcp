@@ -2,11 +2,11 @@ import { createRequire } from "node:module";
 import { createServer, request } from "node:http";
 import { Http2ServerRequest, constants } from "node:http2";
 import { Readable } from "node:stream";
-import { g as peekAppPlan, h as consumeAppPlan, f as frozenAppRefusal, r as replaceView, b as replaceFingerprint, d as danglingAfterReplace, e as prepareQueryOptionsForWrite, m as matchPlannedPage, l as literalCanvasColor, i as prepareComponentBatch, j as replaceIds, k as expandQueryLifecycles, v as validateEvents, n as navigationReorders, o as persistedEventSpecs } from "./chunk-BUBDvZl9.js";
+import { g as peekAppPlan, h as consumeAppPlan, f as frozenAppRefusal, r as replaceView, b as replaceFingerprint, d as danglingAfterReplace, e as prepareQueryOptionsForWrite, m as matchPlannedPage, l as literalCanvasColor, i as prepareComponentBatch, j as replaceIds, k as expandQueryLifecycles, v as validateEvents, n as navigationReorders, o as persistedEventSpecs } from "./chunk-BvP5_Gwz.js";
 import { e5 as fail, ef as tableQuotaError, e6 as ok } from "./chunk-CNzl5iHC.js";
-import { e as componentRef, y as completedPartialWrites, r as resolveRef, m as indexComponentReferences, i as isFlexContainerType, z as batchChildOrders, c as childOrderProperty } from "./chunk-DU7PARuL.js";
-import { E as validateAppStructure, e as encodeComponentParent, d as decodeComponentParent } from "./chunk-B9aEbA_o.js";
-import { L as LARGE_READ_ROW_THRESHOLD, h as assessQueryRead, j as resolveStaticBindings, k as resolvedReadRefusal, s as sameReadSource, m as extractRowCount, o as emptyViewerOnlyParams, p as emptyParamsNote, u as unresolvedNote, v as validateQueryOptions, i as issueMessages } from "./chunk-4VsxWCKn.js";
+import { e as componentRef, y as completedPartialWrites, r as resolveRef, m as indexComponentReferences, i as isFlexContainerType, z as batchChildOrders, c as childOrderProperty } from "./chunk-DuHQ4n9t.js";
+import { E as validateAppStructure, e as encodeComponentParent, d as decodeComponentParent } from "./chunk-BmzK1deX.js";
+import { L as LARGE_READ_ROW_THRESHOLD, h as assessQueryRead, j as resolveStaticBindings, k as resolvedReadRefusal, s as sameReadSource, m as extractRowCount, o as emptyViewerOnlyParams, p as emptyParamsNote, u as unresolvedNote, v as validateQueryOptions, i as issueMessages, S as SQL_KINDS } from "./chunk-YVYQ0IWs.js";
 import { g as getDatasourceQuerySchema } from "./chunk-hq1_aYNY.js";
 import { b0 as external_exports } from "./chunk-Id3EmQoo.js";
 import { randomUUID } from "node:crypto";
@@ -1704,6 +1704,325 @@ function runQueriesTool(client) {
     }
   };
 }
+var MAX_AUTO_ROWS = 1e3;
+var PURE_FUNCTIONS = /* @__PURE__ */ new Set([
+  // aggregates
+  "count",
+  "sum",
+  "avg",
+  "min",
+  "max",
+  "bool_and",
+  "bool_or",
+  "every",
+  "string_agg",
+  "array_agg",
+  "group_concat",
+  "json_agg",
+  "jsonb_agg",
+  "json_object_agg",
+  "jsonb_object_agg",
+  "stddev",
+  "stddev_pop",
+  "stddev_samp",
+  "variance",
+  "var_pop",
+  "var_samp",
+  "percentile_cont",
+  "percentile_disc",
+  "mode",
+  // window ranking
+  "row_number",
+  "rank",
+  "dense_rank",
+  "percent_rank",
+  "cume_dist",
+  "ntile",
+  "lag",
+  "lead",
+  "first_value",
+  "last_value",
+  "nth_value",
+  // conditional and casts
+  "coalesce",
+  "nullif",
+  "greatest",
+  "least",
+  "cast",
+  "ifnull",
+  "isnull",
+  "nvl",
+  "iif",
+  // strings
+  "lower",
+  "upper",
+  "trim",
+  "ltrim",
+  "rtrim",
+  "btrim",
+  "length",
+  "char_length",
+  "character_length",
+  "octet_length",
+  "substring",
+  "substr",
+  "left",
+  "right",
+  "concat",
+  "concat_ws",
+  "replace",
+  "position",
+  "strpos",
+  "split_part",
+  "lpad",
+  "rpad",
+  "initcap",
+  "reverse",
+  "format",
+  "to_char",
+  // numbers
+  "abs",
+  "round",
+  "floor",
+  "ceil",
+  "ceiling",
+  "trunc",
+  "mod",
+  "power",
+  "sqrt",
+  "sign",
+  "to_number",
+  // dates and times
+  "now",
+  "current_timestamp",
+  "current_date",
+  "date_trunc",
+  "date_part",
+  "extract",
+  "age",
+  "to_date",
+  "to_timestamp",
+  "date",
+  "year",
+  "month",
+  "day",
+  "datediff",
+  "dateadd",
+  "date_add",
+  "date_sub",
+  "date_format",
+  "make_date",
+  "make_interval",
+  "justify_interval",
+  // json reads
+  "json_extract_path_text",
+  "jsonb_extract_path_text",
+  "json_array_length",
+  "jsonb_array_length"
+]);
+var PAREN_KEYWORDS = /* @__PURE__ */ new Set([
+  "select",
+  "from",
+  "where",
+  "in",
+  "exists",
+  "join",
+  "on",
+  "using",
+  "as",
+  "and",
+  "or",
+  "not",
+  "any",
+  "all",
+  "some",
+  "values",
+  "over",
+  "filter",
+  "by",
+  "case",
+  "when",
+  "then",
+  "else",
+  "between",
+  "like",
+  "ilike",
+  "is",
+  "distinct",
+  "having",
+  "limit",
+  "offset",
+  "top",
+  "lateral",
+  "within",
+  "partition",
+  "order",
+  "group",
+  "with",
+  "array",
+  "row"
+]);
+var AGGREGATES = /* @__PURE__ */ new Set([
+  "count",
+  "sum",
+  "avg",
+  "min",
+  "max",
+  "bool_and",
+  "bool_or",
+  "every",
+  "string_agg",
+  "array_agg",
+  "group_concat",
+  "json_agg",
+  "jsonb_agg"
+]);
+function maskSql(sql) {
+  let out = "";
+  for (let i = 0; i < sql.length; i++) {
+    const ch = sql[i];
+    if (ch === "{" && sql[i + 1] === "{") {
+      const end = sql.indexOf("}}", i + 2);
+      if (end < 0)
+        return void 0;
+      out += "''";
+      i = end + 1;
+    } else if (ch === "'") {
+      let closed = false;
+      while (++i < sql.length) {
+        if (sql[i] === "\\") {
+          i++;
+          continue;
+        }
+        if (sql[i] === "'") {
+          if (sql[i + 1] === "'") {
+            i++;
+            continue;
+          }
+          closed = true;
+          break;
+        }
+      }
+      if (!closed)
+        return void 0;
+      out += "''";
+    } else if (ch === '"' || ch === "`" || ch === "[") {
+      const close = ch === "[" ? "]" : ch;
+      const end = sql.indexOf(close, i + 1);
+      if (end < 0)
+        return void 0;
+      out += " _q ";
+      i = end;
+    } else if (ch === "-" && sql[i + 1] === "-") {
+      while (i < sql.length && sql[i] !== "\n")
+        i++;
+      out += " ";
+    } else if (ch === "/" && sql[i + 1] === "*") {
+      const end = sql.indexOf("*/", i + 2);
+      if (end < 0 || sql[i + 2] === "!")
+        return void 0;
+      out += " ";
+      i = end + 1;
+    } else if (ch === "$" && /^\$[A-Za-z_]*\$/.test(sql.slice(i))) {
+      return void 0;
+    } else
+      out += ch;
+  }
+  return out.replace(/\s+/g, " ").trim().replace(/;\s*$/, "").trim().toLowerCase();
+}
+function topLevel(sql) {
+  let depth = 0;
+  let out = "";
+  for (const ch of sql) {
+    if (ch === "(") {
+      if (depth === 0)
+        out += "(";
+      depth++;
+    } else if (ch === ")") {
+      depth--;
+      if (depth < 0)
+        return void 0;
+      if (depth === 0)
+        out += ")";
+    } else if (depth === 0)
+      out += ch;
+  }
+  return depth === 0 ? out : void 0;
+}
+var items = (clause) => clause.split(",").map((item) => item.trim()).filter(Boolean);
+function impureCall(sql) {
+  const calls = sql.matchAll(/([a-z_][\w$]*(?:\s*\.\s*[a-z_][\w$]*)*|_q)\s*\(/g);
+  for (const call of calls) {
+    const name = call[1].replace(/\s+/g, "");
+    if (name.includes(".") || name === "_q")
+      return name;
+    if (PAREN_KEYWORDS.has(name))
+      continue;
+    if (!PURE_FUNCTIONS.has(name))
+      return name;
+  }
+  return void 0;
+}
+function autoReadSqlRefusal(sql) {
+  const masked = maskSql(sql);
+  if (masked === void 0)
+    return "its SQL quoting, comments or bindings cannot be read with certainty";
+  if (!masked || masked.includes(";"))
+    return "it is empty or has more than one statement";
+  const top = topLevel(masked);
+  if (top === void 0)
+    return "its parentheses do not balance";
+  if (/^with\b/.test(top))
+    return "a statement with a WITH list (CTE) is not run automatically";
+  if (!/^select\b/.test(top))
+    return "only a single SELECT is run automatically";
+  if (/\b(union|intersect|except)\b/.test(top))
+    return "UNION, INTERSECT and EXCEPT are not run automatically";
+  if (/\b(insert|update|delete|merge|upsert|truncate|drop|alter|create|grant|revoke|copy|call|exec|execute|into|lock)\b/.test(masked)) {
+    return "it contains a statement that writes or runs code";
+  }
+  if (/\bfor\s+(update|share|no\s+key\s+update|key\s+share)\b/.test(top))
+    return "a locking SELECT is not run automatically";
+  const fn = impureCall(masked);
+  if (fn)
+    return `it calls ${fn}(), which is not a well-known pure function`;
+  const limit = top.match(/\blimit\s+(\d+)(?:\s*,\s*(\d+))?(?:\s+offset\s+\d+)?$/) ?? top.match(/\boffset\s+\d+(?:\s+rows?)?\s+limit\s+(\d+)$/);
+  const fetch = top.match(/\bfetch\s+(?:first|next)\s+(\d+)\s+rows?\s+only$/);
+  const topN = top.match(/^select\s+(?:distinct\s+)?top\s*(?:\(\s*\)|(\d+))/);
+  const bound = limit ? Number(limit[2] ?? limit[1]) : fetch ? Number(fetch[1]) : topN?.[1] ? Number(topN[1]) : void 0;
+  if (bound !== void 0) {
+    return bound <= MAX_AUTO_ROWS ? void 0 : `its LIMIT ${bound} is above the ${MAX_AUTO_ROWS}-row automatic bound`;
+  }
+  if (/\b(limit|fetch|top)\b/.test(masked)) {
+    return "its row limit is not the final clause of the outer SELECT (a LIMIT in a subquery bounds nothing it returns)";
+  }
+  const from = top.search(/\bfrom\b/);
+  if (from < 0)
+    return void 0;
+  const projection = items(top.slice("select".length, from).replace(/^\s*distinct\b/, ""));
+  const aggregateOnly = projection.length > 0 && projection.every((item) => {
+    const m = item.match(/^([a-z_][\w$]*)\s*\(\)(?:\s+(?:as\s+)?[a-z_][\w$]*)?$/);
+    return !!m && AGGREGATES.has(m[1]);
+  });
+  if (aggregateOnly && !/\b(group\s+by|over)\b/.test(top.slice(from)))
+    return void 0;
+  return "it has no row limit on the outer SELECT";
+}
+var record = (value) => value && typeof value === "object" && !Array.isArray(value) ? value : void 0;
+function rawSqlOf(query) {
+  const kind = query.kind?.toLowerCase();
+  const options = record(query.options);
+  if (!kind || !options)
+    return void 0;
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : void 0;
+  if (kind === "tooljetdb") {
+    const sql = operation === "sql_execution" ? record(options.sql_execution)?.sqlQuery : void 0;
+    return typeof sql === "string" ? sql : void 0;
+  }
+  if (!SQL_KINDS.has(kind) || operation === "list_rows" || options.mode === "gui")
+    return void 0;
+  return ["query", "sql_query", "sql", "presto_sql_query", "soql_query"].map((field) => options[field]).find((value) => typeof value === "string" && !!value.trim());
+}
 var MAX_READS = 10;
 var CLOCK_SKEW = /JWT issued at future/i;
 var CLOCK_SKEW_RETRY_MS = 1500;
@@ -1714,6 +2033,21 @@ var rowCount = (result) => {
     return data.length;
   return void 0;
 };
+function rawSqlAutoRefusal(query) {
+  const saved = rawSqlOf(query);
+  if (saved === void 0)
+    return void 0;
+  const refusal = autoReadSqlRefusal(saved);
+  if (refusal)
+    return refusal;
+  let resolved;
+  try {
+    resolved = rawSqlOf({ ...query, options: resolveStaticBindings(query.options).resolved });
+  } catch {
+    return "its bindings cannot be resolved without a browser";
+  }
+  return resolved === void 0 || resolved === saved ? void 0 : autoReadSqlRefusal(resolved);
+}
 async function checkPlanReads(client, params) {
   const wanted = [...new Set(params.queryIds)];
   if (!wanted.length)
@@ -1728,8 +2062,14 @@ async function checkPlanReads(client, params) {
       continue;
     const name = query.name ?? id;
     const verdict = batchSafeRead(query);
+    const autoRefusal = verdict.safe ? rawSqlAutoRefusal(query) : void 0;
     if (!verdict.safe) {
       check.not_run.push({ name, reason: String(verdict.reason ?? "not a proven bounded read").slice(0, REASON_CHARS) });
+    } else if (autoRefusal) {
+      check.not_run.push({
+        name,
+        reason: `not checked automatically, run it explicitly with run_query: ${autoRefusal}`
+      });
     } else if (runnable.length >= MAX_READS) {
       check.not_run.push({ name, reason: `only the first ${MAX_READS} reads of a phase are checked; run this one with run_queries` });
     } else {

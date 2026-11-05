@@ -1,10 +1,10 @@
 import { createRequire } from "node:module";
 import { e5 as fail, e9 as mapKeyRefusal, e6 as ok, ed as __toESM, eb as __commonJS } from "./chunk-CNzl5iHC.js";
-import { T as TOOLJET_DB_DATA_TYPES, q as normalizeType, t as resolveComponentLibrary, u as componentLibraryWarnings, w as invalidSeedTimestamps, x as COMPONENT_FX_GUIDANCE } from "./chunk-DU7PARuL.js";
-import { c as componentInputSchema, f as frozenAppRefusal, p as pagesUsingQuery, r as replaceView, d as danglingAfterReplace, l as literalCanvasColor, a as lintPlannedApp, s as storeAppPlan, b as replaceFingerprint, e as prepareQueryOptionsForWrite } from "./chunk-BUBDvZl9.js";
-import { F as pageIconSchema, G as namespaceReads } from "./chunk-B9aEbA_o.js";
+import { T as TOOLJET_DB_DATA_TYPES, q as normalizeType, t as resolveComponentLibrary, u as componentLibraryWarnings, w as invalidSeedTimestamps, x as COMPONENT_FX_GUIDANCE } from "./chunk-DuHQ4n9t.js";
+import { c as componentInputSchema, f as frozenAppRefusal, p as pagesUsingQuery, r as replaceView, d as danglingAfterReplace, l as literalCanvasColor, a as lintPlannedApp, s as storeAppPlan, b as replaceFingerprint, e as prepareQueryOptionsForWrite } from "./chunk-BvP5_Gwz.js";
+import { F as pageIconSchema, G as namespaceReads } from "./chunk-BmzK1deX.js";
 import { m as suggestedHtmlHeight } from "./chunk-DzndRVyJ.js";
-import { g as arithmeticWriteWarning, b as bindingSpans } from "./chunk-4VsxWCKn.js";
+import { g as arithmeticWriteWarning, b as bindingSpans } from "./chunk-YVYQ0IWs.js";
 import { b0 as external_exports } from "./chunk-Id3EmQoo.js";
 import { j as union, A as string, V as number, a7 as looseObject, U as object, a8 as literal, i as unknown, ax as _enum, aU as array, ai as intersection, K as record, aQ as boolean, N as preprocess, T as optional, ae as iso_exports, aD as discriminatedUnion, aI as custom, Y as _null2 } from "./chunk-COEZMi1q.js";
 import { execFile } from "node:child_process";
