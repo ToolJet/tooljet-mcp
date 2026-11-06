@@ -1195,6 +1195,7 @@ var import_moment = __toESM(require_moment(), 1);
 var Unsupported = class extends Error {
 };
 var MAX_EXPRESSION_CHARS = 600;
+var currentParameters;
 var MAX_PAD = 1e3;
 var MATH_FNS = {
   floor: Math.floor,
@@ -1419,6 +1420,12 @@ function interpret(node2) {
         const constant = own(MATH_CONSTANTS, name2);
         return constant ?? unsupported();
       }
+      if (node2.object?.type === "Identifier" && node2.object.name === "parameters") {
+        if (!currentParameters || typeof name2 !== "string" || !Object.prototype.hasOwnProperty.call(currentParameters, name2)) {
+          return unsupported();
+        }
+        return currentParameters[name2];
+      }
       const target = interpret(node2.object);
       if (typeof target === "string" && name2 === "length")
         return target.length;
@@ -1493,7 +1500,42 @@ function interpret(node2) {
   }
 }
 var SERVER_BINDING = /\{\{(.*?)\}\}/gs;
+function declaredParameterDefaults(options) {
+  const declared = options && typeof options === "object" ? options.parameters : void 0;
+  const values = /* @__PURE__ */ Object.create(null);
+  if (!Array.isArray(declared))
+    return values;
+  for (const parameter of declared) {
+    if (!parameter || typeof parameter !== "object")
+      continue;
+    const { name: name2, defaultValue } = parameter;
+    if (typeof name2 !== "string" || !name2 || defaultValue === void 0 || defaultValue === null)
+      continue;
+    if (typeof defaultValue === "number" || typeof defaultValue === "boolean") {
+      values[name2] = defaultValue;
+    } else if (typeof defaultValue === "string") {
+      if (!defaultValue.includes("{{")) {
+        values[name2] = defaultValue;
+        continue;
+      }
+      const outcome = resolveString(defaultValue);
+      const value = outcome.ok ? outcome.value : void 0;
+      if (outcome.ok && (value === null || ["string", "number", "boolean"].includes(typeof value)))
+        values[name2] = value;
+    }
+  }
+  return values;
+}
 function resolveStaticBindings(options) {
+  const previous = currentParameters;
+  currentParameters = declaredParameterDefaults(options);
+  try {
+    return resolveWithParameters(options);
+  } finally {
+    currentParameters = previous;
+  }
+}
+function resolveWithParameters(options) {
   const resolved = {};
   const unresolved = [];
   const visit = (value) => {
@@ -5090,20 +5132,21 @@ export {
   emptyParamsNote as F,
   GUI_LIST_ROWS_KEYS as G,
   unresolvedNote as H,
-  inPackSet as I,
-  registerComponentSchemas as J,
-  newPackSet as K,
+  declaredParameterDefaults as I,
+  inPackSet as J,
+  registerComponentSchemas as K,
   LARGE_READ_ROW_THRESHOLD as L,
-  capabilityRequestSchema as M,
-  getWorkflowCapabilities as N,
-  lint as O,
-  apply as P,
-  deleteNode as Q,
-  editContractSchema as R,
+  newPackSet as M,
+  capabilityRequestSchema as N,
+  getWorkflowCapabilities as O,
+  lint as P,
+  apply as Q,
+  deleteNode as R,
   SQL_DIALECT as S,
   TableQuotaError as T,
-  generateEditContract as U,
-  allComponentSchemas as V,
+  editContractSchema as U,
+  generateEditContract as V,
+  allComponentSchemas as W,
   activePackSet as a,
   getCatalog as b,
   getLegacyComponentReplacement as c,
