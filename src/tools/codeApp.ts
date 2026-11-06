@@ -5,12 +5,28 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { createHash } from 'node:crypto';
 import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
-import { dirname, join, relative, resolve, sep } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { ok, fail, type ToolDef } from './types.js';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { CLI_HOME_PREFIX, cleanOldProjects, touchProject, withBuildSlot } from '../codeBuildLimits.js';
 import { browserUserQueryProblems } from '../serverUserBindings.js';
 import { buildSummary, formatProblems, fromChecked, parseBuildProblems, type CheckedProblem } from '../codeTypeErrors.js';
+import {
+  beforePullCopies,
+  clearAgentWrites,
+  dependencyRefusal,
+  hasAgentWrites,
+  insideProject,
+  lockfileProblems,
+  manifestProblems,
+  markAgentWrites,
+  nonRegistrySpec,
+  pruneBeforePull,
+  removeEscapingLinks,
+  removeUnstoredSource,
+  unstoredSegment,
+  withProjectLock,
+} from '../codeProjectSafety.js';
 
 /*
   Code pages: a ToolJet app page whose whole UI is React code, kept in an app project (app.json + frontend/) and built
@@ -45,6 +61,11 @@ import { buildSummary, formatProblems, fromChecked, parseBuildProblems, type Che
   caller before it touches one, and every tool that writes to the project, installs or builds also needs ToolJet to say
   the caller may edit the app. Reading a project needs ToolJet's source API to say the caller may read the app's code
   (an end user who can only use the app may not), on every call, whatever the project caches hold.
+
+  Paths and packages (codeProjectSafety.ts): every file read and write resolves real paths inside the project and
+  follows no link; nothing is written under a node_modules or dot folder; installs take registry packages only, from
+  the configured registry, and no link out of the project survives one. Tool calls on one project take turns, and the
+  first pull of a build forces ToolJet's code over the local copy only while no build has uninstalled writes there.
 */
 
 const run = promisify(execFile);
@@ -288,15 +309,32 @@ const locateProject = async (args: { name?: string; app_id?: string }, need: Nee
   return dir;
 };
 
+/** The lock that makes tool calls on one project take turns, across processes (codeProjectSafety.ts). */
+const projectLockPath = (dir: string): string =>
+  join(baseRoot(), '.locks', `${current().deployment}.${current().workspace}.${basename(dir)}`);
+const onProject = <T>(dir: string, work: () => Promise<T>): Promise<T> => withProjectLock(projectLockPath(dir), work);
+
 /** What an agent may write: app.json, the frontend's source, and the two style files (theme.css, global.css). */
 const STYLE_FILES = new Set(['frontend/styles/theme.css', 'frontend/styles/global.css']);
 export const editable = (dir: string, path: string): string => {
   const full = resolve(dir, path);
   const rel = relative(dir, full).split(sep).join('/');
-  if (rel === 'app.json' || STYLE_FILES.has(rel) || (rel.startsWith('frontend/src/') && !rel.endsWith('tooljet.gen.ts'))) return full;
-  throw new Error(
-    `"${path}" is not editable: write app.json, frontend/styles/theme.css, frontend/styles/global.css or files under frontend/src/ (tooljet.gen.ts is generated)`
-  );
+  if (!(rel === 'app.json' || STYLE_FILES.has(rel) || (rel.startsWith('frontend/src/') && !rel.endsWith('tooljet.gen.ts')))) {
+    throw new Error(
+      `"${path}" is not editable: write app.json, frontend/styles/theme.css, frontend/styles/global.css or files under frontend/src/ (tooljet.gen.ts is generated)`
+    );
+  }
+  // A package under frontend/src/node_modules is bundled but never stored or scanned; a dot file is never stored.
+  const unstored = unstoredSegment(rel.slice('frontend/'.length));
+  if (rel.startsWith('frontend/') && unstored) {
+    throw new Error(
+      unstored === 'node_modules'
+        ? `"${path}" is not editable: nothing may be written under a node_modules folder (add packages with code_app_add_dependency)`
+        : `"${path}" is not editable: files and folders whose names start with a dot are never stored with the app`
+    );
+  }
+  // Real paths: a link anywhere below the project, or a path that resolves out of it, is refused.
+  return insideProject(dir, rel, path);
 };
 
 const TEXT = /\.(tsx?|jsx?|json|css|md)$/i;
@@ -306,7 +344,7 @@ const listFiles = (dir: string, base = dir, out: string[] = []): string[] => {
     if (['node_modules', 'dist'].includes(entry.name) || entry.name.startsWith('.')) continue;
     const full = join(dir, entry.name);
     if (entry.isDirectory()) listFiles(full, base, out);
-    else if (TEXT.test(entry.name) && entry.name !== 'package-lock.json') out.push(relative(base, full).split(sep).join('/'));
+    else if (entry.isFile() && TEXT.test(entry.name) && entry.name !== 'package-lock.json') out.push(relative(base, full).split(sep).join('/'));
   }
   return out.sort();
 };
@@ -520,35 +558,37 @@ export function codeAppScaffoldTool(context: CodeContext): ToolDef {
         // One project per app: an app that already has one gets it back, whatever name is asked for.
         const [existing] = projectsForApp(args.app_id);
         const dir = existing ? join(root(), existing) : projectDir(args.name);
-        const owner = appIdOf(dir);
-        if (!existing && owner && owner !== args.app_id)
-          throw new Error(`project "${args.name}" belongs to app ${owner}; choose another name`);
-        const created = !existsSync(join(dir, 'app.json'));
-        if (created) {
-          mkdirSync(root(), { recursive: true });
-          const init = await cli(root(), ['app', 'init', args.name, '--name', args.display_name, '--no-install']);
-          if (init.code !== 0) throw new Error(`tooljet app init failed: ${init.output}`);
-          const appFile = join(dir, 'app.json');
-          writeFileSync(appFile, JSON.stringify({ ...JSON.parse(readFileSync(appFile, 'utf8')), appId: args.app_id }, null, 2) + '\n');
-          // The CLI's install: never runs a package's install scripts (npm/pnpm/yarn with --ignore-scripts). It takes the SDK
-          // from TOOLJET_SDK_SPEC without recording that path in the project, so it never reaches ToolJet's stored code.
-          const install = await cli(dir, ['app', 'install']);
-          if (install.code !== 0) throw new Error(`tooljet app install failed: ${install.output}`);
-        }
-        const pull = await cli(dir, ['app', 'pull']);
-        if (pull.code !== 0) throw new Error(`tooljet app pull failed: ${pull.output}`);
-        const restored = created ? await restoreStoredCode(dir) : {};
-        const naming = await nameApp(context.client, dir, args.display_name, args.rename_from);
-        if (!existing && !restored.stored_code) rememberScaffold(dir);
-        return ok({
-          project_dir: dir,
-          ...naming,
-          ...restored,
-          ...(existing ? { existing_project: existing, note: `This app already has a project, "${existing}"; it is used as is.` } : {}),
-          files: listFiles(dir),
-          app_json: JSON.parse(readFileSync(join(dir, 'app.json'), 'utf8')),
-          generated_hooks: readFileSync(join(dir, 'frontend', 'src', 'tooljet.gen.ts'), 'utf8'),
-          next: 'Set the routes in app.json, write the screens under frontend/src/App/, then code_app_install with verify: true.',
+        return await onProject(dir, async () => {
+          const owner = appIdOf(dir);
+          if (!existing && owner && owner !== args.app_id)
+            throw new Error(`project "${args.name}" belongs to app ${owner}; choose another name`);
+          const created = !existsSync(join(dir, 'app.json'));
+          if (created) {
+            mkdirSync(root(), { recursive: true });
+            const init = await cli(root(), ['app', 'init', args.name, '--name', args.display_name, '--no-install']);
+            if (init.code !== 0) throw new Error(`tooljet app init failed: ${init.output}`);
+            const appFile = join(dir, 'app.json');
+            writeFileSync(appFile, JSON.stringify({ ...JSON.parse(readFileSync(appFile, 'utf8')), appId: args.app_id }, null, 2) + '\n');
+            // The CLI's install: never runs a package's install scripts (npm/pnpm/yarn with --ignore-scripts). It takes the SDK
+            // from TOOLJET_SDK_SPEC without recording that path in the project, so it never reaches ToolJet's stored code.
+            const install = await installDependencies(dir, 'Installing the template');
+            if (install.code !== 0) throw new Error(`tooljet app install failed: ${install.output}`);
+          }
+          const pull = await cli(dir, ['app', 'pull']);
+          if (pull.code !== 0) throw new Error(`tooljet app pull failed: ${pull.output}`);
+          const restored = created ? await restoreStoredCode(dir) : {};
+          const naming = await nameApp(context.client, dir, args.display_name, args.rename_from);
+          if (!existing && !restored.stored_code) rememberScaffold(dir);
+          return ok({
+            project_dir: dir,
+            ...naming,
+            ...restored,
+            ...(existing ? { existing_project: existing, note: `This app already has a project, "${existing}"; it is used as is.` } : {}),
+            files: listFiles(dir),
+            app_json: JSON.parse(readFileSync(join(dir, 'app.json'), 'utf8')),
+            generated_hooks: readFileSync(join(dir, 'frontend', 'src', 'tooljet.gen.ts'), 'utf8'),
+            next: 'Set the routes in app.json, write the screens under frontend/src/App/, then code_app_install with verify: true.',
+          });
         });
       } catch (err) {
         return fail(err);
@@ -580,7 +620,7 @@ async function restoreStoredCode(dir: string): Promise<{ stored_code?: string; s
   }
   if (!/Pulled revision|Already at revision/.test(pull.output)) return {};
   if ((existsSync(manifest) ? readFileSync(manifest, 'utf8') : '') !== before) {
-    const install = await cli(dir, ['app', 'install']);
+    const install = await installDependencies(dir, "Installing the app's stored dependencies");
     if (install.code !== 0) throw new Error(`tooljet app install failed after bringing the app's code down: ${install.output}`);
   }
   freshProjects.add(dir);
@@ -591,8 +631,24 @@ async function restoreStoredCode(dir: string): Promise<{ stored_code?: string; s
   };
 }
 
+/**
+ * `tooljet app install`, only for registry dependencies (codeProjectSafety.ts): the package.json and lockfile come from
+ * the stored code, which any editor can change, and a file: or link: dependency linked node_modules to any folder on
+ * this host. After the install no link may lead out of the project.
+ */
+async function installDependencies(dir: string, what: string, timeoutMs?: number): Promise<{ code: number; output: string }> {
+  const refusal = dependencyRefusal(dir, what);
+  if (refusal) throw refusal;
+  const install = await cli(dir, ['app', 'install'], timeoutMs);
+  const escaped = removeEscapingLinks(dir);
+  if (escaped) throw escaped;
+  return install;
+}
+
+type SyncResult = { editor_edits?: string; sync_warning?: string; before_pull_copy?: string };
+
 /** `tooljet app source-pull`: what it reports when it brought editor edits down, or a warning when it could not run. */
-async function syncEditorEdits(dir: string, { force = false } = {}): Promise<{ editor_edits?: string; sync_warning?: string }> {
+async function syncEditorEdits(dir: string, { force = false } = {}): Promise<SyncResult> {
   // Nothing to bring down until the first install stores the code: a pull on every write was 29 s of a first build
   // (2026-11-03). Only the check that found no stored code counts, so a project that has code still pulls every time.
   if (!force && nothingStored.has(dir)) return {};
@@ -604,8 +660,13 @@ async function syncEditorEdits(dir: string, { force = false } = {}): Promise<{ e
     pull refused when the copy was behind a new draft holding the user's Code panel edit, so the agent could neither read
     the edit nor install over it (2026-11-05: a hand edit that did not build, which the agent was asked to fix).
   */
-  if (force && pull.code !== 0 && /Not pulled\. These files differ/i.test(pull.output))
+  let copy: string | undefined;
+  if (force && pull.code !== 0 && /Not pulled\. These files differ/i.test(pull.output)) {
+    const copies = new Set(beforePullCopies(dir));
     pull = await cli(dir, ['app', 'source-pull', '--force'], 60_000);
+    // The CLI keeps a copy of what it replaced, a new folder each time: the newest three are kept, and the result says where.
+    copy = pruneBeforePull(dir).find((kept) => !copies.has(kept));
+  }
   // A refusal is an answer about who is asking, so nothing goes on from a local copy. Anything else may be a passing fault.
   if (pull.code !== 0 && /\b(401|403)\b|unauthori[sz]ed|forbidden/i.test(pull.output)) throw new Error('ToolJet refused access to this app\'s stored code.');
   if (pull.code !== 0) return { sync_warning: `Could not check the ToolJet editor for edits: ${pull.output.trim().slice(0, 300)}` };
@@ -614,7 +675,10 @@ async function syncEditorEdits(dir: string, { force = false } = {}): Promise<{ e
   lastSynced.set(dir, Date.now());
   // What the agent read stays recorded: a write compares it with the file as the pull left it, so only a file the pull
   // changed needs reading again.
-  return /Pulled revision/.test(pull.output) ? { editor_edits: pull.output.trim() } : {};
+  return {
+    ...(/Pulled revision/.test(pull.output) ? { editor_edits: pull.output.trim() } : {}),
+    ...(copy ? { before_pull_copy: `The files this pull replaced are kept in ${copy} (the last 3 copies are kept).` } : {}),
+  };
 }
 
 /*
@@ -663,10 +727,28 @@ function rememberScaffold(dir: string): void {
   }
 }
 
-/** The stored code, once per build per project (the MCP process lives for one build). */
-async function ensureFresh(dir: string): Promise<{ editor_edits?: string; sync_warning?: string }> {
+/** Projects this process has written to (code_app_write_files, code_app_add_dependency). */
+const wroteHere = new Set<string>();
+
+/** The build has written to the project and not installed since: in this process, or by the marker any process left. */
+const unstoredWrites = (dir: string): boolean => wroteHere.has(dir) || hasAgentWrites(dir);
+
+/** Record a write before it happens, so no later first pull of any build replaces it until an install stores it. */
+function noteWrite(dir: string): void {
+  wroteHere.add(dir);
+  markAgentWrites(dir);
+}
+
+/*
+  The stored code, once per build per project (the MCP process lives for one build). The first pull takes ToolJet's code
+  over the local copy only while no build has written to the project since its last install: a retry after a failed
+  pull, a second build on the same app, or a restart of this server would otherwise replace writes nobody has stored
+  yet (the install then reported success without them). With writes pending, it is a plain pull, which refuses to
+  overwrite them and says so.
+*/
+async function ensureFresh(dir: string): Promise<SyncResult> {
   if (freshProjects.has(dir)) return {};
-  const sync = await syncEditorEdits(dir, { force: true });
+  const sync = await syncEditorEdits(dir, { force: !unstoredWrites(dir) });
   if (!sync.sync_warning) freshProjects.add(dir);
   return sync;
 }
@@ -734,6 +816,7 @@ export function resetCodeSessionForTests(): void {
   scaffoldHashes.clear();
   readHashes.clear();
   ownWrites.clear();
+  wroteHere.clear();
   lastSynced.clear();
   prefetchedScans.clear();
   sdkCopied.clear();
@@ -756,7 +839,7 @@ async function copySdkIn(dir: string): Promise<void> {
   }
   if (!linked || sdkCopied.has(dir)) return;
   sdkCopied.add(dir);
-  await cli(dir, ['app', 'install'], 180_000);
+  await installDependencies(dir, 'Copying the SDK into the project', 180_000);
 }
 
 const TYPE_CHECKED = /^frontend\/(src\/.*\.tsx?|.*\.css)$/;
@@ -859,20 +942,22 @@ export function codeAppReadFilesTool(context: CodeContext): ToolDef {
     handler: inScope(context, async (args: { app_id?: string; name?: string; paths?: string[] }) => {
       try {
         const dir = await locateProject(args, 'read');
-        if (!freshProjects.has(dir)) await followDraft(dir);
-        const sync = !freshProjects.has(dir) ? await ensureFresh(dir) : syncedRecently(dir) ? {} : await syncEditorEdits(dir);
-        if (!args.paths?.length) return ok({ project_dir: dir, ...sync, files: listFiles(dir) });
-        const files = Object.fromEntries(
-          args.paths.map((p) => {
-            const full = resolve(dir, p);
-            const rel = relative(dir, full).split(sep).join('/');
-            if (rel.startsWith('..')) throw new Error(`"${p}" is outside the project`);
-            const content = readFileSync(full, 'utf8');
-            readHashes.set(readKey(dir, rel), sha(content));
-            return [p, content];
-          })
-        );
-        return ok({ project_dir: dir, ...sync, files });
+        return await onProject(dir, async () => {
+          if (!freshProjects.has(dir)) await followDraft(dir);
+          const sync = !freshProjects.has(dir) ? await ensureFresh(dir) : syncedRecently(dir) ? {} : await syncEditorEdits(dir);
+          if (!args.paths?.length) return ok({ project_dir: dir, ...sync, files: listFiles(dir) });
+          const files = Object.fromEntries(
+            args.paths.map((p) => {
+              // Real paths, and no link followed: an installed file: dependency linked node_modules/<name> to any folder.
+              const full = insideProject(dir, p);
+              const rel = relative(dir, full).split(sep).join('/');
+              const content = readFileSync(full, 'utf8');
+              readHashes.set(readKey(dir, rel), sha(content));
+              return [p, content];
+            })
+          );
+          return ok({ project_dir: dir, ...sync, files });
+        });
       } catch (err) {
         return fail(err);
       }
@@ -905,62 +990,66 @@ export function codeAppWriteFilesTool(context: CodeContext): ToolDef {
     handler: inScope(context, async (args: { app_id?: string; name?: string; files?: { path: string; content: string }[]; edits?: { path: string; find: string; replace: string }[]; rewrite?: boolean }) => {
       try {
         const dir = await locateProject(args, 'edit');
-        if (!args.files?.length && !args.edits?.length)
-          throw new Error(
-            `Nothing was written: this call had no files and no edits, so it sent no code${args.rewrite ? ' (rewrite: true only allows a rewrite, it carries none)' : ''}. ` +
-              'Send the code in this call: files: [{ path, content }] with the whole file, or edits: [{ path, find, replace }].'
-          );
-        if (!freshProjects.has(dir)) await followDraft(dir);
-        const first = await ensureFresh(dir);
-        const sync = first.editor_edits || first.sync_warning ? first : await syncEditorEdits(dir);
-        // Everything is checked before anything is written, so a refused call changes nothing.
-        const next = new Map<string, { full: string; content: string }>();
-        const current = (rel: string, full: string): string | undefined => next.get(rel)?.content ?? (existsSync(full) ? readFileSync(full, 'utf8') : undefined);
-        const stale = (rel: string, full: string): string | undefined => {
-          if (next.has(rel) || !existsSync(full)) return undefined;
-          const known = readHashes.get(readKey(dir, rel));
-          if (!known) return `${rel} has not been read in this build: read it with code_app_read_files first`;
-          if (known !== sha(readFileSync(full, 'utf8'))) return `${rel} changed on ToolJet (an edit in the editor) since you read it: read it again and apply your change to what is there now`;
-          return undefined;
-        };
-        const refusals: string[] = [];
-        for (const file of args.files ?? []) {
-          const full = editable(dir, file.path);
-          const rel = relative(dir, full).split(sep).join('/');
-          const why = stale(rel, full);
-          if (why) refusals.push(why);
-          const before = current(rel, full);
-          const stillTemplate = before !== undefined && scaffoldHashes.get(readKey(dir, rel)) === sha(before);
-          // Until the first install stores the code, a file this build wrote may be sent whole again: 20 builds had 11
-          // whole-file writes of their own files refused (2026-11-04), 10 of them before the first install, and 7 were
-          // resent as rewrite: true with no files at all. After it, the guard against regenerating a file stands.
-          const ownFile = before !== undefined && nothingStored.has(dir) && ownWrites.get(readKey(dir, rel)) === sha(before);
-          if (!why && before !== undefined && !args.rewrite && !stillTemplate && !ownFile && isRewrite(before, file.content))
-            refusals.push(`${rel}: this replaces most of the file; change only what the request needs with edits (find/replace), or, if the request really is a rewrite, send these files again with rewrite: true in the same call`);
-          next.set(rel, { full, content: file.content });
-        }
-        for (const edit of args.edits ?? []) {
-          const full = editable(dir, edit.path);
-          const rel = relative(dir, full).split(sep).join('/');
-          const why = stale(rel, full);
-          if (why) { refusals.push(why); continue; }
-          const before = current(rel, full);
-          if (before === undefined) { refusals.push(`${rel} does not exist: create it with files`); continue; }
-          const found = before.split(edit.find).length - 1;
-          if (found !== 1) { refusals.push(`${rel}: the find text appears ${found} times; it must match exactly once (copy it from the file as it is now).${findHint(before, edit.find)}`); continue; }
-          next.set(rel, { full, content: before.replace(edit.find, () => edit.replace) });
-        }
-        if (refusals.length) return fail(new Error('Not written:\n' + refusals.map((r) => `- ${r}`).join('\n')));
-        const written: string[] = [];
-        for (const [rel, { full, content }] of next) {
-          mkdirSync(dirname(full), { recursive: true });
-          writeFileSync(full, content);
-          readHashes.set(readKey(dir, rel), sha(content)); // the agent knows what it just wrote
-          ownWrites.set(readKey(dir, rel), sha(content));
-          written.push(rel);
-        }
-        const types = await typeCheckAfterWrite(dir, written).catch(() => undefined);
-        return ok({ project_dir: dir, ...sync, written, ...(types ? { type_check: types } : {}) });
+        return await onProject(dir, async () => {
+          if (!args.files?.length && !args.edits?.length)
+            throw new Error(
+              `Nothing was written: this call had no files and no edits, so it sent no code${args.rewrite ? ' (rewrite: true only allows a rewrite, it carries none)' : ''}. ` +
+                'Send the code in this call: files: [{ path, content }] with the whole file, or edits: [{ path, find, replace }].'
+            );
+          if (!freshProjects.has(dir)) await followDraft(dir);
+          const first = await ensureFresh(dir);
+          const sync = first.editor_edits || first.sync_warning ? first : await syncEditorEdits(dir);
+          // Everything is checked before anything is written, so a refused call changes nothing.
+          const next = new Map<string, { full: string; content: string }>();
+          const current = (rel: string, full: string): string | undefined => next.get(rel)?.content ?? (existsSync(full) ? readFileSync(full, 'utf8') : undefined);
+          const stale = (rel: string, full: string): string | undefined => {
+            if (next.has(rel) || !existsSync(full)) return undefined;
+            const known = readHashes.get(readKey(dir, rel));
+            if (!known) return `${rel} has not been read in this build: read it with code_app_read_files first`;
+            if (known !== sha(readFileSync(full, 'utf8'))) return `${rel} changed on ToolJet (an edit in the editor) since you read it: read it again and apply your change to what is there now`;
+            return undefined;
+          };
+          const refusals: string[] = [];
+          for (const file of args.files ?? []) {
+            const full = editable(dir, file.path);
+            const rel = relative(dir, full).split(sep).join('/');
+            const why = stale(rel, full);
+            if (why) refusals.push(why);
+            const before = current(rel, full);
+            const stillTemplate = before !== undefined && scaffoldHashes.get(readKey(dir, rel)) === sha(before);
+            // Until the first install stores the code, a file this build wrote may be sent whole again: 20 builds had 11
+            // whole-file writes of their own files refused (2026-11-04), 10 of them before the first install, and 7 were
+            // resent as rewrite: true with no files at all. After it, the guard against regenerating a file stands.
+            const ownFile = before !== undefined && nothingStored.has(dir) && ownWrites.get(readKey(dir, rel)) === sha(before);
+            if (!why && before !== undefined && !args.rewrite && !stillTemplate && !ownFile && isRewrite(before, file.content))
+              refusals.push(`${rel}: this replaces most of the file; change only what the request needs with edits (find/replace), or, if the request really is a rewrite, send these files again with rewrite: true in the same call`);
+            next.set(rel, { full, content: file.content });
+          }
+          for (const edit of args.edits ?? []) {
+            const full = editable(dir, edit.path);
+            const rel = relative(dir, full).split(sep).join('/');
+            const why = stale(rel, full);
+            if (why) { refusals.push(why); continue; }
+            const before = current(rel, full);
+            if (before === undefined) { refusals.push(`${rel} does not exist: create it with files`); continue; }
+            const found = before.split(edit.find).length - 1;
+            if (found !== 1) { refusals.push(`${rel}: the find text appears ${found} times; it must match exactly once (copy it from the file as it is now).${findHint(before, edit.find)}`); continue; }
+            next.set(rel, { full, content: before.replace(edit.find, () => edit.replace) });
+          }
+          if (refusals.length) return fail(new Error('Not written:\n' + refusals.map((r) => `- ${r}`).join('\n')));
+          // Before the first byte: no later first pull of any build may replace these writes until an install stores them.
+          noteWrite(dir);
+          const written: string[] = [];
+          for (const [rel, { full, content }] of next) {
+            mkdirSync(dirname(full), { recursive: true });
+            writeFileSync(full, content);
+            readHashes.set(readKey(dir, rel), sha(content)); // the agent knows what it just wrote
+            ownWrites.set(readKey(dir, rel), sha(content));
+            written.push(rel);
+          }
+          const types = await typeCheckAfterWrite(dir, written).catch(() => undefined);
+          return ok({ project_dir: dir, ...sync, written, ...(types ? { type_check: types } : {}) });
+        });
       } catch (err) {
         return fail(err);
       }
@@ -1081,7 +1170,7 @@ export function codeAppBuildTool(context: CodeContext): ToolDef {
     handler: inScope(context, async (args: { app_id?: string; name?: string }) => {
       try {
         const dir = await locateProject(args, 'edit');
-        return ok(await buildProject(dir, args.app_id));
+        return await onProject(dir, async () => ok(await buildProject(dir, args.app_id)));
       } catch (err) {
         return fail(err);
       }
@@ -1092,8 +1181,12 @@ export function codeAppBuildTool(context: CodeContext): ToolDef {
 /** code_app_build's work and report, also the first step of code_app_install with verify. */
 async function buildProject(dir: string, appId: string | undefined): Promise<Record<string, unknown> & { ok: boolean }> {
   const followed = await followDraft(dir);
-  await ensureFresh(dir);
+  const sync = await ensureFresh(dir);
+  // What the bundler would include but the stored code and the scan skip (a package under frontend/src/node_modules,
+  // dot files): never stored, so nobody's work, and removed so the scan sees exactly what is bundled.
+  const unstored = removeUnstoredSource(dir);
   await copySdkIn(dir);
+  const escaped = removeEscapingLinks(dir);
   const started = Date.now();
   const pull = await cli(dir, ['app', 'pull']);
   const build = await cli(join(dir, 'frontend'), ['library', 'build']);
@@ -1105,11 +1198,13 @@ async function buildProject(dir: string, appId: string | undefined): Promise<Rec
   const selects = nativeSelects(dir);
   const handles = badRouteHandles(dir);
   const serverUser = await browserUserQueries(appId ?? appIdOf(dir));
-  const extra = [...handles, ...(unstyled ? [unstyled] : []), ...sdkRedeclared(dir), ...serverUser];
+  const extra = [...handles, ...(unstyled ? [unstyled] : []), ...sdkRedeclared(dir), ...serverUser, ...(escaped ? [escaped.message] : [])];
   const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0 && !extra.length;
   if (okBuild) prefetchFullScan(dir);
   return {
     ...(followed ? { draft: followed } : {}),
+    ...(sync.before_pull_copy ? { before_pull_copy: sync.before_pull_copy } : {}),
+    ...(unstored.length ? { removed_unstored: { files: unstored, note: 'Removed: never stored with the app or scanned. Put code under frontend/src without node_modules or dot names, and add packages with code_app_add_dependency.' } } : {}),
     ok: okBuild,
     build_ms: Date.now() - started,
     pull: pull.code === 0 ? 'typed hooks refreshed' : pull.output.trim(),
@@ -1218,42 +1313,44 @@ export function codeAppInstallTool(context: CodeContext, options: InstallOptions
     handler: inScope(context, async (args: { app_id?: string; name?: string; verify?: boolean; widths?: number[]; routes?: string[] }) => {
       try {
         const dir = await locateProject(args, 'edit');
-        if (!args.verify) {
+        return await onProject(dir, async () => {
+          if (!args.verify) {
+            const installed = await installProject(dir);
+            return installed instanceof Error ? fail(installed) : ok(installed);
+          }
+          const built = await buildProject(dir, args.app_id);
+          if (!built.ok) {
+            return ok({
+              ...built,
+              installed: false,
+              next: 'Not installed: the build has errors. Fix every one in one round of writes, then code_app_install with verify: true again.',
+            });
+          }
           const installed = await installProject(dir);
-          return installed instanceof Error ? fail(installed) : ok(installed);
-        }
-        const built = await buildProject(dir, args.app_id);
-        if (!built.ok) {
+          if (installed instanceof Error) return fail(installed);
+          const appId = args.app_id ?? appIdOf(dir);
+          const build = {
+            ok: true,
+            build_ms: built.build_ms,
+            typescript_errors: 0,
+            a11y_warnings: built.a11y_warnings,
+            ...(built.native_controls ? { native_controls: built.native_controls } : {}),
+          };
+          if (!options.render || !appId) return ok({ ...installed, installed: true, build, render: 'not available here: rendering is unverified' });
+          const routes = args.routes?.length ? [...new Set(args.routes)] : routesToCheck(dir);
+          const widths = args.widths?.length ? [...new Set(args.widths)] : [1280];
+          const render = await renderRoutes(options.render, appId, routes, widths, options.renderConcurrency ?? 2);
+          const failing = render.filter((entry) => entry.ok !== true).map((entry) => `${entry.route} at ${entry.width} px`);
           return ok({
-            ...built,
-            installed: false,
-            next: 'Not installed: the build has errors. Fix every one in one round of writes, then code_app_install with verify: true again.',
+            ...installed,
+            installed: true,
+            build,
+            render_ok: failing.length === 0,
+            render,
+            next: failing.length
+              ? `Fix what the render check found on ${failing.join(', ')} in one round of writes, then code_app_install with verify: true and routes set to those paths.`
+              : 'Built, installed, and every route renders cleanly.',
           });
-        }
-        const installed = await installProject(dir);
-        if (installed instanceof Error) return fail(installed);
-        const appId = args.app_id ?? appIdOf(dir);
-        const build = {
-          ok: true,
-          build_ms: built.build_ms,
-          typescript_errors: 0,
-          a11y_warnings: built.a11y_warnings,
-          ...(built.native_controls ? { native_controls: built.native_controls } : {}),
-        };
-        if (!options.render || !appId) return ok({ ...installed, installed: true, build, render: 'not available here: rendering is unverified' });
-        const routes = args.routes?.length ? [...new Set(args.routes)] : routesToCheck(dir);
-        const widths = args.widths?.length ? [...new Set(args.widths)] : [1280];
-        const render = await renderRoutes(options.render, appId, routes, widths, options.renderConcurrency ?? 2);
-        const failing = render.filter((entry) => entry.ok !== true).map((entry) => `${entry.route} at ${entry.width} px`);
-        return ok({
-          ...installed,
-          installed: true,
-          build,
-          render_ok: failing.length === 0,
-          render,
-          next: failing.length
-            ? `Fix what the render check found on ${failing.join(', ')} in one round of writes, then code_app_install with verify: true and routes set to those paths.`
-            : 'Built, installed, and every route renders cleanly.',
         });
       } catch (err) {
         return fail(err);
@@ -1265,8 +1362,12 @@ export function codeAppInstallTool(context: CodeContext, options: InstallOptions
 /** The install itself: its result, or the refusal (an Error) to report. Throws when the scan or the CLI fails. */
 async function installProject(dir: string): Promise<Record<string, unknown> | Error> {
   const followed = await followDraft(dir);
-  await ensureFresh(dir);
+  const sync = await ensureFresh(dir);
   nothingStored.delete(dir);
+  // Only registry dependencies reach the stored code, and the scan sees exactly what is bundled.
+  const dependencies = dependencyRefusal(dir, 'The install');
+  if (dependencies) return new Error(`Not installed: ${dependencies.message}`);
+  const unstored = removeUnstoredSource(dir);
   const unstyled = missingStylesheet(dir);
   if (unstyled) return new Error(`Not installed: ${unstyled} Then code_app_build and install again.`);
   // The full scan, dependency checks included, before anything reaches the app.
@@ -1285,8 +1386,17 @@ async function installProject(dir: string): Promise<Record<string, unknown> | Er
   // to take a repository-owned source over and to overwrite editor edits it has not pulled.
   const result = await cli(dir, ['app', 'dev', '--once', '--source', 'platform']);
   if (result.code !== 0) throw new Error(result.output.trim());
+  // Stored: the next build's first pull may take ToolJet's code over this copy again.
+  clearAgentWrites(dir);
+  const copies = beforePullCopies(dir);
   return {
     ...(followed ? { draft: followed } : {}),
+    ...(sync.editor_edits ? { editor_edits: sync.editor_edits } : {}),
+    ...(sync.sync_warning ? { sync_warning: sync.sync_warning } : {}),
+    ...(unstored.length ? { removed_unstored: unstored } : {}),
+    ...(copies.length
+      ? { before_pull_copies: { kept: copies, note: 'Copies of local files a pull of ToolJet\'s code replaced (newest first, the last 3 kept); read one with code_app_read_files to recover a change.' } }
+      : {}),
     linked: true,
     editor_url: /Open: (\S+)/.exec(result.output)?.[1] ?? null,
     output: result.output.trim(),
@@ -1315,36 +1425,62 @@ export function codeAppAddDependencyTool(context: CodeContext): ToolDef {
     handler: inScope(context, async (args: { app_id?: string; name?: string; packages: string[]; remove?: string[] }) => {
       try {
         const dir = await locateProject(args, 'edit');
-        if (!args.packages.length && !args.remove?.length) throw new Error('Pass packages to add, or names to remove.');
-        const vet = args.packages.length
-          ? await cli(dir, ['app', 'vet', ...args.packages, '--json'])
-          : { code: 0, output: '{"ok":true,"packages":[]}' };
-        const report = parseReport<SecurityReport & { ok?: boolean; packages?: { name: string; version: string }[] }>(vet.output);
-        if (!report?.packages) throw new Error(`The package check did not run, so nothing was added: ${vet.output.trim().slice(0, 2000)}`);
-        if (!report.ok)
-          return fail(
-            new Error(
-              `Not added: ${report.packages.map((p) => `${p.name}@${p.version}`).join(', ')} fail${report.packages.length > 1 ? '' : 's'} the package check:\n` +
-                (report.findings ?? []).map((f) => `${f.severity.toUpperCase()} ${f.ruleId} ${f.package ?? f.location}: ${f.message}`).join('\n')
-            )
-          );
-        const pkgFile = join(dir, 'frontend', 'package.json');
-        const lockFile = join(dir, 'frontend', 'package-lock.json');
-        const before = readFileSync(pkgFile, 'utf8');
-        const lockBefore = existsSync(lockFile) ? readFileSync(lockFile, 'utf8') : null;
-        writeFileSync(pkgFile, JSON.stringify(withDependencies(withoutDependencies(JSON.parse(before), args.remove ?? []), report.packages), null, 2) + '\n');
-        const install = await cli(dir, ['app', 'install']);
-        if (install.code !== 0) {
-          writeFileSync(pkgFile, before);
-          if (lockBefore !== null) writeFileSync(lockFile, lockBefore);
-          throw new Error(`tooljet app install failed, package.json restored: ${install.output.trim().slice(0, 4000)}`);
-        }
-        return ok({
-          added: report.packages.map((p) => `${p.name}@${p.version}`),
-          ...(args.remove?.length ? { removed: args.remove } : {}),
-          not_run: (report.notRun ?? []).map((n) => `${n.id}${n.reason ? `: ${n.reason}` : ''}`),
-          // Transitive packages come with the install; code_app_build and code_app_install scan the whole lockfile.
-          next: 'Import the package in frontend/src, then code_app_build.',
+        return await onProject(dir, async () => {
+          if (!args.packages.length && !args.remove?.length) throw new Error('Pass packages to add, or names to remove.');
+          // Registry versions only: a spec npm reads as a path, a tarball, git or a URL is refused before the vet.
+          const local = args.packages.flatMap((spec) => {
+            const at = spec.indexOf('@', 1);
+            const why = at > 0 ? nonRegistrySpec(spec.slice(at + 1)) : undefined;
+            return why ? [`${spec}: ${why}`] : [];
+          });
+          if (local.length) throw new Error(`Not added: ${local.join('; ')}. Pass a registry version or range, such as date-fns@4.`);
+          const vet = args.packages.length
+            ? await cli(dir, ['app', 'vet', ...args.packages, '--json'])
+            : { code: 0, output: '{"ok":true,"packages":[]}' };
+          const report = parseReport<SecurityReport & { ok?: boolean; packages?: { name: string; version: string }[] }>(vet.output);
+          if (!report?.packages) throw new Error(`The package check did not run, so nothing was added: ${vet.output.trim().slice(0, 2000)}`);
+          if (!report.ok)
+            return fail(
+              new Error(
+                `Not added: ${report.packages.map((p) => `${p.name}@${p.version}`).join(', ')} fail${report.packages.length > 1 ? '' : 's'} the package check:\n` +
+                  (report.findings ?? []).map((f) => `${f.severity.toUpperCase()} ${f.ruleId} ${f.package ?? f.location}: ${f.message}`).join('\n')
+              )
+            );
+          const vetted = report.packages.flatMap((p) => (nonRegistrySpec(p.version) ? [`${p.name}@${p.version}`] : []));
+          if (vetted.length) throw new Error(`Not added: the package check named ${vetted.join(', ')}, which is not a registry version.`);
+          const pkgFile = insideProject(dir, 'frontend/package.json');
+          const lockFile = insideProject(dir, 'frontend/package-lock.json');
+          const before = readFileSync(pkgFile, 'utf8');
+          const lockBefore = existsSync(lockFile) ? readFileSync(lockFile, 'utf8') : null;
+          const restore = () => {
+            writeFileSync(pkgFile, before);
+            if (lockBefore !== null) writeFileSync(lockFile, lockBefore);
+          };
+          noteWrite(dir);
+          writeFileSync(pkgFile, JSON.stringify(withDependencies(withoutDependencies(JSON.parse(before), args.remove ?? []), report.packages), null, 2) + '\n');
+          // A lockfile that installs from elsewhere while package.json now names registry packages only (a removed
+          // file: dependency): the install writes a new one from the registry, and the full scan vets it at install.
+          const regenerated = !manifestProblems(dir).length && lockfileProblems(dir).length > 0;
+          if (regenerated) rmSync(lockFile, { force: true });
+          let install: { code: number; output: string };
+          try {
+            install = await installDependencies(dir, 'Adding the packages');
+          } catch (error) {
+            restore();
+            throw new Error(`${error instanceof Error ? error.message : String(error)}\nNothing was added; package.json restored.`);
+          }
+          if (install.code !== 0) {
+            restore();
+            throw new Error(`tooljet app install failed, package.json restored: ${install.output.trim().slice(0, 4000)}`);
+          }
+          return ok({
+            added: report.packages.map((p) => `${p.name}@${p.version}`),
+            ...(regenerated ? { lockfile: 'The lockfile named packages from outside the registry, so it was written again from the registry.' } : {}),
+            ...(args.remove?.length ? { removed: args.remove } : {}),
+            not_run: (report.notRun ?? []).map((n) => `${n.id}${n.reason ? `: ${n.reason}` : ''}`),
+            // Transitive packages come with the install; code_app_build and code_app_install scan the whole lockfile.
+            next: 'Import the package in frontend/src, then code_app_build.',
+          });
         });
       } catch (err) {
         return fail(err);
