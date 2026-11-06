@@ -12,6 +12,8 @@
  * - a bound that belongs to the outer statement: a final top-level `LIMIT n` (optionally with OFFSET), `FETCH FIRST n
  *   ROWS ONLY` or `SELECT TOP n` / `TOP (n)` (not PERCENT, not WITH TIES); or a projection of aggregates only with no
  *   top-level GROUP BY, or no FROM at all, which return one row;
+ * - no product of tables: no CROSS JOIN, NATURAL JOIN, join ON TRUE, or comma between tables in any FROM list (a LIMIT
+ *   bounds the rows returned, not the product the database builds and sorts first);
  * - every function it calls is a well-known pure aggregate or scalar function, called by its bare name, with no
  *   argument cast to a type its built-in version does not take; no sequence (NEXT VALUE FOR), no locking table hint,
  *   no assignment, no comment the dialect could read differently (CM-36 retest 4).
@@ -178,6 +180,37 @@ function topLevel(sql: string): string | undefined {
   return depth === 0 ? out : undefined;
 }
 
+/* The clauses that end a FROM list at its own depth. */
+const FROM_END = /^(where|group|order|limit|having|window|union|intersect|except|fetch|offset|for|qualify|returning|on|using)\b/;
+
+/**
+ * An unbounded product of tables in an automatic read: CROSS JOIN, NATURAL JOIN (a cross
+ * join when no column is shared), a join ON TRUE, or a comma between tables in any FROM list, at any depth. A row
+ * LIMIT bounds what returns, not what the database sorts or aggregates first: `FROM t a, t b, t c, t d ORDER BY a.id
+ * LIMIT 1` ran as a proven read. Undefined when there is none.
+ */
+export function crossProduct(masked: string): string | undefined {
+  const sql = masked.toLowerCase();
+  if (/\bcross\s+(join|apply)\b/.test(sql)) return 'it has a CROSS JOIN';
+  if (/\bnatural\s+((left|right|full|inner)\s+)?(outer\s+)?join\b/.test(sql)) return 'it has a NATURAL JOIN';
+  if (/\bon\s*\(?\s*(true|1\s*=\s*1|0\s*=\s*0)\s*\)?(?=\s|$|\))/.test(sql)) return 'it joins ON a condition that is always true';
+  for (const match of sql.matchAll(/\bfrom\b/g)) {
+    let depth = 0;
+    for (let i = match.index! + 4; i < sql.length; i++) {
+      const ch = sql[i]!;
+      if (ch === '(') depth++;
+      else if (ch === ')') {
+        if (--depth < 0) break; // the end of the subquery or call this FROM is in
+      } else if (depth === 0) {
+        if (ch === ',') return 'it lists tables separated by commas in FROM (an implicit cross join)';
+        if (ch === ';') break;
+        if (/[a-z_]/.test(ch) && !/[a-z0-9_$]/.test(sql[i - 1] ?? ' ') && FROM_END.test(sql.slice(i))) break;
+      }
+    }
+  }
+  return undefined;
+}
+
 /** Top-level comma-separated items of a collapsed clause. */
 const items = (clause: string): string[] => clause.split(',').map((item) => item.trim()).filter(Boolean);
 
@@ -277,6 +310,8 @@ export function autoReadSqlRefusal(sql: string, dialect?: SqlDialect): string | 
   }
   if (/\boption\s*\(/.test(masked)) return 'it has a query hint (OPTION (...))';
   if (/\bwith\s+ties\b/.test(masked)) return 'WITH TIES can return more rows than its limit';
+  const product = crossProduct(masked);
+  if (product) return `${product}, which can read the product of its tables however small its LIMIT; join on a condition`;
   const fn = impureCall(masked, dialect);
   if (fn) return `it calls ${fn}(), which is not a well-known pure function`;
   const overload = overloadedCall(masked);

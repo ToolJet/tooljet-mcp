@@ -15,7 +15,7 @@ function readPort(): number {
 async function main(): Promise<void> {
   const host = process.env.TOOLJET_MCP_HTTP_HOST ?? '127.0.0.1';
   const port = readPort();
-  const httpMcp = createHttpMcpServer(standaloneHttpPolicy(host));
+  const httpMcp = createHttpMcpServer({ ...standaloneHttpPolicy(host), bindHost: host });
 
   await new Promise<void>((resolve, reject) => {
     httpMcp.server.once('error', reject);

@@ -773,7 +773,7 @@ describe('run_query tool', () => {
         request: { params: { per_page: '3' } },
         response: { statusCode: 200 },
       },
-      warnings: [expect.stringMatching(/User-confirmed REST GET.*metadata\.request.*pagination/i)],
+      warnings: [expect.stringMatching(/User-confirmed REST GET.*metadata\.response.*pagination/i)],
     });
     expect(client.runQuery).toHaveBeenCalledOnce();
   });

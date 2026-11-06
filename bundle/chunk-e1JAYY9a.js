@@ -1,21 +1,1670 @@
 import { createRequire } from "node:module";
+import { i as fail, o as ok, u as assessQueryRead, x as resolvedReadRefusal, y as resolveStaticBindings, z as sqlConnectorPath, G as GUI_LIST_ROWS_KEYS, A as applyResolvedBindings, B as connectorLabel, S as SQL_DIALECT } from "./chunk-Bfjn8-Pb.js";
+import { ax as external_exports } from "./chunk-Dakrk_ob.js";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync, statSync, readdirSync, renameSync, lstatSync, realpathSync, utimesSync, openSync, closeSync, mkdtempSync } from "node:fs";
+import { tmpdir, homedir } from "node:os";
+import { join, relative, sep, dirname, resolve, basename, isAbsolute } from "node:path";
 import { createServer, request } from "node:http";
 import { Http2ServerRequest, constants } from "node:http2";
 import { Readable } from "node:stream";
-import { e5 as fail, e6 as ok, ef as tableQuotaError } from "./chunk-DSzzr2p4.js";
-import { b0 as external_exports } from "./chunk-BK1olK4j.js";
-import { mkdirSync, readFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join, resolve, dirname } from "node:path";
 import { lookup } from "node:dns/promises";
 import { BlockList, isIP, connect } from "node:net";
-import { g as peekAppPlan, h as consumeAppPlan, f as frozenAppRefusal, r as replaceView, b as replaceFingerprint, d as danglingAfterReplace, e as prepareQueryOptionsForWrite, m as matchPlannedPage, l as literalCanvasColor, i as prepareComponentBatch, j as replaceIds, k as expandQueryLifecycles, v as validateEvents, n as navigationReorders, o as persistedEventSpecs } from "./chunk-Biua2IrG.js";
-import { h as assessQueryRead, j as resolvedReadRefusal, k as resolveStaticBindings, s as sqlConnectorPath, G as GUI_LIST_ROWS_KEYS, m as applyResolvedBindings, o as connectorLabel, S as SQL_DIALECT, L as LARGE_READ_ROW_THRESHOLD, p as sameReadSource, u as extractRowCount, x as emptyViewerOnlyParams, y as emptyParamsNote, z as unresolvedNote, v as validateQueryOptions, i as issueMessages } from "./chunk-BQSkKlW7.js";
-import { e as componentRef, y as completedPartialWrites, r as resolveRef, m as indexComponentReferences, i as isFlexContainerType, z as batchChildOrders, c as childOrderProperty } from "./chunk-BNMLqNpt.js";
-import { E as validateAppStructure, e as encodeComponentParent, d as decodeComponentParent } from "./chunk-CLJFCNyS.js";
-import { g as getDatasourceQuerySchema } from "./chunk-DEG7vXOB.js";
-import { randomUUID } from "node:crypto";
-import { fileURLToPath } from "node:url";
+createRequire(import.meta.url);
+var positive = (name, fallback) => {
+  const value = Number(process.env[name]);
+  return Number.isInteger(value) && value > 0 ? value : fallback;
+};
+var MAX_SLOT_AGE_MS = 10 * 6e4;
+var POLL_MS = 250;
+var alive = (pid) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    return err.code === "EPERM";
+  }
+};
+var stale = (file) => {
+  try {
+    if (Date.now() - statSync(file).mtimeMs > MAX_SLOT_AGE_MS)
+      return true;
+    return !alive(Number(readFileSync(file, "utf8")));
+  } catch {
+    return false;
+  }
+};
+var take = (dir, prefix, limit) => {
+  for (let i = 0; i < limit; i++) {
+    const file = join(dir, `${prefix}-${i}`);
+    if (existsSync(file) && stale(file))
+      rmSync(file, { force: true });
+    try {
+      const fd = openSync(file, "wx");
+      writeFileSync(fd, String(process.pid));
+      closeSync(fd);
+      return file;
+    } catch {
+    }
+  }
+  return void 0;
+};
+var BuildCapacityError = class extends Error {
+};
+async function withBuildSlot(root2, workspaceId, work) {
+  const dir = join(root2, ".slots");
+  mkdirSync(dir, { recursive: true });
+  const globalLimit = positive("MCP_CODE_BUILD_MAX_GLOBAL", 6);
+  const workspaceLimit = positive("MCP_CODE_BUILD_MAX_WORKSPACE", 3);
+  const deadline = Date.now() + positive("MCP_CODE_BUILD_WAIT_MS", 18e4);
+  const release = [];
+  try {
+    for (; ; ) {
+      const mine = take(dir, `ws-${workspaceId}`, workspaceLimit);
+      const shared = mine && take(dir, "global", globalLimit);
+      if (mine && shared) {
+        release.push(mine, shared);
+        break;
+      }
+      if (mine)
+        rmSync(mine, { force: true });
+      if (Date.now() >= deadline)
+        throw new BuildCapacityError("Too many builds are running on this server right now. Try again in a minute.");
+      await new Promise((resolve3) => setTimeout(resolve3, POLL_MS));
+    }
+    return await work();
+  } finally {
+    for (const file of release)
+      rmSync(file, { force: true });
+  }
+}
+var LAST_USED = ".tooljet-last-used";
+var CLEAN_MARKER = ".last-cleanup";
+var HOME_PREFIX = "tj-code-home-";
+function touchProject(dir) {
+  const file = join(dir, LAST_USED);
+  const now = /* @__PURE__ */ new Date();
+  try {
+    utimesSync(file, now, now);
+  } catch {
+    try {
+      writeFileSync(file, "");
+    } catch {
+    }
+  }
+}
+var lastUsed = (dir) => {
+  for (const name of [LAST_USED, "app.json"]) {
+    try {
+      return statSync(join(dir, name)).mtimeMs;
+    } catch {
+    }
+  }
+  return statSync(dir).mtimeMs;
+};
+function cleanOldProjects(root2) {
+  const days = Number(process.env.MCP_CODE_PROJECT_TTL_DAYS ?? 14);
+  if (!(days > 0) || !existsSync(root2))
+    return;
+  const marker = join(root2, CLEAN_MARKER);
+  try {
+    if (Date.now() - statSync(marker).mtimeMs < 36e5)
+      return;
+  } catch {
+  }
+  writeFileSync(marker, "");
+  const oldest = Date.now() - days * 864e5;
+  const isProject = (dir) => existsSync(join(dir, "app.json"));
+  const projects = (dir, depth) => {
+    if (isProject(dir))
+      return [dir];
+    if (depth === 0)
+      return [];
+    return readdirSync(dir, { withFileTypes: true }).filter((e) => e.isDirectory() && !e.name.startsWith(".")).flatMap((e) => projects(join(dir, e.name), depth - 1));
+  };
+  for (const entry of readdirSync(root2, { withFileTypes: true })) {
+    if (!entry.isDirectory() || entry.name.startsWith("."))
+      continue;
+    const dir = join(root2, entry.name);
+    for (const project of projects(dir, entry.name.startsWith("d_") ? 2 : 1)) {
+      if (lastUsed(project) < oldest)
+        rmSync(project, { recursive: true, force: true });
+    }
+  }
+  for (const entry of readdirSync(tmpdir(), { withFileTypes: true })) {
+    if (!entry.isDirectory() || !entry.name.startsWith(HOME_PREFIX))
+      continue;
+    const dir = join(tmpdir(), entry.name);
+    if (Date.now() - statSync(dir).mtimeMs > 864e5)
+      rmSync(dir, { recursive: true, force: true });
+  }
+}
+var CLI_HOME_PREFIX = HOME_PREFIX;
+var BROWSER_USER = /\{\{[^}]*?\bglobals\s*\.\s*currentUser\b/;
+function browserUserBindings(options, path = []) {
+  if (typeof options === "string")
+    return BROWSER_USER.test(options) ? [path.join(".") || "options"] : [];
+  if (Array.isArray(options))
+    return options.flatMap((value, index) => browserUserBindings(value, [...path, String(index)]));
+  if (options && typeof options === "object") {
+    return Object.entries(options).flatMap(([key, value]) => browserUserBindings(value, [...path, key]));
+  }
+  return [];
+}
+function browserUserMessage(queryName, paths) {
+  return `Query "${queryName}": ${paths.join(", ")} ${paths.length > 1 ? "read" : "reads"} {{globals.currentUser.*}}, which the viewer's browser resolves and sends with the run, so anyone can send another user's email. In a Code mode app use {{globals.server.currentUser.*}} (email, id, firstName, groups), which ToolJet resolves on the server, for own-row filters and every "who" column (requester, approver, actor).`;
+}
+var CODE_PAGE_TRUE = /* @__PURE__ */ new Set([true, "true", "{{true}}"]);
+function isCodeModeApp(app) {
+  if (app?.build_mode === "code" || app?.buildMode === "code")
+    return true;
+  for (const page of Array.isArray(app?.pages) ? app.pages : []) {
+    for (const entry of Object.values(page?.components ?? {})) {
+      if (CODE_PAGE_TRUE.has(entry?.component?.definition?.properties?.codePage?.value))
+        return true;
+    }
+  }
+  return false;
+}
+function browserUserQueryProblems(app) {
+  const queries = Array.isArray(app?.data_queries) ? app.data_queries : [];
+  return queries.flatMap((query) => {
+    const paths = browserUserBindings(query?.options ?? {});
+    return paths.length ? [browserUserMessage(String(query?.name ?? query?.id ?? "query"), paths)] : [];
+  });
+}
+var TS_LINE = /^(\S+?):(\d+):(\d+) - error (TS\d+): (.*)$/;
+var ESBUILD_LINE = /^(\S+?):(\d+):(\d+): ERROR: (.*)$/;
+var CSS_IN_PLUGIN = /^\[plugin: [\w-]+\] (?:.*\/frontend\/)?(\S+?\.css):(\d+):(\d+): (.*)$/;
+var MAX_MESSAGE = 300;
+var clipText = (text, max) => text.length > max ? `${text.slice(0, max)}...` : text;
+var inFrontend = (file) => file.startsWith("frontend/") ? file : `frontend/${file}`;
+function fixFor(code, message) {
+  if (/custom-component-sdk/.test(message) && /Cannot find module|Could not resolve/.test(message))
+    return "the SDK's types are missing on this server, not in the code: never declare the module yourself; build again";
+  if (/Cannot find module '\.{1,2}\/|Could not resolve "\.{1,2}\//.test(message))
+    return "no such file: write it (files: [{ path, content }]) or correct the path";
+  if (/Could not resolve "@tooljet\//.test(message))
+    return "no such package: the SDK is @tooljet/custom-component-sdk, and data comes from ../tooljet.gen (useAppQuery)";
+  if (/has no exported member|No matching export/.test(message))
+    return "export that name from the file it is imported from, or import a name the file exports";
+  if (code === "TS7006")
+    return "give the parameter a type, or type the list it comes from (a Row type from tooljet.gen)";
+  if (/'QueryError' is not assignable to type 'ReactNode'/.test(message))
+    return "render error.message, not the error";
+  if (/LucideIcon/.test(message))
+    return "type the icon prop as LucideIcon: import type { LucideIcon } from 'lucide-react'";
+  if (/\.data' is possibly 'undefined'/.test(message))
+    return "data is undefined until the first run: const rows = q.data ?? []";
+  if (code === "TS18047" || /'null' is not assignable/.test(message))
+    return "a nullable column is T | null in its Row type: check for null, or use ?? ''";
+  if (code === "TS2339" && /on type '\{|Row(\[\])?'/.test(message))
+    return "not a field of this row: use only the fields its Row type in tooljet.gen lists";
+  if (/has already been declared|Duplicate identifier|Cannot redeclare/.test(message))
+    return "remove one of the two declarations";
+  if (code === "CSS" && /Unknown word/.test(message))
+    return "a stray */ or an unclosed comment or rule";
+  return void 0;
+}
+var routeFix = (p) => !p.fix && p.code === "TS2345" && /routePath\(/.test(p.source ?? "") ? { ...p, fix: "add the route to app.json's routes (the build refreshes ROUTES), or use an id it has" } : p;
+function parseBuildProblems(output) {
+  const lines = output.split("\n");
+  const problems = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    const ts = TS_LINE.exec(line);
+    if (ts) {
+      const message = [ts[5]];
+      let j = i + 1;
+      while (j < lines.length && lines[j].trim() && !TS_LINE.test(lines[j].trim()) && !/^\d+ /.test(lines[j].trim())) {
+        message.push(lines[j].trim());
+        j++;
+      }
+      while (j < lines.length && !lines[j].trim())
+        j++;
+      const code = new RegExp(`^${ts[2]} (.*)$`).exec(lines[j]?.trim() ?? "");
+      problems.push({
+        at: `${inFrontend(ts[1])}:${ts[2]}:${ts[3]}`,
+        code: ts[4],
+        message: clipText(message.slice(0, 3).join(" / "), MAX_MESSAGE),
+        ...code ? { source: clipText(code[1].trim(), 160) } : {}
+      });
+      continue;
+    }
+    const es = ESBUILD_LINE.exec(line);
+    if (es) {
+      const css = CSS_IN_PLUGIN.exec(es[4]);
+      problems.push(css ? { at: `${inFrontend(css[1])}:${css[2]}:${css[3]}`, code: "CSS", message: clipText(css[4], MAX_MESSAGE) } : { at: `${inFrontend(es[1])}:${es[2]}:${es[3]}`, code: "ESBUILD", message: clipText(es[4], MAX_MESSAGE) });
+    }
+  }
+  return problems.map((p) => routeFix({ ...p, ...fixFor(p.code, p.message) ? { fix: fixFor(p.code, p.message) } : {} }));
+}
+var fromChecked = (p) => routeFix({
+  at: `${inFrontend(p.file)}:${p.line}:${p.column}`,
+  code: p.code,
+  message: clipText(p.message.split("\n").slice(0, 3).map((l) => l.trim()).join(" / "), MAX_MESSAGE),
+  ...p.source ? { source: p.source } : {},
+  ...fixFor(p.code, p.message) ? { fix: fixFor(p.code, p.message) } : {}
+});
+function formatProblems(problems, max = 40) {
+  const groups = /* @__PURE__ */ new Map();
+  for (const p of problems) {
+    const file = p.at.replace(/:\d+:\d+$/, "");
+    const key = `${file}\0${p.code}\0${p.message}`;
+    const group = groups.get(key);
+    if (group)
+      group.at.push(p.at.slice(file.length));
+    else
+      groups.set(key, { first: p, at: [p.at] });
+  }
+  const lines = [...groups.values()].map(({ first, at }) => [`${at.join(", ")} ${first.code} ${first.message}`, first.source && `code: ${first.source}`, first.fix && `fix: ${first.fix}`].filter(Boolean).join(" | "));
+  return lines.length > max ? [...lines.slice(0, max), `... and ${lines.length - max} more`] : lines;
+}
+function buildSummary(output) {
+  const lines = output.split("\n").map((l) => l.trimEnd());
+  const keep = lines.filter((l) => /^\s*(✗|✓|⚠)/.test(l) || /Build completed in/.test(l));
+  return keep.join("\n");
+}
+var DEFAULT_REGISTRY = "https://registry.npmjs.org/";
+function realOrNearest(target) {
+  let at = target;
+  const rest = [];
+  for (; ; ) {
+    try {
+      return join(realpathSync(at), ...rest.reverse());
+    } catch {
+      const parent = dirname(at);
+      if (parent === at)
+        return target;
+      rest.push(at.slice(parent.length).replace(/^[\\/]+/, ""));
+      at = parent;
+    }
+  }
+}
+var isInside = (base, target) => {
+  const rel = relative(base, target);
+  return rel === "" || !rel.startsWith("..") && !isAbsolute(rel);
+};
+function insideProject(dir, path, label = path) {
+  const full = resolve(dir, path);
+  if (!isInside(resolve(dir), full))
+    throw new Error(`"${label}" is outside the project`);
+  const parts = relative(resolve(dir), full).split(sep).filter(Boolean);
+  let at = resolve(dir);
+  for (const part of parts) {
+    at = join(at, part);
+    let linked = false;
+    try {
+      linked = lstatSync(at).isSymbolicLink();
+    } catch {
+      break;
+    }
+    if (linked)
+      throw new Error(`"${label}" goes through a link (${relative(dir, at).split(sep).join("/")}), which these tools never follow`);
+  }
+  if (!isInside(realOrNearest(resolve(dir)), realOrNearest(full)))
+    throw new Error(`"${label}" is outside the project`);
+  return full;
+}
+function unstoredSegment(rel) {
+  return rel.split("/").find((part) => part === "node_modules" || part.startsWith("."));
+}
+function unstoredSourceEntries(dir) {
+  const found = [];
+  const walk = (at) => {
+    if (!existsSync(at))
+      return;
+    for (const entry of readdirSync(at, { withFileTypes: true })) {
+      const full = join(at, entry.name);
+      if (entry.name === "node_modules" || entry.name.startsWith("."))
+        found.push(relative(dir, full).split(sep).join("/"));
+      else if (entry.isDirectory())
+        walk(full);
+    }
+  };
+  walk(join(dir, "frontend", "src"));
+  walk(join(dir, "frontend", "styles"));
+  return found.sort();
+}
+function removeUnstoredSource(dir) {
+  const found = unstoredSourceEntries(dir);
+  for (const rel of found)
+    rmSync(join(dir, rel), { recursive: true, force: true });
+  return found;
+}
+var PATH_SPEC = /^(?:\.|~[\\/]|[\\/]|[a-zA-Z]:)/;
+var TARBALL = /\.(?:tgz|tar\.gz|tar)$/i;
+var REGISTRY_SPEC = /^[A-Za-z0-9.^~<>=*|+ -]*$/;
+function nonRegistrySpec(spec) {
+  if (typeof spec !== "string")
+    return "it is not a version";
+  const value = spec.trim();
+  if (PATH_SPEC.test(value))
+    return "it is a local path";
+  if (TARBALL.test(value))
+    return "it is a tarball file";
+  if (/[:/\\#@]/.test(value))
+    return "it is not a registry version (file:, link:, git, URL, GitHub, alias or workspace specs are refused)";
+  if (!REGISTRY_SPEC.test(value))
+    return "it is not a registry version or range";
+  return void 0;
+}
+var DEPENDENCY_FIELDS = ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"];
+function configuredRegistry(env = process.env) {
+  const raw = env.npm_config_registry || env.NPM_CONFIG_REGISTRY || DEFAULT_REGISTRY;
+  return raw.endsWith("/") ? raw : `${raw}/`;
+}
+function foreignResolved(resolved, registry2 = configuredRegistry()) {
+  if (typeof resolved !== "string")
+    return "it has no download URL";
+  let url;
+  let reg;
+  try {
+    url = new URL(resolved);
+    reg = new URL(registry2);
+  } catch {
+    return `it downloads from "${resolved.slice(0, 120)}", which is not a URL`;
+  }
+  if (url.username || url.password)
+    return "its download URL carries credentials";
+  const sameRegistry = url.origin === reg.origin && url.pathname.startsWith(reg.pathname);
+  const publicRegistry = url.protocol === "https:" && url.host === "registry.npmjs.org";
+  if (!sameRegistry && !publicRegistry)
+    return `it downloads from ${url.origin}, not the configured registry (${reg.origin})`;
+  if (publicRegistry)
+    return void 0;
+  if (url.protocol !== "https:" && reg.protocol !== url.protocol)
+    return "it downloads over plain http";
+  return void 0;
+}
+function dependencyProblems(dir, registry2 = configuredRegistry()) {
+  return [...manifestProblems(dir), ...lockfileProblems(dir, registry2)];
+}
+function manifestProblems(dir) {
+  const problems = [];
+  const manifest = insideProject(dir, "frontend/package.json");
+  if (!existsSync(manifest))
+    return problems;
+  let pkg;
+  try {
+    pkg = JSON.parse(readFileSync(manifest, "utf8"));
+  } catch {
+    return ["frontend/package.json is not valid JSON"];
+  }
+  for (const field of DEPENDENCY_FIELDS) {
+    const deps = pkg[field];
+    if (!deps || typeof deps !== "object")
+      continue;
+    for (const [name, spec] of Object.entries(deps)) {
+      const why = nonRegistrySpec(spec);
+      if (why)
+        problems.push(`frontend/package.json ${field} "${name}": "${String(spec).slice(0, 120)}": ${why}`);
+    }
+  }
+  if (pkg.workspaces !== void 0)
+    problems.push("frontend/package.json declares workspaces, which install other folders");
+  for (const field of ["overrides", "resolutions"]) {
+    const walk = (value, at) => {
+      if (typeof value === "string") {
+        const why = value.startsWith("$") ? void 0 : nonRegistrySpec(value);
+        if (why)
+          problems.push(`frontend/package.json ${field} ${at}: "${value.slice(0, 120)}": ${why}`);
+      } else if (value && typeof value === "object") {
+        for (const [key, child] of Object.entries(value))
+          walk(child, at ? `${at} > ${key}` : key);
+      }
+    };
+    walk(pkg[field], "");
+  }
+  return problems;
+}
+function lockfileProblems(dir, registry2 = configuredRegistry()) {
+  const problems = [];
+  for (const name of ["package-lock.json", "npm-shrinkwrap.json"]) {
+    const file = insideProject(dir, `frontend/${name}`);
+    if (!existsSync(file))
+      continue;
+    let lock;
+    try {
+      lock = JSON.parse(readFileSync(file, "utf8"));
+    } catch {
+      problems.push(`frontend/${name} is not valid JSON`);
+      continue;
+    }
+    for (const [key, entry] of Object.entries(lock.packages ?? {})) {
+      if (key === "")
+        continue;
+      if (!/^node_modules\/(?:@[^/]+\/)?[^/]+(?:\/node_modules\/(?:@[^/]+\/)?[^/]+)*$/.test(key)) {
+        problems.push(`frontend/${name} entry "${key.slice(0, 120)}" is not an installed package (a linked folder)`);
+        continue;
+      }
+      if (entry?.link) {
+        problems.push(`frontend/${name} entry "${key.slice(0, 120)}" is a link to a folder`);
+        continue;
+      }
+      const why = entry?.resolved === void 0 ? void 0 : foreignResolved(entry.resolved, registry2);
+      if (why)
+        problems.push(`frontend/${name} entry "${key.slice(0, 120)}": ${why}`);
+    }
+    const walkV1 = (deps, at) => {
+      for (const [dep, entry] of Object.entries(deps ?? {})) {
+        const where = at ? `${at} > ${dep}` : dep;
+        const version = typeof entry?.version === "string" ? entry.version : "";
+        if (/^(file|link|git|github|http|https):|^\.|\//.test(version))
+          problems.push(`frontend/${name} dependency "${where}" is "${version.slice(0, 120)}", not a registry package`);
+        else if (entry?.resolved !== void 0) {
+          const why = foreignResolved(entry.resolved, registry2);
+          if (why)
+            problems.push(`frontend/${name} dependency "${where}": ${why}`);
+        }
+        walkV1(entry?.dependencies, where);
+      }
+    };
+    if (!lock.packages)
+      walkV1(lock.dependencies, "");
+  }
+  return [...new Set(problems)];
+}
+function dependencyRefusal(dir, what) {
+  const problems = dependencyProblems(dir);
+  if (!problems.length)
+    return void 0;
+  return new Error(`${what} was refused: the app's dependencies must all be registry packages from the configured registry.
+` + problems.slice(0, 20).map((p) => `- ${p}`).join("\n") + (problems.length > 20 ? `
+- and ${problems.length - 20} more` : "") + "\nRemove these packages with code_app_add_dependency (remove), or pin each to a registry version.");
+}
+function escapingLinks(dir) {
+  const modules = join(dir, "frontend", "node_modules");
+  if (!existsSync(modules))
+    return [];
+  let base;
+  try {
+    base = realpathSync(dir);
+  } catch {
+    return [];
+  }
+  const sdk = (process.env.TOOLJET_SDK_SPEC ?? "").replace(/^file:/, "");
+  let sdkReal;
+  try {
+    sdkReal = sdk ? realpathSync(sdk) : void 0;
+  } catch {
+    sdkReal = void 0;
+  }
+  const out = [];
+  const check = (full) => {
+    let link = false;
+    try {
+      link = lstatSync(full).isSymbolicLink();
+    } catch {
+      return;
+    }
+    if (!link)
+      return;
+    let target;
+    try {
+      target = realpathSync(full);
+    } catch {
+      return;
+    }
+    if (isInside(base, target) || sdkReal && target === sdkReal)
+      return;
+    out.push(relative(dir, full).split(sep).join("/"));
+  };
+  for (const entry of readdirSync(modules, { withFileTypes: true })) {
+    const full = join(modules, entry.name);
+    if (entry.name.startsWith("@") && entry.isDirectory()) {
+      for (const child of readdirSync(full))
+        check(join(full, child));
+    } else {
+      check(full);
+    }
+  }
+  return out.sort();
+}
+function removeEscapingLinks(dir) {
+  const links = escapingLinks(dir);
+  if (!links.length)
+    return void 0;
+  for (const rel of links)
+    rmSync(join(dir, rel), { force: true });
+  return new Error(`The install linked ${links.join(", ")} to a folder outside the project; ${links.length > 1 ? "those links were" : "that link was"} removed. Only registry packages may be installed.`);
+}
+var WRITES_MARKER = join(".tooljet", "agent-writes.json");
+function markAgentWrites(dir) {
+  try {
+    mkdirSync(join(dir, ".tooljet"), { recursive: true });
+    writeFileSync(join(dir, WRITES_MARKER), JSON.stringify({ at: (/* @__PURE__ */ new Date()).toISOString(), pid: process.pid }) + "\n");
+  } catch {
+  }
+}
+var hasAgentWrites = (dir) => {
+  const ttl = Number(process.env.MCP_CODE_WRITES_MARKER_TTL_MS ?? 6 * 36e5);
+  const at = statSync(join(dir, WRITES_MARKER), { throwIfNoEntry: false })?.mtimeMs;
+  return at !== void 0 && (!(ttl > 0) || Date.now() - at < ttl);
+};
+function clearAgentWrites(dir) {
+  rmSync(join(dir, WRITES_MARKER), { force: true });
+}
+function beforePullCopies(dir) {
+  const folder = join(dir, ".tooljet", "before-pull");
+  if (!existsSync(folder))
+    return [];
+  return readdirSync(folder, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => ({ name: entry.name, at: statSync(join(folder, entry.name)).mtimeMs })).sort((a, b) => b.at - a.at || (a.name < b.name ? 1 : -1)).map((entry) => `.tooljet/before-pull/${entry.name}`);
+}
+function pruneBeforePull(dir, keep = 3) {
+  const copies = beforePullCopies(dir);
+  for (const old of copies.slice(keep))
+    rmSync(join(dir, old), { recursive: true, force: true });
+  return copies.slice(0, keep);
+}
+var alive2 = (pid) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error.code === "EPERM";
+  }
+};
+var ProjectBusyError = class extends Error {
+};
+async function withProjectLock(lock, work, { waitMs, pollMs = 100 } = {}) {
+  const wait = waitMs ?? Number(process.env.MCP_CODE_PROJECT_LOCK_WAIT_MS ?? 6e5);
+  const stale2 = Number(process.env.MCP_CODE_PROJECT_LOCK_STALE_MS ?? 18e5);
+  const deadline = Date.now() + wait;
+  mkdirSync(dirname(lock), { recursive: true });
+  const token = `${process.pid}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+  for (; ; ) {
+    try {
+      mkdirSync(lock);
+      writeFileSync(join(lock, "owner"), JSON.stringify({ pid: process.pid, at: Date.now(), token }));
+      break;
+    } catch (error) {
+      if (error.code !== "EEXIST")
+        throw error;
+      let owner = {};
+      try {
+        owner = JSON.parse(readFileSync(join(lock, "owner"), "utf8"));
+      } catch {
+        owner = { at: statSync(lock, { throwIfNoEntry: false })?.mtimeMs };
+      }
+      const gone = owner.pid !== void 0 && owner.pid !== process.pid && !alive2(owner.pid) || owner.at !== void 0 && Date.now() - owner.at > stale2;
+      if (gone) {
+        rmSync(lock, { recursive: true, force: true });
+        continue;
+      }
+      if (Date.now() >= deadline) {
+        throw new ProjectBusyError("Another build is working on this app's code right now, so nothing was done. Try again in a minute.");
+      }
+      await new Promise((r) => setTimeout(r, pollMs));
+    }
+  }
+  try {
+    return await work();
+  } finally {
+    try {
+      const owner = JSON.parse(readFileSync(join(lock, "owner"), "utf8"));
+      if (owner.token === token)
+        rmSync(lock, { recursive: true, force: true });
+    } catch {
+    }
+  }
+}
+var run = promisify(execFile);
+var USER_WORDS = ` Talk to the user about "the app's code" and its versions (v1, v2): one version line, as for any app. Never say code version, revision, publishing code, bundle, library, manifest, root component, dev track or pin, and never show internal names, ids or paths.`;
+var noCodeIdentity = (client) => ({
+  client,
+  workspaceId: async () => "",
+  apiUrl: "",
+  appUrl: ""
+});
+var scope = new AsyncLocalStorage();
+var current = () => {
+  const active = scope.getStore();
+  if (!active)
+    throw new Error("Code tools need a request identity");
+  return active;
+};
+var SAFE_WORKSPACE = /^[A-Za-z0-9-]{1,64}$/;
+var deploymentKey = (apiUrl) => {
+  let url;
+  try {
+    url = new URL(apiUrl);
+  } catch {
+    throw new Error("This request names no valid ToolJet backend.");
+  }
+  if (!["http:", "https:"].includes(url.protocol))
+    throw new Error("This request names no valid ToolJet backend.");
+  const canonical = `${url.protocol}//${url.host}${url.pathname.replace(/\/+$/, "")}`;
+  return `d_${createHash("sha256").update(canonical).digest("hex").slice(0, 24)}`;
+};
+var inScope = (context, handler) => async (args) => {
+  try {
+    if (!context.credential?.sessionToken && !context.credential?.pat)
+      throw new Error("Code tools act for a signed-in user, and this request names none.");
+    const deployment = deploymentKey(context.apiUrl);
+    const workspace = await context.workspaceId();
+    if (!SAFE_WORKSPACE.test(workspace))
+      throw new Error("This request has no valid workspace.");
+    return await scope.run({ ...context, workspace, deployment, authorized: authorizedFor(context) }, () => handler(args));
+  } catch (err) {
+    return fail(err);
+  }
+};
+var grantTtlMs = () => {
+  const ttl = Number(process.env.MCP_CODE_APP_AUTH_TTL_MS ?? 3e4);
+  return Number.isFinite(ttl) && ttl >= 0 ? ttl : 3e4;
+};
+var authorizations = /* @__PURE__ */ new WeakMap();
+var authorizedFor = (context) => {
+  const known = authorizations.get(context) ?? /* @__PURE__ */ new Map();
+  authorizations.set(context, known);
+  return known;
+};
+var authorizeApp = async (appId, need) => {
+  const active = current();
+  const key = `${active.deployment}\0${active.workspace}\0${appId}`;
+  const known = active.authorized.get(key);
+  if (known && Date.now() - known.at < grantTtlMs() && known[need])
+    return;
+  active.authorized.delete(key);
+  let app;
+  try {
+    app = await active.client.getApp(appId);
+  } catch {
+    throw new Error(`App ${appId} was not found in this workspace.`);
+  }
+  const owner = app?.organizationId ?? app?.organization_id;
+  if (!owner || owner !== active.workspace)
+    throw new Error(`App ${appId} was not found in this workspace.`);
+  const versionId = app?.editing_version?.id ?? app?.editingVersion?.id;
+  let access;
+  try {
+    if (!versionId)
+      throw new Error("no version");
+    access = await active.client.codeSourceAccess(appId, versionId);
+  } catch {
+    throw new Error(need === "edit" ? `ToolJet could not confirm that you can edit app ${appId}, so nothing was changed.` : `ToolJet could not confirm that you can read app ${appId}'s code, so nothing was read.`);
+  }
+  const grant = { read: access.read, edit: access.read && access.write, at: Date.now() };
+  active.authorized.set(key, grant);
+  if (need === "edit" && !grant.edit) {
+    throw new Error(grant.read ? `You can view app ${appId} but not edit it, so its code cannot be changed, built or installed here.` : `You can view app ${appId} but not edit it or read its code, so its code cannot be changed, built or installed here.`);
+  }
+  if (need === "read" && !grant.read)
+    throw new Error(`You can use app ${appId} but ToolJet does not let you read its code.`);
+};
+var baseRoot = () => resolve(process.env.TOOLJET_CODE_APP_ROOT || join(homedir(), "tooljet-code-apps"));
+var root = () => join(baseRoot(), current().deployment, current().workspace);
+var legacyFolders = () => {
+  const owner = process.env.MCP_CODE_LEGACY_DEPLOYMENT_URL || process.env.TOOLJET_URL || process.env.TOOLJET_DEPLOYMENT_URL || process.env.TOOLJET_APP_URL || "http://localhost:3000";
+  try {
+    if (deploymentKey(owner) !== current().deployment)
+      return [];
+  } catch {
+    return [];
+  }
+  return [join(baseRoot(), current().workspace), baseRoot()];
+};
+var NAME = /^[a-z][a-z0-9-]{1,40}$/;
+var projectDir = (name) => {
+  if (!NAME.test(name))
+    throw new Error(`name must match ${NAME} (lowercase letters, digits, hyphens)`);
+  return join(root(), name);
+};
+var appIdOf = (dir) => {
+  try {
+    return JSON.parse(readFileSync(join(dir, "app.json"), "utf8")).appId;
+  } catch {
+    return void 0;
+  }
+};
+var projectsIn = (folder, appId) => {
+  if (!existsSync(folder))
+    return [];
+  return readdirSync(folder, { withFileTypes: true }).filter((entry) => entry.isDirectory() && NAME.test(entry.name) && appIdOf(join(folder, entry.name)) === appId).map((entry) => entry.name).sort((a, b) => statSync(join(folder, b, "app.json")).mtimeMs - statSync(join(folder, a, "app.json")).mtimeMs);
+};
+var projectsForApp = (appId) => {
+  for (const folder of legacyFolders()) {
+    for (const name of projectsIn(folder, appId)) {
+      mkdirSync(root(), { recursive: true });
+      if (!existsSync(join(root(), name)))
+        renameSync(join(folder, name), join(root(), name));
+    }
+  }
+  return projectsIn(root(), appId);
+};
+var APP_ID = external_exports.string().uuid().optional().describe("The app's id: finds its project, so you never have to know the folder name");
+var PROJECT_NAME = external_exports.string().regex(NAME).optional().describe("The project folder, when you know it; app_id is enough");
+var locateProject = async (args, need) => {
+  let dir;
+  if (args.app_id) {
+    await authorizeApp(args.app_id, need);
+    const [found] = projectsForApp(args.app_id);
+    if (!found)
+      throw new Error(`no Code mode project for app ${args.app_id}; call code_app_scaffold with this app_id`);
+    dir = join(root(), found);
+  } else {
+    if (!args.name)
+      throw new Error("give app_id (or the project name)");
+    dir = projectDir(args.name);
+    const legacy = existsSync(join(dir, "app.json")) ? void 0 : legacyFolders().map((folder) => join(folder, args.name)).find((candidate) => existsSync(join(candidate, "app.json")));
+    const owner = appIdOf(legacy ?? dir);
+    if (!owner)
+      throw new Error(`no app project "${args.name}"; call code_app_scaffold first`);
+    await authorizeApp(owner, need);
+    if (legacy) {
+      mkdirSync(root(), { recursive: true });
+      renameSync(legacy, dir);
+    }
+  }
+  touchProject(dir);
+  return dir;
+};
+var projectLockPath = (dir) => join(baseRoot(), ".locks", `${current().deployment}.${current().workspace}.${basename(dir)}`);
+var onProject = (dir, work) => withProjectLock(projectLockPath(dir), work);
+var STYLE_FILES = /* @__PURE__ */ new Set(["frontend/styles/theme.css", "frontend/styles/global.css"]);
+var editable = (dir, path) => {
+  const full = resolve(dir, path);
+  const rel = relative(dir, full).split(sep).join("/");
+  if (!(rel === "app.json" || STYLE_FILES.has(rel) || rel.startsWith("frontend/src/") && !rel.endsWith("tooljet.gen.ts"))) {
+    throw new Error(`"${path}" is not editable: write app.json, frontend/styles/theme.css, frontend/styles/global.css or files under frontend/src/ (tooljet.gen.ts is generated)`);
+  }
+  const unstored = unstoredSegment(rel.slice("frontend/".length));
+  if (rel.startsWith("frontend/") && unstored) {
+    throw new Error(unstored === "node_modules" ? `"${path}" is not editable: nothing may be written under a node_modules folder (add packages with code_app_add_dependency)` : `"${path}" is not editable: files and folders whose names start with a dot are never stored with the app`);
+  }
+  return insideProject(dir, rel, path);
+};
+var TEXT = /\.(tsx?|jsx?|json|css|md)$/i;
+var listFiles = (dir, base = dir, out = []) => {
+  if (!existsSync(dir))
+    return out;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (["node_modules", "dist"].includes(entry.name) || entry.name.startsWith("."))
+      continue;
+    const full = join(dir, entry.name);
+    if (entry.isDirectory())
+      listFiles(full, base, out);
+    else if (entry.isFile() && TEXT.test(entry.name) && entry.name !== "package-lock.json")
+      out.push(relative(base, full).split(sep).join("/"));
+  }
+  return out.sort();
+};
+var strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "");
+var HOST_ENV = [
+  "PATH",
+  "TMPDIR",
+  "TEMP",
+  "TMP",
+  "LANG",
+  "LC_ALL",
+  "HTTP_PROXY",
+  "HTTPS_PROXY",
+  "NO_PROXY",
+  "http_proxy",
+  "https_proxy",
+  "no_proxy",
+  "NODE_EXTRA_CA_CERTS",
+  "SSL_CERT_FILE",
+  "SSL_CERT_DIR",
+  "TOOLJET_SDK_SPEC",
+  "TOOLJET_APP_SCANNER_BIN"
+];
+var SECRET_NAME = /TOKEN|SECRET|PASSWORD|PASSWD|KEY|PAT$|CREDENTIAL|COOKIE/i;
+var operatorEnv = () => (process.env.MCP_CODE_CLI_ENV_PASS ?? "").split(",").map((name) => name.trim()).filter((name) => name && !SECRET_NAME.test(name));
+var cliHome;
+var buildHome = () => cliHome ??= mkdtempSync(join(tmpdir(), CLI_HOME_PREFIX));
+process.once("exit", () => {
+  if (cliHome)
+    rmSync(cliHome, { recursive: true, force: true });
+});
+var cliEnv = () => {
+  const active = current();
+  const env = {};
+  for (const name of [...HOST_ENV, ...operatorEnv()])
+    if (process.env[name] !== void 0)
+      env[name] = process.env[name];
+  const { sessionToken, pat } = active.credential ?? {};
+  return {
+    ...env,
+    HOME: buildHome(),
+    USERPROFILE: buildHome(),
+    FORCE_COLOR: "0",
+    // The CLI is oclif: under NODE_ENV=development it loads its TypeScript sources instead of the build and fails
+    // ("Unexpected token ':'"). A ToolJet server running in development passes that on to this MCP server.
+    NODE_ENV: "production",
+    TOOLJET_CLI_SERVER_MODE: "1",
+    TOOLJET_URL: active.apiUrl,
+    TOOLJET_APP_URL: process.env.TOOLJET_DEPLOYMENT_URL ?? active.appUrl,
+    ...sessionToken ? { TOOLJET_SESSION_TOKEN: sessionToken, TOOLJET_WORKSPACE_ID: active.workspace } : { TOOLJET_PAT: pat },
+    // npm's cache is by content hash, so projects can share it; a home per process alone would download everything each build.
+    npm_config_cache: process.env.MCP_CODE_NPM_CACHE ?? join(baseRoot(), ".npm-cache"),
+    ...registry() ? { npm_config_registry: registry() } : {}
+  };
+};
+var registry = () => process.env.npm_config_registry ?? process.env.NPM_CONFIG_REGISTRY;
+var COUNTED_COMMANDS = /* @__PURE__ */ new Set(["library build", "app dev", "app install", "app check"]);
+var runCli = async (cwd, args, timeoutMs) => {
+  const [cmd, pre] = process.env.TOOLJET_CLI ? ["node", [process.env.TOOLJET_CLI]] : ["tooljet", []];
+  try {
+    const { stdout, stderr } = await run(cmd, [...pre, ...args], { cwd, timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024, env: cliEnv() });
+    return { code: 0, output: strip(stdout + stderr) };
+  } catch (err) {
+    const e = err;
+    return { code: typeof e.code === "number" ? e.code : 1, output: strip((e.stdout ?? "") + (e.stderr ?? e.message ?? "")) };
+  }
+};
+var serverModeChecked;
+var requireServerModeCli = () => {
+  if (process.env.MCP_CODE_CLI_HANDSHAKE === "0")
+    return Promise.resolve();
+  serverModeChecked ??= runCli(baseRoot(), ["app", "server-mode"], 6e4).then((answer) => {
+    if (!answer.output.includes("tooljet-server-mode:1")) {
+      serverModeChecked = void 0;
+      throw new Error("This server's ToolJet CLI does not support server mode, so Code builds are off here. Update the CLI.");
+    }
+  });
+  return serverModeChecked;
+};
+async function cli(cwd, args, timeoutMs = 3e5) {
+  mkdirSync(baseRoot(), { recursive: true });
+  await requireServerModeCli();
+  const command = args.filter((a) => !a.startsWith("-")).slice(0, 2).join(" ");
+  if (!COUNTED_COMMANDS.has(command))
+    return runCli(cwd, args, timeoutMs);
+  return withBuildSlot(baseRoot(), `${current().deployment}.${current().workspace}`, () => runCli(cwd, args, timeoutMs));
+}
+var PLACEHOLDER_NAME = /^Untitled App\b/;
+async function nameApp(client, dir, name, replaceName) {
+  let snapshot;
+  try {
+    snapshot = JSON.parse(readFileSync(join(dir, ".tooljet", "snapshot.json"), "utf8"));
+  } catch {
+    return {};
+  }
+  const standIn = PLACEHOLDER_NAME.test(snapshot.appName ?? "") || !!replaceName && snapshot.appName === replaceName;
+  if (!client || !snapshot.appId || !snapshot.versionId || !standIn || snapshot.appName === name)
+    return {};
+  try {
+    await client.renameApp(snapshot.appId, snapshot.versionId, name);
+    return { renamed_to: name };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/exist|unique|duplicate|taken|conflict|409|422/i.test(message))
+      return { rename_warning: `Could not name the app: ${message}` };
+    const fallback = `${name} ${Math.random().toString(36).slice(2, 5)}`;
+    await client.renameApp(snapshot.appId, snapshot.versionId, fallback);
+    return { renamed_to: fallback, rename_warning: `App name "${name}" is already used in this workspace; the app was named "${fallback}" instead.` };
+  }
+}
+function parseReport(output) {
+  const start = output.indexOf("{");
+  const end = output.lastIndexOf("}");
+  if (start < 0 || end < start)
+    return null;
+  try {
+    return JSON.parse(output.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+}
+var mustFix = (security) => (security?.findings ?? []).filter((f) => f.severity === "critical" || f.severity === "high");
+var securitySummary = (security) => !security ? { error: "no security report (the CLI predates tooljet app check --json)" } : security.error ? { error: security.error } : {
+  gate: security.gate,
+  counts: security.counts,
+  not_run: (security.notRun ?? []).map((n) => `${n.id}${n.reason ? `: ${n.reason}` : ""}`),
+  findings: (security.findings ?? []).slice(0, 40),
+  ...(security.findings?.length ?? 0) > 40 ? { more_findings: security.findings.length - 40 } : {}
+};
+function withDependencies(pkg, packages) {
+  const dependencies = { ...pkg.dependencies ?? {} };
+  for (const p of packages)
+    dependencies[p.name] = p.version;
+  return { ...pkg, dependencies: Object.fromEntries(Object.entries(dependencies).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) };
+}
+function withoutDependencies(pkg, names) {
+  const drop = (deps) => deps && Object.fromEntries(Object.entries(deps).filter(([name]) => !names.includes(name)));
+  return { ...pkg, ...pkg.dependencies ? { dependencies: drop(pkg.dependencies) } : {}, ...pkg.devDependencies ? { devDependencies: drop(pkg.devDependencies) } : {} };
+}
+var PACKAGE_NAME = /^(@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
+var PACKAGE_SPEC = /^(@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*(@[A-Za-z0-9.^~<>=*| -]+)?$/;
+function codeAppScaffoldTool(context) {
+  return {
+    name: "code_app_scaffold",
+    title: "Scaffold Code Mode App",
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    description: "Create the Code mode project for an app you created with create_app: app.json (the app and its routes, its screens) and frontend/ (React + TypeScript on shadcn + Tailwind, react-router through AppRouter). Create the app's queries (code_app_data) BEFORE this, so the typed hooks it writes (frontend/src/tooljet.gen.ts: useAppQuery, row types, ROUTES, routePath, PAGES) list them. Returns the files and the generated hooks." + USER_WORDS,
+    inputSchema: {
+      name: external_exports.string().regex(NAME).describe("Project folder: lowercase letters, digits and hyphens, e.g. inventory-console"),
+      display_name: external_exports.string().min(1).max(100).describe(`The app's name; an app still called "Untitled App" is renamed to it`),
+      app_id: external_exports.string().uuid().describe("The app from create_app"),
+      rename_from: external_exports.string().max(100).optional().describe("Set by ToolJet; leave it out")
+    },
+    handler: inScope(context, async (args) => {
+      try {
+        await authorizeApp(args.app_id, "edit");
+        cleanOldProjects(baseRoot());
+        const [existing] = projectsForApp(args.app_id);
+        const dir = existing ? join(root(), existing) : projectDir(args.name);
+        return await onProject(dir, async () => {
+          const owner = appIdOf(dir);
+          if (!existing && owner && owner !== args.app_id)
+            throw new Error(`project "${args.name}" belongs to app ${owner}; choose another name`);
+          const created = !existsSync(join(dir, "app.json"));
+          if (created) {
+            mkdirSync(root(), { recursive: true });
+            const init = await cli(root(), ["app", "init", args.name, "--name", args.display_name, "--no-install"]);
+            if (init.code !== 0)
+              throw new Error(`tooljet app init failed: ${init.output}`);
+            const appFile = join(dir, "app.json");
+            writeFileSync(appFile, JSON.stringify({ ...JSON.parse(readFileSync(appFile, "utf8")), appId: args.app_id }, null, 2) + "\n");
+            const install = await installDependencies(dir, "Installing the template");
+            if (install.code !== 0)
+              throw new Error(`tooljet app install failed: ${install.output}`);
+          }
+          const pull = await cli(dir, ["app", "pull"]);
+          if (pull.code !== 0)
+            throw new Error(`tooljet app pull failed: ${pull.output}`);
+          const restored = created ? await restoreStoredCode(dir) : {};
+          const naming = await nameApp(context.client, dir, args.display_name, args.rename_from);
+          if (!existing && !restored.stored_code)
+            rememberScaffold(dir);
+          return ok({
+            project_dir: dir,
+            ...naming,
+            ...restored,
+            ...existing ? { existing_project: existing, note: `This app already has a project, "${existing}"; it is used as is.` } : {},
+            files: listFiles(dir),
+            app_json: JSON.parse(readFileSync(join(dir, "app.json"), "utf8")),
+            generated_hooks: readFileSync(join(dir, "frontend", "src", "tooljet.gen.ts"), "utf8"),
+            next: "Set the routes in app.json, write the screens under frontend/src/App/, then code_app_install with verify: true."
+          });
+        });
+      } catch (err) {
+        return fail(err);
+      }
+    })
+  };
+}
+async function restoreStoredCode(dir) {
+  const manifest = join(dir, "frontend", "package.json");
+  const before = existsSync(manifest) ? readFileSync(manifest, "utf8") : "";
+  const pull = await cli(dir, ["app", "source-pull", "--force"], 6e4);
+  if (pull.code !== 0 && /\b(401|403)\b|unauthori[sz]ed|forbidden/i.test(pull.output))
+    throw new Error("ToolJet refused access to this app's stored code.");
+  if (pull.code !== 0)
+    return { sync_warning: `Could not bring the app's stored code into the new project: ${pull.output.trim().slice(0, 300)}` };
+  if (/No source is stored/i.test(pull.output)) {
+    nothingStored.add(dir);
+    freshProjects.add(dir);
+    lastSynced.set(dir, Date.now());
+    return {};
+  }
+  if (!/Pulled revision|Already at revision/.test(pull.output))
+    return {};
+  if ((existsSync(manifest) ? readFileSync(manifest, "utf8") : "") !== before) {
+    const install = await installDependencies(dir, "Installing the app's stored dependencies");
+    if (install.code !== 0)
+      throw new Error(`tooljet app install failed after bringing the app's code down: ${install.output}`);
+  }
+  freshProjects.add(dir);
+  lastSynced.set(dir, Date.now());
+  return {
+    stored_code: "This app already has code on ToolJet: the project now holds it, not the template. Read the files you change before writing them, and keep the app's existing screens."
+  };
+}
+async function installDependencies(dir, what, timeoutMs) {
+  const refusal = dependencyRefusal(dir, what);
+  if (refusal)
+    throw refusal;
+  const install = await cli(dir, ["app", "install"], timeoutMs);
+  const escaped = removeEscapingLinks(dir);
+  if (escaped)
+    throw escaped;
+  return install;
+}
+async function syncEditorEdits(dir, { force = false } = {}) {
+  if (!force && nothingStored.has(dir))
+    return {};
+  if (force)
+    forgetSourceRevision(dir);
+  let pull = await cli(dir, ["app", "source-pull"], 6e4);
+  let copy;
+  if (force && pull.code !== 0 && /Not pulled\. These files differ/i.test(pull.output)) {
+    const copies = new Set(beforePullCopies(dir));
+    pull = await cli(dir, ["app", "source-pull", "--force"], 6e4);
+    copy = pruneBeforePull(dir).find((kept) => !copies.has(kept));
+  }
+  if (pull.code !== 0 && /\b(401|403)\b|unauthori[sz]ed|forbidden/i.test(pull.output))
+    throw new Error("ToolJet refused access to this app's stored code.");
+  if (pull.code !== 0)
+    return { sync_warning: `Could not check the ToolJet editor for edits: ${pull.output.trim().slice(0, 300)}` };
+  if (/No source is stored/i.test(pull.output))
+    nothingStored.add(dir);
+  else
+    nothingStored.delete(dir);
+  lastSynced.set(dir, Date.now());
+  return {
+    .../Pulled revision/.test(pull.output) ? { editor_edits: pull.output.trim() } : {},
+    ...copy ? { before_pull_copy: `The files this pull replaced are kept in ${copy} (the last 3 copies are kept).` } : {}
+  };
+}
+var freshProjects = /* @__PURE__ */ new Set();
+var nothingStored = /* @__PURE__ */ new Set();
+var scaffoldHashes = /* @__PURE__ */ new Map();
+var readHashes = /* @__PURE__ */ new Map();
+var ownWrites = /* @__PURE__ */ new Map();
+var lastSynced = /* @__PURE__ */ new Map();
+var readSyncWindowMs = () => Number(process.env.MCP_CODE_APP_READ_SYNC_MS ?? 2e4);
+var syncedRecently = (dir) => Date.now() - (lastSynced.get(dir) ?? -Infinity) < readSyncWindowMs();
+var sha = (text) => createHash("sha256").update(text).digest("hex");
+var readKey = (dir, rel) => `${dir}\0${rel}`;
+function forgetSourceRevision(dir) {
+  const file = join(dir, ".tooljet", "source.json");
+  if (!existsSync(file))
+    return;
+  try {
+    const state = JSON.parse(readFileSync(file, "utf8"));
+    writeFileSync(file, JSON.stringify({ ...state, revision: -1 }, null, 2) + "\n");
+  } catch {
+  }
+}
+function rememberScaffold(dir) {
+  for (const rel of listFiles(dir)) {
+    const full = join(dir, rel);
+    if (existsSync(full))
+      scaffoldHashes.set(readKey(dir, rel), sha(readFileSync(full, "utf8")));
+  }
+}
+var wroteHere = /* @__PURE__ */ new Set();
+var unstoredWrites = (dir) => wroteHere.has(dir) || hasAgentWrites(dir);
+function noteWrite(dir) {
+  wroteHere.add(dir);
+  markAgentWrites(dir);
+}
+async function ensureFresh(dir) {
+  if (freshProjects.has(dir))
+    return {};
+  const sync = await syncEditorEdits(dir, { force: !unstoredWrites(dir) });
+  if (!sync.sync_warning)
+    freshProjects.add(dir);
+  return sync;
+}
+var prefetchedScans = /* @__PURE__ */ new Map();
+var scanReuseMs = () => Number(process.env.MCP_CODE_APP_SCAN_REUSE_MS ?? 6e5);
+function projectHash(dir) {
+  const hash = createHash("sha256");
+  const walk = (at) => {
+    for (const entry of readdirSync(at, { withFileTypes: true }).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)) {
+      if (entry.isDirectory() && ["node_modules", "dist", ".tooljet"].includes(entry.name))
+        continue;
+      const full = join(at, entry.name);
+      if (entry.isDirectory())
+        walk(full);
+      else if (entry.isFile())
+        hash.update(relative(dir, full)).update("\0").update(readFileSync(full)).update("\0");
+    }
+  };
+  walk(dir);
+  return hash.digest("hex");
+}
+function prefetchFullScan(dir) {
+  if (process.env.MCP_CODE_APP_SCAN_PREFETCH === "0")
+    return;
+  const hash = projectHash(dir);
+  const result = cli(dir, ["app", "check", "--json"]).then((check) => {
+    try {
+      return projectHash(dir) === hash ? check : null;
+    } catch {
+      return null;
+    }
+  });
+  prefetchedScans.set(dir, { hash, at: Date.now(), result });
+}
+async function fullScan(dir) {
+  const prefetched = prefetchedScans.get(dir);
+  prefetchedScans.delete(dir);
+  if (prefetched && Date.now() - prefetched.at < scanReuseMs() && projectHash(dir) === prefetched.hash) {
+    const check = await prefetched.result;
+    const security = check && parseReport(check.output)?.security;
+    if (check && security && !security.error && projectHash(dir) === prefetched.hash)
+      return { ...check, reused: true };
+  }
+  return { ...await cli(dir, ["app", "check", "--json"]), reused: false };
+}
+var sdkCopied = /* @__PURE__ */ new Set();
+async function copySdkIn(dir) {
+  let linked = false;
+  try {
+    linked = lstatSync(join(dir, "frontend", "node_modules", "@tooljet", "custom-component-sdk")).isSymbolicLink();
+  } catch {
+    return;
+  }
+  if (!linked || sdkCopied.has(dir))
+    return;
+  sdkCopied.add(dir);
+  await installDependencies(dir, "Copying the SDK into the project", 18e4);
+}
+var TYPE_CHECKED = /^frontend\/(src\/.*\.tsx?|.*\.css)$/;
+async function typeCheckAfterWrite(dir, written) {
+  if (process.env.MCP_CODE_WRITE_TYPECHECK !== "1" || !written.some((rel) => TYPE_CHECKED.test(rel)))
+    return void 0;
+  await copySdkIn(dir);
+  const result = await cli(join(dir, "frontend"), ["library", "typecheck", "--json"], 3e4);
+  const report = parseReport(result.output);
+  if (!Array.isArray(report?.problems))
+    return void 0;
+  if (!report.problems.length)
+    return { errors: 0 };
+  const problems = report.problems.map(fromChecked);
+  const unwritten = problems.filter((p) => p.code === "TS2307" && /Cannot find module '\.{1,2}\//.test(p.message));
+  const rest = problems.filter((p) => !unwritten.includes(p));
+  return {
+    errors: problems.length,
+    ...rest.length ? { fix: formatProblems(rest, 25) } : {},
+    ...unwritten.length ? { not_written_yet: [...new Set(unwritten.map((p) => `${/'([^']+)'/.exec(p.message)?.[1]} (imported at ${p.at})`))] } : {},
+    note: "Fix these in this round of writes, before code_app_build. An import of a file you have not written yet clears once you write it."
+  };
+}
+function changedLines(before, after) {
+  const count = (text) => text.split("\n").reduce((m, l) => m.set(l, (m.get(l) ?? 0) + 1), /* @__PURE__ */ new Map());
+  const a = count(before);
+  const b = count(after);
+  let changed = 0;
+  for (const [line, n] of a)
+    changed += Math.max(0, n - (b.get(line) ?? 0));
+  for (const [line, n] of b)
+    changed += Math.max(0, n - (a.get(line) ?? 0));
+  return changed;
+}
+var clip = (line) => line.trim().length > 100 ? `${line.trim().slice(0, 100)}...` : line.trim();
+var lineAt = (text, index) => text.slice(0, index).split("\n").length;
+function findHint(content, find) {
+  const lines = content.split("\n");
+  const at = [];
+  for (let i = content.indexOf(find); i >= 0 && at.length < 6; i = content.indexOf(find, i + 1))
+    at.push(lineAt(content, i));
+  if (at.length > 1) {
+    const shown = at.slice(0, 5).map((n) => `line ${n}${n > 1 ? ` (after "${clip(lines[n - 2])}")` : ""}`);
+    return ` It is at ${shown.join("; ")}${at.length > 5 ? "; and more" : ""}. Add a neighbouring line to the find so it matches one place.`;
+  }
+  if (at.length === 1)
+    return "";
+  const wanted = find.split("\n").map((l) => l.trim());
+  const trimmed = lines.map((l) => l.trim());
+  const starts = trimmed.flatMap((l, i) => wanted.every((w, k) => trimmed[i + k] === w) ? [i + 1] : []);
+  if (starts.length === 1)
+    return ` The same lines are at line ${starts[0]} with different indentation or spacing; copy them exactly as the file has them.`;
+  const words = (l) => new Set(l.match(/[A-Za-z_$][\w$]*|\d+/g) ?? []);
+  const key = wanted.reduce((a, b) => b.length > a.length ? b : a, "");
+  const target = words(key);
+  if (!target.size)
+    return "";
+  const scored = lines.map((l, i) => {
+    const w = words(l);
+    const shared = [...target].filter((t) => w.has(t)).length;
+    return { n: i + 1, l, score: shared / Math.max(target.size, w.size) };
+  }).filter((x) => x.score >= 0.5).sort((a, b) => b.score - a.score).slice(0, 2);
+  return scored.length ? ` Closest: ${scored.map((x) => `line ${x.n}: "${clip(x.l)}"`).join("; ")}.` : "";
+}
+var isRewrite = (before, after) => {
+  const changed = changedLines(before, after);
+  const size = Math.max(before.split("\n").length, after.split("\n").length);
+  return changed > 20 && changed > 0.4 * size;
+};
+function codeAppReadFilesTool(context) {
+  return {
+    name: "code_app_read_files",
+    title: "Read Code Mode Files",
+    annotations: { readOnlyHint: true, openWorldHint: true },
+    description: "Read a Code mode project. Without paths, lists its files; with paths, returns their contents (app.json, frontend/...). Edits saved in the ToolJet Code panel since the last install are brought into the project first." + USER_WORDS,
+    inputSchema: { app_id: APP_ID, name: PROJECT_NAME, paths: external_exports.array(external_exports.string()).optional() },
+    handler: inScope(context, async (args) => {
+      try {
+        const dir = await locateProject(args, "read");
+        return await onProject(dir, async () => {
+          if (!freshProjects.has(dir))
+            await followDraft(dir);
+          const sync = !freshProjects.has(dir) ? await ensureFresh(dir) : syncedRecently(dir) ? {} : await syncEditorEdits(dir);
+          if (!args.paths?.length)
+            return ok({ project_dir: dir, ...sync, files: listFiles(dir) });
+          const files = Object.fromEntries(args.paths.map((p) => {
+            const full = insideProject(dir, p);
+            const rel = relative(dir, full).split(sep).join("/");
+            const content = readFileSync(full, "utf8");
+            readHashes.set(readKey(dir, rel), sha(content));
+            return [p, content];
+          }));
+          return ok({ project_dir: dir, ...sync, files });
+        });
+      } catch (err) {
+        return fail(err);
+      }
+    })
+  };
+}
+function codeAppWriteFilesTool(context) {
+  return {
+    name: "code_app_write_files",
+    title: "Write Code Mode Files",
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    description: "Write into a Code mode project: app.json (name, codePage, routes [{id, path, title}]), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. To change an existing file, read it first (code_app_read_files) and pass edits: [{ path, find, replace }] with the exact text to change; a file you wrote in this build needs no read first, and before the first install may be sent whole again. files: [{ path, content }] is for new files and for replacing a file still as the template left it, or for a rewrite the request needs (then rewrite: true, as well as the files). A write to a file that changed in the ToolJet editor since you read it is refused: read it again and apply your change to what is there. Read data with useAppQuery from ../tooljet.gen; write by awaiting a query's run({ ...parameters }); route with AppRouter, react-router <Routes>/<Route> whose paths are exactly app.json's, and routePath(id, params). A type_check in the result lists the project's type errors after this write: fix them before code_app_build. Then code_app_build." + USER_WORDS,
+    inputSchema: {
+      app_id: APP_ID,
+      name: PROJECT_NAME,
+      files: external_exports.array(external_exports.object({ path: external_exports.string(), content: external_exports.string() })).max(40).optional(),
+      edits: external_exports.array(external_exports.object({ path: external_exports.string(), find: external_exports.string().min(1), replace: external_exports.string() })).max(60).optional().describe("Targeted changes to existing files: each find must appear exactly once in the file as it is now"),
+      rewrite: external_exports.boolean().optional().describe("Allow files to replace most of an existing file (only when the request needs it)")
+    },
+    handler: inScope(context, async (args) => {
+      try {
+        const dir = await locateProject(args, "edit");
+        return await onProject(dir, async () => {
+          if (!args.files?.length && !args.edits?.length)
+            throw new Error(`Nothing was written: this call had no files and no edits, so it sent no code${args.rewrite ? " (rewrite: true only allows a rewrite, it carries none)" : ""}. Send the code in this call: files: [{ path, content }] with the whole file, or edits: [{ path, find, replace }].`);
+          if (!freshProjects.has(dir))
+            await followDraft(dir);
+          const first = await ensureFresh(dir);
+          const sync = first.editor_edits || first.sync_warning ? first : await syncEditorEdits(dir);
+          const next = /* @__PURE__ */ new Map();
+          const current2 = (rel, full) => next.get(rel)?.content ?? (existsSync(full) ? readFileSync(full, "utf8") : void 0);
+          const stale2 = (rel, full) => {
+            if (next.has(rel) || !existsSync(full))
+              return void 0;
+            const known = readHashes.get(readKey(dir, rel));
+            if (!known)
+              return `${rel} has not been read in this build: read it with code_app_read_files first`;
+            if (known !== sha(readFileSync(full, "utf8")))
+              return `${rel} changed on ToolJet (an edit in the editor) since you read it: read it again and apply your change to what is there now`;
+            return void 0;
+          };
+          const refusals = [];
+          for (const file of args.files ?? []) {
+            const full = editable(dir, file.path);
+            const rel = relative(dir, full).split(sep).join("/");
+            const why = stale2(rel, full);
+            if (why)
+              refusals.push(why);
+            const before = current2(rel, full);
+            const stillTemplate = before !== void 0 && scaffoldHashes.get(readKey(dir, rel)) === sha(before);
+            const ownFile = before !== void 0 && nothingStored.has(dir) && ownWrites.get(readKey(dir, rel)) === sha(before);
+            if (!why && before !== void 0 && !args.rewrite && !stillTemplate && !ownFile && isRewrite(before, file.content))
+              refusals.push(`${rel}: this replaces most of the file; change only what the request needs with edits (find/replace), or, if the request really is a rewrite, send these files again with rewrite: true in the same call`);
+            next.set(rel, { full, content: file.content });
+          }
+          for (const edit of args.edits ?? []) {
+            const full = editable(dir, edit.path);
+            const rel = relative(dir, full).split(sep).join("/");
+            const why = stale2(rel, full);
+            if (why) {
+              refusals.push(why);
+              continue;
+            }
+            const before = current2(rel, full);
+            if (before === void 0) {
+              refusals.push(`${rel} does not exist: create it with files`);
+              continue;
+            }
+            const found = before.split(edit.find).length - 1;
+            if (found !== 1) {
+              refusals.push(`${rel}: the find text appears ${found} times; it must match exactly once (copy it from the file as it is now).${findHint(before, edit.find)}`);
+              continue;
+            }
+            next.set(rel, { full, content: before.replace(edit.find, () => edit.replace) });
+          }
+          if (refusals.length)
+            return fail(new Error("Not written:\n" + refusals.map((r) => `- ${r}`).join("\n")));
+          noteWrite(dir);
+          const written = [];
+          for (const [rel, { full, content }] of next) {
+            mkdirSync(dirname(full), { recursive: true });
+            writeFileSync(full, content);
+            readHashes.set(readKey(dir, rel), sha(content));
+            ownWrites.set(readKey(dir, rel), sha(content));
+            written.push(rel);
+          }
+          const types = await typeCheckAfterWrite(dir, written).catch(() => void 0);
+          return ok({ project_dir: dir, ...sync, written, ...types ? { type_check: types } : {} });
+        });
+      } catch (err) {
+        return fail(err);
+      }
+    })
+  };
+}
+async function followDraft(dir) {
+  let pinned;
+  try {
+    pinned = JSON.parse(readFileSync(join(dir, "app.json"), "utf8")).version;
+  } catch {
+    return void 0;
+  }
+  if (!pinned?.id)
+    return void 0;
+  const list = await cli(dir, ["app", "checkout", "--list"], 6e4);
+  const line = list.output.split("\n").find((l) => l.trimStart().startsWith("*") && l.includes(pinned.id));
+  if (list.code !== 0 || !line || /\bdraft\b/i.test(line))
+    return void 0;
+  const moved = await cli(dir, ["app", "checkout", "--editing"], 6e4);
+  if (moved.code !== 0)
+    throw new Error(`The app's draft could not be opened: ${moved.output.trim().slice(0, 500)}`);
+  return `${pinned.name ?? "The pinned version"} is saved, so the code now goes into the app's draft.`;
+}
+var STYLESHEET = "frontend/src/styles/globals.css";
+var IMPORT_RE = /(?:^|[\s;])import\s+(?:[^'"]*?from\s+)?['"]([^'"]+\.css)['"]/gm;
+function nativeSelects(dir) {
+  const src = join(dir, "frontend", "src");
+  if (!existsSync(join(src, "components", "ui", "select.tsx")))
+    return [];
+  return listFiles(src).filter((rel) => rel.endsWith(".tsx") && !rel.startsWith("components/")).flatMap((rel) => readFileSync(join(src, rel), "utf8").split("\n").flatMap((line, i) => /<select[\s>]/.test(line) ? [`frontend/src/${rel}:${i + 1}`] : []));
+}
+function badRouteHandles(dir) {
+  const file = join(dir, "app.json");
+  if (!existsSync(file))
+    return [];
+  const routes = JSON.parse(readFileSync(file, "utf8")).routes ?? [];
+  return routes.map((route) => String(route.id)).filter((id) => !/^[a-z0-9][a-z0-9-]*$/.test(id)).map((id) => `app.json: route id "${id}" is not a valid handle: use lowercase letters, numbers and hyphens, such as "${id.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+/, "") || "page"}"`);
+}
+var SDK_DECLARED = /declare\s+module\s+['"]@tooljet\/custom-component-sdk['"]/;
+function sdkRedeclared(dir) {
+  const src = join(dir, "frontend", "src");
+  if (!existsSync(src))
+    return [];
+  return listFiles(src).filter((rel) => /\.tsx?$/.test(rel) && rel !== "tooljet.gen.ts" && SDK_DECLARED.test(readFileSync(join(src, rel), "utf8"))).map((rel) => `frontend/src/${rel}: declares @tooljet/custom-component-sdk itself, which hides the SDK's real types; write the file without that declaration (the SDK has its own types), then fix what the build reports`);
+}
+function missingStylesheet(dir) {
+  const sheet = join(dir, STYLESHEET);
+  if (!existsSync(sheet))
+    return void 0;
+  const src = join(dir, "frontend", "src");
+  for (const rel of listFiles(src)) {
+    if (!/\.(tsx?|jsx?)$/.test(rel) || rel.startsWith("components/"))
+      continue;
+    const file = join(src, rel);
+    const code = readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    for (const m of code.matchAll(IMPORT_RE)) {
+      if (resolve(dirname(file), m[1]) === sheet)
+        return void 0;
+    }
+  }
+  return "frontend/src/App/index.tsx: the app's stylesheet is not imported, so every screen renders unstyled (no Tailwind, no theme colours). Add `import '../styles/globals.css';` back with the other imports at the top of App/index.tsx.";
+}
+async function browserUserQueries(appId) {
+  if (!appId)
+    return [];
+  try {
+    const summary = await current().client.getAppSummary?.(appId);
+    return summary ? browserUserQueryProblems({ data_queries: summary.queries }).map((line) => `query check: ${line}`) : [];
+  } catch {
+    return [];
+  }
+}
+function codeAppBuildTool(context) {
+  return {
+    name: "code_app_build",
+    title: "Build Code Mode App",
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    description: "Refresh the typed hooks from the app's current queries (tooljet app pull), build the app's code (TypeScript, Tailwind, manifest), and check it against the app (tooljet app check: every useAppQuery name, route, link and page must exist) and the security scan (code rules such as external fetch, eval and token storage; secrets; vendored code). Returns ok and every error (errors: one line each, with the code and often the fix), native control and security finding to fix; fix every one in one round of writes. Repeat write and build until ok, then code_app_install." + USER_WORDS,
+    inputSchema: { app_id: APP_ID, name: PROJECT_NAME },
+    handler: inScope(context, async (args) => {
+      try {
+        const dir = await locateProject(args, "edit");
+        return await onProject(dir, async () => ok(await buildProject(dir, args.app_id)));
+      } catch (err) {
+        return fail(err);
+      }
+    })
+  };
+}
+async function buildProject(dir, appId) {
+  const followed = await followDraft(dir);
+  const sync = await ensureFresh(dir);
+  const unstored = removeUnstoredSource(dir);
+  await copySdkIn(dir);
+  const escaped = removeEscapingLinks(dir);
+  const started = Date.now();
+  const pull = await cli(dir, ["app", "pull"]);
+  const build = await cli(join(dir, "frontend"), ["library", "build"]);
+  const tsErrors = Number(/TypeScript compiled \((\d+) errors\)/.exec(build.output)?.[1] ?? (build.code === 0 ? 0 : 1));
+  const problems = build.code === 0 && tsErrors === 0 ? [] : parseBuildProblems(build.output);
+  const check = await cli(dir, ["app", "check", "--offline", "--json"]);
+  const report = parseReport(check.output);
+  const unstyled = missingStylesheet(dir);
+  const selects = nativeSelects(dir);
+  const handles = badRouteHandles(dir);
+  const serverUser = await browserUserQueries(appId ?? appIdOf(dir));
+  const extra = [...handles, ...unstyled ? [unstyled] : [], ...sdkRedeclared(dir), ...serverUser, ...escaped ? [escaped.message] : []];
+  const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0 && !extra.length;
+  if (okBuild)
+    prefetchFullScan(dir);
+  return {
+    ...followed ? { draft: followed } : {},
+    ...sync.before_pull_copy ? { before_pull_copy: sync.before_pull_copy } : {},
+    ...unstored.length ? { removed_unstored: { files: unstored, note: "Removed: never stored with the app or scanned. Put code under frontend/src without node_modules or dot names, and add packages with code_app_add_dependency." } } : {},
+    ok: okBuild,
+    build_ms: Date.now() - started,
+    pull: pull.code === 0 ? "typed hooks refreshed" : pull.output.trim(),
+    typescript_errors: tsErrors,
+    // Every error on one line, with the code it is on and, for the mistakes that recur, the fix (codeTypeErrors.ts);
+    // the raw output only when it holds no error this can read.
+    ...problems.length ? { errors: formatProblems(problems) } : {},
+    build_output: build.code === 0 && tsErrors === 0 ? build.output.trim().split("\n").slice(-6).join("\n") : problems.length ? buildSummary(build.output) : build.output.trim().slice(0, 12e3),
+    check: report?.problems ? [...extra, ...report.problems.map((p) => `${p.file}:${p.line}  ${p.message}`)] : extra.length ? [...extra, check.output.trim().slice(0, 6e3)] : check.output.trim().slice(0, 6e3),
+    ...selects.length ? { native_controls: { fix: "Use Select from components/ui/select instead of a native <select>.", at: selects } } : {},
+    // jsx-a11y recommended rules, warnings only (tooljet app check); fix them when they are cheap to fix.
+    a11y_warnings: report?.accessibility?.length ?? Number(/(\d+) accessibility warnings?/.exec(check.output)?.[1] ?? 0),
+    // The offline scan (no dependency network checks): fix critical and high before code_app_install.
+    security: securitySummary(report?.security)
+  };
+}
+var concreteRoute = (path) => path.replace(/:[A-Za-z_][\w]*/g, "1");
+function routesToCheck(dir) {
+  let routes = [];
+  try {
+    routes = JSON.parse(readFileSync(join(dir, "app.json"), "utf8")).routes ?? [];
+  } catch {
+    routes = [];
+  }
+  const paths = routes.map((route) => typeof route.path === "string" && route.path.startsWith("/") ? concreteRoute(route.path) : void 0).filter((path) => Boolean(path));
+  return [...new Set(paths.length ? paths : ["/"])].sort((a, b) => a === "/" ? -1 : b === "/" ? 1 : 0);
+}
+async function renderRoutes(render, appId, routes, widths, concurrency) {
+  const jobs = routes.flatMap((route) => widths.map((width) => ({ route, width })));
+  const out = new Array(jobs.length);
+  let next = 0;
+  const worker = async () => {
+    for (let index = next++; index < jobs.length; index = next++) {
+      const { route, width } = jobs[index];
+      const result = await render({ app_id: appId, route, ...width !== 1280 ? { viewport_width: width } : {} });
+      const text = result.content?.[0]?.text ?? "";
+      let parsed;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        parsed = void 0;
+      }
+      out[index] = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? { route, width, ...parsed } : { route, width, ok: false, error: text.replace(/^Error:\s*/, "").slice(0, 500) };
+    }
+  };
+  await Promise.all(Array.from({ length: Math.max(1, Math.min(concurrency, jobs.length)) }, worker));
+  return out;
+}
+function codeAppInstallTool(context, options = {}) {
+  return {
+    name: "code_app_install",
+    title: "Install Code Mode App",
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    description: "Upload the app's code (tooljet app dev --once --source platform): it creates or updates the app's Code mode page, one hidden page per route (set each route's page permissions on it) and the component that runs the code, points the app version at this code as a Live preview, and stores the source on ToolJet so the Code panel can edit it. Build first. Runs the full security scan first and refuses while it has critical or high findings, listing them. Returns the editor URL. If it says the source was edited in the ToolJet editor, call code_app_read_files to bring those edits down, reapply your change, and install again. verify: true makes it one check round: the build (as code_app_build; on any error it stops there, not installed, listing every error), the install, then the render check of every route in app.json (each once, at 1280 px unless widths says otherwise), in one report: build, install, render [{ route, width, ok, pages: [{ findings, accessibility }] }]. This is the last step of a build or edit: saving the app version (release_app saves a draft first) freezes the code." + USER_WORDS,
+    inputSchema: {
+      app_id: APP_ID,
+      name: PROJECT_NAME,
+      verify: external_exports.boolean().optional().describe("Build, install and render-check every route, in this one call"),
+      widths: external_exports.array(external_exports.number().int().min(320).max(2560)).min(1).max(3).optional().describe("verify: the widths to check, default [1280]; add 375 and 768 only when phones or tablets were asked for"),
+      routes: external_exports.array(external_exports.string().regex(/^\/[A-Za-z0-9_\-\/.]*$/)).min(1).max(12).optional().describe("verify: the paths to open, default every route in app.json with each :param as 1 (e.g. only the routes that failed)")
+    },
+    handler: inScope(context, async (args) => {
+      try {
+        const dir = await locateProject(args, "edit");
+        return await onProject(dir, async () => {
+          if (!args.verify) {
+            const installed2 = await installProject(dir);
+            return installed2 instanceof Error ? fail(installed2) : ok(installed2);
+          }
+          const built = await buildProject(dir, args.app_id);
+          if (!built.ok) {
+            return ok({
+              ...built,
+              installed: false,
+              next: "Not installed: the build has errors. Fix every one in one round of writes, then code_app_install with verify: true again."
+            });
+          }
+          const installed = await installProject(dir);
+          if (installed instanceof Error)
+            return fail(installed);
+          const appId = args.app_id ?? appIdOf(dir);
+          const build = {
+            ok: true,
+            build_ms: built.build_ms,
+            typescript_errors: 0,
+            a11y_warnings: built.a11y_warnings,
+            ...built.native_controls ? { native_controls: built.native_controls } : {}
+          };
+          if (!options.render || !appId)
+            return ok({ ...installed, installed: true, build, render: "not available here: rendering is unverified" });
+          const routes = args.routes?.length ? [...new Set(args.routes)] : routesToCheck(dir);
+          const widths = args.widths?.length ? [...new Set(args.widths)] : [1280];
+          const render = await renderRoutes(options.render, appId, routes, widths, options.renderConcurrency ?? 2);
+          const failing = render.filter((entry) => entry.ok !== true).map((entry) => `${entry.route} at ${entry.width} px`);
+          return ok({
+            ...installed,
+            installed: true,
+            build,
+            render_ok: failing.length === 0,
+            render,
+            next: failing.length ? `Fix what the render check found on ${failing.join(", ")} in one round of writes, then code_app_install with verify: true and routes set to those paths.` : "Built, installed, and every route renders cleanly."
+          });
+        });
+      } catch (err) {
+        return fail(err);
+      }
+    })
+  };
+}
+async function installProject(dir) {
+  const followed = await followDraft(dir);
+  const sync = await ensureFresh(dir);
+  nothingStored.delete(dir);
+  const dependencies = dependencyRefusal(dir, "The install");
+  if (dependencies)
+    return new Error(`Not installed: ${dependencies.message}`);
+  const unstored = removeUnstoredSource(dir);
+  const unstyled = missingStylesheet(dir);
+  if (unstyled)
+    return new Error(`Not installed: ${unstyled} Then code_app_build and install again.`);
+  const check = await fullScan(dir);
+  const security = parseReport(check.output)?.security;
+  if (!security || security.error)
+    throw new Error(`The security scan did not run, so nothing was installed: ${security?.error ?? check.output.trim().slice(0, 2e3)}`);
+  const blocking = mustFix(security);
+  if (blocking.length)
+    return new Error(`Not installed: the security scan has ${blocking.length} critical or high finding${blocking.length > 1 ? "s" : ""}. Fix them in the code (or remove the package), code_app_build, then install again:
+` + blocking.map((f) => `${f.severity.toUpperCase()} ${f.ruleId} ${f.package ?? f.location}: ${f.message}`).join("\n"));
+  const result = await cli(dir, ["app", "dev", "--once", "--source", "platform"]);
+  if (result.code !== 0)
+    throw new Error(result.output.trim());
+  clearAgentWrites(dir);
+  const copies = beforePullCopies(dir);
+  return {
+    ...followed ? { draft: followed } : {},
+    ...sync.editor_edits ? { editor_edits: sync.editor_edits } : {},
+    ...sync.sync_warning ? { sync_warning: sync.sync_warning } : {},
+    ...unstored.length ? { removed_unstored: unstored } : {},
+    ...copies.length ? { before_pull_copies: { kept: copies, note: "Copies of local files a pull of ToolJet's code replaced (newest first, the last 3 kept); read one with code_app_read_files to recover a change." } } : {},
+    linked: true,
+    editor_url: /Open: (\S+)/.exec(result.output)?.[1] ?? null,
+    output: result.output.trim(),
+    security: securitySummary(security)
+  };
+}
+function codeAppAddDependencyTool(context) {
+  return {
+    name: "code_app_add_dependency",
+    title: "Add Code Mode Dependency",
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    description: "Add npm packages to a Code mode app (frontend/package.json is not writable otherwise). Each package is vetted first (tooljet app vet: malware, known vulnerabilities, versions published in the last 7 days, licence, workspace blocklist); when any fails, nothing is written and the findings say why: pick another version or package. Passing packages are pinned to the exact version vetted and installed without install scripts. Prefer what the template already has (shadcn, Tailwind, lucide-react). To fix a vulnerable package, pass it again at a fixed version (upgrade), or pass its replacement and the old name in remove; the lockfile is refreshed through the same install." + USER_WORDS,
+    inputSchema: {
+      app_id: APP_ID,
+      name: PROJECT_NAME,
+      packages: external_exports.array(external_exports.string().regex(PACKAGE_SPEC)).max(10).describe("name, name@version or name@range, e.g. date-fns@4"),
+      remove: external_exports.array(external_exports.string().regex(PACKAGE_NAME)).max(10).optional().describe("package names to take out of frontend/package.json (a replaced package)")
+    },
+    handler: inScope(context, async (args) => {
+      try {
+        const dir = await locateProject(args, "edit");
+        return await onProject(dir, async () => {
+          if (!args.packages.length && !args.remove?.length)
+            throw new Error("Pass packages to add, or names to remove.");
+          const local = args.packages.flatMap((spec) => {
+            const at = spec.indexOf("@", 1);
+            const why = at > 0 ? nonRegistrySpec(spec.slice(at + 1)) : void 0;
+            return why ? [`${spec}: ${why}`] : [];
+          });
+          if (local.length)
+            throw new Error(`Not added: ${local.join("; ")}. Pass a registry version or range, such as date-fns@4.`);
+          const vet = args.packages.length ? await cli(dir, ["app", "vet", ...args.packages, "--json"]) : { code: 0, output: '{"ok":true,"packages":[]}' };
+          const report = parseReport(vet.output);
+          if (!report?.packages)
+            throw new Error(`The package check did not run, so nothing was added: ${vet.output.trim().slice(0, 2e3)}`);
+          if (!report.ok)
+            return fail(new Error(`Not added: ${report.packages.map((p) => `${p.name}@${p.version}`).join(", ")} fail${report.packages.length > 1 ? "" : "s"} the package check:
+` + (report.findings ?? []).map((f) => `${f.severity.toUpperCase()} ${f.ruleId} ${f.package ?? f.location}: ${f.message}`).join("\n")));
+          const vetted = report.packages.flatMap((p) => nonRegistrySpec(p.version) ? [`${p.name}@${p.version}`] : []);
+          if (vetted.length)
+            throw new Error(`Not added: the package check named ${vetted.join(", ")}, which is not a registry version.`);
+          const pkgFile = insideProject(dir, "frontend/package.json");
+          const lockFile = insideProject(dir, "frontend/package-lock.json");
+          const before = readFileSync(pkgFile, "utf8");
+          const lockBefore = existsSync(lockFile) ? readFileSync(lockFile, "utf8") : null;
+          const restore = () => {
+            writeFileSync(pkgFile, before);
+            if (lockBefore !== null)
+              writeFileSync(lockFile, lockBefore);
+          };
+          noteWrite(dir);
+          writeFileSync(pkgFile, JSON.stringify(withDependencies(withoutDependencies(JSON.parse(before), args.remove ?? []), report.packages), null, 2) + "\n");
+          const regenerated = !manifestProblems(dir).length && lockfileProblems(dir).length > 0;
+          if (regenerated)
+            rmSync(lockFile, { force: true });
+          let install;
+          try {
+            install = await installDependencies(dir, "Adding the packages");
+          } catch (error) {
+            restore();
+            throw new Error(`${error instanceof Error ? error.message : String(error)}
+Nothing was added; package.json restored.`);
+          }
+          if (install.code !== 0) {
+            restore();
+            throw new Error(`tooljet app install failed, package.json restored: ${install.output.trim().slice(0, 4e3)}`);
+          }
+          return ok({
+            added: report.packages.map((p) => `${p.name}@${p.version}`),
+            ...regenerated ? { lockfile: "The lockfile named packages from outside the registry, so it was written again from the registry." } : {},
+            ...args.remove?.length ? { removed: args.remove } : {},
+            not_run: (report.notRun ?? []).map((n) => `${n.id}${n.reason ? `: ${n.reason}` : ""}`),
+            // Transitive packages come with the install; code_app_build and code_app_install scan the whole lockfile.
+            next: "Import the package in frontend/src, then code_app_build."
+          });
+        });
+      } catch (err) {
+        return fail(err);
+      }
+    })
+  };
+}
 createRequire(import.meta.url);
 var X_ALREADY_SENT = "x-hono-already-sent";
 var RequestError = class extends Error {
@@ -1346,6 +2995,36 @@ function topLevel(sql) {
   }
   return depth === 0 ? out : void 0;
 }
+var FROM_END = /^(where|group|order|limit|having|window|union|intersect|except|fetch|offset|for|qualify|returning|on|using)\b/;
+function crossProduct(masked) {
+  const sql = masked.toLowerCase();
+  if (/\bcross\s+(join|apply)\b/.test(sql))
+    return "it has a CROSS JOIN";
+  if (/\bnatural\s+((left|right|full|inner)\s+)?(outer\s+)?join\b/.test(sql))
+    return "it has a NATURAL JOIN";
+  if (/\bon\s*\(?\s*(true|1\s*=\s*1|0\s*=\s*0)\s*\)?(?=\s|$|\))/.test(sql))
+    return "it joins ON a condition that is always true";
+  for (const match of sql.matchAll(/\bfrom\b/g)) {
+    let depth = 0;
+    for (let i = match.index + 4; i < sql.length; i++) {
+      const ch = sql[i];
+      if (ch === "(")
+        depth++;
+      else if (ch === ")") {
+        if (--depth < 0)
+          break;
+      } else if (depth === 0) {
+        if (ch === ",")
+          return "it lists tables separated by commas in FROM (an implicit cross join)";
+        if (ch === ";")
+          break;
+        if (/[a-z_]/.test(ch) && !/[a-z0-9_$]/.test(sql[i - 1] ?? " ") && FROM_END.test(sql.slice(i)))
+          break;
+      }
+    }
+  }
+  return void 0;
+}
 var items = (clause) => clause.split(",").map((item) => item.trim()).filter(Boolean);
 function closingParen(sql, open) {
   let depth = 0;
@@ -1453,6 +3132,9 @@ function autoReadSqlRefusal(sql, dialect) {
     return "it has a query hint (OPTION (...))";
   if (/\bwith\s+ties\b/.test(masked))
     return "WITH TIES can return more rows than its limit";
+  const product = crossProduct(masked);
+  if (product)
+    return `${product}, which can read the product of its tables however small its LIMIT; join on a condition`;
   const fn = impureCall(masked, dialect);
   if (fn)
     return `it calls ${fn}(), which is not a well-known pure function`;
@@ -2178,9 +3860,9 @@ function codePageAuditScript(route, outside) {
       detail: `ToolJet showed "You don't have access to this screen"${route ? ` for ${route}` : ""}: the check's signed-in user may not open it (a screen limit), so this screen was not checked. The refusal is ToolJet's, not the app's: change nothing for it`
     });
   }
-  const root = doc.getElementById("tj-frame-root");
-  const text = (root?.innerText ?? "").trim();
-  if (!root || root.children.length === 0 || !text && !root.querySelector("svg,canvas,img")) {
+  const root2 = doc.getElementById("tj-frame-root");
+  const text = (root2?.innerText ?? "").trim();
+  if (!root2 || root2.children.length === 0 || !text && !root2.querySelector("svg,canvas,img")) {
     findings.push({ kind: "empty_render", component: "Code mode app", detail: "the Code mode app rendered nothing" });
     return findings;
   }
@@ -2298,8 +3980,8 @@ function codeFrameDrawn() {
   const frame = document.querySelector("iframe[data-tj-code-page-frame]");
   if (frame?.hasAttribute("data-tj-code-page-isolated"))
     return true;
-  const root = frame?.contentDocument?.getElementById("tj-frame-root");
-  return !!root && root.children.length > 0;
+  const root2 = frame?.contentDocument?.getElementById("tj-frame-root");
+  return !!root2 && root2.children.length > 0;
 }
 async function isolatedFrame(page) {
   const handle = await page.$("iframe[data-tj-code-page-frame][data-tj-code-page-isolated]");
@@ -2311,8 +3993,8 @@ async function waitForIsolatedFrame(page, untilMs) {
     if (!frame)
       return;
     const drawn = await frame.evaluate(() => {
-      const root = document.getElementById("tj-frame-root");
-      return !!root && root.children.length > 0;
+      const root2 = document.getElementById("tj-frame-root");
+      return !!root2 && root2.children.length > 0;
     }).catch(() => false);
     if (drawn)
       return;
@@ -2545,8 +4227,8 @@ async function auditPages(pages, options = {}, driver = loadPlaywright) {
         const frame = document.querySelector("iframe[data-tj-code-page-frame]");
         if (!frame || frame.hasAttribute("data-tj-code-page-isolated"))
           return true;
-        const root = frame.contentDocument?.getElementById("tj-frame-root");
-        return !!root && root.children.length > 0;
+        const root2 = frame.contentDocument?.getElementById("tj-frame-root");
+        return !!root2 && root2.children.length > 0;
       }, void 0, { timeout: contentWaitMs }).catch(() => void 0);
       await waitForIsolatedFrame(page, waitStarted + contentWaitMs);
       const codeFrame = network ? options.codePage || await page.evaluate(() => !!document.querySelector("iframe[data-tj-code-page-frame]")).catch(() => false) : false;
@@ -2690,1279 +4372,19 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
     }
   };
 }
-createRequire(import.meta.url);
-var valueOf = (prop) => prop && typeof prop === "object" && "value" in prop ? prop.value : prop;
-function htmlFedTextColumns(table, queries) {
-  if (table.type !== "Table")
-    return [];
-  const columns = valueOf(table.properties?.columns);
-  if (!Array.isArray(columns))
-    return [];
-  const data = String(valueOf(table.properties?.data) ?? "");
-  const read = new Set([...data.matchAll(/queries\.(\w+)/g)].map((m) => m[1]));
-  const code = queries.filter((q) => q.kind === "runjs" && read.has(String(q.name))).map((q) => String(q.options?.code ?? "")).join("\n");
-  if (!code)
-    return [];
-  return columns.filter((col) => {
-    if ((col.columnType ?? "string") !== "string" || typeof col.key !== "string" || !col.key)
-      return false;
-    const key = col.key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    if (new RegExp(`\\b${key}\\s*:[^,;{}]*?['"\`]\\s*<[a-zA-Z]`).test(code))
-      return true;
-    const idents = [...code.matchAll(new RegExp(`\\b${key}\\s*:\\s*([A-Za-z_$][\\w$]*)\\s*[,}]`, "g"))].map((m) => m[1]);
-    return idents.some((id) => new RegExp(`\\b${id}\\s*=(?!=)[^;]*?['"\`]\\s*<[a-zA-Z]`).test(code));
-  });
-}
-var SCRATCH_NAME = /^(debug|diag|diagnostic|probe|tmp|temp|scratch|dummy|sample_test|testonly)[_-]|^hidden[A-Z]|[_-](probe|scratch)$/i;
-function scratchArtifactWarnings(summary) {
-  const warnings = [];
-  for (const query of summary.queries ?? []) {
-    const name = typeof query.name === "string" ? query.name : "";
-    if (name && SCRATCH_NAME.test(name)) {
-      warnings.push(`Query "${name}" looks like a leftover diagnostic, not part of the app. Delete it before finishing, or rename it if it is genuinely part of what the user asked for.`);
-    }
-  }
-  for (const page of summary.pages ?? []) {
-    for (const component of page.components ?? []) {
-      const name = typeof component.name === "string" ? component.name : "";
-      if (name && SCRATCH_NAME.test(name)) {
-        warnings.push(`Component "${name}" on page "${page.name}" looks like a leftover scratch component. Delete it before finishing, or rename it if it is genuinely part of the app.`);
-      }
-    }
-  }
-  return warnings;
-}
-function validatePersistedAppSummary(summary, options = {}) {
-  const structural = validateAppStructure(summary, options);
-  const errors = [...structural.errors];
-  const warnings = [...structural.warnings];
-  warnings.push(...scratchArtifactWarnings(summary));
-  const eventValidation = validateEvents(summary, persistedEventSpecs(summary), { includePersistedChains: false });
-  errors.push(...eventValidation.errors);
-  warnings.push(...eventValidation.warnings);
-  for (const page of summary.pages ?? []) {
-    for (const component of page.components ?? []) {
-      for (const col of htmlFedTextColumns(component, summary.queries)) {
-        warnings.push(`Table "${String(component.name)}" column "${String(col.key)}" is typed as text but its query returns HTML for it, so it renders as raw text (<span ...>). Set that column's columnType "html", or return plain text.`);
-      }
-    }
-  }
-  for (const query of summary.queries) {
-    const label = `Query "${query.name ?? query.id}"`;
-    if (!query.kind || !query.options || typeof query.options !== "object" || Array.isArray(query.options)) {
-      warnings.push(`${label}: kind/options are unavailable, so its datasource contract was not validated.`);
-      continue;
-    }
-    const validation = validateQueryOptions(query.kind, query.options);
-    errors.push(...issueMessages(validation.errors, label));
-    warnings.push(...issueMessages(validation.warnings, label));
-  }
-  return {
-    ok: errors.length === 0,
-    scope: "structural_and_contract",
-    checked: [
-      "persisted references and bindings",
-      "component render traps",
-      "event source/trigger compatibility",
-      "saved datasource option contracts",
-      "leftover diagnostic queries and scratch components"
-    ],
-    not_checked: [
-      "query execution or external API success",
-      "mutating/billable query behavior",
-      "browser event delivery",
-      "visual rendering"
-    ],
-    errors: [...new Set(errors)],
-    warnings: [...new Set(warnings)]
-  };
-}
-var SECTIONS = ["properties", "styles", "validation", "others"];
-var bundled;
-function bundledDefinitions() {
-  if (!bundled) {
-    const path = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-default-definitions.json");
-    try {
-      bundled = JSON.parse(readFileSync(path, "utf8")).definitions;
-    } catch {
-      bundled = {};
-    }
-  }
-  return bundled;
-}
-var isPlainObject = (value) => Boolean(value) && typeof value === "object" && !Array.isArray(value);
-var WHOLE_ARRAY_TYPES = /* @__PURE__ */ new Set([
-  "Table",
-  "DropdownV2",
-  "MultiselectV2",
-  "PopoverMenu",
-  "Steps",
-  "Tabs",
-  "RadioButtonV2",
-  "Tags",
-  "TagsInput",
-  "TreeSelect",
-  "Cascader",
-  "Navigation",
-  "ButtonGroupV2"
-]);
-function mergeLikeServer(target, source, wholeArrays) {
-  if (wholeArrays && Array.isArray(target)) {
-    if (source === void 0)
-      return target;
-    if (Array.isArray(source))
-      return source;
-    return isPlainObject(source) ? Object.values(source) : source;
-  }
-  if (Array.isArray(source)) {
-    const base = Array.isArray(target) ? [...target] : [];
-    source.forEach((item, index) => {
-      const merged = mergeLikeServer(base[index], item, wholeArrays);
-      if (merged !== void 0 || !(index in base))
-        base[index] = merged;
-    });
-    return base;
-  }
-  if (isPlainObject(source)) {
-    const base = isPlainObject(target) ? { ...target } : {};
-    for (const [key, value] of Object.entries(source)) {
-      const merged = mergeLikeServer(base[key], value, wholeArrays);
-      if (merged !== void 0 || !(key in base))
-        base[key] = merged;
-    }
-    return base;
-  }
-  return source === void 0 ? target : source;
-}
-var stable = (value) => JSON.stringify(value, (_key, inner) => isPlainObject(inner) ? Object.fromEntries(Object.entries(inner).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) : inner);
-function sectionAsRead(type, section, stored, definitions = bundledDefinitions()) {
-  const wholeArrays = section === "properties" && WHOLE_ARRAY_TYPES.has(type);
-  return mergeLikeServer(definitions[type]?.[section] ?? {}, stored ?? {}, wholeArrays);
-}
-function differingKey(type, section, planned, stored, definitions) {
-  const asRead = sectionAsRead(type, section, planned, definitions);
-  const have = stored ?? {};
-  for (const key of /* @__PURE__ */ new Set([...Object.keys(asRead), ...Object.keys(have)])) {
-    if (stable(asRead[key]) !== stable(have[key]))
-      return key;
-  }
-  return void 0;
-}
-var RECT_KEYS = ["top", "left", "width", "height"];
-var FLEX_LAYOUT_KEYS = ["fillWidth", "widthPx", "grow", "minWidthPx"];
-var sameRect = (planned, stored) => {
-  if (!planned)
-    return true;
-  if (!stored || typeof stored !== "object")
-    return false;
-  const held = stored;
-  return RECT_KEYS.every((key) => Number(held[key]) === Number(planned[key])) && FLEX_LAYOUT_KEYS.every((key) => planned[key] === void 0 || held[key] === planned[key]);
-};
-function diffPageInPlace(stored, planned, definitions = bundledDefinitions(), newId = randomUUID) {
-  const references = indexComponentReferences(planned);
-  if (references.errors.length)
-    throw new Error(references.errors.join(" "));
-  const storedByName = new Map(stored.filter((component) => component.name).map((component) => [component.name, component]));
-  const ids = /* @__PURE__ */ new Map();
-  const idOf = /* @__PURE__ */ new Map();
-  for (const spec of planned) {
-    const id = storedByName.get(spec.name)?.id ?? newId();
-    idOf.set(spec, id);
-    ids.set(componentRef(spec), id);
-  }
-  const plannedParentId = (spec) => {
-    const parent = spec.parentRef ? ids.get(spec.parentRef) : spec.parent;
-    if (!parent)
-      return void 0;
-    const slot = spec.slotName ?? decodeComponentParent(parent).slotName;
-    return slot === "body" ? decodeComponentParent(parent).parentId : void 0;
-  };
-  const explicitOrders = new Map(planned.flatMap((spec) => {
-    if (!isFlexContainerType(spec.type) || spec.properties?.childOrder === void 0)
-      return [];
-    const raw = spec.properties.childOrder;
-    const value = Array.isArray(raw) ? raw : raw?.value;
-    return [[idOf.get(spec), Array.isArray(value) ? value : []]];
-  }));
-  const childOrders = batchChildOrders(planned.map((spec) => ({ id: idOf.get(spec), type: spec.type, parentId: plannedParentId(spec) })), explicitOrders, (ref) => ids.get(ref));
-  const diff = { ids, keep: [], relayout: [], create: [], recreated: [], deleteIds: [], why: {} };
-  const plannedNames = new Set(planned.map((spec) => spec.name));
-  for (const component of stored)
-    if (!component.name || !plannedNames.has(component.name))
-      diff.deleteIds.push(component.id);
-  for (const spec of planned) {
-    const id = idOf.get(spec);
-    const parent = spec.parentRef ? ids.get(spec.parentRef) : spec.parent;
-    const submit = spec.type === "Form" ? spec.properties?.buttonToSubmit : void 0;
-    const submitId = submit && typeof submit.value === "string" ? ids.get(submit.value) : void 0;
-    let properties = submit && submitId ? { ...spec.properties, buttonToSubmit: { ...submit, value: submitId } } : spec.properties;
-    const childOrder = childOrders.get(id);
-    if (childOrder)
-      properties = { ...properties, childOrder: childOrderProperty(childOrder) };
-    const { clientRef: _clientRef, parentRef: _parentRef, ...rest } = spec;
-    const resolved = { ...rest, properties, id, ...parent ? { parent } : {} };
-    if (!parent)
-      delete resolved.parent;
-    const existing = storedByName.get(spec.name);
-    if (!existing) {
-      diff.create.push(resolved);
-      continue;
-    }
-    let why;
-    if (existing.type !== spec.type)
-      why = `type ${existing.type} -> ${spec.type}`;
-    else if ((existing.parent ?? void 0) !== (parent ? encodeComponentParent(parent, spec.slotName) : void 0))
-      why = "parent";
-    else if (!definitions[spec.type])
-      why = "no default definition for this widget";
-    else {
-      for (const section of SECTIONS) {
-        const key = differingKey(spec.type, section, section === "properties" ? properties : spec[section], existing[section], definitions);
-        if (key !== void 0) {
-          why = `${section}.${key}`;
-          break;
-        }
-      }
-    }
-    if (why) {
-      diff.deleteIds.push(existing.id);
-      diff.create.push(resolved);
-      diff.recreated.push(spec.name);
-      diff.why[spec.name] = why;
-      continue;
-    }
-    const layouts = existing.layouts ?? {};
-    const desktop = spec.layouts?.desktop ?? spec.layout;
-    const mobile = spec.layouts?.mobile ?? spec.layout;
-    if (sameRect(desktop, layouts.desktop) && sameRect(mobile, layouts.mobile))
-      diff.keep.push(spec.name);
-    else
-      diff.relayout.push({ componentId: existing.id, ...desktop ? { desktop } : {}, ...mobile ? { mobile } : {} });
-  }
-  return diff;
-}
-var REMOTE_RESULT_MAX_JSON_CHARS = 3e4;
-function queryResultBindingHint(query, result) {
-  const data = result.data;
-  const options = query.options;
-  if (result.status !== "ok" || query.kind !== "tooljetdb" || options?.operation !== "sql_execution" || !data || !Array.isArray(data.results))
-    return void 0;
-  return {
-    rows_path: "data.results",
-    row_count: data.results.length,
-    guidance: "This ToolJet DB SQL read returned an object containing results. Bind row consumers to queries.<name>.data.results (or data?.results ?? []), not data.map/filter or data[0]. Other operations can return different shapes; preserve the actual returned contract."
-  };
-}
-function truncateRemoteResult(result) {
-  if (!Object.prototype.hasOwnProperty.call(result, "data"))
-    return { result };
-  let serialized;
-  try {
-    serialized = JSON.stringify(result.data);
-  } catch {
-    return {
-      result: { ...result, data: { mcp_truncated: true, preview_json: "<unserializable response>" } },
-      warning: "The REST response data could not be serialized for MCP output; inspect it in ToolJet."
-    };
-  }
-  if (typeof serialized !== "string")
-    return { result };
-  if (serialized.length <= REMOTE_RESULT_MAX_JSON_CHARS)
-    return { result };
-  return {
-    result: {
-      ...result,
-      data: {
-        mcp_truncated: true,
-        original_json_characters: serialized.length,
-        preview_json: serialized.slice(0, REMOTE_RESULT_MAX_JSON_CHARS)
-      }
-    },
-    warning: `REST response data exceeded ${REMOTE_RESULT_MAX_JSON_CHARS} JSON characters and was truncated in MCP output. The remote request already completed; add API-specific pagination or a smaller limit before another run.`
-  };
-}
-function containsComponentBinding(value) {
-  if (typeof value === "string")
-    return /\bcomponents\s*\./.test(value);
-  if (Array.isArray(value))
-    return value.some(containsComponentBinding);
-  if (value && typeof value === "object")
-    return Object.values(value).some(containsComponentBinding);
-  return false;
-}
-function datasourceRecovery(query) {
-  if (!query.datasource_settings_url)
-    return void 0;
-  return {
-    action: "open_datasource_settings",
-    url: query.datasource_settings_url,
-    instruction: "Ask the user to repair or test the connection in ToolJet. If an in-app browser is available, open this URL; do not enter credentials, authorize OAuth, test, or save settings for the user. Retry only after they confirm the repair."
-  };
-}
-var CONNECTION_SQLSTATE_PREFIXES = ["08", "28", "53", "57P0", "3D000"];
-var SCHEMA_NAME_SQLSTATES = /* @__PURE__ */ new Set(["42P01", "42703", "3F000", "42P02", "42704"]);
-var LEGACY_CONNECTION_CODES = /* @__PURE__ */ new Set([
-  "ELOGIN",
-  "ESOCKET",
-  "ECONNREFUSED",
-  "ECONNRESET",
-  "ETIMEDOUT",
-  "ENOTFOUND",
-  "ER_ACCESS_DENIED_ERROR",
-  "ER_DBACCESS_DENIED_ERROR",
-  "ER_BAD_DB_ERROR",
-  "PROTOCOL_CONNECTION_LOST"
-]);
-var LEGACY_SCHEMA_CODES = /* @__PURE__ */ new Set(["ER_BAD_FIELD_ERROR", "ER_BAD_TABLE_ERROR", "ER_NO_SUCH_TABLE"]);
-function classifyQueryFailure(result) {
-  if (!result)
-    return "unknown";
-  const details = result.data;
-  if (details?.name === "SyntaxError" && typeof result.description === "string" && result.description.startsWith("JSON5:"))
-    return "query";
-  const category = result.category;
-  if (category === "authentication" || category === "connection")
-    return "connection";
-  if (category === "schema_name")
-    return "schema_name";
-  if (category === "unknown")
-    return "unknown";
-  if (["timeout", "rate_limit", "transient", "query"].includes(String(category)))
-    return "query";
-  if (typeof category === "string")
-    return "unknown";
-  const data = result.data;
-  const codes = data && typeof data === "object" ? [data.code, data.sqlState, data.sqlstate].map((value) => String(value ?? "").toUpperCase()).filter(Boolean) : [];
-  if (codes.some((code) => CONNECTION_SQLSTATE_PREFIXES.some((prefix) => code.startsWith(prefix))) || codes.some((code) => LEGACY_CONNECTION_CODES.has(code)))
-    return "connection";
-  if (codes.some((code) => SCHEMA_NAME_SQLSTATES.has(code) || LEGACY_SCHEMA_CODES.has(code)))
-    return "schema_name";
-  return codes.length ? "query" : "unknown";
-}
-function failureRecovery(query, result) {
-  return classifyQueryFailure(result) === "connection" ? datasourceRecovery(query) : void 0;
-}
-function failureVerification(query, result) {
-  if (!query.data_source_id || classifyQueryFailure(result) !== "unknown")
-    return void 0;
-  return {
-    action: "test_datasource_connection",
-    datasource_id: query.data_source_id,
-    instruction: "Test this same saved datasource before diagnosing the failure. If testing is unsupported or inconclusive, ask the user before one bounded read. Never substitute another datasource from an unknown failure."
-  };
-}
-function introspectedNames(result) {
-  const data = result?.data;
-  if (!Array.isArray(data))
-    return [];
-  return data.map((row) => typeof row === "string" ? row : row?.value ?? row?.label ?? row?.name).filter((value) => typeof value === "string" && value.length > 0);
-}
-async function availableTableNames(client, query) {
-  if (!query.data_source_id || !query.kind)
-    return void 0;
-  const methods = getDatasourceQuerySchema(query.kind)?.introspectionMethods ?? [];
-  const tableMethod = ["listTables", "list_tables", "getTables", "tables"].find((m) => methods.includes(m));
-  if (!tableMethod)
-    return void 0;
-  let methodArgs;
-  if (methods.includes("listSchemas")) {
-    const schemas = introspectedNames(await client.invokeDatasourceMethod({ dataSourceId: query.data_source_id, method: "listSchemas" }));
-    const schema = schemas.includes("public") ? "public" : schemas[0];
-    if (schema)
-      methodArgs = { schema };
-  }
-  const tableResult = await client.invokeDatasourceMethod({
-    dataSourceId: query.data_source_id,
-    method: tableMethod,
-    ...methodArgs ? { args: methodArgs } : {}
-  });
-  const names = introspectedNames(tableResult);
-  return names.length ? names : void 0;
-}
-async function schemaNameHint(client, query, result) {
-  if (classifyQueryFailure(result) !== "schema_name")
-    return void 0;
-  const data = result.data;
-  const code = data && typeof data === "object" ? String(data.code ?? "") : "";
-  const hint = {
-    kind: "schema_name_error",
-    detail: String(result.description ?? result.message ?? "a table or column named in the query does not exist"),
-    ...code ? { sqlstate: code } : {},
-    guidance: "This is a schema/name error, NOT a connection problem \u2014 the datasource is reachable, so do NOT ask the user to repair or test the connection. A table or column named in the SQL does not exist. Call inspect_datasource_schema (listTables, then listColumns for the target table) to get the EXACT names, correct the query, and retry. Never guess table or column names."
-  };
-  try {
-    const tables = await availableTableNames(client, query);
-    if (tables?.length)
-      hint.available_tables = tables.slice(0, 50);
-  } catch {
-  }
-  return hint;
-}
-function runQueryTool(client) {
-  return {
-    name: "run_query",
-    title: "Run Query",
-    // Executes whatever the query holds against the customer datasource — which may write or delete.
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: true
-    },
-    description: `Run an already-created query and return its REAL result \u2014 the browser-free way to see actual data. Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / distinct values (statuses, categories) before writing chart series, dropdown options, or filters. The query must already exist (create it with add_query first). Returns { status: "ok"|"failed", data: <datasource result>, ... }; data may be an array or an object (ToolJet DB SQL uses data.results). Inspect the actual shape before binding components. HTTP is 200 even on failure, so CHECK \`status\` and read \`message\` on failure. Runs the SAVED query as-is; it does not mutate it. SELECT * is always refused. Reads with no static limit at or below ${LARGE_READ_ROW_THRESHOLD} rows require an unfiltered, same-datasource count_query_id first; if the observed count is larger, retry only after explicit user approval with user_confirmed_large_read:true. BigQuery, Snowflake, and Redshift reads also require explicit cost approval with user_confirmed_billable_read:true, even when row-limited. Never set confirmation flags from inferred consent. A static remote read (including REST GET and Supabase rows) requires separate approval with user_confirmed_remote_read:true because it may expose sensitive data or consume quota; remote writes are refused. If saved options reference \`components.*\`, the result includes a warning because browser-free execution cannot prove the component-resolved pagination/filter behavior.`,
-    inputSchema: {
-      query_id: external_exports.string(),
-      version_id: external_exports.string(),
-      environment_id: external_exports.string().optional(),
-      count_query_id: external_exports.string().optional(),
-      user_confirmed_large_read: external_exports.boolean().optional(),
-      user_confirmed_billable_read: external_exports.boolean().optional(),
-      user_confirmed_remote_read: external_exports.boolean().optional()
-    },
-    async handler(args) {
-      try {
-        const warnings = [];
-        const query = await client.getQuery(args.query_id, args.version_id).catch(async (error) => {
-          const saved = await client.getQueries(args.version_id);
-          const resolution = resolveRef(saved, args.query_id, "Query", `on version "${args.version_id}"`);
-          if (!resolution.ok)
-            throw new Error(resolution.error, { cause: error });
-          return resolution.target;
-        });
-        const assessment = assessQueryRead(query);
-        if (!assessment.provenRead || assessment.selectStar) {
-          return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${assessment.reason ?? "not a proven read"}`));
-        }
-        const staticBindings = resolveStaticBindings(query.options);
-        const bindingRefusal = resolvedReadRefusal(query, assessment, staticBindings.resolved);
-        if (bindingRefusal) {
-          return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${bindingRefusal}`));
-        }
-        if (containsComponentBinding(query.options)) {
-          warnings.push('Saved query options reference components.*. Browser-free run_query cannot resolve live component state. A missing/undefined filter parameter here is not proof the saved SQL is wrong. Verify in the viewer before rewriting the query; preserve output aliases and every consumer when a real repair is needed. Even status:"ok" does not prove live filter or pagination behavior.');
-        }
-        if (assessment.requiresRemoteReadConfirmation && !args.user_confirmed_remote_read) {
-          return fail(new Error(`run_query refused remote read "${query.name ?? query.id}" before execution: remote reads can expose sensitive data, consume API quota, and return an unbounded payload. Tell the user which saved query will run and ask explicitly; retry with user_confirmed_remote_read:true only after they approve that request.`));
-        }
-        if (assessment.requiresRemoteReadConfirmation) {
-          warnings.push(assessment.datasourceKind === "restapi" ? "User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.request and metadata.response, and add API-specific pagination before another run when needed." : "User-confirmed remote read: the datasource controls response size and quota.");
-        }
-        if (assessment.requiresBillableReadConfirmation && !args.user_confirmed_billable_read) {
-          return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${query.kind} reads can incur warehouse/scan charges even with a row LIMIT. Explain that cost to the user and retry with user_confirmed_billable_read:true only after explicit approval.`));
-        }
-        let preflight;
-        if (assessment.requiresCountPreflight) {
-          if (!args.count_query_id) {
-            return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${assessment.reason ?? "result size is not bounded"} Create a same-source COUNT(*)/ToolJet DB count-aggregate query and retry with count_query_id. Use server-side pagination when the count exceeds ${LARGE_READ_ROW_THRESHOLD}.`));
-          }
-          if (args.count_query_id === args.query_id || args.count_query_id === query.id) {
-            return fail(new Error("count_query_id must be a separate count-only query."));
-          }
-          const countQuery = await client.getQuery(args.count_query_id, args.version_id);
-          const countAssessment = assessQueryRead(countQuery);
-          const countCanRun = countAssessment.directSafe || countAssessment.requiresBillableReadConfirmation === true && args.user_confirmed_billable_read === true || countAssessment.requiresRemoteReadConfirmation === true && args.user_confirmed_remote_read === true;
-          if (!countAssessment.countOnly || !countCanRun || countAssessment.requiresCountPreflight || !sameReadSource(assessment, countAssessment)) {
-            return fail(new Error(`run_query refused the count preflight: "${countQuery.name ?? countQuery.id}" must be an unfiltered COUNT(*) (or ToolJet DB count of the generated id) against the same datasource and simple table as the target query.`));
-          }
-          const countResult = await client.runQuery({
-            queryId: countQuery.id,
-            versionId: args.version_id,
-            environmentId: args.environment_id
-          });
-          const rowCount2 = extractRowCount(countResult);
-          if (rowCount2 === void 0) {
-            return fail(new Error(`Count preflight "${countQuery.name ?? countQuery.id}" did not return one row with exactly one numeric count; target query was not run.`));
-          }
-          preflight = { count_query_id: countQuery.id, row_count: rowCount2, threshold: LARGE_READ_ROW_THRESHOLD };
-          if (rowCount2 > LARGE_READ_ROW_THRESHOLD && !args.user_confirmed_large_read) {
-            return fail(new Error(`Target query was not run: count preflight found ${rowCount2} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row threshold. Recommend server-side pagination. If a full read is still necessary, tell the user the observed count and ask explicitly; retry with user_confirmed_large_read:true only after they approve.`));
-          }
-          if (rowCount2 > LARGE_READ_ROW_THRESHOLD) {
-            warnings.push(`User-confirmed large read: count preflight found ${rowCount2} rows. Server-side pagination remains recommended.`);
-          }
-        }
-        let result;
-        try {
-          const bindings = staticBindings;
-          const emptied = emptyViewerOnlyParams(query.options, bindings);
-          if (emptied.length)
-            warnings.push(emptyParamsNote(emptied));
-          const liveOnly = bindings.unresolved.filter((b) => !/components\./.test(b));
-          if (liveOnly.length)
-            warnings.push(unresolvedNote(liveOnly));
-          result = await client.runQuery({
-            queryId: query.id,
-            versionId: args.version_id,
-            environmentId: args.environment_id,
-            resolvedOptions: bindings.resolved
-          });
-        } catch (error) {
-          return ok({
-            status: "failed",
-            message: error instanceof Error ? error.message : String(error),
-            ...preflight ? { preflight } : {},
-            ...warnings.length ? { warnings } : {}
-          });
-        }
-        const failed = result.status === "failed";
-        const bindingHint = queryResultBindingHint(query, result);
-        const recovery = failed ? failureRecovery(query, result) : void 0;
-        const verification = failed ? failureVerification(query, result) : void 0;
-        const schemaHint = failed ? await schemaNameHint(client, query, result) : void 0;
-        const output = assessment.requiresRemoteReadConfirmation ? truncateRemoteResult(result) : { result };
-        if (output.warning)
-          warnings.push(output.warning);
-        return ok({
-          ...output.result,
-          // Trusted execution evidence, separate from datasource-supplied data. No credentials,
-          // URLs or row contents are needed for the agent's early migration/readiness checkpoint.
-          // What let it run, not a claim about its effects: the read classifier is a static check (CM-37).
-          execution: { query_id: query.id, datasource_kind: query.kind, preflight: "explicit_read" },
-          ...bindingHint ? { binding_hint: bindingHint } : {},
-          ...preflight ? { preflight } : {},
-          ...warnings.length ? { warnings } : {},
-          ...recovery ? { recovery } : {},
-          ...verification ? { verification } : {},
-          ...schemaHint ? { schema_hint: schemaHint } : {}
-        });
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
-var MAX_READS = 10;
-var CLOCK_SKEW = /JWT issued at future/i;
-var CLOCK_SKEW_RETRY_MS = 1500;
-var REASON_CHARS = 160;
-var rowCount = (result) => {
-  const data = result.data;
-  if (Array.isArray(data))
-    return data.length;
-  return void 0;
-};
-async function checkPlanReads(client, params) {
-  const wanted = [...new Set(params.queryIds)];
-  if (!wanted.length)
-    return void 0;
-  const saved = await client.getQueries(params.versionId);
-  const byId = new Map(saved.map((query) => [query.id, query]));
-  const check = { ran: 0, rows: {}, failed: [], inconclusive: [], not_run: [], queries: [] };
-  const entries = /* @__PURE__ */ new Map();
-  const runnable = [];
-  for (const id of wanted) {
-    const query = byId.get(id);
-    if (!query)
-      continue;
-    const name = query.name ?? id;
-    const verdict = autoReadPreflight(query);
-    if (!verdict.run) {
-      const reason = verdict.reason.startsWith(NOT_CHECKED_AUTOMATICALLY) ? verdict.reason : verdict.reason.slice(0, REASON_CHARS);
-      check.not_run.push({ name, reason });
-      entries.set(id, { name, status: "refused", reason });
-    } else if (runnable.length >= MAX_READS) {
-      const reason = `only the first ${MAX_READS} reads of a phase are checked; run this one with run_queries`;
-      check.not_run.push({ name, reason });
-      entries.set(id, { name, status: "skipped", reason });
-    } else {
-      runnable.push(id);
-    }
-  }
-  const ledger = () => {
-    check.queries = wanted.flatMap((id) => entries.get(id) ?? []);
-    return check;
-  };
-  if (!runnable.length)
-    return ledger();
-  const environmentId = params.environmentId ?? await client.getDevelopmentEnvironmentId();
-  await Promise.all(runnable.map(async (id) => {
-    const query = byId.get(id);
-    const name = query.name ?? id;
-    const needsViewer = containsComponentBinding(query.options);
-    const run = async () => {
-      try {
-        const bindings = resolveStaticBindings(query.options);
-        emptyViewerOnlyParams(query.options, bindings);
-        return await client.runQuery({ queryId: id, versionId: params.versionId, environmentId, resolvedOptions: bindings.resolved });
-      } catch (error) {
-        return { status: "failed", message: error instanceof Error ? error.message : String(error) };
-      }
-    };
-    let result = await run();
-    if (result.status === "failed" && CLOCK_SKEW.test(String(result.message ?? result.description ?? ""))) {
-      await new Promise((resolve2) => setTimeout(resolve2, params.retryDelayMs ?? CLOCK_SKEW_RETRY_MS));
-      result = await run();
-    }
-    check.ran += 1;
-    if (result.status !== "failed") {
-      const rows = rowCount(result);
-      if (rows !== void 0)
-        check.rows[name] = rows;
-      entries.set(id, { name, status: "checked", outcome: "passed" });
-      return;
-    }
-    const message = String(result.message ?? result.description ?? "the query failed").slice(0, 600);
-    if (needsViewer) {
-      check.inconclusive.push({
-        name,
-        message,
-        note: "This query reads components.*, which a browser-free run leaves empty: the failure may be about the missing value. Check that the query also works when that input is empty, or give the input a default."
-      });
-      entries.set(id, { name, status: "checked", outcome: "inconclusive" });
-      return;
-    }
-    const schemaHint = await schemaNameHint(client, query, result).catch(() => void 0);
-    check.failed.push({ name, message, ...schemaHint ? { schema_hint: schemaHint } : {} });
-    entries.set(id, { name, status: "checked", outcome: "failed" });
-  }));
-  return ledger();
-}
-function logicalRef(value) {
-  return value.client_ref ?? value.name;
-}
-function sourceTarget(sourceType, ref, pages, queries, components) {
-  if (sourceType === "page")
-    return pages.get(ref);
-  if (sourceType === "data_query")
-    return queries.get(ref);
-  return components.get(ref);
-}
-function resolveAction(raw, pages, queries, components) {
-  const { target_ref: explicitRef, ...action } = raw;
-  const targetRef = explicitRef ?? (action.actionId === "run-query" ? action.queryId ?? action.queryName : void 0);
-  if (targetRef === void 0)
-    return action;
-  if (typeof targetRef !== "string")
-    throw new Error("Event action target_ref must be a string.");
-  const actionId = String(action.actionId);
-  const target = actionId === "run-query" ? queries.get(targetRef) : actionId === "switch-page" ? pages.get(targetRef) : ["show-modal", "close-modal", "control-component", "set-table-page", "scroll-component-into-view"].includes(actionId) ? components.get(targetRef) : void 0;
-  if (!target)
-    throw new Error(`Action "${actionId}" has unknown or unsupported target_ref "${targetRef}".`);
-  if (actionId === "run-query")
-    return { ...action, queryId: target.id, queryName: target.name };
-  if (actionId === "switch-page")
-    return { ...action, pageId: target.id };
-  if (actionId === "show-modal" || actionId === "close-modal")
-    return { ...action, modal: target.id };
-  if (actionId === "control-component" || actionId === "scroll-component-into-view") {
-    return { ...action, componentId: target.id };
-  }
-  if (actionId === "set-table-page")
-    return { ...action, table: target.id };
-  return action;
-}
-function refs(values, targets, label) {
-  return values?.map((ref) => {
-    const target = targets.get(ref);
-    if (!target)
-      throw new Error(`${label} ref "${ref}" does not exist.`);
-    return target.id;
-  });
-}
-function oneRef(value, targets, label) {
-  if (!value)
-    return void 0;
-  const target = targets.get(value);
-  if (!target)
-    throw new Error(`${label} ref "${value}" does not exist.`);
-  return target.id;
-}
-function appliedSummary(applied) {
-  return Object.entries(applied).map(([key, value]) => `${key}=${value}`).join(", ");
-}
-var TABLE_READY_DELAYS_MS = [100, 200, 400, 800, 1e3];
-async function waitForCreatedTables(client, tableNames) {
-  await Promise.all(tableNames.map(async (tableName) => {
-    let lastError;
-    for (let attempt = 0; attempt <= TABLE_READY_DELAYS_MS.length; attempt += 1) {
-      try {
-        const [tables, schema] = await Promise.all([client.listTables(), client.getTableSchema(tableName)]);
-        if (!tables.some((table) => table.table_name === tableName)) {
-          throw new Error(`table is not visible in list_tables yet`);
-        }
-        if (!schema.length)
-          throw new Error("schema has no columns yet");
-        return;
-      } catch (error) {
-        lastError = error;
-        const delay = TABLE_READY_DELAYS_MS[attempt];
-        if (delay === void 0)
-          break;
-        await new Promise((resolve2) => setTimeout(resolve2, delay));
-      }
-    }
-    throw new Error(`Created table "${tableName}" did not become readable before seeding: ${lastError instanceof Error ? lastError.message : String(lastError)}`);
-  }));
-}
-function applyAppPhaseTool(client) {
-  return {
-    name: "apply_app_phase",
-    title: "Apply App Phase",
-    // Creates, and amends page metadata or the app name when the approved plan says to. It drops no table and deletes
-    // no row; the one delete path is a plan page marked replace, whose old components and events it removes.
-    annotations: {
-      readOnlyHint: false,
-      // A plan page marked replace has its components and their events deleted before the plan's are created.
-      destructiveHint: true,
-      openWorldHint: true
-    },
-    description: "Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates tables/pages/queries in dependency order, seeds rows, creates independent page component batches concurrently, combines ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It then runs the proven read queries the phase created or updated once and reports them in read_check (failed: fix the query; inconclusive: the read takes a component value a browser-free run leaves empty; not_run: writes, remote or paid calls, RunJS and reads the automatic check cannot prove, which are never run here; queries: each one checked, refused or skipped, and only checked with outcome passed is a pass). A failing read does not fail the phase. ToolJet has no cross-resource transaction: a rare upstream partial failure reports the completed stage/counts and never auto-deletes user data, except for a plan page marked replace: that page ends up holding exactly the plan's components. It is written as a difference: a component the plan leaves as it is is not rewritten, one that only moved is moved, one that changed is created again under its own id, and one the plan drops is deleted, with the events on the page's components replaced by the plan's (page events and query events only where the plan declares them again); queries the plan defines again are updated in place keeping their ids. A replace is refused before any write if the page changed since lint (any component, redefined query or related event edited), and every component and event ref is prepared before the first write. A replace is not atomic: a failure midway leaves the page to be repaired (the result says what was removed; there is no rollback), so use replace on draft or otherwise recoverable pages. The one-time token prevents an accidental retry from duplicating objects.",
-    inputSchema: {
-      app_id: external_exports.string(),
-      version_id: external_exports.string().optional().describe("Defaults to the version the plan was linted for."),
-      plan_token: external_exports.string(),
-      check_reads: external_exports.boolean().optional().describe("Default true: after the phase is written, the proven read queries it created or updated are run once and the result carries read_check {ran, rows, failed, inconclusive, not_run, queries}. Writes, remote or paid calls, RunJS and reads the automatic check cannot prove are never run. false skips the check.")
-    },
-    async handler(input) {
-      const peeked = peekAppPlan(input.plan_token);
-      if (peeked) {
-        const planVersion = peeked.spec.version_id;
-        const mismatch = peeked.spec.app_id && peeked.spec.app_id !== input.app_id ? `Plan app_id "${peeked.spec.app_id}" does not match "${input.app_id}".` : input.version_id && planVersion && planVersion !== input.version_id ? `Plan version_id "${planVersion}" does not match "${input.version_id}". Omit version_id to use the plan's.` : void 0;
-        if (mismatch)
-          return { content: [{ type: "text", text: `Error: ${mismatch} The plan_token is still valid.` }], isError: true };
-      }
-      const version = input.version_id ?? peeked?.spec.version_id;
-      if (!version) {
-        return { content: [{ type: "text", text: "Error: apply_app_phase needs version_id: neither the call nor the plan names one." }], isError: true };
-      }
-      const args = { ...input, version_id: version };
-      const applied = {
-        app_metadata: 0,
-        tables: 0,
-        seed_rows: 0,
-        pages: 0,
-        queries: 0,
-        components: 0,
-        events: 0,
-        queries_updated: 0,
-        events_removed: 0,
-        components_removed: 0,
-        components_kept: 0,
-        components_moved: 0
-      };
-      let stage = "consume plan";
-      let createdPageIds = [];
-      let replacedPageNames = [];
-      let retargetPending = [];
-      let notRetargeted;
-      try {
-        const stored = consumeAppPlan(args.plan_token);
-        const spec = stored.spec;
-        if (spec.app_id && spec.app_id !== args.app_id) {
-          throw new Error(`Plan app_id "${spec.app_id}" does not match "${args.app_id}".`);
-        }
-        if (spec.version_id && spec.version_id !== args.version_id) {
-          throw new Error(`Plan version_id "${spec.version_id}" does not match "${args.version_id}".`);
-        }
-        stage = "read current app context";
-        const [initialSummary, existingTables, datasources] = await Promise.all([
-          client.getAppSummary(args.app_id),
-          client.listTables(),
-          spec.queries?.length ? client.listDatasources(args.version_id) : Promise.resolve([])
-        ]);
-        const frozen = frozenAppRefusal(initialSummary);
-        if (frozen)
-          return fail(new Error(frozen));
-        if (initialSummary.version_id && initialSummary.version_id !== args.version_id) {
-          throw new Error(`App editing version is "${initialSummary.version_id}", not "${args.version_id}".`);
-        }
-        const replacing = replaceView(initialSummary, spec);
-        if (replacing && replaceFingerprint(initialSummary, replacing) !== stored.replaceFingerprint) {
-          const pages = replacing.replacedPageNames.length ? `"${replacing.replacedPageNames.join('", "')}"` : "The queries this plan redefines";
-          return fail(new Error(`apply_app_phase refused before any write: ${pages} changed since this plan was linted (a component, event or query was edited, or the plan was linted without app_id). Run lint_app_spec with app_id again so the plan sees the current state.`));
-        }
-        if (replacing) {
-          const dangling = danglingAfterReplace(initialSummary, replacing, spec);
-          if (dangling.length)
-            return fail(new Error(`apply_app_phase refused before any write: ${dangling.join(" ")}`));
-        }
-        const planSummary = replacing?.summary ?? initialSummary;
-        replacedPageNames = replacing?.replacedPageNames ?? [];
-        retargetPending = (replacing?.eventsToRetarget ?? []).map((event) => `"${event.name ?? event.id}"`);
-        stage = "prepare queries";
-        const datasourceKinds = new Map(datasources.map((datasource) => [datasource.id, datasource.kind]));
-        const preparedQueryOptions = (spec.queries ?? []).map((query) => {
-          if (!query.datasource_id)
-            throw new Error(`Query "${query.name}" has no pinned datasource_id. Lint the phase again.`);
-          const kind = datasourceKinds.get(query.datasource_id);
-          if (!kind)
-            throw new Error(`Query "${query.name}" datasource "${query.datasource_id}" is unavailable.`);
-          const options = structuredClone(query.options);
-          if (query.table_ref)
-            options.table_id = `planned-table:${query.table_ref}`;
-          const prepared = prepareQueryOptionsForWrite(kind, options, `Query "${query.name}"`);
-          if (prepared.errors.length)
-            throw new Error(`${prepared.errors.join(" ")} Nothing was written; lint the phase again.`);
-          return { kind, options: prepared.options };
-        });
-        for (const query of preparedQueryOptions) {
-          if (query.kind === "workflows")
-            await client.assertWorkflowQueryTarget(query.options);
-        }
-        const plannedPageMatches = /* @__PURE__ */ new Map();
-        const claimedPageIds = /* @__PURE__ */ new Set();
-        const reusableHome = initialSummary.pages.length === 1 && initialSummary.pages[0]?.handle === "home" && initialSummary.pages[0].components.length === 0 ? initialSummary.pages[0] : void 0;
-        const plannedPageNames = new Set((spec.pages ?? []).map((page) => page.name));
-        for (const page of spec.pages ?? []) {
-          let match = matchPlannedPage(planSummary.pages, page.name, plannedPageNames, claimedPageIds);
-          if (!match && reusableHome && !claimedPageIds.has(reusableHome.id))
-            match = reusableHome;
-          if (match)
-            plannedPageMatches.set(logicalRef(page), match);
-          if (match)
-            claimedPageIds.add(match.id);
-          const existingNames = new Set((match?.components ?? []).map((component) => component.name).filter(Boolean));
-          const collision = (page.components ?? []).find((component) => existingNames.has(component.name));
-          if (collision) {
-            throw new Error(`Page "${page.name}" already has a component named "${collision.name}".`);
-          }
-        }
-        const existingQueryNames = new Set(planSummary.queries.map((query) => query.name).filter(Boolean));
-        const queryCollision = (spec.queries ?? []).find((query) => existingQueryNames.has(query.name));
-        if (queryCollision)
-          throw new Error(`App already has a query named "${queryCollision.name}".`);
-        const existingTableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
-        const resolvePlannedEvents = (pageTargets2, queryTargets2, targets) => {
-          const ordinaryEvents2 = (spec.events ?? []).map((event) => {
-            const source = sourceTarget(event.source_type, event.source_ref, pageTargets2, queryTargets2, targets);
-            if (!source)
-              throw new Error(`Event has unknown ${event.source_type} source_ref "${event.source_ref}".`);
-            return {
-              sourceId: source.id,
-              sourceType: event.source_type,
-              ref: event.ref,
-              trigger: event.trigger,
-              action: resolveAction(event.action, pageTargets2, queryTargets2, targets),
-              name: event.name
-            };
-          });
-          const lifecycleSpecs2 = (spec.lifecycles ?? []).map((lifecycle) => ({
-            queryId: oneRef(lifecycle.query_ref, queryTargets2, "Lifecycle query"),
-            beforeRefreshActions: lifecycle.before_refresh_actions?.map((action) => resolveAction(action, pageTargets2, queryTargets2, targets)),
-            refreshQueryIds: refs(lifecycle.refresh_query_refs, queryTargets2, "Lifecycle refresh query"),
-            clearComponentIds: refs(lifecycle.clear_component_refs, targets, "Lifecycle clear component"),
-            closeModalId: oneRef(lifecycle.close_modal_ref, targets, "Lifecycle modal"),
-            successAlert: lifecycle.success_alert ? { message: lifecycle.success_alert.message, alertType: lifecycle.success_alert.alert_type } : void 0,
-            failureAlert: lifecycle.failure_alert ? { message: lifecycle.failure_alert.message, alertType: lifecycle.failure_alert.alert_type } : void 0,
-            successActions: lifecycle.success_actions?.map((action) => resolveAction(action, pageTargets2, queryTargets2, targets)),
-            failureActions: lifecycle.failure_actions?.map((action) => resolveAction(action, pageTargets2, queryTargets2, targets))
-          }));
-          return { ordinaryEvents: ordinaryEvents2, lifecycleSpecs: lifecycleSpecs2 };
-        };
-        stage = "prepare page components";
-        const canvasColor = await literalCanvasColor(client, args.app_id, initialSummary.version_id ?? args.version_id);
-        const preparedBatches = /* @__PURE__ */ new Map();
-        for (const page of spec.pages ?? []) {
-          if (!page.components?.length)
-            continue;
-          const prepared = prepareComponentBatch(page.components, {
-            canvasColor,
-            existingComponents: plannedPageMatches.get(logicalRef(page))?.components
-          });
-          if (prepared.errors.length)
-            throw new Error(`Page "${page.name}": ${prepared.errors.join(" ")}`);
-          preparedBatches.set(logicalRef(page), prepared);
-        }
-        stage = "resolve event refs";
-        {
-          const pages = persistedTargets(initialSummary.pages.map((page) => ({ id: page.id, name: page.name ?? page.id, aliases: [page.handle] })));
-          for (const page of spec.pages ?? []) {
-            const id = plannedPageMatches.get(logicalRef(page))?.id ?? `planned-page:${logicalRef(page)}`;
-            pages.set(logicalRef(page), { id, name: page.name });
-          }
-          const queries = persistedTargets(planSummary.queries.map((query) => ({ id: query.id, name: query.name ?? query.id })));
-          for (const query of spec.queries ?? []) {
-            const target = { id: replacing?.queriesToUpdate.get(query.name) ?? `planned-query:${query.name}`, name: query.name };
-            queries.set(logicalRef(query), target);
-            queries.set(query.name, target);
-          }
-          const components = persistedTargets(planSummary.pages.flatMap((page) => page.components).map((component) => ({
-            id: component.id,
-            name: component.name ?? component.id,
-            type: component.type
-          })));
-          for (const prepared of preparedBatches.values()) {
-            for (const component of prepared.components) {
-              const ref = componentRef(component);
-              if (components.has(ref))
-                throw new Error(`Duplicate component client_ref/name "${ref}" in planned app.`);
-              components.set(ref, { id: `planned:${ref}`, name: component.name, type: component.type });
-            }
-          }
-          resolvePlannedEvents(pages, queries, components);
-        }
-        let renameWarning;
-        if (spec.app_name && spec.app_name !== initialSummary.name) {
-          stage = "rename target app";
-          try {
-            await client.renameApp(args.app_id, args.version_id, spec.app_name);
-          } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            if (!/exist|unique|duplicate|taken|conflict|409|422/i.test(message))
-              throw error;
-            const fallback = `${spec.app_name} ${Math.random().toString(36).slice(2, 5)}`;
-            await client.renameApp(args.app_id, args.version_id, fallback);
-            renameWarning = `App name "${spec.app_name}" is already used in this workspace; the app was named "${fallback}" instead.`;
-          }
-          applied.app_metadata = 1;
-        }
-        stage = "create tables and pages";
-        const newPages = (spec.pages ?? []).filter((page) => !plannedPageMatches.has(logicalRef(page)));
-        const [tableWrite, pageWrite] = await Promise.allSettled([
-          spec.tables?.length ? client.createTables({
-            tables: spec.tables.map((table) => ({
-              tableName: table.table_name,
-              columns: table.columns,
-              foreignKeys: table.foreign_keys
-            }))
-          }) : Promise.resolve([]),
-          newPages.length ? client.createPages({
-            appId: args.app_id,
-            versionId: args.version_id,
-            pages: newPages.map((page) => ({ name: page.name, icon: page.icon, hidden: page.hidden }))
-          }) : Promise.resolve([])
-        ]);
-        const createdTables = tableWrite.status === "fulfilled" ? tableWrite.value : completedPartialWrites(tableWrite.reason);
-        const createdPages = pageWrite.status === "fulfilled" ? pageWrite.value : completedPartialWrites(pageWrite.reason);
-        applied.tables = createdTables.length;
-        applied.pages = createdPages.length;
-        createdPageIds = createdPages.map((page) => page.page_id);
-        const foundationFailures = [
-          ...tableWrite.status === "rejected" ? [`tables: ${tableWrite.reason instanceof Error ? tableWrite.reason.message : String(tableWrite.reason)}`] : [],
-          ...pageWrite.status === "rejected" ? [`pages: ${pageWrite.reason instanceof Error ? pageWrite.reason.message : String(pageWrite.reason)}`] : []
-        ];
-        if (foundationFailures.length)
-          throw new Error(foundationFailures.join(" | "), {
-            cause: tableWrite.status === "rejected" ? tableQuotaError(tableWrite.reason) : void 0
-          });
-        const tableIds = new Map(existingTableIds);
-        for (const table of createdTables)
-          tableIds.set(table.table_name.toLowerCase(), table.table_id);
-        const newlyCreatedSeedTables = createdTables.map((table) => table.table_name).filter((tableName) => spec.seed_data?.some((seed) => seed.table_name === tableName));
-        if (newlyCreatedSeedTables.length) {
-          stage = "wait for created table schemas";
-          await waitForCreatedTables(client, newlyCreatedSeedTables);
-        }
-        const pageTargets = persistedTargets(initialSummary.pages.map((page) => ({ id: page.id, name: page.name ?? page.id, aliases: [page.handle] })));
-        for (const page of spec.pages ?? []) {
-          const ref = logicalRef(page);
-          const existing = plannedPageMatches.get(ref);
-          const created = createdPages.find((candidate) => candidate.name === page.name);
-          const id = existing?.id ?? created?.page_id;
-          if (!id)
-            throw new Error(`Could not resolve page "${page.name}" after creation.`);
-          pageTargets.set(ref, { id, name: page.name });
-        }
-        const pageUpdates = (spec.pages ?? []).flatMap((page) => {
-          const existing = plannedPageMatches.get(logicalRef(page));
-          if (!existing)
-            return [];
-          const update = {
-            pageId: existing.id,
-            ...existing.name !== page.name ? { name: page.name } : {},
-            ...existing.icon !== page.icon ? { icon: page.icon } : {},
-            ...page.hidden !== void 0 && Boolean(existing.hidden) !== page.hidden ? { hidden: page.hidden } : {}
-          };
-          return Object.keys(update).length > 1 ? [update] : [];
-        });
-        if (pageUpdates.length) {
-          await client.updatePages({ appId: args.app_id, versionId: args.version_id, updates: pageUpdates });
-        }
-        stage = "seed data and create queries";
-        const queryInputs = (spec.queries ?? []).map((query, index) => {
-          const { kind, options } = preparedQueryOptions[index];
-          if (query.table_ref) {
-            const tableId = tableIds.get(query.table_ref.toLowerCase());
-            if (!tableId)
-              throw new Error(`Query "${query.name}" has unknown table_ref "${query.table_ref}".`);
-            options.table_id = tableId;
-          }
-          return { dataSourceId: query.datasource_id, name: query.name, options, kind };
-        });
-        const updateInputs = queryInputs.filter((query) => replacing?.queriesToUpdate.has(query.name));
-        const createInputs = queryInputs.filter((query) => !replacing?.queriesToUpdate.has(query.name));
-        const [seedWrite, queryWrite] = await Promise.allSettled([
-          spec.seed_data?.length ? client.insertRowsBatch({
-            tables: spec.seed_data.map((seed) => ({ tableName: seed.table_name, rows: seed.rows }))
-          }) : Promise.resolve([]),
-          createInputs.length ? client.createQueries({ versionId: args.version_id, queries: createInputs }) : Promise.resolve([])
-        ]);
-        const seedResults = seedWrite.status === "fulfilled" ? seedWrite.value : completedPartialWrites(seedWrite.reason);
-        const createdQueries = queryWrite.status === "fulfilled" ? queryWrite.value : completedPartialWrites(queryWrite.reason);
-        applied.seed_rows = seedResults.reduce((total, result) => total + result.processed_rows, 0);
-        applied.queries = createdQueries.length;
-        const dataFailures = [
-          ...seedWrite.status === "rejected" ? [`seed_data: ${seedWrite.reason instanceof Error ? seedWrite.reason.message : String(seedWrite.reason)}`] : [],
-          ...queryWrite.status === "rejected" ? [`queries: ${queryWrite.reason instanceof Error ? queryWrite.reason.message : String(queryWrite.reason)}`] : []
-        ];
-        if (dataFailures.length)
-          throw new Error(dataFailures.join(" | "));
-        for (const query of updateInputs) {
-          const queryId = replacing.queriesToUpdate.get(query.name);
-          const current = initialSummary.queries.find((candidate) => candidate.id === queryId);
-          if (current && query.dataSourceId && current.data_source_id !== query.dataSourceId) {
-            await client.updateQueryDatasource({ queryId, versionId: args.version_id, dataSourceId: query.dataSourceId });
-          }
-          try {
-            await client.updateQuery({ queryId, versionId: args.version_id, options: query.options });
-            applied.queries_updated += 1;
-          } catch (error) {
-            applied.queries_updated += completedPartialWrites(error).length;
-            throw error;
-          }
-        }
-        const queryTargets = persistedTargets(planSummary.queries.map((query) => ({ id: query.id, name: query.name ?? query.id })));
-        let createdIndex = 0;
-        (spec.queries ?? []).forEach((query) => {
-          const updatedId = replacing?.queriesToUpdate.get(query.name);
-          const target = updatedId ? { query_id: updatedId, name: query.name } : createdQueries[createdIndex++];
-          if (!target)
-            throw new Error(`Could not resolve query "${query.name}" after creation.`);
-          queryTargets.set(logicalRef(query), { id: target.query_id, name: target.name });
-          queryTargets.set(query.name, { id: target.query_id, name: target.name });
-        });
-        const preparedPages = (spec.pages ?? []).flatMap((page) => {
-          const prepared = preparedBatches.get(logicalRef(page));
-          if (!prepared)
-            return [];
-          const target = pageTargets.get(logicalRef(page));
-          if (!target)
-            throw new Error(`Could not resolve component page "${page.name}".`);
-          return [{ page, pageId: target.id, prepared }];
-        });
-        const inPlace = /* @__PURE__ */ new Map();
-        if (replacing) {
-          for (const page of preparedPages) {
-            if (!replacing.replacedPageIds.includes(page.pageId))
-              continue;
-            const held = initialSummary.pages.find((existing) => existing.id === page.pageId)?.components ?? [];
-            inPlace.set(page.pageId, diffPageInPlace(held, page.prepared.components));
-          }
-        }
-        if (replacing) {
-          stage = "remove the replaced page's components and events";
-          for (const eventId of replacing.eventsToDelete) {
-            await client.deleteEvent({ appId: args.app_id, versionId: args.version_id, eventId });
-            applied.events_removed += 1;
-          }
-          for (const { pageId, componentIds } of replacing.componentsToDelete) {
-            const ids = inPlace.get(pageId)?.deleteIds ?? componentIds;
-            if (!ids.length)
-              continue;
-            const removed = await client.deleteComponents({ appId: args.app_id, versionId: args.version_id, pageId, componentIds: ids });
-            applied.components_removed += removed.deleted ?? ids.length;
-          }
-        }
-        stage = "create page components";
-        const componentWrites = await Promise.allSettled(preparedPages.map(async (page) => {
-          const diff = inPlace.get(page.pageId);
-          if (!diff) {
-            const created2 = await client.createComponents({
-              appId: args.app_id,
-              versionId: args.version_id,
-              pageId: page.pageId,
-              components: page.prepared.components
-            });
-            return { ...page, created: created2, written: created2.length };
-          }
-          if (diff.create.length) {
-            await client.createComponents({ appId: args.app_id, versionId: args.version_id, pageId: page.pageId, components: diff.create });
-          }
-          if (diff.relayout.length) {
-            await client.updateLayouts({ appId: args.app_id, versionId: args.version_id, pageId: page.pageId, layouts: diff.relayout });
-          }
-          applied.components_kept += diff.keep.length;
-          applied.components_moved += diff.relayout.length;
-          const created = page.prepared.components.map((component) => ({
-            component_id: diff.ids.get(componentRef(component)),
-            name: component.name
-          }));
-          return { ...page, created, written: diff.create.length };
-        }));
-        const componentResults = componentWrites.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
-        const componentFailures = componentWrites.flatMap((result, index) => result.status === "rejected" ? [`page ${preparedPages[index].page.name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []);
-        const componentTargets = persistedTargets(planSummary.pages.flatMap((page) => page.components).map((component) => ({
-          id: component.id,
-          name: component.name ?? component.id,
-          type: component.type
-        })));
-        const warnings = [];
-        if (renameWarning)
-          warnings.push(renameWarning);
-        for (const page of componentResults) {
-          applied.components += page.written;
-          warnings.push(...page.prepared.warnings.map((warning) => `Page ${page.page.name}: ${warning}`));
-          page.prepared.components.forEach((component, index) => {
-            const created = page.created[index];
-            if (!created)
-              throw new Error(`Could not resolve component "${component.name}" after creation.`);
-            componentTargets.set(componentRef(component), {
-              id: created.component_id,
-              name: created.name,
-              type: component.type
-            });
-          });
-        }
-        if (replacing?.eventsToRetarget.length) {
-          stage = "point other events at the recreated components";
-          const newIdByName = new Map(componentResults.flatMap((page) => page.prepared.components.map((component, index) => [component.name, page.created[index]?.component_id])));
-          const updates = [];
-          const missingTargets = [];
-          for (const event of replacing.eventsToRetarget) {
-            const newIds = new Map([...replacing.replacedComponentNames].map(([oldId, name]) => [oldId, newIdByName.get(name)]));
-            const original = JSON.stringify(event.event ?? {});
-            const swapped = replaceIds(original, newIds);
-            const text = swapped.text;
-            const missing = swapped.missing.map((id) => replacing.replacedComponentNames.get(id) ?? id);
-            if (missing.length) {
-              missingTargets.push(`"${event.name ?? event.id}" (${missing.join(", ")})`);
-              warnings.push(`Event "${event.name ?? event.id}" targets ${missing.map((n) => `"${n}"`).join(", ")}, which the replaced page no longer has; it was left as it was.`);
-            } else if (text !== original) {
-              updates.push({ eventId: event.id, ...event.name ? { name: event.name } : {}, event: JSON.parse(text) });
-            }
-          }
-          if (updates.length)
-            await client.updateEvents({ appId: args.app_id, versionId: args.version_id, events: updates });
-          notRetargeted = missingTargets;
-        }
-        if (componentFailures.length)
-          throw new Error(componentFailures.join(" | "));
-        stage = "create events and lifecycles";
-        const summaryBeforeEvents = await client.getAppSummary(args.app_id);
-        const { ordinaryEvents, lifecycleSpecs } = resolvePlannedEvents(pageTargets, queryTargets, componentTargets);
-        const expanded = expandQueryLifecycles(summaryBeforeEvents, lifecycleSpecs);
-        warnings.push(...expanded.warnings);
-        const allEvents = [...ordinaryEvents, ...expanded.events];
-        const eventValidation = validateEvents(summaryBeforeEvents, allEvents, { navigationMovedLast: true });
-        if (eventValidation.errors.length)
-          throw new Error(eventValidation.errors.join(" "));
-        warnings.push(...eventValidation.warnings);
-        const newEvents = withoutExistingEvents(allEvents, summaryBeforeEvents.events);
-        if (newEvents.length) {
-          await client.createEvents({
-            appId: args.app_id,
-            versionId: args.version_id,
-            events: newEvents,
-            existingEvents: summaryBeforeEvents.events
-          });
-          applied.events = newEvents.length;
-          const reorders = navigationReorders(await client.getAppSummary(args.app_id), newEvents, warnings);
-          if (reorders.length) {
-            await client.updateEvents({ appId: args.app_id, versionId: args.version_id, events: reorders, updateType: "reorder" });
-            warnings.push(`Moved ${reorders.length} page switch${reorders.length > 1 ? "es" : ""} behind the handlers this phase added, so they still run.`);
-          }
-        }
-        stage = "validate persisted phase";
-        const persisted = await client.getAppSummary(args.app_id);
-        const validation = validatePersistedAppSummary(persisted, { canvasColor: await literalCanvasColor(client, args.app_id, persisted.version_id) });
-        warnings.push(...validation.warnings);
-        const relevantTableNames = /* @__PURE__ */ new Set([
-          ...(spec.tables ?? []).map((table) => table.table_name),
-          ...(spec.seed_data ?? []).map((seed) => seed.table_name),
-          ...(spec.queries ?? []).flatMap((query) => query.table_ref ? [query.table_ref] : [])
-        ]);
-        let readCheck;
-        if (input.check_reads !== false) {
-          stage = "check the phase's reads";
-          try {
-            const written = (spec.queries ?? []).flatMap((query) => {
-              const target = queryTargets.get(logicalRef(query));
-              return target ? [target.id] : [];
-            });
-            readCheck = await checkPlanReads(client, { versionId: args.version_id, queryIds: written });
-          } catch (error) {
-            readCheck = { error: `The phase applied; its reads could not be checked (${error instanceof Error ? error.message : String(error)}). Run them with run_queries.` };
-          }
-        }
-        return ok({
-          applied,
-          ...readCheck ? { read_check: readCheck } : {},
-          refs: {
-            tables: Object.fromEntries([...relevantTableNames].map((name) => [name, tableIds.get(name.toLowerCase())])),
-            pages: selectedRefs(pageTargets, (spec.pages ?? []).map(logicalRef)),
-            queries: selectedRefs(queryTargets, (spec.queries ?? []).map(logicalRef)),
-            components: selectedRefs(componentTargets, (spec.pages ?? []).flatMap((page) => (page.components ?? []).map(logicalRef)))
-          },
-          warnings: [...new Set(warnings)],
-          validation
-        });
-      } catch (error) {
-        let recovery = "";
-        const onlyFoundation = applied.components === 0 && applied.queries === 0 && applied.queries_updated === 0 && applied.events === 0;
-        if (onlyFoundation && createdPageIds.length) {
-          const removed = [];
-          for (const pageId of createdPageIds) {
-            try {
-              await client.deletePage({ appId: args.app_id, versionId: args.version_id, pageId });
-              removed.push(pageId);
-            } catch {
-            }
-          }
-          if (removed.length) {
-            applied.pages -= removed.length;
-            recovery += ` Removed the ${removed.length} empty page(s) this phase had created, so the next plan can recreate them under the same names.`;
-          }
-        }
-        if (Object.values(applied).some((count) => count > 0)) {
-          try {
-            const current = await client.getAppSummary(args.app_id);
-            recovery = " Persisted resources for targeted repair (do not recreate): " + JSON.stringify({
-              pages: current.pages.map((page) => ({
-                id: page.id,
-                name: page.name,
-                components: page.components.map((c) => ({ id: c.id, name: c.name }))
-              })),
-              queries: current.queries.map((q) => ({ id: q.id, name: q.name }))
-            }).slice(0, 12e3);
-          } catch {
-          }
-        }
-        const removedNote = applied.components_removed || applied.events_removed ? `The replace had already removed the old content of ${replacedPageNames.map((name) => `"${name}"`).join(", ")} (${applied.components_removed} component(s), ${applied.events_removed} event(s)); that page now holds only what this phase created (listed below). Repair it by linting the whole page again with replace: true and applying that plan. ` + (notRetargeted === void 0 && retargetPending.length ? `Events on other pages that pointed at its old components were not re-pointed: ${retargetPending.join(", ")}; they still hold the removed ids, so point them at the recreated components with update_events. ` : notRetargeted?.length ? `Events on other pages still point at components that were not recreated: ${notRetargeted.join(", ")}; recreate those or change the events with update_events. ` : "") : "nothing with content on it was auto-deleted. ";
-        return fail(new Error(`apply_app_phase failed during ${stage}. Applied before failure: ${appliedSummary(applied)}. The one-time plan token is consumed; ${removedNote}${error instanceof Error ? error.message : String(error)}` + recovery, { cause: error }));
-      }
-    }
-  };
-}
-function persistedTargets(values) {
-  const targets = /* @__PURE__ */ new Map();
-  const nameCounts = /* @__PURE__ */ new Map();
-  values.forEach((value) => nameCounts.set(value.name, (nameCounts.get(value.name) ?? 0) + 1));
-  for (const { aliases, ...value } of values) {
-    targets.set(value.id, value);
-    if (nameCounts.get(value.name) === 1)
-      targets.set(value.name, value);
-    for (const alias of aliases ?? [])
-      if (alias && !targets.has(alias))
-        targets.set(alias, value);
-  }
-  return targets;
-}
-function selectedRefs(targets, refs2) {
-  return Object.fromEntries(refs2.flatMap((ref) => {
-    const target = targets.get(ref);
-    return target ? [[ref, target.id]] : [];
-  }));
-}
-function withoutExistingEvents(planned, existing) {
-  const key = (sourceType, sourceId, payload) => JSON.stringify([sourceType, sourceId, Object.keys(payload).sort().map((k) => [k, payload[k]])]);
-  const have = new Set(existing.flatMap((e) => {
-    const raw = e.event && typeof e.event === "object" && !Array.isArray(e.event) ? e.event : void 0;
-    if (!raw)
-      return [];
-    const { index: _index, name: _name, ...payload } = raw;
-    return [key(e.target, e.sourceId, payload)];
-  }));
-  return planned.filter((e) => !have.has(key(e.sourceType, e.sourceId, { eventId: e.trigger, ...e.ref ? { ref: e.ref } : {}, ...e.action })));
-}
 export {
-  applyAppPhaseTool as a,
-  validatePersistedAppSummary as b,
-  autoReadPreflight as c,
-  containsComponentBinding as d,
-  failureVerification as e,
-  failureRecovery as f,
-  getRequestListener as g,
-  queryResultBindingHint as q,
-  runQueryTool as r,
-  schemaNameHint as s,
+  NOT_CHECKED_AUTOMATICALLY as N,
+  autoReadPreflight as a,
+  codeAppReadFilesTool as b,
+  codeAppScaffoldTool as c,
+  codeAppWriteFilesTool as d,
+  codeAppBuildTool as e,
+  codeAppInstallTool as f,
+  codeAppAddDependencyTool as g,
+  getRequestListener as h,
+  browserUserBindings as i,
+  isCodeModeApp as j,
+  browserUserMessage as k,
+  noCodeIdentity as n,
   verifyPageRenderTool as v
 };

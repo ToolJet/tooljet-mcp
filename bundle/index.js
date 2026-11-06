@@ -1,27 +1,27 @@
 #!/usr/bin/env node
 import { createRequire } from "node:module";
-import { b as buildServer, a as buildUnconfiguredServer, p as packsReady, c as allowedApiOrigins, A as ALLOWED_API_ORIGINS_VAR, o as oauthHttpOptionsFromEnv, d as createOAuthHttpServer, i as identityFromHeaders, S as SESSION_TOKEN_HEADER, B as BASE_URL_HEADER, P as PAT_HEADER, e as StreamableHTTPServerTransport } from "./chunk-BBSYN6jm.js";
-import "./chunk-DSzzr2p4.js";
-import "./chunk-BK1olK4j.js";
-import "./chunk-BQSkKlW7.js";
-import "./chunk-BNMLqNpt.js";
-import "./chunk-Biua2IrG.js";
-import { a5 as JSONRPCMessageSchema } from "./chunk-CgcHSBSr.js";
-import "./chunk-ByXIxM2W.js";
-import "./chunk-B6eePf5k.js";
-import "./chunk-QE9dviI4.js";
-import "./chunk-DjbmyELB.js";
-import "./chunk-CLJFCNyS.js";
+import { b as buildServer, a as buildUnconfiguredServer, p as packsReady, c as allowedApiOrigins, A as ALLOWED_API_ORIGINS_VAR, o as oauthHttpOptionsFromEnv, d as createOAuthHttpServer, i as identityFromHeaders, S as SESSION_TOKEN_HEADER, B as BASE_URL_HEADER, P as PAT_HEADER, e as StreamableHTTPServerTransport } from "./chunk-B0jXlzo2.js";
+import "./chunk-BJ6ur0AF.js";
+import "./chunk-Bfjn8-Pb.js";
+import "./chunk-CDqLso_G.js";
+import "./chunk-Cvy_fxMt.js";
+import { X as JSONRPCMessageSchema } from "./chunk-DO-MuJmV.js";
+import "./chunk-e1JAYY9a.js";
+import "./chunk-Cq0wunVy.js";
+import "./chunk-BMSDD1MG.js";
+import "./chunk-BwTkk2pR.js";
+import "./chunk-CYQM3j81.js";
+import "./chunk-Dakrk_ob.js";
+import "./chunk-BCDdmwVb.js";
 import "./chunk-DzndRVyJ.js";
-import "./chunk-oXA2PxqX.js";
-import "./chunk-DEG7vXOB.js";
-import "./chunk-UABFKVbI.js";
+import "./chunk-ePnPD46e.js";
+import "./chunk-BozBrMhE.js";
+import "./chunk-CUfRRq1G.js";
 import "./chunk-Biq-LW6M.js";
-import "./chunk-D5bagPnu.js";
-import "./chunk-C8H5r388.js";
-import "./chunk-u-5N46aH.js";
-import "./chunk-BgUXzp_5.js";
-import "./chunk-V7-iwLFk.js";
+import "./chunk-CAiG5_Js.js";
+import "./chunk-UH3hTJjJ.js";
+import "./chunk-00I8NlQo.js";
+import "./chunk-ATrYmI0V.js";
 import { createServer } from "node:http";
 import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -32,12 +32,12 @@ import "node:os";
 import "node:path";
 import "node:async_hooks";
 import "node:fs/promises";
-import "node:vm";
 import "node:util";
 import "node:child_process";
 import "node:http2";
 import "node:stream";
 import "node:dns/promises";
+import "node:vm";
 createRequire(import.meta.url);
 var STDIO_DEFAULT_MAX_BUFFER_SIZE = 10 * 1024 * 1024;
 var ReadBuffer = class {
@@ -213,6 +213,58 @@ function mintAuthorized(authHeader, secret) {
   const b = Buffer.from(secret);
   return a.length === b.length && timingSafeEqual(a, b);
 }
+var list = (value) => (value ?? "").split(",").map((entry) => entry.trim().toLowerCase()).filter(Boolean);
+var bare = (host) => host.trim().toLowerCase().replace(/^\[|\]$/g, "");
+function hostName(header) {
+  const value = header.trim().toLowerCase();
+  if (value.startsWith("["))
+    return value.slice(1, value.indexOf("]") > 0 ? value.indexOf("]") : void 0);
+  const colon = value.lastIndexOf(":");
+  return colon > 0 && value.indexOf(":") === colon ? value.slice(0, colon) : value;
+}
+function isLoopbackName(name) {
+  const host = bare(name);
+  return host === "localhost" || host.endsWith(".localhost") || host === "::1" || /^127(\.\d{1,3}){3}$/.test(host) || /^::ffff:127(\.\d{1,3}){3}$/.test(host);
+}
+var isWildcard = (bind) => ["0.0.0.0", "::", "[::]", ""].includes(bare(bind));
+function foreignRequest(req, { bindHost, env = process.env }) {
+  const allowedHosts = list(env.MCP_ALLOWED_HOSTS).map((entry) => hostName(entry));
+  const ownHost = isWildcard(bindHost) ? void 0 : bare(bindHost);
+  const known = (name) => isLoopbackName(name) || name === ownHost || allowedHosts.includes(name);
+  const hostHeader = req.headers.host;
+  if (hostHeader && (!isWildcard(bindHost) || allowedHosts.length)) {
+    const name = hostName(hostHeader);
+    if (!known(name))
+      return `Host "${hostHeader.slice(0, 100)}" is not this server`;
+  }
+  const origin = req.headers.origin;
+  if (origin !== void 0) {
+    if (list(env.MCP_ALLOWED_ORIGINS).includes(origin.trim().toLowerCase()))
+      return void 0;
+    let parsed;
+    try {
+      parsed = new URL(origin);
+    } catch {
+      return `Origin "${String(origin).slice(0, 100)}" is not allowed`;
+    }
+    if (!known(bare(parsed.hostname)))
+      return `Origin "${origin.slice(0, 100)}" is not allowed`;
+  }
+  return void 0;
+}
+function refuseForeignRequest(req, res, policy) {
+  const why = foreignRequest(req, policy);
+  if (!why)
+    return false;
+  if (!res.headersSent) {
+    res.writeHead(403, { "content-type": "application/json" }).end(JSON.stringify({
+      jsonrpc: "2.0",
+      error: { code: -32e3, message: `Forbidden: ${why}. Set MCP_ALLOWED_HOSTS or MCP_ALLOWED_ORIGINS to allow it.` },
+      id: null
+    }));
+  }
+  return true;
+}
 async function readJsonBody(req, maxBodyBytes) {
   const chunks = [];
   let totalBytes = 0;
@@ -239,9 +291,10 @@ function createGatewayHttpServer({ bindHost } = {}) {
     return { server: createOAuthHttpServer(oauth), gatewayMode: false };
   const sharedToken = process.env.MCP_SHARED_TOKEN;
   const gatewayMode = Boolean(sharedToken);
-  const requireUserSession = gatewayMode && (/^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_USER_SESSION ?? "") || !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN));
+  const requireUserSession = gatewayMode;
   const requireRequestUrl = gatewayMode && /^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_REQUEST_URL ?? "");
   const requireRequestCredential = !gatewayMode && bindHost !== void 0 && !isLoopbackHost(bindHost);
+  const listenHost = bindHost ?? (gatewayMode ? "0.0.0.0" : "127.0.0.1");
   const handleBuildTokenRequest = async (req, res) => {
     const secret = mintSecret();
     const json = (status, body) => {
@@ -294,6 +347,8 @@ function createGatewayHttpServer({ bindHost } = {}) {
     json(200, { token: minted.token, expires_at: new Date(minted.expiresAt).toISOString() });
   };
   const httpServer = createServer(async (req, res) => {
+    if (refuseForeignRequest(req, res, { bindHost: listenHost }))
+      return;
     const requestPath = new URL(req.url ?? "/", "http://localhost").pathname;
     const bearer = bearerValue(req.headers.authorization);
     if (requestPath === "/build-token") {
@@ -360,7 +415,7 @@ function createGatewayHttpServer({ bindHost } = {}) {
       }
     }
     const readsResource = !!parsedBody && typeof parsedBody === "object" && !Array.isArray(parsedBody) && parsedBody.method === "resources/read";
-    const server = buildServer(identity, { hosted: true });
+    const server = buildServer(identity, { hosted: true, requireIdentity: gatewayMode });
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: void 0, enableJsonResponse: readsResource });
     res.on("close", () => {
       transport.close();

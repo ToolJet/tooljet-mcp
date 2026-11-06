@@ -2,6 +2,8 @@ import { emptyParamsNote, emptyViewerOnlyParams, resolveStaticBindings, unresolv
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { autoReadPreflight } from '../autoReadPreflight.js';
+import { redactQueryText, redactRunResult } from '../resultRedaction.js';
+import { capUnattendedOutput, runUnattended } from '../unattendedRun.js';
 import { containsComponentBinding, failureRecovery, failureVerification, schemaNameHint, queryResultBindingHint } from './runQuery.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { resolveRef } from '../refResolution.js';
@@ -94,7 +96,8 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
             if (emptied.length) warnings.push(emptyParamsNote(emptied));
             const liveOnly = bindings.unresolved.filter((b) => !/components\./.test(b));
             if (liveOnly.length) warnings.push(unresolvedNote(liveOnly));
-            const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId, resolvedOptions: bindings.resolved });
+            // A deadline and an output cap (unattendedRun.ts): nobody is watching this run.
+            const result = await runUnattended(client, { queryId, versionId: args.version_id, environmentId, resolvedOptions: bindings.resolved });
             const failed = result.status === 'failed';
             const bindingHint = queryResultBindingHint(query, result as Record<string, unknown>);
             const recovery = failed ? failureRecovery(query, result as Record<string, unknown>) : undefined;
@@ -114,7 +117,7 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
             return {
               query_id: queryId,
               ...(query.name ? { name: query.name } : {}),
-              ...shaped,
+              ...redactRunResult(capUnattendedOutput(shaped as Record<string, unknown>)),
               // What let it run, not a claim about its effects: the preflight is a static check (CM-37).
               execution: { query_id: queryId, datasource_kind: query.kind, preflight: 'automatic_read' },
               ...(bindingHint ? { binding_hint: bindingHint } : {}),
@@ -124,7 +127,7 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
               ...(schemaHint ? { schema_hint: schemaHint } : {}),
             };
           } catch (error) {
-            const failure = { status: 'failed', message: error instanceof Error ? error.message : String(error) };
+            const failure = { status: 'failed', message: redactQueryText(error instanceof Error ? error.message : String(error)) };
             return {
               query_id: queryId,
               ...(query.name ? { name: query.name } : {}),

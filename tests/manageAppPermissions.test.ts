@@ -201,12 +201,45 @@ describe('groups that cannot open the app (roles test, 2026-11-04)', () => {
     expect(result.granted_app_access).toEqual([{ group_id: MANAGERS, name: 'Managers', rule_name: 'Spend approvals (view)' }]);
   });
 
-  it('sets no limit when ToolJet does not confirm the grant', async () => {
-    const client = roleClient();
+  // The limit first, then the grant: a failure part way leaves less access than asked for, never more, and the access
+  // rule this call added is removed again (security audit, 2026-11-05: the grant used to come first, with no rollback).
+  it('removes the access rule it added when ToolJet does not confirm the grant, after setting the limit', async () => {
+    const client = roleClient({
+      listWorkspaceGroupAccess: vi.fn().mockResolvedValue([
+        { id: 'rule-1', name: 'Spend approvals (view)', type: 'app', is_all: false, actions: {}, resources: [{ id: APP, name: 'Spend approvals', membership_id: 'm' }] },
+        { id: 'rule-other', name: 'Other (view)', type: 'app', is_all: false, actions: {}, resources: [{ id: 'other-app', name: 'Other', membership_id: 'n' }] },
+      ]),
+    });
     const result = await manageAppPermissionsTool(client).handler(setManagers({ grant_app_access: true }));
     expect(result.isError).toBe(true);
-    expect(result.content[0]!.text).toMatch(/did not confirm that Managers can open this app/);
-    expect(client.setAppPermission).not.toHaveBeenCalled();
+    expect(result.content[0]!.text).toMatch(/limits were set.*did not confirm that Managers can open this app.*access rules added here were removed/);
+    expect(client.setAppPermission).toHaveBeenCalledOnce();
+    expect(client.writeWorkspaceGroupAccess).toHaveBeenCalledWith('DELETE', MANAGERS, 'app', 'rule-1');
+    expect(client.writeWorkspaceGroupAccess).not.toHaveBeenCalledWith('DELETE', MANAGERS, 'app', 'rule-other');
+  });
+
+  it('gives no app access when every limit fails', async () => {
+    const client = roleClient({ setAppPermission: vi.fn().mockRejectedValue(new Error('Query permission not found')) });
+    const result = await manageAppPermissionsTool(client).handler(setManagers({ grant_app_access: true }));
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/Query permission not found.*No access to the app was given/);
+    expect(client.writeWorkspaceGroupAccess).not.toHaveBeenCalled();
+  });
+
+  it('removes the first group\'s rule when the second group\'s cannot be added', async () => {
+    const write = vi.fn().mockImplementation(async (method: string, groupId: string) => {
+      if (method === 'POST' && groupId === MANAGERS) throw new Error('500');
+    });
+    const client = roleClient({
+      writeWorkspaceGroupAccess: write,
+      listWorkspaceGroupAccess: vi.fn().mockResolvedValue([
+        { id: 'rule-finance', name: 'Spend approvals (view)', type: 'app', is_all: false, actions: {}, resources: [{ id: APP, name: 'Spend approvals', membership_id: 'm' }] },
+      ]),
+    });
+    const result = await manageAppPermissionsTool(client).handler(setManagers({ group_ids: [GROUP, MANAGERS], grant_app_access: true }));
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/Managers could not be given access/);
+    expect(write).toHaveBeenCalledWith('DELETE', GROUP, 'app', 'rule-finance');
   });
 
   it('needs no grant for a group that can already open the app, and refuses an unknown group', async () => {
