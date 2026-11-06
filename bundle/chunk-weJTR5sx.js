@@ -1,13 +1,14 @@
 import { createRequire } from "node:module";
 import { ea as prepareSqlDiscoveryQueries } from "./chunk-BJ6ur0AF.js";
-import { H as registerComponentSchemas, o as ok, h as fail, I as capabilityRequestSchema, J as getWorkflowCapabilities, K as lint, M as apply, N as deleteNode, O as editContractSchema, P as generateEditContract, x as resolveStaticBindings, D as emptyViewerOnlyParams, E as emptyParamsNote, F as unresolvedNote, Q as allComponentSchemas } from "./chunk-DQ6nvnmd.js";
-import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, g as FLEX_GROW_DESCRIPTION, j as FLEX_WIDTH_PX_DESCRIPTION, k as FLEX_FILL_WIDTH_DESCRIPTION, y as createClient, z as registerPackDefinitions, A as listWorkspaceGroupsTool, B as manageWorkspaceGroupsTool, D as createAppTool, E as inspectDatasourceSchemaTool, G as manageThemeTool, v as validateTableBatch, H as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec, u as COMPONENT_FX_GUIDANCE, b as appendedChildOrders, d as reparentAdditions, c as childOrderProperty } from "./chunk-Dm6BaKQE.js";
-import { c as componentInputSchema, t as getComponentCatalogTool, u as updateComponentsTool, w as projectJavascriptRuntime, x as projectAppSettings, y as compactTheme, z as pageSettingProperties, l as literalCanvasColor, A as containsExactValue, e as prepareQueryOptionsForWrite, B as containsNamedBinding, C as normalizePlannedLayouts, D as materializeRequiredDefaultChildren, m as mapKeyRefusal, j as prepareComponentBatch, v as validateEvents, n as expandQueryLifecycles, q as persistedEventSpecs, E as persistedEventIds } from "./chunk-BEsFX7ki.js";
-import { K as dbColumnTypeSchema, N as codeAppScaffoldTool, O as codeAppReadFilesTool, Q as codeAppWriteFilesTool, U as codeAppBuildTool, V as codeAppInstallTool, W as codeAppAddDependencyTool, X as manageAppPermissionsTool, Y as lintAppSpecTool, Z as noCodeIdentity, _ as WebStandardStreamableHTTPServerTransport, $ as plannedTableSchema, a0 as inspectUpdateCompatibility, a1 as normalizePlanBindingAliases, a2 as browserUserBindings, a3 as isCodeModeApp, a4 as browserUserMessage } from "./chunk-BRgcCiC-.js";
-import { v as verifyPageRenderTool, a as applyAppPhaseTool, r as runQueryTool, g as getRequestListener, b as validatePersistedAppSummary, l as libraryPinErrors, c as autoReadPreflight, d as containsComponentBinding, q as queryResultBindingHint, f as failureRecovery, e as failureVerification, s as schemaNameHint } from "./chunk-Ctetl78K.js";
-import { M as McpServer } from "./chunk-C0lKspv9.js";
+import { I as inPackSet, J as registerComponentSchemas, a as activePackSet, K as newPackSet, o as ok, i as fail, M as capabilityRequestSchema, N as getWorkflowCapabilities, O as lint, P as apply, Q as deleteNode, R as editContractSchema, U as generateEditContract, y as resolveStaticBindings, E as emptyViewerOnlyParams, F as emptyParamsNote, H as unresolvedNote, V as allComponentSchemas } from "./chunk-Bfjn8-Pb.js";
+import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, g as FLEX_GROW_DESCRIPTION, j as FLEX_WIDTH_PX_DESCRIPTION, k as FLEX_FILL_WIDTH_DESCRIPTION, y as createClient, z as listWorkspaceGroupsTool, A as manageWorkspaceGroupsTool, B as createAppTool, D as inspectDatasourceSchemaTool, E as manageThemeTool, G as registerPackDefinitions, v as validateTableBatch, H as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec, u as COMPONENT_FX_GUIDANCE, b as appendedChildOrders, d as reparentAdditions, c as childOrderProperty } from "./chunk-sScV8DxV.js";
+import { c as componentInputSchema, t as getComponentCatalogTool, u as updateComponentsTool, w as projectJavascriptRuntime, x as projectAppSettings, y as compactTheme, z as pageSettingProperties, l as literalCanvasColor, A as containsExactValue, e as prepareQueryOptionsForWrite, B as containsNamedBinding, C as normalizePlannedLayouts, D as materializeRequiredDefaultChildren, m as mapKeyRefusal, j as prepareComponentBatch, v as validateEvents, n as expandQueryLifecycles, q as persistedEventSpecs, E as persistedEventIds } from "./chunk-BWSKYx9s.js";
+import { K as dbColumnTypeSchema, N as manageAppPermissionsTool, O as lintAppSpecTool, W as WebStandardStreamableHTTPServerTransport, Q as plannedTableSchema, U as inspectUpdateCompatibility, V as normalizePlanBindingAliases } from "./chunk-BCMT8yJv.js";
+import { v as verifyPageRenderTool, c as codeAppScaffoldTool, b as codeAppReadFilesTool, d as codeAppWriteFilesTool, e as codeAppBuildTool, f as codeAppInstallTool, g as codeAppAddDependencyTool, n as noCodeIdentity, h as getRequestListener, a as autoReadPreflight, i as browserUserBindings, j as isCodeModeApp, k as browserUserMessage } from "./chunk-DWtTR4LI.js";
+import { a as applyAppPhaseTool, r as runQueryTool, v as validatePersistedAppSummary, l as libraryPinErrors, c as containsComponentBinding, b as runUnattended, q as queryResultBindingHint, f as failureRecovery, d as failureVerification, s as schemaNameHint, e as redactRunResult, g as capUnattendedOutput, h as redactQueryText } from "./chunk-DKdAJ4uK.js";
+import { M as McpServer } from "./chunk-CV3HV7ys.js";
 import { ax as external_exports, aA as specSchema, ay as nodeCatalog, az as validateGraph } from "./chunk-Dakrk_ob.js";
-import { K as pageIconSchema, h as componentSlotSchema, O as registerLibraryPacks, s as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION, j as componentNameSchema, H as lintComponents, o as resolveParentRef, p as introducedLintFindings, Q as lintRenderedGeometryBlocking, R as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, u as lintComponentSlots, q as lintComponentSpec, v as lintUnusableTextGeometry, T as lintNestedContainerWidths, w as lintStandardSingleLineInputHeight, x as lintTextGeometry, y as lintRenderedGeometry, U as FORM_SCHEMA_FIELD_TYPE_SET, V as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-CNCsCbKN.js";
+import { K as pageIconSchema, h as componentSlotSchema, O as registerLibraryPacks, s as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION, j as componentNameSchema, H as lintComponents, o as resolveParentRef, p as introducedLintFindings, Q as lintRenderedGeometryBlocking, R as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, u as lintComponentSlots, q as lintComponentSpec, v as lintUnusableTextGeometry, T as lintNestedContainerWidths, w as lintStandardSingleLineInputHeight, x as lintTextGeometry, y as lintRenderedGeometry, U as FORM_SCHEMA_FIELD_TYPE_SET, V as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-BFQMxNTN.js";
 import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-BozBrMhE.js";
 import { b as readCatalogBytes } from "./chunk-ePnPD46e.js";
 import { createHash } from "node:crypto";
@@ -3624,6 +3625,20 @@ function updateQueryTool(client) {
     }
   };
 }
+var escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function codeReferences(files, name) {
+  const literal = new RegExp(`(['"\`])${escapeRegExp(name)}\\1`);
+  const found = [];
+  for (const file of files) {
+    if (/(^|\/)tooljet\.gen\.ts$/.test(file.path) || !/\.(tsx?|jsx?|mjs|cjs)$/.test(file.path))
+      continue;
+    file.content.split("\n").forEach((line, index) => {
+      if (literal.test(line))
+        found.push(`${file.path}:${index + 1}`);
+    });
+  }
+  return found;
+}
 function deleteQueryTool(client) {
   return {
     name: "delete_query",
@@ -3633,7 +3648,7 @@ function deleteQueryTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: "Permanently delete one query. Inspect the target and obtain explicit approval, then pass app_id and confirm:true. The tool refuses component bindings, dependent query bindings, and external events that still reference it, verifies the query disappeared, and never deletes dependencies automatically.",
+    description: "Permanently delete one query. Inspect the target and obtain explicit approval, then pass app_id and confirm:true. The tool refuses component bindings, dependent query bindings, external events and, in a Code mode app, stored code that still reference it, verifies the query disappeared, and never deletes dependencies automatically.",
     inputSchema: {
       app_id: external_exports.string(),
       query_id: external_exports.string(),
@@ -3666,6 +3681,18 @@ function deleteQueryTool(client) {
             continue;
           if (containsExactValue(event.event, query.id) || (query.name ? containsNamedBinding(event.event, "queries", query.name) : false)) {
             references.push(`event ${event.name ?? event.id} targets ${query.name ?? query.id}`);
+          }
+        }
+        if (query.name && client.codeSourceFiles) {
+          let files;
+          try {
+            files = await client.codeSourceFiles(args.app_id, args.version_id);
+          } catch (error) {
+            throw new Error(`delete_query: could not read the app's code to check it for uses of ${query.name}, so nothing was deleted: ` + (error instanceof Error ? error.message : String(error)));
+          }
+          const used = files ? codeReferences(files, query.name) : [];
+          if (used.length) {
+            references.push(`the app's code calls ${query.name} at ${used.slice(0, 8).join(", ")}${used.length > 8 ? ` and ${used.length - 8} more` : ""}`);
           }
         }
         if (references.length) {
@@ -3755,7 +3782,7 @@ function runQueriesTool(client) {
             const liveOnly = bindings.unresolved.filter((b) => !/components\./.test(b));
             if (liveOnly.length)
               warnings.push(unresolvedNote(liveOnly));
-            const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId, resolvedOptions: bindings.resolved });
+            const result = await runUnattended(client, { queryId, versionId: args.version_id, environmentId, resolvedOptions: bindings.resolved });
             const failed = result.status === "failed";
             const bindingHint = queryResultBindingHint(query, result);
             const recovery = failed ? failureRecovery(query, result) : void 0;
@@ -3768,7 +3795,7 @@ function runQueriesTool(client) {
             return {
               query_id: queryId,
               ...query.name ? { name: query.name } : {},
-              ...shaped,
+              ...redactRunResult(capUnattendedOutput(shaped)),
               // What let it run, not a claim about its effects: the preflight is a static check (CM-37).
               execution: { query_id: queryId, datasource_kind: query.kind, preflight: "automatic_read" },
               ...bindingHint ? { binding_hint: bindingHint } : {},
@@ -3778,7 +3805,7 @@ function runQueriesTool(client) {
               ...schemaHint ? { schema_hint: schemaHint } : {}
             };
           } catch (error) {
-            const failure = { status: "failed", message: error instanceof Error ? error.message : String(error) };
+            const failure = { status: "failed", message: redactQueryText(error instanceof Error ? error.message : String(error)) };
             return {
               query_id: queryId,
               ...query.name ? { name: query.name } : {},
@@ -4570,8 +4597,17 @@ var CATALOG_RESOURCES = [
   }
 ];
 var dataDir = resolve(dirname(fileURLToPath(import.meta.url)), "../data");
-var versions = /* @__PURE__ */ new Map();
-var payloads = /* @__PURE__ */ new Map();
+var newCache = () => ({ versions: /* @__PURE__ */ new Map(), payloads: /* @__PURE__ */ new Map() });
+var baseCache = newCache();
+var cache = () => {
+  const set = activePackSet();
+  if (!set.schemas)
+    return baseCache;
+  let own = set.derived.get("resources");
+  if (!own)
+    set.derived.set("resources", own = newCache());
+  return own;
+};
 var readPart = (file) => {
   const bytes = readCatalogBytes(resolve(dataDir, file));
   if (file !== "component-schemas.json")
@@ -4582,7 +4618,7 @@ var readPart = (file) => {
 function readData(resource) {
   const bytes = readPart(resource.file);
   const dataVersion = createHash("sha256").update(bytes).digest("hex").slice(0, 12);
-  versions.set(resource.file, dataVersion);
+  cache().versions.set(resource.file, dataVersion);
   return { bytes, dataVersion };
 }
 function catalogVersionOf(parts) {
@@ -4595,13 +4631,13 @@ ${part.bytes.length}
   }
   return hash.digest("hex").slice(0, 12);
 }
-var catalogVersionCache;
 function catalogVersion() {
-  catalogVersionCache ??= catalogVersionOf(CATALOG_RESOURCES.map((resource) => ({
+  const own = cache();
+  own.catalogVersion ??= catalogVersionOf(CATALOG_RESOURCES.map((resource) => ({
     file: resource.file,
     bytes: readPart(resource.file)
   })));
-  return catalogVersionCache;
+  return own.catalogVersion;
 }
 function listedCatalogVersion() {
   try {
@@ -4612,12 +4648,13 @@ function listedCatalogVersion() {
 }
 function listedVersion(resource) {
   try {
-    return versions.get(resource.file) ?? readData(resource).dataVersion;
+    return cache().versions.get(resource.file) ?? readData(resource).dataVersion;
   } catch {
     return void 0;
   }
 }
 function payload(resource) {
+  const payloads = cache().payloads;
   let text = payloads.get(resource.file);
   if (text === void 0) {
     const { bytes, dataVersion } = readData(resource);
@@ -4636,30 +4673,60 @@ var metadataOf = (resource, catalog) => {
     ...dataVersion ? { _meta: { data_version: dataVersion, ...catalog ? { catalog_version: catalog } : {} } } : {}
   };
 };
-var registered = [];
+var registered = /* @__PURE__ */ new WeakMap();
 function refreshCatalogResources() {
-  versions.clear();
-  payloads.clear();
-  catalogVersionCache = void 0;
+  const set = activePackSet();
+  set.derived.delete("resources");
   const catalog = listedCatalogVersion();
-  for (const { resource, handle } of registered)
+  for (const { resource, handle } of registered.get(set) ?? [])
     handle.update({ metadata: metadataOf(resource, catalog) });
 }
 function registerCatalogResources(server) {
+  const set = activePackSet();
+  const handles = registered.get(set) ?? [];
+  registered.set(set, handles);
   const catalog = listedCatalogVersion();
   for (const resource of CATALOG_RESOURCES) {
     const handle = server.registerResource(resource.name, resource.uri, metadataOf(resource, catalog), async () => ({
       contents: [{ uri: resource.uri, mimeType: "application/json", text: payload(resource) }]
     }));
-    registered.push({ resource, handle });
+    handles.push({ resource, handle });
   }
 }
 var packsReady = Promise.resolve([]);
-function buildServer(identity, { hosted = false } = {}) {
+var PACKS_WAIT_MS = 8e3;
+function scopeHandlers(server, packs, ready) {
+  let done = false;
+  void ready.finally(() => done = true);
+  const settled = async () => {
+    if (done)
+      return;
+    let timer;
+    await Promise.race([ready, new Promise((resolve3) => timer = setTimeout(resolve3, PACKS_WAIT_MS))]);
+    clearTimeout(timer);
+  };
+  const registerTool = server.registerTool.bind(server);
+  server.registerTool = (name, config, callback) => registerTool(name, config, async (...args) => {
+    await settled();
+    return inPackSet(packs, () => callback(...args));
+  });
+  const registerResource = server.registerResource.bind(server);
+  server.registerResource = (...args) => {
+    const callback = args[args.length - 1];
+    return registerResource(...args.slice(0, -1), async (...a) => {
+      await settled();
+      return inPackSet(packs, () => callback(...a));
+    });
+  };
+}
+function buildServer(identity, { hosted = false, requireIdentity = false } = {}) {
+  if (requireIdentity && !identity)
+    throw new Error("This request names no user, and this server never acts with its own credential.");
   const config = loadConfig(identity);
   const auth = createAuth(config);
   const client = createClient(auth, config);
-  packsReady = loadInstalledPacks(() => client.listComponentLibraries(), () => client.listBuiltinPacks()).then((packs) => {
+  const packSet = newPackSet();
+  const ready = inPackSet(packSet, () => loadInstalledPacks(() => client.listComponentLibraries(), () => client.listBuiltinPacks()).then((packs) => {
     if (packs.length) {
       refreshCatalogResources();
       console.error(`tooljet-mcp: component packs: ${packs.join(", ")}`);
@@ -4668,8 +4735,10 @@ function buildServer(identity, { hosted = false } = {}) {
   }).catch((err) => {
     console.error(`tooljet-mcp: component packs not read: ${err instanceof Error ? err.message : String(err)}`);
     return [];
-  });
+  }));
+  packsReady = ready;
   const server = new McpServer({ name: "tooljet-mcp", version: TOOLJET_MCP_VERSION });
+  scopeHandlers(server, packSet, ready);
   registerTools(server, client, void 0, {
     client,
     workspaceId: () => auth.getOrganizationId(),
@@ -4677,7 +4746,7 @@ function buildServer(identity, { hosted = false } = {}) {
     apiUrl: config.apiUrl,
     appUrl: config.appUrl
   });
-  registerCatalogResources(server);
+  inPackSet(packSet, () => registerCatalogResources(server));
   return server;
 }
 function buildUnconfiguredServer(reason) {

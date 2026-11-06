@@ -1,19 +1,12 @@
 import { createRequire } from "node:module";
-import { T as TOOLJET_DB_DATA_TYPES, q as normalizeType, t as invalidSeedTimestamps, u as COMPONENT_FX_GUIDANCE } from "./chunk-Dm6BaKQE.js";
-import { c as componentInputSchema, f as frozenAppRefusal, m as mapKeyRefusal, p as pagesUsingQuery, r as replaceView, d as danglingAfterReplace, l as literalCanvasColor, a as lintPlannedApp, s as storeAppPlan, b as replaceFingerprint, e as prepareQueryOptionsForWrite } from "./chunk-BEsFX7ki.js";
-import { h as fail, p as arithmeticWriteWarning, o as ok, d as bindingSpans } from "./chunk-DQ6nvnmd.js";
-import { K as pageIconSchema, r as resolveComponentLibrary, L as componentLibraryWarnings, M as namespaceReads } from "./chunk-CNCsCbKN.js";
+import { T as TOOLJET_DB_DATA_TYPES, q as normalizeType, t as invalidSeedTimestamps, u as COMPONENT_FX_GUIDANCE } from "./chunk-sScV8DxV.js";
+import { c as componentInputSchema, f as frozenAppRefusal, m as mapKeyRefusal, p as pagesUsingQuery, r as replaceView, d as danglingAfterReplace, l as literalCanvasColor, a as lintPlannedApp, s as storeAppPlan, b as replaceFingerprint, e as prepareQueryOptionsForWrite } from "./chunk-BWSKYx9s.js";
+import { i as fail, s as arithmeticWriteWarning, o as ok, e as bindingSpans } from "./chunk-Bfjn8-Pb.js";
+import { K as pageIconSchema, r as resolveComponentLibrary, L as componentLibraryWarnings, M as namespaceReads } from "./chunk-BFQMxNTN.js";
 import { m as suggestedHtmlHeight } from "./chunk-DzndRVyJ.js";
 import { ax as external_exports } from "./chunk-Dakrk_ob.js";
 import { j as union, A as string, V as number, a7 as looseObject, U as object, a8 as literal, i as unknown, ax as _enum, aU as array, ai as intersection, K as record, aQ as boolean, N as preprocess, T as optional, ae as iso_exports, aD as discriminatedUnion, aI as custom, Y as _null2 } from "./chunk-CAiG5_Js.js";
 import { e7 as __toESM, e5 as __commonJS } from "./chunk-BJ6ur0AF.js";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-import { AsyncLocalStorage } from "node:async_hooks";
-import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, writeFileSync, readFileSync, statSync, readdirSync, rmSync, renameSync, lstatSync, utimesSync, openSync, closeSync, mkdtempSync } from "node:fs";
-import { tmpdir, homedir } from "node:os";
-import { join, resolve, relative, sep, dirname } from "node:path";
 createRequire(import.meta.url);
 var BUILT_IN_DB = /^tool\s*jet\s*(db|data\s*base)$/i;
 function matchDatasourceByName(sources, name) {
@@ -2807,9 +2800,9 @@ data:
       const initRequest = messages.find((m) => isInitializeRequest(m));
       const clientProtocolVersion = initRequest ? initRequest.params.protocolVersion : req.headers.get("mcp-protocol-version") ?? DEFAULT_NEGOTIATED_PROTOCOL_VERSION;
       if (this._enableJsonResponse) {
-        return new Promise((resolve2) => {
+        return new Promise((resolve) => {
           this._streamMapping.set(streamId, {
-            resolveJson: resolve2,
+            resolveJson: resolve,
             cleanup: () => {
               this._streamMapping.delete(streamId);
             }
@@ -3095,14 +3088,14 @@ data:
   }
 };
 createRequire(import.meta.url);
-var CODE_PAGE_TRUE$1 = /* @__PURE__ */ new Set([true, "true", "{{true}}"]);
+var CODE_PAGE_TRUE = /* @__PURE__ */ new Set([true, "true", "{{true}}"]);
 function codeScreens(summary) {
   const pageIds = new Set(summary.pages.map((page) => page.id));
   const screens = [];
   for (const page of summary.pages) {
     for (const component of page.components) {
       const props = component.properties ?? {};
-      if (component.parent || !CODE_PAGE_TRUE$1.has(props.codePage?.value))
+      if (component.parent || !CODE_PAGE_TRUE.has(props.codePage?.value))
         continue;
       let routes = props.routes?.value;
       if (typeof routes === "string") {
@@ -3145,7 +3138,7 @@ function findQuery(summary, ref) {
 function isCodeApp(summary) {
   return summary.pages.some((page) => page.components.some((component) => {
     const props = component.properties ?? {};
-    return !component.parent && CODE_PAGE_TRUE$1.has(props.codePage?.value);
+    return !component.parent && CODE_PAGE_TRUE.has(props.codePage?.value);
   }));
 }
 function findResource(summary, resourceType, resourceId) {
@@ -3274,7 +3267,7 @@ function resolveGroups(directory, refs) {
   return { ids: [...new Set(ids)], unknown: unknown2 };
 }
 var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-async function ensureGroupsCanOpen(client, appId, appName, directory, groupIds, grant) {
+function groupsToGrant(directory, groupIds, grant) {
   const missing = groupIds.filter((id) => !directory.openIds.has(id));
   if (!missing.length)
     return [];
@@ -3287,16 +3280,42 @@ async function ensureGroupsCanOpen(client, appId, appName, directory, groupIds, 
   if (disabled.length) {
     throw new Error(`${disabled.map((id) => byId.get(id)?.name ?? id).join(", ")} cannot be changed under the current plan, so it cannot be given access to this app. Nothing was changed.`);
   }
+  return missing;
+}
+async function removeGrants(client, appId, granted) {
+  const left = [];
+  for (const grant of granted) {
+    try {
+      const rules = await client.listWorkspaceGroupAccess(grant.group_id);
+      const added = rules.filter((rule) => rule.id && rule.name === grant.rule_name && rule.resources.some((r) => r.id === appId));
+      for (const rule of added)
+        await client.writeWorkspaceGroupAccess("DELETE", grant.group_id, "app", rule.id);
+    } catch {
+      left.push(grant.name ?? grant.group_id);
+    }
+  }
+  return left;
+}
+async function grantGroups(client, appId, appName, directory, missing) {
+  const byId = new Map(directory.groups.map((group) => [group.id, group]));
   const granted = [];
+  const undo = async (reason) => {
+    const left = await removeGrants(client, appId, granted);
+    throw new Error(`${reason} The access rules added here were removed${left.length ? `, except for ${left.join(", ")} (remove it in Workspace settings > Groups)` : ""}.`);
+  };
   for (const id of missing) {
     const rule = viewRule(appId, appName, id);
-    await client.writeWorkspaceGroupAccess("POST", id, "app", void 0, rule);
+    try {
+      await client.writeWorkspaceGroupAccess("POST", id, "app", void 0, rule);
+    } catch (error) {
+      await undo(`${byId.get(id)?.name ?? id} could not be given access to this app: ${error.message}.`);
+    }
     granted.push({ group_id: id, ...byId.get(id)?.name ? { name: byId.get(id).name } : {}, rule_name: rule.name });
   }
   const after = new Set((await client.listAppPermissionSubjects(appId)).groups.map((group) => group.id));
   const still = missing.filter((id) => !after.has(id));
   if (still.length) {
-    throw new Error(`ToolJet did not confirm that ${still.map((id) => byId.get(id)?.name ?? id).join(", ")} can open this app after the access rule was added, so no limit was set. Check the group in Workspace settings > Groups.`);
+    await undo(`ToolJet did not confirm that ${still.map((id) => byId.get(id)?.name ?? id).join(", ")} can open this app after the access rule was added.`);
   }
   return granted;
 }
@@ -3529,7 +3548,7 @@ A call that works: ${exampleCall(args, summary, codeApp)}`);
           return ok(one ? { app_id: args.app_id, ...results2[0] } : { app_id: args.app_id, results: results2 });
         }
         const grant = args.grant_app_access ?? codeApp;
-        const granted = accessType === "groups" ? await ensureGroupsCanOpen(client, args.app_id, summary.name, directory, subjectIds, grant) : [];
+        const toGrant = accessType === "groups" ? groupsToGrant(directory, subjectIds, grant) : [];
         const results = [];
         for (const t of targets) {
           try {
@@ -3546,15 +3565,23 @@ A call that works: ${exampleCall(args, summary, codeApp)}`);
           }
         }
         const failed = results.filter((r) => r.error);
+        if (failed.length === results.length) {
+          throw new Error(failed.map((r) => `${r.resource.name ?? r.resource.id}: ${r.error}`).join("; ") + (toGrant.length ? " No access to the app was given." : ""));
+        }
+        let granted = [];
+        if (toGrant.length) {
+          try {
+            granted = await grantGroups(client, args.app_id, summary.name, directory, toGrant);
+          } catch (error) {
+            throw new Error(`The limits were set, but their groups cannot open this app, so their members cannot use those screens or queries yet: ${error.message} Give the groups access in Workspace settings > Groups, or run this again.`);
+          }
+        }
         const grantNote = granted.length ? `${granted.map((g) => g.name ?? g.group_id).join(", ")} could not open this app, so ${granted.length > 1 ? "each now has" : "it now has"} view access to this app only (released app, rule "${granted[0].rule_name}").` : void 0;
         const body = {
           app_id: args.app_id,
           ...one ? results[0] : { results },
           ...granted.length ? { granted_app_access: granted, note: grantNote } : {}
         };
-        if (failed.length === results.length) {
-          throw new Error(failed.map((r) => `${r.resource.name ?? r.resource.id}: ${r.error}`).join("; ") + (grantNote ? ` (${grantNote})` : ""));
-        }
         return ok(failed.length ? { ...body, warning: `${failed.length} of ${results.length} limits were not set; see each error.` } : body);
       } catch (error) {
         return fail(error);
@@ -3562,1238 +3589,7 @@ A call that works: ${exampleCall(args, summary, codeApp)}`);
     }
   };
 }
-createRequire(import.meta.url);
-var positive = (name, fallback) => {
-  const value = Number(process.env[name]);
-  return Number.isInteger(value) && value > 0 ? value : fallback;
-};
-var MAX_SLOT_AGE_MS = 10 * 6e4;
-var POLL_MS = 250;
-var alive = (pid) => {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (err) {
-    return err.code === "EPERM";
-  }
-};
-var stale = (file) => {
-  try {
-    if (Date.now() - statSync(file).mtimeMs > MAX_SLOT_AGE_MS)
-      return true;
-    return !alive(Number(readFileSync(file, "utf8")));
-  } catch {
-    return false;
-  }
-};
-var take = (dir, prefix, limit) => {
-  for (let i = 0; i < limit; i++) {
-    const file = join(dir, `${prefix}-${i}`);
-    if (existsSync(file) && stale(file))
-      rmSync(file, { force: true });
-    try {
-      const fd = openSync(file, "wx");
-      writeFileSync(fd, String(process.pid));
-      closeSync(fd);
-      return file;
-    } catch {
-    }
-  }
-  return void 0;
-};
-var BuildCapacityError = class extends Error {
-};
-async function withBuildSlot(root2, workspaceId, work) {
-  const dir = join(root2, ".slots");
-  mkdirSync(dir, { recursive: true });
-  const globalLimit = positive("MCP_CODE_BUILD_MAX_GLOBAL", 6);
-  const workspaceLimit = positive("MCP_CODE_BUILD_MAX_WORKSPACE", 3);
-  const deadline = Date.now() + positive("MCP_CODE_BUILD_WAIT_MS", 18e4);
-  const release = [];
-  try {
-    for (; ; ) {
-      const mine = take(dir, `ws-${workspaceId}`, workspaceLimit);
-      const shared = mine && take(dir, "global", globalLimit);
-      if (mine && shared) {
-        release.push(mine, shared);
-        break;
-      }
-      if (mine)
-        rmSync(mine, { force: true });
-      if (Date.now() >= deadline)
-        throw new BuildCapacityError("Too many builds are running on this server right now. Try again in a minute.");
-      await new Promise((resolve2) => setTimeout(resolve2, POLL_MS));
-    }
-    return await work();
-  } finally {
-    for (const file of release)
-      rmSync(file, { force: true });
-  }
-}
-var LAST_USED = ".tooljet-last-used";
-var CLEAN_MARKER = ".last-cleanup";
-var HOME_PREFIX = "tj-code-home-";
-function touchProject(dir) {
-  const file = join(dir, LAST_USED);
-  const now = /* @__PURE__ */ new Date();
-  try {
-    utimesSync(file, now, now);
-  } catch {
-    try {
-      writeFileSync(file, "");
-    } catch {
-    }
-  }
-}
-var lastUsed = (dir) => {
-  for (const name of [LAST_USED, "app.json"]) {
-    try {
-      return statSync(join(dir, name)).mtimeMs;
-    } catch {
-    }
-  }
-  return statSync(dir).mtimeMs;
-};
-function cleanOldProjects(root2) {
-  const days = Number(process.env.MCP_CODE_PROJECT_TTL_DAYS ?? 14);
-  if (!(days > 0) || !existsSync(root2))
-    return;
-  const marker = join(root2, CLEAN_MARKER);
-  try {
-    if (Date.now() - statSync(marker).mtimeMs < 36e5)
-      return;
-  } catch {
-  }
-  writeFileSync(marker, "");
-  const oldest = Date.now() - days * 864e5;
-  const isProject = (dir) => existsSync(join(dir, "app.json"));
-  const projects = (dir, depth) => {
-    if (isProject(dir))
-      return [dir];
-    if (depth === 0)
-      return [];
-    return readdirSync(dir, { withFileTypes: true }).filter((e) => e.isDirectory() && !e.name.startsWith(".")).flatMap((e) => projects(join(dir, e.name), depth - 1));
-  };
-  for (const entry of readdirSync(root2, { withFileTypes: true })) {
-    if (!entry.isDirectory() || entry.name.startsWith("."))
-      continue;
-    const dir = join(root2, entry.name);
-    for (const project of projects(dir, entry.name.startsWith("d_") ? 2 : 1)) {
-      if (lastUsed(project) < oldest)
-        rmSync(project, { recursive: true, force: true });
-    }
-  }
-  for (const entry of readdirSync(tmpdir(), { withFileTypes: true })) {
-    if (!entry.isDirectory() || !entry.name.startsWith(HOME_PREFIX))
-      continue;
-    const dir = join(tmpdir(), entry.name);
-    if (Date.now() - statSync(dir).mtimeMs > 864e5)
-      rmSync(dir, { recursive: true, force: true });
-  }
-}
-var CLI_HOME_PREFIX = HOME_PREFIX;
-var BROWSER_USER = /\{\{[^}]*?\bglobals\s*\.\s*currentUser\b/;
-function browserUserBindings(options, path = []) {
-  if (typeof options === "string")
-    return BROWSER_USER.test(options) ? [path.join(".") || "options"] : [];
-  if (Array.isArray(options))
-    return options.flatMap((value, index) => browserUserBindings(value, [...path, String(index)]));
-  if (options && typeof options === "object") {
-    return Object.entries(options).flatMap(([key, value]) => browserUserBindings(value, [...path, key]));
-  }
-  return [];
-}
-function browserUserMessage(queryName, paths) {
-  return `Query "${queryName}": ${paths.join(", ")} ${paths.length > 1 ? "read" : "reads"} {{globals.currentUser.*}}, which the viewer's browser resolves and sends with the run, so anyone can send another user's email. In a Code mode app use {{globals.server.currentUser.*}} (email, id, firstName, groups), which ToolJet resolves on the server, for own-row filters and every "who" column (requester, approver, actor).`;
-}
-var CODE_PAGE_TRUE = /* @__PURE__ */ new Set([true, "true", "{{true}}"]);
-function isCodeModeApp(app) {
-  if (app?.build_mode === "code" || app?.buildMode === "code")
-    return true;
-  for (const page of Array.isArray(app?.pages) ? app.pages : []) {
-    for (const entry of Object.values(page?.components ?? {})) {
-      if (CODE_PAGE_TRUE.has(entry?.component?.definition?.properties?.codePage?.value))
-        return true;
-    }
-  }
-  return false;
-}
-function browserUserQueryProblems(app) {
-  const queries = Array.isArray(app?.data_queries) ? app.data_queries : [];
-  return queries.flatMap((query) => {
-    const paths = browserUserBindings(query?.options ?? {});
-    return paths.length ? [browserUserMessage(String(query?.name ?? query?.id ?? "query"), paths)] : [];
-  });
-}
-var TS_LINE = /^(\S+?):(\d+):(\d+) - error (TS\d+): (.*)$/;
-var ESBUILD_LINE = /^(\S+?):(\d+):(\d+): ERROR: (.*)$/;
-var CSS_IN_PLUGIN = /^\[plugin: [\w-]+\] (?:.*\/frontend\/)?(\S+?\.css):(\d+):(\d+): (.*)$/;
-var MAX_MESSAGE = 300;
-var clipText = (text, max) => text.length > max ? `${text.slice(0, max)}...` : text;
-var inFrontend = (file) => file.startsWith("frontend/") ? file : `frontend/${file}`;
-function fixFor(code, message) {
-  if (/custom-component-sdk/.test(message) && /Cannot find module|Could not resolve/.test(message))
-    return "the SDK's types are missing on this server, not in the code: never declare the module yourself; build again";
-  if (/Cannot find module '\.{1,2}\/|Could not resolve "\.{1,2}\//.test(message))
-    return "no such file: write it (files: [{ path, content }]) or correct the path";
-  if (/Could not resolve "@tooljet\//.test(message))
-    return "no such package: the SDK is @tooljet/custom-component-sdk, and data comes from ../tooljet.gen (useAppQuery)";
-  if (/has no exported member|No matching export/.test(message))
-    return "export that name from the file it is imported from, or import a name the file exports";
-  if (code === "TS7006")
-    return "give the parameter a type, or type the list it comes from (a Row type from tooljet.gen)";
-  if (/'QueryError' is not assignable to type 'ReactNode'/.test(message))
-    return "render error.message, not the error";
-  if (/LucideIcon/.test(message))
-    return "type the icon prop as LucideIcon: import type { LucideIcon } from 'lucide-react'";
-  if (/\.data' is possibly 'undefined'/.test(message))
-    return "data is undefined until the first run: const rows = q.data ?? []";
-  if (code === "TS18047" || /'null' is not assignable/.test(message))
-    return "a nullable column is T | null in its Row type: check for null, or use ?? ''";
-  if (code === "TS2339" && /on type '\{|Row(\[\])?'/.test(message))
-    return "not a field of this row: use only the fields its Row type in tooljet.gen lists";
-  if (/has already been declared|Duplicate identifier|Cannot redeclare/.test(message))
-    return "remove one of the two declarations";
-  if (code === "CSS" && /Unknown word/.test(message))
-    return "a stray */ or an unclosed comment or rule";
-  return void 0;
-}
-var routeFix = (p) => !p.fix && p.code === "TS2345" && /routePath\(/.test(p.source ?? "") ? { ...p, fix: "add the route to app.json's routes (the build refreshes ROUTES), or use an id it has" } : p;
-function parseBuildProblems(output) {
-  const lines = output.split("\n");
-  const problems = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    const ts = TS_LINE.exec(line);
-    if (ts) {
-      const message = [ts[5]];
-      let j = i + 1;
-      while (j < lines.length && lines[j].trim() && !TS_LINE.test(lines[j].trim()) && !/^\d+ /.test(lines[j].trim())) {
-        message.push(lines[j].trim());
-        j++;
-      }
-      while (j < lines.length && !lines[j].trim())
-        j++;
-      const code = new RegExp(`^${ts[2]} (.*)$`).exec(lines[j]?.trim() ?? "");
-      problems.push({
-        at: `${inFrontend(ts[1])}:${ts[2]}:${ts[3]}`,
-        code: ts[4],
-        message: clipText(message.slice(0, 3).join(" / "), MAX_MESSAGE),
-        ...code ? { source: clipText(code[1].trim(), 160) } : {}
-      });
-      continue;
-    }
-    const es = ESBUILD_LINE.exec(line);
-    if (es) {
-      const css = CSS_IN_PLUGIN.exec(es[4]);
-      problems.push(css ? { at: `${inFrontend(css[1])}:${css[2]}:${css[3]}`, code: "CSS", message: clipText(css[4], MAX_MESSAGE) } : { at: `${inFrontend(es[1])}:${es[2]}:${es[3]}`, code: "ESBUILD", message: clipText(es[4], MAX_MESSAGE) });
-    }
-  }
-  return problems.map((p) => routeFix({ ...p, ...fixFor(p.code, p.message) ? { fix: fixFor(p.code, p.message) } : {} }));
-}
-var fromChecked = (p) => routeFix({
-  at: `${inFrontend(p.file)}:${p.line}:${p.column}`,
-  code: p.code,
-  message: clipText(p.message.split("\n").slice(0, 3).map((l) => l.trim()).join(" / "), MAX_MESSAGE),
-  ...p.source ? { source: p.source } : {},
-  ...fixFor(p.code, p.message) ? { fix: fixFor(p.code, p.message) } : {}
-});
-function formatProblems(problems, max = 40) {
-  const groups = /* @__PURE__ */ new Map();
-  for (const p of problems) {
-    const file = p.at.replace(/:\d+:\d+$/, "");
-    const key = `${file}\0${p.code}\0${p.message}`;
-    const group = groups.get(key);
-    if (group)
-      group.at.push(p.at.slice(file.length));
-    else
-      groups.set(key, { first: p, at: [p.at] });
-  }
-  const lines = [...groups.values()].map(({ first, at }) => [`${at.join(", ")} ${first.code} ${first.message}`, first.source && `code: ${first.source}`, first.fix && `fix: ${first.fix}`].filter(Boolean).join(" | "));
-  return lines.length > max ? [...lines.slice(0, max), `... and ${lines.length - max} more`] : lines;
-}
-function buildSummary(output) {
-  const lines = output.split("\n").map((l) => l.trimEnd());
-  const keep = lines.filter((l) => /^\s*(✗|✓|⚠)/.test(l) || /Build completed in/.test(l));
-  return keep.join("\n");
-}
-var run = promisify(execFile);
-var USER_WORDS = ` Talk to the user about "the app's code" and its versions (v1, v2): one version line, as for any app. Never say code version, revision, publishing code, bundle, library, manifest, root component, dev track or pin, and never show internal names, ids or paths.`;
-var noCodeIdentity = (client) => ({
-  client,
-  workspaceId: async () => "",
-  apiUrl: "",
-  appUrl: ""
-});
-var scope = new AsyncLocalStorage();
-var current = () => {
-  const active = scope.getStore();
-  if (!active)
-    throw new Error("Code tools need a request identity");
-  return active;
-};
-var SAFE_WORKSPACE = /^[A-Za-z0-9-]{1,64}$/;
-var deploymentKey = (apiUrl) => {
-  let url;
-  try {
-    url = new URL(apiUrl);
-  } catch {
-    throw new Error("This request names no valid ToolJet backend.");
-  }
-  if (!["http:", "https:"].includes(url.protocol))
-    throw new Error("This request names no valid ToolJet backend.");
-  const canonical = `${url.protocol}//${url.host}${url.pathname.replace(/\/+$/, "")}`;
-  return `d_${createHash("sha256").update(canonical).digest("hex").slice(0, 24)}`;
-};
-var inScope = (context, handler) => async (args) => {
-  try {
-    if (!context.credential?.sessionToken && !context.credential?.pat)
-      throw new Error("Code tools act for a signed-in user, and this request names none.");
-    const deployment = deploymentKey(context.apiUrl);
-    const workspace = await context.workspaceId();
-    if (!SAFE_WORKSPACE.test(workspace))
-      throw new Error("This request has no valid workspace.");
-    return await scope.run({ ...context, workspace, deployment, authorized: authorizedFor(context) }, () => handler(args));
-  } catch (err) {
-    return fail(err);
-  }
-};
-var grantTtlMs = () => {
-  const ttl = Number(process.env.MCP_CODE_APP_AUTH_TTL_MS ?? 3e4);
-  return Number.isFinite(ttl) && ttl >= 0 ? ttl : 3e4;
-};
-var authorizations = /* @__PURE__ */ new WeakMap();
-var authorizedFor = (context) => {
-  const known = authorizations.get(context) ?? /* @__PURE__ */ new Map();
-  authorizations.set(context, known);
-  return known;
-};
-var authorizeApp = async (appId, need) => {
-  const active = current();
-  const key = `${active.deployment}\0${active.workspace}\0${appId}`;
-  const known = active.authorized.get(key);
-  if (known && Date.now() - known.at < grantTtlMs() && known[need])
-    return;
-  active.authorized.delete(key);
-  let app;
-  try {
-    app = await active.client.getApp(appId);
-  } catch {
-    throw new Error(`App ${appId} was not found in this workspace.`);
-  }
-  const owner = app?.organizationId ?? app?.organization_id;
-  if (!owner || owner !== active.workspace)
-    throw new Error(`App ${appId} was not found in this workspace.`);
-  const versionId = app?.editing_version?.id ?? app?.editingVersion?.id;
-  let access;
-  try {
-    if (!versionId)
-      throw new Error("no version");
-    access = await active.client.codeSourceAccess(appId, versionId);
-  } catch {
-    throw new Error(need === "edit" ? `ToolJet could not confirm that you can edit app ${appId}, so nothing was changed.` : `ToolJet could not confirm that you can read app ${appId}'s code, so nothing was read.`);
-  }
-  const grant = { read: access.read, edit: access.read && access.write, at: Date.now() };
-  active.authorized.set(key, grant);
-  if (need === "edit" && !grant.edit) {
-    throw new Error(grant.read ? `You can view app ${appId} but not edit it, so its code cannot be changed, built or installed here.` : `You can view app ${appId} but not edit it or read its code, so its code cannot be changed, built or installed here.`);
-  }
-  if (need === "read" && !grant.read)
-    throw new Error(`You can use app ${appId} but ToolJet does not let you read its code.`);
-};
-var baseRoot = () => resolve(process.env.TOOLJET_CODE_APP_ROOT || join(homedir(), "tooljet-code-apps"));
-var root = () => join(baseRoot(), current().deployment, current().workspace);
-var legacyFolders = () => {
-  const owner = process.env.MCP_CODE_LEGACY_DEPLOYMENT_URL || process.env.TOOLJET_URL || process.env.TOOLJET_DEPLOYMENT_URL || process.env.TOOLJET_APP_URL || "http://localhost:3000";
-  try {
-    if (deploymentKey(owner) !== current().deployment)
-      return [];
-  } catch {
-    return [];
-  }
-  return [join(baseRoot(), current().workspace), baseRoot()];
-};
-var NAME = /^[a-z][a-z0-9-]{1,40}$/;
-var projectDir = (name) => {
-  if (!NAME.test(name))
-    throw new Error(`name must match ${NAME} (lowercase letters, digits, hyphens)`);
-  return join(root(), name);
-};
-var appIdOf = (dir) => {
-  try {
-    return JSON.parse(readFileSync(join(dir, "app.json"), "utf8")).appId;
-  } catch {
-    return void 0;
-  }
-};
-var projectsIn = (folder, appId) => {
-  if (!existsSync(folder))
-    return [];
-  return readdirSync(folder, { withFileTypes: true }).filter((entry) => entry.isDirectory() && NAME.test(entry.name) && appIdOf(join(folder, entry.name)) === appId).map((entry) => entry.name).sort((a, b) => statSync(join(folder, b, "app.json")).mtimeMs - statSync(join(folder, a, "app.json")).mtimeMs);
-};
-var projectsForApp = (appId) => {
-  for (const folder of legacyFolders()) {
-    for (const name of projectsIn(folder, appId)) {
-      mkdirSync(root(), { recursive: true });
-      if (!existsSync(join(root(), name)))
-        renameSync(join(folder, name), join(root(), name));
-    }
-  }
-  return projectsIn(root(), appId);
-};
-var APP_ID = external_exports.string().uuid().optional().describe("The app's id: finds its project, so you never have to know the folder name");
-var PROJECT_NAME = external_exports.string().regex(NAME).optional().describe("The project folder, when you know it; app_id is enough");
-var locateProject = async (args, need) => {
-  let dir;
-  if (args.app_id) {
-    await authorizeApp(args.app_id, need);
-    const [found] = projectsForApp(args.app_id);
-    if (!found)
-      throw new Error(`no Code mode project for app ${args.app_id}; call code_app_scaffold with this app_id`);
-    dir = join(root(), found);
-  } else {
-    if (!args.name)
-      throw new Error("give app_id (or the project name)");
-    dir = projectDir(args.name);
-    const legacy = existsSync(join(dir, "app.json")) ? void 0 : legacyFolders().map((folder) => join(folder, args.name)).find((candidate) => existsSync(join(candidate, "app.json")));
-    const owner = appIdOf(legacy ?? dir);
-    if (!owner)
-      throw new Error(`no app project "${args.name}"; call code_app_scaffold first`);
-    await authorizeApp(owner, need);
-    if (legacy) {
-      mkdirSync(root(), { recursive: true });
-      renameSync(legacy, dir);
-    }
-  }
-  touchProject(dir);
-  return dir;
-};
-var STYLE_FILES = /* @__PURE__ */ new Set(["frontend/styles/theme.css", "frontend/styles/global.css"]);
-var editable = (dir, path) => {
-  const full = resolve(dir, path);
-  const rel = relative(dir, full).split(sep).join("/");
-  if (rel === "app.json" || STYLE_FILES.has(rel) || rel.startsWith("frontend/src/") && !rel.endsWith("tooljet.gen.ts"))
-    return full;
-  throw new Error(`"${path}" is not editable: write app.json, frontend/styles/theme.css, frontend/styles/global.css or files under frontend/src/ (tooljet.gen.ts is generated)`);
-};
-var TEXT = /\.(tsx?|jsx?|json|css|md)$/i;
-var listFiles = (dir, base = dir, out = []) => {
-  if (!existsSync(dir))
-    return out;
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (["node_modules", "dist"].includes(entry.name) || entry.name.startsWith("."))
-      continue;
-    const full = join(dir, entry.name);
-    if (entry.isDirectory())
-      listFiles(full, base, out);
-    else if (TEXT.test(entry.name) && entry.name !== "package-lock.json")
-      out.push(relative(base, full).split(sep).join("/"));
-  }
-  return out.sort();
-};
-var strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "");
-var HOST_ENV = [
-  "PATH",
-  "TMPDIR",
-  "TEMP",
-  "TMP",
-  "LANG",
-  "LC_ALL",
-  "HTTP_PROXY",
-  "HTTPS_PROXY",
-  "NO_PROXY",
-  "http_proxy",
-  "https_proxy",
-  "no_proxy",
-  "NODE_EXTRA_CA_CERTS",
-  "SSL_CERT_FILE",
-  "SSL_CERT_DIR",
-  "TOOLJET_SDK_SPEC",
-  "TOOLJET_APP_SCANNER_BIN"
-];
-var SECRET_NAME = /TOKEN|SECRET|PASSWORD|PASSWD|KEY|PAT$|CREDENTIAL|COOKIE/i;
-var operatorEnv = () => (process.env.MCP_CODE_CLI_ENV_PASS ?? "").split(",").map((name) => name.trim()).filter((name) => name && !SECRET_NAME.test(name));
-var cliHome;
-var buildHome = () => cliHome ??= mkdtempSync(join(tmpdir(), CLI_HOME_PREFIX));
-process.once("exit", () => {
-  if (cliHome)
-    rmSync(cliHome, { recursive: true, force: true });
-});
-var cliEnv = () => {
-  const active = current();
-  const env = {};
-  for (const name of [...HOST_ENV, ...operatorEnv()])
-    if (process.env[name] !== void 0)
-      env[name] = process.env[name];
-  const { sessionToken, pat } = active.credential ?? {};
-  return {
-    ...env,
-    HOME: buildHome(),
-    USERPROFILE: buildHome(),
-    FORCE_COLOR: "0",
-    // The CLI is oclif: under NODE_ENV=development it loads its TypeScript sources instead of the build and fails
-    // ("Unexpected token ':'"). A ToolJet server running in development passes that on to this MCP server.
-    NODE_ENV: "production",
-    TOOLJET_CLI_SERVER_MODE: "1",
-    TOOLJET_URL: active.apiUrl,
-    TOOLJET_APP_URL: process.env.TOOLJET_DEPLOYMENT_URL ?? active.appUrl,
-    ...sessionToken ? { TOOLJET_SESSION_TOKEN: sessionToken, TOOLJET_WORKSPACE_ID: active.workspace } : { TOOLJET_PAT: pat },
-    // npm's cache is by content hash, so projects can share it; a home per process alone would download everything each build.
-    npm_config_cache: process.env.MCP_CODE_NPM_CACHE ?? join(baseRoot(), ".npm-cache"),
-    ...registry() ? { npm_config_registry: registry() } : {}
-  };
-};
-var registry = () => process.env.npm_config_registry ?? process.env.NPM_CONFIG_REGISTRY;
-var COUNTED_COMMANDS = /* @__PURE__ */ new Set(["library build", "app dev", "app install", "app check"]);
-var runCli = async (cwd, args, timeoutMs) => {
-  const [cmd, pre] = process.env.TOOLJET_CLI ? ["node", [process.env.TOOLJET_CLI]] : ["tooljet", []];
-  try {
-    const { stdout, stderr } = await run(cmd, [...pre, ...args], { cwd, timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024, env: cliEnv() });
-    return { code: 0, output: strip(stdout + stderr) };
-  } catch (err) {
-    const e = err;
-    return { code: typeof e.code === "number" ? e.code : 1, output: strip((e.stdout ?? "") + (e.stderr ?? e.message ?? "")) };
-  }
-};
-var serverModeChecked;
-var requireServerModeCli = () => {
-  if (process.env.MCP_CODE_CLI_HANDSHAKE === "0")
-    return Promise.resolve();
-  serverModeChecked ??= runCli(baseRoot(), ["app", "server-mode"], 6e4).then((answer) => {
-    if (!answer.output.includes("tooljet-server-mode:1")) {
-      serverModeChecked = void 0;
-      throw new Error("This server's ToolJet CLI does not support server mode, so Code builds are off here. Update the CLI.");
-    }
-  });
-  return serverModeChecked;
-};
-async function cli(cwd, args, timeoutMs = 3e5) {
-  mkdirSync(baseRoot(), { recursive: true });
-  await requireServerModeCli();
-  const command = args.filter((a) => !a.startsWith("-")).slice(0, 2).join(" ");
-  if (!COUNTED_COMMANDS.has(command))
-    return runCli(cwd, args, timeoutMs);
-  return withBuildSlot(baseRoot(), `${current().deployment}.${current().workspace}`, () => runCli(cwd, args, timeoutMs));
-}
-var PLACEHOLDER_NAME = /^Untitled App\b/;
-async function nameApp(client, dir, name, replaceName) {
-  let snapshot;
-  try {
-    snapshot = JSON.parse(readFileSync(join(dir, ".tooljet", "snapshot.json"), "utf8"));
-  } catch {
-    return {};
-  }
-  const standIn = PLACEHOLDER_NAME.test(snapshot.appName ?? "") || !!replaceName && snapshot.appName === replaceName;
-  if (!client || !snapshot.appId || !snapshot.versionId || !standIn || snapshot.appName === name)
-    return {};
-  try {
-    await client.renameApp(snapshot.appId, snapshot.versionId, name);
-    return { renamed_to: name };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (!/exist|unique|duplicate|taken|conflict|409|422/i.test(message))
-      return { rename_warning: `Could not name the app: ${message}` };
-    const fallback = `${name} ${Math.random().toString(36).slice(2, 5)}`;
-    await client.renameApp(snapshot.appId, snapshot.versionId, fallback);
-    return { renamed_to: fallback, rename_warning: `App name "${name}" is already used in this workspace; the app was named "${fallback}" instead.` };
-  }
-}
-function parseReport(output) {
-  const start = output.indexOf("{");
-  const end = output.lastIndexOf("}");
-  if (start < 0 || end < start)
-    return null;
-  try {
-    return JSON.parse(output.slice(start, end + 1));
-  } catch {
-    return null;
-  }
-}
-var mustFix = (security) => (security?.findings ?? []).filter((f) => f.severity === "critical" || f.severity === "high");
-var securitySummary = (security) => !security ? { error: "no security report (the CLI predates tooljet app check --json)" } : security.error ? { error: security.error } : {
-  gate: security.gate,
-  counts: security.counts,
-  not_run: (security.notRun ?? []).map((n) => `${n.id}${n.reason ? `: ${n.reason}` : ""}`),
-  findings: (security.findings ?? []).slice(0, 40),
-  ...(security.findings?.length ?? 0) > 40 ? { more_findings: security.findings.length - 40 } : {}
-};
-function withDependencies(pkg, packages) {
-  const dependencies = { ...pkg.dependencies ?? {} };
-  for (const p of packages)
-    dependencies[p.name] = p.version;
-  return { ...pkg, dependencies: Object.fromEntries(Object.entries(dependencies).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) };
-}
-function withoutDependencies(pkg, names) {
-  const drop = (deps) => deps && Object.fromEntries(Object.entries(deps).filter(([name]) => !names.includes(name)));
-  return { ...pkg, ...pkg.dependencies ? { dependencies: drop(pkg.dependencies) } : {}, ...pkg.devDependencies ? { devDependencies: drop(pkg.devDependencies) } : {} };
-}
-var PACKAGE_NAME = /^(@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
-var PACKAGE_SPEC = /^(@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*(@[A-Za-z0-9.^~<>=*| -]+)?$/;
-function codeAppScaffoldTool(context) {
-  return {
-    name: "code_app_scaffold",
-    title: "Scaffold Code Mode App",
-    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-    description: "Create the Code mode project for an app you created with create_app: app.json (the app and its routes, its screens) and frontend/ (React + TypeScript on shadcn + Tailwind, react-router through AppRouter). Create the app's queries (code_app_data) BEFORE this, so the typed hooks it writes (frontend/src/tooljet.gen.ts: useAppQuery, row types, ROUTES, routePath, PAGES) list them. Returns the files and the generated hooks." + USER_WORDS,
-    inputSchema: {
-      name: external_exports.string().regex(NAME).describe("Project folder: lowercase letters, digits and hyphens, e.g. inventory-console"),
-      display_name: external_exports.string().min(1).max(100).describe(`The app's name; an app still called "Untitled App" is renamed to it`),
-      app_id: external_exports.string().uuid().describe("The app from create_app"),
-      rename_from: external_exports.string().max(100).optional().describe("Set by ToolJet; leave it out")
-    },
-    handler: inScope(context, async (args) => {
-      try {
-        await authorizeApp(args.app_id, "edit");
-        cleanOldProjects(baseRoot());
-        const [existing] = projectsForApp(args.app_id);
-        const dir = existing ? join(root(), existing) : projectDir(args.name);
-        const owner = appIdOf(dir);
-        if (!existing && owner && owner !== args.app_id)
-          throw new Error(`project "${args.name}" belongs to app ${owner}; choose another name`);
-        const created = !existsSync(join(dir, "app.json"));
-        if (created) {
-          mkdirSync(root(), { recursive: true });
-          const init = await cli(root(), ["app", "init", args.name, "--name", args.display_name, "--no-install"]);
-          if (init.code !== 0)
-            throw new Error(`tooljet app init failed: ${init.output}`);
-          const appFile = join(dir, "app.json");
-          writeFileSync(appFile, JSON.stringify({ ...JSON.parse(readFileSync(appFile, "utf8")), appId: args.app_id }, null, 2) + "\n");
-          const install = await cli(dir, ["app", "install"]);
-          if (install.code !== 0)
-            throw new Error(`tooljet app install failed: ${install.output}`);
-        }
-        const pull = await cli(dir, ["app", "pull"]);
-        if (pull.code !== 0)
-          throw new Error(`tooljet app pull failed: ${pull.output}`);
-        const restored = created ? await restoreStoredCode(dir) : {};
-        const naming = await nameApp(context.client, dir, args.display_name, args.rename_from);
-        if (!existing && !restored.stored_code)
-          rememberScaffold(dir);
-        return ok({
-          project_dir: dir,
-          ...naming,
-          ...restored,
-          ...existing ? { existing_project: existing, note: `This app already has a project, "${existing}"; it is used as is.` } : {},
-          files: listFiles(dir),
-          app_json: JSON.parse(readFileSync(join(dir, "app.json"), "utf8")),
-          generated_hooks: readFileSync(join(dir, "frontend", "src", "tooljet.gen.ts"), "utf8"),
-          next: "Set the routes in app.json, write the screens under frontend/src/App/, then code_app_install with verify: true."
-        });
-      } catch (err) {
-        return fail(err);
-      }
-    })
-  };
-}
-async function restoreStoredCode(dir) {
-  const manifest = join(dir, "frontend", "package.json");
-  const before = existsSync(manifest) ? readFileSync(manifest, "utf8") : "";
-  const pull = await cli(dir, ["app", "source-pull", "--force"], 6e4);
-  if (pull.code !== 0 && /\b(401|403)\b|unauthori[sz]ed|forbidden/i.test(pull.output))
-    throw new Error("ToolJet refused access to this app's stored code.");
-  if (pull.code !== 0)
-    return { sync_warning: `Could not bring the app's stored code into the new project: ${pull.output.trim().slice(0, 300)}` };
-  if (/No source is stored/i.test(pull.output)) {
-    nothingStored.add(dir);
-    freshProjects.add(dir);
-    lastSynced.set(dir, Date.now());
-    return {};
-  }
-  if (!/Pulled revision|Already at revision/.test(pull.output))
-    return {};
-  if ((existsSync(manifest) ? readFileSync(manifest, "utf8") : "") !== before) {
-    const install = await cli(dir, ["app", "install"]);
-    if (install.code !== 0)
-      throw new Error(`tooljet app install failed after bringing the app's code down: ${install.output}`);
-  }
-  freshProjects.add(dir);
-  lastSynced.set(dir, Date.now());
-  return {
-    stored_code: "This app already has code on ToolJet: the project now holds it, not the template. Read the files you change before writing them, and keep the app's existing screens."
-  };
-}
-async function syncEditorEdits(dir, { force = false } = {}) {
-  if (!force && nothingStored.has(dir))
-    return {};
-  if (force)
-    forgetSourceRevision(dir);
-  let pull = await cli(dir, ["app", "source-pull"], 6e4);
-  if (force && pull.code !== 0 && /Not pulled\. These files differ/i.test(pull.output))
-    pull = await cli(dir, ["app", "source-pull", "--force"], 6e4);
-  if (pull.code !== 0 && /\b(401|403)\b|unauthori[sz]ed|forbidden/i.test(pull.output))
-    throw new Error("ToolJet refused access to this app's stored code.");
-  if (pull.code !== 0)
-    return { sync_warning: `Could not check the ToolJet editor for edits: ${pull.output.trim().slice(0, 300)}` };
-  if (/No source is stored/i.test(pull.output))
-    nothingStored.add(dir);
-  else
-    nothingStored.delete(dir);
-  lastSynced.set(dir, Date.now());
-  return /Pulled revision/.test(pull.output) ? { editor_edits: pull.output.trim() } : {};
-}
-var freshProjects = /* @__PURE__ */ new Set();
-var nothingStored = /* @__PURE__ */ new Set();
-var scaffoldHashes = /* @__PURE__ */ new Map();
-var readHashes = /* @__PURE__ */ new Map();
-var ownWrites = /* @__PURE__ */ new Map();
-var lastSynced = /* @__PURE__ */ new Map();
-var readSyncWindowMs = () => Number(process.env.MCP_CODE_APP_READ_SYNC_MS ?? 2e4);
-var syncedRecently = (dir) => Date.now() - (lastSynced.get(dir) ?? -Infinity) < readSyncWindowMs();
-var sha = (text) => createHash("sha256").update(text).digest("hex");
-var readKey = (dir, rel) => `${dir}\0${rel}`;
-function forgetSourceRevision(dir) {
-  const file = join(dir, ".tooljet", "source.json");
-  if (!existsSync(file))
-    return;
-  try {
-    const state = JSON.parse(readFileSync(file, "utf8"));
-    writeFileSync(file, JSON.stringify({ ...state, revision: -1 }, null, 2) + "\n");
-  } catch {
-  }
-}
-function rememberScaffold(dir) {
-  for (const rel of listFiles(dir)) {
-    const full = join(dir, rel);
-    if (existsSync(full))
-      scaffoldHashes.set(readKey(dir, rel), sha(readFileSync(full, "utf8")));
-  }
-}
-async function ensureFresh(dir) {
-  if (freshProjects.has(dir))
-    return {};
-  const sync = await syncEditorEdits(dir, { force: true });
-  if (!sync.sync_warning)
-    freshProjects.add(dir);
-  return sync;
-}
-var prefetchedScans = /* @__PURE__ */ new Map();
-var scanReuseMs = () => Number(process.env.MCP_CODE_APP_SCAN_REUSE_MS ?? 6e5);
-function projectHash(dir) {
-  const hash = createHash("sha256");
-  const walk = (at) => {
-    for (const entry of readdirSync(at, { withFileTypes: true }).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)) {
-      if (entry.isDirectory() && ["node_modules", "dist", ".tooljet"].includes(entry.name))
-        continue;
-      const full = join(at, entry.name);
-      if (entry.isDirectory())
-        walk(full);
-      else if (entry.isFile())
-        hash.update(relative(dir, full)).update("\0").update(readFileSync(full)).update("\0");
-    }
-  };
-  walk(dir);
-  return hash.digest("hex");
-}
-function prefetchFullScan(dir) {
-  if (process.env.MCP_CODE_APP_SCAN_PREFETCH === "0")
-    return;
-  const hash = projectHash(dir);
-  const result = cli(dir, ["app", "check", "--json"]).then((check) => {
-    try {
-      return projectHash(dir) === hash ? check : null;
-    } catch {
-      return null;
-    }
-  });
-  prefetchedScans.set(dir, { hash, at: Date.now(), result });
-}
-async function fullScan(dir) {
-  const prefetched = prefetchedScans.get(dir);
-  prefetchedScans.delete(dir);
-  if (prefetched && Date.now() - prefetched.at < scanReuseMs() && projectHash(dir) === prefetched.hash) {
-    const check = await prefetched.result;
-    const security = check && parseReport(check.output)?.security;
-    if (check && security && !security.error && projectHash(dir) === prefetched.hash)
-      return { ...check, reused: true };
-  }
-  return { ...await cli(dir, ["app", "check", "--json"]), reused: false };
-}
-var sdkCopied = /* @__PURE__ */ new Set();
-async function copySdkIn(dir) {
-  let linked = false;
-  try {
-    linked = lstatSync(join(dir, "frontend", "node_modules", "@tooljet", "custom-component-sdk")).isSymbolicLink();
-  } catch {
-    return;
-  }
-  if (!linked || sdkCopied.has(dir))
-    return;
-  sdkCopied.add(dir);
-  await cli(dir, ["app", "install"], 18e4);
-}
-var TYPE_CHECKED = /^frontend\/(src\/.*\.tsx?|.*\.css)$/;
-async function typeCheckAfterWrite(dir, written) {
-  if (process.env.MCP_CODE_WRITE_TYPECHECK !== "1" || !written.some((rel) => TYPE_CHECKED.test(rel)))
-    return void 0;
-  await copySdkIn(dir);
-  const result = await cli(join(dir, "frontend"), ["library", "typecheck", "--json"], 3e4);
-  const report = parseReport(result.output);
-  if (!Array.isArray(report?.problems))
-    return void 0;
-  if (!report.problems.length)
-    return { errors: 0 };
-  const problems = report.problems.map(fromChecked);
-  const unwritten = problems.filter((p) => p.code === "TS2307" && /Cannot find module '\.{1,2}\//.test(p.message));
-  const rest = problems.filter((p) => !unwritten.includes(p));
-  return {
-    errors: problems.length,
-    ...rest.length ? { fix: formatProblems(rest, 25) } : {},
-    ...unwritten.length ? { not_written_yet: [...new Set(unwritten.map((p) => `${/'([^']+)'/.exec(p.message)?.[1]} (imported at ${p.at})`))] } : {},
-    note: "Fix these in this round of writes, before code_app_build. An import of a file you have not written yet clears once you write it."
-  };
-}
-function changedLines(before, after) {
-  const count = (text) => text.split("\n").reduce((m, l) => m.set(l, (m.get(l) ?? 0) + 1), /* @__PURE__ */ new Map());
-  const a = count(before);
-  const b = count(after);
-  let changed = 0;
-  for (const [line, n] of a)
-    changed += Math.max(0, n - (b.get(line) ?? 0));
-  for (const [line, n] of b)
-    changed += Math.max(0, n - (a.get(line) ?? 0));
-  return changed;
-}
-var clip = (line) => line.trim().length > 100 ? `${line.trim().slice(0, 100)}...` : line.trim();
-var lineAt = (text, index) => text.slice(0, index).split("\n").length;
-function findHint(content, find) {
-  const lines = content.split("\n");
-  const at = [];
-  for (let i = content.indexOf(find); i >= 0 && at.length < 6; i = content.indexOf(find, i + 1))
-    at.push(lineAt(content, i));
-  if (at.length > 1) {
-    const shown = at.slice(0, 5).map((n) => `line ${n}${n > 1 ? ` (after "${clip(lines[n - 2])}")` : ""}`);
-    return ` It is at ${shown.join("; ")}${at.length > 5 ? "; and more" : ""}. Add a neighbouring line to the find so it matches one place.`;
-  }
-  if (at.length === 1)
-    return "";
-  const wanted = find.split("\n").map((l) => l.trim());
-  const trimmed = lines.map((l) => l.trim());
-  const starts = trimmed.flatMap((l, i) => wanted.every((w, k) => trimmed[i + k] === w) ? [i + 1] : []);
-  if (starts.length === 1)
-    return ` The same lines are at line ${starts[0]} with different indentation or spacing; copy them exactly as the file has them.`;
-  const words = (l) => new Set(l.match(/[A-Za-z_$][\w$]*|\d+/g) ?? []);
-  const key = wanted.reduce((a, b) => b.length > a.length ? b : a, "");
-  const target = words(key);
-  if (!target.size)
-    return "";
-  const scored = lines.map((l, i) => {
-    const w = words(l);
-    const shared = [...target].filter((t) => w.has(t)).length;
-    return { n: i + 1, l, score: shared / Math.max(target.size, w.size) };
-  }).filter((x) => x.score >= 0.5).sort((a, b) => b.score - a.score).slice(0, 2);
-  return scored.length ? ` Closest: ${scored.map((x) => `line ${x.n}: "${clip(x.l)}"`).join("; ")}.` : "";
-}
-var isRewrite = (before, after) => {
-  const changed = changedLines(before, after);
-  const size = Math.max(before.split("\n").length, after.split("\n").length);
-  return changed > 20 && changed > 0.4 * size;
-};
-function codeAppReadFilesTool(context) {
-  return {
-    name: "code_app_read_files",
-    title: "Read Code Mode Files",
-    annotations: { readOnlyHint: true, openWorldHint: true },
-    description: "Read a Code mode project. Without paths, lists its files; with paths, returns their contents (app.json, frontend/...). Edits saved in the ToolJet Code panel since the last install are brought into the project first." + USER_WORDS,
-    inputSchema: { app_id: APP_ID, name: PROJECT_NAME, paths: external_exports.array(external_exports.string()).optional() },
-    handler: inScope(context, async (args) => {
-      try {
-        const dir = await locateProject(args, "read");
-        if (!freshProjects.has(dir))
-          await followDraft(dir);
-        const sync = !freshProjects.has(dir) ? await ensureFresh(dir) : syncedRecently(dir) ? {} : await syncEditorEdits(dir);
-        if (!args.paths?.length)
-          return ok({ project_dir: dir, ...sync, files: listFiles(dir) });
-        const files = Object.fromEntries(args.paths.map((p) => {
-          const full = resolve(dir, p);
-          const rel = relative(dir, full).split(sep).join("/");
-          if (rel.startsWith(".."))
-            throw new Error(`"${p}" is outside the project`);
-          const content = readFileSync(full, "utf8");
-          readHashes.set(readKey(dir, rel), sha(content));
-          return [p, content];
-        }));
-        return ok({ project_dir: dir, ...sync, files });
-      } catch (err) {
-        return fail(err);
-      }
-    })
-  };
-}
-function codeAppWriteFilesTool(context) {
-  return {
-    name: "code_app_write_files",
-    title: "Write Code Mode Files",
-    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-    description: "Write into a Code mode project: app.json (name, codePage, routes [{id, path, title}]), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. To change an existing file, read it first (code_app_read_files) and pass edits: [{ path, find, replace }] with the exact text to change; a file you wrote in this build needs no read first, and before the first install may be sent whole again. files: [{ path, content }] is for new files and for replacing a file still as the template left it, or for a rewrite the request needs (then rewrite: true, as well as the files). A write to a file that changed in the ToolJet editor since you read it is refused: read it again and apply your change to what is there. Read data with useAppQuery from ../tooljet.gen; write by awaiting a query's run({ ...parameters }); route with AppRouter, react-router <Routes>/<Route> whose paths are exactly app.json's, and routePath(id, params). A type_check in the result lists the project's type errors after this write: fix them before code_app_build. Then code_app_build." + USER_WORDS,
-    inputSchema: {
-      app_id: APP_ID,
-      name: PROJECT_NAME,
-      files: external_exports.array(external_exports.object({ path: external_exports.string(), content: external_exports.string() })).max(40).optional(),
-      edits: external_exports.array(external_exports.object({ path: external_exports.string(), find: external_exports.string().min(1), replace: external_exports.string() })).max(60).optional().describe("Targeted changes to existing files: each find must appear exactly once in the file as it is now"),
-      rewrite: external_exports.boolean().optional().describe("Allow files to replace most of an existing file (only when the request needs it)")
-    },
-    handler: inScope(context, async (args) => {
-      try {
-        const dir = await locateProject(args, "edit");
-        if (!args.files?.length && !args.edits?.length)
-          throw new Error(`Nothing was written: this call had no files and no edits, so it sent no code${args.rewrite ? " (rewrite: true only allows a rewrite, it carries none)" : ""}. Send the code in this call: files: [{ path, content }] with the whole file, or edits: [{ path, find, replace }].`);
-        if (!freshProjects.has(dir))
-          await followDraft(dir);
-        const first = await ensureFresh(dir);
-        const sync = first.editor_edits || first.sync_warning ? first : await syncEditorEdits(dir);
-        const next = /* @__PURE__ */ new Map();
-        const current2 = (rel, full) => next.get(rel)?.content ?? (existsSync(full) ? readFileSync(full, "utf8") : void 0);
-        const stale2 = (rel, full) => {
-          if (next.has(rel) || !existsSync(full))
-            return void 0;
-          const known = readHashes.get(readKey(dir, rel));
-          if (!known)
-            return `${rel} has not been read in this build: read it with code_app_read_files first`;
-          if (known !== sha(readFileSync(full, "utf8")))
-            return `${rel} changed on ToolJet (an edit in the editor) since you read it: read it again and apply your change to what is there now`;
-          return void 0;
-        };
-        const refusals = [];
-        for (const file of args.files ?? []) {
-          const full = editable(dir, file.path);
-          const rel = relative(dir, full).split(sep).join("/");
-          const why = stale2(rel, full);
-          if (why)
-            refusals.push(why);
-          const before = current2(rel, full);
-          const stillTemplate = before !== void 0 && scaffoldHashes.get(readKey(dir, rel)) === sha(before);
-          const ownFile = before !== void 0 && nothingStored.has(dir) && ownWrites.get(readKey(dir, rel)) === sha(before);
-          if (!why && before !== void 0 && !args.rewrite && !stillTemplate && !ownFile && isRewrite(before, file.content))
-            refusals.push(`${rel}: this replaces most of the file; change only what the request needs with edits (find/replace), or, if the request really is a rewrite, send these files again with rewrite: true in the same call`);
-          next.set(rel, { full, content: file.content });
-        }
-        for (const edit of args.edits ?? []) {
-          const full = editable(dir, edit.path);
-          const rel = relative(dir, full).split(sep).join("/");
-          const why = stale2(rel, full);
-          if (why) {
-            refusals.push(why);
-            continue;
-          }
-          const before = current2(rel, full);
-          if (before === void 0) {
-            refusals.push(`${rel} does not exist: create it with files`);
-            continue;
-          }
-          const found = before.split(edit.find).length - 1;
-          if (found !== 1) {
-            refusals.push(`${rel}: the find text appears ${found} times; it must match exactly once (copy it from the file as it is now).${findHint(before, edit.find)}`);
-            continue;
-          }
-          next.set(rel, { full, content: before.replace(edit.find, () => edit.replace) });
-        }
-        if (refusals.length)
-          return fail(new Error("Not written:\n" + refusals.map((r) => `- ${r}`).join("\n")));
-        const written = [];
-        for (const [rel, { full, content }] of next) {
-          mkdirSync(dirname(full), { recursive: true });
-          writeFileSync(full, content);
-          readHashes.set(readKey(dir, rel), sha(content));
-          ownWrites.set(readKey(dir, rel), sha(content));
-          written.push(rel);
-        }
-        const types = await typeCheckAfterWrite(dir, written).catch(() => void 0);
-        return ok({ project_dir: dir, ...sync, written, ...types ? { type_check: types } : {} });
-      } catch (err) {
-        return fail(err);
-      }
-    })
-  };
-}
-async function followDraft(dir) {
-  let pinned;
-  try {
-    pinned = JSON.parse(readFileSync(join(dir, "app.json"), "utf8")).version;
-  } catch {
-    return void 0;
-  }
-  if (!pinned?.id)
-    return void 0;
-  const list = await cli(dir, ["app", "checkout", "--list"], 6e4);
-  const line = list.output.split("\n").find((l) => l.trimStart().startsWith("*") && l.includes(pinned.id));
-  if (list.code !== 0 || !line || /\bdraft\b/i.test(line))
-    return void 0;
-  const moved = await cli(dir, ["app", "checkout", "--editing"], 6e4);
-  if (moved.code !== 0)
-    throw new Error(`The app's draft could not be opened: ${moved.output.trim().slice(0, 500)}`);
-  return `${pinned.name ?? "The pinned version"} is saved, so the code now goes into the app's draft.`;
-}
-var STYLESHEET = "frontend/src/styles/globals.css";
-var IMPORT_RE = /(?:^|[\s;])import\s+(?:[^'"]*?from\s+)?['"]([^'"]+\.css)['"]/gm;
-function nativeSelects(dir) {
-  const src = join(dir, "frontend", "src");
-  if (!existsSync(join(src, "components", "ui", "select.tsx")))
-    return [];
-  return listFiles(src).filter((rel) => rel.endsWith(".tsx") && !rel.startsWith("components/")).flatMap((rel) => readFileSync(join(src, rel), "utf8").split("\n").flatMap((line, i) => /<select[\s>]/.test(line) ? [`frontend/src/${rel}:${i + 1}`] : []));
-}
-function badRouteHandles(dir) {
-  const file = join(dir, "app.json");
-  if (!existsSync(file))
-    return [];
-  const routes = JSON.parse(readFileSync(file, "utf8")).routes ?? [];
-  return routes.map((route) => String(route.id)).filter((id) => !/^[a-z0-9][a-z0-9-]*$/.test(id)).map((id) => `app.json: route id "${id}" is not a valid handle: use lowercase letters, numbers and hyphens, such as "${id.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+/, "") || "page"}"`);
-}
-var SDK_DECLARED = /declare\s+module\s+['"]@tooljet\/custom-component-sdk['"]/;
-function sdkRedeclared(dir) {
-  const src = join(dir, "frontend", "src");
-  if (!existsSync(src))
-    return [];
-  return listFiles(src).filter((rel) => /\.tsx?$/.test(rel) && rel !== "tooljet.gen.ts" && SDK_DECLARED.test(readFileSync(join(src, rel), "utf8"))).map((rel) => `frontend/src/${rel}: declares @tooljet/custom-component-sdk itself, which hides the SDK's real types; write the file without that declaration (the SDK has its own types), then fix what the build reports`);
-}
-function missingStylesheet(dir) {
-  const sheet = join(dir, STYLESHEET);
-  if (!existsSync(sheet))
-    return void 0;
-  const src = join(dir, "frontend", "src");
-  for (const rel of listFiles(src)) {
-    if (!/\.(tsx?|jsx?)$/.test(rel) || rel.startsWith("components/"))
-      continue;
-    const file = join(src, rel);
-    const code = readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-    for (const m of code.matchAll(IMPORT_RE)) {
-      if (resolve(dirname(file), m[1]) === sheet)
-        return void 0;
-    }
-  }
-  return "frontend/src/App/index.tsx: the app's stylesheet is not imported, so every screen renders unstyled (no Tailwind, no theme colours). Add `import '../styles/globals.css';` back with the other imports at the top of App/index.tsx.";
-}
-async function browserUserQueries(appId) {
-  if (!appId)
-    return [];
-  try {
-    const summary = await current().client.getAppSummary?.(appId);
-    return summary ? browserUserQueryProblems({ data_queries: summary.queries }).map((line) => `query check: ${line}`) : [];
-  } catch {
-    return [];
-  }
-}
-function codeAppBuildTool(context) {
-  return {
-    name: "code_app_build",
-    title: "Build Code Mode App",
-    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-    description: "Refresh the typed hooks from the app's current queries (tooljet app pull), build the app's code (TypeScript, Tailwind, manifest), and check it against the app (tooljet app check: every useAppQuery name, route, link and page must exist) and the security scan (code rules such as external fetch, eval and token storage; secrets; vendored code). Returns ok and every error (errors: one line each, with the code and often the fix), native control and security finding to fix; fix every one in one round of writes. Repeat write and build until ok, then code_app_install." + USER_WORDS,
-    inputSchema: { app_id: APP_ID, name: PROJECT_NAME },
-    handler: inScope(context, async (args) => {
-      try {
-        const dir = await locateProject(args, "edit");
-        return ok(await buildProject(dir, args.app_id));
-      } catch (err) {
-        return fail(err);
-      }
-    })
-  };
-}
-async function buildProject(dir, appId) {
-  const followed = await followDraft(dir);
-  await ensureFresh(dir);
-  await copySdkIn(dir);
-  const started = Date.now();
-  const pull = await cli(dir, ["app", "pull"]);
-  const build = await cli(join(dir, "frontend"), ["library", "build"]);
-  const tsErrors = Number(/TypeScript compiled \((\d+) errors\)/.exec(build.output)?.[1] ?? (build.code === 0 ? 0 : 1));
-  const problems = build.code === 0 && tsErrors === 0 ? [] : parseBuildProblems(build.output);
-  const check = await cli(dir, ["app", "check", "--offline", "--json"]);
-  const report = parseReport(check.output);
-  const unstyled = missingStylesheet(dir);
-  const selects = nativeSelects(dir);
-  const handles = badRouteHandles(dir);
-  const serverUser = await browserUserQueries(appId ?? appIdOf(dir));
-  const extra = [...handles, ...unstyled ? [unstyled] : [], ...sdkRedeclared(dir), ...serverUser];
-  const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0 && !extra.length;
-  if (okBuild)
-    prefetchFullScan(dir);
-  return {
-    ...followed ? { draft: followed } : {},
-    ok: okBuild,
-    build_ms: Date.now() - started,
-    pull: pull.code === 0 ? "typed hooks refreshed" : pull.output.trim(),
-    typescript_errors: tsErrors,
-    // Every error on one line, with the code it is on and, for the mistakes that recur, the fix (codeTypeErrors.ts);
-    // the raw output only when it holds no error this can read.
-    ...problems.length ? { errors: formatProblems(problems) } : {},
-    build_output: build.code === 0 && tsErrors === 0 ? build.output.trim().split("\n").slice(-6).join("\n") : problems.length ? buildSummary(build.output) : build.output.trim().slice(0, 12e3),
-    check: report?.problems ? [...extra, ...report.problems.map((p) => `${p.file}:${p.line}  ${p.message}`)] : extra.length ? [...extra, check.output.trim().slice(0, 6e3)] : check.output.trim().slice(0, 6e3),
-    ...selects.length ? { native_controls: { fix: "Use Select from components/ui/select instead of a native <select>.", at: selects } } : {},
-    // jsx-a11y recommended rules, warnings only (tooljet app check); fix them when they are cheap to fix.
-    a11y_warnings: report?.accessibility?.length ?? Number(/(\d+) accessibility warnings?/.exec(check.output)?.[1] ?? 0),
-    // The offline scan (no dependency network checks): fix critical and high before code_app_install.
-    security: securitySummary(report?.security)
-  };
-}
-var concreteRoute = (path) => path.replace(/:[A-Za-z_][\w]*/g, "1");
-function routesToCheck(dir) {
-  let routes = [];
-  try {
-    routes = JSON.parse(readFileSync(join(dir, "app.json"), "utf8")).routes ?? [];
-  } catch {
-    routes = [];
-  }
-  const paths = routes.map((route) => typeof route.path === "string" && route.path.startsWith("/") ? concreteRoute(route.path) : void 0).filter((path) => Boolean(path));
-  return [...new Set(paths.length ? paths : ["/"])].sort((a, b) => a === "/" ? -1 : b === "/" ? 1 : 0);
-}
-async function renderRoutes(render, appId, routes, widths, concurrency) {
-  const jobs = routes.flatMap((route) => widths.map((width) => ({ route, width })));
-  const out = new Array(jobs.length);
-  let next = 0;
-  const worker = async () => {
-    for (let index = next++; index < jobs.length; index = next++) {
-      const { route, width } = jobs[index];
-      const result = await render({ app_id: appId, route, ...width !== 1280 ? { viewport_width: width } : {} });
-      const text = result.content?.[0]?.text ?? "";
-      let parsed;
-      try {
-        parsed = JSON.parse(text);
-      } catch {
-        parsed = void 0;
-      }
-      out[index] = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? { route, width, ...parsed } : { route, width, ok: false, error: text.replace(/^Error:\s*/, "").slice(0, 500) };
-    }
-  };
-  await Promise.all(Array.from({ length: Math.max(1, Math.min(concurrency, jobs.length)) }, worker));
-  return out;
-}
-function codeAppInstallTool(context, options = {}) {
-  return {
-    name: "code_app_install",
-    title: "Install Code Mode App",
-    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-    description: "Upload the app's code (tooljet app dev --once --source platform): it creates or updates the app's Code mode page, one hidden page per route (set each route's page permissions on it) and the component that runs the code, points the app version at this code as a Live preview, and stores the source on ToolJet so the Code panel can edit it. Build first. Runs the full security scan first and refuses while it has critical or high findings, listing them. Returns the editor URL. If it says the source was edited in the ToolJet editor, call code_app_read_files to bring those edits down, reapply your change, and install again. verify: true makes it one check round: the build (as code_app_build; on any error it stops there, not installed, listing every error), the install, then the render check of every route in app.json (each once, at 1280 px unless widths says otherwise), in one report: build, install, render [{ route, width, ok, pages: [{ findings, accessibility }] }]. This is the last step of a build or edit: saving the app version (release_app saves a draft first) freezes the code." + USER_WORDS,
-    inputSchema: {
-      app_id: APP_ID,
-      name: PROJECT_NAME,
-      verify: external_exports.boolean().optional().describe("Build, install and render-check every route, in this one call"),
-      widths: external_exports.array(external_exports.number().int().min(320).max(2560)).min(1).max(3).optional().describe("verify: the widths to check, default [1280]; add 375 and 768 only when phones or tablets were asked for"),
-      routes: external_exports.array(external_exports.string().regex(/^\/[A-Za-z0-9_\-\/.]*$/)).min(1).max(12).optional().describe("verify: the paths to open, default every route in app.json with each :param as 1 (e.g. only the routes that failed)")
-    },
-    handler: inScope(context, async (args) => {
-      try {
-        const dir = await locateProject(args, "edit");
-        if (!args.verify) {
-          const installed2 = await installProject(dir);
-          return installed2 instanceof Error ? fail(installed2) : ok(installed2);
-        }
-        const built = await buildProject(dir, args.app_id);
-        if (!built.ok) {
-          return ok({
-            ...built,
-            installed: false,
-            next: "Not installed: the build has errors. Fix every one in one round of writes, then code_app_install with verify: true again."
-          });
-        }
-        const installed = await installProject(dir);
-        if (installed instanceof Error)
-          return fail(installed);
-        const appId = args.app_id ?? appIdOf(dir);
-        const build = {
-          ok: true,
-          build_ms: built.build_ms,
-          typescript_errors: 0,
-          a11y_warnings: built.a11y_warnings,
-          ...built.native_controls ? { native_controls: built.native_controls } : {}
-        };
-        if (!options.render || !appId)
-          return ok({ ...installed, installed: true, build, render: "not available here: rendering is unverified" });
-        const routes = args.routes?.length ? [...new Set(args.routes)] : routesToCheck(dir);
-        const widths = args.widths?.length ? [...new Set(args.widths)] : [1280];
-        const render = await renderRoutes(options.render, appId, routes, widths, options.renderConcurrency ?? 2);
-        const failing = render.filter((entry) => entry.ok !== true).map((entry) => `${entry.route} at ${entry.width} px`);
-        return ok({
-          ...installed,
-          installed: true,
-          build,
-          render_ok: failing.length === 0,
-          render,
-          next: failing.length ? `Fix what the render check found on ${failing.join(", ")} in one round of writes, then code_app_install with verify: true and routes set to those paths.` : "Built, installed, and every route renders cleanly."
-        });
-      } catch (err) {
-        return fail(err);
-      }
-    })
-  };
-}
-async function installProject(dir) {
-  const followed = await followDraft(dir);
-  await ensureFresh(dir);
-  nothingStored.delete(dir);
-  const unstyled = missingStylesheet(dir);
-  if (unstyled)
-    return new Error(`Not installed: ${unstyled} Then code_app_build and install again.`);
-  const check = await fullScan(dir);
-  const security = parseReport(check.output)?.security;
-  if (!security || security.error)
-    throw new Error(`The security scan did not run, so nothing was installed: ${security?.error ?? check.output.trim().slice(0, 2e3)}`);
-  const blocking = mustFix(security);
-  if (blocking.length)
-    return new Error(`Not installed: the security scan has ${blocking.length} critical or high finding${blocking.length > 1 ? "s" : ""}. Fix them in the code (or remove the package), code_app_build, then install again:
-` + blocking.map((f) => `${f.severity.toUpperCase()} ${f.ruleId} ${f.package ?? f.location}: ${f.message}`).join("\n"));
-  const result = await cli(dir, ["app", "dev", "--once", "--source", "platform"]);
-  if (result.code !== 0)
-    throw new Error(result.output.trim());
-  return {
-    ...followed ? { draft: followed } : {},
-    linked: true,
-    editor_url: /Open: (\S+)/.exec(result.output)?.[1] ?? null,
-    output: result.output.trim(),
-    security: securitySummary(security)
-  };
-}
-function codeAppAddDependencyTool(context) {
-  return {
-    name: "code_app_add_dependency",
-    title: "Add Code Mode Dependency",
-    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-    description: "Add npm packages to a Code mode app (frontend/package.json is not writable otherwise). Each package is vetted first (tooljet app vet: malware, known vulnerabilities, versions published in the last 7 days, licence, workspace blocklist); when any fails, nothing is written and the findings say why: pick another version or package. Passing packages are pinned to the exact version vetted and installed without install scripts. Prefer what the template already has (shadcn, Tailwind, lucide-react). To fix a vulnerable package, pass it again at a fixed version (upgrade), or pass its replacement and the old name in remove; the lockfile is refreshed through the same install." + USER_WORDS,
-    inputSchema: {
-      app_id: APP_ID,
-      name: PROJECT_NAME,
-      packages: external_exports.array(external_exports.string().regex(PACKAGE_SPEC)).max(10).describe("name, name@version or name@range, e.g. date-fns@4"),
-      remove: external_exports.array(external_exports.string().regex(PACKAGE_NAME)).max(10).optional().describe("package names to take out of frontend/package.json (a replaced package)")
-    },
-    handler: inScope(context, async (args) => {
-      try {
-        const dir = await locateProject(args, "edit");
-        if (!args.packages.length && !args.remove?.length)
-          throw new Error("Pass packages to add, or names to remove.");
-        const vet = args.packages.length ? await cli(dir, ["app", "vet", ...args.packages, "--json"]) : { code: 0, output: '{"ok":true,"packages":[]}' };
-        const report = parseReport(vet.output);
-        if (!report?.packages)
-          throw new Error(`The package check did not run, so nothing was added: ${vet.output.trim().slice(0, 2e3)}`);
-        if (!report.ok)
-          return fail(new Error(`Not added: ${report.packages.map((p) => `${p.name}@${p.version}`).join(", ")} fail${report.packages.length > 1 ? "" : "s"} the package check:
-` + (report.findings ?? []).map((f) => `${f.severity.toUpperCase()} ${f.ruleId} ${f.package ?? f.location}: ${f.message}`).join("\n")));
-        const pkgFile = join(dir, "frontend", "package.json");
-        const lockFile = join(dir, "frontend", "package-lock.json");
-        const before = readFileSync(pkgFile, "utf8");
-        const lockBefore = existsSync(lockFile) ? readFileSync(lockFile, "utf8") : null;
-        writeFileSync(pkgFile, JSON.stringify(withDependencies(withoutDependencies(JSON.parse(before), args.remove ?? []), report.packages), null, 2) + "\n");
-        const install = await cli(dir, ["app", "install"]);
-        if (install.code !== 0) {
-          writeFileSync(pkgFile, before);
-          if (lockBefore !== null)
-            writeFileSync(lockFile, lockBefore);
-          throw new Error(`tooljet app install failed, package.json restored: ${install.output.trim().slice(0, 4e3)}`);
-        }
-        return ok({
-          added: report.packages.map((p) => `${p.name}@${p.version}`),
-          ...args.remove?.length ? { removed: args.remove } : {},
-          not_run: (report.notRun ?? []).map((n) => `${n.id}${n.reason ? `: ${n.reason}` : ""}`),
-          // Transitive packages come with the install; code_app_build and code_app_install scan the whole lockfile.
-          next: "Import the package in frontend/src, then code_app_build."
-        });
-      } catch (err) {
-        return fail(err);
-      }
-    })
-  };
-}
 export {
-  plannedTableSchema as $,
   CreateMessageResultWithToolsSchema as A,
   CreateMessageResultSchema as B,
   CancelledNotificationSchema as C,
@@ -4807,27 +3603,18 @@ export {
   dbColumnTypeSchema as K,
   ListTasksRequestSchema as L,
   McpError as M,
-  codeAppScaffoldTool as N,
-  codeAppReadFilesTool as O,
+  manageAppPermissionsTool as N,
+  lintAppSpecTool as O,
   ProgressNotificationSchema as P,
-  codeAppWriteFilesTool as Q,
+  plannedTableSchema as Q,
   RELATED_TASK_META_KEY as R,
   SetLevelRequestSchema as S,
   TaskStatusNotificationSchema as T,
-  codeAppBuildTool as U,
-  codeAppInstallTool as V,
-  codeAppAddDependencyTool as W,
-  manageAppPermissionsTool as X,
-  lintAppSpecTool as Y,
-  noCodeIdentity as Z,
-  WebStandardStreamableHTTPServerTransport as _,
+  inspectUpdateCompatibility as U,
+  normalizePlanBindingAliases as V,
+  WebStandardStreamableHTTPServerTransport as W,
+  JSONRPCMessageSchema as X,
   PingRequestSchema as a,
-  inspectUpdateCompatibility as a0,
-  normalizePlanBindingAliases as a1,
-  browserUserBindings as a2,
-  isCodeModeApp as a3,
-  browserUserMessage as a4,
-  JSONRPCMessageSchema as a5,
   GetTaskPayloadRequestSchema as b,
   CancelTaskRequestSchema as c,
   isJSONRPCErrorResponse as d,

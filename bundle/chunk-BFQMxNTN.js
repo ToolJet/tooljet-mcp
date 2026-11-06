@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { r as require_lib, l as lintSelectedRowProjections, g as getComponentSchema, a as getCatalog, b as getLegacyComponentReplacement, c as lintBindingNames, d as bindingSpans } from "./chunk-DQ6nvnmd.js";
+import { r as require_lib, a as activePackSet, l as lintSelectedRowProjections, g as getComponentSchema, b as getCatalog, c as getLegacyComponentReplacement, d as lintBindingNames, e as bindingSpans } from "./chunk-Bfjn8-Pb.js";
 import { s as surfaceAroundResolver, l as lintOversizedWidths, a as lintHtmlContentHeight, b as lintHtmlRootSurface, c as lintUnguardedComponentRefs, d as lintEmbeddedBindingSyntax, e as lintChartDataShape, f as lintUnguardedSelectionText, g as lintTextFormat, h as lintTableColumnsShape, B as BARE_QUERY_DATA_BINDING, i as lintUntriggeredDataQueries, j as lintAutomaticWrites, p as parseHtml, k as stripHtmlBindings } from "./chunk-DzndRVyJ.js";
 import { p as parseExpression, a as parse } from "./chunk-ePnPD46e.js";
 import { ax as external_exports } from "./chunk-Dakrk_ob.js";
@@ -8,9 +8,9 @@ import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
-var discovered = null;
 var offline;
 function libraryPacksAll() {
+  const discovered = activePackSet().packs;
   if (discovered)
     return discovered;
   if (offline === void 0) {
@@ -24,9 +24,10 @@ function libraryPacksAll() {
   return offline ? [offline] : [];
 }
 function registerLibraryPacks(packs) {
-  discovered = packs;
+  const set = activePackSet();
+  set.packs = packs;
 }
-var serverLibraryPacks = () => discovered ?? [];
+var serverLibraryPacks = () => activePackSet().packs ?? [];
 function libraryPack() {
   return libraryPacksAll()[0] ?? null;
 }

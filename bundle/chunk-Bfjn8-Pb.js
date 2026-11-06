@@ -9,6 +9,7 @@ import { isDeepStrictEqual } from "node:util";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
+import { AsyncLocalStorage } from "node:async_hooks";
 createRequire(import.meta.url);
 var require_unicode = __commonJS({
   "node_modules/json5/lib/unicode.js"(exports, module) {
@@ -4482,6 +4483,11 @@ async function deleteNode(client, workflowId, versionId, nodeId) {
   return apply(client, result.plan_token);
 }
 createRequire(import.meta.url);
+var newPackSet = () => ({ schemas: null, definitions: {}, packs: null, derived: /* @__PURE__ */ new Map() });
+var processSet = newPackSet();
+var store = new AsyncLocalStorage();
+var activePackSet = () => store.getStore() ?? processSet;
+var inPackSet = (set, work) => store.run(set, work);
 var dataPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-schemas.json");
 var compatibilityPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-compatibility.json");
 var cache = null;
@@ -4498,22 +4504,34 @@ function loadLegacyReplacements() {
   }
   return legacyReplacements;
 }
+var PACK_TYPE = /^Lib_[a-z0-9]+_/;
+function merged() {
+  const set = activePackSet();
+  if (!set.schemas)
+    return load();
+  let all = set.derived.get("catalog");
+  if (!all) {
+    const extra = set.schemas;
+    all = Object.fromEntries(Object.entries(load()).filter(([key3]) => !PACK_TYPE.test(key3) || key3 in extra));
+    Object.assign(all, extra);
+    set.derived.set("catalog", all);
+  }
+  return all;
+}
 function allComponentSchemas() {
-  return load();
+  return merged();
 }
 function registerComponentSchemas(extra) {
-  const all = load();
-  for (const key3 of Object.keys(all))
-    if (/^Lib_[a-z0-9]+_/.test(key3) && !(key3 in extra))
-      delete all[key3];
-  Object.assign(all, extra);
+  const set = activePackSet();
+  set.schemas = { ...extra };
+  set.derived.clear();
 }
 function getCatalog() {
   const legacy = loadLegacyReplacements();
-  return Object.values(load()).filter((c) => !legacy[c.type]).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
+  return Object.values(merged()).filter((c) => !legacy[c.type]).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
 }
 function getComponentSchema(type) {
-  return load()[type] ?? null;
+  return merged()[type] ?? null;
 }
 function getLegacyComponentReplacement(type) {
   return loadLegacyReplacements()[type] ?? null;
@@ -5064,49 +5082,52 @@ function lintSelectedRowProjections(components, extraSources = []) {
   return [...warnings];
 }
 export {
-  connectorLabel as A,
-  sameReadSource as B,
-  extractRowCount as C,
-  emptyViewerOnlyParams as D,
-  emptyParamsNote as E,
-  unresolvedNote as F,
+  applyResolvedBindings as A,
+  connectorLabel as B,
+  sameReadSource as C,
+  extractRowCount as D,
+  emptyViewerOnlyParams as E,
+  emptyParamsNote as F,
   GUI_LIST_ROWS_KEYS as G,
-  registerComponentSchemas as H,
-  capabilityRequestSchema as I,
-  getWorkflowCapabilities as J,
-  lint as K,
+  unresolvedNote as H,
+  inPackSet as I,
+  registerComponentSchemas as J,
+  newPackSet as K,
   LARGE_READ_ROW_THRESHOLD as L,
-  apply as M,
-  deleteNode as N,
-  editContractSchema as O,
-  generateEditContract as P,
-  allComponentSchemas as Q,
+  capabilityRequestSchema as M,
+  getWorkflowCapabilities as N,
+  lint as O,
+  apply as P,
+  deleteNode as Q,
+  editContractSchema as R,
   SQL_DIALECT as S,
   TableQuotaError as T,
-  getCatalog as a,
-  getLegacyComponentReplacement as b,
-  lintBindingNames as c,
-  bindingSpans as d,
-  assertPersistableQueryToggles as e,
-  assertWorkflowQueryOptions as f,
+  generateEditContract as U,
+  allComponentSchemas as V,
+  activePackSet as a,
+  getCatalog as b,
+  getLegacyComponentReplacement as c,
+  lintBindingNames as d,
+  bindingSpans as e,
+  assertPersistableQueryToggles as f,
   getComponentSchema as g,
-  fail as h,
-  normalizeQueryToggles as i,
-  toggleRewriteWarning as j,
-  issueMessages as k,
+  assertWorkflowQueryOptions as h,
+  fail as i,
+  normalizeQueryToggles as j,
+  toggleRewriteWarning as k,
   lintSelectedRowProjections as l,
-  normalizeQueryOptions as m,
+  issueMessages as m,
   normalizeWorkflowQueryOptions as n,
   ok as o,
-  arithmeticWriteWarning as p,
+  normalizeQueryOptions as p,
   queryToggleIssues as q,
   require_lib as r,
-  assessQueryRead as s,
+  arithmeticWriteWarning as s,
   tableQuotaError as t,
-  resolvedReadRefusal as u,
+  assessQueryRead as u,
   validateQueryOptions as v,
   workflowMappingMatches as w,
-  resolveStaticBindings as x,
-  sqlConnectorPath as y,
-  applyResolvedBindings as z
+  resolvedReadRefusal as x,
+  resolveStaticBindings as y,
+  sqlConnectorPath as z
 };

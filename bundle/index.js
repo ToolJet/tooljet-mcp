@@ -1,17 +1,18 @@
 #!/usr/bin/env node
 import { createRequire } from "node:module";
-import { b as buildServer, a as buildUnconfiguredServer, p as packsReady, c as allowedApiOrigins, A as ALLOWED_API_ORIGINS_VAR, o as oauthHttpOptionsFromEnv, d as createOAuthHttpServer, i as identityFromHeaders, S as SESSION_TOKEN_HEADER, B as BASE_URL_HEADER, P as PAT_HEADER, e as StreamableHTTPServerTransport } from "./chunk-Dkth-OB0.js";
+import { b as buildServer, a as buildUnconfiguredServer, p as packsReady, c as allowedApiOrigins, A as ALLOWED_API_ORIGINS_VAR, o as oauthHttpOptionsFromEnv, d as createOAuthHttpServer, i as identityFromHeaders, S as SESSION_TOKEN_HEADER, B as BASE_URL_HEADER, P as PAT_HEADER, e as StreamableHTTPServerTransport } from "./chunk-weJTR5sx.js";
 import "./chunk-BJ6ur0AF.js";
-import "./chunk-DQ6nvnmd.js";
-import "./chunk-Dm6BaKQE.js";
-import "./chunk-BEsFX7ki.js";
-import { a5 as JSONRPCMessageSchema } from "./chunk-BRgcCiC-.js";
-import "./chunk-Ctetl78K.js";
-import "./chunk-C0lKspv9.js";
+import "./chunk-Bfjn8-Pb.js";
+import "./chunk-sScV8DxV.js";
+import "./chunk-BWSKYx9s.js";
+import { X as JSONRPCMessageSchema } from "./chunk-BCMT8yJv.js";
+import "./chunk-DWtTR4LI.js";
+import "./chunk-DKdAJ4uK.js";
+import "./chunk-CV3HV7ys.js";
 import "./chunk-BwTkk2pR.js";
-import "./chunk-CFSXYikx.js";
+import "./chunk-CTaRTe9S.js";
 import "./chunk-Dakrk_ob.js";
-import "./chunk-CNCsCbKN.js";
+import "./chunk-BFQMxNTN.js";
 import "./chunk-DzndRVyJ.js";
 import "./chunk-ePnPD46e.js";
 import "./chunk-BozBrMhE.js";
@@ -212,6 +213,58 @@ function mintAuthorized(authHeader, secret) {
   const b = Buffer.from(secret);
   return a.length === b.length && timingSafeEqual(a, b);
 }
+var list = (value) => (value ?? "").split(",").map((entry) => entry.trim().toLowerCase()).filter(Boolean);
+var bare = (host) => host.trim().toLowerCase().replace(/^\[|\]$/g, "");
+function hostName(header) {
+  const value = header.trim().toLowerCase();
+  if (value.startsWith("["))
+    return value.slice(1, value.indexOf("]") > 0 ? value.indexOf("]") : void 0);
+  const colon = value.lastIndexOf(":");
+  return colon > 0 && value.indexOf(":") === colon ? value.slice(0, colon) : value;
+}
+function isLoopbackName(name) {
+  const host = bare(name);
+  return host === "localhost" || host.endsWith(".localhost") || host === "::1" || /^127(\.\d{1,3}){3}$/.test(host) || /^::ffff:127(\.\d{1,3}){3}$/.test(host);
+}
+var isWildcard = (bind) => ["0.0.0.0", "::", "[::]", ""].includes(bare(bind));
+function foreignRequest(req, { bindHost, env = process.env }) {
+  const allowedHosts = list(env.MCP_ALLOWED_HOSTS).map((entry) => hostName(entry));
+  const ownHost = isWildcard(bindHost) ? void 0 : bare(bindHost);
+  const known = (name) => isLoopbackName(name) || name === ownHost || allowedHosts.includes(name);
+  const hostHeader = req.headers.host;
+  if (hostHeader && (!isWildcard(bindHost) || allowedHosts.length)) {
+    const name = hostName(hostHeader);
+    if (!known(name))
+      return `Host "${hostHeader.slice(0, 100)}" is not this server`;
+  }
+  const origin = req.headers.origin;
+  if (origin !== void 0) {
+    if (list(env.MCP_ALLOWED_ORIGINS).includes(origin.trim().toLowerCase()))
+      return void 0;
+    let parsed;
+    try {
+      parsed = new URL(origin);
+    } catch {
+      return `Origin "${String(origin).slice(0, 100)}" is not allowed`;
+    }
+    if (!known(bare(parsed.hostname)))
+      return `Origin "${origin.slice(0, 100)}" is not allowed`;
+  }
+  return void 0;
+}
+function refuseForeignRequest(req, res, policy) {
+  const why = foreignRequest(req, policy);
+  if (!why)
+    return false;
+  if (!res.headersSent) {
+    res.writeHead(403, { "content-type": "application/json" }).end(JSON.stringify({
+      jsonrpc: "2.0",
+      error: { code: -32e3, message: `Forbidden: ${why}. Set MCP_ALLOWED_HOSTS or MCP_ALLOWED_ORIGINS to allow it.` },
+      id: null
+    }));
+  }
+  return true;
+}
 async function readJsonBody(req, maxBodyBytes) {
   const chunks = [];
   let totalBytes = 0;
@@ -238,9 +291,10 @@ function createGatewayHttpServer({ bindHost } = {}) {
     return { server: createOAuthHttpServer(oauth), gatewayMode: false };
   const sharedToken = process.env.MCP_SHARED_TOKEN;
   const gatewayMode = Boolean(sharedToken);
-  const requireUserSession = gatewayMode && (/^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_USER_SESSION ?? "") || !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN));
+  const requireUserSession = gatewayMode;
   const requireRequestUrl = gatewayMode && /^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_REQUEST_URL ?? "");
   const requireRequestCredential = !gatewayMode && bindHost !== void 0 && !isLoopbackHost(bindHost);
+  const listenHost = bindHost ?? (gatewayMode ? "0.0.0.0" : "127.0.0.1");
   const handleBuildTokenRequest = async (req, res) => {
     const secret = mintSecret();
     const json = (status, body) => {
@@ -293,6 +347,8 @@ function createGatewayHttpServer({ bindHost } = {}) {
     json(200, { token: minted.token, expires_at: new Date(minted.expiresAt).toISOString() });
   };
   const httpServer = createServer(async (req, res) => {
+    if (refuseForeignRequest(req, res, { bindHost: listenHost }))
+      return;
     const requestPath = new URL(req.url ?? "/", "http://localhost").pathname;
     const bearer = bearerValue(req.headers.authorization);
     if (requestPath === "/build-token") {
@@ -359,7 +415,7 @@ function createGatewayHttpServer({ bindHost } = {}) {
       }
     }
     const readsResource = !!parsedBody && typeof parsedBody === "object" && !Array.isArray(parsedBody) && parsedBody.method === "resources/read";
-    const server = buildServer(identity, { hosted: true });
+    const server = buildServer(identity, { hosted: true, requireIdentity: gatewayMode });
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: void 0, enableJsonResponse: readsResource });
     res.on("close", () => {
       transport.close();

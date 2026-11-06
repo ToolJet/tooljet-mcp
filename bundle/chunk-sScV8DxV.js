@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
-import { e as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, t as tableQuotaError, f as assertWorkflowQueryOptions, T as TableQuotaError, w as workflowMappingMatches, o as ok, h as fail, g as getComponentSchema } from "./chunk-DQ6nvnmd.js";
-import { d as decodeComponentParent, e as encodeComponentParent, a as downgradeFlexForLibrary, b as assertPageIcon, r as resolveComponentLibrary, i as isMisplacedStyleKey, t as toLibraryComponent, m as missingLibraryPins, l as libraryTypeOf, c as libraryPins, f as defaultPack, s as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION, P as PROPERTY_KEY_ALIASES, g as retiredUi2Name, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey } from "./chunk-CNCsCbKN.js";
+import { f as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, t as tableQuotaError, h as assertWorkflowQueryOptions, T as TableQuotaError, w as workflowMappingMatches, a as activePackSet, o as ok, i as fail, g as getComponentSchema } from "./chunk-Bfjn8-Pb.js";
+import { d as decodeComponentParent, e as encodeComponentParent, a as downgradeFlexForLibrary, b as assertPageIcon, r as resolveComponentLibrary, i as isMisplacedStyleKey, t as toLibraryComponent, m as missingLibraryPins, l as libraryTypeOf, c as libraryPins, f as defaultPack, s as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION, P as PROPERTY_KEY_ALIASES, g as retiredUi2Name, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey } from "./chunk-BFQMxNTN.js";
 import { ax as external_exports, aE as definition } from "./chunk-Dakrk_ob.js";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
@@ -564,7 +564,7 @@ function registerPackDefinitions(extra) {
         def.properties[key] = { ...entry, value: "" };
     }
   }
-  Object.assign(cached ?? (cached = {}), defs);
+  Object.assign(activePackSet().definitions, defs);
 }
 function packDefaultDefinition(type) {
   if (!cached) {
@@ -584,7 +584,7 @@ function packDefaultDefinition(type) {
       cached = {};
     }
   }
-  return cached[type];
+  return activePackSet().definitions[type] ?? cached[type];
 }
 var TOOLJET_DB_RESERVED_COLUMN_NAMES = /* @__PURE__ */ new Set([
   "abort",
@@ -1358,6 +1358,16 @@ function createClient(auth, config) {
     if (!body || typeof body !== "object")
       throw new Error("codeSourceAccess: ToolJet sent no answer");
     return { read: true, write: body.canWrite === true };
+  }
+  async function codeSourceFiles(appId, versionId) {
+    const res = await auth.authedFetch(`/api/code-mode-source/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}?content=1`);
+    if (res.status === 404)
+      return null;
+    await assertOk(res, "codeSourceFiles");
+    const body = await res.json().catch(() => null);
+    if (!body || body.exists === false || !Array.isArray(body.files))
+      return null;
+    return body.files.flatMap((file) => typeof file.path === "string" && typeof file.content === "string" ? [{ path: file.path, content: file.content }] : []);
   }
   function projectComponent(id, entry) {
     const c = entry?.component ?? {};
@@ -2998,6 +3008,7 @@ function createClient(auth, config) {
     renameApp,
     getApp,
     codeSourceAccess,
+    codeSourceFiles,
     getAppSummary,
     listAppPermissionSubjects,
     getLicenseFeatureAccess,
@@ -4580,13 +4591,13 @@ function resolveRef(candidates, ref, kind, scope, describe = (candidate) => `${c
   };
 }
 export {
-  listWorkspaceGroupsTool as A,
-  manageWorkspaceGroupsTool as B,
+  manageWorkspaceGroupsTool as A,
+  createAppTool as B,
   COMPONENT_FX_UPDATE_GUIDANCE as C,
-  createAppTool as D,
-  inspectDatasourceSchemaTool as E,
+  inspectDatasourceSchemaTool as D,
+  manageThemeTool as E,
   FLEX_MIN_WIDTH_PX_DESCRIPTION as F,
-  manageThemeTool as G,
+  registerPackDefinitions as G,
   ToolJetHttpError as H,
   PartialWriteError as P,
   TOOLJET_DB_DATA_TYPES as T,
@@ -4615,5 +4626,5 @@ export {
   completedPartialWrites as w,
   batchChildOrders as x,
   createClient as y,
-  registerPackDefinitions as z
+  listWorkspaceGroupsTool as z
 };
