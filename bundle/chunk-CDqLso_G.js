@@ -1,14 +1,13 @@
 import { createRequire } from "node:module";
-import { ef as tableQuotaError, eg as TableQuotaError, e6 as ok, e5 as fail, e8 as getComponentSchema } from "./chunk-DSzzr2p4.js";
-import { d as decodeComponentParent, e as encodeComponentParent, a as downgradeFlexForLibrary, b as assertPageIcon, i as isMisplacedStyleKey, t as toLibraryComponent, l as libraryTypeOf, c as libraryPins, P as PROPERTY_KEY_ALIASES, r as retiredUi2Name, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey } from "./chunk-CLJFCNyS.js";
-import { b0 as external_exports, b7 as definition } from "./chunk-BK1olK4j.js";
+import { f as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, t as tableQuotaError, h as assertWorkflowQueryOptions, T as TableQuotaError, w as workflowMappingMatches, a as activePackSet, o as ok, i as fail, g as getComponentSchema } from "./chunk-Bfjn8-Pb.js";
+import { d as decodeComponentParent, e as encodeComponentParent, a as downgradeFlexForLibrary, b as assertPageIcon, i as isMisplacedStyleKey, t as toLibraryComponent, l as libraryTypeOf, c as libraryPins, P as PROPERTY_KEY_ALIASES, r as retiredUi2Name, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey } from "./chunk-BCDdmwVb.js";
+import { ax as external_exports, aE as definition } from "./chunk-Dakrk_ob.js";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { c as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches } from "./chunk-BQSkKlW7.js";
 import { randomUUID, createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-DEG7vXOB.js";
+import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-BozBrMhE.js";
 createRequire(import.meta.url);
 function strictEntry(shape, describeUnknown) {
   return external_exports.strictObject(shape, {
@@ -614,7 +613,7 @@ var SAMPLE_BLANKS = {
 };
 function registerPackDefinitions(extra) {
   packDefaultDefinition("");
-  Object.assign(cached ?? (cached = {}), extra);
+  Object.assign(activePackSet().definitions, extra);
 }
 function packDefaultDefinition(type) {
   if (!cached) {
@@ -634,7 +633,7 @@ function packDefaultDefinition(type) {
       cached = {};
     }
   }
-  return cached[type];
+  return activePackSet().definitions[type] ?? cached[type];
 }
 var TOOLJET_DB_RESERVED_COLUMN_NAMES = /* @__PURE__ */ new Set([
   "abort",
@@ -1389,6 +1388,16 @@ function createClient(auth, config) {
     if (!body || typeof body !== "object")
       throw new Error("codeSourceAccess: ToolJet sent no answer");
     return { read: true, write: body.canWrite === true };
+  }
+  async function codeSourceFiles(appId, versionId) {
+    const res = await auth.authedFetch(`/api/code-mode-source/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}?content=1`);
+    if (res.status === 404)
+      return null;
+    await assertOk(res, "codeSourceFiles");
+    const body = await res.json().catch(() => null);
+    if (!body || body.exists === false || !Array.isArray(body.files))
+      return null;
+    return body.files.flatMap((file) => typeof file.path === "string" && typeof file.content === "string" ? [{ path: file.path, content: file.content }] : []);
   }
   function projectComponent(id, entry) {
     const c = entry?.component ?? {};
@@ -3002,6 +3011,7 @@ function createClient(auth, config) {
     renameApp,
     getApp,
     codeSourceAccess,
+    codeSourceFiles,
     getAppSummary,
     listAppPermissionSubjects,
     getLicenseFeatureAccess,
@@ -4584,14 +4594,14 @@ function resolveRef(candidates, ref, kind, scope, describe = (candidate) => `${c
 }
 export {
   createClient as A,
-  registerPackDefinitions as B,
+  listWorkspaceGroupsTool as B,
   COMPONENT_FX_UPDATE_GUIDANCE as C,
-  listWorkspaceGroupsTool as D,
-  manageWorkspaceGroupsTool as E,
+  manageWorkspaceGroupsTool as D,
+  createAppTool as E,
   FLEX_MIN_WIDTH_PX_DESCRIPTION as F,
-  createAppTool as G,
-  inspectDatasourceSchemaTool as H,
-  manageThemeTool as I,
+  inspectDatasourceSchemaTool as G,
+  manageThemeTool as H,
+  registerPackDefinitions as I,
   savedComponentLibrary as J,
   ToolJetHttpError as K,
   PartialWriteError as P,
