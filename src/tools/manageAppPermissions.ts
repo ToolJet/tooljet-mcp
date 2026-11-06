@@ -10,7 +10,7 @@ import type {
 import { fail, ok, type ToolDef } from './types.js';
 
 type ManageAppPermissionsArgs = {
-  action: 'list_subjects' | 'list_screens' | 'get' | 'set' | 'clear';
+  action: 'list_subjects' | 'list_screens' | 'list_queries' | 'get' | 'set' | 'clear';
   app_id: string;
   resource_type?: AppPermissionResourceType | 'screen';
   resource_id?: string;
@@ -425,10 +425,10 @@ export function manageAppPermissionsTool(client: ToolJetClient): ToolDef {
       'after the user approves the exact rule. clear (back to everyone who can open the app) always needs ' +
       'confirm:true. list_subjects: every workspace group with can_open_app, and plan (whether this plan enforces ' +
       'query and screen limits and resolves {{globals.server.currentUser}} on the server). list_screens: each route ' +
-      'with its access. A screen limit hides the screen; the data it shows is protected only by limiting the ' +
+      'with its access. list_queries: each query of the app with its access. A screen limit hides the screen; the data it shows is protected only by limiting the ' +
       'queries that return it. Visual pages and components: resource_id (resource_type is optional). License gates apply.',
     inputSchema: {
-      action: z.enum(['list_subjects', 'list_screens', 'get', 'set', 'clear']),
+      action: z.enum(['list_subjects', 'list_screens', 'list_queries', 'get', 'set', 'clear']),
       app_id: z.string().uuid(),
       route: z.string().min(1).max(200).optional().describe('A Code mode screen by route path or id (app.json routes).'),
       routes: z.array(z.string().min(1).max(200)).min(1).max(50).optional().describe('Several screens at once.'),
@@ -476,6 +476,20 @@ export function manageAppPermissionsTool(client: ToolJetClient): ToolDef {
             }))
           );
           return ok({ app_id: args.app_id, screens });
+        }
+
+        if (args.action === 'list_queries') {
+          // Every query with its access, in one read: an edit names the limits set before it (the agent's access check
+          // said "no query is limited" on an edit of an app with 11 limits, 2026-11-05, because it counted only its own).
+          const summary = await client.getAppSummary(args.app_id);
+          const queries = await Promise.all(
+            summary.queries.map(async (q) => ({
+              query_id: q.id,
+              name: q.name,
+              ...normalizePermission(await client.getAppPermission(args.app_id, 'query', q.id)),
+            }))
+          );
+          return ok({ app_id: args.app_id, queries, limited: queries.filter((q) => q.access !== 'all').length });
         }
 
         const summary = await client.getAppSummary(args.app_id);
