@@ -1,6 +1,6 @@
 import type { ToolJetClient } from './tooljetClient.js';
 import { runUnattended } from './unattendedRun.js';
-import { emptyViewerOnlyParams, resolveStaticBindings } from './staticBindings.js';
+import { declaredParameterDefaults, emptyViewerOnlyParams, resolveStaticBindings } from './staticBindings.js';
 import { containsComponentBinding, schemaNameHint } from './tools/runQuery.js';
 import { NOT_CHECKED_AUTOMATICALLY, autoReadPreflight } from './autoReadPreflight.js';
 
@@ -45,6 +45,43 @@ const CLOCK_SKEW = /JWT issued at future/i;
 const CLOCK_SKEW_RETRY_MS = 1500;
 const REASON_CHARS = 160;
 
+const PARAMETER_BINDING = /^\{\{\s*parameters\.([A-Za-z_$][\w$]*)\s*\}\}$/;
+const SQL_EQUALS_PARAMETER = /=\s*\{\{\s*parameters\.([A-Za-z_$][\w$]*)\s*\}\}/g;
+const SQL_EQUALS_PLACEHOLDER = /=\s*:([A-Za-z_]\w*)/g;
+
+/**
+ * Parameters a read matches one record by (`id eq {{parameters.id}}`, `WHERE id = {{parameters.id}}`, or `= :id` with
+ * `query_params` [["id", "{{parameters.id}}"]]) that have no default: a record's detail, which the screen runs with the
+ * id it shows. Run without one it can only fail, so the check reports it as needing a value rather than as broken.
+ */
+export function parametersWithoutValue(options: unknown): string[] {
+  const defaults = declaredParameterDefaults(options);
+  const bound = new Set<string>();
+  const sqlPlaceholders = new Set<string>();
+  const visit = (value: unknown): void => {
+    if (typeof value === 'string') {
+      for (const m of value.matchAll(SQL_EQUALS_PARAMETER)) bound.add(m[1]!);
+      for (const m of value.matchAll(SQL_EQUALS_PLACEHOLDER)) sqlPlaceholders.add(m[1]!);
+    } else if (Array.isArray(value)) value.forEach(visit);
+    else if (value && typeof value === 'object') {
+      const clause = value as { operator?: unknown; value?: unknown };
+      const m = clause.operator === 'eq' && typeof clause.value === 'string' ? clause.value.trim().match(PARAMETER_BINDING) : null;
+      if (m) bound.add(m[1]!);
+      Object.values(value).forEach(visit);
+    }
+  };
+  visit(options);
+  const params = options && typeof options === 'object' ? (options as { query_params?: unknown }).query_params : undefined;
+  for (const pair of Array.isArray(params) ? params : []) {
+    const m = Array.isArray(pair) && typeof pair[1] === 'string' ? pair[1].trim().match(PARAMETER_BINDING) : null;
+    if (m && sqlPlaceholders.has(String(pair[0]))) bound.add(m[1]!);
+  }
+  return [...bound].filter((name) => {
+    const value = defaults[name];
+    return value === undefined || value === null || (typeof value === 'string' && !value.trim());
+  });
+}
+
 const rowCount = (result: Record<string, unknown>): number | undefined => {
   const data = result.data;
   if (Array.isArray(data)) return data.length;
@@ -62,6 +99,7 @@ export async function checkPlanReads(
   const check: ReadCheck = { ran: 0, rows: {}, failed: [], inconclusive: [], not_run: [], queries: [] };
   const entries = new Map<string, ReadCheckEntry>();
   const runnable: string[] = [];
+  let missing: string[] = [];
   for (const id of wanted) {
     const query = byId.get(id);
     if (!query) continue;
@@ -72,6 +110,12 @@ export async function checkPlanReads(
       const reason = verdict.reason.startsWith(NOT_CHECKED_AUTOMATICALLY) ? verdict.reason : verdict.reason.slice(0, REASON_CHARS);
       check.not_run.push({ name, reason });
       entries.set(id, { name, status: 'refused', reason });
+    } else if ((missing = parametersWithoutValue(query.options)).length) {
+      const reason = `not checked: needs a value for ${missing.map((p) => `parameters.${p}`).join(', ')}, which ` +
+        `${missing.length > 1 ? 'have' : 'has'} no default (a record's detail runs with the id the screen passes). ` +
+        'Neither passed nor failed: open a record in the app to check it.';
+      check.not_run.push({ name, reason });
+      entries.set(id, { name, status: 'skipped', reason });
     } else if (runnable.length >= MAX_READS) {
       const reason = `only the first ${MAX_READS} reads of a phase are checked; run this one with run_queries`;
       check.not_run.push({ name, reason });
