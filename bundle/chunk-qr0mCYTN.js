@@ -3407,9 +3407,9 @@ function manageAppPermissionsTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: `Server-enforced access to an app's screens and queries: who can open a Code mode screen (route) or run a query. Example: {"action":"set","app_id":"<id>","route":"/finance","groups":["Finance"]}; for queries "query":"finance_queue" (name or id), and "routes" or "queries" take several at once with the same groups. groups take names or ids, users take emails or ids; access_type and resource_type are inferred. In a Code mode app, set needs no confirm, and a named group that cannot open the app first gets view access to this app only (grant_app_access defaults to true; false refuses instead). In other apps set needs confirm:true after the user approves the exact rule. clear (back to everyone who can open the app) always needs confirm:true. list_subjects: every workspace group with can_open_app, and plan (whether this plan enforces query and screen limits and resolves {{globals.server.currentUser}} on the server). list_screens: each route with its access. A screen limit hides the screen; the data it shows is protected only by limiting the queries that return it. Visual pages and components: resource_id (resource_type is optional). License gates apply.`,
+    description: `Server-enforced access to an app's screens and queries: who can open a Code mode screen (route) or run a query. Example: {"action":"set","app_id":"<id>","route":"/finance","groups":["Finance"]}; for queries "query":"finance_queue" (name or id), and "routes" or "queries" take several at once with the same groups. groups take names or ids, users take emails or ids; access_type and resource_type are inferred. In a Code mode app, set needs no confirm, and a named group that cannot open the app first gets view access to this app only (grant_app_access defaults to true; false refuses instead). In other apps set needs confirm:true after the user approves the exact rule. clear (back to everyone who can open the app) always needs confirm:true. list_subjects: every workspace group with can_open_app, and plan (whether this plan enforces query and screen limits and resolves {{globals.server.currentUser}} on the server). list_screens: each route with its access. list_queries: each query of the app with its access. A screen limit hides the screen; the data it shows is protected only by limiting the queries that return it. Visual pages and components: resource_id (resource_type is optional). License gates apply.`,
     inputSchema: {
-      action: external_exports.enum(["list_subjects", "list_screens", "get", "set", "clear"]),
+      action: external_exports.enum(["list_subjects", "list_screens", "list_queries", "get", "set", "clear"]),
       app_id: external_exports.string().uuid(),
       route: external_exports.string().min(1).max(200).optional().describe("A Code mode screen by route path or id (app.json routes)."),
       routes: external_exports.array(external_exports.string().min(1).max(200)).min(1).max(50).optional().describe("Several screens at once."),
@@ -3449,6 +3449,15 @@ function manageAppPermissionsTool(client) {
             ...normalizePermission(await client.getAppPermission(args.app_id, "page", screen.page_id))
           })));
           return ok({ app_id: args.app_id, screens });
+        }
+        if (args.action === "list_queries") {
+          const summary2 = await client.getAppSummary(args.app_id);
+          const queries = await Promise.all(summary2.queries.map(async (q) => ({
+            query_id: q.id,
+            name: q.name,
+            ...normalizePermission(await client.getAppPermission(args.app_id, "query", q.id))
+          })));
+          return ok({ app_id: args.app_id, queries, limited: queries.filter((q) => q.access !== "all").length });
         }
         const summary = await client.getAppSummary(args.app_id);
         const codeApp = isCodeApp(summary);
