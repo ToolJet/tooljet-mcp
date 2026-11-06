@@ -3407,9 +3407,9 @@ function manageAppPermissionsTool(client) {
       destructiveHint: true,
       openWorldHint: true
     },
-    description: `Server-enforced access to an app's screens and queries: who can open a Code mode screen (route) or run a query. Example: {"action":"set","app_id":"<id>","route":"/finance","groups":["Finance"]}; for queries "query":"finance_queue" (name or id), and "routes" or "queries" take several at once with the same groups. groups take names or ids, users take emails or ids; access_type and resource_type are inferred. In a Code mode app, set needs no confirm, and a named group that cannot open the app first gets view access to this app only (grant_app_access defaults to true; false refuses instead). In other apps set needs confirm:true after the user approves the exact rule. clear (back to everyone who can open the app) always needs confirm:true. list_subjects: every workspace group with can_open_app, and plan (whether this plan enforces query and screen limits and resolves {{globals.server.currentUser}} on the server). list_screens: each route with its access. A screen limit hides the screen; the data it shows is protected only by limiting the queries that return it. Visual pages and components: resource_id (resource_type is optional). License gates apply.`,
+    description: `Server-enforced access to an app's screens and queries: who can open a Code mode screen (route) or run a query. Example: {"action":"set","app_id":"<id>","route":"/finance","groups":["Finance"]}; for queries "query":"finance_queue" (name or id), and "routes" or "queries" take several at once with the same groups. groups take names or ids, users take emails or ids; access_type and resource_type are inferred. In a Code mode app, set needs no confirm, and a named group that cannot open the app first gets view access to this app only (grant_app_access defaults to true; false refuses instead). In other apps set needs confirm:true after the user approves the exact rule. clear (back to everyone who can open the app) always needs confirm:true. list_subjects: every workspace group with can_open_app, and plan (whether this plan enforces query and screen limits and resolves {{globals.server.currentUser}} on the server). list_screens: each route with its access. list_queries: each query of the app with its access. A screen limit hides the screen; the data it shows is protected only by limiting the queries that return it. Visual pages and components: resource_id (resource_type is optional). License gates apply.`,
     inputSchema: {
-      action: external_exports.enum(["list_subjects", "list_screens", "get", "set", "clear"]),
+      action: external_exports.enum(["list_subjects", "list_screens", "list_queries", "get", "set", "clear"]),
       app_id: external_exports.string().uuid(),
       route: external_exports.string().min(1).max(200).optional().describe("A Code mode screen by route path or id (app.json routes)."),
       routes: external_exports.array(external_exports.string().min(1).max(200)).min(1).max(50).optional().describe("Several screens at once."),
@@ -3449,6 +3449,15 @@ function manageAppPermissionsTool(client) {
             ...normalizePermission(await client.getAppPermission(args.app_id, "page", screen.page_id))
           })));
           return ok({ app_id: args.app_id, screens });
+        }
+        if (args.action === "list_queries") {
+          const summary2 = await client.getAppSummary(args.app_id);
+          const queries = await Promise.all(summary2.queries.map(async (q) => ({
+            query_id: q.id,
+            name: q.name,
+            ...normalizePermission(await client.getAppPermission(args.app_id, "query", q.id))
+          })));
+          return ok({ app_id: args.app_id, queries, limited: queries.filter((q) => q.access !== "all").length });
         }
         const summary = await client.getAppSummary(args.app_id);
         const codeApp = isCodeApp(summary);
@@ -4067,14 +4076,15 @@ async function cli(cwd, args, timeoutMs = 3e5) {
   return withBuildSlot(baseRoot(), `${current().deployment}.${current().workspace}`, () => runCli(cwd, args, timeoutMs));
 }
 var PLACEHOLDER_NAME = /^Untitled App\b/;
-async function nameApp(client, dir, name) {
+async function nameApp(client, dir, name, replaceName) {
   let snapshot;
   try {
     snapshot = JSON.parse(readFileSync(join(dir, ".tooljet", "snapshot.json"), "utf8"));
   } catch {
     return {};
   }
-  if (!client || !snapshot.appId || !snapshot.versionId || !PLACEHOLDER_NAME.test(snapshot.appName ?? ""))
+  const standIn = PLACEHOLDER_NAME.test(snapshot.appName ?? "") || !!replaceName && snapshot.appName === replaceName;
+  if (!client || !snapshot.appId || !snapshot.versionId || !standIn || snapshot.appName === name)
     return {};
   try {
     await client.renameApp(snapshot.appId, snapshot.versionId, name);
@@ -4128,7 +4138,8 @@ function codeAppScaffoldTool(context) {
     inputSchema: {
       name: external_exports.string().regex(NAME).describe("Project folder: lowercase letters, digits and hyphens, e.g. inventory-console"),
       display_name: external_exports.string().min(1).max(100).describe(`The app's name; an app still called "Untitled App" is renamed to it`),
-      app_id: external_exports.string().uuid().describe("The app from create_app")
+      app_id: external_exports.string().uuid().describe("The app from create_app"),
+      rename_from: external_exports.string().max(100).optional().describe("Set by ToolJet; leave it out")
     },
     handler: inScope(context, async (args) => {
       try {
@@ -4155,7 +4166,7 @@ function codeAppScaffoldTool(context) {
         if (pull.code !== 0)
           throw new Error(`tooljet app pull failed: ${pull.output}`);
         const restored = created ? await restoreStoredCode(dir) : {};
-        const naming = await nameApp(context.client, dir, args.display_name);
+        const naming = await nameApp(context.client, dir, args.display_name, args.rename_from);
         if (!existing && !restored.stored_code)
           rememberScaffold(dir);
         return ok({
@@ -4206,7 +4217,9 @@ async function syncEditorEdits(dir, { force = false } = {}) {
     return {};
   if (force)
     forgetSourceRevision(dir);
-  const pull = await cli(dir, ["app", "source-pull"], 6e4);
+  let pull = await cli(dir, ["app", "source-pull"], 6e4);
+  if (force && pull.code !== 0 && /Not pulled\. These files differ/i.test(pull.output))
+    pull = await cli(dir, ["app", "source-pull", "--force"], 6e4);
   if (pull.code !== 0 && /\b(401|403)\b|unauthori[sz]ed|forbidden/i.test(pull.output))
     throw new Error("ToolJet refused access to this app's stored code.");
   if (pull.code !== 0)

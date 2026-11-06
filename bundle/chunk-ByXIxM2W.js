@@ -1954,13 +1954,39 @@ async function axeInCodePage(page) {
   const { default: axe } = await import("axe-core");
   await frame.evaluate(`${axe.source}
 ;void 0`);
-  return frame.evaluate(() => window.axe.run(document, { resultTypes: ["violations"], runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] } }).then((r) => r.violations.map((v) => ({
-    id: v.id,
-    impact: v.impact ?? null,
-    help: v.help,
-    nodes: v.nodes.length,
-    targets: v.nodes.slice(0, 3).map((n) => [].concat(n.target).join(" "))
-  }))));
+  return frame.evaluate(axeRunInFrame);
+}
+function axeRunInFrame() {
+  const refusal = '[data-cy^="code-screen-no-access"]';
+  const context = document.querySelector(refusal) ? { exclude: [refusal] } : document;
+  const textOf = (selector) => {
+    try {
+      const text = (document.querySelector(selector)?.textContent ?? "").trim().replace(/\s+/g, " ");
+      return text ? text.length > 60 ? `${text.slice(0, 57)}...` : text : void 0;
+    } catch {
+      return void 0;
+    }
+  };
+  return window.axe.run(context, { resultTypes: ["violations"], runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] } }).then((r) => r.violations.map((v) => {
+    const nodes = v.nodes.slice(0, 3);
+    const targets = nodes.map((n) => [].concat(n.target).join(" "));
+    const out = { id: v.id, impact: v.impact ?? null, help: v.help, nodes: v.nodes.length, targets };
+    if (v.id === "color-contrast") {
+      out.elements = nodes.map((n, i) => {
+        const data = (n.any ?? []).find((c) => c?.data?.fgColor)?.data ?? {};
+        const text = textOf(targets[i]);
+        return {
+          target: targets[i],
+          ...text ? { text } : {},
+          ...data.fgColor ? { fg: data.fgColor } : {},
+          ...data.bgColor ? { bg: data.bgColor } : {},
+          ...typeof data.contrastRatio === "number" ? { ratio: data.contrastRatio } : {},
+          ...data.expectedContrastRatio ? { needs: data.expectedContrastRatio } : {}
+        };
+      });
+    }
+    return out;
+  }));
 }
 function auditScript() {
   const widgets = Array.from(document.querySelectorAll('[data-cy^="draggable-widget-"]'));
@@ -2143,6 +2169,14 @@ function codePageAuditScript(route, outside) {
   if (!doc || !doc.body) {
     findings.push({ kind: "empty_render", component: "Code mode app", detail: "the Code mode frame has no document" });
     return findings;
+  }
+  if (doc.querySelector('[data-cy^="code-screen-no-access"]')) {
+    findings.push({
+      kind: "unreachable",
+      component: "Code mode app",
+      reason: "screen_refused",
+      detail: `ToolJet showed "You don't have access to this screen"${route ? ` for ${route}` : ""}: the check's signed-in user may not open it (a screen limit), so this screen was not checked. The refusal is ToolJet's, not the app's: change nothing for it`
+    });
   }
   const root = doc.getElementById("tj-frame-root");
   const text = (root?.innerText ?? "").trim();

@@ -120,4 +120,18 @@ describe('code_app_scaffold names an untitled app', () => {
     expect(calls).toEqual([]);
     expect(out).not.toHaveProperty('renamed_to');
   });
+
+  // The dashboard names a new Code mode app from the prompt's first words ("I run procurement at", 2026-11-05); the
+  // agent passes that name on, and only that name gives way to the build's.
+  it('renames the name the agent says is the dashboard\'s first words, and no other', async () => {
+    setup('I run procurement at');
+    const calls: string[][] = [];
+    const run = (rename_from: string) =>
+      codeAppScaffoldTool(codeContext({ client: { renameApp: async (...a: string[]) => void calls.push(a) } as any }))
+        .handler({ name: 'tasks', display_name: 'Tasks', app_id: APP, rename_from } as any)
+        .then((r: any) => JSON.parse(r.content[0].text));
+    expect((await run('Something else')).renamed_to).toBeUndefined();
+    expect((await run('I run procurement at')).renamed_to).toBe('Tasks');
+    expect(calls).toEqual([[APP, 'v1', 'Tasks']]);
+  });
 });
