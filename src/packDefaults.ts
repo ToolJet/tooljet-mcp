@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { activePackSet } from './packScope.js';
 
 type Section = Record<string, unknown>;
 type PackDefinition = { properties?: Section; styles?: Section; others?: Section };
@@ -60,7 +61,8 @@ export function registerPackDefinitions(extra: Record<string, unknown>): void {
         def.properties![key] = { ...entry, value: '' };
     }
   }
-  Object.assign(cached ?? (cached = {}), defs);
+  // The active pack set's (packScope.ts): one workspace's packs never reach another's requests.
+  Object.assign(activePackSet().definitions, defs);
 }
 
 export function packDefaultDefinition(type: string): PackDefinition | undefined {
@@ -79,5 +81,5 @@ export function packDefaultDefinition(type: string): PackDefinition | undefined 
       cached = {};
     }
   }
-  return cached[type];
+  return (activePackSet().definitions[type] as PackDefinition | undefined) ?? cached[type];
 }

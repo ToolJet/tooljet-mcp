@@ -9,6 +9,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { activePackSet } from './packScope.js';
 
 export interface LibraryPack {
   pack: string;
@@ -23,12 +24,13 @@ export interface LibraryPack {
   components: Record<string, { type: string; props: string[]; events: string[]; [key: string]: unknown }>;
 }
 
-let discovered: LibraryPack[] | null = null;
 let offline: LibraryPack | null | undefined;
 
 /** The packs this server knows: those discovered in the workspace at start-up (packCatalog.ts), else the offline
  *  data/library-pack.json. */
 export function libraryPacksAll(): LibraryPack[] {
+  // The active pack set's (packScope.ts): the packs of the workspace this request is for, never another's.
+  const discovered = activePackSet().packs;
   if (discovered) return discovered;
   if (offline === undefined) {
     try {
@@ -42,11 +44,12 @@ export function libraryPacksAll(): LibraryPack[] {
 }
 
 export function registerLibraryPacks(packs: LibraryPack[]): void {
-  discovered = packs;
+  const set = activePackSet();
+  set.packs = packs;
 }
 
 /** The packs the ToolJet server announced at start-up (none offline or in tests). */
-export const serverLibraryPacks = (): LibraryPack[] => discovered ?? [];
+export const serverLibraryPacks = (): LibraryPack[] => activePackSet().packs ?? [];
 
 /** The first known pack (callers that need any pack at all). */
 export function libraryPack(): LibraryPack | null {
