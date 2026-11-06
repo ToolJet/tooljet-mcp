@@ -4707,7 +4707,9 @@ function scopeHandlers(server, packs, ready) {
     });
   };
 }
-function buildServer(identity, { hosted = false } = {}) {
+function buildServer(identity, { hosted = false, requireIdentity = false } = {}) {
+  if (requireIdentity && !identity)
+    throw new Error("This request names no user, and this server never acts with its own credential.");
   const config = loadConfig(identity);
   const auth = createAuth(config);
   const client = createClient(auth, config);
