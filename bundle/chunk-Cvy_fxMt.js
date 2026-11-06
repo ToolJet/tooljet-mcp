@@ -1,12 +1,11 @@
 import { createRequire } from "node:module";
-import { s as strictEntry, r as resolveRef$1, h as hasNonEmptyDefinition, i as isFlexContainerType, a as resolveAuthoredChildOrder, c as childOrderProperty, p as packValueAsDefault, n as normalizeComponentSpec, b as appendedChildOrders, d as reparentAdditions, C as COMPONENT_FX_UPDATE_GUIDANCE, e as componentRef, f as packDefaultDefinition, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, g as FLEX_GROW_DESCRIPTION, j as FLEX_WIDTH_PX_DESCRIPTION, k as FLEX_FILL_WIDTH_DESCRIPTION, l as plannedCurrency, m as indexComponentReferences, o as booleanBindingValue, v as validateTableBatch, q as normalizeType } from "./chunk-BNMLqNpt.js";
-import { e5 as fail, e6 as ok, e8 as getComponentSchema } from "./chunk-DSzzr2p4.js";
-import { f as componentSlotSchema, g as componentNameSchema, h as componentNameError, j as resolveParentRef, d as decodeComponentParent, e as encodeComponentParent, k as introducedLintFindings, m as lintComponentSpec, o as lintComponentSlots, p as lintUnusableTextGeometry, q as lintStandardSingleLineInputHeight, s as lintTextGeometry, u as lintRenderedGeometry, v as lintKanbanInteractions, w as lintShadKanbanCards, x as lintShadScheduleScale, y as isModalV2Type, z as lintComponentStateBindings, r as retiredUi2Name, A as minimumTextHeight, B as unifyChartAccents, C as lintComponents, D as pageIconError, E as validateAppStructure } from "./chunk-CLJFCNyS.js";
+import { s as strictEntry, r as resolveRef$1, h as hasNonEmptyDefinition, i as isFlexContainerType, a as resolveAuthoredChildOrder, c as childOrderProperty, p as packValueAsDefault, n as normalizeComponentSpec, b as appendedChildOrders, d as reparentAdditions, C as COMPONENT_FX_UPDATE_GUIDANCE, e as componentRef, f as packDefaultDefinition, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, g as FLEX_GROW_DESCRIPTION, j as FLEX_WIDTH_PX_DESCRIPTION, k as FLEX_FILL_WIDTH_DESCRIPTION, l as plannedCurrency, m as indexComponentReferences, o as booleanBindingValue, v as validateTableBatch, q as normalizeType } from "./chunk-CDqLso_G.js";
+import { i as fail, o as ok, b as getCatalog, g as getComponentSchema, c as getLegacyComponentReplacement, j as normalizeQueryToggles, k as toggleRewriteWarning, m as issueMessages, q as queryToggleIssues, p as normalizeQueryOptions, v as validateQueryOptions } from "./chunk-Bfjn8-Pb.js";
+import { f as componentSlotSchema, g as componentNameSchema, h as componentNameError, j as resolveParentRef, d as decodeComponentParent, e as encodeComponentParent, k as introducedLintFindings, m as lintComponentSpec, o as lintComponentSlots, p as lintUnusableTextGeometry, q as lintStandardSingleLineInputHeight, s as lintTextGeometry, u as lintRenderedGeometry, v as lintKanbanInteractions, w as lintShadKanbanCards, x as lintShadScheduleScale, y as isModalV2Type, z as lintComponentStateBindings, r as retiredUi2Name, A as minimumTextHeight, B as unifyChartAccents, C as lintComponents, D as pageIconError, E as validateAppStructure } from "./chunk-BCDdmwVb.js";
 import { m as suggestedHtmlHeight } from "./chunk-DzndRVyJ.js";
-import { b0 as external_exports } from "./chunk-BK1olK4j.js";
+import { ax as external_exports } from "./chunk-Dakrk_ob.js";
 import { randomUUID } from "node:crypto";
-import { e as normalizeQueryToggles, t as toggleRewriteWarning, i as issueMessages, q as queryToggleIssues, f as normalizeQueryOptions, v as validateQueryOptions } from "./chunk-BQSkKlW7.js";
-import { p as parseExpression } from "./chunk-oXA2PxqX.js";
+import { p as parseExpression } from "./chunk-ePnPD46e.js";
 createRequire(import.meta.url);
 var DEFINITION_SECTIONS = ["properties", "styles", "validation", "general", "general_styles", "others"];
 var definitionSchema = strictEntry({
@@ -247,6 +246,276 @@ function onlyTouchedBraceNotes(warnings, definition) {
     const keys = m[2].split(", ").filter((key2) => touched.has(key2));
     return keys.length ? [`${m[1]}${keys.join(", ")}${m[3]}`] : [];
   });
+}
+createRequire(import.meta.url);
+async function mapKeyRefusal(client, componentTypes, library) {
+  if (![...componentTypes].includes("Map") || typeof client?.hasGoogleMapsKey !== "function")
+    return void 0;
+  let hasKey;
+  try {
+    hasKey = await client.hasGoogleMapsKey();
+  } catch {
+    return void 0;
+  }
+  if (hasKey !== false)
+    return void 0;
+  const noKey = "This ToolJet instance has no Google Maps API key (GOOGLE_MAPS_API_KEY), so a Map component shows a Google error instead of a map.";
+  const ui2Map = "Use ShadMap, the ToolJet UI 2.0 Map: OpenStreetMap tiles, no key, one marker per data row read through latField, lngField and idField, with onMarkerClick and selectedMarker.";
+  if (library === "ui2")
+    return `${noKey} ${ui2Map}`;
+  return `${noKey} In a ToolJet UI 2.0 app: ${ui2Map} In a UI 1.0 app, show the locations in a Table (a link column to https://www.google.com/maps?q=<lat>,<lng> opens each one), and tell the user in your reply that an in-app map needs the Google Maps API key on the instance.`;
+}
+createRequire(import.meta.url);
+var CATALOG_SECTIONS = [
+  "overview",
+  "properties",
+  "styles",
+  "events",
+  "actions",
+  "exposedVariables",
+  "defaultChildren",
+  "renderingHints",
+  "authoringHints"
+];
+var DEFAULT_TYPED_SECTIONS = [
+  "overview",
+  "properties",
+  "events",
+  "actions"
+];
+var CATALOG_TYPE_ALIASES = /* @__PURE__ */ new Map([
+  ["gridview", {
+    type: "Listview",
+    note: 'ToolJet grid view is Listview with mode:"grid" (properties.mode.value); use type:"Listview" when creating it.'
+  }]
+]);
+function resolveCatalogType(requestedType) {
+  const alias = CATALOG_TYPE_ALIASES.get(requestedType.replace(/[\s_-]+/g, "").toLowerCase());
+  if (alias)
+    return { type: alias.type, alias: { requested_type: requestedType, note: alias.note } };
+  if (getComponentSchema(requestedType))
+    return { type: requestedType };
+  const wanted = requestedType.replace(/[\s_-]+/g, "").toLowerCase();
+  const types = getCatalog().map((entry) => entry.type);
+  const near = types.find((type) => type.toLowerCase() === wanted) ?? types.find((type) => type.toLowerCase().replace(/v\d+$/, "") === wanted);
+  return near ? { type: near, alias: { requested_type: requestedType, note: `There is no "${requestedType}"; this is ${near}. Use type "${near}".` } } : { type: requestedType };
+}
+var PACK_CONCEPTS = [
+  [/table|grid|datatable/i, ["ShadTable"]],
+  [/metric|stat|kpi/i, ["ShadStat", "ShadSparkline", "ShadSummaryStrip"]],
+  [/summary|figures|totals|strip|headline/i, ["ShadSummaryStrip"]],
+  [/recent|activity|feed|records?|orders|people|contacts|inbox/i, ["ShadRecordList"]],
+  [/card|panel|surface/i, ['FlexContainer (cardStyle "shadcnCard")', "ShadCardGrid"]],
+  [/gallery|tiles?|catalog|products?|cards|grid/i, ["ShadCardGrid"]],
+  [/hero|header|masthead|jumbotron|cover|welcome/i, ["ShadHero"]],
+  [/modal|dialog|sheet|drawer/i, ["ShadDialog"]],
+  [/dropdown|menu/i, ["ShadDropdownMenu", "ShadSelect", "ShadCombobox"]],
+  [/list/i, ["ShadListView", "ShadRecordList", "ShadKeyValue"]],
+  [/chat|message|assistant|conversation|copilot|bot|thread/i, ["ShadChat"]],
+  [/question|survey|quiz|onboarding|intake|wizard|poll|triage|form/i, ["ShadQuestionnaire"]],
+  [/chart|graph/i, ["ShadBarChart", "ShadLineChart", "ShadAreaChart", "ShadPieChart", "ShadComboChart", "ShadScatterChart", "ShadFunnelChart", "ShadHeatmapChart"]],
+  [/funnel|conversion/i, ["ShadFunnelChart"]],
+  [/scatter|bubble|correlation/i, ["ShadScatterChart"]],
+  [/heat|matrix|grid|calendar/i, ["ShadHeatmapChart"]],
+  [/board|kanban|pipeline|stage|trello|dispatch|grouped by/i, ["ShadKanban"]],
+  [/combo|composed|mixed|dual/i, ["ShadComboChart"]],
+  [/label|title|typography/i, ["ShadHeading", "ShadText"]],
+  [/date/i, ["ShadDatePicker", "ShadDateTimePicker", "ShadCalendar"]],
+  [/toast|notification|banner/i, ["ShadAlert"]],
+  [/divider/i, ["ShadSeparator"]],
+  [/schedule|scheduler|booking|reservation|roster|rota|shift|on.?call|resource|timeline.?view|gantt|availability|rooms?/i, ["ShadSchedule"]],
+  [/progress|goal|budget|quota|target|onboarding|checklist|capacity|completion/i, ["ShadProgressList", "ShadProgress"]],
+  [/map|geo|location|pins?$|markers?|route|locator|spatial|leaflet|places|zones?$|territor|geofence|dispatch|fleet/i, ["ShadMap"]]
+];
+function packSuggestions(requestedType) {
+  if (!/^Shad[A-Z]/.test(requestedType))
+    return [];
+  const rest = requestedType.slice(4);
+  return [...new Set(PACK_CONCEPTS.filter(([pattern]) => pattern.test(rest)).flatMap(([, types]) => types))];
+}
+function nearbyTypes(requestedType) {
+  const words = requestedType.split(/(?=[A-Z])|[\s_-]+/).map((word) => word.toLowerCase()).filter((word) => word.length >= 4);
+  return getCatalog().map((entry) => entry.type).filter((type) => words.some((word) => type.toLowerCase().includes(word))).slice(0, 6);
+}
+function selectEntries(entries, keys, detail) {
+  const selected = keys?.length ? entries.filter((entry) => keys.includes(entry.key)) : entries;
+  if (detail === "full" || keys?.length)
+    return selected;
+  return selected.map(({ key: key2, valueType, valueTypes, allowedValues, requires, mutuallyExclusiveWith }) => ({
+    key: key2,
+    ...valueType !== void 0 ? { valueType } : {},
+    ...valueTypes !== void 0 ? { valueTypes } : {},
+    ...allowedValues !== void 0 ? { allowedValues } : {},
+    ...requires !== void 0 ? { requires } : {},
+    ...mutuallyExclusiveWith !== void 0 ? { mutuallyExclusiveWith } : {}
+  }));
+}
+function selectSchema(schema, args) {
+  const detail = args.detail ?? "compact";
+  const sections = new Set(args.sections ?? DEFAULT_TYPED_SECTIONS);
+  const result = { type: schema.type };
+  if (sections.has("overview")) {
+    if (schema.name !== void 0)
+      result.name = schema.name;
+    if (schema.description !== void 0)
+      result.description = schema.description;
+    if (schema.defaultSize !== void 0)
+      result.defaultSize = schema.defaultSize;
+  }
+  if (sections.has("properties")) {
+    result.properties = selectEntries(schema.properties, args.property_keys, detail);
+  }
+  if (sections.has("styles")) {
+    result.styles = selectEntries(schema.styles, args.style_keys, detail);
+  }
+  if (sections.has("events") && schema.events !== void 0)
+    result.events = schema.events;
+  if (sections.has("actions") && schema.actions !== void 0)
+    result.actions = schema.actions;
+  if (sections.has("exposedVariables") && schema.exposedVariables !== void 0) {
+    result.exposedVariables = schema.exposedVariables;
+  }
+  if (sections.has("defaultChildren") && schema.defaultChildren !== void 0) {
+    result.defaultChildren = schema.defaultChildren;
+  }
+  if (sections.has("renderingHints") && schema.renderingHints !== void 0) {
+    result.renderingHints = schema.renderingHints;
+  }
+  if (sections.has("authoringHints") && schema.authoringHints !== void 0) {
+    result.authoringHints = schema.authoringHints;
+  }
+  return result;
+}
+function legacyNotice(type) {
+  const replacement = getLegacyComponentReplacement(type);
+  return replacement ? {
+    deprecated: true,
+    replacement,
+    deprecation_note: `"${type}" remains available only for inspecting or repairing existing apps. Use "${replacement}" for new components.`
+  } : {};
+}
+async function instanceNote(client, type) {
+  const refusal = type === "Map" ? await mapKeyRefusal(client, ["Map"]) : void 0;
+  return refusal ? { instance_note: refusal } : {};
+}
+function getComponentCatalogTool(client) {
+  return {
+    name: "get_component_catalog",
+    title: "Get Component Catalog",
+    // Served from the bundled catalog in data/; never reaches the ToolJet instance.
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false
+    },
+    description: 'Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one component or types for a batch needed in the current page/phase. Typed reads default to detail:"compact" and the overview/properties/events/actions sections; compact property/style lists omit labels and defaults. Use detail:"full" or exact property_keys/style_keys only when those values are needed. Request renderingHints/authoringHints for layout-sensitive or nested components. Use requests when different types need different sections/keys in one call; top-level detail/sections/keys apply as defaults to every requested type, and the type/types/requests selectors may be combined. sections selects only overview, properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. GridView is a lookup alias for Listview mode:"grid"; component writes must still use type:"Listview". authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar contracts once and reuse them; never guess property/event/action ids.',
+    inputSchema: {
+      type: external_exports.string().optional(),
+      types: external_exports.array(external_exports.string()).min(1).max(25).optional(),
+      requests: external_exports.array(external_exports.object({
+        type: external_exports.string(),
+        detail: external_exports.enum(["compact", "full"]).optional(),
+        sections: external_exports.array(external_exports.enum(CATALOG_SECTIONS)).min(1).optional(),
+        property_keys: external_exports.array(external_exports.string()).min(1).optional(),
+        style_keys: external_exports.array(external_exports.string()).min(1).optional()
+      })).min(1).max(25).optional(),
+      detail: external_exports.enum(["compact", "full"]).optional(),
+      sections: external_exports.array(external_exports.enum(CATALOG_SECTIONS)).min(1).optional(),
+      property_keys: external_exports.array(external_exports.string()).min(1).optional(),
+      style_keys: external_exports.array(external_exports.string()).min(1).optional()
+    },
+    async handler(args) {
+      try {
+        const singleType = args?.type;
+        const typesList = args?.types ?? [];
+        const batch = args?.requests ?? [];
+        const hasSelector = !!singleType || typesList.length > 0 || batch.length > 0;
+        if (!hasSelector) {
+          if (args.detail || args.sections || args.property_keys || args.style_keys) {
+            return fail(new Error("Catalog detail/sections/key filters require `type`, `types`, or `requests`."));
+          }
+          return ok(getCatalog());
+        }
+        if (singleType && typesList.length === 0 && batch.length === 0) {
+          const resolved = resolveCatalogType(singleType);
+          const schema = getComponentSchema(resolved.type);
+          if (!schema) {
+            const near = nearbyTypes(singleType);
+            const suggested = [.../* @__PURE__ */ new Set([...packSuggestions(singleType), ...near])].slice(0, 6);
+            const packTypes = /^Shad[A-Z]/.test(singleType) ? getCatalog().map((entry) => entry.type).filter((type) => /^Shad[A-Z]/.test(type)) : [];
+            return ok({
+              error: `Unknown component type "${singleType}". Call with no argument to list valid types.`,
+              ...suggested.length ? { did_you_mean: suggested } : {},
+              ...packTypes.length ? { pack_types: packTypes } : {}
+            });
+          }
+          return ok({
+            ...selectSchema(schema, args),
+            ...legacyNotice(schema.type),
+            ...resolved.alias ? { alias: resolved.alias } : {},
+            ...await instanceNote(client, schema.type)
+          });
+        }
+        const withDefaults = (type, over) => ({
+          type,
+          detail: over?.detail ?? args.detail,
+          sections: over?.sections ?? args.sections,
+          property_keys: over?.property_keys ?? args.property_keys,
+          style_keys: over?.style_keys ?? args.style_keys
+        });
+        const ordered = [
+          ...batch.map((r) => withDefaults(r.type, r)),
+          ...typesList.map((t) => withDefaults(t)),
+          ...singleType ? [withDefaults(singleType)] : []
+        ];
+        const components = [];
+        const unknownTypes = [];
+        const componentByResolvedType = /* @__PURE__ */ new Map();
+        const seenUnknown = /* @__PURE__ */ new Set();
+        for (const request of ordered) {
+          if (!request.type)
+            continue;
+          const resolved = resolveCatalogType(request.type);
+          const schema = getComponentSchema(resolved.type);
+          if (!schema) {
+            if (!seenUnknown.has(request.type)) {
+              seenUnknown.add(request.type);
+              unknownTypes.push(request.type);
+            }
+            continue;
+          }
+          const existing = componentByResolvedType.get(resolved.type);
+          if (existing) {
+            if (resolved.alias) {
+              const requestedAliases = Array.isArray(existing.requested_aliases) ? existing.requested_aliases : [];
+              if (!requestedAliases.includes(request.type)) {
+                existing.requested_aliases = [...requestedAliases, request.type];
+              }
+            }
+            continue;
+          }
+          const component = {
+            ...selectSchema(schema, request),
+            ...legacyNotice(schema.type),
+            ...resolved.alias ? { alias: resolved.alias } : {},
+            ...resolved.alias ? { requested_aliases: [request.type] } : {},
+            ...await instanceNote(client, schema.type)
+          };
+          components.push(component);
+          componentByResolvedType.set(resolved.type, component);
+        }
+        const suggestions = Object.fromEntries(unknownTypes.map((type) => [type, [.../* @__PURE__ */ new Set([...packSuggestions(type), ...nearbyTypes(type)])].slice(0, 6)]).filter(([, near]) => near.length));
+        const guessedPack = unknownTypes.some((type) => /^Shad[A-Z]/.test(type));
+        return ok({
+          components,
+          unknown_types: unknownTypes,
+          ...Object.keys(suggestions).length ? { suggestions } : {},
+          ...guessedPack ? { pack_types: getCatalog().map((entry) => entry.type).filter((type) => /^Shad[A-Z]/.test(type)) } : {}
+        });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
 }
 createRequire(import.meta.url);
 var lookOf = (c) => {
@@ -3783,9 +4052,11 @@ function dropUnprefixedDuplicates(values) {
   return distinct.filter((value) => value.startsWith('Page "') || !stripped.has(value));
 }
 export {
-  normalizePlannedLayouts as A,
-  materializeRequiredDefaultChildren as B,
-  persistedEventIds as C,
+  containsExactValue as A,
+  containsNamedBinding as B,
+  normalizePlannedLayouts as C,
+  materializeRequiredDefaultChildren as D,
+  persistedEventIds as E,
   lintPlannedApp as a,
   replaceFingerprint as b,
   componentInputSchema as c,
@@ -3794,22 +4065,22 @@ export {
   frozenAppRefusal as f,
   peekAppPlan as g,
   consumeAppPlan as h,
-  prepareComponentBatch as i,
-  replaceIds as j,
-  expandQueryLifecycles as k,
+  matchPlannedPage as i,
+  prepareComponentBatch as j,
+  replaceIds as k,
   literalCanvasColor as l,
-  matchPlannedPage as m,
-  navigationReorders as n,
-  persistedEventSpecs as o,
+  mapKeyRefusal as m,
+  expandQueryLifecycles as n,
+  navigationReorders as o,
   pagesUsingQuery as p,
-  projectJavascriptRuntime as q,
+  persistedEventSpecs as q,
   replaceView as r,
   storeAppPlan as s,
-  projectAppSettings as t,
+  getComponentCatalogTool as t,
   updateComponentsTool as u,
   validateEvents as v,
-  compactTheme as w,
-  pageSettingProperties as x,
-  containsExactValue as y,
-  containsNamedBinding as z
+  projectJavascriptRuntime as w,
+  projectAppSettings as x,
+  compactTheme as y,
+  pageSettingProperties as z
 };

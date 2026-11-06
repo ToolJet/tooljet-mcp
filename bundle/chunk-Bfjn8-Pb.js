@@ -1,11 +1,15 @@
 import { createRequire } from "node:module";
-import { b0 as external_exports, b1 as nodeCatalog, b2 as validateGraph, b3 as specSchema, b4 as compileGraph, b5 as assertWorkflowJavaScript, b6 as controlFlowEdges } from "./chunk-BK1olK4j.js";
-import { p as parseExpression, a as parse } from "./chunk-oXA2PxqX.js";
-import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-DEG7vXOB.js";
-import { r as require_moment } from "./chunk-u-5N46aH.js";
-import { ed as __toESM, eb as __commonJS, e8 as getComponentSchema } from "./chunk-DSzzr2p4.js";
+import { ax as external_exports, ay as nodeCatalog, az as validateGraph, aA as specSchema, aB as compileGraph, aC as assertWorkflowJavaScript, aD as controlFlowEdges } from "./chunk-Dakrk_ob.js";
+import { p as parseExpression, a as parse, r as readCatalog } from "./chunk-ePnPD46e.js";
+import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-BozBrMhE.js";
+import { r as require_moment } from "./chunk-00I8NlQo.js";
+import { e7 as __toESM, e5 as __commonJS } from "./chunk-BJ6ur0AF.js";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { resolve, dirname } from "node:path";
+import { AsyncLocalStorage } from "node:async_hooks";
 createRequire(import.meta.url);
 var require_unicode = __commonJS({
   "node_modules/json5/lib/unicode.js"(exports, module) {
@@ -4479,6 +4483,60 @@ async function deleteNode(client, workflowId, versionId, nodeId) {
   return apply(client, result.plan_token);
 }
 createRequire(import.meta.url);
+var newPackSet = () => ({ schemas: null, definitions: {}, packs: null, derived: /* @__PURE__ */ new Map() });
+var processSet = newPackSet();
+var store = new AsyncLocalStorage();
+var activePackSet = () => store.getStore() ?? processSet;
+var inPackSet = (set, work) => store.run(set, work);
+var dataPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-schemas.json");
+var compatibilityPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-compatibility.json");
+var cache = null;
+var legacyReplacements = null;
+function load() {
+  if (!cache)
+    cache = readCatalog(dataPath);
+  return cache;
+}
+function loadLegacyReplacements() {
+  if (!legacyReplacements) {
+    const compatibility = JSON.parse(readFileSync(compatibilityPath, "utf8"));
+    legacyReplacements = compatibility.legacyReplacements ?? {};
+  }
+  return legacyReplacements;
+}
+var PACK_TYPE = /^Lib_[a-z0-9]+_/;
+function merged() {
+  const set = activePackSet();
+  if (!set.schemas)
+    return load();
+  let all = set.derived.get("catalog");
+  if (!all) {
+    const extra = set.schemas;
+    all = Object.fromEntries(Object.entries(load()).filter(([key3]) => !PACK_TYPE.test(key3) || key3 in extra));
+    Object.assign(all, extra);
+    set.derived.set("catalog", all);
+  }
+  return all;
+}
+function allComponentSchemas() {
+  return merged();
+}
+function registerComponentSchemas(extra) {
+  const set = activePackSet();
+  set.schemas = { ...extra };
+  set.derived.clear();
+}
+function getCatalog() {
+  const legacy = loadLegacyReplacements();
+  return Object.values(merged()).filter((c) => !legacy[c.type]).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
+}
+function getComponentSchema(type) {
+  return merged()[type] ?? null;
+}
+function getLegacyComponentReplacement(type) {
+  return loadLegacyReplacements()[type] ?? null;
+}
+createRequire(import.meta.url);
 var name = external_exports.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/).refine((v) => !["__proto__", "prototype", "constructor"].includes(v));
 var editContractSchema = external_exports.object({
   source_query: name.describe("Already-loaded bounded raw row-array query; never a display projection."),
@@ -4659,6 +4717,42 @@ return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
       "Draft tracks native change events, not every displayed input value. Programmatic field changes must update the draft explicitly. Browser-verify that all change events fire, including both checkbox transitions."
     ]
   };
+}
+createRequire(import.meta.url);
+var TableQuotaError = class extends Error {
+  code = "TJDB_TABLE_LIMIT_REACHED";
+  status = 451;
+  retryable = false;
+  constructor() {
+    super("The workspace has reached its ToolJet Database table limit. Stop creating tables. Ask the user to reuse existing tables, free table capacity, or increase the workspace allowance before continuing. Keep resources already created; do not delete tables automatically.");
+    this.name = "TableQuotaError";
+  }
+};
+function tableQuotaError(error) {
+  const seen = /* @__PURE__ */ new Set();
+  while (error instanceof Error && !seen.has(error)) {
+    if (error instanceof TableQuotaError)
+      return error;
+    seen.add(error);
+    error = error.cause;
+  }
+  return void 0;
+}
+createRequire(import.meta.url);
+function ok(value) {
+  return { content: [{ type: "text", text: JSON.stringify(value) }] };
+}
+function fail(err) {
+  const message = err instanceof Error ? err.message : String(err);
+  const quota = tableQuotaError(err);
+  const text2 = quota ? JSON.stringify({ error: {
+    code: quota.code,
+    status: quota.status,
+    retryable: quota.retryable,
+    message: quota.message,
+    details: message
+  } }) : `Error: ${message}`;
+  return { content: [{ type: "text", text: text2 }], isError: true };
 }
 createRequire(import.meta.url);
 var member = (n) => n?.type === "MemberExpression" || n?.type === "OptionalMemberExpression";
@@ -4988,40 +5082,52 @@ function lintSelectedRowProjections(components, extraSources = []) {
   return [...warnings];
 }
 export {
-  capabilityRequestSchema as A,
-  getWorkflowCapabilities as B,
-  lint as C,
-  apply as D,
-  deleteNode as E,
-  editContractSchema as F,
+  applyResolvedBindings as A,
+  connectorLabel as B,
+  sameReadSource as C,
+  extractRowCount as D,
+  emptyViewerOnlyParams as E,
+  emptyParamsNote as F,
   GUI_LIST_ROWS_KEYS as G,
-  generateEditContract as H,
+  unresolvedNote as H,
+  inPackSet as I,
+  registerComponentSchemas as J,
+  newPackSet as K,
   LARGE_READ_ROW_THRESHOLD as L,
+  capabilityRequestSchema as M,
+  getWorkflowCapabilities as N,
+  lint as O,
+  apply as P,
+  deleteNode as Q,
+  editContractSchema as R,
   SQL_DIALECT as S,
-  lintBindingNames as a,
-  bindingSpans as b,
-  assertPersistableQueryToggles as c,
-  assertWorkflowQueryOptions as d,
-  normalizeQueryToggles as e,
-  normalizeQueryOptions as f,
-  arithmeticWriteWarning as g,
-  assessQueryRead as h,
-  issueMessages as i,
-  resolvedReadRefusal as j,
-  resolveStaticBindings as k,
+  TableQuotaError as T,
+  generateEditContract as U,
+  allComponentSchemas as V,
+  activePackSet as a,
+  getCatalog as b,
+  getLegacyComponentReplacement as c,
+  lintBindingNames as d,
+  bindingSpans as e,
+  assertPersistableQueryToggles as f,
+  getComponentSchema as g,
+  assertWorkflowQueryOptions as h,
+  fail as i,
+  normalizeQueryToggles as j,
+  toggleRewriteWarning as k,
   lintSelectedRowProjections as l,
-  applyResolvedBindings as m,
+  issueMessages as m,
   normalizeWorkflowQueryOptions as n,
-  connectorLabel as o,
-  sameReadSource as p,
+  ok as o,
+  normalizeQueryOptions as p,
   queryToggleIssues as q,
   require_lib as r,
-  sqlConnectorPath as s,
-  toggleRewriteWarning as t,
-  extractRowCount as u,
+  arithmeticWriteWarning as s,
+  tableQuotaError as t,
+  assessQueryRead as u,
   validateQueryOptions as v,
   workflowMappingMatches as w,
-  emptyViewerOnlyParams as x,
-  emptyParamsNote as y,
-  unresolvedNote as z
+  resolvedReadRefusal as x,
+  resolveStaticBindings as y,
+  sqlConnectorPath as z
 };
