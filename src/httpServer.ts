@@ -8,6 +8,7 @@ import { createOAuthHttpServer, oauthHttpOptionsFromEnv } from './oauthHttp.js';
 import { identityFromHeaders, type RequestIdentity } from './config.js';
 import { bearerValue } from './httpAuth.js';
 import { isBuildToken, mintAuthorized, mintBuildToken, mintSecret, resolveBuildToken, revokeBuildToken } from './buildTokens.js';
+import { refuseForeignRequest } from './requestOrigin.js';
 
 // A permitted 10 MiB chat image becomes ~13.4 MiB in an Image component's JSON.
 const DEFAULT_MAX_BODY_BYTES = 15 * 1024 * 1024;
@@ -32,6 +33,8 @@ export interface HttpMcpServerOptions {
    *  configured on this process never acts for a request, and the Code tools take only the request's.
    *  On whenever the server is reachable beyond loopback (standaloneHttpPolicy). */
   requireIdentity?: boolean;
+  /** The address the server listens on (default 127.0.0.1): requests must name it, or a loopback name, in Host. */
+  bindHost?: string;
   /** Maximum accepted JSON request size. Defaults to 15 MiB for embedded image updates. */
   maxBodyBytes?: number;
   maxSessions?: number;
@@ -356,6 +359,9 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
         writeJson(res, 200, { status: 'ok', transport: 'streamable-http' });
         return;
       }
+
+      // DNS rebinding: a page whose host name resolves to this machine must not drive it (requestOrigin.ts).
+      if (refuseForeignRequest(req, res, { bindHost: options.bindHost ?? '127.0.0.1' })) return;
 
       if (requestUrl.pathname === '/build-token') {
         await handleBuildToken(req, res);

@@ -54,7 +54,12 @@ function scopeHandlers(server: McpServer, packs: PackSet, ready: Promise<unknown
  * `hosted`: this request came over HTTP, so only the credential it brought may act for it. On stdio the process belongs to
  * one build and its configured credential is that build's.
  */
-export function buildServer(identity?: RequestIdentity, { hosted = false }: { hosted?: boolean } = {}): McpServer {
+export function buildServer(
+  identity?: RequestIdentity,
+  { hosted = false, requireIdentity = false }: { hosted?: boolean; requireIdentity?: boolean } = {}
+): McpServer {
+  // requireIdentity: a shared server's request with no identity must never fall back to this process's credential.
+  if (requireIdentity && !identity) throw new Error('This request names no user, and this server never acts with its own credential.');
   const config = loadConfig(identity);
   const auth = createAuth(config);
   const client = createClient(auth, config);
