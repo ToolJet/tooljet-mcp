@@ -651,6 +651,8 @@ export interface ToolJetClient {
    * for editors and for builders who can view the app, write for editors. Both false for an end user or no access.
    */
   codeSourceAccess(appId: string, versionId: string): Promise<{ read: boolean; write: boolean }>;
+  /** The app version's stored Code mode source files, or null when it has none (a visual app, or no Code mode here). */
+  codeSourceFiles?(appId: string, versionId: string): Promise<Array<{ path: string; content: string }> | null>;
   getAppSummary(appId: string, versionId?: string): Promise<AppSummary>;
   listAppPermissionSubjects(appId: string): Promise<AppPermissionSubjects>;
   /** The workspace's license features (GET /api/license/access): serverSideGlobalResolve, appPermissionQuery, ... */
@@ -1220,6 +1222,19 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const body = (await res.json().catch(() => null)) as { canWrite?: unknown } | null;
     if (!body || typeof body !== 'object') throw new Error('codeSourceAccess: ToolJet sent no answer');
     return { read: true, write: body.canWrite === true };
+  }
+
+  /** GET /api/code-mode-source/:id/versions/:versionId?content=1: the stored files, or null when there are none. */
+  async function codeSourceFiles(appId: string, versionId: string): Promise<Array<{ path: string; content: string }> | null> {
+    const res = await auth.authedFetch(
+      `/api/code-mode-source/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}?content=1`
+    );
+    if (res.status === 404) return null;
+    await assertOk(res, 'codeSourceFiles');
+    const body = (await res.json().catch(() => null)) as { exists?: boolean; files?: Array<{ path?: unknown; content?: unknown }> } | null;
+    if (!body || body.exists === false || !Array.isArray(body.files)) return null;
+    return body.files.flatMap((file) =>
+      typeof file.path === 'string' && typeof file.content === 'string' ? [{ path: file.path, content: file.content }] : []);
   }
 
   // In GET /api/apps/:id, each placed component lives at pages[].components[<id>] as
@@ -3376,6 +3391,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     renameApp,
     getApp,
     codeSourceAccess,
+    codeSourceFiles,
     getAppSummary,
     listAppPermissionSubjects,
     getLicenseFeatureAccess,
