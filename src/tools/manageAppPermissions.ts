@@ -255,18 +255,11 @@ function resolveGroups(directory: GroupDirectory, refs: string[]) {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * A limit to groups whose members cannot open the app would leave them with nothing. With grant, each such group
- * first gets view access to this app only (the access rule Workspace settings > Groups creates); without it, the set
- * is refused and says so.
+ * A limit to groups whose members cannot open the app would leave them with nothing. The groups that need view access
+ * to this app first, checked before anything is written: without grant, or for a group the plan does not let change,
+ * the set is refused and says so.
  */
-async function ensureGroupsCanOpen(
-  client: ToolJetClient,
-  appId: string,
-  appName: string | undefined,
-  directory: GroupDirectory,
-  groupIds: string[],
-  grant: boolean
-): Promise<Granted[]> {
+function groupsToGrant(directory: GroupDirectory, groupIds: string[], grant: boolean): string[] {
   const missing = groupIds.filter((id) => !directory.openIds.has(id));
   if (!missing.length) return [];
   const byId = new Map(directory.groups.map((group) => [group.id, group]));
@@ -285,19 +278,57 @@ async function ensureGroupsCanOpen(
       `${disabled.map((id) => byId.get(id)?.name ?? id).join(', ')} cannot be changed under the current plan, so it cannot be given access to this app. Nothing was changed.`
     );
   }
+  return missing;
+}
+
+/** Remove the view rules this call added (by name, for this app), best effort; the groups that still have one. */
+async function removeGrants(client: ToolJetClient, appId: string, granted: Granted[]): Promise<string[]> {
+  const left: string[] = [];
+  for (const grant of granted) {
+    try {
+      const rules = await client.listWorkspaceGroupAccess(grant.group_id);
+      const added = rules.filter((rule) => rule.id && rule.name === grant.rule_name && rule.resources.some((r) => r.id === appId));
+      for (const rule of added) await client.writeWorkspaceGroupAccess('DELETE', grant.group_id, 'app', rule.id);
+    } catch {
+      left.push(grant.name ?? grant.group_id);
+    }
+  }
+  return left;
+}
+
+/**
+ * Give each group view access to this app only (the access rule Workspace settings > Groups creates), after the limits
+ * are set, so a failure leaves less access, never more. When a rule cannot be added or ToolJet does not confirm the
+ * groups can open the app, the rules this call added are removed again and it throws.
+ */
+async function grantGroups(
+  client: ToolJetClient,
+  appId: string,
+  appName: string | undefined,
+  directory: GroupDirectory,
+  missing: string[]
+): Promise<Granted[]> {
+  const byId = new Map(directory.groups.map((group) => [group.id, group]));
   const granted: Granted[] = [];
+  const undo = async (reason: string): Promise<never> => {
+    const left = await removeGrants(client, appId, granted);
+    throw new Error(
+      `${reason} The access rules added here were removed${left.length ? `, except for ${left.join(', ')} (remove it in Workspace settings > Groups)` : ''}.`
+    );
+  };
   for (const id of missing) {
     const rule = viewRule(appId, appName, id);
-    await client.writeWorkspaceGroupAccess('POST', id, 'app', undefined, rule);
+    try {
+      await client.writeWorkspaceGroupAccess('POST', id, 'app', undefined, rule);
+    } catch (error) {
+      await undo(`${byId.get(id)?.name ?? id} could not be given access to this app: ${(error as Error).message}.`);
+    }
     granted.push({ group_id: id, ...(byId.get(id)?.name ? { name: byId.get(id)!.name } : {}), rule_name: rule.name });
   }
   const after = new Set((await client.listAppPermissionSubjects(appId)).groups.map((group) => group.id));
   const still = missing.filter((id) => !after.has(id));
   if (still.length) {
-    throw new Error(
-      `ToolJet did not confirm that ${still.map((id) => byId.get(id)?.name ?? id).join(', ')} can open this app after ` +
-        'the access rule was added, so no limit was set. Check the group in Workspace settings > Groups.'
-    );
+    await undo(`ToolJet did not confirm that ${still.map((id) => byId.get(id)?.name ?? id).join(', ')} can open this app after the access rule was added.`);
   }
   return granted;
 }
@@ -574,10 +605,9 @@ export function manageAppPermissionsTool(client: ToolJetClient): ToolDef {
         }
 
         const grant = args.grant_app_access ?? codeApp;
-        const granted =
-          accessType === 'groups'
-            ? await ensureGroupsCanOpen(client, args.app_id, summary.name, directory!, subjectIds, grant)
-            : [];
+        // Checked before anything is written; the access rules are added only after the limits are set, so a failure
+        // part way leaves less access than asked for, never more.
+        const toGrant = accessType === 'groups' ? groupsToGrant(directory!, subjectIds, grant) : [];
         const results: Array<Record<string, unknown>> = [];
         for (const t of targets) {
           try {
@@ -594,6 +624,23 @@ export function manageAppPermissionsTool(client: ToolJetClient): ToolDef {
           }
         }
         const failed = results.filter((r) => r.error);
+        if (failed.length === results.length) {
+          throw new Error(
+            failed.map((r) => `${(r.resource as any).name ?? (r.resource as any).id}: ${r.error}`).join('; ') +
+              (toGrant.length ? ' No access to the app was given.' : '')
+          );
+        }
+        let granted: Granted[] = [];
+        if (toGrant.length) {
+          try {
+            granted = await grantGroups(client, args.app_id, summary.name, directory!, toGrant);
+          } catch (error) {
+            throw new Error(
+              `The limits were set, but their groups cannot open this app, so their members cannot use those screens or queries yet: ${(error as Error).message} ` +
+                'Give the groups access in Workspace settings > Groups, or run this again.'
+            );
+          }
+        }
         const grantNote = granted.length
           ? `${granted.map((g) => g.name ?? g.group_id).join(', ')} could not open this app, so ${granted.length > 1 ? 'each now has' : 'it now has'} view access to this app only (released app, rule "${granted[0]!.rule_name}").`
           : undefined;
@@ -602,12 +649,6 @@ export function manageAppPermissionsTool(client: ToolJetClient): ToolDef {
           ...(one ? results[0]! : { results }),
           ...(granted.length ? { granted_app_access: granted, note: grantNote } : {}),
         };
-        if (failed.length === results.length) {
-          throw new Error(
-            failed.map((r) => `${(r.resource as any).name ?? (r.resource as any).id}: ${r.error}`).join('; ') +
-              (grantNote ? ` (${grantNote})` : '')
-          );
-        }
         return ok(failed.length ? { ...body, warning: `${failed.length} of ${results.length} limits were not set; see each error.` } : body);
       } catch (error) {
         return fail(error);
