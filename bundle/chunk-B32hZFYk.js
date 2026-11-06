@@ -1,9 +1,9 @@
 import { createRequire } from "node:module";
-import { g as peekAppPlan, h as consumeAppPlan, f as frozenAppRefusal, r as replaceView, b as replaceFingerprint, d as danglingAfterReplace, e as prepareQueryOptionsForWrite, i as matchPlannedPage, l as literalCanvasColor, j as prepareComponentBatch, k as replaceIds, n as expandQueryLifecycles, v as validateEvents, o as navigationReorders, q as persistedEventSpecs } from "./chunk-Cvy_fxMt.js";
-import { a as autoReadPreflight, N as NOT_CHECKED_AUTOMATICALLY } from "./chunk-DWtTR4LI.js";
-import { i as fail, t as tableQuotaError, o as ok, L as LARGE_READ_ROW_THRESHOLD, u as assessQueryRead, y as resolveStaticBindings, x as resolvedReadRefusal, C as sameReadSource, D as extractRowCount, E as emptyViewerOnlyParams, F as emptyParamsNote, H as unresolvedNote, v as validateQueryOptions, m as issueMessages } from "./chunk-Bfjn8-Pb.js";
-import { e as componentRef, y as completedPartialWrites, r as resolveRef, m as indexComponentReferences, i as isFlexContainerType, z as batchChildOrders, c as childOrderProperty } from "./chunk-CDqLso_G.js";
-import { E as validateAppStructure, e as encodeComponentParent, d as decodeComponentParent } from "./chunk-BCDdmwVb.js";
+import { g as peekAppPlan, h as consumeAppPlan, f as frozenAppRefusal, r as replaceView, b as replaceFingerprint, d as danglingAfterReplace, e as prepareQueryOptionsForWrite, i as matchPlannedPage, l as literalCanvasColor, j as prepareComponentBatch, k as replaceIds, n as expandQueryLifecycles, v as validateEvents, o as navigationReorders, q as persistedEventSpecs } from "./chunk-rOoobFEd.js";
+import { a as autoReadPreflight, N as NOT_CHECKED_AUTOMATICALLY } from "./chunk-B5ckmKe8.js";
+import { i as fail, t as tableQuotaError, o as ok, L as LARGE_READ_ROW_THRESHOLD, u as assessQueryRead, y as resolveStaticBindings, x as resolvedReadRefusal, C as sameReadSource, D as extractRowCount, E as emptyViewerOnlyParams, F as emptyParamsNote, H as unresolvedNote, v as validateQueryOptions, m as issueMessages, I as declaredParameterDefaults } from "./chunk-sf3XXkm1.js";
+import { e as componentRef, y as completedPartialWrites, r as resolveRef, m as indexComponentReferences, i as isFlexContainerType, z as batchChildOrders, c as childOrderProperty } from "./chunk-Cd4GHNjI.js";
+import { E as validateAppStructure, e as encodeComponentParent, d as decodeComponentParent } from "./chunk-BaRzN6zp.js";
 import { g as getDatasourceQuerySchema } from "./chunk-BozBrMhE.js";
 import { ax as external_exports } from "./chunk-Dakrk_ob.js";
 import { randomUUID } from "node:crypto";
@@ -747,6 +747,41 @@ var MAX_READS = 10;
 var CLOCK_SKEW = /JWT issued at future/i;
 var CLOCK_SKEW_RETRY_MS = 1500;
 var REASON_CHARS = 160;
+var PARAMETER_BINDING = /^\{\{\s*parameters\.([A-Za-z_$][\w$]*)\s*\}\}$/;
+var SQL_EQUALS_PARAMETER = /=\s*\{\{\s*parameters\.([A-Za-z_$][\w$]*)\s*\}\}/g;
+var SQL_EQUALS_PLACEHOLDER = /=\s*:([A-Za-z_]\w*)/g;
+function parametersWithoutValue(options) {
+  const defaults = declaredParameterDefaults(options);
+  const bound = /* @__PURE__ */ new Set();
+  const sqlPlaceholders = /* @__PURE__ */ new Set();
+  const visit = (value) => {
+    if (typeof value === "string") {
+      for (const m of value.matchAll(SQL_EQUALS_PARAMETER))
+        bound.add(m[1]);
+      for (const m of value.matchAll(SQL_EQUALS_PLACEHOLDER))
+        sqlPlaceholders.add(m[1]);
+    } else if (Array.isArray(value))
+      value.forEach(visit);
+    else if (value && typeof value === "object") {
+      const clause = value;
+      const m = clause.operator === "eq" && typeof clause.value === "string" ? clause.value.trim().match(PARAMETER_BINDING) : null;
+      if (m)
+        bound.add(m[1]);
+      Object.values(value).forEach(visit);
+    }
+  };
+  visit(options);
+  const params = options && typeof options === "object" ? options.query_params : void 0;
+  for (const pair of Array.isArray(params) ? params : []) {
+    const m = Array.isArray(pair) && typeof pair[1] === "string" ? pair[1].trim().match(PARAMETER_BINDING) : null;
+    if (m && sqlPlaceholders.has(String(pair[0])))
+      bound.add(m[1]);
+  }
+  return [...bound].filter((name) => {
+    const value = defaults[name];
+    return value === void 0 || value === null || typeof value === "string" && !value.trim();
+  });
+}
 var rowCount = (result) => {
   const data = result.data;
   if (Array.isArray(data))
@@ -762,6 +797,7 @@ async function checkPlanReads(client, params) {
   const check = { ran: 0, rows: {}, failed: [], inconclusive: [], not_run: [], queries: [] };
   const entries = /* @__PURE__ */ new Map();
   const runnable = [];
+  let missing = [];
   for (const id of wanted) {
     const query = byId.get(id);
     if (!query)
@@ -772,6 +808,10 @@ async function checkPlanReads(client, params) {
       const reason = verdict.reason.startsWith(NOT_CHECKED_AUTOMATICALLY) ? verdict.reason : verdict.reason.slice(0, REASON_CHARS);
       check.not_run.push({ name, reason });
       entries.set(id, { name, status: "refused", reason });
+    } else if ((missing = parametersWithoutValue(query.options)).length) {
+      const reason = `not checked: needs a value for ${missing.map((p) => `parameters.${p}`).join(", ")}, which ${missing.length > 1 ? "have" : "has"} no default (a record's detail runs with the id the screen passes). Neither passed nor failed: open a record in the app to check it.`;
+      check.not_run.push({ name, reason });
+      entries.set(id, { name, status: "skipped", reason });
     } else if (runnable.length >= MAX_READS) {
       const reason = `only the first ${MAX_READS} reads of a phase are checked; run this one with run_queries`;
       check.not_run.push({ name, reason });
