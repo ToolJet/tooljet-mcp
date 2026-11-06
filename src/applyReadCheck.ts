@@ -1,4 +1,5 @@
 import type { ToolJetClient } from './tooljetClient.js';
+import { runUnattended } from './unattendedRun.js';
 import { emptyViewerOnlyParams, resolveStaticBindings } from './staticBindings.js';
 import { containsComponentBinding, schemaNameHint } from './tools/runQuery.js';
 import { NOT_CHECKED_AUTOMATICALLY, autoReadPreflight } from './autoReadPreflight.js';
@@ -93,7 +94,8 @@ export async function checkPlanReads(
       try {
         const bindings = resolveStaticBindings(query.options);
         emptyViewerOnlyParams(query.options, bindings);
-        return await client.runQuery({ queryId: id, versionId: params.versionId, environmentId, resolvedOptions: bindings.resolved }) as Record<string, unknown>;
+        // Bounded on this side: a deadline (unattendedRun.ts); the LIMIT and the cross-product refusal are the preflight's.
+        return await runUnattended(client, { queryId: id, versionId: params.versionId, environmentId, resolvedOptions: bindings.resolved });
       } catch (error) {
         return { status: 'failed', message: error instanceof Error ? error.message : String(error) };
       }
@@ -104,6 +106,13 @@ export async function checkPlanReads(
     if (result.status === 'failed' && CLOCK_SKEW.test(String(result.message ?? result.description ?? ''))) {
       await new Promise((resolve) => setTimeout(resolve, params.retryDelayMs ?? CLOCK_SKEW_RETRY_MS));
       result = await run();
+    }
+    if (result.timed_out === true) {
+      // Not checked, neither passed nor failed: the run outlasted the automatic check's deadline (unattendedRun.ts).
+      const reason = String(result.message);
+      check.not_run.push({ name, reason });
+      entries.set(id, { name, status: 'skipped', reason });
+      return;
     }
     check.ran += 1;
     if (result.status !== 'failed') {
