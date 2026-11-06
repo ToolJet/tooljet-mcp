@@ -4076,14 +4076,15 @@ async function cli(cwd, args, timeoutMs = 3e5) {
   return withBuildSlot(baseRoot(), `${current().deployment}.${current().workspace}`, () => runCli(cwd, args, timeoutMs));
 }
 var PLACEHOLDER_NAME = /^Untitled App\b/;
-async function nameApp(client, dir, name) {
+async function nameApp(client, dir, name, replaceName) {
   let snapshot;
   try {
     snapshot = JSON.parse(readFileSync(join(dir, ".tooljet", "snapshot.json"), "utf8"));
   } catch {
     return {};
   }
-  if (!client || !snapshot.appId || !snapshot.versionId || !PLACEHOLDER_NAME.test(snapshot.appName ?? ""))
+  const standIn = PLACEHOLDER_NAME.test(snapshot.appName ?? "") || !!replaceName && snapshot.appName === replaceName;
+  if (!client || !snapshot.appId || !snapshot.versionId || !standIn || snapshot.appName === name)
     return {};
   try {
     await client.renameApp(snapshot.appId, snapshot.versionId, name);
@@ -4137,7 +4138,8 @@ function codeAppScaffoldTool(context) {
     inputSchema: {
       name: external_exports.string().regex(NAME).describe("Project folder: lowercase letters, digits and hyphens, e.g. inventory-console"),
       display_name: external_exports.string().min(1).max(100).describe(`The app's name; an app still called "Untitled App" is renamed to it`),
-      app_id: external_exports.string().uuid().describe("The app from create_app")
+      app_id: external_exports.string().uuid().describe("The app from create_app"),
+      rename_from: external_exports.string().max(100).optional().describe("Set by ToolJet; leave it out")
     },
     handler: inScope(context, async (args) => {
       try {
@@ -4164,7 +4166,7 @@ function codeAppScaffoldTool(context) {
         if (pull.code !== 0)
           throw new Error(`tooljet app pull failed: ${pull.output}`);
         const restored = created ? await restoreStoredCode(dir) : {};
-        const naming = await nameApp(context.client, dir, args.display_name);
+        const naming = await nameApp(context.client, dir, args.display_name, args.rename_from);
         if (!existing && !restored.stored_code)
           rememberScaffold(dir);
         return ok({
@@ -4215,7 +4217,9 @@ async function syncEditorEdits(dir, { force = false } = {}) {
     return {};
   if (force)
     forgetSourceRevision(dir);
-  const pull = await cli(dir, ["app", "source-pull"], 6e4);
+  let pull = await cli(dir, ["app", "source-pull"], 6e4);
+  if (force && pull.code !== 0 && /Not pulled\. These files differ/i.test(pull.output))
+    pull = await cli(dir, ["app", "source-pull", "--force"], 6e4);
   if (pull.code !== 0 && /\b(401|403)\b|unauthori[sz]ed|forbidden/i.test(pull.output))
     throw new Error("ToolJet refused access to this app's stored code.");
   if (pull.code !== 0)
