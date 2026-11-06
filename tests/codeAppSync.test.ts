@@ -31,6 +31,10 @@ if (args[1] === 'source-pull') {
   const stored = read(meta);
   if (stored.revision === undefined) { console.log('No source is stored on ToolJet for this version yet'); process.exit(0); }
   if (read(local).revision === stored.revision) { console.log('Already at revision ' + stored.revision + ' (owner platform)'); process.exit(0); }
+  if (process.env.FAKE_PULL_LOCAL_CHANGES && !args.includes('--force')) {
+    console.log("Not pulled. These files differ from ToolJet's code (revision " + stored.revision + ") and a pull would overwrite them:");
+    process.exit(1);
+  }
   fs.cpSync(path.join(store, 'frontend'), path.join(process.cwd(), 'frontend'), { recursive: true });
   fs.mkdirSync(path.dirname(local), { recursive: true });
   fs.writeFileSync(local, JSON.stringify({ revision: stored.revision, owner: 'platform' }));
@@ -187,6 +191,32 @@ describe('Code mode edits start from the stored code', () => {
     writeFileSync(join(store(), queue), QUEUE('bg-card', 'Report an issue'));
     writeFileSync(join(store(), 'store.json'), JSON.stringify({ revision: 2 }));
     expect(json(await read([queue])).files[queue]).toContain('bg-card');
+  });
+
+  // A hand edit in the Code panel on a new draft that did not build (2026-11-05): the plain pull refused because this
+  // server's copy differed, so the agent saw neither the edit nor its error, and the install refused as behind.
+  it("the first pull of a build takes ToolJet's code over this server's copy when a plain pull refuses", async () => {
+    writeFileSync(join(store(), 'store.json'), JSON.stringify({ revision: 3 }));
+    mkdirSync(join(store(), 'frontend', 'src', 'App'), { recursive: true });
+    writeFileSync(join(store(), queue), QUEUE('bg-muted', 'Report an issue') + 'const broken = ;\n');
+    writeFileSync(join(project(), queue), QUEUE('bg-card', 'Report an issue'));
+    Object.assign(process.env, { FAKE_PULL_LOCAL_CHANGES: '1', MCP_CODE_CLI_ENV_PASS: `${env.MCP_CODE_CLI_ENV_PASS},FAKE_PULL_LOCAL_CHANGES` });
+    expect(json(await read([queue])).files[queue]).toContain('const broken = ;');
+    const pulls = readFileSync(join(dir, 'cli.log'), 'utf8').trim().split('\n').filter((l) => l.includes('source-pull'));
+    expect(pulls).toEqual(['["app","source-pull"]', '["app","source-pull","--force"]']);
+  });
+
+  it("a later pull in the same build does not force over the build's own writes", async () => {
+    process.env.MCP_CODE_APP_READ_SYNC_MS = '0';
+    writeFileSync(join(store(), 'store.json'), JSON.stringify({ revision: 1 }));
+    mkdirSync(join(store(), 'frontend', 'src', 'App'), { recursive: true });
+    writeFileSync(join(store(), queue), QUEUE('bg-card', 'Report an issue'));
+    await read([queue]);
+    Object.assign(process.env, { FAKE_PULL_LOCAL_CHANGES: '1', MCP_CODE_CLI_ENV_PASS: `${env.MCP_CODE_CLI_ENV_PASS},FAKE_PULL_LOCAL_CHANGES` });
+    writeFileSync(join(store(), 'store.json'), JSON.stringify({ revision: 4 }));
+    await read([queue]);
+    const pulls = readFileSync(join(dir, 'cli.log'), 'utf8').trim().split('\n').filter((l) => l.includes('source-pull'));
+    expect(pulls.filter((l) => l.includes('--force'))).toEqual([]);
   });
 
   it('still refuses a write when the editor changed the file inside the read window', async () => {
