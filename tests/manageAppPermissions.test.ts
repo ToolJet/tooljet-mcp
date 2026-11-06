@@ -73,6 +73,22 @@ describe('Code mode screens in manage_app_permissions', () => {
     expect(client.getAppPermission).toHaveBeenCalledWith(APP, 'page', PAYROLL_PAGE);
   });
 
+  it('list_queries returns each query with its access and counts the limited ones', async () => {
+    // An edit's access check reads the limits set before it (2026-11-05: 11 limits, reported as "no query is limited").
+    const withQueries = { ...summary, queries: [{ id: 'q-own', name: 'my_expenses' }, { id: 'q-queue', name: 'manager_pending_page' }] } as AppSummary;
+    const client = clientWith({
+      getAppSummary: vi.fn().mockResolvedValue(withQueries),
+      getAppPermission: vi.fn(async (_app: string, _type: string, id: string) =>
+        id === 'q-queue' ? [{ id: 'perm', type: 'GROUP', groups: [{ permissionGroup: { id: GROUP, name: 'Managers' } }] }] : []
+      ) as any,
+    });
+    const result = textOf(await manageAppPermissionsTool(client).handler({ action: 'list_queries', app_id: APP }));
+    expect(result.limited).toBe(1);
+    expect(result.queries[0]).toMatchObject({ query_id: 'q-own', name: 'my_expenses', access: 'all' });
+    expect(result.queries[1]).toMatchObject({ query_id: 'q-queue', name: 'manager_pending_page', access: 'groups' });
+    expect(client.getAppPermission).toHaveBeenCalledWith(APP, 'query', 'q-queue');
+  });
+
   it("set with a route limits that screen's hidden page", async () => {
     const client = clientWith();
     const result = textOf(

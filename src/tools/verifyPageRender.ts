@@ -22,7 +22,17 @@ export interface RenderFinding {
   kind: 'empty_render' | 'placeholder_text' | 'clipped' | 'overlap' | 'overflow' | 'unreachable' | 'blocked_socket' | 'blocked_query';
   component: string;
   detail: string;
-  reason?: 'browser_unavailable' | 'auth_required' | 'navigation_failed' | 'blocked_destination' | 'redirect_blocked' | 'blocked_execution' | 'no_widgets';
+  reason?: 'browser_unavailable' | 'auth_required' | 'navigation_failed' | 'blocked_destination' | 'redirect_blocked' | 'blocked_execution' | 'no_widgets' | 'screen_refused';
+}
+
+/** One element a colour-contrast violation names: what it says and the colours axe measured. */
+export interface ContrastElement {
+  target: string;
+  text?: string;
+  fg?: string;
+  bg?: string;
+  ratio?: number;
+  needs?: string;
 }
 
 export interface AxeViolation {
@@ -31,7 +41,18 @@ export interface AxeViolation {
   help: string;
   nodes: number;
   targets: string[];
+  /** color-contrast only: the first elements, with their text and measured colours, so a fix touches only them. */
+  elements?: ContrastElement[];
 }
+
+/*
+  ToolJet's own refusal of a Code mode screen ("You don't have access to this screen", screenAccess.tsx), drawn over the
+  app's content area or in place of the whole app when the signed-in user may not open the route. The render check of
+  QA Expense Approvals (2026-11-05) opened every screen as a builder outside the screens' groups, measured the refusal's
+  muted line (#816d65 on #f9f5f3, 4.49:1) as "p:nth-child(2)", and the model, told only that, restyled the app header's
+  subtitle twice and turned it into a badge. The refusal is not the app's to fix, and the screen behind it was not seen.
+*/
+export const SCREEN_REFUSAL_SELECTOR = '[data-cy^="code-screen-no-access"]';
 
 export interface PageRenderReport {
   page: string;
@@ -58,19 +79,50 @@ async function axeInCodePage(page: any): Promise<AxeViolation[] | undefined> {
   // Loaded on use, like playwright-core: the bundle keeps both outside its reviewable modules.
   const { default: axe } = await import('axe-core');
   await frame.evaluate(`${(axe as any).source}\n;void 0`);
-  return frame.evaluate(() =>
-    (window as any).axe
-      .run(document, { resultTypes: ['violations'], runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } })
-      .then((r: any) =>
-        r.violations.map((v: any) => ({
-          id: v.id,
-          impact: v.impact ?? null,
-          help: v.help,
-          nodes: v.nodes.length,
-          targets: v.nodes.slice(0, 3).map((n: any) => [].concat(n.target).join(' ')),
-        }))
-      )
-  );
+  return frame.evaluate(axeRunInFrame);
+}
+
+/**
+ * Runs inside the code page's frame, with axe-core loaded: the WCAG 2 A/AA violations of the app's own document. ToolJet's
+ * refusal of a screen (SCREEN_REFUSAL_SELECTOR) is left out: it is the host's, not the app's. A colour-contrast violation
+ * names its first elements with their text and the colours measured, so the fix can be that element's colours and nothing
+ * else (the selector alone, "p:nth-child(2)", was read as the header subtitle).
+ */
+export function axeRunInFrame(): Promise<AxeViolation[]> {
+  const refusal = '[data-cy^="code-screen-no-access"]';
+  const context = document.querySelector(refusal) ? { exclude: [refusal] } : document;
+  const textOf = (selector: string): string | undefined => {
+    try {
+      const text = (document.querySelector(selector)?.textContent ?? '').trim().replace(/\s+/g, ' ');
+      return text ? (text.length > 60 ? `${text.slice(0, 57)}...` : text) : undefined;
+    } catch {
+      return undefined;
+    }
+  };
+  return (window as any).axe
+    .run(context, { resultTypes: ['violations'], runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } })
+    .then((r: any) =>
+      r.violations.map((v: any) => {
+        const nodes = v.nodes.slice(0, 3);
+        const targets = nodes.map((n: any) => [].concat(n.target).join(' '));
+        const out: AxeViolation = { id: v.id, impact: v.impact ?? null, help: v.help, nodes: v.nodes.length, targets };
+        if (v.id === 'color-contrast') {
+          out.elements = nodes.map((n: any, i: number) => {
+            const data = (n.any ?? []).find((c: any) => c?.data?.fgColor)?.data ?? {};
+            const text = textOf(targets[i]);
+            return {
+              target: targets[i],
+              ...(text ? { text } : {}),
+              ...(data.fgColor ? { fg: data.fgColor } : {}),
+              ...(data.bgColor ? { bg: data.bgColor } : {}),
+              ...(typeof data.contrastRatio === 'number' ? { ratio: data.contrastRatio } : {}),
+              ...(data.expectedContrastRatio ? { needs: data.expectedContrastRatio } : {}),
+            };
+          });
+        }
+        return out;
+      })
+    );
 }
 
 /** Runs inside the page: the same walk as the campaign's audit script, over ToolJet's widget containers. */
@@ -243,6 +295,16 @@ export function codePageAuditScript(route?: string): RenderFinding[] | null {
   if (!doc || !doc.body) {
     findings.push({ kind: 'empty_render', component: 'Code mode app', detail: 'the Code mode frame has no document' });
     return findings;
+  }
+  // ToolJet's refusal of the screen (SCREEN_REFUSAL_SELECTOR, inlined: this runs in the page): the check's user may not
+  // open this route, so the screen behind it was not seen.
+  if (doc.querySelector('[data-cy^="code-screen-no-access"]')) {
+    findings.push({
+      kind: 'unreachable',
+      component: 'Code mode app',
+      reason: 'screen_refused',
+      detail: `ToolJet showed "You don't have access to this screen"${route ? ` for ${route}` : ''}: the check's signed-in user may not open it (a screen limit), so this screen was not checked. The refusal is ToolJet's, not the app's: change nothing for it`,
+    });
   }
   const root = doc.getElementById('tj-frame-root');
   const text = (root?.innerText ?? '').trim();
