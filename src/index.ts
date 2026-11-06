@@ -7,6 +7,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { buildServer, buildUnconfiguredServer, packsReady } from './server.js';
 import { isLoopbackHost, readJsonBody } from './httpServer.js';
+import { refuseForeignRequest } from './requestOrigin.js';
 import { createOAuthHttpServer, oauthHttpOptionsFromEnv } from './oauthHttp.js';
 import { bearerValue, checkBearerToken } from './httpAuth.js';
 import { isBuildToken, mintAuthorized, mintBuildToken, mintSecret, resolveBuildToken, revokeBuildToken } from './buildTokens.js';
@@ -52,16 +53,12 @@ export function createGatewayHttpServer({ bindHost }: { bindHost?: string } = {}
      default precisely because that token now travels over the wire. */
   const gatewayMode = Boolean(sharedToken);
 
-  /* Gateway mode serves EVERY user, so the acting user must arrive per request. Require it
-     explicitly when asked: a deployment that also has a PAT configured would otherwise fall back to
-     that shared identity the moment the caller forgot the header, and every build would still
-     succeed, just attributed to the wrong person. Where no PAT is configured the requirement is
-     already implicit, since there would be nothing to fall back to. Direct mode is exempt: its
-     whole point is that one operator's own credential drives the server. */
-  const requireUserSession =
-    gatewayMode &&
-    (/^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_USER_SESSION ?? '') ||
-      !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN));
+  /* Gateway mode serves EVERY user, so the acting user must arrive per request, always: a request
+     that named nobody used to fall back to a TOOLJET_PAT configured on the process (unless
+     MCP_REQUIRE_USER_SESSION was set), acting as the operator for whoever held the shared bearer.
+     The process credential never acts for a gateway request now. Direct mode is exempt: its whole
+     point is that one operator's own credential drives the server. */
+  const requireUserSession = gatewayMode;
 
   /* Same idea, for the target backend rather than the acting user: gateway mode can serve many
      different ToolJet backends, so a deployment can demand every request name its own via
@@ -72,6 +69,11 @@ export function createGatewayHttpServer({ bindHost }: { bindHost?: string } = {}
      the port, so every request must bring its own credential, which ToolJet checks. On loopback it stays the
      operator's own server, where the configured credential is theirs. */
   const requireRequestCredential = !gatewayMode && bindHost !== undefined && !isLoopbackHost(bindHost);
+
+  /* DNS rebinding: a web page whose host name resolves to this machine could drive a loopback server with the
+     operator's PAT. Every request must name this server in Host, and a browser's Origin must be local or allowed
+     (requestOrigin.ts). The address is the one serveHttp listens on when none is configured. */
+  const listenHost = bindHost ?? (gatewayMode ? '0.0.0.0' : '127.0.0.1');
 
   /** POST mints a build token for the caller's own session; DELETE revokes one. Authorised by the
    *  mint secret, and the minted identity comes from this request's own headers, so a caller can only
@@ -131,6 +133,7 @@ export function createGatewayHttpServer({ bindHost }: { bindHost?: string } = {}
   };
 
   const httpServer = createServer(async (req, res) => {
+    if (refuseForeignRequest(req, res, { bindHost: listenHost })) return;
     const requestPath = new URL(req.url ?? '/', 'http://localhost').pathname;
     const bearer = bearerValue(req.headers.authorization);
 
@@ -258,7 +261,8 @@ export function createGatewayHttpServer({ bindHost }: { bindHost?: string } = {}
     const readsResource = !!parsedBody && typeof parsedBody === 'object' && !Array.isArray(parsedBody) &&
       (parsedBody as { method?: unknown }).method === 'resources/read';
 
-    const server = buildServer(identity, { hosted: true });
+    // A gateway request always names its user (checked above), so this process's own credential never acts for it.
+    const server = buildServer(identity, { hosted: true, requireIdentity: gatewayMode });
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: readsResource });
     res.on('close', () => {
       transport.close();
