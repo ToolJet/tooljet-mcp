@@ -398,7 +398,8 @@ const PLACEHOLDER_NAME = /^Untitled App\b/;
 async function nameApp(
   client: Pick<ToolJetClient, 'renameApp'> | undefined,
   dir: string,
-  name: string
+  name: string,
+  replaceName?: string
 ): Promise<{ renamed_to?: string; rename_warning?: string }> {
   let snapshot: { appId?: string; appName?: string; versionId?: string };
   try {
@@ -406,7 +407,10 @@ async function nameApp(
   } catch {
     return {};
   }
-  if (!client || !snapshot.appId || !snapshot.versionId || !PLACEHOLDER_NAME.test(snapshot.appName ?? '')) return {};
+  // replaceName: the name the dashboard gave a new Code mode app from the prompt's first words ("I run procurement at",
+  // 2026-11-05), which the agent passes on; the app keeps any other name someone chose.
+  const standIn = PLACEHOLDER_NAME.test(snapshot.appName ?? '') || (!!replaceName && snapshot.appName === replaceName);
+  if (!client || !snapshot.appId || !snapshot.versionId || !standIn || snapshot.appName === name) return {};
   try {
     await client.renameApp(snapshot.appId, snapshot.versionId, name);
     return { renamed_to: name };
@@ -505,8 +509,9 @@ export function codeAppScaffoldTool(context: CodeContext): ToolDef {
       name: z.string().regex(NAME).describe('Project folder: lowercase letters, digits and hyphens, e.g. inventory-console'),
       display_name: z.string().min(1).max(100).describe("The app's name; an app still called \"Untitled App\" is renamed to it"),
       app_id: z.string().uuid().describe('The app from create_app'),
+      rename_from: z.string().max(100).optional().describe('Set by ToolJet; leave it out'),
     },
-    handler: inScope(context, async (args: { name: string; display_name: string; app_id: string }) => {
+    handler: inScope(context, async (args: { name: string; display_name: string; app_id: string; rename_from?: string }) => {
       try {
         // Before anything is created or installed: a stranger's app id, or one the caller can only view, costs no disk
         // and no install.
@@ -533,7 +538,7 @@ export function codeAppScaffoldTool(context: CodeContext): ToolDef {
         const pull = await cli(dir, ['app', 'pull']);
         if (pull.code !== 0) throw new Error(`tooljet app pull failed: ${pull.output}`);
         const restored = created ? await restoreStoredCode(dir) : {};
-        const naming = await nameApp(context.client, dir, args.display_name);
+        const naming = await nameApp(context.client, dir, args.display_name, args.rename_from);
         if (!existing && !restored.stored_code) rememberScaffold(dir);
         return ok({
           project_dir: dir,
@@ -592,7 +597,15 @@ async function syncEditorEdits(dir: string, { force = false } = {}): Promise<{ e
   // (2026-11-03). Only the check that found no stored code counts, so a project that has code still pulls every time.
   if (!force && nothingStored.has(dir)) return {};
   if (force) forgetSourceRevision(dir);
-  const pull = await cli(dir, ['app', 'source-pull'], 60_000);
+  let pull = await cli(dir, ['app', 'source-pull'], 60_000);
+  /*
+    The first pull of a build, before this build has written anything: files that differ here are only this server's
+    copy, never anyone's work, so ToolJet's code replaces them (the CLI keeps a copy in .tooljet/before-pull). A plain
+    pull refused when the copy was behind a new draft holding the user's Code panel edit, so the agent could neither read
+    the edit nor install over it (2026-11-05: a hand edit that did not build, which the agent was asked to fix).
+  */
+  if (force && pull.code !== 0 && /Not pulled\. These files differ/i.test(pull.output))
+    pull = await cli(dir, ['app', 'source-pull', '--force'], 60_000);
   // A refusal is an answer about who is asking, so nothing goes on from a local copy. Anything else may be a passing fault.
   if (pull.code !== 0 && /\b(401|403)\b|unauthori[sz]ed|forbidden/i.test(pull.output)) throw new Error('ToolJet refused access to this app\'s stored code.');
   if (pull.code !== 0) return { sync_warning: `Could not check the ToolJet editor for edits: ${pull.output.trim().slice(0, 300)}` };
