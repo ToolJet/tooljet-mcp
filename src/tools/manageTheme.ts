@@ -6,64 +6,20 @@ export const THEME_LICENCE_USER_MESSAGE =
   'Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. ' +
   'Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.';
 import { fail, ok, type ToolDef } from './types.js';
-import { paintsDarkCanvasInLightMode } from './createApp.js';
-import { accentWarning } from '../themeAccent.js';
+import { loadStandardTheme, paintsDarkCanvasInLightMode } from './createApp.js';
+import { accentWarning, hsl } from '../themeAccent.js';
+import { themeDefinition } from './themeDefinition.js';
 
-const colorPair = z.object({
-  light: z.string().trim().min(1).max(100).describe('Color used in light mode; hex is recommended.'),
-  dark: z.string().trim().min(1).max(100).describe('Color used in dark mode; hex is recommended.'),
-}).strict();
-
-export const themeDefinition = z.object({
-  brand: z.object({
-    colors: z.object({
-      primary: colorPair,
-      secondary: colorPair.optional(),
-      tertiary: colorPair.optional(),
-    }).strict(),
-  }).strict(),
-  text: z.object({
-    font: z.string().trim().min(1).max(200),
-    colors: z.object({
-      primary: colorPair,
-      placeholder: colorPair.optional(),
-      disabled: colorPair.optional(),
-    }).strict(),
-  }).strict(),
-  border: z.object({
-    radius: z.object({
-      default: z.number().nonnegative(),
-      small: z.number().nonnegative(),
-      large: z.number().nonnegative(),
-    }).strict(),
-    colors: z.object({
-      default: colorPair,
-      weak: colorPair.optional(),
-      disabled: colorPair.optional(),
-    }).strict(),
-  }).strict(),
-  systemStatus: z.object({
-    colors: z.object({
-      success: colorPair,
-      error: colorPair.optional(),
-      warning: colorPair.optional(),
-    }).strict(),
-  }).strict(),
-  surface: z.object({
-    colors: z.object({
-      appBackground: colorPair,
-      surface1: colorPair,
-      surface2: colorPair,
-      surface3: colorPair,
-    }).strict(),
-  }).strict(),
-}).strict();
+export { themeDefinition };
 
 type Args = {
   action: 'list' | 'create' | 'set_default' | 'update_definition' | 'rename' | 'delete';
   theme_id?: string;
   name?: string;
   definition?: z.infer<typeof themeDefinition>;
+  primary?: string;
+  font?: string;
+  radius?: number;
   is_default?: boolean;
   confirm?: boolean;
   include_definitions?: boolean;
@@ -79,6 +35,54 @@ async function applyToApp(client: ToolJetClient, theme: AppTheme, args: Args, de
   await client.updateAppSettings({ appId: args.app_id, versionId: args.version_id,
     globalSettings: { theme, ...(mode ? { appMode: mode } : {}) } });
   return { app_id: args.app_id, version_id: args.version_id, ...(mode ? { app_mode: mode } : {}) };
+}
+
+const hex = (h: number, s: number, l: number): string => {
+  const channel = (n: number): string => {
+    const k = (n + h / 30) % 12;
+    return Math.round(255 * (l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, '0');
+  };
+  return `#${channel(0)}${channel(8)}${channel(4)}`;
+};
+
+/**
+ * A theme from the few choices that make it this app's. DeepSeek left `definition` out of 62 of 63 failed calls in 9 of 10
+ * builds (2026-11-04). Keeping the standard theme's greys around the chosen accent made apps look alike, and they graded
+ * 7.71 on design against 8.00 for full themes, so the neutrals and accents here all come from the accent's hue.
+ */
+export function definitionFromChoices(args: Pick<Args, 'primary' | 'font' | 'radius'>): z.infer<typeof themeDefinition> | undefined {
+  const accent = args.primary ? hsl(args.primary) : null;
+  if (!args.primary || !accent) return undefined;
+  const { h, s: sat, l } = accent;
+  const pair = (light: [number, number], dark: [number, number], hue = h) => ({ light: hex(hue, light[0], light[1]), dark: hex(hue, dark[0], dark[1]) });
+  const base = loadStandardTheme().definition as z.infer<typeof themeDefinition>;
+  const radius = args.radius ?? base.border.radius.default;
+  return {
+    brand: {
+      colors: {
+        primary: { light: args.primary, dark: hex(h, sat, Math.max(l, 0.62)) },
+        secondary: pair([0.45, 0.22], [0.4, 0.78]),
+        tertiary: pair([0.65, 0.42], [0.65, 0.68], (h + 35) % 360),
+      },
+    },
+    text: {
+      font: args.font ?? base.text.font,
+      colors: { primary: pair([0.28, 0.13], [0.18, 0.94]), placeholder: pair([0.12, 0.45], [0.1, 0.65]), disabled: pair([0.1, 0.68], [0.08, 0.45]) },
+    },
+    border: {
+      radius: { default: radius, small: Math.max(radius - 2, 0), large: radius + 4 },
+      colors: { default: pair([0.22, 0.86], [0.12, 0.24]), weak: pair([0.24, 0.91], [0.12, 0.19]), disabled: pair([0.16, 0.82], [0.1, 0.28]) },
+    },
+    systemStatus: base.systemStatus,
+    surface: {
+      colors: {
+        appBackground: pair([0.3, 0.965], [0.16, 0.075]),
+        surface1: { light: '#ffffff', dark: hex(h, 0.14, 0.11) },
+        surface2: pair([0.28, 0.94], [0.13, 0.145]),
+        surface3: pair([0.24, 0.9], [0.12, 0.19]),
+      },
+    },
+  };
 }
 
 function requireValue<T>(value: T | undefined, label: string): T {
@@ -114,6 +118,9 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
       action: z.enum(['list', 'create', 'set_default', 'update_definition', 'rename', 'delete']),
       theme_id: z.string().uuid().optional(),
       name: z.string().trim().min(1).max(100).optional(),
+      primary: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().describe('create: the accent colour as a hex. With font and radius, this is all a theme needs; the rest is derived from its hue'),
+      font: z.string().trim().min(1).max(100).optional().describe('create, with primary: one font family name'),
+      radius: z.number().min(0).max(32).optional().describe('create, with primary: corner radius in px'),
       definition: themeDefinition.optional(),
       is_default: z.boolean().optional(),
       confirm: z.boolean().optional(),
@@ -143,6 +150,14 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
         }
 
         if (args.action === 'create') {
+          // Every missing field in one answer: refused for its name, then for its primary, 20 Code builds had 33 failed
+          // creates (2026-11-04), each a model call over the whole context.
+          const missing = [
+            ...(args.name === undefined ? ['name (at least 5 characters, the brand or app, e.g. "Harbor Ledger")'] : []),
+            ...(args.definition === undefined && !definitionFromChoices(args)
+              ? ['primary (the accent as a hex colour, e.g. "#0f766e"; font and radius are optional)'] : []),
+          ];
+          if (missing.length) throw new Error(`manage_theme create needs ${missing.join(' and ')}. Send them together in one call.`);
           const name = requireValue(args.name, 'name');
           if (name.length < 5) throw new Error('Theme name must contain at least 5 characters.');
           if (name === 'ToolJet') throw new Error('The reserved theme name "ToolJet" cannot be used.');
@@ -163,13 +178,14 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
             });
           }
           try {
+            const definition = requireValue(args.definition ?? definitionFromChoices(args), 'primary (a hex colour; font and radius are optional)');
             const created = await client.createAppTheme({
               name,
-              definition: requireValue(args.definition, 'definition'),
+              definition,
               isDefault: args.is_default ?? false,
             });
-            const applied = await applyToApp(client, created, args, args.definition);
-            const accent = accentWarning(args.definition);
+            const applied = await applyToApp(client, created, args, definition);
+            const accent = accentWarning(definition);
             return ok({ theme: created, ...(applied ? { applied } : {}), ...(accent ? { warnings: [accent] } : {}) });
           } catch (error) {
             // Custom themes are a licensed feature; Community Edition answers 451. That is a fact about

@@ -9,6 +9,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { activePackSet } from './packScope.js';
 
 export interface LibraryPack {
   pack: string;
@@ -23,12 +24,13 @@ export interface LibraryPack {
   components: Record<string, { type: string; props: string[]; events: string[]; [key: string]: unknown }>;
 }
 
-let discovered: LibraryPack[] | null = null;
 let offline: LibraryPack | null | undefined;
 
 /** The packs this server knows: those discovered in the workspace at start-up (packCatalog.ts), else the offline
  *  data/library-pack.json. */
 export function libraryPacksAll(): LibraryPack[] {
+  // The active pack set's (packScope.ts): the packs of the workspace this request is for, never another's.
+  const discovered = activePackSet().packs;
   if (discovered) return discovered;
   if (offline === undefined) {
     try {
@@ -42,7 +44,8 @@ export function libraryPacksAll(): LibraryPack[] {
 }
 
 export function registerLibraryPacks(packs: LibraryPack[]): void {
-  discovered = packs;
+  const set = activePackSet();
+  set.packs = packs;
 }
 
 /** The first known pack (callers that need any pack at all). */
@@ -109,8 +112,9 @@ export function libraryTypeOf(component: { type?: string; properties?: Section }
     const name = value('componentName');
     if (typeof id !== 'string' || typeof name !== 'string') return undefined;
     const known = libraryPacksAll().find((p) => p.pack === id);
-    // A pack this server has not read still reads back as its Lib_* type, so the agent sees what is on the page.
-    return !known || known.components[name] ? `Lib_${id}_${name}` : undefined;
+    // A pack this server has not read still reads back as a Lib_* type, so the agent sees what is on the page.
+    if (!known) return `Lib_${id.toLowerCase().replace(/[^a-z0-9]+/g, '')}_${name}`;
+    return known.components[name] ? `${known.prefix}${name}` : undefined;
   }
   const pack = libraryPacksAll().find((p) => p.correlationId === value('correlationId'));
   const name = value('componentName');

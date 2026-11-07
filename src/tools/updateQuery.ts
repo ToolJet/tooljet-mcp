@@ -4,6 +4,7 @@ import { prepareQueryOptionsForWrite } from '../queryPersistence.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { resolveRef } from '../refResolution.js';
 import { inspectUpdateCompatibility } from '../tableQueryCompatibility.js';
+import { refuseBrowserUser } from './addQueries.js';
 
 export function updateQueryTool(client: ToolJetClient): ToolDef {
   return {
@@ -19,7 +20,8 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
       'FULL options object, not a partial. Pass app_id so the existing query kind is resolved and options are ' +
       'validated. To repoint a query, also pass datasource_id; validation happens before the datasource changes, ' +
       'and MCP attempts to roll back the source if the subsequent option update fails. The query toggles (runOnPageLoad, ' +
-      'runOnDependencyChange, requestConfirmation, showSuccessNotification) must be true or false on every call.',
+      'runOnDependencyChange, requestConfirmation, showSuccessNotification) must be true or false on every call. ' +
+      'In a Code mode app (pass app_id), {{globals.currentUser.*}} in options is refused: use {{globals.server.currentUser.*}}.',
     inputSchema: {
       query_id: z.string().optional().describe('the query id, or its name; with only name given, name picks the query'),
       version_id: z.string(),
@@ -82,6 +84,8 @@ export function updateQueryTool(client: ToolJetClient): ToolDef {
           }
           kind = datasource.kind;
         }
+
+        await refuseBrowserUser(client, args.app_id, [{ name: args.name ?? input.query_id ?? args.query_id, options: args.options }]);
 
         // The shared write preparation. Its toggle rules hold with or without a kind; the kind's normalization and
         // contract only when this call can resolve it (a bare query_id + version_id update cannot).
