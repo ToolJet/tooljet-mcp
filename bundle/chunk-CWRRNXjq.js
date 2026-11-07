@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { r as require_lib, a as activePackSet, l as lintSelectedRowProjections, g as getComponentSchema, b as getCatalog, c as getLegacyComponentReplacement, d as lintBindingNames, e as bindingSpans } from "./chunk-sf3XXkm1.js";
+import { r as require_lib, a as activePackSet, l as lintSelectedRowProjections, g as getComponentSchema, b as getCatalog, c as getLegacyComponentReplacement, d as lintBindingNames, e as bindingSpans } from "./chunk-CLUrdGoT.js";
 import { s as surfaceAroundResolver, l as lintOversizedWidths, a as lintHtmlContentHeight, b as lintHtmlRootSurface, c as lintUnguardedComponentRefs, d as lintEmbeddedBindingSyntax, e as lintChartDataShape, f as lintUnguardedSelectionText, g as lintTextFormat, h as lintTableColumnsShape, B as BARE_QUERY_DATA_BINDING, i as lintUntriggeredDataQueries, j as lintAutomaticWrites, p as parseHtml, k as stripHtmlBindings } from "./chunk-DzndRVyJ.js";
 import { p as parseExpression, a as parse } from "./chunk-ePnPD46e.js";
 import { ax as external_exports } from "./chunk-Dakrk_ob.js";
