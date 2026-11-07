@@ -3309,9 +3309,22 @@ function httpUrl(value) {
 function renderAuditOrigins(configuredBase, additional = "") {
   return /* @__PURE__ */ new Set([httpUrl(configuredBase).origin, ...additional.split(",").map((s) => s.trim()).filter(Boolean).map((s) => httpUrl(s).origin)]);
 }
+function isSandboxFrameDocument(url, configured = process.env.CODE_MODE_SANDBOX_URL) {
+  if (!configured || !url.pathname.endsWith("/api/code-frame/frame.html"))
+    return false;
+  try {
+    const sandbox = new URL(configured.replace("*.", "wildcard."));
+    const host = sandbox.hostname.replace(/^wildcard\./, "");
+    const hostMatches = configured.includes("*.") ? url.hostname.endsWith(`.${host}`) : url.hostname === host;
+    return hostMatches && url.protocol === sandbox.protocol && url.port === sandbox.port;
+  } catch {
+    return false;
+  }
+}
 function renderAuditUrlAllowed(value, origins) {
   try {
-    return origins.has(httpUrl(value).origin);
+    const url = httpUrl(value);
+    return origins.has(url.origin) || isSandboxFrameDocument(url);
   } catch {
     return false;
   }
@@ -3825,14 +3838,14 @@ function auditScript() {
   }
   return { widgets: widgets.length, findings: findings.slice(0, 60) };
 }
-function codePageAuditScript(route) {
-  const frame = document.querySelector("iframe[data-tj-code-page-frame]");
-  if (!frame)
+function codePageAuditScript(route, outside) {
+  const frame = outside ? null : document.querySelector("iframe[data-tj-code-page-frame]");
+  if (!outside && !frame)
     return null;
   const findings = [];
-  const doc = frame.contentDocument;
-  const width = window.innerWidth;
-  const host = document.scrollingElement;
+  const doc = outside ? document : frame.contentDocument;
+  const width = outside ? outside.width : window.innerWidth;
+  const host = outside ? outside : document.scrollingElement;
   if (host && host.scrollWidth > host.clientWidth + 1)
     findings.push({ kind: "overflow", component: "Code mode app", detail: `the page scrolls sideways at ${width}px (${host.scrollWidth}px wide)` });
   if (!doc || !doc.body) {
@@ -3856,9 +3869,9 @@ function codePageAuditScript(route) {
   const scroller = doc.scrollingElement;
   if (scroller && scroller.scrollWidth > scroller.clientWidth + 1)
     findings.push({ kind: "overflow", component: "Code mode app", detail: `the app scrolls sideways at ${width}px (${scroller.scrollWidth}px of content in ${scroller.clientWidth}px)` });
-  const frameRect = frame.getBoundingClientRect();
-  if (frameRect.bottom > window.innerHeight + 1)
-    findings.push({ kind: "clipped", component: "Code mode app", detail: `the app runs ${Math.round(frameRect.bottom - window.innerHeight)}px below the window` });
+  const below = outside ? outside.below : frame.getBoundingClientRect().bottom - window.innerHeight;
+  if (below > 1)
+    findings.push({ kind: "clipped", component: "Code mode app", detail: `the app runs ${Math.round(below)}px below the window` });
   const describe = (el) => {
     const id = el.getAttribute("data-testid") || el.id;
     const label = (el.textContent ?? "").trim().replace(/\s+/g, " ").slice(0, 40);
@@ -3965,8 +3978,44 @@ var LONG_REQUEST_MS = 3e3;
 var STREAM_PATHS = /\/api\/code-page-security$/;
 function codeFrameDrawn() {
   const frame = document.querySelector("iframe[data-tj-code-page-frame]");
+  if (frame?.hasAttribute("data-tj-code-page-isolated"))
+    return true;
   const root2 = frame?.contentDocument?.getElementById("tj-frame-root");
   return !!root2 && root2.children.length > 0;
+}
+async function isolatedFrame(page) {
+  const handle = await page.$("iframe[data-tj-code-page-frame][data-tj-code-page-isolated]");
+  return await handle?.contentFrame() ?? null;
+}
+async function waitForIsolatedFrame(page, untilMs) {
+  while (Date.now() < untilMs) {
+    const frame = await isolatedFrame(page).catch(() => null);
+    if (!frame)
+      return;
+    const drawn = await frame.evaluate(() => {
+      const root2 = document.getElementById("tj-frame-root");
+      return !!root2 && root2.children.length > 0;
+    }).catch(() => false);
+    if (drawn)
+      return;
+    await page.waitForTimeout(100);
+  }
+}
+async function auditCodePage(page, route) {
+  const frame = await isolatedFrame(page);
+  if (!frame)
+    return page.evaluate(codePageAuditScript, route);
+  const outside = await page.evaluate(() => {
+    const el = document.querySelector("iframe[data-tj-code-page-frame]");
+    const host = document.scrollingElement;
+    return {
+      width: window.innerWidth,
+      scrollWidth: host?.scrollWidth ?? 0,
+      clientWidth: host?.clientWidth ?? 0,
+      below: el.getBoundingClientRect().bottom - window.innerHeight
+    };
+  });
+  return frame.evaluate(`(${codePageAuditScript.toString()})(${route ? JSON.stringify(route) : "undefined"}, ${JSON.stringify(outside)})`);
 }
 async function settleWhenQuiet(page, tracker, maxMs) {
   const started = Date.now();
@@ -4170,15 +4219,18 @@ async function auditPages(pages, options = {}, driver = loadPlaywright) {
         reports[index] = unreachable(p, [401, 403].includes(status) ? "auth_required" : "navigation_failed", "Viewer returned HTTP " + status);
         return;
       }
+      const contentWaitMs = options.contentWaitMs ?? Number(process.env.MCP_RENDER_AUDIT_CONTENT_WAIT_MS || 3e4);
+      const waitStarted = Date.now();
       await page.waitForFunction(() => {
         if (!document.querySelector('[data-cy^="draggable-widget-"]'))
           return false;
         const frame = document.querySelector("iframe[data-tj-code-page-frame]");
-        if (!frame)
+        if (!frame || frame.hasAttribute("data-tj-code-page-isolated"))
           return true;
         const root2 = frame.contentDocument?.getElementById("tj-frame-root");
         return !!root2 && root2.children.length > 0;
-      }, void 0, { timeout: options.contentWaitMs ?? Number(process.env.MCP_RENDER_AUDIT_CONTENT_WAIT_MS || 3e4) }).catch(() => void 0);
+      }, void 0, { timeout: contentWaitMs }).catch(() => void 0);
+      await waitForIsolatedFrame(page, waitStarted + contentWaitMs);
       const codeFrame = network ? options.codePage || await page.evaluate(() => !!document.querySelector("iframe[data-tj-code-page-frame]")).catch(() => false) : false;
       if (codeFrame === true) {
         await settleWhenQuiet(page, network, options.settleMs ?? 6e3);
@@ -4198,7 +4250,7 @@ async function auditPages(pages, options = {}, driver = loadPlaywright) {
         return;
       }
       const result = await page.evaluate(auditScript);
-      const codePage = await page.evaluate(codePageAuditScript, new URL(p.url).searchParams.get("route") || void 0);
+      const codePage = await auditCodePage(page, new URL(p.url).searchParams.get("route") || void 0);
       if (Array.isArray(codePage)) {
         const accessibility = await axeInCodePage(page).catch(() => void 0);
         let screenshot;
