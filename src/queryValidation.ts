@@ -828,7 +828,20 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
       const flat = Object.entries(columns).filter(
         ([, clause]) => !isObject(clause) || typeof clause.column !== 'string' || clause.column === ''
       );
-      if (flat.length > 0) {
+      const nested = Object.entries(columns).find(
+        ([, clause]) => isObject(clause) && (isColumnRecordMap(clause) || isColumnRecordMap(clause.value))
+      );
+      if (nested) {
+        errors.push({
+          code: 'malformed_write_columns',
+          path: `${columnsPath}.${nested[0]}`,
+          message:
+            `ToolJet DB ${operation} "${columnsPath}" holds a whole column map inside "${nested[0]}". ToolJet writes ` +
+            `each entry as one column, so this inserts a column named "${(nested[1] as any).column ?? nested[0]}" and ` +
+            `fails with "Could not find the column ... in the schema cache". Put the {column, value} entries directly ` +
+            `under "${columnsPath}" (ToolJet DB has no "columns" level; that is the SQL plugins' shape).`,
+        });
+      } else if (flat.length > 0) {
         const example = flat[0][0];
         errors.push({
           code: 'malformed_write_columns',
@@ -924,6 +937,26 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
     }
   }
 
+  if (kind === 'tooljetdb' && operation === 'delete_rows') {
+    // deleteRows defaults an absent limit to 1 and sends `order` only with order_column. PostgREST
+    // v12 (the production image) refuses a limited DELETE with no order ("A limit was applied
+    // without an explicit order"), so every such delete failed in the released app; v14 on dev
+    // stacks accepts it. The App Builder sends limit "" (no limit: every matching row).
+    const deleteRows = valueAtPath(options, 'delete_rows');
+    const limit = isObject(deleteRows) ? deleteRows.limit : undefined;
+    const ordered = isObject(deleteRows) && Boolean(deleteRows.order_column || deleteRows.order_column_id);
+    if (limit !== '' && !ordered) {
+      errors.push({
+        code: 'unordered_delete_limit',
+        path: 'delete_rows.limit',
+        message:
+          'ToolJet DB delete_rows needs "limit": "" (delete every row the where_filters match, as the App Builder ' +
+          'does) or a limit with "order_column" (for example "id"). Without either, ToolJet applies limit 1 with ' +
+          'no order and the production database refuses the delete, so it fails every time in the released app.',
+      });
+    }
+  }
+
   if (kind === 'tooljetdb' && ['list_rows', 'update_rows', 'delete_rows'].includes(operation)) {
     // ToolJet DB returns date and timestamp columns as full ISO timestamps with an offset
     // ("2026-09-04T00:00:00+00:00"), so an equality filter against a calendar day matches nothing:
@@ -1007,12 +1040,23 @@ export function issueMessages(issues: QueryValidationIssue[], prefix?: string): 
  * unambiguous; normalizing here fixes it at authoring time and the validation above stays as the
  * backstop for anything that reaches the spec another way. Entries already in {column, value} form
  * are passed through untouched, so a partially-correct map is preserved. */
+/** A non-empty {index: {column, value}} map: the whole write, not one column's value. */
+function isColumnRecordMap(value: unknown): value is Record<string, Record<string, unknown>> {
+  return (
+    isObject(value) &&
+    Object.keys(value).length > 0 &&
+    Object.values(value).every((clause) => isObject(clause) && typeof clause.column === 'string' && clause.column !== '')
+  );
+}
+
 function normalizeWriteColumnMap(columns: unknown): Record<string, unknown> | null {
   if (!isObject(columns) || Object.keys(columns).length === 0) return null;
   const entries = Object.entries(columns);
   if (entries.every(([, clause]) => isObject(clause) && typeof clause.column === 'string' && clause.column !== '')) {
     return null; // already correct — do not rewrite keys
   }
+  // A whole column map under one key is not a column and its value: left alone, the validation refuses it.
+  if (entries.some(([, clause]) => isColumnRecordMap(clause))) return null;
   const normalized: Record<string, unknown> = {};
   entries.forEach(([key, clause], index) => {
     if (isObject(clause) && typeof clause.column === 'string' && clause.column !== '') {
@@ -1047,8 +1091,20 @@ export function normalizeQueryOptions(kind: string, rawOptions: Record<string, u
   const operation = typeof options.operation === 'string' ? options.operation : '';
 
   if (operation === 'create_row') {
-    const normalized = normalizeWriteColumnMap(options.create_row);
-    return normalized ? { ...options, create_row: normalized } : options;
+    // The SQL plugins' shape, `create_row.columns`, written for ToolJet DB: unwrapped first. Repaired as a flat map it
+    // became one column named "columns", and every insert failed with "Could not find the 'columns' column of <table> in
+    // the schema cache" (QA 2026-11-06: HOTEL-01, HOTEL-03, I18N-01).
+    // An app saved with that broken repair ({"0": {"column": "columns", "value": <map>}}) is mended the same way.
+    const createRow = options.create_row;
+    const only = isObject(createRow) && Object.keys(createRow).length === 1 ? Object.values(createRow)[0] : undefined;
+    const unwrapped = isColumnRecordMap((createRow as any)?.columns)
+      ? (createRow as any).columns
+      : isObject(only) && only.column === 'columns' && isColumnRecordMap(only.value)
+        ? only.value
+        : createRow;
+    const normalized = normalizeWriteColumnMap(unwrapped);
+    if (normalized) return { ...options, create_row: normalized };
+    return unwrapped === createRow ? options : { ...options, create_row: unwrapped };
   }
 
   if (operation === 'update_rows') {
