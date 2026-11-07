@@ -14,10 +14,11 @@ import { b as readCatalogBytes } from "./chunk-ePnPD46e.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { createServer } from "node:http";
+import { statSync, readFileSync, accessSync, constants } from "node:fs";
+import { homedir } from "node:os";
+import { resolve, dirname, basename, join } from "node:path";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { mkdir, appendFile } from "node:fs/promises";
-import { resolve, dirname, basename, join } from "node:path";
-import { statSync, accessSync, constants } from "node:fs";
 import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
 function createExchangeLimiter(limit = 300, trustedProxyHops = 0) {
@@ -348,6 +349,33 @@ var CUSTOMER_ID_HEADER = "x-tooljet-customer-id";
 var ALLOWED_API_ORIGINS_VAR = "MCP_ALLOWED_API_ORIGINS";
 var GATEWAY_URL_VAR = "MCP_GATEWAY_URL";
 var GATEWAY_TOKEN_VAR = "MCP_GATEWAY_TOKEN";
+function storedCliLogin(explicitApiUrl) {
+  const file = env("TOOLJET_CREDENTIALS_FILE") ?? join(homedir(), ".tooljet", "credentials.json");
+  let store;
+  try {
+    store = JSON.parse(readFileSync(file, "utf8"));
+  } catch {
+    return void 0;
+  }
+  const entry = store?.default ? store.workspaces?.[store.default] : void 0;
+  if (!entry?.url || !entry.apiToken)
+    return void 0;
+  let origin;
+  try {
+    origin = new URL(entry.url).origin;
+  } catch {
+    return void 0;
+  }
+  if (explicitApiUrl) {
+    try {
+      if (new URL(explicitApiUrl).origin !== origin)
+        return void 0;
+    } catch {
+      return void 0;
+    }
+  }
+  return { apiUrl: origin, pat: entry.apiToken };
+}
 function env(name) {
   const value = process.env[name]?.trim();
   return value ? value : void 0;
@@ -520,11 +548,15 @@ function loadConfig(identity) {
   }
   const apiUrl = staticApiUrl;
   const appUrl = explicitAppUrl ?? explicitApiUrl ?? "http://localhost:8082";
-  const pat = env("TOOLJET_PAT");
   const sessionToken = env("TOOLJET_SESSION_TOKEN");
+  const stored = !env("TOOLJET_PAT") && !sessionToken ? storedCliLogin(explicitApiUrl) : void 0;
+  const pat = env("TOOLJET_PAT") ?? stored?.pat;
   const workspaceId = env("TOOLJET_WORKSPACE_ID");
+  if (stored) {
+    return { apiUrl: stored.apiUrl, appUrl: explicitAppUrl ?? stored.apiUrl, pat: stored.pat };
+  }
   if (!pat && !sessionToken) {
-    throw new Error(`TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal access token in ToolJet under Settings \u2192 Access tokens, in the workspace you want this server to act on, and set TOOLJET_PAT. A shared HTTP server instead receives the acting user per request via the ${SESSION_TOKEN_HEADER} header.`);
+    throw new Error(`TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal access token in ToolJet under Settings \u2192 Access tokens, in the workspace you want this server to act on, and set TOOLJET_PAT. A shared HTTP server instead receives the acting user per request via the ${SESSION_TOKEN_HEADER} header. Or sign in once with \`tooljet auth login\`.`);
   }
   if (sessionToken && !workspaceId) {
     throw new Error("TOOLJET_WORKSPACE_ID is required alongside TOOLJET_SESSION_TOKEN.");
@@ -4675,7 +4707,9 @@ function scopeHandlers(server, packs, ready) {
     });
   };
 }
-function buildServer(identity, { hosted = false } = {}) {
+function buildServer(identity, { hosted = false, requireIdentity = false } = {}) {
+  if (requireIdentity && !identity)
+    throw new Error("This request names no user, and this server never acts with its own credential.");
   const config = loadConfig(identity);
   const auth = createAuth(config);
   const client = createClient(auth, config);
