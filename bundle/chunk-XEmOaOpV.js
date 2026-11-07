@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { i as fail, o as ok, u as assessQueryRead, x as resolvedReadRefusal, y as resolveStaticBindings, z as sqlConnectorPath, G as GUI_LIST_ROWS_KEYS, A as applyResolvedBindings, B as connectorLabel, S as SQL_DIALECT } from "./chunk-sf3XXkm1.js";
+import { i as fail, o as ok, u as assessQueryRead, x as resolvedReadRefusal, y as resolveStaticBindings, z as sqlConnectorPath, G as GUI_LIST_ROWS_KEYS, A as applyResolvedBindings, B as connectorLabel, S as SQL_DIALECT } from "./chunk-CLUrdGoT.js";
 import { ax as external_exports } from "./chunk-Dakrk_ob.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
