@@ -4122,7 +4122,14 @@ function validateQueryOptions(kind, options, executionContext = "app") {
       });
     if (isObject(columns) && Object.keys(columns).length > 0) {
       const flat = Object.entries(columns).filter(([, clause]) => !isObject(clause) || typeof clause.column !== "string" || clause.column === "");
-      if (flat.length > 0) {
+      const nested = Object.entries(columns).find(([, clause]) => isObject(clause) && (isColumnRecordMap(clause) || isColumnRecordMap(clause.value)));
+      if (nested) {
+        errors.push({
+          code: "malformed_write_columns",
+          path: `${columnsPath}.${nested[0]}`,
+          message: `ToolJet DB ${operation} "${columnsPath}" holds a whole column map inside "${nested[0]}". ToolJet writes each entry as one column, so this inserts a column named "${nested[1].column ?? nested[0]}" and fails with "Could not find the column ... in the schema cache". Put the {column, value} entries directly under "${columnsPath}" (ToolJet DB has no "columns" level; that is the SQL plugins' shape).`
+        });
+      } else if (flat.length > 0) {
         const example = flat[0][0];
         errors.push({
           code: "malformed_write_columns",
@@ -4163,6 +4170,18 @@ function validateQueryOptions(kind, options, executionContext = "app") {
         code: "malformed_where_filters",
         path: filtersPath,
         message: `ToolJet DB update_rows requires "${filtersPath}"; without it the write is unfiltered and updates EVERY ROW in the table. Add {"0": {"column", "operator", "value"}}.`
+      });
+    }
+  }
+  if (kind === "tooljetdb" && operation === "delete_rows") {
+    const deleteRows = valueAtPath(options, "delete_rows");
+    const limit = isObject(deleteRows) ? deleteRows.limit : void 0;
+    const ordered = isObject(deleteRows) && Boolean(deleteRows.order_column || deleteRows.order_column_id);
+    if (limit !== "" && !ordered) {
+      errors.push({
+        code: "unordered_delete_limit",
+        path: "delete_rows.limit",
+        message: 'ToolJet DB delete_rows needs "limit": "" (delete every row the where_filters match, as the App Builder does) or a limit with "order_column" (for example "id"). Without either, ToolJet applies limit 1 with no order and the production database refuses the delete, so it fails every time in the released app.'
       });
     }
   }
@@ -4236,6 +4255,9 @@ function validateQueryOptions(kind, options, executionContext = "app") {
 function issueMessages(issues, prefix) {
   return issues.map((issue2) => `${prefix ? `${prefix}: ` : ""}${issue2.message}`);
 }
+function isColumnRecordMap(value) {
+  return isObject(value) && Object.keys(value).length > 0 && Object.values(value).every((clause) => isObject(clause) && typeof clause.column === "string" && clause.column !== "");
+}
 function normalizeWriteColumnMap(columns) {
   if (!isObject(columns) || Object.keys(columns).length === 0)
     return null;
@@ -4243,6 +4265,8 @@ function normalizeWriteColumnMap(columns) {
   if (entries.every(([, clause]) => isObject(clause) && typeof clause.column === "string" && clause.column !== "")) {
     return null;
   }
+  if (entries.some(([, clause]) => isColumnRecordMap(clause)))
+    return null;
   const normalized = {};
   entries.forEach(([key3, clause], index) => {
     if (isObject(clause) && typeof clause.column === "string" && clause.column !== "") {
@@ -4273,8 +4297,13 @@ function normalizeQueryOptions(kind, rawOptions) {
     return options;
   const operation = typeof options.operation === "string" ? options.operation : "";
   if (operation === "create_row") {
-    const normalized = normalizeWriteColumnMap(options.create_row);
-    return normalized ? { ...options, create_row: normalized } : options;
+    const createRow = options.create_row;
+    const only = isObject(createRow) && Object.keys(createRow).length === 1 ? Object.values(createRow)[0] : void 0;
+    const unwrapped = isColumnRecordMap(createRow?.columns) ? createRow.columns : isObject(only) && only.column === "columns" && isColumnRecordMap(only.value) ? only.value : createRow;
+    const normalized = normalizeWriteColumnMap(unwrapped);
+    if (normalized)
+      return { ...options, create_row: normalized };
+    return unwrapped === createRow ? options : { ...options, create_row: unwrapped };
   }
   if (operation === "update_rows") {
     const updateRows = options.update_rows;
