@@ -11,7 +11,7 @@ const read = (p: string) => JSON.parse(readFileSync(resolve(root, p), 'utf8'));
 
 const AGENT_PLUGIN = read('plugin.json');
 const CODEX_PLUGIN = read('.codex-plugin/plugin.json');
-const CLAUDE_PLUGIN = read('.claude-plugin/plugin.json');
+const CLAUDE_PLUGIN = read('integrations/claude/plugin.json');
 const CLAUDE_MARKET = read('.claude-plugin/marketplace.json');
 const CODEX_MARKET = read('.agents/plugins/marketplace.json');
 
@@ -23,22 +23,26 @@ describe('plugin manifests agree across ecosystems', () => {
     expect(CODEX_MARKET.plugins.map((p: any) => p.name)).toContain(AGENT_PLUGIN.name);
   });
 
-  it('publishes one version, not three', () => {
-    expect(new Set([AGENT_PLUGIN.version, CODEX_PLUGIN.version, CLAUDE_PLUGIN.version]).size).toBe(1);
+  it('versions the Claude distribution independently and keeps its marketplace current', () => {
+    expect(AGENT_PLUGIN.version).toBe(CODEX_PLUGIN.version);
+    expect(CLAUDE_MARKET.plugins.find((p: any) => p.name === CLAUDE_PLUGIN.name).version).toBe(CLAUDE_PLUGIN.version);
+    expect(CLAUDE_MARKET.plugins.find((p: any) => p.name === CLAUDE_PLUGIN.name).source).toEqual({
+      source: 'github', repo: 'ToolJet/tooljet-mcp', ref: 'chore/claude-plugin-dist',
+    });
   });
 
   it('declares the same MCP server in both filenames', () => {
     expect(read('.mcp.json')).toEqual(read('mcp.json'));
   });
 
-  it('points every manifest at a bundle that exists', () => {
-    const args: string[] = [
-      ...read('mcp.json').mcpServers.tooljet.args,
-      ...CLAUDE_PLUGIN.mcpServers.tooljet.args,
+  it('keeps source-root installs runnable without the generated Claude distribution', () => {
+    const args: [string, string][] = [
+      ...read('mcp.json').mcpServers.tooljet.args.map((arg: string) => [root, arg]),
+      ...read('.claude-plugin/plugin.json').mcpServers.tooljet.args.map((arg: string) => [root, arg]),
     ];
-    for (const arg of args) {
+    for (const [directory, arg] of args) {
       const rel = arg.replace(/\$\{[A-Z_]+\}\//, '');
-      expect(existsSync(resolve(root, rel)), `${arg} -> ${rel}`).toBe(true);
+      expect(existsSync(resolve(directory, rel)), `${arg} -> ${rel}`).toBe(true);
     }
   });
 

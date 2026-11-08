@@ -58,7 +58,7 @@ jq --arg v "$NEW" '.version = $v' .claude-plugin/plugin.json > .claude-plugin/pl
 jq --arg v "$NEW" '.version = $v' .codex-plugin/plugin.json > .codex-plugin/plugin.json.tmp && mv .codex-plugin/plugin.json.tmp .codex-plugin/plugin.json
 jq --arg v "$NEW" '.plugins |= map(if has("version") then .version = $v else . end)' .claude-plugin/marketplace.json > .claude-plugin/marketplace.json.tmp && mv .claude-plugin/marketplace.json.tmp .claude-plugin/marketplace.json
 jq --arg v "$NEW" '.version = $v | .packages[""].version = $v' package-lock.json > package-lock.json.tmp && mv package-lock.json.tmp package-lock.json
-for manifest in registry/server.json plugins/tooljet-app-builder-skills/plugin.json plugins/tooljet-app-builder-skills/.claude-plugin/plugin.json plugins/tooljet-app-builder-skills/.codex-plugin/plugin.json; do
+for manifest in integrations/claude/plugin.json registry/server.json plugins/tooljet-app-builder-skills/plugin.json plugins/tooljet-app-builder-skills/.claude-plugin/plugin.json plugins/tooljet-app-builder-skills/.codex-plugin/plugin.json; do
   jq --arg v "$NEW" '.version = $v' "$manifest" > "$manifest.tmp" && mv "$manifest.tmp" "$manifest"
 done
 sed -i.bak "s/export const TOOLJET_MCP_VERSION = '.*';/export const TOOLJET_MCP_VERSION = '$NEW';/" src/runtimeFreshness.ts && rm -f src/runtimeFreshness.ts.bak
@@ -67,7 +67,7 @@ if [[ "$CURRENT_BRANCH" == "main" ]]; then
   git checkout -b "release/v$NEW"
 fi
 
-git add package.json package-lock.json plugin.json .claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json registry/server.json plugins/tooljet-app-builder-skills/plugin.json plugins/tooljet-app-builder-skills/.claude-plugin/plugin.json plugins/tooljet-app-builder-skills/.codex-plugin/plugin.json src/runtimeFreshness.ts
+git add integrations/claude/plugin.json package.json package-lock.json plugin.json .claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json registry/server.json plugins/tooljet-app-builder-skills/plugin.json plugins/tooljet-app-builder-skills/.claude-plugin/plugin.json plugins/tooljet-app-builder-skills/.codex-plugin/plugin.json src/runtimeFreshness.ts
 git commit -m "Chore: bump version to $NEW"
 
 if [[ "$CURRENT_BRANCH" == "main" ]]; then
