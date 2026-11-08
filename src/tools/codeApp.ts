@@ -11,6 +11,7 @@ import type { ToolJetClient } from '../tooljetClient.js';
 import { CLI_HOME_PREFIX, cleanOldProjects, touchProject, withBuildSlot } from '../codeBuildLimits.js';
 import { browserUserQueryProblems } from '../serverUserBindings.js';
 import { buildSummary, formatProblems, fromChecked, parseBuildProblems, type CheckedProblem } from '../codeTypeErrors.js';
+import { buildInService, buildServiceUrl } from '../codeBuildService.js';
 import {
   beforePullCopies,
   clearAgentWrites,
@@ -1189,7 +1190,8 @@ async function buildProject(dir: string, appId: string | undefined): Promise<Rec
   const escaped = removeEscapingLinks(dir);
   const started = Date.now();
   const pull = await cli(dir, ['app', 'pull']);
-  const build = await cli(join(dir, 'frontend'), ['library', 'build']);
+  // ToolJet cloud builds in the build service's sandbox (codeBuildService.ts); self-hosted builds here.
+  const build = buildServiceUrl() ? await buildInService(dir, 'production') : await cli(join(dir, 'frontend'), ['library', 'build']);
   const tsErrors = Number(/TypeScript compiled \((\d+) errors\)/.exec(build.output)?.[1] ?? (build.code === 0 ? 0 : 1));
   const problems = build.code === 0 && tsErrors === 0 ? [] : parseBuildProblems(build.output);
   const check = await cli(dir, ['app', 'check', '--offline', '--json']);
@@ -1384,7 +1386,14 @@ async function installProject(dir: string): Promise<Record<string, unknown> | Er
     );
   // Agent-built apps keep their source on ToolJet (owner platform) unless a repository owns it; the CLI refuses
   // to take a repository-owned source over and to overwrite editor edits it has not pulled.
-  const result = await cli(dir, ['app', 'dev', '--once', '--source', 'platform']);
+  // In the sandbox when the build service is set: the CLI here then only uploads the bundle it sent back and links it.
+  let prebuilt: string[] = [];
+  if (buildServiceUrl()) {
+    const built = await buildInService(dir, 'development');
+    if (built.code !== 0) throw new Error(built.output.trim());
+    prebuilt = ['--prebuilt', join(dir, 'frontend', 'dist')];
+  }
+  const result = await cli(dir, ['app', 'dev', '--once', '--source', 'platform', ...prebuilt]);
   if (result.code !== 0) throw new Error(result.output.trim());
   // Stored: the next build's first pull may take ToolJet's code over this copy again.
   clearAgentWrites(dir);
