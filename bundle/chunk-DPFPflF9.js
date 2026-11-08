@@ -1,11 +1,11 @@
 import { createRequire } from "node:module";
 import { i as fail, o as ok, u as assessQueryRead, x as resolvedReadRefusal, y as resolveStaticBindings, z as sqlConnectorPath, G as GUI_LIST_ROWS_KEYS, A as applyResolvedBindings, B as connectorLabel, S as SQL_DIALECT } from "./chunk-CLUrdGoT.js";
 import { ax as external_exports } from "./chunk-Dakrk_ob.js";
-import { execFile } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import { promisify } from "node:util";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync, statSync, readdirSync, renameSync, lstatSync, realpathSync, utimesSync, openSync, closeSync, mkdtempSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync, statSync, readdirSync, renameSync, lstatSync, realpathSync, utimesSync, mkdtempSync, openSync, closeSync } from "node:fs";
 import { tmpdir, homedir } from "node:os";
 import { join, relative, sep, dirname, resolve, basename, isAbsolute } from "node:path";
 import { createServer, request } from "node:http";
@@ -267,6 +267,75 @@ function buildSummary(output) {
   const lines = output.split("\n").map((l) => l.trimEnd());
   const keep = lines.filter((l) => /^\s*(✗|✓|⚠)/.test(l) || /Build completed in/.test(l));
   return keep.join("\n");
+}
+var run = promisify(execFile);
+var buildServiceUrl = () => process.env.MCP_CODE_BUILD_WORKER_URL?.trim().replace(/\/+$/, "") || void 0;
+var POLL_MS2 = Number(process.env.MCP_CODE_BUILD_WORKER_POLL_MS ?? 1500);
+var DEADLINE_MS = Number(process.env.MCP_CODE_BUILD_WORKER_TIMEOUT_MS ?? 10 * 6e4);
+var strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "");
+async function packProject(dir) {
+  const { stdout } = await run("tar", ["-czf", "-", "--exclude=node_modules", "--exclude=frontend/dist", "-C", dir, "app.json", "frontend"], { encoding: "buffer", maxBuffer: 64 * 1024 * 1024, env: { PATH: process.env.PATH ?? "/usr/bin:/bin", COPYFILE_DISABLE: "1" } });
+  return stdout;
+}
+async function buildInService(dir, env, fetchImpl = fetch) {
+  const base = buildServiceUrl();
+  if (!base)
+    throw new Error("MCP_CODE_BUILD_WORKER_URL is not set");
+  const token = process.env.MCP_CODE_BUILD_WORKER_TOKEN ?? "";
+  const headers = { authorization: `Bearer ${token}` };
+  const started = Date.now();
+  const unreachable = (detail) => ({
+    code: 1,
+    ms: Date.now() - started,
+    output: `The build service could not build this app (${detail}). Nothing was built here: try the build again in a minute.`
+  });
+  let id;
+  try {
+    const body = await packProject(dir);
+    const res = await fetchImpl(`${base}/jobs?env=${env}`, { method: "POST", headers: { ...headers, "content-type": "application/gzip" }, body: new Uint8Array(body) });
+    if (res.status !== 202)
+      return unreachable(`HTTP ${res.status} ${(await res.text()).trim().slice(0, 200)}`);
+    id = (await res.json()).id;
+  } catch (error) {
+    return unreachable(error instanceof Error ? error.message : String(error));
+  }
+  let job;
+  try {
+    for (; ; ) {
+      const res = await fetchImpl(`${base}/jobs/${id}`, { headers });
+      if (!res.ok)
+        return unreachable(`HTTP ${res.status} reading build ${id}`);
+      job = await res.json();
+      if (job.status === "done" || job.status === "failed")
+        break;
+      if (Date.now() - started > DEADLINE_MS)
+        return unreachable(`build ${id} did not finish in ${Math.round(DEADLINE_MS / 6e4)} minutes`);
+      await new Promise((resolve3) => setTimeout(resolve3, POLL_MS2));
+    }
+  } catch (error) {
+    return unreachable(error instanceof Error ? error.message : String(error));
+  } finally {
+    void fetchImpl(`${base}/jobs/${id}`, { method: "DELETE", headers }).catch(() => void 0);
+  }
+  const output = strip([job.output ?? "", job.error ? `
+${job.error}` : ""].join("")).trim();
+  const location = [job.location?.CLOUDFLARE_REGION, job.location?.CLOUDFLARE_LOCATION].filter(Boolean).join(" ") || void 0;
+  if (job.status === "done" && job.bundleTgzBase64) {
+    writeDist(join(dir, "frontend", "dist"), Buffer.from(job.bundleTgzBase64, "base64"));
+  }
+  return { code: job.status === "done" ? 0 : job.exitCode && job.exitCode > 0 ? job.exitCode : 1, output, location, ms: Date.now() - started };
+}
+function writeDist(dist, tgz) {
+  const scratch = mkdtempSync(join(tmpdir(), "tj-dist-"));
+  try {
+    const file = join(scratch, "bundle.tgz");
+    writeFileSync(file, tgz);
+    rmSync(dist, { recursive: true, force: true });
+    mkdirSync(dist, { recursive: true });
+    execFileSync("tar", ["-xzf", file, "-C", dist, "--no-same-owner"], { stdio: "pipe" });
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
+  }
 }
 var DEFAULT_REGISTRY = "https://registry.npmjs.org/";
 function realOrNearest(target) {
@@ -612,7 +681,7 @@ async function withProjectLock(lock, work, { waitMs, pollMs = 100 } = {}) {
     }
   }
 }
-var run = promisify(execFile);
+var run2 = promisify(execFile);
 var USER_WORDS = ` Talk to the user about "the app's code" and its versions (v1, v2): one version line, as for any app. Never say code version, revision, publishing code, bundle, library, manifest, root component, dev track or pin, and never show internal names, ids or paths.`;
 var noCodeIdentity = (client) => ({
   client,
@@ -793,7 +862,7 @@ var listFiles = (dir, base = dir, out = []) => {
   }
   return out.sort();
 };
-var strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "");
+var strip2 = (s) => s.replace(/\x1b\[[0-9;]*m/g, "");
 var HOST_ENV = [
   "PATH",
   "TMPDIR",
@@ -850,11 +919,11 @@ var COUNTED_COMMANDS = /* @__PURE__ */ new Set(["library build", "app dev", "app
 var runCli = async (cwd, args, timeoutMs) => {
   const [cmd, pre] = process.env.TOOLJET_CLI ? ["node", [process.env.TOOLJET_CLI]] : ["tooljet", []];
   try {
-    const { stdout, stderr } = await run(cmd, [...pre, ...args], { cwd, timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024, env: cliEnv() });
-    return { code: 0, output: strip(stdout + stderr) };
+    const { stdout, stderr } = await run2(cmd, [...pre, ...args], { cwd, timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024, env: cliEnv() });
+    return { code: 0, output: strip2(stdout + stderr) };
   } catch (err) {
     const e = err;
-    return { code: typeof e.code === "number" ? e.code : 1, output: strip((e.stdout ?? "") + (e.stderr ?? e.message ?? "")) };
+    return { code: typeof e.code === "number" ? e.code : 1, output: strip2((e.stdout ?? "") + (e.stderr ?? e.message ?? "")) };
   }
 };
 var serverModeChecked;
@@ -1427,7 +1496,7 @@ async function buildProject(dir, appId) {
   const escaped = removeEscapingLinks(dir);
   const started = Date.now();
   const pull = await cli(dir, ["app", "pull"]);
-  const build = await cli(join(dir, "frontend"), ["library", "build"]);
+  const build = buildServiceUrl() ? await buildInService(dir, "production") : await cli(join(dir, "frontend"), ["library", "build"]);
   const tsErrors = Number(/TypeScript compiled \((\d+) errors\)/.exec(build.output)?.[1] ?? (build.code === 0 ? 0 : 1));
   const problems = build.code === 0 && tsErrors === 0 ? [] : parseBuildProblems(build.output);
   const check = await cli(dir, ["app", "check", "--offline", "--json"]);
@@ -1572,7 +1641,14 @@ async function installProject(dir) {
   if (blocking.length)
     return new Error(`Not installed: the security scan has ${blocking.length} critical or high finding${blocking.length > 1 ? "s" : ""}. Fix them in the code (or remove the package), code_app_build, then install again:
 ` + blocking.map((f) => `${f.severity.toUpperCase()} ${f.ruleId} ${f.package ?? f.location}: ${f.message}`).join("\n"));
-  const result = await cli(dir, ["app", "dev", "--once", "--source", "platform"]);
+  let prebuilt = [];
+  if (buildServiceUrl()) {
+    const built = await buildInService(dir, "development");
+    if (built.code !== 0)
+      throw new Error(built.output.trim());
+    prebuilt = ["--prebuilt", join(dir, "frontend", "dist")];
+  }
+  const result = await cli(dir, ["app", "dev", "--once", "--source", "platform", ...prebuilt]);
   if (result.code !== 0)
     throw new Error(result.output.trim());
   clearAgentWrites(dir);
@@ -3142,11 +3218,11 @@ function autoReadSqlRefusal(sql, dialect) {
   if (overload)
     return `it calls ${overload}, which is not the built-in function's signature (another overload would run)`;
   const limit = top.match(/\blimit\s+(\d+)(?:\s*,\s*(\d+))?(?:\s+offset\s+\d+)?$/) ?? top.match(/\boffset\s+\d+(?:\s+rows?)?\s+limit\s+(\d+)$/);
-  const fetch = top.match(/\bfetch\s+(?:first|next)\s+(\d+)\s+rows?\s+only$/);
+  const fetch2 = top.match(/\bfetch\s+(?:first|next)\s+(\d+)\s+rows?\s+only$/);
   const topN = topBound(masked);
   if (topN && "refusal" in topN)
     return topN.refusal;
-  const bounds = [limit ? Number(limit[2] ?? limit[1]) : void 0, fetch ? Number(fetch[1]) : void 0, topN?.rows].filter((n) => n !== void 0);
+  const bounds = [limit ? Number(limit[2] ?? limit[1]) : void 0, fetch2 ? Number(fetch2[1]) : void 0, topN?.rows].filter((n) => n !== void 0);
   const bound = bounds.length ? Math.min(...bounds) : void 0;
   if (bound !== void 0) {
     return bound <= MAX_AUTO_ROWS ? void 0 : `its LIMIT ${bound} is above the ${MAX_AUTO_ROWS}-row automatic bound`;
