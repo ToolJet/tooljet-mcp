@@ -20,7 +20,7 @@ jobs:
         run: npm run build:claude-plugin
       - name: Test the extracted Claude package and policy boundaries
         run: node scripts/test-claude-package.mjs
-      - name: Upload the Claude package for review (does not publish)
+      - name: Upload the tested Claude package
         uses: actions/upload-artifact@v4
         with:
           name: tooljet-claude-${{ github.sha }}
@@ -37,7 +37,7 @@ jobs:
         run: npm run build:gemini-extension
       - name: Build Kiro power from the shared skill
         run: npm run build:kiro-power
-      - name: Verify generated skills and Claude package are current
+      - name: Verify generated skills and marketplace metadata are current
         run: git diff --exit-code -- skill skills plugins .claude-plugin
       - name: Verify generated skill plugin has no untracked files
         run: test -z "$(git ls-files --others --exclude-standard -- plugins)"

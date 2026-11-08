@@ -50,6 +50,7 @@ try {
   execFileSync('unzip', ['-q', zip, '-d', extracted]);
   const report = checkClaudePackage(extracted);
   const manifest = JSON.parse(readFileSync(join(extracted, '.claude-plugin/plugin.json'), 'utf8'));
+  assert.deepEqual(manifest, JSON.parse(readFileSync(join(root, 'integrations/claude/plugin.json'), 'utf8')), 'Generated manifest must match its maintained source');
   const manifestPath = join(extracted, '.claude-plugin/plugin.json');
   writeFileSync(manifestPath, JSON.stringify({ ...manifest, mcpServers: { tooljet: { type: 'http', url: 'https://service.example.test/mcp' } } }));
   assert.throws(() => checkClaudePackage(extracted), /must remain local stdio MCP/);

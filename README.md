@@ -218,7 +218,7 @@ Package metadata comes from `scripts/build-skill-plugin.mjs` and `package.json`.
 
 ## Install as a Claude Code plugin
 
-The Claude marketplace installs `plugins/tooljet-claude/`, a self-contained **local MCP server + app-builder skill**. It supports self-hosted ToolJet and ToolJet Cloud through a personal access token. Node.js 20 or newer must already be installed; the package has no dependency installation or runtime download.
+The Claude marketplace installs a self-contained **local MCP server + app-builder skill** from the root of `chore/claude-plugin-dist`. It supports self-hosted ToolJet and ToolJet Cloud through a personal access token. Node.js 20 or newer must already be installed; the package has no dependency installation or runtime download.
 
 ```text
 /plugin marketplace add ToolJet/tooljet-mcp
@@ -238,11 +238,13 @@ node scripts/test-claude-package.mjs
 claude plugin validate plugins/tooljet-claude --strict --profile directory
 ```
 
-The maintained metadata and guide live in `integrations/claude/`. Generation includes the local runtime and its readable dependencies, required catalogs, canonical skill, icon, and license notices. Modules use `.mjs` so the installed package needs neither `package.json` nor a lockfile. Keep all generated files together. The package version is maintained in `integrations/claude/plugin.json` and included in `scripts/bump-version.sh`.
+The maintained metadata and guide live in `integrations/claude/`. The generated `plugins/tooljet-claude/` folder is ignored by Git. Generation includes the local runtime and its readable dependencies, required catalogs, canonical skill, icon, and license notices. Modules use `.mjs` so the installed package needs neither `package.json` nor a lockfile. Keep all generated files together. The package version is maintained in `integrations/claude/plugin.json` and included in `scripts/bump-version.sh`.
 
-**Existing directory listing:** after review and merge, distribute the contents of `plugins/tooljet-claude/` at the root of a dedicated distribution branch and select that branch with an empty plugin path on the existing listing. Preserve the listing identity. The development repository root still includes standalone-client configuration, source, and lockfiles, so it is not the submission package. The [directory checklist](https://claude.com/docs/plugins/pre-submission-checklist#choices-a-reviewer-always-checks) documents an additional reviewer hold when a server runs a non-shell program from a repository subfolder. Using a distribution root addresses that packaging issue without changing the local transport.
+**Publication:** after the complete `MCP tests and packaging` workflow succeeds for a push to `main`, `Publish Claude plugin distribution` downloads that run's tested artifact and publishes its contents at the root of `chore/claude-plugin-dist`. PR runs never publish. Superseded main commits are skipped, and the workflow records both source and distribution commits. To retry a failed publication, rerun the publishing workflow. The first successful run after this PR merges creates the branch; marketplace installs require that publication to finish.
 
-Local validation cannot clear Anthropic's existing hold or satisfy its announced Verified-organization requirement for local MCP servers. Those require directory-team/organization action. This repository change does not publish a distribution branch, edit the portal, or submit an update.
+**Existing directory listing:** once the branch is published, change only **Tracked branch or tag** to `chore/claude-plugin-dist`. Keep the same repository and existing root plugin path; no new listing is needed. [Claude does not allow this setting to change while a reviewer has the plugin](https://claude.com/docs/plugins/submit#change-the-tracked-branch-or-tag). The development root keeps its existing direct-install manifest and standalone-client files; marketplace and directory installs use the separate distribution.
+
+Bundling removes dependency-install findings, but [local non-shell programs can still require manual review](https://claude.com/docs/plugins/pre-submission-checklist#choices-a-reviewer-always-checks), including at a branch root. Local validation cannot clear Anthropic's existing hold or satisfy organization-verification requirements. The publishing workflow does not edit portal settings or request publication there; subsequent branch updates follow the listing's configured review/publish policy.
 
 `npm run check:claude-package` verifies file-size/count limits, portability, icon and skill references, complete module imports, and explicit sensitive configuration. The extracted-package test starts the local server without installed dependencies, compares every tool schema and resource against the standard MCP runtime, and checks PAT exchange, ambient-credential rejection, and stale-runtime blocking. Standalone clients keep their existing entry point.
 

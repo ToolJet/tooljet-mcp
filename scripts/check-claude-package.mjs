@@ -92,7 +92,7 @@ export function checkClaudePackage(directory) {
   for (const [reference] of skill.matchAll(/(?:references|scripts)\/[\w/-]+\.(?:md|js|json)/g)) {
     assert(existsSync(resolve(skillRoot, reference)), `Missing skill reference: ${reference}`);
   }
-  return { version: manifest.version, files: files.length, largestTextBytes: largest, rootInstall: false };
+  return { version: manifest.version, files: files.length, largestTextBytes: largest };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

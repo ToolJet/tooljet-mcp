@@ -9,7 +9,11 @@
   "plugins": [
     {
       "name": "tooljet-app-builder",
-      "source": "./plugins/tooljet-claude",
+      "source": {
+        "source": "github",
+        "repo": "ToolJet/tooljet-mcp",
+        "ref": "chore/claude-plugin-dist"
+      },
       "description": "Build data-connected dashboards, internal tools and back-office apps in ToolJet, then refine them visually. Requires a ToolJet connection.",
       "version": "0.13.1",
       "author": {

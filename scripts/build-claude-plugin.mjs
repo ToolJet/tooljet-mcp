@@ -30,17 +30,12 @@ for (const [from, to] of [
   });
 }
 const manifest = JSON.parse(readFileSync(resolve(output, '.claude-plugin/plugin.json'), 'utf8'));
-// Preserve explicit root/path installs while the marketplace installs only the curated folder.
-// The repository root remains a development checkout and is not the directory submission target.
-const rootManifest = structuredClone(manifest);
-rootManifest.icon = './integrations/claude/assets/tooljet-icon.png';
-rootManifest.mcpServers.tooljet.args = ['${CLAUDE_PLUGIN_ROOT}/plugins/tooljet-claude/bundle/index.mjs'];
-writeFileSync(resolve(root, '.claude-plugin/plugin.json'), JSON.stringify(rootManifest, null, 2) + '\n');
+// The marketplace follows the published branch; source-root installs keep their existing manifest.
 const marketplacePath = resolve(root, '.claude-plugin/marketplace.json');
 const marketplace = JSON.parse(readFileSync(marketplacePath, 'utf8'));
 const entry = marketplace.plugins.find(plugin => plugin.name === manifest.name);
 if (!entry) throw new Error('Claude marketplace entry missing');
-entry.source = './plugins/tooljet-claude';
+entry.source = { source: 'github', repo: 'ToolJet/tooljet-mcp', ref: 'chore/claude-plugin-dist' };
 entry.version = manifest.version;
 entry.description = manifest.description;
 writeFileSync(marketplacePath, JSON.stringify(marketplace, null, 2) + '\n');
