@@ -558,15 +558,20 @@ export function codeAppScaffoldTool(context: CodeContext): ToolDef {
         cleanOldProjects(baseRoot());
         // One project per app: an app that already has one gets it back, whatever name is asked for.
         const [existing] = projectsForApp(args.app_id);
-        const dir = existing ? join(root(), existing) : projectDir(args.name);
+        // A name another app's project already has gets this app's id on the end, instead of a refusal the model answers
+        // with another name and another call (two turns in one build, 2026-11-09). The folder name is never shown.
+        let name = args.name;
+        const taken = !existing && appIdOf(projectDir(name));
+        if (taken && taken !== args.app_id && process.env.MCP_CODE_SCAFFOLD_FREE_NAME === "1") name = `${args.name.slice(0, 32).replace(/-+$/, "")}-${args.app_id.slice(0, 8)}`;
+        const dir = existing ? join(root(), existing) : projectDir(name);
         return await onProject(dir, async () => {
           const owner = appIdOf(dir);
           if (!existing && owner && owner !== args.app_id)
-            throw new Error(`project "${args.name}" belongs to app ${owner}; choose another name`);
+            throw new Error(`project "${name}" belongs to app ${owner}; choose another name`);
           const created = !existsSync(join(dir, 'app.json'));
           if (created) {
             mkdirSync(root(), { recursive: true });
-            const init = await cli(root(), ['app', 'init', args.name, '--name', args.display_name, '--no-install']);
+            const init = await cli(root(), ['app', 'init', name, '--name', args.display_name, '--no-install']);
             if (init.code !== 0) throw new Error(`tooljet app init failed: ${init.output}`);
             const appFile = join(dir, 'app.json');
             writeFileSync(appFile, JSON.stringify({ ...JSON.parse(readFileSync(appFile, 'utf8')), appId: args.app_id }, null, 2) + '\n');
