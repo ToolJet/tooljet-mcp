@@ -3,10 +3,10 @@ import { ea as prepareSqlDiscoveryQueries } from "./chunk-BJ6ur0AF.js";
 import { J as inPackSet, K as registerComponentSchemas, a as activePackSet, M as newPackSet, o as ok, i as fail, N as capabilityRequestSchema, O as getWorkflowCapabilities, P as lint, Q as apply, R as deleteNode, U as editContractSchema, V as generateEditContract, y as resolveStaticBindings, E as emptyViewerOnlyParams, F as emptyParamsNote, H as unresolvedNote, W as allComponentSchemas } from "./chunk-CLUrdGoT.js";
 import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, g as FLEX_GROW_DESCRIPTION, j as FLEX_WIDTH_PX_DESCRIPTION, k as FLEX_FILL_WIDTH_DESCRIPTION, y as createClient, z as listWorkspaceGroupsTool, A as manageWorkspaceGroupsTool, B as createAppTool, D as inspectDatasourceSchemaTool, E as manageThemeTool, G as registerPackDefinitions, v as validateTableBatch, H as ToolJetHttpError, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec, u as COMPONENT_FX_GUIDANCE, b as appendedChildOrders, d as reparentAdditions, c as childOrderProperty } from "./chunk-C5ROU7BA.js";
 import { c as componentInputSchema, t as getComponentCatalogTool, u as updateComponentsTool, w as projectJavascriptRuntime, x as projectAppSettings, y as compactTheme, z as pageSettingProperties, l as literalCanvasColor, A as containsExactValue, e as prepareQueryOptionsForWrite, B as containsNamedBinding, C as normalizePlannedLayouts, D as materializeRequiredDefaultChildren, m as mapKeyRefusal, j as prepareComponentBatch, v as validateEvents, n as expandQueryLifecycles, q as persistedEventSpecs, E as persistedEventIds } from "./chunk-CY5AE9Z_.js";
-import { K as dbColumnTypeSchema, N as manageAppPermissionsTool, O as lintAppSpecTool, W as WebStandardStreamableHTTPServerTransport, Q as plannedTableSchema, U as inspectUpdateCompatibility, V as normalizePlanBindingAliases } from "./chunk-eg_pTvVK.js";
-import { v as verifyPageRenderTool, c as codeAppScaffoldTool, b as codeAppReadFilesTool, d as codeAppWriteFilesTool, e as codeAppBuildTool, f as codeAppInstallTool, g as codeAppAddDependencyTool, n as noCodeIdentity, h as getRequestListener, a as autoReadPreflight, i as browserUserBindings, j as isCodeModeApp, k as browserUserMessage } from "./chunk-DPFPflF9.js";
-import { a as applyAppPhaseTool, r as runQueryTool, v as validatePersistedAppSummary, l as libraryPinErrors, c as containsComponentBinding, b as runUnattended, q as queryResultBindingHint, f as failureRecovery, d as failureVerification, s as schemaNameHint, e as redactRunResult, g as capUnattendedOutput, h as redactQueryText } from "./chunk-aJjaXJYR.js";
-import { M as McpServer } from "./chunk-B4OzMtdl.js";
+import { K as dbColumnTypeSchema, N as manageAppPermissionsTool, O as lintAppSpecTool, W as WebStandardStreamableHTTPServerTransport, Q as plannedTableSchema, U as inspectUpdateCompatibility, V as normalizePlanBindingAliases } from "./chunk-C7jp5BaQ.js";
+import { v as verifyPageRenderTool, c as codeAppScaffoldTool, b as codeAppReadFilesTool, d as codeAppWriteFilesTool, e as codeAppBuildTool, f as codeAppInstallTool, g as codeAppAddDependencyTool, n as noCodeIdentity, h as getRequestListener, a as autoReadPreflight, i as browserUserBindings, j as isCodeModeApp, k as browserUserMessage } from "./chunk-DtoBgyxr.js";
+import { a as applyAppPhaseTool, r as runQueryTool, v as validatePersistedAppSummary, l as libraryPinErrors, c as containsComponentBinding, b as runUnattended, q as queryResultBindingHint, f as failureRecovery, d as failureVerification, s as schemaNameHint, e as redactRunResult, g as capUnattendedOutput, h as redactQueryText } from "./chunk-DlyINJ7m.js";
+import { M as McpServer } from "./chunk-T6kJH9iL.js";
 import { ax as external_exports, aA as specSchema, ay as nodeCatalog, az as validateGraph } from "./chunk-Dakrk_ob.js";
 import { K as pageIconSchema, h as componentSlotSchema, O as registerLibraryPacks, s as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION, j as componentNameSchema, H as lintComponents, o as resolveParentRef, p as introducedLintFindings, Q as lintRenderedGeometryBlocking, R as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, u as lintComponentSlots, q as lintComponentSpec, v as lintUnusableTextGeometry, T as lintNestedContainerWidths, w as lintStandardSingleLineInputHeight, x as lintTextGeometry, y as lintRenderedGeometry, U as FORM_SCHEMA_FIELD_TYPE_SET, V as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-CY9u3IK5.js";
 import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-BozBrMhE.js";
@@ -1611,12 +1611,15 @@ function chunkSeeds(seeds = []) {
     rows: seed.rows.slice(i * SEED_CHUNK, (i + 1) * SEED_CHUNK)
   })));
 }
+function undeclaredNames(query) {
+  const declared = new Set((Array.isArray(query.options?.parameters) ? query.options.parameters : []).map((p) => p && typeof p === "object" ? String(p.name) : ""));
+  const { parameters: _declared, ...rest } = query.options ?? {};
+  const used = [...new Set([...JSON.stringify(rest).matchAll(/\bparameters\.([A-Za-z_$][\w$]*)/g)].map((m) => m[1]))];
+  return used.filter((name) => !declared.has(name));
+}
 function undeclaredParameters(queries = []) {
   return queries.flatMap((query) => {
-    const declared = new Set((Array.isArray(query.options?.parameters) ? query.options.parameters : []).map((p) => p && typeof p === "object" ? String(p.name) : ""));
-    const { parameters: _declared, ...rest } = query.options ?? {};
-    const used = [...new Set([...JSON.stringify(rest).matchAll(/\bparameters\.([A-Za-z_$][\w$]*)/g)].map((m) => m[1]))];
-    const missing = used.filter((name) => !declared.has(name));
+    const missing = undeclaredNames(query);
     return missing.length ? [`Query "${query.name}" reads ${missing.map((n) => `parameters.${n}`).join(", ")} but does not declare ${missing.length > 1 ? "them" : "it"}: add ${missing.map((n) => `{ "name": "${n}", "defaultValue": "" }`).join(", ")} to its options.parameters.`] : [];
   });
 }
@@ -1664,10 +1667,24 @@ function codeAppDataTool(client) {
           ...args.seed_data?.length ? { seed_data: chunkSeeds(args.seed_data) } : {},
           ...queries?.length ? { queries } : {}
         };
+        const declaredHere = [];
+        if (process.env.MCP_CODE_DATA_AUTODECLARE !== "0" && spec.queries?.length) {
+          spec.queries = spec.queries.map((query) => {
+            const missing = undeclaredNames(query);
+            if (!missing.length)
+              return query;
+            declaredHere.push(`Query "${query.name}": declared ${missing.map((n) => `parameters.${n}`).join(", ")} (default ""); pass ${missing.length > 1 ? "them" : "it"} in run({ ... }).`);
+            const params = Array.isArray(query.options?.parameters) ? query.options.parameters : [];
+            return { ...query, options: { ...query.options, parameters: [...params, ...missing.map((name) => ({ name, defaultValue: "" }))] } };
+          });
+          queries = spec.queries;
+        }
         const linted = await lint2.handler(spec);
         const checked = body(linted);
         if (linted.isError || !checked)
           return linted;
+        if (declaredHere.length)
+          checked.warnings = [...declaredHere, ...checked.warnings ?? []];
         const undeclared = undeclaredParameters(queries);
         if (!checked.ok || !checked.plan_token || undeclared.length) {
           return ok({

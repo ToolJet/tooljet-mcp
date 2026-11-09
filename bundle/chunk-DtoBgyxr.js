@@ -1017,15 +1017,19 @@ function codeAppScaffoldTool(context) {
         await authorizeApp(args.app_id, "edit");
         cleanOldProjects(baseRoot());
         const [existing] = projectsForApp(args.app_id);
-        const dir = existing ? join(root(), existing) : projectDir(args.name);
+        let name = args.name;
+        const taken = !existing && appIdOf(projectDir(name));
+        if (taken && taken !== args.app_id && process.env.MCP_CODE_SCAFFOLD_FREE_NAME !== "0")
+          name = `${args.name.slice(0, 32).replace(/-+$/, "")}-${args.app_id.slice(0, 8)}`;
+        const dir = existing ? join(root(), existing) : projectDir(name);
         return await onProject(dir, async () => {
           const owner = appIdOf(dir);
           if (!existing && owner && owner !== args.app_id)
-            throw new Error(`project "${args.name}" belongs to app ${owner}; choose another name`);
+            throw new Error(`project "${name}" belongs to app ${owner}; choose another name`);
           const created = !existsSync(join(dir, "app.json"));
           if (created) {
             mkdirSync(root(), { recursive: true });
-            const init = await cli(root(), ["app", "init", args.name, "--name", args.display_name, "--no-install"]);
+            const init = await cli(root(), ["app", "init", name, "--name", args.display_name, "--no-install"]);
             if (init.code !== 0)
               throw new Error(`tooljet app init failed: ${init.output}`);
             const appFile = join(dir, "app.json");
@@ -1164,6 +1168,8 @@ async function ensureFresh(dir) {
 }
 var prefetchedScans = /* @__PURE__ */ new Map();
 var scanReuseMs = () => Number(process.env.MCP_CODE_APP_SCAN_REUSE_MS ?? 6e5);
+var installReuse = () => process.env.MCP_CODE_INSTALL_REUSE !== "0" && !buildServiceUrl();
+var devBuilt = /* @__PURE__ */ new Map();
 function projectHash(dir) {
   const hash = createHash("sha256");
   const walk = (at) => {
@@ -1496,7 +1502,8 @@ async function buildProject(dir, appId) {
   const escaped = removeEscapingLinks(dir);
   const started = Date.now();
   const pull = await cli(dir, ["app", "pull"]);
-  const build = buildServiceUrl() ? await buildInService(dir, "production") : await cli(join(dir, "frontend"), ["library", "build"]);
+  devBuilt.delete(dir);
+  const build = buildServiceUrl() ? await buildInService(dir, "production") : await cli(join(dir, "frontend"), ["library", "build", ...installReuse() ? ["--env", "development"] : []]);
   const tsErrors = Number(/TypeScript compiled \((\d+) errors\)/.exec(build.output)?.[1] ?? (build.code === 0 ? 0 : 1));
   const problems = build.code === 0 && tsErrors === 0 ? [] : parseBuildProblems(build.output);
   const check = await cli(dir, ["app", "check", "--offline", "--json"]);
@@ -1509,6 +1516,8 @@ async function buildProject(dir, appId) {
   const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0 && !extra.length;
   if (okBuild)
     prefetchFullScan(dir);
+  if (okBuild && installReuse())
+    devBuilt.set(dir, projectHash(dir));
   return {
     ...followed ? { draft: followed } : {},
     ...sync.before_pull_copy ? { before_pull_copy: sync.before_pull_copy } : {},
@@ -1623,8 +1632,11 @@ function codeAppInstallTool(context, options = {}) {
   };
 }
 async function installProject(dir) {
+  const t0 = Date.now();
+  const lap = {};
   const followed = await followDraft(dir);
   const sync = await ensureFresh(dir);
+  lap.sync_ms = Date.now() - t0;
   nothingStored.delete(dir);
   const dependencies = dependencyRefusal(dir, "The install");
   if (dependencies)
@@ -1634,6 +1646,8 @@ async function installProject(dir) {
   if (unstyled)
     return new Error(`Not installed: ${unstyled} Then code_app_build and install again.`);
   const check = await fullScan(dir);
+  lap.scan_ms = Date.now() - t0 - lap.sync_ms;
+  lap.scan_reused = check.reused ? 1 : 0;
   const security = parseReport(check.output)?.security;
   if (!security || security.error)
     throw new Error(`The security scan did not run, so nothing was installed: ${security?.error ?? check.output.trim().slice(0, 2e3)}`);
@@ -1647,8 +1661,14 @@ async function installProject(dir) {
     if (built.code !== 0)
       throw new Error(built.output.trim());
     prebuilt = ["--prebuilt", join(dir, "frontend", "dist")];
+  } else if (installReuse() && devBuilt.get(dir) === projectHash(dir) && existsSync(join(dir, "frontend", "dist", "manifest.json"))) {
+    prebuilt = ["--prebuilt", join(dir, "frontend", "dist"), "--no-scan"];
   }
+  devBuilt.delete(dir);
+  const devStarted = Date.now();
   const result = await cli(dir, ["app", "dev", "--once", "--source", "platform", ...prebuilt]);
+  lap.dev_ms = Date.now() - devStarted;
+  lap.prebuilt = prebuilt.length ? 1 : 0;
   if (result.code !== 0)
     throw new Error(result.output.trim());
   clearAgentWrites(dir);
@@ -1660,6 +1680,7 @@ async function installProject(dir) {
     ...unstored.length ? { removed_unstored: unstored } : {},
     ...copies.length ? { before_pull_copies: { kept: copies, note: "Copies of local files a pull of ToolJet's code replaced (newest first, the last 3 kept); read one with code_app_read_files to recover a change." } } : {},
     linked: true,
+    ...process.env.MCP_CODE_INSTALL_TIMINGS === "1" ? { timings: { ...lap, total_ms: Date.now() - t0 } } : {},
     editor_url: /Open: (\S+)/.exec(result.output)?.[1] ?? null,
     output: result.output.trim(),
     security: securitySummary(security)

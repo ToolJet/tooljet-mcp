@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { g as peekAppPlan, h as consumeAppPlan, f as frozenAppRefusal, r as replaceView, b as replaceFingerprint, d as danglingAfterReplace, e as prepareQueryOptionsForWrite, i as matchPlannedPage, l as literalCanvasColor, j as prepareComponentBatch, k as replaceIds, n as expandQueryLifecycles, v as validateEvents, o as navigationReorders, q as persistedEventSpecs } from "./chunk-CY5AE9Z_.js";
-import { a as autoReadPreflight, N as NOT_CHECKED_AUTOMATICALLY } from "./chunk-DPFPflF9.js";
+import { a as autoReadPreflight, N as NOT_CHECKED_AUTOMATICALLY } from "./chunk-DtoBgyxr.js";
 import { i as fail, t as tableQuotaError, o as ok, L as LARGE_READ_ROW_THRESHOLD, u as assessQueryRead, y as resolveStaticBindings, x as resolvedReadRefusal, C as sameReadSource, D as extractRowCount, E as emptyViewerOnlyParams, F as emptyParamsNote, H as unresolvedNote, v as validateQueryOptions, m as issueMessages, I as declaredParameterDefaults } from "./chunk-CLUrdGoT.js";
 import { e as componentRef, w as completedPartialWrites, r as resolveRef, m as indexComponentReferences, i as isFlexContainerType, x as batchChildOrders, c as childOrderProperty } from "./chunk-C5ROU7BA.js";
 import { J as validateAppStructure, N as unpinnedLibraries, d as decodeComponentParent, e as encodeComponentParent } from "./chunk-CY9u3IK5.js";
