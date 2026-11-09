@@ -77,7 +77,7 @@ describe('code_app_install with verify', () => {
     expect(render.mock.calls.map(([args]) => args)).toEqual([
       { app_id: APP, route: '/' }, { app_id: APP, route: '/orders/1' }, { app_id: APP, route: '/reports' },
     ]);
-    expect(calls().filter((line) => /^(library build|app dev)/.test(line))).toEqual(['library build', 'app dev --once --source platform']);
+    expect(calls().filter((line) => /^(library build|app dev)/.test(line))).toEqual(['library build --env development', 'app dev --once --source platform']);
   });
 
   it('stops at the build when it has errors: nothing installed, nothing rendered', async () => {

@@ -562,7 +562,7 @@ export function codeAppScaffoldTool(context: CodeContext): ToolDef {
         // with another name and another call (two turns in one build, 2026-11-09). The folder name is never shown.
         let name = args.name;
         const taken = !existing && appIdOf(projectDir(name));
-        if (taken && taken !== args.app_id && process.env.MCP_CODE_SCAFFOLD_FREE_NAME === "1") name = `${args.name.slice(0, 32).replace(/-+$/, "")}-${args.app_id.slice(0, 8)}`;
+        if (taken && taken !== args.app_id && process.env.MCP_CODE_SCAFFOLD_FREE_NAME !== "0") name = `${args.name.slice(0, 32).replace(/-+$/, "")}-${args.app_id.slice(0, 8)}`;
         const dir = existing ? join(root(), existing) : projectDir(name);
         return await onProject(dir, async () => {
           const owner = appIdOf(dir);
@@ -771,14 +771,14 @@ const prefetchedScans = new Map<string, { hash: string; at: number; result: Prom
 const scanReuseMs = (): number => Number(process.env.MCP_CODE_APP_SCAN_REUSE_MS ?? 600_000);
 
 /*
-  Install reuse (speed A/B, MCP_CODE_INSTALL_REUSE=1, off by default). A checked install built the app twice and scanned it
+  Install reuse (on unless MCP_CODE_INSTALL_REUSE=0; off when the build service is on). A checked install built the app twice and scanned it
   three times: code_app_build's production build and offline check, the install's full scan, then `app dev --once`, which
   built a development bundle and scanned again for the Security panel. With reuse on, code_app_build makes the development
   bundle (the one the canvas loads, with the Inspector's source tags), and an install of exactly those files uploads it
   with --prebuilt and leaves the panel to the server's own check of the stored code, which runs on every save.
   The install's full scan still gates it. Any change since the build, or a pulled edit, builds again as before.
 */
-const installReuse = (): boolean => process.env.MCP_CODE_INSTALL_REUSE === '1' && !buildServiceUrl();
+const installReuse = (): boolean => process.env.MCP_CODE_INSTALL_REUSE !== '0' && !buildServiceUrl();
 const devBuilt = new Map<string, string>();
 
 /** A hash of the project's files outside node_modules, dist and .tooljet (paths and contents). */

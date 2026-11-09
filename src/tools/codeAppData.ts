@@ -124,11 +124,11 @@ export function codeAppDataTool(client: ToolJetClient): ToolDef {
           ...(args.seed_data?.length ? { seed_data: chunkSeeds(args.seed_data) } : {}),
           ...(queries?.length ? { queries } : {}),
         };
-        // Speed A/B (2026-11-09, MCP_CODE_DATA_AUTODECLARE=1): a query that reads parameters it does not declare gets them
+        // On unless MCP_CODE_DATA_AUTODECLARE=0: a query that reads parameters it does not declare gets them
         // declared (default ""), the fix the refusal names, instead of refusing the whole call. Each resend was 10-30 s and
         // the resend often dropped table_ref, which refused the call again. The warning keeps the code's side visible.
         const declaredHere: string[] = [];
-        if (process.env.MCP_CODE_DATA_AUTODECLARE === '1' && spec.queries?.length) {
+        if (process.env.MCP_CODE_DATA_AUTODECLARE !== '0' && spec.queries?.length) {
           spec.queries = spec.queries.map((query) => {
             const missing = undeclaredNames(query);
             if (!missing.length) return query;

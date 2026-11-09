@@ -147,7 +147,7 @@ describe('an editor of the app', () => {
     const { context } = caller(true);
     const out = JSON.parse(text(await codeAppBuildTool(context).handler({ app_id: APP } as any)));
     expect(out.typescript_errors).toBe(0);
-    expect(calls()).toContain('library build');
+    expect(calls()).toContain('library build --env development');
   });
 });
 

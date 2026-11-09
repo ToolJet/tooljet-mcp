@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, onTestFinished } from 'vitest';
 import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -62,7 +62,15 @@ describe('Code mode projects are found by app id', () => {
     await inCodeScopeForTests(codeContext(), async () => expect(projectsForApp(APP)).toHaveLength(2));
   });
 
-  it("refuses to scaffold into another app's project", async () => {
+  it("scaffolds beside another app's project under a free name", async () => {
+    const out = text(await codeAppScaffoldTool(codeContext()).handler({ name: 'expenses', display_name: 'X', app_id: '33333333-3333-4333-8333-333333333333' } as any));
+    expect(out).not.toMatch(/belongs to app/);
+    expect(out).toMatch(/expenses-33333333/);
+  });
+
+  it("refuses to scaffold into another app's project with MCP_CODE_SCAFFOLD_FREE_NAME=0", async () => {
+    process.env.MCP_CODE_SCAFFOLD_FREE_NAME = '0';
+    onTestFinished(() => { delete process.env.MCP_CODE_SCAFFOLD_FREE_NAME; });
     const out = text(await codeAppScaffoldTool(codeContext()).handler({ name: 'expenses', display_name: 'X', app_id: '33333333-3333-4333-8333-333333333333' } as any));
     expect(out).toMatch(/belongs to app/);
   });

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import type { AppSummary, ToolJetClient } from '../src/tooljetClient.js';
 import { clearAppPlansForTests } from '../src/appPlanStore.js';
 import { chunkSeeds, codeAppDataTool, undeclaredParameters } from '../src/tools/codeAppData.js';
@@ -96,7 +96,21 @@ describe('code_app_data', () => {
     expect(client.createQueries).not.toHaveBeenCalled();
   });
 
-  it('refuses a query that reads a parameter it does not declare, and writes nothing', async () => {
+  it('declares a parameter a query reads but does not declare, and says so', async () => {
+    const client = fakeClient();
+    const out = text(await codeAppDataTool(client).handler({
+      app_id: APP,
+      tables: [orders],
+      queries: [{ name: 'orders_page', table_ref: 'orders', options: { operation: 'list_rows', list_rows: { limit: 25, offset: '{{parameters.offset}}' } } }],
+    }));
+    expect(out.ok).not.toBe(false);
+    expect(out.warnings.join(' ')).toMatch(/Query "orders_page": declared parameters\.offset \(default ""\)/);
+    expect(client.createTables).toHaveBeenCalled();
+  });
+
+  it('refuses a query that reads a parameter it does not declare, and writes nothing, with MCP_CODE_DATA_AUTODECLARE=0', async () => {
+    process.env.MCP_CODE_DATA_AUTODECLARE = '0';
+    onTestFinished(() => { delete process.env.MCP_CODE_DATA_AUTODECLARE; });
     const client = fakeClient();
     const result = await codeAppDataTool(client).handler({
       app_id: APP,
