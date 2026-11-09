@@ -58,13 +58,18 @@ export function chunkSeeds(seeds: Input['seed_data'] = []): { table_name: string
  * Parameters a query reads ({{parameters.x}}) without declaring them in options.parameters: the code's run({ x }) then
  * has nothing to fill, and the write sends an empty value. One line per query.
  */
+/** The parameter names a query reads but does not declare. */
+export function undeclaredNames(query: NonNullable<Input['queries']>[number]): string[] {
+  const declared = new Set((Array.isArray(query.options?.parameters) ? query.options.parameters : [])
+    .map((p: unknown) => (p && typeof p === 'object' ? String((p as { name?: unknown }).name) : '')));
+  const { parameters: _declared, ...rest } = query.options ?? {};
+  const used = [...new Set([...JSON.stringify(rest).matchAll(/\bparameters\.([A-Za-z_$][\w$]*)/g)].map((m) => m[1]!))];
+  return used.filter((name) => !declared.has(name));
+}
+
 export function undeclaredParameters(queries: Input['queries'] = []): string[] {
   return queries.flatMap((query) => {
-    const declared = new Set((Array.isArray(query.options?.parameters) ? query.options.parameters : [])
-      .map((p: unknown) => (p && typeof p === 'object' ? String((p as { name?: unknown }).name) : '')));
-    const { parameters: _declared, ...rest } = query.options ?? {};
-    const used = [...new Set([...JSON.stringify(rest).matchAll(/\bparameters\.([A-Za-z_$][\w$]*)/g)].map((m) => m[1]!))];
-    const missing = used.filter((name) => !declared.has(name));
+    const missing = undeclaredNames(query);
     return missing.length
       ? [`Query "${query.name}" reads ${missing.map((n) => `parameters.${n}`).join(', ')} but does not declare ${missing.length > 1 ? 'them' : 'it'}: ` +
         `add ${missing.map((n) => `{ "name": "${n}", "defaultValue": "" }`).join(', ')} to its options.parameters.`]
@@ -119,9 +124,24 @@ export function codeAppDataTool(client: ToolJetClient): ToolDef {
           ...(args.seed_data?.length ? { seed_data: chunkSeeds(args.seed_data) } : {}),
           ...(queries?.length ? { queries } : {}),
         };
+        // Speed A/B (2026-11-09, MCP_CODE_DATA_AUTODECLARE=1): a query that reads parameters it does not declare gets them
+        // declared (default ""), the fix the refusal names, instead of refusing the whole call. Each resend was 10-30 s and
+        // the resend often dropped table_ref, which refused the call again. The warning keeps the code's side visible.
+        const declaredHere: string[] = [];
+        if (process.env.MCP_CODE_DATA_AUTODECLARE === '1' && spec.queries?.length) {
+          spec.queries = spec.queries.map((query) => {
+            const missing = undeclaredNames(query);
+            if (!missing.length) return query;
+            declaredHere.push(`Query "${query.name}": declared ${missing.map((n) => `parameters.${n}`).join(', ')} (default ""); pass ${missing.length > 1 ? 'them' : 'it'} in run({ ... }).`);
+            const params = Array.isArray(query.options?.parameters) ? query.options.parameters : [];
+            return { ...query, options: { ...query.options, parameters: [...params, ...missing.map((name) => ({ name, defaultValue: '' }))] } };
+          });
+          queries = spec.queries;
+        }
         const linted = await lint.handler(spec);
         const checked = body(linted);
         if (linted.isError || !checked) return linted;
+        if (declaredHere.length) checked.warnings = [...declaredHere, ...(checked.warnings ?? [])];
         const undeclared = undeclaredParameters(queries);
         if (!checked.ok || !checked.plan_token || undeclared.length) {
           return ok({

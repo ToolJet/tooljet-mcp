@@ -765,6 +765,17 @@ async function ensureFresh(dir: string): Promise<SyncResult> {
 const prefetchedScans = new Map<string, { hash: string; at: number; result: Promise<{ code: number; output: string } | null> }>();
 const scanReuseMs = (): number => Number(process.env.MCP_CODE_APP_SCAN_REUSE_MS ?? 600_000);
 
+/*
+  Install reuse (speed A/B, MCP_CODE_INSTALL_REUSE=1, off by default). A checked install built the app twice and scanned it
+  three times: code_app_build's production build and offline check, the install's full scan, then `app dev --once`, which
+  built a development bundle and scanned again for the Security panel. With reuse on, code_app_build makes the development
+  bundle (the one the canvas loads, with the Inspector's source tags), and an install of exactly those files uploads it
+  with --prebuilt and leaves the panel to the server's own check of the stored code, which runs on every save.
+  The install's full scan still gates it. Any change since the build, or a pulled edit, builds again as before.
+*/
+const installReuse = (): boolean => process.env.MCP_CODE_INSTALL_REUSE === '1' && !buildServiceUrl();
+const devBuilt = new Map<string, string>();
+
 /** A hash of the project's files outside node_modules, dist and .tooljet (paths and contents). */
 export function projectHash(dir: string): string {
   const hash = createHash('sha256');
@@ -1191,7 +1202,10 @@ async function buildProject(dir: string, appId: string | undefined): Promise<Rec
   const started = Date.now();
   const pull = await cli(dir, ['app', 'pull']);
   // ToolJet cloud builds in the build service's sandbox (codeBuildService.ts); self-hosted builds here.
-  const build = buildServiceUrl() ? await buildInService(dir, 'production') : await cli(join(dir, 'frontend'), ['library', 'build']);
+  devBuilt.delete(dir);
+  const build = buildServiceUrl()
+    ? await buildInService(dir, 'production')
+    : await cli(join(dir, 'frontend'), ['library', 'build', ...(installReuse() ? ['--env', 'development'] : [])]);
   const tsErrors = Number(/TypeScript compiled \((\d+) errors\)/.exec(build.output)?.[1] ?? (build.code === 0 ? 0 : 1));
   const problems = build.code === 0 && tsErrors === 0 ? [] : parseBuildProblems(build.output);
   const check = await cli(dir, ['app', 'check', '--offline', '--json']);
@@ -1203,6 +1217,7 @@ async function buildProject(dir: string, appId: string | undefined): Promise<Rec
   const extra = [...handles, ...(unstyled ? [unstyled] : []), ...sdkRedeclared(dir), ...serverUser, ...(escaped ? [escaped.message] : [])];
   const okBuild = pull.code === 0 && build.code === 0 && tsErrors === 0 && check.code === 0 && !extra.length;
   if (okBuild) prefetchFullScan(dir);
+  if (okBuild && installReuse()) devBuilt.set(dir, projectHash(dir));
   return {
     ...(followed ? { draft: followed } : {}),
     ...(sync.before_pull_copy ? { before_pull_copy: sync.before_pull_copy } : {}),
@@ -1363,8 +1378,12 @@ export function codeAppInstallTool(context: CodeContext, options: InstallOptions
 
 /** The install itself: its result, or the refusal (an Error) to report. Throws when the scan or the CLI fails. */
 async function installProject(dir: string): Promise<Record<string, unknown> | Error> {
+  // Speed A/B (2026-11-09): where an install's time goes, in the result when MCP_CODE_INSTALL_TIMINGS=1.
+  const t0 = Date.now();
+  const lap: Record<string, number> = {};
   const followed = await followDraft(dir);
   const sync = await ensureFresh(dir);
+  lap.sync_ms = Date.now() - t0;
   nothingStored.delete(dir);
   // Only registry dependencies reach the stored code, and the scan sees exactly what is bundled.
   const dependencies = dependencyRefusal(dir, 'The install');
@@ -1374,6 +1393,8 @@ async function installProject(dir: string): Promise<Record<string, unknown> | Er
   if (unstyled) return new Error(`Not installed: ${unstyled} Then code_app_build and install again.`);
   // The full scan, dependency checks included, before anything reaches the app.
   const check = await fullScan(dir);
+  lap.scan_ms = Date.now() - t0 - lap.sync_ms;
+  lap.scan_reused = check.reused ? 1 : 0;
   const security = parseReport<{ security?: SecurityReport }>(check.output)?.security;
   if (!security || security.error)
     throw new Error(`The security scan did not run, so nothing was installed: ${security?.error ?? check.output.trim().slice(0, 2000)}`);
@@ -1392,8 +1413,14 @@ async function installProject(dir: string): Promise<Record<string, unknown> | Er
     const built = await buildInService(dir, 'development');
     if (built.code !== 0) throw new Error(built.output.trim());
     prebuilt = ['--prebuilt', join(dir, 'frontend', 'dist')];
+  } else if (installReuse() && devBuilt.get(dir) === projectHash(dir) && existsSync(join(dir, 'frontend', 'dist', 'manifest.json'))) {
+    prebuilt = ['--prebuilt', join(dir, 'frontend', 'dist'), '--no-scan'];
   }
+  devBuilt.delete(dir);
+  const devStarted = Date.now();
   const result = await cli(dir, ['app', 'dev', '--once', '--source', 'platform', ...prebuilt]);
+  lap.dev_ms = Date.now() - devStarted;
+  lap.prebuilt = prebuilt.length ? 1 : 0;
   if (result.code !== 0) throw new Error(result.output.trim());
   // Stored: the next build's first pull may take ToolJet's code over this copy again.
   clearAgentWrites(dir);
@@ -1407,6 +1434,7 @@ async function installProject(dir: string): Promise<Record<string, unknown> | Er
       ? { before_pull_copies: { kept: copies, note: 'Copies of local files a pull of ToolJet\'s code replaced (newest first, the last 3 kept); read one with code_app_read_files to recover a change.' } }
       : {}),
     linked: true,
+    ...(process.env.MCP_CODE_INSTALL_TIMINGS === '1' ? { timings: { ...lap, total_ms: Date.now() - t0 } } : {}),
     editor_url: /Open: (\S+)/.exec(result.output)?.[1] ?? null,
     output: result.output.trim(),
     security: securitySummary(security),
