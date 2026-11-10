@@ -1251,7 +1251,7 @@ function codeAppWriteFilesTool(context) {
     name: "code_app_write_files",
     title: "Write Code Mode Files",
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-    description: "Write into a Code mode project: app.json (name, codePage, routes [{id, path, title}]), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. To change an existing file, read it first (code_app_read_files) and pass edits: [{ path, find, replace }] with the exact text to change; a file you wrote in this build needs no read first, and before the first install may be sent whole again. files: [{ path, content }] is for new files and for replacing a file still as the template left it, or for a rewrite the request needs (then rewrite: true, as well as the files). A write to a file that changed in the ToolJet editor since you read it is refused: read it again and apply your change to what is there. Read data with useAppQuery from ../tooljet.gen; write by awaiting a query's run({ ...parameters }); route with AppRouter, react-router <Routes>/<Route> whose paths are exactly app.json's, and routePath(id, params). A type_check in the result lists the project's type errors after this write: fix them before code_app_build. Then code_app_build." + USER_WORDS,
+    description: "Write into a Code mode project: app.json (name and routes [{id, path, title}]; its codePage stays as the scaffold set it), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. To change an existing file, read it first (code_app_read_files) and pass edits: [{ path, find, replace }] with the exact text to change; a file you wrote in this build needs no read first, and before the first install may be sent whole again. files: [{ path, content }] is for new files and for replacing a file still as the template left it, or for a rewrite the request needs (then rewrite: true, as well as the files). A write to a file that changed in the ToolJet editor since you read it is refused: read it again and apply your change to what is there. Read data with useAppQuery from ../tooljet.gen; write by awaiting a query's run({ ...parameters }); route with AppRouter, react-router <Routes>/<Route> whose paths are exactly app.json's, and routePath(id, params). A type_check in the result lists the project's type errors after this write: fix them before code_app_build. Then code_app_build." + USER_WORDS,
     inputSchema: {
       app_id: APP_ID,
       name: PROJECT_NAME,
@@ -1319,7 +1319,16 @@ function codeAppWriteFilesTool(context) {
             return fail(new Error("Not written:\n" + refusals.map((r) => `- ${r}`).join("\n")));
           noteWrite(dir);
           const written = [];
-          for (const [rel, { full, content }] of next) {
+          const notes = [];
+          for (const [rel, entry] of next) {
+            const { full } = entry;
+            let { content } = entry;
+            if (rel === "app.json") {
+              const keptPage = keepCodePage(full, content);
+              content = keptPage.content;
+              if (keptPage.note)
+                notes.push(keptPage.note);
+            }
             mkdirSync(dirname(full), { recursive: true });
             writeFileSync(full, content);
             readHashes.set(readKey(dir, rel), sha(content));
@@ -1327,7 +1336,7 @@ function codeAppWriteFilesTool(context) {
             written.push(rel);
           }
           const types = await typeCheckAfterWrite(dir, written).catch(() => void 0);
-          return ok({ project_dir: dir, ...sync, written, ...types ? { type_check: types } : {} });
+          return ok({ project_dir: dir, ...sync, written, ...notes.length ? { notes } : {}, ...types ? { type_check: types } : {} });
         });
       } catch (err) {
         return fail(err);
@@ -1360,6 +1369,26 @@ function nativeSelects(dir) {
   if (!existsSync(join(src, "components", "ui", "select.tsx")))
     return [];
   return listFiles(src).filter((rel) => rel.endsWith(".tsx") && !rel.startsWith("components/")).flatMap((rel) => readFileSync(join(src, rel), "utf8").split("\n").flatMap((line, i) => /<select[\s>]/.test(line) ? [`frontend/src/${rel}:${i + 1}`] : []));
+}
+function keepCodePage(full, content) {
+  if (!existsSync(full))
+    return { content };
+  let before;
+  let after;
+  try {
+    before = JSON.parse(readFileSync(full, "utf8"));
+    after = JSON.parse(content);
+  } catch {
+    return { content };
+  }
+  const kept = before.codePage;
+  if (!kept || typeof kept.handle !== "string")
+    return { content };
+  const sent = after.codePage;
+  if (sent && sent.handle === kept.handle && sent.name === kept.name)
+    return { content };
+  const note = sent ? `app.json: codePage kept as "${kept.handle}" (the app's home page, which people open); the code cannot move to "${String(sent.handle)}". Change the name and routes only.` : void 0;
+  return { content: JSON.stringify({ ...after, codePage: kept }, null, 2) + "\n", note };
 }
 function badRouteHandles(dir) {
   const file = join(dir, "app.json");
