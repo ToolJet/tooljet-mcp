@@ -988,7 +988,7 @@ export function codeAppWriteFilesTool(context: CodeContext): ToolDef {
     title: 'Write Code Mode Files',
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     description:
-      'Write into a Code mode project: app.json (name, codePage, routes [{id, path, title}]), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. ' +
+      'Write into a Code mode project: app.json (name and routes [{id, path, title}]; its codePage stays as the scaffold set it), frontend/styles/theme.css (tokens), frontend/styles/global.css (page-wide rules and library overrides) and anything under frontend/src/. ' +
       'To change an existing file, read it first (code_app_read_files) and pass edits: [{ path, find, replace }] with the exact text to change; ' +
       'a file you wrote in this build needs no read first, and before the first install may be sent whole again. ' +
       'files: [{ path, content }] is for new files and for replacing a file still as the template left it, or for a rewrite the request needs (then rewrite: true, as well as the files). A write to a file that changed ' +
@@ -1057,7 +1057,15 @@ export function codeAppWriteFilesTool(context: CodeContext): ToolDef {
           // Before the first byte: no later first pull of any build may replace these writes until an install stores them.
           noteWrite(dir);
           const written: string[] = [];
-          for (const [rel, { full, content }] of next) {
+          const notes: string[] = [];
+          for (const [rel, entry] of next) {
+            const { full } = entry;
+            let { content } = entry;
+            if (rel === 'app.json') {
+              const keptPage = keepCodePage(full, content);
+              content = keptPage.content;
+              if (keptPage.note) notes.push(keptPage.note);
+            }
             mkdirSync(dirname(full), { recursive: true });
             writeFileSync(full, content);
             readHashes.set(readKey(dir, rel), sha(content)); // the agent knows what it just wrote
@@ -1065,7 +1073,7 @@ export function codeAppWriteFilesTool(context: CodeContext): ToolDef {
             written.push(rel);
           }
           const types = await typeCheckAfterWrite(dir, written).catch(() => undefined);
-          return ok({ project_dir: dir, ...sync, written, ...(types ? { type_check: types } : {}) });
+          return ok({ project_dir: dir, ...sync, written, ...(notes.length ? { notes } : {}), ...(types ? { type_check: types } : {}) });
         });
       } catch (err) {
         return fail(err);
@@ -1112,6 +1120,32 @@ export function nativeSelects(dir: string): string[] {
   if (!existsSync(join(src, 'components', 'ui', 'select.tsx'))) return [];
   return listFiles(src).filter((rel) => rel.endsWith('.tsx') && !rel.startsWith('components/')).flatMap((rel) =>
     readFileSync(join(src, rel), 'utf8').split('\n').flatMap((line, i) => (/<select[\s>]/.test(line) ? [`frontend/src/${rel}:${i + 1}`] : [])));
+}
+
+/**
+ * An app.json write keeps the code page the scaffold set up. The scaffold puts the code on the app's home page, the one
+ * people open; a write that renamed it ("home" to "support", 2026-11-09) made the install create a second page for the
+ * code and left the home page empty, so the app opened blank. The page is not the agent's to move: the write keeps the
+ * scaffold's codePage and says so.
+ */
+export function keepCodePage(full: string, content: string): { content: string; note?: string } {
+  if (!existsSync(full)) return { content };
+  let before: { codePage?: { handle?: unknown; name?: unknown } };
+  let after: { codePage?: { handle?: unknown; name?: unknown } } & Record<string, unknown>;
+  try {
+    before = JSON.parse(readFileSync(full, 'utf8'));
+    after = JSON.parse(content);
+  } catch {
+    return { content }; // unreadable JSON is the build's to report, not this check's
+  }
+  const kept = before.codePage;
+  if (!kept || typeof kept.handle !== 'string') return { content };
+  const sent = after.codePage;
+  if (sent && sent.handle === kept.handle && sent.name === kept.name) return { content };
+  const note = sent
+    ? `app.json: codePage kept as "${kept.handle}" (the app's home page, which people open); the code cannot move to "${String(sent.handle)}". Change the name and routes only.`
+    : undefined;
+  return { content: JSON.stringify({ ...after, codePage: kept }, null, 2) + '\n', note };
 }
 
 /** Route ids the install would refuse: each becomes a page handle. `new_lead` passed the build, then failed the install after the scan (2026-11-04). */
