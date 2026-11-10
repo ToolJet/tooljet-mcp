@@ -50,7 +50,7 @@ function browserFixture({ status = 200, widgets = 1, landed = 'http://viewer.tes
     newPage: vi.fn().mockResolvedValue({
       goto: async () => { if (socket) onSocket?.(ws); if (!duringSettle && (resource || redirect)) { await handler(route); if (route.abort.mock.calls.length) throw new Error('aborted'); } return { status: () => status }; },
       waitForTimeout: vi.fn(async () => { if (duringSettle) await handler(route); }), waitForFunction: vi.fn().mockResolvedValue(undefined),
-      url: () => landed, evaluate: vi.fn().mockResolvedValue({ widgets, findings: [] }),
+      url: () => landed, evaluate: vi.fn().mockResolvedValue({ widgets, findings: [] }), $: vi.fn().mockResolvedValue(null),
     }),
   };
   const browser = { newContext: vi.fn().mockResolvedValue(context), close: vi.fn() };
@@ -413,7 +413,8 @@ describe('render audit of a code page: axe and screenshot', () => {
     const violation = { id: 'button-name', impact: 'critical', help: 'Buttons must have discernible text', nodes: 2, targets: ['#a', '#b'] };
     const frameEvaluate = vi.fn().mockResolvedValueOnce(undefined).mockResolvedValueOnce([violation]);
     page.evaluate = vi.fn().mockResolvedValueOnce({ widgets: 1, findings: [] }).mockResolvedValueOnce([]);
-    (page as any).$ = vi.fn().mockResolvedValue({ contentFrame: async () => ({ evaluate: frameEvaluate }) });
+    (page as any).$ = vi.fn(async (selector: string) =>
+      selector.includes('isolated') ? null : { contentFrame: async () => ({ evaluate: frameEvaluate }) });
     (page as any).screenshot = vi.fn().mockResolvedValue(undefined);
     f.context.newPage = vi.fn().mockResolvedValue(page);
     const [report] = await auditPages([{ page: 'home', url: 'http://viewer.test/applications/app1/home?route=%2Forders%2F36' }], { viewportWidth: 375 }, f.driver);
@@ -427,6 +428,43 @@ describe('render audit of a code page: axe and screenshot', () => {
 
 // Equipment checkout log (2026-11-02): a working dev-track Code mode page drew its widget 3 to 4 s after load, and a
 // fixed 6 s settle during a build read it as "no widgets" twice. The audit now waits for the page to draw first.
+describe('render audit of an isolated frame', () => {
+  it('asks the frame itself: its document cannot be read from the page', async () => {
+    vi.stubEnv('MCP_RENDER_AUDIT_SCREENSHOTS', '/tmp/tj-audit-test');
+    const f = browserFixture();
+    const page = await f.context.newPage();
+    const finding = { kind: 'overflow', component: 'Code mode app', detail: 'wide' };
+    const frameEvaluate = vi.fn(async (fn: unknown) => {
+      if (typeof fn === 'string') return fn.includes('codePageAuditScript') || fn.includes('tj-frame-root') ? [finding] : undefined;
+      return true;
+    });
+    const frame = { contentFrame: async () => ({ evaluate: frameEvaluate }) };
+    page.evaluate = vi.fn()
+      .mockResolvedValueOnce({ widgets: 1, findings: [] })
+      .mockResolvedValue({ width: 1280, scrollWidth: 1280, clientWidth: 1280, below: 0 });
+    (page as any).$ = vi.fn().mockResolvedValue(frame);
+    (page as any).screenshot = vi.fn().mockResolvedValue(undefined);
+    f.context.newPage = vi.fn().mockResolvedValue(page);
+    const [report] = await auditPages([{ page: 'home', url: 'http://viewer.test/applications/app1/home' }], { viewportWidth: 1280 }, f.driver);
+    expect(report.findings).toEqual([finding]);
+    const scripts = frameEvaluate.mock.calls.map(([fn]) => String(fn));
+    expect(scripts.some((text) => text.includes('tj-frame-root') && text.includes('"scrollWidth":1280'))).toBe(true);
+  });
+});
+
+describe('the sandbox domain in render audit origins', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('allows only the frame document, on a host of the configured domain', () => {
+    vi.stubEnv('CODE_MODE_SANDBOX_URL', 'https://*.apps-sandbox.example');
+    const origins = renderAuditOrigins('https://tooljet.example');
+    expect(renderAuditUrlAllowed('https://aabc.apps-sandbox.example/api/code-frame/frame.html', origins)).toBe(true);
+    expect(renderAuditUrlAllowed('https://aabc.apps-sandbox.example/api/session', origins)).toBe(false);
+    expect(renderAuditUrlAllowed('https://apps-sandbox.example.evil.test/api/code-frame/frame.html', origins)).toBe(false);
+    expect(renderAuditUrlAllowed('http://aabc.apps-sandbox.example/api/code-frame/frame.html', origins)).toBe(false);
+  });
+});
+
 describe('render audit waits for the page to draw', () => {
   it('waits for content before the settle, with its own timeout', async () => {
     const f = browserFixture();
@@ -450,7 +488,7 @@ describe('render audit waits for the page to draw', () => {
     const doc = (widget: boolean, frame?: { children: number }) => ({
       querySelector: (sel: string) =>
         sel.startsWith('[data-cy') ? (widget ? {} : null)
-          : frame ? { contentDocument: { getElementById: () => ({ children: { length: frame.children } }) } } : null,
+          : frame ? { hasAttribute: () => false, contentDocument: { getElementById: () => ({ children: { length: frame.children } }) } } : null,
     });
     const run = (d: unknown) => { (globalThis as any).document = d; try { return predicate!(); } finally { delete (globalThis as any).document; } };
     expect(run(doc(false))).toBe(false);
