@@ -1549,6 +1549,23 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   async function createAppVersion(params: CreateAppVersionParams): Promise<AppVersionResult> {
+    const inventory = await auth.authedFetch(`/api/apps/${encodeURIComponent(params.appId)}/versions`);
+    await assertOk(inventory, 'createAppVersion.readSource');
+    const body = (await inventory.json()) as { versions?: Array<Record<string, unknown>> };
+    const source = body.versions?.find(version => version.id === params.versionFromId);
+    if (!source) {
+      throw new Error(`ToolJet createAppVersion failed: version ${params.versionFromId} was not found in app ${params.appId}.`);
+    }
+    // Feature branches allow one branch head, not a second named draft. Native Save
+    // creates a published snapshot on the default branch, which is a different operation.
+    if (String(source.version_type ?? source.versionType).toLowerCase() === 'branch') {
+      throw new Error('Cannot clone a branch head into a named draft. Save a named version in ToolJet, then use its version_id as the clone source. No version was created or published.');
+    }
+    const sourceBranchId = source.branch_id ?? source.branchId;
+    const selectedBranchId = branchIdFor(config);
+    if (selectedBranchId && typeof sourceBranchId === 'string' && sourceBranchId !== selectedBranchId) {
+      throw new Error('Cannot create a named draft on a different branch from its source. Select the source version\'s branch before cloning. No version was created.');
+    }
     const res = await auth.authedFetch(`/api/apps/${encodeURIComponent(params.appId)}/versions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

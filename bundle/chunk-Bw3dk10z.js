@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
-import { n as require_parse, o as require_util } from "./chunk-BxG5FxrI.js";
-import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-CPA73pkF.js";
+import { n as require_parse, o as require_util } from "./chunk-CRW7VwRs.js";
+import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-C2iUeXKc.js";
 import { a$ as require_moment, aB as ParseErrorEnum, aJ as ScopeHandler, aZ as getExportedToken, t as tt, N as percentSign, ai as tokenLabelName, aC as tokenIsIdentifier, a as rightCurlyBrace, g as greaterThan, M as ampersand, x as leftCurlyBrace, l as lessThan, n as carriageReturn, m as lineFeed, E as Errors, J as numberSign, Z as lowercaseX, a6 as semicolon, c as isIdentifierChar, f as dash, aj as tokenIsKeyword, al as types, h as exclamationMark, z as isIdentifierStart, P as quotationMark, O as apostrophe, b0 as tokenComesBeforeExpression } from "./chunk-DWjCfHK5.js";
 import { g as getOptions, O as OptionFlags, t as typescript_default, i as isNewLine } from "./chunk-BWs7AjPx.js";
 import { f as flow_default } from "./chunk-DZ0zG5Ev.js";

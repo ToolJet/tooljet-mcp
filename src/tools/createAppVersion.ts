@@ -13,6 +13,7 @@ export function createAppVersionTool(client: ToolJetClient): ToolDef {
     },
     description:
       'Create a new draft version of an existing ToolJet app by cloning a specified source version. ' +
+      'Branch heads cannot be cloned into named drafts; save a named version in ToolJet first, then select its branch and use that version as the source. ' +
       'Returns the app_id, new version_id, version_name, source_version_id, and available version metadata; ' +
       'Conflicts fail without adopting an existing draft, including after a timeout. Before editing, inspect the returned ' +
       'version_id for its cloned resource IDs. The agent and ToolJet editor automatically switch to the newly ' +

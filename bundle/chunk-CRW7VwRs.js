@@ -1086,10 +1086,11 @@ var nodeCatalog = {
   runtime_context: {
     inputs: "Read workflow inputs from startTrigger.params, for example startTrigger.params.left. A logical start-node ref does not create a JavaScript global.",
     query_results: "Read a preceding query result as <persisted_query_name>.data, for example computeSum.data. There is no app-style queries namespace in workflow code.",
-    code: "JavaScript, condition and response code runs in a server-side function body. Return the result explicitly. Read only preceding nodes on the current execution path.",
+    code: "JavaScript and response code runs in a server-side function body; return the result explicitly. Condition code is a boolean expression without a return statement. Read only preceding nodes on the current execution path.",
     example: {
       query_name: "computeSum",
       javascript: "return { sum: Number(startTrigger.params.left) + Number(startTrigger.params.right) };",
+      condition: "computeSum.data.sum > 0",
       response: "return computeSum.data;"
     }
   },

@@ -1,9 +1,9 @@
 import { createRequire } from "node:module";
-import { T as TOOLJET_DB_DATA_TYPES, n as normalizeType, f as fail, i as invalidSeedTimestamps, l as literalCanvasColor, o as ok, c as componentRef, b as completedPartialWrites, v as validateTableBatch, d as indexComponentReferences, g as currentBranchId } from "./chunk-08smxdh7.js";
-import { p as external_exports, u as tableQuotaError, q as getComponentSchema } from "./chunk-BxG5FxrI.js";
-import { c as componentNameSchema, b as componentSlotSchema, p as pageIconSchema, v as validateAppStructure, s as suggestedHtmlHeight, f as pageIconError, l as lintComponents, e as encodeComponentParent, g as lintComponentStateBindings, d as decodeComponentParent, S as STYLE_KEYS_IN_PROPERTIES, m as minimumTextHeight, n as namespaceReads, P as PROPERTY_KEY_ALIASES, h as nearestCatalogKey } from "./chunk-Cpp7yj_s.js";
-import { g as arithmeticWriteWarning, L as LARGE_READ_ROW_THRESHOLD, f as assessQueryRead, r as resolveStaticBindings, h as resolvedReadRefusal, s as sameReadSource, j as extractRowCount, k as emptyViewerOnlyParams, m as emptyParamsNote, u as unresolvedNote, v as validateQueryOptions, i as issueMessages, o as normalizeQueryToggles, t as toggleRewriteWarning, q as queryToggleIssues, e as normalizeQueryOptions, b as bindingSpans, p as parseExpression } from "./chunk-Ynh3P6jF.js";
-import { g as getDatasourceQuerySchema } from "./chunk-CPA73pkF.js";
+import { T as TOOLJET_DB_DATA_TYPES, n as normalizeType, f as fail, i as invalidSeedTimestamps, l as literalCanvasColor, o as ok, c as componentRef, b as completedPartialWrites, v as validateTableBatch, d as indexComponentReferences, g as currentBranchId } from "./chunk-C9gtSStk.js";
+import { p as external_exports, u as tableQuotaError, q as getComponentSchema } from "./chunk-CRW7VwRs.js";
+import { c as componentNameSchema, b as componentSlotSchema, p as pageIconSchema, v as validateAppStructure, s as suggestedHtmlHeight, f as pageIconError, l as lintComponents, e as encodeComponentParent, g as lintComponentStateBindings, d as decodeComponentParent, S as STYLE_KEYS_IN_PROPERTIES, m as minimumTextHeight, n as namespaceReads, P as PROPERTY_KEY_ALIASES, h as nearestCatalogKey } from "./chunk-DSbn40TY.js";
+import { g as arithmeticWriteWarning, L as LARGE_READ_ROW_THRESHOLD, f as assessQueryRead, r as resolveStaticBindings, h as resolvedReadRefusal, s as sameReadSource, j as extractRowCount, k as emptyViewerOnlyParams, m as emptyParamsNote, u as unresolvedNote, v as validateQueryOptions, i as issueMessages, o as normalizeQueryToggles, t as toggleRewriteWarning, q as queryToggleIssues, e as normalizeQueryOptions, b as bindingSpans, p as parseExpression } from "./chunk-Bw3dk10z.js";
+import { g as getDatasourceQuerySchema } from "./chunk-C2iUeXKc.js";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";

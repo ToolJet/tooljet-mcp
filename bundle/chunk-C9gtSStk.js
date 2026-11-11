@@ -1,11 +1,11 @@
 import { createRequire } from "node:module";
-import { p as external_exports, u as tableQuotaError, T as TableQuotaError, v as definition, w as nodeCatalog, x as validateGraph, y as specSchema, z as compileGraph, A as assertWorkflowJavaScript, B as controlFlowEdges, q as getComponentSchema } from "./chunk-BxG5FxrI.js";
-import { e as encodeComponentParent, a as assertPageIcon, S as STYLE_KEYS_IN_PROPERTIES, d as decodeComponentParent } from "./chunk-Cpp7yj_s.js";
-import { c as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches, e as normalizeQueryOptions, v as validateQueryOptions, i as issueMessages } from "./chunk-Ynh3P6jF.js";
+import { p as external_exports, u as tableQuotaError, T as TableQuotaError, v as definition, w as nodeCatalog, x as validateGraph, y as specSchema, z as compileGraph, A as assertWorkflowJavaScript, B as controlFlowEdges, q as getComponentSchema } from "./chunk-CRW7VwRs.js";
+import { e as encodeComponentParent, a as assertPageIcon, S as STYLE_KEYS_IN_PROPERTIES, d as decodeComponentParent } from "./chunk-DSbn40TY.js";
+import { c as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches, e as normalizeQueryOptions, v as validateQueryOptions, i as issueMessages } from "./chunk-Bw3dk10z.js";
 import { randomUUID, createHash } from "node:crypto";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { isDeepStrictEqual } from "node:util";
-import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-CPA73pkF.js";
+import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-C2iUeXKc.js";
 createRequire(import.meta.url);
 function componentRef(component) {
   return component.clientRef ?? component.name;
@@ -1694,6 +1694,21 @@ function createClient(auth, config) {
     };
   }
   async function createAppVersion(params) {
+    const inventory = await auth.authedFetch(`/api/apps/${encodeURIComponent(params.appId)}/versions`);
+    await assertOk(inventory, "createAppVersion.readSource");
+    const body = await inventory.json();
+    const source = body.versions?.find((version) => version.id === params.versionFromId);
+    if (!source) {
+      throw new Error(`ToolJet createAppVersion failed: version ${params.versionFromId} was not found in app ${params.appId}.`);
+    }
+    if (String(source.version_type ?? source.versionType).toLowerCase() === "branch") {
+      throw new Error("Cannot clone a branch head into a named draft. Save a named version in ToolJet, then use its version_id as the clone source. No version was created or published.");
+    }
+    const sourceBranchId = source.branch_id ?? source.branchId;
+    const selectedBranchId = branchIdFor(config);
+    if (selectedBranchId && typeof sourceBranchId === "string" && sourceBranchId !== selectedBranchId) {
+      throw new Error("Cannot create a named draft on a different branch from its source. Select the source version's branch before cloning. No version was created.");
+    }
     const res = await auth.authedFetch(`/api/apps/${encodeURIComponent(params.appId)}/versions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
