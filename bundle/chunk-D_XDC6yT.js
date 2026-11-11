@@ -1,10 +1,10 @@
 import { createRequire } from "node:module";
-import { t as themeDefinition, h as createClient, j as listWorkspaceAppsTool, k as listWorkspaceFoldersTool, m as listWorkspaceUsersTool, p as manageWorkspaceUsersTool, q as inspectDatasourceSchemaTool, u as updateComponentsTool, s as manageThemeTool, x as datasourceMetadataTools, o as ok, f as fail, y as capabilityRequestSchema, z as getWorkflowCapabilities, A as lint, B as apply, D as deleteNode, E as paintsDarkCanvasInLightMode, F as projectJavascriptRuntime, G as projectAppSettings, H as compactTheme, I as pageSettingProperties, v as validateTableBatch, J as ToolJetHttpError, K as editContractSchema, L as generateEditContract, l as literalCanvasColor, r as resolveRef, P as PartialWriteError, d as normalizeComponentSpec, C as COMPONENT_FX_GUIDANCE, M as themeActionTools, N as workspaceUserActionTools, e as exposeActions } from "./chunk-Cm6A-Ye7.js";
-import { K as listWorkspaceGroupsTool, N as manageWorkspaceGroupsTool, O as verifyPageRenderTool, W as WebStandardStreamableHTTPServerTransport, Q as getRequestListener, U as workspaceGroupActionTools } from "./chunk-t62YCwCI.js";
-import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, e as renameAppTool, v as validatePersistedAppSummary, f as containsExactValue, p as prepareQueryOptionsForWrite, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, g as containsNamedBinding, h as normalizePlannedLayouts, m as materializeRequiredDefaultChildren, j as mapKeyRefusal, k as prepareComponentBatch, o as validateEvents, q as expandQueryLifecycles, s as persistedEventSpecs, t as persistedEventIds } from "./chunk-DvDcM-Wj.js";
-import { M as McpServer } from "./chunk-mYONPs3z.js";
+import { t as themeDefinition, j as createClient, k as listWorkspaceAppsTool, m as listWorkspaceFoldersTool, p as listWorkspaceUsersTool, q as manageWorkspaceUsersTool, s as inspectDatasourceSchemaTool, u as updateComponentsTool, x as manageThemeTool, y as datasourceMetadataTools, o as ok, f as fail, z as capabilityRequestSchema, A as getWorkflowCapabilities, B as lint, D as apply, E as deleteNode, F as paintsDarkCanvasInLightMode, G as projectJavascriptRuntime, H as projectAppSettings, I as compactTheme, J as pageSettingProperties, v as validateTableBatch, K as ToolJetHttpError, L as editContractSchema, M as generateEditContract, l as literalCanvasColor, r as resolveRef, P as PartialWriteError, d as normalizeComponentSpec, C as COMPONENT_FX_GUIDANCE, N as themeActionTools, O as workspaceUserActionTools, e as exposeActions, Q as withBranchContext, R as branchIdFor } from "./chunk-C0B8RDUi.js";
+import { K as listWorkspaceGroupsTool, N as manageWorkspaceGroupsTool, O as verifyPageRenderTool, W as WebStandardStreamableHTTPServerTransport, Q as getRequestListener, U as workspaceGroupActionTools } from "./chunk-DKW_qviY.js";
+import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, e as renameAppTool, v as validatePersistedAppSummary, f as containsExactValue, p as prepareQueryOptionsForWrite, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, g as containsNamedBinding, h as normalizePlannedLayouts, m as materializeRequiredDefaultChildren, j as mapKeyRefusal, k as prepareComponentBatch, o as validateEvents, q as expandQueryLifecycles, s as persistedEventSpecs, t as persistedEventIds } from "./chunk-DmeThlAf.js";
+import { M as McpServer } from "./chunk-Cjccd6sm.js";
 import { p as external_exports, x as strictEntry, A as specSchema, E as nodeSchema, y as nodeCatalog, z as validateGraph, s as getCatalog, q as getComponentSchema, t as getLegacyComponentReplacement, F as readCatalogBytes } from "./chunk-C9d6UC58.js";
-import { p as pageIconSchema, c as componentSlotSchema, b as componentNameSchema, r as lintComponents, i as introducedLintFindings, x as lintRenderedGeometryBlocking, y as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, g as lintComponentSlots, l as lintComponentSpec, h as lintUnusableTextGeometry, z as lintNestedContainerWidths, j as lintStandardSingleLineInputHeight, k as lintTextGeometry, m as lintRenderedGeometry, F as FORM_SCHEMA_FIELD_TYPE_SET, A as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-Dp2c_mDp.js";
+import { p as pageIconSchema, c as componentSlotSchema, b as componentNameSchema, r as lintComponents, i as introducedLintFindings, x as lintRenderedGeometryBlocking, y as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, g as lintComponentSlots, l as lintComponentSpec, h as lintUnusableTextGeometry, z as lintNestedContainerWidths, j as lintStandardSingleLineInputHeight, k as lintTextGeometry, m as lintRenderedGeometry, F as FORM_SCHEMA_FIELD_TYPE_SET, A as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-SUwesx9W.js";
 import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-7Kp3wqfy.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
@@ -183,6 +183,7 @@ var StreamableHTTPServerTransport = class {
 var SESSION_TOKEN_HEADER = "x-tooljet-session";
 var WORKSPACE_ID_HEADER = "x-tooljet-workspace-id";
 var WORKSPACE_SLUG_HEADER = "x-tooljet-workspace-slug";
+var BRANCH_ID_HEADER = "x-tooljet-branch-id";
 var PAT_HEADER = "x-tooljet-pat";
 var BASE_URL_HEADER = "x-tooljet-url";
 var CUSTOMER_ID_HEADER = "x-tooljet-customer-id";
@@ -299,6 +300,7 @@ async function validateApiUrl(raw, customerId) {
 async function identityFromHeaders(headers, { allowPat = true } = {}) {
   const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
   const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
+  const branchId = readHeader(headers, BRANCH_ID_HEADER);
   const pat = readHeader(headers, PAT_HEADER);
   const rawApiUrl = readHeader(headers, BASE_URL_HEADER);
   const customerId = readHeader(headers, CUSTOMER_ID_HEADER);
@@ -319,7 +321,7 @@ async function identityFromHeaders(headers, { allowPat = true } = {}) {
     }
     if (sessionToken)
       throw new Error(`Send either ${PAT_HEADER} or ${SESSION_TOKEN_HEADER}, not both.`);
-    return { pat, apiUrl, customerVerified };
+    return { pat, apiUrl, customerVerified, ...branchId ? { branchId } : {} };
   }
   if (!sessionToken && !workspaceId) {
     return apiUrl || customerVerified ? { apiUrl, customerVerified } : void 0;
@@ -333,6 +335,7 @@ async function identityFromHeaders(headers, { allowPat = true } = {}) {
   return {
     sessionToken,
     workspaceId,
+    ...branchId ? { branchId } : {},
     workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER),
     apiUrl,
     customerVerified
@@ -347,7 +350,7 @@ function loadConfig(identity) {
     const appUrl2 = identity.appUrl ?? explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? "http://localhost:8082";
     const viewerUrl = identity.viewerUrl ?? appUrl2;
     if (identity.pat)
-      return { apiUrl: apiUrl2, appUrl: appUrl2, viewerUrl, pat: identity.pat };
+      return { apiUrl: apiUrl2, appUrl: appUrl2, viewerUrl, pat: identity.pat, ...identity.branchId ? { branchId: identity.branchId } : {} };
     return {
       apiUrl: apiUrl2,
       appUrl: appUrl2,
@@ -356,7 +359,8 @@ function loadConfig(identity) {
       isOAuthDelegation: identity.isOAuthDelegation,
       oauthGrantId: identity.oauthGrantId,
       workspaceId: identity.workspaceId,
-      workspaceSlug: identity.workspaceSlug
+      workspaceSlug: identity.workspaceSlug,
+      ...identity.branchId ? { branchId: identity.branchId } : {}
     };
   }
   const apiUrl = staticApiUrl;
@@ -377,7 +381,8 @@ function loadConfig(identity) {
     pat,
     sessionToken,
     workspaceId,
-    workspaceSlug: env("TOOLJET_WORKSPACE_SLUG")
+    workspaceSlug: env("TOOLJET_WORKSPACE_SLUG"),
+    ...env("TOOLJET_BRANCH_ID") ? { branchId: env("TOOLJET_BRANCH_ID") } : {}
   };
 }
 var storage = new AsyncLocalStorage();
@@ -467,7 +472,17 @@ function createAuth(config, fetchImpl = fetch) {
     workspaceName = body.organizationName ?? void 0;
   }
   async function rawFetch(path, init) {
+    const branchId = branchIdFor(config);
     const headers = new Headers(init?.headers);
+    if (branchId) {
+      if (path.startsWith("/api/tooljet-db/proxy/")) {
+        headers.set("x-branch-id", branchId);
+      } else {
+        const url = new URL(path, config.apiUrl);
+        url.searchParams.set("branch_id", branchId);
+        path = url.pathname + url.search;
+      }
+    }
     if (config.isOAuthDelegation) {
       headers.delete("Cookie");
       headers.delete("Authorization");
@@ -670,6 +685,22 @@ function appVersionLifecycleTools(client) {
       handler: execute((a) => client.appVersions.remove(a.app_id, a.version_id, a.fallback_version_id))
     }
   ];
+}
+function listWorkspaceBranchesTool(client) {
+  return {
+    name: "list_workspace_branches",
+    title: "List Workspace Branches",
+    description: "List existing workspace branches and whether multi-branching is enabled. For a branching workspace, select the requested feature branch and pass its exact branch_id on every app/data tool call. The default branch is protected. Does not create, activate, push or merge branches.",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+    inputSchema: {},
+    async handler() {
+      try {
+        return ok(await client.listWorkspaceBranches());
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  };
 }
 function listWorkspacesTool(client) {
   return {
@@ -4344,7 +4375,8 @@ var inputSchemas = /* @__PURE__ */ new Map();
 function sharedInputSchema(tool) {
   let schema = inputSchemas.get(tool.name);
   if (!schema) {
-    schema = tool.strictInput ? external_exports.object(tool.inputSchema).strict() : external_exports.object(tool.inputSchema);
+    const fields = { ...tool.inputSchema, branch_id: external_exports.string().uuid().optional().describe("Existing workspace branch ID from list_workspace_branches; pass consistently for this task.") };
+    schema = tool.strictInput ? external_exports.object(fields).strict() : external_exports.object(fields);
     inputSchemas.set(tool.name, schema);
   }
   return schema;
@@ -4367,6 +4399,7 @@ function registerTools(server, client, runtime = runtimeFreshness) {
     getWorkflowExecutionTool(client),
     getRuntimeInfoTool(runtime),
     listWorkspacesTool(client),
+    listWorkspaceBranchesTool(client),
     useWorkspaceTool(client),
     manageAppPermissionsTool(client),
     listWorkspaceAppsTool(client),
@@ -4450,7 +4483,8 @@ function registerTools(server, client, runtime = runtimeFreshness) {
       if (status.restart_required && name !== "get_runtime_info") {
         return staleRuntimeResult(status);
       }
-      return withRuntimeStatus(await handler(args), status);
+      const { branch_id, ...input } = args;
+      return withRuntimeStatus(await withBranchContext(branch_id ?? client.branchId, () => handler(input)), status);
     }));
   }
 }

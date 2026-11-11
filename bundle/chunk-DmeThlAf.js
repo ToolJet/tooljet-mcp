@@ -1,8 +1,8 @@
 import { createRequire } from "node:module";
-import { T as TOOLJET_DB_DATA_TYPES, n as normalizeType, f as fail, i as invalidSeedTimestamps, l as literalCanvasColor, o as ok, C as COMPONENT_FX_GUIDANCE, c as componentRef, b as completedPartialWrites, r as resolveRef, v as validateTableBatch, d as normalizeComponentSpec, g as indexComponentReferences } from "./chunk-Cm6A-Ye7.js";
+import { T as TOOLJET_DB_DATA_TYPES, n as normalizeType, f as fail, i as invalidSeedTimestamps, l as literalCanvasColor, o as ok, C as COMPONENT_FX_GUIDANCE, c as componentRef, b as completedPartialWrites, r as resolveRef, v as validateTableBatch, d as normalizeComponentSpec, g as indexComponentReferences, h as currentBranchId } from "./chunk-C0B8RDUi.js";
 import { p as external_exports, v as tableQuotaError, q as getComponentSchema } from "./chunk-C9d6UC58.js";
-import { b as componentNameSchema, c as componentSlotSchema, p as pageIconSchema, v as validateAppStructure, s as suggestedHtmlHeight, q as pageIconError, r as lintComponents, e as encodeComponentParent, t as lintComponentStateBindings, d as decodeComponentParent, u as minimumTextHeight, w as namespaceReads } from "./chunk-Dp2c_mDp.js";
-import { g as arithmeticWriteWarning, L as LARGE_READ_ROW_THRESHOLD, f as assessQueryRead, r as resolveStaticBindings, h as resolvedReadRefusal, s as sameReadSource, j as extractRowCount, k as emptyViewerOnlyParams, m as emptyParamsNote, u as unresolvedNote, v as validateQueryOptions, i as issueMessages, o as normalizeQueryToggles, t as toggleRewriteWarning, q as queryToggleIssues, e as normalizeQueryOptions, b as bindingSpans, p as parseExpression } from "./chunk-DFfOcLmL.js";
+import { b as componentNameSchema, c as componentSlotSchema, p as pageIconSchema, v as validateAppStructure, s as suggestedHtmlHeight, q as pageIconError, r as lintComponents, e as encodeComponentParent, t as lintComponentStateBindings, d as decodeComponentParent, u as minimumTextHeight, w as namespaceReads } from "./chunk-SUwesx9W.js";
+import { g as arithmeticWriteWarning, L as LARGE_READ_ROW_THRESHOLD, f as assessQueryRead, r as resolveStaticBindings, h as resolvedReadRefusal, s as sameReadSource, j as extractRowCount, k as emptyViewerOnlyParams, m as emptyParamsNote, u as unresolvedNote, v as validateQueryOptions, i as issueMessages, o as normalizeQueryToggles, t as toggleRewriteWarning, q as queryToggleIssues, e as normalizeQueryOptions, b as bindingSpans, p as parseExpression } from "./chunk-CPey5AnB.js";
 import { g as getDatasourceQuerySchema } from "./chunk-7Kp3wqfy.js";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -51,6 +51,7 @@ function storeAppPlan(spec, lint, replaceFingerprint2) {
   prune();
   const planToken = randomUUID();
   plans.set(planToken, {
+    branchId: currentBranchId(),
     spec: structuredClone(spec),
     lint: structuredClone(lint),
     expiresAt: Date.now() + PLAN_TTL_MS,
@@ -67,6 +68,8 @@ function consumeAppPlan(planToken) {
   const plan = plans.get(planToken);
   if (!plan)
     throw new Error("Unknown or expired plan_token. Run lint_app_spec again.");
+  if (plan.branchId !== currentBranchId())
+    throw new Error("The plan belongs to a different branch. Use the branch_id supplied to lint_app_spec.");
   plans.delete(planToken);
   return plan;
 }

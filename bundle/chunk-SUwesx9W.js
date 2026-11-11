@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { p as external_exports, q as getComponentSchema, s as getCatalog, t as getLegacyComponentReplacement } from "./chunk-C9d6UC58.js";
-import { l as lintBindingNames, p as parseExpression, a as parse, b as bindingSpans } from "./chunk-DFfOcLmL.js";
+import { l as lintBindingNames, p as parseExpression, a as parse, b as bindingSpans } from "./chunk-CPey5AnB.js";
 import { readFileSync } from "node:fs";
 createRequire(import.meta.url);
 var VOID_TAGS = /* @__PURE__ */ new Set(["br", "img", "hr", "input", "meta", "link", "source", "wbr", "col"]);

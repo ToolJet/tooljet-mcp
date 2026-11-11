@@ -1,8 +1,9 @@
 import { createRequire } from "node:module";
 import { p as external_exports, u as hasNonEmptyDefinition, v as tableQuotaError, T as TableQuotaError, w as definition, q as getComponentSchema, x as strictEntry, y as nodeCatalog, z as validateGraph, A as specSchema, B as compileGraph, C as assertWorkflowJavaScript, D as controlFlowEdges } from "./chunk-C9d6UC58.js";
-import { e as encodeComponentParent, a as assertPageIcon, S as STYLE_KEYS_IN_PROPERTIES, d as decodeComponentParent, P as PROPERTY_KEY_ALIASES, n as nearestCatalogKey, c as componentSlotSchema, b as componentNameSchema, f as componentNameError, s as suggestedHtmlHeight, i as introducedLintFindings, l as lintComponentSpec, g as lintComponentSlots, h as lintUnusableTextGeometry, j as lintStandardSingleLineInputHeight, k as lintTextGeometry, m as lintRenderedGeometry, o as lintKanbanInteractions } from "./chunk-Dp2c_mDp.js";
-import { c as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches, e as normalizeQueryOptions, v as validateQueryOptions, i as issueMessages } from "./chunk-DFfOcLmL.js";
+import { e as encodeComponentParent, a as assertPageIcon, S as STYLE_KEYS_IN_PROPERTIES, d as decodeComponentParent, P as PROPERTY_KEY_ALIASES, n as nearestCatalogKey, c as componentSlotSchema, b as componentNameSchema, f as componentNameError, s as suggestedHtmlHeight, i as introducedLintFindings, l as lintComponentSpec, g as lintComponentSlots, h as lintUnusableTextGeometry, j as lintStandardSingleLineInputHeight, k as lintTextGeometry, m as lintRenderedGeometry, o as lintKanbanInteractions } from "./chunk-SUwesx9W.js";
+import { c as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches, e as normalizeQueryOptions, v as validateQueryOptions, i as issueMessages } from "./chunk-CPey5AnB.js";
 import { randomUUID, createHash } from "node:crypto";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { isDeepStrictEqual } from "node:util";
 import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-7Kp3wqfy.js";
 createRequire(import.meta.url);
@@ -72,11 +73,17 @@ function createAppVersionLifecycle(auth, getApp) {
     if (typeof raw.id !== "string" || typeof raw.name !== "string")
       throw new Error("Invalid version metadata.");
     const environmentId = raw.current_environment_id ?? raw.currentEnvironmentId;
+    const versionType = raw.version_type ?? raw.versionType;
+    const branchId = raw.branch_id ?? raw.branchId;
+    const displayName = raw.display_name ?? raw.displayName;
     return {
       id: raw.id,
       name: raw.name,
       ...typeof raw.description === "string" || raw.description === null ? { description: raw.description } : {},
       ...typeof raw.status === "string" ? { status: raw.status } : {},
+      ...typeof versionType === "string" ? { versionType } : {},
+      ...typeof branchId === "string" ? { branchId } : {},
+      ...typeof displayName === "string" ? { displayName } : {},
       ...typeof environmentId === "string" ? { environmentId } : {}
     };
   }
@@ -117,6 +124,9 @@ function createAppVersionLifecycle(auth, getApp) {
       version_id: v.id,
       version_name: v.name,
       selected: true,
+      ...v.versionType ? { version_type: v.versionType } : {},
+      ...v.branchId ? { branch_id: v.branchId } : {},
+      ...v.displayName ? { display_name: v.displayName } : {},
       ...v.status ? { status: v.status } : {},
       ...environmentId ? { current_environment_id: environmentId } : {}
     };
@@ -141,6 +151,9 @@ function createAppVersionLifecycle(auth, getApp) {
   }
   async function promote(appId, versionId, environmentName) {
     let v = await version(appId, versionId);
+    if (v.versionType?.toLowerCase() === "branch") {
+      throw new Error("Cannot promote a branch head. Save a named version in ToolJet, then select that exact version for promotion.");
+    }
     const envs = await environments(appId);
     const target = environment(envs, environmentName);
     const start = envs.find((e) => e.id === v.environmentId);
@@ -227,6 +240,16 @@ function createAppVersionLifecycle(auth, getApp) {
   }
   return { list, switchEnvironment, promote, update, remove };
 }
+var branchContext = new AsyncLocalStorage();
+var withBranchContext = (branchId, fn) => branchContext.run(branchId, fn);
+var currentBranchId = () => branchContext.getStore();
+function branchIdFor(config) {
+  const requested = branchContext.getStore();
+  if (config.branchId && requested && config.branchId !== requested) {
+    throw new Error("This build is pinned to another branch. Start a build from the intended branch.");
+  }
+  return config.branchId ?? requested;
+}
 var record = (x) => x && typeof x === "object" && !Array.isArray(x) ? x : {};
 var required$1 = (x, label) => {
   if (typeof x !== "string" || !x)
@@ -286,6 +309,8 @@ function createWorkflowClient(auth, config, queries) {
     if (rawVersion.id !== versionId || !Object.hasOwn(rawVersion, "definition")) {
       throw new Error("Lossless workflow export is missing the requested version definition.");
     }
+    const branchName = record(version.branch).name;
+    const branchQuery = typeof branchName === "string" && branchName ? `?branch=${encodeURIComponent(branchName)}` : "";
     return {
       workflow_id: workflowId,
       version_id: versionId,
@@ -293,7 +318,7 @@ function createWorkflowClient(auth, config, queries) {
       environment_id: environmentId,
       editable: status === "DRAFT" && !released && !frozen,
       enabled: (app.isMaintenanceOn ?? app.is_maintenance_on) === true,
-      editor_url: `${config.appUrl}/${encodeURIComponent(await auth.getOrganizationSlug())}/apps/${encodeURIComponent(typeof app.slug === "string" && app.slug ? app.slug : workflowId)}`,
+      editor_url: `${config.appUrl}/${encodeURIComponent(await auth.getOrganizationSlug())}/apps/${encodeURIComponent(typeof app.slug === "string" && app.slug ? app.slug : workflowId)}${branchQuery}`,
       definition: definition(rawVersion.definition)
     };
   }
@@ -345,14 +370,15 @@ function createWorkflowClient(auth, config, queries) {
       if (config.isOAuthDelegation && !config.oauthGrantId)
         throw new Error("OAuth workflow plans require a trusted grant identifier.");
       const identity = config.isOAuthDelegation ? ["oauth", config.oauthGrantId] : config.sessionToken ?? config.pat;
-      return createHash("sha256").update(JSON.stringify([config.apiUrl, identity, await auth.getOrganizationId()])).digest("hex");
+      return createHash("sha256").update(JSON.stringify([config.apiUrl, identity, await auth.getOrganizationId(), branchIdFor(config)])).digest("hex");
     },
     async list(page = 1, search = "") {
       return request(`/api/apps?${new URLSearchParams({ type: "workflow", page: String(page), searchKey: search })}`);
     },
     get,
     async create(name2) {
-      const created = record(await request("/api/workflows", { name: name2, type: "workflow" }));
+      const branchId = branchIdFor(config);
+      const created = record(await request("/api/workflows", { name: name2, type: "workflow", ...branchId ? { branchId } : {} }));
       const id = required$1(created.id, "created workflow ID");
       try {
         return await get(id);
@@ -1411,6 +1437,7 @@ function createClient(auth, config) {
     return auth.switchWorkspace(workspaceId);
   }
   async function createApp(name2) {
+    const branchId = branchIdFor(config);
     let createRes;
     let finalName = name2;
     for (let attempt = 1; attempt <= 6; attempt++) {
@@ -1418,7 +1445,7 @@ function createClient(auth, config) {
       createRes = await auth.authedFetch("/api/apps", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: finalName, type: "front-end" })
+        body: JSON.stringify({ name: finalName, type: "front-end", ...branchId ? { branchId } : {} })
       });
       if (createRes.status !== 409)
         break;
@@ -1435,11 +1462,14 @@ function createClient(auth, config) {
     }
     const orgSlug = await auth.getOrganizationSlug();
     const appSlug = created.slug ?? created.id;
-    const editorUrl = `${config.appUrl}/${orgSlug}/apps/${appSlug}`;
+    const branchName = app.editing_version.branch?.name;
+    const branchQuery = typeof branchName === "string" ? `branch=${encodeURIComponent(branchName)}` : "";
+    const editorUrl = `${config.appUrl}/${orgSlug}/apps/${appSlug}${branchQuery ? `?${branchQuery}` : ""}`;
     const homeHandle = homePage.handle ?? "home";
-    const viewerUrl = `${config.appUrl}/applications/${created.id}/${encodeURIComponent(homeHandle)}?env=development&version=${encodeURIComponent(versionName)}`;
+    const viewerUrl = `${config.appUrl}/applications/${created.id}/${encodeURIComponent(homeHandle)}?env=development&version=${encodeURIComponent(versionName)}${branchQuery ? `&${branchQuery}` : ""}`;
     return {
       app_id: created.id,
+      ...branchId ? { branch_id: branchId } : {},
       version_id: versionId,
       home_page_id: homePage.id,
       app_url: editorUrl,
@@ -1501,6 +1531,9 @@ function createClient(auth, config) {
       const version2 = body.versions?.find((candidate) => candidate.id === versionId);
       if (!version2) {
         throw new Error(`ToolJet releaseApp failed: version ${versionId} was not found in app ${appId}.`);
+      }
+      if (String(version2.version_type ?? version2.versionType).toLowerCase() === "branch") {
+        throw new Error("Cannot release a branch head. Save a named version in ToolJet, then select that exact version for release.");
       }
       return {
         id: versionId,
@@ -2637,7 +2670,20 @@ function createClient(auth, config) {
     inviteWorkspaceUser,
     updateWorkspaceUser,
     setWorkspaceUserArchived,
+    branchId: config.branchId,
     createApp,
+    async listWorkspaceBranches() {
+      const res = await auth.authedFetch("/api/workspace-branches");
+      if (res.status === 404)
+        return { branches: [], is_multi_branching_enabled: false };
+      await assertOk(res, "listWorkspaceBranches");
+      const body = await res.json();
+      return {
+        branches: body.branches.map((branch) => ({ id: branch.id, name: branch.name, is_default: branch.isDefault })),
+        active_branch_id: branchIdFor(config) ?? body.activeBranchId,
+        is_multi_branching_enabled: body.isMultiBranchingEnabled
+      };
+    },
     createAppVersion,
     switchAppVersion,
     releaseApp,
@@ -4594,21 +4640,24 @@ return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
   };
 }
 export {
-  lint as A,
-  apply as B,
+  getWorkflowCapabilities as A,
+  lint as B,
   COMPONENT_FX_GUIDANCE as C,
-  deleteNode as D,
-  paintsDarkCanvasInLightMode as E,
-  projectJavascriptRuntime as F,
-  projectAppSettings as G,
-  compactTheme as H,
-  pageSettingProperties as I,
-  ToolJetHttpError as J,
-  editContractSchema as K,
-  generateEditContract as L,
-  themeActionTools as M,
-  workspaceUserActionTools as N,
+  apply as D,
+  deleteNode as E,
+  paintsDarkCanvasInLightMode as F,
+  projectJavascriptRuntime as G,
+  projectAppSettings as H,
+  compactTheme as I,
+  pageSettingProperties as J,
+  ToolJetHttpError as K,
+  editContractSchema as L,
+  generateEditContract as M,
+  themeActionTools as N,
+  workspaceUserActionTools as O,
   PartialWriteError as P,
+  withBranchContext as Q,
+  branchIdFor as R,
   TOOLJET_DB_DATA_TYPES as T,
   WORKSPACE_ACCESS_KEYS as W,
   WORKSPACE_PERMISSION_KEYS as a,
@@ -4618,23 +4667,23 @@ export {
   exposeActions as e,
   fail as f,
   indexComponentReferences as g,
-  createClient as h,
+  currentBranchId as h,
   invalidSeedTimestamps as i,
-  listWorkspaceAppsTool as j,
-  listWorkspaceFoldersTool as k,
+  createClient as j,
+  listWorkspaceAppsTool as k,
   literalCanvasColor as l,
-  listWorkspaceUsersTool as m,
+  listWorkspaceFoldersTool as m,
   normalizeType as n,
   ok as o,
-  manageWorkspaceUsersTool as p,
-  inspectDatasourceSchemaTool as q,
+  listWorkspaceUsersTool as p,
+  manageWorkspaceUsersTool as q,
   resolveRef as r,
-  manageThemeTool as s,
+  inspectDatasourceSchemaTool as s,
   themeDefinition as t,
   updateComponentsTool as u,
   validateTableBatch as v,
   workspaceAccessKeys as w,
-  datasourceMetadataTools as x,
-  capabilityRequestSchema as y,
-  getWorkflowCapabilities as z
+  manageThemeTool as x,
+  datasourceMetadataTools as y,
+  capabilityRequestSchema as z
 };
