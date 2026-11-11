@@ -2,6 +2,8 @@ import { renderAuditAvailable } from '../renderAuditAvailability.js';
 import { appVersionLifecycleTools } from './appVersionLifecycle.js';
 import { listWorkspaceGroupsTool, manageWorkspaceGroupsTool, workspaceGroupActionTools } from './workspaceGroupManagement.js';
 import { z } from 'zod';
+import { withBranchContext } from '../branchContext.js';
+import { listWorkspaceBranchesTool } from './listWorkspaceBranches.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ToolJetClient } from '../tooljetClient.js';
 import type { ToolDef } from './types.js';
@@ -106,7 +108,8 @@ const inputSchemas = new Map<string, z.ZodObject>();
 function sharedInputSchema(tool: ToolDef): z.ZodObject {
   let schema = inputSchemas.get(tool.name);
   if (!schema) {
-    schema = tool.strictInput ? z.object(tool.inputSchema).strict() : z.object(tool.inputSchema);
+    const fields = { ...tool.inputSchema, branch_id: z.string().uuid().optional().describe('Existing workspace branch ID from list_workspace_branches; pass consistently for this task.') };
+    schema = tool.strictInput ? z.object(fields).strict() : z.object(fields);
     inputSchemas.set(tool.name, schema);
   }
   return schema;
@@ -135,6 +138,7 @@ export function registerTools(
     getWorkflowExecutionTool(client),
     getRuntimeInfoTool(runtime),
     listWorkspacesTool(client),
+    listWorkspaceBranchesTool(client),
     useWorkspaceTool(client),
     manageAppPermissionsTool(client),
     listWorkspaceAppsTool(client),
@@ -226,7 +230,8 @@ export function registerTools(
         if (status.restart_required && name !== 'get_runtime_info') {
           return staleRuntimeResult(status);
         }
-        return withRuntimeStatus(await handler(args), status);
+        const { branch_id, ...input } = args;
+        return withRuntimeStatus(await withBranchContext(branch_id ?? client.branchId, () => handler(input)), status);
       }) as any
     );
   }

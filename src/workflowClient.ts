@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { Auth } from './auth.js';
+import { branchIdFor } from './branchContext.js';
 import type { Config } from './config.js';
 import type { ToolJetClient } from './tooljetClient.js';
 import { definition, type Definition } from './workflows/graph.js';
@@ -62,11 +63,13 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
     if (rawVersion.id !== versionId || !Object.hasOwn(rawVersion, 'definition')) {
       throw new Error('Lossless workflow export is missing the requested version definition.');
     }
+    const branchName = record(version.branch).name;
+    const branchQuery = typeof branchName === 'string' && branchName ? `?branch=${encodeURIComponent(branchName)}` : '';
     return {
       workflow_id: workflowId, version_id: versionId, workspace_id: workspace, environment_id: environmentId,
       editable: status === 'DRAFT' && !released && !frozen,
       enabled: (app.isMaintenanceOn ?? app.is_maintenance_on) === true,
-      editor_url: `${config.appUrl}/${encodeURIComponent(await auth.getOrganizationSlug())}/apps/${encodeURIComponent(typeof app.slug === 'string' && app.slug ? app.slug : workflowId)}`,
+      editor_url: `${config.appUrl}/${encodeURIComponent(await auth.getOrganizationSlug())}/apps/${encodeURIComponent(typeof app.slug === 'string' && app.slug ? app.slug : workflowId)}${branchQuery}`,
       definition: definition(rawVersion.definition),
     };
   }
@@ -117,12 +120,13 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
       if (config.isOAuthDelegation && !config.oauthGrantId) throw new Error('OAuth workflow plans require a trusted grant identifier.');
       // Delegation JWTs change per request; the same live approval must retain its linted plan.
       const identity = config.isOAuthDelegation ? ['oauth', config.oauthGrantId] : config.sessionToken ?? config.pat;
-      return createHash('sha256').update(JSON.stringify([config.apiUrl, identity, await auth.getOrganizationId()])).digest('hex');
+      return createHash('sha256').update(JSON.stringify([config.apiUrl, identity, await auth.getOrganizationId(), branchIdFor(config)])).digest('hex');
     },
     async list(page = 1, search = '') { return request(`/api/apps?${new URLSearchParams({ type: 'workflow', page: String(page), searchKey: search })}`); },
     get,
     async create(name: string) {
-      const created = record(await request('/api/workflows', { name, type: 'workflow' }));
+      const branchId = branchIdFor(config);
+      const created = record(await request('/api/workflows', { name, type: 'workflow', ...(branchId ? { branchId } : {}) }));
       const id = required(created.id, 'created workflow ID');
       try { return await get(id); } catch (error) {
         throw new Error(`Workflow ${id} was created, but readback failed. Do not recreate it. ${error instanceof Error ? error.message : String(error)}`);

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createAppVersionLifecycle } from '../src/appVersionLifecycle.js';
 import { appVersionLifecycleTools } from '../src/tools/appVersionLifecycle.js';
 import type { Auth } from '../src/auth.js';
-import type { ToolJetClient } from '../src/tooljetClient.js';
+import { createClient, type ToolJetClient } from '../src/tooljetClient.js';
 
 function fixture() {
   const envs = [
@@ -47,6 +47,44 @@ function fixture() {
 }
 
 describe('app version lifecycle', () => {
+  it.each(['snake', 'camel'])('preserves branch identity and display metadata from %s-case responses', async casing => {
+    const f = fixture();
+    Object.assign(f.rows[0], casing === 'snake'
+      ? { version_type: 'branch', branch_id: 'garden-branch', display_name: 'Garden planning' }
+      : { versionType: 'branch', branchId: 'garden-branch', displayName: 'Garden planning' });
+    expect((await f.client.list('training')).versions[0]).toMatchObject({
+      version_id: 'draft', version_name: 'Training draft', version_type: 'branch',
+      branch_id: 'garden-branch', display_name: 'Garden planning',
+    });
+  });
+  it.each(['version_type', 'versionType'])('refuses branch-head promotion before any write (%s)', async field => {
+    const f = fixture();
+    Object.assign(f.rows[0], { [field]: 'branch' });
+    await expect(f.client.promote('training', 'draft', 'staging')).rejects.toThrow(/branch head/i);
+    expect(f.writes()).toEqual([]);
+  });
+  it.each(['version_type', 'versionType'])('refuses branch-head release before publishing a new version (%s)', async field => {
+    const fetch = vi.fn(async () => Response.json({ versions: [{ id: 'branch-head', status: 'DRAFT', [field]: 'branch' }] }));
+    const client = createClient({ authedFetch: fetch } as unknown as Auth, {
+      apiUrl: 'https://example.test', appUrl: 'https://example.test', pat: 'synthetic-token',
+    });
+    await expect(client.releaseApp('garden', 'branch-head')).rejects.toThrow(/branch head/i);
+    expect(fetch.mock.calls).toHaveLength(1);
+  });
+  it('keeps releasing a named draft version with the exact requested id', async () => {
+    const fetch = vi.fn(async (path: string, options?: RequestInit) => {
+      if (path === '/api/apps/garden/versions') return Response.json({ versions: [{ id: 'snapshot', status: 'DRAFT', version_type: 'version' }] });
+      if (options?.method === 'PUT') return new Response(null, { status: 204 });
+      return Response.json({ current_version_id: 'snapshot' });
+    });
+    const client = createClient({ authedFetch: fetch } as unknown as Auth, {
+      apiUrl: 'https://example.test', appUrl: 'https://example.test', pat: 'synthetic-token',
+    });
+    expect(await client.releaseApp('garden', 'snapshot')).toMatchObject({ released: true, version_id: 'snapshot' });
+    expect(fetch.mock.calls.filter(([, options]) => options?.method).map(([path]) => path)).toEqual([
+      '/api/v2/apps/garden/versions/snapshot', '/api/apps/garden/release',
+    ]);
+  });
   it('lists compact verified app versions and ordered environments', async () => {
     const f = fixture(); expect(await f.client.list('training')).toMatchObject({
       app_id: 'training', versions: [{ version_id: 'draft' }, { version_id: 'stable' }], environments: f.envs,
