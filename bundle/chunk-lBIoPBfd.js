@@ -1,11 +1,11 @@
 import { createRequire } from "node:module";
-import { t as themeDefinition, j as createClient, k as listWorkspaceAppsTool, m as listWorkspaceFoldersTool, p as listWorkspaceUsersTool, q as manageWorkspaceUsersTool, s as inspectDatasourceSchemaTool, u as updateComponentsTool, x as manageThemeTool, y as datasourceMetadataTools, o as ok, f as fail, z as capabilityRequestSchema, A as getWorkflowCapabilities, B as lint, D as apply, E as deleteNode, F as paintsDarkCanvasInLightMode, G as projectJavascriptRuntime, H as projectAppSettings, I as compactTheme, J as pageSettingProperties, v as validateTableBatch, K as ToolJetHttpError, L as editContractSchema, M as generateEditContract, l as literalCanvasColor, r as resolveRef, P as PartialWriteError, d as normalizeComponentSpec, C as COMPONENT_FX_GUIDANCE, N as themeActionTools, O as workspaceUserActionTools, e as exposeActions, Q as withBranchContext, R as branchIdFor } from "./chunk-C0B8RDUi.js";
-import { K as listWorkspaceGroupsTool, N as manageWorkspaceGroupsTool, O as verifyPageRenderTool, W as WebStandardStreamableHTTPServerTransport, Q as getRequestListener, U as workspaceGroupActionTools } from "./chunk-DKW_qviY.js";
-import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, e as renameAppTool, v as validatePersistedAppSummary, f as containsExactValue, p as prepareQueryOptionsForWrite, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, g as containsNamedBinding, h as normalizePlannedLayouts, m as materializeRequiredDefaultChildren, j as mapKeyRefusal, k as prepareComponentBatch, o as validateEvents, q as expandQueryLifecycles, s as persistedEventSpecs, t as persistedEventIds } from "./chunk-DmeThlAf.js";
-import { M as McpServer } from "./chunk-Cjccd6sm.js";
-import { p as external_exports, x as strictEntry, A as specSchema, E as nodeSchema, y as nodeCatalog, z as validateGraph, s as getCatalog, q as getComponentSchema, t as getLegacyComponentReplacement, F as readCatalogBytes } from "./chunk-C9d6UC58.js";
-import { p as pageIconSchema, c as componentSlotSchema, b as componentNameSchema, r as lintComponents, i as introducedLintFindings, x as lintRenderedGeometryBlocking, y as lintRenderedGeometryAdvisory, d as decodeComponentParent, e as encodeComponentParent, g as lintComponentSlots, l as lintComponentSpec, h as lintUnusableTextGeometry, z as lintNestedContainerWidths, j as lintStandardSingleLineInputHeight, k as lintTextGeometry, m as lintRenderedGeometry, F as FORM_SCHEMA_FIELD_TYPE_SET, A as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-SUwesx9W.js";
-import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-7Kp3wqfy.js";
+import { t as themeDefinition, s as strictEntry, h as loadConfig, j as createClient, k as listWorkspaceAppsTool, m as listWorkspaceFoldersTool, p as listWorkspaceUsersTool, q as manageWorkspaceUsersTool, r as inspectDatasourceSchemaTool, u as manageThemeTool, x as datasourceMetadataTools, o as ok, f as fail, y as capabilityRequestSchema, z as getWorkflowCapabilities, A as lint, B as apply, C as deleteNode, D as paintsDarkCanvasInLightMode, E as projectJavascriptRuntime, F as projectAppSettings, G as compactTheme, H as pageSettingProperties, v as validateTableBatch, I as ToolJetHttpError, J as editContractSchema, K as generateEditContract, l as literalCanvasColor, P as PartialWriteError, L as hasNonEmptyDefinition, M as themeActionTools, N as workspaceUserActionTools, e as exposeActions, O as withBranchContext, Q as branchIdFor } from "./chunk-08smxdh7.js";
+import { K as listWorkspaceGroupsTool, N as manageWorkspaceGroupsTool, O as verifyPageRenderTool, W as WebStandardStreamableHTTPServerTransport, Q as getRequestListener, U as workspaceGroupActionTools } from "./chunk-BItsZlOQ.js";
+import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, e as renameAppTool, v as validatePersistedAppSummary, f as containsExactValue, p as prepareQueryOptionsForWrite, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, g as resolveRef, h as containsNamedBinding, j as normalizeComponentSpec, k as normalizePlannedLayouts, m as materializeRequiredDefaultChildren, o as mapKeyRefusal, C as COMPONENT_FX_GUIDANCE, q as prepareComponentBatch, s as COMPONENT_FX_UPDATE_GUIDANCE, t as validateEvents, u as expandQueryLifecycles, w as persistedEventSpecs, x as persistedEventIds } from "./chunk-CfRx6A12.js";
+import { M as McpServer } from "./chunk-dmqfKwSi.js";
+import { p as external_exports, y as specSchema, C as nodeSchema, w as nodeCatalog, x as validateGraph, s as getCatalog, q as getComponentSchema, t as getLegacyComponentReplacement, D as readCatalogBytes } from "./chunk-BxG5FxrI.js";
+import { p as pageIconSchema, b as componentSlotSchema, c as componentNameSchema, l as lintComponents, i as introducedLintFindings, j as lintRenderedGeometryBlocking, k as lintRenderedGeometryAdvisory, o as componentNameError, d as decodeComponentParent, e as encodeComponentParent, s as suggestedHtmlHeight, q as lintComponentSpec, r as lintComponentSlots, t as lintUnusableTextGeometry, u as lintStandardSingleLineInputHeight, w as lintTextGeometry, x as lintRenderedGeometry, y as lintKanbanInteractions, z as lintNestedContainerWidths, F as FORM_SCHEMA_FIELD_TYPE_SET, A as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-Cpp7yj_s.js";
+import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-CPA73pkF.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { createServer } from "node:http";
@@ -180,211 +180,6 @@ var StreamableHTTPServerTransport = class {
     this._webStandardTransport.closeStandaloneSSEStream();
   }
 };
-var SESSION_TOKEN_HEADER = "x-tooljet-session";
-var WORKSPACE_ID_HEADER = "x-tooljet-workspace-id";
-var WORKSPACE_SLUG_HEADER = "x-tooljet-workspace-slug";
-var BRANCH_ID_HEADER = "x-tooljet-branch-id";
-var PAT_HEADER = "x-tooljet-pat";
-var BASE_URL_HEADER = "x-tooljet-url";
-var CUSTOMER_ID_HEADER = "x-tooljet-customer-id";
-var ALLOWED_API_ORIGINS_VAR = "MCP_ALLOWED_API_ORIGINS";
-var GATEWAY_URL_VAR = "MCP_GATEWAY_URL";
-var GATEWAY_TOKEN_VAR = "MCP_GATEWAY_TOKEN";
-function env(name) {
-  const value = process.env[name]?.trim();
-  return value ? value : void 0;
-}
-function allowedApiOrigins() {
-  const raw = env(ALLOWED_API_ORIGINS_VAR);
-  if (!raw)
-    return [];
-  return raw.split(",").map((entry) => entry.trim()).filter(Boolean).map((entry) => {
-    let parsed;
-    try {
-      parsed = new URL(entry);
-    } catch {
-      throw new Error(`${ALLOWED_API_ORIGINS_VAR} contains an entry that is not a valid URL: "${entry}".`);
-    }
-    if (parsed.protocol !== "https:") {
-      throw new Error(`${ALLOWED_API_ORIGINS_VAR} entry "${entry}" must use https \u2014 it could never match a request.`);
-    }
-    return parsed.origin;
-  });
-}
-function readHeader(headers, name) {
-  const raw = headers[name] ?? headers[name.toLowerCase()];
-  const value = Array.isArray(raw) ? raw[0] : raw;
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : void 0;
-}
-var gatewayOriginCache = /* @__PURE__ */ new Map();
-var GATEWAY_CACHE_TTL_MS = 6e4;
-async function checkOriginWithGateway(customerId, origin) {
-  const cacheKey = `${customerId} ${origin}`;
-  const cached = gatewayOriginCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now())
-    return cached.allowed;
-  const gatewayUrl = env(GATEWAY_URL_VAR);
-  const gatewayToken = env(GATEWAY_TOKEN_VAR);
-  if (!gatewayUrl || !gatewayToken)
-    return false;
-  let allowed = false;
-  try {
-    const res = await fetch(new URL("/internal/mcp/verify-origin", gatewayUrl), {
-      method: "POST",
-      headers: { authorization: gatewayToken, "content-type": "application/json" },
-      body: JSON.stringify({ customer_id: customerId, origin }),
-      signal: AbortSignal.timeout(5e3)
-    });
-    if (res.ok) {
-      const body = await res.json();
-      allowed = body.allowed === true;
-    }
-  } catch {
-    allowed = false;
-  }
-  gatewayOriginCache.set(cacheKey, { allowed, expiresAt: Date.now() + GATEWAY_CACHE_TTL_MS });
-  return allowed;
-}
-var gatewayResolveCache = /* @__PURE__ */ new Map();
-async function resolveApiUrlFromGateway(customerId) {
-  const cached = gatewayResolveCache.get(customerId);
-  if (cached && cached.expiresAt > Date.now())
-    return cached.result;
-  const gatewayUrl = env(GATEWAY_URL_VAR);
-  const gatewayToken = env(GATEWAY_TOKEN_VAR);
-  let result = { url: void 0, verified: false };
-  if (gatewayUrl && gatewayToken) {
-    try {
-      const res = await fetch(new URL("/internal/mcp/verify-origin", gatewayUrl), {
-        method: "POST",
-        headers: { authorization: gatewayToken, "content-type": "application/json" },
-        body: JSON.stringify({ customer_id: customerId }),
-        signal: AbortSignal.timeout(5e3)
-      });
-      if (res.ok) {
-        const body = await res.json();
-        if ("host_name" in body) {
-          const path = body.subpath ? `/${body.subpath.replace(/^\/+|\/+$/g, "")}` : "";
-          result = { url: body.host_name ? `https://${body.host_name}${path}` : void 0, verified: true };
-        }
-      }
-    } catch {
-      result = { url: void 0, verified: false };
-    }
-  }
-  gatewayResolveCache.set(customerId, { result, expiresAt: Date.now() + GATEWAY_CACHE_TTL_MS });
-  return result;
-}
-async function validateApiUrl(raw, customerId) {
-  let parsed;
-  try {
-    parsed = new URL(raw);
-  } catch {
-    throw new Error(`${BASE_URL_HEADER} must be a valid absolute URL.`);
-  }
-  if (parsed.protocol !== "https:") {
-    throw new Error(`${BASE_URL_HEADER} must use https.`);
-  }
-  if (parsed.search || parsed.hash || parsed.username || parsed.password) {
-    throw new Error(`${BASE_URL_HEADER} must carry no query, hash, or credentials.`);
-  }
-  const inStaticList = allowedApiOrigins().includes(parsed.origin);
-  const verifiedViaGateway = !inStaticList && customerId ? await checkOriginWithGateway(customerId, parsed.origin) : false;
-  if (!inStaticList && !verifiedViaGateway) {
-    throw new Error(`${BASE_URL_HEADER} origin "${parsed.origin}" is not in ${ALLOWED_API_ORIGINS_VAR} and did not verify against the Gateway. Add it to that comma-separated list, or confirm ${CUSTOMER_ID_HEADER} is being sent.`);
-  }
-  const path = parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/$/, "");
-  return { apiUrl: parsed.origin + path, customerVerified: verifiedViaGateway ? true : void 0 };
-}
-async function identityFromHeaders(headers, { allowPat = true } = {}) {
-  const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
-  const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
-  const branchId = readHeader(headers, BRANCH_ID_HEADER);
-  const pat = readHeader(headers, PAT_HEADER);
-  const rawApiUrl = readHeader(headers, BASE_URL_HEADER);
-  const customerId = readHeader(headers, CUSTOMER_ID_HEADER);
-  let apiUrl;
-  let customerVerified;
-  if (rawApiUrl) {
-    const validated = await validateApiUrl(rawApiUrl, customerId);
-    apiUrl = validated.apiUrl;
-    customerVerified = validated.customerVerified;
-  } else if (customerId) {
-    const resolved = await resolveApiUrlFromGateway(customerId);
-    apiUrl = resolved.url;
-    customerVerified = resolved.verified ? true : void 0;
-  }
-  if (pat) {
-    if (!allowPat) {
-      throw new Error(`${PAT_HEADER} is not accepted by this server. It acts only on behalf of a signed-in user: send ${SESSION_TOKEN_HEADER} with ${WORKSPACE_ID_HEADER}.`);
-    }
-    if (sessionToken)
-      throw new Error(`Send either ${PAT_HEADER} or ${SESSION_TOKEN_HEADER}, not both.`);
-    return { pat, apiUrl, customerVerified, ...branchId ? { branchId } : {} };
-  }
-  if (!sessionToken && !workspaceId) {
-    return apiUrl || customerVerified ? { apiUrl, customerVerified } : void 0;
-  }
-  if (!sessionToken) {
-    throw new Error(`${WORKSPACE_ID_HEADER} was sent without ${SESSION_TOKEN_HEADER}.`);
-  }
-  if (!workspaceId) {
-    throw new Error(`${SESSION_TOKEN_HEADER} was sent without ${WORKSPACE_ID_HEADER}.`);
-  }
-  return {
-    sessionToken,
-    workspaceId,
-    ...branchId ? { branchId } : {},
-    workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER),
-    apiUrl,
-    customerVerified
-  };
-}
-function loadConfig(identity) {
-  const explicitApiUrl = env("TOOLJET_URL");
-  const explicitAppUrl = env("TOOLJET_DEPLOYMENT_URL") ?? env("TOOLJET_APP_URL");
-  const staticApiUrl = explicitApiUrl ?? explicitAppUrl ?? "http://localhost:3000";
-  if (identity) {
-    const apiUrl2 = identity.apiUrl ?? staticApiUrl;
-    const appUrl2 = identity.appUrl ?? explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? "http://localhost:8082";
-    const viewerUrl = identity.viewerUrl ?? appUrl2;
-    if (identity.pat)
-      return { apiUrl: apiUrl2, appUrl: appUrl2, viewerUrl, pat: identity.pat, ...identity.branchId ? { branchId: identity.branchId } : {} };
-    return {
-      apiUrl: apiUrl2,
-      appUrl: appUrl2,
-      viewerUrl,
-      sessionToken: identity.sessionToken,
-      isOAuthDelegation: identity.isOAuthDelegation,
-      oauthGrantId: identity.oauthGrantId,
-      workspaceId: identity.workspaceId,
-      workspaceSlug: identity.workspaceSlug,
-      ...identity.branchId ? { branchId: identity.branchId } : {}
-    };
-  }
-  const apiUrl = staticApiUrl;
-  const appUrl = explicitAppUrl ?? explicitApiUrl ?? "http://localhost:8082";
-  const pat = env("TOOLJET_PAT");
-  const sessionToken = env("TOOLJET_SESSION_TOKEN");
-  const workspaceId = env("TOOLJET_WORKSPACE_ID");
-  if (!pat && !sessionToken) {
-    throw new Error(`TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal access token in ToolJet under Settings \u2192 Access tokens, in the workspace you want this server to act on, and set TOOLJET_PAT. A shared HTTP server instead receives the acting user per request via the ${SESSION_TOKEN_HEADER} header.`);
-  }
-  if (sessionToken && !workspaceId) {
-    throw new Error("TOOLJET_WORKSPACE_ID is required alongside TOOLJET_SESSION_TOKEN.");
-  }
-  return {
-    apiUrl,
-    appUrl,
-    viewerUrl: appUrl,
-    pat,
-    sessionToken,
-    workspaceId,
-    workspaceSlug: env("TOOLJET_WORKSPACE_SLUG"),
-    ...env("TOOLJET_BRANCH_ID") ? { branchId: env("TOOLJET_BRANCH_ID") } : {}
-  };
-}
 var storage = new AsyncLocalStorage();
 function recordHttpResponse(response) {
   const context = storage.getStore();
@@ -686,22 +481,6 @@ function appVersionLifecycleTools(client) {
     }
   ];
 }
-function listWorkspaceBranchesTool(client) {
-  return {
-    name: "list_workspace_branches",
-    title: "List Workspace Branches",
-    description: "List existing workspace branches and whether multi-branching is enabled. For a branching workspace, select the requested feature branch and pass its exact branch_id on every app/data tool call. The default branch is protected. Does not create, activate, push or merge branches.",
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
-    inputSchema: {},
-    async handler() {
-      try {
-        return ok(await client.listWorkspaceBranches());
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
 function listWorkspacesTool(client) {
   return {
     name: "list_workspaces",
@@ -718,6 +497,22 @@ function listWorkspacesTool(client) {
         return ok(await client.listWorkspaces());
       } catch (err) {
         return fail(err);
+      }
+    }
+  };
+}
+function listWorkspaceBranchesTool(client) {
+  return {
+    name: "list_workspace_branches",
+    title: "List Workspace Branches",
+    description: "List existing workspace branches and whether multi-branching is enabled. For a branching workspace, select the requested feature branch and pass its exact branch_id on every app/data tool call. The default branch is protected. Does not create, activate, push or merge branches.",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+    inputSchema: {},
+    async handler() {
+      try {
+        return ok(await client.listWorkspaceBranches());
+      } catch (error) {
+        return fail(error);
       }
     }
   };
@@ -3103,6 +2898,198 @@ function addComponentBatchesTool(client) {
     }
   };
 }
+var DEFINITION_SECTIONS = ["properties", "styles", "validation", "general", "general_styles", "others"];
+var definitionSchema = strictEntry({
+  properties: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  general: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  general_styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+  others: external_exports.record(external_exports.string(), external_exports.any()).optional()
+}, (key) => key === "layout" || key === "layouts" ? `definition."${key}" is not a component definition section; move/resize with update_layout instead.` : `definition."${key}" is not a component definition section; use one of ${DEFINITION_SECTIONS.join("/")}.`);
+var updateSchema2 = strictEntry({
+  component_id: external_exports.string(),
+  definition: definitionSchema.optional(),
+  name: componentNameSchema.optional(),
+  parent: external_exports.string().optional(),
+  slot_name: componentSlotSchema.optional()
+}, (key) => {
+  if (DEFINITION_SECTIONS.includes(key)) {
+    return `Update entry key "${key}" must be nested under \`definition\` (e.g. { component_id, definition: { ${key}: {...} } }); top-level ${key} would write nothing.`;
+  }
+  if (key === "layout" || key === "layouts") {
+    return `Update entry key "${key}" is not accepted by update_components; move/resize with update_layout instead.`;
+  }
+  return `Unknown update entry key "${key}"; accepted keys are component_id, definition, name, parent, slot_name.`;
+});
+function updateComponentsTool(client) {
+  return {
+    name: "update_components",
+    title: "Update Components",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: false
+    },
+    description: "Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves under `definition` (properties/styles/validation/others) \u2014 ToolJet deep-merges, so untouched values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. " + COMPONENT_FX_UPDATE_GUIDANCE + "NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container regions, or modal for Kanban card-click content; omit parent to keep the current parent. Unknown entry keys are rejected (a top-level properties/styles patch is an error, not a silent no-op), and an entry that changes nothing fails. Get component ids + current values from get_app_summary / get_component.",
+    inputSchema: {
+      app_id: external_exports.string(),
+      version_id: external_exports.string(),
+      page_id: external_exports.string(),
+      updates: external_exports.array(updateSchema2).min(1)
+    },
+    async handler(args) {
+      try {
+        const summary = await client.getAppSummary(args.app_id);
+        const page = summary.pages.find((candidate) => candidate.id === args.page_id);
+        if (!page)
+          return fail(new Error(`Page "${args.page_id}" does not exist in app "${args.app_id}".`));
+        const projected = new Map(page.components.map((component) => [component.id, component]));
+        const warnings = [];
+        const errors = [];
+        const changedComponents = [];
+        let placementChanged = false;
+        const layoutFixes = [];
+        const resolvedUpdates = [];
+        for (const update of args.updates) {
+          if (update.name !== void 0) {
+            const nameError = componentNameError(update.name);
+            if (nameError) {
+              errors.push(`Component "${update.component_id}": ${nameError}`);
+              continue;
+            }
+          }
+          const resolution = resolveRef(page.components, update.component_id, "Component", `on page "${args.page_id}"`);
+          if (!resolution.ok) {
+            errors.push(resolution.error);
+            continue;
+          }
+          if (resolution.warning)
+            warnings.push(resolution.warning);
+          const current = resolution.target;
+          const componentId = current.id;
+          if (update.definition && (update.name !== void 0 || update.parent !== void 0 || update.slot_name !== void 0)) {
+            errors.push(`Component "${update.component_id}": set EITHER definition OR name/parent/slot_name in one entry.`);
+            continue;
+          }
+          if (!hasNonEmptyDefinition(update.definition) && update.name === void 0 && update.parent === void 0 && update.slot_name === void 0) {
+            errors.push(`Component "${update.component_id}": nothing to update. Send the changed leaves under definition (properties/styles/validation/others) or a name/parent/slot_name change.`);
+            continue;
+          }
+          let parent = update.parent;
+          let slotName = update.slot_name;
+          if (slotName !== void 0) {
+            parent ??= current.parent ? decodeComponentParent(current.parent).parentId : void 0;
+            if (!parent) {
+              if (slotName === "body") {
+                warnings.push(`Component "${update.component_id}": slot_name:"body" ignored on a root component (it has no parent slots).`);
+                slotName = void 0;
+              } else {
+                errors.push(`Component "${update.component_id}": slot_name:"${slotName}" requires an existing or explicit parent.`);
+                continue;
+              }
+            }
+          }
+          const definition = update.definition;
+          const next = {
+            id: current.id,
+            name: update.name ?? current.name ?? current.id,
+            type: current.type,
+            properties: { ...current.properties ?? {}, ...definition?.properties ?? {} },
+            styles: { ...current.styles ?? {}, ...definition?.styles ?? {} },
+            layouts: current.layouts,
+            parent: parent !== void 0 ? encodeComponentParent(parent, slotName) : current.parent,
+            slotName
+          };
+          const normalized = normalizeComponentSpec({
+            name: next.name ?? current.id,
+            type: next.type ?? current.type ?? "",
+            properties: next.properties ?? {},
+            styles: next.styles,
+            validation: definition?.validation,
+            others: { ...current.others ?? {}, ...definition?.others ?? {} },
+            layouts: next.layouts,
+            parent: next.parent
+          });
+          const normalizedNext = { ...normalized.component, id: current.id };
+          const heightFix = update.definition ? suggestedHtmlHeight(normalizedNext) : null;
+          const desktopRect = current.layouts?.desktop;
+          if (heightFix && desktopRect && typeof desktopRect.top === "number") {
+            normalizedNext.layouts = { ...normalizedNext.layouts ?? {}, desktop: { ...desktopRect, height: heightFix.to } };
+            layoutFixes.push({ componentId: current.id, desktop: { ...desktopRect, height: heightFix.to } });
+            warnings.push(`Html "${normalizedNext.name ?? current.id}" needed about ${heightFix.needed}px for its new markup but was ${heightFix.from}px; its height is now ${heightFix.to}px. Anything within ${heightFix.to - heightFix.from}px below it now overlaps; move it down.`);
+          }
+          projected.set(current.id, normalizedNext);
+          if (update.definition)
+            changedComponents.push({ before: current, after: normalizedNext });
+          placementChanged ||= update.parent !== void 0 || update.slot_name !== void 0;
+          warnings.push(...onlyTouchedBraceNotes(normalized.warnings, definition));
+          let normalizedDefinition = update.definition;
+          if (update.definition && Object.keys(normalized.patch).length) {
+            normalizedDefinition = { ...update.definition };
+            for (const section of ["properties", "styles", "validation", "others"]) {
+              const sectionPatch = normalized.patch[section];
+              if (!sectionPatch)
+                continue;
+              normalizedDefinition[section] = {
+                ...update.definition[section] ?? {},
+                ...sectionPatch
+              };
+            }
+          }
+          resolvedUpdates.push({
+            componentId,
+            definition: normalizedDefinition,
+            name: update.name,
+            parent,
+            slotName: update.slot_name
+          });
+          if (!update.definition)
+            continue;
+          errors.push(...introducedLintFindings(lintComponentSpec(current).errors, lintComponentSpec(normalizedNext).errors));
+          warnings.push(...introducedLintFindings(lintComponentSpec(current).warnings, lintComponentSpec(normalizedNext).warnings));
+        }
+        const allComponents = [...projected.values()];
+        const introducedForChanged = (lint2) => changedComponents.flatMap(({ before, after }) => introducedLintFindings(lint2([before]), lint2([after])));
+        if (placementChanged) {
+          errors.push(...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(allComponents)));
+        }
+        errors.push(...introducedForChanged(lintUnusableTextGeometry));
+        if (errors.length)
+          return fail(new Error(`${errors.join(" ")} (Nothing was saved: refused before any write.)`));
+        warnings.push(...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)));
+        warnings.push(...introducedForChanged(lintTextGeometry));
+        warnings.push(...lintRenderedGeometry(allComponents));
+        warnings.push(...lintKanbanInteractions(allComponents));
+        const result = await client.updateComponents({
+          appId: args.app_id,
+          versionId: args.version_id,
+          pageId: args.page_id,
+          updates: resolvedUpdates
+        });
+        if (layoutFixes.length) {
+          await client.updateLayouts({ appId: args.app_id, versionId: args.version_id, pageId: args.page_id, layouts: layoutFixes });
+        }
+        return ok({ ...result, warnings: [...new Set(warnings)] });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+function onlyTouchedBraceNotes(warnings, definition) {
+  const touched = /* @__PURE__ */ new Set([
+    ...Object.keys(definition?.properties ?? {}).map((key) => `properties.${key}`),
+    ...Object.keys(definition?.styles ?? {}).map((key) => `styles.${key}`)
+  ]);
+  return warnings.flatMap((warning) => {
+    const m = /^(.*?: separated adjacent closing braces inside )(.+?)( \(ToolJet ends.*)$/s.exec(warning);
+    if (!m)
+      return [warning];
+    const keys = m[2].split(", ").filter((key) => touched.has(key));
+    return keys.length ? [`${m[1]}${keys.join(", ")}${m[3]}`] : [];
+  });
+}
 function deleteComponentsTool(client) {
   return {
     name: "delete_components",
@@ -4874,15 +4861,9 @@ function createOAuthHttpServer(options2) {
   return httpServer;
 }
 export {
-  ALLOWED_API_ORIGINS_VAR as A,
-  BASE_URL_HEADER as B,
-  PAT_HEADER as P,
-  SESSION_TOKEN_HEADER as S,
+  StreamableHTTPServerTransport as S,
   buildUnconfiguredServer as a,
   buildServer as b,
-  allowedApiOrigins as c,
-  createOAuthHttpServer as d,
-  StreamableHTTPServerTransport as e,
-  identityFromHeaders as i,
+  createOAuthHttpServer as c,
   oauthHttpOptionsFromEnv as o
 };

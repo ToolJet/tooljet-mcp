@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { r as readCatalog, a as require_errors, b as require_identity, c as require_Scalar, d as require_cst, e as require_lexer, f as require_parser, g as require_resolve_end, h as require_toJS, i as require_applyReviver, j as require_Node, k as require_stringifyString, l as require_resolve_block_scalar, m as require_resolve_flow_scalar } from "./chunk-C9d6UC58.js";
+import { r as readCatalog, a as require_errors, b as require_identity, c as require_Scalar, d as require_cst, e as require_lexer, f as require_parser, g as require_resolve_end, h as require_toJS, i as require_applyReviver, j as require_Node, k as require_stringifyString, l as require_resolve_block_scalar, m as require_resolve_flow_scalar } from "./chunk-BxG5FxrI.js";
 import { e7 as __toESM, e5 as __commonJS, e6 as __require } from "./chunk-DcxxRLvp.js";
 import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";

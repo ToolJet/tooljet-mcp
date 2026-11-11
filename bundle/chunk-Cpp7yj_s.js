@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
-import { p as external_exports, q as getComponentSchema, s as getCatalog, t as getLegacyComponentReplacement } from "./chunk-C9d6UC58.js";
-import { l as lintBindingNames, p as parseExpression, a as parse, b as bindingSpans } from "./chunk-CPey5AnB.js";
+import { p as external_exports, q as getComponentSchema, s as getCatalog, t as getLegacyComponentReplacement } from "./chunk-BxG5FxrI.js";
+import { l as lintBindingNames, p as parseExpression, a as parse, b as bindingSpans } from "./chunk-Ynh3P6jF.js";
 import { readFileSync } from "node:fs";
 createRequire(import.meta.url);
 var VOID_TAGS = /* @__PURE__ */ new Set(["br", "img", "hr", "input", "meta", "link", "source", "wbr", "col"]);
@@ -4541,29 +4541,29 @@ export {
   PROPERTY_KEY_ALIASES as P,
   STYLE_KEYS_IN_PROPERTIES as S,
   assertPageIcon as a,
-  componentNameSchema as b,
-  componentSlotSchema as c,
+  componentSlotSchema as b,
+  componentNameSchema as c,
   decodeComponentParent as d,
   encodeComponentParent as e,
-  componentNameError as f,
-  lintComponentSlots as g,
-  lintUnusableTextGeometry as h,
+  pageIconError as f,
+  lintComponentStateBindings as g,
+  nearestCatalogKey as h,
   introducedLintFindings as i,
-  lintStandardSingleLineInputHeight as j,
-  lintTextGeometry as k,
-  lintComponentSpec as l,
-  lintRenderedGeometry as m,
-  nearestCatalogKey as n,
-  lintKanbanInteractions as o,
+  lintRenderedGeometryBlocking as j,
+  lintRenderedGeometryAdvisory as k,
+  lintComponents as l,
+  minimumTextHeight as m,
+  namespaceReads as n,
+  componentNameError as o,
   pageIconSchema as p,
-  pageIconError as q,
-  lintComponents as r,
+  lintComponentSpec as q,
+  lintComponentSlots as r,
   suggestedHtmlHeight as s,
-  lintComponentStateBindings as t,
-  minimumTextHeight as u,
+  lintUnusableTextGeometry as t,
+  lintStandardSingleLineInputHeight as u,
   validateAppStructure as v,
-  namespaceReads as w,
-  lintRenderedGeometryBlocking as x,
-  lintRenderedGeometryAdvisory as y,
+  lintTextGeometry as w,
+  lintRenderedGeometry as x,
+  lintKanbanInteractions as y,
   lintNestedContainerWidths as z
 };

@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { Auth } from './auth.js';
-import { branchIdFor } from './branchContext.js';
-import type { Config } from './config.js';
+import { branchIdFor, type Config } from './config.js';
 import type { ToolJetClient } from './tooljetClient.js';
 import { definition, type Definition } from './workflows/graph.js';
 

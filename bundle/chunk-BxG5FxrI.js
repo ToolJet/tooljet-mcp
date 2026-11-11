@@ -776,17 +776,6 @@ function date2(params) {
 }
 config(en_default());
 createRequire(import.meta.url);
-function strictEntry(shape, describeUnknown) {
-  return external_exports.strictObject(shape, {
-    error: (issue) => issue.code === "unrecognized_keys" ? issue.keys.map(describeUnknown).join(" ") : void 0
-  });
-}
-function hasNonEmptyDefinition(definition2) {
-  if (!definition2)
-    return false;
-  return Object.values(definition2).some((section) => section !== null && typeof section === "object" && Object.keys(section).length > 0);
-}
-createRequire(import.meta.url);
 var ref = external_exports.string().min(1).max(100);
 var base = { ref, existing_id: external_exports.string().uuid().optional(), label: external_exports.string().max(100).optional(), position: external_exports.object({ x: external_exports.number().finite(), y: external_exports.number().finite() }).optional() };
 var query = { name: external_exports.string().regex(/^[A-Za-z_$][\w$]*$/), datasource_id: external_exports.string().min(1), options: external_exports.record(external_exports.string(), external_exports.unknown()) };
@@ -5022,12 +5011,10 @@ var require_parser = __commonJS({
   }
 });
 export {
-  specSchema as A,
-  compileGraph as B,
-  assertWorkflowJavaScript as C,
-  controlFlowEdges as D,
-  nodeSchema as E,
-  readCatalogBytes as F,
+  assertWorkflowJavaScript as A,
+  controlFlowEdges as B,
+  nodeSchema as C,
+  readCatalogBytes as D,
   TableQuotaError as T,
   require_errors as a,
   require_identity as b,
@@ -5049,10 +5036,10 @@ export {
   readCatalog as r,
   getCatalog as s,
   getLegacyComponentReplacement as t,
-  hasNonEmptyDefinition as u,
-  tableQuotaError as v,
-  definition as w,
-  strictEntry as x,
-  nodeCatalog as y,
-  validateGraph as z
+  tableQuotaError as u,
+  definition as v,
+  nodeCatalog as w,
+  validateGraph as x,
+  specSchema as y,
+  compileGraph as z
 };

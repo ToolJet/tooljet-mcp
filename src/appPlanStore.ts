@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { currentBranchId } from './branchContext.js';
+import { currentBranchId } from './config.js';
 import type { AppSpecLintResult } from './appSpecLint.js';
 import type { AppPlanInput } from './appPlanSchema.js';
 

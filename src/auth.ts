@@ -1,5 +1,4 @@
-import type { Config } from './config.js';
-import { branchIdFor } from './branchContext.js';
+import { branchIdFor, type Config } from './config.js';
 import { recordHttpResponse } from './telemetry.js';
 
 const COOKIE_PREFIX = 'tj_auth_token=';
