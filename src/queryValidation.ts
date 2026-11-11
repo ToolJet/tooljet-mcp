@@ -877,6 +877,26 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
     }
   }
 
+  if (kind === 'tooljetdb' && operation === 'delete_rows') {
+    // The backend defaults an omitted limit to 1. PostgREST rejects any bounded
+    // delete without an explicit order, even when its filter targets one row.
+    const limit = valueAtPath(options, 'delete_rows.limit');
+    const hasOrder = ['order_column', 'order_column_id'].some((key) => {
+      const value = valueAtPath(options, `delete_rows.${key}`);
+      return typeof value === 'string' && value.trim() !== '';
+    });
+    if ((limit === undefined || Boolean(limit)) && !hasOrder) {
+      errors.push({
+        code: 'missing_delete_order',
+        path: 'delete_rows.order_column',
+        message:
+          'ToolJet DB delete_rows defaults to limit 1 and bounded deletes require an explicit order. ' +
+          'Set delete_rows.order_column or order_column_id to the actual primary key from get_table_schema. ' +
+          'Preserve the intended filters and limit; do not assume the primary key is named id.',
+      });
+    }
+  }
+
   if (kind === 'tooljetdb' && (operation === 'update_rows' || operation === 'delete_rows')) {
     // The FILTER half of the same hazard, and far more dangerous than the column half.
     // buildPostgrestQuery only emits a clause when BOTH `column` and `operator` are non-empty

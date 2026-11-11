@@ -463,7 +463,7 @@ describe('ToolJet DB filter operator aliases', () => {
 
   it.each(['list_rows', 'update_rows', 'delete_rows'])('validates array-form operators for %s without rewriting filters', operation => {
     const original = { operation, table_id: 'synthetic-stock', [operation]: {
-      limit: 30, columns: { 0: { column: 'quantity', value: 14 } },
+      limit: 30, order_column: 'id', columns: { 0: { column: 'quantity', value: 14 } },
       where_filters: [{ column: 'id', operator: '=', value: 4 }],
     } };
     const before = structuredClone(original);
