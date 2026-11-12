@@ -1,5 +1,6 @@
 import { componentRef, indexComponentReferences } from './componentReferences.js';
 import { assertAiDatasource, isSampleDatasource } from './datasourcePolicy.js';
+import { resolveComponentLibrary, type ResolvedComponentLibrary } from './componentLibrary.js';
 import { createAppVersionLifecycle } from './appVersionLifecycle.js';
 import { createWorkflowClient, type WorkflowClient } from './workflowClient.js';
 import { assertWorkflowQueryOptions, normalizeWorkflowQueryOptions, workflowMappingMatches } from './workflowQueryOptions.js';
@@ -8,17 +9,30 @@ import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { assertPageIcon } from './pageIcons.js';
 import type { Auth, Workspace, ViewerSession } from './auth.js';
-import type { Config } from './config.js';
-import { STYLE_KEYS_IN_PROPERTIES } from './lint.js';
+import { branchIdFor, type Config } from './config.js';
+import { isMisplacedStyleKey } from './lint.js';
+import { packDefaultDefinition } from './packDefaults.js';
+import { downgradeFlexForLibrary, libraryTypeOf, missingLibraryPins, toLibraryComponent } from './libraryPack.js';
 import { assertPersistableQueryToggles } from './queryToggles.js';
 import { hasNonEmptyDefinition } from './strictEntry.js';
 import { decodeComponentParent, encodeComponentParent, type ComponentSlotName } from './componentParent.js';
+import {
+  appendedChildOrders,
+  batchChildOrders,
+  childOrderProperty,
+  flexBodyParentId,
+  isFlexContainerType,
+  type FlexPageComponent,
+} from './flexContainer.js';
 import { tableCreationLevels, TOOLJET_DB_RESERVED_COLUMN_NAMES } from './tableValidation.js';
 import { booleanBindingValue, isCanonicalStaticBooleanBinding, staticBooleanBinding } from './bindings.js';
 import { invalidSeedTimestamps } from './seedTimestampValidation.js';
 import { z } from 'zod';
 
 export interface CreateAppResult {
+  branch_id?: string;
+  /** "code" for a Code mode app (React, built with the code_app_* tools); "visual" otherwise. */
+  build_mode?: 'visual' | 'code';
   app_id: string;
   version_id: string;
   home_page_id: string;
@@ -264,6 +278,14 @@ export interface ComponentLayout {
   left?: number;
   width?: number;
   height?: number;
+  /** FlexContainer child only: fill the remaining main-axis width (ToolJet's default) or use widthPx. */
+  fillWidth?: boolean;
+  /** FlexContainer child only: fixed width in pixels, used when fillWidth is false. */
+  widthPx?: number;
+  /** FlexContainer row child only: share of the free width among fill children (default 1). */
+  grow?: number;
+  /** FlexContainer row child only: narrowest width before a wrapping row moves the child down. */
+  minWidthPx?: number;
 }
 
 export interface CreateComponentParams {
@@ -307,6 +329,8 @@ export interface ComponentSpec {
   clientRef?: string;
   /** Parent another component in the same batch by its clientRef, or name when it has no clientRef. */
   parentRef?: string;
+  /** The parent's type when it is not in this batch: a pack widget stores even its body slot suffixed. */
+  parentType?: string;
   /** Parent an already-existing component by its ToolJet component id. */
   parent?: string;
   /** Logical parent slot. ToolJet stores header/footer as suffixed parent ids; the client translates it. */
@@ -319,6 +343,9 @@ export interface CreateComponentsParams {
   versionId: string;
   pageId: string;
   components: ComponentSpec[];
+  /** The page's components as already read, used to append new children to an existing FlexContainer's
+   *  childOrder. Read from ToolJet when omitted and a component targets an existing parent. */
+  pageComponents?: FlexPageComponent[];
 }
 
 /** One query in a batch (versionId is shared across the batch). */
@@ -383,6 +410,25 @@ export interface CreateTableResult {
 
 export interface CreateTablesParams {
   tables: CreateTableParams[];
+}
+
+/** Give every row the keys any row has, as null, for columns with no default (see insertRows). */
+export function alignSeedRowKeys(schema: SchemaColumn[], rows: Record<string, unknown>[]): void {
+  const noDefault = new Set(schema.filter((column) => column.defaultValue === undefined || column.defaultValue === null).map((column) => column.name));
+  const keys = new Set(rows.flatMap((row) => Object.keys(row)));
+  for (const key of keys) {
+    if (!noDefault.has(key)) continue;
+    for (const row of rows) if (!(key in row)) row[key] = null;
+  }
+}
+
+/** The rows from `start` that share the first row's keys, up to `limit`, so they can go up as one list. */
+export function sameKeysRun(rows: Record<string, unknown>[], start: number, limit: number): Record<string, unknown>[] {
+  const keysOf = (row: Record<string, unknown>) => Object.keys(row).sort().join('\0');
+  const keys = keysOf(rows[start]);
+  let end = start + 1;
+  while (end < rows.length && end - start < limit && keysOf(rows[end]) === keys) end++;
+  return rows.slice(start, end);
 }
 
 export interface SchemaColumn {
@@ -564,6 +610,8 @@ export interface AppSummary {
   editor_frozen?: boolean;
   /** The editing version's environment (development, staging, production). */
   environment?: string;
+  /** The library the app is built in (ToolJet UI 1.0 or 2.0): its saved setting, else inferred from its widgets. */
+  component_library?: ResolvedComponentLibrary;
   pages: Array<{
     id: string;
     name?: string;
@@ -593,6 +641,7 @@ export interface QuerySummary {
    back, which left the app public whenever the restore failed — a best-effort call with nobody watching.
    An app's visibility belongs to its owner, changed by them, in the product. Do not add it back. */
 export interface ToolJetClient {
+  branchId?: string;
   appVersions: ReturnType<typeof createAppVersionLifecycle>;
   workflows: WorkflowClient;
   assertWorkflowQueryTarget(options: Record<string, unknown>): Promise<void>;
@@ -621,14 +670,24 @@ export interface ToolJetClient {
   inviteWorkspaceUser(params: InviteWorkspaceUserParams): Promise<void>;
   updateWorkspaceUser(organizationUserId: string, params: UpdateWorkspaceUserParams): Promise<{ user: WorkspaceUser; updated: boolean }>;
   setWorkspaceUserArchived(organizationUserId: string, archived: boolean): Promise<void>;
-  createApp(name: string): Promise<CreateAppResult>;
+  createApp(name: string, options?: { buildMode?: 'visual' | 'code' }): Promise<CreateAppResult>;
+  listWorkspaceBranches(): Promise<Record<string, unknown>>;
   createAppVersion(params: CreateAppVersionParams): Promise<AppVersionResult>;
   switchAppVersion(appId: string, versionId: string): Promise<SwitchAppVersionResult>;
   releaseApp(appId: string, versionId: string): Promise<ReleaseAppResult>;
   renameApp(appId: string, versionId: string, name: string): Promise<void>;
   getApp(appId: string): Promise<any>;
+  /**
+   * What ToolJet's Code source API lets the caller do with the app's code (its own answer, public apps included): read
+   * for editors and for builders who can view the app, write for editors. Both false for an end user or no access.
+   */
+  codeSourceAccess(appId: string, versionId: string): Promise<{ read: boolean; write: boolean }>;
+  /** The app version's stored Code mode source files, or null when it has none (a visual app, or no Code mode here). */
+  codeSourceFiles?(appId: string, versionId: string): Promise<Array<{ path: string; content: string }> | null>;
   getAppSummary(appId: string, versionId?: string): Promise<AppSummary>;
   listAppPermissionSubjects(appId: string): Promise<AppPermissionSubjects>;
+  /** The workspace's license features (GET /api/license/access): serverSideGlobalResolve, appPermissionQuery, ... */
+  getLicenseFeatureAccess(): Promise<Record<string, unknown>>;
   getAppPermission(
     appId: string,
     resourceType: AppPermissionResourceType,
@@ -671,6 +730,14 @@ export interface ToolJetClient {
   createComponents(params: CreateComponentsParams): Promise<Array<CreateComponentResult & { name: string }>>;
   updateComponents(params: UpdateComponentsParams): Promise<{ updated: number }>;
   deleteComponents(params: DeleteComponentsParams): Promise<{ deleted: number }>;
+  /** The workspace's custom-component libraries with their latest manifests (component packs, packCatalog.ts). */
+  listComponentLibraries(): Promise<import('./packCatalog.js').InstalledLibrary[]>;
+  /** The packs this ToolJet ships (GET /api/builtin-packs) with their manifests; null when the server has no
+   *  builtin-packs module (it then serves packs as custom-component libraries). */
+  listBuiltinPacks(): Promise<Array<{
+    info: import('./packCatalog.js').BuiltinPackInfo;
+    manifest: import('./packCatalog.js').InstalledLibrary['manifest'];
+  }> | null>;
   updateLayouts(params: UpdateLayoutsParams): Promise<{ updated: number }>;
   updateQuery(params: UpdateQueryParams): Promise<{ query_id: string }>;
   updateQueryDatasource(params: { queryId: string; versionId: string; dataSourceId: string }): Promise<void>;
@@ -681,6 +748,8 @@ export interface ToolJetClient {
   assertDatasourceAllowed(dataSourceId: string, versionId?: string, environmentId?: string): Promise<void>;
   invokeDatasourceMethod(params: InvokeDatasourceMethodParams): Promise<RunQueryResult>;
   getDatasourceConnectionDetails(dataSourceId: string, environmentId?: string): Promise<DatasourceConnectionDetails>;
+  /** A workspace datasource's kind without a version: the identity already listed, else its own record. */
+  datasourceKind?(dataSourceId: string): Promise<string | undefined>;
   getPluginSpec(pluginKind: string, specName: string): Promise<string>;
   /** Which ToolJet server and workspace this client reads plugin specs from, for a cache shared across clients.
    *  Undefined when it cannot be established; such a client's specs are not cached. */
@@ -1214,6 +1283,37 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return res.json();
   }
 
+  /*
+    GET /api/code-mode-source/:id/versions/:versionId (no content) is authorized by the Code source module's GET_SOURCE
+    feature, which is checked on public apps too (shouldNotSkipPublicApp): editors and builders who can view the app get
+    200, with canWrite from WRITE_SOURCE (editors only); an end user gets 403, and an app outside the caller's workspace
+    or a backend without Code mode 404. The apps module's UPDATE check (GET /api/apps/:id/tables, used before) passes
+    for any workspace member on a public app, so it never said whether the caller may edit.
+  */
+  async function codeSourceAccess(appId: string, versionId: string): Promise<{ read: boolean; write: boolean }> {
+    const res = await auth.authedFetch(
+      `/api/code-mode-source/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`
+    );
+    if (res.status === 403 || res.status === 404) return { read: false, write: false };
+    await assertOk(res, 'codeSourceAccess');
+    const body = (await res.json().catch(() => null)) as { canWrite?: unknown } | null;
+    if (!body || typeof body !== 'object') throw new Error('codeSourceAccess: ToolJet sent no answer');
+    return { read: true, write: body.canWrite === true };
+  }
+
+  /** GET /api/code-mode-source/:id/versions/:versionId?content=1: the stored files, or null when there are none. */
+  async function codeSourceFiles(appId: string, versionId: string): Promise<Array<{ path: string; content: string }> | null> {
+    const res = await auth.authedFetch(
+      `/api/code-mode-source/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}?content=1`
+    );
+    if (res.status === 404) return null;
+    await assertOk(res, 'codeSourceFiles');
+    const body = (await res.json().catch(() => null)) as { exists?: boolean; files?: Array<{ path?: unknown; content?: unknown }> } | null;
+    if (!body || body.exists === false || !Array.isArray(body.files)) return null;
+    return body.files.flatMap((file) =>
+      typeof file.path === 'string' && typeof file.content === 'string' ? [{ path: file.path, content: file.content }] : []);
+  }
+
   // In GET /api/apps/:id, each placed component lives at pages[].components[<id>] as
   // { component: { name, component: <type>, definition: { properties, styles, others } }, layouts }.
   // `component.definition` holds the ACTUAL bound values; `component.properties`/`styles` is the full
@@ -1226,7 +1326,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return {
       id,
       name: c.name,
-      type: c.component,
+      // A component of the published library reads back as its Lib_* type, so the catalogue checks its events,
+      // actions and properties (libraryPack.ts).
+      type: libraryTypeOf({ type: c.component, properties: def.properties }) ?? c.component,
       layouts: entry?.layouts,
       properties: def.properties,
       styles: def.styles,
@@ -1281,8 +1383,15 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       event: e.event,
       ...(typeof e.index === 'number' ? { index: e.index } : {}),
     }));
+    const globalSettings = full.editing_version?.global_settings ?? full.editing_version?.globalSettings
+      ?? full.editingVersion?.globalSettings ?? full.global_settings ?? full.globalSettings;
+    const componentLibrary = resolveComponentLibrary(
+      globalSettings,
+      pages.flatMap((page: { components: ComponentSummary[] }) => page.components.map((component) => component.type)),
+    );
     return {
       app_id: full.id, name: full.name, version_id: full.editing_version?.id,
+      component_library: componentLibrary,
       ...(full.should_freeze_editor === true ? { editor_frozen: true } : {}),
       ...(typeof full.editorEnvironment?.name === 'string' ? { environment: full.editorEnvironment.name } : {}),
       pages, queries, events,
@@ -1324,6 +1433,16 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         ...(typeof group.count === 'number' ? { count: group.count } : {}),
       })),
     };
+  }
+
+  async function getLicenseFeatureAccess(): Promise<Record<string, unknown>> {
+    const res = await auth.authedFetch('/api/license/access');
+    await assertOk(res, 'getLicenseFeatureAccess');
+    const body = await res.json();
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      throw new Error('ToolJet getLicenseFeatureAccess failed: expected an object response.');
+    }
+    return body as Record<string, unknown>;
   }
 
   async function getAppPermission(
@@ -1493,7 +1612,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return auth.switchWorkspace(workspaceId);
   }
 
-  async function createApp(name: string): Promise<CreateAppResult> {
+  async function createApp(name: string, options: { buildMode?: 'visual' | 'code' } = {}): Promise<CreateAppResult> {
+    const wantsCode = options.buildMode === 'code';
+    const branchId = branchIdFor(config);
     // A taken name is a 409 that used to bounce back to the model, which then spent a turn (and at
     // max reasoning effort, a minute) inventing "… 2026" or "… A9". Every build in a shared workspace
     // paid it twice. Append a counter ourselves; the model sees the name it got in the result.
@@ -1504,7 +1625,13 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       createRes = await auth.authedFetch('/api/apps', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: finalName, type: 'front-end' }),
+        body: JSON.stringify({
+          name: finalName,
+          type: 'front-end',
+          ...(branchId ? { branchId } : {}),
+          // The build mode is set when the app is created, as the dashboard does: ToolJet has no call that changes it later.
+          ...(wantsCode ? { buildMode: 'code' } : {}),
+        }),
       });
       if (createRes.status !== 409) break;
     }
@@ -1512,6 +1639,20 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const created = (await createRes!.json()) as { id: string; slug?: string };
 
     const app = await getApp(created.id);
+    const buildMode = app?.build_mode ?? app?.buildMode;
+    if (wantsCode && buildMode !== 'code') {
+      // A ToolJet without Code mode drops the unknown field and makes a visual app. Remove it, so nothing gets built on
+      // an app that can never hold code; a failed delete is named so the app can be removed by hand.
+      const removed = await auth
+        .authedFetch(`/api/apps/${created.id}`, { method: 'DELETE' })
+        .then((res) => res.ok)
+        .catch(() => false);
+      throw new Error(
+        'This ToolJet server does not support Code mode apps: it created a visual app instead. ' +
+          (removed ? 'That app was deleted. ' : `Delete app ${created.id} ("${finalName}"); it could not be removed here. `) +
+          'Build a visual app (create_app without build_mode), or connect to a ToolJet version with Code mode.'
+      );
+    }
     const versionId: string = app.editing_version.id;
     const versionName: string = app.editing_version.name ?? 'v1';
     const pages: Array<{ id: string; name: string; handle?: string }> = app.pages ?? [];
@@ -1524,14 +1665,18 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const orgSlug = await auth.getOrganizationSlug();
     const appSlug = created.slug ?? created.id;
 
-    const editorUrl = `${config.appUrl}/${orgSlug}/apps/${appSlug}`;
+    const branchName = app.editing_version.branch?.name;
+    const branchQuery = typeof branchName === 'string' ? `branch=${encodeURIComponent(branchName)}` : '';
+    const editorUrl = `${config.appUrl}/${orgSlug}/apps/${appSlug}${branchQuery ? `?${branchQuery}` : ''}`;
     const homeHandle = homePage.handle ?? 'home';
     const viewerUrl =
       `${config.appUrl}/applications/${created.id}/${encodeURIComponent(homeHandle)}` +
-      `?env=development&version=${encodeURIComponent(versionName)}`;
+      `?env=development&version=${encodeURIComponent(versionName)}${branchQuery ? `&${branchQuery}` : ''}`;
 
     return {
       app_id: created.id,
+      ...(branchId ? { branch_id: branchId } : {}),
+      build_mode: buildMode === 'code' ? 'code' : 'visual',
       version_id: versionId,
       home_page_id: homePage.id,
       app_url: editorUrl,
@@ -1542,6 +1687,23 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   async function createAppVersion(params: CreateAppVersionParams): Promise<AppVersionResult> {
+    const inventory = await auth.authedFetch(`/api/apps/${encodeURIComponent(params.appId)}/versions`);
+    await assertOk(inventory, 'createAppVersion.readSource');
+    const body = (await inventory.json()) as { versions?: Array<Record<string, unknown>> };
+    const source = body.versions?.find(version => version.id === params.versionFromId);
+    if (!source) {
+      throw new Error(`ToolJet createAppVersion failed: version ${params.versionFromId} was not found in app ${params.appId}.`);
+    }
+    // Feature branches allow one branch head, not a second named draft. Native Save
+    // creates a published snapshot on the default branch, which is a different operation.
+    if (String(source.version_type ?? source.versionType).toLowerCase() === 'branch') {
+      throw new Error('Cannot clone a branch head into a named draft. Save a named version in ToolJet, then use its version_id as the clone source. No version was created or published.');
+    }
+    const sourceBranchId = source.branch_id ?? source.branchId;
+    const selectedBranchId = branchIdFor(config);
+    if (selectedBranchId && typeof sourceBranchId === 'string' && sourceBranchId !== selectedBranchId) {
+      throw new Error('Cannot create a named draft on a different branch from its source. Select the source version\'s branch before cloning. No version was created.');
+    }
     const res = await auth.authedFetch(`/api/apps/${encodeURIComponent(params.appId)}/versions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1626,6 +1788,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       const version = body.versions?.find((candidate) => candidate.id === versionId);
       if (!version) {
         throw new Error(`ToolJet releaseApp failed: version ${versionId} was not found in app ${appId}.`);
+      }
+      // Branch publication creates a different version; never release the branch head by mistake.
+      if (String(version.version_type ?? version.versionType).toLowerCase() === 'branch') {
+        throw new Error('Cannot release a branch head. Save a named version in ToolJet, then select that exact version for release.');
       }
       return {
         id: versionId,
@@ -2396,6 +2562,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   // A timed-out POST may already have committed. Bound the wait, but never replay an insert after
   // a transport failure or uncertain server response without server-side idempotency.
   const INSERT_ATTEMPT_TIMEOUT_MS = 45_000;
+  const BULK_INSERT_ROWS = 500;
   const UNKNOWN_INSERT_OUTCOME = 'Insert outcome unknown: the row may already have been inserted. ' +
     'Verify persisted rows before retrying; do not replay the whole batch.';
 
@@ -2410,7 +2577,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     }
   }
 
-  async function insertRowViaProxy(tableId: string, row: Record<string, unknown>): Promise<Response> {
+  async function insertRowViaProxy(tableId: string, row: Record<string, unknown> | Record<string, unknown>[]): Promise<Response> {
     let schemaWaits = 0;
     for (;;) {
       let res: Response;
@@ -2441,10 +2608,16 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       if (schemaWaits >= SCHEMA_CACHE_RETRY_DELAYS_MS.length) return res;
       const body = await res.clone().text().catch(() => '');
       if (!/PGRST205|schema cache/i.test(body)) return res; // a real error — let assertOk surface it
+      // A server without the proxy fix turns a list into column "0", which PostgREST also words as a schema-cache miss;
+      // waiting would not help (insertRows falls back to one row per request).
+      if (Array.isArray(row) && /['"]0['"] column|column ['"]0['"]/i.test(body)) return res;
       await new Promise((resolve) => setTimeout(resolve, SCHEMA_CACHE_RETRY_DELAYS_MS[schemaWaits]));
       schemaWaits += 1;
     }
   }
+
+  // Whether this server takes a list of rows in one insert (see insertRows); false after its first rejection.
+  let bulkInsertAccepted = true;
 
   async function insertRows(params: InsertRowsParams): Promise<{ processed_rows: number }> {
     if (!params.rows.length) return { processed_rows: 0 };
@@ -2467,12 +2640,41 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const table = (await listTables()).find((candidate) => candidate.table_name === params.tableName);
     if (!table) throw new Error(`insertRows: ToolJet DB table "${params.tableName}" was not found in the active workspace.`);
 
-    // ToolJet's PostgREST proxy object-spreads POST bodies while validating JSONB values, which
-    // turns an array payload into numeric column names. Send one ordinary INSERT per row instead.
-    // Unlike bulk-upload, this path does not upsert on primary-key conflicts, and omitted
-    // serial/generated keys use the table's real sequence.
+    // Rows go up to BULK_INSERT_ROWS per request, in order, so omitted serial keys still take the table's sequence
+    // in seed order. Unlike bulk-upload, this path does not upsert on primary-key conflicts. ToolJet's PostgREST proxy
+    // used to object-spread POST bodies while validating JSONB values, turning a list of rows into columns "0", "1",
+    // ...; a server without that fix rejects the list, PostgREST writes nothing for a rejected statement, and the
+    // rows then go one per request as before (one ~180 ms request a row was most of an apply, 2026-10-22).
+    //
+    // PostgREST rejects a list whose rows have different keys, which sent any batch with an optional column left out of
+    // some rows one row per request (7 of 46 seed calls and 188 s in 10 builds, 2026-11-03). So a key a row leaves out
+    // goes in as null when the column has no default, which is what leaving it out means. A column with a default keeps
+    // its default: rows that differ there go in separate lists, in order.
+    alignSeedRowKeys(schema, rows);
     let processedRows = 0;
+    while (bulkInsertAccepted && rows.length - processedRows >= 2) {
+      const chunk = sameKeysRun(rows, processedRows, BULK_INSERT_ROWS);
+      let res: Response;
+      try {
+        res = await insertRowViaProxy(table.id, chunk);
+      } catch (error) {
+        if (!processedRows) throw error;
+        throw new PartialWriteError('insertRows', [{ processed_rows: processedRows }], [
+          `rows ${processedRows + 1}-${processedRows + chunk.length}/${rows.length}: ${error instanceof Error ? error.message : String(error)}`,
+        ]);
+      }
+      if (res.ok) {
+        processedRows += chunk.length;
+        continue;
+      }
+      // A rejected statement wrote nothing (a timeout or 5xx, whose outcome is unknown, threw above and is never retried
+      // row by row). The rest go one per request, which also names the row at fault. A server without the proxy fix
+      // rejects every list, so lists stop for this session.
+      if (/['"]0['"] column|column ['"]0['"]/i.test(await res.clone().text().catch(() => ''))) bulkInsertAccepted = false;
+      break;
+    }
     for (const [index, row] of rows.entries()) {
+      if (index < processedRows) continue;
       try {
         const res = await insertRowViaProxy(table.id, row);
         await assertOk(res, 'insertRows');
@@ -2596,20 +2798,86 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   function buildComponentDto(spec: ComponentSpec): Record<string, unknown> {
     // Guard: styling nested under `properties` is silently discarded by ToolJet (its renderer
     // reads styles from `definition.styles`). Reject early with an actionable message.
-    const misplaced = Object.keys(spec.properties ?? {}).filter((k) => STYLE_KEYS_IN_PROPERTIES.has(k));
+    const misplaced = Object.keys(spec.properties ?? {}).filter((k) => isMisplacedStyleKey(spec.type, k));
     if (misplaced.length) {
       throw new Error(
         `Component "${spec.name}": style keys ${JSON.stringify(misplaced)} were placed under \`properties\`, ` +
           `where ToolJet silently ignores them. Move them to the top-level \`styles\` object instead.`
       );
     }
+    // A component-pack widget is stored with its full default definition, the caller's entries winning: the server
+    // merges no defaults over pack types, so an omitted property would stay unset (and read as off in the inspector).
+    const pack = packDefaultDefinition(spec.type);
+    if (pack) {
+      // Sample content (array or object literals such as a Table's sample columns) only fills a component given no
+      // data of its own: beside the caller's data it would describe someone else's rows.
+      const ownData = spec.properties?.data !== undefined;
+      const sample = (entry: unknown) => {
+        const value = (entry as { value?: unknown } | undefined)?.value;
+        return typeof value === 'string' && /^\{\{\s*[[{]/.test(value);
+      };
+      // A chart's field-name defaults name the sample rows' fields (month, revenue, type, value): beside the caller's
+      // data they plot nothing (a bar chart kept "revenue" against rows with "amount", 2026-10-10).
+      const sampleField = (key: string) =>
+        /Chart$|^ShadSparkline$/.test(spec.type) && [
+          'xField',
+          'yFields',
+          'categoryField',
+          'valueField',
+          'nameField',
+          'barFields',
+          'lineFields',
+          'rightAxisFields',
+          'yField',
+          'sizeField',
+          'groupField',
+          'stageField',
+          'xLabel',
+          'yLabel',
+          'seriesLabels',
+        ].includes(key);
+      const packProperties = Object.fromEntries(
+        Object.entries(pack.properties ?? {}).filter(([key, entry]) => !(ownData && (sample(entry) || sampleField(key))))
+      );
+      spec = {
+        ...spec,
+        properties: { ...packProperties, ...(spec.properties ?? {}) },
+        styles: { ...(pack.styles ?? {}), ...(spec.styles ?? {}) },
+        others: { ...(pack.others ?? {}), ...(spec.others ?? {}) },
+      };
+    }
+    // A component of the published library (Lib_*): stored as LibraryComponent with the library named (libraryPack.ts).
+    spec = downgradeFlexForLibrary(toLibraryComponent(spec));
     const dto: Record<string, unknown> = {
       name: spec.name,
       type: spec.type,
-      properties: spec.properties,
-      styles: spec.styles ?? {},
+      // A FlexContainer grows with its children unless the author fixes its height: with dynamic height off, a row or
+      // card whose children grew scrolled inside or clipped them (Air India fleet build, 2026-10-09).
+      // ToolJet gives a FlexContainer the UI 2.0 layout only when it carries layoutVersion '2', and the server adds no
+      // defaults on create, so the MCP writes it, with Equal heights on, as the widget's default definition does.
+      properties:
+        spec.type === 'FlexContainer'
+          ? {
+              dynamicHeight: { value: '{{true}}' },
+              layoutVersion: { value: '2' },
+              equalHeights: { value: '{{true}}' },
+              ...(spec.properties ?? {}),
+            }
+          : spec.properties,
+      // A FlexContainer is layout: invisible unless the author gives it a surface (cardStyle 'shadcnCard', or a
+      // background or border). ToolJet's own default draws every row and column as a bordered box.
+      styles:
+        spec.type === 'FlexContainer'
+          ? { backgroundColor: { value: 'transparent' }, borderColor: { value: 'transparent' }, ...(spec.styles ?? {}) }
+          : spec.styles ?? {},
       validation: spec.validation ?? {},
-      others: spec.others ?? {},
+      // Device visibility defaults, as a drag and drop sets them. The server fills these for its own widget types but
+      // not for types it has no defaults for, which then count as hidden on desktop.
+      others: { showOnDesktop: { value: '{{true}}' }, showOnMobile: { value: '{{false}}' }, ...(spec.others ?? {}) },
+      // The editor always sends these two sections. For a widget type the server has no defaults for (for example
+      // the UI 2.0 widgets) an omitted section is stored as null, and one null section stops the page loading.
+      general: {},
+      generalStyles: { boxShadow: { value: '0px 0px 0px 0px #00000040' } },
     };
     // layouts are keyed by resolution type (desktop/mobile) — a flat {top,left,...} returns 422
     // "invalid input value for enum layout_type". Explicit per-resolution `layouts` wins; otherwise
@@ -2632,6 +2900,14 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const entries = params.components.map((spec) => ({ id: spec.id ?? randomUUID(), spec }));
     const refToId = new Map(entries.map((entry) => [componentRef(entry.spec), entry.id]));
     const diff: Record<string, unknown> = {};
+    // A pack widget's slots are stored suffixed, so a child needs its parent's type: from this batch, else from the
+    // page as already read (a child added to a pack card that is already there: review, 2026-11-11, its text was saved
+    // on the bare id and never shown), else as the caller passed it (an in-place page replace knows every type).
+    // add_components and add_component_batches pass the page they read; apply_app_phase passes parentType.
+    const typeById = new Map<string, string | undefined>(
+      (params.pageComponents ?? []).map((component) => [component.id, component.type] as [string, string | undefined])
+    );
+    for (const e of entries) typeById.set(e.id, e.spec.type);
     for (const e of entries) {
       if (e.spec.parent && e.spec.parentRef) {
         throw new Error(`createComponents "${e.spec.name}": set EITHER parent or parentRef, not both.`);
@@ -2646,7 +2922,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       if (e.spec.slotName && !resolvedParent) {
         throw new Error(`createComponents "${e.spec.name}": slotName requires parent or parentRef.`);
       }
-      if (resolvedParent) dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName);
+      if (resolvedParent) {
+        const parentType = typeById.get(decodeComponentParent(resolvedParent).parentId) ?? e.spec.parentType;
+        dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName, parentType);
+      }
       // A Form submits when the Button whose component id is buttonToSubmit is clicked (Form.jsx); a plan names that
       // Button by its client ref (or its name when it has none), as lint checks, and ids are made here.
       const submit = e.spec.type === 'Form' ? (dto.properties as Record<string, { value?: unknown }> | undefined)?.buttonToSubmit : undefined;
@@ -2659,13 +2938,95 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       diff[e.id] = dto;
     }
 
+    // FlexContainer renders its children in properties.childOrder order (ids), not by grid position. A container
+    // created here gets its children in request order, after any order the caller set; a child added under a
+    // container that already exists is appended to that container's stored order (a second write, below).
+    const batchIds = new Set(entries.map((e) => e.id));
+    const flexEntries = entries.map((e) => ({
+      id: e.id,
+      type: e.spec.type,
+      parentId: flexBodyParentId((diff[e.id] as { parent?: string }).parent),
+    }));
+    const explicitOrders = new Map(entries
+      .filter((e) => isFlexContainerType(e.spec.type) && e.spec.properties?.childOrder !== undefined)
+      .map((e) => {
+        const raw = e.spec.properties.childOrder as { value?: unknown } | unknown[];
+        const value = Array.isArray(raw) ? raw : raw?.value;
+        return [e.id, Array.isArray(value) ? value : []] as const;
+      }));
+    const nameToId = new Map(entries.map((e) => [e.spec.name, e.id]));
+    const orders = batchChildOrders(flexEntries, explicitOrders, (ref) => refToId.get(ref) ?? nameToId.get(ref));
+    for (const [id, order] of orders) {
+      const dto = diff[id] as { properties?: Record<string, unknown> };
+      dto.properties = { ...(dto.properties ?? {}), childOrder: childOrderProperty(order) };
+    }
+    const additions = flexEntries.flatMap((e) =>
+      e.parentId && !batchIds.has(e.parentId) ? [{ parentId: e.parentId, childId: e.id }] : []);
+
     const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/components`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_user_switched_version: false, pageId: params.pageId, diff }),
     });
     await assertOk(res, 'createComponents');
-    return entries.map((e) => ({ component_id: e.id, name: e.spec.name }));
+    const created = entries.map((e) => ({ component_id: e.id, name: e.spec.name }));
+    await pinWrittenLibraries(params.appId, params.versionId, Object.values(diff) as Array<{ properties?: unknown }>);
+    // Read after the create, so the page read never holds up or precedes the write.
+    let pageComponents = params.pageComponents;
+    if (additions.length && !pageComponents) {
+      // Only FlexContainer parents need their stored order; when the page cannot be read, no order is appended.
+      const summary = await getAppSummary(params.appId, params.versionId).catch(() => undefined);
+      pageComponents = summary?.pages.find((page) => page.id === params.pageId)?.components ?? [];
+    }
+    const appended = additions.length ? appendedChildOrders(pageComponents ?? [], additions) : new Map<string, string[]>();
+    if (appended.size) {
+      try {
+        await writeFlexChildOrders(params.appId, params.versionId, params.pageId, appended);
+      } catch (err) {
+        throw new PartialWriteError('createComponents', created, [
+          `FlexContainer child order (${[...appended.keys()].join(', ')}): ${err instanceof Error ? err.message : String(err)}. ` +
+            'The components exist; set the container\'s childOrder with update_components.',
+        ], err);
+      }
+    }
+    return created;
+  }
+
+  /** A library component draws only while its version pins the library, and only create_app used to write the pin, so
+   *  an app that started elsewhere drew empty Slots. Each version and library is checked once per client. A failure
+   *  never fails the write: the components exist, and validate_app reports the missing pin. */
+  const pinChecks = new Map<string, Promise<void>>();
+  function pinWrittenLibraries(appId: string, versionId: string, components: Array<{ properties?: unknown }>): Promise<unknown> {
+    const wanted = missingLibraryPins(components, {});
+    if (!wanted) return Promise.resolve();
+    const fresh = Object.keys(wanted).filter((id) => !pinChecks.has(`${versionId}:${id}`));
+    const check = fresh.length
+      ? (async () => {
+          const settings = await getAppSettings(appId, versionId);
+          const stored = settings.global_settings.customComponentLibraries;
+          const pins = (stored && typeof stored === 'object' ? stored : {}) as Record<string, unknown>;
+          const missing = missingLibraryPins(components, pins);
+          if (missing) {
+            await updateAppSettings({ appId, versionId, globalSettings: { customComponentLibraries: { ...pins, ...missing } } });
+          }
+        })().catch(() => { for (const id of fresh) pinChecks.delete(`${versionId}:${id}`); })
+      : Promise.resolve();
+    for (const id of fresh) pinChecks.set(`${versionId}:${id}`, check);
+    return Promise.all(Object.keys(wanted).map((id) => pinChecks.get(`${versionId}:${id}`)));
+  }
+
+  /** Persist FlexContainer child orders. The server merges arrays index by index for this widget, which is safe:
+   *  ToolJet's renderer drops unknown and repeated ids from childOrder, so a shorter order cannot reorder. */
+  async function writeFlexChildOrders(appId: string, versionId: string, pageId: string, orders: Map<string, string[]>): Promise<void> {
+    const diff = Object.fromEntries([...orders].map(([id, order]) => [
+      id, { component: { definition: { properties: { childOrder: childOrderProperty(order) } } } },
+    ]));
+    const res = await auth.authedFetch(`/api/v2/apps/${appId}/versions/${versionId}/components`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_user_switched_version: false, pageId, diff }),
+    });
+    await assertOk(res, 'writeFlexChildOrders');
   }
 
   async function createComponent(params: CreateComponentParams): Promise<CreateComponentResult> {
@@ -2716,7 +3077,12 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         throw new Error(`updateComponents "${u.componentId}": slotName requires parent.`);
       }
       if (hasDef) {
-        diff[u.componentId] = { component: { definition: u.definition } };
+        // An update carries no type: only FlexContainer has these keys (libraryPack.ts downgradeFlexForLibrary).
+        const definition = u.definition as { properties?: Record<string, unknown> } | undefined;
+        const properties = definition?.properties
+          ? downgradeFlexForLibrary({ type: 'FlexContainer', properties: definition.properties as Record<string, unknown> }).properties
+          : undefined;
+        diff[u.componentId] = { component: { definition: properties ? { ...definition, properties } : u.definition } };
       } else {
         diff[u.componentId] = {
           component: {
@@ -2739,6 +3105,31 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   // Delete = DELETE /components with a JSON body whose `diff` is a bare array of component ids.
+  async function listComponentLibraries() {
+    const res = await auth.authedFetch('/api/custom-component-libraries');
+    await assertOk(res, 'listComponentLibraries');
+    const body = (await res.json()) as unknown;
+    return (Array.isArray(body) ? body : ((body as { libraries?: unknown[] })?.libraries ?? [])) as import('./packCatalog.js').InstalledLibrary[];
+  }
+
+  async function listBuiltinPacks() {
+    const res = await auth.authedFetch('/api/builtin-packs');
+    // An older server has no such route (404): its packs are custom-component libraries.
+    if (!res.ok) return null;
+    const body = (await res.json()) as unknown;
+    if (!Array.isArray(body)) return null;
+    const packs = body as import('./packCatalog.js').BuiltinPackInfo[];
+    return Promise.all(
+      packs.map(async (info) => {
+        const file = await auth.authedFetch(
+          `/api/builtin-packs/${encodeURIComponent(info.pack)}/${encodeURIComponent(info.hash)}/manifest.json`,
+        );
+        const manifest = file.ok ? ((await file.json()) as import('./packCatalog.js').InstalledLibrary['manifest']) : null;
+        return { info, manifest };
+      }),
+    );
+  }
+
   async function deleteComponents(params: DeleteComponentsParams): Promise<{ deleted: number }> {
     const res = await auth.authedFetch(
       `/api/v2/apps/${params.appId}/versions/${params.versionId}/components`,
@@ -3005,6 +3396,11 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     };
   }
 
+  async function datasourceKind(dataSourceId: string): Promise<string | undefined> {
+    const known = datasourceIdentities.get(`${await auth.getOrganizationId()}:${dataSourceId}`);
+    return known?.kind ?? (await getDatasourceConnectionDetails(dataSourceId)).kind;
+  }
+
   /** Run ToolJet's own connection test for a saved datasource — the same call the datasource
    *  settings page makes. Options are the stored ones; a caller never supplies its own, so no
    *  credential passes through this process. */
@@ -3118,14 +3514,29 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     inviteWorkspaceUser,
     updateWorkspaceUser,
     setWorkspaceUserArchived,
+    branchId: config.branchId,
     createApp,
+    async listWorkspaceBranches() {
+      const res = await auth.authedFetch('/api/workspace-branches');
+      if (res.status === 404) return { branches: [], is_multi_branching_enabled: false };
+      await assertOk(res, 'listWorkspaceBranches');
+      const body = await res.json();
+      return {
+        branches: body.branches.map((branch: any) => ({ id: branch.id, name: branch.name, is_default: branch.isDefault })),
+        active_branch_id: branchIdFor(config) ?? body.activeBranchId,
+        is_multi_branching_enabled: body.isMultiBranchingEnabled,
+      };
+    },
     createAppVersion,
     switchAppVersion,
     releaseApp,
     renameApp,
     getApp,
+    codeSourceAccess,
+    codeSourceFiles,
     getAppSummary,
     listAppPermissionSubjects,
+    getLicenseFeatureAccess,
     getAppPermission,
     setAppPermission,
     clearAppPermission,
@@ -3165,6 +3576,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     createComponents,
     updateComponents,
     deleteComponents,
+    listComponentLibraries,
+    listBuiltinPacks,
     updateLayouts,
     updateQuery,
     updateQueryDatasource,
@@ -3176,6 +3589,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     assertDatasourceAllowed,
     invokeDatasourceMethod,
     getDatasourceConnectionDetails,
+    datasourceKind,
     getPluginSpec,
     specCacheScope,
     testDatasourceConnection,

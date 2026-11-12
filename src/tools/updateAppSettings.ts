@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { pageSettingProperties, projectAppSettings } from '../appSettings.js';
 import type { AppSettingsSnapshot, ToolJetClient } from '../tooljetClient.js';
 import { fail, ok, type ToolDef } from './types.js';
+import { COMPONENT_PACK_DESCRIPTION, savedComponentLibrary } from '../componentLibrary.js';
 
 type Args = {
   app_id: string;
@@ -17,11 +18,15 @@ type Args = {
   navigation_position?: 'side' | 'top';
   navigation_style?: 'texticon' | 'text' | 'icon';
   navigation_collapsible?: boolean;
+  component_library?: 'ui1' | 'ui2';
+  component_pack?: string;
 };
 
 const SETTING_KEYS: Array<keyof Omit<Args, 'app_id' | 'version_id'>> = [
   'canvas_background_color', 'canvas_max_width', 'app_mode', 'theme_id', 'hide_header', 'hide_logo',
   'header_title', 'navigation_hidden', 'navigation_position', 'navigation_style', 'navigation_collapsible',
+  'component_library',
+  'component_pack',
 ];
 
 function persistenceMismatches(args: Args, snapshot: AppSettingsSnapshot): string[] {
@@ -37,6 +42,8 @@ function persistenceMismatches(args: Args, snapshot: AppSettingsSnapshot): strin
     expectEqual('canvas_max_width.unit', global.canvasMaxWidthType, args.canvas_max_width.unit);
   }
   if (args.app_mode !== undefined) expectEqual('app_mode', global.appMode, args.app_mode);
+  if (args.component_library !== undefined || args.component_pack !== undefined)
+    expectEqual('component_library', global.componentLibrary, savedComponentLibrary(args.component_library ?? 'ui2', args.component_pack));
   if (args.theme_id !== undefined) {
     const theme = global.theme as Record<string, unknown> | undefined;
     expectEqual('theme_id', theme?.id, args.theme_id);
@@ -68,6 +75,8 @@ export function updateAppSettingsTool(client: ToolJetClient): ToolDef {
       'Supports canvas background/width/mode, a theme selected from list_app_themes, header/logo/title, and ' +
       'navigation visibility/layout. hide_header controls the app header/banner. The separate generated page-navigation ' +
       'menu can be positioned on the side or top; navigation_hidden hides that entire menu in either position. ' +
+      'navigation_hidden:true also hides the app header and its logo (the app brings its own navigation and header), ' +
+      'unless hide_header or hide_logo is passed as false. ' +
       'To hide only one non-Home page from that menu, use update_pages.hidden. ' +
       'Omitted fields are preserved. Every requested field is read back; the tool returns an error instead of ' +
       'success if any field did not persist.',
@@ -88,14 +97,27 @@ export function updateAppSettingsTool(client: ToolJetClient): ToolDef {
       header_title: z.string().trim().min(1).max(32).optional(),
       navigation_hidden: z.boolean().optional().describe(
         'Hide or show the entire generated page-navigation menu, whether it is positioned on the side or top. ' +
+        'true also hides the app header and logo unless hide_header or hide_logo is false. ' +
         'To hide only one non-Home page from the menu, use update_pages.hidden.'
       ),
       navigation_position: z.enum(['side', 'top']).optional(),
       navigation_style: z.enum(['texticon', 'text', 'icon']).optional(),
       navigation_collapsible: z.boolean().optional(),
+      component_library: z.enum(['ui1', 'ui2']).optional().describe(
+        'The component library the app is built in: "ui1" ToolJet UI 1.0 (native widgets) or "ui2" ToolJet UI 2.0 ' +
+          '(Shad* types). Change it only when the user asks to move the app to the other library.'
+      ),
+      component_pack: z.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION),
     },
-    async handler(args: Args) {
+    async handler(requested: Args) {
       try {
+        // An app that hides the generated menu brings its own navigation bar and header, so the app header above it
+        // only repeats the app's name and ToolJet's mark (SkyLine Ops, 2026-10-20). Explicit false values win.
+        const headerFollowsMenu = requested.navigation_hidden === true &&
+          (requested.hide_header === undefined || requested.hide_logo === undefined);
+        const args: Args = requested.navigation_hidden === true
+          ? { ...requested, hide_header: requested.hide_header ?? true, hide_logo: requested.hide_logo ?? true }
+          : requested;
         const changed = SETTING_KEYS.filter((key) => args[key] !== undefined);
         if (!changed.length) throw new Error('update_app_settings requires at least one setting field.');
         if (args.canvas_max_width?.unit === '%' && args.canvas_max_width.value > 100) {
@@ -126,6 +148,9 @@ export function updateAppSettingsTool(client: ToolJetClient): ToolDef {
             : {}),
           ...(args.app_mode !== undefined ? { appMode: args.app_mode } : {}),
           ...(theme ? { theme } : {}),
+          // UI 2.0 is saved as the default pack ("pack:<id>"), as create_app does, so the panel shows that pack.
+          ...(args.component_library !== undefined || args.component_pack !== undefined
+            ? { componentLibrary: savedComponentLibrary(args.component_library ?? 'ui2', args.component_pack) } : {}),
         };
         const properties: Record<string, unknown> = {
           ...(args.hide_header !== undefined ? { hideHeader: args.hide_header } : {}),
@@ -157,6 +182,7 @@ export function updateAppSettingsTool(client: ToolJetClient): ToolDef {
           updated_fields: changed.length,
           settings: projectAppSettings(persisted),
           warnings: [],
+          ...(headerFollowsMenu ? { note: 'The page menu is hidden, so the app header and logo were hidden with it.' } : {}),
         });
       } catch (error) {
         return fail(error);

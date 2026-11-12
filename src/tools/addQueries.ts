@@ -4,6 +4,7 @@ import { prepareQueryOptionsForWrite } from '../queryPersistence.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { inspectUpdateCompatibility } from '../tableQueryCompatibility.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
+import { browserUserBindings, browserUserMessage, isCodeModeApp } from '../serverUserBindings.js';
 
 const querySchema = z.object({
   client_ref: z.string().optional(),
@@ -32,18 +33,23 @@ export function addQueriesTool(client: ToolJetClient): ToolDef {
       'contract-validates every query before any writes, and returns {queries,warnings,validation}. ToolJet has no query bulk ' +
       'transaction: a rare partial failure names every persisted query; do not retry the whole batch. ' +
       'Creates are serialized per version within this MCP client. Optional client_ref aliases declared in this batch ' +
-      'are resolved in its query bindings/RunJS when unambiguous; existing runtime names take precedence.',
+      'are resolved in its query bindings/RunJS when unambiguous; existing runtime names take precedence. ' +
+      'Pass app_id for a Code mode app: its queries must read the signed-in user as {{globals.server.currentUser.*}} ' +
+      '(resolved on the server), and {{globals.currentUser.*}} (resolved in the browser) is refused.',
     inputSchema: {
       version_id: z.string(),
+      app_id: z.string().optional().describe("the app's id; in a Code mode app it enables the signed-in-user check"),
       queries: z
         .array(querySchema)
         .min(1),
     },
     async handler(args: {
       version_id: string;
+      app_id?: string;
       queries: Array<{ client_ref?: string; datasource_id: string; name: string; options: Record<string, unknown>; kind?: string }>;
     }) {
       try {
+        await refuseBrowserUser(client, args.app_id, args.queries);
         const datasources = await client.listDatasources(args.version_id);
         const datasourceById = new Map(datasources.map((datasource) => [datasource.id, datasource]));
         const warnings: string[] = [];
@@ -101,4 +107,22 @@ export function addQueriesTool(client: ToolJetClient): ToolDef {
       }
     },
   };
+}
+
+/**
+ * A Code mode app's queries read the signed-in user on the server. Looked up only when a query reads
+ * {{globals.currentUser.*}} and the app is named, so a Visual app's writes are unchanged.
+ */
+export async function refuseBrowserUser(
+  client: Pick<ToolJetClient, 'getApp'>,
+  appId: string | undefined,
+  queries: Array<{ name: string; options: Record<string, unknown> }>
+): Promise<void> {
+  const found = queries.map((query) => ({ name: query.name, paths: browserUserBindings(query.options) }))
+    .filter((query) => query.paths.length);
+  if (!found.length || !appId) return;
+  if (!isCodeModeApp(await client.getApp(appId))) return;
+  throw new Error(
+    found.map((query) => browserUserMessage(query.name, query.paths)).join(' ') + ' Nothing was written.'
+  );
 }

@@ -176,8 +176,9 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
       'tables/pages/queries in dependency order, seeds rows, creates independent page component batches concurrently, combines ' +
       'ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It then ' +
       'runs the proven read queries the phase created or updated once and reports them in read_check (failed: fix the query; ' +
-      'inconclusive: the read takes a component value a browser-free run leaves empty; not_run: writes, remote or paid calls and ' +
-      'RunJS, which are never run here). A failing read does not fail the phase. ToolJet has no cross-resource transaction: a rare ' +
+      'inconclusive: the read takes a component value a browser-free run leaves empty; not_run: writes, remote or paid calls, ' +
+      'RunJS and reads the automatic check cannot prove, which are never run here; queries: each one checked, refused or skipped, ' +
+      'and only checked with outcome passed is a pass). A failing read does not fail the phase. ToolJet has no cross-resource transaction: a rare ' +
       'upstream partial failure reports the completed stage/counts and never auto-deletes user data, except for a plan page marked ' +
       'replace: that page ends up holding exactly the plan\'s components. It is written as a difference: a component the plan ' +
       'leaves as it is is not rewritten, one that only moved is moved, one that changed is created again under its own id, and ' +
@@ -194,8 +195,8 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
       plan_token: z.string(),
       check_reads: z.boolean().optional().describe(
         'Default true: after the phase is written, the proven read queries it created or updated are run once and ' +
-          'the result carries read_check {ran, rows, failed, inconclusive, not_run}. Writes, remote or paid calls and ' +
-          'RunJS are never run. false skips the check.'
+          'the result carries read_check {ran, rows, failed, inconclusive, not_run, queries}. Writes, remote or paid calls, ' +
+          'RunJS and reads the automatic check cannot prove are never run. false skips the check.'
       ),
     },
     async handler(input: { app_id: string; version_id?: string; plan_token: string; check_reads?: boolean }) {

@@ -20,6 +20,12 @@ type Value = string | number | boolean | null | undefined | MomentBox;
 class Unsupported extends Error {}
 
 const MAX_EXPRESSION_CHARS = 600;
+/**
+ * The values `{{parameters.x}}` takes while a binding is being resolved: the query's declared parameter defaults, as
+ * the viewer resolves them when the code runs the query with no values. Set only for the duration of one synchronous
+ * resolveStaticBindings call.
+ */
+let currentParameters: Record<string, Value> | undefined;
 const MAX_PAD = 1000;
 const MATH_FNS: Record<string, (...args: number[]) => number> = {
   floor: Math.floor, ceil: Math.ceil, round: Math.round, abs: Math.abs, trunc: Math.trunc, sign: Math.sign,
@@ -165,6 +171,13 @@ function interpret(node: any): Value {
         const constant = own(MATH_CONSTANTS, name);
         return constant ?? unsupported();
       }
+      if (node.object?.type === 'Identifier' && node.object.name === 'parameters') {
+        // Only a parameter the query declares, by its own key: never a name looked up on a prototype.
+        if (!currentParameters || typeof name !== 'string' || !Object.prototype.hasOwnProperty.call(currentParameters, name)) {
+          return unsupported();
+        }
+        return currentParameters[name];
+      }
       const target = interpret(node.object);
       if (typeof target === 'string' && name === 'length') return target.length;
       return unsupported();
@@ -236,7 +249,47 @@ export interface StaticBindingResolution {
   unresolved: string[];
 }
 
+/**
+ * A query's declared parameters (`options.parameters`: `[{ name, defaultValue }]`) and the value each takes when the
+ * code runs it with none: its default, a plain string as written or a binding resolved like any other. A parameter
+ * without a default, or whose default reads live state, is left out: it runs as undefined. These were never resolved
+ * before, so every `{{parameters.x}}` reached ToolJet as undefined in a browser-free run, and the automatic check
+ * reported "an undefined integer parameter" on reads that work in the app (third Code mode QA round, 2026-11-05).
+ */
+export function declaredParameterDefaults(options: unknown): Record<string, Value> {
+  const declared = options && typeof options === 'object' ? (options as { parameters?: unknown }).parameters : undefined;
+  const values: Record<string, Value> = Object.create(null);
+  if (!Array.isArray(declared)) return values;
+  for (const parameter of declared) {
+    if (!parameter || typeof parameter !== 'object') continue;
+    const { name, defaultValue } = parameter as { name?: unknown; defaultValue?: unknown };
+    if (typeof name !== 'string' || !name || defaultValue === undefined || defaultValue === null) continue;
+    if (typeof defaultValue === 'number' || typeof defaultValue === 'boolean') {
+      values[name] = defaultValue;
+    } else if (typeof defaultValue === 'string') {
+      if (!defaultValue.includes('{{')) {
+        values[name] = defaultValue;
+        continue;
+      }
+      const outcome = resolveString(defaultValue);
+      const value = outcome.ok ? outcome.value : undefined;
+      if (outcome.ok && (value === null || ['string', 'number', 'boolean'].includes(typeof value))) values[name] = value as Value;
+    }
+  }
+  return values;
+}
+
 export function resolveStaticBindings(options: unknown): StaticBindingResolution {
+  const previous = currentParameters;
+  currentParameters = declaredParameterDefaults(options);
+  try {
+    return resolveWithParameters(options);
+  } finally {
+    currentParameters = previous;
+  }
+}
+
+function resolveWithParameters(options: unknown): StaticBindingResolution {
   const resolved: Record<string, unknown> = {};
   const unresolved: string[] = [];
   const visit = (value: unknown): void => {

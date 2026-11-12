@@ -4,10 +4,11 @@ import { hubspotQueryIssues } from './hubspotQuery.js';
 import { apiEndpointQueryIssues, singleSpecRef } from './specEndpointKinds.js';
 import type { QuerySummary, RunQueryResult } from './tooljetClient.js';
 import { applyResolvedBindings, resolvedBindingValues } from './staticBindings.js';
+import { connectorLabel, sqlConnectorPath } from './sqlConnectorDispatch.js';
 
 export const LARGE_READ_ROW_THRESHOLD = 1000;
 
-const SQL_KINDS = new Set([
+export const SQL_KINDS = new Set([
   'postgresql', 'mysql', 'mariadb', 'mssql', 'sqlserver', 'cockroachdb', 'redshift',
   'snowflake', 'bigquery', 'clickhouse', 'oracle', 'oracledb', 'sqlite',
   'databricks', 'athena', 'awsredshift', 'harperdb', 'ibmdb', 'saphana',
@@ -848,7 +849,12 @@ function assessListRows(kind: string, options: Record<string, unknown>, datasour
     };
   }
   const listRows = record(options.list_rows);
-  const maxRows = staticPositiveInteger(listRows?.limit ?? options.limit);
+  // Each connector reads its bound from one place (CM-37): ToolJet Database from list_rows.limit, the SQL connectors'
+  // GUI list_rows from the top-level limit only. A bound anywhere else is ignored by the connector, so it bounds nothing.
+  const maxRows = staticPositiveInteger(kind === 'tooljetdb' ? listRows?.limit : options.limit);
+  const misplaced = kind === 'tooljetdb'
+    ? options.limit !== undefined && listRows?.limit === undefined
+    : listRows?.limit !== undefined && options.limit === undefined;
   if (maxRows !== undefined && maxRows <= LARGE_READ_ROW_THRESHOLD) {
     return {
       provenRead: true, directSafe: !billableRead, countOnly: false, selectStar: false,
@@ -861,7 +867,11 @@ function assessListRows(kind: string, options: Record<string, unknown>, datasour
     requiresCountPreflight: true, requiresBillableReadConfirmation: billableRead,
     simpleSourceRead: true, source, maxRows, ...identity,
     reason: maxRows === undefined
-      ? 'list_rows has no statically provable row limit.'
+      ? misplaced
+        ? kind === 'tooljetdb'
+          ? 'list_rows has no statically provable row limit: ToolJet Database reads it from list_rows.limit and ignores a top-level limit.'
+          : `list_rows has no statically provable row limit: ${connectorLabel(kind)} reads it from the top-level limit and ignores list_rows.limit.`
+        : 'list_rows has no statically provable row limit.'
       : `list_rows can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`,
   };
 }
@@ -938,11 +948,29 @@ export function assessQueryRead(query: QuerySummary): QueryReadAssessment {
   }
 
   if (SQL_KINDS.has(kind)) {
-    if (operation === 'list_rows' || options.mode === 'gui') return assessListRows(kind, options, datasourceId);
+    // The connector's own discriminator decides what runs (CM-37): `operation: 'list_rows'` beside SQL text, or any
+    // GUI operation, was classified as a bounded list_rows read, so a GUI delete_rows with a limit passed as a read.
+    const path = sqlConnectorPath(kind, options);
+    if (path?.path === 'not_read') {
+      return {
+        provenRead: false, directSafe: false, countOnly: false, selectStar: false,
+        requiresCountPreflight: false, reason: path.reason, datasourceKind: kind, ...(datasourceId ? { datasourceId } : {}),
+      };
+    }
+    if (path?.path === 'gui_list_rows') return assessListRows(kind, options, datasourceId);
+    if (!path && operation === 'list_rows') {
+      return {
+        provenRead: false, directSafe: false, countOnly: false, selectStar: false, requiresCountPreflight: false,
+        reason: `Datasource kind ${kind} has no GUI list_rows; its operation and options do not name a proven read.`,
+        datasourceKind: kind, ...(datasourceId ? { datasourceId } : {}),
+      };
+    }
     // Plugins disagree on the field name; databricks, awsredshift and harperdb use `sql_query`.
-    const sql = ['query', 'sql_query', 'sql', 'presto_sql_query', 'soql_query']
-      .map((field) => options[field])
-      .find((value): value is string => typeof value === 'string' && !!value.trim());
+    const sql = path
+      ? path.sql
+      : ['query', 'sql_query', 'sql', 'presto_sql_query', 'soql_query']
+        .map((field) => options[field])
+        .find((value): value is string => typeof value === 'string' && !!value.trim());
     return sql
       ? assessSql(sql, kind, datasourceId)
       : {
