@@ -9,7 +9,7 @@ import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { ok, fail, type ToolDef } from './types.js';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { CLI_HOME_PREFIX, cleanOldProjects, touchProject, withBuildSlot } from '../codeBuildLimits.js';
-import { browserUserQueryProblems } from '../serverUserBindings.js';
+import { browserUserQueryProblems, isCodeModeApp } from '../serverUserBindings.js';
 import { buildSummary, formatProblems, fromChecked, parseBuildProblems, type CheckedProblem } from '../codeTypeErrors.js';
 import { buildInService, buildServiceUrl } from '../codeBuildService.js';
 import {
@@ -585,8 +585,10 @@ export function codeAppScaffoldTool(context: CodeContext): ToolDef {
           const restored = created ? await restoreStoredCode(dir) : {};
           const naming = await nameApp(context.client, dir, args.display_name, args.rename_from);
           if (!existing && !restored.stored_code) rememberScaffold(dir);
+          const visual = created ? await visualAppWarning(context.client, args.app_id) : undefined;
           return ok({
             project_dir: dir,
+            ...(visual ? { warning: visual } : {}),
             ...naming,
             ...restored,
             ...(existing ? { existing_project: existing, note: `This app already has a project, "${existing}"; it is used as is.` } : {}),
@@ -601,6 +603,21 @@ export function codeAppScaffoldTool(context: CodeContext): ToolDef {
       }
     }),
   };
+}
+
+/**
+ * A new project on an app ToolJet holds as visual (create_app without build_mode "code"): its code still runs, on a
+ * code page, but ToolJet treats it as a visual app (no stored code, no Code mode release checks). Said, not refused:
+ * an app with no build mode on an older server is still built this way. Null when the app could not be read.
+ */
+export async function visualAppWarning(client: Pick<ToolJetClient, 'getApp'>, appId: string): Promise<string | undefined> {
+  const app = await client.getApp(appId).catch(() => null);
+  if (!app || isCodeModeApp(app)) return undefined;
+  return (
+    'This app was created as a visual app, not a Code mode app (create_app without build_mode "code"). Its code will ' +
+    'run, but ToolJet will treat it as visual. If this is a new build, create the app again with create_app ' +
+    'build_mode "code" and scaffold that one instead; tell the user which app you used.'
+  );
 }
 
 /*

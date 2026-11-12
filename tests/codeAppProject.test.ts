@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, onTestFinished } from 'vit
 import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { codeAppBuildTool, codeAppReadFilesTool, codeAppScaffoldTool, inCodeScopeForTests, projectsForApp } from '../src/tools/codeApp.js';
+import { codeAppBuildTool, codeAppReadFilesTool, codeAppScaffoldTool, inCodeScopeForTests, projectsForApp, visualAppWarning } from '../src/tools/codeApp.js';
 import { codeContext, DEPLOYMENT, WORKSPACE } from './codeContext.js';
 
 const APP = '11111111-1111-4111-8111-111111111111';
@@ -141,5 +141,20 @@ describe('code_app_scaffold names an untitled app', () => {
     expect((await run('Something else')).renamed_to).toBeUndefined();
     expect((await run('I run procurement at')).renamed_to).toBe('Tasks');
     expect(calls).toEqual([[APP, 'v1', 'Tasks']]);
+  });
+});
+
+describe('code_app_scaffold on an app created as visual', () => {
+  const app = (extra: Record<string, unknown>) => ({ getApp: async () => ({ id: 'a1', pages: [], ...extra }) });
+
+  it('warns when the app is visual and has no code page', async () => {
+    expect(await visualAppWarning(app({ build_mode: 'visual' }), 'a1')).toMatch(/create_app build_mode "code"/);
+  });
+
+  it('says nothing for a Code mode app, an app whose page already holds code, or an app it cannot read', async () => {
+    expect(await visualAppWarning(app({ build_mode: 'code' }), 'a1')).toBeUndefined();
+    const codePage = { components: { c1: { component: { definition: { properties: { codePage: { value: true } } } } } } };
+    expect(await visualAppWarning(app({ pages: [codePage] }), 'a1')).toBeUndefined();
+    expect(await visualAppWarning({ getApp: async () => { throw new Error('404'); } }, 'a1')).toBeUndefined();
   });
 });

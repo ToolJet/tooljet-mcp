@@ -1133,6 +1133,10 @@ Use the selected ToolJet connection's tools; ask if missing or ambiguous. This s
 
 For migration/clone/replacement requests, first read \`references/migration.md\`. Discover expanded states, relationships and read-only journeys—not just screenshots. Map source coverage to ToolJet and report gaps. Skip this workflow for ordinary builds or visual-only inspiration.
 
+## Visual or Code mode
+
+Unless the user said, ask before \`create_app\`: visual (ToolJet components) or Code mode (React, \`code_app_*\` tools). For Code mode pass \`build_mode: "code"\`, then follow the \`code_app_*\` tool descriptions instead of lint and apply.
+
 ## Core workflow
 
 1. Call \`list_workspaces\`; if several exist, confirm the workspace. Branch selection: references/workflows.md. Decide the page architecture before components. A simple single-job app can stay on one page; separate substantial jobs into focused pages; add an overview only when cross-workflow orientation or decisions need it.

@@ -133,6 +133,7 @@ describe('createClient', () => {
 
       expect(result).toEqual({
         app_id: 'app1',
+        build_mode: 'visual',
         version_id: 'ver1',
         home_page_id: 'page-home',
         app_url: 'http://localhost:8082/myworkspace/apps/app1',
@@ -176,6 +177,48 @@ describe('createClient', () => {
       expect(result.app_id).toBe('app3');
       const names = auth.authedFetch.mock.calls.slice(0, 3).map(([, init]) => JSON.parse((init as RequestInit).body as string).name);
       expect(names).toEqual(['Coffee Order Desk', 'Coffee Order Desk 2', 'Coffee Order Desk 3']);
+    });
+
+    it('asks for a Code mode app with buildMode "code" and reports the mode the app got', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: { id: 'app4' } }))
+        .mockResolvedValueOnce(
+          mockResponse({ status: 200, json: { id: 'app4', build_mode: 'code', editing_version: { id: 'v1', name: 'v1' }, pages: [{ id: 'p1', name: 'Home' }] } })
+        );
+
+      const client = createClient(auth, config);
+      const result = await client.createApp('Accord', { buildMode: 'code' });
+
+      expect(JSON.parse(auth.authedFetch.mock.calls[0][1].body)).toEqual({ name: 'Accord', type: 'front-end', buildMode: 'code' });
+      expect(result.build_mode).toBe('code');
+    });
+
+    it('deletes the visual app a server without Code mode made, and says so', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: { id: 'app5' } }))
+        .mockResolvedValueOnce(
+          mockResponse({ status: 200, json: { id: 'app5', editing_version: { id: 'v1', name: 'v1' }, pages: [{ id: 'p1', name: 'Home' }] } })
+        )
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: {} }));
+
+      const client = createClient(auth, config);
+      await expect(client.createApp('Accord', { buildMode: 'code' })).rejects.toThrow(
+        /does not support Code mode apps.*That app was deleted/
+      );
+      expect(auth.authedFetch.mock.calls[2][0]).toBe('/api/apps/app5');
+      expect(auth.authedFetch.mock.calls[2][1].method).toBe('DELETE');
+    });
+
+    it('names the visual app it could not delete', async () => {
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: { id: 'app6' } }))
+        .mockResolvedValueOnce(
+          mockResponse({ status: 200, json: { id: 'app6', build_mode: 'visual', editing_version: { id: 'v1', name: 'v1' }, pages: [{ id: 'p1', name: 'Home' }] } })
+        )
+        .mockResolvedValueOnce(mockResponse({ status: 403, text: 'forbidden' }));
+
+      const client = createClient(auth, config);
+      await expect(client.createApp('Accord', { buildMode: 'code' })).rejects.toThrow(/Delete app app6 \("Accord"\)/);
     });
 
     it('throws when the create call is non-2xx', async () => {

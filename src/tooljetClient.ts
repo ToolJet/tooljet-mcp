@@ -31,6 +31,8 @@ import { z } from 'zod';
 
 export interface CreateAppResult {
   branch_id?: string;
+  /** "code" for a Code mode app (React, built with the code_app_* tools); "visual" otherwise. */
+  build_mode?: 'visual' | 'code';
   app_id: string;
   version_id: string;
   home_page_id: string;
@@ -668,7 +670,7 @@ export interface ToolJetClient {
   inviteWorkspaceUser(params: InviteWorkspaceUserParams): Promise<void>;
   updateWorkspaceUser(organizationUserId: string, params: UpdateWorkspaceUserParams): Promise<{ user: WorkspaceUser; updated: boolean }>;
   setWorkspaceUserArchived(organizationUserId: string, archived: boolean): Promise<void>;
-  createApp(name: string): Promise<CreateAppResult>;
+  createApp(name: string, options?: { buildMode?: 'visual' | 'code' }): Promise<CreateAppResult>;
   listWorkspaceBranches(): Promise<Record<string, unknown>>;
   createAppVersion(params: CreateAppVersionParams): Promise<AppVersionResult>;
   switchAppVersion(appId: string, versionId: string): Promise<SwitchAppVersionResult>;
@@ -1610,7 +1612,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return auth.switchWorkspace(workspaceId);
   }
 
-  async function createApp(name: string): Promise<CreateAppResult> {
+  async function createApp(name: string, options: { buildMode?: 'visual' | 'code' } = {}): Promise<CreateAppResult> {
+    const wantsCode = options.buildMode === 'code';
     const branchId = branchIdFor(config);
     // A taken name is a 409 that used to bounce back to the model, which then spent a turn (and at
     // max reasoning effort, a minute) inventing "… 2026" or "… A9". Every build in a shared workspace
@@ -1622,7 +1625,13 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       createRes = await auth.authedFetch('/api/apps', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: finalName, type: 'front-end', ...(branchId ? { branchId } : {}) }),
+        body: JSON.stringify({
+          name: finalName,
+          type: 'front-end',
+          ...(branchId ? { branchId } : {}),
+          // The build mode is set when the app is created, as the dashboard does: ToolJet has no call that changes it later.
+          ...(wantsCode ? { buildMode: 'code' } : {}),
+        }),
       });
       if (createRes.status !== 409) break;
     }
@@ -1630,6 +1639,20 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const created = (await createRes!.json()) as { id: string; slug?: string };
 
     const app = await getApp(created.id);
+    const buildMode = app?.build_mode ?? app?.buildMode;
+    if (wantsCode && buildMode !== 'code') {
+      // A ToolJet without Code mode drops the unknown field and makes a visual app. Remove it, so nothing gets built on
+      // an app that can never hold code; a failed delete is named so the app can be removed by hand.
+      const removed = await auth
+        .authedFetch(`/api/apps/${created.id}`, { method: 'DELETE' })
+        .then((res) => res.ok)
+        .catch(() => false);
+      throw new Error(
+        'This ToolJet server does not support Code mode apps: it created a visual app instead. ' +
+          (removed ? 'That app was deleted. ' : `Delete app ${created.id} ("${finalName}"); it could not be removed here. `) +
+          'Build a visual app (create_app without build_mode), or connect to a ToolJet version with Code mode.'
+      );
+    }
     const versionId: string = app.editing_version.id;
     const versionName: string = app.editing_version.name ?? 'v1';
     const pages: Array<{ id: string; name: string; handle?: string }> = app.pages ?? [];
@@ -1653,6 +1676,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return {
       app_id: created.id,
       ...(branchId ? { branch_id: branchId } : {}),
+      build_mode: buildMode === 'code' ? 'code' : 'visual',
       version_id: versionId,
       home_page_id: homePage.id,
       app_url: editorUrl,
