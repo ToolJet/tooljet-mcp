@@ -951,7 +951,7 @@ export function codeAppReadFilesTool(context: CodeContext): ToolDef {
   return {
     name: 'code_app_read_files',
     title: 'Read Code Mode Files',
-    annotations: { readOnlyHint: true, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
     description:
       'Read a Code mode project. Without paths, lists its files; with paths, returns their contents (app.json, frontend/...). ' +
       'Edits saved in the ToolJet Code panel since the last install are brought into the project first.' + USER_WORDS,
