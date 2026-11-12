@@ -1,12 +1,15 @@
 import { createRequire } from "node:module";
-import { g as getComponentSchema, f as fail, o as ok, C as COMPONENT_FX_UPDATE_GUIDANCE, b as getCatalog, c as getLegacyComponentReplacement, e as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, t as tableQuotaError, h as assertWorkflowQueryOptions, T as TableQuotaError, w as workflowMappingMatches, a as activePackSet } from "./chunk-4n_covov.js";
-import { i as isMisplacedStyleKey, P as PROPERTY_KEY_ALIASES, r as retiredUi2Name, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey, d as decodeComponentParent, c as componentSlotSchema, a as componentNameSchema, b as componentNameError, e as resolveParentRef, f as encodeComponentParent, g as introducedLintFindings, l as lintComponentSpec, h as lintComponentSlots, j as lintUnusableTextGeometry, k as lintStandardSingleLineInputHeight, m as lintTextGeometry, o as lintRenderedGeometry, p as lintKanbanInteractions, q as lintShadKanbanCards, s as lintShadScheduleScale, t as downgradeFlexForLibrary, u as assertPageIcon, v as resolveComponentLibrary, w as toLibraryComponent, x as missingLibraryPins, y as libraryTypeOf } from "./chunk-23CIdoFG.js";
-import { n as suggestedHtmlHeight } from "./chunk-JeqLopLS.js";
-import { ax as external_exports, aE as definition } from "./chunk-DtQIWAeP.js";
+import { g as getComponentSchema, C as COMPONENT_FX_UPDATE_GUIDANCE, b as getCatalog, c as getLegacyComponentReplacement, e as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, f as assertWorkflowQueryOptions, w as workflowMappingMatches, a as activePackSet } from "./chunk-CmizjRXJ.js";
+import { i as isMisplacedStyleKey, P as PROPERTY_KEY_ALIASES, r as retiredUi2Name, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey, d as decodeComponentParent, c as componentSlotSchema, a as componentNameSchema, b as componentNameError, e as resolveParentRef, f as encodeComponentParent, g as introducedLintFindings, l as lintComponentSpec, h as lintComponentSlots, j as lintUnusableTextGeometry, k as lintStandardSingleLineInputHeight, m as lintTextGeometry, o as lintRenderedGeometry, p as lintKanbanInteractions, q as lintShadKanbanCards, s as lintShadScheduleScale, t as downgradeFlexForLibrary, u as assertPageIcon, v as resolveComponentLibrary, w as toLibraryComponent, x as missingLibraryPins, y as libraryTypeOf } from "./chunk-CzEla2h4.js";
+import { b0 as external_exports, b7 as fail, b8 as ok, b9 as definition } from "./chunk-Csl8mO51.js";
+import { n as suggestedHtmlHeight } from "./chunk-CH7Qaiw9.js";
+import { e5 as tableQuotaError, e9 as TableQuotaError } from "./chunk-C1Uan0hB.js";
 import { randomUUID, createHash } from "node:crypto";
-import { isDeepStrictEqual } from "node:util";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { readFileSync } from "node:fs";
-import { resolve, dirname } from "node:path";
+import { homedir } from "node:os";
+import { join, resolve, dirname } from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
 function separateAdjacentClosingBraces(text) {
@@ -1347,11 +1350,17 @@ function createAppVersionLifecycle(auth, getApp) {
     if (typeof raw.id !== "string" || typeof raw.name !== "string")
       throw new Error("Invalid version metadata.");
     const environmentId = raw.current_environment_id ?? raw.currentEnvironmentId;
+    const versionType = raw.version_type ?? raw.versionType;
+    const branchId = raw.branch_id ?? raw.branchId;
+    const displayName = raw.display_name ?? raw.displayName;
     return {
       id: raw.id,
       name: raw.name,
       ...typeof raw.description === "string" || raw.description === null ? { description: raw.description } : {},
       ...typeof raw.status === "string" ? { status: raw.status } : {},
+      ...typeof versionType === "string" ? { versionType } : {},
+      ...typeof branchId === "string" ? { branchId } : {},
+      ...typeof displayName === "string" ? { displayName } : {},
       ...typeof environmentId === "string" ? { environmentId } : {}
     };
   }
@@ -1392,15 +1401,18 @@ function createAppVersionLifecycle(auth, getApp) {
       version_id: v.id,
       version_name: v.name,
       selected: true,
+      ...v.versionType ? { version_type: v.versionType } : {},
+      ...v.branchId ? { branch_id: v.branchId } : {},
+      ...v.displayName ? { display_name: v.displayName } : {},
       ...v.status ? { status: v.status } : {},
       ...environmentId ? { current_environment_id: environmentId } : {}
     };
   }
-  async function available(appId, v, env) {
-    const data = await (await request(`/api/app-environments/${enc(env.id)}/versions?app_id=${enc(appId)}`)).json();
+  async function available(appId, v, env2) {
+    const data = await (await request(`/api/app-environments/${enc(env2.id)}/versions?app_id=${enc(appId)}`)).json();
     const rows = data.appVersions ?? data.app_versions;
     if (!Array.isArray(rows) || !rows.some((row) => row.id === v.id)) {
-      throw new Error(`Version ${v.name} is not available in ${env.name}. No promotion or release was performed.`);
+      throw new Error(`Version ${v.name} is not available in ${env2.name}. No promotion or release was performed.`);
     }
   }
   async function list(appId) {
@@ -1410,12 +1422,15 @@ function createAppVersionLifecycle(auth, getApp) {
   }
   async function switchEnvironment(appId, versionId, environmentName) {
     const v = await version(appId, versionId);
-    const env = environment(await environments(appId), environmentName);
-    await available(appId, v, env);
-    return { ...selection(appId, v, env.id), environment_name: env.name };
+    const env2 = environment(await environments(appId), environmentName);
+    await available(appId, v, env2);
+    return { ...selection(appId, v, env2.id), environment_name: env2.name };
   }
   async function promote(appId, versionId, environmentName) {
     let v = await version(appId, versionId);
+    if (v.versionType?.toLowerCase() === "branch") {
+      throw new Error("Cannot promote a branch head. Save a named version in ToolJet, then select that exact version for promotion.");
+    }
     const envs = await environments(appId);
     const target = environment(envs, environmentName);
     const start = envs.find((e) => e.id === v.environmentId);
@@ -1502,6 +1517,257 @@ function createAppVersionLifecycle(auth, getApp) {
   }
   return { list, switchEnvironment, promote, update, remove };
 }
+var branchContext = new AsyncLocalStorage();
+var withBranchContext = (branchId, fn) => branchContext.run(branchId, fn);
+var currentBranchId = () => branchContext.getStore();
+function branchIdFor(config) {
+  const requested = branchContext.getStore();
+  if (config.branchId && requested && config.branchId !== requested) {
+    throw new Error("This build is pinned to another branch. Start a build from the intended branch.");
+  }
+  return config.branchId ?? requested;
+}
+var SESSION_TOKEN_HEADER = "x-tooljet-session";
+var WORKSPACE_ID_HEADER = "x-tooljet-workspace-id";
+var WORKSPACE_SLUG_HEADER = "x-tooljet-workspace-slug";
+var BRANCH_ID_HEADER = "x-tooljet-branch-id";
+var PAT_HEADER = "x-tooljet-pat";
+var BASE_URL_HEADER = "x-tooljet-url";
+var CUSTOMER_ID_HEADER = "x-tooljet-customer-id";
+var ALLOWED_API_ORIGINS_VAR = "MCP_ALLOWED_API_ORIGINS";
+var GATEWAY_URL_VAR = "MCP_GATEWAY_URL";
+var GATEWAY_TOKEN_VAR = "MCP_GATEWAY_TOKEN";
+function storedCliLogin(explicitApiUrl) {
+  const file = env("TOOLJET_CREDENTIALS_FILE") ?? join(homedir(), ".tooljet", "credentials.json");
+  let store;
+  try {
+    store = JSON.parse(readFileSync(file, "utf8"));
+  } catch {
+    return void 0;
+  }
+  const entry = store?.default ? store.workspaces?.[store.default] : void 0;
+  if (!entry?.url || !entry.apiToken)
+    return void 0;
+  let origin;
+  try {
+    origin = new URL(entry.url).origin;
+  } catch {
+    return void 0;
+  }
+  if (explicitApiUrl) {
+    try {
+      if (new URL(explicitApiUrl).origin !== origin)
+        return void 0;
+    } catch {
+      return void 0;
+    }
+  }
+  return { apiUrl: origin, pat: entry.apiToken };
+}
+function env(name) {
+  const value = process.env[name]?.trim();
+  return value ? value : void 0;
+}
+function allowedApiOrigins() {
+  const raw = env(ALLOWED_API_ORIGINS_VAR);
+  if (!raw)
+    return [];
+  return raw.split(",").map((entry) => entry.trim()).filter(Boolean).map((entry) => {
+    let parsed;
+    try {
+      parsed = new URL(entry);
+    } catch {
+      throw new Error(`${ALLOWED_API_ORIGINS_VAR} contains an entry that is not a valid URL: "${entry}".`);
+    }
+    if (parsed.protocol !== "https:") {
+      throw new Error(`${ALLOWED_API_ORIGINS_VAR} entry "${entry}" must use https \u2014 it could never match a request.`);
+    }
+    return parsed.origin;
+  });
+}
+function readHeader(headers, name) {
+  const raw = headers[name] ?? headers[name.toLowerCase()];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : void 0;
+}
+var gatewayOriginCache = /* @__PURE__ */ new Map();
+var GATEWAY_CACHE_TTL_MS = 6e4;
+async function checkOriginWithGateway(customerId, origin) {
+  const cacheKey = `${customerId} ${origin}`;
+  const cached2 = gatewayOriginCache.get(cacheKey);
+  if (cached2 && cached2.expiresAt > Date.now())
+    return cached2.allowed;
+  const gatewayUrl = env(GATEWAY_URL_VAR);
+  const gatewayToken = env(GATEWAY_TOKEN_VAR);
+  if (!gatewayUrl || !gatewayToken)
+    return false;
+  let allowed = false;
+  try {
+    const res = await fetch(new URL("/internal/mcp/verify-origin", gatewayUrl), {
+      method: "POST",
+      headers: { authorization: gatewayToken, "content-type": "application/json" },
+      body: JSON.stringify({ customer_id: customerId, origin }),
+      signal: AbortSignal.timeout(5e3)
+    });
+    if (res.ok) {
+      const body = await res.json();
+      allowed = body.allowed === true;
+    }
+  } catch {
+    allowed = false;
+  }
+  gatewayOriginCache.set(cacheKey, { allowed, expiresAt: Date.now() + GATEWAY_CACHE_TTL_MS });
+  return allowed;
+}
+var gatewayResolveCache = /* @__PURE__ */ new Map();
+async function resolveApiUrlFromGateway(customerId) {
+  const cached2 = gatewayResolveCache.get(customerId);
+  if (cached2 && cached2.expiresAt > Date.now())
+    return cached2.result;
+  const gatewayUrl = env(GATEWAY_URL_VAR);
+  const gatewayToken = env(GATEWAY_TOKEN_VAR);
+  let result = { url: void 0, verified: false };
+  if (gatewayUrl && gatewayToken) {
+    try {
+      const res = await fetch(new URL("/internal/mcp/verify-origin", gatewayUrl), {
+        method: "POST",
+        headers: { authorization: gatewayToken, "content-type": "application/json" },
+        body: JSON.stringify({ customer_id: customerId }),
+        signal: AbortSignal.timeout(5e3)
+      });
+      if (res.ok) {
+        const body = await res.json();
+        if ("host_name" in body) {
+          const path = body.subpath ? `/${body.subpath.replace(/^\/+|\/+$/g, "")}` : "";
+          result = { url: body.host_name ? `https://${body.host_name}${path}` : void 0, verified: true };
+        }
+      }
+    } catch {
+      result = { url: void 0, verified: false };
+    }
+  }
+  gatewayResolveCache.set(customerId, { result, expiresAt: Date.now() + GATEWAY_CACHE_TTL_MS });
+  return result;
+}
+async function validateApiUrl(raw, customerId) {
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new Error(`${BASE_URL_HEADER} must be a valid absolute URL.`);
+  }
+  if (parsed.protocol !== "https:") {
+    throw new Error(`${BASE_URL_HEADER} must use https.`);
+  }
+  if (parsed.search || parsed.hash || parsed.username || parsed.password) {
+    throw new Error(`${BASE_URL_HEADER} must carry no query, hash, or credentials.`);
+  }
+  const inStaticList = allowedApiOrigins().includes(parsed.origin);
+  const verifiedViaGateway = !inStaticList && customerId ? await checkOriginWithGateway(customerId, parsed.origin) : false;
+  if (!inStaticList && !verifiedViaGateway) {
+    throw new Error(`${BASE_URL_HEADER} origin "${parsed.origin}" is not in ${ALLOWED_API_ORIGINS_VAR} and did not verify against the Gateway. Add it to that comma-separated list, or confirm ${CUSTOMER_ID_HEADER} is being sent.`);
+  }
+  const path = parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/$/, "");
+  return { apiUrl: parsed.origin + path, customerVerified: verifiedViaGateway ? true : void 0 };
+}
+async function identityFromHeaders(headers, { allowPat = true } = {}) {
+  const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
+  const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
+  const branchId = readHeader(headers, BRANCH_ID_HEADER);
+  const pat = readHeader(headers, PAT_HEADER);
+  const rawApiUrl = readHeader(headers, BASE_URL_HEADER);
+  const customerId = readHeader(headers, CUSTOMER_ID_HEADER);
+  let apiUrl;
+  let customerVerified;
+  if (rawApiUrl) {
+    const validated = await validateApiUrl(rawApiUrl, customerId);
+    apiUrl = validated.apiUrl;
+    customerVerified = validated.customerVerified;
+  } else if (customerId) {
+    const resolved = await resolveApiUrlFromGateway(customerId);
+    apiUrl = resolved.url;
+    customerVerified = resolved.verified ? true : void 0;
+  }
+  if (pat) {
+    if (!allowPat) {
+      throw new Error(`${PAT_HEADER} is not accepted by this server. It acts only on behalf of a signed-in user: send ${SESSION_TOKEN_HEADER} with ${WORKSPACE_ID_HEADER}.`);
+    }
+    if (sessionToken)
+      throw new Error(`Send either ${PAT_HEADER} or ${SESSION_TOKEN_HEADER}, not both.`);
+    return { pat, apiUrl, customerVerified, ...branchId ? { branchId } : {} };
+  }
+  if (!sessionToken && !workspaceId) {
+    return apiUrl || customerVerified ? { apiUrl, customerVerified } : void 0;
+  }
+  if (!sessionToken) {
+    throw new Error(`${WORKSPACE_ID_HEADER} was sent without ${SESSION_TOKEN_HEADER}.`);
+  }
+  if (!workspaceId) {
+    throw new Error(`${SESSION_TOKEN_HEADER} was sent without ${WORKSPACE_ID_HEADER}.`);
+  }
+  return {
+    sessionToken,
+    workspaceId,
+    ...branchId ? { branchId } : {},
+    workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER),
+    apiUrl,
+    customerVerified
+  };
+}
+function loadConfig(identity) {
+  const explicitApiUrl = env("TOOLJET_URL");
+  const explicitAppUrl = env("TOOLJET_DEPLOYMENT_URL") ?? env("TOOLJET_APP_URL");
+  const staticApiUrl = explicitApiUrl ?? explicitAppUrl ?? "http://localhost:3000";
+  if (identity) {
+    const apiUrl2 = identity.apiUrl ?? staticApiUrl;
+    const appUrl2 = identity.appUrl ?? explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? "http://localhost:8082";
+    const viewerUrl = identity.viewerUrl ?? appUrl2;
+    if (identity.pat)
+      return { apiUrl: apiUrl2, appUrl: appUrl2, viewerUrl, pat: identity.pat, ...identity.branchId ? { branchId: identity.branchId } : {} };
+    return {
+      apiUrl: apiUrl2,
+      appUrl: appUrl2,
+      viewerUrl,
+      sessionToken: identity.sessionToken,
+      isOAuthDelegation: identity.isOAuthDelegation,
+      oauthGrantId: identity.oauthGrantId,
+      workspaceId: identity.workspaceId,
+      workspaceSlug: identity.workspaceSlug,
+      ...identity.branchId ? { branchId: identity.branchId } : {}
+    };
+  }
+  const apiUrl = staticApiUrl;
+  const appUrl = explicitAppUrl ?? explicitApiUrl ?? "http://localhost:8082";
+  const sessionToken = env("TOOLJET_SESSION_TOKEN");
+  const stored = !env("TOOLJET_PAT") && !sessionToken ? storedCliLogin(explicitApiUrl ?? explicitAppUrl) : void 0;
+  const pat = env("TOOLJET_PAT") ?? stored?.pat;
+  const workspaceId = env("TOOLJET_WORKSPACE_ID");
+  if (stored) {
+    return {
+      apiUrl: stored.apiUrl,
+      appUrl: explicitAppUrl ?? stored.apiUrl,
+      pat: stored.pat,
+      ...env("TOOLJET_BRANCH_ID") ? { branchId: env("TOOLJET_BRANCH_ID") } : {}
+    };
+  }
+  if (!pat && !sessionToken) {
+    throw new Error(`TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal access token in ToolJet under Settings \u2192 Access tokens, in the workspace you want this server to act on, and set TOOLJET_PAT. A shared HTTP server instead receives the acting user per request via the ${SESSION_TOKEN_HEADER} header. Or sign in once with \`tooljet auth login\`.`);
+  }
+  if (sessionToken && !workspaceId) {
+    throw new Error("TOOLJET_WORKSPACE_ID is required alongside TOOLJET_SESSION_TOKEN.");
+  }
+  return {
+    apiUrl,
+    appUrl,
+    viewerUrl: appUrl,
+    pat,
+    sessionToken,
+    workspaceId,
+    workspaceSlug: env("TOOLJET_WORKSPACE_SLUG"),
+    ...env("TOOLJET_BRANCH_ID") ? { branchId: env("TOOLJET_BRANCH_ID") } : {}
+  };
+}
 var record = (x) => x && typeof x === "object" && !Array.isArray(x) ? x : {};
 var required = (x, label) => {
   if (typeof x !== "string" || !x)
@@ -1561,6 +1827,8 @@ function createWorkflowClient(auth, config, queries) {
     if (rawVersion.id !== versionId || !Object.hasOwn(rawVersion, "definition")) {
       throw new Error("Lossless workflow export is missing the requested version definition.");
     }
+    const branchName = record(version.branch).name;
+    const branchQuery = typeof branchName === "string" && branchName ? `?branch=${encodeURIComponent(branchName)}` : "";
     return {
       workflow_id: workflowId,
       version_id: versionId,
@@ -1568,7 +1836,7 @@ function createWorkflowClient(auth, config, queries) {
       environment_id: environmentId,
       editable: status === "DRAFT" && !released && !frozen,
       enabled: (app.isMaintenanceOn ?? app.is_maintenance_on) === true,
-      editor_url: `${config.appUrl}/${encodeURIComponent(await auth.getOrganizationSlug())}/apps/${encodeURIComponent(typeof app.slug === "string" && app.slug ? app.slug : workflowId)}`,
+      editor_url: `${config.appUrl}/${encodeURIComponent(await auth.getOrganizationSlug())}/apps/${encodeURIComponent(typeof app.slug === "string" && app.slug ? app.slug : workflowId)}${branchQuery}`,
       definition: definition(rawVersion.definition)
     };
   }
@@ -1620,14 +1888,15 @@ function createWorkflowClient(auth, config, queries) {
       if (config.isOAuthDelegation && !config.oauthGrantId)
         throw new Error("OAuth workflow plans require a trusted grant identifier.");
       const identity = config.isOAuthDelegation ? ["oauth", config.oauthGrantId] : config.sessionToken ?? config.pat;
-      return createHash("sha256").update(JSON.stringify([config.apiUrl, identity, await auth.getOrganizationId()])).digest("hex");
+      return createHash("sha256").update(JSON.stringify([config.apiUrl, identity, await auth.getOrganizationId(), branchIdFor(config)])).digest("hex");
     },
     async list(page = 1, search = "") {
       return request(`/api/apps?${new URLSearchParams({ type: "workflow", page: String(page), searchKey: search })}`);
     },
     get,
     async create(name) {
-      const created = record(await request("/api/workflows", { name, type: "workflow" }));
+      const branchId = branchIdFor(config);
+      const created = record(await request("/api/workflows", { name, type: "workflow", ...branchId ? { branchId } : {} }));
       const id = required(created.id, "created workflow ID");
       try {
         return await get(id);
@@ -2802,6 +3071,7 @@ function createClient(auth, config) {
     return auth.switchWorkspace(workspaceId);
   }
   async function createApp(name) {
+    const branchId = branchIdFor(config);
     let createRes;
     let finalName = name;
     for (let attempt = 1; attempt <= 6; attempt++) {
@@ -2809,7 +3079,7 @@ function createClient(auth, config) {
       createRes = await auth.authedFetch("/api/apps", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: finalName, type: "front-end" })
+        body: JSON.stringify({ name: finalName, type: "front-end", ...branchId ? { branchId } : {} })
       });
       if (createRes.status !== 409)
         break;
@@ -2826,11 +3096,14 @@ function createClient(auth, config) {
     }
     const orgSlug = await auth.getOrganizationSlug();
     const appSlug = created.slug ?? created.id;
-    const editorUrl = `${config.appUrl}/${orgSlug}/apps/${appSlug}`;
+    const branchName = app.editing_version.branch?.name;
+    const branchQuery = typeof branchName === "string" ? `branch=${encodeURIComponent(branchName)}` : "";
+    const editorUrl = `${config.appUrl}/${orgSlug}/apps/${appSlug}${branchQuery ? `?${branchQuery}` : ""}`;
     const homeHandle = homePage.handle ?? "home";
-    const viewerUrl = `${config.appUrl}/applications/${created.id}/${encodeURIComponent(homeHandle)}?env=development&version=${encodeURIComponent(versionName)}`;
+    const viewerUrl = `${config.appUrl}/applications/${created.id}/${encodeURIComponent(homeHandle)}?env=development&version=${encodeURIComponent(versionName)}${branchQuery ? `&${branchQuery}` : ""}`;
     return {
       app_id: created.id,
+      ...branchId ? { branch_id: branchId } : {},
       version_id: versionId,
       home_page_id: homePage.id,
       app_url: editorUrl,
@@ -2840,6 +3113,21 @@ function createClient(auth, config) {
     };
   }
   async function createAppVersion(params) {
+    const inventory = await auth.authedFetch(`/api/apps/${encodeURIComponent(params.appId)}/versions`);
+    await assertOk(inventory, "createAppVersion.readSource");
+    const body = await inventory.json();
+    const source = body.versions?.find((version) => version.id === params.versionFromId);
+    if (!source) {
+      throw new Error(`ToolJet createAppVersion failed: version ${params.versionFromId} was not found in app ${params.appId}.`);
+    }
+    if (String(source.version_type ?? source.versionType).toLowerCase() === "branch") {
+      throw new Error("Cannot clone a branch head into a named draft. Save a named version in ToolJet, then use its version_id as the clone source. No version was created or published.");
+    }
+    const sourceBranchId = source.branch_id ?? source.branchId;
+    const selectedBranchId = branchIdFor(config);
+    if (selectedBranchId && typeof sourceBranchId === "string" && sourceBranchId !== selectedBranchId) {
+      throw new Error("Cannot create a named draft on a different branch from its source. Select the source version's branch before cloning. No version was created.");
+    }
     const res = await auth.authedFetch(`/api/apps/${encodeURIComponent(params.appId)}/versions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -2892,6 +3180,9 @@ function createClient(auth, config) {
       const version2 = body.versions?.find((candidate) => candidate.id === versionId);
       if (!version2) {
         throw new Error(`ToolJet releaseApp failed: version ${versionId} was not found in app ${appId}.`);
+      }
+      if (String(version2.version_type ?? version2.versionType).toLowerCase() === "branch") {
+        throw new Error("Cannot release a branch head. Save a named version in ToolJet, then select that exact version for release.");
       }
       return {
         id: versionId,
@@ -4205,7 +4496,20 @@ function createClient(auth, config) {
     inviteWorkspaceUser,
     updateWorkspaceUser,
     setWorkspaceUserArchived,
+    branchId: config.branchId,
     createApp,
+    async listWorkspaceBranches() {
+      const res = await auth.authedFetch("/api/workspace-branches");
+      if (res.status === 404)
+        return { branches: [], is_multi_branching_enabled: false };
+      await assertOk(res, "listWorkspaceBranches");
+      const body = await res.json();
+      return {
+        branches: body.branches.map((branch) => ({ id: branch.id, name: branch.name, is_default: branch.isDefault })),
+        active_branch_id: branchIdFor(config) ?? body.activeBranchId,
+        is_multi_branching_enabled: body.isMultiBranchingEnabled
+      };
+    },
     createAppVersion,
     switchAppVersion,
     releaseApp,
@@ -4401,15 +4705,25 @@ function paintsDarkCanvasInLightMode(definition2) {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.18;
 }
 export {
-  registerPackDefinitions as A,
-  projectJavascriptRuntime as B,
-  projectAppSettings as C,
-  compactTheme as D,
-  pageSettingProperties as E,
+  getComponentCatalogTool as A,
+  updateComponentsTool as B,
+  registerPackDefinitions as C,
+  projectJavascriptRuntime as D,
+  projectAppSettings as E,
   FLEX_MIN_WIDTH_PX_DESCRIPTION as F,
-  appendedChildOrders as G,
-  reparentAdditions as H,
+  compactTheme as G,
+  pageSettingProperties as H,
+  appendedChildOrders as I,
+  reparentAdditions as J,
+  branchIdFor as K,
+  withBranchContext as L,
+  allowedApiOrigins as M,
+  ALLOWED_API_ORIGINS_VAR as N,
+  identityFromHeaders as O,
   PartialWriteError as P,
+  BASE_URL_HEADER as Q,
+  PAT_HEADER as R,
+  SESSION_TOKEN_HEADER as S,
   ToolJetHttpError as T,
   WORKSPACE_ACCESS_KEYS as W,
   WORKSPACE_PERMISSION_KEYS as a,
@@ -4428,14 +4742,14 @@ export {
   normalizeComponentSpec as n,
   completedPartialWrites as o,
   paintsDarkCanvasInLightMode as p,
-  isFlexContainerType as q,
+  currentBranchId as q,
   resolveRef as r,
-  batchChildOrders as s,
-  childOrderProperty as t,
-  strictEntry as u,
+  isFlexContainerType as s,
+  batchChildOrders as t,
+  childOrderProperty as u,
   validateTableBatch as v,
   workspaceAccessKeys as w,
-  createClient as x,
-  getComponentCatalogTool as y,
-  updateComponentsTool as z
+  strictEntry as x,
+  loadConfig as y,
+  createClient as z
 };

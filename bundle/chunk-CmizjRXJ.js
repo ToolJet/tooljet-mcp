@@ -1,9 +1,9 @@
 import { createRequire } from "node:module";
-import { ax as external_exports, ay as nodeCatalog, az as validateGraph, aA as specSchema, aB as compileGraph, aC as assertWorkflowJavaScript, aD as controlFlowEdges } from "./chunk-DtQIWAeP.js";
-import { p as parseExpression, a as parse, r as readCatalog } from "./chunk--cm-cFrL.js";
-import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-nEOjGGpO.js";
-import { r as require_moment } from "./chunk-00I8NlQo.js";
-import { e7 as __toESM, e5 as __commonJS } from "./chunk-BJ6ur0AF.js";
+import { b0 as external_exports, b1 as nodeCatalog, b2 as validateGraph, b3 as specSchema, b4 as compileGraph, b5 as assertWorkflowJavaScript, b6 as controlFlowEdges } from "./chunk-Csl8mO51.js";
+import { p as parseExpression, a as parse, r as readCatalog } from "./chunk-C1y-3rfY.js";
+import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-Cd-rK1dm.js";
+import { r as require_moment } from "./chunk-B2ExoG2l.js";
+import { e8 as __toESM, e6 as __commonJS } from "./chunk-C1Uan0hB.js";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { readFileSync } from "node:fs";
@@ -4068,8 +4068,8 @@ function validateQueryOptions(kind, options, executionContext = "app") {
       errors.push({ code: "missing_target", path: targets[0], message: `${kind}/${operation} names nothing to act on: set ${targets.join(" or ")}.` });
     }
   }
-  const required2 = intersection(matching.map((variant) => variant.required));
-  for (const path of required2) {
+  const required = intersection(matching.map((variant) => variant.required));
+  for (const path of required) {
     const value = valueAtPath(options, path);
     if (value === void 0 || value === null || value === "") {
       errors.push({
@@ -4152,6 +4152,20 @@ function validateQueryOptions(kind, options, executionContext = "app") {
       });
     }
   }
+  if (kind === "tooljetdb" && operation === "delete_rows") {
+    const limit = valueAtPath(options, "delete_rows.limit");
+    const hasOrder = ["order_column", "order_column_id"].some((key) => {
+      const value = valueAtPath(options, `delete_rows.${key}`);
+      return typeof value === "string" && value.trim() !== "";
+    });
+    if ((limit === void 0 || Boolean(limit)) && !hasOrder) {
+      errors.push({
+        code: "missing_delete_order",
+        path: "delete_rows.order_column",
+        message: "ToolJet DB delete_rows defaults to limit 1 and bounded deletes require an explicit order. Set delete_rows.order_column or order_column_id to the actual primary key from get_table_schema. Preserve the intended filters and limit; do not assume the primary key is named id."
+      });
+    }
+  }
   if (kind === "tooljetdb" && (operation === "update_rows" || operation === "delete_rows")) {
     const filtersPath = `${operation}.where_filters`;
     const filters = valueAtPath(options, filtersPath);
@@ -4170,18 +4184,6 @@ function validateQueryOptions(kind, options, executionContext = "app") {
         code: "malformed_where_filters",
         path: filtersPath,
         message: `ToolJet DB update_rows requires "${filtersPath}"; without it the write is unfiltered and updates EVERY ROW in the table. Add {"0": {"column", "operator", "value"}}.`
-      });
-    }
-  }
-  if (kind === "tooljetdb" && operation === "delete_rows") {
-    const deleteRows = valueAtPath(options, "delete_rows");
-    const limit = isObject(deleteRows) ? deleteRows.limit : void 0;
-    const ordered = isObject(deleteRows) && Boolean(deleteRows.order_column || deleteRows.order_column_id);
-    if (limit !== "" && !ordered) {
-      errors.push({
-        code: "unordered_delete_limit",
-        path: "delete_rows.limit",
-        message: 'ToolJet DB delete_rows needs "limit": "" (delete every row the where_filters match, as the App Builder does) or a limit with "order_column" (for example "id"). Without either, ToolJet applies limit 1 with no order and the production database refuses the delete, so it fails every time in the released app.'
       });
     }
   }
@@ -4790,334 +4792,53 @@ return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
   };
 }
 createRequire(import.meta.url);
-var TableQuotaError = class extends Error {
-  code = "TJDB_TABLE_LIMIT_REACHED";
-  status = 451;
-  retryable = false;
-  constructor() {
-    super("The workspace has reached its ToolJet Database table limit. Stop creating tables. Ask the user to reuse existing tables, free table capacity, or increase the workspace allowance before continuing. Keep resources already created; do not delete tables automatically.");
-    this.name = "TableQuotaError";
-  }
-};
-function tableQuotaError(error) {
-  const seen = /* @__PURE__ */ new Set();
-  while (error instanceof Error && !seen.has(error)) {
-    if (error instanceof TableQuotaError)
-      return error;
-    seen.add(error);
-    error = error.cause;
-  }
-  return void 0;
-}
-createRequire(import.meta.url);
-function ok(value) {
-  return { content: [{ type: "text", text: JSON.stringify(value) }] };
-}
-function fail(err) {
-  const message = err instanceof Error ? err.message : String(err);
-  const quota = tableQuotaError(err);
-  const text2 = quota ? JSON.stringify({ error: {
-    code: quota.code,
-    status: quota.status,
-    retryable: quota.retryable,
-    message: quota.message,
-    details: message
-  } }) : `Error: ${message}`;
-  return { content: [{ type: "text", text: text2 }], isError: true };
-}
-var schemas = /* @__PURE__ */ new Map();
-function exposeActions(source, definitions, selector = "action") {
-  source.description += " Individually exposed operations: " + definitions.map((action) => action.name).join(", ") + ".";
-  const handler = source.handler;
-  return definitions.map(({ action, required: required2, optional = [], ...definition }) => {
-    let schema = schemas.get(definition.name);
-    if (!schema) {
-      const fields = {};
-      for (const key of [...required2, ...optional]) {
-        if (key === selector || !source.inputSchema[key])
-          throw new Error(`Invalid action field: ${definition.name}.${key}`);
-        fields[key] = source.inputSchema[key];
-      }
-      schema = external_exports.object(fields).required(Object.fromEntries(required2.map((key) => [key, true]))).strict();
-      if (required2.includes("confirm"))
-        schema = schema.extend({ confirm: external_exports.literal(true) });
-      schemas.set(definition.name, schema);
-    }
-    const input = schema;
-    return {
-      ...definition,
-      strictInput: true,
-      inputSchema: input.shape,
-      async handler(args) {
-        try {
-          return await handler({ ...input.parse(args), [selector]: action });
-        } catch (error) {
-          return fail(error);
-        }
-      }
-    };
-  });
-}
-createRequire(import.meta.url);
-var userRole = external_exports.enum(["admin", "builder", "end-user"]);
-var userStatus = external_exports.enum(["active", "archived", "invited"]);
-var listWorkspaceAppsInput = external_exports.object({
-  page: external_exports.number().int().positive().optional(),
-  search_text: external_exports.string().trim().max(100).describe("Filter by app name.").optional(),
-  folder_id: external_exports.string().uuid().describe("Folder ID returned by list_workspace_folders.").optional()
-}).strict();
-var listWorkspaceFoldersInput = external_exports.object({
-  search_text: external_exports.string().trim().max(100).describe("Case-insensitive folder-name search.").optional()
-}).strict();
-function listWorkspaceAppsTool(client) {
-  return {
-    name: "list_workspace_apps",
-    title: "List Workspace Apps",
-    strictInput: true,
-    annotations: {
-      readOnlyHint: true,
-      destructiveHint: false,
-      openWorldHint: false
-    },
-    description: "List front-end apps in the workspace pinned to the current ToolJet connection, with pagination, app-name search, and optional folder_id filtering. Discover folder IDs with list_workspace_folders. Each app includes folders: [{id,name}] (empty when unfiled). The top-level folder describes the selected folder, or is null. meta.workspace_folder_count counts visible app folders; meta.folder_app_count counts matching apps in the selected folder (null without a folder filter). meta.total_count remains the workspace-wide count of matching apps even with folder_id; use meta.folder_app_count for the folder. This cannot inspect or switch to another workspace.",
-    inputSchema: listWorkspaceAppsInput.shape,
-    async handler(input) {
-      try {
-        const args = listWorkspaceAppsInput.parse(input);
-        return ok(await client.listWorkspaceApps({ page: args.page, searchText: args.search_text, folderId: args.folder_id }));
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-function listWorkspaceFoldersTool(client) {
-  return {
-    name: "list_workspace_folders",
-    title: "List Workspace Folders",
-    strictInput: true,
-    annotations: {
-      readOnlyHint: true,
-      destructiveHint: false,
-      openWorldHint: false
-    },
-    description: "List visible front-end app folders in the workspace pinned to the current ToolJet connection. Returns folders: [{id,name,app_count}] and meta.total_count (matching folders). app_count counts apps visible to you. search_text filters folder names, not app names. Includes empty folders when ToolJet permits you to see them. Pass a returned id as folder_id to list_workspace_apps to read that folder\u2019s apps with pagination and app-name search. OAuth connections require the apps scope; existing ToolJet permissions still apply.",
-    inputSchema: listWorkspaceFoldersInput.shape,
-    async handler(input) {
-      try {
-        const args = listWorkspaceFoldersInput.parse(input);
-        return ok(await client.listWorkspaceFolders({ searchText: args.search_text }));
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-function listWorkspaceUsersTool(client) {
-  return {
-    name: "list_workspace_users",
-    title: "List Workspace Users",
-    annotations: {
-      readOnlyHint: true,
-      destructiveHint: false,
-      openWorldHint: false
-    },
-    description: "List users in the workspace pinned to the current ToolJet connection. Supports pagination, search, and status filtering. OAuth connections require the workspace_users scope.",
-    inputSchema: {
-      page: external_exports.number().int().positive().optional(),
-      search_text: external_exports.string().trim().max(100).optional(),
-      filter_status: userStatus.optional()
-    },
-    async handler(args) {
-      try {
-        return ok(await client.listWorkspaceUsers({
-          page: args.page,
-          searchText: args.search_text,
-          status: args.filter_status
-        }));
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-function required(value, label) {
-  if (!value)
-    throw new Error(`${label} is required for this action.`);
-  return value;
-}
-var manageWorkspaceUsersInput = external_exports.object({
-  action: external_exports.enum(["invite", "update", "archive", "unarchive"]),
-  organization_user_id: external_exports.string().uuid().optional(),
-  email: external_exports.string().email().optional(),
-  first_name: external_exports.string().trim().max(99).optional(),
-  last_name: external_exports.string().trim().max(99).optional(),
-  role: userRole.optional(),
-  group_ids: external_exports.array(external_exports.string().uuid()).max(100).optional(),
-  user_metadata: external_exports.record(external_exports.string(), external_exports.unknown()).optional(),
-  confirm: external_exports.boolean().optional()
-}).strict();
-function manageWorkspaceUsersTool(client) {
-  return {
-    name: "manage_workspace_users",
-    title: "Manage Workspace Users",
-    strictInput: true,
-    // invite is additive, but update overwrites a member's role and archive revokes their access to
-    // the workspace, so the hint covers its widest action.
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: true
-    },
-    description: "Manage users only in the workspace pinned to the current ToolJet connection. OAuth connections require the workspace_users scope. Invite, update, archive, and unarchive require confirm:true. Updates can change role, add existing custom group_ids while preserving all other memberships, and merge supplied user_metadata keys while preserving other keys. Empty group_ids never removes groups. first_name/last_name are only supported for invitations: editing an existing name requires a Super Admin in ToolJet and is refused by this workspace-scoped tool before any mutation. Updates are read back before success is reported. Use manage_workspace_groups remove_member for explicit membership removal. Updates cannot change email or passwords. Changing a role to end-user also transfers any apps owned by that user to the acting admin under ToolJet's existing behavior; disclose this before confirmation. Invite accepts email, optional names/role/group_ids; archive/unarchive accepts only organization_user_id. Never substitute role or membership changes for a rejected name edit, or bypass the connection owner's ToolJet permissions.",
-    inputSchema: manageWorkspaceUsersInput.shape,
-    async handler(input) {
-      try {
-        const args = manageWorkspaceUsersInput.parse(input);
-        const allowed = args.action === "invite" ? ["email", "first_name", "last_name", "role", "group_ids"] : args.action === "update" ? ["organization_user_id", "first_name", "last_name", "role", "group_ids", "user_metadata"] : ["organization_user_id"];
-        for (const key of Object.keys(args)) {
-          if (!["action", "confirm", ...allowed].includes(key))
-            throw new Error(`${key} is not supported for ${args.action}; no changes were made.`);
-        }
-        if (args.action === "update" && (args.first_name !== void 0 || args.last_name !== void 0)) {
-          throw new Error("Name changes require a Super Admin and are not supported by this workspace-scoped tool. No changes were made. Ask a Super Admin to edit the name in ToolJet.");
-        }
-        if (args.confirm !== true) {
-          throw new Error(`${args.action} requires confirm:true after checking the exact workspace user.`);
-        }
-        if (args.action === "invite") {
-          await client.inviteWorkspaceUser({
-            email: required(args.email, "email"),
-            role: args.role ?? "end-user",
-            firstName: args.first_name,
-            lastName: args.last_name,
-            groupIds: args.group_ids
-          });
-          return ok({ invited: true, email: args.email });
-        }
-        const organizationUserId = required(args.organization_user_id, "organization_user_id");
-        if (args.action === "archive" || args.action === "unarchive") {
-          await client.setWorkspaceUserArchived(organizationUserId, args.action === "archive");
-          return ok({ organization_user_id: organizationUserId, status: args.action === "archive" ? "archived" : "active" });
-        }
-        if (args.first_name === void 0 && args.last_name === void 0 && args.role === void 0 && !args.group_ids?.length && args.user_metadata === void 0) {
-          throw new Error("update requires at least one changed field.");
-        }
-        const result = await client.updateWorkspaceUser(organizationUserId, {
-          firstName: args.first_name,
-          lastName: args.last_name,
-          role: args.role,
-          addGroupIds: args.group_ids,
-          userMetadata: args.user_metadata
-        });
-        return ok({
-          organization_user_id: organizationUserId,
-          ...result,
-          ...!result.updated ? { already_satisfied: true } : {}
-        });
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-var workspaceUsers = [
-  {
-    action: "invite",
-    name: "invite_workspace_user",
-    title: "Invite Workspace User",
-    description: "Send an email invitation to the pinned workspace. Requires confirm:true for the exact recipient and access. Role defaults to end-user; optional group_ids add existing custom groups. Requires workspace_users OAuth scope and ToolJet permissions. Do not automatically retry an uncertain send.",
-    required: ["email", "confirm"],
-    optional: ["first_name", "last_name", "role", "group_ids"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true }
-  },
-  {
-    action: "update",
-    name: "update_workspace_user",
-    title: "Update Workspace User",
-    description: "Change a workspace member role, add custom group memberships, or merge supplied metadata keys. Preserves other memberships and metadata; empty group_ids removes nothing. Changing role to end-user transfers owned apps to the acting admin: disclose before confirm:true. Cannot change names, email, or passwords. Requires workspace_users scope and ToolJet permissions; reads back updates.",
-    required: ["organization_user_id", "confirm"],
-    optional: ["role", "group_ids", "user_metadata"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  },
-  {
-    action: "archive",
-    name: "archive_workspace_user",
-    title: "Archive Workspace User",
-    description: "Archive the exact member of the pinned workspace and revoke their workspace access. Requires confirm:true, workspace_users OAuth scope, and ToolJet permissions.",
-    required: ["organization_user_id", "confirm"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  },
-  {
-    action: "unarchive",
-    name: "unarchive_workspace_user",
-    title: "Unarchive Workspace User",
-    description: "Restore an archived member to active status in the pinned workspace. Requires confirm:true, workspace_users OAuth scope, and ToolJet permissions.",
-    required: ["organization_user_id", "confirm"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  }
-];
-function workspaceUserActionTools(source) {
-  return exposeActions(source, workspaceUsers);
-}
-createRequire(import.meta.url);
 var COMPONENT_FX_GUIDANCE = "For properties/styles/validation with an FX toggle, use `{ value: <expression>, fxActive: true }` only for bindings/conditions/calculations the normal control cannot express. Keep defaults and panel-editable constants (including `{{true}}`/`{{false}}`, numbers, selections, colors) out of FX. For nested Table columns/buttons/options and KeyValuePair fields, add the property key (e.g. `columnVisibility`, `disableButton`, `fieldVisibility`, `isEditable`) to that object's `fxActiveFields`, preserving other entries. ";
 var COMPONENT_FX_UPDATE_GUIDANCE = COMPONENT_FX_GUIDANCE + "Updates must include both `value` and `fxActive`; revert with `{ value: <constant>, fxActive: false }`. For nested Table fields, remove only reverted property keys from `fxActiveFields`. KeyValuePair arrays merge by index; verify flag removals and report retained flags. ";
 export {
-  generateEditContract as $,
-  validateQueryOptions as A,
-  arithmeticWriteWarning as B,
+  extractRowCount as A,
+  emptyViewerOnlyParams as B,
   COMPONENT_FX_UPDATE_GUIDANCE as C,
-  COMPONENT_FX_GUIDANCE as D,
-  sameReadSource as E,
-  extractRowCount as F,
+  emptyParamsNote as D,
+  unresolvedNote as E,
+  declaredParameterDefaults as F,
   GUI_LIST_ROWS_KEYS as G,
-  emptyViewerOnlyParams as H,
-  emptyParamsNote as I,
-  unresolvedNote as J,
-  declaredParameterDefaults as K,
+  inPackSet as H,
+  registerComponentSchemas as I,
+  newPackSet as J,
+  capabilityRequestSchema as K,
   LARGE_READ_ROW_THRESHOLD as L,
-  inPackSet as M,
-  listWorkspaceAppsTool as N,
-  listWorkspaceFoldersTool as O,
-  listWorkspaceUsersTool as P,
-  manageWorkspaceUsersTool as Q,
-  registerComponentSchemas as R,
+  getWorkflowCapabilities as M,
+  lint as N,
+  apply as O,
+  deleteNode as P,
+  editContractSchema as Q,
+  generateEditContract as R,
   SQL_DIALECT as S,
-  TableQuotaError as T,
-  newPackSet as U,
-  capabilityRequestSchema as V,
-  getWorkflowCapabilities as W,
-  lint as X,
-  apply as Y,
-  deleteNode as Z,
-  editContractSchema as _,
+  allComponentSchemas as T,
   activePackSet as a,
-  workspaceUserActionTools as a0,
-  allComponentSchemas as a1,
   getCatalog as b,
   getLegacyComponentReplacement as c,
   bindingSpans as d,
   assertPersistableQueryToggles as e,
-  fail as f,
+  assertWorkflowQueryOptions as f,
   getComponentSchema as g,
-  assertWorkflowQueryOptions as h,
-  exposeActions as i,
-  assessQueryRead as j,
-  resolvedReadRefusal as k,
+  assessQueryRead as h,
+  resolvedReadRefusal as i,
+  resolveStaticBindings as j,
+  applyResolvedBindings as k,
   lintBindingNames as l,
-  resolveStaticBindings as m,
+  connectorLabel as m,
   normalizeWorkflowQueryOptions as n,
-  ok as o,
-  applyResolvedBindings as p,
-  connectorLabel as q,
+  normalizeQueryToggles as o,
+  issueMessages as p,
+  queryToggleIssues as q,
   require_lib as r,
   sqlConnectorPath as s,
-  tableQuotaError as t,
-  normalizeQueryToggles as u,
-  toggleRewriteWarning as v,
+  toggleRewriteWarning as t,
+  normalizeQueryOptions as u,
+  validateQueryOptions as v,
   workflowMappingMatches as w,
-  issueMessages as x,
-  queryToggleIssues as y,
-  normalizeQueryOptions as z
+  arithmeticWriteWarning as x,
+  COMPONENT_FX_GUIDANCE as y,
+  sameReadSource as z
 };
