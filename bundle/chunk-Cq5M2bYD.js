@@ -966,6 +966,22 @@ A call that works: ${exampleCall(args, summary, codeApp)}`);
 }
 var appPermissions = [
   {
+    action: "list_screens",
+    name: "list_app_permission_screens",
+    title: "List App Screen Permissions",
+    description: "Read the Code mode screens and their access restrictions for one app. Does not change access.",
+    required: ["app_id"],
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
+  },
+  {
+    action: "list_queries",
+    name: "list_app_permission_queries",
+    title: "List App Query Permissions",
+    description: "Read the queries and their access restrictions for one app. Does not change access.",
+    required: ["app_id"],
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
+  },
+  {
     action: "list_subjects",
     name: "list_app_permission_subjects",
     title: "List App Permission Subjects",
