@@ -678,4 +678,17 @@ describe('loadConfig with the CLI\'s stored login (tooljet auth login)', () => {
     process.env.TOOLJET_URL = 'https://tj.example.com/';
     expect(loadConfig().pat).toBe('tj_pat_stored');
   });
+
+  // Review, 2026-11-11: with only TOOLJET_DEPLOYMENT_URL set (it doubles as the API origin), a login stored for
+  // another instance was used, so requests went to that instance while the app links pointed at the configured one.
+  it('checks the stored login against TOOLJET_DEPLOYMENT_URL or TOOLJET_APP_URL when TOOLJET_URL is unset', () => {
+    for (const name of ['TOOLJET_DEPLOYMENT_URL', 'TOOLJET_APP_URL']) {
+      process.env[name] = 'https://other.example.com';
+      expect(() => loadConfig()).toThrow(/TOOLJET_PAT/);
+      process.env[name] = 'https://tj.example.com';
+      const c = loadConfig();
+      expect([c.apiUrl, c.appUrl, c.pat]).toEqual(['https://tj.example.com', 'https://tj.example.com', 'tj_pat_stored']);
+      delete process.env[name];
+    }
+  });
 });
