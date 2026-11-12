@@ -9,7 +9,7 @@ import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { ok, fail, type ToolDef } from './types.js';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { CLI_HOME_PREFIX, cleanOldProjects, touchProject, withBuildSlot } from '../codeBuildLimits.js';
-import { browserUserQueryProblems } from '../serverUserBindings.js';
+import { browserUserQueryProblems, isCodeModeApp } from '../serverUserBindings.js';
 import { buildSummary, formatProblems, fromChecked, parseBuildProblems, type CheckedProblem } from '../codeTypeErrors.js';
 import { buildInService, buildServiceUrl } from '../codeBuildService.js';
 import {
@@ -420,6 +420,37 @@ const requireServerModeCli = (): Promise<void> => {
   return serverModeChecked;
 };
 
+/**
+ * Before create_app makes a Code mode app: whether this machine can build one. Code mode projects are made and built by
+ * the ToolJet CLI where this MCP server runs, so without a CLI that knows server mode the app would be created and then
+ * fail at code_app_scaffold. The handshake carries no credential. Undefined when it can; else what to tell the user.
+ */
+let cliReady: Promise<string | undefined> | undefined;
+export const codeCliProblem = (): Promise<string | undefined> => {
+  if (process.env.MCP_CODE_CLI_HANDSHAKE === '0') return Promise.resolve(undefined);
+  cliReady ??= (async () => {
+    const [cmd, pre] = process.env.TOOLJET_CLI ? ['node', [process.env.TOOLJET_CLI]] : ['tooljet', []];
+    const env: NodeJS.ProcessEnv = { HOME: buildHome(), USERPROFILE: buildHome(), FORCE_COLOR: '0', NODE_ENV: 'production', TOOLJET_CLI_SERVER_MODE: '1' };
+    for (const name of HOST_ENV) if (process.env[name] !== undefined) env[name] = process.env[name];
+    try {
+      const { stdout, stderr } = await run(cmd, [...pre, 'app', 'server-mode'], { timeout: 60_000, env });
+      if (strip(stdout + stderr).includes('tooljet-server-mode:1')) return undefined;
+      return CLI_TOO_OLD;
+    } catch (err) {
+      const e = err as { code?: unknown; stdout?: string; stderr?: string };
+      if (e.code === 'ENOENT' || /MODULE_NOT_FOUND|Cannot find module/.test(e.stderr ?? '')) return CLI_MISSING;
+      return /Unknown command|not a tooljet command|command .*not found/i.test(strip((e.stdout ?? '') + (e.stderr ?? ''))) ? CLI_TOO_OLD : CLI_MISSING;
+    }
+  })().then((problem) => {
+    if (problem) cliReady = undefined; // installed later: asked again on the next call
+    return problem;
+  });
+  return cliReady;
+};
+const CLI_FIX = 'install it with `npm install -g @tooljet/cli@beta` (or set TOOLJET_CLI to its entry point), then try again';
+const CLI_MISSING = `Code mode apps are built with the ToolJet CLI on the machine running this MCP server, and it is not installed: ${CLI_FIX}. No app was created. Or build a visual app (create_app without build_mode).`;
+const CLI_TOO_OLD = `The ToolJet CLI on the machine running this MCP server is too old for Code mode: ${CLI_FIX}. No app was created. Or build a visual app (create_app without build_mode).`;
+
 async function cli(cwd: string, args: string[], timeoutMs = 300_000): Promise<{ code: number; output: string }> {
   mkdirSync(baseRoot(), { recursive: true });
   await requireServerModeCli();
@@ -585,8 +616,10 @@ export function codeAppScaffoldTool(context: CodeContext): ToolDef {
           const restored = created ? await restoreStoredCode(dir) : {};
           const naming = await nameApp(context.client, dir, args.display_name, args.rename_from);
           if (!existing && !restored.stored_code) rememberScaffold(dir);
+          const visual = created ? await visualAppWarning(context.client, args.app_id) : undefined;
           return ok({
             project_dir: dir,
+            ...(visual ? { warning: visual } : {}),
             ...naming,
             ...restored,
             ...(existing ? { existing_project: existing, note: `This app already has a project, "${existing}"; it is used as is.` } : {}),
@@ -601,6 +634,21 @@ export function codeAppScaffoldTool(context: CodeContext): ToolDef {
       }
     }),
   };
+}
+
+/**
+ * A new project on an app ToolJet holds as visual (create_app without build_mode "code"): its code still runs, on a
+ * code page, but ToolJet treats it as a visual app (no stored code, no Code mode release checks). Said, not refused:
+ * an app with no build mode on an older server is still built this way. Null when the app could not be read.
+ */
+export async function visualAppWarning(client: Pick<ToolJetClient, 'getApp'>, appId: string): Promise<string | undefined> {
+  const app = await client.getApp(appId).catch(() => null);
+  if (!app || isCodeModeApp(app)) return undefined;
+  return (
+    'This app was created as a visual app, not a Code mode app (create_app without build_mode "code"). Its code will ' +
+    'run, but ToolJet will treat it as visual. If this is a new build, create the app again with create_app ' +
+    'build_mode "code" and scaffold that one instead; tell the user which app you used.'
+  );
 }
 
 /*

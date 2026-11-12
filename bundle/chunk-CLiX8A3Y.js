@@ -1,1022 +1,13 @@
 import { createRequire } from "node:module";
-import { p as paintsDarkCanvasInLightMode, T as ToolJetHttpError, W as WORKSPACE_ACCESS_KEYS, a as WORKSPACE_PERMISSION_KEYS, w as workspaceAccessKeys } from "./chunk-C_xL9Jh_.js";
-import { b0 as external_exports, b8 as ok, b7 as fail, ba as exposeActions } from "./chunk-Csl8mO51.js";
-import { z as libraryPins, A as defaultPack, B as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION } from "./chunk-CzEla2h4.js";
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import { j as union, A as string, V as number, a7 as looseObject, U as object, a8 as literal, i as unknown, ax as _enum, aU as array, ai as intersection, K as record, aQ as boolean, N as preprocess, T as optional, ae as iso_exports, aD as discriminatedUnion, aI as custom, Y as _null2 } from "./chunk-Dl7vSZwt.js";
+import { j as union, A as string, V as number, a7 as looseObject, U as object, a8 as literal, i as unknown, ax as _enum, aU as array, ai as intersection, K as record$1, aQ as boolean, N as preprocess, T as optional, ae as iso_exports, aD as discriminatedUnion, aI as custom, Y as _null2 } from "./chunk-Dl7vSZwt.js";
 import { e8 as __toESM, e6 as __commonJS } from "./chunk-C1Uan0hB.js";
+import { b0 as external_exports, b8 as ok, b7 as fail, ba as exposeActions } from "./chunk-Csl8mO51.js";
+import { W as WORKSPACE_ACCESS_KEYS, a as WORKSPACE_PERMISSION_KEYS, w as workspaceAccessKeys } from "./chunk-M7e4iJ0f.js";
 import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-Cd-rK1dm.js";
-createRequire(import.meta.url);
-var colorPair = external_exports.object({
-  light: external_exports.string().trim().min(1).max(100).describe("Color used in light mode; hex is recommended."),
-  dark: external_exports.string().trim().min(1).max(100).describe("Color used in dark mode; hex is recommended.")
-}).strict();
-var themeDefinition = external_exports.object({
-  brand: external_exports.object({
-    colors: external_exports.object({
-      primary: colorPair,
-      secondary: colorPair.optional(),
-      tertiary: colorPair.optional()
-    }).strict()
-  }).strict(),
-  text: external_exports.object({
-    font: external_exports.string().trim().min(1).max(200),
-    colors: external_exports.object({
-      primary: colorPair,
-      placeholder: colorPair.optional(),
-      disabled: colorPair.optional()
-    }).strict()
-  }).strict(),
-  border: external_exports.object({
-    radius: external_exports.object({
-      default: external_exports.number().nonnegative(),
-      small: external_exports.number().nonnegative(),
-      large: external_exports.number().nonnegative()
-    }).strict(),
-    colors: external_exports.object({
-      default: colorPair,
-      weak: colorPair.optional(),
-      disabled: colorPair.optional()
-    }).strict()
-  }).strict(),
-  systemStatus: external_exports.object({
-    colors: external_exports.object({
-      success: colorPair,
-      error: colorPair.optional(),
-      warning: colorPair.optional()
-    }).strict()
-  }).strict(),
-  surface: external_exports.object({
-    colors: external_exports.object({
-      appBackground: colorPair,
-      surface1: colorPair,
-      surface2: colorPair,
-      surface3: colorPair
-    }).strict()
-  }).strict()
-}).strict();
-var ACCENT_MENU = [
-  { name: "Indigo", hex: "#4F46E5", fits: "software, analytics, internal tools" },
-  { name: "Violet", hex: "#7C3AED", fits: "creative, education, product teams" },
-  { name: "Fuchsia", hex: "#C026D3", fits: "consumer, beauty, events" },
-  { name: "Rose", hex: "#E11D48", fits: "hospitality, retail, food" },
-  { name: "Coral", hex: "#EA580C", fits: "logistics, field service, sports" },
-  { name: "Amber", hex: "#B45309", fits: "manufacturing, construction, real estate" },
-  { name: "Emerald", hex: "#059669", fits: "finance, sustainability, health" },
-  { name: "Teal", hex: "#0D9488", fits: "healthcare, travel, operations" },
-  { name: "Sky", hex: "#0284C7", fits: "support, IT, aviation, marine" }
-];
-var MENU_TEXT = ACCENT_MENU.map((a) => `${a.name} ${a.hex} (${a.fits})`).join(", ");
-var hsl = (hex2) => {
-  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(hex2.trim());
-  if (!m)
-    return null;
-  const full = m[1].length === 3 ? m[1].replace(/./g, (c) => c + c) : m[1];
-  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const l = (max + min) / 2;
-  const d = max - min;
-  if (d === 0)
-    return { h: 0, s: 0, l };
-  const s = d / (1 - Math.abs(2 * l - 1));
-  const h = max === r ? (g - b) / d % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
-  return { h: (h * 60 + 360) % 360, s, l };
-};
-var accentWarning = (definition) => {
-  const light = definition?.brand?.colors?.primary?.light;
-  if (typeof light !== "string")
-    return null;
-  const c = hsl(light);
-  if (!c)
-    return null;
-  const kind = c.l < 0.22 ? "near-black" : c.s < 0.2 ? "grey" : c.h >= 212 && c.h <= 226 && c.s > 0.75 && c.l >= 0.45 && c.l <= 0.66 ? "the stock blue" : null;
-  if (!kind)
-    return null;
-  return `The theme's primary ${light} is ${kind}, which reads plain. Unless the request names this colour or the brand uses it, pick an accent from the menu by the request's brand, industry or mood: ${MENU_TEXT}. Keep the canvas and neutrals light and lightly tinted toward it.`;
-};
-var STANDARD_PRIMARY = { brand: { colors: { primary: { light: "#2563EB" } } } };
-var here = dirname(fileURLToPath(import.meta.url));
-var standardThemeCandidates = [
-  resolve(here, "../../data/default-theme.json"),
-  resolve(here, "../data/default-theme.json")
-];
-var standardThemeCache;
-function loadStandardTheme() {
-  if (!standardThemeCache) {
-    const path = standardThemeCandidates.find((candidate) => existsSync(candidate));
-    if (!path) {
-      throw new Error(`standard theme file not found (looked in ${standardThemeCandidates.join(", ")})`);
-    }
-    standardThemeCache = JSON.parse(readFileSync(path, "utf8"));
-  }
-  return standardThemeCache;
-}
-var derivedThemeSchema = external_exports.object({
-  name: external_exports.string().trim().min(5).max(100),
-  definition: themeDefinition
-}).strict();
-async function resolveTheme(client, choice) {
-  const themes2 = await client.listAppThemes();
-  if (process.env.MCP_AGENT_PACK_LOOK === "own" && (choice === "standard" || choice === "workspace_default")) {
-    const basic = themes2.find((theme) => theme.isBasic && !theme.isDisabled);
-    if (basic)
-      return basic;
-  }
-  const wanted = choice === "standard" ? loadStandardTheme() : typeof choice === "object" ? choice : void 0;
-  if (wanted) {
-    const existing = themes2.find((theme) => theme.name === wanted.name && !theme.isDisabled);
-    if (existing)
-      return existing;
-    return client.createAppTheme({ name: wanted.name, definition: wanted.definition, isDefault: false });
-  }
-  const named = themes2.find((theme) => theme.name === choice || theme.id === choice);
-  if (!named)
-    throw new Error(`Theme "${String(choice)}" is not available in the active workspace.`);
-  if (named.isDisabled)
-    throw new Error(`Theme "${named.name}" is disabled and cannot be selected.`);
-  return named;
-}
-function createAppTool(client) {
-  return {
-    name: "create_app",
-    title: "Create App",
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: false,
-      openWorldHint: false
-    },
-    description: 'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, app_url (a backward-compatible alias for editor_url), and the theme that was applied. Honor explicit or selected themes first. Otherwise derive a theme from a brand, industry or customer type (see references/themes.md) and pass theme:{name, definition}; include complete brand, text, border, systemStatus and surface tokens with light/dark values, not a font-only or partial definition. It is created once per workspace by name and applied. Otherwise the app gets the standard theme ("ToolJet Modern": neutral greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. If a theme cannot be created (for example a licence gate) the app is still created and the result carries a theme warning. New apps are built in ToolJet UI 2.0 (component_library "ui2": types starting with Shad, laid out in FlexContainers); pass component_library "ui1" only when the user asks for the classic ToolJet widgets.',
-    inputSchema: {
-      name: external_exports.string().min(1),
-      theme: external_exports.union([external_exports.string().min(1), derivedThemeSchema]).optional(),
-      app_mode: external_exports.enum(["light", "dark"]).optional().describe("Open the app in this mode. Pass 'dark' when the request asks for a dark app, so the theme's dark values paint every surface; never paint dark backgrounds by hand on a light-mode app."),
-      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in, saved on the app (the components panel lists it). Default "ui2", ToolJet UI 2.0; "ui1" (ToolJet UI 1.0, the native widgets) only when the user asks for it.'),
-      component_pack: external_exports.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION)
-    },
-    async handler(args) {
-      try {
-        if (typeof args.theme === "object")
-          derivedThemeSchema.parse(args.theme);
-        const created = await client.createApp(args.name);
-        const componentLibrary = args.component_library ?? "ui2";
-        const choice = args.theme ?? "standard";
-        const pins = libraryPins();
-        const pinned = pins ? { customComponentLibraries: pins } : {};
-        const result = {
-          ...created,
-          component_library: componentLibrary,
-          ...componentLibrary === "ui2" && (args.component_pack || defaultPack()) ? { component_pack: (args.component_pack || defaultPack()).toLowerCase() } : {},
-          theme: { mode: "workspace_default" }
-        };
-        const savedLibrary = savedComponentLibrary(componentLibrary, args.component_pack);
-        const saveLibrary = () => Promise.resolve().then(() => client.updateAppSettings({
-          appId: created.app_id,
-          versionId: created.version_id,
-          globalSettings: { componentLibrary: savedLibrary, ...pinned }
-        })).catch((libraryErr) => {
-          result.component_library_warning = `Could not save component_library "${componentLibrary}": ${libraryErr instanceof Error ? libraryErr.message : String(libraryErr)}. Build in it anyway.`;
-        });
-        if (choice === "workspace_default") {
-          await saveLibrary();
-          return ok(result);
-        }
-        const label = typeof choice === "object" ? choice.name : choice;
-        try {
-          const theme = await resolveTheme(client, choice);
-          const appMode = args.app_mode ?? (typeof choice === "object" && paintsDarkCanvasInLightMode(choice.definition) ? "dark" : void 0);
-          await client.updateAppSettings({
-            appId: created.app_id,
-            versionId: created.version_id,
-            globalSettings: { theme, componentLibrary: savedLibrary, ...pinned, ...appMode ? { appMode } : {} }
-          });
-          const mode = choice === "standard" ? "standard" : typeof choice === "object" ? "derived" : "named";
-          const accentNote = mode === "standard" ? accentWarning(STANDARD_PRIMARY) : mode === "derived" ? accentWarning(choice.definition) : null;
-          result.theme = { mode, id: theme.id, name: theme.name, ...appMode ? { app_mode: appMode } : {}, ...accentNote ? { accent_note: accentNote } : {} };
-        } catch (themeErr) {
-          await saveLibrary();
-          result.theme = {
-            mode: "workspace_default",
-            warning: `Could not apply theme "${label}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
-          };
-        }
-        return ok(result);
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
-var THEME_LICENCE_USER_MESSAGE = "Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.";
-async function applyToApp(client, theme, args, definition) {
-  if (!args.app_id || !args.version_id)
-    return void 0;
-  const mode = args.app_mode ?? (paintsDarkCanvasInLightMode(definition) ? "dark" : void 0);
-  await client.updateAppSettings({
-    appId: args.app_id,
-    versionId: args.version_id,
-    globalSettings: { theme, ...mode ? { appMode: mode } : {} }
-  });
-  return { app_id: args.app_id, version_id: args.version_id, ...mode ? { app_mode: mode } : {} };
-}
-var hex = (h, s, l) => {
-  const channel = (n) => {
-    const k = (n + h / 30) % 12;
-    return Math.round(255 * (l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, "0");
-  };
-  return `#${channel(0)}${channel(8)}${channel(4)}`;
-};
-function definitionFromChoices(args) {
-  const accent = args.primary ? hsl(args.primary) : null;
-  if (!args.primary || !accent)
-    return void 0;
-  const { h, s: sat, l } = accent;
-  const pair = (light, dark, hue = h) => ({ light: hex(hue, light[0], light[1]), dark: hex(hue, dark[0], dark[1]) });
-  const base = loadStandardTheme().definition;
-  const radius = args.radius ?? base.border.radius.default;
-  return {
-    brand: {
-      colors: {
-        primary: { light: args.primary, dark: hex(h, sat, Math.max(l, 0.62)) },
-        secondary: pair([0.45, 0.22], [0.4, 0.78]),
-        tertiary: pair([0.65, 0.42], [0.65, 0.68], (h + 35) % 360)
-      }
-    },
-    text: {
-      font: args.font ?? base.text.font,
-      colors: { primary: pair([0.28, 0.13], [0.18, 0.94]), placeholder: pair([0.12, 0.45], [0.1, 0.65]), disabled: pair([0.1, 0.68], [0.08, 0.45]) }
-    },
-    border: {
-      radius: { default: radius, small: Math.max(radius - 2, 0), large: radius + 4 },
-      colors: { default: pair([0.22, 0.86], [0.12, 0.24]), weak: pair([0.24, 0.91], [0.12, 0.19]), disabled: pair([0.16, 0.82], [0.1, 0.28]) }
-    },
-    systemStatus: base.systemStatus,
-    surface: {
-      colors: {
-        appBackground: pair([0.3, 0.965], [0.16, 0.075]),
-        surface1: { light: "#ffffff", dark: hex(h, 0.14, 0.11) },
-        surface2: pair([0.28, 0.94], [0.13, 0.145]),
-        surface3: pair([0.24, 0.9], [0.12, 0.19])
-      }
-    }
-  };
-}
-function requireValue(value, label) {
-  if (value === void 0)
-    throw new Error(`manage_theme requires ${label} for this action.`);
-  return value;
-}
-async function readTheme(client, themeId) {
-  const theme = (await client.listAppThemes()).find((candidate) => candidate.id === themeId);
-  if (!theme)
-    throw new Error(`Theme "${themeId}" is not available in the active workspace.`);
-  return theme;
-}
-function manageThemeTool(client) {
-  return {
-    name: "manage_theme",
-    title: "Manage Workspace Theme",
-    // list/create/rename are safe, but the same tool also deletes a theme, so the hint covers its widest action.
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: false
-    },
-    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. create with app_id and version_id also applies the theme to that app (in app_mode, else in dark mode when its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same name, so there is no need to list themes first. Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass include_definitions:true (or theme_id) to get a definition.",
-    inputSchema: {
-      action: external_exports.enum(["list", "create", "set_default", "update_definition", "rename", "delete"]),
-      theme_id: external_exports.string().uuid().optional(),
-      name: external_exports.string().trim().min(1).max(100).optional(),
-      primary: external_exports.string().regex(/^#[0-9a-fA-F]{6}$/).optional().describe("create: the accent colour as a hex. With font and radius, this is all a theme needs; the rest is derived from its hue"),
-      font: external_exports.string().trim().min(1).max(100).optional().describe("create, with primary: one font family name"),
-      radius: external_exports.number().min(0).max(32).optional().describe("create, with primary: corner radius in px"),
-      definition: themeDefinition.optional(),
-      is_default: external_exports.boolean().optional(),
-      confirm: external_exports.boolean().optional(),
-      include_definitions: external_exports.boolean().optional(),
-      app_id: external_exports.string().uuid().optional().describe("create only: apply the theme to this app as well"),
-      version_id: external_exports.string().uuid().optional().describe("create only, with app_id: the app version to apply it to"),
-      app_mode: external_exports.enum(["light", "dark"]).optional().describe("create only, with app_id: open the app in this mode. Pass 'dark' when the request asks for a dark app: the theme's dark values then paint every surface, and ToolJet's own parts (tables, inputs) draw for them. Never paint dark backgrounds by hand on a light-mode app.")
-    },
-    async handler(args) {
-      try {
-        if (args.action === "list") {
-          const themes2 = await client.listAppThemes();
-          if (args.include_definitions)
-            return ok({ themes: themes2 });
-          if (args.theme_id) {
-            const one = themes2.find((theme) => theme.id === args.theme_id);
-            return one ? ok({ themes: [one] }) : fail(new Error(`Theme "${args.theme_id}" not found.`));
-          }
-          return ok({
-            themes: themes2.map(({ id, name, isDefault, isBasic, isDisabled }) => ({ id, name, isDefault, isBasic, isDisabled })),
-            note: "Definitions omitted; pass include_definitions:true or theme_id to read one."
-          });
-        }
-        if (args.action === "create") {
-          const missing = [
-            ...args.name === void 0 ? ['name (at least 5 characters, the brand or app, e.g. "Harbor Ledger")'] : [],
-            ...args.definition === void 0 && !definitionFromChoices(args) ? ['primary (the accent as a hex colour, e.g. "#0f766e"; font and radius are optional)'] : []
-          ];
-          if (missing.length)
-            throw new Error(`manage_theme create needs ${missing.join(" and ")}. Send them together in one call.`);
-          const name = requireValue(args.name, "name");
-          if (name.length < 5)
-            throw new Error("Theme name must contain at least 5 characters.");
-          if (name === "ToolJet")
-            throw new Error('The reserved theme name "ToolJet" cannot be used.');
-          const existing = (await client.listAppThemes()).find((theme) => theme.name === name && !theme.isDisabled);
-          if (existing) {
-            const applied = await applyToApp(client, existing, args, existing.definition ?? args.definition);
-            return ok({
-              theme: existing,
-              reused: true,
-              ...applied ? { applied } : {},
-              warnings: [
-                `Theme "${name}" already exists in this workspace; returned it instead of creating a duplicate. ` + (applied ? "It is applied to the app." : "Apply it with update_app_settings, or use update_definition to change it.")
-              ]
-            });
-          }
-          try {
-            const definition = requireValue(args.definition ?? definitionFromChoices(args), "primary (a hex colour; font and radius are optional)");
-            const created = await client.createAppTheme({
-              name,
-              definition,
-              isDefault: args.is_default ?? false
-            });
-            const applied = await applyToApp(client, created, args, definition);
-            const accent = accentWarning(definition);
-            return ok({ theme: created, ...applied ? { applied } : {}, ...accent ? { warnings: [accent] } : {} });
-          } catch (error) {
-            if (error instanceof ToolJetHttpError && error.status === 451) {
-              return ok({
-                theme: null,
-                licensed: false,
-                user_message: THEME_LICENCE_USER_MESSAGE,
-                warnings: [
-                  "Custom themes are not included in this ToolJet plan (HTTP 451). The app keeps the workspace default theme. Do not retry theme creation or guess a theme id; build the app on the default theme and repeat `user_message` to the user in the closing handoff."
-                ]
-              });
-            }
-            throw error;
-          }
-        }
-        const themeId = requireValue(args.theme_id, "theme_id");
-        await readTheme(client, themeId);
-        if (args.action === "set_default") {
-          await client.setDefaultAppTheme(themeId, args.is_default ?? true);
-          return ok({ theme: await readTheme(client, themeId) });
-        }
-        if (args.action === "update_definition") {
-          await client.updateAppThemeDefinition(themeId, requireValue(args.definition, "definition"));
-          const accent = accentWarning(args.definition);
-          return ok({ theme: await readTheme(client, themeId), ...accent ? { warnings: [accent] } : {} });
-        }
-        if (args.action === "rename") {
-          await client.renameAppTheme(themeId, requireValue(args.name, "name"));
-          return ok({ theme: await readTheme(client, themeId) });
-        }
-        if (args.confirm !== true) {
-          throw new Error(`Deleting theme "${themeId}" requires confirm:true after exact-target user approval.`);
-        }
-        await client.deleteAppTheme(themeId);
-        return ok({ deleted: true, theme_id: themeId });
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-var themes = [
-  {
-    action: "list",
-    name: "list_workspace_themes",
-    title: "List Workspace Theme Definitions",
-    description: "Read workspace themes with id, name, and flags. Unlike list_app_themes, this also supports include_definitions:true for all definitions or theme_id for one full definition. Does not change themes.",
-    required: [],
-    optional: ["theme_id", "include_definitions"],
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
-  },
-  {
-    action: "create",
-    name: "create_workspace_theme",
-    title: "Create Workspace Theme",
-    description: "Create a custom workspace theme, or reuse an existing active theme of the same name. Supply a name of at least five characters and either a full definition or primary (a hex accent), with optional font and radius, for a new theme. is_default can replace the workspace default. With both app_id and version_id, applies it to that app and selects dark mode for a dark light-mode canvas. License gates apply.",
-    required: ["name"],
-    optional: ["definition", "primary", "font", "radius", "is_default", "app_id", "version_id", "app_mode"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  },
-  {
-    action: "set_default",
-    name: "set_default_workspace_theme",
-    title: "Set Default Workspace Theme",
-    description: "Change whether an existing workspace theme is the default. is_default defaults to true; false removes its default status. Changes the workspace default used by apps.",
-    required: ["theme_id"],
-    optional: ["is_default"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  },
-  {
-    action: "update_definition",
-    name: "update_workspace_theme_definition",
-    title: "Update Workspace Theme Definition",
-    description: "Replace the full token definition of an existing workspace theme, affecting apps using it. Definitions require brand, text, border, systemStatus, and surface tokens with light/dark colors. License gates apply.",
-    required: ["theme_id", "definition"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  },
-  {
-    action: "rename",
-    name: "rename_workspace_theme",
-    title: "Rename Workspace Theme",
-    description: "Replace the name of an existing workspace theme. Requires a theme_id from the active workspace; ToolJet permissions and license gates apply.",
-    required: ["theme_id", "name"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  },
-  {
-    action: "delete",
-    name: "delete_workspace_theme",
-    title: "Delete Workspace Theme",
-    description: "Delete an existing workspace theme only after explicit approval of that exact theme. Requires confirm:true. ToolJet permissions and license gates apply.",
-    required: ["theme_id", "confirm"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  }
-];
-function themeActionTools(source) {
-  return exposeActions(source, themes);
-}
-createRequire(import.meta.url);
-var CODE_PAGE_TRUE = /* @__PURE__ */ new Set([true, "true", "{{true}}"]);
-function codeScreens(summary) {
-  const pageIds = new Set(summary.pages.map((page) => page.id));
-  const screens = [];
-  for (const page of summary.pages) {
-    for (const component of page.components) {
-      const props = component.properties ?? {};
-      if (component.parent || !CODE_PAGE_TRUE.has(props.codePage?.value))
-        continue;
-      let routes = props.routes?.value;
-      if (typeof routes === "string") {
-        try {
-          routes = JSON.parse(routes);
-        } catch {
-          routes = [];
-        }
-      }
-      if (!Array.isArray(routes))
-        continue;
-      for (const route of routes) {
-        if (typeof route?.id !== "string" || typeof route?.path !== "string")
-          continue;
-        if (typeof route.pageId !== "string" || !pageIds.has(route.pageId))
-          continue;
-        screens.push({
-          route_id: route.id,
-          path: route.path,
-          ...typeof route.title === "string" ? { title: route.title } : {},
-          page_id: route.pageId,
-          code_page_id: page.id
-        });
-      }
-    }
-  }
-  return screens;
-}
-function findScreen(summary, route) {
-  const screens = codeScreens(summary);
-  const screen = screens.find((s) => s.route_id === route) ?? screens.find((s) => s.path === route);
-  if (screen)
-    return screen;
-  throw new Error(`No Code mode screen "${route}" in app "${summary.app_id}". ` + (screens.length ? `Its screens: ${screens.map((s) => `${s.route_id} (${s.path})`).join(", ")}.` : "The app has no Code mode screens."));
-}
-function findQuery(summary, ref) {
-  const lower = ref.toLowerCase();
-  return summary.queries.find((q) => q.id === ref) ?? summary.queries.find((q) => q.name === ref) ?? summary.queries.find((q) => q.name?.toLowerCase() === lower);
-}
-function isCodeApp(summary) {
-  return summary.pages.some((page) => page.components.some((component) => {
-    const props = component.properties ?? {};
-    return !component.parent && CODE_PAGE_TRUE.has(props.codePage?.value);
-  }));
-}
-function findResource(summary, resourceType, resourceId) {
-  if (resourceType === "page") {
-    const page = summary.pages.find((candidate) => candidate.id === resourceId) ?? summary.pages.find((candidate) => candidate.name === resourceId);
-    if (page)
-      return { type: resourceType, id: page.id, name: page.name };
-  } else if (resourceType === "query") {
-    const query = findQuery(summary, resourceId);
-    if (query)
-      return { type: resourceType, id: query.id, name: query.name };
-  } else {
-    for (const page of summary.pages) {
-      const component = page.components.find((candidate) => candidate.id === resourceId);
-      if (component) {
-        return {
-          type: resourceType,
-          id: component.id,
-          name: component.name,
-          component_type: component.type,
-          page_id: page.id,
-          page_name: page.name
-        };
-      }
-    }
-  }
-  throw new Error(`${resourceType} "${resourceId}" does not belong to app "${summary.app_id}". Use get_app_summary and do not guess resource ids.`);
-}
-function normalizePermission(permissions) {
-  const permission = permissions[0];
-  if (!permission)
-    return { access: "all", permission_id: null };
-  if (permission.type === "SINGLE") {
-    return {
-      access: "users",
-      permission_id: permission.id,
-      users: (Array.isArray(permission.users) ? permission.users : []).map((entry) => entry?.user).filter(Boolean).map((user) => ({
-        id: user.id,
-        name: [user.firstName, user.lastName].filter(Boolean).join(" ") || void 0,
-        email: user.email
-      }))
-    };
-  }
-  if (permission.type === "GROUP") {
-    return {
-      access: "groups",
-      permission_id: permission.id,
-      groups: (Array.isArray(permission.groups) ? permission.groups : []).map((entry) => entry?.permissionGroup).filter(Boolean).map((group) => ({ id: group.id, name: group.name }))
-    };
-  }
-  return { access: String(permission.type ?? "unknown").toLowerCase(), permission_id: permission.id };
-}
-function planLimits(features) {
-  if (!features)
-    return void 0;
-  const known = Object.entries({
-    query_limits: features.appPermissionQuery,
-    screen_limits: features.appPermissionPages,
-    server_side_current_user: features.serverSideGlobalResolve
-  }).filter(([, value]) => typeof value === "boolean");
-  return known.length ? Object.fromEntries(known) : void 0;
-}
-async function subjectGroups(client, open) {
-  const openIds = new Map(open.map((group) => [group.id, group]));
-  let workspace;
-  try {
-    workspace = await client.listWorkspaceGroups();
-  } catch {
-    workspace = void 0;
-  }
-  if (!workspace) {
-    return {
-      groups: open.map((group) => ({ ...group, can_open_app: true })),
-      complete: false
-    };
-  }
-  const groups = workspace.map((group) => ({
-    id: group.id,
-    name: group.name,
-    type: group.type,
-    ...typeof openIds.get(group.id)?.count === "number" ? { count: openIds.get(group.id).count } : {},
-    can_open_app: openIds.has(group.id),
-    ...group.disabled ? { disabled: true } : {}
-  }));
-  for (const group of open)
-    if (!groups.some((known) => known.id === group.id))
-      groups.push({ ...group, can_open_app: true });
-  return { groups, complete: true };
-}
-function viewRule(appId, appName, groupId) {
-  return {
-    name: `${(appName || "App").slice(0, 40)} (view)`,
-    type: "app",
-    groupId,
-    isAll: false,
-    createResourcePermissionObject: {
-      canEdit: false,
-      canView: true,
-      hideFromDashboard: false,
-      canAccessDevelopment: false,
-      canAccessStaging: false,
-      canAccessProduction: false,
-      canAccessReleased: true,
-      resourcesToAdd: [{ appId }]
-    }
-  };
-}
-async function groupDirectory(client, appId) {
-  const subjects = await client.listAppPermissionSubjects(appId);
-  const { groups, complete } = await subjectGroups(client, subjects.groups);
-  return { groups, complete, openIds: new Set(subjects.groups.map((group) => group.id)) };
-}
-function resolveGroups(directory, refs) {
-  const ids = [];
-  const unknown2 = [];
-  for (const ref of refs) {
-    const lower = ref.toLowerCase();
-    const group = directory.groups.find((g) => g.id === ref) ?? directory.groups.find((g) => g.name === ref) ?? directory.groups.find((g) => g.name?.toLowerCase() === lower);
-    if (group)
-      ids.push(group.id);
-    else if (!directory.complete && UUID.test(ref))
-      ids.push(ref);
-    else
-      unknown2.push(ref);
-  }
-  return { ids: [...new Set(ids)], unknown: unknown2 };
-}
-var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-function groupsToGrant(directory, groupIds, grant) {
-  const missing = groupIds.filter((id) => !directory.openIds.has(id));
-  if (!missing.length)
-    return [];
-  const byId = new Map(directory.groups.map((group) => [group.id, group]));
-  const names = missing.map((id) => byId.get(id)?.name ?? id);
-  if (!grant) {
-    throw new Error(`${names.join(", ")} cannot open this app yet, so a limit to ${missing.length > 1 ? "them" : "it"} would leave ${missing.length > 1 ? "their" : "its"} members without the screen or query. Pass grant_app_access: true to give each of them view access to this app only (the released app), or give them access in Workspace settings > Groups. Nothing was changed.`);
-  }
-  const disabled = missing.filter((id) => byId.get(id)?.disabled);
-  if (disabled.length) {
-    throw new Error(`${disabled.map((id) => byId.get(id)?.name ?? id).join(", ")} cannot be changed under the current plan, so it cannot be given access to this app. Nothing was changed.`);
-  }
-  return missing;
-}
-async function removeGrants(client, appId, granted) {
-  const left = [];
-  for (const grant of granted) {
-    try {
-      const rules = await client.listWorkspaceGroupAccess(grant.group_id);
-      const added = rules.filter((rule) => rule.id && rule.name === grant.rule_name && rule.resources.some((r) => r.id === appId));
-      for (const rule of added)
-        await client.writeWorkspaceGroupAccess("DELETE", grant.group_id, "app", rule.id);
-    } catch {
-      left.push(grant.name ?? grant.group_id);
-    }
-  }
-  return left;
-}
-async function grantGroups(client, appId, appName, directory, missing) {
-  const byId = new Map(directory.groups.map((group) => [group.id, group]));
-  const granted = [];
-  const undo = async (reason) => {
-    const left = await removeGrants(client, appId, granted);
-    throw new Error(`${reason} The access rules added here were removed${left.length ? `, except for ${left.join(", ")} (remove it in Workspace settings > Groups)` : ""}.`);
-  };
-  for (const id of missing) {
-    const rule = viewRule(appId, appName, id);
-    try {
-      await client.writeWorkspaceGroupAccess("POST", id, "app", void 0, rule);
-    } catch (error) {
-      await undo(`${byId.get(id)?.name ?? id} could not be given access to this app: ${error.message}.`);
-    }
-    granted.push({ group_id: id, ...byId.get(id)?.name ? { name: byId.get(id).name } : {}, rule_name: rule.name });
-  }
-  const after = new Set((await client.listAppPermissionSubjects(appId)).groups.map((group) => group.id));
-  const still = missing.filter((id) => !after.has(id));
-  if (still.length) {
-    await undo(`ToolJet did not confirm that ${still.map((id) => byId.get(id)?.name ?? id).join(", ")} can open this app after the access rule was added.`);
-  }
-  return granted;
-}
-function resolveTargets(args, summary, problems) {
-  const targets = [];
-  const routes = [...args.route !== void 0 ? [args.route] : [], ...args.routes ?? []];
-  const queries = [...args.query !== void 0 ? [args.query] : [], ...args.queries ?? []];
-  const type = args.resource_type === "screen" ? "page" : args.resource_type;
-  if (routes.length && type && type !== "page") {
-    problems.push(`route names a Code mode screen (a page permission), so resource_type "${args.resource_type}" does not fit: leave resource_type out.`);
-  }
-  if (queries.length && type && type !== "query") {
-    problems.push(`query names a query, so resource_type "${args.resource_type}" does not fit: leave resource_type out.`);
-  }
-  for (const route of [...new Set(routes)]) {
-    try {
-      const screen = findScreen(summary, route);
-      targets.push({
-        resourceType: "page",
-        resourceId: screen.page_id,
-        resource: {
-          ...findResource(summary, "page", screen.page_id),
-          screen: { route_id: screen.route_id, path: screen.path, title: screen.title }
-        }
-      });
-    } catch (error) {
-      problems.push(error.message);
-    }
-  }
-  const unknownQueries = [];
-  for (const ref of [...new Set(queries)]) {
-    const query = findQuery(summary, ref);
-    if (!query)
-      unknownQueries.push(ref);
-    else
-      targets.push({ resourceType: "query", resourceId: query.id, resource: { type: "query", id: query.id, name: query.name } });
-  }
-  if (unknownQueries.length) {
-    const names = summary.queries.map((q) => q.name ?? q.id);
-    problems.push(`No query ${unknownQueries.map((q) => `"${q}"`).join(", ")} in this app. ` + (names.length ? `Its queries: ${names.join(", ")}.` : "The app has no queries."));
-  }
-  if (args.resource_id !== void 0) {
-    const kinds = type ? [type] : ["query", "page", "component"];
-    let found;
-    for (const kind of kinds) {
-      try {
-        found = { resourceType: kind, resourceId: "", resource: findResource(summary, kind, args.resource_id) };
-        found.resourceId = String(found.resource.id);
-        break;
-      } catch {
-      }
-    }
-    if (found)
-      targets.push(found);
-    else
-      problems.push(`resource_id "${args.resource_id}" is no ${type ?? "page, query or component"} of this app. Pass a query by its name with query, or a screen with route.`);
-  }
-  if (!routes.length && !queries.length && args.resource_id === void 0) {
-    const screens = codeScreens(summary);
-    problems.push("Name what to limit: route (or routes) for screens, query (or queries) for queries, by name or id." + (screens.length ? ` Screens: ${screens.map((s) => s.path).join(", ")}.` : "") + (summary.queries.length ? ` Queries: ${summary.queries.map((q) => q.name ?? q.id).join(", ")}.` : "") + // A build sent set with groups and grant_app_access but nothing to limit, four times over (2026-11-09).
-    (args.grant_app_access || args.groups?.length || args.group_ids?.length ? " There is no app-wide grant: a group gets into this app with the first screen or query limited to it (grant_app_access does that part). Everyone who can open the app already sees what is not limited, so when no screen or query should be limited, there is nothing to set." + (isCodeApp(summary) && !screens.length ? " Screens are listed here after code_app_install has saved the routes." : "") : ""));
-  }
-  const seen = /* @__PURE__ */ new Set();
-  return targets.filter((target) => {
-    const key = `${target.resourceType}:${target.resourceId}`;
-    if (seen.has(key))
-      return false;
-    seen.add(key);
-    return true;
-  });
-}
-function exampleCall(args, summary, codeApp) {
-  const example = { action: args.action === "get" ? "get" : args.action, app_id: args.app_id };
-  const screens = summary ? codeScreens(summary) : [];
-  if (args.routes?.length)
-    example.routes = args.routes;
-  else if (args.route)
-    example.route = args.route;
-  else if (args.queries?.length)
-    example.queries = args.queries;
-  else if (args.query)
-    example.query = args.query;
-  else if (screens.length)
-    example.route = screens[screens.length - 1].path;
-  else if (summary?.queries.length)
-    example.query = summary.queries[0].name ?? summary.queries[0].id;
-  else
-    example.route = "/finance";
-  if (args.action === "set") {
-    if (args.users?.length || args.user_ids?.length)
-      example.users = args.users ?? args.user_ids;
-    else
-      example.groups = args.groups ?? args.group_ids ?? ["Finance"];
-    if (!codeApp)
-      example.confirm = true;
-  }
-  if (args.action === "clear")
-    example.confirm = true;
-  return JSON.stringify(example);
-}
-function manageAppPermissionsTool(client) {
-  return {
-    name: "manage_app_permissions",
-    title: "Manage App Permissions",
-    // get/list_subjects only read, but set overwrites an access rule and clear broadens access to
-    // every user who can reach the app, so the hint covers its widest action.
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: false
-    },
-    description: `Server-enforced access to an app's screens and queries: who can open a Code mode screen (route) or run a query. Example: {"action":"set","app_id":"<id>","route":"/finance","groups":["Finance"]}; for queries "query":"finance_queue" (name or id), and "routes" or "queries" take several at once with the same groups. groups take names or ids, users take emails or ids; access_type and resource_type are inferred. In a Code mode app, set needs no confirm, and a named group that cannot open the app first gets view access to this app only (grant_app_access defaults to true; false refuses instead). In other apps set needs confirm:true after the user approves the exact rule. clear (back to everyone who can open the app) always needs confirm:true. list_subjects: every workspace group with can_open_app, and plan (whether this plan enforces query and screen limits and resolves {{globals.server.currentUser}} on the server). list_screens: each route with its access. list_queries: each query of the app with its access. A screen limit hides the screen; the data it shows is protected only by limiting the queries that return it. Visual pages and components: resource_id (resource_type is optional). License gates apply.`,
-    inputSchema: {
-      action: external_exports.enum(["list_subjects", "list_screens", "list_queries", "get", "set", "clear"]),
-      app_id: external_exports.string().uuid(),
-      route: external_exports.string().min(1).max(200).optional().describe("A Code mode screen by route path or id (app.json routes)."),
-      routes: external_exports.array(external_exports.string().min(1).max(200)).min(1).max(50).optional().describe("Several screens at once."),
-      query: external_exports.string().min(1).max(200).optional().describe("A query by name or id."),
-      queries: external_exports.array(external_exports.string().min(1).max(200)).min(1).max(100).optional().describe("Several queries at once."),
-      groups: external_exports.array(external_exports.string().min(1).max(200)).min(1).max(100).optional().describe("Group names or ids."),
-      users: external_exports.array(external_exports.string().min(1).max(320)).min(1).max(100).optional().describe("User emails or ids."),
-      resource_type: external_exports.enum(["page", "query", "component", "screen"]).optional().describe("Inferred; only needed with resource_id."),
-      resource_id: external_exports.string().min(1).max(200).optional(),
-      access_type: external_exports.enum(["users", "groups"]).optional().describe("Inferred from groups or users."),
-      user_ids: external_exports.array(external_exports.string().min(1)).min(1).max(100).optional(),
-      group_ids: external_exports.array(external_exports.string().min(1)).min(1).max(100).optional(),
-      confirm: external_exports.boolean().optional(),
-      grant_app_access: external_exports.boolean().optional().describe("set with groups: give a group that cannot open the app view access to this app only first (default true in a Code mode app)")
-    },
-    async handler(args) {
-      try {
-        if (args.action === "list_subjects") {
-          const [subjects, features] = await Promise.all([
-            client.listAppPermissionSubjects(args.app_id),
-            client.getLicenseFeatureAccess().catch(() => void 0)
-          ]);
-          const { groups, complete } = await subjectGroups(client, subjects.groups);
-          const plan = planLimits(features);
-          return ok({
-            app_id: args.app_id,
-            users: subjects.users,
-            groups,
-            ...plan ? { plan } : {},
-            note: complete ? "A group with can_open_app false cannot open the app: a set naming it gives it view access to this app only first (in a Code mode app by default, elsewhere with grant_app_access:true)." : "Only the groups that can open the app are listed: the workspace group list could not be read."
-          });
-        }
-        if (args.action === "list_screens") {
-          const summary2 = await client.getAppSummary(args.app_id);
-          const screens = await Promise.all(codeScreens(summary2).map(async (screen) => ({
-            ...screen,
-            ...normalizePermission(await client.getAppPermission(args.app_id, "page", screen.page_id))
-          })));
-          return ok({ app_id: args.app_id, screens });
-        }
-        if (args.action === "list_queries") {
-          const summary2 = await client.getAppSummary(args.app_id);
-          const queries = await Promise.all(summary2.queries.map(async (q) => ({
-            query_id: q.id,
-            name: q.name,
-            ...normalizePermission(await client.getAppPermission(args.app_id, "query", q.id))
-          })));
-          return ok({ app_id: args.app_id, queries, limited: queries.filter((q) => q.access !== "all").length });
-        }
-        const summary = await client.getAppSummary(args.app_id);
-        const codeApp = isCodeApp(summary);
-        const problems = [];
-        const targets = resolveTargets(args, summary, problems);
-        let accessType;
-        let subjectIds = [];
-        let directory;
-        if (args.action === "set") {
-          const groupRefs = [...args.groups ?? [], ...args.group_ids ?? []];
-          const userRefs = [...args.users ?? [], ...args.user_ids ?? []];
-          if (groupRefs.length && userRefs.length) {
-            problems.push("Pass groups or users, not both: one limit is to groups or to named users.");
-          } else if (!groupRefs.length && !userRefs.length) {
-            problems.push("Name who keeps access: groups (names or ids) or users (emails or ids).");
-          } else {
-            accessType = groupRefs.length ? "groups" : "users";
-            if (args.access_type && args.access_type !== accessType) {
-              problems.push(`access_type "${args.access_type}" does not match the ${accessType} passed: leave access_type out.`);
-            }
-          }
-          if (accessType === "groups") {
-            directory = await groupDirectory(client, args.app_id);
-            const { ids, unknown: unknown2 } = resolveGroups(directory, groupRefs);
-            if (unknown2.length) {
-              problems.push(`${unknown2.map((g) => `"${g}"`).join(", ")} ${unknown2.length > 1 ? "are not groups" : "is not a group"} of this workspace. Its groups: ${directory.groups.map((g) => g.name ?? g.id).join(", ")}.`);
-            }
-            subjectIds = ids;
-          } else if (accessType === "users") {
-            const users = (await client.listAppPermissionSubjects(args.app_id)).users;
-            const unknown2 = [];
-            for (const ref of userRefs) {
-              const lower = ref.toLowerCase();
-              const user = users.find((u) => u.id === ref) ?? users.find((u) => u.email?.toLowerCase() === lower);
-              if (user)
-                subjectIds.push(user.id);
-              else
-                unknown2.push(ref);
-            }
-            if (unknown2.length) {
-              problems.push(`${unknown2.map((u) => `"${u}"`).join(", ")} cannot open this app or is not a user of this workspace (users must already have access to the app; list_subjects lists them).`);
-            }
-            subjectIds = [...new Set(subjectIds)];
-            if (args.grant_app_access === true) {
-              problems.push("grant_app_access applies only to a limit to groups: leave it out with users.");
-            }
-          }
-          if (!codeApp && args.confirm !== true) {
-            problems.push("set on this app needs confirm:true after the user explicitly approves the exact access rule.");
-          }
-        }
-        if (args.action === "clear" && args.confirm !== true) {
-          problems.push("clear opens the resource to everyone who can open the app, so it needs confirm:true after the user approves it.");
-        }
-        if (problems.length) {
-          throw new Error(`manage_app_permissions ${args.action} was refused and nothing was changed:
-` + problems.map((problem) => `- ${problem}`).join("\n") + `
-A call that works: ${exampleCall(args, summary, codeApp)}`);
-        }
-        const one = targets.length === 1;
-        if (args.action === "get") {
-          const results2 = await Promise.all(targets.map(async (t) => ({ resource: t.resource, ...normalizePermission(await client.getAppPermission(args.app_id, t.resourceType, t.resourceId)) })));
-          return ok(one ? { app_id: args.app_id, ...results2[0] } : { app_id: args.app_id, results: results2 });
-        }
-        if (args.action === "clear") {
-          for (const t of targets)
-            await client.clearAppPermission(args.app_id, t.resourceType, t.resourceId);
-          const results2 = targets.map((t) => ({ resource: t.resource, access: "all", permission_id: null }));
-          return ok(one ? { app_id: args.app_id, ...results2[0] } : { app_id: args.app_id, results: results2 });
-        }
-        const grant = args.grant_app_access ?? codeApp;
-        const toGrant = accessType === "groups" ? groupsToGrant(directory, subjectIds, grant) : [];
-        const results = [];
-        for (const t of targets) {
-          try {
-            const permissions = await client.setAppPermission({
-              appId: args.app_id,
-              resourceType: t.resourceType,
-              resourceId: t.resourceId,
-              accessType,
-              subjectIds
-            });
-            results.push({ resource: t.resource, ...normalizePermission(permissions) });
-          } catch (error) {
-            results.push({ resource: t.resource, error: error.message });
-          }
-        }
-        const failed = results.filter((r) => r.error);
-        const failures = failed.map((r) => `${r.resource.name ?? r.resource.id}: ${r.error}`).join("; ");
-        if (failed.length === results.length) {
-          throw new Error(failures + (toGrant.length ? " No access to the app was given." : ""));
-        }
-        if (failed.length) {
-          return {
-            content: [{
-              type: "text",
-              text: JSON.stringify({
-                error: `${failed.length} of ${results.length} limits were not set: ${failures}.` + (toGrant.length ? " No access to the app was given." : "") + " Set the failed ones again; the others are in place.",
-                app_id: args.app_id,
-                applied: results.filter((r) => !r.error),
-                failed
-              })
-            }],
-            isError: true
-          };
-        }
-        let granted = [];
-        if (toGrant.length) {
-          try {
-            granted = await grantGroups(client, args.app_id, summary.name, directory, toGrant);
-          } catch (error) {
-            throw new Error(`The limits were set, but their groups cannot open this app, so their members cannot use those screens or queries yet: ${error.message} Give the groups access in Workspace settings > Groups, or run this again.`);
-          }
-        }
-        const grantNote = granted.length ? `${granted.map((g) => g.name ?? g.group_id).join(", ")} could not open this app, so ${granted.length > 1 ? "each now has" : "it now has"} view access to this app only (released app, rule "${granted[0].rule_name}").` : void 0;
-        const body = {
-          app_id: args.app_id,
-          ...one ? results[0] : { results },
-          ...granted.length ? { granted_app_access: granted, note: grantNote } : {}
-        };
-        return ok(body);
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-var appPermissions = [
-  {
-    action: "list_screens",
-    name: "list_app_permission_screens",
-    title: "List App Screen Permissions",
-    description: "Read the Code mode screens and their access restrictions for one app. Does not change access.",
-    required: ["app_id"],
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
-  },
-  {
-    action: "list_queries",
-    name: "list_app_permission_queries",
-    title: "List App Query Permissions",
-    description: "Read the queries and their access restrictions for one app. Does not change access.",
-    required: ["app_id"],
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
-  },
-  {
-    action: "list_subjects",
-    name: "list_app_permission_subjects",
-    title: "List App Permission Subjects",
-    description: "List users and groups eligible for resource access rules in one app. Subjects must already have app access. ToolJet permissions and license gates apply.",
-    required: ["app_id"],
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
-  },
-  {
-    action: "get",
-    name: "get_app_resource_permission",
-    title: "Get App Resource Permission",
-    description: "Read server-enforced access for one page, query, or component belonging to the selected app. Use exact resource IDs from get_app_summary.",
-    required: ["app_id", "resource_type", "resource_id"],
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
-  },
-  {
-    action: "set",
-    name: "set_app_resource_permission",
-    title: "Set App Resource Permission",
-    description: "Replace access to one app page, query, or component with selected users or groups. Supply user_ids for access_type users or group_ids for groups, never both. Requires confirm:true after explicit approval of the exact rule; existing app access and license gates still apply.",
-    required: ["app_id", "resource_type", "resource_id", "access_type", "confirm"],
-    optional: ["user_ids", "group_ids"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  },
-  {
-    action: "clear",
-    name: "clear_app_resource_permission",
-    title: "Clear App Resource Permission",
-    description: "Remove a resource access restriction, broadening access to every user who can access the app. Requires confirm:true after explicit approval of this exact page, query, or component.",
-    required: ["app_id", "resource_type", "resource_id", "confirm"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  }
-];
-function appPermissionActionTools(source) {
-  return exposeActions(source, appPermissions);
-}
+import "node:http";
+import { Http2ServerRequest, constants } from "node:http2";
+import { Readable } from "node:stream";
+import { h as assessQueryRead, i as resolvedReadRefusal, j as resolveStaticBindings, s as sqlConnectorPath, G as GUI_LIST_ROWS_KEYS, k as applyResolvedBindings, m as connectorLabel, S as SQL_DIALECT } from "./chunk-CmizjRXJ.js";
 createRequire(import.meta.url);
 var LATEST_PROTOCOL_VERSION = "2025-11-25";
 var DEFAULT_NEGOTIATED_PROTOCOL_VERSION = "2025-03-26";
@@ -1235,7 +226,7 @@ var ImplementationSchema = BaseMetadataSchema.extend({
 });
 var FormElicitationCapabilitySchema = intersection(object({
   applyDefaults: boolean().optional()
-}), record(string(), unknown()));
+}), record$1(string(), unknown()));
 var ElicitationCapabilitySchema = preprocess((value) => {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     if (Object.keys(value).length === 0) {
@@ -1246,7 +237,7 @@ var ElicitationCapabilitySchema = preprocess((value) => {
 }, intersection(object({
   form: FormElicitationCapabilitySchema.optional(),
   url: AssertObjectSchema.optional()
-}), record(string(), unknown()).optional()));
+}), record$1(string(), unknown()).optional()));
 var ClientTasksCapabilitySchema = looseObject({
   /**
    * Present if the client supports listing tasks.
@@ -1299,7 +290,7 @@ var ClientCapabilitiesSchema = object({
   /**
    * Experimental, non-standard capabilities that the client supports.
    */
-  experimental: record(string(), AssertObjectSchema).optional(),
+  experimental: record$1(string(), AssertObjectSchema).optional(),
   /**
    * Present if the client supports sampling from an LLM.
    */
@@ -1334,7 +325,7 @@ var ClientCapabilitiesSchema = object({
   /**
    * Extensions that the client supports. Keys are extension identifiers (vendor-prefix/extension-name).
    */
-  extensions: record(string(), AssertObjectSchema).optional()
+  extensions: record$1(string(), AssertObjectSchema).optional()
 });
 var InitializeRequestParamsSchema = BaseRequestParamsSchema.extend({
   /**
@@ -1353,7 +344,7 @@ var ServerCapabilitiesSchema = object({
   /**
    * Experimental, non-standard capabilities that the server supports.
    */
-  experimental: record(string(), AssertObjectSchema).optional(),
+  experimental: record$1(string(), AssertObjectSchema).optional(),
   /**
    * Present if the server supports sending log messages to the client.
    */
@@ -1400,7 +391,7 @@ var ServerCapabilitiesSchema = object({
   /**
    * Extensions that the server supports. Keys are extension identifiers (vendor-prefix/extension-name).
    */
-  extensions: record(string(), AssertObjectSchema).optional()
+  extensions: record$1(string(), AssertObjectSchema).optional()
 });
 var InitializeResultSchema = ResultSchema.extend({
   /**
@@ -1538,7 +529,7 @@ var ResourceContentsSchema = object({
    * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
    * for notes on _meta usage.
    */
-  _meta: record(string(), unknown()).optional()
+  _meta: record$1(string(), unknown()).optional()
 });
 var TextResourceContentsSchema = ResourceContentsSchema.extend({
   /**
@@ -1732,7 +723,7 @@ var GetPromptRequestParamsSchema = BaseRequestParamsSchema.extend({
   /**
    * Arguments to use for templating the prompt.
    */
-  arguments: record(string(), string()).optional()
+  arguments: record$1(string(), string()).optional()
 });
 var GetPromptRequestSchema = RequestSchema.extend({
   method: literal("prompts/get"),
@@ -1752,7 +743,7 @@ var TextContentSchema = object({
    * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
    * for notes on _meta usage.
    */
-  _meta: record(string(), unknown()).optional()
+  _meta: record$1(string(), unknown()).optional()
 });
 var ImageContentSchema = object({
   type: literal("image"),
@@ -1772,7 +763,7 @@ var ImageContentSchema = object({
    * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
    * for notes on _meta usage.
    */
-  _meta: record(string(), unknown()).optional()
+  _meta: record$1(string(), unknown()).optional()
 });
 var AudioContentSchema = object({
   type: literal("audio"),
@@ -1792,7 +783,7 @@ var AudioContentSchema = object({
    * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
    * for notes on _meta usage.
    */
-  _meta: record(string(), unknown()).optional()
+  _meta: record$1(string(), unknown()).optional()
 });
 var ToolUseContentSchema = object({
   type: literal("tool_use"),
@@ -1810,12 +801,12 @@ var ToolUseContentSchema = object({
    * Arguments to pass to the tool.
    * Must conform to the tool's inputSchema.
    */
-  input: record(string(), unknown()),
+  input: record$1(string(), unknown()),
   /**
    * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
    * for notes on _meta usage.
    */
-  _meta: record(string(), unknown()).optional()
+  _meta: record$1(string(), unknown()).optional()
 });
 var EmbeddedResourceSchema = object({
   type: literal("resource"),
@@ -1828,7 +819,7 @@ var EmbeddedResourceSchema = object({
    * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
    * for notes on _meta usage.
    */
-  _meta: record(string(), unknown()).optional()
+  _meta: record$1(string(), unknown()).optional()
 });
 var ResourceLinkSchema = ResourceSchema.extend({
   type: literal("resource_link")
@@ -1918,7 +909,7 @@ var ToolSchema = object({
    */
   inputSchema: object({
     type: literal("object"),
-    properties: record(string(), AssertObjectSchema).optional(),
+    properties: record$1(string(), AssertObjectSchema).optional(),
     required: array(string()).optional()
   }).catchall(unknown()),
   /**
@@ -1928,7 +919,7 @@ var ToolSchema = object({
    */
   outputSchema: object({
     type: literal("object"),
-    properties: record(string(), AssertObjectSchema).optional(),
+    properties: record$1(string(), AssertObjectSchema).optional(),
     required: array(string()).optional()
   }).catchall(unknown()).optional(),
   /**
@@ -1943,7 +934,7 @@ var ToolSchema = object({
    * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
    * for notes on _meta usage.
    */
-  _meta: record(string(), unknown()).optional()
+  _meta: record$1(string(), unknown()).optional()
 });
 var ListToolsRequestSchema = PaginatedRequestSchema.extend({
   method: literal("tools/list")
@@ -1964,7 +955,7 @@ var CallToolResultSchema = ResultSchema.extend({
    *
    * If the Tool defines an outputSchema, this field MUST be present in the result, and contain a JSON object that matches the schema.
    */
-  structuredContent: record(string(), unknown()).optional(),
+  structuredContent: record$1(string(), unknown()).optional(),
   /**
    * Whether the tool call ended in an error.
    *
@@ -1992,7 +983,7 @@ var CallToolRequestParamsSchema = TaskAugmentedRequestParamsSchema.extend({
   /**
    * Arguments to pass to the tool.
    */
-  arguments: record(string(), unknown()).optional()
+  arguments: record$1(string(), unknown()).optional()
 });
 var CallToolRequestSchema = RequestSchema.extend({
   method: literal("tools/call"),
@@ -2094,7 +1085,7 @@ var ToolResultContentSchema = object({
    * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
    * for notes on _meta usage.
    */
-  _meta: record(string(), unknown()).optional()
+  _meta: record$1(string(), unknown()).optional()
 });
 var SamplingContentSchema = discriminatedUnion("type", [TextContentSchema, ImageContentSchema, AudioContentSchema]);
 var SamplingMessageContentBlockSchema = discriminatedUnion("type", [
@@ -2111,7 +1102,7 @@ var SamplingMessageSchema = object({
    * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
    * for notes on _meta usage.
    */
-  _meta: record(string(), unknown()).optional()
+  _meta: record$1(string(), unknown()).optional()
 });
 var CreateMessageRequestParamsSchema = TaskAugmentedRequestParamsSchema.extend({
   messages: array(SamplingMessageSchema),
@@ -2299,7 +1290,7 @@ var ElicitRequestFormParamsSchema = TaskAugmentedRequestParamsSchema.extend({
    */
   requestedSchema: object({
     type: literal("object"),
-    properties: record(string(), PrimitiveSchemaDefinitionSchema),
+    properties: record$1(string(), PrimitiveSchemaDefinitionSchema),
     required: array(string()).optional()
   })
 });
@@ -2351,7 +1342,7 @@ var ElicitResultSchema = ResultSchema.extend({
    * Per MCP spec, content is "typically omitted" for decline/cancel actions.
    * We normalize null to undefined for leniency while maintaining type compatibility.
    */
-  content: preprocess((val) => val === null ? void 0 : val, record(string(), union([string(), number(), boolean(), array(string())])).optional())
+  content: preprocess((val) => val === null ? void 0 : val, record$1(string(), union([string(), number(), boolean(), array(string())])).optional())
 });
 var ResourceTemplateReferenceSchema = object({
   type: literal("ref/resource"),
@@ -2386,7 +1377,7 @@ var CompleteRequestParamsSchema = BaseRequestParamsSchema.extend({
     /**
      * Previously-resolved variables in a URI template or prompt.
      */
-    arguments: record(string(), string()).optional()
+    arguments: record$1(string(), string()).optional()
   }).optional()
 });
 var CompleteRequestSchema = RequestSchema.extend({
@@ -2432,7 +1423,7 @@ var RootSchema = object({
    * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
    * for notes on _meta usage.
    */
-  _meta: record(string(), unknown()).optional()
+  _meta: record$1(string(), unknown()).optional()
 });
 var ListRootsRequestSchema = RequestSchema.extend({
   method: literal("roots/list"),
@@ -3123,9 +2114,9 @@ data:
       const initRequest = messages.find((m) => isInitializeRequest(m));
       const clientProtocolVersion = initRequest ? initRequest.params.protocolVersion : req.headers.get("mcp-protocol-version") ?? DEFAULT_NEGOTIATED_PROTOCOL_VERSION;
       if (this._enableJsonResponse) {
-        return new Promise((resolve2) => {
+        return new Promise((resolve) => {
           this._streamMapping.set(streamId, {
-            resolveJson: resolve2,
+            resolveJson: resolve,
             cleanup: () => {
               this._streamMapping.delete(streamId);
             }
@@ -3885,7 +2876,7 @@ function inspectDatasourceSchemaTool(client) {
         const contract = getDatasourceQuerySchema(datasource.kind);
         const kindSpec = singleSpecRef(datasource.kind);
         const methods = [.../* @__PURE__ */ new Set([...contract?.introspectionMethods ?? [], ...kindSpec ? SPEC_DISCOVERY_METHODS : []])];
-        const topLevel = args.method ? [{
+        const topLevel2 = args.method ? [{
           method: args.method,
           schema: args.schema,
           table: args.table,
@@ -3895,7 +2886,7 @@ function inspectDatasourceSchemaTool(client) {
           args: args.args
         }] : [];
         const seenRequests = /* @__PURE__ */ new Set();
-        const requests = [...args.requests ?? [], ...topLevel].filter((request) => {
+        const requests = [...args.requests ?? [], ...topLevel2].filter((request) => {
           if (!request.method)
             return false;
           const key = JSON.stringify([request.method, request.schema ?? null, request.table ?? null, request.search ?? null]);
@@ -3994,59 +2985,1661 @@ function inspectDatasourceSchemaTool(client) {
     }
   };
 }
+createRequire(import.meta.url);
+var X_ALREADY_SENT = "x-hono-already-sent";
+var RequestError = class extends Error {
+  constructor(message, options) {
+    super(message, options);
+    this.name = "RequestError";
+  }
+};
+var nonJoinedHeaders = /* @__PURE__ */ new Set([
+  "age",
+  "authorization",
+  "content-length",
+  "content-type",
+  "etag",
+  "expires",
+  "from",
+  "host",
+  "if-modified-since",
+  "if-unmodified-since",
+  "last-modified",
+  "location",
+  "max-forwards",
+  "proxy-authorization",
+  "referer",
+  "retry-after",
+  "server",
+  "user-agent"
+]);
+var validHeaderName = /^[!#$%&'*+\-.^_`|~\dA-Za-z]+$/;
+var isHttpWhitespace = (code) => code === 9 || code === 10 || code === 13 || code === 32;
+var normalizeHeaderValue = (value) => {
+  if (!isHttpWhitespace(value.charCodeAt(0)) && !isHttpWhitespace(value.charCodeAt(value.length - 1))) return value;
+  let start = 0;
+  let end = value.length;
+  while (start < end && isHttpWhitespace(value.charCodeAt(start))) start++;
+  while (end > start && isHttpWhitespace(value.charCodeAt(end - 1))) end--;
+  return value.slice(start, end);
+};
+var forbiddenHeaderValue = /[\0\r\n]/;
+var GlobalHeaders = globalThis.Headers;
+var materializeHeaders = (rawHeaders, HeadersCtor = GlobalHeaders) => {
+  const headers = new HeadersCtor();
+  for (let i = 0; i < rawHeaders.length; i += 2) {
+    const name = rawHeaders[i];
+    if (!name.startsWith(":")) headers.append(name, rawHeaders[i + 1]);
+  }
+  return headers;
+};
+var RequestHeaders = class {
+  #incoming;
+  #rawHeaders;
+  #headers;
+  #invalidValue;
+  constructor(incoming) {
+    this.#incoming = incoming;
+    if (incoming instanceof Http2ServerRequest) this.#rawHeaders = incoming.rawHeaders.slice();
+  }
+  get #lazyRawHeaders() {
+    return this.#rawHeaders ??= this.#incoming.rawHeaders.slice();
+  }
+  get #native() {
+    if (!this.#headers) {
+      this.#headers = materializeHeaders(this.#lazyRawHeaders);
+      this.#rawHeaders = void 0;
+    }
+    return this.#headers;
+  }
+  #normalizedName(name) {
+    if (typeof name !== "string") return;
+    if (!validHeaderName.test(name)) throw new TypeError(`Invalid header name: ${name}`);
+    return name.toLowerCase();
+  }
+  #lookupHttp1(lowerName) {
+    const headers = this.#incoming instanceof Http2ServerRequest ? void 0 : this.#incoming.headers;
+    if (!headers || nonJoinedHeaders.has(lowerName) || lowerName === "set-cookie" || lowerName === "__proto__") return;
+    if (!Object.hasOwn(headers, lowerName)) return null;
+    const rawValue = headers[lowerName];
+    if (typeof rawValue === "string") {
+      const value = normalizeHeaderValue(rawValue);
+      return forbiddenHeaderValue.test(value) ? void 0 : value;
+    }
+  }
+  #lookup(rawHeaders, lowerName) {
+    const separator = lowerName === "cookie" ? "; " : ", ";
+    let value = null;
+    for (let i = 0; i < rawHeaders.length; i += 2) {
+      const rawName = rawHeaders[i];
+      if (rawName.length === lowerName.length && rawName.toLowerCase() === lowerName) {
+        const rawValue = normalizeHeaderValue(rawHeaders[i + 1]);
+        if (forbiddenHeaderValue.test(rawValue)) {
+          this.#invalidValue = true;
+          return;
+        }
+        value = value === null ? rawValue : value + separator + rawValue;
+      }
+    }
+    return value;
+  }
+  append(name, value) {
+    this.#native.append(name, value);
+  }
+  delete(name) {
+    this.#native.delete(name);
+  }
+  get(name) {
+    const lowerName = this.#normalizedName(name);
+    if (lowerName && !this.#headers && !this.#invalidValue) {
+      const http1Value = this.#lookupHttp1(lowerName);
+      if (http1Value !== void 0) return http1Value;
+      const value = this.#lookup(this.#lazyRawHeaders, lowerName);
+      if (value !== void 0) return value;
+    }
+    return this.#native.get(name);
+  }
+  has(name) {
+    const lowerName = this.#normalizedName(name);
+    if (lowerName && !this.#headers && !this.#invalidValue) {
+      const http1Value = this.#lookupHttp1(lowerName);
+      if (http1Value !== void 0) return http1Value !== null;
+      const value = this.#lookup(this.#lazyRawHeaders, lowerName);
+      if (value !== void 0) return value !== null;
+    }
+    return this.#native.has(name);
+  }
+  set(name, value) {
+    this.#native.set(name, value);
+  }
+  getSetCookie() {
+    return this.#native.getSetCookie();
+  }
+  keys() {
+    return this.#native.keys();
+  }
+  values() {
+    return this.#native.values();
+  }
+  entries() {
+    return this.#native.entries();
+  }
+  forEach(callback, thisArg) {
+    this.#native.forEach((value, key) => {
+      callback.call(thisArg, value, key, this);
+    });
+  }
+  [Symbol.iterator]() {
+    return this.entries();
+  }
+};
+Object.defineProperty(RequestHeaders.prototype, /* @__PURE__ */ Symbol.for("nodejs.util.inspect.custom"), { value: function(depth, options, inspectFn) {
+  return `Headers (lightweight) ${inspectFn(Object.fromEntries(this), {
+    ...options,
+    depth: depth == null ? null : depth - 1
+  })}`;
+} });
+Object.setPrototypeOf(RequestHeaders.prototype, GlobalHeaders.prototype);
+var newHeadersFromIncoming = (incoming) => globalThis.Headers === GlobalHeaders ? new RequestHeaders(incoming) : materializeHeaders(incoming.rawHeaders, globalThis.Headers);
+var reValidRequestUrl = /^\/[!#$&-;=?-\[\]_a-z~]*$/;
+var reDotSegment = /\/\.\.?(?:[/?#]|$)/;
+var reValidHost = /^[a-z0-9._-]+(?::(?:[1-5]\d{3,4}|[6-9]\d{3}))?$/;
+var buildUrl = (scheme, host, incomingUrl) => {
+  const url = `${scheme}://${host}${incomingUrl}`;
+  if (!reValidHost.test(host)) {
+    const urlObj = new URL(url);
+    if (urlObj.hostname.length !== host.length && urlObj.hostname !== (host.includes(":") ? host.replace(/:\d+$/, "") : host).toLowerCase()) throw new RequestError("Invalid host header");
+    return urlObj.href;
+  } else if (incomingUrl.length === 0) return url + "/";
+  else {
+    if (incomingUrl.charCodeAt(0) !== 47) throw new RequestError("Invalid URL");
+    if (!reValidRequestUrl.test(incomingUrl) || reDotSegment.test(incomingUrl)) return new URL(url).href;
+    return url;
+  }
+};
+var toRequestError = (e) => {
+  if (e instanceof RequestError) return e;
+  return new RequestError(e.message, { cause: e });
+};
+var GlobalRequest = global.Request;
+var Request$1 = class extends GlobalRequest {
+  constructor(input, options) {
+    if (typeof input === "object" && getRequestCache in input) {
+      const hasReplacementBody = options !== void 0 && "body" in options && options.body != null;
+      if (input[bodyConsumedDirectlyKey] && !hasReplacementBody) throw new TypeError("Cannot construct a Request with a Request object that has already been used.");
+      input = input[getRequestCache]();
+    }
+    if (typeof options?.body?.getReader !== "undefined") options.duplex ??= "half";
+    super(input, options);
+  }
+};
+var wrapBodyStream = /* @__PURE__ */ Symbol("wrapBodyStream");
+var byteExactEncodings = /* @__PURE__ */ new Set([
+  "latin1",
+  "binary",
+  "hex",
+  "base64",
+  "base64url"
+]);
+var isByteExactEncoding = (encoding) => encoding === null || byteExactEncodings.has(encoding);
+var bodyBufferedBeforeDisconnectKey = /* @__PURE__ */ Symbol("bodyBufferedBeforeDisconnect");
+var bodyBufferedLengthBeforeDisconnectKey = /* @__PURE__ */ Symbol("bodyBufferedLengthBeforeDisconnect");
+var toBufferChunk = (chunk, encoding) => Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, encoding ?? "utf8");
+var isRecoverableDisconnectedIncoming = (incoming) => !(incoming instanceof Http2ServerRequest) && !!incoming.complete && !!incoming.readableAborted && typeof incoming.read === "function" && isByteExactEncoding(incoming.readableEncoding);
+var recordBodyBufferedBeforeDisconnect = (incoming) => {
+  if (incoming.readableDidRead || !isRecoverableDisconnectedIncoming(incoming)) return;
+  const incomingWithRecovery = incoming;
+  incomingWithRecovery[bodyBufferedLengthBeforeDisconnectKey] ??= incoming.readableLength;
+};
+var readBodyBufferedBeforeDisconnect = (incoming, chunks) => {
+  if (incoming.readableDidRead && !chunks || !isRecoverableDisconnectedIncoming(incoming)) return;
+  const incomingWithRecovery = incoming;
+  if (incomingWithRecovery[bodyBufferedBeforeDisconnectKey] !== void 0) return incomingWithRecovery[bodyBufferedBeforeDisconnectKey];
+  let result;
+  const errored = incoming.errored;
+  if (errored && errored.code !== "ECONNRESET") result = errored;
+  else if (incomingWithRecovery[bodyBufferedLengthBeforeDisconnectKey] !== void 0 && incoming.readableLength !== incomingWithRecovery[bodyBufferedLengthBeforeDisconnectKey]) result = newBodyUnusableError();
+  else {
+    const bodyChunks = chunks ?? [];
+    const chunk = incoming.read();
+    if (chunk !== null) bodyChunks.push(toBufferChunk(chunk, incoming.readableEncoding));
+    const buffer = bodyChunks.length === 1 ? bodyChunks[0] : Buffer.concat(bodyChunks);
+    result = buffer;
+    const contentLength = incoming.headers["content-length"];
+    if (typeof contentLength === "string" && /^\d+$/.test(contentLength)) {
+      const expectedLength = Number(contentLength);
+      if (Number.isSafeInteger(expectedLength) && buffer.length !== expectedLength) result = newBodyUnusableError();
+    }
+  }
+  incomingWithRecovery[bodyBufferedBeforeDisconnectKey] = result;
+  return result;
+};
+var enqueueBufferedBody = (controller, buffered) => {
+  if (buffered instanceof Error) {
+    controller.error(buffered);
+    return;
+  }
+  if (buffered.length > 0) controller.enqueue(buffered);
+  controller.close();
+};
+var newRequestFromIncoming = (method, url, headers, incoming, abortController) => {
+  const init = {
+    method,
+    headers,
+    signal: abortController.signal
+  };
+  if (method === "TRACE") {
+    init.method = "GET";
+    const req = new Request$1(url, init);
+    Object.defineProperty(req, "method", { get() {
+      return "TRACE";
+    } });
+    return req;
+  }
+  if (!(method === "GET" || method === "HEAD")) if ("rawBody" in incoming && incoming.rawBody instanceof Buffer) init.body = new ReadableStream({ start(controller) {
+    controller.enqueue(incoming.rawBody);
+    controller.close();
+  } });
+  else if (incoming[wrapBodyStream]) {
+    let reader;
+    init.body = new ReadableStream({ async pull(controller) {
+      try {
+        if (!reader) {
+          const buffered = readBodyBufferedBeforeDisconnect(incoming);
+          if (buffered !== void 0) {
+            enqueueBufferedBody(controller, buffered);
+            return;
+          }
+        }
+        reader ||= Readable.toWeb(incoming).getReader();
+        const { done, value } = await reader.read();
+        if (done) controller.close();
+        else controller.enqueue(value);
+      } catch (error) {
+        controller.error(error);
+      }
+    } });
+  } else {
+    const buffered = readBodyBufferedBeforeDisconnect(incoming);
+    if (buffered !== void 0) init.body = new ReadableStream({ start(controller) {
+      enqueueBufferedBody(controller, buffered);
+    } });
+    else init.body = Readable.toWeb(incoming);
+  }
+  return new Request$1(url, init);
+};
+var getRequestCache = /* @__PURE__ */ Symbol("getRequestCache");
+var requestCache = /* @__PURE__ */ Symbol("requestCache");
+var incomingKey = /* @__PURE__ */ Symbol("incomingKey");
+var urlKey = /* @__PURE__ */ Symbol("urlKey");
+var methodKey = /* @__PURE__ */ Symbol("methodKey");
+var headersKey = /* @__PURE__ */ Symbol("headersKey");
+var abortControllerKey = /* @__PURE__ */ Symbol("abortControllerKey");
+var getAbortController = /* @__PURE__ */ Symbol("getAbortController");
+var abortRequest = /* @__PURE__ */ Symbol("abortRequest");
+var bodyBufferKey = /* @__PURE__ */ Symbol("bodyBuffer");
+var bodyReadPromiseKey = /* @__PURE__ */ Symbol("bodyReadPromise");
+var bodyConsumedDirectlyKey = /* @__PURE__ */ Symbol("bodyConsumedDirectly");
+var bodyLockReaderKey = /* @__PURE__ */ Symbol("bodyLockReader");
+var abortReasonKey = /* @__PURE__ */ Symbol("abortReason");
+var newBodyUnusableError = () => {
+  return /* @__PURE__ */ new TypeError("Body is unusable");
+};
+var rejectBodyUnusable = () => {
+  return Promise.reject(newBodyUnusableError());
+};
+var textDecoder = new TextDecoder();
+var consumeBodyDirectOnce = (request) => {
+  if (request[bodyConsumedDirectlyKey]) return rejectBodyUnusable();
+  request[bodyConsumedDirectlyKey] = true;
+};
+var toArrayBuffer = (buf) => {
+  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+};
+var contentType = (request) => {
+  return (request[headersKey] ||= newHeadersFromIncoming(request[incomingKey])).get("content-type") || "";
+};
+var methodTokenRegExp = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
+var normalizeIncomingMethod = (method) => {
+  if (typeof method !== "string" || method.length === 0) return "GET";
+  switch (method) {
+    case "DELETE":
+    case "GET":
+    case "HEAD":
+    case "OPTIONS":
+    case "PATCH":
+    case "POST":
+    case "PUT":
+    case "QUERY":
+      return method;
+  }
+  const upper = method.toUpperCase();
+  switch (upper) {
+    case "DELETE":
+    case "GET":
+    case "HEAD":
+    case "OPTIONS":
+    case "POST":
+    case "PUT":
+      return upper;
+    default:
+      return method;
+  }
+};
+var validateDirectReadMethod = (method) => {
+  if (!methodTokenRegExp.test(method)) return /* @__PURE__ */ new TypeError(`'${method}' is not a valid HTTP method.`);
+  const normalized = method.toUpperCase();
+  if (normalized === "CONNECT" || normalized === "TRACK" || normalized === "TRACE" && method !== "TRACE") return /* @__PURE__ */ new TypeError(`'${method}' HTTP method is unsupported.`);
+};
+var readBodyWithFastPath = (request, method, fromBuffer) => {
+  if (request[bodyConsumedDirectlyKey]) return rejectBodyUnusable();
+  const methodName = request.method;
+  if (methodName === "GET" || methodName === "HEAD") return request[getRequestCache]()[method]();
+  const methodValidationError = validateDirectReadMethod(methodName);
+  if (methodValidationError) return Promise.reject(methodValidationError);
+  if (request[requestCache]) {
+    if (methodName !== "TRACE") return request[requestCache][method]();
+  }
+  const alreadyUsedError = consumeBodyDirectOnce(request);
+  if (alreadyUsedError) return alreadyUsedError;
+  const raw = readRawBodyIfAvailable(request);
+  if (raw) {
+    const result = Promise.resolve(fromBuffer(raw, request));
+    request[bodyBufferKey] = void 0;
+    return result;
+  }
+  return readBodyDirect(request).then((buf) => {
+    const result = fromBuffer(buf, request);
+    request[bodyBufferKey] = void 0;
+    return result;
+  });
+};
+var readRawBodyIfAvailable = (request) => {
+  const incoming = request[incomingKey];
+  if ("rawBody" in incoming && incoming.rawBody instanceof Buffer) return incoming.rawBody;
+};
+var normalizeAbortError = (request, incoming) => {
+  if (incoming.errored) return incoming.errored;
+  const reason = request[abortReasonKey];
+  if (reason !== void 0) return reason instanceof Error ? reason : new Error(String(reason));
+  return /* @__PURE__ */ new Error("Client connection prematurely closed.");
+};
+var readBodyDirect = (request) => {
+  if (request[bodyBufferKey]) return Promise.resolve(request[bodyBufferKey]);
+  if (request[bodyReadPromiseKey]) return request[bodyReadPromiseKey];
+  const incoming = request[incomingKey];
+  if (incoming.readableDidRead) return rejectBodyUnusable();
+  const buffered = readBodyBufferedBeforeDisconnect(incoming);
+  if (buffered !== void 0) {
+    if (buffered instanceof Error) return Promise.reject(buffered);
+    request[bodyBufferKey] = buffered;
+    return Promise.resolve(buffered);
+  }
+  const promise = new Promise((resolve, reject) => {
+    const chunks = [];
+    let settled = false;
+    const finish = (callback) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      callback();
+    };
+    const recoverCompleteBodyAfterDisconnect = (error) => {
+      const streamError = incoming.errored ?? error;
+      if (!isRecoverableDisconnectedIncoming(incoming) || streamError && streamError.code !== "ECONNRESET") return false;
+      finish(() => {
+        const recovered = readBodyBufferedBeforeDisconnect(incoming, chunks);
+        if (recovered instanceof Error) reject(recovered);
+        else if (recovered === void 0) reject(error ?? normalizeAbortError(request, incoming));
+        else {
+          request[bodyBufferKey] = recovered;
+          resolve(recovered);
+        }
+      });
+      return true;
+    };
+    const onData = (chunk) => {
+      chunks.push(toBufferChunk(chunk, incoming.readableEncoding));
+    };
+    const onEnd = () => {
+      finish(() => {
+        const buffer = chunks.length === 1 ? chunks[0] : Buffer.concat(chunks);
+        request[bodyBufferKey] = buffer;
+        resolve(buffer);
+      });
+    };
+    const onError = (error) => {
+      if (recoverCompleteBodyAfterDisconnect(error)) return;
+      finish(() => {
+        reject(error);
+      });
+    };
+    const onClose = () => {
+      if (incoming.readableEnded) {
+        onEnd();
+        return;
+      }
+      if (recoverCompleteBodyAfterDisconnect()) return;
+      finish(() => {
+        reject(normalizeAbortError(request, incoming));
+      });
+    };
+    const cleanup = () => {
+      incoming.off("data", onData);
+      incoming.off("end", onEnd);
+      incoming.off("error", onError);
+      incoming.off("close", onClose);
+      request[bodyReadPromiseKey] = void 0;
+    };
+    incoming.on("data", onData);
+    incoming.on("end", onEnd);
+    incoming.on("error", onError);
+    incoming.on("close", onClose);
+    queueMicrotask(() => {
+      if (settled) return;
+      if (incoming.readableEnded) onEnd();
+      else if (incoming.errored) onError(incoming.errored);
+      else if (incoming.destroyed) onClose();
+    });
+  });
+  request[bodyReadPromiseKey] = promise;
+  return promise;
+};
+var requestPrototype = {
+  get method() {
+    return this[methodKey];
+  },
+  get url() {
+    return this[urlKey];
+  },
+  get headers() {
+    return this[headersKey] ||= newHeadersFromIncoming(this[incomingKey]);
+  },
+  [abortRequest](reason) {
+    if (this[abortReasonKey] === void 0) this[abortReasonKey] = reason;
+    const abortController = this[abortControllerKey];
+    if (abortController && !abortController.signal.aborted) abortController.abort(reason);
+  },
+  [getAbortController]() {
+    this[abortControllerKey] ||= new AbortController();
+    if (this[abortReasonKey] !== void 0 && !this[abortControllerKey].signal.aborted) this[abortControllerKey].abort(this[abortReasonKey]);
+    return this[abortControllerKey];
+  },
+  [getRequestCache]() {
+    const abortController = this[getAbortController]();
+    if (this[requestCache]) return this[requestCache];
+    const method = this.method;
+    if (this[bodyConsumedDirectlyKey] && !(method === "GET" || method === "HEAD")) {
+      this[bodyBufferKey] = void 0;
+      const init = {
+        method: method === "TRACE" ? "GET" : method,
+        headers: this.headers,
+        signal: abortController.signal
+      };
+      if (method !== "TRACE") {
+        init.body = new ReadableStream({ start(c) {
+          c.close();
+        } });
+        init.duplex = "half";
+      }
+      const req = new Request$1(this[urlKey], init);
+      if (method === "TRACE") Object.defineProperty(req, "method", { get() {
+        return "TRACE";
+      } });
+      return this[requestCache] = req;
+    }
+    return this[requestCache] = newRequestFromIncoming(this.method, this[urlKey], this.headers, this[incomingKey], abortController);
+  },
+  get body() {
+    if (!this[bodyConsumedDirectlyKey]) return this[getRequestCache]().body;
+    const request = this[getRequestCache]();
+    if (!this[bodyLockReaderKey] && request.body) this[bodyLockReaderKey] = request.body.getReader();
+    return request.body;
+  },
+  get bodyUsed() {
+    if (this[bodyConsumedDirectlyKey]) return true;
+    if (this[requestCache]) return this[requestCache].bodyUsed;
+    return false;
+  }
+};
+Object.defineProperty(requestPrototype, "signal", { get() {
+  return this[getAbortController]().signal;
+} });
+[
+  "cache",
+  "credentials",
+  "destination",
+  "integrity",
+  "mode",
+  "redirect",
+  "referrer",
+  "referrerPolicy",
+  "keepalive"
+].forEach((k) => {
+  Object.defineProperty(requestPrototype, k, { get() {
+    return this[getRequestCache]()[k];
+  } });
+});
+["clone", "formData"].forEach((k) => {
+  Object.defineProperty(requestPrototype, k, { value: function() {
+    if (this[bodyConsumedDirectlyKey]) {
+      if (k === "clone") throw newBodyUnusableError();
+      return rejectBodyUnusable();
+    }
+    return this[getRequestCache]()[k]();
+  } });
+});
+Object.defineProperty(requestPrototype, "text", { value: function() {
+  return readBodyWithFastPath(this, "text", (buf) => textDecoder.decode(buf));
+} });
+Object.defineProperty(requestPrototype, "arrayBuffer", { value: function() {
+  return readBodyWithFastPath(this, "arrayBuffer", (buf) => toArrayBuffer(buf));
+} });
+Object.defineProperty(requestPrototype, "blob", { value: function() {
+  return readBodyWithFastPath(this, "blob", (buf, request) => {
+    const type = contentType(request);
+    const init = type ? { headers: { "content-type": type } } : void 0;
+    return new Response(buf, init).blob();
+  });
+} });
+Object.defineProperty(requestPrototype, "json", { value: function() {
+  if (this[bodyConsumedDirectlyKey]) return rejectBodyUnusable();
+  return this.text().then(JSON.parse);
+} });
+Object.defineProperty(requestPrototype, /* @__PURE__ */ Symbol.for("nodejs.util.inspect.custom"), { value: function(depth, options, inspectFn) {
+  return `Request (lightweight) ${inspectFn({
+    method: this.method,
+    url: this.url,
+    headers: this.headers,
+    nativeRequest: this[requestCache]
+  }, {
+    ...options,
+    depth: depth == null ? null : depth - 1
+  })}`;
+} });
+Object.setPrototypeOf(requestPrototype, Request$1.prototype);
+var newRequest = (incoming, defaultHostname) => {
+  const req = Object.create(requestPrototype);
+  req[incomingKey] = incoming;
+  req[methodKey] = normalizeIncomingMethod(incoming.method);
+  const incomingUrl = incoming.url || "";
+  if (incomingUrl[0] !== "/" && (incomingUrl.startsWith("http://") || incomingUrl.startsWith("https://"))) {
+    if (incoming instanceof Http2ServerRequest) throw new RequestError("Absolute URL for :path is not allowed in HTTP/2");
+    try {
+      req[urlKey] = new URL(incomingUrl).href;
+    } catch (e) {
+      throw new RequestError("Invalid absolute URL", { cause: e });
+    }
+    return req;
+  }
+  const host = (incoming instanceof Http2ServerRequest ? incoming.authority : incoming.headers.host) || defaultHostname;
+  if (!host) throw new RequestError("Missing host header");
+  let scheme;
+  if (incoming instanceof Http2ServerRequest) {
+    scheme = incoming.scheme;
+    if (!(scheme === "http" || scheme === "https")) throw new RequestError("Unsupported scheme");
+  } else scheme = incoming.socket && incoming.socket.encrypted ? "https" : "http";
+  try {
+    req[urlKey] = buildUrl(scheme, host, incomingUrl);
+  } catch (e) {
+    if (e instanceof RequestError) throw e;
+    else throw new RequestError("Invalid URL", { cause: e });
+  }
+  return req;
+};
+var defaultContentType = "text/plain; charset=UTF-8";
+var responseCache = /* @__PURE__ */ Symbol("responseCache");
+var getResponseCache = /* @__PURE__ */ Symbol("getResponseCache");
+var cacheKey = /* @__PURE__ */ Symbol("cache");
+var GlobalResponse = global.Response;
+var Response$1 = class Response$12 {
+  #body;
+  #init;
+  [getResponseCache]() {
+    const cache = this[cacheKey];
+    const liveHeaders = cache && cache[2] instanceof Headers ? cache[2] : void 0;
+    delete this[cacheKey];
+    return this[responseCache] ||= new GlobalResponse(this.#body, liveHeaders ? {
+      status: this.#init?.status,
+      statusText: this.#init?.statusText,
+      headers: liveHeaders
+    } : this.#init);
+  }
+  constructor(body, init) {
+    let headers;
+    this.#body = body;
+    if (init instanceof GlobalResponse) {
+      const cachedGlobalResponse = init[responseCache];
+      if (cachedGlobalResponse) {
+        this.#init = cachedGlobalResponse;
+        this[getResponseCache]();
+        return;
+      }
+      this.#init = init instanceof Response$12 ? init.#init : init;
+      headers = new Headers(init.headers);
+    } else this.#init = init;
+    if (body == null || typeof body === "string" || typeof body?.getReader !== "undefined" || body instanceof Blob || body instanceof Uint8Array) this[cacheKey] = [
+      init?.status || 200,
+      body ?? null,
+      headers || init?.headers
+    ];
+  }
+  get headers() {
+    const cache = this[cacheKey];
+    if (cache) {
+      if (!(cache[2] instanceof Headers)) cache[2] = new Headers(cache[2] || (cache[1] === null ? void 0 : { "content-type": defaultContentType }));
+      return cache[2];
+    }
+    return this[getResponseCache]().headers;
+  }
+  get status() {
+    return this[cacheKey]?.[0] ?? this[getResponseCache]().status;
+  }
+  get ok() {
+    const status = this.status;
+    return status >= 200 && status < 300;
+  }
+};
+[
+  "body",
+  "bodyUsed",
+  "redirected",
+  "statusText",
+  "trailers",
+  "type",
+  "url"
+].forEach((k) => {
+  Object.defineProperty(Response$1.prototype, k, { get() {
+    return this[getResponseCache]()[k];
+  } });
+});
+[
+  "arrayBuffer",
+  "blob",
+  "clone",
+  "formData",
+  "json",
+  "text"
+].forEach((k) => {
+  Object.defineProperty(Response$1.prototype, k, { value: function() {
+    return this[getResponseCache]()[k]();
+  } });
+});
+Object.defineProperty(Response$1.prototype, /* @__PURE__ */ Symbol.for("nodejs.util.inspect.custom"), { value: function(depth, options, inspectFn) {
+  return `Response (lightweight) ${inspectFn({
+    status: this.status,
+    headers: this.headers,
+    ok: this.ok,
+    nativeResponse: this[responseCache]
+  }, {
+    ...options,
+    depth: depth == null ? null : depth - 1
+  })}`;
+} });
+Object.setPrototypeOf(Response$1, GlobalResponse);
+Object.setPrototypeOf(Response$1.prototype, GlobalResponse.prototype);
+var validRedirectUrl = /^https?:\/\/[!#-;=?-[\]_a-z~A-Z]+$/;
+var parseRedirectUrl = (url) => {
+  if (url instanceof URL) return url.href;
+  if (validRedirectUrl.test(url)) return url;
+  return new URL(url).href;
+};
+var validRedirectStatuses = /* @__PURE__ */ new Set([
+  301,
+  302,
+  303,
+  307,
+  308
+]);
+Object.defineProperty(Response$1, "redirect", {
+  value: function redirect(url, status = 302) {
+    if (!validRedirectStatuses.has(status)) throw new RangeError("Invalid status code");
+    return new Response$1(null, {
+      status,
+      headers: { location: parseRedirectUrl(url) }
+    });
+  },
+  writable: true,
+  configurable: true
+});
+Object.defineProperty(Response$1, "json", {
+  value: function json(data, init) {
+    const body = JSON.stringify(data);
+    if (body === void 0) throw new TypeError("The data is not JSON serializable");
+    const initHeaders = init?.headers;
+    let headers;
+    if (initHeaders) {
+      headers = new Headers(initHeaders);
+      if (!headers.has("content-type")) headers.set("content-type", "application/json");
+    } else headers = { "content-type": "application/json" };
+    return new Response$1(body, {
+      status: init?.status ?? 200,
+      statusText: init?.statusText,
+      headers
+    });
+  },
+  writable: true,
+  configurable: true
+});
+async function readWithoutBlocking(readPromise) {
+  return Promise.race([readPromise, Promise.resolve().then(() => Promise.resolve(void 0))]);
+}
+function writeFromReadableStreamDefaultReader(reader, writable, currentReadPromise) {
+  const cancel = (error) => {
+    reader.cancel(error).catch(() => {
+    });
+  };
+  writable.on("close", cancel);
+  writable.on("error", cancel);
+  (currentReadPromise ?? reader.read()).then(flow, handleStreamError);
+  return reader.closed.finally(() => {
+    writable.off("close", cancel);
+    writable.off("error", cancel);
+  });
+  function handleStreamError(error) {
+    if (error) writable.destroy(error);
+  }
+  function onDrain() {
+    reader.read().then(flow, handleStreamError);
+  }
+  function flow({ done, value }) {
+    try {
+      if (done) writable.end();
+      else if (!writable.write(value)) writable.once("drain", onDrain);
+      else return reader.read().then(flow, handleStreamError);
+    } catch (e) {
+      handleStreamError(e);
+    }
+  }
+}
+function writeFromReadableStream(stream, writable) {
+  if (stream.locked) throw new TypeError("ReadableStream is locked.");
+  else if (writable.destroyed) return;
+  return writeFromReadableStreamDefaultReader(stream.getReader(), writable);
+}
+var buildOutgoingHttpHeaders = (headers, defaultContentType2) => {
+  const res = {};
+  if (!(headers instanceof Headers)) headers = new Headers(headers ?? void 0);
+  if (headers.has("set-cookie")) {
+    const cookies = [];
+    for (const [k, v] of headers) if (k === "set-cookie") cookies.push(v);
+    else res[k] = v;
+    if (cookies.length > 0) res["set-cookie"] = cookies;
+  } else for (const [k, v] of headers) res[k] = v;
+  if (defaultContentType2) res["content-type"] ??= defaultContentType2;
+  return res;
+};
+var outgoingEnded = /* @__PURE__ */ Symbol("outgoingEnded");
+var incomingDraining = /* @__PURE__ */ Symbol("incomingDraining");
+var DRAIN_TIMEOUT_MS = 500;
+var MAX_DRAIN_BYTES = 64 * 1024 * 1024;
+var drainIncoming = (incoming) => {
+  const incomingWithDrainState = incoming;
+  if (incoming.destroyed || incomingWithDrainState[incomingDraining]) return;
+  incomingWithDrainState[incomingDraining] = true;
+  if (incoming instanceof Http2ServerRequest) {
+    try {
+      incoming.stream?.close?.(constants.NGHTTP2_NO_ERROR);
+    } catch {
+    }
+    return;
+  }
+  let bytesRead = 0;
+  const cleanup = () => {
+    clearTimeout(timer);
+    incoming.off("data", onData);
+    incoming.off("end", cleanup);
+    incoming.off("error", cleanup);
+  };
+  const forceClose = () => {
+    cleanup();
+    const socket = incoming.socket;
+    if (socket && !socket.destroyed) {
+      if (typeof socket.destroySoon === "function") socket.destroySoon();
+      else if (typeof socket.destroy === "function") socket.destroy();
+    }
+  };
+  const timer = setTimeout(forceClose, DRAIN_TIMEOUT_MS);
+  timer.unref?.();
+  const onData = (chunk) => {
+    bytesRead += chunk.length;
+    if (bytesRead > MAX_DRAIN_BYTES) forceClose();
+  };
+  incoming.on("data", onData);
+  incoming.on("end", cleanup);
+  incoming.on("error", cleanup);
+  incoming.resume();
+};
+var makeCloseHandler = (req, incoming, outgoing, needsBodyCleanup) => () => {
+  if (incoming.errored) {
+    recordBodyBufferedBeforeDisconnect(incoming);
+    req[abortRequest](incoming.errored.toString());
+  } else if (!outgoing.writableFinished) {
+    recordBodyBufferedBeforeDisconnect(incoming);
+    req[abortRequest]("Client connection prematurely closed.");
+  }
+  if (needsBodyCleanup && !incoming.readableEnded) setTimeout(() => {
+    if (!incoming.readableEnded) setTimeout(() => {
+      drainIncoming(incoming);
+    });
+  });
+};
+var isImmediateCacheableResponse = (res) => {
+  if (!(cacheKey in res)) return false;
+  const body = res[cacheKey][1];
+  return body === null || typeof body === "string" || body instanceof Uint8Array;
+};
+var handleRequestError = () => new Response(null, { status: 400 });
+var handleFetchError = (e) => new Response(null, { status: e instanceof Error && (e.name === "TimeoutError" || e.constructor.name === "TimeoutError") ? 504 : 500 });
+var handleResponseError = (e, outgoing) => {
+  const err = e instanceof Error ? e : new Error("unknown error", { cause: e });
+  if (err.code === "ERR_STREAM_PREMATURE_CLOSE") console.info("The user aborted a request.");
+  else {
+    console.error(e);
+    if (!outgoing.headersSent) outgoing.writeHead(500, { "Content-Type": "text/plain" });
+    outgoing.end(`Error: ${err.message}`);
+    outgoing.destroy(err);
+  }
+};
+var flushHeaders = (outgoing) => {
+  if ("flushHeaders" in outgoing && outgoing.writable) outgoing.flushHeaders();
+};
+var responseViaCache = async (res, outgoing) => {
+  let [status, body, header] = res[cacheKey];
+  if (!header) {
+    if (body === null) {
+      outgoing.writeHead(status);
+      outgoing.end();
+    } else if (typeof body === "string") {
+      outgoing.writeHead(status, {
+        "Content-Type": defaultContentType,
+        "Content-Length": Buffer.byteLength(body)
+      });
+      outgoing.end(body);
+    } else if (body instanceof Uint8Array) {
+      outgoing.writeHead(status, {
+        "Content-Type": defaultContentType,
+        "Content-Length": body.byteLength
+      });
+      outgoing.end(body);
+    } else if (body instanceof Blob) {
+      outgoing.writeHead(status, {
+        "Content-Type": defaultContentType,
+        "Content-Length": body.size
+      });
+      outgoing.end(new Uint8Array(await body.arrayBuffer()));
+    } else {
+      outgoing.writeHead(status, { "Content-Type": defaultContentType });
+      flushHeaders(outgoing);
+      await writeFromReadableStream(body, outgoing)?.catch((e) => handleResponseError(e, outgoing));
+    }
+    outgoing[outgoingEnded]?.();
+    return;
+  }
+  let hasContentLength = false;
+  if (header instanceof Headers) {
+    hasContentLength = header.has("content-length");
+    header = buildOutgoingHttpHeaders(header, body === null ? void 0 : defaultContentType);
+  } else if (Array.isArray(header)) {
+    const headerObj = new Headers(header);
+    hasContentLength = headerObj.has("content-length");
+    header = buildOutgoingHttpHeaders(headerObj, body === null ? void 0 : defaultContentType);
+  } else for (const key in header) if (key.length === 14 && key.toLowerCase() === "content-length") {
+    hasContentLength = true;
+    break;
+  }
+  if (!hasContentLength) {
+    if (typeof body === "string") header["Content-Length"] = Buffer.byteLength(body);
+    else if (body instanceof Uint8Array) header["Content-Length"] = body.byteLength;
+    else if (body instanceof Blob) header["Content-Length"] = body.size;
+  }
+  outgoing.writeHead(status, header);
+  if (body == null) outgoing.end();
+  else if (typeof body === "string" || body instanceof Uint8Array) outgoing.end(body);
+  else if (body instanceof Blob) outgoing.end(new Uint8Array(await body.arrayBuffer()));
+  else {
+    flushHeaders(outgoing);
+    await writeFromReadableStream(body, outgoing)?.catch((e) => handleResponseError(e, outgoing));
+  }
+  outgoing[outgoingEnded]?.();
+};
+var isPromise = (res) => typeof res.then === "function";
+var responseViaResponseObject = async (res, outgoing, options = {}) => {
+  if (isPromise(res)) if (options.errorHandler) try {
+    res = await res;
+  } catch (err) {
+    const errRes = await options.errorHandler(err);
+    if (!errRes) return;
+    res = errRes;
+  }
+  else res = await res.catch(handleFetchError);
+  if (cacheKey in res) return responseViaCache(res, outgoing);
+  const resHeaderRecord = buildOutgoingHttpHeaders(res.headers, res.body === null ? void 0 : defaultContentType);
+  if (res.body) {
+    const reader = res.body.getReader();
+    const values = [];
+    let done = false;
+    let currentReadPromise = void 0;
+    if (resHeaderRecord["transfer-encoding"] !== "chunked") {
+      let maxReadCount = 2;
+      for (let i = 0; i < maxReadCount; i++) {
+        currentReadPromise ||= reader.read();
+        const chunk = await readWithoutBlocking(currentReadPromise).catch((e) => {
+          console.error(e);
+          done = true;
+        });
+        if (!chunk) {
+          if (i === 1) {
+            await new Promise((resolve) => setTimeout(resolve));
+            maxReadCount = 3;
+            continue;
+          }
+          break;
+        }
+        currentReadPromise = void 0;
+        if (chunk.value) values.push(chunk.value);
+        if (chunk.done) {
+          done = true;
+          break;
+        }
+      }
+      if (done && !("content-length" in resHeaderRecord)) resHeaderRecord["content-length"] = values.reduce((acc, value) => acc + value.length, 0);
+    }
+    outgoing.writeHead(res.status, resHeaderRecord);
+    values.forEach((value) => {
+      outgoing.write(value);
+    });
+    if (done) outgoing.end();
+    else {
+      if (values.length === 0) flushHeaders(outgoing);
+      await writeFromReadableStreamDefaultReader(reader, outgoing, currentReadPromise);
+    }
+  } else if (resHeaderRecord[X_ALREADY_SENT]) ;
+  else {
+    outgoing.writeHead(res.status, resHeaderRecord);
+    outgoing.end();
+  }
+  outgoing[outgoingEnded]?.();
+};
+var getRequestListener = (fetchCallback, options = {}) => {
+  const autoCleanupIncoming = options.autoCleanupIncoming ?? true;
+  if (options.overrideGlobalObjects !== false && global.Request !== Request$1) {
+    Object.defineProperty(global, "Request", { value: Request$1 });
+    Object.defineProperty(global, "Response", { value: Response$1 });
+  }
+  return async (incoming, outgoing) => {
+    let res, req;
+    let needsBodyCleanup = false;
+    let closeHandlerAttached = false;
+    const ensureCloseHandler = () => {
+      if (!req || closeHandlerAttached) return;
+      closeHandlerAttached = true;
+      outgoing.on("close", makeCloseHandler(req, incoming, outgoing, needsBodyCleanup));
+    };
+    try {
+      req = newRequest(incoming, options.hostname);
+      needsBodyCleanup = autoCleanupIncoming && !(incoming.method === "GET" || incoming.method === "HEAD");
+      if (needsBodyCleanup) {
+        incoming[wrapBodyStream] = true;
+        if (incoming instanceof Http2ServerRequest) outgoing[outgoingEnded] = () => {
+          if (!incoming.readableEnded) setTimeout(() => {
+            if (!incoming.readableEnded) setTimeout(() => {
+              incoming.destroy();
+              outgoing.destroy();
+            });
+          });
+        };
+      }
+      res = fetchCallback(req, {
+        incoming,
+        outgoing
+      });
+      if (!isPromise(res) && isImmediateCacheableResponse(res)) {
+        if (needsBodyCleanup && !incoming.readableEnded) outgoing.once("finish", () => {
+          if (!incoming.readableEnded) drainIncoming(incoming);
+        });
+        return responseViaCache(res, outgoing);
+      }
+      ensureCloseHandler();
+    } catch (e) {
+      if (!res) if (options.errorHandler) {
+        ensureCloseHandler();
+        res = await options.errorHandler(req ? e : toRequestError(e));
+        if (!res) return;
+      } else if (!req) res = handleRequestError();
+      else res = handleFetchError(e);
+      else return handleResponseError(e, outgoing);
+    }
+    try {
+      return await responseViaResponseObject(res, outgoing, options);
+    } catch (e) {
+      return handleResponseError(e, outgoing);
+    }
+  };
+};
+createRequire(import.meta.url);
+var MAX_AUTO_ROWS = 1e3;
+var PURE_FUNCTIONS = /* @__PURE__ */ new Set([
+  // aggregates
+  "count",
+  "sum",
+  "avg",
+  "min",
+  "max",
+  "bool_and",
+  "bool_or",
+  "every",
+  "string_agg",
+  "array_agg",
+  "group_concat",
+  "json_agg",
+  "jsonb_agg",
+  "json_object_agg",
+  "jsonb_object_agg",
+  "stddev",
+  "stddev_pop",
+  "stddev_samp",
+  "variance",
+  "var_pop",
+  "var_samp",
+  "percentile_cont",
+  "percentile_disc",
+  "mode",
+  // window ranking
+  "row_number",
+  "rank",
+  "dense_rank",
+  "percent_rank",
+  "cume_dist",
+  "ntile",
+  "lag",
+  "lead",
+  "first_value",
+  "last_value",
+  "nth_value",
+  // conditional and casts
+  "coalesce",
+  "nullif",
+  "greatest",
+  "least",
+  "cast",
+  "ifnull",
+  "isnull",
+  "nvl",
+  "iif",
+  // strings
+  "lower",
+  "upper",
+  "trim",
+  "ltrim",
+  "rtrim",
+  "btrim",
+  "length",
+  "char_length",
+  "character_length",
+  "octet_length",
+  "substring",
+  "substr",
+  "left",
+  "right",
+  "concat",
+  "concat_ws",
+  "replace",
+  "position",
+  "strpos",
+  "split_part",
+  "lpad",
+  "rpad",
+  "initcap",
+  "reverse",
+  "format",
+  "to_char",
+  // numbers
+  "abs",
+  "round",
+  "floor",
+  "ceil",
+  "ceiling",
+  "trunc",
+  "mod",
+  "power",
+  "sqrt",
+  "sign",
+  "to_number",
+  // dates and times
+  "now",
+  "current_timestamp",
+  "current_date",
+  "date_trunc",
+  "date_part",
+  "extract",
+  "age",
+  "to_date",
+  "to_timestamp",
+  "date",
+  "year",
+  "month",
+  "day",
+  "datediff",
+  "dateadd",
+  "date_add",
+  "date_sub",
+  "date_format",
+  "make_date",
+  "make_interval",
+  "justify_interval",
+  // json reads
+  "json_extract_path_text",
+  "jsonb_extract_path_text",
+  "json_array_length",
+  "jsonb_array_length"
+]);
+var PAREN_KEYWORDS = /* @__PURE__ */ new Set([
+  "select",
+  "from",
+  "where",
+  "in",
+  "exists",
+  "on",
+  "using",
+  "as",
+  "and",
+  "or",
+  "not",
+  "any",
+  "all",
+  "some",
+  "values",
+  "case",
+  "when",
+  "then",
+  "else",
+  "between",
+  "distinct",
+  "having",
+  "limit",
+  "offset",
+  "lateral",
+  "order",
+  "group",
+  "with",
+  "array",
+  "row"
+]);
+var AGGREGATES = /* @__PURE__ */ new Set([
+  "count",
+  "sum",
+  "avg",
+  "min",
+  "max",
+  "bool_and",
+  "bool_or",
+  "every",
+  "string_agg",
+  "array_agg",
+  "group_concat",
+  "json_agg",
+  "jsonb_agg"
+]);
+var TEXT_FUNCTIONS = /* @__PURE__ */ new Set([
+  "lower",
+  "upper",
+  "trim",
+  "ltrim",
+  "rtrim",
+  "btrim",
+  "length",
+  "char_length",
+  "character_length",
+  "octet_length",
+  "substring",
+  "substr",
+  "left",
+  "right",
+  "replace",
+  "position",
+  "strpos",
+  "split_part",
+  "lpad",
+  "rpad",
+  "initcap",
+  "reverse"
+]);
+var NUMERIC_FUNCTIONS = /* @__PURE__ */ new Set(["abs", "round", "floor", "ceil", "ceiling", "trunc", "mod", "power", "sqrt", "sign"]);
+var TEXT_TYPES = /* @__PURE__ */ new Set(["text", "varchar", "character", "char", "bpchar", "name", "citext", "nvarchar", "nchar"]);
+var NUMERIC_TYPES = /* @__PURE__ */ new Set([
+  "numeric",
+  "decimal",
+  "int",
+  "integer",
+  "int2",
+  "int4",
+  "int8",
+  "smallint",
+  "bigint",
+  "real",
+  "float",
+  "float4",
+  "float8",
+  "double"
+]);
+var READ_HINTS = /* @__PURE__ */ new Set(["nolock", "readuncommitted"]);
+function maskSql(sql, dialect, backslashEscapes) {
+  const mysqlRules = dialect === void 0 || dialect === "mysql";
+  let out = "";
+  for (let i = 0; i < sql.length; i++) {
+    const ch = sql[i];
+    if (ch === "{" && sql[i + 1] === "{") {
+      const end = sql.indexOf("}}", i + 2);
+      if (end < 0)
+        return { refusal: "its {{ }} bindings do not close" };
+      out += "''";
+      i = end + 1;
+    } else if (ch === "'") {
+      let closed = false;
+      while (++i < sql.length) {
+        if (sql[i] === "\\" && backslashEscapes) {
+          i++;
+          continue;
+        }
+        if (sql[i] === "'") {
+          if (sql[i + 1] === "'") {
+            i++;
+            continue;
+          }
+          closed = true;
+          break;
+        }
+      }
+      if (!closed)
+        return { refusal: "a string literal does not close" };
+      out += "''";
+    } else if (ch === '"' || ch === "`" || ch === "[" && dialect === "mssql") {
+      const close = ch === "[" ? "]" : ch;
+      const end = sql.indexOf(close, i + 1);
+      if (end < 0)
+        return { refusal: "a quoted identifier does not close" };
+      out += " _q ";
+      i = end;
+    } else if (ch === "-" && sql[i + 1] === "-") {
+      if (mysqlRules && !/^[\s\x00-\x1f]$/.test(sql[i + 2] ?? "")) {
+        return { refusal: "it has -- without a space after it, which MySQL does not read as a comment" };
+      }
+      while (i < sql.length && sql[i] !== "\n")
+        i++;
+      out += " ";
+    } else if (ch === "#" && mysqlRules) {
+      return { refusal: "it has a #, which starts a comment in MySQL" };
+    } else if (ch === "/" && sql[i + 1] === "*") {
+      if (/^\/\*\s*(?:!|M!|\+)/.test(sql.slice(i)))
+        return { refusal: "it has an executable comment or optimizer hint (/*! */, /*M! */, /*+ */)" };
+      const end = sql.indexOf("*/", i + 2);
+      if (end < 0)
+        return { refusal: "a comment does not close" };
+      out += " ";
+      i = end + 1;
+    } else if (ch === "$" && /^\$[A-Za-z_]*\$/.test(sql.slice(i))) {
+      return { refusal: "it uses dollar quoting" };
+    } else
+      out += ch;
+  }
+  return { text: out.replace(/\s+/g, " ").trim().replace(/;\s*$/, "").trim().toLowerCase() };
+}
+function maskBothWays(sql, dialect) {
+  const plain = maskSql(sql, dialect, false);
+  const escaped = maskSql(sql, dialect, true);
+  if ("refusal" in plain)
+    return plain;
+  if ("refusal" in escaped)
+    return escaped;
+  if (plain.text !== escaped.text)
+    return { refusal: "its string literals read differently with and without backslash escapes" };
+  return plain;
+}
+function topLevel(sql) {
+  let depth = 0;
+  let out = "";
+  for (const ch of sql) {
+    if (ch === "(") {
+      if (depth === 0)
+        out += "(";
+      depth++;
+    } else if (ch === ")") {
+      depth--;
+      if (depth < 0)
+        return void 0;
+      if (depth === 0)
+        out += ")";
+    } else if (depth === 0)
+      out += ch;
+  }
+  return depth === 0 ? out : void 0;
+}
+var FROM_END = /^(where|group|order|limit|having|window|union|intersect|except|fetch|offset|for|qualify|returning|on|using)\b/;
+function crossProduct(masked) {
+  const sql = masked.toLowerCase();
+  if (/\bcross\s+(join|apply)\b/.test(sql))
+    return "it has a CROSS JOIN";
+  if (/\bnatural\s+((left|right|full|inner)\s+)?(outer\s+)?join\b/.test(sql))
+    return "it has a NATURAL JOIN";
+  if (/\bon\s*\(?\s*(true|1\s*=\s*1|0\s*=\s*0)\s*\)?(?=\s|$|\))/.test(sql))
+    return "it joins ON a condition that is always true";
+  for (const match of sql.matchAll(/\bfrom\b/g)) {
+    let depth = 0;
+    for (let i = match.index + 4; i < sql.length; i++) {
+      const ch = sql[i];
+      if (ch === "(")
+        depth++;
+      else if (ch === ")") {
+        if (--depth < 0)
+          break;
+      } else if (depth === 0) {
+        if (ch === ",")
+          return "it lists tables separated by commas in FROM (an implicit cross join)";
+        if (ch === ";")
+          break;
+        if (/[a-z_]/.test(ch) && !/[a-z0-9_$]/.test(sql[i - 1] ?? " ") && FROM_END.test(sql.slice(i)))
+          break;
+      }
+    }
+  }
+  return void 0;
+}
+var items = (clause) => clause.split(",").map((item) => item.trim()).filter(Boolean);
+function closingParen(sql, open) {
+  let depth = 0;
+  for (let i = open; i < sql.length; i++) {
+    if (sql[i] === "(")
+      depth++;
+    else if (sql[i] === ")" && --depth === 0)
+      return i;
+  }
+  return -1;
+}
+function keywordCallAllowed(name, sql, at, dialect) {
+  const before = sql.slice(0, at).trimEnd();
+  if (name === "filter" || name === "over")
+    return before.endsWith(")");
+  if (name === "by")
+    return /\b(?:order|group|partition)$/.test(before);
+  if (name === "join")
+    return /^join\s*\(\s*select\b/.test(sql.slice(at));
+  if (name === "top")
+    return (dialect === "mssql" || dialect === void 0) && /^select(?:\s+(?:distinct|all))?$/.test(before);
+  return false;
+}
+function impureCall(sql, dialect) {
+  const calls = sql.matchAll(/([a-z_][\w$]*(?:\s*\.\s*[a-z_][\w$]*)*|_q)\s*\(/g);
+  for (const call of calls) {
+    const name = call[1].replace(/\s+/g, "");
+    if (name.includes(".") || name === "_q")
+      return name;
+    if (PAREN_KEYWORDS.has(name))
+      continue;
+    if (["filter", "over", "by", "join", "top"].includes(name)) {
+      if (keywordCallAllowed(name, sql, call.index, dialect))
+        continue;
+      return name;
+    }
+    if (!PURE_FUNCTIONS.has(name))
+      return name;
+  }
+  return void 0;
+}
+function overloadedCall(sql) {
+  for (const call of sql.matchAll(/\b([a-z_][\w$]*)\s*\(/g)) {
+    const name = call[1];
+    const family = TEXT_FUNCTIONS.has(name) ? TEXT_TYPES : NUMERIC_FUNCTIONS.has(name) ? NUMERIC_TYPES : void 0;
+    if (!family)
+      continue;
+    const open = call.index + call[0].length - 1;
+    const close = closingParen(sql, open);
+    const args = sql.slice(open + 1, close < 0 ? void 0 : close);
+    const casts = [...args.matchAll(/::\s*([a-z_][\w$]*)/g), ...args.matchAll(/\bcast\s*\([^]*?\bas\s+([a-z_][\w$]*)/g)];
+    const foreign = casts.map((cast) => cast[1]).find((type) => !family.has(type));
+    if (foreign)
+      return `${name}() with an argument cast to ${foreign === "_q" ? "a quoted type" : foreign}`;
+  }
+  return void 0;
+}
+function topBound(masked) {
+  const head = masked.match(/^select\s+(?:(?:distinct|all)\s+)?top\b\s*(.*)$/);
+  if (!head)
+    return void 0;
+  const count = head[1].match(/^(?:\(\s*(\d+)\s*\)|(\d+)\b)\s*(.*)$/);
+  if (!count)
+    return { refusal: "its TOP is not a fixed row count" };
+  if (/^percent\b/.test(count[3]))
+    return { refusal: "its TOP is a PERCENT of the rows, not a fixed row count" };
+  if (/^with\s+ties\b/.test(count[3]))
+    return { refusal: "its TOP ... WITH TIES can return more rows than its count" };
+  return { rows: Number(count[1] ?? count[2]) };
+}
+function autoReadSqlRefusal(sql, dialect) {
+  const read = maskBothWays(sql, dialect);
+  if ("refusal" in read)
+    return `its SQL cannot be read with certainty: ${read.refusal}`;
+  const masked = read.text;
+  if (!masked || masked.includes(";"))
+    return "it is empty or has more than one statement";
+  const top = topLevel(masked);
+  if (top === void 0)
+    return "its parentheses do not balance";
+  if (/^with\b/.test(top))
+    return "a statement with a WITH list (CTE) is not run automatically";
+  if (!/^select\b/.test(top))
+    return "only a single SELECT is run automatically";
+  if (/\b(union|intersect|except)\b/.test(top))
+    return "UNION, INTERSECT and EXCEPT are not run automatically";
+  if (/\b(insert|update|delete|merge|upsert|truncate|drop|alter|create|grant|revoke|copy|call|exec|execute|into|lock)\b/.test(masked)) {
+    return "it contains a statement that writes or runs code";
+  }
+  if (/\bfor\s+(update|share|no\s+key\s+update|key\s+share)\b/.test(top))
+    return "a locking SELECT is not run automatically";
+  if (/\bnext\s+value\s+for\b/.test(masked))
+    return "it takes NEXT VALUE FOR a sequence, which advances it";
+  if (/:=/.test(masked))
+    return "it assigns a variable (:=)";
+  if (/\b(updlock|xlock|holdlock|tablock|tablockx|paglock|rowlock|serializable|repeatableread|readcommittedlock)\b/.test(masked)) {
+    return "it has a table hint that takes or holds locks";
+  }
+  for (const hint of masked.matchAll(/\bwith\s*\(([^()]*)\)/g)) {
+    const names = hint[1].split(",").map((name) => name.trim()).filter(Boolean);
+    if (!names.length || names.some((name) => !READ_HINTS.has(name)))
+      return `it has the table hint WITH (${hint[1].trim()}), which is not a plain read`;
+  }
+  if (/\boption\s*\(/.test(masked))
+    return "it has a query hint (OPTION (...))";
+  if (/\bwith\s+ties\b/.test(masked))
+    return "WITH TIES can return more rows than its limit";
+  const product = crossProduct(masked);
+  if (product)
+    return `${product}, which can read the product of its tables however small its LIMIT; join on a condition`;
+  const fn = impureCall(masked, dialect);
+  if (fn)
+    return `it calls ${fn}(), which is not a well-known pure function`;
+  const overload = overloadedCall(masked);
+  if (overload)
+    return `it calls ${overload}, which is not the built-in function's signature (another overload would run)`;
+  const limit = top.match(/\blimit\s+(\d+)(?:\s*,\s*(\d+))?(?:\s+offset\s+\d+)?$/) ?? top.match(/\boffset\s+\d+(?:\s+rows?)?\s+limit\s+(\d+)$/);
+  const fetch = top.match(/\bfetch\s+(?:first|next)\s+(\d+)\s+rows?\s+only$/);
+  const topN = topBound(masked);
+  if (topN && "refusal" in topN)
+    return topN.refusal;
+  const bounds = [limit ? Number(limit[2] ?? limit[1]) : void 0, fetch ? Number(fetch[1]) : void 0, topN?.rows].filter((n) => n !== void 0);
+  const bound = bounds.length ? Math.min(...bounds) : void 0;
+  if (bound !== void 0) {
+    return bound <= MAX_AUTO_ROWS ? void 0 : `its LIMIT ${bound} is above the ${MAX_AUTO_ROWS}-row automatic bound`;
+  }
+  if (/\b(limit|fetch|top)\b/.test(masked)) {
+    return "its row limit is not the final clause of the outer SELECT (a LIMIT in a subquery bounds nothing it returns)";
+  }
+  const from = top.search(/\bfrom\b/);
+  if (from < 0)
+    return void 0;
+  const projection = items(top.slice("select".length, from).replace(/^\s*distinct\b/, ""));
+  const aggregateOnly = projection.length > 0 && projection.every((item) => {
+    const m = item.match(/^([a-z_][\w$]*)\s*\(\)(?:\s+(?:as\s+)?[a-z_][\w$]*)?$/);
+    return !!m && AGGREGATES.has(m[1]);
+  });
+  if (aggregateOnly && !/\b(group\s+by|over)\b/.test(top.slice(from)))
+    return void 0;
+  return "it has no row limit on the outer SELECT";
+}
+var sqlDialectOf = (kind) => kind ? SQL_DIALECT[kind.toLowerCase()] : void 0;
+function batchSafeRead(query) {
+  const assessment = assessQueryRead(query);
+  if (assessment.provenRead && assessment.directSafe && !assessment.selectStar) {
+    const refusal = resolvedReadRefusal(query, assessment, resolveStaticBindings(query.options).resolved);
+    return refusal ? { safe: false, reason: refusal } : { safe: true };
+  }
+  if (assessment.provenRead && assessment.requiresRemoteReadConfirmation) {
+    return {
+      safe: false,
+      reason: `${assessment.reason ?? "remote read"} run_queries cannot run remote reads at all. Use singular run_query for this one: tell the user which saved query will run, and once they approve, call run_query with user_confirmed_remote_read:true. Do not retry run_queries with it.`
+    };
+  }
+  return {
+    safe: false,
+    reason: assessment.reason ?? (assessment.requiresCountPreflight ? "read requires a count-first preflight through singular run_query" : "query is not a proven bounded read")
+  };
+}
+var NOT_CHECKED_AUTOMATICALLY = "not checked automatically, run it explicitly with run_query: ";
+var AUTO_SQL_KINDS = /* @__PURE__ */ new Set(["postgresql", "mysql", "mariadb", "mssql", "oracledb"]);
+var MODE_REQUIRED = /* @__PURE__ */ new Set(["postgresql", "mysql", "mssql"]);
+var TOOLJETDB_LIST_ROWS_KEYS = /* @__PURE__ */ new Set(["limit", "offset", "where_filters", "order_filters", "aggregates", "group_by"]);
+var record = (value) => value && typeof value === "object" && !Array.isArray(value) ? value : void 0;
+var hasText = (value) => typeof value === "string" && !!value.trim();
+function sqlRefusal(kind, options, sql) {
+  if (!sql)
+    return "its SQL text is empty";
+  const dialect = sqlDialectOf(kind);
+  const saved = autoReadSqlRefusal(sql, dialect);
+  if (saved)
+    return saved;
+  let resolvedOptions;
+  try {
+    resolvedOptions = applyResolvedBindings(options, resolveStaticBindings(options).resolved);
+  } catch {
+    return "its bindings cannot be resolved without a browser";
+  }
+  const resolved = kind === "tooljetdb" ? record(resolvedOptions.sql_execution)?.sqlQuery : (() => {
+    const path = sqlConnectorPath(kind, resolvedOptions);
+    return path?.path === "sql" ? path.sql : void 0;
+  })();
+  if (typeof resolved !== "string")
+    return "its SQL text is not text once its bindings resolve";
+  if (resolved === sql)
+    return void 0;
+  const after = autoReadSqlRefusal(resolved, dialect);
+  return after ? `once its {{ }} bindings resolve, ${after}` : void 0;
+}
+function connectorRefusal(query) {
+  const kind = query.kind?.toLowerCase();
+  const options = record(query.options);
+  if (!kind || !options)
+    return "its datasource kind or options are unavailable";
+  if (kind === "tooljetdb") {
+    if (options.operation === "list_rows") {
+      if (options.limit !== void 0 || options.offset !== void 0) {
+        return "it has a top-level limit or offset, which ToolJet Database ignores (it reads list_rows.limit and list_rows.offset)";
+      }
+      const stray = Object.keys(record(options.list_rows) ?? {}).filter((key) => !TOOLJETDB_LIST_ROWS_KEYS.has(key));
+      return stray.length ? `its list_rows carries ${stray.join(", ")}, which ToolJet Database does not read` : void 0;
+    }
+    if (options.operation === "sql_execution")
+      return sqlRefusal(kind, options, record(options.sql_execution)?.sqlQuery);
+    return `ToolJet Database operation "${String(options.operation ?? "<missing>")}" is not one the automatic check runs`;
+  }
+  if (!AUTO_SQL_KINDS.has(kind)) {
+    return `automatic checks run only ToolJet Database, PostgreSQL, MySQL, MariaDB, SQL Server and Oracle queries, whose read and write branches are known; this is a ${kind} query`;
+  }
+  const label = connectorLabel(kind);
+  const mode = options.mode;
+  if (MODE_REQUIRED.has(kind) && mode !== "sql" && mode !== "gui") {
+    return `its mode is ${mode === void 0 ? "missing" : `"${String(mode)}"`}: ${label} runs a query only in mode "sql" or "gui"`;
+  }
+  if (mode !== void 0 && mode !== "sql" && mode !== "gui")
+    return `its mode "${String(mode)}" is neither "sql" nor "gui"`;
+  const path = sqlConnectorPath(kind, options);
+  if (path.path === "not_read")
+    return path.reason;
+  if (path.path === "gui_list_rows") {
+    if (hasText(options.query))
+      return "it is a GUI query that also carries SQL text in query; remove the one that is not meant to run";
+    const stray = Object.keys(record(options.list_rows) ?? {}).filter((key) => !GUI_LIST_ROWS_KEYS.has(key));
+    if (stray.includes("limit") || stray.includes("offset")) {
+      return `its row bound is in list_rows, which ${label} ignores (it applies only the top-level limit and offset), so it is unbounded`;
+    }
+    if (stray.length)
+      return `its list_rows carries ${stray.join(", ")}, which ${label} does not read`;
+    if (options.limit === void 0)
+      return `it has no top-level limit, which is where ${label} applies the row limit`;
+    return void 0;
+  }
+  if (hasText(options.operation)) {
+    return `it is a SQL query that also names the GUI operation "${String(options.operation)}"; remove the one that is not meant to run`;
+  }
+  return sqlRefusal(kind, options, path.sql);
+}
+function autoReadPreflight(query) {
+  const general = batchSafeRead(query);
+  if (!general.safe)
+    return { run: false, reason: String(general.reason ?? "not a proven bounded read") };
+  const refusal = connectorRefusal(query);
+  return refusal ? { run: false, reason: `${NOT_CHECKED_AUTOMATICALLY}${refusal}` } : { run: true };
+}
 export {
-  JSONRPCMessageSchema as $,
-  CreateMessageResultWithToolsSchema as A,
-  CreateMessageResultSchema as B,
+  EmptyResultSchema as A,
+  CreateMessageResultWithToolsSchema as B,
   CancelledNotificationSchema as C,
-  ElicitResultSchema as D,
+  CreateMessageResultSchema as D,
   ErrorCode as E,
-  ListRootsResultSchema as F,
+  ElicitResultSchema as F,
   GetTaskRequestSchema as G,
-  SUPPORTED_PROTOCOL_VERSIONS as H,
+  ListRootsResultSchema as H,
   InitializeRequestSchema as I,
-  CallToolResultSchema as J,
-  manageAppPermissionsTool as K,
+  SUPPORTED_PROTOCOL_VERSIONS as J,
+  CallToolResultSchema as K,
   ListTasksRequestSchema as L,
   McpError as M,
-  listWorkspaceGroupsTool as N,
-  manageWorkspaceGroupsTool as O,
+  NOT_CHECKED_AUTOMATICALLY as N,
+  listWorkspaceGroupsTool as O,
   ProgressNotificationSchema as P,
-  createAppTool as Q,
+  manageWorkspaceGroupsTool as Q,
   RELATED_TASK_META_KEY as R,
   SetLevelRequestSchema as S,
   TaskStatusNotificationSchema as T,
   inspectDatasourceSchemaTool as U,
-  manageThemeTool as V,
-  datasourceMetadataTools as W,
-  WebStandardStreamableHTTPServerTransport as X,
-  themeActionTools as Y,
-  workspaceGroupActionTools as Z,
-  appPermissionActionTools as _,
-  PingRequestSchema as a,
-  GetTaskPayloadRequestSchema as b,
-  CancelTaskRequestSchema as c,
-  isJSONRPCErrorResponse as d,
-  isJSONRPCRequest as e,
-  isJSONRPCNotification as f,
-  isTaskAugmentedRequestParams as g,
-  CreateTaskResultSchema as h,
+  datasourceMetadataTools as V,
+  WebStandardStreamableHTTPServerTransport as W,
+  getRequestListener as X,
+  workspaceGroupActionTools as Y,
+  JSONRPCMessageSchema as Z,
+  autoReadPreflight as a,
+  PingRequestSchema as b,
+  GetTaskPayloadRequestSchema as c,
+  CancelTaskRequestSchema as d,
+  isJSONRPCErrorResponse as e,
+  isJSONRPCRequest as f,
+  isJSONRPCNotification as g,
+  isTaskAugmentedRequestParams as h,
   isJSONRPCResultResponse as i,
-  GetTaskResultSchema as j,
-  ListTasksResultSchema as k,
-  CancelTaskResultSchema as l,
-  ListToolsRequestSchema as m,
-  CallToolRequestSchema as n,
-  CompleteRequestSchema as o,
-  assertCompleteRequestResourceTemplate as p,
-  assertCompleteRequestPrompt as q,
-  ListResourcesRequestSchema as r,
-  ListResourceTemplatesRequestSchema as s,
-  ReadResourceRequestSchema as t,
-  ListPromptsRequestSchema as u,
-  GetPromptRequestSchema as v,
-  LoggingLevelSchema as w,
-  InitializedNotificationSchema as x,
-  LATEST_PROTOCOL_VERSION as y,
-  EmptyResultSchema as z
+  CreateTaskResultSchema as j,
+  GetTaskResultSchema as k,
+  ListTasksResultSchema as l,
+  CancelTaskResultSchema as m,
+  ListToolsRequestSchema as n,
+  CallToolRequestSchema as o,
+  CompleteRequestSchema as p,
+  assertCompleteRequestResourceTemplate as q,
+  assertCompleteRequestPrompt as r,
+  ListResourcesRequestSchema as s,
+  ListResourceTemplatesRequestSchema as t,
+  ReadResourceRequestSchema as u,
+  ListPromptsRequestSchema as v,
+  GetPromptRequestSchema as w,
+  LoggingLevelSchema as x,
+  InitializedNotificationSchema as y,
+  LATEST_PROTOCOL_VERSION as z
 };

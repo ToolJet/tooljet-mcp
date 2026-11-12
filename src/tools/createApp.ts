@@ -8,6 +8,7 @@ import { themeDefinition } from './themeDefinition.js';
 import { accentWarning } from '../themeAccent.js';
 import { COMPONENT_PACK_DESCRIPTION, defaultPack, savedComponentLibrary, type ComponentLibrary } from '../componentLibrary.js';
 import { libraryPins } from '../libraryPack.js';
+import { codeCliProblem } from './codeApp.js';
 
 // The standard theme's primary, for the accent note (a stock blue reads plain).
 const STANDARD_PRIMARY = { brand: { colors: { primary: { light: '#2563EB' } } } };
@@ -115,7 +116,10 @@ export function createAppTool(client: ToolJetClient): ToolDef {
       'workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. ' +
       'If a theme cannot be created (for example a licence gate) the app is still created and the result carries a ' +
       'theme warning. New apps are built in ToolJet UI 2.0 (component_library "ui2": types starting with Shad, laid out ' +
-      'in FlexContainers); pass component_library "ui1" only when the user asks for the classic ToolJet widgets.',
+      'in FlexContainers); pass component_library "ui1" only when the user asks for the classic ToolJet widgets. ' +
+      'For a Code mode app (React code, built with the code_app_* tools) pass build_mode "code": the build mode is fixed ' +
+      'when the app is created, so an app created without it stays visual. A Code mode app takes no theme, ' +
+      'component_library or component_pack (its look lives in its code); call code_app_scaffold with its app_id next.',
     inputSchema: {
       name: z.string().min(1),
       theme: z.union([z.string().min(1), derivedThemeSchema]).optional(),
@@ -126,9 +130,27 @@ export function createAppTool(client: ToolJetClient): ToolDef {
         'The component library the app is built in, saved on the app (the components panel lists it). Default "ui2", ' +
           'ToolJet UI 2.0; "ui1" (ToolJet UI 1.0, the native widgets) only when the user asks for it.'),
       component_pack: z.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION),
+      build_mode: z.enum(['visual', 'code']).optional().describe(
+        'How the app is built, fixed at creation. Default "visual" (ToolJet components on the canvas). "code" makes a ' +
+          'Code mode app: React code written with the code_app_* tools. Ask the user which they want when the request ' +
+          'does not say.'),
     },
-    async handler(args: { name: string; theme?: string | DerivedTheme; app_mode?: 'light' | 'dark'; component_library?: ComponentLibrary; component_pack?: string }) {
+    async handler(args: { name: string; theme?: string | DerivedTheme; app_mode?: 'light' | 'dark'; component_library?: ComponentLibrary; component_pack?: string; build_mode?: 'visual' | 'code' }) {
       try {
+        if (args.build_mode === 'code') {
+          // Checked before the app exists: without the CLI the app could never be scaffolded.
+          const cliProblem = await codeCliProblem();
+          if (cliProblem) return fail(new Error(cliProblem));
+          // The visual build's settings (theme, component library, the published pack's pin) do not apply: a Code mode
+          // app draws from its own code, and a pin to any library but its own would hold its release.
+          const created = await client.createApp(args.name, { buildMode: 'code' });
+          const ignored = (['theme', 'app_mode', 'component_library', 'component_pack'] as const).filter((k) => args[k] !== undefined);
+          return ok({
+            ...created,
+            ...(ignored.length ? { note: `Not applied to a Code mode app: ${ignored.join(', ')}. Its look is set in its code (frontend/styles/theme.css).` } : {}),
+            next: 'code_app_scaffold with this app_id.',
+          });
+        }
         // Internal callers can bypass MCP input validation. Reject incomplete themes before creating
         // even an empty app; a theme name alone does not prove that its requested palette was applied.
         if (typeof args.theme === 'object') derivedThemeSchema.parse(args.theme);

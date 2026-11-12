@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, onTestFinished } from 'vitest';
 import type { ToolJetClient } from '../src/tooljetClient.js';
 import { createAppTool, loadStandardTheme } from '../src/tools/createApp.js';
 import { createAppVersionTool } from '../src/tools/createAppVersion.js';
@@ -82,6 +82,52 @@ function textOf(result: { content: Array<{ type: string; text: string }> }): unk
 }
 
 describe('create_app tool', () => {
+  it('creates a Code mode app with build_mode "code", without the visual build\'s theme or library settings', async () => {
+    const client = makeClient();
+    client.createApp.mockResolvedValue({ ...createdApp, build_mode: 'code' });
+
+    const result = await createAppTool(client as unknown as ToolJetClient).handler({
+      name: 'Accord',
+      build_mode: 'code',
+      theme: 'workspace_default',
+      component_pack: 'shadcn',
+    });
+
+    expect(client.createApp).toHaveBeenCalledWith('Accord', { buildMode: 'code' });
+    expect(client.listAppThemes).not.toHaveBeenCalled();
+    expect(client.updateAppSettings).not.toHaveBeenCalled();
+    expect(textOf(result)).toEqual({
+      ...createdApp,
+      build_mode: 'code',
+      note: expect.stringMatching(/Not applied to a Code mode app: theme, component_pack/),
+      next: 'code_app_scaffold with this app_id.',
+    });
+    expect(result.isError).toBeUndefined();
+  });
+
+  it('refuses a Code mode app before creating it when this machine has no ToolJet CLI', async () => {
+    vi.stubEnv('MCP_CODE_CLI_HANDSHAKE', '1'); // vitest.config turns the handshake off for every other test
+    vi.stubEnv('TOOLJET_CLI', '/nonexistent/tooljet-cli/bin/run');
+    onTestFinished(() => vi.unstubAllEnvs());
+    const client = makeClient();
+
+    const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'Accord', build_mode: 'code' });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/ToolJet CLI .* not installed.*npm install -g @tooljet\/cli@beta.*No app was created/);
+    expect(client.createApp).not.toHaveBeenCalled();
+  });
+
+  it('reports a server without Code mode as a failure', async () => {
+    const client = makeClient();
+    client.createApp.mockRejectedValue(new Error('This ToolJet server does not support Code mode apps: it created a visual app instead.'));
+
+    const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'Accord', build_mode: 'code' });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/does not support Code mode/);
+  });
+
   it('creates the app, creates the standard theme once, and applies it to the new version', async () => {
     const client = makeClient();
     client.createApp.mockResolvedValue(createdApp);

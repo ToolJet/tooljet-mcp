@@ -1,1288 +1,16 @@
 import { createRequire } from "node:module";
-import { g as getComponentSchema, C as COMPONENT_FX_UPDATE_GUIDANCE, b as getCatalog, c as getLegacyComponentReplacement, e as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, f as assertWorkflowQueryOptions, w as workflowMappingMatches, a as activePackSet } from "./chunk-CmizjRXJ.js";
-import { i as isMisplacedStyleKey, P as PROPERTY_KEY_ALIASES, r as retiredUi2Name, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey, d as decodeComponentParent, c as componentSlotSchema, a as componentNameSchema, b as componentNameError, e as resolveParentRef, f as encodeComponentParent, g as introducedLintFindings, l as lintComponentSpec, h as lintComponentSlots, j as lintUnusableTextGeometry, k as lintStandardSingleLineInputHeight, m as lintTextGeometry, o as lintRenderedGeometry, p as lintKanbanInteractions, q as lintShadKanbanCards, s as lintShadScheduleScale, t as downgradeFlexForLibrary, u as assertPageIcon, v as resolveComponentLibrary, w as toLibraryComponent, x as missingLibraryPins, y as libraryTypeOf } from "./chunk-CzEla2h4.js";
-import { b0 as external_exports, b7 as fail, b8 as ok, b9 as definition } from "./chunk-Csl8mO51.js";
-import { n as suggestedHtmlHeight } from "./chunk-CH7Qaiw9.js";
+import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, e as codeCliProblem } from "./chunk-BmwE9MbG.js";
+import { b0 as external_exports, b9 as definition, b7 as fail, b8 as ok, ba as exposeActions } from "./chunk-Csl8mO51.js";
 import { e5 as tableQuotaError, e9 as TableQuotaError } from "./chunk-C1Uan0hB.js";
+import { f as encodeComponentParent, t as downgradeFlexForLibrary, d as decodeComponentParent, u as assertPageIcon, v as resolveComponentLibrary, i as isMisplacedStyleKey, w as toLibraryComponent, x as missingLibraryPins, y as libraryTypeOf, z as libraryPins, A as defaultPack, B as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION } from "./chunk-CzEla2h4.js";
+import { e as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, f as assertWorkflowQueryOptions, w as workflowMappingMatches, a as activePackSet } from "./chunk-CmizjRXJ.js";
 import { randomUUID, createHash } from "node:crypto";
 import { AsyncLocalStorage } from "node:async_hooks";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { fileURLToPath } from "node:url";
-createRequire(import.meta.url);
-function separateAdjacentClosingBraces(text) {
-  let out = "";
-  let i = 0;
-  const n = text.length;
-  while (i < n) {
-    if (!text.startsWith("{{", i)) {
-      out += text[i];
-      i += 1;
-      continue;
-    }
-    let j = i + 2;
-    let depth = 0;
-    let quote = null;
-    let expr = "";
-    let terminated = false;
-    while (j < n) {
-      const c = text[j];
-      if (quote) {
-        expr += c;
-        if (c === "\\" && j + 1 < n) {
-          expr += text[j + 1];
-          j += 2;
-          continue;
-        }
-        if (c === quote)
-          quote = null;
-        j += 1;
-        continue;
-      }
-      if (c === "'" || c === '"' || c === "`") {
-        quote = c;
-        expr += c;
-        j += 1;
-        continue;
-      }
-      if (c === "{") {
-        depth += 1;
-        expr += c;
-        j += 1;
-        continue;
-      }
-      if (c === "}") {
-        if (depth === 0 && text[j + 1] === "}") {
-          terminated = true;
-          break;
-        }
-        depth = Math.max(depth - 1, 0);
-        expr += c;
-        if (text[j + 1] === "}")
-          expr += " ";
-        j += 1;
-        continue;
-      }
-      expr += c;
-      j += 1;
-    }
-    if (!terminated) {
-      out += text.slice(i);
-      break;
-    }
-    out += `{{${expr}}}`;
-    i = j + 2;
-  }
-  return out;
-}
-function separateAdjacentClosingBracesDeep(value) {
-  if (typeof value === "string") {
-    if (!value.includes("{{"))
-      return { value, changed: false };
-    const fixed = separateAdjacentClosingBraces(value);
-    return { value: fixed, changed: fixed !== value };
-  }
-  if (Array.isArray(value)) {
-    let changed = false;
-    const next = value.map((item) => {
-      const result = separateAdjacentClosingBracesDeep(item);
-      changed ||= result.changed;
-      return result.value;
-    });
-    return { value: changed ? next : value, changed };
-  }
-  if (value && typeof value === "object") {
-    let changed = false;
-    const next = {};
-    for (const [key, item] of Object.entries(value)) {
-      const result = separateAdjacentClosingBracesDeep(item);
-      changed ||= result.changed;
-      next[key] = result.value;
-    }
-    return { value: changed ? next : value, changed };
-  }
-  return { value, changed: false };
-}
-function normalizeSection(section) {
-  if (!section)
-    return { value: void 0, patch: void 0 };
-  const value = {};
-  const patch = {};
-  for (const [key, entry] of Object.entries(section)) {
-    const canonical = entry !== null && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry : { value: entry };
-    value[key] = canonical;
-    if (canonical !== entry)
-      patch[key] = canonical;
-  }
-  return {
-    value,
-    patch: Object.keys(patch).length ? patch : void 0
-  };
-}
-function propValue(properties, key) {
-  const entry = properties[key];
-  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
-}
-function isTruthy(value) {
-  if (value === true || value === 1)
-    return true;
-  if (typeof value !== "string")
-    return false;
-  const compact = value.replace(/\s+/g, "").toLowerCase();
-  return compact === "true" || compact === "{{true}}" || compact === "1" || compact === "{{1}}";
-}
-function catalogDefault(type, key, fallback) {
-  return getComponentSchema(type)?.properties.find((property) => property.key === key)?.default ?? fallback;
-}
-var MONEY_WORDS = /\b(price|amount|cost|total|revenue|balance|fee|fees|spend|spent|salary|budget|paid|payment|invoice|subtotal|tax|refund|value|mrr|arr)\b/i;
-var PERSON_WORDS = /\b(customer|client|requester|requestor|owner|assignee|assigned to|contact|lead|member|patient|guest|organi[sz]er|employee|technician|tech|agent|rep|student|author|reporter|host|driver|candidate|applicant|tenant|buyer|seller|manager|person|attendee|trainer|coach|instructor|doctor|vet|veterinarian|nurse|resident|full name|customer name|contact name)\b/i;
-var UNIT_WORDS = /\b(min|mins|minutes?|hours?|hrs?|days?|weeks?|time|count|qty|quantity|servings?|units?|items?|points?|score|percent|pct|kg|lbs?|reps?|sets?|seats?|guests?|nights?|orders?|tickets?|visits?)\b/i;
-var COUNT_WORDS = /\b(min|mins|minutes?|hours?|hrs?|count|qty|quantity|servings?|units?|items?|points?|score|percent|pct|kg|lbs?|reps?|sets?|seats?|guests?|nights?|orders?|tickets?|visits?|jobs?|rate)\b/i;
-var STATE_WORDS = /\b(status|stage|state|priority|severity|availability|health|risk|condition)\b/i;
-var AMBIGUOUS_MONEY_WORDS = /\b(total|totals|value)\b/gi;
-var COUNTED_NOUNS = /\b(clients?|clientes?|customers?|users?|usu[aá]rios?|members?|membros?|miembros?|patients?|pacientes?|leads?|accounts?|contas?|cuentas?|vendors?|suppliers?|fornecedor(es)?|proveedor(es)?|employees?|funcion[aá]rios?|empleados?|staff|people|pessoas|personas|students?|alunos?|estudiantes?|contacts?|contatos?|contactos?|compan(y|ies)|empresas?|projects?|projetos?|proyectos?|tasks?|tarefas?|tareas?|bugs?|issues?|requests?|pedidos?|solicita[cç](ão|ões|ión|iones)|records?|registros?|rooms?|salas?|bookings?|reservations?|reservas?|appointments?|agendamentos?|consultas?|citas?|recipes?|receitas?|recetas?|ingredients?|ingredientes?|products?|produtos?|productos?|assets?|ativos?|devices?|dispositivos?|vehicles?|ve[ií]culos?|audits?|auditorias?|findings?|cases?|casos?|deals?|negócios?|events?|eventos?)\b/i;
-var countLabel = (label) => {
-  if (COUNT_WORDS.test(label))
-    return true;
-  return !MONEY_WORDS.test(label.replace(AMBIGUOUS_MONEY_WORDS, " ")) && COUNTED_NOUNS.test(label);
-};
-function plannedCurrency(components) {
-  for (const component of components) {
-    if (component.type !== "ShadStat")
-      continue;
-    const currency = propValue(component.properties ?? {}, "currency");
-    if (typeof currency === "string" && /^[A-Za-z]{3}$/.test(currency.trim()))
-      return currency.trim().toUpperCase();
-  }
-  return void 0;
-}
-var CLIENT_SERVER_BOOLEAN_KEYS = /* @__PURE__ */ new Set([
-  "serverSidePagination",
-  "serverSideSearch",
-  "serverSideSort",
-  "serverSideFilter"
-]);
-var STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS = 24;
-function isStrippableUnknownKey(type, section, key, knownKeys) {
-  if (knownKeys.includes(key))
-    return false;
-  if (section === "properties" && retiredUi2Name(type, "properties", key))
-    return false;
-  if (type === "DropdownV2" && section === "properties" && ["value", "defaultValue"].includes(key))
-    return false;
-  if (section === "properties" && STYLE_KEYS_IN_PROPERTIES.has(key))
-    return false;
-  const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
-  if (aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget)))
-    return false;
-  if (nearestCatalogKey(key, knownKeys))
-    return false;
-  return true;
-}
-function packValueAsDefault(type, name, properties) {
-  if (!properties || properties.value === void 0)
-    return { properties };
-  const schema = type ? getComponentSchema(type) : void 0;
-  const keys = new Set((schema?.properties ?? []).map((entry) => entry.key));
-  if (!schema?.pack || !keys.has("defaultValue") || keys.has("value"))
-    return { properties };
-  const { value, ...rest } = properties;
-  if (rest.defaultValue !== void 0) {
-    return { properties: rest, warning: `${type} "${name}": dropped properties.value, the input's runtime value; it starts from defaultValue.` };
-  }
-  return {
-    properties: { ...rest, defaultValue: value },
-    warning: `${type} "${name}": moved properties.value to defaultValue, where the input takes its starting value from.`
-  };
-}
-function normalizeComponentSpec(component, options = {}) {
-  const normalizedSections = Object.fromEntries(["properties", "styles", "validation", "others"].map((section) => [
-    section,
-    normalizeSection(component[section])
-  ]));
-  const warnings = [];
-  const packValue = packValueAsDefault(component.type, component.name, normalizedSections.properties.value);
-  if (packValue.warning)
-    warnings.push(packValue.warning);
-  const properties = { ...packValue.properties ?? {} };
-  const propertyPatch = {};
-  const stylePatch = {};
-  const setProperty = (key, value) => {
-    const current = properties[key];
-    const wrapped = current && typeof current === "object" && !Array.isArray(current) ? { ...current, value } : { value };
-    properties[key] = wrapped;
-    propertyPatch[key] = wrapped;
-  };
-  const stylesValue = normalizedSections.styles.value ?? {};
-  let stylesChanged = false;
-  const setStyle = (key, value) => {
-    const current = stylesValue[key];
-    stylesValue[key] = current && typeof current === "object" && !Array.isArray(current) ? { ...current, value } : { value };
-    stylePatch[key] = stylesValue[key];
-    normalizedSections.styles.value = stylesValue;
-  };
-  const schema = getComponentSchema(component.type);
-  const knownPropertyKeys = schema ? new Set(schema.properties.map((entry) => entry.key)) : void 0;
-  const knownStyleKeys = schema ? new Set(schema.styles.map((entry) => entry.key)) : void 0;
-  const aliasTargetFor = (key) => {
-    if (knownPropertyKeys?.has(key))
-      return void 0;
-    const target = PROPERTY_KEY_ALIASES[key.toLowerCase()];
-    if (!target)
-      return void 0;
-    if (!schema)
-      return target;
-    return knownStyleKeys.has(target) || knownPropertyKeys.has(target) ? target : void 0;
-  };
-  for (const key of Object.keys(properties)) {
-    const aliasTarget = aliasTargetFor(key);
-    const canonical = aliasTarget ?? key;
-    const belongsInStyles = canonical !== "styles" && (isMisplacedStyleKey(component.type, canonical) || !!aliasTarget && !!knownStyleKeys?.has(canonical) && !knownPropertyKeys?.has(canonical));
-    if (!aliasTarget && !belongsInStyles)
-      continue;
-    if (belongsInStyles) {
-      if (stylesValue[canonical] === void 0)
-        stylesValue[canonical] = properties[key];
-      delete properties[key];
-      stylesChanged = true;
-      warnings.push(`${component.type} "${component.name}": moved ${aliasTarget ? `alias "${key}"` : `style key "${key}"`} to styles.${canonical} (ToolJet reads it from styles, not properties).`);
-    } else if (canonical !== key) {
-      if (properties[canonical] === void 0)
-        properties[canonical] = properties[key];
-      delete properties[key];
-      warnings.push(`${component.type} "${component.name}": renamed alias "${key}" to "${canonical}".`);
-    }
-  }
-  if (schema && options.stripUnknownKeys) {
-    for (const key of Object.keys(stylesValue)) {
-      if (knownStyleKeys.has(key) || !knownPropertyKeys.has(key))
-        continue;
-      if (properties[key] === void 0) {
-        properties[key] = stylesValue[key];
-        propertyPatch[key] = stylesValue[key];
-      }
-      delete stylesValue[key];
-      stylesChanged = true;
-      warnings.push(`${component.type} "${component.name}": moved styles.${key} to properties.${key} (ToolJet reads it from properties for ${component.type}).`);
-    }
-  }
-  if (stylesChanged)
-    normalizedSections.styles.value = stylesValue;
-  if (options.stripUnknownKeys && component.type === "NumberInput") {
-    for (const key of ["minValue", "maxValue"]) {
-      const value = propValue(properties, key);
-      if (value == null || typeof value === "string" && !value.trim())
-        continue;
-      const validation = normalizedSections.validation.value ?? {};
-      const current = propValue(validation, key);
-      if (validation[key] !== void 0 && current !== value)
-        continue;
-      validation[key] = properties[key];
-      normalizedSections.validation.value = validation;
-      normalizedSections.validation.patch = { ...normalizedSections.validation.patch, [key]: validation[key] };
-      delete properties[key];
-      warnings.push(`NumberInput "${component.name}": moved properties.${key} to validation.${key}, where the renderer reads the bound.`);
-    }
-  }
-  for (const key of CLIENT_SERVER_BOOLEAN_KEYS) {
-    const current = propValue(properties, key);
-    if (current !== "clientSide" && current !== "serverSide")
-      continue;
-    setProperty(key, current === "serverSide");
-    warnings.push(`${component.name} "${key}": normalized ${JSON.stringify(current)} to a boolean ToolJet binding.`);
-  }
-  if (component.type === "FlexContainer") {
-    const card = propValue(properties, "cardStyle");
-    if (card === "shadcnCard" && !isTruthy(propValue(properties, "dynamicHeight"))) {
-      setProperty("dynamicHeight", "{{true}}");
-    }
-  }
-  if (component.type === "Table") {
-    const lookEntry0 = stylesValue.tableLook;
-    const look0 = lookEntry0 && typeof lookEntry0 === "object" ? lookEntry0.value : lookEntry0;
-    const height = (component.layouts?.desktop ?? component.layout)?.height;
-    const staticNumber = (v) => {
-      const m = typeof v === "number" ? String(v) : typeof v === "string" ? /^\s*(?:\{\{\s*)?(\d+)\s*(?:\}\})?\s*$/.exec(v)?.[1] : void 0;
-      return m !== void 0 ? Number(m) : void 0;
-    };
-    const isFalse = (v) => v === false || typeof v === "string" && /^\s*(\{\{\s*)?false(\s*\}\})?\s*$/.test(v);
-    if (look0 === "shadcn" && properties.dynamicHeight === void 0) {
-      setProperty("dynamicHeight", "{{true}}");
-    }
-    if (look0 === "shadcn" && typeof height === "number" && !isTruthy(propValue(properties, "dynamicHeight")) && !isTruthy(propValue(properties, "serverSidePagination")) && !isFalse(propValue(properties, "enablePagination"))) {
-      const rowsPerPage = staticNumber(propValue(properties, "rowsPerPage")) ?? 10;
-      const toolbar = isFalse(propValue(properties, "displaySearchBox")) ? 0 : 64;
-      const cellEntry = stylesValue.cellSize;
-      const cellSize = cellEntry && typeof cellEntry === "object" ? cellEntry.value : cellEntry;
-      const rowPx = cellSize === "condensed" ? 40 : 46;
-      const fit = Math.floor((height - toolbar - 41 - 47) / rowPx);
-      if (fit < rowsPerPage) {
-        if (fit >= 3) {
-          setProperty("rowsPerPage", `{{${fit}}}`);
-          warnings.push(`Table "${component.name}": height ${height}px fits ${fit} rows; rowsPerPage is now ${fit} so no row is cut off.`);
-        } else {
-          setProperty("dynamicHeight", "{{true}}");
-          warnings.push(`Table "${component.name}": height ${height}px fits fewer than 3 rows; dynamicHeight is on so the table fits its rows.`);
-        }
-      }
-    }
-    if (look0 === "shadcn" && properties.highlightSelectedRow === void 0 && !isTruthy(propValue(properties, "showBulkSelector")) && !isFalse(propValue(properties, "allowSelection"))) {
-      setProperty("highlightSelectedRow", "{{true}}");
-    }
-    if (properties.useDynamicColumn === void 0) {
-      setProperty("useDynamicColumn", catalogDefault("Table", "useDynamicColumn", "{{false}}"));
-    }
-    if (properties.columnData === void 0) {
-      setProperty("columnData", catalogDefault("Table", "columnData", "{{[{name: 'email', key: 'email', id: '1'}, {name: 'Full name', key: 'name', id: '2', isEditable: true}]}}"));
-    }
-    const columns = propValue(properties, "columns");
-    const dynamicColumns = isTruthy(propValue(properties, "useDynamicColumn"));
-    const autogenerateColumns = propValue(properties, "autogenerateColumns");
-    if (options.stripUnknownKeys && columns === void 0 && !dynamicColumns && isTruthy(autogenerateColumns) && typeof propValue(properties, "data") === "string" && /\bqueries(?:\.|\[)/.test(String(propValue(properties, "data")))) {
-      setProperty("columns", []);
-    }
-    if (Array.isArray(columns) && !dynamicColumns && !isTruthy(autogenerateColumns)) {
-      setProperty("autogenerateColumns", true);
-      if (autogenerateColumns !== void 0) {
-        warnings.push(`Table "${component.name}": normalized autogenerateColumns from false to true for runtime compatibility. Some ToolJet Table versions crash while generating transformations for explicit static columns when it is false. Project the data binding to intended keys and declare behavior-only keys with columnVisibility:false.`);
-      }
-    }
-    if (Array.isArray(columns)) {
-      const lookEntry = stylesValue.tableLook;
-      const shadcnLook = (lookEntry && typeof lookEntry === "object" ? lookEntry.value : lookEntry) === "shadcn";
-      const wrapNow = stylesValue.contentWrap?.value ?? stylesValue.contentWrap;
-      const multiLine = columns.some((c) => c && typeof c === "object" && !Array.isArray(c) && c.columnVisibility !== false && ["html", "text", "json", "image", "markdown"].includes(String(c.columnType)));
-      if (shadcnLook && multiLine && wrapNow === false)
-        setStyle("contentWrap", true);
-      else if (shadcnLook && !multiLine && wrapNow !== false)
-        setStyle("contentWrap", false);
-      let changedColumns = false;
-      const repairedColumns = columns.map((column) => {
-        if (options.stripUnknownKeys && column && typeof column === "object" && !Array.isArray(column) && column.columnType === "button" && Array.isArray(column.buttons)) {
-          const buttons = column.buttons.map((button) => {
-            if (!button || typeof button !== "object" || Array.isArray(button))
-              return button;
-            const b = button;
-            if (typeof b.label !== "string" || b.buttonLabel !== void 0)
-              return button;
-            const { label, ...rest } = b;
-            changedColumns = true;
-            warnings.push(`Table "${component.name}" action "${b.id}": moved label to buttonLabel, where the renderer reads the caption.`);
-            return { ...rest, buttonLabel: label };
-          });
-          column = { ...column, buttons };
-        }
-        if (column && typeof column === "object" && !Array.isArray(column) && column.columnType === "datepicker" && column.isDateSelectionEnabled === false && column.isTimeChecked !== true) {
-          changedColumns = true;
-          const entry = column;
-          warnings.push(`Table "${component.name}" date column "${entry.name ?? entry.key}": enabled date selection \u2014 a datepicker column with both date selection and time disabled renders blank regardless of the data.`);
-          return { ...entry, isDateSelectionEnabled: true };
-        }
-        if (shadcnLook && column && typeof column === "object" && !Array.isArray(column) && column.columnType === "datepicker" && !isTruthy(column.isEditable) && /^Y{4}[-/]MM[-/]DD$/.test(String(column.dateFormat ?? "").trim())) {
-          changedColumns = true;
-          const entry = column;
-          column = { ...entry, parseDateFormat: entry.parseDateFormat ?? entry.dateFormat, dateFormat: "MMM D, YYYY" };
-        }
-        if (column && typeof column === "object" && !Array.isArray(column) && column.columnType === "newMultiSelect" && !isTruthy(column.isEditable) && /^(status|severity|priority|stage|state|level|risk)$/i.test(String(column.key ?? column.name ?? "").replace(/[_\s-]+/g, ""))) {
-          changedColumns = true;
-          const entry = column;
-          warnings.push(`Table "${component.name}" column "${entry.name ?? entry.key}": a single state per row; columnType is now "select" (a multi-select shows "Select.." for a single value).`);
-          column = { ...entry, columnType: "select" };
-        }
-        if (shadcnLook && column && typeof column === "object" && !Array.isArray(column) && column.columnType === "number" && (column.horizontalAlignment === void 0 || column.thousandSeparator === void 0)) {
-          changedColumns = true;
-          const entry = column;
-          column = {
-            ...entry,
-            horizontalAlignment: entry.horizontalAlignment ?? "right",
-            thousandSeparator: entry.thousandSeparator ?? true
-          };
-        }
-        if (shadcnLook && column && typeof column === "object" && !Array.isArray(column)) {
-          const entry = column;
-          const words = `${String(entry.key ?? "")} ${String(entry.name ?? "")}`.replace(/[_-]+/g, " ");
-          const next = { ...entry };
-          if (entry.columnType === "number" && entry.decimalPlaces === void 0 && MONEY_WORDS.test(words) && !UNIT_WORDS.test(words)) {
-            next.decimalPlaces = 2;
-          }
-          if (["string", void 0].includes(entry.columnType) && entry.displayAsChip === void 0 && !isTruthy(entry.isEditable) && STATE_WORDS.test(words)) {
-            next.displayAsChip = true;
-          }
-          const size = Number(entry.columnSize);
-          const label = String(entry.name ?? entry.key ?? "");
-          if (Number.isFinite(size) && size > 0 && label) {
-            const email = /\be ?mail\b/i.test(words) ? 240 : 0;
-            const chip = next.displayAsChip === true || entry.displayAsChip === true ? 140 : 0;
-            const needed = Math.max(email, chip, Math.ceil(label.length * 7.5) + 32 + (isTruthy(entry.isEditable) ? 18 : 0));
-            if (size < needed)
-              next.columnSize = needed;
-          }
-          if (entry.columnType === "button" && Array.isArray(entry.buttons)) {
-            const buttons = entry.buttons.map((button) => {
-              if (!button || typeof button !== "object" || Array.isArray(button))
-                return button;
-              const b = button;
-              const bg = b.buttonBackgroundColor;
-              const defaultBg = bg === void 0 || ["#4368E3", "#4368e3", "var(--cc-primary-brand)"].includes(String(bg));
-              return (b.buttonType === void 0 || b.buttonType === "solid") && defaultBg ? { ...b, buttonType: "outline" } : button;
-            });
-            if (buttons.some((b, i) => b !== entry.buttons[i]))
-              next.buttons = buttons;
-          }
-          if (Object.keys(next).some((k) => next[k] !== entry[k])) {
-            changedColumns = true;
-            column = next;
-          }
-        }
-        return column;
-      });
-      if (shadcnLook) {
-        const visible = repairedColumns.filter((c) => !!c && typeof c === "object" && !Array.isArray(c) && c.columnVisibility !== false);
-        const width = (c) => Number(c.columnSize) > 0 ? Number(c.columnSize) : 120;
-        const total = visible.reduce((sum, c) => sum + width(c), 0);
-        if (visible.length > 1 && total > 1240) {
-          const factor = 1240 / total;
-          const floor = (c) => c.columnType === "button" ? 110 : Math.max(/\be ?mail\b/i.test(`${String(c.key ?? "")} ${String(c.name ?? "")}`.replace(/[_-]+/g, " ")) ? 240 : 64, Math.ceil(String(c.name ?? c.key ?? "").length * 7.5) + 32);
-          for (let i = 0; i < repairedColumns.length; i++) {
-            const c = repairedColumns[i];
-            if (!visible.includes(c))
-              continue;
-            repairedColumns[i] = { ...c, columnSize: Math.max(floor(c), Math.floor(width(c) * factor)) };
-          }
-          changedColumns = true;
-          warnings.push(`Table "${component.name}": its visible columns (${total}px) were wider than a page; they now scale to fit about 1240px.`);
-        }
-      }
-      if (shadcnLook) {
-        const index = repairedColumns.findIndex((c) => {
-          if (!c || typeof c !== "object" || Array.isArray(c))
-            return false;
-          const entry2 = c;
-          const words = `${String(entry2.key ?? "")} ${String(entry2.name ?? "")}`.replace(/[_-]+/g, " ");
-          return entry2.columnVisibility !== false && ["string", void 0].includes(entry2.columnType) && PERSON_WORDS.test(words) && !/\b(e ?mail|id|phone|count|type|notes?)\b/i.test(words);
-        });
-        const entry = index >= 0 ? repairedColumns[index] : void 0;
-        if (entry && entry.displayAvatar === void 0 && entry.displayAsChip === void 0 && !isTruthy(entry.isEditable)) {
-          repairedColumns[index] = { ...entry, displayAvatar: true };
-          changedColumns = true;
-        }
-      }
-      if (changedColumns)
-        setProperty("columns", repairedColumns);
-    }
-  }
-  const statFormat = propValue(properties, "valueFormat");
-  if (component.type === "ShadStat" && (statFormat === void 0 || statFormat === "auto")) {
-    const label = String(propValue(properties, "label") ?? "");
-    let value = propValue(properties, "value");
-    const moneyLabel = MONEY_WORDS.test(label.replace(/[_-]+/g, " ")) && !countLabel(label.replace(/[_-]+/g, " "));
-    const trailingFormat = /\.(?:toLocaleString\((?:[^()]|\([^()]*\))*\)|toFixed\(\s*\d*\s*\))\s*\}\}\s*$/;
-    if (moneyLabel && typeof value === "string" && trailingFormat.test(value) && !/[$€£₹¥]|Intl\.|currency/i.test(value)) {
-      value = value.replace(trailingFormat, "}}");
-      setProperty("value", value);
-    }
-    if (typeof value === "string" && /^\s*\{\{[\s\S]*\}\}\s*$/.test(value) && !/[$€£₹¥]|toLocaleString|toFixed|Intl\.|currency/i.test(value) && moneyLabel) {
-      setProperty("valueFormat", "currency");
-      if (options.currency && propValue(properties, "currency") === void 0)
-        setProperty("currency", options.currency);
-    }
-  }
-  if (component.type === "KeyValuePair") {
-    const fields = propValue(properties, "fields");
-    if (Array.isArray(fields) && fields.length > 0) {
-      const explicitIds = new Set(fields.flatMap((field) => {
-        const id = field && typeof field === "object" ? field.id : void 0;
-        return typeof id === "string" && id.length > 0 ? [id] : [];
-      }));
-      const demoFields = catalogDefault("KeyValuePair", "fields", []);
-      const currentHistory = propValue(properties, "fieldDeletionHistory");
-      const deletionHistory = new Set(Array.isArray(currentHistory) ? currentHistory.filter((key) => typeof key === "string" && key.length > 0) : []);
-      const before = deletionHistory.size;
-      if (Array.isArray(demoFields)) {
-        for (const field of demoFields) {
-          if (!field || typeof field !== "object")
-            continue;
-          const { id, key } = field;
-          if (typeof key === "string" && !explicitIds.has(String(id ?? "")))
-            deletionHistory.add(key);
-        }
-      }
-      if (deletionHistory.size > before || properties.fieldDeletionHistory === void 0) {
-        setProperty("fieldDeletionHistory", [...deletionHistory]);
-        warnings.push(`KeyValuePair "${component.name}": normalized fieldDeletionHistory so ToolJet does not append or positionally merge catalog demo fields into the explicit fields array.`);
-      }
-    }
-  }
-  if (component.type === "Statistics") {
-    const width = (component.layouts?.desktop ?? component.layout)?.width;
-    const iconName = propValue(properties, "icon");
-    const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propValue(properties, "iconVisibility") !== false && propValue(properties, "iconVisibility") !== "{{false}}";
-    const rawSize = propValue(stylesValue, "primaryValueSize") ?? propValue(properties, "primaryValueSize");
-    const sizeText = typeof rawSize === "string" ? rawSize.replace(/[{}]/g, "").trim() : rawSize;
-    const numericSize = typeof sizeText === "number" ? sizeText : typeof sizeText === "string" && /^\d+$/.test(sizeText) ? Number(sizeText) : void 0;
-    const rawValue = propValue(properties, "primaryValue");
-    const currencyValue = typeof rawValue === "string" && /minimumFractionDigits|style\s*:\s*['"]currency['"]|[$£€¥]/.test(rawValue);
-    const widthKnown = typeof width === "number";
-    const narrowTile = widthKnown && width < STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS;
-    const clipProne = iconVisible && narrowTile || currencyValue && (narrowTile || !widthKnown);
-    if (isTruthy(propValue(properties, "hideSecondary")) && (numericSize === void 0 || numericSize > 22) && clipProne) {
-      setStyle("primaryValueSize", "{{22}}");
-      warnings.push(`Statistics "${component.name}": set styles.primaryValueSize to 22 so the ${currencyValue ? "currency " : ""}value fits a value-only tile${widthKnown ? ` (${width} columns wide)` : ""} (larger sizes clip or wrap the value).`);
-    }
-  }
-  if (options.stripUnknownKeys) {
-    const schema2 = getComponentSchema(component.type);
-    if (schema2) {
-      const sections = [
-        ["properties", properties],
-        ["styles", normalizedSections.styles.value]
-      ];
-      for (const [section, sectionValue] of sections) {
-        if (!sectionValue)
-          continue;
-        const knownKeys = (schema2[section] ?? []).map((entry) => entry.key);
-        for (const key of Object.keys(sectionValue)) {
-          if (!isStrippableUnknownKey(component.type, section, key, knownKeys))
-            continue;
-          delete sectionValue[key];
-          warnings.push(`${component.type} "${component.name}": removed unknown ${section} key "${key}" \u2014 ToolJet ignores it, so it is kept out of the saved definition rather than persisted as an unusable key.`);
-        }
-      }
-    }
-  }
-  const braceFixedKeys = [];
-  for (const key of Object.keys(properties)) {
-    const result = separateAdjacentClosingBracesDeep(propValue(properties, key));
-    if (!result.changed)
-      continue;
-    setProperty(key, result.value);
-    braceFixedKeys.push(`properties.${key}`);
-  }
-  for (const key of Object.keys(stylesValue)) {
-    const result = separateAdjacentClosingBracesDeep(propValue(stylesValue, key));
-    if (!result.changed)
-      continue;
-    setStyle(key, result.value);
-    braceFixedKeys.push(`styles.${key}`);
-  }
-  if (braceFixedKeys.length) {
-    warnings.push(`${component.type} "${component.name}": separated adjacent closing braces inside ${braceFixedKeys.join(", ")} (ToolJet ends a {{ }} expression at the first "}}", which would have left the component blank). Write nested closes as "} }" inside bindings.`);
-  }
-  const booleanKeys = /* @__PURE__ */ new Set(["loadingState", "visibility", "disabledState"]);
-  for (const entry of schema?.properties ?? [])
-    if (entry.valueType === "boolean")
-      booleanKeys.add(entry.key);
-  const BARE_EXPRESSION = /^\s*!?\s*\(?\s*(queries|components|variables|globals|page|constants|parameters)\.[\w$]/;
-  const wrappedKeys = [];
-  for (const key of booleanKeys) {
-    const current = propValue(properties, key);
-    if (typeof current !== "string" || current.includes("{{") || !BARE_EXPRESSION.test(current))
-      continue;
-    const entry = properties[key];
-    const wrapped = { ...entry && typeof entry === "object" && !Array.isArray(entry) ? entry : {}, value: `{{${current.trim()}}}`, fxActive: true };
-    properties[key] = wrapped;
-    propertyPatch[key] = wrapped;
-    wrappedKeys.push(key);
-  }
-  if (wrappedKeys.length) {
-    warnings.push(`${component.type} "${component.name}": wrapped the bare expression in ${wrappedKeys.map((k) => `properties.${k}`).join(", ")} in {{ }}; without the braces ToolJet reads it as text, which counts as true (a table stays on its loading spinner).`);
-  }
-  const CODE_START = /^\s*(?:String|Number|Math|moment|Intl|JSON|Object|Array)\s*[.(]|^\s*[([!]|^\s*(?:queries|components|variables|globals|page|constants|parameters)\.[\w$]/;
-  const CODE_ROOT = /\b(?:queries|components|variables|globals|constants|parameters)\.[\w$]/;
-  const CODE_OPERATOR = /=>|\|\||&&|===|!==|\.length\b|\.(?:filter|map|reduce|toFixed|toLocaleString|find|some)\s*\(/;
-  const codeKeys = [];
-  const showsCode = /CodeEditor|Html|Markdown|RichText|Json/i.test(component.type ?? "");
-  for (const [key, entry] of Object.entries(showsCode ? {} : properties)) {
-    if (booleanKeys.has(key))
-      continue;
-    const current = propValue(properties, key);
-    if (typeof current !== "string" || current.includes("{{") || current.length > 2e3)
-      continue;
-    if (!CODE_START.test(current) || !CODE_ROOT.test(current) || !CODE_OPERATOR.test(current))
-      continue;
-    const wrapped = { ...entry && typeof entry === "object" && !Array.isArray(entry) ? entry : {}, value: `{{${current.trim()}}}` };
-    properties[key] = wrapped;
-    propertyPatch[key] = wrapped;
-    codeKeys.push(key);
-  }
-  if (codeKeys.length) {
-    warnings.push(`${component.type} "${component.name}": ${codeKeys.map((k) => `properties.${k}`).join(", ")} held a JavaScript expression without {{ }}, which shows the code on screen; it is now wrapped in {{ }}.`);
-  }
-  const patch = Object.fromEntries(["properties", "styles", "validation", "others"].flatMap((section) => {
-    const envelopePatch = normalizedSections[section].patch ?? {};
-    const semanticPatch = section === "properties" ? propertyPatch : section === "styles" ? stylePatch : {};
-    const merged = { ...envelopePatch, ...semanticPatch };
-    return Object.keys(merged).length ? [[section, merged]] : [];
-  }));
-  return {
-    component: {
-      ...component,
-      properties,
-      ...normalizedSections.styles.value ? { styles: normalizedSections.styles.value } : {},
-      ...normalizedSections.validation.value ? { validation: normalizedSections.validation.value } : {},
-      ...normalizedSections.others.value ? { others: normalizedSections.others.value } : {}
-    },
-    patch,
-    warnings
-  };
-}
-function resolveRef(candidates, ref, kind, scope, describe = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
-  const byId = candidates.find((candidate) => candidate.id === ref);
-  if (byId)
-    return { ok: true, target: byId };
-  const byName = candidates.filter((candidate) => candidate.name === ref);
-  if (byName.length === 1)
-    return { ok: true, target: byName[0] };
-  if (byName.length > 1) {
-    return {
-      ok: false,
-      error: `${kind} name "${ref}" is ambiguous ${scope} (${byName.length} share it). Pass the id instead: ${byName.map((candidate) => candidate.id).join(", ")}.`
-    };
-  }
-  const available = candidates.map(describe).join(", ");
-  return {
-    ok: false,
-    // The "do not re-read" clause matters: the previous phrasing ("does not exist") invited exactly
-    // the re-read that caused the loop.
-    error: `No ${kind.toLowerCase()} with id or name "${ref}" ${scope}. Do not re-read \u2014 it currently holds: ${available || "(none)"}.`
-  };
-}
-createRequire(import.meta.url);
-function strictEntry(shape, describeUnknown) {
-  return external_exports.strictObject(shape, {
-    error: (issue) => issue.code === "unrecognized_keys" ? issue.keys.map(describeUnknown).join(" ") : void 0
-  });
-}
-function hasNonEmptyDefinition(definition2) {
-  if (!definition2)
-    return false;
-  return Object.values(definition2).some((section) => section !== null && typeof section === "object" && Object.keys(section).length > 0);
-}
-var FLEX_CONTAINER_TYPE = "FlexContainer";
-var FLEX_FILL_WIDTH_DESCRIPTION = "FlexContainer child only: true (the default) fills the free main-axis width; false uses widthPx. Ignored elsewhere.";
-var FLEX_WIDTH_PX_DESCRIPTION = "FlexContainer child only: fixed width in pixels, applied when fillWidth is false. Ignored elsewhere.";
-var FLEX_GROW_DESCRIPTION = "FlexContainer row child only: share of the free width among fill children (default 1; 2 beside 1 takes two thirds). Ignored elsewhere.";
-var FLEX_MIN_WIDTH_PX_DESCRIPTION = "FlexContainer row child only: narrowest a fill child may get, in pixels; in a wrapping row a narrower child moves to the next line. Ignored elsewhere.";
-function isFlexContainerType(type) {
-  return type === FLEX_CONTAINER_TYPE;
-}
-function storedChildOrder(properties) {
-  const entry = properties?.childOrder;
-  const value = Array.isArray(entry) ? entry : entry?.value;
-  return Array.isArray(value) ? value.filter((id) => typeof id === "string" && id.length > 0) : [];
-}
-function normalizeChildOrder(childOrder, actualChildIds) {
-  const actual = new Set(actualChildIds);
-  const seen = /* @__PURE__ */ new Set();
-  const normalized2 = [];
-  for (const id of [...childOrder.filter((id2) => actual.has(id2)), ...actualChildIds]) {
-    if (seen.has(id))
-      continue;
-    seen.add(id);
-    normalized2.push(id);
-  }
-  return normalized2;
-}
-function desktopRect(component) {
-  const desktop = component.layouts?.desktop;
-  return {
-    top: typeof desktop?.top === "number" ? desktop.top : 0,
-    left: typeof desktop?.left === "number" ? desktop.left : 0
-  };
-}
-function bodyParentId(parent) {
-  if (!parent)
-    return void 0;
-  const decoded = decodeComponentParent(parent);
-  return decoded.slotName === "body" ? decoded.parentId : void 0;
-}
-function currentChildOrder(container, page) {
-  const children = page.filter((component) => bodyParentId(component.parent) === container.id);
-  const stored = storedChildOrder(container.properties);
-  const storedSet = new Set(stored);
-  const unordered = children.filter((child) => !storedSet.has(child.id)).sort((a, b) => {
-    const ra = desktopRect(a), rb = desktopRect(b);
-    return ra.top - rb.top || ra.left - rb.left;
-  }).map((child) => child.id);
-  return normalizeChildOrder(stored, [...children.map((child) => child.id).filter((id) => storedSet.has(id)), ...unordered]);
-}
-function appendedChildOrders(page, additions) {
-  const byId = new Map(page.map((component) => [component.id, component]));
-  const added = /* @__PURE__ */ new Map();
-  for (const { parentId, childId } of additions) {
-    const container = byId.get(parentId);
-    if (!container || !isFlexContainerType(container.type))
-      continue;
-    const ids = added.get(parentId) ?? [];
-    if (!ids.includes(childId))
-      ids.push(childId);
-    added.set(parentId, ids);
-  }
-  const orders = /* @__PURE__ */ new Map();
-  for (const [parentId, newIds] of added) {
-    const container = byId.get(parentId);
-    const newSet = new Set(newIds);
-    const existing = currentChildOrder(container, page.filter((component) => !newSet.has(component.id)));
-    const stored = storedChildOrder(container.properties);
-    const next = normalizeChildOrder(stored, [...existing, ...newIds]);
-    if (next.length !== stored.length || next.some((id, index) => stored[index] !== id))
-      orders.set(parentId, next);
-  }
-  return orders;
-}
-function batchChildOrders(entries, explicit = /* @__PURE__ */ new Map(), resolveRef2 = () => void 0) {
-  const orders = /* @__PURE__ */ new Map();
-  for (const container of entries) {
-    if (!isFlexContainerType(container.type))
-      continue;
-    const children = entries.filter((entry) => entry.parentId === container.id).map((entry) => entry.id);
-    const authored = (explicit.get(container.id) ?? []).flatMap((ref) => typeof ref === "string" ? [resolveRef2(ref) ?? ref] : []);
-    orders.set(container.id, [.../* @__PURE__ */ new Set([...authored, ...children])]);
-  }
-  return orders;
-}
-function childOrderProperty(order) {
-  return { value: order };
-}
-function reparentAdditions(page, moves) {
-  const byId = new Map(page.map((component) => [component.id, component]));
-  return moves.flatMap(({ componentId, parent }) => {
-    if (parent === void 0)
-      return [];
-    const nextParent = bodyParentId(parent);
-    if (!nextParent || nextParent === bodyParentId(byId.get(componentId)?.parent))
-      return [];
-    return [{ parentId: nextParent, childId: componentId }];
-  });
-}
-function resolveAuthoredChildOrder(container, page, authored) {
-  const children = page.filter((component) => bodyParentId(component.parent) === container.id);
-  const unknown = [];
-  const ids = authored.flatMap((item) => {
-    const ref = typeof item === "string" ? item : String(item);
-    const child = children.find((candidate) => candidate.id === ref) ?? children.find((candidate) => candidate.name === ref);
-    if (!child) {
-      unknown.push(ref);
-      return [];
-    }
-    return [child.id];
-  });
-  return { order: normalizeChildOrder(ids, [...ids, ...currentChildOrder(container, page)]), unknown };
-}
-createRequire(import.meta.url);
-var DEFINITION_SECTIONS = ["properties", "styles", "validation", "general", "general_styles", "others"];
-var definitionSchema = strictEntry({
-  properties: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  general: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  general_styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  others: external_exports.record(external_exports.string(), external_exports.any()).optional()
-}, (key) => key === "layout" || key === "layouts" ? `definition."${key}" is not a component definition section; move/resize with update_layout instead.` : `definition."${key}" is not a component definition section; use one of ${DEFINITION_SECTIONS.join("/")}.`);
-var updateSchema = strictEntry({
-  component_id: external_exports.string(),
-  definition: definitionSchema.optional(),
-  name: componentNameSchema.optional(),
-  parent: external_exports.string().optional(),
-  slot_name: componentSlotSchema.optional()
-}, (key) => {
-  if (DEFINITION_SECTIONS.includes(key)) {
-    return `Update entry key "${key}" must be nested under \`definition\` (e.g. { component_id, definition: { ${key}: {...} } }); top-level ${key} would write nothing.`;
-  }
-  if (key === "layout" || key === "layouts") {
-    return `Update entry key "${key}" is not accepted by update_components; move/resize with update_layout instead.`;
-  }
-  return `Unknown update entry key "${key}"; accepted keys are component_id, definition, name, parent, slot_name.`;
-});
-function updateComponentsTool(client) {
-  return {
-    name: "update_components",
-    title: "Update Components",
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: false
-    },
-    description: "Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves under `definition` (properties/styles/validation/others) \u2014 ToolJet deep-merges, so untouched values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. " + COMPONENT_FX_UPDATE_GUIDANCE + "NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container regions, or modal for Kanban card-click content; omit parent to keep the current parent. Unknown entry keys are rejected (a top-level properties/styles patch is an error, not a silent no-op), and an entry that changes nothing fails. Get component ids + current values from get_app_summary / get_component. To reorder a FlexContainer, set its properties.childOrder to the child names or ids in the wanted order; unlisted children follow in their current order.",
-    inputSchema: {
-      app_id: external_exports.string(),
-      version_id: external_exports.string(),
-      page_id: external_exports.string(),
-      updates: external_exports.array(updateSchema).min(1)
-    },
-    async handler(args) {
-      try {
-        const summary = await client.getAppSummary(args.app_id);
-        const page = summary.pages.find((candidate) => candidate.id === args.page_id);
-        if (!page)
-          return fail(new Error(`Page "${args.page_id}" does not exist in app "${args.app_id}".`));
-        const projected = new Map(page.components.map((component) => [component.id, component]));
-        const warnings = [];
-        const errors = [];
-        const changedComponents = [];
-        let placementChanged = false;
-        const layoutFixes = [];
-        const resolvedUpdates = [];
-        for (const update of args.updates) {
-          if (update.name !== void 0) {
-            const nameError = componentNameError(update.name);
-            if (nameError) {
-              errors.push(`Component "${update.component_id}": ${nameError}`);
-              continue;
-            }
-          }
-          const resolution = resolveRef(page.components, update.component_id, "Component", `on page "${args.page_id}"`);
-          if (!resolution.ok) {
-            errors.push(resolution.error);
-            continue;
-          }
-          if (resolution.warning)
-            warnings.push(resolution.warning);
-          const current = resolution.target;
-          const componentId = current.id;
-          if (update.definition && (update.name !== void 0 || update.parent !== void 0 || update.slot_name !== void 0)) {
-            errors.push(`Component "${update.component_id}": set EITHER definition OR name/parent/slot_name in one entry.`);
-            continue;
-          }
-          if (!hasNonEmptyDefinition(update.definition) && update.name === void 0 && update.parent === void 0 && update.slot_name === void 0) {
-            errors.push(`Component "${update.component_id}": nothing to update. Send the changed leaves under definition (properties/styles/validation/others) or a name/parent/slot_name change.`);
-            continue;
-          }
-          let parent = update.parent;
-          if (typeof parent === "string" && parent) {
-            const resolvedParent = resolveParentRef(page.components, parent);
-            if (!resolvedParent.ok) {
-              errors.push(`Component "${update.component_id}": ${resolvedParent.error}`);
-              continue;
-            }
-            parent = resolvedParent.parent;
-          }
-          let slotName = update.slot_name;
-          if (slotName !== void 0) {
-            parent ??= current.parent ? decodeComponentParent(current.parent).parentId : void 0;
-            if (!parent) {
-              if (slotName === "body") {
-                warnings.push(`Component "${update.component_id}": slot_name:"body" ignored on a root component (it has no parent slots).`);
-                slotName = void 0;
-              } else {
-                errors.push(`Component "${update.component_id}": slot_name:"${slotName}" requires an existing or explicit parent.`);
-                continue;
-              }
-            }
-          }
-          const authoredOrder = update.definition?.properties?.childOrder;
-          if (authoredOrder !== void 0 && isFlexContainerType(current.type)) {
-            const raw = authoredOrder;
-            const value = Array.isArray(raw) ? raw : raw?.value;
-            if (!Array.isArray(value)) {
-              errors.push(`FlexContainer "${current.name ?? current.id}": properties.childOrder must be an array of child component ids or names.`);
-              continue;
-            }
-            const resolved = resolveAuthoredChildOrder(current, page.components, value);
-            if (resolved.unknown.length) {
-              errors.push(`FlexContainer "${current.name ?? current.id}": childOrder names ${resolved.unknown.map((ref) => `"${ref}"`).join(", ")}, which are not children of this container. List its child component ids or names.`);
-              continue;
-            }
-            update.definition = {
-              ...update.definition,
-              properties: { ...update.definition.properties, childOrder: childOrderProperty(resolved.order) }
-            };
-          }
-          const packValue = packValueAsDefault(current.type, current.name ?? current.id, update.definition?.properties);
-          if (packValue.warning) {
-            warnings.push(packValue.warning);
-            update.definition = { ...update.definition, properties: packValue.properties };
-          }
-          const definition2 = update.definition;
-          const next = {
-            id: current.id,
-            name: update.name ?? current.name ?? current.id,
-            type: current.type,
-            properties: { ...current.properties ?? {}, ...definition2?.properties ?? {} },
-            styles: { ...current.styles ?? {}, ...definition2?.styles ?? {} },
-            layouts: current.layouts,
-            parent: parent !== void 0 ? encodeComponentParent(parent, slotName) : current.parent,
-            slotName
-          };
-          const normalized2 = normalizeComponentSpec({
-            name: next.name ?? current.id,
-            type: next.type ?? current.type ?? "",
-            properties: next.properties ?? {},
-            styles: next.styles,
-            validation: definition2?.validation,
-            others: { ...current.others ?? {}, ...definition2?.others ?? {} },
-            layouts: next.layouts,
-            parent: next.parent
-          });
-          const normalizedNext = { ...normalized2.component, id: current.id };
-          const heightFix = update.definition ? suggestedHtmlHeight(normalizedNext) : null;
-          const desktopRect2 = current.layouts?.desktop;
-          if (heightFix && desktopRect2 && typeof desktopRect2.top === "number") {
-            normalizedNext.layouts = { ...normalizedNext.layouts ?? {}, desktop: { ...desktopRect2, height: heightFix.to } };
-            layoutFixes.push({ componentId: current.id, desktop: { ...desktopRect2, height: heightFix.to } });
-            warnings.push(`Html "${normalizedNext.name ?? current.id}" needed about ${heightFix.needed}px for its new markup but was ${heightFix.from}px; its height is now ${heightFix.to}px. Anything within ${heightFix.to - heightFix.from}px below it now overlaps; move it down.`);
-          }
-          projected.set(current.id, normalizedNext);
-          if (update.definition)
-            changedComponents.push({ before: current, after: normalizedNext });
-          placementChanged ||= update.parent !== void 0 || update.slot_name !== void 0;
-          warnings.push(...onlyTouchedBraceNotes(normalized2.warnings, definition2));
-          let normalizedDefinition = update.definition;
-          if (update.definition && Object.keys(normalized2.patch).length) {
-            normalizedDefinition = { ...update.definition };
-            for (const section of ["properties", "styles", "validation", "others"]) {
-              const sectionPatch = normalized2.patch[section];
-              if (!sectionPatch)
-                continue;
-              normalizedDefinition[section] = {
-                ...update.definition[section] ?? {},
-                ...sectionPatch
-              };
-            }
-          }
-          resolvedUpdates.push({
-            componentId,
-            definition: normalizedDefinition,
-            name: update.name,
-            parent,
-            slotName: update.slot_name
-          });
-          if (!update.definition)
-            continue;
-          errors.push(...introducedLintFindings(lintComponentSpec(current).errors, lintComponentSpec(normalizedNext).errors));
-          warnings.push(...introducedLintFindings(lintComponentSpec(current).warnings, lintComponentSpec(normalizedNext).warnings));
-        }
-        const allComponents = [...projected.values()];
-        const introducedForChanged = (lint) => changedComponents.flatMap(({ before, after }) => introducedLintFindings(lint([before]), lint([after])));
-        if (placementChanged) {
-          errors.push(...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(allComponents)));
-        }
-        errors.push(...introducedForChanged(lintUnusableTextGeometry));
-        if (errors.length)
-          return fail(new Error(`${errors.join(" ")} (Nothing was saved: refused before any write.)`));
-        warnings.push(...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)));
-        warnings.push(...introducedForChanged(lintTextGeometry));
-        warnings.push(...lintRenderedGeometry(allComponents));
-        warnings.push(...lintKanbanInteractions(allComponents));
-        warnings.push(...lintShadKanbanCards(allComponents));
-        warnings.push(...lintShadScheduleScale(allComponents));
-        const result = await client.updateComponents({
-          appId: args.app_id,
-          versionId: args.version_id,
-          pageId: args.page_id,
-          updates: resolvedUpdates
-        });
-        if (layoutFixes.length) {
-          await client.updateLayouts({ appId: args.app_id, versionId: args.version_id, pageId: args.page_id, layouts: layoutFixes });
-        }
-        const appended = appendedChildOrders(page.components, reparentAdditions(page.components, resolvedUpdates.map((update) => ({
-          componentId: update.componentId,
-          parent: update.parent !== void 0 ? encodeComponentParent(update.parent, update.slotName) : void 0
-        }))));
-        if (appended.size) {
-          await client.updateComponents({
-            appId: args.app_id,
-            versionId: args.version_id,
-            pageId: args.page_id,
-            updates: [...appended].map(([componentId, order]) => ({
-              componentId,
-              definition: { properties: { childOrder: childOrderProperty(order) } }
-            }))
-          });
-        }
-        return ok({ ...result, warnings: [...new Set(warnings)] });
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
-function onlyTouchedBraceNotes(warnings, definition2) {
-  const touched = /* @__PURE__ */ new Set([
-    ...Object.keys(definition2?.properties ?? {}).map((key) => `properties.${key}`),
-    ...Object.keys(definition2?.styles ?? {}).map((key) => `styles.${key}`)
-  ]);
-  return warnings.flatMap((warning) => {
-    const m = /^(.*?: separated adjacent closing braces inside )(.+?)( \(ToolJet ends.*)$/s.exec(warning);
-    if (!m)
-      return [warning];
-    const keys = m[2].split(", ").filter((key) => touched.has(key));
-    return keys.length ? [`${m[1]}${keys.join(", ")}${m[3]}`] : [];
-  });
-}
-createRequire(import.meta.url);
-async function mapKeyRefusal(client, componentTypes, library) {
-  if (![...componentTypes].includes("Map") || typeof client?.hasGoogleMapsKey !== "function")
-    return void 0;
-  let hasKey;
-  try {
-    hasKey = await client.hasGoogleMapsKey();
-  } catch {
-    return void 0;
-  }
-  if (hasKey !== false)
-    return void 0;
-  const noKey = "This ToolJet instance has no Google Maps API key (GOOGLE_MAPS_API_KEY), so a Map component shows a Google error instead of a map.";
-  const ui2Map = "Use ShadMap, the ToolJet UI 2.0 Map: OpenStreetMap tiles, no key, one marker per data row read through latField, lngField and idField, with onMarkerClick and selectedMarker.";
-  if (library === "ui2")
-    return `${noKey} ${ui2Map}`;
-  return `${noKey} In a ToolJet UI 2.0 app: ${ui2Map} In a UI 1.0 app, show the locations in a Table (a link column to https://www.google.com/maps?q=<lat>,<lng> opens each one), and tell the user in your reply that an in-app map needs the Google Maps API key on the instance.`;
-}
-createRequire(import.meta.url);
-var CATALOG_SECTIONS = [
-  "overview",
-  "properties",
-  "styles",
-  "events",
-  "actions",
-  "exposedVariables",
-  "defaultChildren",
-  "renderingHints",
-  "authoringHints"
-];
-var DEFAULT_TYPED_SECTIONS = [
-  "overview",
-  "properties",
-  "events",
-  "actions"
-];
-var CATALOG_TYPE_ALIASES = /* @__PURE__ */ new Map([
-  ["gridview", {
-    type: "Listview",
-    note: 'ToolJet grid view is Listview with mode:"grid" (properties.mode.value); use type:"Listview" when creating it.'
-  }]
-]);
-function resolveCatalogType(requestedType) {
-  const alias = CATALOG_TYPE_ALIASES.get(requestedType.replace(/[\s_-]+/g, "").toLowerCase());
-  if (alias)
-    return { type: alias.type, alias: { requested_type: requestedType, note: alias.note } };
-  if (getComponentSchema(requestedType))
-    return { type: requestedType };
-  const wanted = requestedType.replace(/[\s_-]+/g, "").toLowerCase();
-  const types = getCatalog().map((entry) => entry.type);
-  const near = types.find((type) => type.toLowerCase() === wanted) ?? types.find((type) => type.toLowerCase().replace(/v\d+$/, "") === wanted);
-  return near ? { type: near, alias: { requested_type: requestedType, note: `There is no "${requestedType}"; this is ${near}. Use type "${near}".` } } : { type: requestedType };
-}
-var PACK_CONCEPTS = [
-  [/table|grid|datatable/i, ["ShadTable"]],
-  [/metric|stat|kpi/i, ["ShadStat", "ShadSparkline", "ShadSummaryStrip"]],
-  [/summary|figures|totals|strip|headline/i, ["ShadSummaryStrip"]],
-  [/recent|activity|feed|records?|orders|people|contacts|inbox/i, ["ShadRecordList"]],
-  [/card|panel|surface/i, ['FlexContainer (cardStyle "shadcnCard")', "ShadCardGrid"]],
-  [/gallery|tiles?|catalog|products?|cards|grid/i, ["ShadCardGrid"]],
-  [/hero|header|masthead|jumbotron|cover|welcome/i, ["ShadHero"]],
-  [/modal|dialog|sheet|drawer/i, ["ShadDialog"]],
-  [/dropdown|menu/i, ["ShadDropdownMenu", "ShadSelect", "ShadCombobox"]],
-  [/list/i, ["ShadListView", "ShadRecordList", "ShadKeyValue"]],
-  [/chat|message|assistant|conversation|copilot|bot|thread/i, ["ShadChat"]],
-  [/question|survey|quiz|onboarding|intake|wizard|poll|triage|form/i, ["ShadQuestionnaire"]],
-  [/chart|graph/i, ["ShadBarChart", "ShadLineChart", "ShadAreaChart", "ShadPieChart", "ShadComboChart", "ShadScatterChart", "ShadFunnelChart", "ShadHeatmapChart"]],
-  [/funnel|conversion/i, ["ShadFunnelChart"]],
-  [/scatter|bubble|correlation/i, ["ShadScatterChart"]],
-  [/heat|matrix|grid|calendar/i, ["ShadHeatmapChart"]],
-  [/board|kanban|pipeline|stage|trello|dispatch|grouped by/i, ["ShadKanban"]],
-  [/combo|composed|mixed|dual/i, ["ShadComboChart"]],
-  [/label|title|typography/i, ["ShadHeading", "ShadText"]],
-  [/date/i, ["ShadDatePicker", "ShadDateTimePicker", "ShadCalendar"]],
-  [/toast|notification|banner/i, ["ShadAlert"]],
-  [/divider/i, ["ShadSeparator"]],
-  [/schedule|scheduler|booking|reservation|roster|rota|shift|on.?call|resource|timeline.?view|gantt|availability|rooms?/i, ["ShadSchedule"]],
-  [/progress|goal|budget|quota|target|onboarding|checklist|capacity|completion/i, ["ShadProgressList", "ShadProgress"]],
-  [/map|geo|location|pins?$|markers?|route|locator|spatial|leaflet|places|zones?$|territor|geofence|dispatch|fleet/i, ["ShadMap"]]
-];
-function packSuggestions(requestedType) {
-  if (!/^Shad[A-Z]/.test(requestedType))
-    return [];
-  const rest = requestedType.slice(4);
-  return [...new Set(PACK_CONCEPTS.filter(([pattern]) => pattern.test(rest)).flatMap(([, types]) => types))];
-}
-function nearbyTypes(requestedType) {
-  const words = requestedType.split(/(?=[A-Z])|[\s_-]+/).map((word) => word.toLowerCase()).filter((word) => word.length >= 4);
-  return getCatalog().map((entry) => entry.type).filter((type) => words.some((word) => type.toLowerCase().includes(word))).slice(0, 6);
-}
-function selectEntries(entries, keys, detail) {
-  const selected = keys?.length ? entries.filter((entry) => keys.includes(entry.key)) : entries;
-  if (detail === "full" || keys?.length)
-    return selected;
-  return selected.map(({ key, valueType, valueTypes, allowedValues, requires, mutuallyExclusiveWith }) => ({
-    key,
-    ...valueType !== void 0 ? { valueType } : {},
-    ...valueTypes !== void 0 ? { valueTypes } : {},
-    ...allowedValues !== void 0 ? { allowedValues } : {},
-    ...requires !== void 0 ? { requires } : {},
-    ...mutuallyExclusiveWith !== void 0 ? { mutuallyExclusiveWith } : {}
-  }));
-}
-function selectSchema(schema, args) {
-  const detail = args.detail ?? "compact";
-  const sections = new Set(args.sections ?? DEFAULT_TYPED_SECTIONS);
-  const result = { type: schema.type };
-  if (sections.has("overview")) {
-    if (schema.name !== void 0)
-      result.name = schema.name;
-    if (schema.description !== void 0)
-      result.description = schema.description;
-    if (schema.defaultSize !== void 0)
-      result.defaultSize = schema.defaultSize;
-  }
-  if (sections.has("properties")) {
-    result.properties = selectEntries(schema.properties, args.property_keys, detail);
-  }
-  if (sections.has("styles")) {
-    result.styles = selectEntries(schema.styles, args.style_keys, detail);
-  }
-  if (sections.has("events") && schema.events !== void 0)
-    result.events = schema.events;
-  if (sections.has("actions") && schema.actions !== void 0)
-    result.actions = schema.actions;
-  if (sections.has("exposedVariables") && schema.exposedVariables !== void 0) {
-    result.exposedVariables = schema.exposedVariables;
-  }
-  if (sections.has("defaultChildren") && schema.defaultChildren !== void 0) {
-    result.defaultChildren = schema.defaultChildren;
-  }
-  if (sections.has("renderingHints") && schema.renderingHints !== void 0) {
-    result.renderingHints = schema.renderingHints;
-  }
-  if (sections.has("authoringHints") && schema.authoringHints !== void 0) {
-    result.authoringHints = schema.authoringHints;
-  }
-  return result;
-}
-function legacyNotice(type) {
-  const replacement = getLegacyComponentReplacement(type);
-  return replacement ? {
-    deprecated: true,
-    replacement,
-    deprecation_note: `"${type}" remains available only for inspecting or repairing existing apps. Use "${replacement}" for new components.`
-  } : {};
-}
-async function instanceNote(client, type) {
-  const refusal = type === "Map" ? await mapKeyRefusal(client, ["Map"]) : void 0;
-  return refusal ? { instance_note: refusal } : {};
-}
-function getComponentCatalogTool(client) {
-  return {
-    name: "get_component_catalog",
-    title: "Get Component Catalog",
-    // Served from the bundled catalog in data/; never reaches the ToolJet instance.
-    annotations: {
-      readOnlyHint: true,
-      destructiveHint: false,
-      openWorldHint: false
-    },
-    description: 'Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one component or types for a batch needed in the current page/phase. Typed reads default to detail:"compact" and the overview/properties/events/actions sections; compact property/style lists omit labels and defaults. Use detail:"full" or exact property_keys/style_keys only when those values are needed. Request renderingHints/authoringHints for layout-sensitive or nested components. Use requests when different types need different sections/keys in one call; top-level detail/sections/keys apply as defaults to every requested type, and the type/types/requests selectors may be combined. sections selects only overview, properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. GridView is a lookup alias for Listview mode:"grid"; component writes must still use type:"Listview". authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar contracts once and reuse them; never guess property/event/action ids.',
-    inputSchema: {
-      type: external_exports.string().optional(),
-      types: external_exports.array(external_exports.string()).min(1).max(25).optional(),
-      requests: external_exports.array(external_exports.object({
-        type: external_exports.string(),
-        detail: external_exports.enum(["compact", "full"]).optional(),
-        sections: external_exports.array(external_exports.enum(CATALOG_SECTIONS)).min(1).optional(),
-        property_keys: external_exports.array(external_exports.string()).min(1).optional(),
-        style_keys: external_exports.array(external_exports.string()).min(1).optional()
-      })).min(1).max(25).optional(),
-      detail: external_exports.enum(["compact", "full"]).optional(),
-      sections: external_exports.array(external_exports.enum(CATALOG_SECTIONS)).min(1).optional(),
-      property_keys: external_exports.array(external_exports.string()).min(1).optional(),
-      style_keys: external_exports.array(external_exports.string()).min(1).optional()
-    },
-    async handler(args) {
-      try {
-        const singleType = args?.type;
-        const typesList = args?.types ?? [];
-        const batch = args?.requests ?? [];
-        const hasSelector = !!singleType || typesList.length > 0 || batch.length > 0;
-        if (!hasSelector) {
-          if (args.detail || args.sections || args.property_keys || args.style_keys) {
-            return fail(new Error("Catalog detail/sections/key filters require `type`, `types`, or `requests`."));
-          }
-          return ok(getCatalog());
-        }
-        if (singleType && typesList.length === 0 && batch.length === 0) {
-          const resolved = resolveCatalogType(singleType);
-          const schema = getComponentSchema(resolved.type);
-          if (!schema) {
-            const near = nearbyTypes(singleType);
-            const suggested = [.../* @__PURE__ */ new Set([...packSuggestions(singleType), ...near])].slice(0, 6);
-            const packTypes = /^Shad[A-Z]/.test(singleType) ? getCatalog().map((entry) => entry.type).filter((type) => /^Shad[A-Z]/.test(type)) : [];
-            return ok({
-              error: `Unknown component type "${singleType}". Call with no argument to list valid types.`,
-              ...suggested.length ? { did_you_mean: suggested } : {},
-              ...packTypes.length ? { pack_types: packTypes } : {}
-            });
-          }
-          return ok({
-            ...selectSchema(schema, args),
-            ...legacyNotice(schema.type),
-            ...resolved.alias ? { alias: resolved.alias } : {},
-            ...await instanceNote(client, schema.type)
-          });
-        }
-        const withDefaults = (type, over) => ({
-          type,
-          detail: over?.detail ?? args.detail,
-          sections: over?.sections ?? args.sections,
-          property_keys: over?.property_keys ?? args.property_keys,
-          style_keys: over?.style_keys ?? args.style_keys
-        });
-        const ordered = [
-          ...batch.map((r) => withDefaults(r.type, r)),
-          ...typesList.map((t) => withDefaults(t)),
-          ...singleType ? [withDefaults(singleType)] : []
-        ];
-        const components = [];
-        const unknownTypes = [];
-        const componentByResolvedType = /* @__PURE__ */ new Map();
-        const seenUnknown = /* @__PURE__ */ new Set();
-        for (const request of ordered) {
-          if (!request.type)
-            continue;
-          const resolved = resolveCatalogType(request.type);
-          const schema = getComponentSchema(resolved.type);
-          if (!schema) {
-            if (!seenUnknown.has(request.type)) {
-              seenUnknown.add(request.type);
-              unknownTypes.push(request.type);
-            }
-            continue;
-          }
-          const existing = componentByResolvedType.get(resolved.type);
-          if (existing) {
-            if (resolved.alias) {
-              const requestedAliases = Array.isArray(existing.requested_aliases) ? existing.requested_aliases : [];
-              if (!requestedAliases.includes(request.type)) {
-                existing.requested_aliases = [...requestedAliases, request.type];
-              }
-            }
-            continue;
-          }
-          const component = {
-            ...selectSchema(schema, request),
-            ...legacyNotice(schema.type),
-            ...resolved.alias ? { alias: resolved.alias } : {},
-            ...resolved.alias ? { requested_aliases: [request.type] } : {},
-            ...await instanceNote(client, schema.type)
-          };
-          components.push(component);
-          componentByResolvedType.set(resolved.type, component);
-        }
-        const suggestions = Object.fromEntries(unknownTypes.map((type) => [type, [.../* @__PURE__ */ new Set([...packSuggestions(type), ...nearbyTypes(type)])].slice(0, 6)]).filter(([, near]) => near.length));
-        const guessedPack = unknownTypes.some((type) => /^Shad[A-Z]/.test(type));
-        return ok({
-          components,
-          unknown_types: unknownTypes,
-          ...Object.keys(suggestions).length ? { suggestions } : {},
-          ...guessedPack ? { pack_types: getCatalog().map((entry) => entry.type).filter((type) => /^Shad[A-Z]/.test(type)) } : {}
-        });
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
 createRequire(import.meta.url);
 function componentRef(component) {
   return component.clientRef ?? component.name;
@@ -3070,7 +1798,8 @@ function createClient(auth, config) {
   async function useWorkspace(workspaceId) {
     return auth.switchWorkspace(workspaceId);
   }
-  async function createApp(name) {
+  async function createApp(name, options = {}) {
+    const wantsCode = options.buildMode === "code";
     const branchId = branchIdFor(config);
     let createRes;
     let finalName = name;
@@ -3079,7 +1808,13 @@ function createClient(auth, config) {
       createRes = await auth.authedFetch("/api/apps", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: finalName, type: "front-end", ...branchId ? { branchId } : {} })
+        body: JSON.stringify({
+          name: finalName,
+          type: "front-end",
+          ...branchId ? { branchId } : {},
+          // The build mode is set when the app is created, as the dashboard does: ToolJet has no call that changes it later.
+          ...wantsCode ? { buildMode: "code" } : {}
+        })
       });
       if (createRes.status !== 409)
         break;
@@ -3087,6 +1822,11 @@ function createClient(auth, config) {
     await assertOk(createRes, "createApp");
     const created = await createRes.json();
     const app = await getApp(created.id);
+    const buildMode = app?.build_mode ?? app?.buildMode;
+    if (wantsCode && buildMode !== "code") {
+      const removed = await auth.authedFetch(`/api/apps/${created.id}`, { method: "DELETE" }).then((res) => res.ok).catch(() => false);
+      throw new Error("This ToolJet server does not support Code mode apps: it created a visual app instead. " + (removed ? "That app was deleted. " : `Delete app ${created.id} ("${finalName}"); it could not be removed here. `) + "Build a visual app (create_app without build_mode), or connect to a ToolJet version with Code mode.");
+    }
     const versionId = app.editing_version.id;
     const versionName = app.editing_version.name ?? "v1";
     const pages = app.pages ?? [];
@@ -3104,6 +1844,7 @@ function createClient(auth, config) {
     return {
       app_id: created.id,
       ...branchId ? { branch_id: branchId } : {},
+      build_mode: buildMode === "code" ? "code" : "visual",
       version_id: versionId,
       home_page_id: homePage.id,
       app_url: editorUrl,
@@ -4695,61 +3436,1071 @@ async function literalCanvasColor(client, appId, versionId) {
 }
 function paintsDarkCanvasInLightMode(definition2) {
   const light = definition2?.surface?.colors?.appBackground?.light;
-  const hex = typeof light === "string" ? /^#([0-9a-f]{6})$/i.exec(light.trim())?.[1] : void 0;
-  if (!hex)
+  const hex2 = typeof light === "string" ? /^#([0-9a-f]{6})$/i.exec(light.trim())?.[1] : void 0;
+  if (!hex2)
     return false;
   const [r, g, b] = [0, 2, 4].map((at) => {
-    const channel = parseInt(hex.slice(at, at + 2), 16) / 255;
+    const channel = parseInt(hex2.slice(at, at + 2), 16) / 255;
     return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
   });
   return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.18;
 }
+createRequire(import.meta.url);
+var colorPair = external_exports.object({
+  light: external_exports.string().trim().min(1).max(100).describe("Color used in light mode; hex is recommended."),
+  dark: external_exports.string().trim().min(1).max(100).describe("Color used in dark mode; hex is recommended.")
+}).strict();
+var themeDefinition = external_exports.object({
+  brand: external_exports.object({
+    colors: external_exports.object({
+      primary: colorPair,
+      secondary: colorPair.optional(),
+      tertiary: colorPair.optional()
+    }).strict()
+  }).strict(),
+  text: external_exports.object({
+    font: external_exports.string().trim().min(1).max(200),
+    colors: external_exports.object({
+      primary: colorPair,
+      placeholder: colorPair.optional(),
+      disabled: colorPair.optional()
+    }).strict()
+  }).strict(),
+  border: external_exports.object({
+    radius: external_exports.object({
+      default: external_exports.number().nonnegative(),
+      small: external_exports.number().nonnegative(),
+      large: external_exports.number().nonnegative()
+    }).strict(),
+    colors: external_exports.object({
+      default: colorPair,
+      weak: colorPair.optional(),
+      disabled: colorPair.optional()
+    }).strict()
+  }).strict(),
+  systemStatus: external_exports.object({
+    colors: external_exports.object({
+      success: colorPair,
+      error: colorPair.optional(),
+      warning: colorPair.optional()
+    }).strict()
+  }).strict(),
+  surface: external_exports.object({
+    colors: external_exports.object({
+      appBackground: colorPair,
+      surface1: colorPair,
+      surface2: colorPair,
+      surface3: colorPair
+    }).strict()
+  }).strict()
+}).strict();
+var ACCENT_MENU = [
+  { name: "Indigo", hex: "#4F46E5", fits: "software, analytics, internal tools" },
+  { name: "Violet", hex: "#7C3AED", fits: "creative, education, product teams" },
+  { name: "Fuchsia", hex: "#C026D3", fits: "consumer, beauty, events" },
+  { name: "Rose", hex: "#E11D48", fits: "hospitality, retail, food" },
+  { name: "Coral", hex: "#EA580C", fits: "logistics, field service, sports" },
+  { name: "Amber", hex: "#B45309", fits: "manufacturing, construction, real estate" },
+  { name: "Emerald", hex: "#059669", fits: "finance, sustainability, health" },
+  { name: "Teal", hex: "#0D9488", fits: "healthcare, travel, operations" },
+  { name: "Sky", hex: "#0284C7", fits: "support, IT, aviation, marine" }
+];
+var MENU_TEXT = ACCENT_MENU.map((a) => `${a.name} ${a.hex} (${a.fits})`).join(", ");
+var hsl = (hex2) => {
+  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(hex2.trim());
+  if (!m)
+    return null;
+  const full = m[1].length === 3 ? m[1].replace(/./g, (c) => c + c) : m[1];
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d === 0)
+    return { h: 0, s: 0, l };
+  const s = d / (1 - Math.abs(2 * l - 1));
+  const h = max === r ? (g - b) / d % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return { h: (h * 60 + 360) % 360, s, l };
+};
+var accentWarning = (definition2) => {
+  const light = definition2?.brand?.colors?.primary?.light;
+  if (typeof light !== "string")
+    return null;
+  const c = hsl(light);
+  if (!c)
+    return null;
+  const kind = c.l < 0.22 ? "near-black" : c.s < 0.2 ? "grey" : c.h >= 212 && c.h <= 226 && c.s > 0.75 && c.l >= 0.45 && c.l <= 0.66 ? "the stock blue" : null;
+  if (!kind)
+    return null;
+  return `The theme's primary ${light} is ${kind}, which reads plain. Unless the request names this colour or the brand uses it, pick an accent from the menu by the request's brand, industry or mood: ${MENU_TEXT}. Keep the canvas and neutrals light and lightly tinted toward it.`;
+};
+var STANDARD_PRIMARY = { brand: { colors: { primary: { light: "#2563EB" } } } };
+var here = dirname(fileURLToPath(import.meta.url));
+var standardThemeCandidates = [
+  resolve(here, "../../data/default-theme.json"),
+  resolve(here, "../data/default-theme.json")
+];
+var standardThemeCache;
+function loadStandardTheme() {
+  if (!standardThemeCache) {
+    const path = standardThemeCandidates.find((candidate) => existsSync(candidate));
+    if (!path) {
+      throw new Error(`standard theme file not found (looked in ${standardThemeCandidates.join(", ")})`);
+    }
+    standardThemeCache = JSON.parse(readFileSync(path, "utf8"));
+  }
+  return standardThemeCache;
+}
+var derivedThemeSchema = external_exports.object({
+  name: external_exports.string().trim().min(5).max(100),
+  definition: themeDefinition
+}).strict();
+async function resolveTheme(client, choice) {
+  const themes2 = await client.listAppThemes();
+  if (process.env.MCP_AGENT_PACK_LOOK === "own" && (choice === "standard" || choice === "workspace_default")) {
+    const basic = themes2.find((theme) => theme.isBasic && !theme.isDisabled);
+    if (basic)
+      return basic;
+  }
+  const wanted = choice === "standard" ? loadStandardTheme() : typeof choice === "object" ? choice : void 0;
+  if (wanted) {
+    const existing = themes2.find((theme) => theme.name === wanted.name && !theme.isDisabled);
+    if (existing)
+      return existing;
+    return client.createAppTheme({ name: wanted.name, definition: wanted.definition, isDefault: false });
+  }
+  const named = themes2.find((theme) => theme.name === choice || theme.id === choice);
+  if (!named)
+    throw new Error(`Theme "${String(choice)}" is not available in the active workspace.`);
+  if (named.isDisabled)
+    throw new Error(`Theme "${named.name}" is disabled and cannot be selected.`);
+  return named;
+}
+function createAppTool(client) {
+  return {
+    name: "create_app",
+    title: "Create App",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: false
+    },
+    description: 'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, app_url (a backward-compatible alias for editor_url), and the theme that was applied. Honor explicit or selected themes first. Otherwise derive a theme from a brand, industry or customer type (see references/themes.md) and pass theme:{name, definition}; include complete brand, text, border, systemStatus and surface tokens with light/dark values, not a font-only or partial definition. It is created once per workspace by name and applied. Otherwise the app gets the standard theme ("ToolJet Modern": neutral greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. If a theme cannot be created (for example a licence gate) the app is still created and the result carries a theme warning. New apps are built in ToolJet UI 2.0 (component_library "ui2": types starting with Shad, laid out in FlexContainers); pass component_library "ui1" only when the user asks for the classic ToolJet widgets. For a Code mode app (React code, built with the code_app_* tools) pass build_mode "code": the build mode is fixed when the app is created, so an app created without it stays visual. A Code mode app takes no theme, component_library or component_pack (its look lives in its code); call code_app_scaffold with its app_id next.',
+    inputSchema: {
+      name: external_exports.string().min(1),
+      theme: external_exports.union([external_exports.string().min(1), derivedThemeSchema]).optional(),
+      app_mode: external_exports.enum(["light", "dark"]).optional().describe("Open the app in this mode. Pass 'dark' when the request asks for a dark app, so the theme's dark values paint every surface; never paint dark backgrounds by hand on a light-mode app."),
+      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in, saved on the app (the components panel lists it). Default "ui2", ToolJet UI 2.0; "ui1" (ToolJet UI 1.0, the native widgets) only when the user asks for it.'),
+      component_pack: external_exports.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION),
+      build_mode: external_exports.enum(["visual", "code"]).optional().describe('How the app is built, fixed at creation. Default "visual" (ToolJet components on the canvas). "code" makes a Code mode app: React code written with the code_app_* tools. Ask the user which they want when the request does not say.')
+    },
+    async handler(args) {
+      try {
+        if (args.build_mode === "code") {
+          const cliProblem = await codeCliProblem();
+          if (cliProblem)
+            return fail(new Error(cliProblem));
+          const created2 = await client.createApp(args.name, { buildMode: "code" });
+          const ignored = ["theme", "app_mode", "component_library", "component_pack"].filter((k) => args[k] !== void 0);
+          return ok({
+            ...created2,
+            ...ignored.length ? { note: `Not applied to a Code mode app: ${ignored.join(", ")}. Its look is set in its code (frontend/styles/theme.css).` } : {},
+            next: "code_app_scaffold with this app_id."
+          });
+        }
+        if (typeof args.theme === "object")
+          derivedThemeSchema.parse(args.theme);
+        const created = await client.createApp(args.name);
+        const componentLibrary = args.component_library ?? "ui2";
+        const choice = args.theme ?? "standard";
+        const pins = libraryPins();
+        const pinned = pins ? { customComponentLibraries: pins } : {};
+        const result = {
+          ...created,
+          component_library: componentLibrary,
+          ...componentLibrary === "ui2" && (args.component_pack || defaultPack()) ? { component_pack: (args.component_pack || defaultPack()).toLowerCase() } : {},
+          theme: { mode: "workspace_default" }
+        };
+        const savedLibrary = savedComponentLibrary(componentLibrary, args.component_pack);
+        const saveLibrary = () => Promise.resolve().then(() => client.updateAppSettings({
+          appId: created.app_id,
+          versionId: created.version_id,
+          globalSettings: { componentLibrary: savedLibrary, ...pinned }
+        })).catch((libraryErr) => {
+          result.component_library_warning = `Could not save component_library "${componentLibrary}": ${libraryErr instanceof Error ? libraryErr.message : String(libraryErr)}. Build in it anyway.`;
+        });
+        if (choice === "workspace_default") {
+          await saveLibrary();
+          return ok(result);
+        }
+        const label = typeof choice === "object" ? choice.name : choice;
+        try {
+          const theme = await resolveTheme(client, choice);
+          const appMode = args.app_mode ?? (typeof choice === "object" && paintsDarkCanvasInLightMode(choice.definition) ? "dark" : void 0);
+          await client.updateAppSettings({
+            appId: created.app_id,
+            versionId: created.version_id,
+            globalSettings: { theme, componentLibrary: savedLibrary, ...pinned, ...appMode ? { appMode } : {} }
+          });
+          const mode = choice === "standard" ? "standard" : typeof choice === "object" ? "derived" : "named";
+          const accentNote = mode === "standard" ? accentWarning(STANDARD_PRIMARY) : mode === "derived" ? accentWarning(choice.definition) : null;
+          result.theme = { mode, id: theme.id, name: theme.name, ...appMode ? { app_mode: appMode } : {}, ...accentNote ? { accent_note: accentNote } : {} };
+        } catch (themeErr) {
+          await saveLibrary();
+          result.theme = {
+            mode: "workspace_default",
+            warning: `Could not apply theme "${label}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
+          };
+        }
+        return ok(result);
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+var THEME_LICENCE_USER_MESSAGE = "Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.";
+async function applyToApp(client, theme, args, definition2) {
+  if (!args.app_id || !args.version_id)
+    return void 0;
+  const mode = args.app_mode ?? (paintsDarkCanvasInLightMode(definition2) ? "dark" : void 0);
+  await client.updateAppSettings({
+    appId: args.app_id,
+    versionId: args.version_id,
+    globalSettings: { theme, ...mode ? { appMode: mode } : {} }
+  });
+  return { app_id: args.app_id, version_id: args.version_id, ...mode ? { app_mode: mode } : {} };
+}
+var hex = (h, s, l) => {
+  const channel = (n) => {
+    const k = (n + h / 30) % 12;
+    return Math.round(255 * (l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, "0");
+  };
+  return `#${channel(0)}${channel(8)}${channel(4)}`;
+};
+function definitionFromChoices(args) {
+  const accent = args.primary ? hsl(args.primary) : null;
+  if (!args.primary || !accent)
+    return void 0;
+  const { h, s: sat, l } = accent;
+  const pair = (light, dark, hue = h) => ({ light: hex(hue, light[0], light[1]), dark: hex(hue, dark[0], dark[1]) });
+  const base = loadStandardTheme().definition;
+  const radius = args.radius ?? base.border.radius.default;
+  return {
+    brand: {
+      colors: {
+        primary: { light: args.primary, dark: hex(h, sat, Math.max(l, 0.62)) },
+        secondary: pair([0.45, 0.22], [0.4, 0.78]),
+        tertiary: pair([0.65, 0.42], [0.65, 0.68], (h + 35) % 360)
+      }
+    },
+    text: {
+      font: args.font ?? base.text.font,
+      colors: { primary: pair([0.28, 0.13], [0.18, 0.94]), placeholder: pair([0.12, 0.45], [0.1, 0.65]), disabled: pair([0.1, 0.68], [0.08, 0.45]) }
+    },
+    border: {
+      radius: { default: radius, small: Math.max(radius - 2, 0), large: radius + 4 },
+      colors: { default: pair([0.22, 0.86], [0.12, 0.24]), weak: pair([0.24, 0.91], [0.12, 0.19]), disabled: pair([0.16, 0.82], [0.1, 0.28]) }
+    },
+    systemStatus: base.systemStatus,
+    surface: {
+      colors: {
+        appBackground: pair([0.3, 0.965], [0.16, 0.075]),
+        surface1: { light: "#ffffff", dark: hex(h, 0.14, 0.11) },
+        surface2: pair([0.28, 0.94], [0.13, 0.145]),
+        surface3: pair([0.24, 0.9], [0.12, 0.19])
+      }
+    }
+  };
+}
+function requireValue(value, label) {
+  if (value === void 0)
+    throw new Error(`manage_theme requires ${label} for this action.`);
+  return value;
+}
+async function readTheme(client, themeId) {
+  const theme = (await client.listAppThemes()).find((candidate) => candidate.id === themeId);
+  if (!theme)
+    throw new Error(`Theme "${themeId}" is not available in the active workspace.`);
+  return theme;
+}
+function manageThemeTool(client) {
+  return {
+    name: "manage_theme",
+    title: "Manage Workspace Theme",
+    // list/create/rename are safe, but the same tool also deletes a theme, so the hint covers its widest action.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: false
+    },
+    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. create with app_id and version_id also applies the theme to that app (in app_mode, else in dark mode when its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same name, so there is no need to list themes first. Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass include_definitions:true (or theme_id) to get a definition.",
+    inputSchema: {
+      action: external_exports.enum(["list", "create", "set_default", "update_definition", "rename", "delete"]),
+      theme_id: external_exports.string().uuid().optional(),
+      name: external_exports.string().trim().min(1).max(100).optional(),
+      primary: external_exports.string().regex(/^#[0-9a-fA-F]{6}$/).optional().describe("create: the accent colour as a hex. With font and radius, this is all a theme needs; the rest is derived from its hue"),
+      font: external_exports.string().trim().min(1).max(100).optional().describe("create, with primary: one font family name"),
+      radius: external_exports.number().min(0).max(32).optional().describe("create, with primary: corner radius in px"),
+      definition: themeDefinition.optional(),
+      is_default: external_exports.boolean().optional(),
+      confirm: external_exports.boolean().optional(),
+      include_definitions: external_exports.boolean().optional(),
+      app_id: external_exports.string().uuid().optional().describe("create only: apply the theme to this app as well"),
+      version_id: external_exports.string().uuid().optional().describe("create only, with app_id: the app version to apply it to"),
+      app_mode: external_exports.enum(["light", "dark"]).optional().describe("create only, with app_id: open the app in this mode. Pass 'dark' when the request asks for a dark app: the theme's dark values then paint every surface, and ToolJet's own parts (tables, inputs) draw for them. Never paint dark backgrounds by hand on a light-mode app.")
+    },
+    async handler(args) {
+      try {
+        if (args.action === "list") {
+          const themes2 = await client.listAppThemes();
+          if (args.include_definitions)
+            return ok({ themes: themes2 });
+          if (args.theme_id) {
+            const one = themes2.find((theme) => theme.id === args.theme_id);
+            return one ? ok({ themes: [one] }) : fail(new Error(`Theme "${args.theme_id}" not found.`));
+          }
+          return ok({
+            themes: themes2.map(({ id, name, isDefault, isBasic, isDisabled }) => ({ id, name, isDefault, isBasic, isDisabled })),
+            note: "Definitions omitted; pass include_definitions:true or theme_id to read one."
+          });
+        }
+        if (args.action === "create") {
+          const missing = [
+            ...args.name === void 0 ? ['name (at least 5 characters, the brand or app, e.g. "Harbor Ledger")'] : [],
+            ...args.definition === void 0 && !definitionFromChoices(args) ? ['primary (the accent as a hex colour, e.g. "#0f766e"; font and radius are optional)'] : []
+          ];
+          if (missing.length)
+            throw new Error(`manage_theme create needs ${missing.join(" and ")}. Send them together in one call.`);
+          const name = requireValue(args.name, "name");
+          if (name.length < 5)
+            throw new Error("Theme name must contain at least 5 characters.");
+          if (name === "ToolJet")
+            throw new Error('The reserved theme name "ToolJet" cannot be used.');
+          const existing = (await client.listAppThemes()).find((theme) => theme.name === name && !theme.isDisabled);
+          if (existing) {
+            const applied = await applyToApp(client, existing, args, existing.definition ?? args.definition);
+            return ok({
+              theme: existing,
+              reused: true,
+              ...applied ? { applied } : {},
+              warnings: [
+                `Theme "${name}" already exists in this workspace; returned it instead of creating a duplicate. ` + (applied ? "It is applied to the app." : "Apply it with update_app_settings, or use update_definition to change it.")
+              ]
+            });
+          }
+          try {
+            const definition2 = requireValue(args.definition ?? definitionFromChoices(args), "primary (a hex colour; font and radius are optional)");
+            const created = await client.createAppTheme({
+              name,
+              definition: definition2,
+              isDefault: args.is_default ?? false
+            });
+            const applied = await applyToApp(client, created, args, definition2);
+            const accent = accentWarning(definition2);
+            return ok({ theme: created, ...applied ? { applied } : {}, ...accent ? { warnings: [accent] } : {} });
+          } catch (error) {
+            if (error instanceof ToolJetHttpError && error.status === 451) {
+              return ok({
+                theme: null,
+                licensed: false,
+                user_message: THEME_LICENCE_USER_MESSAGE,
+                warnings: [
+                  "Custom themes are not included in this ToolJet plan (HTTP 451). The app keeps the workspace default theme. Do not retry theme creation or guess a theme id; build the app on the default theme and repeat `user_message` to the user in the closing handoff."
+                ]
+              });
+            }
+            throw error;
+          }
+        }
+        const themeId = requireValue(args.theme_id, "theme_id");
+        await readTheme(client, themeId);
+        if (args.action === "set_default") {
+          await client.setDefaultAppTheme(themeId, args.is_default ?? true);
+          return ok({ theme: await readTheme(client, themeId) });
+        }
+        if (args.action === "update_definition") {
+          await client.updateAppThemeDefinition(themeId, requireValue(args.definition, "definition"));
+          const accent = accentWarning(args.definition);
+          return ok({ theme: await readTheme(client, themeId), ...accent ? { warnings: [accent] } : {} });
+        }
+        if (args.action === "rename") {
+          await client.renameAppTheme(themeId, requireValue(args.name, "name"));
+          return ok({ theme: await readTheme(client, themeId) });
+        }
+        if (args.confirm !== true) {
+          throw new Error(`Deleting theme "${themeId}" requires confirm:true after exact-target user approval.`);
+        }
+        await client.deleteAppTheme(themeId);
+        return ok({ deleted: true, theme_id: themeId });
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  };
+}
+var themes = [
+  {
+    action: "list",
+    name: "list_workspace_themes",
+    title: "List Workspace Theme Definitions",
+    description: "Read workspace themes with id, name, and flags. Unlike list_app_themes, this also supports include_definitions:true for all definitions or theme_id for one full definition. Does not change themes.",
+    required: [],
+    optional: ["theme_id", "include_definitions"],
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
+  },
+  {
+    action: "create",
+    name: "create_workspace_theme",
+    title: "Create Workspace Theme",
+    description: "Create a custom workspace theme, or reuse an existing active theme of the same name. Supply a name of at least five characters and either a full definition or primary (a hex accent), with optional font and radius, for a new theme. is_default can replace the workspace default. With both app_id and version_id, applies it to that app and selects dark mode for a dark light-mode canvas. License gates apply.",
+    required: ["name"],
+    optional: ["definition", "primary", "font", "radius", "is_default", "app_id", "version_id", "app_mode"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
+  },
+  {
+    action: "set_default",
+    name: "set_default_workspace_theme",
+    title: "Set Default Workspace Theme",
+    description: "Change whether an existing workspace theme is the default. is_default defaults to true; false removes its default status. Changes the workspace default used by apps.",
+    required: ["theme_id"],
+    optional: ["is_default"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
+  },
+  {
+    action: "update_definition",
+    name: "update_workspace_theme_definition",
+    title: "Update Workspace Theme Definition",
+    description: "Replace the full token definition of an existing workspace theme, affecting apps using it. Definitions require brand, text, border, systemStatus, and surface tokens with light/dark colors. License gates apply.",
+    required: ["theme_id", "definition"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
+  },
+  {
+    action: "rename",
+    name: "rename_workspace_theme",
+    title: "Rename Workspace Theme",
+    description: "Replace the name of an existing workspace theme. Requires a theme_id from the active workspace; ToolJet permissions and license gates apply.",
+    required: ["theme_id", "name"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
+  },
+  {
+    action: "delete",
+    name: "delete_workspace_theme",
+    title: "Delete Workspace Theme",
+    description: "Delete an existing workspace theme only after explicit approval of that exact theme. Requires confirm:true. ToolJet permissions and license gates apply.",
+    required: ["theme_id", "confirm"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
+  }
+];
+function themeActionTools(source) {
+  return exposeActions(source, themes);
+}
+createRequire(import.meta.url);
+var CODE_PAGE_TRUE = /* @__PURE__ */ new Set([true, "true", "{{true}}"]);
+function codeScreens(summary) {
+  const pageIds = new Set(summary.pages.map((page) => page.id));
+  const screens = [];
+  for (const page of summary.pages) {
+    for (const component of page.components) {
+      const props = component.properties ?? {};
+      if (component.parent || !CODE_PAGE_TRUE.has(props.codePage?.value))
+        continue;
+      let routes = props.routes?.value;
+      if (typeof routes === "string") {
+        try {
+          routes = JSON.parse(routes);
+        } catch {
+          routes = [];
+        }
+      }
+      if (!Array.isArray(routes))
+        continue;
+      for (const route of routes) {
+        if (typeof route?.id !== "string" || typeof route?.path !== "string")
+          continue;
+        if (typeof route.pageId !== "string" || !pageIds.has(route.pageId))
+          continue;
+        screens.push({
+          route_id: route.id,
+          path: route.path,
+          ...typeof route.title === "string" ? { title: route.title } : {},
+          page_id: route.pageId,
+          code_page_id: page.id
+        });
+      }
+    }
+  }
+  return screens;
+}
+function findScreen(summary, route) {
+  const screens = codeScreens(summary);
+  const screen = screens.find((s) => s.route_id === route) ?? screens.find((s) => s.path === route);
+  if (screen)
+    return screen;
+  throw new Error(`No Code mode screen "${route}" in app "${summary.app_id}". ` + (screens.length ? `Its screens: ${screens.map((s) => `${s.route_id} (${s.path})`).join(", ")}.` : "The app has no Code mode screens."));
+}
+function findQuery(summary, ref) {
+  const lower = ref.toLowerCase();
+  return summary.queries.find((q) => q.id === ref) ?? summary.queries.find((q) => q.name === ref) ?? summary.queries.find((q) => q.name?.toLowerCase() === lower);
+}
+function isCodeApp(summary) {
+  return summary.pages.some((page) => page.components.some((component) => {
+    const props = component.properties ?? {};
+    return !component.parent && CODE_PAGE_TRUE.has(props.codePage?.value);
+  }));
+}
+function findResource(summary, resourceType, resourceId) {
+  if (resourceType === "page") {
+    const page = summary.pages.find((candidate) => candidate.id === resourceId) ?? summary.pages.find((candidate) => candidate.name === resourceId);
+    if (page)
+      return { type: resourceType, id: page.id, name: page.name };
+  } else if (resourceType === "query") {
+    const query = findQuery(summary, resourceId);
+    if (query)
+      return { type: resourceType, id: query.id, name: query.name };
+  } else {
+    for (const page of summary.pages) {
+      const component = page.components.find((candidate) => candidate.id === resourceId);
+      if (component) {
+        return {
+          type: resourceType,
+          id: component.id,
+          name: component.name,
+          component_type: component.type,
+          page_id: page.id,
+          page_name: page.name
+        };
+      }
+    }
+  }
+  throw new Error(`${resourceType} "${resourceId}" does not belong to app "${summary.app_id}". Use get_app_summary and do not guess resource ids.`);
+}
+function normalizePermission(permissions) {
+  const permission = permissions[0];
+  if (!permission)
+    return { access: "all", permission_id: null };
+  if (permission.type === "SINGLE") {
+    return {
+      access: "users",
+      permission_id: permission.id,
+      users: (Array.isArray(permission.users) ? permission.users : []).map((entry) => entry?.user).filter(Boolean).map((user) => ({
+        id: user.id,
+        name: [user.firstName, user.lastName].filter(Boolean).join(" ") || void 0,
+        email: user.email
+      }))
+    };
+  }
+  if (permission.type === "GROUP") {
+    return {
+      access: "groups",
+      permission_id: permission.id,
+      groups: (Array.isArray(permission.groups) ? permission.groups : []).map((entry) => entry?.permissionGroup).filter(Boolean).map((group) => ({ id: group.id, name: group.name }))
+    };
+  }
+  return { access: String(permission.type ?? "unknown").toLowerCase(), permission_id: permission.id };
+}
+function planLimits(features) {
+  if (!features)
+    return void 0;
+  const known = Object.entries({
+    query_limits: features.appPermissionQuery,
+    screen_limits: features.appPermissionPages,
+    server_side_current_user: features.serverSideGlobalResolve
+  }).filter(([, value]) => typeof value === "boolean");
+  return known.length ? Object.fromEntries(known) : void 0;
+}
+async function subjectGroups(client, open) {
+  const openIds = new Map(open.map((group) => [group.id, group]));
+  let workspace;
+  try {
+    workspace = await client.listWorkspaceGroups();
+  } catch {
+    workspace = void 0;
+  }
+  if (!workspace) {
+    return {
+      groups: open.map((group) => ({ ...group, can_open_app: true })),
+      complete: false
+    };
+  }
+  const groups = workspace.map((group) => ({
+    id: group.id,
+    name: group.name,
+    type: group.type,
+    ...typeof openIds.get(group.id)?.count === "number" ? { count: openIds.get(group.id).count } : {},
+    can_open_app: openIds.has(group.id),
+    ...group.disabled ? { disabled: true } : {}
+  }));
+  for (const group of open)
+    if (!groups.some((known) => known.id === group.id))
+      groups.push({ ...group, can_open_app: true });
+  return { groups, complete: true };
+}
+function viewRule(appId, appName, groupId) {
+  return {
+    name: `${(appName || "App").slice(0, 40)} (view)`,
+    type: "app",
+    groupId,
+    isAll: false,
+    createResourcePermissionObject: {
+      canEdit: false,
+      canView: true,
+      hideFromDashboard: false,
+      canAccessDevelopment: false,
+      canAccessStaging: false,
+      canAccessProduction: false,
+      canAccessReleased: true,
+      resourcesToAdd: [{ appId }]
+    }
+  };
+}
+async function groupDirectory(client, appId) {
+  const subjects = await client.listAppPermissionSubjects(appId);
+  const { groups, complete } = await subjectGroups(client, subjects.groups);
+  return { groups, complete, openIds: new Set(subjects.groups.map((group) => group.id)) };
+}
+function resolveGroups(directory, refs) {
+  const ids = [];
+  const unknown = [];
+  for (const ref of refs) {
+    const lower = ref.toLowerCase();
+    const group = directory.groups.find((g) => g.id === ref) ?? directory.groups.find((g) => g.name === ref) ?? directory.groups.find((g) => g.name?.toLowerCase() === lower);
+    if (group)
+      ids.push(group.id);
+    else if (!directory.complete && UUID.test(ref))
+      ids.push(ref);
+    else
+      unknown.push(ref);
+  }
+  return { ids: [...new Set(ids)], unknown };
+}
+var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function groupsToGrant(directory, groupIds, grant) {
+  const missing = groupIds.filter((id) => !directory.openIds.has(id));
+  if (!missing.length)
+    return [];
+  const byId = new Map(directory.groups.map((group) => [group.id, group]));
+  const names = missing.map((id) => byId.get(id)?.name ?? id);
+  if (!grant) {
+    throw new Error(`${names.join(", ")} cannot open this app yet, so a limit to ${missing.length > 1 ? "them" : "it"} would leave ${missing.length > 1 ? "their" : "its"} members without the screen or query. Pass grant_app_access: true to give each of them view access to this app only (the released app), or give them access in Workspace settings > Groups. Nothing was changed.`);
+  }
+  const disabled = missing.filter((id) => byId.get(id)?.disabled);
+  if (disabled.length) {
+    throw new Error(`${disabled.map((id) => byId.get(id)?.name ?? id).join(", ")} cannot be changed under the current plan, so it cannot be given access to this app. Nothing was changed.`);
+  }
+  return missing;
+}
+async function removeGrants(client, appId, granted) {
+  const left = [];
+  for (const grant of granted) {
+    try {
+      const rules = await client.listWorkspaceGroupAccess(grant.group_id);
+      const added = rules.filter((rule) => rule.id && rule.name === grant.rule_name && rule.resources.some((r) => r.id === appId));
+      for (const rule of added)
+        await client.writeWorkspaceGroupAccess("DELETE", grant.group_id, "app", rule.id);
+    } catch {
+      left.push(grant.name ?? grant.group_id);
+    }
+  }
+  return left;
+}
+async function grantGroups(client, appId, appName, directory, missing) {
+  const byId = new Map(directory.groups.map((group) => [group.id, group]));
+  const granted = [];
+  const undo = async (reason) => {
+    const left = await removeGrants(client, appId, granted);
+    throw new Error(`${reason} The access rules added here were removed${left.length ? `, except for ${left.join(", ")} (remove it in Workspace settings > Groups)` : ""}.`);
+  };
+  for (const id of missing) {
+    const rule = viewRule(appId, appName, id);
+    try {
+      await client.writeWorkspaceGroupAccess("POST", id, "app", void 0, rule);
+    } catch (error) {
+      await undo(`${byId.get(id)?.name ?? id} could not be given access to this app: ${error.message}.`);
+    }
+    granted.push({ group_id: id, ...byId.get(id)?.name ? { name: byId.get(id).name } : {}, rule_name: rule.name });
+  }
+  const after = new Set((await client.listAppPermissionSubjects(appId)).groups.map((group) => group.id));
+  const still = missing.filter((id) => !after.has(id));
+  if (still.length) {
+    await undo(`ToolJet did not confirm that ${still.map((id) => byId.get(id)?.name ?? id).join(", ")} can open this app after the access rule was added.`);
+  }
+  return granted;
+}
+function resolveTargets(args, summary, problems) {
+  const targets = [];
+  const routes = [...args.route !== void 0 ? [args.route] : [], ...args.routes ?? []];
+  const queries = [...args.query !== void 0 ? [args.query] : [], ...args.queries ?? []];
+  const type = args.resource_type === "screen" ? "page" : args.resource_type;
+  if (routes.length && type && type !== "page") {
+    problems.push(`route names a Code mode screen (a page permission), so resource_type "${args.resource_type}" does not fit: leave resource_type out.`);
+  }
+  if (queries.length && type && type !== "query") {
+    problems.push(`query names a query, so resource_type "${args.resource_type}" does not fit: leave resource_type out.`);
+  }
+  for (const route of [...new Set(routes)]) {
+    try {
+      const screen = findScreen(summary, route);
+      targets.push({
+        resourceType: "page",
+        resourceId: screen.page_id,
+        resource: {
+          ...findResource(summary, "page", screen.page_id),
+          screen: { route_id: screen.route_id, path: screen.path, title: screen.title }
+        }
+      });
+    } catch (error) {
+      problems.push(error.message);
+    }
+  }
+  const unknownQueries = [];
+  for (const ref of [...new Set(queries)]) {
+    const query = findQuery(summary, ref);
+    if (!query)
+      unknownQueries.push(ref);
+    else
+      targets.push({ resourceType: "query", resourceId: query.id, resource: { type: "query", id: query.id, name: query.name } });
+  }
+  if (unknownQueries.length) {
+    const names = summary.queries.map((q) => q.name ?? q.id);
+    problems.push(`No query ${unknownQueries.map((q) => `"${q}"`).join(", ")} in this app. ` + (names.length ? `Its queries: ${names.join(", ")}.` : "The app has no queries."));
+  }
+  if (args.resource_id !== void 0) {
+    const kinds = type ? [type] : ["query", "page", "component"];
+    let found;
+    for (const kind of kinds) {
+      try {
+        found = { resourceType: kind, resourceId: "", resource: findResource(summary, kind, args.resource_id) };
+        found.resourceId = String(found.resource.id);
+        break;
+      } catch {
+      }
+    }
+    if (found)
+      targets.push(found);
+    else
+      problems.push(`resource_id "${args.resource_id}" is no ${type ?? "page, query or component"} of this app. Pass a query by its name with query, or a screen with route.`);
+  }
+  if (!routes.length && !queries.length && args.resource_id === void 0) {
+    const screens = codeScreens(summary);
+    problems.push("Name what to limit: route (or routes) for screens, query (or queries) for queries, by name or id." + (screens.length ? ` Screens: ${screens.map((s) => s.path).join(", ")}.` : "") + (summary.queries.length ? ` Queries: ${summary.queries.map((q) => q.name ?? q.id).join(", ")}.` : "") + // A build sent set with groups and grant_app_access but nothing to limit, four times over (2026-11-09).
+    (args.grant_app_access || args.groups?.length || args.group_ids?.length ? " There is no app-wide grant: a group gets into this app with the first screen or query limited to it (grant_app_access does that part). Everyone who can open the app already sees what is not limited, so when no screen or query should be limited, there is nothing to set." + (isCodeApp(summary) && !screens.length ? " Screens are listed here after code_app_install has saved the routes." : "") : ""));
+  }
+  const seen = /* @__PURE__ */ new Set();
+  return targets.filter((target) => {
+    const key = `${target.resourceType}:${target.resourceId}`;
+    if (seen.has(key))
+      return false;
+    seen.add(key);
+    return true;
+  });
+}
+function exampleCall(args, summary, codeApp) {
+  const example = { action: args.action === "get" ? "get" : args.action, app_id: args.app_id };
+  const screens = summary ? codeScreens(summary) : [];
+  if (args.routes?.length)
+    example.routes = args.routes;
+  else if (args.route)
+    example.route = args.route;
+  else if (args.queries?.length)
+    example.queries = args.queries;
+  else if (args.query)
+    example.query = args.query;
+  else if (screens.length)
+    example.route = screens[screens.length - 1].path;
+  else if (summary?.queries.length)
+    example.query = summary.queries[0].name ?? summary.queries[0].id;
+  else
+    example.route = "/finance";
+  if (args.action === "set") {
+    if (args.users?.length || args.user_ids?.length)
+      example.users = args.users ?? args.user_ids;
+    else
+      example.groups = args.groups ?? args.group_ids ?? ["Finance"];
+    if (!codeApp)
+      example.confirm = true;
+  }
+  if (args.action === "clear")
+    example.confirm = true;
+  return JSON.stringify(example);
+}
+function manageAppPermissionsTool(client) {
+  return {
+    name: "manage_app_permissions",
+    title: "Manage App Permissions",
+    // get/list_subjects only read, but set overwrites an access rule and clear broadens access to
+    // every user who can reach the app, so the hint covers its widest action.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: false
+    },
+    description: `Server-enforced access to an app's screens and queries: who can open a Code mode screen (route) or run a query. Example: {"action":"set","app_id":"<id>","route":"/finance","groups":["Finance"]}; for queries "query":"finance_queue" (name or id), and "routes" or "queries" take several at once with the same groups. groups take names or ids, users take emails or ids; access_type and resource_type are inferred. In a Code mode app, set needs no confirm, and a named group that cannot open the app first gets view access to this app only (grant_app_access defaults to true; false refuses instead). In other apps set needs confirm:true after the user approves the exact rule. clear (back to everyone who can open the app) always needs confirm:true. list_subjects: every workspace group with can_open_app, and plan (whether this plan enforces query and screen limits and resolves {{globals.server.currentUser}} on the server). list_screens: each route with its access. list_queries: each query of the app with its access. A screen limit hides the screen; the data it shows is protected only by limiting the queries that return it. Visual pages and components: resource_id (resource_type is optional). License gates apply.`,
+    inputSchema: {
+      action: external_exports.enum(["list_subjects", "list_screens", "list_queries", "get", "set", "clear"]),
+      app_id: external_exports.string().uuid(),
+      route: external_exports.string().min(1).max(200).optional().describe("A Code mode screen by route path or id (app.json routes)."),
+      routes: external_exports.array(external_exports.string().min(1).max(200)).min(1).max(50).optional().describe("Several screens at once."),
+      query: external_exports.string().min(1).max(200).optional().describe("A query by name or id."),
+      queries: external_exports.array(external_exports.string().min(1).max(200)).min(1).max(100).optional().describe("Several queries at once."),
+      groups: external_exports.array(external_exports.string().min(1).max(200)).min(1).max(100).optional().describe("Group names or ids."),
+      users: external_exports.array(external_exports.string().min(1).max(320)).min(1).max(100).optional().describe("User emails or ids."),
+      resource_type: external_exports.enum(["page", "query", "component", "screen"]).optional().describe("Inferred; only needed with resource_id."),
+      resource_id: external_exports.string().min(1).max(200).optional(),
+      access_type: external_exports.enum(["users", "groups"]).optional().describe("Inferred from groups or users."),
+      user_ids: external_exports.array(external_exports.string().min(1)).min(1).max(100).optional(),
+      group_ids: external_exports.array(external_exports.string().min(1)).min(1).max(100).optional(),
+      confirm: external_exports.boolean().optional(),
+      grant_app_access: external_exports.boolean().optional().describe("set with groups: give a group that cannot open the app view access to this app only first (default true in a Code mode app)")
+    },
+    async handler(args) {
+      try {
+        if (args.action === "list_subjects") {
+          const [subjects, features] = await Promise.all([
+            client.listAppPermissionSubjects(args.app_id),
+            client.getLicenseFeatureAccess().catch(() => void 0)
+          ]);
+          const { groups, complete } = await subjectGroups(client, subjects.groups);
+          const plan = planLimits(features);
+          return ok({
+            app_id: args.app_id,
+            users: subjects.users,
+            groups,
+            ...plan ? { plan } : {},
+            note: complete ? "A group with can_open_app false cannot open the app: a set naming it gives it view access to this app only first (in a Code mode app by default, elsewhere with grant_app_access:true)." : "Only the groups that can open the app are listed: the workspace group list could not be read."
+          });
+        }
+        if (args.action === "list_screens") {
+          const summary2 = await client.getAppSummary(args.app_id);
+          const screens = await Promise.all(codeScreens(summary2).map(async (screen) => ({
+            ...screen,
+            ...normalizePermission(await client.getAppPermission(args.app_id, "page", screen.page_id))
+          })));
+          return ok({ app_id: args.app_id, screens });
+        }
+        if (args.action === "list_queries") {
+          const summary2 = await client.getAppSummary(args.app_id);
+          const queries = await Promise.all(summary2.queries.map(async (q) => ({
+            query_id: q.id,
+            name: q.name,
+            ...normalizePermission(await client.getAppPermission(args.app_id, "query", q.id))
+          })));
+          return ok({ app_id: args.app_id, queries, limited: queries.filter((q) => q.access !== "all").length });
+        }
+        const summary = await client.getAppSummary(args.app_id);
+        const codeApp = isCodeApp(summary);
+        const problems = [];
+        const targets = resolveTargets(args, summary, problems);
+        let accessType;
+        let subjectIds = [];
+        let directory;
+        if (args.action === "set") {
+          const groupRefs = [...args.groups ?? [], ...args.group_ids ?? []];
+          const userRefs = [...args.users ?? [], ...args.user_ids ?? []];
+          if (groupRefs.length && userRefs.length) {
+            problems.push("Pass groups or users, not both: one limit is to groups or to named users.");
+          } else if (!groupRefs.length && !userRefs.length) {
+            problems.push("Name who keeps access: groups (names or ids) or users (emails or ids).");
+          } else {
+            accessType = groupRefs.length ? "groups" : "users";
+            if (args.access_type && args.access_type !== accessType) {
+              problems.push(`access_type "${args.access_type}" does not match the ${accessType} passed: leave access_type out.`);
+            }
+          }
+          if (accessType === "groups") {
+            directory = await groupDirectory(client, args.app_id);
+            const { ids, unknown } = resolveGroups(directory, groupRefs);
+            if (unknown.length) {
+              problems.push(`${unknown.map((g) => `"${g}"`).join(", ")} ${unknown.length > 1 ? "are not groups" : "is not a group"} of this workspace. Its groups: ${directory.groups.map((g) => g.name ?? g.id).join(", ")}.`);
+            }
+            subjectIds = ids;
+          } else if (accessType === "users") {
+            const users = (await client.listAppPermissionSubjects(args.app_id)).users;
+            const unknown = [];
+            for (const ref of userRefs) {
+              const lower = ref.toLowerCase();
+              const user = users.find((u) => u.id === ref) ?? users.find((u) => u.email?.toLowerCase() === lower);
+              if (user)
+                subjectIds.push(user.id);
+              else
+                unknown.push(ref);
+            }
+            if (unknown.length) {
+              problems.push(`${unknown.map((u) => `"${u}"`).join(", ")} cannot open this app or is not a user of this workspace (users must already have access to the app; list_subjects lists them).`);
+            }
+            subjectIds = [...new Set(subjectIds)];
+            if (args.grant_app_access === true) {
+              problems.push("grant_app_access applies only to a limit to groups: leave it out with users.");
+            }
+          }
+          if (!codeApp && args.confirm !== true) {
+            problems.push("set on this app needs confirm:true after the user explicitly approves the exact access rule.");
+          }
+        }
+        if (args.action === "clear" && args.confirm !== true) {
+          problems.push("clear opens the resource to everyone who can open the app, so it needs confirm:true after the user approves it.");
+        }
+        if (problems.length) {
+          throw new Error(`manage_app_permissions ${args.action} was refused and nothing was changed:
+` + problems.map((problem) => `- ${problem}`).join("\n") + `
+A call that works: ${exampleCall(args, summary, codeApp)}`);
+        }
+        const one = targets.length === 1;
+        if (args.action === "get") {
+          const results2 = await Promise.all(targets.map(async (t) => ({ resource: t.resource, ...normalizePermission(await client.getAppPermission(args.app_id, t.resourceType, t.resourceId)) })));
+          return ok(one ? { app_id: args.app_id, ...results2[0] } : { app_id: args.app_id, results: results2 });
+        }
+        if (args.action === "clear") {
+          for (const t of targets)
+            await client.clearAppPermission(args.app_id, t.resourceType, t.resourceId);
+          const results2 = targets.map((t) => ({ resource: t.resource, access: "all", permission_id: null }));
+          return ok(one ? { app_id: args.app_id, ...results2[0] } : { app_id: args.app_id, results: results2 });
+        }
+        const grant = args.grant_app_access ?? codeApp;
+        const toGrant = accessType === "groups" ? groupsToGrant(directory, subjectIds, grant) : [];
+        const results = [];
+        for (const t of targets) {
+          try {
+            const permissions = await client.setAppPermission({
+              appId: args.app_id,
+              resourceType: t.resourceType,
+              resourceId: t.resourceId,
+              accessType,
+              subjectIds
+            });
+            results.push({ resource: t.resource, ...normalizePermission(permissions) });
+          } catch (error) {
+            results.push({ resource: t.resource, error: error.message });
+          }
+        }
+        const failed = results.filter((r) => r.error);
+        const failures = failed.map((r) => `${r.resource.name ?? r.resource.id}: ${r.error}`).join("; ");
+        if (failed.length === results.length) {
+          throw new Error(failures + (toGrant.length ? " No access to the app was given." : ""));
+        }
+        if (failed.length) {
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                error: `${failed.length} of ${results.length} limits were not set: ${failures}.` + (toGrant.length ? " No access to the app was given." : "") + " Set the failed ones again; the others are in place.",
+                app_id: args.app_id,
+                applied: results.filter((r) => !r.error),
+                failed
+              })
+            }],
+            isError: true
+          };
+        }
+        let granted = [];
+        if (toGrant.length) {
+          try {
+            granted = await grantGroups(client, args.app_id, summary.name, directory, toGrant);
+          } catch (error) {
+            throw new Error(`The limits were set, but their groups cannot open this app, so their members cannot use those screens or queries yet: ${error.message} Give the groups access in Workspace settings > Groups, or run this again.`);
+          }
+        }
+        const grantNote = granted.length ? `${granted.map((g) => g.name ?? g.group_id).join(", ")} could not open this app, so ${granted.length > 1 ? "each now has" : "it now has"} view access to this app only (released app, rule "${granted[0].rule_name}").` : void 0;
+        const body = {
+          app_id: args.app_id,
+          ...one ? results[0] : { results },
+          ...granted.length ? { granted_app_access: granted, note: grantNote } : {}
+        };
+        return ok(body);
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  };
+}
+var appPermissions = [
+  {
+    action: "list_screens",
+    name: "list_app_permission_screens",
+    title: "List App Screen Permissions",
+    description: "Read the Code mode screens and their access restrictions for one app. Does not change access.",
+    required: ["app_id"],
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
+  },
+  {
+    action: "list_queries",
+    name: "list_app_permission_queries",
+    title: "List App Query Permissions",
+    description: "Read the queries and their access restrictions for one app. Does not change access.",
+    required: ["app_id"],
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
+  },
+  {
+    action: "list_subjects",
+    name: "list_app_permission_subjects",
+    title: "List App Permission Subjects",
+    description: "List users and groups eligible for resource access rules in one app. Subjects must already have app access. ToolJet permissions and license gates apply.",
+    required: ["app_id"],
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
+  },
+  {
+    action: "get",
+    name: "get_app_resource_permission",
+    title: "Get App Resource Permission",
+    description: "Read server-enforced access for one page, query, or component belonging to the selected app. Use exact resource IDs from get_app_summary.",
+    required: ["app_id", "resource_type", "resource_id"],
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
+  },
+  {
+    action: "set",
+    name: "set_app_resource_permission",
+    title: "Set App Resource Permission",
+    description: "Replace access to one app page, query, or component with selected users or groups. Supply user_ids for access_type users or group_ids for groups, never both. Requires confirm:true after explicit approval of the exact rule; existing app access and license gates still apply.",
+    required: ["app_id", "resource_type", "resource_id", "access_type", "confirm"],
+    optional: ["user_ids", "group_ids"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
+  },
+  {
+    action: "clear",
+    name: "clear_app_resource_permission",
+    title: "Clear App Resource Permission",
+    description: "Remove a resource access restriction, broadening access to every user who can access the app. Requires confirm:true after explicit approval of this exact page, query, or component.",
+    required: ["app_id", "resource_type", "resource_id", "confirm"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
+  }
+];
+function appPermissionActionTools(source) {
+  return exposeActions(source, appPermissions);
+}
 export {
-  getComponentCatalogTool as A,
-  updateComponentsTool as B,
-  registerPackDefinitions as C,
-  projectJavascriptRuntime as D,
-  projectAppSettings as E,
-  FLEX_MIN_WIDTH_PX_DESCRIPTION as F,
-  compactTheme as G,
-  pageSettingProperties as H,
-  appendedChildOrders as I,
-  reparentAdditions as J,
-  branchIdFor as K,
-  withBranchContext as L,
-  allowedApiOrigins as M,
-  ALLOWED_API_ORIGINS_VAR as N,
-  identityFromHeaders as O,
+  allowedApiOrigins as A,
+  ALLOWED_API_ORIGINS_VAR as B,
+  identityFromHeaders as C,
+  BASE_URL_HEADER as D,
+  PAT_HEADER as E,
   PartialWriteError as P,
-  BASE_URL_HEADER as Q,
-  PAT_HEADER as R,
   SESSION_TOKEN_HEADER as S,
-  ToolJetHttpError as T,
+  TOOLJET_DB_DATA_TYPES as T,
   WORKSPACE_ACCESS_KEYS as W,
   WORKSPACE_PERMISSION_KEYS as a,
-  plannedCurrency as b,
+  invalidSeedTimestamps as b,
   componentRef as c,
-  normalizeType as d,
-  packDefaultDefinition as e,
-  TOOLJET_DB_DATA_TYPES as f,
-  FLEX_GROW_DESCRIPTION as g,
-  FLEX_WIDTH_PX_DESCRIPTION as h,
+  completedPartialWrites as d,
+  currentBranchId as e,
+  loadConfig as f,
+  createClient as g,
+  createAppTool as h,
   indexComponentReferences as i,
-  FLEX_FILL_WIDTH_DESCRIPTION as j,
-  invalidSeedTimestamps as k,
+  manageThemeTool as j,
+  projectJavascriptRuntime as k,
   literalCanvasColor as l,
-  mapKeyRefusal as m,
-  normalizeComponentSpec as n,
-  completedPartialWrites as o,
-  paintsDarkCanvasInLightMode as p,
-  currentBranchId as q,
-  resolveRef as r,
-  isFlexContainerType as s,
-  batchChildOrders as t,
-  childOrderProperty as u,
+  manageAppPermissionsTool as m,
+  normalizeType as n,
+  projectAppSettings as o,
+  packDefaultDefinition as p,
+  compactTheme as q,
+  registerPackDefinitions as r,
+  pageSettingProperties as s,
+  ToolJetHttpError as t,
+  themeActionTools as u,
   validateTableBatch as v,
   workspaceAccessKeys as w,
-  strictEntry as x,
-  loadConfig as y,
-  createClient as z
+  appPermissionActionTools as x,
+  branchIdFor as y,
+  withBranchContext as z
 };
