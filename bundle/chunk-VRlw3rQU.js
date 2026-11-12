@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { p as paintsDarkCanvasInLightMode, T as ToolJetHttpError, W as WORKSPACE_ACCESS_KEYS, a as WORKSPACE_PERMISSION_KEYS, w as workspaceAccessKeys } from "./chunk-C_xL9Jh_.js";
+import { p as paintsDarkCanvasInLightMode, T as ToolJetHttpError, W as WORKSPACE_ACCESS_KEYS, a as WORKSPACE_PERMISSION_KEYS, w as workspaceAccessKeys } from "./chunk-DEiV-XzK.js";
 import { b0 as external_exports, b8 as ok, b7 as fail, ba as exposeActions } from "./chunk-Csl8mO51.js";
 import { z as libraryPins, A as defaultPack, B as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION } from "./chunk-CzEla2h4.js";
 import { existsSync, readFileSync } from "node:fs";
@@ -148,16 +148,26 @@ function createAppTool(client) {
       destructiveHint: false,
       openWorldHint: false
     },
-    description: 'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, app_url (a backward-compatible alias for editor_url), and the theme that was applied. Honor explicit or selected themes first. Otherwise derive a theme from a brand, industry or customer type (see references/themes.md) and pass theme:{name, definition}; include complete brand, text, border, systemStatus and surface tokens with light/dark values, not a font-only or partial definition. It is created once per workspace by name and applied. Otherwise the app gets the standard theme ("ToolJet Modern": neutral greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. If a theme cannot be created (for example a licence gate) the app is still created and the result carries a theme warning. New apps are built in ToolJet UI 2.0 (component_library "ui2": types starting with Shad, laid out in FlexContainers); pass component_library "ui1" only when the user asks for the classic ToolJet widgets.',
+    description: 'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, app_url (a backward-compatible alias for editor_url), and the theme that was applied. Honor explicit or selected themes first. Otherwise derive a theme from a brand, industry or customer type (see references/themes.md) and pass theme:{name, definition}; include complete brand, text, border, systemStatus and surface tokens with light/dark values, not a font-only or partial definition. It is created once per workspace by name and applied. Otherwise the app gets the standard theme ("ToolJet Modern": neutral greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. If a theme cannot be created (for example a licence gate) the app is still created and the result carries a theme warning. New apps are built in ToolJet UI 2.0 (component_library "ui2": types starting with Shad, laid out in FlexContainers); pass component_library "ui1" only when the user asks for the classic ToolJet widgets. For a Code mode app (React code, built with the code_app_* tools) pass build_mode "code": the build mode is fixed when the app is created, so an app created without it stays visual. A Code mode app takes no theme, component_library or component_pack (its look lives in its code); call code_app_scaffold with its app_id next.',
     inputSchema: {
       name: external_exports.string().min(1),
       theme: external_exports.union([external_exports.string().min(1), derivedThemeSchema]).optional(),
       app_mode: external_exports.enum(["light", "dark"]).optional().describe("Open the app in this mode. Pass 'dark' when the request asks for a dark app, so the theme's dark values paint every surface; never paint dark backgrounds by hand on a light-mode app."),
       component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in, saved on the app (the components panel lists it). Default "ui2", ToolJet UI 2.0; "ui1" (ToolJet UI 1.0, the native widgets) only when the user asks for it.'),
-      component_pack: external_exports.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION)
+      component_pack: external_exports.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION),
+      build_mode: external_exports.enum(["visual", "code"]).optional().describe('How the app is built, fixed at creation. Default "visual" (ToolJet components on the canvas). "code" makes a Code mode app: React code written with the code_app_* tools. Ask the user which they want when the request does not say.')
     },
     async handler(args) {
       try {
+        if (args.build_mode === "code") {
+          const created2 = await client.createApp(args.name, { buildMode: "code" });
+          const ignored = ["theme", "app_mode", "component_library", "component_pack"].filter((k) => args[k] !== void 0);
+          return ok({
+            ...created2,
+            ...ignored.length ? { note: `Not applied to a Code mode app: ${ignored.join(", ")}. Its look is set in its code (frontend/styles/theme.css).` } : {},
+            next: "code_app_scaffold with this app_id."
+          });
+        }
         if (typeof args.theme === "object")
           derivedThemeSchema.parse(args.theme);
         const created = await client.createApp(args.name);

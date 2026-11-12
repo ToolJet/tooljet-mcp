@@ -3070,7 +3070,8 @@ function createClient(auth, config) {
   async function useWorkspace(workspaceId) {
     return auth.switchWorkspace(workspaceId);
   }
-  async function createApp(name) {
+  async function createApp(name, options = {}) {
+    const wantsCode = options.buildMode === "code";
     const branchId = branchIdFor(config);
     let createRes;
     let finalName = name;
@@ -3079,7 +3080,13 @@ function createClient(auth, config) {
       createRes = await auth.authedFetch("/api/apps", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: finalName, type: "front-end", ...branchId ? { branchId } : {} })
+        body: JSON.stringify({
+          name: finalName,
+          type: "front-end",
+          ...branchId ? { branchId } : {},
+          // The build mode is set when the app is created, as the dashboard does: ToolJet has no call that changes it later.
+          ...wantsCode ? { buildMode: "code" } : {}
+        })
       });
       if (createRes.status !== 409)
         break;
@@ -3087,6 +3094,11 @@ function createClient(auth, config) {
     await assertOk(createRes, "createApp");
     const created = await createRes.json();
     const app = await getApp(created.id);
+    const buildMode = app?.build_mode ?? app?.buildMode;
+    if (wantsCode && buildMode !== "code") {
+      const removed = await auth.authedFetch(`/api/apps/${created.id}`, { method: "DELETE" }).then((res) => res.ok).catch(() => false);
+      throw new Error("This ToolJet server does not support Code mode apps: it created a visual app instead. " + (removed ? "That app was deleted. " : `Delete app ${created.id} ("${finalName}"); it could not be removed here. `) + "Build a visual app (create_app without build_mode), or connect to a ToolJet version with Code mode.");
+    }
     const versionId = app.editing_version.id;
     const versionName = app.editing_version.name ?? "v1";
     const pages = app.pages ?? [];
@@ -3104,6 +3116,7 @@ function createClient(auth, config) {
     return {
       app_id: created.id,
       ...branchId ? { branch_id: branchId } : {},
+      build_mode: buildMode === "code" ? "code" : "visual",
       version_id: versionId,
       home_page_id: homePage.id,
       app_url: editorUrl,

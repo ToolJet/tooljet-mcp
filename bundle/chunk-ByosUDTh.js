@@ -1083,8 +1083,10 @@ function codeAppScaffoldTool(context) {
           const naming = await nameApp(context.client, dir, args.display_name, args.rename_from);
           if (!existing && !restored.stored_code)
             rememberScaffold(dir);
+          const visual = created ? await visualAppWarning(context.client, args.app_id) : void 0;
           return ok({
             project_dir: dir,
+            ...visual ? { warning: visual } : {},
             ...naming,
             ...restored,
             ...existing ? { existing_project: existing, note: `This app already has a project, "${existing}"; it is used as is.` } : {},
@@ -1099,6 +1101,12 @@ function codeAppScaffoldTool(context) {
       }
     })
   };
+}
+async function visualAppWarning(client, appId) {
+  const app = await client.getApp(appId).catch(() => null);
+  if (!app || isCodeModeApp(app))
+    return void 0;
+  return 'This app was created as a visual app, not a Code mode app (create_app without build_mode "code"). Its code will run, but ToolJet will treat it as visual. If this is a new build, create the app again with create_app build_mode "code" and scaffold that one instead; tell the user which app you used.';
 }
 async function restoreStoredCode(dir) {
   const manifest = join(dir, "frontend", "package.json");

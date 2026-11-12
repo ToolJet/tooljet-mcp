@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 import { createRequire } from "node:module";
-import { b as buildServer, a as buildUnconfiguredServer, p as packsReady, o as oauthHttpOptionsFromEnv, c as createOAuthHttpServer, S as StreamableHTTPServerTransport } from "./chunk-Cm8nYh7I.js";
+import { b as buildServer, a as buildUnconfiguredServer, p as packsReady, o as oauthHttpOptionsFromEnv, c as createOAuthHttpServer, S as StreamableHTTPServerTransport } from "./chunk-C7Zmnb9R.js";
 import "./chunk-Csl8mO51.js";
 import "./chunk-CmizjRXJ.js";
-import { M as allowedApiOrigins, N as ALLOWED_API_ORIGINS_VAR, O as identityFromHeaders, S as SESSION_TOKEN_HEADER, Q as BASE_URL_HEADER, R as PAT_HEADER } from "./chunk-C_xL9Jh_.js";
-import { $ as JSONRPCMessageSchema } from "./chunk-RSS1Cebt.js";
-import "./chunk-DPYRyOLs.js";
-import "./chunk-CmXpQP84.js";
-import "./chunk-Bpds2tpO.js";
-import "./chunk-BT8XGz5p.js";
+import { M as allowedApiOrigins, N as ALLOWED_API_ORIGINS_VAR, O as identityFromHeaders, S as SESSION_TOKEN_HEADER, Q as BASE_URL_HEADER, R as PAT_HEADER } from "./chunk-DEiV-XzK.js";
+import { $ as JSONRPCMessageSchema } from "./chunk-VRlw3rQU.js";
+import "./chunk-ByosUDTh.js";
+import "./chunk-0kQUy4zS.js";
+import "./chunk-tSYCB7Wt.js";
+import "./chunk-CePM36HB.js";
 import "./chunk-BT0pQMhR.js";
-import "./chunk-BO26wTdv.js";
+import "./chunk-71Ts5nA8.js";
 import "./chunk-C1Uan0hB.js";
 import "./chunk-CzEla2h4.js";
 import "./chunk-CH7Qaiw9.js";
