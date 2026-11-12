@@ -420,6 +420,37 @@ const requireServerModeCli = (): Promise<void> => {
   return serverModeChecked;
 };
 
+/**
+ * Before create_app makes a Code mode app: whether this machine can build one. Code mode projects are made and built by
+ * the ToolJet CLI where this MCP server runs, so without a CLI that knows server mode the app would be created and then
+ * fail at code_app_scaffold. The handshake carries no credential. Undefined when it can; else what to tell the user.
+ */
+let cliReady: Promise<string | undefined> | undefined;
+export const codeCliProblem = (): Promise<string | undefined> => {
+  if (process.env.MCP_CODE_CLI_HANDSHAKE === '0') return Promise.resolve(undefined);
+  cliReady ??= (async () => {
+    const [cmd, pre] = process.env.TOOLJET_CLI ? ['node', [process.env.TOOLJET_CLI]] : ['tooljet', []];
+    const env: NodeJS.ProcessEnv = { HOME: buildHome(), USERPROFILE: buildHome(), FORCE_COLOR: '0', NODE_ENV: 'production', TOOLJET_CLI_SERVER_MODE: '1' };
+    for (const name of HOST_ENV) if (process.env[name] !== undefined) env[name] = process.env[name];
+    try {
+      const { stdout, stderr } = await run(cmd, [...pre, 'app', 'server-mode'], { timeout: 60_000, env });
+      if (strip(stdout + stderr).includes('tooljet-server-mode:1')) return undefined;
+      return CLI_TOO_OLD;
+    } catch (err) {
+      const e = err as { code?: unknown; stdout?: string; stderr?: string };
+      if (e.code === 'ENOENT' || /MODULE_NOT_FOUND|Cannot find module/.test(e.stderr ?? '')) return CLI_MISSING;
+      return /Unknown command|not a tooljet command|command .*not found/i.test(strip((e.stdout ?? '') + (e.stderr ?? ''))) ? CLI_TOO_OLD : CLI_MISSING;
+    }
+  })().then((problem) => {
+    if (problem) cliReady = undefined; // installed later: asked again on the next call
+    return problem;
+  });
+  return cliReady;
+};
+const CLI_FIX = 'install it with `npm install -g @tooljet/cli@beta` (or set TOOLJET_CLI to its entry point), then try again';
+const CLI_MISSING = `Code mode apps are built with the ToolJet CLI on the machine running this MCP server, and it is not installed: ${CLI_FIX}. No app was created. Or build a visual app (create_app without build_mode).`;
+const CLI_TOO_OLD = `The ToolJet CLI on the machine running this MCP server is too old for Code mode: ${CLI_FIX}. No app was created. Or build a visual app (create_app without build_mode).`;
+
 async function cli(cwd: string, args: string[], timeoutMs = 300_000): Promise<{ code: number; output: string }> {
   mkdirSync(baseRoot(), { recursive: true });
   await requireServerModeCli();

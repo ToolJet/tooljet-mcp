@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, onTestFinished } from 'vitest';
 import type { ToolJetClient } from '../src/tooljetClient.js';
 import { createAppTool, loadStandardTheme } from '../src/tools/createApp.js';
 import { createAppVersionTool } from '../src/tools/createAppVersion.js';
@@ -103,6 +103,19 @@ describe('create_app tool', () => {
       next: 'code_app_scaffold with this app_id.',
     });
     expect(result.isError).toBeUndefined();
+  });
+
+  it('refuses a Code mode app before creating it when this machine has no ToolJet CLI', async () => {
+    vi.stubEnv('MCP_CODE_CLI_HANDSHAKE', '1'); // vitest.config turns the handshake off for every other test
+    vi.stubEnv('TOOLJET_CLI', '/nonexistent/tooljet-cli/bin/run');
+    onTestFinished(() => vi.unstubAllEnvs());
+    const client = makeClient();
+
+    const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'Accord', build_mode: 'code' });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/ToolJet CLI .* not installed.*npm install -g @tooljet\/cli@beta.*No app was created/);
+    expect(client.createApp).not.toHaveBeenCalled();
   });
 
   it('reports a server without Code mode as a failure', async () => {

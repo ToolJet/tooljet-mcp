@@ -8,6 +8,7 @@ import { themeDefinition } from './themeDefinition.js';
 import { accentWarning } from '../themeAccent.js';
 import { COMPONENT_PACK_DESCRIPTION, defaultPack, savedComponentLibrary, type ComponentLibrary } from '../componentLibrary.js';
 import { libraryPins } from '../libraryPack.js';
+import { codeCliProblem } from './codeApp.js';
 
 // The standard theme's primary, for the accent note (a stock blue reads plain).
 const STANDARD_PRIMARY = { brand: { colors: { primary: { light: '#2563EB' } } } };
@@ -137,6 +138,9 @@ export function createAppTool(client: ToolJetClient): ToolDef {
     async handler(args: { name: string; theme?: string | DerivedTheme; app_mode?: 'light' | 'dark'; component_library?: ComponentLibrary; component_pack?: string; build_mode?: 'visual' | 'code' }) {
       try {
         if (args.build_mode === 'code') {
+          // Checked before the app exists: without the CLI the app could never be scaffolded.
+          const cliProblem = await codeCliProblem();
+          if (cliProblem) return fail(new Error(cliProblem));
           // The visual build's settings (theme, component library, the published pack's pin) do not apply: a Code mode
           // app draws from its own code, and a pin to any library but its own would hold its release.
           const created = await client.createApp(args.name, { buildMode: 'code' });

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, onTestFinished } from 'vit
 import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { codeAppBuildTool, codeAppReadFilesTool, codeAppScaffoldTool, inCodeScopeForTests, projectsForApp, visualAppWarning } from '../src/tools/codeApp.js';
+import { codeAppBuildTool, codeAppReadFilesTool, codeAppScaffoldTool, inCodeScopeForTests, projectsForApp, visualAppWarning, codeCliProblem } from '../src/tools/codeApp.js';
 import { codeContext, DEPLOYMENT, WORKSPACE } from './codeContext.js';
 
 const APP = '11111111-1111-4111-8111-111111111111';
@@ -156,5 +156,25 @@ describe('code_app_scaffold on an app created as visual', () => {
     const codePage = { components: { c1: { component: { definition: { properties: { codePage: { value: true } } } } } } };
     expect(await visualAppWarning(app({ pages: [codePage] }), 'a1')).toBeUndefined();
     expect(await visualAppWarning({ getApp: async () => { throw new Error('404'); } }, 'a1')).toBeUndefined();
+  });
+});
+
+describe('create_app checks the ToolJet CLI before a Code mode app', () => {
+  const fakeCli = (answer: string) => {
+    const dir = mkdtempSync(join(tmpdir(), 'tj-cli-'));
+    onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
+    const entry = join(dir, 'run.js');
+    writeFileSync(entry, `process.stdout.write(${JSON.stringify(answer)} + '\\n');`);
+    return entry;
+  };
+
+  it('says a CLI without server mode is too old, then accepts one that has it', async () => {
+    const env = { ...process.env };
+    onTestFinished(() => { process.env = env; });
+    delete process.env.MCP_CODE_CLI_HANDSHAKE;
+    process.env.TOOLJET_CLI = fakeCli('tooljet-server-mode:0');
+    expect(await codeCliProblem()).toMatch(/too old for Code mode.*@tooljet\/cli@beta/);
+    process.env.TOOLJET_CLI = fakeCli('tooljet-server-mode:1');
+    expect(await codeCliProblem()).toBeUndefined();
   });
 });
