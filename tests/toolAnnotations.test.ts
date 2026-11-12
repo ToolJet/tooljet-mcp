@@ -64,7 +64,7 @@ const MUST_BE_DESTRUCTIVE = [
 ];
 
 const MUST_BE_READ_ONLY = [
-  'code_app_read_files',
+  'code_app_read_files', 'list_app_permission_screens', 'list_app_permission_queries',
   'generate_form_schema', 'get_app', 'get_app_settings', 'get_app_summary', 'get_component',
   'get_component_catalog', 'get_datasource_query_schema', 'get_runtime_info', 'get_table_schema',
   'inspect_datasource_schema', 'lint_app_spec', 'list_app_themes', 'list_datasources',
@@ -80,10 +80,10 @@ describe('tool annotations', () => {
   const tools = registeredTools();
 
   it.each([
-    { legacy: false, render: false, count: 123 },
-    { legacy: true, render: false, count: 128 },
-    { legacy: false, render: true, count: 124 },
-    { legacy: true, render: true, count: 129 },
+    { legacy: false, render: false, count: 125 },
+    { legacy: true, render: false, count: 130 },
+    { legacy: false, render: true, count: 126 },
+    { legacy: true, render: true, count: 131 },
   ])('publishes complete wire annotations with legacy=$legacy and render=$render', async ({ legacy, render, count }) => {
     const previous = process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS;
     process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS = String(legacy);
@@ -147,7 +147,7 @@ describe('tool annotations', () => {
 
   it('reserves open-world annotations for execution, connected-service probes, rendering, and invitations', () => {
     expect(tools.filter(t => t.annotations?.openWorldHint).map(t => t.name).sort()).toEqual([
-      'code_app_scaffold', 'code_app_read_files', 'code_app_build', 'code_app_install', 'code_app_add_dependency',
+      'code_app_scaffold', 'code_app_read_files', 'code_app_build', 'code_app_install', 'code_app_add_dependency', 'code_app_data',
       'inspect_datasource_schema', 'invite_workspace_user', 'manage_workspace_users',
       'run_queries', 'run_query', 'run_workflow', 'test_datasource_connection', 'verify_page_render',
       'list_datasource_datasets', 'list_datasource_tables', 'list_datasource_columns', 'list_datasource_sheets',

@@ -206,6 +206,7 @@ function proxiedBrowser(destination: string, { pageAsked }: { pageAsked: boolean
         return { status: () => 200 };
       },
       waitForTimeout: vi.fn(), waitForFunction: vi.fn().mockResolvedValue(undefined),
+      $: vi.fn().mockResolvedValue(null),
       url: () => 'http://viewer.test/applications/app1/home', evaluate: vi.fn().mockResolvedValue({ widgets: 1, findings: [] }),
     }),
   };
@@ -243,6 +244,7 @@ describe('the render check uses the proxy', () => {
       route: vi.fn(), routeWebSocket: vi.fn(), close: vi.fn().mockResolvedValue(undefined),
       newPage: vi.fn().mockResolvedValue({
         goto: async () => ({ status: () => 200 }), waitForTimeout: vi.fn(), waitForFunction: vi.fn().mockResolvedValue(undefined),
+      $: vi.fn().mockResolvedValue(null),
         url: () => 'http://viewer.test/applications/app1/home', evaluate: vi.fn().mockResolvedValue({ widgets: 1, findings: [] }),
       }),
     };

@@ -9,7 +9,7 @@ import { redactQueryText, redactRunResult, redactUrl } from '../src/resultRedact
   secret), metadata.queryDefinition (the URL again) and, on a failure, requestObject.requestHeaders and the raw
   responseHeaders with Set-Cookie. The rows stay; the credentials around them go.
 */
-const SECRET = 'sk_live_SUPERSECRET123';
+const SECRET = 'synthetic-redaction-marker';
 const restResult = () => ({
   status: 'ok',
   data: [{ id: 1, email: 'row@example.com' }],
