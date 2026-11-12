@@ -305,6 +305,22 @@ describe('the minimal call a model sends (DeepSeek role build, 2026-11-04)', () 
     expect(result.results.map((r: any) => r.resource.name)).toEqual(['finance_queue', 'finance_approve']);
   });
 
+  // Review, 2026-11-11: one failed limit of two was reported as success with a warning, and the app access was given.
+  it('reports a limit that failed as a failure, keeps the ones set, and gives no app access', async () => {
+    const set = vi.fn().mockImplementation(async ({ resourceId }: { resourceId: string }) => {
+      if (resourceId === QUERY2) throw new Error('Query permission not found');
+      return [{ id: 'perm', type: 'GROUP', groups: [{ permissionGroup: { id: GROUP, name: 'Finance' } }] }];
+    });
+    const c = client({ setAppPermission: set });
+    const result = await manageAppPermissionsTool(c).handler({ action: 'set', app_id: APP, queries: ['finance_queue', 'finance_approve'], groups: ['Finance'] });
+    expect(result.isError).toBe(true);
+    const body = textOf(result);
+    expect(body.error).toMatch(/1 of 2 limits were not set: finance_approve: Query permission not found\. No access to the app was given/);
+    expect(body.applied.map((r: any) => r.resource.name)).toEqual(['finance_queue']);
+    expect(body.failed.map((r: any) => r.resource.name)).toEqual(['finance_approve']);
+    expect(c.writeWorkspaceGroupAccess).not.toHaveBeenCalled();
+  });
+
   it('names every problem at once, with a call that works, and changes nothing', async () => {
     const c = client();
     const result = await manageAppPermissionsTool(c).handler({ action: 'set', app_id: APP, query: 'nope', groups: ['Auditors'] });

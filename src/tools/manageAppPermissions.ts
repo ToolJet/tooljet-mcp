@@ -624,11 +624,28 @@ export function manageAppPermissionsTool(client: ToolJetClient): ToolDef {
           }
         }
         const failed = results.filter((r) => r.error);
+        const failures = failed.map((r) => `${(r.resource as any).name ?? (r.resource as any).id}: ${r.error}`).join('; ');
         if (failed.length === results.length) {
-          throw new Error(
-            failed.map((r) => `${(r.resource as any).name ?? (r.resource as any).id}: ${r.error}`).join('; ') +
-              (toGrant.length ? ' No access to the app was given.' : '')
-          );
+          throw new Error(failures + (toGrant.length ? ' No access to the app was given.' : ''));
+        }
+        if (failed.length) {
+          // A partial failure is a failure (review, 2026-11-11): reported as success with a warning, the agent counted
+          // every resource of the call as limited, the one whose limit failed included. App access waits until every
+          // limit is set; the limits that were set stay, so sending the failed ones again completes the call.
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                error: `${failed.length} of ${results.length} limits were not set: ${failures}.` +
+                  (toGrant.length ? ' No access to the app was given.' : '') +
+                  ' Set the failed ones again; the others are in place.',
+                app_id: args.app_id,
+                applied: results.filter((r) => !r.error),
+                failed,
+              }),
+            }],
+            isError: true,
+          };
         }
         let granted: Granted[] = [];
         if (toGrant.length) {
@@ -649,7 +666,7 @@ export function manageAppPermissionsTool(client: ToolJetClient): ToolDef {
           ...(one ? results[0]! : { results }),
           ...(granted.length ? { granted_app_access: granted, note: grantNote } : {}),
         };
-        return ok(failed.length ? { ...body, warning: `${failed.length} of ${results.length} limits were not set; see each error.` } : body);
+        return ok(body);
       } catch (error) {
         return fail(error);
       }
