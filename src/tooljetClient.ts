@@ -2776,9 +2776,14 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const entries = params.components.map((spec) => ({ id: spec.id ?? randomUUID(), spec }));
     const refToId = new Map(entries.map((entry) => [componentRef(entry.spec), entry.id]));
     const diff: Record<string, unknown> = {};
-    // A pack widget's slots are stored suffixed, so a child needs its parent's type: from this batch, else as the
-    // caller passed it (an in-place page replace knows every planned component's type).
-    const typeById = new Map(entries.map((e) => [e.id, e.spec.type]));
+    // A pack widget's slots are stored suffixed, so a child needs its parent's type: from this batch, else from the
+    // page as already read (a child added to a pack card that is already there: review, 2026-11-11, its text was saved
+    // on the bare id and never shown), else as the caller passed it (an in-place page replace knows every type).
+    // add_components and add_component_batches pass the page they read; apply_app_phase passes parentType.
+    const typeById = new Map<string, string | undefined>(
+      (params.pageComponents ?? []).map((component) => [component.id, component.type] as [string, string | undefined])
+    );
+    for (const e of entries) typeById.set(e.id, e.spec.type);
     for (const e of entries) {
       if (e.spec.parent && e.spec.parentRef) {
         throw new Error(`createComponents "${e.spec.name}": set EITHER parent or parentRef, not both.`);
@@ -2794,7 +2799,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         throw new Error(`createComponents "${e.spec.name}": slotName requires parent or parentRef.`);
       }
       if (resolvedParent) {
-        const parentType = typeById.get(resolvedParent) ?? e.spec.parentType;
+        const parentType = typeById.get(decodeComponentParent(resolvedParent).parentId) ?? e.spec.parentType;
         dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName, parentType);
       }
       // A Form submits when the Button whose component id is buttonToSubmit is clicked (Form.jsx); a plan names that

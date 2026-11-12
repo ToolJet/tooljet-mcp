@@ -1,5 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import type { Auth } from '../src/auth.js';
+import type { Config } from '../src/config.js';
 import { decodeComponentParent, encodeComponentParent, isPackContainerType } from '../src/componentParent.js';
+import { createClient } from '../src/tooljetClient.js';
 
 // SkyLine in Ant Design (2026-11-01): an Ant Card's Statistic and Sparkline were saved with the bare card id and never
 // drew. A pack widget draws each slot, its body included, on the canvas "<id>-<slot>" (SdkComponentHost renderSlot),
@@ -26,5 +29,31 @@ describe('pack widget slots', () => {
     expect(isPackContainerType('Lib_mui_Card')).toBe(true);
     expect(isPackContainerType('LibraryComponent')).toBe(true);
     expect(isPackContainerType('ModalV2')).toBe(false);
+  });
+});
+
+// Review, 2026-11-11: a child added to a pack card already on the page was saved on the bare card id (only the batch's
+// own types were known), so it saved and never drew inside the card.
+describe('a child added to a pack widget already on the page', () => {
+  const card = 'bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb';
+  const write = async (slotName?: 'body') => {
+    const diffs: Array<Record<string, { parent?: string }>> = [];
+    const authedFetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.endsWith('/components') && init?.method === 'POST') diffs.push(JSON.parse(String(init.body)).diff);
+      return new Response('{}', { status: 200 });
+    });
+    const client = createClient({ authedFetch } as unknown as Auth, {} as Config);
+    await client.createComponents({
+      appId: 'a1', versionId: 'v1', pageId: 'p1',
+      pageComponents: [{ id: card, type: 'PackComponent' }],
+      components: [{ name: 'note', type: 'Text', parent: card, ...(slotName ? { slotName } : {}), properties: {}, layout: { top: 0, left: 0, width: 4, height: 4 } } as never],
+    });
+    return Object.values(diffs[0]!)[0]!.parent;
+  };
+  it('goes on its body canvas when no slot is named', async () => {
+    expect(await write()).toBe(`${card}-body`);
+  });
+  it('goes on its body canvas when the body slot is named', async () => {
+    expect(await write('body')).toBe(`${card}-body`);
   });
 });
