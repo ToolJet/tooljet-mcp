@@ -1,522 +1,8 @@
 import { createRequire } from "node:module";
-import { s as strictEntry, r as resolveRef$1, h as hasNonEmptyDefinition, i as isFlexContainerType, a as resolveAuthoredChildOrder, c as childOrderProperty, p as packValueAsDefault, n as normalizeComponentSpec, b as appendedChildOrders, d as reparentAdditions, C as COMPONENT_FX_UPDATE_GUIDANCE, e as componentRef, f as packDefaultDefinition, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, g as FLEX_GROW_DESCRIPTION, j as FLEX_WIDTH_PX_DESCRIPTION, k as FLEX_FILL_WIDTH_DESCRIPTION, l as plannedCurrency, m as indexComponentReferences, o as booleanBindingValue, v as validateTableBatch, q as normalizeType } from "./chunk-B_ahRxFS.js";
-import { i as fail, o as ok, b as getCatalog, g as getComponentSchema, c as getLegacyComponentReplacement, j as normalizeQueryToggles, k as toggleRewriteWarning, m as issueMessages, q as queryToggleIssues, p as normalizeQueryOptions, v as validateQueryOptions } from "./chunk-CLUrdGoT.js";
-import { h as componentSlotSchema, j as componentNameSchema, k as componentNameError, o as resolveParentRef, d as decodeComponentParent, e as encodeComponentParent, p as introducedLintFindings, q as lintComponentSpec, u as lintComponentSlots, v as lintUnusableTextGeometry, w as lintStandardSingleLineInputHeight, x as lintTextGeometry, y as lintRenderedGeometry, z as lintKanbanInteractions, A as lintShadKanbanCards, B as lintShadScheduleScale, D as isModalV2Type, E as lintComponentStateBindings, g as retiredUi2Name, F as minimumTextHeight, G as unifyChartAccents, H as lintComponents, I as pageIconError, J as validateAppStructure } from "./chunk-CY9u3IK5.js";
-import { m as suggestedHtmlHeight } from "./chunk-DzndRVyJ.js";
-import { ax as external_exports } from "./chunk-Dakrk_ob.js";
-import { randomUUID } from "node:crypto";
-import { p as parseExpression } from "./chunk-ePnPD46e.js";
-createRequire(import.meta.url);
-var DEFINITION_SECTIONS = ["properties", "styles", "validation", "general", "general_styles", "others"];
-var definitionSchema = strictEntry({
-  properties: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  general: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  general_styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  others: external_exports.record(external_exports.string(), external_exports.any()).optional()
-}, (key2) => key2 === "layout" || key2 === "layouts" ? `definition."${key2}" is not a component definition section; move/resize with update_layout instead.` : `definition."${key2}" is not a component definition section; use one of ${DEFINITION_SECTIONS.join("/")}.`);
-var updateSchema = strictEntry({
-  component_id: external_exports.string(),
-  definition: definitionSchema.optional(),
-  name: componentNameSchema.optional(),
-  parent: external_exports.string().optional(),
-  slot_name: componentSlotSchema.optional()
-}, (key2) => {
-  if (DEFINITION_SECTIONS.includes(key2)) {
-    return `Update entry key "${key2}" must be nested under \`definition\` (e.g. { component_id, definition: { ${key2}: {...} } }); top-level ${key2} would write nothing.`;
-  }
-  if (key2 === "layout" || key2 === "layouts") {
-    return `Update entry key "${key2}" is not accepted by update_components; move/resize with update_layout instead.`;
-  }
-  return `Unknown update entry key "${key2}"; accepted keys are component_id, definition, name, parent, slot_name.`;
-});
-function updateComponentsTool(client) {
-  return {
-    name: "update_components",
-    title: "Update Components",
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: true
-    },
-    description: "Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves under `definition` (properties/styles/validation/others) \u2014 ToolJet deep-merges, so untouched values are preserved. Leaves may be raw values or `{ value: ... }` envelopes; MCP canonicalizes them. " + COMPONENT_FX_UPDATE_GUIDANCE + "NOTE: array values (Table `columns`, DropdownV2 `options`/`schema`) are REPLACED wholesale, so send the full array. Set EITHER `definition` OR name/parent/slot_name per entry, not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container regions, or modal for Kanban card-click content; omit parent to keep the current parent. Unknown entry keys are rejected (a top-level properties/styles patch is an error, not a silent no-op), and an entry that changes nothing fails. Get component ids + current values from get_app_summary / get_component. To reorder a FlexContainer, set its properties.childOrder to the child names or ids in the wanted order; unlisted children follow in their current order.",
-    inputSchema: {
-      app_id: external_exports.string(),
-      version_id: external_exports.string(),
-      page_id: external_exports.string(),
-      updates: external_exports.array(updateSchema).min(1)
-    },
-    async handler(args) {
-      try {
-        const summary = await client.getAppSummary(args.app_id);
-        const page = summary.pages.find((candidate) => candidate.id === args.page_id);
-        if (!page)
-          return fail(new Error(`Page "${args.page_id}" does not exist in app "${args.app_id}".`));
-        const projected = new Map(page.components.map((component) => [component.id, component]));
-        const warnings = [];
-        const errors = [];
-        const changedComponents = [];
-        let placementChanged = false;
-        const layoutFixes = [];
-        const resolvedUpdates = [];
-        for (const update of args.updates) {
-          if (update.name !== void 0) {
-            const nameError = componentNameError(update.name);
-            if (nameError) {
-              errors.push(`Component "${update.component_id}": ${nameError}`);
-              continue;
-            }
-          }
-          const resolution = resolveRef$1(page.components, update.component_id, "Component", `on page "${args.page_id}"`);
-          if (!resolution.ok) {
-            errors.push(resolution.error);
-            continue;
-          }
-          if (resolution.warning)
-            warnings.push(resolution.warning);
-          const current = resolution.target;
-          const componentId = current.id;
-          if (update.definition && (update.name !== void 0 || update.parent !== void 0 || update.slot_name !== void 0)) {
-            errors.push(`Component "${update.component_id}": set EITHER definition OR name/parent/slot_name in one entry.`);
-            continue;
-          }
-          if (!hasNonEmptyDefinition(update.definition) && update.name === void 0 && update.parent === void 0 && update.slot_name === void 0) {
-            errors.push(`Component "${update.component_id}": nothing to update. Send the changed leaves under definition (properties/styles/validation/others) or a name/parent/slot_name change.`);
-            continue;
-          }
-          let parent = update.parent;
-          if (typeof parent === "string" && parent) {
-            const resolvedParent = resolveParentRef(page.components, parent);
-            if (!resolvedParent.ok) {
-              errors.push(`Component "${update.component_id}": ${resolvedParent.error}`);
-              continue;
-            }
-            parent = resolvedParent.parent;
-          }
-          let slotName = update.slot_name;
-          if (slotName !== void 0) {
-            parent ??= current.parent ? decodeComponentParent(current.parent).parentId : void 0;
-            if (!parent) {
-              if (slotName === "body") {
-                warnings.push(`Component "${update.component_id}": slot_name:"body" ignored on a root component (it has no parent slots).`);
-                slotName = void 0;
-              } else {
-                errors.push(`Component "${update.component_id}": slot_name:"${slotName}" requires an existing or explicit parent.`);
-                continue;
-              }
-            }
-          }
-          const authoredOrder = update.definition?.properties?.childOrder;
-          if (authoredOrder !== void 0 && isFlexContainerType(current.type)) {
-            const raw = authoredOrder;
-            const value = Array.isArray(raw) ? raw : raw?.value;
-            if (!Array.isArray(value)) {
-              errors.push(`FlexContainer "${current.name ?? current.id}": properties.childOrder must be an array of child component ids or names.`);
-              continue;
-            }
-            const resolved = resolveAuthoredChildOrder(current, page.components, value);
-            if (resolved.unknown.length) {
-              errors.push(`FlexContainer "${current.name ?? current.id}": childOrder names ${resolved.unknown.map((ref) => `"${ref}"`).join(", ")}, which are not children of this container. List its child component ids or names.`);
-              continue;
-            }
-            update.definition = {
-              ...update.definition,
-              properties: { ...update.definition.properties, childOrder: childOrderProperty(resolved.order) }
-            };
-          }
-          const packValue = packValueAsDefault(current.type, current.name ?? current.id, update.definition?.properties);
-          if (packValue.warning) {
-            warnings.push(packValue.warning);
-            update.definition = { ...update.definition, properties: packValue.properties };
-          }
-          const definition = update.definition;
-          const next = {
-            id: current.id,
-            name: update.name ?? current.name ?? current.id,
-            type: current.type,
-            properties: { ...current.properties ?? {}, ...definition?.properties ?? {} },
-            styles: { ...current.styles ?? {}, ...definition?.styles ?? {} },
-            layouts: current.layouts,
-            parent: parent !== void 0 ? encodeComponentParent(parent, slotName) : current.parent,
-            slotName
-          };
-          const normalized = normalizeComponentSpec({
-            name: next.name ?? current.id,
-            type: next.type ?? current.type ?? "",
-            properties: next.properties ?? {},
-            styles: next.styles,
-            validation: definition?.validation,
-            others: { ...current.others ?? {}, ...definition?.others ?? {} },
-            layouts: next.layouts,
-            parent: next.parent
-          });
-          const normalizedNext = { ...normalized.component, id: current.id };
-          const heightFix = update.definition ? suggestedHtmlHeight(normalizedNext) : null;
-          const desktopRect = current.layouts?.desktop;
-          if (heightFix && desktopRect && typeof desktopRect.top === "number") {
-            normalizedNext.layouts = { ...normalizedNext.layouts ?? {}, desktop: { ...desktopRect, height: heightFix.to } };
-            layoutFixes.push({ componentId: current.id, desktop: { ...desktopRect, height: heightFix.to } });
-            warnings.push(`Html "${normalizedNext.name ?? current.id}" needed about ${heightFix.needed}px for its new markup but was ${heightFix.from}px; its height is now ${heightFix.to}px. Anything within ${heightFix.to - heightFix.from}px below it now overlaps; move it down.`);
-          }
-          projected.set(current.id, normalizedNext);
-          if (update.definition)
-            changedComponents.push({ before: current, after: normalizedNext });
-          placementChanged ||= update.parent !== void 0 || update.slot_name !== void 0;
-          warnings.push(...onlyTouchedBraceNotes(normalized.warnings, definition));
-          let normalizedDefinition = update.definition;
-          if (update.definition && Object.keys(normalized.patch).length) {
-            normalizedDefinition = { ...update.definition };
-            for (const section of ["properties", "styles", "validation", "others"]) {
-              const sectionPatch = normalized.patch[section];
-              if (!sectionPatch)
-                continue;
-              normalizedDefinition[section] = {
-                ...update.definition[section] ?? {},
-                ...sectionPatch
-              };
-            }
-          }
-          resolvedUpdates.push({
-            componentId,
-            definition: normalizedDefinition,
-            name: update.name,
-            parent,
-            slotName: update.slot_name
-          });
-          if (!update.definition)
-            continue;
-          errors.push(...introducedLintFindings(lintComponentSpec(current).errors, lintComponentSpec(normalizedNext).errors));
-          warnings.push(...introducedLintFindings(lintComponentSpec(current).warnings, lintComponentSpec(normalizedNext).warnings));
-        }
-        const allComponents = [...projected.values()];
-        const introducedForChanged = (lint) => changedComponents.flatMap(({ before, after }) => introducedLintFindings(lint([before]), lint([after])));
-        if (placementChanged) {
-          errors.push(...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(allComponents)));
-        }
-        errors.push(...introducedForChanged(lintUnusableTextGeometry));
-        if (errors.length)
-          return fail(new Error(`${errors.join(" ")} (Nothing was saved: refused before any write.)`));
-        warnings.push(...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)));
-        warnings.push(...introducedForChanged(lintTextGeometry));
-        warnings.push(...lintRenderedGeometry(allComponents));
-        warnings.push(...lintKanbanInteractions(allComponents));
-        warnings.push(...lintShadKanbanCards(allComponents));
-        warnings.push(...lintShadScheduleScale(allComponents));
-        const result = await client.updateComponents({
-          appId: args.app_id,
-          versionId: args.version_id,
-          pageId: args.page_id,
-          updates: resolvedUpdates
-        });
-        if (layoutFixes.length) {
-          await client.updateLayouts({ appId: args.app_id, versionId: args.version_id, pageId: args.page_id, layouts: layoutFixes });
-        }
-        const appended = appendedChildOrders(page.components, reparentAdditions(page.components, resolvedUpdates.map((update) => ({
-          componentId: update.componentId,
-          parent: update.parent !== void 0 ? encodeComponentParent(update.parent, update.slotName) : void 0
-        }))));
-        if (appended.size) {
-          await client.updateComponents({
-            appId: args.app_id,
-            versionId: args.version_id,
-            pageId: args.page_id,
-            updates: [...appended].map(([componentId, order]) => ({
-              componentId,
-              definition: { properties: { childOrder: childOrderProperty(order) } }
-            }))
-          });
-        }
-        return ok({ ...result, warnings: [...new Set(warnings)] });
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
-function onlyTouchedBraceNotes(warnings, definition) {
-  const touched = /* @__PURE__ */ new Set([
-    ...Object.keys(definition?.properties ?? {}).map((key2) => `properties.${key2}`),
-    ...Object.keys(definition?.styles ?? {}).map((key2) => `styles.${key2}`)
-  ]);
-  return warnings.flatMap((warning) => {
-    const m = /^(.*?: separated adjacent closing braces inside )(.+?)( \(ToolJet ends.*)$/s.exec(warning);
-    if (!m)
-      return [warning];
-    const keys = m[2].split(", ").filter((key2) => touched.has(key2));
-    return keys.length ? [`${m[1]}${keys.join(", ")}${m[3]}`] : [];
-  });
-}
-createRequire(import.meta.url);
-async function mapKeyRefusal(client, componentTypes, library) {
-  if (![...componentTypes].includes("Map") || typeof client?.hasGoogleMapsKey !== "function")
-    return void 0;
-  let hasKey;
-  try {
-    hasKey = await client.hasGoogleMapsKey();
-  } catch {
-    return void 0;
-  }
-  if (hasKey !== false)
-    return void 0;
-  const noKey = "This ToolJet instance has no Google Maps API key (GOOGLE_MAPS_API_KEY), so a Map component shows a Google error instead of a map.";
-  const ui2Map = "Use ShadMap, the ToolJet UI 2.0 Map: OpenStreetMap tiles, no key, one marker per data row read through latField, lngField and idField, with onMarkerClick and selectedMarker.";
-  if (library === "ui2")
-    return `${noKey} ${ui2Map}`;
-  return `${noKey} In a ToolJet UI 2.0 app: ${ui2Map} In a UI 1.0 app, show the locations in a Table (a link column to https://www.google.com/maps?q=<lat>,<lng> opens each one), and tell the user in your reply that an in-app map needs the Google Maps API key on the instance.`;
-}
-createRequire(import.meta.url);
-var CATALOG_SECTIONS = [
-  "overview",
-  "properties",
-  "styles",
-  "events",
-  "actions",
-  "exposedVariables",
-  "defaultChildren",
-  "renderingHints",
-  "authoringHints"
-];
-var DEFAULT_TYPED_SECTIONS = [
-  "overview",
-  "properties",
-  "events",
-  "actions"
-];
-var CATALOG_TYPE_ALIASES = /* @__PURE__ */ new Map([
-  ["gridview", {
-    type: "Listview",
-    note: 'ToolJet grid view is Listview with mode:"grid" (properties.mode.value); use type:"Listview" when creating it.'
-  }]
-]);
-function resolveCatalogType(requestedType) {
-  const alias = CATALOG_TYPE_ALIASES.get(requestedType.replace(/[\s_-]+/g, "").toLowerCase());
-  if (alias)
-    return { type: alias.type, alias: { requested_type: requestedType, note: alias.note } };
-  if (getComponentSchema(requestedType))
-    return { type: requestedType };
-  const wanted = requestedType.replace(/[\s_-]+/g, "").toLowerCase();
-  const types = getCatalog().map((entry) => entry.type);
-  const near = types.find((type) => type.toLowerCase() === wanted) ?? types.find((type) => type.toLowerCase().replace(/v\d+$/, "") === wanted);
-  return near ? { type: near, alias: { requested_type: requestedType, note: `There is no "${requestedType}"; this is ${near}. Use type "${near}".` } } : { type: requestedType };
-}
-var PACK_CONCEPTS = [
-  [/table|grid|datatable/i, ["ShadTable"]],
-  [/metric|stat|kpi/i, ["ShadStat", "ShadSparkline", "ShadSummaryStrip"]],
-  [/summary|figures|totals|strip|headline/i, ["ShadSummaryStrip"]],
-  [/recent|activity|feed|records?|orders|people|contacts|inbox/i, ["ShadRecordList"]],
-  [/card|panel|surface/i, ['FlexContainer (cardStyle "shadcnCard")', "ShadCardGrid"]],
-  [/gallery|tiles?|catalog|products?|cards|grid/i, ["ShadCardGrid"]],
-  [/hero|header|masthead|jumbotron|cover|welcome/i, ["ShadHero"]],
-  [/modal|dialog|sheet|drawer/i, ["ShadDialog"]],
-  [/dropdown|menu/i, ["ShadDropdownMenu", "ShadSelect", "ShadCombobox"]],
-  [/list/i, ["ShadListView", "ShadRecordList", "ShadKeyValue"]],
-  [/chat|message|assistant|conversation|copilot|bot|thread/i, ["ShadChat"]],
-  [/question|survey|quiz|onboarding|intake|wizard|poll|triage|form/i, ["ShadQuestionnaire"]],
-  [/chart|graph/i, ["ShadBarChart", "ShadLineChart", "ShadAreaChart", "ShadPieChart", "ShadComboChart", "ShadScatterChart", "ShadFunnelChart", "ShadHeatmapChart"]],
-  [/funnel|conversion/i, ["ShadFunnelChart"]],
-  [/scatter|bubble|correlation/i, ["ShadScatterChart"]],
-  [/heat|matrix|grid|calendar/i, ["ShadHeatmapChart"]],
-  [/board|kanban|pipeline|stage|trello|dispatch|grouped by/i, ["ShadKanban"]],
-  [/combo|composed|mixed|dual/i, ["ShadComboChart"]],
-  [/label|title|typography/i, ["ShadHeading", "ShadText"]],
-  [/date/i, ["ShadDatePicker", "ShadDateTimePicker", "ShadCalendar"]],
-  [/toast|notification|banner/i, ["ShadAlert"]],
-  [/divider/i, ["ShadSeparator"]],
-  [/schedule|scheduler|booking|reservation|roster|rota|shift|on.?call|resource|timeline.?view|gantt|availability|rooms?/i, ["ShadSchedule"]],
-  [/progress|goal|budget|quota|target|onboarding|checklist|capacity|completion/i, ["ShadProgressList", "ShadProgress"]],
-  [/map|geo|location|pins?$|markers?|route|locator|spatial|leaflet|places|zones?$|territor|geofence|dispatch|fleet/i, ["ShadMap"]]
-];
-function packSuggestions(requestedType) {
-  if (!/^Shad[A-Z]/.test(requestedType))
-    return [];
-  const rest = requestedType.slice(4);
-  return [...new Set(PACK_CONCEPTS.filter(([pattern]) => pattern.test(rest)).flatMap(([, types]) => types))];
-}
-function nearbyTypes(requestedType) {
-  const words = requestedType.split(/(?=[A-Z])|[\s_-]+/).map((word) => word.toLowerCase()).filter((word) => word.length >= 4);
-  return getCatalog().map((entry) => entry.type).filter((type) => words.some((word) => type.toLowerCase().includes(word))).slice(0, 6);
-}
-function selectEntries(entries, keys, detail) {
-  const selected = keys?.length ? entries.filter((entry) => keys.includes(entry.key)) : entries;
-  if (detail === "full" || keys?.length)
-    return selected;
-  return selected.map(({ key: key2, valueType, valueTypes, allowedValues, requires, mutuallyExclusiveWith }) => ({
-    key: key2,
-    ...valueType !== void 0 ? { valueType } : {},
-    ...valueTypes !== void 0 ? { valueTypes } : {},
-    ...allowedValues !== void 0 ? { allowedValues } : {},
-    ...requires !== void 0 ? { requires } : {},
-    ...mutuallyExclusiveWith !== void 0 ? { mutuallyExclusiveWith } : {}
-  }));
-}
-function selectSchema(schema, args) {
-  const detail = args.detail ?? "compact";
-  const sections = new Set(args.sections ?? DEFAULT_TYPED_SECTIONS);
-  const result = { type: schema.type };
-  if (sections.has("overview")) {
-    if (schema.name !== void 0)
-      result.name = schema.name;
-    if (schema.description !== void 0)
-      result.description = schema.description;
-    if (schema.defaultSize !== void 0)
-      result.defaultSize = schema.defaultSize;
-  }
-  if (sections.has("properties")) {
-    result.properties = selectEntries(schema.properties, args.property_keys, detail);
-  }
-  if (sections.has("styles")) {
-    result.styles = selectEntries(schema.styles, args.style_keys, detail);
-  }
-  if (sections.has("events") && schema.events !== void 0)
-    result.events = schema.events;
-  if (sections.has("actions") && schema.actions !== void 0)
-    result.actions = schema.actions;
-  if (sections.has("exposedVariables") && schema.exposedVariables !== void 0) {
-    result.exposedVariables = schema.exposedVariables;
-  }
-  if (sections.has("defaultChildren") && schema.defaultChildren !== void 0) {
-    result.defaultChildren = schema.defaultChildren;
-  }
-  if (sections.has("renderingHints") && schema.renderingHints !== void 0) {
-    result.renderingHints = schema.renderingHints;
-  }
-  if (sections.has("authoringHints") && schema.authoringHints !== void 0) {
-    result.authoringHints = schema.authoringHints;
-  }
-  return result;
-}
-function legacyNotice(type) {
-  const replacement = getLegacyComponentReplacement(type);
-  return replacement ? {
-    deprecated: true,
-    replacement,
-    deprecation_note: `"${type}" remains available only for inspecting or repairing existing apps. Use "${replacement}" for new components.`
-  } : {};
-}
-async function instanceNote(client, type) {
-  const refusal = type === "Map" ? await mapKeyRefusal(client, ["Map"]) : void 0;
-  return refusal ? { instance_note: refusal } : {};
-}
-function getComponentCatalogTool(client) {
-  return {
-    name: "get_component_catalog",
-    title: "Get Component Catalog",
-    // Served from the bundled catalog in data/; never reaches the ToolJet instance.
-    annotations: {
-      readOnlyHint: true,
-      openWorldHint: false
-    },
-    description: 'Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one component or types for a batch needed in the current page/phase. Typed reads default to detail:"compact" and the overview/properties/events/actions sections; compact property/style lists omit labels and defaults. Use detail:"full" or exact property_keys/style_keys only when those values are needed. Request renderingHints/authoringHints for layout-sensitive or nested components. Use requests when different types need different sections/keys in one call; top-level detail/sections/keys apply as defaults to every requested type, and the type/types/requests selectors may be combined. sections selects only overview, properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. GridView is a lookup alias for Listview mode:"grid"; component writes must still use type:"Listview". authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar contracts once and reuse them; never guess property/event/action ids.',
-    inputSchema: {
-      type: external_exports.string().optional(),
-      types: external_exports.array(external_exports.string()).min(1).max(25).optional(),
-      requests: external_exports.array(external_exports.object({
-        type: external_exports.string(),
-        detail: external_exports.enum(["compact", "full"]).optional(),
-        sections: external_exports.array(external_exports.enum(CATALOG_SECTIONS)).min(1).optional(),
-        property_keys: external_exports.array(external_exports.string()).min(1).optional(),
-        style_keys: external_exports.array(external_exports.string()).min(1).optional()
-      })).min(1).max(25).optional(),
-      detail: external_exports.enum(["compact", "full"]).optional(),
-      sections: external_exports.array(external_exports.enum(CATALOG_SECTIONS)).min(1).optional(),
-      property_keys: external_exports.array(external_exports.string()).min(1).optional(),
-      style_keys: external_exports.array(external_exports.string()).min(1).optional()
-    },
-    async handler(args) {
-      try {
-        const singleType = args?.type;
-        const typesList = args?.types ?? [];
-        const batch = args?.requests ?? [];
-        const hasSelector = !!singleType || typesList.length > 0 || batch.length > 0;
-        if (!hasSelector) {
-          if (args.detail || args.sections || args.property_keys || args.style_keys) {
-            return fail(new Error("Catalog detail/sections/key filters require `type`, `types`, or `requests`."));
-          }
-          return ok(getCatalog());
-        }
-        if (singleType && typesList.length === 0 && batch.length === 0) {
-          const resolved = resolveCatalogType(singleType);
-          const schema = getComponentSchema(resolved.type);
-          if (!schema) {
-            const near = nearbyTypes(singleType);
-            const suggested = [.../* @__PURE__ */ new Set([...packSuggestions(singleType), ...near])].slice(0, 6);
-            const packTypes = /^Shad[A-Z]/.test(singleType) ? getCatalog().map((entry) => entry.type).filter((type) => /^Shad[A-Z]/.test(type)) : [];
-            return ok({
-              error: `Unknown component type "${singleType}". Call with no argument to list valid types.`,
-              ...suggested.length ? { did_you_mean: suggested } : {},
-              ...packTypes.length ? { pack_types: packTypes } : {}
-            });
-          }
-          return ok({
-            ...selectSchema(schema, args),
-            ...legacyNotice(schema.type),
-            ...resolved.alias ? { alias: resolved.alias } : {},
-            ...await instanceNote(client, schema.type)
-          });
-        }
-        const withDefaults = (type, over) => ({
-          type,
-          detail: over?.detail ?? args.detail,
-          sections: over?.sections ?? args.sections,
-          property_keys: over?.property_keys ?? args.property_keys,
-          style_keys: over?.style_keys ?? args.style_keys
-        });
-        const ordered = [
-          ...batch.map((r) => withDefaults(r.type, r)),
-          ...typesList.map((t) => withDefaults(t)),
-          ...singleType ? [withDefaults(singleType)] : []
-        ];
-        const components = [];
-        const unknownTypes = [];
-        const componentByResolvedType = /* @__PURE__ */ new Map();
-        const seenUnknown = /* @__PURE__ */ new Set();
-        for (const request of ordered) {
-          if (!request.type)
-            continue;
-          const resolved = resolveCatalogType(request.type);
-          const schema = getComponentSchema(resolved.type);
-          if (!schema) {
-            if (!seenUnknown.has(request.type)) {
-              seenUnknown.add(request.type);
-              unknownTypes.push(request.type);
-            }
-            continue;
-          }
-          const existing = componentByResolvedType.get(resolved.type);
-          if (existing) {
-            if (resolved.alias) {
-              const requestedAliases = Array.isArray(existing.requested_aliases) ? existing.requested_aliases : [];
-              if (!requestedAliases.includes(request.type)) {
-                existing.requested_aliases = [...requestedAliases, request.type];
-              }
-            }
-            continue;
-          }
-          const component = {
-            ...selectSchema(schema, request),
-            ...legacyNotice(schema.type),
-            ...resolved.alias ? { alias: resolved.alias } : {},
-            ...resolved.alias ? { requested_aliases: [request.type] } : {},
-            ...await instanceNote(client, schema.type)
-          };
-          components.push(component);
-          componentByResolvedType.set(resolved.type, component);
-        }
-        const suggestions = Object.fromEntries(unknownTypes.map((type) => [type, [.../* @__PURE__ */ new Set([...packSuggestions(type), ...nearbyTypes(type)])].slice(0, 6)]).filter(([, near]) => near.length));
-        const guessedPack = unknownTypes.some((type) => /^Shad[A-Z]/.test(type));
-        return ok({
-          components,
-          unknown_types: unknownTypes,
-          ...Object.keys(suggestions).length ? { suggestions } : {},
-          ...guessedPack ? { pack_types: getCatalog().map((entry) => entry.type).filter((type) => /^Shad[A-Z]/.test(type)) } : {}
-        });
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
+import { v as validateTableBatch, b as plannedCurrency, n as normalizeComponentSpec, i as indexComponentReferences, c as componentRef, r as resolveRef, d as normalizeType, e as packDefaultDefinition } from "./chunk-0-6sjmM9.js";
+import { D as pageIconError, E as lintComponents, f as encodeComponentParent, F as validateAppStructure, G as isModalV2Type, H as lintComponentStateBindings, r as retiredUi2Name, d as decodeComponentParent, I as minimumTextHeight, J as unifyChartAccents } from "./chunk-23CIdoFG.js";
+import { u as normalizeQueryToggles, v as toggleRewriteWarning, x as issueMessages, y as queryToggleIssues, z as normalizeQueryOptions, A as validateQueryOptions, g as getComponentSchema } from "./chunk-4n_covov.js";
+import { p as parseExpression } from "./chunk--cm-cFrL.js";
 createRequire(import.meta.url);
 var lookOf = (c) => {
   const entry = c.styles?.tableLook;
@@ -541,10 +27,10 @@ var DEFAULT_GAP = 12;
 var DEFAULT_PADDING = 12;
 var CANVAS_PX = { narrow: 1100, wide: 1600 };
 var GRID_COLUMNS = 43;
-var DIALOG_TYPES$1 = /* @__PURE__ */ new Set(["ShadDialog", "ModalV2", "Modal"]);
-var valueOf$1 = (entry) => entry && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry.value : entry;
+var DIALOG_TYPES = /* @__PURE__ */ new Set(["ShadDialog", "ModalV2", "Modal"]);
+var valueOf = (entry) => entry && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry.value : entry;
 var text = (entry) => {
-  const v = valueOf$1(entry);
+  const v = valueOf(entry);
   return typeof v === "string" ? v.trim() : typeof v === "number" || typeof v === "boolean" ? String(v) : "";
 };
 var prop = (c, key2) => text(c.properties && typeof c.properties === "object" ? c.properties[key2] : void 0);
@@ -557,7 +43,7 @@ var num = (raw, fallback) => {
   const n = Number(raw.replace(/[{}\s]/g, "").replace(/px$/, ""));
   return raw === "" || !Number.isFinite(n) ? fallback : n;
 };
-var refOf$1 = (c) => c.clientRef ?? c.name;
+var refOf = (c) => c.clientRef ?? c.name;
 var rectsOf = (c) => [c.layout, c.layouts?.desktop].filter((r, i, all) => !!r && typeof r.height === "number" && all.indexOf(r) === i);
 var heightOf = (c) => Number((c.layouts?.desktop ?? c.layout)?.height ?? NaN);
 var setHeight = (c, height) => rectsOf(c).forEach((r) => r.height = height);
@@ -569,7 +55,7 @@ function moveBelow(components, box, was, now) {
   const oldBottom = top + was;
   let moved = 0;
   for (const other of components) {
-    if (!other || other === box || placeOf(other) !== placeOf(box) || DIALOG_TYPES$1.has(other.type))
+    if (!other || other === box || placeOf(other) !== placeOf(box) || DIALOG_TYPES.has(other.type))
       continue;
     const otherRects = [other.layout, other.layouts?.desktop].filter((r, i, all) => !!r && typeof r.top === "number" && all.indexOf(r) === i);
     if (!otherRects.length || otherRects[0].top < oldBottom - 1)
@@ -583,8 +69,8 @@ function fitFlexHeights(components, warnings) {
   const fitted = /* @__PURE__ */ new Set();
   const byRef = /* @__PURE__ */ new Map();
   for (const c of components)
-    if (c && refOf$1(c))
-      byRef.set(refOf$1(c), c);
+    if (c && refOf(c))
+      byRef.set(refOf(c), c);
   const childrenOf = (ref) => components.filter((c) => c && c.parentRef === ref && !c.slotName);
   const depth = (c) => {
     let d = 0;
@@ -595,13 +81,13 @@ function fitFlexHeights(components, warnings) {
   const isCard = (c) => c.type === "FlexContainer" && prop(c, "cardStyle") === "shadcnCard";
   const directionOf = (c) => prop(c, "direction") || "row";
   const layoutV2 = (c) => prop(c, "layoutVersion") === "" || num(prop(c, "layoutVersion"), 2) >= 2;
-  const inFlow = (c) => !DIALOG_TYPES$1.has(c.type) && bool(prop(c, "visibility"), true);
+  const inFlow = (c) => !DIALOG_TYPES.has(c.type) && bool(prop(c, "visibility"), true);
   const boxes = components.filter((c) => c && c.type === "FlexContainer").sort((a, b) => depth(b) - depth(a));
   const original = new Map(boxes.map((c) => [c, heightOf(c)]));
   const notes = [];
   for (const box of boxes) {
     const rects = rectsOf(box);
-    const ref = refOf$1(box);
+    const ref = refOf(box);
     if (!rects.length || !ref)
       continue;
     const inner = childrenOf(ref).filter(inFlow);
@@ -1174,7 +660,7 @@ function polishFlexRows(input) {
     } : {}
   } : component);
   const childrenOf = (ref) => components.filter((component) => component && component.parentRef === ref && !component.slotName);
-  const DIALOG_TYPES2 = /* @__PURE__ */ new Set(["ShadDialog", "ModalV2", "Modal"]);
+  const DIALOG_TYPES3 = /* @__PURE__ */ new Set(["ShadDialog", "ModalV2", "Modal"]);
   const isRootLevel = (c) => !c.parentRef && !c.parent;
   const topOf = (c) => Number(c.layout?.top ?? c.layouts?.desktop?.top);
   for (const host of [...components]) {
@@ -1182,7 +668,7 @@ function polishFlexRows(input) {
       continue;
     const ref = refOf2(host);
     const inner = components.filter((c) => c && c.parentRef === ref);
-    if (!inner.length || !inner.every((c) => DIALOG_TYPES2.has(c.type)))
+    if (!inner.length || !inner.every((c) => DIALOG_TYPES3.has(c.type)))
       continue;
     inner.forEach((dialog) => {
       delete dialog.parentRef;
@@ -1190,7 +676,7 @@ function polishFlexRows(input) {
     });
     components.splice(components.indexOf(host), 1);
     const hostTop = topOf(host);
-    const below = components.filter((c) => c && isRootLevel(c) && !DIALOG_TYPES2.has(c.type) && topOf(c) > hostTop);
+    const below = components.filter((c) => c && isRootLevel(c) && !DIALOG_TYPES3.has(c.type) && topOf(c) > hostTop);
     const nextTop = below.length ? Math.min(...below.map(topOf)) : NaN;
     const lift = Number.isFinite(hostTop) && Number.isFinite(nextTop) ? nextTop - hostTop : 0;
     if (lift > 0) {
@@ -1723,6 +1209,168 @@ function polishFlexRows(input) {
   const tables = packTableLook(accents.components);
   return { components: tables.components, warnings: [...warnings, ...accents.warnings, ...tables.warnings] };
 }
+var PAGE_ARCHETYPES = ["catalog", "personal-overview", "register", "queue-board", "other"];
+var MAIN_SURFACE = {
+  catalog: { types: /* @__PURE__ */ new Set(["ShadCardGrid"]), label: "a photo card grid (ShadCardGrid)" },
+  "personal-overview": {
+    types: /* @__PURE__ */ new Set(["ShadSummaryStrip", "ShadStat", "ShadProgress", "ShadCircularProgress"]),
+    label: "the period figures (ShadSummaryStrip, then progress tiles)"
+  },
+  register: { types: /* @__PURE__ */ new Set(["Table", "ShadTable"]), label: 'the records table (Table with tableLook "shadcn")' },
+  "queue-board": {
+    types: /* @__PURE__ */ new Set(["ShadRecordList", "Table", "ShadTable", "ShadKanban", "ShadCardGrid"]),
+    label: "the work itself (a needs-attention ShadRecordList, the queue table or a ShadKanban)"
+  }
+};
+var FILTER_TYPES = /* @__PURE__ */ new Set(["ShadInput", "ShadToggleGroup", "ShadSelect", "ShadTabs", "ShadCombobox", "ShadMultiselect"]);
+var DIALOG_TYPES2 = /* @__PURE__ */ new Set(["ShadDialog", "Modal", "ModalV2"]);
+var SHORT_LIST_MAX = 36;
+var isChart = (type) => /^Shad\w*Chart$/.test(type ?? "");
+var valueOf4 = (bag, key2) => {
+  const entry = bag?.[key2];
+  return entry && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry.value : entry;
+};
+var textOf = (bag, key2) => {
+  const v = valueOf4(bag, key2);
+  return typeof v === "string" ? v.trim() : typeof v === "number" ? String(v) : "";
+};
+var refOf3 = (c) => c.clientRef ?? c.name ?? "";
+var label = (c) => `"${c.name ?? c.clientRef ?? c.type}"`;
+function readingOrder(components) {
+  const refs = new Set(components.map(refOf3).filter(Boolean));
+  const parentOf = (c) => {
+    const p = c.parentRef ?? c.parent;
+    return p && refs.has(p) ? p : void 0;
+  };
+  const children = /* @__PURE__ */ new Map();
+  for (const c of components) {
+    const p = parentOf(c);
+    if (p)
+      children.set(p, [...children.get(p) ?? [], c]);
+  }
+  const out = [];
+  const seen = /* @__PURE__ */ new Set();
+  const visit = (c) => {
+    if (seen.has(c) || DIALOG_TYPES2.has(c.type ?? ""))
+      return;
+    seen.add(c);
+    out.push(c);
+    for (const child of children.get(refOf3(c)) ?? [])
+      visit(child);
+  };
+  for (const c of components)
+    if (!parentOf(c))
+      visit(c);
+  return out;
+}
+function chartColourWarnings(chart) {
+  const series = valueOf4(chart.properties, "yFields");
+  const parts = chart.type === "ShadPieChart" || chart.type === "ShadFunnelChart" ? "slice" : Array.isArray(series) && series.length > 1 ? "series" : null;
+  if (!parts)
+    return [];
+  const colors = valueOf4(chart.properties, "colors");
+  const literal2 = Array.isArray(colors) ? colors : null;
+  const bound = typeof colors === "string" && colors.includes("{{") && !/^\{\{\s*\[\s*\]\s*\}\}$/.test(colors.trim());
+  if (bound)
+    return [];
+  if (!literal2 || literal2.length === 0) {
+    return [
+      `Chart ${label(chart)} draws each ${parts} in the default palette: set colors to explicit, distinct hues that sit with the theme (one family, clearly different lightness or hue per ` + parts + "), so no pair clashes and no slice disappears."
+    ];
+  }
+  const norm = literal2.map((c) => String(c).trim().toLowerCase());
+  if (new Set(norm).size < norm.length) {
+    return [`Chart ${label(chart)} repeats a colour in colors (${literal2.join(", ")}): give each ${parts} its own hue.`];
+  }
+  return [];
+}
+function headerActionWarnings(order, components) {
+  const first = order.find((c) => c.type === "ShadHero" || c.type === "ShadHeading");
+  if (!first)
+    return [];
+  if (first.type === "ShadHero") {
+    const primary = textOf(first.properties, "actionLabel");
+    const secondary = textOf(first.properties, "secondaryActionLabel");
+    return primary && secondary ? [`Header ${label(first)} offers two actions ("${primary}", "${secondary}"): keep the one the page is for; move the other into the page (a card's action, a filter or the nav).`] : [];
+  }
+  const byRef = new Map(components.map((c) => [refOf3(c), c]));
+  let row;
+  let at = first;
+  for (let i = 0; i < 2 && at; i++) {
+    at = byRef.get(at.parentRef ?? at.parent ?? "");
+    if (at?.type === "FlexContainer" && textOf(at.properties, "direction") === "row") {
+      row = at;
+      break;
+    }
+  }
+  if (!row)
+    return [];
+  const inRow = /* @__PURE__ */ new Set([refOf3(row)]);
+  const buttons = [];
+  for (const c of order) {
+    const p = c.parentRef ?? c.parent ?? "";
+    if (!inRow.has(p))
+      continue;
+    inRow.add(refOf3(c));
+    if (c.type === "ShadButton")
+      buttons.push(c);
+  }
+  return buttons.length > 1 ? [`Header row ${label(row)} holds ${buttons.length} buttons (${buttons.map(label).join(", ")}): keep one primary action in the header; the rest belong in the page or the nav.`] : [];
+}
+function lintPageArchetype(archetype, components) {
+  const kind = (archetype ?? "").trim();
+  if (!kind)
+    return [];
+  if (!PAGE_ARCHETYPES.includes(kind)) {
+    return [`Archetype "${kind}" is not one of ${PAGE_ARCHETYPES.join(", ")}; use "other" for a page that is none of them.`];
+  }
+  if (kind === "other")
+    return [];
+  const prefix = `Archetype "${kind}": `;
+  const order = readingOrder(components);
+  const warnings = [];
+  const main = MAIN_SURFACE[kind];
+  const mainAt = order.findIndex((c) => main.types.has(c.type ?? ""));
+  const chartAt = order.findIndex((c) => isChart(c.type));
+  if (mainAt < 0) {
+    warnings.push(`the page is built around ${main.label}, and this plan has none.`);
+  } else if (chartAt >= 0 && chartAt < mainAt) {
+    warnings.push(`chart ${label(order[chartAt])} comes before ${label(order[mainAt])}: the main surface opens the page; a chart, if it earns a place, sits beside or below it, never as the first thing under the header.`);
+  }
+  const has = (type) => order.some((c) => c.type === type);
+  const filterBefore = (index) => order.slice(0, Math.max(index, 0)).some((c) => FILTER_TYPES.has(c.type ?? ""));
+  const hasDialog = components.some((c) => DIALOG_TYPES2.has(c.type ?? ""));
+  if (kind === "catalog" && mainAt >= 0) {
+    const grid = order[mainAt];
+    if (!filterBefore(mainAt))
+      warnings.push(`no search or filter bar above ${label(grid)}: put a search input and a course/kind toggle in a row between the hero and the grid.`);
+    if (!hasDialog)
+      warnings.push('no detail sheet: a card click opens a ShadDialog (variant "sheet") with the full record.');
+  }
+  if (kind === "register" && mainAt >= 0) {
+    if (!filterBefore(mainAt))
+      warnings.push(`no filter row above ${label(order[mainAt])}: a register is read through a period or status toggle and a select.`);
+    if (!hasDialog)
+      warnings.push('no detail sheet: a row click opens a ShadDialog (variant "sheet") with the record and its actions.');
+  }
+  if (kind === "personal-overview") {
+    if (!has("ShadSummaryStrip"))
+      warnings.push("no ShadSummaryStrip under the hero: the period's four key figures go in one strip.");
+    const progress = order.some((c) => c.type === "ShadProgress" || c.type === "ShadCircularProgress" || c.type === "ShadStat" && valueOf4(c.properties, "progress") !== void 0);
+    if (!progress)
+      warnings.push("no progress grid: show each goal or budget as a ShadStat with progress (or ShadProgress) against its limit.");
+  }
+  if (kind === "queue-board" && !has("ShadSummaryStrip")) {
+    warnings.push("no ShadSummaryStrip: a queue opens with its counts (open, overdue, unassigned, done this week) in one strip.");
+  }
+  for (const chart of order.filter((c) => isChart(c.type)))
+    warnings.push(...chartColourWarnings(chart));
+  warnings.push(...headerActionWarnings(order, components));
+  if (order.length > SHORT_LIST_MAX) {
+    warnings.push(`${order.length} components outside dialogs: a ${kind} page reads best with a short list (the blueprint has about 10 to 20); merge repeated tiles into one bound component and drop sections the page does not need.`);
+  }
+  return warnings.map((w) => prefix + w);
+}
 var AUTO_MATERIALIZE_DEFAULTS = /* @__PURE__ */ new Set(["Kanban"]);
 var TOOLJET_DESKTOP_GRID_COLUMNS = 43;
 function wrappedValues(keys, defaults) {
@@ -1781,47 +1429,6 @@ function materializeRequiredDefaultChildren(input) {
     warnings.push(`Kanban "${original.name}" had no explicit card children; materialized ${defaults.length} catalog default children so cards render content. For wrapped multi-line card text, use add_components with a Kanban client_ref and an explicit Html child using the matching parent_ref.`);
   });
   return { components, warnings, materializedChildren };
-}
-function normalizePlannedLayouts(component) {
-  const warnings = [];
-  const label2 = `${component.type ?? "component"} "${component.name ?? "?"}"`;
-  const targets = [];
-  if (component.layout)
-    targets.push(["layout", component.layout]);
-  if (component.layouts?.desktop)
-    targets.push(["desktop", component.layouts.desktop]);
-  if (component.layouts?.mobile)
-    targets.push(["mobile", component.layouts.mobile]);
-  if (!targets.length)
-    return { component, warnings };
-  const textMinimum = component.type === "Text" ? minimumTextHeight(component) : void 0;
-  const schema = component.type ? getComponentSchema(component.type) : void 0;
-  const compactHeight = schema?.renderingHints?.compactFormHeight ? schema?.defaultSize?.height : void 0;
-  const fixed = /* @__PURE__ */ new Map();
-  for (const [name, rect] of targets) {
-    if (typeof rect.height !== "number")
-      continue;
-    if (textMinimum !== void 0 && rect.height < textMinimum) {
-      fixed.set(name, { ...rect, height: textMinimum });
-      warnings.push(`${label2}: raised ${name} height ${rect.height}px to ${textMinimum}px so one line of text renders.`);
-    } else if (compactHeight !== void 0 && rect.height > compactHeight) {
-      fixed.set(name, { ...rect, height: compactHeight });
-      warnings.push(`${label2}: lowered ${name} height ${rect.height}px to the standard single-line ${compactHeight}px (oversizing does not enlarge the value text; a top label renders outside the box).`);
-    }
-  }
-  if (!fixed.size)
-    return { component, warnings };
-  const next = { ...component };
-  if (fixed.has("layout"))
-    next.layout = fixed.get("layout");
-  if (fixed.has("desktop") || fixed.has("mobile")) {
-    next.layouts = {
-      ...component.layouts,
-      ...fixed.has("desktop") ? { desktop: fixed.get("desktop") } : {},
-      ...fixed.has("mobile") ? { mobile: fixed.get("mobile") } : {}
-    };
-  }
-  return { component: next, warnings };
 }
 function matchPlannedPage(pages, name, plannedNames, claimed = /* @__PURE__ */ new Set()) {
   const byName = pages.find((page) => page.name === name && !claimed.has(page.id));
@@ -2233,7 +1840,7 @@ function validateEvents(summary, events, options = {}) {
     if (actionId === "run-query") {
       let queryId = event.action.queryId;
       if (typeof queryId === "string" && !queries.has(queryId)) {
-        const resolution = resolveRef$1(summary.queries, queryId, "Query", "in this app");
+        const resolution = resolveRef(summary.queries, queryId, "Query", "in this app");
         if (resolution.ok) {
           if (resolution.warning)
             warnings.push(`${label2}: ${resolution.warning}`);
@@ -2547,11 +2154,11 @@ function expandQueryLifecycles(summary, lifecycles) {
     }
     seenSources.add(lifecycle.queryId);
     const sourceName = query.name ?? lifecycle.queryId;
-    const refreshIds = unique$1(lifecycle.refreshQueryIds ?? [], `refresh query`, sourceName, warnings);
+    const refreshIds = unique(lifecycle.refreshQueryIds ?? [], `refresh query`, sourceName, warnings);
     if (refreshIds.includes(lifecycle.queryId)) {
       throw new Error(`Query "${sourceName}" cannot refresh itself after success: this repeats the query indefinitely, including any writes. Refresh a separate read query instead.`);
     }
-    const clearIds = unique$1(lifecycle.clearComponentIds ?? [], `clear component`, sourceName, warnings);
+    const clearIds = unique(lifecycle.clearComponentIds ?? [], `clear component`, sourceName, warnings);
     (lifecycle.beforeRefreshActions ?? []).forEach((action, index) => {
       events.push({
         sourceId: lifecycle.queryId,
@@ -2641,7 +2248,7 @@ function alertEvent(queryId, queryName, trigger, alert, defaultType) {
     name: trigger === "onDataQuerySuccess" ? `Confirm ${queryName}` : `${queryName} failed`
   };
 }
-function unique$1(values, label2, sourceName, warnings) {
+function unique(values, label2, sourceName, warnings) {
   const seen = /* @__PURE__ */ new Set();
   const result = [];
   for (const value of values) {
@@ -2653,657 +2260,6 @@ function unique$1(values, label2, sourceName, warnings) {
     result.push(value);
   }
   return result;
-}
-createRequire(import.meta.url);
-function asRecord(value) {
-  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
-}
-function bindingBoolean(value) {
-  return booleanBindingValue(value) ?? value;
-}
-function compactTheme(theme) {
-  if (!theme)
-    return null;
-  return {
-    ...typeof theme.id === "string" ? { id: theme.id } : {},
-    ...typeof theme.name === "string" ? { name: theme.name } : {},
-    ...typeof theme.isDefault === "boolean" ? { is_default: theme.isDefault } : {},
-    ...typeof theme.isBasic === "boolean" ? { is_basic: theme.isBasic } : {},
-    ...typeof theme.isDisabled === "boolean" ? { is_disabled: theme.isDisabled } : {}
-  };
-}
-function projectAppSettings(snapshot) {
-  const global = snapshot.global_settings ?? {};
-  const properties = pageSettingProperties(snapshot);
-  const disableMenu = asRecord(properties.disableMenu);
-  const theme = asRecord(global.theme);
-  return {
-    app_id: snapshot.app_id,
-    version_id: snapshot.version_id,
-    canvas: {
-      background_color: global.canvasBackgroundColor,
-      max_width: {
-        value: global.canvasMaxWidth,
-        unit: global.canvasMaxWidthType
-      },
-      mode: global.appMode
-    },
-    theme: compactTheme(theme),
-    // The saved component library (ToolJet UI 1.0 or 2.0); absent on apps from before the setting.
-    component_library: global.componentLibrary,
-    header: {
-      hidden: properties.hideHeader,
-      logo_hidden: properties.hideLogo,
-      title: properties.name
-    },
-    navigation: {
-      hidden: bindingBoolean(disableMenu.value ?? properties.disableMenu),
-      position: properties.position,
-      style: properties.style,
-      collapsible: properties.collapsable
-    }
-  };
-}
-function pageSettingProperties(snapshot) {
-  return asRecord(asRecord(snapshot.page_settings).properties);
-}
-function projectJavascriptRuntime(snapshot) {
-  const global = snapshot.global_settings ?? {};
-  const raw = asRecord(global.libraries).javascript;
-  const entries = Array.isArray(raw) ? raw : [];
-  const script = asRecord(global.preloadedScript).javascript;
-  return {
-    configuration_state: raw === void 0 || Array.isArray(raw) && !raw.length ? "not_configured" : Array.isArray(raw) ? "configured" : "unknown",
-    total: Array.isArray(raw) ? raw.length : raw === void 0 ? 0 : null,
-    truncated: entries.length > 32,
-    libraries: entries.slice(0, 32).map((value) => {
-      const lib = asRecord(value);
-      let sourceUrl = null;
-      let redacted = false;
-      let https = false;
-      try {
-        if (typeof lib.url === "string" && lib.url.length <= 4096) {
-          const url = new URL(lib.url);
-          if (url.protocol === "https:" || url.protocol === "http:") {
-            https = url.protocol === "https:";
-            redacted = Boolean(url.username || url.password || url.search || url.hash);
-            url.username = "";
-            url.password = "";
-            url.search = "";
-            url.hash = "";
-            sourceUrl = url.toString();
-          }
-        }
-      } catch {
-      }
-      return {
-        name: typeof lib.name === "string" ? lib.name.slice(0, 128) : null,
-        enabled: typeof lib.enabled === "boolean" ? lib.enabled : null,
-        source_url: sourceUrl,
-        url_valid: sourceUrl !== null,
-        url_redacted: redacted,
-        https
-      };
-    }),
-    preloaded_script_present: typeof script === "string" ? Boolean(script.trim()) : null,
-    runtime_verified: false,
-    guidance: "Configuration is not proof of successful loading, export names, worker/CSP compatibility, or deployment support. In ToolJet versions with the native library loader, enabled HTTPS UMD/IIFE library exports are passed to RunJS as lexical parameters by their configured names, not guaranteed globalThis properties. Do not redeclare those parameter names with const/let. Preloaded script exports may add or override names; their code is intentionally omitted here. This MCP does not configure JavaScript libraries through update_app_settings. If required dependencies are missing, report the prerequisite and request supported setup instead of inventing globals or claiming OCR works. PDF.js rasterization, Tesseract worker initialization and actual image/PDF extraction still need runtime testing. Source URLs omit credentials, query strings and fragments; do not reuse redacted URLs as configuration."
-  };
-}
-async function literalCanvasColor(client, appId, versionId) {
-  if (!versionId || typeof client.getAppSettings !== "function")
-    return void 0;
-  try {
-    const snapshot = await client.getAppSettings(appId, versionId);
-    const colour = asRecord(snapshot.global_settings).canvasBackgroundColor;
-    return typeof colour === "string" && /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%deg]+\))$/i.test(colour.trim()) ? colour.trim() : void 0;
-  } catch {
-    return void 0;
-  }
-}
-var layoutSchema = external_exports.object({
-  top: external_exports.number(),
-  left: external_exports.number().describe("Columns in the immediate parent canvas, which has its own 43-column grid."),
-  width: external_exports.number().describe("Columns out of 43 in the immediate parent canvas, independent of the parent outer width. Full width is 43. Container/Form/modal inset full rows use left 2, width 39; grid-mode Listview full rows use left 0, width 43."),
-  height: external_exports.number(),
-  fillWidth: external_exports.boolean().optional().describe(FLEX_FILL_WIDTH_DESCRIPTION),
-  widthPx: external_exports.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION),
-  grow: external_exports.number().positive().optional().describe(FLEX_GROW_DESCRIPTION),
-  minWidthPx: external_exports.number().nonnegative().optional().describe(FLEX_MIN_WIDTH_PX_DESCRIPTION)
-});
-var componentInputSchema = external_exports.object({
-  name: componentNameSchema,
-  type: external_exports.string(),
-  properties: external_exports.record(external_exports.string(), external_exports.any()),
-  styles: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  validation: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  others: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-  layout: layoutSchema.optional(),
-  layouts: external_exports.object({ desktop: layoutSchema.optional(), mobile: layoutSchema.optional() }).optional(),
-  client_ref: external_exports.string().optional(),
-  parent_ref: external_exports.string().optional(),
-  parent: external_exports.string().optional(),
-  slot_name: componentSlotSchema.optional()
-});
-function containsListItemBinding(value) {
-  if (typeof value === "string")
-    return /\blistItem\b/.test(value);
-  if (Array.isArray(value))
-    return value.some(containsListItemBinding);
-  if (value && typeof value === "object") {
-    return Object.values(value).some(containsListItemBinding);
-  }
-  return false;
-}
-function prepareComponentBatch(inputs, options = {}) {
-  const requested = inputs.map(({ client_ref, parent_ref, slot_name, ...component }) => ({
-    ...component,
-    clientRef: client_ref,
-    parentRef: parent_ref,
-    slotName: slot_name
-  }));
-  const currency = plannedCurrency(requested);
-  const normalized = requested.map((component) => {
-    const definition = normalizeComponentSpec(component, { stripUnknownKeys: true, currency });
-    const geometry = normalizePlannedLayouts(definition.component);
-    return { ...definition, component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
-  });
-  const heightFixes = [];
-  for (const result of normalized) {
-    const component = result.component;
-    const fix = suggestedHtmlHeight(component);
-    if (!fix)
-      continue;
-    for (const rect of [component.layout, component.layouts?.desktop])
-      if (rect && typeof rect.height === "number")
-        rect.height = fix.to;
-    heightFixes.push(`Html "${component.name ?? "?"}" needed about ${fix.needed}px for its markup but was ${fix.from}px; saved at ${fix.to}px. Anything placed within ${fix.to - fix.from}px below it now overlaps; move it down.`);
-  }
-  const materialized = materializeRequiredDefaultChildren(normalized.map((result) => result.component));
-  const polished = polishFlexRows(materialized.components);
-  const expanded = { components: polished.components, warnings: [...materialized.warnings, ...polished.warnings] };
-  const references = indexComponentReferences(expanded.components, options.existingComponents);
-  const lint = lintComponents(references.components, options);
-  const lateListviewChildWarnings = requested.flatMap((component) => component.parent && containsListItemBinding({
-    properties: component.properties,
-    styles: component.styles,
-    validation: component.validation,
-    others: component.others
-  }) ? [
-    `Component "${component.name}" is being added under an existing parent and reads listItem. ToolJet can mount late-added Listview children with empty repeated values. Create the Listview and all listItem-bound children atomically in one component batch using client_ref/parent_ref.`
-  ] : []);
-  return {
-    components: references.components,
-    errors: [...references.errors, ...lint.errors],
-    warnings: [
-      ...normalized.flatMap((item) => item.warnings),
-      ...expanded.warnings,
-      ...lint.warnings,
-      ...heightFixes,
-      ...lateListviewChildWarnings
-    ]
-  };
-}
-var PLAN_TTL_MS = 30 * 60 * 1e3;
-var MAX_PLANS = 20;
-var plans = /* @__PURE__ */ new Map();
-function prune(now = Date.now()) {
-  for (const [token, plan] of plans)
-    if (plan.expiresAt <= now)
-      plans.delete(token);
-  while (plans.size >= MAX_PLANS)
-    plans.delete(plans.keys().next().value);
-}
-function storeAppPlan(spec, lint, replaceFingerprint2) {
-  prune();
-  const planToken = randomUUID();
-  plans.set(planToken, {
-    spec: structuredClone(spec),
-    lint: structuredClone(lint),
-    expiresAt: Date.now() + PLAN_TTL_MS,
-    ...replaceFingerprint2 ? { replaceFingerprint: replaceFingerprint2 } : {}
-  });
-  return { plan_token: planToken, expires_in_seconds: PLAN_TTL_MS / 1e3 };
-}
-function peekAppPlan(planToken) {
-  prune();
-  return plans.get(planToken);
-}
-function consumeAppPlan(planToken) {
-  prune();
-  const plan = plans.get(planToken);
-  if (!plan)
-    throw new Error("Unknown or expired plan_token. Run lint_app_spec again.");
-  plans.delete(planToken);
-  return plan;
-}
-var escapeRegExp$1 = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-var idPattern = (ids) => new RegExp(`(?<![\\w-])(?:${[...ids].sort((a, b) => b.length - a.length).map(escapeRegExp$1).join("|")})(?![\\w-])`, "g");
-function mentionsId(text3, id) {
-  return idPattern([id]).test(text3);
-}
-function replaceIds(text3, newIds) {
-  const ids = [...newIds.keys()];
-  if (!ids.length)
-    return { text: text3, missing: [] };
-  const missing = /* @__PURE__ */ new Set();
-  const replaced = text3.replace(idPattern(ids), (id) => {
-    const next = newIds.get(id);
-    if (next)
-      return next;
-    missing.add(id);
-    return id;
-  });
-  return { text: replaced, missing: [...missing] };
-}
-var readsQuery = (text3, name) => {
-  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`queries\\s*(?:\\?\\.|\\.)\\s*${escaped}(?![\\w$])|queries\\s*\\[\\s*['"]${escaped}['"]\\s*\\]`).test(text3);
-};
-function replaceView(summary, plan) {
-  const replacedNames = new Set((plan.pages ?? []).filter((page) => page.replace).map((page) => page.name));
-  const plannedNames = new Set((plan.pages ?? []).map((page) => page.name));
-  const matched = /* @__PURE__ */ new Set();
-  const plannedNameById = /* @__PURE__ */ new Map();
-  for (const name of replacedNames) {
-    const page = matchPlannedPage(summary.pages, name, plannedNames, matched);
-    if (page)
-      matched.add(page.id);
-    if (page)
-      plannedNameById.set(page.id, name);
-  }
-  const replacedPages = summary.pages.filter((page) => matched.has(page.id));
-  const replacedPageIds = replacedPages.map((page) => page.id);
-  const componentsToDelete = replacedPages.map((page) => ({ pageId: page.id, componentIds: page.components.map((component) => component.id) })).filter((entry) => entry.componentIds.length);
-  const replacedComponentIds = componentsToDelete.flatMap((entry) => entry.componentIds);
-  const removedSources = /* @__PURE__ */ new Set([...replacedPageIds, ...replacedComponentIds]);
-  const planQueryNames = new Set((plan.queries ?? []).map((query) => query.name));
-  const replacedComponents = replacedPages.flatMap((page) => page.components);
-  const otherComponents = summary.pages.filter((page) => !matched.has(page.id)).flatMap((page) => page.components);
-  const componentText = (component) => JSON.stringify([component.properties ?? {}, component.styles ?? {}]);
-  const runsQuery = (event, id) => JSON.stringify(event.event ?? {}).includes(`"${id}"`);
-  const planQueryIds = new Set(summary.queries.filter((query) => query.name && planQueryNames.has(query.name)).map((query) => query.id));
-  const pageOwns = (query) => replacedComponents.some((component) => readsQuery(componentText(component), query.name)) || summary.events.some((event) => event.sourceId && removedSources.has(event.sourceId) && runsQuery(event, query.id));
-  const usedElsewhere = (query) => otherComponents.some((component) => readsQuery(componentText(component), query.name)) || summary.events.some((event) => event.sourceId !== query.id && !(event.sourceId && removedSources.has(event.sourceId)) && !(event.sourceId && planQueryIds.has(event.sourceId)) && runsQuery(event, query.id)) || summary.queries.some((other) => other.id !== query.id && !planQueryIds.has(other.id) && readsQuery(JSON.stringify(other.options ?? {}), query.name));
-  const readsOf = (text3) => summary.queries.filter((q) => q.name && readsQuery(text3, q.name)).map((q) => q.id);
-  const reachedElsewhere = /* @__PURE__ */ new Set([
-    ...otherComponents.flatMap((component) => readsOf(componentText(component))),
-    ...summary.events.filter((event) => !(event.sourceId && (removedSources.has(event.sourceId) || summary.queries.some((q) => q.id === event.sourceId)))).flatMap((event) => summary.queries.filter((q) => runsQuery(event, q.id)).map((q) => q.id))
-  ]);
-  for (let frontier = [...reachedElsewhere]; frontier.length; ) {
-    const next = frontier.flatMap((id) => {
-      const query = summary.queries.find((q) => q.id === id);
-      return readsOf(JSON.stringify(query?.options ?? {}));
-    }).filter((id) => !reachedElsewhere.has(id));
-    next.forEach((id) => reachedElsewhere.add(id));
-    frontier = next;
-  }
-  const owned = new Set(summary.queries.filter((query) => query.name && !reachedElsewhere.has(query.id) && pageOwns(query)).map((query) => query.id));
-  for (let grew = true; grew; ) {
-    grew = false;
-    for (const query of summary.queries) {
-      if (!query.name || owned.has(query.id) || reachedElsewhere.has(query.id))
-        continue;
-      const readByOwned = summary.queries.some((other) => owned.has(other.id) && readsQuery(JSON.stringify(other.options ?? {}), query.name));
-      const chainedByOwned = summary.events.some((event) => !!event.sourceId && owned.has(event.sourceId) && runsQuery(event, query.id));
-      if (readByOwned || chainedByOwned) {
-        owned.add(query.id);
-        grew = true;
-      }
-    }
-  }
-  const explicitUpdates = new Set((plan.queries ?? []).filter((query) => query.update).map((query) => query.name));
-  const implicit = replacedNames.size ? summary.queries.filter((query) => query.name && planQueryNames.has(query.name) && !reachedElsewhere.has(query.id) && (owned.has(query.id) || !usedElsewhere(query))) : [];
-  const explicit = summary.queries.filter((query) => query.name && explicitUpdates.has(query.name));
-  const queriesToUpdate = new Map([...implicit, ...explicit].map((query) => [query.name, query.id]));
-  if (!replacedPages.length && !explicit.length && (!replacedNames.size || !queriesToUpdate.size))
-    return void 0;
-  const redefinedIds = new Set(queriesToUpdate.values());
-  const queryNameById = new Map(summary.queries.map((query) => [query.id, query.name ?? ""]));
-  const pageNameById = new Map(summary.pages.map((page) => [page.id, page.name ?? ""]));
-  const queryRefName = new Map((plan.queries ?? []).flatMap((query) => [[query.name, query.name], ...query.client_ref ? [[query.client_ref, query.name]] : []]));
-  const pageRefName = new Map((plan.pages ?? []).flatMap((page) => [[page.name, page.name], ...page.client_ref ? [[page.client_ref, page.name]] : []]));
-  const nameOfQuery = (ref) => typeof ref === "string" ? queryRefName.get(ref) ?? queryNameById.get(ref) ?? ref : "";
-  const nameOfPage = (ref) => typeof ref === "string" ? pageRefName.get(ref) ?? pageNameById.get(ref) ?? ref : "";
-  const actionKey = (action) => {
-    const id = action.actionId;
-    if (id === "run-query")
-      return `run-query:${nameOfQuery(action.target_ref ?? action.queryName ?? action.queryId)}`;
-    if (id === "switch-page")
-      return `switch-page:${nameOfPage(action.target_ref ?? action.pageId)}`;
-    if (id === "set-custom-variable" || id === "set-page-variable")
-      return `${id}:${String(action.key ?? "")}`;
-    return void 0;
-  };
-  const planned = /* @__PURE__ */ new Set();
-  const plan_ = (source, trigger, action) => {
-    const key2 = action && actionKey(action);
-    if (key2)
-      planned.add(`${source}|${trigger ?? ""}|${key2}`);
-  };
-  for (const event of plan.events ?? []) {
-    if (event.source_type === "data_query")
-      plan_(`q:${nameOfQuery(event.source_ref)}`, event.trigger, event.action);
-    if (event.source_type === "page")
-      plan_(`p:${nameOfPage(event.source_ref)}`, event.trigger, event.action);
-  }
-  for (const lc of plan.lifecycles ?? []) {
-    const source = `q:${nameOfQuery(lc.query_ref)}`;
-    for (const ref of lc.refresh_query_refs ?? [])
-      plan_(source, "onDataQuerySuccess", { actionId: "run-query", queryId: ref });
-    for (const action of [...lc.before_refresh_actions ?? [], ...lc.success_actions ?? []])
-      plan_(source, "onDataQuerySuccess", action);
-    for (const action of lc.failure_actions ?? [])
-      plan_(source, "onDataQueryFailure", action);
-  }
-  const replannedFrom = (source, action) => {
-    const key2 = actionKey(action);
-    return !!key2 && planned.has(`${source}|${String(action.eventId ?? "")}|${key2}`);
-  };
-  const alertedQueries = /* @__PURE__ */ new Set([
-    ...(plan.lifecycles ?? []).filter((lc) => lc.success_alert || lc.failure_alert).map((lc) => nameOfQuery(lc.query_ref)),
-    ...(plan.events ?? []).filter((event) => event.source_type === "data_query" && event.action?.actionId === "show-alert").map((event) => nameOfQuery(event.source_ref))
-  ]);
-  const eventsToDelete = summary.events.filter((event) => {
-    const action = event.event ?? {};
-    if (event.sourceId && replacedComponentIds.includes(event.sourceId))
-      return true;
-    if (event.sourceId && replacedPageIds.includes(event.sourceId)) {
-      if (replannedFrom(`p:${plannedNameById.get(event.sourceId)}`, action))
-        return true;
-      return action.actionId === "run-query" && typeof action.queryId === "string" && redefinedIds.has(action.queryId);
-    }
-    if (!event.sourceId || !redefinedIds.has(event.sourceId))
-      return false;
-    const text3 = JSON.stringify(action);
-    if (replacedComponentIds.some((id) => mentionsId(text3, id)))
-      return true;
-    if (replannedFrom(`q:${queryNameById.get(event.sourceId)}`, action))
-      return true;
-    if (action.actionId === "run-query")
-      return typeof action.queryId === "string" && redefinedIds.has(action.queryId);
-    if (action.actionId === "show-alert")
-      return alertedQueries.has(queryNameById.get(event.sourceId) ?? "");
-    return false;
-  }).map((event) => event.id);
-  const deleted = new Set(eventsToDelete);
-  const replacedComponentNames = new Map(replacedPages.flatMap((page) => page.components).filter((component) => component.name).map((component) => [component.id, component.name]));
-  const eventsToRetarget = summary.events.filter((event) => {
-    if (deleted.has(event.id))
-      return false;
-    const text3 = JSON.stringify(event.event ?? {});
-    return [...replacedComponentNames.keys()].some((id) => mentionsId(text3, id));
-  });
-  const retargeted = new Set(eventsToRetarget.map((event) => event.id));
-  return {
-    summary: {
-      ...summary,
-      pages: summary.pages.map((page) => replacedPageIds.includes(page.id) ? { ...page, components: [] } : page),
-      // A redefined query stays under a placeholder name: its name is free for the plan's new definition, and
-      // events that run it by id (from other pages) still resolve. Dropping it would orphan them.
-      queries: summary.queries.map((query) => redefinedIds.has(query.id) ? { ...query, name: `${query.name} (being replaced)` } : query),
-      events: summary.events.filter((event) => !deleted.has(event.id) && !retargeted.has(event.id))
-    },
-    replacedPageIds,
-    componentsToDelete,
-    eventsToDelete,
-    queriesToUpdate,
-    eventsToRetarget,
-    replacedComponentNames,
-    replacedPageNames: replacedPages.map((page) => page.name ?? page.id)
-  };
-}
-function danglingAfterReplace(summary, view, plan) {
-  const kept = new Set((plan.pages ?? []).filter((page) => page.replace).flatMap((page) => (page.components ?? []).map((c) => c.name ?? "")));
-  const dropped = [...new Set(view.replacedComponentNames.values())].filter((name) => !kept.has(name));
-  if (!dropped.length)
-    return [];
-  const errors = [];
-  const reads = (text3, name) => new RegExp(`components\\s*(?:\\?\\.|\\.)\\s*${name.replace(/[$]/g, "\\$")}\\b|components\\s*\\[\\s*['"]${name.replace(/[$]/g, "\\$")}['"]\\s*\\]`).test(text3);
-  for (const page of summary.pages.filter((p) => !view.replacedPageIds.includes(p.id))) {
-    for (const component of page.components) {
-      const text3 = JSON.stringify([component.properties ?? {}, component.styles ?? {}]);
-      for (const name of dropped) {
-        if (reads(text3, name))
-          errors.push(`Page "${page.name}": "${component.name ?? component.id}" reads components.${name}, which the replace of "${view.replacedPageNames.join('", "')}" drops. Keep ${name} in that page's plan, or change "${page.name}" first.`);
-      }
-    }
-  }
-  const droppedIds = [...view.replacedComponentNames].filter(([, name]) => dropped.includes(name));
-  const sourceName = new Map(summary.pages.flatMap((p) => p.components.map((c) => [c.id, `${c.name ?? c.id}" on page "${p.name}`])));
-  for (const event of view.eventsToRetarget) {
-    const text3 = JSON.stringify(event.event ?? {});
-    for (const [id, name] of droppedIds) {
-      if (!mentionsId(text3, id))
-        continue;
-      const source = event.sourceId ? sourceName.get(event.sourceId) ?? event.sourceId : "the app";
-      errors.push(`"${source}" has an event that acts on ${name}, which the replace of "${view.replacedPageNames.join('", "')}" drops. Keep ${name} in that page's plan, or change that event first.`);
-    }
-  }
-  const redefined = new Set(view.queriesToUpdate.values());
-  for (const query of summary.queries.filter((q) => !redefined.has(q.id))) {
-    const text3 = JSON.stringify(query.options ?? {});
-    for (const name of dropped) {
-      if (reads(text3, name))
-        errors.push(`Query "${query.name}" reads components.${name}, which the replace of "${view.replacedPageNames.join('", "')}" drops. Keep ${name} in that page's plan, or redefine "${query.name}" in this same plan without it (in page markup: write the whole <Query name="${query.name}" ...> in the same document as the page).`);
-    }
-  }
-  return errors;
-}
-function canonical(value) {
-  return JSON.stringify(value, (_key, item) => item && typeof item === "object" && !Array.isArray(item) ? Object.fromEntries(Object.keys(item).sort().map((key2) => [key2, item[key2]])) : item);
-}
-function replaceFingerprint(summary, view) {
-  const pageIds = new Set(view.replacedPageIds);
-  const replacedPages = summary.pages.filter((page) => pageIds.has(page.id));
-  const pages = replacedPages.map((page) => ({
-    id: page.id,
-    name: page.name ?? null,
-    handle: page.handle ?? null,
-    icon: page.icon ?? null,
-    hidden: page.hidden ?? false,
-    components: [...page.components].sort((a, b) => a.id.localeCompare(b.id)).map((component) => ({
-      id: component.id,
-      name: component.name ?? null,
-      type: component.type ?? null,
-      parent: component.parent ?? null,
-      slot_name: component.slot_name ?? null,
-      properties: component.properties ?? {},
-      styles: component.styles ?? {},
-      layouts: component.layouts ?? {},
-      validation: component.validation ?? {},
-      others: component.others ?? {}
-    }))
-  })).sort((a, b) => a.id.localeCompare(b.id));
-  const redefined = new Set(view.queriesToUpdate.values());
-  const queries = summary.queries.filter((query) => redefined.has(query.id)).map((query) => ({
-    id: query.id,
-    name: query.name ?? null,
-    kind: query.kind ?? null,
-    data_source_id: query.data_source_id ?? null,
-    options: query.options ?? {}
-  })).sort((a, b) => a.id.localeCompare(b.id));
-  const touched = [...pageIds, ...replacedPages.flatMap((page) => page.components.map((component) => component.id)), ...redefined];
-  const touchedIds = new Set(touched);
-  const names = touched.length ? new RegExp(idPattern(touched).source) : void 0;
-  const events = summary.events.filter((event) => event.sourceId && touchedIds.has(event.sourceId) || !!names?.test(JSON.stringify(event.event ?? {}))).map((event) => ({
-    id: event.id,
-    name: event.name ?? null,
-    sourceId: event.sourceId ?? null,
-    target: event.target ?? null,
-    index: event.index ?? null,
-    event: event.event ?? {}
-  })).sort((a, b) => a.id.localeCompare(b.id));
-  return canonical({ pages, queries, events });
-}
-function frozenAppRefusal(summary) {
-  if (!summary?.editor_frozen)
-    return void 0;
-  const where = summary.environment ? ` is in the ${summary.environment} environment and` : "";
-  return `Not executed: this app's version${where} is read-only in ToolJet (the editor is frozen, and ToolJet refuses changes to a promoted version). Nothing was changed. Tell the user to create a new version in development (version menu, Create version) and ask again; do not create tables or try other tools.`;
-}
-createRequire(import.meta.url);
-var PAGE_ARCHETYPES = ["catalog", "personal-overview", "register", "queue-board", "other"];
-var MAIN_SURFACE = {
-  catalog: { types: /* @__PURE__ */ new Set(["ShadCardGrid"]), label: "a photo card grid (ShadCardGrid)" },
-  "personal-overview": {
-    types: /* @__PURE__ */ new Set(["ShadSummaryStrip", "ShadStat", "ShadProgress", "ShadCircularProgress"]),
-    label: "the period figures (ShadSummaryStrip, then progress tiles)"
-  },
-  register: { types: /* @__PURE__ */ new Set(["Table", "ShadTable"]), label: 'the records table (Table with tableLook "shadcn")' },
-  "queue-board": {
-    types: /* @__PURE__ */ new Set(["ShadRecordList", "Table", "ShadTable", "ShadKanban", "ShadCardGrid"]),
-    label: "the work itself (a needs-attention ShadRecordList, the queue table or a ShadKanban)"
-  }
-};
-var FILTER_TYPES = /* @__PURE__ */ new Set(["ShadInput", "ShadToggleGroup", "ShadSelect", "ShadTabs", "ShadCombobox", "ShadMultiselect"]);
-var DIALOG_TYPES = /* @__PURE__ */ new Set(["ShadDialog", "Modal", "ModalV2"]);
-var SHORT_LIST_MAX = 36;
-var isChart = (type) => /^Shad\w*Chart$/.test(type ?? "");
-var valueOf = (bag, key2) => {
-  const entry = bag?.[key2];
-  return entry && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry.value : entry;
-};
-var textOf = (bag, key2) => {
-  const v = valueOf(bag, key2);
-  return typeof v === "string" ? v.trim() : typeof v === "number" ? String(v) : "";
-};
-var refOf = (c) => c.clientRef ?? c.name ?? "";
-var label = (c) => `"${c.name ?? c.clientRef ?? c.type}"`;
-function readingOrder(components) {
-  const refs = new Set(components.map(refOf).filter(Boolean));
-  const parentOf = (c) => {
-    const p = c.parentRef ?? c.parent;
-    return p && refs.has(p) ? p : void 0;
-  };
-  const children = /* @__PURE__ */ new Map();
-  for (const c of components) {
-    const p = parentOf(c);
-    if (p)
-      children.set(p, [...children.get(p) ?? [], c]);
-  }
-  const out = [];
-  const seen = /* @__PURE__ */ new Set();
-  const visit = (c) => {
-    if (seen.has(c) || DIALOG_TYPES.has(c.type ?? ""))
-      return;
-    seen.add(c);
-    out.push(c);
-    for (const child of children.get(refOf(c)) ?? [])
-      visit(child);
-  };
-  for (const c of components)
-    if (!parentOf(c))
-      visit(c);
-  return out;
-}
-function chartColourWarnings(chart) {
-  const series = valueOf(chart.properties, "yFields");
-  const parts = chart.type === "ShadPieChart" || chart.type === "ShadFunnelChart" ? "slice" : Array.isArray(series) && series.length > 1 ? "series" : null;
-  if (!parts)
-    return [];
-  const colors = valueOf(chart.properties, "colors");
-  const literal2 = Array.isArray(colors) ? colors : null;
-  const bound = typeof colors === "string" && colors.includes("{{") && !/^\{\{\s*\[\s*\]\s*\}\}$/.test(colors.trim());
-  if (bound)
-    return [];
-  if (!literal2 || literal2.length === 0) {
-    return [
-      `Chart ${label(chart)} draws each ${parts} in the default palette: set colors to explicit, distinct hues that sit with the theme (one family, clearly different lightness or hue per ` + parts + "), so no pair clashes and no slice disappears."
-    ];
-  }
-  const norm = literal2.map((c) => String(c).trim().toLowerCase());
-  if (new Set(norm).size < norm.length) {
-    return [`Chart ${label(chart)} repeats a colour in colors (${literal2.join(", ")}): give each ${parts} its own hue.`];
-  }
-  return [];
-}
-function headerActionWarnings(order, components) {
-  const first = order.find((c) => c.type === "ShadHero" || c.type === "ShadHeading");
-  if (!first)
-    return [];
-  if (first.type === "ShadHero") {
-    const primary = textOf(first.properties, "actionLabel");
-    const secondary = textOf(first.properties, "secondaryActionLabel");
-    return primary && secondary ? [`Header ${label(first)} offers two actions ("${primary}", "${secondary}"): keep the one the page is for; move the other into the page (a card's action, a filter or the nav).`] : [];
-  }
-  const byRef = new Map(components.map((c) => [refOf(c), c]));
-  let row;
-  let at = first;
-  for (let i = 0; i < 2 && at; i++) {
-    at = byRef.get(at.parentRef ?? at.parent ?? "");
-    if (at?.type === "FlexContainer" && textOf(at.properties, "direction") === "row") {
-      row = at;
-      break;
-    }
-  }
-  if (!row)
-    return [];
-  const inRow = /* @__PURE__ */ new Set([refOf(row)]);
-  const buttons = [];
-  for (const c of order) {
-    const p = c.parentRef ?? c.parent ?? "";
-    if (!inRow.has(p))
-      continue;
-    inRow.add(refOf(c));
-    if (c.type === "ShadButton")
-      buttons.push(c);
-  }
-  return buttons.length > 1 ? [`Header row ${label(row)} holds ${buttons.length} buttons (${buttons.map(label).join(", ")}): keep one primary action in the header; the rest belong in the page or the nav.`] : [];
-}
-function lintPageArchetype(archetype, components) {
-  const kind = (archetype ?? "").trim();
-  if (!kind)
-    return [];
-  if (!PAGE_ARCHETYPES.includes(kind)) {
-    return [`Archetype "${kind}" is not one of ${PAGE_ARCHETYPES.join(", ")}; use "other" for a page that is none of them.`];
-  }
-  if (kind === "other")
-    return [];
-  const prefix = `Archetype "${kind}": `;
-  const order = readingOrder(components);
-  const warnings = [];
-  const main = MAIN_SURFACE[kind];
-  const mainAt = order.findIndex((c) => main.types.has(c.type ?? ""));
-  const chartAt = order.findIndex((c) => isChart(c.type));
-  if (mainAt < 0) {
-    warnings.push(`the page is built around ${main.label}, and this plan has none.`);
-  } else if (chartAt >= 0 && chartAt < mainAt) {
-    warnings.push(`chart ${label(order[chartAt])} comes before ${label(order[mainAt])}: the main surface opens the page; a chart, if it earns a place, sits beside or below it, never as the first thing under the header.`);
-  }
-  const has = (type) => order.some((c) => c.type === type);
-  const filterBefore = (index) => order.slice(0, Math.max(index, 0)).some((c) => FILTER_TYPES.has(c.type ?? ""));
-  const hasDialog = components.some((c) => DIALOG_TYPES.has(c.type ?? ""));
-  if (kind === "catalog" && mainAt >= 0) {
-    const grid = order[mainAt];
-    if (!filterBefore(mainAt))
-      warnings.push(`no search or filter bar above ${label(grid)}: put a search input and a course/kind toggle in a row between the hero and the grid.`);
-    if (!hasDialog)
-      warnings.push('no detail sheet: a card click opens a ShadDialog (variant "sheet") with the full record.');
-  }
-  if (kind === "register" && mainAt >= 0) {
-    if (!filterBefore(mainAt))
-      warnings.push(`no filter row above ${label(order[mainAt])}: a register is read through a period or status toggle and a select.`);
-    if (!hasDialog)
-      warnings.push('no detail sheet: a row click opens a ShadDialog (variant "sheet") with the record and its actions.');
-  }
-  if (kind === "personal-overview") {
-    if (!has("ShadSummaryStrip"))
-      warnings.push("no ShadSummaryStrip under the hero: the period's four key figures go in one strip.");
-    const progress = order.some((c) => c.type === "ShadProgress" || c.type === "ShadCircularProgress" || c.type === "ShadStat" && valueOf(c.properties, "progress") !== void 0);
-    if (!progress)
-      warnings.push("no progress grid: show each goal or budget as a ShadStat with progress (or ShadProgress) against its limit.");
-  }
-  if (kind === "queue-board" && !has("ShadSummaryStrip")) {
-    warnings.push("no ShadSummaryStrip: a queue opens with its counts (open, overdue, unassigned, done this week) in one strip.");
-  }
-  for (const chart of order.filter((c) => isChart(c.type)))
-    warnings.push(...chartColourWarnings(chart));
-  warnings.push(...headerActionWarnings(order, components));
-  if (order.length > SHORT_LIST_MAX) {
-    warnings.push(`${order.length} components outside dialogs: a ${kind} page reads best with a short list (the blueprint has about 10 to 20); merge repeated tiles into one bound component and drop sections the page does not need.`);
-  }
-  return warnings.map((w) => prefix + w);
 }
 function invalidPlannedGeneratedPrimaryKeySeeds(columns, rows) {
   const primaryKeys = columns.some((column) => column.primaryKey) ? columns.filter((column) => column.primaryKey) : [{ name: "id", type: "serial", primaryKey: true }];
@@ -3374,6 +2330,47 @@ function lintUniformSeedMetrics(tableName, rows) {
     }
   }
   return warnings;
+}
+function normalizePlannedLayouts(component) {
+  const warnings = [];
+  const label2 = `${component.type ?? "component"} "${component.name ?? "?"}"`;
+  const targets = [];
+  if (component.layout)
+    targets.push(["layout", component.layout]);
+  if (component.layouts?.desktop)
+    targets.push(["desktop", component.layouts.desktop]);
+  if (component.layouts?.mobile)
+    targets.push(["mobile", component.layouts.mobile]);
+  if (!targets.length)
+    return { component, warnings };
+  const textMinimum = component.type === "Text" ? minimumTextHeight(component) : void 0;
+  const schema = component.type ? getComponentSchema(component.type) : void 0;
+  const compactHeight = schema?.renderingHints?.compactFormHeight ? schema?.defaultSize?.height : void 0;
+  const fixed = /* @__PURE__ */ new Map();
+  for (const [name, rect] of targets) {
+    if (typeof rect.height !== "number")
+      continue;
+    if (textMinimum !== void 0 && rect.height < textMinimum) {
+      fixed.set(name, { ...rect, height: textMinimum });
+      warnings.push(`${label2}: raised ${name} height ${rect.height}px to ${textMinimum}px so one line of text renders.`);
+    } else if (compactHeight !== void 0 && rect.height > compactHeight) {
+      fixed.set(name, { ...rect, height: compactHeight });
+      warnings.push(`${label2}: lowered ${name} height ${rect.height}px to the standard single-line ${compactHeight}px (oversizing does not enlarge the value text; a top label renders outside the box).`);
+    }
+  }
+  if (!fixed.size)
+    return { component, warnings };
+  const next = { ...component };
+  if (fixed.has("layout"))
+    next.layout = fixed.get("layout");
+  if (fixed.has("desktop") || fixed.has("mobile")) {
+    next.layouts = {
+      ...component.layouts,
+      ...fixed.has("desktop") ? { desktop: fixed.get("desktop") } : {},
+      ...fixed.has("mobile") ? { mobile: fixed.get("mobile") } : {}
+    };
+  }
+  return { component: next, warnings };
 }
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -3884,7 +2881,7 @@ function lintPlannedApp(spec, existingSummary, options = {}) {
         queryId: source.id,
         refreshQueryIds: resolveRefs(lifecycle.refreshQueryRefs, queryRefs, errors, `Lifecycle[${index}] refresh query`),
         clearComponentIds: resolveRefs(lifecycle.clearComponentRefs, componentRefs, errors, `Lifecycle[${index}] clear component`),
-        closeModalId: resolveRef(lifecycle.closeModalRef, componentRefs, errors, `Lifecycle[${index}] modal`),
+        closeModalId: resolveRef2(lifecycle.closeModalRef, componentRefs, errors, `Lifecycle[${index}] modal`),
         successAlert: lifecycle.successAlert,
         failureAlert: lifecycle.failureAlert,
         beforeRefreshActions: lifecycle.beforeRefreshActions?.map((action, actionIndex) => resolveAction(action, queryRefs, pageRefs, componentRefs, errors, `Lifecycle[${index}] before refresh action[${actionIndex}]`)),
@@ -4033,7 +3030,7 @@ function resolveRefs(refs, map, errors, label2) {
     return [value.id];
   });
 }
-function resolveRef(ref, map, errors, label2) {
+function resolveRef2(ref, map, errors, label2) {
   if (!ref)
     return void 0;
   const value = map.get(ref);
@@ -4046,44 +3043,27 @@ function resolveRef(ref, map, errors, label2) {
 function slug(value) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "page";
 }
-function unique(values) {
+function unique2(values) {
   return [...new Set(values)];
 }
 function dropUnprefixedDuplicates(values) {
-  const distinct = unique(values);
+  const distinct = unique2(values);
   const stripped = new Set(distinct.map((value) => value.replace(/^Page "[^"]*": /, "")).filter((value, i) => value !== distinct[i]));
   return distinct.filter((value) => value.startsWith('Page "') || !stripped.has(value));
 }
 export {
-  containsExactValue as A,
-  containsNamedBinding as B,
-  normalizePlannedLayouts as C,
-  materializeRequiredDefaultChildren as D,
-  persistedEventIds as E,
-  lintPlannedApp as a,
-  replaceFingerprint as b,
-  componentInputSchema as c,
-  danglingAfterReplace as d,
-  prepareQueryOptionsForWrite as e,
-  frozenAppRefusal as f,
-  peekAppPlan as g,
-  consumeAppPlan as h,
-  matchPlannedPage as i,
-  prepareComponentBatch as j,
-  replaceIds as k,
-  literalCanvasColor as l,
-  mapKeyRefusal as m,
-  expandQueryLifecycles as n,
-  navigationReorders as o,
+  prepareQueryOptionsForWrite as a,
+  persistedEventSpecs as b,
+  normalizePlannedLayouts as c,
+  materializeRequiredDefaultChildren as d,
+  expandQueryLifecycles as e,
+  polishFlexRows as f,
+  containsExactValue as g,
+  containsNamedBinding as h,
+  persistedEventIds as i,
+  lintPlannedApp as l,
+  matchPlannedPage as m,
+  navigationReorders as n,
   pagesUsingQuery as p,
-  persistedEventSpecs as q,
-  replaceView as r,
-  storeAppPlan as s,
-  getComponentCatalogTool as t,
-  updateComponentsTool as u,
-  validateEvents as v,
-  projectJavascriptRuntime as w,
-  projectAppSettings as x,
-  compactTheme as y,
-  pageSettingProperties as z
+  validateEvents as v
 };

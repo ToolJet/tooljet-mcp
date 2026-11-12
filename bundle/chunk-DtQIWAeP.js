@@ -5726,6 +5726,7 @@ export {
   assertWorkflowJavaScript as aC,
   controlFlowEdges as aD,
   definition as aE,
+  nodeSchema as aF,
   newAsyncArrowScope as aa,
   setInnerComments as ab,
   newArrowHeadScope as ac,

@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
-import { i as fail, o as ok, u as assessQueryRead, x as resolvedReadRefusal, y as resolveStaticBindings, z as sqlConnectorPath, G as GUI_LIST_ROWS_KEYS, A as applyResolvedBindings, B as connectorLabel, S as SQL_DIALECT } from "./chunk-CLUrdGoT.js";
-import { ax as external_exports } from "./chunk-Dakrk_ob.js";
+import { f as fail, o as ok, j as assessQueryRead, k as resolvedReadRefusal, m as resolveStaticBindings, s as sqlConnectorPath, G as GUI_LIST_ROWS_KEYS, p as applyResolvedBindings, q as connectorLabel, S as SQL_DIALECT } from "./chunk-4n_covov.js";
+import { ax as external_exports } from "./chunk-DtQIWAeP.js";
 import { execFile, execFileSync } from "node:child_process";
 import { promisify } from "node:util";
 import { AsyncLocalStorage } from "node:async_hooks";
@@ -1332,7 +1332,7 @@ function codeAppReadFilesTool(context) {
   return {
     name: "code_app_read_files",
     title: "Read Code Mode Files",
-    annotations: { readOnlyHint: true, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
     description: "Read a Code mode project. Without paths, lists its files; with paths, returns their contents (app.json, frontend/...). Edits saved in the ToolJet Code panel since the last install are brought into the project first." + USER_WORDS,
     inputSchema: { app_id: APP_ID, name: PROJECT_NAME, paths: external_exports.array(external_exports.string()).optional() },
     handler: inScope(context, async (args) => {
@@ -4468,7 +4468,7 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
   return {
     name: "verify_page_render",
     title: "Verify Page Render",
-    annotations: { readOnlyHint: true, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
     description: 'Render audit of one page or every page of an app in a headless browser (1600x900 unless viewport_width is set; 1280 with route), after the app is built. On an app in Code mode it checks inside the app: sideways scrolling, content cut off at the right edge, an empty app and placeholder text; pass route to open one route of it and viewport_width (375, 768, 1280) to check each width. An app in Code mode also gets an axe-core accessibility run (WCAG 2 A/AA; `accessibility` lists violations by impact) and a screenshot path. Reports what lint cannot see: Html/Text widgets that render empty (a multi-line binding, a broken expression), placeholder text a customer would read as a bug ("undefined", "NaN", "Invalid date", "Tab 1", "Select..", a literal \\n), text clipped inside its box, and components overlapping each other. Run it once per page before the handoff and review every finding; report unverified behavior explicitly. Opens the version being edited with the builder\'s ToolJet session, or a separate app-scoped OAuth viewer credential (limited to the viewer origin), so a private app is audited without being made public. Only saved, static, bounded read queries may run; writes, dynamic queries and queries requiring confirmation are blocked and reported as unverified. WebSockets to the ToolJet origin pass; any other WebSocket is closed and reported as a `blocked_socket` finding, which does not make `ok` false. Returns { pages: [{ page, url, widgets, findings: [{ kind, component, detail }] }], ok }.',
     inputSchema: {
       app_id: external_exports.string().regex(/^[A-Za-z0-9_-]+$/),
