@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
-import { T as TOOLJET_DB_DATA_TYPES, q as normalizeType, t as invalidSeedTimestamps, u as COMPONENT_FX_GUIDANCE } from "./chunk-C5ROU7BA.js";
-import { c as componentInputSchema, f as frozenAppRefusal, m as mapKeyRefusal, p as pagesUsingQuery, r as replaceView, d as danglingAfterReplace, l as literalCanvasColor, a as lintPlannedApp, s as storeAppPlan, b as replaceFingerprint, e as prepareQueryOptionsForWrite } from "./chunk-CY5AE9Z_.js";
+import { T as TOOLJET_DB_DATA_TYPES, q as normalizeType, t as invalidSeedTimestamps, u as COMPONENT_FX_GUIDANCE } from "./chunk-B_ahRxFS.js";
+import { c as componentInputSchema, f as frozenAppRefusal, m as mapKeyRefusal, p as pagesUsingQuery, r as replaceView, d as danglingAfterReplace, l as literalCanvasColor, a as lintPlannedApp, s as storeAppPlan, b as replaceFingerprint, e as prepareQueryOptionsForWrite } from "./chunk-BKP8K65Y.js";
 import { i as fail, s as arithmeticWriteWarning, o as ok, e as bindingSpans } from "./chunk-CLUrdGoT.js";
 import { K as pageIconSchema, r as resolveComponentLibrary, L as componentLibraryWarnings, M as namespaceReads } from "./chunk-CY9u3IK5.js";
 import { m as suggestedHtmlHeight } from "./chunk-DzndRVyJ.js";
@@ -3566,8 +3566,23 @@ A call that works: ${exampleCall(args, summary, codeApp)}`);
           }
         }
         const failed = results.filter((r) => r.error);
+        const failures = failed.map((r) => `${r.resource.name ?? r.resource.id}: ${r.error}`).join("; ");
         if (failed.length === results.length) {
-          throw new Error(failed.map((r) => `${r.resource.name ?? r.resource.id}: ${r.error}`).join("; ") + (toGrant.length ? " No access to the app was given." : ""));
+          throw new Error(failures + (toGrant.length ? " No access to the app was given." : ""));
+        }
+        if (failed.length) {
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                error: `${failed.length} of ${results.length} limits were not set: ${failures}.` + (toGrant.length ? " No access to the app was given." : "") + " Set the failed ones again; the others are in place.",
+                app_id: args.app_id,
+                applied: results.filter((r) => !r.error),
+                failed
+              })
+            }],
+            isError: true
+          };
         }
         let granted = [];
         if (toGrant.length) {
@@ -3583,7 +3598,7 @@ A call that works: ${exampleCall(args, summary, codeApp)}`);
           ...one ? results[0] : { results },
           ...granted.length ? { granted_app_access: granted, note: grantNote } : {}
         };
-        return ok(failed.length ? { ...body, warning: `${failed.length} of ${results.length} limits were not set; see each error.` } : body);
+        return ok(body);
       } catch (error) {
         return fail(error);
       }

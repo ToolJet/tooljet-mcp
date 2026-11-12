@@ -271,7 +271,7 @@ function buildSummary(output) {
 var run = promisify(execFile);
 var buildServiceUrl = () => process.env.MCP_CODE_BUILD_WORKER_URL?.trim().replace(/\/+$/, "") || void 0;
 var POLL_MS2 = Number(process.env.MCP_CODE_BUILD_WORKER_POLL_MS ?? 1500);
-var DEADLINE_MS = Number(process.env.MCP_CODE_BUILD_WORKER_TIMEOUT_MS ?? 10 * 6e4);
+var deadlineMs = () => Number(process.env.MCP_CODE_BUILD_WORKER_TIMEOUT_MS ?? 10 * 6e4);
 var strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "");
 async function packProject(dir) {
   const { stdout } = await run("tar", ["-czf", "-", "--exclude=node_modules", "--exclude=frontend/dist", "-C", dir, "app.json", "frontend"], { encoding: "buffer", maxBuffer: 64 * 1024 * 1024, env: { PATH: process.env.PATH ?? "/usr/bin:/bin", COPYFILE_DISABLE: "1" } });
@@ -284,6 +284,10 @@ async function buildInService(dir, env, fetchImpl = fetch) {
   const token = process.env.MCP_CODE_BUILD_WORKER_TOKEN ?? "";
   const headers = { authorization: `Bearer ${token}` };
   const started = Date.now();
+  const deadline = started + deadlineMs();
+  const bounded = (init = {}) => ({ ...init, signal: AbortSignal.timeout(Math.max(1, deadline - Date.now())) });
+  const late = () => `the build did not finish in ${Math.max(1, Math.round(deadlineMs() / 6e4))} minutes`;
+  const reason = (error) => error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError") ? late() : error instanceof Error ? error.message : String(error);
   const unreachable = (detail) => ({
     code: 1,
     ms: Date.now() - started,
@@ -292,49 +296,83 @@ async function buildInService(dir, env, fetchImpl = fetch) {
   let id;
   try {
     const body = await packProject(dir);
-    const res = await fetchImpl(`${base}/jobs?env=${env}`, { method: "POST", headers: { ...headers, "content-type": "application/gzip" }, body: new Uint8Array(body) });
+    const res = await fetchImpl(`${base}/jobs?env=${env}`, bounded({ method: "POST", headers: { ...headers, "content-type": "application/gzip" }, body: new Uint8Array(body) }));
     if (res.status !== 202)
       return unreachable(`HTTP ${res.status} ${(await res.text()).trim().slice(0, 200)}`);
     id = (await res.json()).id;
   } catch (error) {
-    return unreachable(error instanceof Error ? error.message : String(error));
+    return unreachable(reason(error));
   }
   let job;
   try {
     for (; ; ) {
-      const res = await fetchImpl(`${base}/jobs/${id}`, { headers });
+      const res = await fetchImpl(`${base}/jobs/${id}`, bounded({ headers }));
       if (!res.ok)
         return unreachable(`HTTP ${res.status} reading build ${id}`);
       job = await res.json();
       if (job.status === "done" || job.status === "failed")
         break;
-      if (Date.now() - started > DEADLINE_MS)
-        return unreachable(`build ${id} did not finish in ${Math.round(DEADLINE_MS / 6e4)} minutes`);
+      if (Date.now() + POLL_MS2 > deadline)
+        return unreachable(`build ${id}: ${late()}`);
       await new Promise((resolve3) => setTimeout(resolve3, POLL_MS2));
     }
   } catch (error) {
-    return unreachable(error instanceof Error ? error.message : String(error));
+    return unreachable(reason(error));
   } finally {
     void fetchImpl(`${base}/jobs/${id}`, { method: "DELETE", headers }).catch(() => void 0);
   }
   const output = strip([job.output ?? "", job.error ? `
 ${job.error}` : ""].join("")).trim();
   const location = [job.location?.CLOUDFLARE_REGION, job.location?.CLOUDFLARE_LOCATION].filter(Boolean).join(" ") || void 0;
-  if (job.status === "done" && job.bundleTgzBase64) {
-    writeDist(join(dir, "frontend", "dist"), Buffer.from(job.bundleTgzBase64, "base64"));
+  const failedCode = job.exitCode && job.exitCode > 0 ? job.exitCode : 1;
+  if (job.status !== "done" || (job.exitCode ?? 0) !== 0)
+    return { code: failedCode, output, location, ms: Date.now() - started };
+  const refused = job.bundleTgzBase64 ? writeDist(join(dir, "frontend"), Buffer.from(job.bundleTgzBase64, "base64")) : "the build service sent no bundle";
+  if (refused) {
+    return { code: failedCode, output: `${output}
+${refused}. The previous build was kept; try the build again.`.trim(), location, ms: Date.now() - started };
   }
-  return { code: job.status === "done" ? 0 : job.exitCode && job.exitCode > 0 ? job.exitCode : 1, output, location, ms: Date.now() - started };
+  return { code: 0, output, location, ms: Date.now() - started };
 }
-function writeDist(dist, tgz) {
+var ENTRY = /^[-d]/;
+function irregularEntries(root2, at = root2) {
+  return readdirSync(at, { withFileTypes: true }).flatMap((entry) => {
+    const full = join(at, entry.name);
+    const stat = lstatSync(full);
+    if (stat.isDirectory())
+      return irregularEntries(root2, full);
+    return stat.isFile() ? [] : [full.slice(root2.length + 1)];
+  });
+}
+function writeDist(frontend, tgz) {
   const scratch = mkdtempSync(join(tmpdir(), "tj-dist-"));
+  const incoming = mkdtempSync(join(frontend, ".dist-incoming-"));
   try {
     const file = join(scratch, "bundle.tgz");
     writeFileSync(file, tgz);
+    let listing;
+    try {
+      listing = execFileSync("tar", ["-tvzf", file], { stdio: ["ignore", "pipe", "pipe"], maxBuffer: 64 * 1024 * 1024 }).toString();
+    } catch {
+      return "the bundle from the build service could not be read";
+    }
+    const lines = listing.split("\n").filter(Boolean);
+    const bad = lines.filter((line) => !ENTRY.test(line) || / link to | -> /.test(line));
+    if (bad.length)
+      return `the bundle from the build service holds ${bad.length} link(s) or special file(s), which are refused (${bad[0].trim().slice(0, 160)})`;
+    if (!lines.some((line) => line.startsWith("-")))
+      return "the bundle from the build service is empty";
+    execFileSync("tar", ["-xzf", file, "-C", incoming, "--no-same-owner"], { stdio: "pipe" });
+    const irregular = irregularEntries(incoming);
+    if (irregular.length)
+      return `the bundle from the build service holds links or special files (${irregular.slice(0, 3).join(", ")}), which are refused`;
+    const dist = join(frontend, "dist");
     rmSync(dist, { recursive: true, force: true });
-    mkdirSync(dist, { recursive: true });
-    execFileSync("tar", ["-xzf", file, "-C", dist, "--no-same-owner"], { stdio: "pipe" });
+    renameSync(incoming, dist);
+    return void 0;
   } finally {
     rmSync(scratch, { recursive: true, force: true });
+    rmSync(incoming, { recursive: true, force: true });
   }
 }
 var DEFAULT_REGISTRY = "https://registry.npmjs.org/";
