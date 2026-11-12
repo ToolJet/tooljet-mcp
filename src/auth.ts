@@ -32,6 +32,7 @@ export interface Auth {
   /** Switch the ACTIVE workspace for all subsequent calls; re-issues the session cookie. */
   switchWorkspace(workspaceId: string): Promise<Workspace>;
   /** The current session token (logging in first), for the render audit's viewer browser. */
+  /** A session for the viewer: pinned to `appId` when given (the server's read-only render-check session). */
   viewerSession?(appId?: string): Promise<ViewerSession | undefined>;
 }
 
@@ -233,6 +234,48 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
     return current;
   }
 
+  const pinnedSessions = new Map<string, string>();
+  /** The relay's render session (in-product builds), until shortly before it expires. */
+  let renderSession: { token: string; appId?: string; expiresAt: number } | undefined;
+  const RENDER_SESSION_MARGIN_MS = 60_000;
+
+  /**
+   * In-product builds run on the ai_builder session the relay supplies (TOOLJET_SESSION_TOKEN, no PAT), whose PAT-scope
+   * ceiling blocks the viewer's boot reads, so every render check of a Code mode page came back unreachable (Reading
+   * log, 2026-11-02). The server mints a short-lived, read-only, viewer-only session pinned to the build's own app
+   * (POST /api/personal-access-tokens/ai-render-session -> { authToken, expiresAt, appId }). Undefined when it cannot:
+   * an older server, or a session that is not an ai_builder one; the caller then falls back. Sent with the plain fetch,
+   * not authedFetch: a 401 here must not clear the build's own session. The token is never logged.
+   */
+  async function aiRenderSession(appId?: string): Promise<string | undefined> {
+    if (
+      renderSession &&
+      renderSession.expiresAt - RENDER_SESSION_MARGIN_MS > Date.now() &&
+      (!appId || !renderSession.appId || renderSession.appId === appId)
+    )
+      return renderSession.token;
+    try {
+      if (!token) await login();
+      const res = await rawFetch('/api/personal-access-tokens/ai-render-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(appId ? { appId } : {}),
+      });
+      if (!res.ok) return undefined;
+      const body = (await res.json()) as { authToken?: string; expiresAt?: string | number; appId?: string };
+      if (!body.authToken) return undefined;
+      const expiresAt = typeof body.expiresAt === 'number' ? body.expiresAt : Date.parse(String(body.expiresAt ?? ''));
+      renderSession = {
+        token: body.authToken,
+        appId: body.appId,
+        expiresAt: Number.isFinite(expiresAt) ? expiresAt : Date.now() + 5 * 60_000,
+      };
+      return body.authToken;
+    } catch {
+      return undefined;
+    }
+  }
+
   async function viewerSession(appId?: string): Promise<ViewerSession | undefined> {
     if (config.isOAuthDelegation) {
       if (!appId || !/^[A-Za-z0-9_-]+$/.test(appId)) throw new Error('An app is required for OAuth render verification');
@@ -248,6 +291,34 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
       }
       return { cookieName: 'tj_oauth_viewer', token: body.access_token,
         origin: new URL(config.viewerUrl || config.appUrl).origin, expiresAt: Math.floor(Date.now() / 1000) + body.expires_in };
+    }
+    if (config.sessionToken) {
+      const rendered = await aiRenderSession(appId);
+      if (rendered) return rendered;
+      // Never the build's own session: rendered code runs in that browser.
+      throw new Error('The render check could not get its own read-only session.');
+    }
+    // A workspace token's own session is the automation session, whose ceiling excludes the viewer's boot reads
+    // (session, app access, environments): the viewer then shows "App not found". The server mints a read-only
+    // session pinned to one app for exactly this (personal-access-tokens AGENTS.md, "app-pinned render check").
+    if (appId && config.pat && !config.sessionToken) {
+      const cached = pinnedSessions.get(appId);
+      if (cached) return cached;
+      const res = await fetchImpl(`${config.apiUrl}/api/personal-access-tokens/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.pat}` },
+        body: JSON.stringify({ appId }),
+      });
+      recordHttpResponse(res);
+      if (res.ok) {
+        const body = (await res.json()) as { authToken?: string };
+        if (body.authToken) {
+          pinnedSessions.set(appId, body.authToken);
+          return body.authToken;
+        }
+      }
+      // Never the token's automation session: rendered code runs in that browser.
+      throw new Error('The render check could not get its own read-only session.');
     }
     if (!token) await login();
     return token;

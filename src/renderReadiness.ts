@@ -85,7 +85,7 @@ export function lintTextFormat(c: ReadinessComponent): string[] {
   ];
 }
 
-const WIDTH_EXEMPT = new Set(['Modal', 'ModalV2', 'Drawer']);
+const WIDTH_EXEMPT = new Set(['Modal', 'ModalV2', 'ShadDialog', 'Drawer']);
 
 /** Widths and lefts are columns on a 43-column grid. A value past the grid is pixels by mistake. */
 export function lintOversizedWidths(components: ReadinessComponent[]): string[] {

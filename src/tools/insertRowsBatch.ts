@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { seedPictureWarnings } from '../seedPictureLint.js';
 
 const seedSchema = z.object({
   table_name: z.string(),
@@ -29,9 +30,12 @@ export function insertRowsBatchTool(client: ToolJetClient): ToolDef {
         const results = await client.insertRowsBatch({
           tables: args.tables.map((table) => ({ tableName: table.table_name, rows: table.rows })),
         });
+        // Rows that share a picture or carry a drawn data: image read as placeholders; the insert still happens.
+        const warnings = seedPictureWarnings(args.tables);
         return ok({
           tables: results,
           processed_rows: results.reduce((total, result) => total + result.processed_rows, 0),
+          ...(warnings.length ? { warnings } : {}),
         });
       } catch (error) {
         return fail(error);

@@ -21,3 +21,11 @@ describe('a catalog type that is nearly right', () => {
     expect(result.did_you_mean.some((type: string) => /^Date/.test(type))).toBe(true);
   });
 });
+
+describe('a guessed pack type', () => {
+  it('lists every pack type, so a build can find the chart it needs (ShadZZZ was a probe for that list)', async () => {
+    const result = await read('ShadCard');
+    expect(result.pack_types).toEqual(expect.arrayContaining(['ShadFunnelChart', 'ShadComboChart', 'ShadScatterChart', 'ShadStat']));
+    expect((await read('DatePick')).pack_types).toBeUndefined();
+  });
+});

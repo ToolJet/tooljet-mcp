@@ -71,7 +71,7 @@ Use `add_table_column` to evolve a ToolJet DB table in place. Destructive delete
 - **Write operations** (for edit/create flows) use indexed-object option shapes:
   - Create: `{ "operation": "create_row", "table_id": "<id>", "create_row": { "0": { "column": "title", "value": "{{...}}" }, "1": { "column": "status", "value": "Open" } } }`
   - Update: `{ "operation": "update_rows", "table_id": "<id>", "update_rows": { "where_filters": { "0": { "column": "id", "operator": "eq", "value": "{{...}}" } }, "columns": { "0": { "column": "status", "value": "{{...}}" } } } }`
-  - Delete: `{ "operation": "delete_rows", "table_id": "<id>", "delete_rows": { "where_filters": { "0": { "column": "id", "operator": "eq", "value": "{{...}}" } } } }`
+  - Delete: `{ "operation": "delete_rows", "table_id": "<id>", "delete_rows": { "where_filters": { "0": { "column": "id", "operator": "eq", "value": "{{...}}" } }, "limit": "" } }` (`"limit": ""` deletes every matching row; with no limit ToolJet applies limit 1 with no order, which the production database refuses)
 - After a write succeeds, re-run list/count queries from the mutation's `onDataQuerySuccess` event.
 
 ### MongoDB writes to embedded arrays (`kind: "mongodb"`)

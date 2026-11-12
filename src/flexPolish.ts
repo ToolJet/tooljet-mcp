@@ -1,0 +1,849 @@
+/* Layout polish for FlexContainer rows in a planned batch: mechanical alignment fixes a designer would always make,
+   applied before lint so the stored plan carries them (lint and apply run the same pass). Each fix is reported as a
+   warning naming the row, so the model sees what changed; nothing here changes what the page shows, only how it
+   lines up.
+
+   - A row of top-labelled fields with a badge, text or button beside them: the row's children align on their last
+     text line (alignItems "last baseline"), so the badge, the note and the button's label sit level with the field's
+     value instead of centring on label + field.
+   - A row of two or more cards (surfaced FlexContainers): alignItems stretch, so the cards share one height.
+   - A header row whose action buttons come before the title: the actions move after the title block (to the right). */
+import type { ComponentSpec } from './tooljetClient.js';
+import { unifyChartAccents } from './chartAccentLint.js';
+import { packTableLook } from './packTableLook.js';
+import { fitFlexHeights } from './flexFit.js';
+import { fitPackHeights, reportPackHeights } from './packFit.js';
+
+const FIELD_TYPES = new Set([
+  'ShadInput',
+  'ShadSelect',
+  'ShadDatePicker',
+  'ShadDateTimePicker',
+  'ShadTimePicker',
+  'ShadCombobox',
+  'ShadMultiselect',
+  'ShadNumberInput',
+  'ShadCurrencyInput',
+  'ShadPhoneInput',
+  'ShadPasswordInput',
+  'ShadTagsInput',
+  'ShadColorPicker',
+  'ShadSlider',
+]);
+const ACTION_TYPES = new Set(['ShadButton', 'ShadButtonGroup', 'ShadDropdownMenu']);
+// One-line widgets that may sit beside fields in a toolbar row.
+const INLINE_TYPES = new Set([
+  ...FIELD_TYPES,
+  ...ACTION_TYPES,
+  'ShadBadge',
+  'ShadText',
+  'ShadToggleGroup',
+  'ShadSwitch',
+  'ShadCheckbox',
+  'ShadLink',
+  'ShadIcon',
+  'ShadTags',
+  'ShadSpinner',
+]);
+
+const valueOf = (entry: unknown): unknown =>
+  entry && typeof entry === 'object' && !Array.isArray(entry) && 'value' in (entry as Record<string, unknown>)
+    ? (entry as Record<string, unknown>).value
+    : entry;
+const text = (entry: unknown): string => {
+  const v = valueOf(entry);
+  return typeof v === 'string' ? v.trim() : typeof v === 'number' ? String(v) : '';
+};
+const props = (component: ComponentSpec): Record<string, unknown> =>
+  component.properties && typeof component.properties === 'object' ? component.properties : {};
+const prop = (component: ComponentSpec, key: string): unknown => props(component)[key];
+const styleText = (component: ComponentSpec, key: string): string =>
+  text(component.styles && typeof component.styles === 'object' ? component.styles[key] : undefined);
+const refOf = (component: ComponentSpec): string | undefined => component.clientRef ?? component.name;
+
+const setProp = (component: ComponentSpec, key: string, value: unknown): void => {
+  const current = props(component)[key];
+  component.properties = {
+    ...props(component),
+    [key]:
+      current && typeof current === 'object' && !Array.isArray(current) ? { ...(current as object), value } : { value },
+  };
+};
+
+const isRow = (component: ComponentSpec): boolean =>
+  component.type === 'FlexContainer' && text(prop(component, 'direction')) === 'row';
+const isLabelledField = (component: ComponentSpec): boolean =>
+  FIELD_TYPES.has(component.type) && text(prop(component, 'label')) !== '';
+const isSurface = (component: ComponentSpec): boolean => {
+  if (component.type !== 'FlexContainer') return false;
+  if (text(prop(component, 'cardStyle')) === 'shadcnCard') return true;
+  const background = styleText(component, 'backgroundColor').toLowerCase();
+  return background !== '' && background !== 'transparent' && !/^#[0-9a-f]{6}00$/.test(background);
+};
+const isTitle = (component: ComponentSpec, children: (ref: string) => ComponentSpec[]): boolean =>
+  component.type === 'ShadHeading' ||
+  (component.type === 'FlexContainer' &&
+    !isRow(component) &&
+    children(refOf(component) ?? '').some((inner) => inner.type === 'ShadHeading'));
+
+// One line of heading text: font size by level (ui.jsx HEADING) times an average glyph width, plus a little slack.
+const HEADING_PX: Record<string, number> = { h1: 36, h2: 30, h3: 24, h4: 20 };
+const headingLineWidth = (component: ComponentSpec): number | null => {
+  const raw = text(prop(component, 'text'));
+  if (!raw || raw.includes('{{')) return null;
+  const size = HEADING_PX[text(prop(component, 'level'))] ?? HEADING_PX.h2;
+  return Math.ceil(raw.length * size * (size >= 36 ? 0.6 : 0.56) + 8);
+};
+type FlexRect = { widthPx?: number; fillWidth?: boolean };
+const fixedRects = (component: ComponentSpec): FlexRect[] =>
+  [component.layout, component.layouts?.desktop].filter(
+    (rect): rect is FlexRect & NonNullable<ComponentSpec['layout']> =>
+      !!rect && (rect as FlexRect).fillWidth === false && typeof (rect as FlexRect).widthPx === 'number'
+  ) as FlexRect[];
+const META_TYPES = new Set(['ShadText', 'ShadBadge', 'ShadTags']);
+/** Text as it will read: a binding becomes the words quoted in it plus a short number for each value it computes
+ *  ("{{open + ' active · ' + done + ' finished'}}" reads "00 active · 00 finished"), or four characters without words. */
+const shownText = (raw: string): string =>
+  raw.replace(/\{\{([\s\S]*?)\}\}/g, (_, code: string) => {
+    const words = [...code.matchAll(/'([^']*)'|"([^"]*)"|`([^`$]*)`/g)].map((m) => m[1] ?? m[2] ?? m[3] ?? '');
+    if (!words.length) return '0000';
+    const values = code.split(/'[^']*'|"[^"]*"|`[^`$]*`/).filter((part) => /[A-Za-z0-9_)\]]/.test(part)).length;
+    return words.join('') + '00'.repeat(Math.max(1, values));
+  });
+
+export interface FlexPolishResult {
+  components: ComponentSpec[];
+  warnings: string[];
+}
+
+/** The polish pass over one page's planned components (same-batch children, parented by parentRef). Never throws;
+ *  returns a new array (components it changes are copied). */
+/** The padding a page-wide root container keeps on every side, so content never runs to the window's edge. */
+const PAGE_MARGIN = 24;
+/** UI 2.0 fields that draw their label above the box, inside their own height. */
+const LABELLED_FIELD_TYPES = new Set(['ShadInput', 'ShadSelect', 'ShadMultiSelect', 'ShadCombobox', 'ShadCurrencyInput',
+  'ShadNumberInput', 'ShadDatePicker', 'ShadDateRangePicker', 'ShadTimePicker', 'ShadPhoneInput', 'ShadEmailInput', 'ShadPasswordInput']);
+
+export function polishFlexRows(input: ComponentSpec[]): FlexPolishResult {
+  const warnings: string[] = [];
+  if (!Array.isArray(input) || !input.length) return { components: Array.isArray(input) ? [...input] : [], warnings };
+  const components = input.map((component) =>
+    component && typeof component === 'object'
+      ? {
+          ...component,
+          properties: { ...props(component) },
+          ...(component.layout ? { layout: { ...component.layout } } : {}),
+          ...(component.layouts
+            ? {
+                layouts: {
+                  ...component.layouts,
+                  ...(component.layouts.desktop ? { desktop: { ...component.layouts.desktop } } : {}),
+                },
+              }
+            : {}),
+        }
+      : component
+  );
+  const childrenOf = (ref: string): ComponentSpec[] =>
+    components.filter((component) => component && component.parentRef === ref && !component.slotName);
+
+  // A top-level container holding nothing but dialogs is an empty band: dialogs draw nothing until opened, so the
+  // container showed as blank space above the page (a recipe book's "modalsHost", 80px, pushed the page down to 110px).
+  // The dialogs move to the page root, where dialogs belong, the container goes, and the top-level sections below it
+  // move up into the space it held. Only that space: a batch may add to a page whose other sections are not in it.
+  const DIALOG_TYPES = new Set(['ShadDialog', 'ModalV2', 'Modal']);
+  const isRootLevel = (c: ComponentSpec) => !c.parentRef && !(c as { parent?: unknown }).parent;
+  const topOf = (c: ComponentSpec) => Number(c.layout?.top ?? c.layouts?.desktop?.top);
+  for (const host of [...components]) {
+    if (!host || host.type !== 'FlexContainer' || !isRootLevel(host)) continue;
+    const ref = refOf(host);
+    const inner = components.filter((c) => c && c.parentRef === ref);
+    if (!inner.length || !inner.every((c) => DIALOG_TYPES.has(c.type))) continue;
+    inner.forEach((dialog) => {
+      delete dialog.parentRef;
+      delete (dialog as { slotName?: string }).slotName;
+    });
+    components.splice(components.indexOf(host), 1);
+    const hostTop = topOf(host);
+    const below = components.filter((c) => c && isRootLevel(c) && !DIALOG_TYPES.has(c.type) && topOf(c) > hostTop);
+    const nextTop = below.length ? Math.min(...below.map(topOf)) : NaN;
+    const lift = Number.isFinite(hostTop) && Number.isFinite(nextTop) ? nextTop - hostTop : 0;
+    if (lift > 0) {
+      below.forEach((c) => {
+        [c.layout, c.layouts?.desktop].forEach((rect) => {
+          if (rect && typeof rect.top === 'number') rect.top -= lift;
+        });
+      });
+    }
+    warnings.push(
+      `"${host.name}" held only dialogs, which draw nothing until opened, so it showed as an empty band; the dialogs now ` +
+        `sit at the page root, the container is gone${lift > 0 ? ` and the sections below moved up ${lift}px` : ''}.`
+    );
+  }
+
+  // A page's top-level FlexContainer grows with its content: a gym page's root fixed at 710px with dynamic height off
+  // clipped both cards and the table under them.
+  for (const root of components) {
+    if (!root || root.type !== 'FlexContainer' || root.parentRef || (root as { parent?: unknown }).parent) continue;
+    const dynamic = text(prop(root, 'dynamicHeight')).replace(/[{}\s]/g, '');
+    if (dynamic === 'true') continue;
+    setProp(root, 'dynamicHeight', '{{true}}'); // silent: it changes nothing the model must reconsider
+  }
+
+  // A page's top-level FlexContainer that spans the canvas keeps a page margin. Pages built as one root column at
+  // left 0, width 43 with padding 0 ran their hero, cards and tables flush against the navigation and the window (an
+  // expenses overview); the side-gutter lint judges only pages of three or more roots, so it never saw them.
+  for (const root of components) {
+    if (!root || root.type !== 'FlexContainer' || root.parentRef || (root as { parent?: unknown }).parent) continue;
+    const rect = root.layouts?.desktop ?? root.layout;
+    if (!rect || typeof rect.left !== 'number' || typeof rect.width !== 'number') continue;
+    // Page-wide (most of the 43 columns) and touching an edge; a small row at the edge is not a page's frame.
+    if (rect.width < 39 || (rect.left >= 2 && rect.left + rect.width <= 41)) continue;
+    // A band painted its own colour (an app header, a hero strip) is meant to run to the edge, and its rows carry their
+    // own padding: a forced 24px made an Ant Design top bar 100px tall (SkyLine, 2026-11-01).
+    const band = styleText(root, 'backgroundColor').toLowerCase();
+    if (band && band !== 'transparent' && !band.startsWith('var(--cc-appbackground')) continue;
+    // An unset padding is the FlexContainer's default, 12px.
+    const raw = text(prop(root, 'padding'));
+    const padding = raw === '' ? 12 : Number(raw) || 0;
+    if (padding >= PAGE_MARGIN) continue;
+    setProp(root, 'padding', PAGE_MARGIN); // silent: a margin, nothing the model must reconsider
+  }
+
+  const heightOf = (c: ComponentSpec): number => Number(c.layout?.height ?? c.layouts?.desktop?.height ?? NaN);
+
+  // A side sheet holding a row of two or more fields opens at the wide sheet size (640px): at the default 480px two
+  // fields side by side were cut off at the sheet's edge (a lead form, 2026-10-11).
+  for (const sheet of components) {
+    if (!sheet || sheet.type !== 'ShadDialog' || text(prop(sheet, 'variant')) !== 'sheet') continue;
+    if (['xl', 'fullscreen'].includes(text(prop(sheet, 'size')))) continue;
+    const descendants: ComponentSpec[] = [];
+    const queue = [refOf(sheet)];
+    while (queue.length && descendants.length < 400) {
+      const parent = queue.shift();
+      for (const c of components) {
+        if (c && parent && c.parentRef === parent) {
+          descendants.push(c);
+          queue.push(refOf(c));
+        }
+      }
+    }
+    const pairRow = descendants.find(
+      (c) => isRow(c) && components.filter((x) => x && x.parentRef === refOf(c) && FIELD_TYPES.has(x.type)).length >= 2
+    );
+    if (!pairRow) continue;
+    setProp(sheet, 'size', 'xl');
+    warnings.push(`Sheet "${sheet.name}" holds fields side by side ("${pairRow.name}"); it now opens at the wide size (xl, 640px).`);
+  }
+
+  for (const container of components) {
+    if (!container || !isRow(container)) continue;
+    const ref = refOf(container);
+    if (!ref) continue;
+    let children = childrenOf(ref);
+    const label0 = container.name ?? ref;
+
+    // 00. A titled card left empty with a lone widget placed right after it in the same row: the widget was meant to
+    //     be inside the card (a backlog chart parented to the row drew outside its empty "Open backlog trend" card).
+    children.forEach((card, i) => {
+      const next = children[i + 1];
+      if (!next || !isSurface(card) || !text(prop(card, 'cardTitle'))) return;
+      const cardRef = refOf(card);
+      if (!cardRef || childrenOf(cardRef).length) return;
+      if (next.type === 'FlexContainer' || ACTION_TYPES.has(next.type)) return;
+      next.parentRef = cardRef;
+      const order = valueOf(prop(container, 'childOrder'));
+      if (Array.isArray(order)) {
+        setProp(container, 'childOrder', order.filter((entry) => entry !== refOf(next) && entry !== next.name));
+      }
+      warnings.push(`"${next.name}" sat beside the empty card "${card.name}" in row "${label0}"; it is now inside the card.`);
+    });
+    children = childrenOf(ref);
+
+    // 0. A plain row is at least as tall as its tallest child plus its chrome (padding, the widget's 2px box padding
+    //    and the canvas border, 6px in all). The editor draws the authored height, so a 36px button in a 40px row
+    //    was clipped and its row scrolled by 2px under the pointer.
+    if (!isSurface(container) && !text(prop(container, 'cardTitle'))) {
+      const rects = [container.layout, container.layouts?.desktop].filter(
+        (rect): rect is NonNullable<ComponentSpec['layout']> => !!rect && typeof rect.height === 'number'
+      );
+      const tallest = Math.max(
+        0,
+        ...children.map((c) => Number(c.layout?.height ?? c.layouts?.desktop?.height ?? 0)).filter(Number.isFinite)
+      );
+      // An unset padding is the FlexContainer's default, 12px.
+      const rawPadding = text(prop(container, 'padding'));
+      const padding = rawPadding === '' ? 12 : Number(rawPadding) || 0;
+      const needed = tallest > 0 ? tallest + padding * 2 + 6 : 0;
+      if (needed && rects.length && rects.some((rect) => (rect.height as number) < needed)) {
+        rects.forEach((rect) => {
+          rect.height = Math.max(rect.height as number, needed);
+        });
+        warnings.push(`Row "${label0}" was shorter than its tallest child; its height is now ${needed}.`);
+      }
+    }
+    // A lone button in a row placed at its end or centre keeps its own width: filling, it drew at the left of the row.
+    const lone = children.length === 1 ? children[0] : undefined;
+    if (lone && lone.type === 'ShadButton' && ['flex-end', 'end', 'center'].includes(text(prop(container, 'justifyContent')))) {
+      const rects = [lone.layout, lone.layouts?.desktop].filter(
+        (rect): rect is NonNullable<ComponentSpec['layout']> => !!rect && (rect as FlexRect).fillWidth !== false
+      );
+      if (rects.length) {
+        const caption = text(prop(lone, 'text')) || text(prop(lone, 'label'));
+        const own = rects.map((rect) => (rect as FlexRect).widthPx).find((w) => typeof w === 'number' && w > 0);
+        const width = own ?? Math.max(96, Math.ceil(caption.length * 8 + (text(prop(lone, 'icon')) ? 64 : 40)));
+        rects.forEach((rect) => {
+          (rect as FlexRect).fillWidth = false;
+          (rect as FlexRect).widthPx = width;
+        });
+        warnings.push(`"${lone.name}" filled row "${label0}" and drew at its left; it now keeps its own width (${width}px).`);
+      }
+    }
+    if (children.length < 2) continue;
+
+    // 0a. Two or more children each drawn the row's full width (43 columns) were meant to share it: unfilled, each took
+    //     a whole line of a wrapping row and five KPI cards stacked down the first screen.
+    const fullWidth = children.filter((child) => {
+      const rect = child.layout ?? child.layouts?.desktop;
+      return rect && typeof rect.width === 'number' && rect.width >= 40 && (rect as FlexRect).fillWidth !== true &&
+        typeof (rect as FlexRect).widthPx !== 'number';
+    });
+    if (fullWidth.length >= 2) {
+      fullWidth.forEach((child) => {
+        [child.layout, child.layouts?.desktop].forEach((rect) => {
+          if (rect) (rect as FlexRect).fillWidth = true;
+        });
+      });
+      warnings.push(`Row "${label0}": ${fullWidth.length} children were each drawn full-width; they now share the row.`);
+    }
+
+    // 0b. A button beside other content keeps its own width: filling, it took half the row and drew at the left of
+    //     that half (a header's page action sat mid-header).
+    // A row of only buttons placed at its end, centre or spread (justifyContent) too: a filling button draws at the
+    // left of its box, so "Add recipe" sat at the left of a flex-end actions row.
+    const placed = ['flex-end', 'end', 'center', 'space-between', 'space-around', 'space-evenly'].includes(
+      text(prop(container, 'justifyContent'))
+    );
+    if (placed || children.some((child) => !ACTION_TYPES.has(child.type))) {
+      const hasTitle = children.some((c) => isTitle(c, childrenOf));
+      for (const child of children) {
+        // A button anywhere in a mixed row; a badge, tag or link beside a title (it filled and floated mid-header).
+        const inline = child.type === 'ShadButton' || (hasTitle && ['ShadBadge', 'ShadTags', 'ShadLink'].includes(child.type));
+        if (!inline) continue;
+        // A flex child fills unless it says fillWidth:false (flexContainer.utils resolveFlexChildSizing): an unset flag
+        // filled half a gym header and drew its button mid-header, even with widthPx set.
+        const rects = [child.layout, child.layouts?.desktop].filter(
+          (rect): rect is NonNullable<ComponentSpec['layout']> => !!rect && (rect as FlexRect).fillWidth !== false
+        );
+        if (!rects.length) continue;
+        const caption = text(prop(child, 'text')) || text(prop(child, 'label'));
+        const fitted =
+          child.type === 'ShadButton'
+            ? Math.max(96, Math.ceil(caption.length * 8 + (text(prop(child, 'icon')) ? 64 : 40)))
+            : Math.min(320, Math.max(48, Math.ceil(caption.length * 7 + 28)));
+        const own = rects.map((rect) => (rect as FlexRect).widthPx).find((w) => typeof w === 'number' && w > 0);
+        const width = own ?? fitted;
+        rects.forEach((rect) => {
+          (rect as FlexRect).fillWidth = false;
+          (rect as FlexRect).widthPx = width;
+        });
+        warnings.push(`"${child.name}" in row "${label0}" filled the row's width; it now keeps its own (${width}px).`);
+      }
+    }
+    // 0c. Headers with a title. A column of only buttons beside it is laid out as a row (a pets header stacked "Add a
+    //     pet" over "Record vaccination"). In a space-between header, a group of actions and short meta text keep their
+    //     own width and the title takes the rest: with all of them filling, the header split in halves and "Add recipe"
+    //     and "24 saved" sat mid-header.
+    if (children.some((c) => isTitle(c, childrenOf))) {
+      const buttonWidth = (button: ComponentSpec): number => {
+        const own = [button.layout, button.layouts?.desktop]
+          .map((rect) => (rect as FlexRect | undefined)?.widthPx)
+          .find((w) => typeof w === 'number' && w > 0);
+        if (own) return own;
+        const caption = text(prop(button, 'text')) || text(prop(button, 'label'));
+        return Math.max(96, Math.ceil(caption.length * 8 + (text(prop(button, 'icon')) ? 64 : 40)));
+      };
+      const actionGroup = (c: ComponentSpec): ComponentSpec[] | null => {
+        if (c.type !== 'FlexContainer' || isSurface(c)) return null;
+        const inner = childrenOf(refOf(c) ?? '');
+        return inner.length && inner.every((b) => ACTION_TYPES.has(b.type)) ? inner : null;
+      };
+      // A short status line or badge, at the width of its text (a binding reads as a few characters).
+      const metaWidth = (c: ComponentSpec): number | null => {
+        if (c.type !== 'ShadText' && c.type !== 'ShadBadge') return null;
+        const shown = shownText(text(prop(c, 'text')));
+        return shown.length <= 40 ? Math.min(320, Math.max(48, Math.ceil(shown.length * 7 + 28))) : null;
+      };
+      // An actions group that also carries a short status line ("21 active · 7 finished" beside "New task"): the
+      // to-do build's group filled half the header and its status line, filling the group, started mid-page.
+      const metaActionGroup = (c: ComponentSpec): ComponentSpec[] | null => {
+        if (c.type !== 'FlexContainer' || isSurface(c) || !isRow(c)) return null;
+        const inner = childrenOf(refOf(c) ?? '');
+        return inner.some((b) => ACTION_TYPES.has(b.type)) &&
+          inner.some((b) => !ACTION_TYPES.has(b.type)) &&
+          inner.every((b) => ACTION_TYPES.has(b.type) || metaWidth(b) !== null)
+          ? inner
+          : null;
+      };
+      for (const c of children) {
+        const inner = actionGroup(c);
+        // A group of buttons stays on one line: sized to its buttons, a few pixels of padding wrapped the last one onto
+        // a second line, where the group's fixed height clipped it to a coloured strip under the first.
+        if (inner && inner.length >= 2 && props(c).flexWrap === undefined) setProp(c, 'flexWrap', '{{false}}');
+        if (!inner || inner.length < 2 || isRow(c)) continue;
+        setProp(c, 'direction', 'row');
+        if (text(prop(c, 'gap')) === '') setProp(c, 'gap', 8);
+        warnings.push(`"${c.name}" stacked its ${inner.length} buttons beside a title; it now lays them out in a row.`);
+      }
+      const [first, ...rest] = children;
+      if (first && rest.length && isTitle(first, childrenOf) && text(prop(container, 'justifyContent')) === 'space-between') {
+        const fills = (c: ComponentSpec) =>
+          [c.layout, c.layouts?.desktop].filter(
+            (rect): rect is NonNullable<ComponentSpec['layout']> => !!rect && (rect as FlexRect).fillWidth !== false
+          );
+        for (const c of rest) {
+          const rects = fills(c);
+          if (!rects.length) continue;
+          let width: number | null = null;
+          const inner = actionGroup(c);
+          const mixed = inner ? null : metaActionGroup(c);
+          if (mixed) {
+            const rawGap = text(prop(c, 'gap'));
+            const gap = rawGap === '' ? 8 : Number(rawGap) || 0;
+            const rawPad = text(prop(c, 'padding'));
+            const pad = rawPad === '' ? 12 : Number(rawPad) || 0;
+            width =
+              mixed.reduce((sum, b) => sum + (ACTION_TYPES.has(b.type) ? buttonWidth(b) : metaWidth(b) ?? 0), 0) +
+              gap * (mixed.length - 1) + pad * 2 + 4;
+            for (const meta of mixed) {
+              const own = metaWidth(meta);
+              if (own === null) continue;
+              // Right-aligned in its box: a bound line's width is an estimate, and left-aligned the slack fell between
+              // the line and the button.
+              if (meta.type === 'ShadText' && ['', 'left'].includes(styleText(meta, 'textAlign'))) {
+                meta.styles = { ...(meta.styles ?? {}), textAlign: { value: 'right' } };
+              }
+              [meta.layout, meta.layouts?.desktop].forEach((rect) => {
+                if (!rect) return;
+                (rect as FlexRect).fillWidth = false;
+                (rect as FlexRect).widthPx = own;
+              });
+            }
+          } else if (inner) {
+            const rawGap = text(prop(c, 'gap'));
+            const gap = rawGap === '' ? 8 : Number(rawGap) || 0;
+            const rawPad = text(prop(c, 'padding'));
+            const pad = rawPad === '' ? 12 : Number(rawPad) || 0;
+            width = inner.reduce((sum, b) => sum + buttonWidth(b), 0) + gap * (inner.length - 1) + pad * 2 + 4;
+          } else if (c.type === 'ShadText') {
+            // A binding counts as a few characters ("{{rows.length}} saved" reads "24 saved").
+            const shown = shownText(text(prop(c, 'text')));
+            if (shown.length <= 40) width = Math.min(320, Math.max(48, Math.ceil(shown.length * 7 + 28)));
+          }
+          if (width === null) continue;
+          const own = width;
+          rects.forEach((rect) => {
+            (rect as FlexRect).fillWidth = false;
+            (rect as FlexRect).widthPx = own;
+          });
+          warnings.push(`"${c.name}" in header "${label0}" filled half the header; it now keeps its own width (${own}px).`);
+        }
+        const titleRects = [first.layout, first.layouts?.desktop].filter(
+          // A title the build sized itself (fillWidth:false) keeps its width; space-between still puts the rest right.
+          (rect): rect is NonNullable<ComponentSpec['layout']> => !!rect && (rect as FlexRect).fillWidth === undefined
+        );
+        if (titleRects.length && rest.every((c) => !fills(c).length)) {
+          titleRects.forEach((rect) => {
+            (rect as FlexRect).fillWidth = true;
+          });
+        }
+      }
+    }
+
+    const align = text(prop(container, 'alignItems'));
+    const label = container.name ?? ref;
+
+    // 1. Labelled fields with other one-line widgets beside them.
+    if (
+      children.every((child) => INLINE_TYPES.has(child.type)) &&
+      children.some(isLabelledField) &&
+      children.some((child) => !isLabelledField(child)) &&
+      align !== 'flex-end'
+    ) {
+      // Bottom-aligned, every field box ends on one line whatever its label, and a button beside them lines up with
+      // the boxes. On "last baseline" a text input and a select sat 6px apart (their value baselines differ).
+      setProp(container, 'alignItems', 'flex-end');
+      warnings.push(
+        `Row "${label}" has labelled fields beside other controls; its alignItems is now "flex-end" so the field boxes ` +
+          'and the controls beside them line up along the bottom.'
+      );
+    }
+
+    // 1a. A row of two or more labelled fields and nothing else: bottom-aligned too. On "last baseline" a search input sat
+    //     8px below the selects beside it, label and box, because their last text baselines differ (2026-10-12).
+    if (children.length >= 2 && children.every(isLabelledField) && text(prop(container, 'alignItems')) !== 'flex-end') {
+      setProp(container, 'alignItems', 'flex-end');
+      warnings.push(
+        `Row "${label}" holds only labelled fields; its alignItems is now "flex-end" so the field boxes line up along the bottom.`
+      );
+    }
+
+    // 1b. A labelled field beside buttons in a row that also holds other blocks (a header's title stack): rule 1 skips
+    //     such rows, and centred, a "Reserve a room" button sat 20px above the date box beside it (the field is taller
+    //     by its label). Bottom-aligned, the button meets the field box and the title block sits on the same line.
+    if (
+      children.some(isLabelledField) &&
+      children.some((child) => ACTION_TYPES.has(child.type)) &&
+      !children.every((child) => INLINE_TYPES.has(child.type)) &&
+      align !== 'flex-end'
+    ) {
+      setProp(container, 'alignItems', 'flex-end');
+      warnings.push(
+        `Row "${label}" has a labelled field beside buttons; its alignItems is now "flex-end" so the buttons line up ` +
+          'with the field box.'
+      );
+    }
+
+    // 1c. In a bottom-aligned row with a labelled UI 2.0 field, a shorter ShadButton's box ends level with the field box
+    //     but starts lower: a 36px "Assign a job" (32px box) sat 4px under a select's 36px box (2026-10-13). A ShadButton's
+    //     box is its height less 4px, so 40px matches the field box.
+    if (text(prop(container, 'alignItems')) === 'flex-end' && children.some(isLabelledField)) {
+      for (const button of children.filter((child) => child.type === 'ShadButton')) {
+        const rects = [button.layout, button.layouts?.desktop].filter((rect): rect is NonNullable<ComponentSpec['layout']> => !!rect);
+        if (!rects.length || !rects.some((rect) => typeof rect.height === 'number' && rect.height < 40)) continue;
+        rects.forEach((rect) => {
+          if (typeof rect.height === 'number' && rect.height < 40) rect.height = 40;
+        });
+        warnings.push(`"${button.name}" in row "${label}" is now 40px tall so its box matches the field box beside it.`);
+      }
+    }
+
+    // 2. A row of cards shares one height.
+    // Whatever alignment the build gave the row: centred or bottom-aligned cards of different content came out at
+    // different heights side by side.
+    if (children.length >= 2 && children.every(isSurface) && align !== 'stretch') {
+      setProp(container, 'alignItems', 'stretch');
+      warnings.push(`Row "${label}" holds ${children.length} cards; its alignItems is now stretch so they share one height.`);
+    }
+
+    // 2b. In a stretched row of cards, a card whose last widget is a chart and whose content is shorter than the
+    //     tallest card's grows that chart by the difference: stretched, the card otherwise kept an empty band under
+    //     the chart (an MRR trend beside a donut and its table).
+    if (children.length >= 2 && children.every(isSurface) && text(prop(container, 'alignItems')) === 'stretch') {
+      const contentOf = (card: ComponentSpec): { height: number; last?: ComponentSpec } => {
+        const inner = childrenOf(refOf(card) ?? '');
+        const heights = inner.map((c) => Number(c.layout?.height ?? c.layouts?.desktop?.height ?? NaN));
+        if (!inner.length || heights.some((h) => !Number.isFinite(h))) return { height: NaN };
+        const rawGap = text(prop(card, 'gap'));
+        const gap = rawGap === '' ? 8 : Number(rawGap) || 0;
+        return { height: heights.reduce((a, b) => a + b, 0) + gap * (inner.length - 1), last: inner[inner.length - 1] };
+      };
+      const contents = children.map(contentOf);
+      const tallest = Math.max(...contents.map((c) => (Number.isFinite(c.height) ? c.height : 0)));
+      contents.forEach(({ height, last }) => {
+        if (!last || !Number.isFinite(height) || tallest - height < 24 || !/Chart$/.test(last.type)) return;
+        const grow = tallest - height;
+        [last.layout, last.layouts?.desktop].forEach((rect) => {
+          if (rect && typeof rect.height === 'number') rect.height += grow;
+        });
+        warnings.push(`Chart "${last.name}" grows by ${grow}px to fill its card, which is stretched to the tallest card in row "${label}".`);
+      });
+    }
+
+    // 2c. A table in one of several cards side by side fits its columns to the card's share of the page (about 1280px
+    //     wide): four tables on a room board clipped their last column ("Mark clean", guest names). Columns scale
+    //     down together, none below 64px; the widths stay ordinary column sizes, editable in the inspector.
+    //     A table card beside a chart counts too, at its own width when it sets one: a six-column table in a 390px
+    //     card beside a trend chart ran off the card's right edge.
+    if (children.length >= 2 && children.some(isSurface)) {
+      const rawGap = text(prop(container, 'gap'));
+      const gap = rawGap === '' ? 16 : Number(rawGap) || 0;
+      const share = Math.floor((1280 - gap * (children.length - 1)) / children.length);
+      for (const card of children) {
+        if (!isSurface(card)) continue;
+        const rawPad = text(prop(card, 'padding'));
+        const pad = rawPad === '' ? 12 : Number(rawPad) || 0;
+        const own = fixedRects(card).map((rect) => rect.widthPx).find((w) => typeof w === 'number' && w > 0);
+        const available = (own ?? share) - pad * 2 - 4;
+        for (const table of childrenOf(refOf(card) ?? '')) {
+          if (table.type !== 'Table') continue;
+          const columns = valueOf(prop(table, 'columns'));
+          if (!Array.isArray(columns)) continue;
+          const visible = columns.filter(
+            (c): c is Record<string, unknown> => !!c && typeof c === 'object' && (c as Record<string, unknown>).columnVisibility !== false
+          );
+          const size = (c: Record<string, unknown>) => (Number.isFinite(Number(c.columnSize)) ? Number(c.columnSize) : 120);
+          const total = visible.reduce((sum, c) => sum + size(c), 0);
+          if (!visible.length || total <= available) continue;
+          // Squeezed under 80px a column cuts its values to a letter or two: ask for fewer columns instead.
+          if (available / visible.length < 80) {
+            warnings.push(
+              `Table "${table.name}" shows ${visible.length} columns (${total}px) in a card about ${available}px wide; ` +
+                'show fewer columns there (the 3 or 4 this card is about), or give the card more of the row.'
+            );
+            continue;
+          }
+          const factor = available / total;
+          setProp(
+            table,
+            'columns',
+            columns.map((c) =>
+              visible.includes(c as Record<string, unknown>)
+                ? {
+                    ...(c as Record<string, unknown>),
+                    // A button column keeps room for its button's label.
+                    columnSize: Math.max(
+                      (c as Record<string, unknown>).columnType === 'button' ? 110 : 64,
+                      Math.floor(size(c as Record<string, unknown>) * factor)
+                    ),
+                  }
+                : c
+            )
+          );
+          warnings.push(`Table "${table.name}" in a narrow card: its columns (${total}px) now fit the card's ${available}px.`);
+        }
+      }
+    }
+
+    // 3. A fixed-width heading too narrow for one line of its text is widened to fit (it wrapped onto two lines).
+    for (const child of children) {
+      if (child.type !== 'ShadHeading') continue;
+      const needed = headingLineWidth(child);
+      if (!needed) continue;
+      const rects = fixedRects(child);
+      if (!rects.length || rects.every((rect) => (rect.widthPx ?? 0) >= needed)) continue;
+      rects.forEach((rect) => {
+        rect.widthPx = Math.max(rect.widthPx ?? 0, needed);
+      });
+      warnings.push(
+        `Heading "${child.name}" in row "${label}" was too narrow for one line of its text; its widthPx is now ${needed}.`
+      );
+    }
+
+    // 4. A heading with meta text or a badge beside it (no controls) sits on one text baseline.
+    if (
+      children.some((child) => child.type === 'ShadHeading') &&
+      children.some((child) => META_TYPES.has(child.type)) &&
+      children.every((child) => child.type === 'ShadHeading' || META_TYPES.has(child.type)) &&
+      ['', 'center', 'flex-start'].includes(align)
+    ) {
+      setProp(container, 'alignItems', 'last baseline');
+      warnings.push(`Row "${label}" pairs a heading with meta text; its alignItems is now "last baseline" so they share a baseline.`);
+    }
+
+    // 4b. A space-between header with a title and two or more items after it: the title takes the free space, so the
+    //     badges and actions gather at the right instead of one floating mid-header.
+    if (text(prop(container, 'justifyContent')) === 'space-between' && children.length >= 3) {
+      const first = children[0];
+      if (isTitle(first, childrenOf)) {
+        const rects = [first.layout, first.layouts?.desktop].filter(
+          (rect): rect is NonNullable<ComponentSpec['layout']> => !!rect && (rect as FlexRect).fillWidth !== true
+        );
+        if (rects.length) {
+          rects.forEach((rect) => {
+            (rect as FlexRect).fillWidth = true;
+          });
+          warnings.push(`Row "${label}": the title now takes the free space, so the items after it sit together at the right of the header.`);
+        }
+      }
+    }
+
+    // 5. Actions before the title in a header row move after it.
+    const authored = valueOf(prop(container, 'childOrder'));
+    const authoredOrder = Array.isArray(authored) ? authored.filter((entry): entry is string => typeof entry === 'string') : null;
+    const ordered = authoredOrder?.length
+      ? [
+          ...authoredOrder
+            .map((name) => children.find((child) => refOf(child) === name || child.name === name))
+            .filter((child): child is ComponentSpec => !!child),
+          ...children.filter((child) => !authoredOrder.includes(refOf(child) ?? '') && !authoredOrder.includes(child.name)),
+        ]
+      : children;
+    const titleIndex = ordered.findIndex((child) => isTitle(child, childrenOf));
+    if (titleIndex <= 0) continue;
+    const before = ordered.slice(0, titleIndex);
+    const leadingActions = before.filter((child) => ACTION_TYPES.has(child.type));
+    if (!leadingActions.length) continue;
+    const next = [
+      ...before.filter((child) => !ACTION_TYPES.has(child.type)),
+      ...ordered.slice(titleIndex),
+      ...leadingActions,
+    ];
+    if (authoredOrder?.length) {
+      setProp(container, 'childOrder', next.map((child) => (authoredOrder.includes(child.name) ? child.name : refOf(child))));
+    } else {
+      // Request order is the render order: put the row's children back into their own slots in the new order.
+      const slots = components
+        .map((component, index) => (component && component.parentRef === ref && !component.slotName ? index : -1))
+        .filter((index) => index >= 0);
+      slots.forEach((slot, i) => {
+        components[slot] = next[i];
+      });
+    }
+    warnings.push(
+      `Row "${label}": ${leadingActions.map((child) => `"${child.name}"`).join(', ')} came before the title; ` +
+        'moved after it so the page action sits at the right of the header.'
+    );
+  }
+  // A titled card that opens with a heading of its own reads as two section titles stacked (to-do build, 2026-10-12:
+  // "Your tasks / Keep the next step in view" over "The list / Open work comes first"; blind review: "doubled section
+  // headers nest a card in a card"). Its first child, or the first child of a first row or column, is looked at.
+  const firstOf = (parent: ComponentSpec): ComponentSpec | undefined => {
+    const inner = childrenOf(refOf(parent) ?? '');
+    const authored = valueOf(prop(parent, 'childOrder'));
+    const first = Array.isArray(authored) && typeof authored[0] === 'string'
+      ? inner.find((c) => refOf(c) === authored[0] || c.name === authored[0] || (c as { id?: string }).id === authored[0])
+      : undefined;
+    return first ?? inner[0];
+  };
+  for (const card of components) {
+    if (!card || !isSurface(card)) continue;
+    const title = text(prop(card, 'cardTitle'));
+    if (!title) continue;
+    let node = firstOf(card);
+    for (let depth = 0; node && node.type === 'FlexContainer' && !isSurface(node) && depth < 2; depth++) node = firstOf(node);
+    if (node?.type !== 'ShadHeading') continue;
+    warnings.push(
+      `Card "${card.name}" is already titled "${title}" and opens with heading "${text(prop(node, 'text'))}": two section ` +
+        'titles stacked read as a card in a card. Keep one: drop the heading (and its caption) or clear cardTitle and cardExtra.'
+    );
+  }
+
+  // A heading in a dialog's header is at most h3 (recipe sheet, 2026-10-12: an h2 bound to a recipe name wrapped onto two
+  // lines and covered the description under it; the composition hint asks for h4 there).
+  const dialogRefs = new Set(
+    components.filter((c) => c && (c.type === 'ShadDialog' || c.type === 'ModalV2')).map((c) => refOf(c)).filter(Boolean)
+  );
+  for (const heading of components) {
+    if (!heading || heading.type !== 'ShadHeading' || heading.slotName !== 'header' || !dialogRefs.has(heading.parentRef)) continue;
+    const level = text(prop(heading, 'level')) || 'h2';
+    if (level !== 'h1' && level !== 'h2') continue;
+    setProp(heading, 'level', 'h3');
+    warnings.push(`Heading "${heading.name}" in a dialog header was ${level}; it is now h3, so a long title fits the header.`);
+  }
+
+  // Buttons placed straight in a dialog's footer slot (expense build, 2026-10-12: Close, Reject and Approve at left 2, 16
+  // and 29, uneven gaps) are gathered into one FlexContainer row at the right, in their left-to-right order, each at the
+  // width of its label.
+  const DIALOGS = new Set(['ShadDialog', 'ModalV2']);
+  for (const dialog of [...components]) {
+    if (!dialog || !DIALOGS.has(dialog.type)) continue;
+    const ref = refOf(dialog);
+    if (!ref) continue;
+    const bare = components.filter((c) => c && c.parentRef === ref && c.slotName === 'footer' && c.type === 'ShadButton');
+    if (bare.length < 2 || components.some((c) => c && c.parentRef === ref && c.slotName === 'footer' && c.type !== 'ShadButton')) continue;
+    const rowRef = `${ref}FooterRow`;
+    if (components.some((c) => c && refOf(c) === rowRef)) continue;
+    const leftOf = (c: ComponentSpec) => Number(c.layout?.left ?? c.layouts?.desktop?.left ?? 0);
+    const ordered = [...bare].sort((a, b) => leftOf(a) - leftOf(b));
+    const top = Math.min(...bare.map((c) => Number(c.layout?.top ?? c.layouts?.desktop?.top ?? 0)));
+    const row: ComponentSpec = {
+      name: rowRef,
+      type: 'FlexContainer',
+      clientRef: rowRef,
+      parentRef: ref,
+      slotName: 'footer',
+      properties: {
+        direction: { value: 'row' },
+        justifyContent: { value: 'flex-end' },
+        alignItems: { value: 'center' },
+        gap: { value: 8 },
+        padding: { value: 0 },
+        dynamicHeight: { value: '{{true}}' },
+      },
+      layout: { top: Number.isFinite(top) ? top : 0, left: 0, width: 43, height: 48 },
+    };
+    for (const button of ordered) {
+      button.parentRef = rowRef;
+      delete (button as { slotName?: string }).slotName;
+      const label = text(prop(button, 'text'));
+      const width = Math.max(80, Math.ceil(label.length * 8 + (text(prop(button, 'icon')) ? 64 : 40)));
+      [button.layout, button.layouts?.desktop].forEach((rect) => {
+        if (!rect) return;
+        (rect as FlexRect).fillWidth = false;
+        (rect as FlexRect).widthPx = (rect as FlexRect).widthPx ?? width;
+      });
+    }
+    // Request order is render order for children created together: the row first, then its buttons left to right.
+    const firstIndex = Math.min(...ordered.map((c) => components.indexOf(c)));
+    const rest = components.filter((c) => !ordered.includes(c));
+    rest.splice(Math.min(firstIndex, rest.length), 0, row, ...ordered);
+    components.splice(0, components.length, ...rest);
+    warnings.push(
+      `Dialog "${dialog.name}": its ${ordered.length} footer buttons were placed by hand with uneven gaps; they now sit in one ` +
+        `row "${rowRef}" at the right, in their order (${ordered.map((c) => `"${c.name}"`).join(', ')}).`
+    );
+  }
+
+  // Every FlexContainer is saved at the height the app draws it at (flexFit.ts). The editor draws a container at its
+  // saved height, while the app fits a card or a row to its content: a row saved at the 300px default around 150px of
+  // content showed an empty band in the editor only, and the section below it started that much lower there. A card
+  // drawn taller than its content was trimmed here before, but only nested cards and only past 12px; rows were only
+  // ever grown.
+  // The UI 2.0 widgets first, at the heights the app draws them (packFit.ts), so the containers fit what they hold.
+  const packNotes = fitPackHeights(components);
+  const fittedBoxes = fitFlexHeights(components, warnings);
+  reportPackHeights(packNotes, warnings);
+
+  // Cards placed side by side on the page grid (no FlexContainer row) share one height, the tallest card's: a
+  // dashboard drew its KPI cards at 200, 124 and 200px in one line. A card fitted to its content above keeps that
+  // height: the app draws it there whatever it is saved at.
+  {
+    const gridCards = components.filter(
+      (c) => c && !c.parentRef && !(c as { parent?: unknown }).parent && (isSurface(c) || c.type === 'ShadStat') && !fittedBoxes.has(c) && Number.isFinite(heightOf(c))
+    );
+    const lines = new Map<number, ComponentSpec[]>();
+    for (const c of gridCards) {
+      const top = Number(c.layout?.top ?? c.layouts?.desktop?.top);
+      if (!Number.isFinite(top)) continue;
+      const key = [...lines.keys()].find((t) => Math.abs(t - top) <= 10) ?? top;
+      lines.set(key, [...(lines.get(key) ?? []), c]);
+    }
+    for (const line of lines.values()) {
+      if (line.length < 2) continue;
+      const tallest = Math.max(...line.map(heightOf));
+      if (line.every((c) => heightOf(c) === tallest)) continue;
+      for (const c of line) {
+        [c.layout, c.layouts?.desktop].forEach((rect) => {
+          if (rect && typeof rect.height === 'number') rect.height = tallest;
+        });
+      }
+      warnings.push(`Cards ${line.map((c) => `"${c.name}"`).join(', ')} sit side by side; they now share one height (${tallest}px).`);
+    }
+  }
+
+  // A grid-placed button beside labelled UI 2.0 fields, authored at the fields' top, floats above their boxes (a repair
+  // form's "Create ticket", 2026-10-13). Measured: a labelled Shad field's box runs 24 to 60px down its widget and a
+  // ShadButton's box is its height less 4px, so the button moves 22px down at 40px tall and its box meets the fields'.
+  // FlexContainer rows are handled above (alignItems flex-end).
+  const flexRefs = new Set(components.filter((c) => c?.type === 'FlexContainer').map((c) => refOf(c)));
+  const rectOf = (c: ComponentSpec) => c.layouts?.desktop ?? c.layout;
+  const placeOf = (c: ComponentSpec) => String(c.parentRef ?? (c as { parent?: unknown }).parent ?? '') + '|' + String(c.slotName ?? '');
+  const labelled = components.filter((c) => {
+    const label = (props(c).label as { value?: unknown } | undefined)?.value;
+    return c && LABELLED_FIELD_TYPES.has(c.type) && typeof label === 'string' && label.trim() !== '' && rectOf(c) && !flexRefs.has(String(c.parentRef ?? ''));
+  });
+  for (const button of components) {
+    if (!button || button.type !== 'ShadButton' || flexRefs.has(String(button.parentRef ?? ''))) continue;
+    const b = rectOf(button);
+    if (!b || typeof b.top !== 'number' || (b.height ?? 0) > 44) continue;
+    const field = labelled.find((f) => {
+      const r = rectOf(f)!;
+      if (placeOf(f) !== placeOf(button) || typeof r.top !== 'number') return false;
+      const sameRow = b.top! >= r.top - 4 && b.top! < r.top + 18;
+      const apart = (b.left ?? 0) >= (r.left ?? 0) + (r.width ?? 0) || (r.left ?? 0) >= (b.left ?? 0) + (b.width ?? 0);
+      return sameRow && apart;
+    });
+    if (!field) continue;
+    const top = rectOf(field)!.top! + 22;
+    b.top = top;
+    b.height = 40;
+    warnings.push(`Button "${button.name}" sat at the top of a row of labelled fields; it now sits at ${top} (40px tall) so it lines up with the field boxes, not the labels.`);
+  }
+
+  // Charts on the page in one accent (chartAccentLint.ts): an odd hand-set colour takes the page's most common one.
+  const accents = unifyChartAccents(components);
+  // Tables among pack widgets draw in the pack's look (packTableLook.ts).
+  const tables = packTableLook(accents.components);
+  return { components: tables.components, warnings: [...warnings, ...accents.warnings, ...tables.warnings] };
+}

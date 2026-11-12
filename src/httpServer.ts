@@ -8,6 +8,7 @@ import { createOAuthHttpServer, oauthHttpOptionsFromEnv } from './oauthHttp.js';
 import { identityFromHeaders, type RequestIdentity } from './config.js';
 import { bearerValue } from './httpAuth.js';
 import { isBuildToken, mintAuthorized, mintBuildToken, mintSecret, resolveBuildToken, revokeBuildToken } from './buildTokens.js';
+import { refuseForeignRequest } from './requestOrigin.js';
 
 // A permitted 10 MiB chat image becomes ~13.4 MiB in an Image component's JSON.
 const DEFAULT_MAX_BODY_BYTES = 15 * 1024 * 1024;
@@ -28,6 +29,12 @@ export interface HttpMcpServerOptions {
   /** Creates one isolated MCP server instance for each Streamable HTTP session. Receives the acting
    *  user parsed from the initialize request's headers, when the caller sent one. */
   serverFactory?: (identity?: RequestIdentity) => McpServer;
+  /** Every session must bring its own ToolJet credential (a PAT, a session or a build token): one
+   *  configured on this process never acts for a request, and the Code tools take only the request's.
+   *  On whenever the server is reachable beyond loopback (standaloneHttpPolicy). */
+  requireIdentity?: boolean;
+  /** The address the server listens on (default 127.0.0.1): requests must name it, or a loopback name, in Host. */
+  bindHost?: string;
   /** Maximum accepted JSON request size. Defaults to 15 MiB for embedded image updates. */
   maxBodyBytes?: number;
   maxSessions?: number;
@@ -94,6 +101,32 @@ export async function readJsonBody(req: IncomingMessage, maxBodyBytes: number): 
   return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown;
 }
 
+const TRUTHY = /^(1|true|yes|on)$/i;
+
+/** Whether a bind address only accepts connections from this machine. */
+export function isLoopbackHost(host: string): boolean {
+  const h = host.trim().toLowerCase().replace(/^\[|\]$/g, '');
+  return h === 'localhost' || h === '::1' || /^127(\.\d{1,3}){3}$/.test(h) || /^::ffff:127(\.\d{1,3}){3}$/.test(h);
+}
+
+/**
+ * How the standalone HTTP entry point (src/http.ts) may listen on `host`. On loopback it is the local
+ * development transport and may use this process's configured credential. Beyond loopback that
+ * credential would act for anyone who can reach the port, so it is refused unless OAuth is on
+ * (MCP_OAUTH_ENABLED=true) or TOOLJET_MCP_HTTP_REQUIRE_IDENTITY=1 makes every request bring its own.
+ */
+export function standaloneHttpPolicy(host: string, env: NodeJS.ProcessEnv = process.env): { requireIdentity: boolean } {
+  const requireIdentity = TRUTHY.test(env.TOOLJET_MCP_HTTP_REQUIRE_IDENTITY ?? '');
+  if (!isLoopbackHost(host) && env.MCP_OAUTH_ENABLED !== 'true' && !requireIdentity) {
+    throw new Error(
+      `Refusing to listen on ${host}: beyond loopback this server would act for any caller with the credential configured ` +
+        'on this process. Bind 127.0.0.1, or set TOOLJET_MCP_HTTP_REQUIRE_IDENTITY=1 (every request brings its own ToolJet ' +
+        'credential) or MCP_OAUTH_ENABLED=true.'
+    );
+  }
+  return { requireIdentity };
+}
+
 export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcpServer {
   const oauth = oauthHttpOptionsFromEnv();
   if (oauth) {
@@ -107,7 +140,9 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
       }),
     };
   }
-  const serverFactory = options.serverFactory ?? buildServer;
+  const requireIdentity = options.requireIdentity === true;
+  // With identity required, the Code tools also take only the request's credential (hosted semantics).
+  const serverFactory = options.serverFactory ?? (requireIdentity ? (identity?: RequestIdentity) => buildServer(identity, { hosted: true }) : buildServer);
   const maxBodyBytes = options.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES;
   const sessions = new Map<string, Session>();
   const now = options.now ?? Date.now;
@@ -175,9 +210,8 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
     }
 
     /* Identity is bound at initialize; every later request must carry the same credential, not just
-       the session id. NOTE this transport has
-       no bearer gate of its own (src/http.ts binds it to loopback) — do not expose it off-box
-       without one, or any local caller could name a user. */
+       the session id. This transport has no bearer gate of its own: off loopback, src/http.ts starts
+       it only with requireIdentity, so a caller can act only with a credential it already holds. */
     let identity: RequestIdentity | undefined;
     let sessionBuildToken: string | undefined;
     const bearer = bearerValue(req.headers.authorization);
@@ -206,6 +240,11 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
     }
     if (identity && !identity.pat && !identity.sessionToken) {
       writeError(res, 401, 'URL metadata is not a user credential');
+      return;
+    }
+    if (requireIdentity && !identity) {
+      writeError(res, 401, 'This server acts only for the caller\'s own ToolJet credential: send a personal access token ' +
+        'as Authorization: Bearer or x-tooljet-pat, or x-tooljet-session with x-tooljet-workspace-id.');
       return;
     }
 
@@ -320,6 +359,9 @@ export function createHttpMcpServer(options: HttpMcpServerOptions = {}): HttpMcp
         writeJson(res, 200, { status: 'ok', transport: 'streamable-http' });
         return;
       }
+
+      // DNS rebinding: a page whose host name resolves to this machine must not drive it (requestOrigin.ts).
+      if (refuseForeignRequest(req, res, { bindHost: options.bindHost ?? '127.0.0.1' })) return;
 
       if (requestUrl.pathname === '/build-token') {
         await handleBuildToken(req, res);

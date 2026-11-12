@@ -1,7 +1,8 @@
 import { getComponentSchema } from './catalog.js';
-import { STYLE_KEYS_IN_PROPERTIES, PROPERTY_KEY_ALIASES, nearestCatalogKey } from './lint.js';
+import { STYLE_KEYS_IN_PROPERTIES, PROPERTY_KEY_ALIASES, isMisplacedStyleKey, nearestCatalogKey } from './lint.js';
 import type { ComponentSpec } from './tooljetClient.js';
 import { separateAdjacentClosingBracesDeep } from './bindingBraces.js';
+import { retiredUi2Name } from './ui2LegacyNames.js';
 
 export interface ComponentNormalization<T extends ComponentSpec = ComponentSpec> {
   component: T;
@@ -51,6 +52,34 @@ function catalogDefault(type: string, key: string, fallback: unknown): unknown {
   return getComponentSchema(type)?.properties.find((property) => property.key === key)?.default ?? fallback;
 }
 
+// Table column names that hold money, and ones that hold a state (a shadcn-look table finishes both).
+const MONEY_WORDS = /\b(price|amount|cost|total|revenue|balance|fee|fees|spend|spent|salary|budget|paid|payment|invoice|subtotal|tax|refund|value|mrr|arr)\b/i;
+const PERSON_WORDS = /\b(customer|client|requester|requestor|owner|assignee|assigned to|contact|lead|member|patient|guest|organi[sz]er|employee|technician|tech|agent|rep|student|author|reporter|host|driver|candidate|applicant|tenant|buyer|seller|manager|person|attendee|trainer|coach|instructor|doctor|vet|veterinarian|nurse|resident|full name|customer name|contact name)\b/i;
+// A total of minutes, reps or items is a count, not money ("Total (min)" read "47.00").
+const UNIT_WORDS = /\b(min|mins|minutes?|hours?|hrs?|days?|weeks?|time|count|qty|quantity|servings?|units?|items?|points?|score|percent|pct|kg|lbs?|reps?|sets?|seats?|guests?|nights?|orders?|tickets?|visits?)\b/i;
+// Counts a KPI label can name besides money; periods ("this week") are not among them.
+const COUNT_WORDS = /\b(min|mins|minutes?|hours?|hrs?|count|qty|quantity|servings?|units?|items?|points?|score|percent|pct|kg|lbs?|reps?|sets?|seats?|guests?|nights?|orders?|tickets?|visits?|jobs?|rate)\b/i;
+const STATE_WORDS = /\b(status|stage|state|priority|severity|availability|health|risk|condition)\b/i;
+// "Total" and "value" also head counts: "Total de Clientes" showed "$26". Next to one of these nouns (English,
+// Portuguese or Spanish, singular or plural) a label with no other money word is a count.
+const AMBIGUOUS_MONEY_WORDS = /\b(total|totals|value)\b/gi;
+const COUNTED_NOUNS = /\b(clients?|clientes?|customers?|users?|usu[aá]rios?|members?|membros?|miembros?|patients?|pacientes?|leads?|accounts?|contas?|cuentas?|vendors?|suppliers?|fornecedor(es)?|proveedor(es)?|employees?|funcion[aá]rios?|empleados?|staff|people|pessoas|personas|students?|alunos?|estudiantes?|contacts?|contatos?|contactos?|compan(y|ies)|empresas?|projects?|projetos?|proyectos?|tasks?|tarefas?|tareas?|bugs?|issues?|requests?|pedidos?|solicita[cç](ão|ões|ión|iones)|records?|registros?|rooms?|salas?|bookings?|reservations?|reservas?|appointments?|agendamentos?|consultas?|citas?|recipes?|receitas?|recetas?|ingredients?|ingredientes?|products?|produtos?|productos?|assets?|ativos?|devices?|dispositivos?|vehicles?|ve[ií]culos?|audits?|auditorias?|findings?|cases?|casos?|deals?|negócios?|events?|eventos?)\b/i;
+const countLabel = (label: string): boolean => {
+  if (COUNT_WORDS.test(label)) return true;
+  // Only total/value made it money, and a counted noun says what is totalled.
+  return !MONEY_WORDS.test(label.replace(AMBIGUOUS_MONEY_WORDS, ' ')) && COUNTED_NOUNS.test(label);
+};
+/** The currency a plan names on a money Stat, for the Stats whose currency is inferred: "Faturamento" in BRL and an
+ *  inferred revenue Stat next to it in USD read as two currencies. */
+export function plannedCurrency(components: Iterable<{ type?: string; properties?: unknown }>): string | undefined {
+  for (const component of components) {
+    if (component.type !== 'ShadStat') continue;
+    const currency = propValue((component.properties ?? {}) as Record<string, unknown>, 'currency');
+    if (typeof currency === 'string' && /^[A-Za-z]{3}$/.test(currency.trim())) return currency.trim().toUpperCase();
+  }
+  return undefined;
+}
+
 const CLIENT_SERVER_BOOLEAN_KEYS = new Set([
   'serverSidePagination',
   'serverSideSearch',
@@ -72,6 +101,8 @@ function isStrippableUnknownKey(
   knownKeys: string[]
 ): boolean {
   if (knownKeys.includes(key)) return false;
+  // A UI 2.0 widget's retired property key (ShadImage src) is a mistake, not cruft: lint names its replacement.
+  if (section === 'properties' && retiredUi2Name(type, 'properties', key)) return false;
   // These are not harmless cruft: stripping an attempted edit preselection
   // silently opens a blank selector and can erase a foreign key on Save.
   if (type === 'DropdownV2' && section === 'properties' && ['value', 'defaultValue'].includes(key)) return false;
@@ -86,9 +117,30 @@ function isStrippableUnknownKey(
  *  With `stripUnknownKeys` (new-component writes only — add_components / planned apply), unknown keys
  *  ToolJet would silently ignore are removed from the saved definition instead of persisted as cruft
  *  (e.g. dynamicHeight, collapseWhenHidden). Legacy in-place update paths do NOT pass this. */
+/** A pack input's settings with a written `value` (the widget's runtime state, see packCatalog) as its `defaultValue`,
+ *  or dropped beside one. The properties are returned unchanged for any other component. */
+export function packValueAsDefault(
+  type: string | undefined,
+  name: string | undefined,
+  properties: Record<string, unknown> | undefined
+): { properties: Record<string, unknown> | undefined; warning?: string } {
+  if (!properties || properties.value === undefined) return { properties };
+  const schema = type ? getComponentSchema(type) : undefined;
+  const keys = new Set((schema?.properties ?? []).map((entry) => entry.key));
+  if (!(schema as { pack?: unknown } | undefined)?.pack || !keys.has('defaultValue') || keys.has('value')) return { properties };
+  const { value, ...rest } = properties;
+  if (rest.defaultValue !== undefined) {
+    return { properties: rest, warning: `${type} "${name}": dropped properties.value, the input's runtime value; it starts from defaultValue.` };
+  }
+  return {
+    properties: { ...rest, defaultValue: value },
+    warning: `${type} "${name}": moved properties.value to defaultValue, where the input takes its starting value from.`,
+  };
+}
+
 export function normalizeComponentSpec<T extends ComponentSpec>(
   component: T,
-  options: { stripUnknownKeys?: boolean } = {}
+  options: { stripUnknownKeys?: boolean; currency?: string } = {}
 ): ComponentNormalization<T> {
   const normalizedSections = Object.fromEntries(
     (['properties', 'styles', 'validation', 'others'] as DefinitionSection[]).map((section) => [
@@ -96,10 +148,12 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
       normalizeSection(component[section]),
     ])
   ) as Record<DefinitionSection, ReturnType<typeof normalizeSection>>;
-  const properties = { ...(normalizedSections.properties.value ?? {}) };
+  const warnings: string[] = [];
+  const packValue = packValueAsDefault(component.type, component.name, normalizedSections.properties.value);
+  if (packValue.warning) warnings.push(packValue.warning);
+  const properties = { ...(packValue.properties ?? {}) };
   const propertyPatch: Record<string, unknown> = {};
   const stylePatch: Record<string, unknown> = {};
-  const warnings: string[] = [];
   const setProperty = (key: string, value: unknown): void => {
     const current = properties[key];
     const wrapped = current && typeof current === 'object' && !Array.isArray(current)
@@ -142,7 +196,7 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
   for (const key of Object.keys(properties)) {
     const aliasTarget = aliasTargetFor(key);
     const canonical = aliasTarget ?? key;
-    const belongsInStyles = canonical !== 'styles' && (STYLE_KEYS_IN_PROPERTIES.has(canonical) ||
+    const belongsInStyles = canonical !== 'styles' && (isMisplacedStyleKey(component.type, canonical) ||
       (!!aliasTarget && !!knownStyleKeys?.has(canonical) && !knownPropertyKeys?.has(canonical)));
     if (!aliasTarget && !belongsInStyles) continue;
     if (belongsInStyles) {
@@ -157,6 +211,23 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
       if (properties[canonical] === undefined) properties[canonical] = properties[key];
       delete properties[key];
       warnings.push(`${component.type} "${component.name}": renamed alias "${key}" to "${canonical}".`);
+    }
+  }
+  // The reverse: a key this type declares only as a property, authored under styles (FlexContainer padding,
+  // which ToolJet reads from properties). Moved rather than stripped as an unknown style. New definitions only: a
+  // persisted definition can carry legacy style leaves ToolJet itself wrote, which an update must not reinterpret.
+  if (schema && options.stripUnknownKeys) {
+    for (const key of Object.keys(stylesValue)) {
+      if (knownStyleKeys!.has(key) || !knownPropertyKeys!.has(key)) continue;
+      if (properties[key] === undefined) {
+        properties[key] = stylesValue[key];
+        propertyPatch[key] = stylesValue[key];
+      }
+      delete stylesValue[key];
+      stylesChanged = true;
+      warnings.push(
+        `${component.type} "${component.name}": moved styles.${key} to properties.${key} (ToolJet reads it from properties for ${component.type}).`
+      );
     }
   }
   if (stylesChanged) normalizedSections.styles.value = stylesValue;
@@ -190,7 +261,67 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
     );
   }
 
+  // A UI 2.0 card (cardStyle shadcnCard) fits its content; equal heights in a row come from the row's
+  // stretch. A churn card fixed at 780px with dynamicHeight off kept 140px under its table.
+  if (component.type === 'FlexContainer') {
+    const card = propValue(properties, 'cardStyle');
+    if (card === 'shadcnCard' && !isTruthy(propValue(properties, 'dynamicHeight'))) {
+      setProperty('dynamicHeight', '{{true}}');
+    }
+  }
+
   if (component.type === 'Table') {
+    // A shadcn-look table drawn shorter than its rows per page showed a row and a half and scrolled inside its card
+    // (an incident console, four cards). Fewer rows per page when three or more fit, else the table fits its rows.
+    const lookEntry0 = stylesValue.tableLook;
+    const look0 = lookEntry0 && typeof lookEntry0 === 'object' ? (lookEntry0 as { value?: unknown }).value : lookEntry0;
+    const height = (component.layouts?.desktop ?? component.layout)?.height;
+    const staticNumber = (v: unknown): number | undefined => {
+      const m = typeof v === 'number' ? String(v) : typeof v === 'string' ? /^\s*(?:\{\{\s*)?(\d+)\s*(?:\}\})?\s*$/.exec(v)?.[1] : undefined;
+      return m !== undefined ? Number(m) : undefined;
+    };
+    const isFalse = (v: unknown) => v === false || (typeof v === 'string' && /^\s*(\{\{\s*)?false(\s*\}\})?\s*$/.test(v));
+    // A shadcn data table is as tall as its rows. Drawn heights left a band under the last row (a store dashboard, a
+    // churn report, a fleet view) or cut rows off (an incident console), so dynamicHeight turns on unless set.
+    if (look0 === 'shadcn' && properties.dynamicHeight === undefined) {
+      setProperty('dynamicHeight', '{{true}}');
+    }
+    if (
+      look0 === 'shadcn' &&
+      typeof height === 'number' &&
+      !isTruthy(propValue(properties, 'dynamicHeight')) &&
+      !isTruthy(propValue(properties, 'serverSidePagination')) &&
+      !isFalse(propValue(properties, 'enablePagination'))
+    ) {
+      const rowsPerPage = staticNumber(propValue(properties, 'rowsPerPage')) ?? 10;
+      const toolbar = isFalse(propValue(properties, 'displaySearchBox')) ? 0 : 64;
+      // The look's measured chrome (2026-10-14, in the viewer): toolbar 64px, header 41px, footer and borders 47px; rows
+      // 46px, 40px condensed. A 45px estimate cut 8 condensed rows in 472px to 6 and left a band under them.
+      const cellEntry = stylesValue.cellSize;
+      const cellSize = cellEntry && typeof cellEntry === 'object' ? (cellEntry as { value?: unknown }).value : cellEntry;
+      const rowPx = cellSize === 'condensed' ? 40 : 46;
+      const fit = Math.floor((height - toolbar - 41 - 47) / rowPx);
+      if (fit < rowsPerPage) {
+        if (fit >= 3) {
+          setProperty('rowsPerPage', `{{${fit}}}`);
+          warnings.push(`Table "${component.name}": height ${height}px fits ${fit} rows; rowsPerPage is now ${fit} so no row is cut off.`);
+        } else {
+          setProperty('dynamicHeight', '{{true}}');
+          warnings.push(`Table "${component.name}": height ${height}px fits fewer than 3 rows; dynamicHeight is on so the table fits its rows.`);
+        }
+      }
+    }
+    // Selection without bulk select draws a checkbox per row unless the selected row is highlighted: shadcn-look
+    // tables in several test builds showed checkboxes nothing used. The row
+    // highlights instead; selectedRow works the same.
+    if (
+      look0 === 'shadcn' &&
+      properties.highlightSelectedRow === undefined &&
+      !isTruthy(propValue(properties, 'showBulkSelector')) &&
+      !isFalse(propValue(properties, 'allowSelection'))
+    ) {
+      setProperty('highlightSelectedRow', '{{true}}');
+    }
     if (properties.useDynamicColumn === undefined) {
       setProperty('useDynamicColumn', catalogDefault('Table', 'useDynamicColumn', '{{false}}'));
     }
@@ -232,6 +363,22 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
     // isDateSelectionEnabled:false thinking it means "read-only"; re-enable date selection so the value
     // displays. Only touches this exact blank-rendering combination.
     if (Array.isArray(columns)) {
+      const lookEntry = stylesValue.tableLook;
+      const shadcnLook =
+        (lookEntry && typeof lookEntry === 'object' ? (lookEntry as { value?: unknown }).value : lookEntry) === 'shadcn';
+      // Rows of one line in the shadcn look: long subjects wrapped into uneven two-line rows, which reviewers marked as
+      // unfinished; the look ends long text in an ellipsis instead.
+      // A column that draws more than a line (html, long text, json, an image) needs rows that grow: at one line a
+      // two-line html reservation overlapped the row below. Such a table keeps wrapping, turned back on if it was off.
+      const wrapNow = (stylesValue.contentWrap as { value?: unknown } | undefined)?.value ?? stylesValue.contentWrap;
+      const multiLine = columns.some(
+        (c) =>
+          c && typeof c === 'object' && !Array.isArray(c) &&
+          (c as Record<string, unknown>).columnVisibility !== false &&
+          ['html', 'text', 'json', 'image', 'markdown'].includes(String((c as Record<string, unknown>).columnType))
+      );
+      if (shadcnLook && multiLine && wrapNow === false) setStyle('contentWrap', true);
+      else if (shadcnLook && !multiLine && wrapNow !== false) setStyle('contentWrap', false);
       let changedColumns = false;
       const repairedColumns = columns.map((column) => {
         if (options.stripUnknownKeys && column && typeof column === 'object' && !Array.isArray(column) &&
@@ -261,9 +408,171 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
           );
           return { ...entry, isDateSelectionEnabled: true };
         }
+        // A read-only date column in the shadcn look authored in a machine format (YYYY-MM-DD) showed 2026-10-12; it parses
+        // with that format and displays a readable date. Editable columns keep what the author typed into.
+        if (
+          shadcnLook && column && typeof column === 'object' && !Array.isArray(column) &&
+          (column as Record<string, unknown>).columnType === 'datepicker' &&
+          !isTruthy((column as Record<string, unknown>).isEditable) &&
+          /^Y{4}[-/]MM[-/]DD$/.test(String((column as Record<string, unknown>).dateFormat ?? '').trim())
+        ) {
+          changedColumns = true;
+          const entry = column as Record<string, unknown>;
+          column = { ...entry, parseDateFormat: entry.parseDateFormat ?? entry.dateFormat, dateFormat: 'MMM D, YYYY' };
+        }
+        // A state (one severity, status or stage per row) drawn as a read-only multi-select showed "Select.." on every
+        // row: the multi-select reads an array and the value was one string. A single select shows it.
+        if (
+          column && typeof column === 'object' && !Array.isArray(column) &&
+          (column as Record<string, unknown>).columnType === 'newMultiSelect' &&
+          !isTruthy((column as Record<string, unknown>).isEditable) &&
+          /^(status|severity|priority|stage|state|level|risk)$/i.test(
+            String((column as Record<string, unknown>).key ?? (column as Record<string, unknown>).name ?? '').replace(/[_\s-]+/g, '')
+          )
+        ) {
+          changedColumns = true;
+          const entry = column as Record<string, unknown>;
+          warnings.push(`Table "${component.name}" column "${entry.name ?? entry.key}": a single state per row; columnType is now "select" (a multi-select shows "Select.." for a single value).`);
+          column = { ...entry, columnType: 'select' };
+        }
+        // The shadcn look reads numbers right-aligned (shadcn's data table, and how money and counts scan down a
+        // column); a number column that sets no alignment gets right, which the inspector shows and can change.
+        // It also groups thousands (100000 reads 100,000) unless the column says otherwise.
+        if (
+          shadcnLook && column && typeof column === 'object' && !Array.isArray(column) &&
+          (column as Record<string, unknown>).columnType === 'number' &&
+          ((column as Record<string, unknown>).horizontalAlignment === undefined ||
+            (column as Record<string, unknown>).thousandSeparator === undefined)
+        ) {
+          changedColumns = true;
+          const entry = column as Record<string, unknown>;
+          column = {
+            ...entry,
+            horizontalAlignment: entry.horizontalAlignment ?? 'right',
+            thousandSeparator: entry.thousandSeparator ?? true,
+          };
+        }
+        if (shadcnLook && column && typeof column === 'object' && !Array.isArray(column)) {
+          const entry = column as Record<string, unknown>;
+          const words = `${String(entry.key ?? '')} ${String(entry.name ?? '')}`.replace(/[_-]+/g, ' ');
+          const next: Record<string, unknown> = { ...entry };
+          // Money reads with two decimals (19.50, not 19.5) unless the column says otherwise (builds of 2026-10-10
+          // showed "Amount 19.5" and "Retail price 3.5").
+          if (entry.columnType === 'number' && entry.decimalPlaces === undefined && MONEY_WORDS.test(words) && !UNIT_WORDS.test(words)) {
+            next.decimalPlaces = 2;
+          }
+          // A read-only state (status, stage, priority) is drawn as a status chip, whose tone the Table reads from the
+          // value's words. Plain text was what the builds shipped, though the lint asked for chips.
+          if (
+            ['string', undefined].includes(entry.columnType as string | undefined) &&
+            entry.displayAsChip === undefined && !isTruthy(entry.isEditable) && STATE_WORDS.test(words)
+          ) {
+            next.displayAsChip = true;
+          }
+          // A header needs its label's width plus the cell padding, and the pencil of an editable column: "On hand"
+          // at 60px read "On h...".
+          const size = Number(entry.columnSize);
+          const label = String(entry.name ?? entry.key ?? '');
+          if (Number.isFinite(size) && size > 0 && label) {
+            // An address needs about 240px on one line; at 185px "sofia.alvarez@example.c / om" broke mid-word.
+            const email = /\be ?mail\b/i.test(words) ? 240 : 0;
+            // A status chip needs room for its longest state ("Waiting on customer" was cut at 100px).
+            const chip = next.displayAsChip === true || entry.displayAsChip === true ? 140 : 0;
+            const needed = Math.max(email, chip, Math.ceil(label.length * 7.5) + 32 + (isTruthy(entry.isEditable) ? 18 : 0));
+            if (size < needed) next.columnSize = needed;
+          }
+          // A row action in the default colours is an outline button, as shadcn's data table draws row actions: a
+          // filled brand button on every row ("Update" down a CRM table) was the loudest thing on the page. A button
+          // given its own colour (a red Delete) keeps it.
+          if (entry.columnType === 'button' && Array.isArray(entry.buttons)) {
+            const buttons = (entry.buttons as unknown[]).map((button) => {
+              if (!button || typeof button !== 'object' || Array.isArray(button)) return button;
+              const b = button as Record<string, unknown>;
+              const bg = b.buttonBackgroundColor;
+              const defaultBg = bg === undefined || ['#4368E3', '#4368e3', 'var(--cc-primary-brand)'].includes(String(bg));
+              return (b.buttonType === undefined || b.buttonType === 'solid') && defaultBg ? { ...b, buttonType: 'outline' } : button;
+            });
+            if (buttons.some((b, i) => b !== (entry.buttons as unknown[])[i])) next.buttons = buttons;
+          }
+          if (Object.keys(next).some((k) => next[k] !== entry[k])) {
+            changedColumns = true;
+            column = next;
+          }
+        }
         return column;
       });
+      // Visible columns wider than a page (about 1240px inside a card) scale down together: the last ones ran under the
+      // frozen actions column. A column keeps at least its header's width; unsized columns count as 120px.
+      if (shadcnLook) {
+        const visible = repairedColumns.filter(
+          (c): c is Record<string, unknown> => !!c && typeof c === 'object' && !Array.isArray(c) && (c as Record<string, unknown>).columnVisibility !== false
+        );
+        const width = (c: Record<string, unknown>) => (Number(c.columnSize) > 0 ? Number(c.columnSize) : 120);
+        const total = visible.reduce((sum, c) => sum + width(c), 0);
+        if (visible.length > 1 && total > 1240) {
+          const factor = 1240 / total;
+          const floor = (c: Record<string, unknown>) =>
+            c.columnType === 'button'
+              ? 110
+              : Math.max(
+                  /\be ?mail\b/i.test(`${String(c.key ?? '')} ${String(c.name ?? '')}`.replace(/[_-]+/g, ' ')) ? 240 : 64,
+                  Math.ceil(String(c.name ?? c.key ?? '').length * 7.5) + 32
+                );
+          for (let i = 0; i < repairedColumns.length; i++) {
+            const c = repairedColumns[i] as Record<string, unknown>;
+            if (!visible.includes(c)) continue;
+            repairedColumns[i] = { ...c, columnSize: Math.max(floor(c), Math.floor(width(c) * factor)) };
+          }
+          changedColumns = true;
+          warnings.push(`Table "${component.name}": its visible columns (${total}px) were wider than a page; they now scale to fit about 1240px.`);
+        }
+      }
+      // The first column of people shows an avatar beside each name, as a designed CRM or helpdesk table does (an
+      // email, id or editable column never; "name" alone may be a product's, so only words that name a person count).
+      if (shadcnLook) {
+        const index = repairedColumns.findIndex((c) => {
+          if (!c || typeof c !== 'object' || Array.isArray(c)) return false;
+          const entry = c as Record<string, unknown>;
+          const words = `${String(entry.key ?? '')} ${String(entry.name ?? '')}`.replace(/[_-]+/g, ' ');
+          return entry.columnVisibility !== false && ['string', undefined].includes(entry.columnType as string | undefined) &&
+            PERSON_WORDS.test(words) && !/\b(e ?mail|id|phone|count|type|notes?)\b/i.test(words);
+        });
+        const entry = index >= 0 ? (repairedColumns[index] as Record<string, unknown>) : undefined;
+        if (entry && entry.displayAvatar === undefined && entry.displayAsChip === undefined && !isTruthy(entry.isEditable)) {
+          repairedColumns[index] = { ...entry, displayAvatar: true };
+          changedColumns = true;
+        }
+      }
       if (changedColumns) setProperty('columns', repairedColumns);
+    }
+  }
+
+  // A money KPI bound to a number shows it as currency: "Revenue this week 947.37" read like a count. A binding that
+  // formats its own text ('$' + ..., toLocaleString, toFixed) or a typed figure is left as written, and so is an
+  // explicit valueFormat. The Stat shows text unchanged, so a binding that returns text is unaffected anyway.
+  // "auto" is the agent's way of not choosing, so it counts as unset. A binding that ends by formatting its own number
+  // without a currency (".toLocaleString('en-US', { minimumFractionDigits: 2 })", ".toFixed(2)") showed "822.54" for
+  // a month's spend: the trailing call is dropped so the Stat formats the number as currency.
+  const statFormat = propValue(properties, 'valueFormat');
+  if (component.type === 'ShadStat' && (statFormat === undefined || statFormat === 'auto')) {
+    const label = String(propValue(properties, 'label') ?? '');
+    let value = propValue(properties, 'value');
+    const moneyLabel = MONEY_WORDS.test(label.replace(/[_-]+/g, ' ')) && !countLabel(label.replace(/[_-]+/g, ' '));
+    const trailingFormat = /\.(?:toLocaleString\((?:[^()]|\([^()]*\))*\)|toFixed\(\s*\d*\s*\))\s*\}\}\s*$/;
+    if (
+      moneyLabel && typeof value === 'string' && trailingFormat.test(value) &&
+      !/[$€£₹¥]|Intl\.|currency/i.test(value)
+    ) {
+      value = value.replace(trailingFormat, '}}');
+      setProperty('value', value);
+    }
+    if (
+      typeof value === 'string' && /^\s*\{\{[\s\S]*\}\}\s*$/.test(value) &&
+      !/[$€£₹¥]|toLocaleString|toFixed|Intl\.|currency/i.test(value) &&
+      moneyLabel
+    ) {
+      setProperty('valueFormat', 'currency');
+      if (options.currency && propValue(properties, 'currency') === undefined) setProperty('currency', options.currency);
     }
   }
 
@@ -391,6 +700,54 @@ export function normalizeComponentSpec<T extends ComponentSpec>(
       `${component.type} "${component.name}": separated adjacent closing braces inside ${braceFixedKeys.join(', ')} ` +
         '(ToolJet ends a {{ }} expression at the first "}}", which would have left the component blank). ' +
         'Write nested closes as "} }" inside bindings.'
+    );
+  }
+
+  // A true/false property given a bare expression ("queries.getFlights.isLoading") without {{ }} is plain text, which
+  // ToolJet reads as true: three Air India tables showed their loading spinner forever. Wrap it.
+  const booleanKeys = new Set(['loadingState', 'visibility', 'disabledState']);
+  for (const entry of schema?.properties ?? []) if (entry.valueType === 'boolean') booleanKeys.add(entry.key);
+  const BARE_EXPRESSION = /^\s*!?\s*\(?\s*(queries|components|variables|globals|page|constants|parameters)\.[\w$]/;
+  const wrappedKeys: string[] = [];
+  for (const key of booleanKeys) {
+    const current = propValue(properties, key);
+    if (typeof current !== 'string' || current.includes('{{') || !BARE_EXPRESSION.test(current)) continue;
+    const entry = properties[key];
+    const wrapped = { ...(entry && typeof entry === 'object' && !Array.isArray(entry) ? entry : {}), value: `{{${current.trim()}}}`, fxActive: true };
+    properties[key] = wrapped;
+    propertyPatch[key] = wrapped;
+    wrappedKeys.push(key);
+  }
+  if (wrappedKeys.length) {
+    warnings.push(
+      `${component.type} "${component.name}": wrapped the bare expression in ${wrappedKeys.map((k) => `properties.${k}`).join(', ')} ` +
+        'in {{ }}; without the braces ToolJet reads it as text, which counts as true (a table stays on its loading spinner).'
+    );
+  }
+
+  // A text property holding a whole JavaScript expression without {{ }} shows the code on screen: an expense KPI read
+  // "String((queries.get_expenses.data || []).filter(r => ...).length) + ' expenses awaiting review'". Only a value
+  // that is plainly code (opens with a call, a bracket or a ToolJet root, references one and uses an operator) is
+  // wrapped; prose that mentions a query is left alone.
+  const CODE_START = /^\s*(?:String|Number|Math|moment|Intl|JSON|Object|Array)\s*[.(]|^\s*[([!]|^\s*(?:queries|components|variables|globals|page|constants|parameters)\.[\w$]/;
+  const CODE_ROOT = /\b(?:queries|components|variables|globals|constants|parameters)\.[\w$]/;
+  const CODE_OPERATOR = /=>|\|\||&&|===|!==|\.length\b|\.(?:filter|map|reduce|toFixed|toLocaleString|find|some)\s*\(/;
+  const codeKeys: string[] = [];
+  const showsCode = /CodeEditor|Html|Markdown|RichText|Json/i.test(component.type ?? '');
+  for (const [key, entry] of Object.entries(showsCode ? {} : properties)) {
+    if (booleanKeys.has(key)) continue;
+    const current = propValue(properties, key);
+    if (typeof current !== 'string' || current.includes('{{') || current.length > 2000) continue;
+    if (!CODE_START.test(current) || !CODE_ROOT.test(current) || !CODE_OPERATOR.test(current)) continue;
+    const wrapped = { ...(entry && typeof entry === 'object' && !Array.isArray(entry) ? entry : {}), value: `{{${current.trim()}}}` };
+    properties[key] = wrapped;
+    propertyPatch[key] = wrapped;
+    codeKeys.push(key);
+  }
+  if (codeKeys.length) {
+    warnings.push(
+      `${component.type} "${component.name}": ${codeKeys.map((k) => `properties.${k}`).join(', ')} held a JavaScript ` +
+        'expression without {{ }}, which shows the code on screen; it is now wrapped in {{ }}.'
     );
   }
 

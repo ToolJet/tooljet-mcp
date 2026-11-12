@@ -3,7 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { encodeComponentParent } from './componentParent.js';
+import { decodeComponentParent, encodeComponentParent } from './componentParent.js';
+import { batchChildOrders, childOrderProperty, isFlexContainerType } from './flexContainer.js';
 import type { ComponentLayout, ComponentSpec, ComponentSummary } from './tooljetClient.js';
 
 /**
@@ -126,10 +127,14 @@ function differingKey(type: string, section: Section, planned: Record<string, un
 }
 
 const RECT_KEYS = ['top', 'left', 'width', 'height'] as const;
+// FlexContainer children size by these instead of the grid rect; compared only when the plan sets them.
+const FLEX_LAYOUT_KEYS = ['fillWidth', 'widthPx', 'grow', 'minWidthPx'] as const;
 const sameRect = (planned: ComponentLayout | undefined, stored: unknown): boolean => {
   if (!planned) return true;
   if (!stored || typeof stored !== 'object') return false;
-  return RECT_KEYS.every((key) => Number((stored as Record<string, unknown>)[key]) === Number(planned[key]));
+  const held = stored as Record<string, unknown>;
+  return RECT_KEYS.every((key) => Number(held[key]) === Number(planned[key])) &&
+    FLEX_LAYOUT_KEYS.every((key) => planned[key] === undefined || held[key] === planned[key]);
 };
 
 export function diffPageInPlace(
@@ -148,6 +153,25 @@ export function diffPageInPlace(
     idOf.set(spec, id);
     ids.set(componentRef(spec), id);
   }
+  // A FlexContainer stores its children's order (childOrder, by id). The plan's order is its children in plan
+  // order, so a container whose children and order are unchanged compares equal and is kept.
+  const plannedParentId = (spec: ComponentSpec): string | undefined => {
+    const parent = spec.parentRef ? ids.get(spec.parentRef) : spec.parent;
+    if (!parent) return undefined;
+    const slot = spec.slotName ?? decodeComponentParent(parent).slotName;
+    return slot === 'body' ? decodeComponentParent(parent).parentId : undefined;
+  };
+  const explicitOrders = new Map(planned.flatMap((spec) => {
+    if (!isFlexContainerType(spec.type) || spec.properties?.childOrder === undefined) return [];
+    const raw = spec.properties.childOrder as { value?: unknown } | unknown[];
+    const value = Array.isArray(raw) ? raw : raw?.value;
+    return [[idOf.get(spec)!, Array.isArray(value) ? value : []] as const];
+  }));
+  const childOrders = batchChildOrders(
+    planned.map((spec) => ({ id: idOf.get(spec)!, type: spec.type, parentId: plannedParentId(spec) })),
+    explicitOrders,
+    (ref) => ids.get(ref)
+  );
   const diff: InPlaceDiff = { ids, keep: [], relayout: [], create: [], recreated: [], deleteIds: [], why: {} };
   const plannedNames = new Set(planned.map((spec) => spec.name));
   for (const component of stored) if (!component.name || !plannedNames.has(component.name)) diff.deleteIds.push(component.id);
@@ -158,9 +182,12 @@ export function diffPageInPlace(
     // A Form names its submit Button by ref; the page holds that Button's id.
     const submit = spec.type === 'Form' ? (spec.properties as Record<string, { value?: unknown }> | undefined)?.buttonToSubmit : undefined;
     const submitId = submit && typeof submit.value === 'string' ? ids.get(submit.value) : undefined;
-    const properties = submit && submitId ? { ...spec.properties, buttonToSubmit: { ...submit, value: submitId } } : spec.properties;
+    let properties = submit && submitId ? { ...spec.properties, buttonToSubmit: { ...submit, value: submitId } } : spec.properties;
+    const childOrder = childOrders.get(id);
+    if (childOrder) properties = { ...properties, childOrder: childOrderProperty(childOrder) };
     const { clientRef: _clientRef, parentRef: _parentRef, ...rest } = spec;
-    const resolved: InPlaceComponent = { ...rest, properties, id, ...(parent ? { parent } : {}) };
+    const parentType = parent ? planned.find((other) => idOf.get(other) === decodeComponentParent(parent).parentId)?.type : undefined;
+    const resolved: InPlaceComponent = { ...rest, properties, id, ...(parent ? { parent } : {}), ...(parentType ? { parentType } : {}) };
     if (!parent) delete resolved.parent;
 
     const existing = storedByName.get(spec.name);
@@ -171,7 +198,7 @@ export function diffPageInPlace(
     let why: string | undefined;
     if (existing.type !== spec.type) why = `type ${existing.type} -> ${spec.type}`;
     // The page holds the parent as ToolJet stores it: the parent's id, suffixed for a header, footer or tab.
-    else if ((existing.parent ?? undefined) !== (parent ? encodeComponentParent(parent, spec.slotName) : undefined)) why = 'parent';
+    else if ((existing.parent ?? undefined) !== (parent ? encodeComponentParent(parent, spec.slotName, parentType) : undefined)) why = 'parent';
     else if (!definitions[spec.type]) why = 'no default definition for this widget';
     else {
       for (const section of SECTIONS) {

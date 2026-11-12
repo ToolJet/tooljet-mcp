@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs';
 import { readCatalog } from '../lib/catalogFiles.js';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { activePackSet } from './packScope.js';
 
 export interface ComponentProp {
   key: string;
@@ -17,6 +18,8 @@ export interface ComponentProp {
   description?: string;
   label?: string;
   valueType?: string;
+  /** The member types of a 'union' valueType, e.g. ['array', 'string']. */
+  valueTypes?: string[];
   default?: unknown;
   /** Static values accepted by a source-defined select/switch property. */
   allowedValues?: Array<string | number | boolean>;
@@ -98,10 +101,38 @@ function loadLegacyReplacements(): Record<string, string> {
   return legacyReplacements;
 }
 
+const PACK_TYPE = /^Lib_[a-z0-9]+_/;
+
+/** The data file's catalogue with the active pack set's types (packScope.ts): another workspace's packs never show. */
+function merged(): Record<string, ComponentSchema> {
+  const set = activePackSet();
+  if (!set.schemas) return load();
+  let all = set.derived.get('catalog') as Record<string, ComponentSchema> | undefined;
+  if (!all) {
+    const extra = set.schemas;
+    all = Object.fromEntries(Object.entries(load()).filter(([key]) => !PACK_TYPE.test(key) || key in extra));
+    Object.assign(all, extra);
+    set.derived.set('catalog', all);
+  }
+  return all;
+}
+
+/** Every component schema, with the packs discovered at run time (the components catalogue resource serves this). */
+export function allComponentSchemas(): Record<string, ComponentSchema> {
+  return merged();
+}
+
+/** Sets the catalogue types discovered at run time for the active pack set (the workspace's packs, packCatalog.ts). */
+export function registerComponentSchemas(extra: Record<string, ComponentSchema>): void {
+  const set = activePackSet();
+  set.schemas = { ...extra };
+  set.derived.clear();
+}
+
 /** The palette for new authoring: modern component types + purpose (no per-prop detail). */
 export function getCatalog(): Array<{ type: string; description?: string }> {
   const legacy = loadLegacyReplacements();
-  return Object.values(load())
+  return Object.values(merged())
     .filter((c) => !legacy[c.type])
     .map((c) => ({ type: c.type, description: c.description }))
     .sort((a, b) => a.type.localeCompare(b.type));
@@ -109,7 +140,7 @@ export function getCatalog(): Array<{ type: string; description?: string }> {
 
 /** The full property schema for one component type, or null if unknown. */
 export function getComponentSchema(type: string): ComponentSchema | null {
-  return load()[type] ?? null;
+  return merged()[type] ?? null;
 }
 
 /** Modern replacement for a legacy type, when one exists. */

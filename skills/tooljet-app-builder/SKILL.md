@@ -5,7 +5,7 @@ metadata:
   generated_by: scripts/generate-skill.mjs
   sources: >-
     Source-verified component binding rules (22 components);
-    ToolJet WidgetManager catalog (74 built-in components);
+    ToolJet WidgetManager catalog (150 built-in components);
     ToolJet appCanvasConstants (grid mechanics)
 ---
 
@@ -30,12 +30,16 @@ For migration/clone/replacement requests, first read `references/migration.md`. 
 5. Verify each completed page/primary flow using `references/qa.md`. For detailed requests, reconcile a compact requirement-to-implementation ledger at these checkpoints (`references/workflows.md`); page count is not feature coverage. Static validation does not prove runtime query behavior, rendering, or event delivery.
 6. Share `editor_url` while authoring. After the first meaningful page works, open `viewer_url` in the built-in browser when available and reuse that tab. The final handoff is at most 120 words: both links, what works, one line of limitations.
 
+## Component library
+
+Build in the app's `component_library` from `get_app_summary`: `ui1` (ToolJet UI 1.0, native widgets) or `ui2` (ToolJet UI 2.0, `Shad*` types in `FlexContainer`s). New apps are UI 2.0; an explicit request for the other wins (`references/ui-layout.md`).
+
 ## Design quality — required outcomes, flexible composition
 
 Build a polished, contemporary 2026 product UI even from a short prompt: legible hierarchy, coherent theme surfaces, intentional density, clear actions and complete states. "Modern" is a quality bar, not a demand for gradients, glass, oversized cards or a fixed template. Do not claim production readiness from appearance.
 
 - **Resolve the design source:** explicit requirements/design system → existing or selected theme → recognizable brand → use case/industry/audience → ToolJet Modern. Preserve chosen themes, even on empty shells. For brand-led designs, map identity to visible component treatments—not just saved tokens (references/themes.md).
-- **Design the job, not a generic dashboard.** Identify the user's main decision and next action, then choose the dominant surface: agenda, review split-view, queue, map, board, analytics or form. Infer supporting views from the task and available data; a dashboard can need trends without the user naming charts. Do not invent metrics, records, capabilities or unrelated workflows.
+- **Design the job, not a generic dashboard.** Identify the user's main decision and next action, then choose the dominant surface: agenda, review split-view, queue, map, board, analytics or form. Work moving through stages (deals, hiring, orders) usually reads best as a board by stage. Infer supporting views from the task and available data; a dashboard can need trends without the user naming charts. Do not invent metrics, records, capabilities or unrelated workflows.
 - **Freedom with purpose.** Derive headers, region proportions, typography, accents and density from the work; do not select a palette or composition merely because it appears in an example. ToolJet themes store the resulting design tokens, not a menu of allowed designs. Zero KPIs is valid. No fixed KPI count, root-component budget, mandatory overview, all-white-card rule or universal header position applies. Familiar patterns are welcome when justified; industry identity must affect information hierarchy, not just colour.
 - **HTML where it helps.** Use theme-aware Html for read-only summaries when helpful; headers and KPIs can be native. Keep controls, charts, tables and interactions native. Read references/ui-layout.md for background and escaping safeguards.
 - **Finish the workflow.** Format values for the user's locale, give states readable labels, and provide loading, empty, error and disabled states with useful recovery. Size content to fit; use intentional spacing and accessible contrast. Before handoff, check relevance, hierarchy, interaction and actual rendering—not merely whether lint passed.
@@ -82,5 +86,5 @@ Tool schemas and warnings are authoritative. Load references as needed. Keep ins
 - Never run mutations, AI, email, OAuth, or other side effects merely to validate. Version changes require explicit intent: create only when asked, pin the returned `version_id`, and release only that exact version with `confirm:true`.
 - Seed writes are insert-only; omit generated serial keys. A duplicate-key failure is never permission to update existing rows.
 - Page/query/component/table/column deletion requires exact-target approval plus `confirm:true`, except for resources this build created itself (a diagnostic query, a scratch page): delete those before finishing rather than renaming or hiding them. Visibility is not authorization.
-- Keep app chrome controls distinct: `hide_header` hides the app header/banner; `navigation_position` places the separate generated navigation menu on the side or top; `navigation_hidden` hides that whole menu in either position; and `update_pages.hidden` hides only one non-Home page. Home cannot be hidden.
+- Keep app chrome controls distinct: `hide_header` hides the app header/banner; `navigation_position` places the separate generated navigation menu on the side or top; `navigation_hidden` hides that whole menu in either position, plus header and logo; and `update_pages.hidden` hides only one non-Home page. Home cannot be hidden.
 - Batch/phase writes can partially persist. Read reported completed resources and repair in place; never auto-delete or replay the whole batch blindly.

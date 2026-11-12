@@ -4,7 +4,13 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import type { AppTheme, CreateAppResult, ToolJetClient } from '../tooljetClient.js';
 import { ok, fail, type ToolDef } from './types.js';
-import { themeDefinition } from './manageTheme.js';
+import { themeDefinition } from './themeDefinition.js';
+import { accentWarning } from '../themeAccent.js';
+import { COMPONENT_PACK_DESCRIPTION, defaultPack, savedComponentLibrary, type ComponentLibrary } from '../componentLibrary.js';
+import { libraryPins } from '../libraryPack.js';
+
+// The standard theme's primary, for the accent note (a stock blue reads plain).
+const STANDARD_PRIMARY = { brand: { colors: { primary: { light: '#2563EB' } } } };
 import { paintsDarkCanvasInLightMode } from '../appSettings.js';
 export { paintsDarkCanvasInLightMode } from '../appSettings.js';
 
@@ -42,15 +48,23 @@ type DerivedTheme = z.infer<typeof derivedThemeSchema>;
 export type CreateAppThemeChoice = 'standard' | 'workspace_default' | string | DerivedTheme;
 
 export interface CreateAppToolResult extends CreateAppResult {
+  /** The library the app is built in, saved on the app: "ui2" (ToolJet UI 2.0) unless the call asked for "ui1". */
+  component_library: ComponentLibrary;
+  /** The component pack a UI 2.0 app is built with (its UI 2.0 widgets draw as that pack's). */
+  component_pack?: string;
+  /** Set when the library could not be saved; the app still exists. */
+  component_library_warning?: string;
   theme: {
     /** "standard" = the shipped theme, "derived" = created from the request, "named" = an existing workspace theme, "workspace_default" = untouched. */
     mode: 'standard' | 'derived' | 'workspace_default' | 'named';
     id?: string;
     name?: string;
     /** "dark" when the app was opened in dark mode because the derived theme's canvas is dark in light mode. */
-    app_mode?: 'dark';
+    app_mode?: 'light' | 'dark';
     /** Set when the requested theme could not be applied; the app still exists and uses the workspace default. */
     warning?: string;
+    /** Set when the theme's primary is near-black, grey or the stock blue: names the accent menu. */
+    accent_note?: string;
   };
 }
 
@@ -60,6 +74,14 @@ export interface CreateAppToolResult extends CreateAppResult {
  */
 async function resolveTheme(client: ToolJetClient, choice: CreateAppThemeChoice): Promise<AppTheme> {
   const themes = await client.listAppThemes();
+  // Experiment (exp/packs-platform): an app built on a component pack in its own design system (Ant, MUI) keeps the
+  // basic theme, so the pack draws in its stock colours; any theme takes over its tokens (frontend LibraryComponent).
+  // A theme the request asked for (a definition or a name) is still applied: forcing basic for those too dropped
+  // every Ant/MUI create_app.theme without a warning (a playful kitchen app's derived theme drew stock blue).
+  if (process.env.MCP_AGENT_PACK_LOOK === 'own' && (choice === 'standard' || choice === 'workspace_default')) {
+    const basic = themes.find((theme) => theme.isBasic && !theme.isDisabled);
+    if (basic) return basic;
+  }
   const wanted: StandardThemeFile | DerivedTheme | undefined =
     choice === 'standard' ? loadStandardTheme() : typeof choice === 'object' ? choice : undefined;
   if (wanted) {
@@ -92,32 +114,68 @@ export function createAppTool(client: ToolJetClient): ToolDef {
       'greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the ' +
       'workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. ' +
       'If a theme cannot be created (for example a licence gate) the app is still created and the result carries a ' +
-      'theme warning.',
+      'theme warning. New apps are built in ToolJet UI 2.0 (component_library "ui2": types starting with Shad, laid out ' +
+      'in FlexContainers); pass component_library "ui1" only when the user asks for the classic ToolJet widgets.',
     inputSchema: {
       name: z.string().min(1),
       theme: z.union([z.string().min(1), derivedThemeSchema]).optional(),
+      app_mode: z.enum(['light', 'dark']).optional().describe(
+        "Open the app in this mode. Pass 'dark' when the request asks for a dark app, so the theme's dark values paint " +
+        'every surface; never paint dark backgrounds by hand on a light-mode app.'),
+      component_library: z.enum(['ui1', 'ui2']).optional().describe(
+        'The component library the app is built in, saved on the app (the components panel lists it). Default "ui2", ' +
+          'ToolJet UI 2.0; "ui1" (ToolJet UI 1.0, the native widgets) only when the user asks for it.'),
+      component_pack: z.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION),
     },
-    async handler(args: { name: string; theme?: string | DerivedTheme }) {
+    async handler(args: { name: string; theme?: string | DerivedTheme; app_mode?: 'light' | 'dark'; component_library?: ComponentLibrary; component_pack?: string }) {
       try {
         // Internal callers can bypass MCP input validation. Reject incomplete themes before creating
         // even an empty app; a theme name alone does not prove that its requested palette was applied.
         if (typeof args.theme === 'object') derivedThemeSchema.parse(args.theme);
         const created = await client.createApp(args.name);
+        const componentLibrary: ComponentLibrary = args.component_library ?? 'ui2';
         const choice: CreateAppThemeChoice = args.theme ?? 'standard';
-        const result: CreateAppToolResult = { ...created, theme: { mode: 'workspace_default' } };
-        if (choice === 'workspace_default') return ok(result);
+        // The published library this server exposes renders only where the version pins it (libraryPack.ts).
+        const pins = libraryPins();
+        const pinned = pins ? { customComponentLibraries: pins } : {};
+        const result: CreateAppToolResult = {
+          ...created,
+          component_library: componentLibrary,
+          ...(componentLibrary === 'ui2' && (args.component_pack || defaultPack()) ? { component_pack: (args.component_pack || defaultPack())!.toLowerCase() } : {}),
+          theme: { mode: 'workspace_default' },
+        };
+        // What the app saves: a pack's "pack:<id>" for UI 2.0, so the components panel and later builds use that pack.
+        const savedLibrary = savedComponentLibrary(componentLibrary, args.component_pack);
+        // Saved explicitly, not left to the server's default for new apps: older ToolJet servers create apps without it.
+        // A failure never fails the call: the app exists, and a retried create_app would make a second one.
+        const saveLibrary = () => Promise.resolve().then(() => client.updateAppSettings({
+          appId: created.app_id,
+          versionId: created.version_id,
+          globalSettings: { componentLibrary: savedLibrary, ...pinned },
+        })).catch((libraryErr: unknown) => {
+          result.component_library_warning = `Could not save component_library "${componentLibrary}": ` +
+            `${libraryErr instanceof Error ? libraryErr.message : String(libraryErr)}. Build in it anyway.`;
+        });
+        if (choice === 'workspace_default') {
+          await saveLibrary();
+          return ok(result);
+        }
         const label = typeof choice === 'object' ? choice.name : choice;
         try {
           const theme = await resolveTheme(client, choice);
-          const dark = typeof choice === 'object' && paintsDarkCanvasInLightMode(choice.definition);
+          const appMode =
+            args.app_mode ??
+            (typeof choice === 'object' && paintsDarkCanvasInLightMode(choice.definition) ? 'dark' : undefined);
           await client.updateAppSettings({
             appId: created.app_id,
             versionId: created.version_id,
-            globalSettings: { theme, ...(dark ? { appMode: 'dark' as const } : {}) },
+            globalSettings: { theme, componentLibrary: savedLibrary, ...pinned, ...(appMode ? { appMode } : {}) },
           });
           const mode = choice === 'standard' ? 'standard' : typeof choice === 'object' ? 'derived' : 'named';
-          result.theme = { mode, id: theme.id, name: theme.name, ...(dark ? { app_mode: 'dark' as const } : {}) };
+          const accentNote = mode === 'standard' ? accentWarning(STANDARD_PRIMARY) : mode === 'derived' ? accentWarning((choice as DerivedTheme).definition) : null;
+          result.theme = { mode, id: theme.id, name: theme.name, ...(appMode ? { app_mode: appMode } : {}), ...(accentNote ? { accent_note: accentNote } : {}) };
         } catch (themeErr) {
+          await saveLibrary();
           result.theme = {
             mode: 'workspace_default',
             warning:

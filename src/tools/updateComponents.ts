@@ -6,19 +6,28 @@ import {
   lintComponentSlots,
   lintComponentSpec,
   lintKanbanInteractions,
+  lintShadKanbanCards,
+  lintShadScheduleScale,
   lintRenderedGeometry,
   lintStandardSingleLineInputHeight,
   lintTextGeometry,
   lintUnusableTextGeometry,
   type LintComponent,
 } from '../lint.js';
-import { COMPONENT_SLOT_NAMES, componentSlotSchema, decodeComponentParent, encodeComponentParent } from '../componentParent.js';
+import { COMPONENT_SLOT_NAMES, componentSlotSchema, decodeComponentParent, encodeComponentParent, resolveParentRef } from '../componentParent.js';
 import { ok, fail, type ToolDef } from './types.js';
-import { normalizeComponentSpec } from '../componentNormalization.js';
+import { normalizeComponentSpec, packValueAsDefault } from '../componentNormalization.js';
 import { resolveRef } from '../refResolution.js';
 import { hasNonEmptyDefinition, strictEntry } from '../strictEntry.js';
 import { componentNameError, componentNameSchema } from '../componentName.js';
 import { COMPONENT_FX_UPDATE_GUIDANCE } from '../componentFxGuidance.js';
+import {
+  appendedChildOrders,
+  childOrderProperty,
+  isFlexContainerType,
+  reparentAdditions,
+  resolveAuthoredChildOrder,
+} from '../flexContainer.js';
 
 const DEFINITION_SECTIONS = ['properties', 'styles', 'validation', 'general', 'general_styles', 'others'] as const;
 
@@ -77,7 +86,8 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
       'not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container ' +
       'regions, or modal for Kanban card-click content; omit parent to keep the current parent. Unknown entry keys are rejected (a top-level properties/styles ' +
       'patch is an error, not a silent no-op), and an entry that changes nothing fails. Get component ids + current ' +
-      'values from get_app_summary / get_component.',
+      'values from get_app_summary / get_component. To reorder a FlexContainer, set its properties.childOrder to the child ' +
+      'names or ids in the wanted order; unlisted children follow in their current order.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),
@@ -156,6 +166,15 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             continue;
           }
           let parent = update.parent;
+          if (typeof parent === 'string' && parent) {
+            // A parent named by its component name moves the component under that component's id.
+            const resolvedParent = resolveParentRef(page.components, parent);
+            if (!resolvedParent.ok) {
+              errors.push(`Component "${update.component_id}": ${resolvedParent.error}`);
+              continue;
+            }
+            parent = resolvedParent.parent;
+          }
           let slotName = update.slot_name;
           if (slotName !== undefined) {
             parent ??= current.parent ? decodeComponentParent(current.parent).parentId : undefined;
@@ -173,6 +192,36 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
                 continue;
               }
             }
+          }
+          // A FlexContainer's childOrder holds child ids; accept child names too and write the complete order, so
+          // a partial list cannot leave the rest to ToolJet's arbitrary fallback order.
+          const authoredOrder = (update.definition?.properties as Record<string, unknown> | undefined)?.childOrder;
+          if (authoredOrder !== undefined && isFlexContainerType(current.type)) {
+            const raw = authoredOrder as { value?: unknown } | unknown[];
+            const value = Array.isArray(raw) ? raw : raw?.value;
+            if (!Array.isArray(value)) {
+              errors.push(`FlexContainer "${current.name ?? current.id}": properties.childOrder must be an array of child component ids or names.`);
+              continue;
+            }
+            const resolved = resolveAuthoredChildOrder(current, page.components, value);
+            if (resolved.unknown.length) {
+              errors.push(
+                `FlexContainer "${current.name ?? current.id}": childOrder names ${resolved.unknown.map((ref) => `"${ref}"`).join(', ')}, ` +
+                  'which are not children of this container. List its child component ids or names.'
+              );
+              continue;
+            }
+            update.definition = {
+              ...update.definition,
+              properties: { ...(update.definition!.properties as Record<string, unknown>), childOrder: childOrderProperty(resolved.order) },
+            };
+          }
+          // Judged on what this update writes: the stored definition always carries defaultValue.
+          const packValue = packValueAsDefault(current.type, current.name ?? current.id,
+            update.definition?.properties as Record<string, unknown> | undefined);
+          if (packValue.warning) {
+            warnings.push(packValue.warning);
+            update.definition = { ...update.definition, properties: packValue.properties } as typeof update.definition;
           }
           const definition = update.definition as {
             properties?: Record<string, unknown>;
@@ -265,6 +314,8 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
         warnings.push(...introducedForChanged(lintTextGeometry));
         warnings.push(...lintRenderedGeometry(allComponents));
         warnings.push(...lintKanbanInteractions(allComponents));
+        warnings.push(...lintShadKanbanCards(allComponents));
+        warnings.push(...lintShadScheduleScale(allComponents));
         const result = await client.updateComponents({
           appId: args.app_id,
           versionId: args.version_id,
@@ -273,6 +324,22 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
         });
         if (layoutFixes.length) {
           await client.updateLayouts({ appId: args.app_id, versionId: args.version_id, pageId: args.page_id, layouts: layoutFixes });
+        }
+        // A child moved into a FlexContainer joins the end of its childOrder, as the editor does on a drop.
+        const appended = appendedChildOrders(page.components, reparentAdditions(page.components, resolvedUpdates.map((update) => ({
+          componentId: update.componentId,
+          parent: update.parent !== undefined ? encodeComponentParent(update.parent, update.slotName) : undefined,
+        }))));
+        if (appended.size) {
+          await client.updateComponents({
+            appId: args.app_id,
+            versionId: args.version_id,
+            pageId: args.page_id,
+            updates: [...appended].map(([componentId, order]) => ({
+              componentId,
+              definition: { properties: { childOrder: childOrderProperty(order) } },
+            })),
+          });
         }
         return ok({ ...result, warnings: [...new Set(warnings)] });
       } catch (err) {
