@@ -549,7 +549,7 @@ function loadConfig(identity) {
   const apiUrl = staticApiUrl;
   const appUrl = explicitAppUrl ?? explicitApiUrl ?? "http://localhost:8082";
   const sessionToken = env("TOOLJET_SESSION_TOKEN");
-  const stored = !env("TOOLJET_PAT") && !sessionToken ? storedCliLogin(explicitApiUrl) : void 0;
+  const stored = !env("TOOLJET_PAT") && !sessionToken ? storedCliLogin(explicitApiUrl ?? explicitAppUrl) : void 0;
   const pat = env("TOOLJET_PAT") ?? stored?.pat;
   const workspaceId = env("TOOLJET_WORKSPACE_ID");
   if (stored) {
