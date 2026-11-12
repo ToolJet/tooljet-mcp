@@ -3565,8 +3565,23 @@ A call that works: ${exampleCall(args, summary, codeApp)}`);
           }
         }
         const failed = results.filter((r) => r.error);
+        const failures = failed.map((r) => `${r.resource.name ?? r.resource.id}: ${r.error}`).join("; ");
         if (failed.length === results.length) {
-          throw new Error(failed.map((r) => `${r.resource.name ?? r.resource.id}: ${r.error}`).join("; ") + (toGrant.length ? " No access to the app was given." : ""));
+          throw new Error(failures + (toGrant.length ? " No access to the app was given." : ""));
+        }
+        if (failed.length) {
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                error: `${failed.length} of ${results.length} limits were not set: ${failures}.` + (toGrant.length ? " No access to the app was given." : "") + " Set the failed ones again; the others are in place.",
+                app_id: args.app_id,
+                applied: results.filter((r) => !r.error),
+                failed
+              })
+            }],
+            isError: true
+          };
         }
         let granted = [];
         if (toGrant.length) {
@@ -3582,7 +3597,7 @@ A call that works: ${exampleCall(args, summary, codeApp)}`);
           ...one ? results[0] : { results },
           ...granted.length ? { granted_app_access: granted, note: grantNote } : {}
         };
-        return ok(failed.length ? { ...body, warning: `${failed.length} of ${results.length} limits were not set; see each error.` } : body);
+        return ok(body);
       } catch (error) {
         return fail(error);
       }
