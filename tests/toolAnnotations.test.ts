@@ -68,7 +68,7 @@ const MUST_BE_READ_ONLY = [
   'generate_form_schema', 'get_app', 'get_app_settings', 'get_app_summary', 'get_component',
   'get_component_catalog', 'get_datasource_query_schema', 'get_runtime_info', 'get_table_schema',
   'inspect_datasource_schema', 'lint_app_spec', 'list_app_themes', 'list_datasources',
-  'list_events', 'list_tables', 'list_workspaces', 'list_workspace_groups', 'prepare_sql_discovery_queries',
+  'list_events', 'list_tables', 'list_workspaces', 'list_workspace_branches', 'list_workspace_groups', 'prepare_sql_discovery_queries',
   'test_datasource_connection', 'use_workspace', 'validate_app', 'verify_page_render',
   'get_workflow', 'get_workflow_execution', 'get_workflow_node_catalog',
   'get_workflow_capabilities', 'list_workflows', 'lint_workflow_spec', 'validate_workflow',
@@ -80,10 +80,10 @@ describe('tool annotations', () => {
   const tools = registeredTools();
 
   it.each([
-    { legacy: false, render: false, count: 125 },
-    { legacy: true, render: false, count: 130 },
-    { legacy: false, render: true, count: 126 },
-    { legacy: true, render: true, count: 131 },
+    { legacy: false, render: false, count: 126 },
+    { legacy: true, render: false, count: 131 },
+    { legacy: false, render: true, count: 127 },
+    { legacy: true, render: true, count: 132 },
   ])('publishes complete wire annotations with legacy=$legacy and render=$render', async ({ legacy, render, count }) => {
     const previous = process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS;
     process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS = String(legacy);

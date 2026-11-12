@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { assertPageIcon } from './pageIcons.js';
 import type { Auth, Workspace, ViewerSession } from './auth.js';
-import type { Config } from './config.js';
+import { branchIdFor, type Config } from './config.js';
 import { isMisplacedStyleKey } from './lint.js';
 import { packDefaultDefinition } from './packDefaults.js';
 import { downgradeFlexForLibrary, libraryTypeOf, missingLibraryPins, toLibraryComponent } from './libraryPack.js';
@@ -30,6 +30,7 @@ import { invalidSeedTimestamps } from './seedTimestampValidation.js';
 import { z } from 'zod';
 
 export interface CreateAppResult {
+  branch_id?: string;
   app_id: string;
   version_id: string;
   home_page_id: string;
@@ -638,6 +639,7 @@ export interface QuerySummary {
    back, which left the app public whenever the restore failed — a best-effort call with nobody watching.
    An app's visibility belongs to its owner, changed by them, in the product. Do not add it back. */
 export interface ToolJetClient {
+  branchId?: string;
   appVersions: ReturnType<typeof createAppVersionLifecycle>;
   workflows: WorkflowClient;
   assertWorkflowQueryTarget(options: Record<string, unknown>): Promise<void>;
@@ -667,6 +669,7 @@ export interface ToolJetClient {
   updateWorkspaceUser(organizationUserId: string, params: UpdateWorkspaceUserParams): Promise<{ user: WorkspaceUser; updated: boolean }>;
   setWorkspaceUserArchived(organizationUserId: string, archived: boolean): Promise<void>;
   createApp(name: string): Promise<CreateAppResult>;
+  listWorkspaceBranches(): Promise<Record<string, unknown>>;
   createAppVersion(params: CreateAppVersionParams): Promise<AppVersionResult>;
   switchAppVersion(appId: string, versionId: string): Promise<SwitchAppVersionResult>;
   releaseApp(appId: string, versionId: string): Promise<ReleaseAppResult>;
@@ -1608,6 +1611,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   async function createApp(name: string): Promise<CreateAppResult> {
+    const branchId = branchIdFor(config);
     // A taken name is a 409 that used to bounce back to the model, which then spent a turn (and at
     // max reasoning effort, a minute) inventing "… 2026" or "… A9". Every build in a shared workspace
     // paid it twice. Append a counter ourselves; the model sees the name it got in the result.
@@ -1618,7 +1622,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       createRes = await auth.authedFetch('/api/apps', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: finalName, type: 'front-end' }),
+        body: JSON.stringify({ name: finalName, type: 'front-end', ...(branchId ? { branchId } : {}) }),
       });
       if (createRes.status !== 409) break;
     }
@@ -1638,14 +1642,17 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const orgSlug = await auth.getOrganizationSlug();
     const appSlug = created.slug ?? created.id;
 
-    const editorUrl = `${config.appUrl}/${orgSlug}/apps/${appSlug}`;
+    const branchName = app.editing_version.branch?.name;
+    const branchQuery = typeof branchName === 'string' ? `branch=${encodeURIComponent(branchName)}` : '';
+    const editorUrl = `${config.appUrl}/${orgSlug}/apps/${appSlug}${branchQuery ? `?${branchQuery}` : ''}`;
     const homeHandle = homePage.handle ?? 'home';
     const viewerUrl =
       `${config.appUrl}/applications/${created.id}/${encodeURIComponent(homeHandle)}` +
-      `?env=development&version=${encodeURIComponent(versionName)}`;
+      `?env=development&version=${encodeURIComponent(versionName)}${branchQuery ? `&${branchQuery}` : ''}`;
 
     return {
       app_id: created.id,
+      ...(branchId ? { branch_id: branchId } : {}),
       version_id: versionId,
       home_page_id: homePage.id,
       app_url: editorUrl,
@@ -1656,6 +1663,23 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   async function createAppVersion(params: CreateAppVersionParams): Promise<AppVersionResult> {
+    const inventory = await auth.authedFetch(`/api/apps/${encodeURIComponent(params.appId)}/versions`);
+    await assertOk(inventory, 'createAppVersion.readSource');
+    const body = (await inventory.json()) as { versions?: Array<Record<string, unknown>> };
+    const source = body.versions?.find(version => version.id === params.versionFromId);
+    if (!source) {
+      throw new Error(`ToolJet createAppVersion failed: version ${params.versionFromId} was not found in app ${params.appId}.`);
+    }
+    // Feature branches allow one branch head, not a second named draft. Native Save
+    // creates a published snapshot on the default branch, which is a different operation.
+    if (String(source.version_type ?? source.versionType).toLowerCase() === 'branch') {
+      throw new Error('Cannot clone a branch head into a named draft. Save a named version in ToolJet, then use its version_id as the clone source. No version was created or published.');
+    }
+    const sourceBranchId = source.branch_id ?? source.branchId;
+    const selectedBranchId = branchIdFor(config);
+    if (selectedBranchId && typeof sourceBranchId === 'string' && sourceBranchId !== selectedBranchId) {
+      throw new Error('Cannot create a named draft on a different branch from its source. Select the source version\'s branch before cloning. No version was created.');
+    }
     const res = await auth.authedFetch(`/api/apps/${encodeURIComponent(params.appId)}/versions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1740,6 +1764,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       const version = body.versions?.find((candidate) => candidate.id === versionId);
       if (!version) {
         throw new Error(`ToolJet releaseApp failed: version ${versionId} was not found in app ${appId}.`);
+      }
+      // Branch publication creates a different version; never release the branch head by mistake.
+      if (String(version.version_type ?? version.versionType).toLowerCase() === 'branch') {
+        throw new Error('Cannot release a branch head. Save a named version in ToolJet, then select that exact version for release.');
       }
       return {
         id: versionId,
@@ -3462,7 +3490,19 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     inviteWorkspaceUser,
     updateWorkspaceUser,
     setWorkspaceUserArchived,
+    branchId: config.branchId,
     createApp,
+    async listWorkspaceBranches() {
+      const res = await auth.authedFetch('/api/workspace-branches');
+      if (res.status === 404) return { branches: [], is_multi_branching_enabled: false };
+      await assertOk(res, 'listWorkspaceBranches');
+      const body = await res.json();
+      return {
+        branches: body.branches.map((branch: any) => ({ id: branch.id, name: branch.name, is_default: branch.isDefault })),
+        active_branch_id: branchIdFor(config) ?? body.activeBranchId,
+        is_multi_branching_enabled: body.isMultiBranchingEnabled,
+      };
+    },
     createAppVersion,
     switchAppVersion,
     releaseApp,

@@ -890,6 +890,26 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
     }
   }
 
+  if (kind === 'tooljetdb' && operation === 'delete_rows') {
+    // The backend defaults an omitted limit to 1. PostgREST rejects any bounded
+    // delete without an explicit order, even when its filter targets one row.
+    const limit = valueAtPath(options, 'delete_rows.limit');
+    const hasOrder = ['order_column', 'order_column_id'].some((key) => {
+      const value = valueAtPath(options, `delete_rows.${key}`);
+      return typeof value === 'string' && value.trim() !== '';
+    });
+    if ((limit === undefined || Boolean(limit)) && !hasOrder) {
+      errors.push({
+        code: 'missing_delete_order',
+        path: 'delete_rows.order_column',
+        message:
+          'ToolJet DB delete_rows defaults to limit 1 and bounded deletes require an explicit order. ' +
+          'Set delete_rows.order_column or order_column_id to the actual primary key from get_table_schema. ' +
+          'Preserve the intended filters and limit; do not assume the primary key is named id.',
+      });
+    }
+  }
+
   if (kind === 'tooljetdb' && (operation === 'update_rows' || operation === 'delete_rows')) {
     // The FILTER half of the same hazard, and far more dangerous than the column half.
     // buildPostgrestQuery only emits a clause when BOTH `column` and `operator` are non-empty
@@ -933,26 +953,6 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
         message:
           `ToolJet DB update_rows requires "${filtersPath}"; without it the write is unfiltered and ` +
           'updates EVERY ROW in the table. Add {"0": {"column", "operator", "value"}}.',
-      });
-    }
-  }
-
-  if (kind === 'tooljetdb' && operation === 'delete_rows') {
-    // deleteRows defaults an absent limit to 1 and sends `order` only with order_column. PostgREST
-    // v12 (the production image) refuses a limited DELETE with no order ("A limit was applied
-    // without an explicit order"), so every such delete failed in the released app; v14 on dev
-    // stacks accepts it. The App Builder sends limit "" (no limit: every matching row).
-    const deleteRows = valueAtPath(options, 'delete_rows');
-    const limit = isObject(deleteRows) ? deleteRows.limit : undefined;
-    const ordered = isObject(deleteRows) && Boolean(deleteRows.order_column || deleteRows.order_column_id);
-    if (limit !== '' && !ordered) {
-      errors.push({
-        code: 'unordered_delete_limit',
-        path: 'delete_rows.limit',
-        message:
-          'ToolJet DB delete_rows needs "limit": "" (delete every row the where_filters match, as the App Builder ' +
-          'does) or a limit with "order_column" (for example "id"). Without either, ToolJet applies limit 1 with ' +
-          'no order and the production database refuses the delete, so it fails every time in the released app.',
       });
     }
   }

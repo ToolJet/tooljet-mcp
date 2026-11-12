@@ -1,8 +1,24 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+// HTTP is stateless; stdio can run calls concurrently. Never store a selected branch on a client.
+const branchContext = new AsyncLocalStorage<string | undefined>();
+export const withBranchContext = <T>(branchId: string | undefined, fn: () => T): T => branchContext.run(branchId, fn);
+export const currentBranchId = (): string | undefined => branchContext.getStore();
+
+export function branchIdFor(config: { branchId?: string }): string | undefined {
+  const requested = branchContext.getStore();
+  if (config.branchId && requested && config.branchId !== requested) {
+    throw new Error('This build is pinned to another branch. Start a build from the intended branch.');
+  }
+  return config.branchId ?? requested;
+}
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 export interface Config {
+  /** Branch pinned by the in-product build or standalone configuration. */
+  branchId?: string;
   apiUrl: string;
   /** Where a human opens ToolJet in a browser — used only to build user-facing links (a datasource's
    *  settings page, an app's editor/viewer URL). Most self-hosted instances serve the API and the UI
@@ -42,6 +58,7 @@ export interface Config {
  * caller, the session authorises the work.
  */
 export interface RequestIdentity {
+  branchId?: string;
   /** Trusted browser base supplied by the public OAuth deployment, never a request header. */
   appUrl?: string;
   viewerUrl?: string;
@@ -67,6 +84,7 @@ export interface RequestIdentity {
 export const SESSION_TOKEN_HEADER = 'x-tooljet-session';
 export const WORKSPACE_ID_HEADER = 'x-tooljet-workspace-id';
 export const WORKSPACE_SLUG_HEADER = 'x-tooljet-workspace-slug';
+export const BRANCH_ID_HEADER = 'x-tooljet-branch-id';
 export const PAT_HEADER = 'x-tooljet-pat';
 export const BASE_URL_HEADER = 'x-tooljet-url';
 /** Self-hosted customer ID, forwarded by tooljet-agent — lets validateApiUrl check an origin outside
@@ -293,6 +311,7 @@ export async function identityFromHeaders(
 ): Promise<RequestIdentity | undefined> {
   const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
   const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
+  const branchId = readHeader(headers, BRANCH_ID_HEADER);
   const pat = readHeader(headers, PAT_HEADER);
   const rawApiUrl = readHeader(headers, BASE_URL_HEADER);
   const customerId = readHeader(headers, CUSTOMER_ID_HEADER);
@@ -324,7 +343,7 @@ export async function identityFromHeaders(
     // mechanism exists to prevent, so refuse rather than silently prefer one.
     if (sessionToken) throw new Error(`Send either ${PAT_HEADER} or ${SESSION_TOKEN_HEADER}, not both.`);
     // A PAT is pinned to the workspace it was issued in, so unlike a session it needs no companion.
-    return { pat, apiUrl, customerVerified };
+    return { pat, apiUrl, customerVerified, ...(branchId ? { branchId } : {}) };
   }
 
   if (!sessionToken && !workspaceId) {
@@ -340,6 +359,7 @@ export async function identityFromHeaders(
   return {
     sessionToken,
     workspaceId,
+    ...(branchId ? { branchId } : {}),
     workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER),
     apiUrl,
     customerVerified,
@@ -390,7 +410,7 @@ export function loadConfig(identity?: RequestIdentity): Config {
     const appUrl = identity.appUrl ?? explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? 'http://localhost:8082';
 
     const viewerUrl = identity.viewerUrl ?? appUrl;
-    if (identity.pat) return { apiUrl, appUrl, viewerUrl, pat: identity.pat };
+    if (identity.pat) return { apiUrl, appUrl, viewerUrl, pat: identity.pat, ...(identity.branchId ? { branchId: identity.branchId } : {}) };
     return {
       apiUrl,
       appUrl,
@@ -400,6 +420,7 @@ export function loadConfig(identity?: RequestIdentity): Config {
       oauthGrantId: identity.oauthGrantId,
       workspaceId: identity.workspaceId,
       workspaceSlug: identity.workspaceSlug,
+      ...(identity.branchId ? { branchId: identity.branchId } : {}),
     };
   }
 
@@ -411,7 +432,8 @@ export function loadConfig(identity?: RequestIdentity): Config {
   const pat = env('TOOLJET_PAT') ?? stored?.pat;
   const workspaceId = env('TOOLJET_WORKSPACE_ID');
   if (stored) {
-    return { apiUrl: stored.apiUrl, appUrl: explicitAppUrl ?? stored.apiUrl, pat: stored.pat };
+    return { apiUrl: stored.apiUrl, appUrl: explicitAppUrl ?? stored.apiUrl, pat: stored.pat,
+      ...(env('TOOLJET_BRANCH_ID') ? { branchId: env('TOOLJET_BRANCH_ID') } : {}) };
   }
   if (!pat && !sessionToken) {
     throw new Error(
@@ -435,5 +457,6 @@ export function loadConfig(identity?: RequestIdentity): Config {
     sessionToken,
     workspaceId,
     workspaceSlug: env('TOOLJET_WORKSPACE_SLUG'),
+    ...(env('TOOLJET_BRANCH_ID') ? { branchId: env('TOOLJET_BRANCH_ID') } : {}),
   };
 }

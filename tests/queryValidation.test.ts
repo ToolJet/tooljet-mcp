@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeQueryOptions, validateQueryOptions } from '../src/queryValidation.js';
+import { prepareQueryOptionsForWrite } from '../src/queryPersistence.js';
 
 describe('validateQueryOptions', () => {
   it('accepts the ToolJet OpenAI wrapper shape and returns the operation', () => {
@@ -350,10 +351,10 @@ describe('tooljetdb write filters (mass-update guard)', () => {
     const codes = (deleteRows: Record<string, unknown>) =>
       validateQueryOptions('tooljetdb', { operation: 'delete_rows', table_id: 't1', delete_rows: deleteRows })
         .errors.map((e) => e.code);
-    expect(codes({ where_filters: where })).toContain('unordered_delete_limit');
-    expect(codes({ where_filters: where, limit: 1 })).toContain('unordered_delete_limit');
-    expect(codes({ where_filters: where, limit: '' })).not.toContain('unordered_delete_limit');
-    expect(codes({ where_filters: where, limit: 1, order_column: 'id' })).not.toContain('unordered_delete_limit');
+    expect(codes({ where_filters: where })).toContain('missing_delete_order');
+    expect(codes({ where_filters: where, limit: 1 })).toContain('missing_delete_order');
+    expect(codes({ where_filters: where, limit: '' })).not.toContain('missing_delete_order');
+    expect(codes({ where_filters: where, limit: 1, order_column: 'id' })).not.toContain('missing_delete_order');
   });
 
   // HOTEL-01 / I18N-01: the SQL shape `create_row.columns` was "repaired" into a column named "columns".
@@ -558,5 +559,37 @@ describe('ToolJet DB filter operator aliases', () => {
   it('keeps another datasource contract separate', () => {
     const result = validateQueryOptions('postgresql', options('update_rows', 'equals'));
     expect(result.errors.filter((e) => e.code === 'invalid_tooljetdb_filter_operator')).toEqual([]);
+  });
+});
+
+describe('ToolJet DB bounded delete order', () => {
+const filters = { selected: { column: 'sample_code', operator: 'eq', value: '{{components.samples.selectedRow.sample_code}}' } };
+const prepare = (extra: Record<string, unknown> = {}) => prepareQueryOptionsForWrite('tooljetdb', {
+  operation: 'delete_rows',
+  table_id: 'ceramic-samples',
+  delete_rows: { where_filters: filters, ...extra },
+});
+
+
+  it.each([{}, { limit: 4 }, { order_column: ' ', order_column_id: '' }])('refuses missing order before persisting %j', (extra) => {
+    const result = prepare(extra);
+    expect(result.validation?.errors).toContainEqual(expect.objectContaining({
+      code: 'missing_delete_order', path: 'delete_rows.order_column',
+    }));
+    expect(result.errors.join(' ')).toMatch(/primary key.*get_table_schema/i);
+    expect(result.options.delete_rows).toEqual({ where_filters: filters, ...extra });
+  });
+
+  it.each([
+    { order_column: 'sample_code' },
+    { order_column_id: 'b6687043-07e2-4c34-b3bf-fc1989d81f93' },
+  ])('preserves an explicit table-derived order %j', (extra) => {
+    const result = prepare(extra);
+    expect(result.errors).toEqual([]);
+    expect(result.options.delete_rows).toEqual({ where_filters: filters, ...extra });
+  });
+
+  it.each([0, null, ''])('keeps explicitly unbounded filtered deletes unchanged (limit %j)', (limit) => {
+    expect(prepare({ limit }).errors).toEqual([]);
   });
 });

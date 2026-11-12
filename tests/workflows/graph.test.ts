@@ -13,6 +13,10 @@ describe('workflow graph contracts', () => {
       [example.query_name]: { status: 'ok', data: result },
     });
     expect(response).toEqual({ sum: 43 });
+    const condition = compileGraph(empty(), specSchema.parse({ nodes: [
+      { ref: 'positiveSum', type: 'condition', code: example.condition },
+    ] })).graph.nodes[0].data.code;
+    expect(runInNewContext(`(${condition})`, { [example.query_name]: { data: result } })).toBe(true);
   });
   it('compiles editor types and validates start to response', () => {
     const { graph } = compileGraph(empty(), basic());

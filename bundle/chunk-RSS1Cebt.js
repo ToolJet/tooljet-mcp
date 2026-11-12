@@ -1,14 +1,13 @@
 import { createRequire } from "node:module";
-import { p as paintsDarkCanvasInLightMode, T as ToolJetHttpError, W as WORKSPACE_ACCESS_KEYS, a as WORKSPACE_PERMISSION_KEYS, w as workspaceAccessKeys } from "./chunk-0-6sjmM9.js";
-import { o as ok, f as fail, i as exposeActions } from "./chunk-4n_covov.js";
-import { z as libraryPins, A as defaultPack, B as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION } from "./chunk-23CIdoFG.js";
-import { ax as external_exports } from "./chunk-DtQIWAeP.js";
+import { p as paintsDarkCanvasInLightMode, T as ToolJetHttpError, W as WORKSPACE_ACCESS_KEYS, a as WORKSPACE_PERMISSION_KEYS, w as workspaceAccessKeys } from "./chunk-C_xL9Jh_.js";
+import { b0 as external_exports, b8 as ok, b7 as fail, ba as exposeActions } from "./chunk-Csl8mO51.js";
+import { z as libraryPins, A as defaultPack, B as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION } from "./chunk-CzEla2h4.js";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { j as union, A as string, V as number, a7 as looseObject, U as object, a8 as literal, i as unknown, ax as _enum, aU as array, ai as intersection, K as record, aQ as boolean, N as preprocess, T as optional, ae as iso_exports, aD as discriminatedUnion, aI as custom, Y as _null2 } from "./chunk-CAiG5_Js.js";
-import { e7 as __toESM, e5 as __commonJS } from "./chunk-BJ6ur0AF.js";
-import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-nEOjGGpO.js";
+import { j as union, A as string, V as number, a7 as looseObject, U as object, a8 as literal, i as unknown, ax as _enum, aU as array, ai as intersection, K as record, aQ as boolean, N as preprocess, T as optional, ae as iso_exports, aD as discriminatedUnion, aI as custom, Y as _null2 } from "./chunk-Dl7vSZwt.js";
+import { e8 as __toESM, e6 as __commonJS } from "./chunk-C1Uan0hB.js";
+import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-Cd-rK1dm.js";
 createRequire(import.meta.url);
 var colorPair = external_exports.object({
   light: external_exports.string().trim().min(1).max(100).describe("Color used in light mode; hex is recommended."),

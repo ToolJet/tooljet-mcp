@@ -1,24 +1,22 @@
 import { createRequire } from "node:module";
-import { ea as prepareSqlDiscoveryQueries } from "./chunk-BJ6ur0AF.js";
-import { M as inPackSet, N as listWorkspaceAppsTool, O as listWorkspaceFoldersTool, P as listWorkspaceUsersTool, Q as manageWorkspaceUsersTool, R as registerComponentSchemas, a as activePackSet, U as newPackSet, o as ok, f as fail, V as capabilityRequestSchema, W as getWorkflowCapabilities, X as lint, Y as apply, Z as deleteNode, _ as editContractSchema, $ as generateEditContract, m as resolveStaticBindings, H as emptyViewerOnlyParams, I as emptyParamsNote, J as unresolvedNote, D as COMPONENT_FX_GUIDANCE, a0 as workspaceUserActionTools, a1 as allComponentSchemas } from "./chunk-4n_covov.js";
-import { u as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, g as FLEX_GROW_DESCRIPTION, h as FLEX_WIDTH_PX_DESCRIPTION, j as FLEX_FILL_WIDTH_DESCRIPTION, x as createClient, y as getComponentCatalogTool, z as updateComponentsTool, A as registerPackDefinitions, B as projectJavascriptRuntime, C as projectAppSettings, D as compactTheme, E as pageSettingProperties, v as validateTableBatch, T as ToolJetHttpError, l as literalCanvasColor, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec, m as mapKeyRefusal, G as appendedChildOrders, H as reparentAdditions, t as childOrderProperty } from "./chunk-0-6sjmM9.js";
-import { K as manageAppPermissionsTool, N as listWorkspaceGroupsTool, O as manageWorkspaceGroupsTool, Q as createAppTool, U as inspectDatasourceSchemaTool, V as manageThemeTool, W as datasourceMetadataTools, X as WebStandardStreamableHTTPServerTransport, Y as themeActionTools, Z as workspaceGroupActionTools, _ as appPermissionActionTools } from "./chunk-Cq5M2bYD.js";
-import { v as verifyPageRenderTool, c as codeAppScaffoldTool, b as codeAppReadFilesTool, d as codeAppWriteFilesTool, e as codeAppBuildTool, f as codeAppInstallTool, g as codeAppAddDependencyTool, n as noCodeIdentity, h as getRequestListener, a as autoReadPreflight, i as browserUserBindings, j as isCodeModeApp, k as browserUserMessage } from "./chunk-BYQFWN28.js";
-import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as renameAppTool, p as plannedTableSchema, v as validatePersistedAppSummary, e as libraryPinErrors, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, f as containsComponentBinding, g as runUnattended, q as queryResultBindingHint, h as failureRecovery, j as failureVerification, s as schemaNameHint, k as redactRunResult, m as capUnattendedOutput, o as redactQueryText, t as prepareComponentBatch } from "./chunk-CV57ktvr.js";
-import { g as containsExactValue, a as prepareQueryOptionsForWrite, h as containsNamedBinding, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, v as validateEvents, e as expandQueryLifecycles, b as persistedEventSpecs, i as persistedEventIds } from "./chunk-DEegIZdp.js";
-import { M as McpServer } from "./chunk-C83hmRdQ.js";
-import { ax as external_exports, aA as specSchema, aF as nodeSchema, ay as nodeCatalog, az as validateGraph } from "./chunk-DtQIWAeP.js";
-import { K as pageIconSchema, c as componentSlotSchema, O as registerLibraryPacks, B as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION, a as componentNameSchema, E as lintComponents, e as resolveParentRef, g as introducedLintFindings, Q as lintRenderedGeometryBlocking, R as lintRenderedGeometryAdvisory, d as decodeComponentParent, f as encodeComponentParent, h as lintComponentSlots, l as lintComponentSpec, j as lintUnusableTextGeometry, T as lintNestedContainerWidths, k as lintStandardSingleLineInputHeight, m as lintTextGeometry, o as lintRenderedGeometry, U as FORM_SCHEMA_FIELD_TYPE_SET, V as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-23CIdoFG.js";
-import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-nEOjGGpO.js";
-import { b as readCatalogBytes } from "./chunk--cm-cFrL.js";
+import { b0 as external_exports, b3 as specSchema, bb as nodeSchema, bc as listWorkspaceAppsTool, bd as listWorkspaceFoldersTool, be as listWorkspaceUsersTool, bf as manageWorkspaceUsersTool, b8 as ok, b1 as nodeCatalog, b7 as fail, b2 as validateGraph, bg as workspaceUserActionTools } from "./chunk-Csl8mO51.js";
+import { H as inPackSet, I as registerComponentSchemas, a as activePackSet, J as newPackSet, K as capabilityRequestSchema, M as getWorkflowCapabilities, N as lint, O as apply, P as deleteNode, Q as editContractSchema, R as generateEditContract, j as resolveStaticBindings, B as emptyViewerOnlyParams, D as emptyParamsNote, E as unresolvedNote, y as COMPONENT_FX_GUIDANCE, T as allComponentSchemas } from "./chunk-CmizjRXJ.js";
+import { x as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, g as FLEX_GROW_DESCRIPTION, h as FLEX_WIDTH_PX_DESCRIPTION, j as FLEX_FILL_WIDTH_DESCRIPTION, y as loadConfig, z as createClient, A as getComponentCatalogTool, B as updateComponentsTool, C as registerPackDefinitions, D as projectJavascriptRuntime, E as projectAppSettings, G as compactTheme, H as pageSettingProperties, v as validateTableBatch, T as ToolJetHttpError, l as literalCanvasColor, r as resolveRef, P as PartialWriteError, n as normalizeComponentSpec, m as mapKeyRefusal, I as appendedChildOrders, J as reparentAdditions, u as childOrderProperty, K as branchIdFor, L as withBranchContext } from "./chunk-C_xL9Jh_.js";
+import { K as manageAppPermissionsTool, N as listWorkspaceGroupsTool, O as manageWorkspaceGroupsTool, Q as createAppTool, U as inspectDatasourceSchemaTool, V as manageThemeTool, W as datasourceMetadataTools, X as WebStandardStreamableHTTPServerTransport, Y as themeActionTools, Z as workspaceGroupActionTools, _ as appPermissionActionTools } from "./chunk-RSS1Cebt.js";
+import { v as verifyPageRenderTool, c as codeAppScaffoldTool, b as codeAppReadFilesTool, d as codeAppWriteFilesTool, e as codeAppBuildTool, f as codeAppInstallTool, g as codeAppAddDependencyTool, n as noCodeIdentity, h as getRequestListener, a as autoReadPreflight, i as browserUserBindings, j as isCodeModeApp, k as browserUserMessage } from "./chunk-DPYRyOLs.js";
+import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as renameAppTool, p as plannedTableSchema, v as validatePersistedAppSummary, e as libraryPinErrors, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, f as containsComponentBinding, g as runUnattended, q as queryResultBindingHint, h as failureRecovery, j as failureVerification, s as schemaNameHint, k as redactRunResult, m as capUnattendedOutput, o as redactQueryText, t as prepareComponentBatch } from "./chunk-CmXpQP84.js";
+import { g as containsExactValue, a as prepareQueryOptionsForWrite, h as containsNamedBinding, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, v as validateEvents, e as expandQueryLifecycles, b as persistedEventSpecs, i as persistedEventIds } from "./chunk-Bpds2tpO.js";
+import { M as McpServer } from "./chunk-BT8XGz5p.js";
+import { K as pageIconSchema, c as componentSlotSchema, O as registerLibraryPacks, B as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION, a as componentNameSchema, E as lintComponents, e as resolveParentRef, g as introducedLintFindings, Q as lintRenderedGeometryBlocking, R as lintRenderedGeometryAdvisory, d as decodeComponentParent, f as encodeComponentParent, h as lintComponentSlots, l as lintComponentSpec, j as lintUnusableTextGeometry, T as lintNestedContainerWidths, k as lintStandardSingleLineInputHeight, m as lintTextGeometry, o as lintRenderedGeometry, U as FORM_SCHEMA_FIELD_TYPE_SET, V as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-CzEla2h4.js";
+import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-Cd-rK1dm.js";
+import { b as readCatalogBytes } from "./chunk-C1y-3rfY.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { createServer } from "node:http";
-import { statSync, readFileSync, accessSync, constants } from "node:fs";
-import { homedir } from "node:os";
-import { resolve, dirname, basename, join } from "node:path";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { mkdir, appendFile } from "node:fs/promises";
+import { resolve, dirname, basename, join } from "node:path";
+import { statSync, accessSync, constants } from "node:fs";
 import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
 function createExchangeLimiter(limit = 300, trustedProxyHops = 0) {
@@ -87,9 +85,9 @@ function createVerifiedExchangeCache(ttlMs = 6e4, capacity = 1e4) {
   };
 }
 var StreamableHTTPServerTransport = class {
-  constructor(options = {}) {
+  constructor(options2 = {}) {
     this._requestContext = /* @__PURE__ */ new WeakMap();
-    this._webStandardTransport = new WebStandardStreamableHTTPServerTransport(options);
+    this._webStandardTransport = new WebStandardStreamableHTTPServerTransport(options2);
     this._requestListener = getRequestListener(async (webRequest) => {
       const context = this._requestContext.get(webRequest);
       return this._webStandardTransport.handleRequest(webRequest, {
@@ -147,8 +145,8 @@ var StreamableHTTPServerTransport = class {
   /**
    * Sends a JSON-RPC message through the transport.
    */
-  async send(message, options) {
-    return this._webStandardTransport.send(message, options);
+  async send(message, options2) {
+    return this._webStandardTransport.send(message, options2);
   }
   /**
    * Handles an incoming HTTP request, whether GET or POST.
@@ -340,237 +338,6 @@ async function loadInstalledPacks(listLibraries, listBuiltin) {
   registerLibraryPacks(packs.map((p) => p.pack));
   return packs.map((p) => `${p.pack.libraryName} ${p.pack.version}`);
 }
-var SESSION_TOKEN_HEADER = "x-tooljet-session";
-var WORKSPACE_ID_HEADER = "x-tooljet-workspace-id";
-var WORKSPACE_SLUG_HEADER = "x-tooljet-workspace-slug";
-var PAT_HEADER = "x-tooljet-pat";
-var BASE_URL_HEADER = "x-tooljet-url";
-var CUSTOMER_ID_HEADER = "x-tooljet-customer-id";
-var ALLOWED_API_ORIGINS_VAR = "MCP_ALLOWED_API_ORIGINS";
-var GATEWAY_URL_VAR = "MCP_GATEWAY_URL";
-var GATEWAY_TOKEN_VAR = "MCP_GATEWAY_TOKEN";
-function storedCliLogin(explicitApiUrl) {
-  const file = env("TOOLJET_CREDENTIALS_FILE") ?? join(homedir(), ".tooljet", "credentials.json");
-  let store;
-  try {
-    store = JSON.parse(readFileSync(file, "utf8"));
-  } catch {
-    return void 0;
-  }
-  const entry = store?.default ? store.workspaces?.[store.default] : void 0;
-  if (!entry?.url || !entry.apiToken)
-    return void 0;
-  let origin;
-  try {
-    origin = new URL(entry.url).origin;
-  } catch {
-    return void 0;
-  }
-  if (explicitApiUrl) {
-    try {
-      if (new URL(explicitApiUrl).origin !== origin)
-        return void 0;
-    } catch {
-      return void 0;
-    }
-  }
-  return { apiUrl: origin, pat: entry.apiToken };
-}
-function env(name) {
-  const value = process.env[name]?.trim();
-  return value ? value : void 0;
-}
-function allowedApiOrigins() {
-  const raw = env(ALLOWED_API_ORIGINS_VAR);
-  if (!raw)
-    return [];
-  return raw.split(",").map((entry) => entry.trim()).filter(Boolean).map((entry) => {
-    let parsed;
-    try {
-      parsed = new URL(entry);
-    } catch {
-      throw new Error(`${ALLOWED_API_ORIGINS_VAR} contains an entry that is not a valid URL: "${entry}".`);
-    }
-    if (parsed.protocol !== "https:") {
-      throw new Error(`${ALLOWED_API_ORIGINS_VAR} entry "${entry}" must use https \u2014 it could never match a request.`);
-    }
-    return parsed.origin;
-  });
-}
-function readHeader(headers, name) {
-  const raw = headers[name] ?? headers[name.toLowerCase()];
-  const value = Array.isArray(raw) ? raw[0] : raw;
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : void 0;
-}
-var gatewayOriginCache = /* @__PURE__ */ new Map();
-var GATEWAY_CACHE_TTL_MS = 6e4;
-async function checkOriginWithGateway(customerId, origin) {
-  const cacheKey = `${customerId} ${origin}`;
-  const cached = gatewayOriginCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now())
-    return cached.allowed;
-  const gatewayUrl = env(GATEWAY_URL_VAR);
-  const gatewayToken = env(GATEWAY_TOKEN_VAR);
-  if (!gatewayUrl || !gatewayToken)
-    return false;
-  let allowed = false;
-  try {
-    const res = await fetch(new URL("/internal/mcp/verify-origin", gatewayUrl), {
-      method: "POST",
-      headers: { authorization: gatewayToken, "content-type": "application/json" },
-      body: JSON.stringify({ customer_id: customerId, origin }),
-      signal: AbortSignal.timeout(5e3)
-    });
-    if (res.ok) {
-      const body2 = await res.json();
-      allowed = body2.allowed === true;
-    }
-  } catch {
-    allowed = false;
-  }
-  gatewayOriginCache.set(cacheKey, { allowed, expiresAt: Date.now() + GATEWAY_CACHE_TTL_MS });
-  return allowed;
-}
-var gatewayResolveCache = /* @__PURE__ */ new Map();
-async function resolveApiUrlFromGateway(customerId) {
-  const cached = gatewayResolveCache.get(customerId);
-  if (cached && cached.expiresAt > Date.now())
-    return cached.result;
-  const gatewayUrl = env(GATEWAY_URL_VAR);
-  const gatewayToken = env(GATEWAY_TOKEN_VAR);
-  let result = { url: void 0, verified: false };
-  if (gatewayUrl && gatewayToken) {
-    try {
-      const res = await fetch(new URL("/internal/mcp/verify-origin", gatewayUrl), {
-        method: "POST",
-        headers: { authorization: gatewayToken, "content-type": "application/json" },
-        body: JSON.stringify({ customer_id: customerId }),
-        signal: AbortSignal.timeout(5e3)
-      });
-      if (res.ok) {
-        const body2 = await res.json();
-        if ("host_name" in body2) {
-          const path = body2.subpath ? `/${body2.subpath.replace(/^\/+|\/+$/g, "")}` : "";
-          result = { url: body2.host_name ? `https://${body2.host_name}${path}` : void 0, verified: true };
-        }
-      }
-    } catch {
-      result = { url: void 0, verified: false };
-    }
-  }
-  gatewayResolveCache.set(customerId, { result, expiresAt: Date.now() + GATEWAY_CACHE_TTL_MS });
-  return result;
-}
-async function validateApiUrl(raw, customerId) {
-  let parsed;
-  try {
-    parsed = new URL(raw);
-  } catch {
-    throw new Error(`${BASE_URL_HEADER} must be a valid absolute URL.`);
-  }
-  if (parsed.protocol !== "https:") {
-    throw new Error(`${BASE_URL_HEADER} must use https.`);
-  }
-  if (parsed.search || parsed.hash || parsed.username || parsed.password) {
-    throw new Error(`${BASE_URL_HEADER} must carry no query, hash, or credentials.`);
-  }
-  const inStaticList = allowedApiOrigins().includes(parsed.origin);
-  const verifiedViaGateway = !inStaticList && customerId ? await checkOriginWithGateway(customerId, parsed.origin) : false;
-  if (!inStaticList && !verifiedViaGateway) {
-    throw new Error(`${BASE_URL_HEADER} origin "${parsed.origin}" is not in ${ALLOWED_API_ORIGINS_VAR} and did not verify against the Gateway. Add it to that comma-separated list, or confirm ${CUSTOMER_ID_HEADER} is being sent.`);
-  }
-  const path = parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/$/, "");
-  return { apiUrl: parsed.origin + path, customerVerified: verifiedViaGateway ? true : void 0 };
-}
-async function identityFromHeaders(headers, { allowPat = true } = {}) {
-  const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
-  const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
-  const pat = readHeader(headers, PAT_HEADER);
-  const rawApiUrl = readHeader(headers, BASE_URL_HEADER);
-  const customerId = readHeader(headers, CUSTOMER_ID_HEADER);
-  let apiUrl;
-  let customerVerified;
-  if (rawApiUrl) {
-    const validated = await validateApiUrl(rawApiUrl, customerId);
-    apiUrl = validated.apiUrl;
-    customerVerified = validated.customerVerified;
-  } else if (customerId) {
-    const resolved = await resolveApiUrlFromGateway(customerId);
-    apiUrl = resolved.url;
-    customerVerified = resolved.verified ? true : void 0;
-  }
-  if (pat) {
-    if (!allowPat) {
-      throw new Error(`${PAT_HEADER} is not accepted by this server. It acts only on behalf of a signed-in user: send ${SESSION_TOKEN_HEADER} with ${WORKSPACE_ID_HEADER}.`);
-    }
-    if (sessionToken)
-      throw new Error(`Send either ${PAT_HEADER} or ${SESSION_TOKEN_HEADER}, not both.`);
-    return { pat, apiUrl, customerVerified };
-  }
-  if (!sessionToken && !workspaceId) {
-    return apiUrl || customerVerified ? { apiUrl, customerVerified } : void 0;
-  }
-  if (!sessionToken) {
-    throw new Error(`${WORKSPACE_ID_HEADER} was sent without ${SESSION_TOKEN_HEADER}.`);
-  }
-  if (!workspaceId) {
-    throw new Error(`${SESSION_TOKEN_HEADER} was sent without ${WORKSPACE_ID_HEADER}.`);
-  }
-  return {
-    sessionToken,
-    workspaceId,
-    workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER),
-    apiUrl,
-    customerVerified
-  };
-}
-function loadConfig(identity) {
-  const explicitApiUrl = env("TOOLJET_URL");
-  const explicitAppUrl = env("TOOLJET_DEPLOYMENT_URL") ?? env("TOOLJET_APP_URL");
-  const staticApiUrl = explicitApiUrl ?? explicitAppUrl ?? "http://localhost:3000";
-  if (identity) {
-    const apiUrl2 = identity.apiUrl ?? staticApiUrl;
-    const appUrl2 = identity.appUrl ?? explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? "http://localhost:8082";
-    const viewerUrl = identity.viewerUrl ?? appUrl2;
-    if (identity.pat)
-      return { apiUrl: apiUrl2, appUrl: appUrl2, viewerUrl, pat: identity.pat };
-    return {
-      apiUrl: apiUrl2,
-      appUrl: appUrl2,
-      viewerUrl,
-      sessionToken: identity.sessionToken,
-      isOAuthDelegation: identity.isOAuthDelegation,
-      oauthGrantId: identity.oauthGrantId,
-      workspaceId: identity.workspaceId,
-      workspaceSlug: identity.workspaceSlug
-    };
-  }
-  const apiUrl = staticApiUrl;
-  const appUrl = explicitAppUrl ?? explicitApiUrl ?? "http://localhost:8082";
-  const sessionToken = env("TOOLJET_SESSION_TOKEN");
-  const stored = !env("TOOLJET_PAT") && !sessionToken ? storedCliLogin(explicitApiUrl ?? explicitAppUrl) : void 0;
-  const pat = env("TOOLJET_PAT") ?? stored?.pat;
-  const workspaceId = env("TOOLJET_WORKSPACE_ID");
-  if (stored) {
-    return { apiUrl: stored.apiUrl, appUrl: explicitAppUrl ?? stored.apiUrl, pat: stored.pat };
-  }
-  if (!pat && !sessionToken) {
-    throw new Error(`TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal access token in ToolJet under Settings \u2192 Access tokens, in the workspace you want this server to act on, and set TOOLJET_PAT. A shared HTTP server instead receives the acting user per request via the ${SESSION_TOKEN_HEADER} header. Or sign in once with \`tooljet auth login\`.`);
-  }
-  if (sessionToken && !workspaceId) {
-    throw new Error("TOOLJET_WORKSPACE_ID is required alongside TOOLJET_SESSION_TOKEN.");
-  }
-  return {
-    apiUrl,
-    appUrl,
-    viewerUrl: appUrl,
-    pat,
-    sessionToken,
-    workspaceId,
-    workspaceSlug: env("TOOLJET_WORKSPACE_SLUG")
-  };
-}
 var storage = new AsyncLocalStorage();
 function recordHttpResponse(response) {
   const context = storage.getStore();
@@ -658,7 +425,17 @@ function createAuth(config, fetchImpl = fetch) {
     workspaceName = body2.organizationName ?? void 0;
   }
   async function rawFetch(path, init) {
+    const branchId = branchIdFor(config);
     const headers = new Headers(init?.headers);
+    if (branchId) {
+      if (path.startsWith("/api/tooljet-db/proxy/")) {
+        headers.set("x-branch-id", branchId);
+      } else {
+        const url = new URL(path, config.apiUrl);
+        url.searchParams.set("branch_id", branchId);
+        path = url.pathname + url.search;
+      }
+    }
     if (config.isOAuthDelegation) {
       headers.delete("Cookie");
       headers.delete("Authorization");
@@ -937,6 +714,22 @@ function listWorkspacesTool(client) {
     }
   };
 }
+function listWorkspaceBranchesTool(client) {
+  return {
+    name: "list_workspace_branches",
+    title: "List Workspace Branches",
+    description: "List existing workspace branches and whether multi-branching is enabled. For a branching workspace, select the requested feature branch and pass its exact branch_id on every app/data tool call. The default branch is protected. Does not create, activate, push or merge branches.",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+    inputSchema: {},
+    async handler() {
+      try {
+        return ok(await client.listWorkspaceBranches());
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  };
+}
 function useWorkspaceTool(client) {
   return {
     name: "use_workspace",
@@ -968,7 +761,7 @@ function createAppVersionTool(client) {
       destructiveHint: false,
       openWorldHint: false
     },
-    description: "Create a new draft version of an existing ToolJet app by cloning a specified source version. Returns the app_id, new version_id, version_name, source_version_id, and available version metadata; Conflicts fail without adopting an existing draft, including after a timeout. Before editing, inspect the returned version_id for its cloned resource IDs. The agent and ToolJet editor automatically switch to the newly created version after success. Version names must be unique within the app.",
+    description: "Create a new draft version of an existing ToolJet app by cloning a specified source version. Branch heads cannot be cloned into named drafts; save a named version in ToolJet first, then select its branch and use that version as the source. Returns the app_id, new version_id, version_name, source_version_id, and available version metadata; Conflicts fail without adopting an existing draft, including after a timeout. Before editing, inspect the returned version_id for its cloned resource IDs. The agent and ToolJet editor automatically switch to the newly created version after success. Version names must be unique within the app.",
     inputSchema: {
       app_id: external_exports.string().uuid(),
       version_name: external_exports.string().trim().min(1).max(25),
@@ -1550,7 +1343,7 @@ function addQueriesTool(client) {
           if (prepared.errors.length)
             throw new Error(prepared.errors.join(" "));
           warnings.push(...prepared.warnings);
-          const { options } = prepared;
+          const { options: options2 } = prepared;
           const validation = prepared.validation;
           if (query.kind && query.kind !== datasource.kind) {
             warnings.push(`Query "${query.name}": caller kind "${query.kind}" was ignored; datasource kind is "${datasource.kind}".`);
@@ -1561,7 +1354,7 @@ function addQueriesTool(client) {
             operation: validation.operation,
             schema_found: validation.schemaFound
           });
-          return { query: { ...query, options }, kind: datasource.kind };
+          return { query: { ...query, options: options2 }, kind: datasource.kind };
         });
         warnings.push(...await inspectUpdateCompatibility(client, resolved.map(({ query, kind }) => ({
           name: query.name,
@@ -1657,7 +1450,7 @@ function codeAppDataTool(client) {
         if (queries?.length) {
           await refuseBrowserUser(client, args.app_id, queries);
           const datasources = await client.listDatasources(versionId);
-          const tooljetDb = datasources.find((source) => source.kind === "tooljetdb");
+          const tooljetDb = datasources.find((source2) => source2.kind === "tooljetdb");
           queries = queries.map(({ datasource_name, datasource_id, ...query }) => {
             if (datasource_id || datasource_name)
               return { ...query, ...datasource_id ? { datasource_id } : { datasource_name } };
@@ -2049,6 +1842,147 @@ function testDatasourceConnectionTool(client) {
     }
   };
 }
+var DIALECTS = {
+  postgresql: { quote: "double", limit: "limit", metadata: "postgresql" },
+  mysql: { quote: "backtick", limit: "limit", metadata: "mysql" },
+  mssql: { quote: "bracket", limit: "top", metadata: "mssql" },
+  snowflake: { quote: "double", limit: "limit" },
+  bigquery: { quote: "backtick", limit: "limit" },
+  oracledb: { quote: "double", limit: "fetch" }
+};
+function assertIdentifier(identifier, label) {
+  if (!identifier.trim() || identifier.length > 256 || /[\0-\x1f\x7f;`"\[\]\\]/.test(identifier)) {
+    throw new Error(`${label} contains unsupported or unsafe identifier characters.`);
+  }
+}
+function quote(kind, identifier) {
+  assertIdentifier(identifier, "SQL identifier");
+  const style = DIALECTS[kind].quote;
+  if (style === "backtick")
+    return `\`${identifier}\``;
+  if (style === "bracket")
+    return `[${identifier}]`;
+  return `"${identifier}"`;
+}
+function literal(value) {
+  return `'${value.replaceAll("'", "''")}'`;
+}
+function source(kind, schema, table) {
+  return schema ? `${quote(kind, schema)}.${quote(kind, table)}` : quote(kind, table);
+}
+function boundedSelect(kind, projection, from, limit, distinct = false) {
+  const prefix = `SELECT ${distinct ? "DISTINCT " : ""}`;
+  if (DIALECTS[kind].limit === "top")
+    return `${prefix}TOP (${limit}) ${projection} FROM ${from}`;
+  if (DIALECTS[kind].limit === "fetch")
+    return `${prefix}${projection} FROM ${from} FETCH FIRST ${limit} ROWS ONLY`;
+  return `${prefix}${projection} FROM ${from} LIMIT ${limit}`;
+}
+function options(kind, query) {
+  return {
+    mode: "sql",
+    query,
+    ...!["snowflake"].includes(kind) ? { query_params: [] } : {},
+    runOnPageLoad: false
+  };
+}
+function metadataSql(kind, purpose, schema, table) {
+  const metadata = "metadata" in DIALECTS[kind] ? DIALECTS[kind].metadata : void 0;
+  if (!metadata)
+    return void 0;
+  if (purpose !== "views" && !table)
+    throw new Error(`${purpose} discovery requires table.`);
+  if (metadata !== "mysql" && !schema)
+    throw new Error(`${purpose} discovery for ${kind} requires schema.`);
+  const schemaFilter = metadata === "mysql" && !schema ? "DATABASE()" : literal(schema);
+  const tableFilter = table ? literal(table) : void 0;
+  if (metadata === "postgresql") {
+    if (purpose === "primary_keys")
+      return `SELECT kcu.column_name, kcu.ordinal_position, tc.constraint_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.ordinal_position`;
+    if (purpose === "foreign_keys")
+      return `SELECT kcu.constraint_name, kcu.column_name, ccu.table_schema AS referenced_schema, ccu.table_name AS referenced_table, ccu.column_name AS referenced_column FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_catalog = tc.constraint_catalog AND ccu.constraint_schema = tc.constraint_schema AND ccu.constraint_name = tc.constraint_name WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.constraint_name, kcu.ordinal_position`;
+    if (purpose === "indexes")
+      return `SELECT indexname AS index_name, indexdef AS definition FROM pg_indexes WHERE schemaname = ${schemaFilter} AND tablename = ${tableFilter} ORDER BY indexname`;
+    return `SELECT table_schema, table_name AS view_name FROM information_schema.views WHERE table_schema = ${schemaFilter} ORDER BY table_name`;
+  }
+  if (metadata === "mysql") {
+    if (purpose === "primary_keys")
+      return `SELECT column_name, ordinal_position, constraint_name FROM information_schema.key_column_usage WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} AND constraint_name = 'PRIMARY' ORDER BY ordinal_position`;
+    if (purpose === "foreign_keys")
+      return `SELECT constraint_name, column_name, referenced_table_schema AS referenced_schema, referenced_table_name AS referenced_table, referenced_column_name AS referenced_column FROM information_schema.key_column_usage WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} AND referenced_table_name IS NOT NULL ORDER BY constraint_name, ordinal_position`;
+    if (purpose === "indexes")
+      return `SELECT index_name, column_name, non_unique, seq_in_index FROM information_schema.statistics WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} ORDER BY index_name, seq_in_index`;
+    return `SELECT table_schema, table_name AS view_name FROM information_schema.views WHERE table_schema = ${schemaFilter} ORDER BY table_name`;
+  }
+  if (purpose === "primary_keys")
+    return `SELECT kcu.COLUMN_NAME AS column_name, kcu.ORDINAL_POSITION AS ordinal_position, tc.CONSTRAINT_NAME AS constraint_name FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA AND tc.TABLE_NAME = kcu.TABLE_NAME WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY' AND tc.TABLE_SCHEMA = ${schemaFilter} AND tc.TABLE_NAME = ${tableFilter} ORDER BY kcu.ORDINAL_POSITION`;
+  if (purpose === "foreign_keys")
+    return `SELECT fk.name AS constraint_name, pc.name AS column_name, rs.name AS referenced_schema, rt.name AS referenced_table, rc.name AS referenced_column FROM sys.foreign_key_columns fkc JOIN sys.foreign_keys fk ON fk.object_id = fkc.constraint_object_id JOIN sys.tables pt ON pt.object_id = fkc.parent_object_id JOIN sys.schemas ps ON ps.schema_id = pt.schema_id JOIN sys.columns pc ON pc.object_id = pt.object_id AND pc.column_id = fkc.parent_column_id JOIN sys.tables rt ON rt.object_id = fkc.referenced_object_id JOIN sys.schemas rs ON rs.schema_id = rt.schema_id JOIN sys.columns rc ON rc.object_id = rt.object_id AND rc.column_id = fkc.referenced_column_id WHERE ps.name = ${schemaFilter} AND pt.name = ${tableFilter} ORDER BY fk.name, fkc.constraint_column_id`;
+  if (purpose === "indexes")
+    return `SELECT i.name AS index_name, c.name AS column_name, i.is_unique, ic.key_ordinal FROM sys.indexes i JOIN sys.tables t ON t.object_id = i.object_id JOIN sys.schemas s ON s.schema_id = t.schema_id JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id WHERE s.name = ${schemaFilter} AND t.name = ${tableFilter} AND i.is_hypothetical = 0 ORDER BY i.name, ic.key_ordinal`;
+  return `SELECT TABLE_SCHEMA AS table_schema, TABLE_NAME AS view_name FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = ${schemaFilter} ORDER BY TABLE_NAME`;
+}
+function boundMetadata(kind, sql) {
+  if (DIALECTS[kind].limit === "top")
+    return sql.replace(/^SELECT\s+/i, "SELECT TOP (100) ");
+  if (DIALECTS[kind].limit === "fetch")
+    return `${sql} FETCH FIRST 100 ROWS ONLY`;
+  return `${sql} LIMIT 100`;
+}
+function safeName(value) {
+  return value.replace(/[^A-Za-z0-9_]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "table";
+}
+function prepareSqlDiscoveryQueries(args) {
+  if (!(args.kind in DIALECTS))
+    throw new Error(`Datasource kind "${args.kind}" is not supported by SQL discovery.`);
+  const kind = args.kind;
+  if (args.schema)
+    assertIdentifier(args.schema, "schema");
+  if (args.table)
+    assertIdentifier(args.table, "table");
+  for (const column of [...args.columns ?? [], ...args.distinctColumns ?? []])
+    assertIdentifier(column, "column");
+  const tablePurposes = args.purposes.filter((purpose) => purpose !== "views");
+  if (tablePurposes.length && !args.table)
+    throw new Error("Table-scoped SQL discovery requires table.");
+  if (args.purposes.includes("preview") && !args.columns?.length) {
+    throw new Error("Preview discovery requires one or more explicit columns; SELECT * is never generated.");
+  }
+  if (args.purposes.includes("distinct") && !args.distinctColumns?.length) {
+    throw new Error("Distinct discovery requires one or more explicit distinct_columns.");
+  }
+  const from = args.table ? source(kind, args.schema, args.table) : void 0;
+  const prefix = safeName(args.namePrefix ?? args.table ?? args.schema ?? "schema");
+  const queries = [];
+  const unsupported = [];
+  for (const purpose of [...new Set(args.purposes)]) {
+    let sql;
+    if (purpose === "count")
+      sql = `SELECT COUNT(*) AS row_count FROM ${from}`;
+    else if (purpose === "preview") {
+      sql = boundedSelect(kind, args.columns.map((column) => quote(kind, column)).join(", "), from, args.limit);
+    } else if (purpose === "distinct") {
+      sql = boundedSelect(kind, args.distinctColumns.map((column) => quote(kind, column)).join(", "), from, args.limit, true);
+    } else {
+      sql = metadataSql(kind, purpose, args.schema, args.table);
+      if (!sql) {
+        unsupported.push({
+          purpose,
+          reason: `${args.kind} does not expose a verified ${purpose} selector and MCP has no curated read-only SQL contract for it yet.`
+        });
+        continue;
+      }
+      sql = boundMetadata(kind, sql);
+    }
+    queries.push({
+      purpose,
+      name: `${prefix}_${purpose}`,
+      datasource_id: args.datasourceId,
+      options: options(kind, sql)
+    });
+  }
+  return { queries, unsupported };
+}
 var purposes = ["count", "preview", "distinct", "primary_keys", "foreign_keys", "indexes", "views"];
 function prepareSqlDiscoveryQueriesTool(client) {
   return {
@@ -2161,12 +2095,12 @@ function bindingValue(prefix, column) {
   const access = `${prefix}[${JSON.stringify(column.name)}]`;
   return column.type.toLowerCase().includes("json") ? `{{JSON.stringify(${access})}}` : `{{${access}}}`;
 }
-function generateFormSchema(columns, options) {
-  const exclude = new Set(options.exclude ?? []);
+function generateFormSchema(columns, options2) {
+  const exclude = new Set(options2.exclude ?? []);
   const omitted = [];
   const byName = new Map(columns.map((column) => [column.name, column]));
   const seen = /* @__PURE__ */ new Set();
-  const ordered = options.include ? options.include.flatMap((name) => {
+  const ordered = options2.include ? options2.include.flatMap((name) => {
     if (seen.has(name))
       return [];
     seen.add(name);
@@ -2178,7 +2112,7 @@ function generateFormSchema(columns, options) {
   const selected = ordered.filter((column) => {
     if (exclude.has(column.name))
       return false;
-    if (options.mode === "create" && column.type.toLowerCase() === "serial") {
+    if (options2.mode === "create" && column.type.toLowerCase() === "serial") {
       omitted.push({ name: column.name, reason: "generated serial column omitted from create form" });
       return false;
     }
@@ -2192,11 +2126,11 @@ function generateFormSchema(columns, options) {
       Object.assign(field, { values: choices, displayValues: choices.map(String) });
     if (type === "datepicker")
       Object.assign(field, { enableDate: true, enableTime: true });
-    if (options.mode === "edit" && column.isPrimaryKey)
+    if (options2.mode === "edit" && column.isPrimaryKey)
       field.styles = { disabled: true };
-    if (options.initialValuesBinding) {
-      field.value = bindingValue(options.initialValuesBinding, column);
-    } else if (options.mode === "create" && column.defaultValue !== void 0) {
+    if (options2.initialValuesBinding) {
+      field.value = bindingValue(options2.initialValuesBinding, column);
+    } else if (options2.mode === "create" && column.defaultValue !== void 0) {
       if (column.type.toLowerCase().includes("json"))
         field.value = JSON.stringify(column.defaultValue);
       else if (type === "checkbox" && booleanDefault(column.defaultValue) !== void 0) {
@@ -2205,10 +2139,10 @@ function generateFormSchema(columns, options) {
         field.value = "{{0}}";
       else
         field.value = column.defaultValue;
-    } else if (options.mode === "create" && type === "datepicker") {
+    } else if (options2.mode === "create" && type === "datepicker") {
       field.value = "{{null}}";
     }
-    field = mergeField(field, options.fieldOverrides?.[column.name]);
+    field = mergeField(field, options2.fieldOverrides?.[column.name]);
     const finalType = field.type;
     if (typeof finalType !== "string" || !FORM_SCHEMA_FIELD_TYPE_SET.has(finalType)) {
       throw new Error(`Form field "${column.name}" has unsupported type "${String(finalType)}".`);
@@ -2226,9 +2160,9 @@ function generateFormSchema(columns, options) {
     throw new Error(`Generated ToolJet Form is not layout-safe for ${standaloneFields.join(", ")}. FormUtils does not pass label alignment through to generated fields; Dropdown/Multiselect labels do not align with inputs, and TextArea retains a literal "Label" and can render as a single-line control. Build the entire form from standalone components in one add_components call, set styles.alignment.value="top" on every labelled input, use a consistent two-column grid for compact fields, and make TextArea fields full-width. Generated Form is approved only for textinput, number, emailinput, password, datepicker, and checkbox fields.`);
   }
   const schema = {
-    title: options.title ?? `${options.mode === "create" ? "Create" : "Edit"} ${humanize(options.tableName)}`,
+    title: options2.title ?? `${options2.mode === "create" ? "Create" : "Edit"} ${humanize(options2.tableName)}`,
     properties: fields,
-    submitButton: { value: options.submitLabel ?? (options.mode === "create" ? "Create" : "Save changes") }
+    submitButton: { value: options2.submitLabel ?? (options2.mode === "create" ? "Create" : "Save changes") }
   };
   const recommendedCanvasHeight = Math.max(300, selected.length * 70);
   const recommendedFormHeight = recommendedCanvasHeight + 130;
@@ -2252,7 +2186,7 @@ function generateFormSchema(columns, options) {
       default_value: column.defaultValue,
       foreign_keys: column.foreignKeys,
       generated_type: fields[column.name].type,
-      overridden: !!options.fieldOverrides?.[column.name]
+      overridden: !!options2.fieldOverrides?.[column.name]
     })),
     omitted_fields: omitted,
     layout_guidance: {
@@ -2383,8 +2317,8 @@ function validatePaths(paths, roots, label) {
     }
   }
 }
-function readPath(source, segments) {
-  let cursor = source;
+function readPath(source2, segments) {
+  let cursor = source2;
   for (const segment of segments) {
     if (cursor === null || typeof cursor !== "object" || !Object.prototype.hasOwnProperty.call(cursor, segment)) {
       return { found: false };
@@ -2405,11 +2339,11 @@ function writePath(target2, segments, value) {
   }
   cursor[segments.at(-1)] = value;
 }
-function pickPaths(source, paths) {
+function pickPaths(source2, paths) {
   const result = {};
   for (const path of paths) {
     const segments = path.split(".");
-    const selected = readPath(source, segments);
+    const selected = readPath(source2, segments);
     if (selected.found)
       writePath(result, segments, selected.value);
   }
@@ -2846,17 +2780,17 @@ function addQueryTool(client) {
         const prepared = prepareQueryOptionsForWrite(datasource.kind, args.options);
         if (prepared.errors.length)
           return fail(new Error(prepared.errors.join(" ")));
-        const { options, warnings } = prepared;
+        const { options: options2, warnings } = prepared;
         const validation = prepared.validation;
         if (args.kind && args.kind !== datasource.kind) {
           warnings.push(`Caller kind "${args.kind}" was ignored; datasource "${args.datasource_id}" is kind "${datasource.kind}".`);
         }
-        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name, kind: datasource.kind, options }]));
+        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name, kind: datasource.kind, options: options2 }]));
         const result = await client.createQuery({
           versionId: args.version_id,
           dataSourceId: args.datasource_id,
           name: args.name,
-          options,
+          options: options2,
           kind: datasource.kind
         });
         return ok({
@@ -3600,10 +3534,10 @@ function updateQueryTool(client) {
         if (prepared.errors.length)
           return fail(new Error(prepared.errors.join(" ")));
         const warnings = [...resolutionWarnings, ...prepared.warnings];
-        const { options, validation } = prepared;
+        const { options: options2, validation } = prepared;
         if (!kind)
           warnings.push("Query options were not contract-validated; pass app_id or kind on update_query.");
-        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name ?? args.query_id, kind, options }]));
+        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name ?? args.query_id, kind, options: options2 }]));
         if (args.datasource_id && args.datasource_id !== currentDatasourceId) {
           await client.updateQueryDatasource({
             queryId: args.query_id,
@@ -3616,7 +3550,7 @@ function updateQueryTool(client) {
           result = await client.updateQuery({
             queryId: args.query_id,
             versionId: args.version_id,
-            options,
+            options: options2,
             name: args.name
           });
         } catch (error) {
@@ -3659,13 +3593,13 @@ function updateQueryTool(client) {
 }
 var escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 function codeReferences(files, name) {
-  const literal = new RegExp(`(['"\`])${escapeRegExp(name)}\\1`);
+  const literal2 = new RegExp(`(['"\`])${escapeRegExp(name)}\\1`);
   const found = [];
   for (const file of files) {
     if (/(^|\/)tooljet\.gen\.ts$/.test(file.path) || !/\.(tsx?|jsx?|mjs|cjs)$/.test(file.path))
       continue;
     file.content.split("\n").forEach((line, index) => {
-      if (literal.test(line))
+      if (literal2.test(line))
         found.push(`${file.path}:${index + 1}`);
     });
   }
@@ -3990,9 +3924,9 @@ var TOOLJET_MCP_VERSION = "0.13.0";
 function snapshot(path) {
   try {
     const stat = statSync(path);
-    const source = `${Math.round(stat.mtimeMs * 1e3)}:${stat.size}`;
+    const source2 = `${Math.round(stat.mtimeMs * 1e3)}:${stat.size}`;
     return {
-      buildId: createHash("sha256").update(source).digest("hex").slice(0, 12),
+      buildId: createHash("sha256").update(source2).digest("hex").slice(0, 12),
       modifiedMs: stat.mtimeMs,
       size: stat.size
     };
@@ -4408,7 +4342,8 @@ var inputSchemas = /* @__PURE__ */ new Map();
 function sharedInputSchema(tool) {
   let schema = inputSchemas.get(tool.name);
   if (!schema) {
-    schema = tool.strictInput ? external_exports.object(tool.inputSchema).strict() : external_exports.object(tool.inputSchema);
+    const fields = { ...tool.inputSchema, branch_id: external_exports.string().uuid().optional().describe("Existing workspace branch ID from list_workspace_branches; pass consistently for this task.") };
+    schema = tool.strictInput ? external_exports.object(fields).strict() : external_exports.object(fields);
     inputSchemas.set(tool.name, schema);
   }
   return schema;
@@ -4442,6 +4377,7 @@ function registerTools(server, client, runtime = runtimeFreshness, code = noCode
     codeAppAddDependencyTool(code),
     codeAppDataTool(client),
     listWorkspacesTool(client),
+    listWorkspaceBranchesTool(client),
     useWorkspaceTool(client),
     manageAppPermissionsTool(client),
     listWorkspaceAppsTool(client),
@@ -4524,7 +4460,8 @@ function registerTools(server, client, runtime = runtimeFreshness, code = noCode
       if (status.restart_required && name !== "get_runtime_info") {
         return staleRuntimeResult(status);
       }
-      return withRuntimeStatus(await handler(args), status);
+      const { branch_id, ...input } = args;
+      return withRuntimeStatus(await withBranchContext(branch_id ?? client.branchId, () => handler(input)), status);
     }));
   }
 }
@@ -4535,7 +4472,7 @@ function managementActionTools(sources) {
     manage_workspace_groups: workspaceGroupActionTools,
     manage_theme: themeActionTools
   };
-  return sources.flatMap((source) => factories[source.name]?.(source) ?? []);
+  return sources.flatMap((source2) => factories[source2.name]?.(source2) ?? []);
 }
 var PREFACE = "Read-only catalog data, for clients that validate or build plans locally. ";
 var CATALOG_RESOURCES = [
@@ -4789,21 +4726,21 @@ async function readOAuthBody(req, maxBytes) {
   }
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
-function createOAuthHttpServer(options) {
-  const issuer = checkedUrl(options.issuer, "issuer");
-  const resourceBase = checkedUrl(options.resourceUrl, "resourceUrl");
-  const apiUrl = checkedUrl(options.apiUrl, "apiUrl");
-  const appUrl = checkedUrl(options.appUrl, "appUrl");
-  if (options.exchangeSecret.length < 32)
+function createOAuthHttpServer(options2) {
+  const issuer = checkedUrl(options2.issuer, "issuer");
+  const resourceBase = checkedUrl(options2.resourceUrl, "resourceUrl");
+  const apiUrl = checkedUrl(options2.apiUrl, "apiUrl");
+  const appUrl = checkedUrl(options2.appUrl, "appUrl");
+  if (options2.exchangeSecret.length < 32)
     throw new Error("OAuth exchange secret must contain at least 32 characters");
-  const openaiAppsChallenge = options.openaiAppsChallenge?.trim();
+  const openaiAppsChallenge = options2.openaiAppsChallenge?.trim();
   const resource = new URL(resourceBase);
-  const factory = options.serverFactory ?? buildServer;
-  const fetchImpl = options.fetchImpl ?? fetch;
-  const maxBodyBytes = options.maxBodyBytes ?? OAUTH_MAX_BODY_BYTES;
+  const factory = options2.serverFactory ?? buildServer;
+  const fetchImpl = options2.fetchImpl ?? fetch;
+  const maxBodyBytes = options2.maxBodyBytes ?? OAUTH_MAX_BODY_BYTES;
   if (!Number.isSafeInteger(maxBodyBytes) || maxBodyBytes <= 0)
     throw new Error("Invalid OAuth request body limit");
-  const allowedOrigins = new Set((options.allowedOrigins || []).map((origin) => {
+  const allowedOrigins = new Set((options2.allowedOrigins || []).map((origin) => {
     const checked = checkedUrl(origin, "allowedOrigin");
     if (new URL(checked).origin !== checked)
       throw new Error("OAuth allowed origins must not include a path");
@@ -4910,7 +4847,7 @@ function createOAuthHttpServer(options) {
           method: "POST",
           redirect: "error",
           signal: AbortSignal.timeout(1e4),
-          headers: { authorization: `Bearer ${options.exchangeSecret}`, "content-type": "application/json" },
+          headers: { authorization: `Bearer ${options2.exchangeSecret}`, "content-type": "application/json" },
           body: JSON.stringify({
             grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
             subject_token_type: "urn:ietf:params:oauth:token-type:access_token",
@@ -4993,16 +4930,10 @@ function createOAuthHttpServer(options) {
   return httpServer;
 }
 export {
-  ALLOWED_API_ORIGINS_VAR as A,
-  BASE_URL_HEADER as B,
-  PAT_HEADER as P,
-  SESSION_TOKEN_HEADER as S,
+  StreamableHTTPServerTransport as S,
   buildUnconfiguredServer as a,
   buildServer as b,
-  allowedApiOrigins as c,
-  createOAuthHttpServer as d,
-  StreamableHTTPServerTransport as e,
-  identityFromHeaders as i,
+  createOAuthHttpServer as c,
   oauthHttpOptionsFromEnv as o,
   packsReady as p
 };

@@ -1,4 +1,4 @@
-import type { Config } from './config.js';
+import { branchIdFor, type Config } from './config.js';
 import { recordHttpResponse } from './telemetry.js';
 
 const COOKIE_PREFIX = 'tj_auth_token=';
@@ -117,7 +117,18 @@ export function createAuth(config: Config, fetchImpl: typeof fetch = fetch): Aut
   // Low-level authed fetch that assumes a token already exists (no re-login) — used by the
   // workspace helpers so switching/listing during login() doesn't recurse.
   async function rawFetch(path: string, init?: RequestInit): Promise<Response> {
+    const branchId = branchIdFor(config);
     const headers = new Headers(init?.headers);
+    if (branchId) {
+      if (path.startsWith('/api/tooljet-db/proxy/')) {
+        // The proxy forwards query parameters to PostgREST as row filters.
+        headers.set('x-branch-id', branchId);
+      } else {
+        const url = new URL(path, config.apiUrl);
+        url.searchParams.set('branch_id', branchId);
+        path = url.pathname + url.search;
+      }
+    }
     if (config.isOAuthDelegation) {
       // Delegation must not become a browser session or be accompanied by another identity.
       headers.delete('Cookie');

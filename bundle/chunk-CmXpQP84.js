@@ -1,12 +1,13 @@
 import { createRequire } from "node:module";
-import { p as pagesUsingQuery, l as lintPlannedApp, a as prepareQueryOptionsForWrite, m as matchPlannedPage, e as expandQueryLifecycles, v as validateEvents, n as navigationReorders, b as persistedEventSpecs, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, f as polishFlexRows } from "./chunk-DEegIZdp.js";
-import { f as fail, B as arithmeticWriteWarning, o as ok, D as COMPONENT_FX_GUIDANCE, t as tableQuotaError, L as LARGE_READ_ROW_THRESHOLD, j as assessQueryRead, m as resolveStaticBindings, k as resolvedReadRefusal, E as sameReadSource, F as extractRowCount, H as emptyViewerOnlyParams, I as emptyParamsNote, J as unresolvedNote, A as validateQueryOptions, x as issueMessages, d as bindingSpans, K as declaredParameterDefaults } from "./chunk-4n_covov.js";
-import { f as TOOLJET_DB_DATA_TYPES, d as normalizeType, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, g as FLEX_GROW_DESCRIPTION, h as FLEX_WIDTH_PX_DESCRIPTION, j as FLEX_FILL_WIDTH_DESCRIPTION, m as mapKeyRefusal, k as invalidSeedTimestamps, l as literalCanvasColor, c as componentRef, o as completedPartialWrites, r as resolveRef, b as plannedCurrency, n as normalizeComponentSpec, i as indexComponentReferences, q as isFlexContainerType, s as batchChildOrders, t as childOrderProperty } from "./chunk-0-6sjmM9.js";
-import { a as autoReadPreflight, N as NOT_CHECKED_AUTOMATICALLY } from "./chunk-BYQFWN28.js";
-import { a as componentNameSchema, c as componentSlotSchema, K as pageIconSchema, v as resolveComponentLibrary, L as componentLibraryWarnings, F as validateAppStructure, M as unpinnedLibraries, E as lintComponents, d as decodeComponentParent, f as encodeComponentParent, N as namespaceReads } from "./chunk-23CIdoFG.js";
-import { n as suggestedHtmlHeight } from "./chunk-JeqLopLS.js";
-import { g as getDatasourceQuerySchema } from "./chunk-nEOjGGpO.js";
-import { ax as external_exports } from "./chunk-DtQIWAeP.js";
+import { p as pagesUsingQuery, l as lintPlannedApp, a as prepareQueryOptionsForWrite, m as matchPlannedPage, e as expandQueryLifecycles, v as validateEvents, n as navigationReorders, b as persistedEventSpecs, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, f as polishFlexRows } from "./chunk-Bpds2tpO.js";
+import { x as arithmeticWriteWarning, y as COMPONENT_FX_GUIDANCE, L as LARGE_READ_ROW_THRESHOLD, h as assessQueryRead, j as resolveStaticBindings, i as resolvedReadRefusal, z as sameReadSource, A as extractRowCount, B as emptyViewerOnlyParams, D as emptyParamsNote, E as unresolvedNote, v as validateQueryOptions, p as issueMessages, d as bindingSpans, F as declaredParameterDefaults } from "./chunk-CmizjRXJ.js";
+import { f as TOOLJET_DB_DATA_TYPES, d as normalizeType, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, g as FLEX_GROW_DESCRIPTION, h as FLEX_WIDTH_PX_DESCRIPTION, j as FLEX_FILL_WIDTH_DESCRIPTION, m as mapKeyRefusal, k as invalidSeedTimestamps, l as literalCanvasColor, c as componentRef, o as completedPartialWrites, r as resolveRef, q as currentBranchId, b as plannedCurrency, n as normalizeComponentSpec, i as indexComponentReferences, s as isFlexContainerType, t as batchChildOrders, u as childOrderProperty } from "./chunk-C_xL9Jh_.js";
+import { a as autoReadPreflight, N as NOT_CHECKED_AUTOMATICALLY } from "./chunk-DPYRyOLs.js";
+import { b0 as external_exports, b7 as fail, b8 as ok } from "./chunk-Csl8mO51.js";
+import { e5 as tableQuotaError } from "./chunk-C1Uan0hB.js";
+import { a as componentNameSchema, c as componentSlotSchema, K as pageIconSchema, v as resolveComponentLibrary, L as componentLibraryWarnings, F as validateAppStructure, M as unpinnedLibraries, E as lintComponents, d as decodeComponentParent, f as encodeComponentParent, N as namespaceReads } from "./chunk-CzEla2h4.js";
+import { n as suggestedHtmlHeight } from "./chunk-CH7Qaiw9.js";
+import { g as getDatasourceQuerySchema } from "./chunk-Cd-rK1dm.js";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
@@ -32,6 +33,7 @@ function storeAppPlan(spec, lint, replaceFingerprint2) {
   prune();
   const planToken = randomUUID();
   plans.set(planToken, {
+    branchId: currentBranchId(),
     spec: structuredClone(spec),
     lint: structuredClone(lint),
     expiresAt: Date.now() + PLAN_TTL_MS,
@@ -48,6 +50,8 @@ function consumeAppPlan(planToken) {
   const plan = plans.get(planToken);
   if (!plan)
     throw new Error("Unknown or expired plan_token. Run lint_app_spec again.");
+  if (plan.branchId !== currentBranchId())
+    throw new Error("The plan belongs to a different branch. Use the branch_id supplied to lint_app_spec.");
   plans.delete(planToken);
   return plan;
 }

@@ -189,8 +189,41 @@ describe('createClient', () => {
   });
 
   describe('app version lifecycle', () => {
+    it.each(['version_type', 'versionType'])('rejects a branch-head clone before writing (%s)', async (field) => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ json: {
+        versions: [{ id: 'ceramic-branch', name: 'internal-name', [field]: 'branch' }],
+      } }));
+      const client = createClient(auth, config);
+      await expect(client.createAppVersion({
+        appId: 'ceramic-app', versionName: 'kiln-review', versionFromId: 'ceramic-branch',
+      })).rejects.toThrow(/branch head.*Save a named version/i);
+      expect(auth.authedFetch.mock.calls.every(([, init]) => !init?.method)).toBe(true);
+    });
+
+    it('rejects a clone source outside the target app before writing', async () => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ json: { versions: [] } }));
+      const client = createClient(auth, config);
+      await expect(client.createAppVersion({
+        appId: 'ceramic-app', versionName: 'kiln-review', versionFromId: 'foreign-source',
+      })).rejects.toThrow(/not found in app/);
+      expect(auth.authedFetch.mock.calls.every(([, init]) => !init?.method)).toBe(true);
+    });
+
+    it.each(['branch_id', 'branchId'])('does not clone a named source onto another branch (%s)', async (field) => {
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ json: {
+        versions: [{ id: 'ceramic-snapshot', version_type: 'version', [field]: 'main-branch' }],
+      } }));
+      const client = createClient(auth, { ...config, branchId: 'feature-branch' });
+      await expect(client.createAppVersion({
+        appId: 'ceramic-app', versionName: 'kiln-review', versionFromId: 'ceramic-snapshot',
+      })).rejects.toThrow(/different branch from its source/i);
+      expect(auth.authedFetch.mock.calls.every(([, init]) => !init?.method)).toBe(true);
+    });
+
     it('creates a version from an explicit source and maps the response', async () => {
-      auth.authedFetch.mockResolvedValueOnce(mockResponse({
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ json: { versions: [{ id: 'version-old', version_type: 'version' }] } }))
+        .mockResolvedValueOnce(mockResponse({
         status: 201,
         json: {
           id: 'version-new',
@@ -253,6 +286,7 @@ describe('createClient', () => {
 
     it.each([409, 422])('rejects a first-call %s conflict even when an edited draft matches every field', async (status) => {
       auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ json: { versions: [{ id: 'orchard-source' }] } }))
         .mockResolvedValueOnce(mockResponse({ status, text: 'Already exists!' }))
         .mockResolvedValueOnce(mockResponse({ json: { versions: [{
           id: 'orchard-draft', name: 'harvest-review', parent_version_id: 'orchard-source', status: 'DRAFT',
@@ -264,19 +298,21 @@ describe('createClient', () => {
         appId: 'orchard-app', versionName: 'harvest-review', versionFromId: 'orchard-source',
         versionDescription: 'Harvest candidate',
       })).rejects.toThrow('No existing draft was adopted');
-      expect(auth.authedFetch).toHaveBeenCalledTimes(1);
+      expect(auth.authedFetch).toHaveBeenCalledTimes(2);
     });
 
     it('does not adopt a matching draft after an uncertain clone timeout', async () => {
       auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ json: { versions: [{ id: 'orchard-source' }] } }))
         .mockRejectedValueOnce(new Error('Response timed out after submission'))
+        .mockResolvedValueOnce(mockResponse({ json: { versions: [{ id: 'orchard-source' }] } }))
         .mockResolvedValueOnce(mockResponse({ status: 409, text: 'Already exists!' }));
       const client = createClient(auth, config);
       const request = { appId: 'orchard-app', versionName: 'harvest-review', versionFromId: 'orchard-source' };
 
       await expect(client.createAppVersion(request)).rejects.toThrow('timed out');
       await expect(client.createAppVersion(request)).rejects.toThrow('No existing draft was adopted');
-      expect(auth.authedFetch.mock.calls.map(([, init]) => init.method)).toEqual(['POST', 'POST']);
+      expect(auth.authedFetch.mock.calls.filter(([, init]) => init?.method).map(([, init]) => init.method)).toEqual(['POST', 'POST']);
     });
 
     it('releases a version and verifies it through the app readback', async () => {

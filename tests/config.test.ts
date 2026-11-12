@@ -656,8 +656,15 @@ describe('loadConfig with the CLI\'s stored login (tooljet auth login)', () => {
     process.env.TOOLJET_CREDENTIALS_FILE = file;
   });
   afterEach(() => {
+    delete process.env.TOOLJET_BRANCH_ID;
     rmSync(dir, { recursive: true, force: true });
     delete process.env.TOOLJET_CREDENTIALS_FILE;
+  });
+
+  it('keeps an explicitly pinned branch when using the stored CLI login', () => {
+    writeFileSync(join(dir, 'credentials.json'), JSON.stringify({ default: 'orchard', workspaces: { orchard: { url: 'https://orchard.example.test', apiToken: 'synthetic-orchard-pat' } } }));
+    process.env.TOOLJET_BRANCH_ID = '71ee873f-9342-4c5e-86e8-21f790e49991';
+    expect(loadConfig()).toMatchObject({ branchId: '71ee873f-9342-4c5e-86e8-21f790e49991' });
   });
 
   it('uses the stored instance and token when nothing else is configured', () => {
