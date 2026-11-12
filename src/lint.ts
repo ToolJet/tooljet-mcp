@@ -19,7 +19,7 @@ import {
   lintTextFormat,
   lintUntriggeredDataQueries, lintAutomaticWrites,
 } from './renderReadiness.js';
-import { bindingReferences, dynamicBindingNamespaces } from './bindingReferences.js';
+import { bindingReferences, dynamicBindingNamespaces, QUERY_PROPERTIES, unknownQueryMemberReads } from './bindingReferences.js';
 import { bindingSpans } from './bindingSpans.js';
 import { componentNameError } from './componentName.js';
 import { lintEditPrefill, lintUninitializedWriteSelections } from './editPrefillContract.js';
@@ -1694,6 +1694,16 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
       `Text "${label}" has no properties.text and will render ToolJet's default greeting. ` +
       'Supply the intended text or binding; use an explicit empty string if this display is intentionally blank. ' +
       'Do not invent replacement copy or change its layout.'
+    );
+  }
+
+  // A ModuleViewer shows the module its moduleAppId names. add_components wrote one with properties {}: it showed
+  // nothing, and ToolJet failed every load of the app with a 500 (QA DVRL-1, 2026-11-12; the server skips it now).
+  if (spec.type === 'ModuleViewer' && !String(propVal(props, 'moduleAppId') ?? '').trim()) {
+    errors.push(
+      `ModuleViewer "${label}" needs properties.moduleAppId, the co_relation_id of a module app in this workspace. ` +
+        'Without one it shows nothing, and a ToolJet server without the fix fails to load the app. ' +
+        'Place the module in the ToolJet editor if its id is not known.'
     );
   }
 
@@ -3777,19 +3787,19 @@ export function validateAppStructure(summary: AppSummary, options: { canvasColor
           `is named "${ref.name}". Binding names are case-sensitive; use the persisted name.`);
       }
     }
+    // A query publishes a fixed set of values: validate_app passed {{queries.getData.dataa}}, which reads undefined and
+    // shows nothing (QA DVRL-112, 2026-11-12). A query that does not exist is reported above.
+    for (const read of unknownQueryMemberReads(source.value)) {
+      const query = summary.queries.find((q) => q.name === read.name || q.id === read.name);
+      const key = `queries.${query?.name ?? read.name}.${read.member}`;
+      if (!query || seen.has(key)) continue;
+      seen.add(key);
+      const meant = nearestCatalogKey(read.member, QUERY_PROPERTIES);
+      errors.push(`${source.label} reads ${key}, but a query has no ${read.member}; it reads undefined at runtime. ` +
+        (meant ? `Read queries.${query.name}.${meant}. ` : '') + `A query has ${QUERY_PROPERTIES.join(', ')}.`);
+    }
   }
   for (const c of allComponents) {
-    const blob = JSON.stringify({ p: c.properties ?? {}, s: c.styles ?? {} });
-    for (const m of blob.matchAll(/\{\{\s*queries\.([A-Za-z0-9_]+)/g)) {
-      if (!queryNames.has(m[1])) {
-        warnings.push(`Component "${c.name ?? c.id}" binds {{queries.${m[1]}…}} but no query is named "${m[1]}".`);
-      }
-    }
-    for (const m of blob.matchAll(/\{\{\s*components\.([A-Za-z0-9_]+)/g)) {
-      if (!componentNames.has(m[1])) {
-        warnings.push(`Component "${c.name ?? c.id}" binds {{components.${m[1]}…}} but no component is named "${m[1]}".`);
-      }
-    }
     const r = lintComponentSpec({
       id: c.id,
       name: c.name ?? c.id,

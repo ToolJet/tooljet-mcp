@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { packSlotsOfType } from './packSlots.js';
 
 export const COMPONENT_SLOT_NAMES = ['body', 'header', 'footer', 'modal'] as const;
 
@@ -54,7 +55,17 @@ export function isPackContainerType(type: unknown): boolean {
  */
 export function encodeComponentParent(parentId: string, slotName?: ComponentSlotName, parentType?: string): string {
   // a pack widget's body is a slot of its own even when the caller leaves slot_name to its default
-  if (isPackContainerType(parentType)) return `${decodeComponentParent(parentId).parentId}-${slotName ?? 'body'}`;
+  if (isPackContainerType(parentType)) {
+    const base = decodeComponentParent(parentId).parentId;
+    const slots = packSlotsOfType(parentType);
+    // With no slot named: the body, or the only slot of a widget without one (as resolvePackSlot picks).
+    const slot =
+      slotName ?? (slots && !slots.fixed.includes('body') && slots.fixed.length === 1 && !slots.families.length ? slots.fixed[0] : 'body');
+    // A slot drawn once per item (a List's row, a Kanban's card) is the widget's own canvas, as ToolJet's List view rows
+    // are: a child stored on "<id>-row" was never drawn (QA DVRL-110).
+    if (slots?.rows.includes(slot)) return base;
+    return `${base}-${slot}`;
+  }
   if (!slotName) return parentId;
   if (slotName === 'body') return decodeComponentParent(parentId).parentId;
   const base = decodeComponentParent(parentId).parentId;
