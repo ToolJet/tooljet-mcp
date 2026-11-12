@@ -1,9 +1,9 @@
 import { createRequire } from "node:module";
-import { s as surfaceAroundResolver, l as lintSelectedRowProjections, a as lintOversizedWidths, b as lintHtmlContentHeight, c as lintHtmlRootSurface, d as lintUnguardedComponentRefs, e as lintEmbeddedBindingSyntax, f as lintChartDataShape, g as lintUnguardedSelectionText, h as lintTextFormat, i as lintTableColumnsShape, B as BARE_QUERY_DATA_BINDING, j as lintBindingNames, k as lintUntriggeredDataQueries, m as lintAutomaticWrites, n as bindingSpans, p as parseHtml, o as stripHtmlBindings } from "./chunk-BxMc6J_M.js";
-import { ed as __toESM, e8 as getComponentSchema, e7 as getCatalog, ea as getLegacyComponentReplacement } from "./chunk-COW2iNTB.js";
-import { r as require_lib } from "./chunk-B6ef8g-7.js";
-import { p as parseExpression, a as parse } from "./chunk-DpvBXwyI.js";
-import { b0 as external_exports } from "./chunk-D-yEFdPv.js";
+import { s as surfaceAroundResolver, l as lintSelectedRowProjections, a as lintOversizedWidths, b as lintHtmlContentHeight, c as lintHtmlRootSurface, d as lintUnguardedComponentRefs, e as lintEmbeddedBindingSyntax, f as lintChartDataShape, g as lintUnguardedSelectionText, h as lintTextFormat, i as lintTableColumnsShape, B as BARE_QUERY_DATA_BINDING, j as lintBindingNames, k as lintUntriggeredDataQueries, m as lintAutomaticWrites, n as bindingSpans, p as parseHtml, o as stripHtmlBindings } from "./chunk-DHwsBZfi.js";
+import { ed as __toESM, e8 as getComponentSchema, e7 as getCatalog, ea as getLegacyComponentReplacement } from "./chunk-addBGscc.js";
+import { r as require_lib } from "./chunk-Ces3cV_q.js";
+import { p as parseExpression, a as parse } from "./chunk-SVZaINty.js";
+import { b0 as external_exports } from "./chunk-Bk2YZ8cg.js";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -987,10 +987,14 @@ function dropdownDefaultVisibilityWarning(value2, label) {
 }
 var COMPONENT_SLOT_NAMES = ["body", "header", "footer", "modal"];
 var TAB_SLOT = /^tab-(t\d+)$/;
-var LIBRARY_TAB_SLOT = /^tab_[A-Za-z0-9_]+$/;
+var PACK_SLOT = /^[A-Za-z][A-Za-z0-9_]*$/;
 var TAB_CANVAS_SUFFIX = /-(t\d+)$/;
+var SLOT_CANVAS = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-([A-Za-z][A-Za-z0-9_]*)$/i;
 function isComponentSlotName(value2) {
-  return typeof value2 === "string" && (COMPONENT_SLOT_NAMES.includes(value2) || TAB_SLOT.test(value2) || LIBRARY_TAB_SLOT.test(value2));
+  return typeof value2 === "string" && (TAB_SLOT.test(value2) || PACK_SLOT.test(value2));
+}
+function isNativeSlotName(value2) {
+  return typeof value2 === "string" && (COMPONENT_SLOT_NAMES.includes(value2) || TAB_SLOT.test(value2));
 }
 function isTabSlot(value2) {
   return typeof value2 === "string" && TAB_SLOT.test(value2);
@@ -998,7 +1002,7 @@ function isTabSlot(value2) {
 var componentSlotSchema = external_exports.union([
   external_exports.enum(COMPONENT_SLOT_NAMES),
   external_exports.string().regex(TAB_SLOT),
-  external_exports.string().regex(LIBRARY_TAB_SLOT)
+  external_exports.string().regex(PACK_SLOT)
 ]);
 var ENCODED_SLOT_SUFFIXES = ["header", "footer", "modal"];
 function isPackContainerType(type) {
@@ -1027,6 +1031,9 @@ function decodeComponentParent(parentId) {
   const tab = TAB_CANVAS_SUFFIX.exec(parentId);
   if (tab)
     return { parentId: parentId.slice(0, -tab[0].length), slotName: `tab-${tab[1]}` };
+  const slot = SLOT_CANVAS.exec(parentId);
+  if (slot)
+    return { parentId: slot[1], slotName: slot[2] };
   return { parentId, slotName: "body" };
 }
 function resolveParentRef(pageComponents, parent) {
@@ -1048,6 +1055,147 @@ function resolveParentRef(pageComponents, parent) {
   return {
     ok: false,
     error: `parent "${parent}" is not a component on this page (by id or name), so the component would be stored detached and never render. Pass an existing container id or name, or create the parent in the same batch with client_ref/parent_ref.`
+  };
+}
+var import_json5 = __toESM(require_lib(), 1);
+var toSlotName = (prefix, key) => `${prefix}_${key.replace(/[^A-Za-z0-9_]/g, "_")}`;
+var keyTag = (key) => {
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i += 1)
+    h = Math.imul(h ^ key.charCodeAt(i), 16777619);
+  return (h >>> 0).toString(36);
+};
+function slotNames(prefix, keys) {
+  const names = [];
+  const taken = /* @__PURE__ */ new Set();
+  const distinct2 = [...new Set(keys)];
+  const plain = distinct2.filter((k) => /^[A-Za-z0-9_]*$/.test(k));
+  const folded = distinct2.filter((k) => !/^[A-Za-z0-9_]*$/.test(k)).sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
+  for (const k of plain) {
+    names.push(toSlotName(prefix, k));
+    taken.add(toSlotName(prefix, k));
+  }
+  for (const k of folded) {
+    const base = toSlotName(prefix, k);
+    let name = base;
+    for (let n = 1; taken.has(name); n += 1)
+      name = `${base}_${keyTag(k)}${n > 1 ? `_${n}` : ""}`;
+    names.push(name);
+    taken.add(name);
+  }
+  return names;
+}
+var KEY_FIELDS = ["key", "id", "value", "name"];
+function keysOf(items, field) {
+  const keys = items.map((item) => {
+    const value2 = item && typeof item === "object" ? item[field] : void 0;
+    return typeof value2 === "string" || typeof value2 === "number" ? String(value2) : "";
+  });
+  return keys.every(Boolean) ? keys : null;
+}
+function packSlotsFromManifest(slots, props) {
+  if (!slots?.length)
+    return void 0;
+  const names = slots.map((slot) => slot.name);
+  const families = [];
+  const claimed = /* @__PURE__ */ new Set();
+  const prefixes = [...new Set(names.flatMap((name) => /^([A-Za-z0-9]+)_./.exec(name)?.[1] ?? []))];
+  for (const prefix of prefixes) {
+    const listed = names.filter((name) => name.startsWith(`${prefix}_`));
+    const family = (props ?? []).flatMap((prop2) => {
+      if (!Array.isArray(prop2.default) || !prop2.default.length)
+        return [];
+      return KEY_FIELDS.flatMap((field) => {
+        const keys = keysOf(prop2.default, field);
+        const drawn = keys ? new Set(slotNames(prefix, keys)) : void 0;
+        return drawn && listed.every((name) => drawn.has(name)) ? [{ prefix, itemsProp: prop2.name, keyField: field, defaultItems: prop2.default }] : [];
+      });
+    })[0];
+    if (!family)
+      continue;
+    families.push(family);
+    listed.forEach((name) => claimed.add(name));
+  }
+  return { fixed: names.filter((name) => !claimed.has(name)), families };
+}
+function describePackSlots(slots) {
+  if (!slots)
+    return void 0;
+  const parts = [
+    ...slots.fixed,
+    ...slots.families.map((family) => {
+      const sample = slotNames(family.prefix, keysOf(family.defaultItems, family.keyField) ?? []);
+      return `${family.prefix}_<${family.keyField} of each ${family.itemsProp} item>${sample.length ? ` (by default ${sample.join(", ")})` : ""}`;
+    })
+  ];
+  return parts.length ? `Child components go in slot_name ${parts.join(", ")}.` : void 0;
+}
+function packSlotsOfType(type) {
+  if (typeof type !== "string" || !type.startsWith("Lib_"))
+    return void 0;
+  return getComponentSchema(type)?.pack?.slotInfo;
+}
+function itemsOf(properties, key) {
+  const entry = properties?.[key];
+  if (entry === void 0)
+    return void 0;
+  const raw = entry && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry.value : entry;
+  if (raw === void 0 || raw === null || raw === "")
+    return void 0;
+  if (Array.isArray(raw))
+    return raw;
+  if (typeof raw !== "string")
+    return [];
+  const body = /^\s*\{\{([\s\S]*)\}\}\s*$/.exec(raw)?.[1]?.trim() ?? (raw.trim().startsWith("[") ? raw : void 0);
+  if (body === void 0)
+    return raw.includes("{{") ? null : [];
+  try {
+    const value2 = import_json5.default.parse(body.replace(/^\(([\s\S]*)\)$/, "$1"));
+    return Array.isArray(value2) ? value2 : [];
+  } catch {
+    return null;
+  }
+}
+function widgetSlots(component, { propertiesKnown = true } = {}) {
+  const slots = packSlotsOfType(component.type);
+  if (!slots)
+    return void 0;
+  const known = [...slots.fixed];
+  const open = [];
+  for (const family of slots.families) {
+    const items = propertiesKnown ? itemsOf(component.properties, family.itemsProp) : null;
+    const keys = items === null ? null : keysOf(items ?? family.defaultItems, family.keyField);
+    if (keys)
+      known.push(...slotNames(family.prefix, keys));
+    else
+      open.push({ prefix: family.prefix, itemsProp: family.itemsProp });
+  }
+  return { known, open };
+}
+function resolvePackSlot(parent, slotName, child, options = {}) {
+  const slots = widgetSlots(parent, options);
+  if (!slots)
+    return { ok: true, slotName };
+  const listed = [...slots.known, ...slots.open.map((family) => `${family.prefix}_<key of each ${family.itemsProp} item>`)];
+  const where = `${String(parent.type)} "${parent.name ?? parent.id ?? "?"}"`;
+  if (slotName === void 0) {
+    if (slots.known.includes("body"))
+      return { ok: true, slotName: "body" };
+    if (slots.known.length === 1 && !slots.open.length)
+      return { ok: true, slotName: slots.known[0] };
+    return {
+      ok: false,
+      error: `Component "${child}": ${where} draws its children in named slots; set slot_name to one of ${listed.join(", ")}. Without one the component is saved on a canvas the widget does not draw, and never shown.`
+    };
+  }
+  if (slots.known.includes(slotName))
+    return { ok: true, slotName };
+  if (slots.open.some((family) => slotName.startsWith(`${family.prefix}_`) && slotName.length > family.prefix.length + 1)) {
+    return { ok: true, slotName };
+  }
+  return {
+    ok: false,
+    error: `Component "${child}": ${where} has no slot "${slotName}" (its slots: ${listed.join(", ")}), so the component would be saved and never shown. Use one of those slots, or add the item it should go in to the widget first.`
   };
 }
 var FORM_SCHEMA_FIELD_TYPES = [
@@ -1416,7 +1564,7 @@ function lintKpiCardGrids(components) {
     return figure && (delta || !valueOf4(p, "imageField")) || KPI_NAME.test(c.name ?? "") && !valueOf4(p, "imageField");
   }).map((c) => `Card grid "${c.name ?? "ShadCardGrid"}" draws figures: a card grid is for records with a face, its badge sits beside the title (a long delta is cut off) and its subtitle is small body text, not a headline number. Draw KPIs as a row of ShadStat (value, valueFormat, change, changeLabel) or one ShadSummaryStrip (items).`);
 }
-var import_json5 = __toESM(require_lib(), 1);
+var import_json52 = __toESM(require_lib(), 1);
 var FIELD_PROPS = [
   "latField",
   "lngField",
@@ -1447,7 +1595,7 @@ function literal(value2) {
   if (body === void 0)
     return typeof value2 === "string" && value2.includes("{{") ? void 0 : { value: value2 };
   try {
-    return { value: import_json5.default.parse(body.replace(/^\(([\s\S]*)\)$/, "$1")) };
+    return { value: import_json52.default.parse(body.replace(/^\(([\s\S]*)\)$/, "$1")) };
   } catch {
     return void 0;
   }
@@ -2172,11 +2320,17 @@ function lintComponentSlots(components) {
   for (const component of components) {
     const persistedSlot = component.parent ? decodeComponentParent(component.parent).slotName : "body";
     const slotName = component.slotName ?? (persistedSlot === "body" ? void 0 : persistedSlot);
-    if (!slotName)
-      continue;
     const placement = parentPlacement(component);
     const parent = placement ? refs.get(placement.parentId) : void 0;
-    const validParent = isLibraryPackType(parent?.type) ? !["header", "footer", "modal"].includes(slotName) && !isTabSlot(slotName) : slotName === "modal" ? parent?.type === "Kanban" : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? "") : SLOT_PARENT_TYPES.has(parent?.type ?? "") || slotName === "body" && ["Kanban", "ShadKanban", "FlexContainer"].includes(parent?.type ?? "");
+    if (parent && isLibraryPackType(parent.type) && packSlotsOfType(parent.type)) {
+      const slot = resolvePackSlot(parent, slotName, String(component.name ?? component.id ?? component.type));
+      if (!slot.ok)
+        errors.push(slot.error);
+      continue;
+    }
+    if (!slotName)
+      continue;
+    const validParent = isLibraryPackType(parent?.type) ? !["header", "footer", "modal"].includes(slotName) && !isTabSlot(slotName) : !isNativeSlotName(slotName) ? false : slotName === "modal" ? parent?.type === "Kanban" : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? "") : SLOT_PARENT_TYPES.has(parent?.type ?? "") || slotName === "body" && ["Kanban", "ShadKanban", "FlexContainer"].includes(parent?.type ?? "");
     if (parent && TABS_TYPES.has(parent.type ?? "") && isTabSlot(slotName) && !isTruthyBinding(propVal(parent.properties, "useDynamicOptions"))) {
       const items = propVal(parent.properties, "tabItems");
       const ids = Array.isArray(items) ? items.map((item) => String(item?.id ?? "")) : void 0;
@@ -2959,7 +3113,7 @@ function lintComponentSpec(spec, context = {}) {
   }
   if (spec.slotName !== void 0) {
     if (!isComponentSlotName(spec.slotName)) {
-      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, Kanban modal, or a Tabs tab (tab-t0, tab-t1, ...).`);
+      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, Kanban modal, a Tabs tab (tab-t0, tab-t1, ...), or a pack widget's slot (body, tab_<key>, panel_<key>, first ...).`);
     }
     if (!spec.parentRef && !spec.parent) {
       errors.push(`Component "${label}": slot_name requires parent_ref or parent.`);
@@ -4373,52 +4527,56 @@ function lintInnerPageBands(summary) {
   return warnings;
 }
 export {
-  lintComponentStateBindings as A,
-  minimumTextHeight as B,
-  unifyChartAccents as C,
-  lintComponents as D,
-  pageIconError as E,
-  validateAppStructure as F,
-  pageIconSchema as G,
-  componentLibraryWarnings as H,
-  namespaceReads as I,
-  unpinnedLibraries as J,
-  registerLibraryPacks as K,
-  libraryPins as L,
-  defaultPack as M,
-  savedComponentLibrary as N,
-  COMPONENT_PACK_DESCRIPTION as O,
+  lintShadKanbanCards as A,
+  lintShadScheduleScale as B,
+  isModalV2Type as C,
+  lintComponentStateBindings as D,
+  minimumTextHeight as E,
+  unifyChartAccents as F,
+  lintComponents as G,
+  pageIconError as H,
+  validateAppStructure as I,
+  pageIconSchema as J,
+  componentLibraryWarnings as K,
+  namespaceReads as L,
+  unpinnedLibraries as M,
+  registerLibraryPacks as N,
+  libraryPins as O,
   PROPERTY_KEY_ALIASES as P,
-  lintRenderedGeometryBlocking as Q,
-  lintRenderedGeometryAdvisory as R,
+  defaultPack as Q,
+  savedComponentLibrary as R,
   STYLE_KEYS_IN_PROPERTIES as S,
-  lintNestedContainerWidths as T,
-  FORM_SCHEMA_FIELD_TYPE_SET as U,
-  SAFE_GENERATED_FORM_FIELD_TYPE_SET as V,
-  downgradeFlexForLibrary as a,
-  assertPageIcon as b,
-  retiredUi2Name as c,
+  COMPONENT_PACK_DESCRIPTION as T,
+  lintRenderedGeometryBlocking as U,
+  lintRenderedGeometryAdvisory as V,
+  packSlotsFromManifest as W,
+  describePackSlots as X,
+  FORM_SCHEMA_FIELD_TYPE_SET as Y,
+  SAFE_GENERATED_FORM_FIELD_TYPE_SET as Z,
+  resolvePackSlot as a,
+  introducedLintFindings as b,
+  componentSlotSchema as c,
   decodeComponentParent as d,
   encodeComponentParent as e,
-  componentSlotSchema as f,
-  componentNameSchema as g,
-  componentNameError as h,
-  isMisplacedStyleKey as i,
-  resolveParentRef as j,
-  introducedLintFindings as k,
-  libraryTypeOf as l,
-  missingLibraryPins as m,
-  nearestCatalogKey as n,
-  lintComponentSpec as o,
-  lintComponentSlots as p,
-  lintUnusableTextGeometry as q,
-  resolveComponentLibrary as r,
-  lintStandardSingleLineInputHeight as s,
+  lintComponentSpec as f,
+  lintUnusableTextGeometry as g,
+  lintNestedContainerWidths as h,
+  isPackContainerType as i,
+  lintStandardSingleLineInputHeight as j,
+  lintTextGeometry as k,
+  lintComponentSlots as l,
+  lintRenderedGeometry as m,
+  downgradeFlexForLibrary as n,
+  assertPageIcon as o,
+  resolveComponentLibrary as p,
+  isMisplacedStyleKey as q,
+  resolveParentRef as r,
+  missingLibraryPins as s,
   toLibraryComponent as t,
-  lintTextGeometry as u,
-  lintRenderedGeometry as v,
-  lintKanbanInteractions as w,
-  lintShadKanbanCards as x,
-  lintShadScheduleScale as y,
-  isModalV2Type as z
+  libraryTypeOf as u,
+  retiredUi2Name as v,
+  nearestCatalogKey as w,
+  componentNameSchema as x,
+  componentNameError as y,
+  lintKanbanInteractions as z
 };

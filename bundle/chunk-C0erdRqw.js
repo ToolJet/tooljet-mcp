@@ -1,10 +1,10 @@
 import { createRequire } from "node:module";
-import { e8 as getComponentSchema, e5 as fail, e9 as mapKeyRefusal, e6 as ok } from "./chunk-COW2iNTB.js";
-import { r as resolveRef$1, c as componentRef, p as packDefaultDefinition, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, a as FLEX_GROW_DESCRIPTION, b as FLEX_WIDTH_PX_DESCRIPTION, d as FLEX_FILL_WIDTH_DESCRIPTION, e as plannedCurrency, n as normalizeComponentSpec, i as indexComponentReferences, f as booleanBindingValue, v as validateTableBatch, g as normalizeType, T as TOOLJET_DB_DATA_TYPES, h as invalidSeedTimestamps, C as COMPONENT_FX_GUIDANCE } from "./chunk-cUJVoZMr.js";
-import { z as isModalV2Type, A as lintComponentStateBindings, c as retiredUi2Name, d as decodeComponentParent, B as minimumTextHeight, C as unifyChartAccents, g as componentNameSchema, f as componentSlotSchema, D as lintComponents, E as pageIconError, e as encodeComponentParent, F as validateAppStructure, G as pageIconSchema, r as resolveComponentLibrary, H as componentLibraryWarnings, I as namespaceReads } from "./chunk-D8GCORfd.js";
-import { v as normalizeQueryToggles, x as toggleRewriteWarning, y as issueMessages, z as queryToggleIssues, A as normalizeQueryOptions, C as validateQueryOptions, u as suggestedHtmlHeight, D as arithmeticWriteWarning, n as bindingSpans } from "./chunk-BxMc6J_M.js";
-import { p as parseExpression } from "./chunk-DpvBXwyI.js";
-import { b0 as external_exports } from "./chunk-D-yEFdPv.js";
+import { e8 as getComponentSchema, e5 as fail, e9 as mapKeyRefusal, e6 as ok } from "./chunk-addBGscc.js";
+import { c as componentRef, p as packDefaultDefinition, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, a as FLEX_GROW_DESCRIPTION, b as FLEX_WIDTH_PX_DESCRIPTION, d as FLEX_FILL_WIDTH_DESCRIPTION, e as plannedCurrency, n as normalizeComponentSpec, i as indexComponentReferences, f as booleanBindingValue, v as validateTableBatch, g as normalizeType, T as TOOLJET_DB_DATA_TYPES, h as invalidSeedTimestamps, C as COMPONENT_FX_GUIDANCE } from "./chunk-DkGTJHQA.js";
+import { x as normalizeQueryToggles, y as toggleRewriteWarning, z as issueMessages, A as queryToggleIssues, C as normalizeQueryOptions, D as validateQueryOptions, r as resolveRef$1, v as suggestedHtmlHeight, E as arithmeticWriteWarning, n as bindingSpans } from "./chunk-DHwsBZfi.js";
+import { C as isModalV2Type, D as lintComponentStateBindings, v as retiredUi2Name, d as decodeComponentParent, E as minimumTextHeight, F as unifyChartAccents, x as componentNameSchema, c as componentSlotSchema, G as lintComponents, H as pageIconError, e as encodeComponentParent, I as validateAppStructure, J as pageIconSchema, p as resolveComponentLibrary, K as componentLibraryWarnings, L as namespaceReads } from "./chunk-BN-V1KBv.js";
+import { p as parseExpression } from "./chunk-SVZaINty.js";
+import { b0 as external_exports } from "./chunk-Bk2YZ8cg.js";
 import { randomUUID } from "node:crypto";
 createRequire(import.meta.url);
 var member = (n) => n && ["MemberExpression", "OptionalMemberExpression"].includes(n.type);

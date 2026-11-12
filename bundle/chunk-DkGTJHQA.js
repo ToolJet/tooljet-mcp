@@ -1,14 +1,14 @@
 import { createRequire } from "node:module";
-import { ef as tableQuotaError, eg as TableQuotaError, e6 as ok, e5 as fail, e8 as getComponentSchema } from "./chunk-COW2iNTB.js";
-import { b0 as external_exports, b7 as definition } from "./chunk-D-yEFdPv.js";
-import { d as decodeComponentParent, e as encodeComponentParent, a as downgradeFlexForLibrary, b as assertPageIcon, r as resolveComponentLibrary, i as isMisplacedStyleKey, t as toLibraryComponent, m as missingLibraryPins, l as libraryTypeOf, P as PROPERTY_KEY_ALIASES, c as retiredUi2Name, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey, f as componentSlotSchema, g as componentNameSchema, h as componentNameError, j as resolveParentRef, k as introducedLintFindings, o as lintComponentSpec, p as lintComponentSlots, q as lintUnusableTextGeometry, s as lintStandardSingleLineInputHeight, u as lintTextGeometry, v as lintRenderedGeometry, w as lintKanbanInteractions, x as lintShadKanbanCards, y as lintShadScheduleScale } from "./chunk-D8GCORfd.js";
-import { q as assertPersistableQueryToggles, r as normalizeWorkflowQueryOptions, t as assertWorkflowQueryOptions, w as workflowMappingMatches, u as suggestedHtmlHeight } from "./chunk-BxMc6J_M.js";
+import { e5 as fail, e6 as ok, ef as tableQuotaError, eg as TableQuotaError, e8 as getComponentSchema } from "./chunk-addBGscc.js";
+import { r as resolveRef, q as assertPersistableQueryToggles, t as normalizeWorkflowQueryOptions, u as assertWorkflowQueryOptions, w as workflowMappingMatches, v as suggestedHtmlHeight } from "./chunk-DHwsBZfi.js";
+import { d as decodeComponentParent, c as componentSlotSchema, r as resolveParentRef, i as isPackContainerType, a as resolvePackSlot, e as encodeComponentParent, b as introducedLintFindings, l as lintComponentSlots, f as lintComponentSpec, g as lintUnusableTextGeometry, h as lintNestedContainerWidths, j as lintStandardSingleLineInputHeight, k as lintTextGeometry, m as lintRenderedGeometry, n as downgradeFlexForLibrary, o as assertPageIcon, p as resolveComponentLibrary, q as isMisplacedStyleKey, t as toLibraryComponent, s as missingLibraryPins, u as libraryTypeOf, P as PROPERTY_KEY_ALIASES, v as retiredUi2Name, S as STYLE_KEYS_IN_PROPERTIES, w as nearestCatalogKey, x as componentNameSchema, y as componentNameError, z as lintKanbanInteractions, A as lintShadKanbanCards, B as lintShadScheduleScale } from "./chunk-BN-V1KBv.js";
+import { b0 as external_exports, b7 as definition } from "./chunk-Bk2YZ8cg.js";
 import { randomUUID, createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-BOAy1nzn.js";
+import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-DGCi5LfA.js";
 createRequire(import.meta.url);
 function strictEntry(shape, describeUnknown) {
   return external_exports.strictObject(shape, {
@@ -130,6 +130,205 @@ function resolveAuthoredChildOrder(container, page, authored) {
     return [child.id];
   });
   return { order: normalizeChildOrder(ids, [...ids, ...currentChildOrder(container, page)]), unknown };
+}
+createRequire(import.meta.url);
+var rect = external_exports.object({
+  top: external_exports.number(),
+  left: external_exports.number(),
+  width: external_exports.number(),
+  height: external_exports.number(),
+  fillWidth: external_exports.boolean().optional().describe(FLEX_FILL_WIDTH_DESCRIPTION),
+  widthPx: external_exports.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION),
+  grow: external_exports.number().positive().optional().describe(FLEX_GROW_DESCRIPTION),
+  minWidthPx: external_exports.number().nonnegative().optional().describe(FLEX_MIN_WIDTH_PX_DESCRIPTION)
+});
+var RECT_KEYS = /* @__PURE__ */ new Set(["top", "left", "width", "height"]);
+var layoutEntrySchema = strictEntry({
+  component_id: external_exports.string(),
+  desktop: rect.optional(),
+  mobile: rect.optional(),
+  parent: external_exports.string().optional(),
+  slot_name: componentSlotSchema.optional()
+}, (key) => {
+  if (RECT_KEYS.has(key)) {
+    return `Layout entry key "${key}" must be nested under desktop and/or mobile (e.g. { component_id, desktop: { top, left, width, height } }).`;
+  }
+  if (key === "layout" || key === "layouts") {
+    return `Layout entry key "${key}" is not accepted; put the rect directly under desktop and/or mobile on the entry.`;
+  }
+  if (key === "definition" || key === "properties" || key === "styles") {
+    return `Layout entry key "${key}" is not accepted by update_layout; edit component values with update_components.`;
+  }
+  return `Unknown layout entry key "${key}"; accepted keys are component_id, desktop, mobile, parent, slot_name.`;
+});
+function updateLayoutTool(client) {
+  return {
+    name: "update_layout",
+    title: "Update Layout",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
+    description: "Move / resize existing components (batch) without touching their properties. `left`/`width` are in the immediate parent canvas's own 43-column grid, including nested containers; `top`/`height` are pixels. Full rows use width 43, independent of the parent outer width. Container/Form/modal insets may use left 2, width 39; grid-mode Listview full rows use left 0, width 43. Provide desktop and/or mobile per component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` (header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent. A FlexContainer child takes its width from fillWidth/widthPx, not width/left; a component reparented into a FlexContainer is appended to its childOrder.",
+    inputSchema: {
+      app_id: external_exports.string(),
+      version_id: external_exports.string(),
+      page_id: external_exports.string(),
+      layouts: external_exports.array(layoutEntrySchema).min(1)
+    },
+    async handler(args) {
+      try {
+        const summary = await client.getAppSummary(args.app_id);
+        const page = summary.pages.find((candidate) => candidate.id === args.page_id);
+        if (!page)
+          return fail(new Error(`Page "${args.page_id}" does not exist in app "${args.app_id}".`));
+        const components = new Map(page.components.map((component) => [component.id, component]));
+        const layoutWarnings = [];
+        const resolveErrors = [];
+        const resolvedIds = /* @__PURE__ */ new Map();
+        for (const layout of args.layouts) {
+          if (!layout.desktop && !layout.mobile && layout.parent === void 0 && layout.slot_name === void 0) {
+            resolveErrors.push(`Component "${layout.component_id}": nothing to update. Provide desktop and/or mobile rects, or a parent/slot_name change.`);
+            continue;
+          }
+          if (resolvedIds.has(layout.component_id))
+            continue;
+          const resolution = resolveRef(page.components, layout.component_id, "Component", `on page "${args.page_id}"`);
+          if (!resolution.ok) {
+            resolveErrors.push(resolution.error);
+            continue;
+          }
+          resolvedIds.set(layout.component_id, resolution.target.id);
+          if (resolution.warning)
+            layoutWarnings.push(resolution.warning);
+        }
+        if (resolveErrors.length)
+          return fail(new Error(resolveErrors.join(" ")));
+        args = {
+          ...args,
+          layouts: args.layouts.map((layout) => ({
+            ...layout,
+            component_id: resolvedIds.get(layout.component_id) ?? layout.component_id
+          }))
+        };
+        const rootSlotWarnings = [];
+        const parentErrors = [];
+        const resolvedLayouts = args.layouts.map((layout) => {
+          const current = components.get(layout.component_id);
+          let parent = layout.parent;
+          let slot_name = layout.slot_name;
+          let parentType;
+          if (typeof parent === "string" && parent) {
+            const resolvedParent = resolveParentRef(page.components, parent);
+            if (!resolvedParent.ok) {
+              parentErrors.push(`Component "${layout.component_id}": ${resolvedParent.error}`);
+              return { ...layout, parentType };
+            }
+            parent = resolvedParent.parent;
+          }
+          if (slot_name !== void 0) {
+            parent ??= current.parent ? decodeComponentParent(current.parent).parentId : void 0;
+            if (!parent) {
+              if (slot_name === "body") {
+                rootSlotWarnings.push(`Component "${layout.component_id}": slot_name:"body" ignored on a root component (it has no parent slots).`);
+                slot_name = void 0;
+              } else {
+                throw new Error(`Component "${layout.component_id}": slot_name:"${slot_name}" requires an existing or explicit parent.`);
+              }
+            }
+          }
+          if (parent) {
+            const decoded = decodeComponentParent(parent);
+            const parentComponent = components.get(decoded.parentId);
+            if (parentComponent && isPackContainerType(parentComponent.type)) {
+              const named = slot_name ?? (parent !== decoded.parentId ? decoded.slotName : void 0);
+              const slot = resolvePackSlot(parentComponent, named, current.name ?? current.id);
+              if (!slot.ok)
+                parentErrors.push(slot.error);
+              else {
+                parent = decoded.parentId;
+                slot_name = slot.slotName;
+                parentType = parentComponent.type;
+              }
+            }
+          }
+          return { ...layout, parent, slot_name, parentType };
+        });
+        if (parentErrors.length) {
+          return fail(new Error(`${parentErrors.join(" ")} (Nothing was saved: refused before any write.)`));
+        }
+        const changes = new Map(resolvedLayouts.map((layout) => [layout.component_id, layout]));
+        const projected = page.components.map((component) => {
+          const change = changes.get(component.id);
+          if (!change)
+            return component;
+          const currentLayouts = component.layouts ?? {};
+          return {
+            ...component,
+            layouts: {
+              ...currentLayouts,
+              desktop: change.desktop ?? currentLayouts?.desktop,
+              mobile: change.mobile ?? currentLayouts?.mobile
+            },
+            parent: change.parent !== void 0 ? encodeComponentParent(change.parent, change.slot_name, change.parentType) : component.parent,
+            slotName: change.slot_name
+          };
+        });
+        const changedIds = new Set(resolvedLayouts.map((layout) => layout.component_id));
+        const changed = projected.filter((component) => component.id && changedIds.has(component.id));
+        const introducedForChanged = (lint) => changed.flatMap((component) => introducedLintFindings(lint([components.get(component.id)]), lint([component])));
+        const errors = [
+          ...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(projected)),
+          ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).errors)),
+          ...introducedForChanged(lintUnusableTextGeometry)
+        ];
+        if (errors.length)
+          return fail(new Error(`${errors.join(" ")} (Nothing was saved: refused before any write.)`));
+        const nestedWidths = new Set(lintNestedContainerWidths(projected));
+        const warnings = [.../* @__PURE__ */ new Set([
+          ...layoutWarnings,
+          ...rootSlotWarnings,
+          ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).warnings)),
+          ...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)),
+          ...introducedForChanged(lintTextGeometry),
+          ...lintRenderedGeometry(projected).filter((warning) => !nestedWidths.has(warning)),
+          ...introducedLintFindings(lintNestedContainerWidths(page.components), [...nestedWidths])
+        ])];
+        const result = await client.updateLayouts({
+          appId: args.app_id,
+          versionId: args.version_id,
+          pageId: args.page_id,
+          layouts: resolvedLayouts.map((l) => ({
+            componentId: l.component_id,
+            desktop: l.desktop,
+            mobile: l.mobile,
+            parent: l.parent,
+            slotName: l.slot_name,
+            parentType: l.parentType
+          }))
+        });
+        const appended = appendedChildOrders(page.components, reparentAdditions(page.components, resolvedLayouts.map((layout) => ({
+          componentId: layout.component_id,
+          parent: layout.parent !== void 0 ? encodeComponentParent(layout.parent, layout.slot_name, layout.parentType) : void 0
+        }))));
+        if (appended.size) {
+          await client.updateComponents({
+            appId: args.app_id,
+            versionId: args.version_id,
+            pageId: args.page_id,
+            updates: [...appended].map(([componentId, order]) => ({
+              componentId,
+              definition: { properties: { childOrder: childOrderProperty(order) } }
+            }))
+          });
+        }
+        return ok({ ...result, warnings });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
 }
 createRequire(import.meta.url);
 function componentRef(component) {
@@ -2495,6 +2694,13 @@ function createClient(auth, config) {
     const typeById = new Map((params.pageComponents ?? []).map((component) => [component.id, component.type]));
     for (const e of entries)
       typeById.set(e.id, e.spec.type);
+    const parentFacts = new Map((params.pageComponents ?? []).map((component) => [
+      component.id,
+      { name: component.name, properties: component.properties }
+    ]));
+    for (const e of entries)
+      parentFacts.set(e.id, { name: e.spec.name, properties: e.spec.properties });
+    const slotErrors = [];
     for (const e of entries) {
       if (e.spec.parent && e.spec.parentRef) {
         throw new Error(`createComponents "${e.spec.name}": set EITHER parent or parentRef, not both.`);
@@ -2508,8 +2714,20 @@ function createClient(auth, config) {
         throw new Error(`createComponents "${e.spec.name}": slotName requires parent or parentRef.`);
       }
       if (resolvedParent) {
-        const parentType = typeById.get(decodeComponentParent(resolvedParent).parentId) ?? e.spec.parentType;
-        dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName, parentType);
+        const decoded = decodeComponentParent(resolvedParent);
+        const parentType = typeById.get(decoded.parentId) ?? e.spec.parentType;
+        let slotName = e.spec.slotName;
+        if (isPackContainerType(parentType)) {
+          const named = slotName ?? (resolvedParent !== decoded.parentId ? decoded.slotName : void 0);
+          const facts = parentFacts.get(decoded.parentId);
+          const slot = resolvePackSlot({ id: decoded.parentId, name: facts?.name, type: parentType, properties: facts?.properties }, named, e.spec.name, { propertiesKnown: !!facts });
+          if (!slot.ok) {
+            slotErrors.push(slot.error);
+            continue;
+          }
+          slotName = slot.slotName;
+        }
+        dto.parent = encodeComponentParent(resolvedParent, slotName, parentType);
       }
       const submit = e.spec.type === "Form" ? dto.properties?.buttonToSubmit : void 0;
       const submitId = submit && typeof submit.value === "string" ? refToId.get(submit.value) : void 0;
@@ -2517,6 +2735,9 @@ function createClient(auth, config) {
         dto.properties = { ...dto.properties, buttonToSubmit: { ...submit, value: submitId } };
       }
       diff[e.id] = dto;
+    }
+    if (slotErrors.length) {
+      throw new Error(`createComponents: ${slotErrors.join(" ")} (Nothing was saved: refused before any write.)`);
     }
     const batchIds = new Set(entries.map((e) => e.id));
     const flexEntries = entries.map((e) => ({
@@ -2637,7 +2858,7 @@ function createClient(auth, config) {
         diff[u.componentId] = {
           component: {
             ...u.name !== void 0 ? { name: u.name } : {},
-            ...u.parent !== void 0 ? { parent: encodeComponentParent(u.parent, u.slotName) } : {}
+            ...u.parent !== void 0 ? { parent: encodeComponentParent(u.parent, u.slotName, u.parentType) } : {}
           }
         };
       }
@@ -2699,7 +2920,7 @@ function createClient(auth, config) {
         throw new Error(`updateLayouts "${l.componentId}": slotName requires parent.`);
       }
       if (l.parent !== void 0)
-        entry.component = { parent: encodeComponentParent(l.parent, l.slotName) };
+        entry.component = { parent: encodeComponentParent(l.parent, l.slotName, l.parentType) };
       diff[l.componentId] = entry;
     }
     const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/components/layout`, {
@@ -3249,285 +3470,9 @@ function manageWorkspaceGroupsTool(client) {
   };
 }
 createRequire(import.meta.url);
-var requestSchema = external_exports.object({
-  method: external_exports.string().min(1),
-  schema: external_exports.string().optional(),
-  table: external_exports.string().optional(),
-  search: external_exports.string().optional(),
-  page: external_exports.number().int().positive().optional(),
-  limit: external_exports.number().int().positive().max(1e3).optional(),
-  args: external_exports.record(external_exports.string(), external_exports.any()).optional()
-});
-function invokeArgs(request) {
-  const customValues = request.args?.values && typeof request.args.values === "object" && !Array.isArray(request.args.values) ? request.args.values : {};
-  const values = {
-    ...customValues,
-    ...request.schema !== void 0 ? { schema: request.schema } : {},
-    ...request.table !== void 0 ? { table: request.table } : {}
-  };
-  return {
-    ...request.args ?? {},
-    ...Object.keys(values).length ? { values } : {},
-    ...request.search !== void 0 ? { search: request.search } : {},
-    ...request.page !== void 0 ? { page: request.page } : {},
-    ...request.limit !== void 0 ? { limit: request.limit } : {}
-  };
-}
-var specCache = /* @__PURE__ */ new Map();
-function specText(entry) {
-  const raw = entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
-  return typeof raw === "string" ? raw : void 0;
-}
-function parseSpecCached(options) {
-  const key = specText(options.spec) ?? specText(options.definition);
-  if (key === void 0)
-    return extractSpec(options);
-  const hit = specCache.get(key);
-  if (hit)
-    return hit;
-  const parsed = extractSpec(options);
-  if (parsed) {
-    if (specCache.size > 8)
-      specCache.clear();
-    specCache.set(key, parsed);
-  }
-  return parsed;
-}
-function openapiIntrospection(spec, request) {
-  if (request.method === "listTables") {
-    const endpoints = listEndpoints(spec);
-    const host2 = specHost(spec);
-    const header = { total: endpoints.length, ...host2 ? { host: host2 } : {} };
-    if (request.search) {
-      const ranked = rankEndpoints(spec, endpoints, request.search);
-      const limit2 = request.limit ?? 25;
-      return {
-        ...header,
-        search: request.search,
-        matched: ranked.length,
-        ...ranked.length > limit2 ? { returned: limit2 } : {},
-        // Ordered by relevance, not spec order: the caller should read from the top.
-        endpoints: ranked.slice(0, limit2).map(({ score, ...endpoint }) => endpoint),
-        ...ranked.length ? {} : { hint: "No endpoint matched. Retry with a broader term, or omit `search` to see the spec's tags." }
-      };
-    }
-    const limit = request.limit ?? 200;
-    if (endpoints.length > limit) {
-      return {
-        ...header,
-        tags: endpointTagCounts(spec, endpoints),
-        returned: limit,
-        truncated: true,
-        next_step: `This spec has ${endpoints.length} endpoints. Call listTables again with \`search\` describing what you need (a phrase is fine, it is ranked by relevance), or with a tag name from \`tags\`.`,
-        endpoints: endpoints.slice(0, limit)
-      };
-    }
-    return { ...header, endpoints };
-  }
-  const path = request.table ?? (typeof request.args?.path === "string" ? request.args.path : void 0);
-  const method = ["operation", "method", "httpMethod", "http_method", "verb"].map((key) => request.args?.[key]).find((value) => typeof value === "string" && !!value);
-  if (!path || !method) {
-    throw new Error('getEndpointSchema needs the endpoint path and HTTP method: pass the path as `table` and the method as `args.operation` (for example table:"/pets/{petId}", args:{operation:"get"}); `args.httpMethod` and `args.method` are accepted too.');
-  }
-  const result = endpointParameters(spec, path, method);
-  if (!result.found) {
-    throw new Error(`The spec has no ${method.toLowerCase()} operation on path "${path}". Call listTables first.`);
-  }
-  const buckets = {};
-  for (const parameter of result.parameters) {
-    const bucket = parameter.in === "header" ? "params.header" : parameter.in === "path" ? "params.path" : parameter.in === "query" ? "params.query" : `unsupported:${parameter.in}`;
-    (buckets[bucket] ??= []).push(parameter.name);
-  }
-  if (result.requestBody)
-    buckets["params.request"] = ["<request body>"];
-  const operation = method.toLowerCase();
-  const host = specHost(spec);
-  return {
-    path,
-    operation,
-    /* A runnable skeleton, not just a description: copy it and fill the buckets.
-       All four buckets are present even when empty because the plugin destructures every one of
-       them and calls Object.entries(params.path) unguarded — omitting a bucket fails the query with
-       "Cannot convert undefined or null to object" before the request is ever built. */
-    query_options: {
-      ...host ? { host } : {},
-      path,
-      operation,
-      params: { request: {}, query: {}, header: {}, path: {} }
-    },
-    // Which query-option bucket each parameter belongs in, so the caller does not have to infer it.
-    buckets,
-    parameters: result.parameters,
-    ...result.response ? { response: result.response } : {},
-    ...result.requestBody ? { requestBody: result.requestBody } : {},
-    ...host ? {} : { host_warning: 'This spec declares no server URL. The query needs an explicit `host`, or the request fails with "Invalid URL".' }
-  };
-}
-function inspectDatasourceSchemaTool(client) {
-  return {
-    name: "inspect_datasource_schema",
-    title: "Inspect Datasource Schema",
-    // Invokes only plugin-advertised read-only metadata methods.
-    annotations: {
-      readOnlyHint: true,
-      openWorldHint: true
-    },
-    description: 'Invoke one read-only metadata method advertised by a connected datasource plugin (for example listSchemas, listTables, listColumns, or listCollections). This avoids creating/running ad-hoc information_schema queries. HubSpot: call listTables without schema to list spec groups, then pass schema for endpoint discovery. Use get_datasource_query_schema with sections:["introspection"] to discover exact methods. Common schema/table/search/page/limit inputs are converted to ToolJet selector args; `args` adds plugin-specific fields. Only the requested metadata method is called. Use requests (up to 20) to batch independent table/column lookups after the schema/table names are known; every method is validated before any invocation.',
-    inputSchema: {
-      version_id: external_exports.string(),
-      datasource_id: external_exports.string(),
-      method: external_exports.string().min(1).optional(),
-      schema: external_exports.string().optional(),
-      table: external_exports.string().optional(),
-      search: external_exports.string().optional(),
-      page: external_exports.number().int().positive().optional(),
-      limit: external_exports.number().int().positive().max(1e3).optional(),
-      args: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-      requests: external_exports.array(requestSchema).min(1).max(20).optional()
-    },
-    async handler(args) {
-      try {
-        const datasource = (await client.listDatasources(args.version_id)).find((candidate) => candidate.id === args.datasource_id);
-        if (!datasource) {
-          return fail(new Error(`Datasource "${args.datasource_id}" is not available on version "${args.version_id}".`));
-        }
-        const contract = getDatasourceQuerySchema(datasource.kind);
-        const kindSpec = singleSpecRef(datasource.kind);
-        const methods = [.../* @__PURE__ */ new Set([...contract?.introspectionMethods ?? [], ...kindSpec ? SPEC_DISCOVERY_METHODS : []])];
-        const topLevel = args.method ? [{
-          method: args.method,
-          schema: args.schema,
-          table: args.table,
-          search: args.search,
-          page: args.page,
-          limit: args.limit,
-          args: args.args
-        }] : [];
-        const seenRequests = /* @__PURE__ */ new Set();
-        const requests = [...args.requests ?? [], ...topLevel].filter((request) => {
-          if (!request.method)
-            return false;
-          const key = JSON.stringify([request.method, request.schema ?? null, request.table ?? null, request.search ?? null]);
-          if (seenRequests.has(key))
-            return false;
-          seenRequests.add(key);
-          return true;
-        });
-        if (!requests.length) {
-          return fail(new Error("Provide a `method` or a `requests` batch."));
-        }
-        const asBatch = !!args.requests?.length || requests.length > 1;
-        const unsupported = [...new Set(requests.map((request) => request.method).filter((method) => !methods.includes(method)))];
-        if (unsupported.length) {
-          return fail(new Error(`Datasource kind "${datasource.kind}" does not advertise introspection method(s) ${unsupported.map((method) => `"${method}"`).join(", ")}. Available methods: ${methods.length ? methods.join(", ") : "none"}.`));
-        }
-        let openapiSpec;
-        if (datasource.kind === "openapi") {
-          const details = await client.getDatasourceConnectionDetails(args.datasource_id);
-          openapiSpec = parseSpecCached(details.options);
-          if (!openapiSpec) {
-            return fail(new Error("This OpenAPI datasource has no readable spec stored in its options, so its endpoints cannot be listed. Re-save the datasource with a valid OpenAPI/Swagger (JSON or YAML) document."));
-          }
-        }
-        const hubspotDocuments = /* @__PURE__ */ new Map();
-        let kindSpecDocument;
-        const results = await Promise.all(requests.map(async (request) => {
-          if (datasource.kind === "hubspot") {
-            const specs = hubspotSpecs();
-            const selector = request.schema ?? request.args?.specType;
-            if (!selector && request.method === "listTables") {
-              return { method: request.method, result: {
-                specs,
-                next_step: "Choose a spec using schema (name, label or specType), then call listTables to find paths or getEndpointSchema to get query_options. Properties and Pipelines describe endpoints for discovering account-specific fields and stages."
-              } };
-            }
-            const selected = specs.find((spec) => [spec.name, spec.label, spec.specType].includes(String(selector)));
-            if (!selected)
-              throw new Error("HubSpot discovery requires a known schema. Call listTables without schema to list installed spec groups.");
-            if (!hubspotDocuments.has(selected.name)) {
-              hubspotDocuments.set(selected.name, client.getPluginSpec("hubspot", selected.name).then((text) => {
-                const spec = extractSpec({ spec: text });
-                if (!spec)
-                  throw new Error(`HubSpot spec "${selected.name}" is unavailable or invalid. Reinstall/update the plugin; do not invent its endpoints.`);
-                return spec;
-              }));
-            }
-            const document = await hubspotDocuments.get(selected.name);
-            const result2 = openapiIntrospection(document, request);
-            if (result2.query_options) {
-              delete result2.query_options.host;
-              delete result2.query_options.params.header;
-              delete result2.host_warning;
-              result2.query_options.specType = selected.specType;
-              if (result2.buckets?.["params.header"])
-                result2.unsupported_headers = result2.buckets["params.header"];
-              result2.notes = "HubSpot fixes the API host and authentication in the plugin. The spec describes API shapes; read Properties/Pipelines endpoints to verify account-specific fields and valid stage IDs. Do not guess them.";
-            }
-            return { method: request.method, schema: selected.name, specType: selected.specType, result: result2 };
-          }
-          if (kindSpec && SPEC_DISCOVERY_METHODS.includes(request.method)) {
-            kindSpecDocument ??= loadKindSpec(client, datasource.kind, kindSpec);
-            const result2 = openapiIntrospection(await kindSpecDocument, request);
-            if (result2.query_options) {
-              delete result2.query_options.host;
-              delete result2.query_options.params?.header;
-              delete result2.host_warning;
-              if (result2.buckets?.["params.header"])
-                result2.unsupported_headers = result2.buckets["params.header"];
-              result2.notes = `The ${datasource.kind} plugin fixes the API host and authentication. Copy query_options as they are; put IDs in params.path and filters in params.query, each value flat (created[gte], expand[0]): the plugin cannot send a list or an object.`;
-            }
-            return { method: request.method, ...request.table ? { table: request.table } : {}, result: result2 };
-          }
-          if (openapiSpec) {
-            const result2 = openapiIntrospection(openapiSpec, request);
-            return { method: request.method, ...request.table ? { table: request.table } : {}, result: result2 };
-          }
-          const converted = invokeArgs(request);
-          const result = await client.invokeDatasourceMethod({
-            dataSourceId: args.datasource_id,
-            method: request.method,
-            ...Object.keys(converted).length ? { args: converted } : {}
-          });
-          return {
-            method: request.method,
-            ...request.schema ? { schema: request.schema } : {},
-            ...request.table ? { table: request.table } : {},
-            result
-          };
-        }));
-        const header = { datasource: { id: datasource.id, name: datasource.name, kind: datasource.kind } };
-        return asBatch ? ok({ ...header, results }) : ok({ ...header, method: results[0].method, result: results[0].result });
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
-createRequire(import.meta.url);
 var COMPONENT_FX_GUIDANCE = "For properties/styles/validation with an FX toggle, use `{ value: <expression>, fxActive: true }` only for bindings/conditions/calculations the normal control cannot express. Keep defaults and panel-editable constants (including `{{true}}`/`{{false}}`, numbers, selections, colors) out of FX. For nested Table columns/buttons/options and KeyValuePair fields, add the property key (e.g. `columnVisibility`, `disableButton`, `fieldVisibility`, `isEditable`) to that object's `fxActiveFields`, preserving other entries. ";
 var COMPONENT_FX_UPDATE_GUIDANCE = COMPONENT_FX_GUIDANCE + "Updates must include both `value` and `fxActive`; revert with `{ value: <constant>, fxActive: false }`. For nested Table fields, remove only reverted property keys from `fxActiveFields`. KeyValuePair arrays merge by index; verify flag removals and report retained flags. ";
 createRequire(import.meta.url);
-function resolveRef(candidates, ref, kind, scope, describe = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
-  const byId = candidates.find((candidate) => candidate.id === ref);
-  if (byId)
-    return { ok: true, target: byId };
-  const byName = candidates.filter((candidate) => candidate.name === ref);
-  if (byName.length === 1)
-    return { ok: true, target: byName[0] };
-  if (byName.length > 1) {
-    return {
-      ok: false,
-      error: `${kind} name "${ref}" is ambiguous ${scope} (${byName.length} share it). Pass the id instead: ${byName.map((candidate) => candidate.id).join(", ")}.`
-    };
-  }
-  const available = candidates.map(describe).join(", ");
-  return {
-    ok: false,
-    // The "do not re-read" clause matters: the previous phrasing ("does not exist") invited exactly
-    // the re-read that caused the loop.
-    error: `No ${kind.toLowerCase()} with id or name "${ref}" ${scope}. Do not re-read \u2014 it currently holds: ${available || "(none)"}.`
-  };
-}
 function separateAdjacentClosingBraces(text) {
   let out = "";
   let i = 0;
@@ -4245,6 +4190,22 @@ function updateComponentsTool(client) {
               }
             }
           }
+          let parentType;
+          if (parent) {
+            const decoded = decodeComponentParent(parent);
+            const parentComponent = page.components.find((component) => component.id === decoded.parentId);
+            if (parentComponent && isPackContainerType(parentComponent.type)) {
+              const named = slotName ?? (parent !== decoded.parentId ? decoded.slotName : void 0);
+              const slot = resolvePackSlot(parentComponent, named, current.name ?? current.id);
+              if (!slot.ok) {
+                errors.push(slot.error);
+                continue;
+              }
+              parent = decoded.parentId;
+              slotName = slot.slotName;
+              parentType = parentComponent.type;
+            }
+          }
           const authoredOrder = update.definition?.properties?.childOrder;
           if (authoredOrder !== void 0 && isFlexContainerType(current.type)) {
             const raw = authoredOrder;
@@ -4276,7 +4237,7 @@ function updateComponentsTool(client) {
             properties: { ...current.properties ?? {}, ...definition2?.properties ?? {} },
             styles: { ...current.styles ?? {}, ...definition2?.styles ?? {} },
             layouts: current.layouts,
-            parent: parent !== void 0 ? encodeComponentParent(parent, slotName) : current.parent,
+            parent: parent !== void 0 ? encodeComponentParent(parent, slotName, parentType) : current.parent,
             slotName
           };
           const normalized2 = normalizeComponentSpec({
@@ -4320,7 +4281,8 @@ function updateComponentsTool(client) {
             definition: normalizedDefinition,
             name: update.name,
             parent,
-            slotName: update.slot_name
+            slotName: parentType ? slotName : update.slot_name,
+            parentType
           });
           if (!update.definition)
             continue;
@@ -4352,7 +4314,7 @@ function updateComponentsTool(client) {
         }
         const appended = appendedChildOrders(page.components, reparentAdditions(page.components, resolvedUpdates.map((update) => ({
           componentId: update.componentId,
-          parent: update.parent !== void 0 ? encodeComponentParent(update.parent, update.slotName) : void 0
+          parent: update.parent !== void 0 ? encodeComponentParent(update.parent, update.slotName, update.parentType) : void 0
         }))));
         if (appended.size) {
           await client.updateComponents({
@@ -4385,8 +4347,262 @@ function onlyTouchedBraceNotes(warnings, definition2) {
     return keys.length ? [`${m[1]}${keys.join(", ")}${m[3]}`] : [];
   });
 }
+createRequire(import.meta.url);
+var requestSchema = external_exports.object({
+  method: external_exports.string().min(1),
+  schema: external_exports.string().optional(),
+  table: external_exports.string().optional(),
+  search: external_exports.string().optional(),
+  page: external_exports.number().int().positive().optional(),
+  limit: external_exports.number().int().positive().max(1e3).optional(),
+  args: external_exports.record(external_exports.string(), external_exports.any()).optional()
+});
+function invokeArgs(request) {
+  const customValues = request.args?.values && typeof request.args.values === "object" && !Array.isArray(request.args.values) ? request.args.values : {};
+  const values = {
+    ...customValues,
+    ...request.schema !== void 0 ? { schema: request.schema } : {},
+    ...request.table !== void 0 ? { table: request.table } : {}
+  };
+  return {
+    ...request.args ?? {},
+    ...Object.keys(values).length ? { values } : {},
+    ...request.search !== void 0 ? { search: request.search } : {},
+    ...request.page !== void 0 ? { page: request.page } : {},
+    ...request.limit !== void 0 ? { limit: request.limit } : {}
+  };
+}
+var specCache = /* @__PURE__ */ new Map();
+function specText(entry) {
+  const raw = entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+  return typeof raw === "string" ? raw : void 0;
+}
+function parseSpecCached(options) {
+  const key = specText(options.spec) ?? specText(options.definition);
+  if (key === void 0)
+    return extractSpec(options);
+  const hit = specCache.get(key);
+  if (hit)
+    return hit;
+  const parsed = extractSpec(options);
+  if (parsed) {
+    if (specCache.size > 8)
+      specCache.clear();
+    specCache.set(key, parsed);
+  }
+  return parsed;
+}
+function openapiIntrospection(spec, request) {
+  if (request.method === "listTables") {
+    const endpoints = listEndpoints(spec);
+    const host2 = specHost(spec);
+    const header = { total: endpoints.length, ...host2 ? { host: host2 } : {} };
+    if (request.search) {
+      const ranked = rankEndpoints(spec, endpoints, request.search);
+      const limit2 = request.limit ?? 25;
+      return {
+        ...header,
+        search: request.search,
+        matched: ranked.length,
+        ...ranked.length > limit2 ? { returned: limit2 } : {},
+        // Ordered by relevance, not spec order: the caller should read from the top.
+        endpoints: ranked.slice(0, limit2).map(({ score, ...endpoint }) => endpoint),
+        ...ranked.length ? {} : { hint: "No endpoint matched. Retry with a broader term, or omit `search` to see the spec's tags." }
+      };
+    }
+    const limit = request.limit ?? 200;
+    if (endpoints.length > limit) {
+      return {
+        ...header,
+        tags: endpointTagCounts(spec, endpoints),
+        returned: limit,
+        truncated: true,
+        next_step: `This spec has ${endpoints.length} endpoints. Call listTables again with \`search\` describing what you need (a phrase is fine, it is ranked by relevance), or with a tag name from \`tags\`.`,
+        endpoints: endpoints.slice(0, limit)
+      };
+    }
+    return { ...header, endpoints };
+  }
+  const path = request.table ?? (typeof request.args?.path === "string" ? request.args.path : void 0);
+  const method = ["operation", "method", "httpMethod", "http_method", "verb"].map((key) => request.args?.[key]).find((value) => typeof value === "string" && !!value);
+  if (!path || !method) {
+    throw new Error('getEndpointSchema needs the endpoint path and HTTP method: pass the path as `table` and the method as `args.operation` (for example table:"/pets/{petId}", args:{operation:"get"}); `args.httpMethod` and `args.method` are accepted too.');
+  }
+  const result = endpointParameters(spec, path, method);
+  if (!result.found) {
+    throw new Error(`The spec has no ${method.toLowerCase()} operation on path "${path}". Call listTables first.`);
+  }
+  const buckets = {};
+  for (const parameter of result.parameters) {
+    const bucket = parameter.in === "header" ? "params.header" : parameter.in === "path" ? "params.path" : parameter.in === "query" ? "params.query" : `unsupported:${parameter.in}`;
+    (buckets[bucket] ??= []).push(parameter.name);
+  }
+  if (result.requestBody)
+    buckets["params.request"] = ["<request body>"];
+  const operation = method.toLowerCase();
+  const host = specHost(spec);
+  return {
+    path,
+    operation,
+    /* A runnable skeleton, not just a description: copy it and fill the buckets.
+       All four buckets are present even when empty because the plugin destructures every one of
+       them and calls Object.entries(params.path) unguarded — omitting a bucket fails the query with
+       "Cannot convert undefined or null to object" before the request is ever built. */
+    query_options: {
+      ...host ? { host } : {},
+      path,
+      operation,
+      params: { request: {}, query: {}, header: {}, path: {} }
+    },
+    // Which query-option bucket each parameter belongs in, so the caller does not have to infer it.
+    buckets,
+    parameters: result.parameters,
+    ...result.response ? { response: result.response } : {},
+    ...result.requestBody ? { requestBody: result.requestBody } : {},
+    ...host ? {} : { host_warning: 'This spec declares no server URL. The query needs an explicit `host`, or the request fails with "Invalid URL".' }
+  };
+}
+function inspectDatasourceSchemaTool(client) {
+  return {
+    name: "inspect_datasource_schema",
+    title: "Inspect Datasource Schema",
+    // Invokes only plugin-advertised read-only metadata methods.
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
+    description: 'Invoke one read-only metadata method advertised by a connected datasource plugin (for example listSchemas, listTables, listColumns, or listCollections). This avoids creating/running ad-hoc information_schema queries. HubSpot: call listTables without schema to list spec groups, then pass schema for endpoint discovery. Use get_datasource_query_schema with sections:["introspection"] to discover exact methods. Common schema/table/search/page/limit inputs are converted to ToolJet selector args; `args` adds plugin-specific fields. Only the requested metadata method is called. Use requests (up to 20) to batch independent table/column lookups after the schema/table names are known; every method is validated before any invocation.',
+    inputSchema: {
+      version_id: external_exports.string(),
+      datasource_id: external_exports.string(),
+      method: external_exports.string().min(1).optional(),
+      schema: external_exports.string().optional(),
+      table: external_exports.string().optional(),
+      search: external_exports.string().optional(),
+      page: external_exports.number().int().positive().optional(),
+      limit: external_exports.number().int().positive().max(1e3).optional(),
+      args: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+      requests: external_exports.array(requestSchema).min(1).max(20).optional()
+    },
+    async handler(args) {
+      try {
+        const datasource = (await client.listDatasources(args.version_id)).find((candidate) => candidate.id === args.datasource_id);
+        if (!datasource) {
+          return fail(new Error(`Datasource "${args.datasource_id}" is not available on version "${args.version_id}".`));
+        }
+        const contract = getDatasourceQuerySchema(datasource.kind);
+        const kindSpec = singleSpecRef(datasource.kind);
+        const methods = [.../* @__PURE__ */ new Set([...contract?.introspectionMethods ?? [], ...kindSpec ? SPEC_DISCOVERY_METHODS : []])];
+        const topLevel = args.method ? [{
+          method: args.method,
+          schema: args.schema,
+          table: args.table,
+          search: args.search,
+          page: args.page,
+          limit: args.limit,
+          args: args.args
+        }] : [];
+        const seenRequests = /* @__PURE__ */ new Set();
+        const requests = [...args.requests ?? [], ...topLevel].filter((request) => {
+          if (!request.method)
+            return false;
+          const key = JSON.stringify([request.method, request.schema ?? null, request.table ?? null, request.search ?? null]);
+          if (seenRequests.has(key))
+            return false;
+          seenRequests.add(key);
+          return true;
+        });
+        if (!requests.length) {
+          return fail(new Error("Provide a `method` or a `requests` batch."));
+        }
+        const asBatch = !!args.requests?.length || requests.length > 1;
+        const unsupported = [...new Set(requests.map((request) => request.method).filter((method) => !methods.includes(method)))];
+        if (unsupported.length) {
+          return fail(new Error(`Datasource kind "${datasource.kind}" does not advertise introspection method(s) ${unsupported.map((method) => `"${method}"`).join(", ")}. Available methods: ${methods.length ? methods.join(", ") : "none"}.`));
+        }
+        let openapiSpec;
+        if (datasource.kind === "openapi") {
+          const details = await client.getDatasourceConnectionDetails(args.datasource_id);
+          openapiSpec = parseSpecCached(details.options);
+          if (!openapiSpec) {
+            return fail(new Error("This OpenAPI datasource has no readable spec stored in its options, so its endpoints cannot be listed. Re-save the datasource with a valid OpenAPI/Swagger (JSON or YAML) document."));
+          }
+        }
+        const hubspotDocuments = /* @__PURE__ */ new Map();
+        let kindSpecDocument;
+        const results = await Promise.all(requests.map(async (request) => {
+          if (datasource.kind === "hubspot") {
+            const specs = hubspotSpecs();
+            const selector = request.schema ?? request.args?.specType;
+            if (!selector && request.method === "listTables") {
+              return { method: request.method, result: {
+                specs,
+                next_step: "Choose a spec using schema (name, label or specType), then call listTables to find paths or getEndpointSchema to get query_options. Properties and Pipelines describe endpoints for discovering account-specific fields and stages."
+              } };
+            }
+            const selected = specs.find((spec) => [spec.name, spec.label, spec.specType].includes(String(selector)));
+            if (!selected)
+              throw new Error("HubSpot discovery requires a known schema. Call listTables without schema to list installed spec groups.");
+            if (!hubspotDocuments.has(selected.name)) {
+              hubspotDocuments.set(selected.name, client.getPluginSpec("hubspot", selected.name).then((text) => {
+                const spec = extractSpec({ spec: text });
+                if (!spec)
+                  throw new Error(`HubSpot spec "${selected.name}" is unavailable or invalid. Reinstall/update the plugin; do not invent its endpoints.`);
+                return spec;
+              }));
+            }
+            const document = await hubspotDocuments.get(selected.name);
+            const result2 = openapiIntrospection(document, request);
+            if (result2.query_options) {
+              delete result2.query_options.host;
+              delete result2.query_options.params.header;
+              delete result2.host_warning;
+              result2.query_options.specType = selected.specType;
+              if (result2.buckets?.["params.header"])
+                result2.unsupported_headers = result2.buckets["params.header"];
+              result2.notes = "HubSpot fixes the API host and authentication in the plugin. The spec describes API shapes; read Properties/Pipelines endpoints to verify account-specific fields and valid stage IDs. Do not guess them.";
+            }
+            return { method: request.method, schema: selected.name, specType: selected.specType, result: result2 };
+          }
+          if (kindSpec && SPEC_DISCOVERY_METHODS.includes(request.method)) {
+            kindSpecDocument ??= loadKindSpec(client, datasource.kind, kindSpec);
+            const result2 = openapiIntrospection(await kindSpecDocument, request);
+            if (result2.query_options) {
+              delete result2.query_options.host;
+              delete result2.query_options.params?.header;
+              delete result2.host_warning;
+              if (result2.buckets?.["params.header"])
+                result2.unsupported_headers = result2.buckets["params.header"];
+              result2.notes = `The ${datasource.kind} plugin fixes the API host and authentication. Copy query_options as they are; put IDs in params.path and filters in params.query, each value flat (created[gte], expand[0]): the plugin cannot send a list or an object.`;
+            }
+            return { method: request.method, ...request.table ? { table: request.table } : {}, result: result2 };
+          }
+          if (openapiSpec) {
+            const result2 = openapiIntrospection(openapiSpec, request);
+            return { method: request.method, ...request.table ? { table: request.table } : {}, result: result2 };
+          }
+          const converted = invokeArgs(request);
+          const result = await client.invokeDatasourceMethod({
+            dataSourceId: args.datasource_id,
+            method: request.method,
+            ...Object.keys(converted).length ? { args: converted } : {}
+          });
+          return {
+            method: request.method,
+            ...request.schema ? { schema: request.schema } : {},
+            ...request.table ? { table: request.table } : {},
+            result
+          };
+        }));
+        const header = { datasource: { id: datasource.id, name: datasource.name, kind: datasource.kind } };
+        return asBatch ? ok({ ...header, results }) : ok({ ...header, method: results[0].method, result: results[0].result });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
 export {
-  reparentAdditions as A,
   COMPONENT_FX_GUIDANCE as C,
   FLEX_MIN_WIDTH_PX_DESCRIPTION as F,
   PartialWriteError as P,
@@ -4407,14 +4623,13 @@ export {
   normalizeComponentSpec as n,
   createClient as o,
   packDefaultDefinition as p,
-  registerPackDefinitions as q,
-  resolveRef as r,
+  listWorkspaceGroupsTool as q,
+  registerPackDefinitions as r,
   strictEntry as s,
-  listWorkspaceGroupsTool as t,
-  manageWorkspaceGroupsTool as u,
+  manageWorkspaceGroupsTool as t,
+  inspectDatasourceSchemaTool as u,
   validateTableBatch as v,
-  inspectDatasourceSchemaTool as w,
-  updateComponentsTool as x,
-  ToolJetHttpError as y,
-  appendedChildOrders as z
+  updateComponentsTool as w,
+  updateLayoutTool as x,
+  ToolJetHttpError as y
 };

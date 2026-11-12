@@ -1,11 +1,11 @@
 import { createRequire } from "node:module";
-import { b0 as external_exports, b1 as nodeCatalog, b2 as validateGraph, b3 as specSchema, b4 as compileGraph, b5 as assertWorkflowJavaScript, b6 as controlFlowEdges } from "./chunk-D-yEFdPv.js";
-import { a as assessQueryRead, L as LARGE_READ_ROW_THRESHOLD } from "./chunk-B6ef8g-7.js";
-import { p as parseExpression, a as parse } from "./chunk-DpvBXwyI.js";
-import { h as hubspotQueryIssues, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, s as singleSpecRef, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-BOAy1nzn.js";
+import { b0 as external_exports, b1 as nodeCatalog, b2 as validateGraph, b3 as specSchema, b4 as compileGraph, b5 as assertWorkflowJavaScript, b6 as controlFlowEdges } from "./chunk-Bk2YZ8cg.js";
+import { a as assessQueryRead, L as LARGE_READ_ROW_THRESHOLD } from "./chunk-Ces3cV_q.js";
+import { p as parseExpression, a as parse } from "./chunk-SVZaINty.js";
+import { h as hubspotQueryIssues, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, s as singleSpecRef, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-DGCi5LfA.js";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import { e8 as getComponentSchema } from "./chunk-COW2iNTB.js";
+import { e8 as getComponentSchema } from "./chunk-addBGscc.js";
 createRequire(import.meta.url);
 var QUERY_TOGGLES = ["runOnPageLoad", "runOnDependencyChange", "requestConfirmation", "showSuccessNotification"];
 var STATIC_TOGGLE = /^\s*(?:\{\{\s*(true|false)\s*\}\}|(true|false))\s*$/;
@@ -1798,6 +1798,28 @@ return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
   };
 }
 createRequire(import.meta.url);
+function resolveRef(candidates, ref, kind, scope, describe2 = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
+  const byId = candidates.find((candidate) => candidate.id === ref);
+  if (byId)
+    return { ok: true, target: byId };
+  const byName = candidates.filter((candidate) => candidate.name === ref);
+  if (byName.length === 1)
+    return { ok: true, target: byName[0] };
+  if (byName.length > 1) {
+    return {
+      ok: false,
+      error: `${kind} name "${ref}" is ambiguous ${scope} (${byName.length} share it). Pass the id instead: ${byName.map((candidate) => candidate.id).join(", ")}.`
+    };
+  }
+  const available = candidates.map(describe2).join(", ");
+  return {
+    ok: false,
+    // The "do not re-read" clause matters: the previous phrasing ("does not exist") invited exactly
+    // the re-read that caused the loop.
+    error: `No ${kind.toLowerCase()} with id or name "${ref}" ${scope}. Do not re-read \u2014 it currently holds: ${available || "(none)"}.`
+  };
+}
+createRequire(import.meta.url);
 var VOID_TAGS = /* @__PURE__ */ new Set(["br", "img", "hr", "input", "meta", "link", "source", "wbr", "col"]);
 var INLINE_TAGS = /* @__PURE__ */ new Set([
   "span",
@@ -3125,17 +3147,18 @@ function lintSelectedRowProjections(components, extraSources = []) {
   return [...warnings];
 }
 export {
-  normalizeQueryOptions as A,
+  queryToggleIssues as A,
   BARE_QUERY_DATA_BINDING as B,
-  validateQueryOptions as C,
-  arithmeticWriteWarning as D,
-  capabilityRequestSchema as E,
-  getWorkflowCapabilities as F,
-  lint as G,
-  apply as H,
-  deleteNode as I,
-  editContractSchema as J,
-  generateEditContract as K,
+  normalizeQueryOptions as C,
+  validateQueryOptions as D,
+  arithmeticWriteWarning as E,
+  capabilityRequestSchema as F,
+  getWorkflowCapabilities as G,
+  lint as H,
+  apply as I,
+  deleteNode as J,
+  editContractSchema as K,
+  generateEditContract as L,
   lintOversizedWidths as a,
   lintHtmlContentHeight as b,
   lintHtmlRootSurface as c,
@@ -3153,13 +3176,13 @@ export {
   stripHtmlBindings as o,
   parseHtml as p,
   assertPersistableQueryToggles as q,
-  normalizeWorkflowQueryOptions as r,
+  resolveRef as r,
   surfaceAroundResolver as s,
-  assertWorkflowQueryOptions as t,
-  suggestedHtmlHeight as u,
-  normalizeQueryToggles as v,
+  normalizeWorkflowQueryOptions as t,
+  assertWorkflowQueryOptions as u,
+  suggestedHtmlHeight as v,
   workflowMappingMatches as w,
-  toggleRewriteWarning as x,
-  issueMessages as y,
-  queryToggleIssues as z
+  normalizeQueryToggles as x,
+  toggleRewriteWarning as y,
+  issueMessages as z
 };

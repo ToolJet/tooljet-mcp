@@ -3,148 +3,6 @@ import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
-var DIALECTS = {
-  postgresql: { quote: "double", limit: "limit", metadata: "postgresql" },
-  mysql: { quote: "backtick", limit: "limit", metadata: "mysql" },
-  mssql: { quote: "bracket", limit: "top", metadata: "mssql" },
-  snowflake: { quote: "double", limit: "limit" },
-  bigquery: { quote: "backtick", limit: "limit" },
-  oracledb: { quote: "double", limit: "fetch" }
-};
-function assertIdentifier(identifier, label) {
-  if (!identifier.trim() || identifier.length > 256 || /[\0-\x1f\x7f;`"\[\]\\]/.test(identifier)) {
-    throw new Error(`${label} contains unsupported or unsafe identifier characters.`);
-  }
-}
-function quote(kind, identifier) {
-  assertIdentifier(identifier, "SQL identifier");
-  const style = DIALECTS[kind].quote;
-  if (style === "backtick")
-    return `\`${identifier}\``;
-  if (style === "bracket")
-    return `[${identifier}]`;
-  return `"${identifier}"`;
-}
-function literal(value) {
-  return `'${value.replaceAll("'", "''")}'`;
-}
-function source(kind, schema, table) {
-  return schema ? `${quote(kind, schema)}.${quote(kind, table)}` : quote(kind, table);
-}
-function boundedSelect(kind, projection, from, limit, distinct = false) {
-  const prefix = `SELECT ${distinct ? "DISTINCT " : ""}`;
-  if (DIALECTS[kind].limit === "top")
-    return `${prefix}TOP (${limit}) ${projection} FROM ${from}`;
-  if (DIALECTS[kind].limit === "fetch")
-    return `${prefix}${projection} FROM ${from} FETCH FIRST ${limit} ROWS ONLY`;
-  return `${prefix}${projection} FROM ${from} LIMIT ${limit}`;
-}
-function options(kind, query) {
-  return {
-    mode: "sql",
-    query,
-    ...!["snowflake"].includes(kind) ? { query_params: [] } : {},
-    runOnPageLoad: false
-  };
-}
-function metadataSql(kind, purpose, schema, table) {
-  const metadata = "metadata" in DIALECTS[kind] ? DIALECTS[kind].metadata : void 0;
-  if (!metadata)
-    return void 0;
-  if (purpose !== "views" && !table)
-    throw new Error(`${purpose} discovery requires table.`);
-  if (metadata !== "mysql" && !schema)
-    throw new Error(`${purpose} discovery for ${kind} requires schema.`);
-  const schemaFilter = metadata === "mysql" && !schema ? "DATABASE()" : literal(schema);
-  const tableFilter = table ? literal(table) : void 0;
-  if (metadata === "postgresql") {
-    if (purpose === "primary_keys")
-      return `SELECT kcu.column_name, kcu.ordinal_position, tc.constraint_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.ordinal_position`;
-    if (purpose === "foreign_keys")
-      return `SELECT kcu.constraint_name, kcu.column_name, ccu.table_schema AS referenced_schema, ccu.table_name AS referenced_table, ccu.column_name AS referenced_column FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_catalog = tc.constraint_catalog AND ccu.constraint_schema = tc.constraint_schema AND ccu.constraint_name = tc.constraint_name WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.constraint_name, kcu.ordinal_position`;
-    if (purpose === "indexes")
-      return `SELECT indexname AS index_name, indexdef AS definition FROM pg_indexes WHERE schemaname = ${schemaFilter} AND tablename = ${tableFilter} ORDER BY indexname`;
-    return `SELECT table_schema, table_name AS view_name FROM information_schema.views WHERE table_schema = ${schemaFilter} ORDER BY table_name`;
-  }
-  if (metadata === "mysql") {
-    if (purpose === "primary_keys")
-      return `SELECT column_name, ordinal_position, constraint_name FROM information_schema.key_column_usage WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} AND constraint_name = 'PRIMARY' ORDER BY ordinal_position`;
-    if (purpose === "foreign_keys")
-      return `SELECT constraint_name, column_name, referenced_table_schema AS referenced_schema, referenced_table_name AS referenced_table, referenced_column_name AS referenced_column FROM information_schema.key_column_usage WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} AND referenced_table_name IS NOT NULL ORDER BY constraint_name, ordinal_position`;
-    if (purpose === "indexes")
-      return `SELECT index_name, column_name, non_unique, seq_in_index FROM information_schema.statistics WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} ORDER BY index_name, seq_in_index`;
-    return `SELECT table_schema, table_name AS view_name FROM information_schema.views WHERE table_schema = ${schemaFilter} ORDER BY table_name`;
-  }
-  if (purpose === "primary_keys")
-    return `SELECT kcu.COLUMN_NAME AS column_name, kcu.ORDINAL_POSITION AS ordinal_position, tc.CONSTRAINT_NAME AS constraint_name FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA AND tc.TABLE_NAME = kcu.TABLE_NAME WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY' AND tc.TABLE_SCHEMA = ${schemaFilter} AND tc.TABLE_NAME = ${tableFilter} ORDER BY kcu.ORDINAL_POSITION`;
-  if (purpose === "foreign_keys")
-    return `SELECT fk.name AS constraint_name, pc.name AS column_name, rs.name AS referenced_schema, rt.name AS referenced_table, rc.name AS referenced_column FROM sys.foreign_key_columns fkc JOIN sys.foreign_keys fk ON fk.object_id = fkc.constraint_object_id JOIN sys.tables pt ON pt.object_id = fkc.parent_object_id JOIN sys.schemas ps ON ps.schema_id = pt.schema_id JOIN sys.columns pc ON pc.object_id = pt.object_id AND pc.column_id = fkc.parent_column_id JOIN sys.tables rt ON rt.object_id = fkc.referenced_object_id JOIN sys.schemas rs ON rs.schema_id = rt.schema_id JOIN sys.columns rc ON rc.object_id = rt.object_id AND rc.column_id = fkc.referenced_column_id WHERE ps.name = ${schemaFilter} AND pt.name = ${tableFilter} ORDER BY fk.name, fkc.constraint_column_id`;
-  if (purpose === "indexes")
-    return `SELECT i.name AS index_name, c.name AS column_name, i.is_unique, ic.key_ordinal FROM sys.indexes i JOIN sys.tables t ON t.object_id = i.object_id JOIN sys.schemas s ON s.schema_id = t.schema_id JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id WHERE s.name = ${schemaFilter} AND t.name = ${tableFilter} AND i.is_hypothetical = 0 ORDER BY i.name, ic.key_ordinal`;
-  return `SELECT TABLE_SCHEMA AS table_schema, TABLE_NAME AS view_name FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = ${schemaFilter} ORDER BY TABLE_NAME`;
-}
-function boundMetadata(kind, sql) {
-  if (DIALECTS[kind].limit === "top")
-    return sql.replace(/^SELECT\s+/i, "SELECT TOP (100) ");
-  if (DIALECTS[kind].limit === "fetch")
-    return `${sql} FETCH FIRST 100 ROWS ONLY`;
-  return `${sql} LIMIT 100`;
-}
-function safeName(value) {
-  return value.replace(/[^A-Za-z0-9_]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "table";
-}
-function prepareSqlDiscoveryQueries(args) {
-  if (!(args.kind in DIALECTS))
-    throw new Error(`Datasource kind "${args.kind}" is not supported by SQL discovery.`);
-  const kind = args.kind;
-  if (args.schema)
-    assertIdentifier(args.schema, "schema");
-  if (args.table)
-    assertIdentifier(args.table, "table");
-  for (const column of [...args.columns ?? [], ...args.distinctColumns ?? []])
-    assertIdentifier(column, "column");
-  const tablePurposes = args.purposes.filter((purpose) => purpose !== "views");
-  if (tablePurposes.length && !args.table)
-    throw new Error("Table-scoped SQL discovery requires table.");
-  if (args.purposes.includes("preview") && !args.columns?.length) {
-    throw new Error("Preview discovery requires one or more explicit columns; SELECT * is never generated.");
-  }
-  if (args.purposes.includes("distinct") && !args.distinctColumns?.length) {
-    throw new Error("Distinct discovery requires one or more explicit distinct_columns.");
-  }
-  const from = args.table ? source(kind, args.schema, args.table) : void 0;
-  const prefix = safeName(args.namePrefix ?? args.table ?? args.schema ?? "schema");
-  const queries = [];
-  const unsupported = [];
-  for (const purpose of [...new Set(args.purposes)]) {
-    let sql;
-    if (purpose === "count")
-      sql = `SELECT COUNT(*) AS row_count FROM ${from}`;
-    else if (purpose === "preview") {
-      sql = boundedSelect(kind, args.columns.map((column) => quote(kind, column)).join(", "), from, args.limit);
-    } else if (purpose === "distinct") {
-      sql = boundedSelect(kind, args.distinctColumns.map((column) => quote(kind, column)).join(", "), from, args.limit, true);
-    } else {
-      sql = metadataSql(kind, purpose, args.schema, args.table);
-      if (!sql) {
-        unsupported.push({
-          purpose,
-          reason: `${args.kind} does not expose a verified ${purpose} selector and MCP has no curated read-only SQL contract for it yet.`
-        });
-        continue;
-      }
-      sql = boundMetadata(kind, sql);
-    }
-    queries.push({
-      purpose,
-      name: `${prefix}_${purpose}`,
-      datasource_id: args.datasourceId,
-      options: options(kind, sql)
-    });
-  }
-  return { queries, unsupported };
-}
-createRequire(import.meta.url);
 async function mapKeyRefusal(client, componentTypes, library) {
   if (![...componentTypes].includes("Map") || typeof client?.hasGoogleMapsKey !== "function")
     return void 0;
@@ -528,10 +386,10 @@ function cached(getter) {
 function nullish(input) {
   return input === null || input === void 0;
 }
-function cleanRegex(source2) {
-  const start = source2.startsWith("^") ? 1 : 0;
-  const end = source2.endsWith("$") ? source2.length - 1 : source2.length;
-  return source2.slice(start, end);
+function cleanRegex(source) {
+  const start = source.startsWith("^") ? 1 : 0;
+  const end = source.endsWith("$") ? source.length - 1 : source.length;
+  return source.slice(start, end);
 }
 function floatSafeRemainder(val, step) {
   const ratio = val / step;
@@ -4001,12 +3859,12 @@ var $ZodTemplateLiteral = /* @__PURE__ */ $constructor("$ZodTemplateLiteral", (i
       if (!part._zod.pattern) {
         throw new Error(`Invalid template literal part, no pattern found: ${[...part._zod.traits].shift()}`);
       }
-      const source2 = part._zod.pattern instanceof RegExp ? part._zod.pattern.source : part._zod.pattern;
-      if (!source2)
+      const source = part._zod.pattern instanceof RegExp ? part._zod.pattern.source : part._zod.pattern;
+      if (!source)
         throw new Error(`Invalid template literal part: ${part._zod.traits}`);
-      const start = source2.startsWith("^") ? 1 : 0;
-      const end = source2.endsWith("$") ? source2.length - 1 : source2.length;
-      regexParts.push(source2.slice(start, end));
+      const start = source.startsWith("^") ? 1 : 0;
+      const end = source.endsWith("$") ? source.length - 1 : source.length;
+      regexParts.push(source.slice(start, end));
     } else if (part === null || primitiveTypes.has(typeof part)) {
       regexParts.push(escapeRegex(`${part}`));
     } else {
@@ -4870,26 +4728,26 @@ function _array(Class2, element, params) {
   });
 }
 // @__NO_SIDE_EFFECTS__
-function _union(Class2, options2, params) {
+function _union(Class2, options, params) {
   return new Class2({
     type: "union",
-    options: options2,
+    options,
     ...normalizeParams(params)
   });
 }
-function _xor(Class2, options2, params) {
+function _xor(Class2, options, params) {
   return new Class2({
     type: "union",
-    options: options2,
+    options,
     inclusive: false,
     ...normalizeParams(params)
   });
 }
 // @__NO_SIDE_EFFECTS__
-function _discriminatedUnion(Class2, discriminator, options2, params) {
+function _discriminatedUnion(Class2, discriminator, options, params) {
   return new Class2({
     type: "union",
-    options: options2,
+    options,
     discriminator,
     ...normalizeParams(params)
   });
@@ -5849,14 +5707,14 @@ var objectProcessor = (schema, ctx, _json, params) => {
 var unionProcessor = (schema, ctx, json2, params) => {
   const def = schema._zod.def;
   const isExclusive = def.inclusive === false;
-  const options2 = def.options.map((x, i) => process(x, ctx, {
+  const options = def.options.map((x, i) => process(x, ctx, {
     ...params,
     path: [...params.path, isExclusive ? "oneOf" : "anyOf", i]
   }));
   if (isExclusive) {
-    json2.oneOf = options2;
+    json2.oneOf = options;
   } else {
-    json2.anyOf = options2;
+    json2.anyOf = options;
   }
 };
 var intersectionProcessor = (schema, ctx, json2, params) => {
@@ -6416,9 +6274,8 @@ export {
   normalizeParams as eh,
   defineLazy as ei,
   registerComponentSchemas as ej,
-  prepareSqlDiscoveryQueries as ek,
-  readCatalogBytes as el,
-  allComponentSchemas as em,
+  readCatalogBytes as ek,
+  allComponentSchemas as el,
   _startsWith as f,
   _slugify as g,
   _size as h,
