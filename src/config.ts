@@ -407,7 +407,7 @@ export function loadConfig(identity?: RequestIdentity): Config {
   const appUrl = explicitAppUrl ?? explicitApiUrl ?? 'http://localhost:8082';
 
   const sessionToken = env('TOOLJET_SESSION_TOKEN');
-  const stored = !env('TOOLJET_PAT') && !sessionToken ? storedCliLogin(explicitApiUrl) : undefined;
+  const stored = !env('TOOLJET_PAT') && !sessionToken ? storedCliLogin(explicitApiUrl ?? explicitAppUrl) : undefined;
   const pat = env('TOOLJET_PAT') ?? stored?.pat;
   const workspaceId = env('TOOLJET_WORKSPACE_ID');
   if (stored) {
