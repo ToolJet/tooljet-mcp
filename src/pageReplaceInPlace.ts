@@ -186,7 +186,8 @@ export function diffPageInPlace(
     const childOrder = childOrders.get(id);
     if (childOrder) properties = { ...properties, childOrder: childOrderProperty(childOrder) };
     const { clientRef: _clientRef, parentRef: _parentRef, ...rest } = spec;
-    const resolved: InPlaceComponent = { ...rest, properties, id, ...(parent ? { parent } : {}) };
+    const parentType = parent ? planned.find((other) => idOf.get(other) === decodeComponentParent(parent).parentId)?.type : undefined;
+    const resolved: InPlaceComponent = { ...rest, properties, id, ...(parent ? { parent } : {}), ...(parentType ? { parentType } : {}) };
     if (!parent) delete resolved.parent;
 
     const existing = storedByName.get(spec.name);
@@ -197,7 +198,7 @@ export function diffPageInPlace(
     let why: string | undefined;
     if (existing.type !== spec.type) why = `type ${existing.type} -> ${spec.type}`;
     // The page holds the parent as ToolJet stores it: the parent's id, suffixed for a header, footer or tab.
-    else if ((existing.parent ?? undefined) !== (parent ? encodeComponentParent(parent, spec.slotName) : undefined)) why = 'parent';
+    else if ((existing.parent ?? undefined) !== (parent ? encodeComponentParent(parent, spec.slotName, parentType) : undefined)) why = 'parent';
     else if (!definitions[spec.type]) why = 'no default definition for this widget';
     else {
       for (const section of SECTIONS) {

@@ -1,14 +1,14 @@
 import { createRequire } from "node:module";
-import { ef as tableQuotaError, eg as TableQuotaError, e6 as ok, e5 as fail, e8 as getComponentSchema } from "./chunk-addBGscc.js";
-import { b0 as external_exports, b7 as definition } from "./chunk-CN1mtqtB.js";
-import { d as decodeComponentParent, e as encodeComponentParent, a as downgradeFlexForLibrary, b as assertPageIcon, i as isMisplacedStyleKey, t as toLibraryComponent, l as libraryTypeOf, P as PROPERTY_KEY_ALIASES, r as retiredUi2Name, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey, c as componentSlotSchema, f as componentNameSchema, g as componentNameError, h as resolveParentRef, j as introducedLintFindings, k as lintComponentSpec, m as lintComponentSlots, o as lintUnusableTextGeometry, p as lintStandardSingleLineInputHeight, q as lintTextGeometry, s as lintRenderedGeometry, u as lintKanbanInteractions, v as lintShadKanbanCards, w as lintShadScheduleScale } from "./chunk-FlRx_OJe.js";
-import { q as assertPersistableQueryToggles, r as normalizeWorkflowQueryOptions, t as assertWorkflowQueryOptions, w as workflowMappingMatches, u as suggestedHtmlHeight } from "./chunk-CR7sOYLa.js";
+import { ef as tableQuotaError, eg as TableQuotaError, e6 as ok, e5 as fail, e8 as getComponentSchema } from "./chunk-COW2iNTB.js";
+import { b0 as external_exports, b7 as definition } from "./chunk-D-yEFdPv.js";
+import { d as decodeComponentParent, e as encodeComponentParent, a as downgradeFlexForLibrary, b as assertPageIcon, r as resolveComponentLibrary, i as isMisplacedStyleKey, t as toLibraryComponent, m as missingLibraryPins, l as libraryTypeOf, P as PROPERTY_KEY_ALIASES, c as retiredUi2Name, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey, f as componentSlotSchema, g as componentNameSchema, h as componentNameError, j as resolveParentRef, k as introducedLintFindings, o as lintComponentSpec, p as lintComponentSlots, q as lintUnusableTextGeometry, s as lintStandardSingleLineInputHeight, u as lintTextGeometry, v as lintRenderedGeometry, w as lintKanbanInteractions, x as lintShadKanbanCards, y as lintShadScheduleScale } from "./chunk-D8GCORfd.js";
+import { q as assertPersistableQueryToggles, r as normalizeWorkflowQueryOptions, t as assertWorkflowQueryOptions, w as workflowMappingMatches, u as suggestedHtmlHeight } from "./chunk-BxMc6J_M.js";
 import { randomUUID, createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-DGCi5LfA.js";
+import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-BOAy1nzn.js";
 createRequire(import.meta.url);
 function strictEntry(shape, describeUnknown) {
   return external_exports.strictObject(shape, {
@@ -181,64 +181,6 @@ function isSampleDatasource(source) {
 function assertAiDatasource(source) {
   if (isSampleDatasource(source))
     throw new Error(SAMPLE_DATASOURCE_REFUSAL);
-}
-var defaultPack = () => {
-  const raw = process.env.MCP_AGENT_PACK;
-  return (raw === void 0 ? "shadcn" : raw).trim().toLowerCase() || void 0;
-};
-var savedComponentLibrary = (library) => library === "ui2" && defaultPack() ? `pack:${defaultPack()}` : library;
-var COMPONENT_LIBRARY_NAMES = {
-  ui1: "ToolJet UI 1.0",
-  ui2: "ToolJet UI 2.0"
-};
-var isUi2Type = (type) => typeof type === "string" && /^Shad[A-Z]/.test(type);
-var isPackType = (type) => typeof type === "string" && /^Lib_[a-z0-9]+_/i.test(type);
-function resolveComponentLibrary(globalSettings, componentTypes) {
-  const settings = globalSettings;
-  const saved = settings?.componentLibrary ?? settings?.component_library;
-  if (saved === "ui1" || saved === "ui2")
-    return { library: saved, source: "saved" };
-  if (typeof saved === "string" && saved.startsWith("pack:") && saved.length > 5)
-    return { library: "ui2", source: "saved", pack: saved.slice(5) };
-  if (typeof saved === "string" && saved.startsWith("lib:"))
-    return { library: "ui1", source: "saved" };
-  for (const type of componentTypes)
-    if (isUi2Type(type) || isPackType(type))
-      return { library: "ui2", source: "inferred" };
-  return { library: "ui1", source: "inferred" };
-}
-var styleValue = (styles, key) => {
-  const entry = styles?.[key];
-  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
-};
-function nativeFitsUi2(component) {
-  if (component.type === "FlexContainer" || component.type === "Map")
-    return true;
-  return component.type === "Table" && styleValue(component.styles, "tableLook") !== "default";
-}
-function componentLibraryWarnings(library, pages, request) {
-  if (request?.trim())
-    return [];
-  const off = /* @__PURE__ */ new Map();
-  for (const page of pages ?? []) {
-    for (const component of page.components ?? []) {
-      const type = String(component.type ?? "");
-      const ui2Side = isUi2Type(type) || isPackType(type);
-      const mismatch = library.library === "ui1" ? ui2Side : !ui2Side && !nativeFitsUi2(component);
-      if (!mismatch)
-        continue;
-      off.set(type, [...off.get(type) ?? [], component.name ?? type]);
-    }
-  }
-  if (!off.size)
-    return [];
-  const listed = [...off].map(([type, names]) => `${type} (${names.slice(0, 3).join(", ")}${names.length > 3 ? ", ..." : ""})`).join("; ");
-  const how = library.source === "saved" ? "its saved library" : library.source === "inferred" ? "the library its widgets imply" : "new apps are; pass app_id to check the plan against an existing app";
-  const appName = COMPONENT_LIBRARY_NAMES[library.library];
-  const fix = library.library === "ui1" ? "Build with the native ToolJet types instead (Table, Chart, TextInput, DropdownV2, ModalV2, Container, ...)." : `Build with the UI 2.0 types instead: types whose names start with Shad, laid out in FlexContainers; ShadDialog for dialogs and side sheets; for tables ToolJet's Table (styles.tableLook "shadcn").`;
-  return [
-    `This app is built in ${appName} (${how}), and the plan adds widgets from the other library: ${listed}. ${fix} If the user asked for the other library in this request, keep the plan and put their words in component_library_request.`
-  ];
 }
 function createAppVersionLifecycle(auth, getApp) {
   const enc = encodeURIComponent;
@@ -612,9 +554,18 @@ var SAMPLE_BLANKS = {
   // The sample's 'set up your workspace' line is not a build's; completeTitle alone reads fine.
   ShadQuestionnaire: { completeText: "" }
 };
+var PACK_SAMPLE_TEXT = ["label", "title", "resourceTitle", "subTitle", "message"];
 function registerPackDefinitions(extra) {
   packDefaultDefinition("");
-  Object.assign(cached ?? (cached = {}), extra);
+  const defs = extra;
+  for (const def of Object.values(defs)) {
+    for (const key of PACK_SAMPLE_TEXT) {
+      const entry = def?.properties?.[key];
+      if (entry && typeof entry.value === "string" && entry.value && !entry.value.trim().startsWith("{{"))
+        def.properties[key] = { ...entry, value: "" };
+    }
+  }
+  Object.assign(cached ?? (cached = {}), defs);
 }
 function packDefaultDefinition(type) {
   if (!cached) {
@@ -2541,6 +2492,9 @@ function createClient(auth, config) {
     const entries = params.components.map((spec) => ({ id: spec.id ?? randomUUID(), spec }));
     const refToId = new Map(entries.map((entry) => [componentRef(entry.spec), entry.id]));
     const diff = {};
+    const typeById = new Map((params.pageComponents ?? []).map((component) => [component.id, component.type]));
+    for (const e of entries)
+      typeById.set(e.id, e.spec.type);
     for (const e of entries) {
       if (e.spec.parent && e.spec.parentRef) {
         throw new Error(`createComponents "${e.spec.name}": set EITHER parent or parentRef, not both.`);
@@ -2553,8 +2507,10 @@ function createClient(auth, config) {
       if (e.spec.slotName && !resolvedParent) {
         throw new Error(`createComponents "${e.spec.name}": slotName requires parent or parentRef.`);
       }
-      if (resolvedParent)
-        dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName);
+      if (resolvedParent) {
+        const parentType = typeById.get(decodeComponentParent(resolvedParent).parentId) ?? e.spec.parentType;
+        dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName, parentType);
+      }
       const submit = e.spec.type === "Form" ? dto.properties?.buttonToSubmit : void 0;
       const submitId = submit && typeof submit.value === "string" ? refToId.get(submit.value) : void 0;
       if (submit && submitId) {
@@ -2587,6 +2543,7 @@ function createClient(auth, config) {
     });
     await assertOk(res, "createComponents");
     const created = entries.map((e) => ({ component_id: e.id, name: e.spec.name }));
+    await pinWrittenLibraries(params.appId, params.versionId, Object.values(diff));
     let pageComponents = params.pageComponents;
     if (additions.length && !pageComponents) {
       const summary = await getAppSummary(params.appId, params.versionId).catch(() => void 0);
@@ -2603,6 +2560,28 @@ function createClient(auth, config) {
       }
     }
     return created;
+  }
+  const pinChecks = /* @__PURE__ */ new Map();
+  function pinWrittenLibraries(appId, versionId, components) {
+    const wanted = missingLibraryPins(components, {});
+    if (!wanted)
+      return Promise.resolve();
+    const fresh = Object.keys(wanted).filter((id) => !pinChecks.has(`${versionId}:${id}`));
+    const check = fresh.length ? (async () => {
+      const settings = await getAppSettings(appId, versionId);
+      const stored = settings.global_settings.customComponentLibraries;
+      const pins = stored && typeof stored === "object" ? stored : {};
+      const missing = missingLibraryPins(components, pins);
+      if (missing) {
+        await updateAppSettings({ appId, versionId, globalSettings: { customComponentLibraries: { ...pins, ...missing } } });
+      }
+    })().catch(() => {
+      for (const id of fresh)
+        pinChecks.delete(`${versionId}:${id}`);
+    }) : Promise.resolve();
+    for (const id of fresh)
+      pinChecks.set(`${versionId}:${id}`, check);
+    return Promise.all(Object.keys(wanted).map((id) => pinChecks.get(`${versionId}:${id}`)));
   }
   async function writeFlexChildOrders(appId, versionId, pageId, orders) {
     const diff = Object.fromEntries([...orders].map(([id, order]) => [
@@ -4407,13 +4386,9 @@ function onlyTouchedBraceNotes(warnings, definition2) {
   });
 }
 export {
-  defaultPack as A,
-  savedComponentLibrary as B,
+  reparentAdditions as A,
   COMPONENT_FX_GUIDANCE as C,
-  ToolJetHttpError as D,
-  appendedChildOrders as E,
   FLEX_MIN_WIDTH_PX_DESCRIPTION as F,
-  reparentAdditions as G,
   PartialWriteError as P,
   TOOLJET_DB_DATA_TYPES as T,
   FLEX_GROW_DESCRIPTION as a,
@@ -4423,23 +4398,23 @@ export {
   plannedCurrency as e,
   booleanBindingValue as f,
   normalizeType as g,
-  resolveComponentLibrary as h,
+  invalidSeedTimestamps as h,
   indexComponentReferences as i,
-  componentLibraryWarnings as j,
-  invalidSeedTimestamps as k,
-  completedPartialWrites as l,
-  isFlexContainerType as m,
+  completedPartialWrites as j,
+  isFlexContainerType as k,
+  batchChildOrders as l,
+  childOrderProperty as m,
   normalizeComponentSpec as n,
-  batchChildOrders as o,
+  createClient as o,
   packDefaultDefinition as p,
-  childOrderProperty as q,
+  registerPackDefinitions as q,
   resolveRef as r,
   strictEntry as s,
-  createClient as t,
-  registerPackDefinitions as u,
+  listWorkspaceGroupsTool as t,
+  manageWorkspaceGroupsTool as u,
   validateTableBatch as v,
-  listWorkspaceGroupsTool as w,
-  manageWorkspaceGroupsTool as x,
-  inspectDatasourceSchemaTool as y,
-  updateComponentsTool as z
+  inspectDatasourceSchemaTool as w,
+  updateComponentsTool as x,
+  ToolJetHttpError as y,
+  appendedChildOrders as z
 };

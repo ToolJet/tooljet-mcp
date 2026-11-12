@@ -26,6 +26,14 @@ describe('resolveComponentLibrary', () => {
     expect(resolveComponentLibrary({ componentLibrary: 'lib:1234' }, ['ShadButton'])).toEqual({ library: 'ui1', source: 'saved' });
   });
 
+  // SkyLine in Ant Design (2026-11-01): create_app could only save the default pack, so the app had to be moved to
+  // Ant by hand in the database before any Lib_antd_* widget drew.
+  it('saves the pack the caller names over the default', () => {
+    expect(savedComponentLibrary('ui2', 'antd')).toBe('pack:antd');
+    expect(savedComponentLibrary('ui2', 'MUI')).toBe('pack:mui');
+    expect(savedComponentLibrary('ui1', 'antd')).toBe('ui1');
+  });
+
   it('saves a new UI 2.0 app with the default pack', () => {
     const saved = process.env.MCP_AGENT_PACK;
     process.env.MCP_AGENT_PACK = 'mui';

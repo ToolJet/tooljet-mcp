@@ -1,11 +1,11 @@
 import { createRequire } from "node:module";
-import { b0 as external_exports, b1 as nodeCatalog, b2 as validateGraph, b3 as specSchema, b4 as compileGraph, b5 as assertWorkflowJavaScript, b6 as controlFlowEdges } from "./chunk-CN1mtqtB.js";
-import { a as assessQueryRead, L as LARGE_READ_ROW_THRESHOLD } from "./chunk-CQ1QtaUb.js";
-import { p as parseExpression, a as parse } from "./chunk-DyyCxCqH.js";
-import { h as hubspotQueryIssues, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, s as singleSpecRef, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-DGCi5LfA.js";
+import { b0 as external_exports, b1 as nodeCatalog, b2 as validateGraph, b3 as specSchema, b4 as compileGraph, b5 as assertWorkflowJavaScript, b6 as controlFlowEdges } from "./chunk-D-yEFdPv.js";
+import { a as assessQueryRead, L as LARGE_READ_ROW_THRESHOLD } from "./chunk-B6ef8g-7.js";
+import { p as parseExpression, a as parse } from "./chunk-DpvBXwyI.js";
+import { h as hubspotQueryIssues, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, s as singleSpecRef, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-BOAy1nzn.js";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import { e8 as getComponentSchema } from "./chunk-addBGscc.js";
+import { e8 as getComponentSchema } from "./chunk-COW2iNTB.js";
 createRequire(import.meta.url);
 var QUERY_TOGGLES = ["runOnPageLoad", "runOnDependencyChange", "requestConfirmation", "showSuccessNotification"];
 var STATIC_TOGGLE = /^\s*(?:\{\{\s*(true|false)\s*\}\}|(true|false))\s*$/;
@@ -18,16 +18,16 @@ function staticToggle(value) {
   const match = STATIC_TOGGLE.exec(value);
   return match ? (match[1] ?? match[2]) === "true" : void 0;
 }
-function normalizeQueryToggles(options2) {
-  if (!isPlainObject(options2))
-    return options2;
-  let out = options2;
+function normalizeQueryToggles(options) {
+  if (!isPlainObject(options))
+    return options;
+  let out = options;
   for (const key3 of QUERY_TOGGLES) {
-    const value = staticToggle(options2[key3]);
+    const value = staticToggle(options[key3]);
     if (value === void 0)
       continue;
-    if (out === options2)
-      out = { ...options2 };
+    if (out === options)
+      out = { ...options };
     out[key3] = value;
   }
   return out;
@@ -43,14 +43,14 @@ function describe(value) {
     return JSON.stringify(value);
   return `${typeof value} ${String(value)}`;
 }
-function queryToggleIssues(options2) {
-  if (!isPlainObject(options2))
+function queryToggleIssues(options) {
+  if (!isPlainObject(options))
     return [];
   const issues = [];
   for (const key3 of QUERY_TOGGLES) {
-    if (!(key3 in options2))
+    if (!(key3 in options))
       continue;
-    const value = options2[key3];
+    const value = options[key3];
     if (value === void 0 || typeof value === "boolean" || staticToggle(value) !== void 0)
       continue;
     const dynamic = typeof value === "string" ? " ToolJet does not evaluate it and treats any text as on. Run the query from an event instead when it depends on state." : "";
@@ -68,12 +68,12 @@ function toggleRewriteWarning(before, after) {
     return void 0;
   return `${changed.map((key3) => `${key3} ${JSON.stringify(before[key3])} saved as ${String(after[key3])}`).join(", ")}; ToolJet reads these as true/false and runs any text on load.`;
 }
-function assertPersistableQueryToggles(options2, subject) {
-  const issues = queryToggleIssues(options2);
-  const strings = isPlainObject(options2) ? QUERY_TOGGLES.filter((key3) => typeof options2[key3] === "string") : [];
+function assertPersistableQueryToggles(options, subject) {
+  const issues = queryToggleIssues(options);
+  const strings = isPlainObject(options) ? QUERY_TOGGLES.filter((key3) => typeof options[key3] === "string") : [];
   const messages = [
     ...issues.map((issue2) => issue2.message),
-    ...strings.filter((key3) => !issues.some((issue2) => issue2.path === key3)).map((key3) => `${key3} must be sent as a boolean, not ${JSON.stringify(options2[key3])}.`)
+    ...strings.filter((key3) => !issues.some((issue2) => issue2.path === key3)).map((key3) => `${key3} must be sent as a boolean, not ${JSON.stringify(options[key3])}.`)
   ];
   if (messages.length)
     throw new Error(`${subject}: ${messages.join(" ")}`);
@@ -107,9 +107,9 @@ function bindingSpans(value) {
 function primitiveWriteBindingEntries(value) {
   if (typeof value !== "string")
     return [];
-  const source2 = value.trim();
-  const spans = bindingSpans(source2);
-  if (spans.length !== 1 || spans[0].start !== 0 || spans[0].end !== source2.length)
+  const source = value.trim();
+  const spans = bindingSpans(source);
+  if (spans.length !== 1 || spans[0].start !== 0 || spans[0].end !== source.length)
     return [];
   try {
     const node2 = parseExpression(spans[0].body);
@@ -128,10 +128,10 @@ function primitiveWriteBindingEntries(value) {
   }
 }
 var object = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : void 0;
-function conditionalWriteWarning(kind, options2) {
-  if (kind !== "tooljetdb" || options2.operation !== "update_rows")
+function conditionalWriteWarning(kind, options) {
+  if (kind !== "tooljetdb" || options.operation !== "update_rows")
     return;
-  const update = object(options2.update_rows);
+  const update = object(options.update_rows);
   const written = new Set(Object.values(object(update?.columns) ?? {}).map(object).flatMap((c) => typeof c?.column === "string" ? [c.column] : []));
   const guarded = Object.values(object(update?.where_filters) ?? {}).map(object).filter((f) => typeof f?.column === "string" && written.has(f.column) && f.operator === "eq").map((f) => String(f.column));
   if (!guarded.length)
@@ -159,10 +159,10 @@ function property(n) {
   if (p?.type === "StringLiteral")
     return String(p.value);
 }
-function arithmeticWriteWarning(kind, options2) {
-  if (kind !== "tooljetdb" || options2.operation !== "update_rows")
+function arithmeticWriteWarning(kind, options) {
+  if (kind !== "tooljetdb" || options.operation !== "update_rows")
     return;
-  const update = object(options2.update_rows), columns = object(update?.columns);
+  const update = object(options.update_rows), columns = object(update?.columns);
   if (!columns)
     return;
   const filters = Object.values(object(update?.where_filters) ?? {}).map(object);
@@ -242,17 +242,17 @@ function parseField(value) {
     value = JSON.stringify(value);
   if (typeof value !== "string" || !value.trim())
     return void 0;
-  let source2 = "";
+  let source = "";
   let from = 0;
   for (const span of bindingSpans(value)) {
-    const quote2 = value[span.start - 1];
-    const quoted = (quote2 === '"' || quote2 === "'") && value[span.end] === quote2 && span.start - 1 >= from;
-    source2 += value.slice(from, quoted ? span.start - 1 : span.start) + `(${span.body})`;
+    const quote = value[span.start - 1];
+    const quoted = (quote === '"' || quote === "'") && value[span.end] === quote && span.start - 1 >= from;
+    source += value.slice(from, quoted ? span.start - 1 : span.start) + `(${span.body})`;
     from = quoted ? span.end + 1 : span.end;
   }
-  source2 += value.slice(from);
+  source += value.slice(from);
   try {
-    return unwrap(parseExpression(source2));
+    return unwrap(parseExpression(source));
   } catch {
     return void 0;
   }
@@ -330,13 +330,13 @@ function issue(path, field) {
     message: `$set replaces the whole "${field}" array with a value built from component data, so every save drops the elements and fields the components do not hold. Update the edited elements by path instead: { $set: { "${field}.$[el].<field>": ... } } with options { arrayFilters: [{ "el.<key>": ... }] }, matching a stable key field, and abort the save unless the element count is unchanged apart from explicit adds and deletes.`
   };
 }
-function mongoArrayReplacementIssues(options2) {
-  const operation = typeof options2.operation === "string" ? options2.operation : "";
+function mongoArrayReplacementIssues(options) {
+  const operation = typeof options.operation === "string" ? options.operation : "";
   const updates = [];
   if (UPDATE_OPERATIONS.has(operation))
-    updates.push({ path: "update", update: parseField(options2.update) });
+    updates.push({ path: "update", update: parseField(options.update) });
   if (operation === "bulk_write") {
-    const operations = parseField(options2.operations);
+    const operations = parseField(options.operations);
     if (operations?.type === "ArrayExpression") {
       operations.elements.forEach((op, index) => {
         for (const kind of BULK_UPDATES) {
@@ -351,36 +351,36 @@ function mongoArrayReplacementIssues(options2) {
 }
 var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 var ALIASES = { workflow_id: "workflowId", workflow_version_id: "workflowVersionId" };
-function normalizeWorkflowQueryOptions(options2) {
-  let normalized = options2;
+function normalizeWorkflowQueryOptions(options) {
+  let normalized = options;
   for (const [alias, field] of Object.entries(ALIASES)) {
-    if (!(alias in options2))
+    if (!(alias in options))
       continue;
-    if (options2[field] !== void 0 && options2[field] !== options2[alias])
+    if (options[field] !== void 0 && options[field] !== options[alias])
       continue;
-    if (normalized === options2)
-      normalized = { ...options2 };
+    if (normalized === options)
+      normalized = { ...options };
     if (normalized[field] === void 0)
       normalized[field] = normalized[alias];
     delete normalized[alias];
   }
   return normalized;
 }
-function workflowQueryIssues(options2) {
+function workflowQueryIssues(options) {
   const errors = [];
   for (const [alias, field] of Object.entries(ALIASES)) {
-    if (alias in options2 && options2[field] !== void 0 && options2[field] !== options2[alias])
+    if (alias in options && options[field] !== void 0 && options[field] !== options[alias])
       errors.push({
         code: "conflicting_workflow_target",
         path: alias,
         message: `Conflicting workflow selectors ${field} and ${alias}; specify one target.`
       });
   }
-  if ("sync_execution" in options2)
+  if ("sync_execution" in options)
     errors.push({ code: "invalid_workflow_option", path: "sync_execution", message: "Use the native syncExecution boolean, not sync_execution." });
-  options2 = normalizeWorkflowQueryOptions(options2);
+  options = normalizeWorkflowQueryOptions(options);
   for (const field of ["workflowId", "workflowVersionId"]) {
-    const value = options2[field];
+    const value = options[field];
     if (field === "workflowVersionId" && (value === void 0 || value === null))
       continue;
     if (typeof value !== "string" || !UUID.test(value))
@@ -390,16 +390,16 @@ function workflowQueryIssues(options2) {
         message: `Workflow query options.${field} must be a literal workflow ${field === "workflowId" ? "ID from list_workflows/get_workflow" : "version ID from list_app_versions/get_workflow"}. A query and its success/failure handlers do not establish the workflow mapping.`
       });
   }
-  if (options2.syncExecution !== void 0 && typeof options2.syncExecution !== "boolean") {
+  if (options.syncExecution !== void 0 && typeof options.syncExecution !== "boolean") {
     errors.push({ code: "invalid_workflow_option", path: "syncExecution", message: "Workflow query syncExecution must be a boolean." });
   }
-  if (options2.params !== void 0 && (!Array.isArray(options2.params) || options2.params.some((param) => !param || typeof param !== "object" || Array.isArray(param) || typeof param.key !== "string" || !Object.hasOwn(param, "value")))) {
+  if (options.params !== void 0 && (!Array.isArray(options.params) || options.params.some((param) => !param || typeof param !== "object" || Array.isArray(param) || typeof param.key !== "string" || !Object.hasOwn(param, "value")))) {
     errors.push({ code: "invalid_workflow_option", path: "params", message: "Workflow query params must be an array of {key, value} entries; values may contain app bindings." });
   }
   return errors;
 }
-function assertWorkflowQueryOptions(options2) {
-  const errors = workflowQueryIssues(options2);
+function assertWorkflowQueryOptions(options) {
+  const errors = workflowQueryIssues(options);
   if (errors.length)
     throw new Error(errors.map((error) => error.message).join(" "));
 }
@@ -421,8 +421,8 @@ function isTruthyStatic(value) {
 function isDynamicBinding(value) {
   return typeof value === "string" && value.includes("{{");
 }
-function valueAtPath(source2, path) {
-  let cursor = source2;
+function valueAtPath(source, path) {
+  let cursor = source;
   for (const segment of path.split(".")) {
     if (!isObject(cursor) || !Object.prototype.hasOwnProperty.call(cursor, segment))
       return void 0;
@@ -445,8 +445,8 @@ function describeOperationSelection(schema) {
   }
   return "This kind has a single unnamed query form; author it against the default contract.";
 }
-function operationFromOptions(options2, contracts, defaults) {
-  const operation = options2.operation ?? defaults.operation;
+function operationFromOptions(options, contracts, defaults) {
+  const operation = options.operation ?? defaults.operation;
   if (typeof operation === "string" && operation) {
     if (Object.prototype.hasOwnProperty.call(contracts, operation))
       return operation;
@@ -454,7 +454,7 @@ function operationFromOptions(options2, contracts, defaults) {
       return "default";
     return operation;
   }
-  const mode = options2.mode ?? defaults.mode;
+  const mode = options.mode ?? defaults.mode;
   if (typeof mode === "string" && mode && Object.prototype.hasOwnProperty.call(contracts, mode))
     return mode;
   if (Object.prototype.hasOwnProperty.call(contracts, "default"))
@@ -462,7 +462,7 @@ function operationFromOptions(options2, contracts, defaults) {
   const selectorMatches = Object.entries(contracts).filter(([, contract]) => contract.variants.some((variant) => {
     const selectors = Object.entries(variant.when);
     return selectors.length > 0 && selectors.every(([selector, accepted]) => {
-      const actual = options2[selector] ?? defaults[selector];
+      const actual = options[selector] ?? defaults[selector];
       return typeof actual === "string" && !isDynamicBinding(actual) && accepted.includes(actual);
     });
   }));
@@ -470,9 +470,9 @@ function operationFromOptions(options2, contracts, defaults) {
     return selectorMatches[0][0];
   return void 0;
 }
-function variantMatches(variant, options2) {
+function variantMatches(variant, options) {
   return Object.entries(variant.when).every(([selector, accepted]) => {
-    const actual = options2[selector];
+    const actual = options[selector];
     return actual === void 0 || isDynamicBinding(actual) || typeof actual === "string" && accepted.includes(actual);
   });
 }
@@ -511,9 +511,9 @@ function bindingStrings(value, path = "") {
     return [];
   return Object.entries(value).flatMap(([key3, item]) => bindingStrings(item, path ? `${path}.${key3}` : key3));
 }
-function tableStateWarnings(options2) {
+function tableStateWarnings(options) {
   const warnings = [];
-  for (const binding of bindingStrings(options2)) {
+  for (const binding of bindingStrings(options)) {
     const match = binding.value.match(/components\.([A-Za-z_$][\w$]*)\.pageIndex\s*-\s*1/);
     if (!match)
       continue;
@@ -597,22 +597,22 @@ function bracketBalance(code) {
     const col = i - start;
     return (lines[l - 1] ?? "").slice(Math.max(0, col - 30), col + 30).trim();
   };
-  let quote2 = null;
+  let quote = null;
   for (let i = 0; i < code.length; i += 1) {
     const ch = code[i];
-    if (quote2) {
+    if (quote) {
       if (ch === "\\") {
         i += 1;
         continue;
       }
-      if (quote2 === "`" && ch === "$" && code[i + 1] === "{") {
+      if (quote === "`" && ch === "$" && code[i + 1] === "{") {
         stack.push({ ch: "${", line: lineOf(i), at: i });
-        quote2 = null;
+        quote = null;
         i += 1;
         continue;
       }
-      if (ch === quote2)
-        quote2 = null;
+      if (ch === quote)
+        quote = null;
       continue;
     }
     if (ch === "/" && code[i + 1] === "/") {
@@ -626,7 +626,7 @@ function bracketBalance(code) {
       continue;
     }
     if (ch === '"' || ch === "'" || ch === "`") {
-      quote2 = ch;
+      quote = ch;
       continue;
     }
     if (ch === "(" || ch === "[" || ch === "{")
@@ -634,7 +634,7 @@ function bracketBalance(code) {
     else if (ch === ")" || ch === "]" || ch === "}") {
       const top = stack.pop();
       if (top?.ch === "${" && ch === "}") {
-        quote2 = "`";
+        quote = "`";
         continue;
       }
       if (!top || top.ch !== pairs[ch]) {
@@ -812,10 +812,10 @@ var BINDING_KNOWN_NAMES = /* @__PURE__ */ new Set([
   "theme"
 ]);
 var FUNCTION_TYPES = /* @__PURE__ */ new Set(["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression", "ObjectMethod", "ClassMethod", "ClassPrivateMethod"]);
-function undeclaredNames(source2, known) {
+function undeclaredNames(source, known) {
   let ast;
   try {
-    ast = parse(source2, { sourceType: "script", errorRecovery: false });
+    ast = parse(source, { sourceType: "script", errorRecovery: false });
   } catch {
     return [];
   }
@@ -926,15 +926,15 @@ function undeclaredNames(source2, known) {
   walk22(ast);
   return [...new Set(used.filter((name2) => !known.has(name2) && name2 !== "__runjs__" && name2 !== "__binding__"))];
 }
-function transformationWarnings(options2) {
+function transformationWarnings(options) {
   const warnings = [];
-  const bag = isObject(options2.transformations) ? options2.transformations : void 0;
+  const bag = isObject(options.transformations) ? options.transformations : void 0;
   const languages = bag ? Object.keys(bag).filter((key3) => key3 === "javascript" || key3 === "python") : [];
-  const hasCode = languages.length > 0 || typeof options2.transformation === "string" && options2.transformation.trim() !== "";
+  const hasCode = languages.length > 0 || typeof options.transformation === "string" && options.transformation.trim() !== "";
   if (!hasCode)
     return warnings;
-  const enabled = isTruthyStatic(options2.enableTransformation);
-  const language = typeof options2.transformationLanguage === "string" ? options2.transformationLanguage : void 0;
+  const enabled = isTruthyStatic(options.enableTransformation);
+  const language = typeof options.transformationLanguage === "string" ? options.transformationLanguage : void 0;
   if (!enabled) {
     warnings.push({
       code: "transformation_not_enabled",
@@ -957,13 +957,13 @@ function transformationWarnings(options2) {
   }
   return warnings;
 }
-function influxTransformWarnings(kind, options2) {
+function influxTransformWarnings(kind, options) {
   if (kind !== "influxdb")
     return [];
-  const operation = typeof options2.operation === "string" ? options2.operation.toLowerCase() : void 0;
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : void 0;
   if (operation !== "query_data")
     return [];
-  if (isTruthyStatic(options2.enableTransformation))
+  if (isTruthyStatic(options.enableTransformation))
     return [];
   return [{
     code: "influx_raw_csv_response",
@@ -972,31 +972,31 @@ function influxTransformWarnings(kind, options2) {
   }];
 }
 var TARGET_FIELD = /(^|_)(table|table_name|table_id|collection|collection_name|spreadsheet_id|base_id|bucket|bucket_name|index|index_name|container|url|endpoint|list_id|database_id|page_id|object_type|resource_name)$/i;
-function validateQueryOptions(kind, options2, executionContext = "app") {
+function validateQueryOptions(kind, options, executionContext = "app") {
   const errors = [];
-  errors.push(...queryToggleIssues(options2));
+  errors.push(...queryToggleIssues(options));
   if (kind === "workflows")
-    errors.push(...workflowQueryIssues(options2));
+    errors.push(...workflowQueryIssues(options));
   if (kind === "hubspot")
-    errors.push(...hubspotQueryIssues(options2).map((issue2) => ({ code: "invalid_hubspot_query", ...issue2 })));
-  errors.push(...apiEndpointQueryIssues(kind, options2).map((issue2) => ({ code: "invalid_api_endpoint_query", ...issue2 })));
-  if (kind === "hubspot" && options2.operation !== "get" && (isTruthyStatic(options2.runOnPageLoad) || isTruthyStatic(options2.runOnDependencyChange))) {
+    errors.push(...hubspotQueryIssues(options).map((issue2) => ({ code: "invalid_hubspot_query", ...issue2 })));
+  errors.push(...apiEndpointQueryIssues(kind, options).map((issue2) => ({ code: "invalid_api_endpoint_query", ...issue2 })));
+  if (kind === "hubspot" && options.operation !== "get" && (isTruthyStatic(options.runOnPageLoad) || isTruthyStatic(options.runOnDependencyChange))) {
     errors.push({ code: "automatic_hubspot_write", message: "HubSpot writes must run from an explicit user action, not on page load or dependency changes." });
   }
-  const warnings = tableStateWarnings(options2);
+  const warnings = tableStateWarnings(options);
   if (kind === "workflows") {
-    const normalized = normalizeWorkflowQueryOptions(options2);
-    if (normalized !== options2)
+    const normalized = normalizeWorkflowQueryOptions(options);
+    if (normalized !== options)
       warnings.push({ code: "legacy_workflow_selector", message: "Legacy workflow selector keys are equivalent to workflowId/workflowVersionId; writes use the native camelCase keys." });
-    options2 = normalized;
+    options = normalized;
   }
-  const conditionalWrite = conditionalWriteWarning(kind, options2);
+  const conditionalWrite = conditionalWriteWarning(kind, options);
   if (conditionalWrite)
     warnings.push({ code: "conditional_write_result", path: "update_rows", message: conditionalWrite });
   if (kind === "mongodb")
-    errors.push(...mongoArrayReplacementIssues(options2));
-  if (executionContext === "app" && kind === "runjs" && typeof options2.code === "string" && options2.code.trim()) {
-    const syntax = runjsSyntaxError(options2.code);
+    errors.push(...mongoArrayReplacementIssues(options));
+  if (executionContext === "app" && kind === "runjs" && typeof options.code === "string" && options.code.trim()) {
+    const syntax = runjsSyntaxError(options.code);
     if (syntax) {
       errors.push({
         code: "runjs_syntax_error",
@@ -1004,7 +1004,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
         message: `the JavaScript does not parse (${syntax}). ToolJet marks the query failed and every component bound to its data stays empty; fix the code before writing it.`
       });
     } else {
-      const undeclared = runjsUndeclaredNames(options2.code);
+      const undeclared = runjsUndeclaredNames(options.code);
       if (undeclared.length) {
         errors.push({
           code: "runjs_undeclared_name",
@@ -1014,39 +1014,39 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
       }
     }
   }
-  warnings.push(...transformationWarnings(options2));
-  warnings.push(...influxTransformWarnings(kind, options2));
-  if (typeof options2.query === "string") {
-    errors.push(...unquotedSqlBindingIssues(options2.query));
-    warnings.push(...interpolatedSqlBindingIssues(options2.query));
+  warnings.push(...transformationWarnings(options));
+  warnings.push(...influxTransformWarnings(kind, options));
+  if (typeof options.query === "string") {
+    errors.push(...unquotedSqlBindingIssues(options.query));
+    warnings.push(...interpolatedSqlBindingIssues(options.query));
   }
-  const readAssessment = assessQueryRead({ kind, options: options2 });
+  const readAssessment = assessQueryRead({ kind, options });
   if (readAssessment.selectStar) {
     warnings.push({
       code: "select_star_read",
-      path: typeof options2.query === "string" ? "query" : void 0,
+      path: typeof options.query === "string" ? "query" : void 0,
       message: "SELECT * will be refused by run_query. Inspect the table schema and select only the fields the app needs; this avoids unknown/wide columns and accidental sensitive-data reads."
     });
   }
   if (readAssessment.provenRead && readAssessment.requiresCountPreflight) {
     warnings.push({
       code: "unbounded_read",
-      path: typeof options2.query === "string" ? "query" : void 0,
+      path: typeof options.query === "string" ? "query" : void 0,
       message: `${readAssessment.reason ?? "This read is not statically bounded"} Count the same table before running it. Prefer a bounded preview and server-side pagination for large or growing datasets.`
     });
   }
-  const automaticRead = isTruthyStatic(options2.runOnPageLoad) || isTruthyStatic(options2.runOnDependencyChange);
+  const automaticRead = isTruthyStatic(options.runOnPageLoad) || isTruthyStatic(options.runOnDependencyChange);
   if (automaticRead && readAssessment.provenRead && readAssessment.requiresCountPreflight) {
     errors.push({
       code: "unsafe_automatic_unbounded_read",
-      path: isTruthyStatic(options2.runOnPageLoad) ? "runOnPageLoad" : "runOnDependencyChange",
+      path: isTruthyStatic(options.runOnPageLoad) ? "runOnPageLoad" : "runOnDependencyChange",
       message: "An unbounded read cannot run automatically on page load or dependency change. " + (readAssessment.reason ? `${readAssessment.reason} ` : `Add a static row limit at or below ${LARGE_READ_ROW_THRESHOLD}. `) + "Use server-side pagination for more, or run it only after an explicit user decision."
     });
   }
   if (automaticRead && readAssessment.requiresBillableReadConfirmation) {
     errors.push({
       code: "unsafe_automatic_billable_read",
-      path: isTruthyStatic(options2.runOnPageLoad) ? "runOnPageLoad" : "runOnDependencyChange",
+      path: isTruthyStatic(options.runOnPageLoad) ? "runOnPageLoad" : "runOnDependencyChange",
       message: "A potentially billable warehouse read cannot run automatically. Trigger it through an explicit user action, and use run_query user_confirmed_billable_read:true only after the user approves any MCP-side verification run."
     });
   }
@@ -1059,7 +1059,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
     return { kind, schemaFound: false, errors, warnings };
   }
   const operationHint = describeOperationSelection(schema);
-  const operation = operationFromOptions(options2, schema.contracts, schema.defaults);
+  const operation = operationFromOptions(options, schema.contracts, schema.defaults);
   if (!operation) {
     errors.push({
       code: "missing_operation",
@@ -1072,12 +1072,12 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
   if (!contract) {
     errors.push({
       code: "invalid_operation",
-      path: typeof options2.operation === "string" ? "operation" : "mode",
+      path: typeof options.operation === "string" ? "operation" : "mode",
       message: `Unknown operation/mode "${operation}" for datasource "${kind}". ${operationHint}`
     });
     return { kind, operation, schemaFound: true, errors, warnings };
   }
-  const matching = contract.variants.filter((variant) => variantMatches(variant, options2));
+  const matching = contract.variants.filter((variant) => variantMatches(variant, options));
   if (!matching.length) {
     const selectors = /* @__PURE__ */ new Map();
     for (const variant of contract.variants) {
@@ -1088,7 +1088,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
       }
     }
     for (const [selector, accepted] of selectors) {
-      const actual = options2[selector];
+      const actual = options[selector];
       if (typeof actual === "string" && !accepted.has(actual)) {
         errors.push({
           code: "invalid_selector_value",
@@ -1099,7 +1099,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
     }
     return { kind, operation, schemaFound: true, errors, warnings };
   }
-  const dynamicSelectors = [...new Set(contract.variants.flatMap((variant) => Object.keys(variant.when)).filter((selector) => isDynamicBinding(options2[selector])))];
+  const dynamicSelectors = [...new Set(contract.variants.flatMap((variant) => Object.keys(variant.when)).filter((selector) => isDynamicBinding(options[selector])))];
   for (const selector of dynamicSelectors) {
     warnings.push({
       code: "runtime_selector_binding",
@@ -1113,13 +1113,13 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
     for (const key3 of ["operation", "path", "params", "selectedOperation"])
       allowedTopLevel.add(key3);
   const own = [...allowedTopLevel].filter((k) => !(k in COMMON_QUERY_OPTION_FIELDS));
-  for (const key3 of Object.keys(options2)) {
+  for (const key3 of Object.keys(options)) {
     if (allowedTopLevel.has(key3))
       continue;
     const exactReplacement = KNOWN_IGNORED_KEYS[key3];
     const nestedReplacement = suffixSuggestion(key3, fields);
     const replacement = exactReplacement ?? nestedReplacement;
-    const meant = key3.length >= 4 ? own.filter((f) => f !== key3 && options2[f] === void 0 && (f.toLowerCase().includes(key3.toLowerCase()) || key3.toLowerCase().includes(f.toLowerCase()))) : [];
+    const meant = key3.length >= 4 ? own.filter((f) => f !== key3 && options[f] === void 0 && (f.toLowerCase().includes(key3.toLowerCase()) || key3.toLowerCase().includes(f.toLowerCase()))) : [];
     if (!replacement && meant.length === 1) {
       errors.push({
         code: "unknown_option_key",
@@ -1136,7 +1136,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
   }
   for (const root of allowedTopLevel) {
     const children = nestedChildren(fields, root);
-    const actual = options2[root];
+    const actual = options[root];
     if (!children.size || !isObject(actual))
       continue;
     for (const child of Object.keys(actual)) {
@@ -1149,10 +1149,10 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
       }
     }
   }
-  if (options2.mode !== "sql") {
+  if (options.mode !== "sql") {
     const targets = Object.keys(fields).filter((path) => !path.includes(".") && TARGET_FIELD.test(path) && !(path in COMMON_QUERY_OPTION_FIELDS));
     const set = targets.filter((path) => {
-      const v = options2[path];
+      const v = options[path];
       return v !== void 0 && v !== null && v !== "";
     });
     if (targets.length && !set.length) {
@@ -1161,7 +1161,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
   }
   const required = intersection(matching.map((variant) => variant.required));
   for (const path of required) {
-    const value = valueAtPath(options2, path);
+    const value = valueAtPath(options, path);
     if (value === void 0 || value === null || value === "") {
       errors.push({
         code: "missing_required_option",
@@ -1171,7 +1171,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
     }
   }
   for (const [path, field] of Object.entries(fields)) {
-    const value = valueAtPath(options2, path);
+    const value = valueAtPath(options, path);
     const arity = tupleArity(field);
     if (arity !== void 0 && value !== void 0 && !isDynamicBinding(value)) {
       if (!Array.isArray(value)) {
@@ -1203,7 +1203,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
   }
   if (kind === "tooljetdb" && (operation === "create_row" || operation === "update_rows")) {
     const columnsPath = operation === "create_row" ? "create_row" : "update_rows.columns";
-    const columns = valueAtPath(options2, columnsPath);
+    const columns = valueAtPath(options, columnsPath);
     const primitiveEntries = primitiveWriteBindingEntries(columns);
     if (primitiveEntries.length)
       errors.push({
@@ -1223,8 +1223,8 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
       }
     }
   }
-  if (kind !== "tooljetdb" && operation === "create_row" && isObject(valueAtPath(options2, "create_row"))) {
-    const createRow = valueAtPath(options2, "create_row");
+  if (kind !== "tooljetdb" && operation === "create_row" && isObject(valueAtPath(options, "create_row"))) {
+    const createRow = valueAtPath(options, "create_row");
     const columns = createRow.columns;
     const usable = isObject(columns) && Object.values(columns).some((clause) => isObject(clause) && typeof clause.column === "string" && clause.column !== "");
     if (!usable) {
@@ -1238,7 +1238,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
   }
   if (kind === "tooljetdb" && (operation === "update_rows" || operation === "delete_rows")) {
     const filtersPath = `${operation}.where_filters`;
-    const filters = valueAtPath(options2, filtersPath);
+    const filters = valueAtPath(options, filtersPath);
     if (isObject(filters) || Array.isArray(filters)) {
       const usable = Object.entries(filters).filter(([, clause]) => isObject(clause) && typeof clause.column === "string" && clause.column !== "" && typeof clause.operator === "string" && clause.operator !== "");
       if (usable.length === 0) {
@@ -1258,7 +1258,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
     }
   }
   if (kind === "tooljetdb" && ["list_rows", "update_rows", "delete_rows"].includes(operation)) {
-    const filters = valueAtPath(options2, `${operation}.where_filters`);
+    const filters = valueAtPath(options, `${operation}.where_filters`);
     if (isObject(filters) || Array.isArray(filters)) {
       for (const [mapKey, rawClause] of Object.entries(filters)) {
         const aliases = {
@@ -1309,7 +1309,7 @@ function validateQueryOptions(kind, options2, executionContext = "app") {
     }
   }
   if (kind === "tooljetdb" && operation === "list_rows") {
-    const orderFilters = valueAtPath(options2, "list_rows.order_filters");
+    const orderFilters = valueAtPath(options, "list_rows.order_filters");
     if (isObject(orderFilters)) {
       for (const [mapKey, rawClause] of Object.entries(orderFilters)) {
         if (!isObject(rawClause) || typeof rawClause.id !== "string" || rawClause.id === mapKey)
@@ -1345,36 +1345,36 @@ function normalizeWriteColumnMap(columns) {
   return normalized;
 }
 function normalizeQueryOptions(kind, rawOptions) {
-  const options2 = normalizeQueryToggles(rawOptions);
+  const options = normalizeQueryToggles(rawOptions);
   if (kind === "workflows")
-    return normalizeWorkflowQueryOptions(options2);
-  if (kind === "mongodb" && isObject(options2)) {
-    let result = options2;
+    return normalizeWorkflowQueryOptions(options);
+  if (kind === "mongodb" && isObject(options)) {
+    let result = options;
     for (const field of ["filter", "options", "pipeline", "document", "documents", "update", "replacement", "operations"]) {
-      const value = options2[field];
+      const value = options[field];
       if (value !== null && typeof value === "object") {
-        if (result === options2)
-          result = { ...options2 };
+        if (result === options)
+          result = { ...options };
         result[field] = JSON.stringify(value);
       }
     }
     return result;
   }
-  if (kind !== "tooljetdb" || !isObject(options2))
-    return options2;
-  const operation = typeof options2.operation === "string" ? options2.operation : "";
+  if (kind !== "tooljetdb" || !isObject(options))
+    return options;
+  const operation = typeof options.operation === "string" ? options.operation : "";
   if (operation === "create_row") {
-    const normalized = normalizeWriteColumnMap(options2.create_row);
-    return normalized ? { ...options2, create_row: normalized } : options2;
+    const normalized = normalizeWriteColumnMap(options.create_row);
+    return normalized ? { ...options, create_row: normalized } : options;
   }
   if (operation === "update_rows") {
-    const updateRows = options2.update_rows;
+    const updateRows = options.update_rows;
     if (!isObject(updateRows))
-      return options2;
+      return options;
     const normalized = normalizeWriteColumnMap(updateRows.columns);
-    return normalized ? { ...options2, update_rows: { ...updateRows, columns: normalized } } : options2;
+    return normalized ? { ...options, update_rows: { ...updateRows, columns: normalized } } : options;
   }
-  return options2;
+  return options;
 }
 createRequire(import.meta.url);
 var capabilityRequestSchema = external_exports.object({
@@ -1504,16 +1504,16 @@ async function prepare(client, workflowId, versionId, spec, ids) {
       throw new Error(`Duplicate query name: ${name2}`);
     claimedNames.add(name2);
     const requestedOptions = item.role === "agent-model" ? item.options : input.type === "javascript" || input.type === "loop" ? { ...oldQuery?.options ?? {}, code: input.code } : input.options;
-    const options2 = item.role === "agent-model" ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
+    const options = item.role === "agent-model" ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
     if (item.role === "workflow-node" && kind === "runjs")
-      assertWorkflowJavaScript(options2.code, label2);
+      assertWorkflowJavaScript(options.code, label2);
     if (item.role === "workflow-node") {
-      const validation2 = validateQueryOptions(kind, options2, "workflow");
+      const validation2 = validateQueryOptions(kind, options, "workflow");
       if (validation2.errors.length)
         throw new Error(issueMessages(validation2.errors).join(" "));
       warnings.push(...issueMessages(validation2.warnings));
     }
-    writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name: name2, dataSourceId: dataSourceId ?? "", kind, options: options2 });
+    writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name: name2, dataSourceId: dataSourceId ?? "", kind, options });
     if (!existingMapping && !compiled.graph.queries.some((mapping) => mapping.idOnDefinition === item.definition_id))
       compiled.graph.queries.push({ idOnDefinition: item.definition_id, id: `pending:${item.node_id}` });
   }
@@ -1754,8 +1754,8 @@ return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
     const initial = `variables.${snapshot} && variables.${snapshot}.values[${q(f.field)}]`;
     let value = `{{${initial} != null ? variables.${snapshot}.values[${q(f.field)}] : ${f.type === "boolean" ? "false" : "''"}}}`;
     if (f.choices) {
-      const options2 = Array.isArray(f.choices) ? q(f.choices) : `(queries.${f.choices.query}.data || []).map(r=>({label:r[${q(f.choices.label_field)}],value:r[${q(f.choices.value_field)}]}))`;
-      value = `{{(${options2}).map(option=>({label:option.label,value:option.value,visible:true,default:!!variables.${snapshot} && option.value === variables.${snapshot}.values[${q(f.field)}]}))}}`;
+      const options = Array.isArray(f.choices) ? q(f.choices) : `(queries.${f.choices.query}.data || []).map(r=>({label:r[${q(f.choices.label_field)}],value:r[${q(f.choices.value_field)}]}))`;
+      value = `{{(${options}).map(option=>({label:option.label,value:option.value,visible:true,default:!!variables.${snapshot} && option.value === variables.${snapshot}.values[${q(f.field)}]}))}}`;
     }
     const exposedValue = `components.${f.component}.${exposed}`;
     const changedValue = f.choices && f.nullable ? `(${exposedValue} == null ? null : ${exposedValue})` : exposedValue;
@@ -1796,475 +1796,6 @@ return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
       "Draft tracks native change events, not every displayed input value. Programmatic field changes must update the draft explicitly. Browser-verify that all change events fire, including both checkbox transitions."
     ]
   };
-}
-createRequire(import.meta.url);
-var DIALECTS = {
-  postgresql: { quote: "double", limit: "limit", metadata: "postgresql" },
-  mysql: { quote: "backtick", limit: "limit", metadata: "mysql" },
-  mssql: { quote: "bracket", limit: "top", metadata: "mssql" },
-  snowflake: { quote: "double", limit: "limit" },
-  bigquery: { quote: "backtick", limit: "limit" },
-  oracledb: { quote: "double", limit: "fetch" }
-};
-function assertIdentifier(identifier, label2) {
-  if (!identifier.trim() || identifier.length > 256 || /[\0-\x1f\x7f;`"\[\]\\]/.test(identifier)) {
-    throw new Error(`${label2} contains unsupported or unsafe identifier characters.`);
-  }
-}
-function quote(kind, identifier) {
-  assertIdentifier(identifier, "SQL identifier");
-  const style = DIALECTS[kind].quote;
-  if (style === "backtick")
-    return `\`${identifier}\``;
-  if (style === "bracket")
-    return `[${identifier}]`;
-  return `"${identifier}"`;
-}
-function literal(value) {
-  return `'${value.replaceAll("'", "''")}'`;
-}
-function source(kind, schema, table) {
-  return schema ? `${quote(kind, schema)}.${quote(kind, table)}` : quote(kind, table);
-}
-function boundedSelect(kind, projection, from, limit, distinct = false) {
-  const prefix = `SELECT ${distinct ? "DISTINCT " : ""}`;
-  if (DIALECTS[kind].limit === "top")
-    return `${prefix}TOP (${limit}) ${projection} FROM ${from}`;
-  if (DIALECTS[kind].limit === "fetch")
-    return `${prefix}${projection} FROM ${from} FETCH FIRST ${limit} ROWS ONLY`;
-  return `${prefix}${projection} FROM ${from} LIMIT ${limit}`;
-}
-function options(kind, query) {
-  return {
-    mode: "sql",
-    query,
-    ...!["snowflake"].includes(kind) ? { query_params: [] } : {},
-    runOnPageLoad: false
-  };
-}
-function metadataSql(kind, purpose, schema, table) {
-  const metadata = "metadata" in DIALECTS[kind] ? DIALECTS[kind].metadata : void 0;
-  if (!metadata)
-    return void 0;
-  if (purpose !== "views" && !table)
-    throw new Error(`${purpose} discovery requires table.`);
-  if (metadata !== "mysql" && !schema)
-    throw new Error(`${purpose} discovery for ${kind} requires schema.`);
-  const schemaFilter = metadata === "mysql" && !schema ? "DATABASE()" : literal(schema);
-  const tableFilter = table ? literal(table) : void 0;
-  if (metadata === "postgresql") {
-    if (purpose === "primary_keys")
-      return `SELECT kcu.column_name, kcu.ordinal_position, tc.constraint_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.ordinal_position`;
-    if (purpose === "foreign_keys")
-      return `SELECT kcu.constraint_name, kcu.column_name, ccu.table_schema AS referenced_schema, ccu.table_name AS referenced_table, ccu.column_name AS referenced_column FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_catalog = tc.constraint_catalog AND ccu.constraint_schema = tc.constraint_schema AND ccu.constraint_name = tc.constraint_name WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.constraint_name, kcu.ordinal_position`;
-    if (purpose === "indexes")
-      return `SELECT indexname AS index_name, indexdef AS definition FROM pg_indexes WHERE schemaname = ${schemaFilter} AND tablename = ${tableFilter} ORDER BY indexname`;
-    return `SELECT table_schema, table_name AS view_name FROM information_schema.views WHERE table_schema = ${schemaFilter} ORDER BY table_name`;
-  }
-  if (metadata === "mysql") {
-    if (purpose === "primary_keys")
-      return `SELECT column_name, ordinal_position, constraint_name FROM information_schema.key_column_usage WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} AND constraint_name = 'PRIMARY' ORDER BY ordinal_position`;
-    if (purpose === "foreign_keys")
-      return `SELECT constraint_name, column_name, referenced_table_schema AS referenced_schema, referenced_table_name AS referenced_table, referenced_column_name AS referenced_column FROM information_schema.key_column_usage WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} AND referenced_table_name IS NOT NULL ORDER BY constraint_name, ordinal_position`;
-    if (purpose === "indexes")
-      return `SELECT index_name, column_name, non_unique, seq_in_index FROM information_schema.statistics WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} ORDER BY index_name, seq_in_index`;
-    return `SELECT table_schema, table_name AS view_name FROM information_schema.views WHERE table_schema = ${schemaFilter} ORDER BY table_name`;
-  }
-  if (purpose === "primary_keys")
-    return `SELECT kcu.COLUMN_NAME AS column_name, kcu.ORDINAL_POSITION AS ordinal_position, tc.CONSTRAINT_NAME AS constraint_name FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA AND tc.TABLE_NAME = kcu.TABLE_NAME WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY' AND tc.TABLE_SCHEMA = ${schemaFilter} AND tc.TABLE_NAME = ${tableFilter} ORDER BY kcu.ORDINAL_POSITION`;
-  if (purpose === "foreign_keys")
-    return `SELECT fk.name AS constraint_name, pc.name AS column_name, rs.name AS referenced_schema, rt.name AS referenced_table, rc.name AS referenced_column FROM sys.foreign_key_columns fkc JOIN sys.foreign_keys fk ON fk.object_id = fkc.constraint_object_id JOIN sys.tables pt ON pt.object_id = fkc.parent_object_id JOIN sys.schemas ps ON ps.schema_id = pt.schema_id JOIN sys.columns pc ON pc.object_id = pt.object_id AND pc.column_id = fkc.parent_column_id JOIN sys.tables rt ON rt.object_id = fkc.referenced_object_id JOIN sys.schemas rs ON rs.schema_id = rt.schema_id JOIN sys.columns rc ON rc.object_id = rt.object_id AND rc.column_id = fkc.referenced_column_id WHERE ps.name = ${schemaFilter} AND pt.name = ${tableFilter} ORDER BY fk.name, fkc.constraint_column_id`;
-  if (purpose === "indexes")
-    return `SELECT i.name AS index_name, c.name AS column_name, i.is_unique, ic.key_ordinal FROM sys.indexes i JOIN sys.tables t ON t.object_id = i.object_id JOIN sys.schemas s ON s.schema_id = t.schema_id JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id WHERE s.name = ${schemaFilter} AND t.name = ${tableFilter} AND i.is_hypothetical = 0 ORDER BY i.name, ic.key_ordinal`;
-  return `SELECT TABLE_SCHEMA AS table_schema, TABLE_NAME AS view_name FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = ${schemaFilter} ORDER BY TABLE_NAME`;
-}
-function boundMetadata(kind, sql) {
-  if (DIALECTS[kind].limit === "top")
-    return sql.replace(/^SELECT\s+/i, "SELECT TOP (100) ");
-  if (DIALECTS[kind].limit === "fetch")
-    return `${sql} FETCH FIRST 100 ROWS ONLY`;
-  return `${sql} LIMIT 100`;
-}
-function safeName(value) {
-  return value.replace(/[^A-Za-z0-9_]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "table";
-}
-function prepareSqlDiscoveryQueries(args) {
-  if (!(args.kind in DIALECTS))
-    throw new Error(`Datasource kind "${args.kind}" is not supported by SQL discovery.`);
-  const kind = args.kind;
-  if (args.schema)
-    assertIdentifier(args.schema, "schema");
-  if (args.table)
-    assertIdentifier(args.table, "table");
-  for (const column of [...args.columns ?? [], ...args.distinctColumns ?? []])
-    assertIdentifier(column, "column");
-  const tablePurposes = args.purposes.filter((purpose) => purpose !== "views");
-  if (tablePurposes.length && !args.table)
-    throw new Error("Table-scoped SQL discovery requires table.");
-  if (args.purposes.includes("preview") && !args.columns?.length) {
-    throw new Error("Preview discovery requires one or more explicit columns; SELECT * is never generated.");
-  }
-  if (args.purposes.includes("distinct") && !args.distinctColumns?.length) {
-    throw new Error("Distinct discovery requires one or more explicit distinct_columns.");
-  }
-  const from = args.table ? source(kind, args.schema, args.table) : void 0;
-  const prefix = safeName(args.namePrefix ?? args.table ?? args.schema ?? "schema");
-  const queries = [];
-  const unsupported = [];
-  for (const purpose of [...new Set(args.purposes)]) {
-    let sql;
-    if (purpose === "count")
-      sql = `SELECT COUNT(*) AS row_count FROM ${from}`;
-    else if (purpose === "preview") {
-      sql = boundedSelect(kind, args.columns.map((column) => quote(kind, column)).join(", "), from, args.limit);
-    } else if (purpose === "distinct") {
-      sql = boundedSelect(kind, args.distinctColumns.map((column) => quote(kind, column)).join(", "), from, args.limit, true);
-    } else {
-      sql = metadataSql(kind, purpose, args.schema, args.table);
-      if (!sql) {
-        unsupported.push({
-          purpose,
-          reason: `${args.kind} does not expose a verified ${purpose} selector and MCP has no curated read-only SQL contract for it yet.`
-        });
-        continue;
-      }
-      sql = boundMetadata(kind, sql);
-    }
-    queries.push({
-      purpose,
-      name: `${prefix}_${purpose}`,
-      datasource_id: args.datasourceId,
-      options: options(kind, sql)
-    });
-  }
-  return { queries, unsupported };
-}
-createRequire(import.meta.url);
-var member = (n) => n?.type === "MemberExpression" || n?.type === "OptionalMemberExpression";
-var key = (n) => n.computed ? n.property?.type === "StringLiteral" ? n.property.value : void 0 : n.property?.name;
-var rootRef = (n) => {
-  if (!member(n) || !["components", "queries"].includes(n.object?.name) || n.object?.type !== "Identifier")
-    return;
-  const k = key(n);
-  return k ? `${n.object.name}.${k}` : void 0;
-};
-function walk(n, visit) {
-  if (!n || typeof n !== "object")
-    return;
-  if (Array.isArray(n)) {
-    for (const child of n)
-      walk(child, visit);
-    return;
-  }
-  visit(n);
-  for (const [key3, value] of Object.entries(n))
-    if (!["loc", "extra", "comments"].includes(key3))
-      walk(value, visit);
-}
-function lintUntrackedReactiveBindings(value, label2) {
-  if (Array.isArray(value))
-    return value.flatMap((v) => lintUntrackedReactiveBindings(v, label2));
-  if (value && typeof value === "object")
-    return Object.values(value).flatMap((v) => lintUntrackedReactiveBindings(v, label2));
-  if (typeof value !== "string")
-    return [];
-  const match = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
-  if (!match)
-    return [];
-  let ast;
-  try {
-    ast = parseExpression(match[1]);
-  } catch {
-    return [];
-  }
-  const tracked = /* @__PURE__ */ new Set(), suspects = /* @__PURE__ */ new Set();
-  let shadowed = false;
-  walk(ast, (n) => {
-    if (n.params && /"(?:components|queries)"/.test(JSON.stringify(n.params)) || n.type === "VariableDeclarator" && /"(?:components|queries)"/.test(JSON.stringify(n.id)))
-      shadowed = true;
-    if (!member(n))
-      return;
-    const direct = rootRef(n.object);
-    if (direct && key(n))
-      tracked.add(direct);
-    if (n.object?.type === "LogicalExpression" && ["||", "??"].includes(n.object.operator)) {
-      const wrapped = rootRef(n.object.left);
-      if (wrapped && key(n))
-        suspects.add(wrapped);
-    }
-  });
-  if (shadowed)
-    return [];
-  return [...suspects].filter((ref) => !tracked.has(ref)).map((ref) => `${label2}: a logical fallback wraps ${ref} before its exposed value is read. ToolJet cannot track this dependency, so filters/prefill may stay stale. Keep a complete optional chain, e.g. ${ref}?.value (use the actual exposed property). Valid JavaScript alone does not guarantee reactive updates. No expression was rewritten.`);
-}
-function lintQueryArrayMutations(value, label2) {
-  if (Array.isArray(value))
-    return value.flatMap((v) => lintQueryArrayMutations(v, label2));
-  if (value && typeof value === "object")
-    return Object.values(value).flatMap((v) => lintQueryArrayMutations(v, label2));
-  if (typeof value !== "string")
-    return [];
-  const match = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
-  if (!match)
-    return [];
-  let ast;
-  try {
-    ast = parseExpression(match[1]);
-  } catch {
-    return [];
-  }
-  let shadowed = false;
-  const mutations = /* @__PURE__ */ new Set();
-  const queryData = (n) => {
-    if (n?.type === "LogicalExpression" && ["||", "??"].includes(n.operator) && n.right?.type === "ArrayExpression" && n.right.elements.length === 0)
-      return queryData(n.left);
-    const ref = member(n) && key(n) === "data" ? rootRef(n.object) : void 0;
-    return ref?.startsWith("queries.") ? ref : void 0;
-  };
-  walk(ast, (n) => {
-    if (n.params && /"queries"/.test(JSON.stringify(n.params)) || n.type === "VariableDeclarator" && /"queries"/.test(JSON.stringify(n.id)))
-      shadowed = true;
-    if (!["CallExpression", "OptionalCallExpression"].includes(n.type) || !member(n.callee) || !["sort", "reverse"].includes(key(n.callee)))
-      return;
-    const ref = queryData(n.callee.object);
-    if (ref)
-      mutations.add(`${ref}.data.${key(n.callee)}`);
-  });
-  if (shadowed)
-    return [];
-  return [...mutations].map((ref) => `${label2}: ${ref}() mutates the shared query array inside a display binding. ToolJet state can be frozen, so this may throw and render an empty table even when the query has rows. Copy first with slice() or a spread, then sort/reverse the copy; a prior map/filter already creates a new array. No expression was rewritten.`);
-}
-var node = (v) => v !== null && typeof v === "object" && !Array.isArray(v) ? v : void 0;
-var member2 = (n) => n?.type === "MemberExpression" || n?.type === "OptionalMemberExpression";
-function key2(n) {
-  if (!n)
-    return;
-  const p = node(n.property ?? n.key);
-  if (!n.computed && p?.type === "Identifier")
-    return String(p.name);
-  if (p?.type === "StringLiteral")
-    return String(p.value);
-}
-function expression(value) {
-  if (typeof value !== "string")
-    return;
-  const m = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
-  if (!m)
-    return;
-  try {
-    return parseExpression(m[1]);
-  } catch {
-    return;
-  }
-}
-function walk2(value, visit) {
-  if (Array.isArray(value)) {
-    for (const child of value)
-      walk2(child, visit);
-    return;
-  }
-  const n = node(value);
-  if (!n)
-    return;
-  visit(n);
-  for (const [k, child] of Object.entries(n)) {
-    if (k !== "loc" && k !== "extra" && k !== "comments")
-      walk2(child, visit);
-  }
-}
-function projectedFields(c) {
-  if (c.type !== "Table")
-    return;
-  const raw = c.properties?.data;
-  const root = expression(node(raw) && "value" in node(raw) ? node(raw).value : raw);
-  if (root?.type !== "CallExpression")
-    return;
-  const callee = node(root.callee);
-  if (!member2(callee) || key2(callee) !== "map")
-    return;
-  const args = root.arguments;
-  if (!Array.isArray(args) || args.length !== 1)
-    return;
-  const callback = node(args[0]);
-  if (callback?.type !== "ArrowFunctionExpression")
-    return;
-  const body = node(callback.body);
-  if (body?.type !== "ObjectExpression" || !Array.isArray(body.properties))
-    return;
-  const keys = /* @__PURE__ */ new Map();
-  for (const prop of body.properties) {
-    const p = node(prop);
-    if (p?.type !== "ObjectProperty" || p.computed)
-      return;
-    const name2 = key2(p);
-    if (name2 === void 0 || name2 === "__proto__")
-      return;
-    keys.set(name2, node(p.value));
-  }
-  return keys;
-}
-function lintSelectedRowProjections(components, extraSources = []) {
-  const tables = /* @__PURE__ */ new Map();
-  for (const c of components) {
-    if (!c.name)
-      continue;
-    tables.set(c.name, tables.has(c.name) ? void 0 : projectedFields(c));
-  }
-  const aliases = /* @__PURE__ */ new Map();
-  const singleAlias = (alias) => {
-    const names = aliases.get(alias);
-    return names?.size === 1 ? [...names][0] : void 0;
-  };
-  for (const source2 of extraSources) {
-    const action = node(source2.value);
-    if (action?.actionId !== "set-custom-variable" || typeof action.key !== "string")
-      continue;
-    const selected = expression(action.value);
-    if (action.value === null || selected?.type === "NullLiteral")
-      continue;
-    const table = node(selected?.object), namespace = node(table?.object);
-    const name2 = member2(selected) && key2(selected) === "selectedRow" && member2(table) && namespace?.type === "Identifier" && namespace.name === "components" ? key2(table) : void 0;
-    if (!name2)
-      aliases.set(action.key, void 0);
-    else if (!aliases.has(action.key))
-      aliases.set(action.key, /* @__PURE__ */ new Set([name2]));
-    else
-      aliases.get(action.key)?.add(name2);
-  }
-  if (extraSources.some((s) => /actions\s*(?:\.\s*(?:setVariable|unsetVariable)|\[\s*["'](?:setVariable|unsetVariable)["']\s*\])/.test(JSON.stringify(s.value))))
-    aliases.clear();
-  const warnings = /* @__PURE__ */ new Set();
-  const aliasOmissions = /* @__PURE__ */ new Map();
-  function inspect(value, label2) {
-    if (Array.isArray(value)) {
-      for (const v of value)
-        inspect(v, label2);
-      return;
-    }
-    if (node(value)) {
-      for (const v of Object.values(node(value)))
-        inspect(v, label2);
-      return;
-    }
-    const root = expression(value);
-    if (!root)
-      return;
-    let shadowed = false;
-    walk2(root, (n) => {
-      if (Array.isArray(n.params) && /"(?:components|variables)"/.test(JSON.stringify(n.params)))
-        shadowed = true;
-      if (n.type === "VariableDeclarator" && /"(?:components|variables)"/.test(JSON.stringify(n.id)))
-        shadowed = true;
-    });
-    if (shadowed)
-      return;
-    walk2(root, (n) => {
-      if (!member2(n))
-        return;
-      const field = key2(n), selection = node(n.object), table = node(selection?.object), namespace = node(table?.object);
-      if (field && member2(selection) && table?.type === "Identifier" && table.name === "variables") {
-        const alias = key2(selection), names = alias ? aliases.get(alias) : void 0;
-        for (const name22 of names ?? []) {
-          const fields = tables.get(name22);
-          if (fields && !fields.has(field) && !["toString", "valueOf", "constructor", "hasOwnProperty", "__proto__", "isPrototypeOf", "propertyIsEnumerable", "toLocaleString"].includes(field)) {
-            const id = JSON.stringify([alias, name22]);
-            if (!aliasOmissions.has(id))
-              aliasOmissions.set(id, { alias, table: name22, fields: /* @__PURE__ */ new Set() });
-            aliasOmissions.get(id).fields.add(field);
-          }
-        }
-      }
-      if (!field || !member2(selection) || key2(selection) !== "selectedRow" || !member2(table) || namespace?.type !== "Identifier" || namespace.name !== "components")
-        return;
-      const name2 = key2(table), keys = name2 ? tables.get(name2) : void 0;
-      if (!name2 || !keys || keys.has(field) || ["toString", "valueOf", "constructor", "hasOwnProperty", "__proto__", "isPrototypeOf", "propertyIsEnumerable", "toLocaleString"].includes(field))
-        return;
-      warnings.add(`${label2}: reads components.${name2}.selectedRow.${field}, but Table "${name2}" has a closed map projection that omits "${field}". Preserve the raw field in the row (hide its column if needed), or look up the source record by its stable id. Check edit/review prefill and avoid overwriting omitted values with blanks. If the missing-field fallback is intentional, no change is required.`);
-    });
-  }
-  for (const c of components) {
-    const value = { p: c.properties, s: c.styles }, label2 = `Component "${c.name ?? c.id ?? "?"}"`;
-    inspect(value, label2);
-    for (const warning of lintUntrackedReactiveBindings(value, label2))
-      warnings.add(warning);
-    for (const warning of lintQueryArrayMutations(value, label2))
-      warnings.add(warning);
-  }
-  for (const source2 of extraSources)
-    inspect(source2.value, source2.label);
-  for (const { alias, table, fields } of aliasOmissions.values()) {
-    warnings.add(`Bindings read ${[...fields].map((field) => `variables.${alias}.${field}`).join(", ")}; an event assigns that variable from Table "${table}" selectedRow, whose closed map projection omits ${[...fields].map((field) => `"${field}"`).join(", ")}. This edit can overwrite missing values with a blank/false default. Preserve raw fields or resolve the raw record by stable id before opening the editor; generate_edit_contract can provide that snapshot. Unknown runtime writes are not certified by this advisory.`);
-  }
-  const unwrap2 = (value) => node(value) && "value" in node(value) ? node(value).value : value;
-  for (const c of components) {
-    if (!["TextInput", "TextArea", "EmailInput", "PhoneInput"].includes(c.type ?? ""))
-      continue;
-    let selected = expression(unwrap2(c.properties?.value));
-    if (selected?.type === "LogicalExpression" && ["||", "??"].includes(String(selected.operator)))
-      selected = node(selected.left);
-    if (!member2(selected))
-      continue;
-    const field = key2(selected), selection = node(selected?.object), owner = node(selection?.object), namespace = node(owner?.object);
-    if (!field || !member2(selection))
-      continue;
-    const tableName = owner?.type === "Identifier" && owner.name === "variables" ? singleAlias(key2(selection) ?? "") : key2(selection) === "selectedRow" && member2(owner) && namespace?.type === "Identifier" && namespace.name === "components" ? key2(owner) : void 0;
-    const projected = tableName ? tables.get(tableName)?.get(field) : void 0;
-    if (projected?.type !== "LogicalExpression" || !["||", "??"].includes(String(projected.operator)))
-      continue;
-    const fallback = node(projected.right);
-    if (fallback?.type !== "StringLiteral" || !String(fallback.value).trim())
-      continue;
-    warnings.add(`Component "${c.name ?? c.id ?? "?"}": editable value reads "${field}" from Table "${tableName}", whose projection replaces missing raw text with a non-empty display fallback. Saving another field can persist that label as real data. Keep raw text separate from display labels, or resolve the raw record by stable id; preserve untouched null/empty values. This is advisory, not a claim that every fallback is unintended.`);
-  }
-  for (const c of components) {
-    const property3 = c.type === "DatePickerV2" ? "defaultValue" : ["NumberInput", "CurrencyInput"].includes(c.type ?? "") ? "value" : void 0;
-    if (!property3)
-      continue;
-    let selected = expression(unwrap2(c.properties?.[property3]));
-    if (selected?.type === "LogicalExpression" && ["||", "??"].includes(String(selected.operator)))
-      selected = node(selected.left);
-    if (!member2(selected))
-      continue;
-    const field = key2(selected), selection = node(selected?.object), table = node(selection?.object), namespace = node(table?.object);
-    if (!field || !member2(selection))
-      continue;
-    const tableName = table?.type === "Identifier" && table.name === "variables" ? singleAlias(key2(selection) ?? "") : key2(selection) === "selectedRow" && member2(table) && namespace?.type === "Identifier" && namespace.name === "components" ? key2(table) : void 0;
-    const value = tableName ? tables.get(tableName)?.get(field) : void 0;
-    if (!value)
-      continue;
-    const formats = [];
-    let localizedNumber = false;
-    walk2(value, (n) => {
-      if (n.type !== "CallExpression")
-        return;
-      const callee = node(n.callee);
-      if (!member2(callee))
-        return;
-      if (key2(callee) === "toLocaleString" || key2(callee) === "toFixed")
-        localizedNumber = true;
-      const args = n.arguments;
-      if (key2(callee) === "format" && Array.isArray(args) && node(args[0])?.type === "StringLiteral")
-        formats.push(String(node(args[0]).value));
-    });
-    const expected = unwrap2(c.properties?.dateFormat) ?? "DD/MM/YYYY";
-    if (c.type === "DatePickerV2" && member2(value) && typeof expected === "string" && !expected.includes("{{")) {
-      const source2 = components.find((t) => t.type === "Table" && t.name === tableName);
-      const columns = unwrap2(source2?.properties?.columns);
-      const matches = Array.isArray(columns) ? columns.filter((col) => {
-        const entry = node(col);
-        return entry?.key === field && entry.columnType === "datepicker";
-      }) : [];
-      const parseFormat = matches.length === 1 ? node(matches[0])?.parseDateFormat : void 0;
-      const yearLast = /^(?:D{1,2}[^A-Za-z]+M{1,4}|M{1,4}[^A-Za-z]+D{1,2})[^A-Za-z]+Y{2,4}$/.test(expected);
-      if (typeof parseFormat === "string" && parseFormat.startsWith("YYYY-MM-DD") && !parseFormat.includes("{{") && yearLast) {
-        warnings.add(`Component "${c.name ?? c.id ?? "?"}": defaultValue reads raw ${tableName}.selectedRow.${field}; that Table column declares parseDateFormat "${parseFormat}", but the DatePickerV2 parses its default with dateFormat "${expected}". A name-only edit can silently change the date. Match the editor's input format or explicitly format the raw default before opening it; table display formatting does not convert selectedRow. Advisory only: verify the actual source value before changing it.`);
-      }
-    }
-    if (c.type === "DatePickerV2" && formats.some((f) => typeof expected === "string" && !expected.includes("{{") && f !== expected) || c.type !== "DatePickerV2" && localizedNumber) {
-      warnings.add(`Component "${c.name ?? c.id ?? "?"}": ${property3} reads display-formatted ${tableName}.selectedRow.${field} into a typed ${c.type} editor${c.type === "DatePickerV2" ? ` (dateFormat ${String(expected)})` : ""}. Look up the raw record by stable id, or explicitly convert to the editor's input format. Preserve untouched fields on save; generate_edit_contract can provide raw-record defaults and changed-field-only payloads.`);
-    }
-  }
-  return [...warnings];
 }
 createRequire(import.meta.url);
 var VOID_TAGS = /* @__PURE__ */ new Set(["br", "img", "hr", "input", "meta", "link", "source", "wbr", "col"]);
@@ -2846,8 +2377,8 @@ function lintTextFormat(c) {
   const effective = typeof format === "string" && format ? format : "html";
   if (effective === "markdown")
     return [];
-  const literal2 = text.replace(/\{\{[\s\S]*?\}\}/g, " ");
-  if (!MARKDOWN_SIGNS.test(literal2))
+  const literal = text.replace(/\{\{[\s\S]*?\}\}/g, " ");
+  if (!MARKDOWN_SIGNS.test(literal))
     return [];
   return [
     `Text "${label(c)}": the text uses markdown (a "#" heading, **bold**, a list or a link) but textFormat is "${effective}", so it renders literally. Set properties.textFormat.value = "markdown", or write the heading as HTML / plain text.`
@@ -2881,8 +2412,8 @@ function queryTriggers(summary) {
   const resolve = (ref) => typeof ref === "string" ? byId.get(ref) ?? byName.get(ref) : void 0;
   const triggers = /* @__PURE__ */ new Map();
   for (const q of summary.queries) {
-    const options2 = q.options && typeof q.options === "object" ? q.options : {};
-    const automatic = truthy(propVal(options2, "runOnPageLoad")) || truthy(propVal(options2, "runOnDependencyChange"));
+    const options = q.options && typeof q.options === "object" ? q.options : {};
+    const automatic = truthy(propVal(options, "runOnPageLoad")) || truthy(propVal(options, "runOnDependencyChange"));
     triggers.set(q.id, { automatic, manual: [] });
   }
   const chains = [];
@@ -2909,9 +2440,9 @@ function queryTriggers(summary) {
   while (changed) {
     changed = false;
     for (const [sourceId, targetId] of chains) {
-      const source2 = triggers.get(sourceId);
+      const source = triggers.get(sourceId);
       const target = triggers.get(targetId);
-      if (source2?.automatic && target && !target.automatic) {
+      if (source?.automatic && target && !target.automatic) {
         target.automatic = true;
         changed = true;
       }
@@ -2961,8 +2492,8 @@ var TOOLJETDB_WRITES = /* @__PURE__ */ new Set(["create_row", "update_rows", "de
 function lintAutomaticWrites(summary) {
   const triggers = queryTriggers(summary);
   return summary.queries.flatMap((q) => {
-    const options2 = q.options && typeof q.options === "object" ? q.options : {};
-    const op = String(options2.operation ?? "");
+    const options = q.options && typeof q.options === "object" ? q.options : {};
+    const op = String(options.operation ?? "");
     if (q.kind !== "tooljetdb" || !TOOLJETDB_WRITES.has(op) || !triggers.get(q.id)?.automatic)
       return [];
     return [`Query "${q.name ?? q.id}" writes (${op}) and runs on its own when the page opens, so every visit changes the data. Run it from a user action instead.`];
@@ -3124,24 +2655,24 @@ function lintHtmlRootSurface(c, surfaceAround) {
 }
 var DATA_BOUND_FOR_REFS = /* @__PURE__ */ new Set(["Table", "ListView", "Chart", "Kanban", "Statistics", "Text", "Html"]);
 var COMPONENT_REF = /components(?:\.([A-Za-z_$][\w$]*)|\[\s*(['"])((?:(?!\2).)+)\2\s*\])(\??\.)(value|selectedRow|selectedRowId|selectedRows|isValid|searchText|selectedOptionLabel|checked|filteredData|text)\b/g;
-function chartExpressionSurface(source2) {
+function chartExpressionSurface(source) {
   const stack = [];
-  let quote2 = "";
+  let quote = "";
   let text = "";
   let lastGroupStart = -1;
-  for (let i = 0; i < source2.length; i++) {
-    const ch = source2[i];
-    if (quote2) {
+  for (let i = 0; i < source.length; i++) {
+    const ch = source[i];
+    if (quote) {
       if (ch === "\\")
         i++;
-      else if (ch === quote2)
-        quote2 = "";
+      else if (ch === quote)
+        quote = "";
       continue;
     }
     if (ch === "/" || ch === "`")
       return void 0;
     if (ch === "'" || ch === '"') {
-      quote2 = ch;
+      quote = ch;
       if (!stack.length)
         text += "?";
       continue;
@@ -3160,7 +2691,7 @@ function chartExpressionSurface(source2) {
     } else if (!stack.length)
       text += ch;
   }
-  return quote2 || stack.length ? void 0 : { text, lastGroupStart };
+  return quote || stack.length ? void 0 : { text, lastGroupStart };
 }
 function finalChartPointKeys(value) {
   const binding = /^\s*\{\{([\s\S]*)\}\}\s*$/.exec(value);
@@ -3266,6 +2797,333 @@ function lintUnguardedComponentRefs(c) {
   }
   return errors;
 }
+createRequire(import.meta.url);
+var member = (n) => n?.type === "MemberExpression" || n?.type === "OptionalMemberExpression";
+var key = (n) => n.computed ? n.property?.type === "StringLiteral" ? n.property.value : void 0 : n.property?.name;
+var rootRef = (n) => {
+  if (!member(n) || !["components", "queries"].includes(n.object?.name) || n.object?.type !== "Identifier")
+    return;
+  const k = key(n);
+  return k ? `${n.object.name}.${k}` : void 0;
+};
+function walk(n, visit) {
+  if (!n || typeof n !== "object")
+    return;
+  if (Array.isArray(n)) {
+    for (const child of n)
+      walk(child, visit);
+    return;
+  }
+  visit(n);
+  for (const [key3, value] of Object.entries(n))
+    if (!["loc", "extra", "comments"].includes(key3))
+      walk(value, visit);
+}
+function lintUntrackedReactiveBindings(value, label2) {
+  if (Array.isArray(value))
+    return value.flatMap((v) => lintUntrackedReactiveBindings(v, label2));
+  if (value && typeof value === "object")
+    return Object.values(value).flatMap((v) => lintUntrackedReactiveBindings(v, label2));
+  if (typeof value !== "string")
+    return [];
+  const match = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
+  if (!match)
+    return [];
+  let ast;
+  try {
+    ast = parseExpression(match[1]);
+  } catch {
+    return [];
+  }
+  const tracked = /* @__PURE__ */ new Set(), suspects = /* @__PURE__ */ new Set();
+  let shadowed = false;
+  walk(ast, (n) => {
+    if (n.params && /"(?:components|queries)"/.test(JSON.stringify(n.params)) || n.type === "VariableDeclarator" && /"(?:components|queries)"/.test(JSON.stringify(n.id)))
+      shadowed = true;
+    if (!member(n))
+      return;
+    const direct = rootRef(n.object);
+    if (direct && key(n))
+      tracked.add(direct);
+    if (n.object?.type === "LogicalExpression" && ["||", "??"].includes(n.object.operator)) {
+      const wrapped = rootRef(n.object.left);
+      if (wrapped && key(n))
+        suspects.add(wrapped);
+    }
+  });
+  if (shadowed)
+    return [];
+  return [...suspects].filter((ref) => !tracked.has(ref)).map((ref) => `${label2}: a logical fallback wraps ${ref} before its exposed value is read. ToolJet cannot track this dependency, so filters/prefill may stay stale. Keep a complete optional chain, e.g. ${ref}?.value (use the actual exposed property). Valid JavaScript alone does not guarantee reactive updates. No expression was rewritten.`);
+}
+function lintQueryArrayMutations(value, label2) {
+  if (Array.isArray(value))
+    return value.flatMap((v) => lintQueryArrayMutations(v, label2));
+  if (value && typeof value === "object")
+    return Object.values(value).flatMap((v) => lintQueryArrayMutations(v, label2));
+  if (typeof value !== "string")
+    return [];
+  const match = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
+  if (!match)
+    return [];
+  let ast;
+  try {
+    ast = parseExpression(match[1]);
+  } catch {
+    return [];
+  }
+  let shadowed = false;
+  const mutations = /* @__PURE__ */ new Set();
+  const queryData = (n) => {
+    if (n?.type === "LogicalExpression" && ["||", "??"].includes(n.operator) && n.right?.type === "ArrayExpression" && n.right.elements.length === 0)
+      return queryData(n.left);
+    const ref = member(n) && key(n) === "data" ? rootRef(n.object) : void 0;
+    return ref?.startsWith("queries.") ? ref : void 0;
+  };
+  walk(ast, (n) => {
+    if (n.params && /"queries"/.test(JSON.stringify(n.params)) || n.type === "VariableDeclarator" && /"queries"/.test(JSON.stringify(n.id)))
+      shadowed = true;
+    if (!["CallExpression", "OptionalCallExpression"].includes(n.type) || !member(n.callee) || !["sort", "reverse"].includes(key(n.callee)))
+      return;
+    const ref = queryData(n.callee.object);
+    if (ref)
+      mutations.add(`${ref}.data.${key(n.callee)}`);
+  });
+  if (shadowed)
+    return [];
+  return [...mutations].map((ref) => `${label2}: ${ref}() mutates the shared query array inside a display binding. ToolJet state can be frozen, so this may throw and render an empty table even when the query has rows. Copy first with slice() or a spread, then sort/reverse the copy; a prior map/filter already creates a new array. No expression was rewritten.`);
+}
+var node = (v) => v !== null && typeof v === "object" && !Array.isArray(v) ? v : void 0;
+var member2 = (n) => n?.type === "MemberExpression" || n?.type === "OptionalMemberExpression";
+function key2(n) {
+  if (!n)
+    return;
+  const p = node(n.property ?? n.key);
+  if (!n.computed && p?.type === "Identifier")
+    return String(p.name);
+  if (p?.type === "StringLiteral")
+    return String(p.value);
+}
+function expression(value) {
+  if (typeof value !== "string")
+    return;
+  const m = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
+  if (!m)
+    return;
+  try {
+    return parseExpression(m[1]);
+  } catch {
+    return;
+  }
+}
+function walk2(value, visit) {
+  if (Array.isArray(value)) {
+    for (const child of value)
+      walk2(child, visit);
+    return;
+  }
+  const n = node(value);
+  if (!n)
+    return;
+  visit(n);
+  for (const [k, child] of Object.entries(n)) {
+    if (k !== "loc" && k !== "extra" && k !== "comments")
+      walk2(child, visit);
+  }
+}
+function projectedFields(c) {
+  if (c.type !== "Table")
+    return;
+  const raw = c.properties?.data;
+  const root = expression(node(raw) && "value" in node(raw) ? node(raw).value : raw);
+  if (root?.type !== "CallExpression")
+    return;
+  const callee = node(root.callee);
+  if (!member2(callee) || key2(callee) !== "map")
+    return;
+  const args = root.arguments;
+  if (!Array.isArray(args) || args.length !== 1)
+    return;
+  const callback = node(args[0]);
+  if (callback?.type !== "ArrowFunctionExpression")
+    return;
+  const body = node(callback.body);
+  if (body?.type !== "ObjectExpression" || !Array.isArray(body.properties))
+    return;
+  const keys = /* @__PURE__ */ new Map();
+  for (const prop of body.properties) {
+    const p = node(prop);
+    if (p?.type !== "ObjectProperty" || p.computed)
+      return;
+    const name2 = key2(p);
+    if (name2 === void 0 || name2 === "__proto__")
+      return;
+    keys.set(name2, node(p.value));
+  }
+  return keys;
+}
+function lintSelectedRowProjections(components, extraSources = []) {
+  const tables = /* @__PURE__ */ new Map();
+  for (const c of components) {
+    if (!c.name)
+      continue;
+    tables.set(c.name, tables.has(c.name) ? void 0 : projectedFields(c));
+  }
+  const aliases = /* @__PURE__ */ new Map();
+  const singleAlias = (alias) => {
+    const names = aliases.get(alias);
+    return names?.size === 1 ? [...names][0] : void 0;
+  };
+  for (const source of extraSources) {
+    const action = node(source.value);
+    if (action?.actionId !== "set-custom-variable" || typeof action.key !== "string")
+      continue;
+    const selected = expression(action.value);
+    if (action.value === null || selected?.type === "NullLiteral")
+      continue;
+    const table = node(selected?.object), namespace = node(table?.object);
+    const name2 = member2(selected) && key2(selected) === "selectedRow" && member2(table) && namespace?.type === "Identifier" && namespace.name === "components" ? key2(table) : void 0;
+    if (!name2)
+      aliases.set(action.key, void 0);
+    else if (!aliases.has(action.key))
+      aliases.set(action.key, /* @__PURE__ */ new Set([name2]));
+    else
+      aliases.get(action.key)?.add(name2);
+  }
+  if (extraSources.some((s) => /actions\s*(?:\.\s*(?:setVariable|unsetVariable)|\[\s*["'](?:setVariable|unsetVariable)["']\s*\])/.test(JSON.stringify(s.value))))
+    aliases.clear();
+  const warnings = /* @__PURE__ */ new Set();
+  const aliasOmissions = /* @__PURE__ */ new Map();
+  function inspect(value, label2) {
+    if (Array.isArray(value)) {
+      for (const v of value)
+        inspect(v, label2);
+      return;
+    }
+    if (node(value)) {
+      for (const v of Object.values(node(value)))
+        inspect(v, label2);
+      return;
+    }
+    const root = expression(value);
+    if (!root)
+      return;
+    let shadowed = false;
+    walk2(root, (n) => {
+      if (Array.isArray(n.params) && /"(?:components|variables)"/.test(JSON.stringify(n.params)))
+        shadowed = true;
+      if (n.type === "VariableDeclarator" && /"(?:components|variables)"/.test(JSON.stringify(n.id)))
+        shadowed = true;
+    });
+    if (shadowed)
+      return;
+    walk2(root, (n) => {
+      if (!member2(n))
+        return;
+      const field = key2(n), selection = node(n.object), table = node(selection?.object), namespace = node(table?.object);
+      if (field && member2(selection) && table?.type === "Identifier" && table.name === "variables") {
+        const alias = key2(selection), names = alias ? aliases.get(alias) : void 0;
+        for (const name22 of names ?? []) {
+          const fields = tables.get(name22);
+          if (fields && !fields.has(field) && !["toString", "valueOf", "constructor", "hasOwnProperty", "__proto__", "isPrototypeOf", "propertyIsEnumerable", "toLocaleString"].includes(field)) {
+            const id = JSON.stringify([alias, name22]);
+            if (!aliasOmissions.has(id))
+              aliasOmissions.set(id, { alias, table: name22, fields: /* @__PURE__ */ new Set() });
+            aliasOmissions.get(id).fields.add(field);
+          }
+        }
+      }
+      if (!field || !member2(selection) || key2(selection) !== "selectedRow" || !member2(table) || namespace?.type !== "Identifier" || namespace.name !== "components")
+        return;
+      const name2 = key2(table), keys = name2 ? tables.get(name2) : void 0;
+      if (!name2 || !keys || keys.has(field) || ["toString", "valueOf", "constructor", "hasOwnProperty", "__proto__", "isPrototypeOf", "propertyIsEnumerable", "toLocaleString"].includes(field))
+        return;
+      warnings.add(`${label2}: reads components.${name2}.selectedRow.${field}, but Table "${name2}" has a closed map projection that omits "${field}". Preserve the raw field in the row (hide its column if needed), or look up the source record by its stable id. Check edit/review prefill and avoid overwriting omitted values with blanks. If the missing-field fallback is intentional, no change is required.`);
+    });
+  }
+  for (const c of components) {
+    const value = { p: c.properties, s: c.styles }, label2 = `Component "${c.name ?? c.id ?? "?"}"`;
+    inspect(value, label2);
+    for (const warning of lintUntrackedReactiveBindings(value, label2))
+      warnings.add(warning);
+    for (const warning of lintQueryArrayMutations(value, label2))
+      warnings.add(warning);
+  }
+  for (const source of extraSources)
+    inspect(source.value, source.label);
+  for (const { alias, table, fields } of aliasOmissions.values()) {
+    warnings.add(`Bindings read ${[...fields].map((field) => `variables.${alias}.${field}`).join(", ")}; an event assigns that variable from Table "${table}" selectedRow, whose closed map projection omits ${[...fields].map((field) => `"${field}"`).join(", ")}. This edit can overwrite missing values with a blank/false default. Preserve raw fields or resolve the raw record by stable id before opening the editor; generate_edit_contract can provide that snapshot. Unknown runtime writes are not certified by this advisory.`);
+  }
+  const unwrap2 = (value) => node(value) && "value" in node(value) ? node(value).value : value;
+  for (const c of components) {
+    if (!["TextInput", "TextArea", "EmailInput", "PhoneInput"].includes(c.type ?? ""))
+      continue;
+    let selected = expression(unwrap2(c.properties?.value));
+    if (selected?.type === "LogicalExpression" && ["||", "??"].includes(String(selected.operator)))
+      selected = node(selected.left);
+    if (!member2(selected))
+      continue;
+    const field = key2(selected), selection = node(selected?.object), owner = node(selection?.object), namespace = node(owner?.object);
+    if (!field || !member2(selection))
+      continue;
+    const tableName = owner?.type === "Identifier" && owner.name === "variables" ? singleAlias(key2(selection) ?? "") : key2(selection) === "selectedRow" && member2(owner) && namespace?.type === "Identifier" && namespace.name === "components" ? key2(owner) : void 0;
+    const projected = tableName ? tables.get(tableName)?.get(field) : void 0;
+    if (projected?.type !== "LogicalExpression" || !["||", "??"].includes(String(projected.operator)))
+      continue;
+    const fallback = node(projected.right);
+    if (fallback?.type !== "StringLiteral" || !String(fallback.value).trim())
+      continue;
+    warnings.add(`Component "${c.name ?? c.id ?? "?"}": editable value reads "${field}" from Table "${tableName}", whose projection replaces missing raw text with a non-empty display fallback. Saving another field can persist that label as real data. Keep raw text separate from display labels, or resolve the raw record by stable id; preserve untouched null/empty values. This is advisory, not a claim that every fallback is unintended.`);
+  }
+  for (const c of components) {
+    const property3 = c.type === "DatePickerV2" ? "defaultValue" : ["NumberInput", "CurrencyInput"].includes(c.type ?? "") ? "value" : void 0;
+    if (!property3)
+      continue;
+    let selected = expression(unwrap2(c.properties?.[property3]));
+    if (selected?.type === "LogicalExpression" && ["||", "??"].includes(String(selected.operator)))
+      selected = node(selected.left);
+    if (!member2(selected))
+      continue;
+    const field = key2(selected), selection = node(selected?.object), table = node(selection?.object), namespace = node(table?.object);
+    if (!field || !member2(selection))
+      continue;
+    const tableName = table?.type === "Identifier" && table.name === "variables" ? singleAlias(key2(selection) ?? "") : key2(selection) === "selectedRow" && member2(table) && namespace?.type === "Identifier" && namespace.name === "components" ? key2(table) : void 0;
+    const value = tableName ? tables.get(tableName)?.get(field) : void 0;
+    if (!value)
+      continue;
+    const formats = [];
+    let localizedNumber = false;
+    walk2(value, (n) => {
+      if (n.type !== "CallExpression")
+        return;
+      const callee = node(n.callee);
+      if (!member2(callee))
+        return;
+      if (key2(callee) === "toLocaleString" || key2(callee) === "toFixed")
+        localizedNumber = true;
+      const args = n.arguments;
+      if (key2(callee) === "format" && Array.isArray(args) && node(args[0])?.type === "StringLiteral")
+        formats.push(String(node(args[0]).value));
+    });
+    const expected = unwrap2(c.properties?.dateFormat) ?? "DD/MM/YYYY";
+    if (c.type === "DatePickerV2" && member2(value) && typeof expected === "string" && !expected.includes("{{")) {
+      const source = components.find((t) => t.type === "Table" && t.name === tableName);
+      const columns = unwrap2(source?.properties?.columns);
+      const matches = Array.isArray(columns) ? columns.filter((col) => {
+        const entry = node(col);
+        return entry?.key === field && entry.columnType === "datepicker";
+      }) : [];
+      const parseFormat = matches.length === 1 ? node(matches[0])?.parseDateFormat : void 0;
+      const yearLast = /^(?:D{1,2}[^A-Za-z]+M{1,4}|M{1,4}[^A-Za-z]+D{1,2})[^A-Za-z]+Y{2,4}$/.test(expected);
+      if (typeof parseFormat === "string" && parseFormat.startsWith("YYYY-MM-DD") && !parseFormat.includes("{{") && yearLast) {
+        warnings.add(`Component "${c.name ?? c.id ?? "?"}": defaultValue reads raw ${tableName}.selectedRow.${field}; that Table column declares parseDateFormat "${parseFormat}", but the DatePickerV2 parses its default with dateFormat "${expected}". A name-only edit can silently change the date. Match the editor's input format or explicitly format the raw default before opening it; table display formatting does not convert selectedRow. Advisory only: verify the actual source value before changing it.`);
+      }
+    }
+    if (c.type === "DatePickerV2" && formats.some((f) => typeof expected === "string" && !expected.includes("{{") && f !== expected) || c.type !== "DatePickerV2" && localizedNumber) {
+      warnings.add(`Component "${c.name ?? c.id ?? "?"}": ${property3} reads display-formatted ${tableName}.selectedRow.${field} into a typed ${c.type} editor${c.type === "DatePickerV2" ? ` (dateFormat ${String(expected)})` : ""}. Look up the raw record by stable id, or explicitly convert to the editor's input format. Preserve untouched fields on save; generate_edit_contract can provide raw-record defaults and changed-field-only payloads.`);
+    }
+  }
+  return [...warnings];
+}
 export {
   normalizeQueryOptions as A,
   BARE_QUERY_DATA_BINDING as B,
@@ -3276,9 +3134,8 @@ export {
   lint as G,
   apply as H,
   deleteNode as I,
-  prepareSqlDiscoveryQueries as J,
-  editContractSchema as K,
-  generateEditContract as L,
+  editContractSchema as J,
+  generateEditContract as K,
   lintOversizedWidths as a,
   lintHtmlContentHeight as b,
   lintHtmlRootSurface as c,
