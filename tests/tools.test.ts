@@ -494,7 +494,7 @@ describe('run_query tool', () => {
 
     expect(textOf(result)).toEqual({
       status: 'ok', data: [{ '?column?': 1 }],
-      execution: { query_id: 'q1', datasource_kind: 'postgresql', read_only: true },
+      execution: { query_id: 'q1', datasource_kind: 'postgresql', preflight: 'explicit_read' },
     });
   });
 
@@ -722,7 +722,7 @@ describe('run_query tool', () => {
     const client = makeClient();
     client.getQuery.mockResolvedValue({
       id: 'warehouse-page', name: 'warehousePage', kind: 'bigquery', data_source_id: 'bq-main',
-      options: { query: 'SELECT id FROM dataset.orders LIMIT 25' },
+      options: { mode: 'sql', query: 'SELECT id FROM dataset.orders LIMIT 25' },
     });
 
     const refused = await runQueryTool(client as unknown as ToolJetClient).handler({
@@ -768,12 +768,12 @@ describe('run_query tool', () => {
     expect(textOf(approved)).toMatchObject({
       status: 'ok',
       data: { tag_name: 'v19.2.8' },
-      execution: { query_id: 'latest-release', datasource_kind: 'restapi', read_only: true },
+      execution: { query_id: 'latest-release', datasource_kind: 'restapi', preflight: 'explicit_read' },
       metadata: {
         request: { params: { per_page: '3' } },
         response: { statusCode: 200 },
       },
-      warnings: [expect.stringMatching(/User-confirmed REST GET.*metadata\.request.*pagination/i)],
+      warnings: [expect.stringMatching(/User-confirmed REST GET.*metadata\.response.*pagination/i)],
     });
     expect(client.runQuery).toHaveBeenCalledOnce();
   });
@@ -830,7 +830,7 @@ describe('run_queries tool', () => {
     expect(client.runQuery).toHaveBeenCalledTimes(2);
     expect(textOf(result)).toEqual({ queries: [
       { query_id: 'q1', name: 'overview', status: 'ok', data: [{ count: 48 }],
-        execution: { query_id: 'q1', datasource_kind: 'tooljetdb', read_only: true } },
+        execution: { query_id: 'q1', datasource_kind: 'tooljetdb', preflight: 'automatic_read' } },
       {
         query_id: 'q2', name: 'page', status: 'failed', message: 'connect ETIMEDOUT',
         warnings: [expect.stringMatching(/components\.\*.*viewer/i)],

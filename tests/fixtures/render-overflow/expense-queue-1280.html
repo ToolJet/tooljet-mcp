@@ -1,0 +1,510 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Expense Approvals E4x | ToolJet</title><meta name="viewport" content="width=device-width, initial-scale=1"><style>html, body { margin: 0px; height: 100%; }
+#tj-frame-root { height: 100%; }
+* { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+:hover { scrollbar-color: rgba(128, 128, 128, 0.45) transparent; }
+@media (pointer: coarse) {
+  * { scrollbar-width: none; }
+  ::-webkit-scrollbar { display: none; }
+}
+html.tj-device-width, html.tj-device-width * { scrollbar-width: none; }
+html.tj-device-width::-webkit-scrollbar, html.tj-device-width ::-webkit-scrollbar { display: none; }
+:root { --cc-small-border: undefined; --text-placeholder: #6A727C; --cc-on-primary-brand: #ffffff; --text-danger: #D72D39; --cc-secondary-brand: #F26419; --cc-0-text: undefined; --cc-5-text: undefined; --cc-1-text: undefined; --cc-font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; --cc-tertiary-brand: #6B7A8F; --text-inverse: #F6F8FA; --cc-surface1-surface: #FFFFFF; --text-black-000: #000000; --cc-disabled-text: #A6AFBA; --cc-radius-large: 0px; --cc-primary-text: #0B2545; --text-warning: #BF4F03; --cc-2-text: undefined; --text-brand: #4368E3; --text-tooltip: #FAFCFF; --cc-primary-brand-strong: #0B2545; --text-medium: #2D343B; --cc-default-icon: #627084; --cc-6-text: undefined; --cc-surface2-surface: #FAFAF7; --cc-7-text: undefined; --cc-appBackground-surface: #F4F4F0; --cc-placeholder-text: #627084; --cc-radius-small: 0px; --cc-disabled-border: #E4E7E9; --text-disbled: #ACB2B9; --cc-radius-default: 0px; --text-on-solid: #FFFFFF; --cc-3-text: undefined; --cc-surface3-surface: #EFEFE9; --cc-default-icon-light: #627084; --cc-primary-brand: #0B2545; --cc-error-systemStatus: #B3261E; --cc-8-text: undefined; --text-default: #1B1F24; --cc-warning-systemStatus: #B25C00; --cc-placeholder-text-light: #627084; --cc-success-systemStatus: #1F7A4C; --text-primary: #1B1F24; --cc-12-text: undefined; --cc-10-text: undefined; --cc-default-icon-dark: #8FA0B3; --text-disabled: #ACB2B9; --cc-default-border: #CBD2D9; --cc-11-text: undefined; --cc-weak-border: #DDE2E6; --text-success: #1E823B; --text-disabled-on-solid: #FFFFFF99; --text-selected: #4368E3; --cc-9-text: undefined; --cc-4-text: undefined; --cc-placeholder-text-dark: #8FA0B3; --cc-large-border: undefined; color-scheme: light; --tj-radius: var(--cc-radius-default, 6px); --tj-radius-small: max(var(--cc-radius-small, 0px), min(max(0px, var(--tj-radius) - 2px), (1px - var(--cc-radius-small, 0px)) * 1000)); --tj-radius-large: max(var(--cc-radius-large, 0px), min(var(--tj-radius) + min(var(--tj-radius), 2px), (1px - var(--cc-radius-large, 0px)) * 1000)); --tj-brand: var(--cc-primary-brand, #4368e3); --tj-brand-strong: var(--cc-primary-brand-strong, var(--tj-brand)); --tj-on-brand: var(--cc-on-primary-brand, #ffffff); --tj-page: var(--cc-appBackground-surface, #f6f6f6); --tj-surface: var(--cc-surface1-surface, #ffffff); --tj-surface-alt: var(--cc-surface2-surface, #f6f8fa); --tj-surface-muted: var(--cc-surface3-surface, #e4e7eb); --tj-text: var(--cc-primary-text, #1b1f24); --tj-text-muted: var(--cc-placeholder-text, #6a727c); --tj-border: var(--cc-default-border, #d7dbdf); --tj-border-weak: var(--cc-weak-border, var(--tj-border)); --tj-danger: var(--cc-error-systemStatus, #d72d39); --tj-success: var(--cc-success-systemStatus, #1e823b); --tj-warning: var(--cc-warning-systemStatus, #b54708); --tj-font: var(--cc-font-family); }
+:root, .app-root { --font-sans: "Inter",
+    ui-sans-serif,
+    system-ui,
+    sans-serif; --font-display: "Barlow Condensed",
+    "Arial Narrow",
+    ui-sans-serif,
+    sans-serif; --page: #f4f4f0; --background: #ffffff; --foreground: #0b2545; --card: #ffffff; --card-foreground: #0b2545; --popover: #ffffff; --popover-foreground: #0b2545; --primary: #f26419; --primary-foreground: #0b2545; --secondary: #eff1f3; --secondary-foreground: #0b2545; --muted: #f1f2ee; --muted-foreground: #546475; --accent: #e9edf1; --accent-foreground: #0b2545; --destructive: #b42318; --destructive-foreground: #ffffff; --success: #1f7a4c; --success-foreground: #ffffff; --warning: #b45309; --warning-foreground: #ffffff; --border: #d7d9d2; --input: #c9ccc4; --ring: #0b2545; --chart-1: #0b2545; --chart-2: #1e4c7a; --chart-3: #f26419; --chart-4: #1f7a4c; --chart-5: #b45309; --radius: 0px; --navy: #0b2545; --navy-2: #1c3e66; --on-navy: #ffffff; --on-navy-muted: #becbda; --signal: #f26419; --paper: #f4f4f0; --tag-waiting-bg: #fbf0e2; --tag-waiting-fg: #8a3e06; --tag-waiting-border: #e4c6a4; --tag-approved-bg: #e7f2ea; --tag-approved-fg: #17603c; --tag-approved-border: #bcd9c6; --tag-rejected-bg: #fbeae8; --tag-rejected-fg: #8e1b12; --tag-rejected-border: #efc5c0; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*, ::before, ::after { --tw-border-spacing-x: 0; --tw-border-spacing-y: 0; --tw-translate-x: 0; --tw-translate-y: 0; --tw-rotate: 0; --tw-skew-x: 0; --tw-skew-y: 0; --tw-scale-x: 1; --tw-scale-y: 1; --tw-pan-x: ; --tw-pan-y: ; --tw-pinch-zoom: ; --tw-scroll-snap-strictness: proximity; --tw-gradient-from-position: ; --tw-gradient-via-position: ; --tw-gradient-to-position: ; --tw-ordinal: ; --tw-slashed-zero: ; --tw-numeric-figure: ; --tw-numeric-spacing: ; --tw-numeric-fraction: ; --tw-ring-inset: ; --tw-ring-offset-width: 0px; --tw-ring-offset-color: #fff; --tw-ring-color: rgb(59 130 246 / 0.5); --tw-ring-offset-shadow: 0 0 #0000; --tw-ring-shadow: 0 0 #0000; --tw-shadow: 0 0 #0000; --tw-shadow-colored: 0 0 #0000; --tw-blur: ; --tw-brightness: ; --tw-contrast: ; --tw-grayscale: ; --tw-hue-rotate: ; --tw-invert: ; --tw-saturate: ; --tw-sepia: ; --tw-drop-shadow: ; --tw-backdrop-blur: ; --tw-backdrop-brightness: ; --tw-backdrop-contrast: ; --tw-backdrop-grayscale: ; --tw-backdrop-hue-rotate: ; --tw-backdrop-invert: ; --tw-backdrop-opacity: ; --tw-backdrop-saturate: ; --tw-backdrop-sepia: ; --tw-contain-size: ; --tw-contain-layout: ; --tw-contain-paint: ; --tw-contain-style: ; }
+::backdrop { --tw-border-spacing-x: 0; --tw-border-spacing-y: 0; --tw-translate-x: 0; --tw-translate-y: 0; --tw-rotate: 0; --tw-skew-x: 0; --tw-skew-y: 0; --tw-scale-x: 1; --tw-scale-y: 1; --tw-pan-x: ; --tw-pan-y: ; --tw-pinch-zoom: ; --tw-scroll-snap-strictness: proximity; --tw-gradient-from-position: ; --tw-gradient-via-position: ; --tw-gradient-to-position: ; --tw-ordinal: ; --tw-slashed-zero: ; --tw-numeric-figure: ; --tw-numeric-spacing: ; --tw-numeric-fraction: ; --tw-ring-inset: ; --tw-ring-offset-width: 0px; --tw-ring-offset-color: #fff; --tw-ring-color: rgb(59 130 246 / 0.5); --tw-ring-offset-shadow: 0 0 #0000; --tw-ring-shadow: 0 0 #0000; --tw-shadow: 0 0 #0000; --tw-shadow-colored: 0 0 #0000; --tw-blur: ; --tw-brightness: ; --tw-contrast: ; --tw-grayscale: ; --tw-hue-rotate: ; --tw-invert: ; --tw-saturate: ; --tw-sepia: ; --tw-drop-shadow: ; --tw-backdrop-blur: ; --tw-backdrop-brightness: ; --tw-backdrop-contrast: ; --tw-backdrop-grayscale: ; --tw-backdrop-hue-rotate: ; --tw-backdrop-invert: ; --tw-backdrop-opacity: ; --tw-backdrop-saturate: ; --tw-backdrop-sepia: ; --tw-contain-size: ; --tw-contain-layout: ; --tw-contain-paint: ; --tw-contain-style: ; }
+*, ::before, ::after { box-sizing: border-box; border-width: 0px; border-style: solid; border-color: rgb(229, 231, 235); }
+::before, ::after { --tw-content: ""; }
+html, :host { line-height: 1.5; text-size-adjust: 100%; tab-size: 4; font-family: var(--font-sans),
+    system-ui,
+    sans-serif; font-feature-settings: normal; font-variation-settings: normal; -webkit-tap-highlight-color: transparent; }
+body { margin: 0px; line-height: inherit; }
+hr { height: 0px; color: inherit; border-top-width: 1px; }
+abbr:where([title]) { text-decoration: underline dotted; }
+h1, h2, h3, h4, h5, h6 { font-size: inherit; font-weight: inherit; }
+a { color: inherit; text-decoration: inherit; }
+b, strong { font-weight: bolder; }
+code, kbd, samp, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-feature-settings: normal; font-variation-settings: normal; font-size: 1em; }
+small { font-size: 80%; }
+sub, sup { font-size: 75%; line-height: 0; position: relative; vertical-align: baseline; }
+sub { bottom: -0.25em; }
+sup { top: -0.5em; }
+table { text-indent: 0px; border-color: inherit; border-collapse: collapse; }
+button, input, optgroup, select, textarea { font-family: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-size: 100%; font-weight: inherit; line-height: inherit; letter-spacing: inherit; color: inherit; margin: 0px; padding: 0px; }
+button, select { text-transform: none; }
+button, input:where([type="button"]), input:where([type="reset"]), input:where([type="submit"]) { appearance: button; background-color: transparent; background-image: none; }
+progress { vertical-align: baseline; }
+::-webkit-inner-spin-button, ::-webkit-outer-spin-button { height: auto; }
+[type="search"] { appearance: textfield; outline-offset: -2px; }
+::-webkit-search-decoration { appearance: none; }
+::-webkit-file-upload-button { appearance: button; font: inherit; }
+summary { display: list-item; }
+blockquote, dl, dd, h1, h2, h3, h4, h5, h6, hr, figure, p, pre { margin: 0px; }
+fieldset { margin: 0px; padding: 0px; }
+legend { padding: 0px; }
+ol, ul, menu { list-style: none; margin: 0px; padding: 0px; }
+dialog { padding: 0px; }
+textarea { resize: vertical; }
+input::placeholder, textarea::placeholder { opacity: 1; color: rgb(156, 163, 175); }
+button, [role="button"] { cursor: pointer; }
+:disabled { cursor: default; }
+img, svg, video, canvas, audio, iframe, embed, object { display: block; vertical-align: middle; }
+img, video { max-width: 100%; height: auto; }
+[hidden]:where(:not([hidden="until-found"])) { display: none; }
+body, .app-root { --tw-bg-opacity: 1; background-color: color-mix(in srgb, var(--background) calc(var(--tw-bg-opacity, 1) * 100%), transparent); font-family: var(--font-sans),
+    system-ui,
+    sans-serif; font-size: 0.875rem; line-height: 1.25rem; --tw-text-opacity: 1; color: color-mix(in srgb, var(--foreground) calc(var(--tw-text-opacity, 1) * 100%), transparent); -webkit-font-smoothing: antialiased; font-feature-settings: "cv02", "cv03", "cv04", "cv11"; }
+.app-root * { --tw-border-opacity: 1; border-color: color-mix(in srgb, var(--border) calc(var(--tw-border-opacity, 1) * 100%), transparent); }
+.container { width: 100%; margin-right: auto; margin-left: auto; padding-right: 1.5rem; padding-left: 1.5rem; }
+@media (min-width: 640px) {
+  .container { max-width: 640px; }
+}
+@media (min-width: 768px) {
+  .container { max-width: 768px; }
+}
+@media (min-width: 1024px) {
+  .container { max-width: 1024px; }
+}
+@media (min-width: 1280px) {
+  .container { max-width: 1280px; }
+}
+@media (min-width: 1536px) {
+  .container { max-width: 1536px; }
+}
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0px; margin: -1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap; border-width: 0px; }
+.pointer-events-none { pointer-events: none; }
+.fixed { position: fixed; }
+.absolute { position: absolute; }
+.relative { position: relative; }
+.inset-0 { inset: 0px; }
+.inset-x-0 { left: 0px; right: 0px; }
+.inset-y-0 { top: 0px; bottom: 0px; }
+.bottom-0 { bottom: 0px; }
+.left-0 { left: 0px; }
+.left-3 { left: 0.75rem; }
+.right-0 { right: 0px; }
+.right-2 { right: 0.5rem; }
+.right-4 { right: 1rem; }
+.top-1\/2 { top: 50%; }
+.top-4 { top: 1rem; }
+.z-30 { z-index: 30; }
+.z-50 { z-index: 50; }
+.mb-4 { margin-bottom: 1rem; }
+.mt-0\.5 { margin-top: 0.125rem; }
+.mt-1 { margin-top: 0.25rem; }
+.mt-1\.5 { margin-top: 0.375rem; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-3 { margin-top: 0.75rem; }
+.mt-4 { margin-top: 1rem; }
+.mt-5 { margin-top: 1.25rem; }
+.mt-6 { margin-top: 1.5rem; }
+.mt-auto { margin-top: auto; }
+.block { display: block; }
+.flex { display: flex; }
+.inline-flex { display: inline-flex; }
+.table { display: table; }
+.grid { display: grid; }
+.hidden { display: none; }
+.h-1\.5 { height: 0.375rem; }
+.h-10 { height: 2.5rem; }
+.h-3\.5 { height: 0.875rem; }
+.h-4 { height: 1rem; }
+.h-5 { height: 1.25rem; }
+.h-6 { height: 1.5rem; }
+.h-8 { height: 2rem; }
+.h-9 { height: 2.25rem; }
+.h-\[var\(--radix-select-trigger-height\)\] { height: var(--radix-select-trigger-height); }
+.h-full { height: 100%; }
+.h-px { height: 1px; }
+.max-h-96 { max-height: 24rem; }
+.min-h-0 { min-height: 0px; }
+.min-h-\[48px\] { min-height: 48px; }
+.min-h-\[60px\] { min-height: 60px; }
+.min-h-screen { min-height: 100vh; }
+.w-3\.5 { width: 0.875rem; }
+.w-4 { width: 1rem; }
+.w-6 { width: 1.5rem; }
+.w-8 { width: 2rem; }
+.w-9 { width: 2.25rem; }
+.w-\[236px\] { width: 236px; }
+.w-full { width: 100%; }
+.min-w-0 { min-width: 0px; }
+.min-w-\[8rem\] { min-width: 8rem; }
+.min-w-\[var\(--radix-select-trigger-width\)\] { min-width: var(--radix-select-trigger-width); }
+.max-w-3xl { max-width: 48rem; }
+.max-w-\[16rem\] { max-width: 16rem; }
+.max-w-\[20rem\] { max-width: 20rem; }
+.max-w-\[22rem\] { max-width: 22rem; }
+.max-w-md { max-width: 28rem; }
+.flex-1 { flex: 1 1 0%; }
+.shrink-0 { flex-shrink: 0; }
+.caption-bottom { caption-side: bottom; }
+.-translate-y-1\/2 { --tw-translate-y: -50%; transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }
+.cursor-default { cursor: default; }
+.cursor-pointer { cursor: pointer; }
+.select-none { user-select: none; }
+.auto-cols-fr { grid-auto-columns: minmax(0px, 1fr); }
+.grid-flow-col { grid-auto-flow: column; }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0px, 1fr)); }
+.flex-col { flex-direction: column; }
+.flex-col-reverse { flex-direction: column-reverse; }
+.flex-wrap { flex-wrap: wrap; }
+.items-start { align-items: flex-start; }
+.items-center { align-items: center; }
+.items-baseline { align-items: baseline; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.gap-0 { gap: 0px; }
+.gap-1 { gap: 0.25rem; }
+.gap-1\.5 { gap: 0.375rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-2\.5 { gap: 0.625rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+.gap-x-3 { column-gap: 0.75rem; }
+.gap-y-1 { row-gap: 0.25rem; }
+.space-y-1\.5 > :not([hidden]) ~ :not([hidden]) { --tw-space-y-reverse: 0; margin-top: calc(0.375rem * calc(1 - var(--tw-space-y-reverse))); margin-bottom: calc(0.375rem * var(--tw-space-y-reverse)); }
+.space-y-3 > :not([hidden]) ~ :not([hidden]) { --tw-space-y-reverse: 0; margin-top: calc(0.75rem * calc(1 - var(--tw-space-y-reverse))); margin-bottom: calc(0.75rem * var(--tw-space-y-reverse)); }
+.space-y-4 > :not([hidden]) ~ :not([hidden]) { --tw-space-y-reverse: 0; margin-top: calc(1rem * calc(1 - var(--tw-space-y-reverse))); margin-bottom: calc(1rem * var(--tw-space-y-reverse)); }
+.space-y-px > :not([hidden]) ~ :not([hidden]) { --tw-space-y-reverse: 0; margin-top: calc(1px * calc(1 - var(--tw-space-y-reverse))); margin-bottom: calc(1px * var(--tw-space-y-reverse)); }
+.divide-y > :not([hidden]) ~ :not([hidden]) { --tw-divide-y-reverse: 0; border-top-width: calc(1px * calc(1 - var(--tw-divide-y-reverse))); border-bottom-width: calc(1px * var(--tw-divide-y-reverse)); }
+.divide-\[var\(--border\)\] > :not([hidden]) ~ :not([hidden]) { border-color: var(--border); }
+.overflow-auto { overflow: auto; }
+.overflow-hidden { overflow: hidden; }
+.overflow-y-auto { overflow-y: auto; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.whitespace-nowrap { white-space: nowrap; }
+.rounded-full { border-radius: 9999px; }
+.rounded-lg { border-radius: var(--radius); }
+.rounded-md { border-radius: calc(var(--radius) - 2px); }
+.rounded-sm { border-radius: calc(var(--radius) - 4px); }
+.border { border-width: 1px; }
+.border-2 { border-width: 2px; }
+.border-b { border-bottom-width: 1px; }
+.border-l { border-left-width: 1px; }
+.border-l-0 { border-left-width: 0px; }
+.border-l-2 { border-left-width: 2px; }
+.border-r { border-right-width: 1px; }
+.border-t { border-top-width: 1px; }
+.border-t-2 { border-top-width: 2px; }
+.border-\[var\(--border\)\] { border-color: var(--border); }
+.border-\[var\(--destructive\)\] { border-color: var(--destructive); }
+.border-\[var\(--input\)\] { border-color: var(--input); }
+.border-\[var\(--navy\)\] { border-color: var(--navy); }
+.border-\[var\(--navy-2\)\] { border-color: var(--navy-2); }
+.border-\[var\(--on-navy-muted\)\] { border-color: var(--on-navy-muted); }
+.border-\[var\(--signal\)\] { border-color: var(--signal); }
+.border-\[var\(--tag-approved-border\)\] { border-color: var(--tag-approved-border); }
+.border-\[var\(--tag-rejected-border\)\] { border-color: var(--tag-rejected-border); }
+.border-\[var\(--tag-waiting-border\)\] { border-color: var(--tag-waiting-border); }
+.border-input { --tw-border-opacity: 1; border-color: color-mix(in srgb, var(--input) calc(var(--tw-border-opacity, 1) * 100%), transparent); }
+.border-transparent { border-color: transparent; }
+.border-l-\[var\(--success\)\] { border-left-color: var(--success); }
+.bg-\[var\(--muted\)\] { background-color: var(--muted); }
+.bg-\[var\(--navy\)\] { background-color: var(--navy); }
+.bg-\[var\(--navy-2\)\] { background-color: var(--navy-2); }
+.bg-\[var\(--page\)\] { background-color: var(--page); }
+.bg-\[var\(--tag-approved-bg\)\] { background-color: var(--tag-approved-bg); }
+.bg-\[var\(--tag-rejected-bg\)\] { background-color: var(--tag-rejected-bg); }
+.bg-\[var\(--tag-waiting-bg\)\] { background-color: var(--tag-waiting-bg); }
+.bg-background { --tw-bg-opacity: 1; background-color: color-mix(in srgb, var(--background) calc(var(--tw-bg-opacity, 1) * 100%), transparent); }
+.bg-black\/40 { background-color: rgba(0, 0, 0, 0.4); }
+.bg-border { --tw-bg-opacity: 1; background-color: color-mix(in srgb, var(--border) calc(var(--tw-bg-opacity, 1) * 100%), transparent); }
+.bg-card { --tw-bg-opacity: 1; background-color: color-mix(in srgb, var(--card) calc(var(--tw-bg-opacity, 1) * 100%), transparent); }
+.bg-chart-1\/15 { background-color: color-mix(in srgb, var(--chart-1) calc(0.15 * 100%), transparent); }
+.bg-destructive { --tw-bg-opacity: 1; background-color: color-mix(in srgb, var(--destructive) calc(var(--tw-bg-opacity, 1) * 100%), transparent); }
+.bg-destructive\/15 { background-color: color-mix(in srgb, var(--destructive) calc(0.15 * 100%), transparent); }
+.bg-muted { --tw-bg-opacity: 1; background-color: color-mix(in srgb, var(--muted) calc(var(--tw-bg-opacity, 1) * 100%), transparent); }
+.bg-page { --tw-bg-opacity: 1; background-color: color-mix(in srgb, var(--page) calc(var(--tw-bg-opacity, 1) * 100%), transparent); }
+.bg-popover { --tw-bg-opacity: 1; background-color: color-mix(in srgb, var(--popover) calc(var(--tw-bg-opacity, 1) * 100%), transparent); }
+.bg-primary { --tw-bg-opacity: 1; background-color: color-mix(in srgb, var(--primary) calc(var(--tw-bg-opacity, 1) * 100%), transparent); }
+.bg-secondary { --tw-bg-opacity: 1; background-color: color-mix(in srgb, var(--secondary) calc(var(--tw-bg-opacity, 1) * 100%), transparent); }
+.bg-success\/15 { background-color: color-mix(in srgb, var(--success) calc(0.15 * 100%), transparent); }
+.bg-transparent { background-color: transparent; }
+.bg-warning\/15 { background-color: color-mix(in srgb, var(--warning) calc(0.15 * 100%), transparent); }
+.p-0 { padding: 0px; }
+.p-1 { padding: 0.25rem; }
+.p-3 { padding: 0.75rem; }
+.p-5 { padding: 1.25rem; }
+.p-6 { padding: 1.5rem; }
+.p-8 { padding: 2rem; }
+.px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+.px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+.px-4 { padding-left: 1rem; padding-right: 1rem; }
+.px-5 { padding-left: 1.25rem; padding-right: 1.25rem; }
+.px-8 { padding-left: 2rem; padding-right: 2rem; }
+.py-0\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+.py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+.py-1\.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+.py-10 { padding-top: 2.5rem; padding-bottom: 2.5rem; }
+.py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.py-2\.5 { padding-top: 0.625rem; padding-bottom: 0.625rem; }
+.py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+.py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+.py-5 { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+.py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+.pb-20 { padding-bottom: 5rem; }
+.pb-5 { padding-bottom: 1.25rem; }
+.pl-2 { padding-left: 0.5rem; }
+.pl-3 { padding-left: 0.75rem; }
+.pl-7 { padding-left: 1.75rem; }
+.pr-8 { padding-right: 2rem; }
+.pt-0 { padding-top: 0px; }
+.pt-4 { padding-top: 1rem; }
+.pt-6 { padding-top: 1.5rem; }
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.align-middle { vertical-align: middle; }
+.text-\[10px\] { font-size: 10px; }
+.text-\[11px\] { font-size: 11px; }
+.text-\[12px\] { font-size: 12px; }
+.text-\[13px\] { font-size: 13px; }
+.text-\[15px\] { font-size: 15px; }
+.text-\[19px\] { font-size: 19px; }
+.text-\[26px\] { font-size: 26px; }
+.text-base { font-size: 1rem; line-height: 1.5rem; }
+.text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+.text-xs { font-size: 0.75rem; line-height: 1rem; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.uppercase { text-transform: uppercase; }
+.leading-none { line-height: 1; }
+.leading-relaxed { line-height: 1.625; }
+.leading-snug { line-height: 1.375; }
+.tracking-\[0\.12em\] { letter-spacing: 0.12em; }
+.tracking-tight { letter-spacing: -0.025em; }
+.tracking-wide { letter-spacing: 0.025em; }
+.tracking-wider { letter-spacing: 0.05em; }
+.text-\[var\(--destructive\)\] { color: var(--destructive); }
+.text-\[var\(--navy\)\] { color: var(--navy); }
+.text-\[var\(--on-navy\)\] { color: var(--on-navy); }
+.text-\[var\(--tag-approved-fg\)\] { color: var(--tag-approved-fg); }
+.text-\[var\(--tag-rejected-fg\)\] { color: var(--tag-rejected-fg); }
+.text-\[var\(--tag-waiting-fg\)\] { color: var(--tag-waiting-fg); }
+.text-card-foreground { --tw-text-opacity: 1; color: color-mix(in srgb, var(--card-foreground) calc(var(--tw-text-opacity, 1) * 100%), transparent); }
+.text-chart-1 { --tw-text-opacity: 1; color: color-mix(in srgb, var(--chart-1) calc(var(--tw-text-opacity, 1) * 100%), transparent); }
+.text-destructive { --tw-text-opacity: 1; color: color-mix(in srgb, var(--destructive) calc(var(--tw-text-opacity, 1) * 100%), transparent); }
+.text-destructive-foreground { --tw-text-opacity: 1; color: color-mix(in srgb, var(--destructive-foreground) calc(var(--tw-text-opacity, 1) * 100%), transparent); }
+.text-foreground { --tw-text-opacity: 1; color: color-mix(in srgb, var(--foreground) calc(var(--tw-text-opacity, 1) * 100%), transparent); }
+.text-muted-foreground { --tw-text-opacity: 1; color: color-mix(in srgb, var(--muted-foreground) calc(var(--tw-text-opacity, 1) * 100%), transparent); }
+.text-popover-foreground { --tw-text-opacity: 1; color: color-mix(in srgb, var(--popover-foreground) calc(var(--tw-text-opacity, 1) * 100%), transparent); }
+.text-primary { --tw-text-opacity: 1; color: color-mix(in srgb, var(--primary) calc(var(--tw-text-opacity, 1) * 100%), transparent); }
+.text-primary-foreground { --tw-text-opacity: 1; color: color-mix(in srgb, var(--primary-foreground) calc(var(--tw-text-opacity, 1) * 100%), transparent); }
+.text-secondary-foreground { --tw-text-opacity: 1; color: color-mix(in srgb, var(--secondary-foreground) calc(var(--tw-text-opacity, 1) * 100%), transparent); }
+.text-success { --tw-text-opacity: 1; color: color-mix(in srgb, var(--success) calc(var(--tw-text-opacity, 1) * 100%), transparent); }
+.text-warning { --tw-text-opacity: 1; color: color-mix(in srgb, var(--warning) calc(var(--tw-text-opacity, 1) * 100%), transparent); }
+.underline { text-decoration-line: underline; }
+.underline-offset-4 { text-underline-offset: 4px; }
+.opacity-50 { opacity: 0.5; }
+.opacity-70 { opacity: 0.7; }
+.shadow { --tw-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); --tw-shadow-colored: 0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color); box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000),
+    var(--tw-ring-shadow, 0 0 #0000),
+    var(--tw-shadow); }
+.shadow-lg { --tw-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); --tw-shadow-colored: 0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color); box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000),
+    var(--tw-ring-shadow, 0 0 #0000),
+    var(--tw-shadow); }
+.shadow-md { --tw-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); --tw-shadow-colored: 0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color); box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000),
+    var(--tw-ring-shadow, 0 0 #0000),
+    var(--tw-shadow); }
+.shadow-sm { --tw-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); --tw-shadow-colored: 0 1px 2px 0 var(--tw-shadow-color); box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000),
+    var(--tw-ring-shadow, 0 0 #0000),
+    var(--tw-shadow); }
+.outline-none { outline: transparent solid 2px; outline-offset: 2px; }
+.outline { outline-style: solid; }
+.ring-0 { --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color); --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(0px + var(--tw-ring-offset-width)) var(--tw-ring-color); box-shadow: var(--tw-ring-offset-shadow),
+    var(--tw-ring-shadow),
+    var(--tw-shadow, 0 0 #0000); }
+.ring-offset-background { --tw-ring-offset-color: color-mix(in srgb, var(--background) calc(1 * 100%), transparent); }
+.filter { filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow); }
+.transition { transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+.transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+.transition-colors { transition-property: color, background-color, border-color, text-decoration-color, fill, stroke; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+.transition-opacity { transition-property: opacity; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+.transition-transform { transition-property: transform; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+.ease-in-out { transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+@keyframes enter { 
+  0% { opacity: var(--tw-enter-opacity, 1); transform: translate3d(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0), 0) scale3d(var(--tw-enter-scale, 1), var(--tw-enter-scale, 1), var(--tw-enter-scale, 1)) rotate(var(--tw-enter-rotate, 0)); }
+}
+@keyframes exit { 
+  100% { opacity: var(--tw-exit-opacity, 1); transform: translate3d(var(--tw-exit-translate-x, 0), var(--tw-exit-translate-y, 0), 0) scale3d(var(--tw-exit-scale, 1), var(--tw-exit-scale, 1), var(--tw-exit-scale, 1)) rotate(var(--tw-exit-rotate, 0)); }
+}
+.animate-in { animation-name: enter; animation-duration: 150ms; --tw-enter-opacity: initial; --tw-enter-scale: initial; --tw-enter-rotate: initial; --tw-enter-translate-x: initial; --tw-enter-translate-y: initial; }
+.fade-in-0 { --tw-enter-opacity: 0; }
+.zoom-in-95 { --tw-enter-scale: .95; }
+.ease-in-out { animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+.file\:border-0::file-selector-button { border-width: 0px; }
+.file\:bg-transparent::file-selector-button { background-color: transparent; }
+.file\:text-sm::file-selector-button { font-size: 0.875rem; line-height: 1.25rem; }
+.file\:font-medium::file-selector-button { font-weight: 500; }
+.placeholder\:text-muted-foreground::placeholder { --tw-text-opacity: 1; color: color-mix(in srgb, var(--muted-foreground) calc(var(--tw-text-opacity, 1) * 100%), transparent); }
+.last\:border-0:last-child { border-width: 0px; }
+.hover\:bg-\[var\(--muted\)\]:hover { background-color: var(--muted); }
+.hover\:bg-\[var\(--navy-2\)\]:hover { background-color: var(--navy-2); }
+.hover\:bg-\[var\(--tag-rejected-bg\)\]:hover { background-color: var(--tag-rejected-bg); }
+.hover\:bg-accent:hover { --tw-bg-opacity: 1; background-color: color-mix(in srgb, var(--accent) calc(var(--tw-bg-opacity, 1) * 100%), transparent); }
+.hover\:bg-destructive\/90:hover { background-color: color-mix(in srgb, var(--destructive) calc(0.9 * 100%), transparent); }
+.hover\:bg-muted\/50:hover { background-color: color-mix(in srgb, var(--muted) calc(0.5 * 100%), transparent); }
+.hover\:bg-primary\/90:hover { background-color: color-mix(in srgb, var(--primary) calc(0.9 * 100%), transparent); }
+.hover\:bg-secondary\/80:hover { background-color: color-mix(in srgb, var(--secondary) calc(0.8 * 100%), transparent); }
+.hover\:text-\[var\(--on-navy\)\]:hover { color: var(--on-navy); }
+.hover\:text-\[var\(--tag-rejected-fg\)\]:hover { color: var(--tag-rejected-fg); }
+.hover\:text-accent-foreground:hover { --tw-text-opacity: 1; color: color-mix(in srgb, var(--accent-foreground) calc(var(--tw-text-opacity, 1) * 100%), transparent); }
+.hover\:underline:hover { text-decoration-line: underline; }
+.hover\:opacity-100:hover { opacity: 1; }
+.focus\:bg-accent:focus { --tw-bg-opacity: 1; background-color: color-mix(in srgb, var(--accent) calc(var(--tw-bg-opacity, 1) * 100%), transparent); }
+.focus\:text-accent-foreground:focus { --tw-text-opacity: 1; color: color-mix(in srgb, var(--accent-foreground) calc(var(--tw-text-opacity, 1) * 100%), transparent); }
+.focus\:outline-none:focus { outline: transparent solid 2px; outline-offset: 2px; }
+.focus\:ring-1:focus { --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color); --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color); box-shadow: var(--tw-ring-offset-shadow),
+    var(--tw-ring-shadow),
+    var(--tw-shadow, 0 0 #0000); }
+.focus\:ring-2:focus { --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color); --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color); box-shadow: var(--tw-ring-offset-shadow),
+    var(--tw-ring-shadow),
+    var(--tw-shadow, 0 0 #0000); }
+.focus\:ring-ring:focus { --tw-ring-opacity: 1; --tw-ring-color: color-mix(in srgb, var(--ring) calc(var(--tw-ring-opacity, 1) * 100%), transparent); }
+.focus\:ring-offset-2:focus { --tw-ring-offset-width: 2px; }
+.focus-visible\:outline-none:focus-visible { outline: transparent solid 2px; outline-offset: 2px; }
+.focus-visible\:ring-1:focus-visible { --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color); --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color); box-shadow: var(--tw-ring-offset-shadow),
+    var(--tw-ring-shadow),
+    var(--tw-shadow, 0 0 #0000); }
+.focus-visible\:ring-2:focus-visible { --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color); --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color); box-shadow: var(--tw-ring-offset-shadow),
+    var(--tw-ring-shadow),
+    var(--tw-shadow, 0 0 #0000); }
+.focus-visible\:ring-\[var\(--ring\)\]:focus-visible { --tw-ring-color: var(--ring); }
+.focus-visible\:ring-ring:focus-visible { --tw-ring-opacity: 1; --tw-ring-color: color-mix(in srgb, var(--ring) calc(var(--tw-ring-opacity, 1) * 100%), transparent); }
+.focus-visible\:ring-offset-2:focus-visible { --tw-ring-offset-width: 2px; }
+.focus-visible\:ring-offset-background:focus-visible { --tw-ring-offset-color: color-mix(in srgb, var(--background) calc(1 * 100%), transparent); }
+.disabled\:pointer-events-none:disabled { pointer-events: none; }
+.disabled\:cursor-not-allowed:disabled { cursor: not-allowed; }
+.disabled\:opacity-50:disabled { opacity: 0.5; }
+.peer:disabled ~ .peer-disabled\:cursor-not-allowed { cursor: not-allowed; }
+.peer:disabled ~ .peer-disabled\:opacity-70 { opacity: 0.7; }
+.data-\[disabled\]\:pointer-events-none[data-disabled] { pointer-events: none; }
+.data-\[side\=bottom\]\:translate-y-1[data-side="bottom"] { --tw-translate-y: 0.25rem; transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }
+.data-\[side\=left\]\:-translate-x-1[data-side="left"] { --tw-translate-x: -0.25rem; transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }
+.data-\[side\=right\]\:translate-x-1[data-side="right"] { --tw-translate-x: 0.25rem; transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }
+.data-\[side\=top\]\:-translate-y-1[data-side="top"] { --tw-translate-y: -0.25rem; transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }
+.data-\[state\=checked\]\:translate-x-4[data-state="checked"] { --tw-translate-x: 1rem; transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }
+.data-\[state\=unchecked\]\:translate-x-0[data-state="unchecked"] { --tw-translate-x: 0px; transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }
+.data-\[state\=active\]\:bg-background[data-state="active"] { --tw-bg-opacity: 1; background-color: color-mix(in srgb, var(--background) calc(var(--tw-bg-opacity, 1) * 100%), transparent); }
+.data-\[state\=checked\]\:bg-primary[data-state="checked"] { --tw-bg-opacity: 1; background-color: color-mix(in srgb, var(--primary) calc(var(--tw-bg-opacity, 1) * 100%), transparent); }
+.data-\[state\=selected\]\:bg-muted[data-state="selected"] { --tw-bg-opacity: 1; background-color: color-mix(in srgb, var(--muted) calc(var(--tw-bg-opacity, 1) * 100%), transparent); }
+.data-\[state\=unchecked\]\:bg-input[data-state="unchecked"] { --tw-bg-opacity: 1; background-color: color-mix(in srgb, var(--input) calc(var(--tw-bg-opacity, 1) * 100%), transparent); }
+.data-\[state\=active\]\:text-foreground[data-state="active"] { --tw-text-opacity: 1; color: color-mix(in srgb, var(--foreground) calc(var(--tw-text-opacity, 1) * 100%), transparent); }
+.data-\[disabled\]\:opacity-50[data-disabled] { opacity: 0.5; }
+.data-\[state\=active\]\:shadow[data-state="active"] { --tw-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); --tw-shadow-colored: 0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color); box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000),
+    var(--tw-ring-shadow, 0 0 #0000),
+    var(--tw-shadow); }
+.data-\[state\=closed\]\:duration-300[data-state="closed"] { transition-duration: 300ms; }
+.data-\[state\=open\]\:duration-300[data-state="open"] { transition-duration: 300ms; }
+.data-\[state\=open\]\:animate-in[data-state="open"] { animation-name: enter; animation-duration: 150ms; --tw-enter-opacity: initial; --tw-enter-scale: initial; --tw-enter-rotate: initial; --tw-enter-translate-x: initial; --tw-enter-translate-y: initial; }
+.data-\[state\=closed\]\:animate-out[data-state="closed"] { animation-name: exit; animation-duration: 150ms; --tw-exit-opacity: initial; --tw-exit-scale: initial; --tw-exit-rotate: initial; --tw-exit-translate-x: initial; --tw-exit-translate-y: initial; }
+.data-\[state\=closed\]\:fade-out-0[data-state="closed"] { --tw-exit-opacity: 0; }
+.data-\[state\=open\]\:fade-in-0[data-state="open"] { --tw-enter-opacity: 0; }
+.data-\[state\=closed\]\:zoom-out-95[data-state="closed"] { --tw-exit-scale: .95; }
+.data-\[state\=open\]\:zoom-in-95[data-state="open"] { --tw-enter-scale: .95; }
+.data-\[state\=closed\]\:slide-out-to-left[data-state="closed"] { --tw-exit-translate-x: -100%; }
+.data-\[state\=closed\]\:slide-out-to-right[data-state="closed"] { --tw-exit-translate-x: 100%; }
+.data-\[state\=open\]\:slide-in-from-left[data-state="open"] { --tw-enter-translate-x: -100%; }
+.data-\[state\=open\]\:slide-in-from-right[data-state="open"] { --tw-enter-translate-x: 100%; }
+.data-\[state\=closed\]\:duration-300[data-state="closed"] { animation-duration: 300ms; }
+.data-\[state\=open\]\:duration-300[data-state="open"] { animation-duration: 300ms; }
+@media (min-width: 640px) {
+  .sm\:col-span-2 { grid-column: span 2 / span 2; }
+  .sm\:max-w-lg { max-width: 32rem; }
+  .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0px, 1fr)); }
+  .sm\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0px, 1fr)); }
+  .sm\:grid-cols-\[minmax\(0\,1fr\)_170px_190px\] { grid-template-columns: minmax(0px, 1fr) 170px 190px; }
+  .sm\:flex-row { flex-direction: row; }
+  .sm\:items-end { align-items: flex-end; }
+  .sm\:items-center { align-items: center; }
+  .sm\:justify-between { justify-content: space-between; }
+  .sm\:divide-x > :not([hidden]) ~ :not([hidden]) { --tw-divide-x-reverse: 0; border-right-width: calc(1px * var(--tw-divide-x-reverse)); border-left-width: calc(1px * calc(1 - var(--tw-divide-x-reverse))); }
+  .sm\:divide-y-0 > :not([hidden]) ~ :not([hidden]) { --tw-divide-y-reverse: 0; border-top-width: calc(0px * calc(1 - var(--tw-divide-y-reverse))); border-bottom-width: calc(0px * var(--tw-divide-y-reverse)); }
+  .sm\:px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+  .sm\:text-\[30px\] { font-size: 30px; }
+}
+@media (min-width: 768px) {
+  .md\:block { display: block; }
+  .md\:hidden { display: none; }
+}
+@media (min-width: 1024px) {
+  .lg\:col-span-1 { grid-column: span 1 / span 1; }
+  .lg\:col-span-2 { grid-column: span 2 / span 2; }
+  .lg\:flex { display: flex; }
+  .lg\:hidden { display: none; }
+  .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0px, 1fr)); }
+  .lg\:grid-cols-\[minmax\(0\,190px\)_minmax\(0\,190px\)_minmax\(0\,1fr\)\] { grid-template-columns: minmax(0px, 190px) minmax(0px, 190px) minmax(0px, 1fr); }
+  .lg\:flex-row { flex-direction: row; }
+  .lg\:items-end { align-items: flex-end; }
+  .lg\:justify-end { justify-content: flex-end; }
+  .lg\:px-8 { padding-left: 2rem; padding-right: 2rem; }
+  .lg\:py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+  .lg\:pb-0 { padding-bottom: 0px; }
+  .lg\:pb-1\.5 { padding-bottom: 0.375rem; }
+}
+.\[\&\:has\(\[role\=checkbox\]\)\]\:pr-0:has([role="checkbox"]) { padding-right: 0px; }
+.\[\&\>span\]\:line-clamp-1 > span { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; }
+.\[\&_svg\]\:pointer-events-none svg { pointer-events: none; }
+.\[\&_svg\]\:size-4 svg { width: 1rem; height: 1rem; }
+.\[\&_svg\]\:shrink-0 svg { flex-shrink: 0; }
+.\[\&_tr\:last-child\]\:border-0 tr:last-child { border-width: 0px; }
+.\[\&_tr\]\:border-b tr { border-bottom-width: 1px; }
+.app-root { background-color: var(--page); color: var(--foreground); font-family: var(--font-sans); }
+.app-root :where(button, input, textarea, select, [role="dialog"], [role="listbox"]) { border-radius: 0px; }
+.app-root :where(.shadow-sm, .shadow, .shadow-md, .shadow-lg, .shadow-xl) { box-shadow: none; }
+.display { font-family: var(--font-display); text-transform: uppercase; font-weight: 600; letter-spacing: 0.015em; line-height: 1.02; }
+.eyebrow { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.18em; font-size: 11px; font-weight: 600; }
+.micro { font-size: 10px; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; }
+.num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+.brand-band { background-color: var(--navy); color: var(--on-navy); }
+.band-muted { color: var(--on-navy-muted); }
+.panel { background-color: var(--card); border: 1px solid var(--border); }
+.stat-value { font-family: var(--font-display); font-size: 28px; line-height: 1; font-weight: 600; letter-spacing: 0.01em; font-variant-numeric: tabular-nums; }
+.tag { display: inline-flex; align-items: center; gap: 4px; border: 1px solid transparent; padding: 1px 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+.tag-waiting { background: var(--tag-waiting-bg); color: var(--tag-waiting-fg); border-color: var(--tag-waiting-border); }
+.tag-approved { background: var(--tag-approved-bg); color: var(--tag-approved-fg); border-color: var(--tag-approved-border); }
+.tag-rejected { background: var(--tag-rejected-bg); color: var(--tag-rejected-fg); border-color: var(--tag-rejected-border); }
+.dense-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.dense-table th { padding: 8px 12px; text-align: left; font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted-foreground); white-space: nowrap; border-bottom: 1px solid var(--border); }
+.dense-table td { padding: 10px 12px; vertical-align: middle; }
+.dense-table tbody tr + tr { border-top: 1px solid var(--border); }
+.dense-table tbody tr:hover { background-color: var(--muted); }
+[role="dialog"] > button { color: var(--on-navy); }
+[role="dialog"] { border-radius: 0px; }</style></head><body><div id="tj-frame-root"><div class="app-root flex min-h-screen flex-col bg-[var(--page)] lg:flex-row"><aside class="brand-band hidden w-[236px] shrink-0 flex-col lg:flex"><div class="border-b border-[var(--navy-2)] px-5 py-5"><p class="display text-[19px] leading-none">Lumen Freight</p><p class="micro mt-2 band-muted">Expense approvals</p></div><nav aria-label="Sections" class="flex-1 px-3 py-4"><ul class="space-y-px"><li><a aria-current="page" class="flex items-center gap-2.5 border-l-2 px-3 py-2.5 text-[13px] font-medium border-[var(--signal)] bg-[var(--navy-2)] text-[var(--on-navy)]" href="/" data-discover="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-inbox h-4 w-4 shrink-0" aria-hidden="true"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>Queue</a></li><li><a class="flex items-center gap-2.5 border-l-2 px-3 py-2.5 text-[13px] font-medium border-transparent band-muted hover:bg-[var(--navy-2)] hover:text-[var(--on-navy)]" href="/expenses" data-discover="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-receipt h-4 w-4 shrink-0" aria-hidden="true"><path d="M12 17V7"></path><path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8"></path><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z"></path></svg>Expense log</a></li><li><a class="flex items-center gap-2.5 border-l-2 px-3 py-2.5 text-[13px] font-medium border-transparent band-muted hover:bg-[var(--navy-2)] hover:text-[var(--on-navy)]" href="/mine" data-discover="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text h-4 w-4 shrink-0" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"></path><path d="M14 2v5a1 1 0 0 0 1 1h5"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>My claims</a></li><li><a class="flex items-center gap-2.5 border-l-2 px-3 py-2.5 text-[13px] font-medium border-transparent band-muted hover:bg-[var(--navy-2)] hover:text-[var(--on-navy)]" href="/submit" data-discover="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus h-4 w-4 shrink-0" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>New expense</a></li></ul></nav><div class="border-t border-[var(--navy-2)] px-5 py-4"><p class="num text-[11px] band-muted">Tue, Nov 3</p><p class="mt-1.5 truncate text-[12px] font-medium">The Developer</p><p class="micro mt-1 band-muted">Sunset depot</p></div></aside><div class="flex min-w-0 flex-1 flex-col"><div class="brand-band flex items-center justify-between gap-3 px-4 py-2.5 lg:hidden"><div><p class="display text-[15px] leading-none">Lumen Freight</p><p class="micro mt-1 band-muted">Expense approvals</p></div><p class="num text-[11px] band-muted">Tue, Nov 3</p></div><main class="min-w-0 flex-1 pb-20 lg:pb-0"><div><header class="brand-band border-b border-[var(--navy-2)] px-4 py-5 sm:px-6 lg:px-8 lg:py-6"><div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div class="min-w-0"><p class="eyebrow band-muted">Lumen Freight · Approvals</p><h1 class="display mt-1 text-[26px] leading-none sm:text-[30px]">Expense queue</h1><p class="num mt-2 text-[13px] leading-snug band-muted">13 waiting · $7,878.51 to review · Tue, Nov 3</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 text-[12px] font-semibold uppercase tracking-wide" href="/submit" data-discover="true">New expense</a></div></div></header><div class="space-y-4 px-4 py-4 sm:px-6 lg:px-8"><section aria-label="Queue summary" class="panel grid grid-cols-2 divide-y divide-[var(--border)] sm:grid-cols-4 sm:divide-x sm:divide-y-0"><div class="min-w-0 px-4 py-3"><p class="micro text-muted-foreground">Waiting now</p><p class="stat-value mt-1.5">13</p><p class="num mt-1 truncate text-[11px] text-muted-foreground">$7,878.51 to review</p></div><div class="min-w-0 px-4 py-3"><p class="micro text-muted-foreground">Oldest request</p><p class="stat-value mt-1.5">9 days</p><p class="num mt-1 truncate text-[11px] text-muted-foreground">Tobias Grant</p></div><div class="min-w-0 px-4 py-3"><p class="micro text-muted-foreground">Approved · Nov</p><p class="stat-value mt-1.5">$1,613.35</p><p class="num mt-1 truncate text-[11px] text-muted-foreground">4 decisions</p></div><div class="min-w-0 px-4 py-3"><p class="micro text-muted-foreground">Rejected · Nov</p><p class="stat-value mt-1.5">2</p><p class="num mt-1 truncate text-[11px] text-muted-foreground">$501.40 returned</p></div></section><section class="panel px-4 py-3" aria-label="Queue filters"><div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,190px)_minmax(0,190px)_minmax(0,1fr)] lg:items-end"><div><label for="queue-month" class="micro block text-muted-foreground">Month</label><select id="queue-month" class="mt-1 h-9 w-full border border-[var(--input)] bg-background px-2 text-[13px] text-[var(--navy)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--ring)]"><option value="2026-11">November 2026</option><option value="2026-10">October 2026</option></select></div><div><label for="queue-category" class="micro block text-muted-foreground">Category</label><select id="queue-category" class="mt-1 h-9 w-full border border-[var(--input)] bg-background px-2 text-[13px] text-[var(--navy)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--ring)]"><option value="all">All categories</option><option value="Equipment">Equipment</option><option value="Freight Handling">Freight Handling</option><option value="Fuel">Fuel</option><option value="Lodging">Lodging</option><option value="Meals">Meals</option><option value="Office Supplies">Office Supplies</option><option value="Tolls &amp; Parking">Tolls &amp; Parking</option><option value="Travel">Travel</option></select></div><div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 sm:col-span-2 lg:col-span-1 lg:justify-end lg:pb-1.5"><span class="num text-[12px] text-muted-foreground">8 of 13 waiting · $3,122.86</span></div></div><p class="mt-2 text-[11px] text-muted-foreground">5 requests are waiting in other months.</p></section><div class="grid gap-4 lg:grid-cols-3"><div class="lg:col-span-2"><section class="panel" aria-labelledby="queue-heading"><div class="flex items-baseline justify-between gap-3 border-b border-[var(--border)] px-4 py-3"><h2 id="queue-heading" class="micro text-muted-foreground">Waiting for approval</h2><span class="micro num text-muted-foreground">8 requests</span></div><div class="hidden md:block"><table class="dense-table"><thead><tr><th scope="col">Employee</th><th scope="col">Category</th><th scope="col" class="text-right">Amount</th><th scope="col">Waiting</th><th scope="col" class="text-right">Decision</th></tr></thead><tbody><tr><td class="max-w-[22rem]"><div class="flex items-center gap-3"><span aria-hidden="true" class="flex h-8 w-8 shrink-0 items-center justify-center border border-[var(--border)] bg-[var(--muted)] text-[11px] font-semibold tracking-wide text-[var(--navy)]">MB</span><div class="min-w-0"><div class="flex min-w-0 items-baseline gap-2"><p class="truncate text-[13px] font-semibold text-[var(--navy)]">Marcus Bell</p><span class="num shrink-0 text-[11px] text-muted-foreground">$341.38 in Nov</span></div><p class="num truncate text-[11px] text-muted-foreground">Dispatch · Nov 1</p><p class="truncate text-[11px] text-muted-foreground">Dispatch headsets and printer toner</p></div></div></td><td><span class="whitespace-nowrap text-[13px] text-[var(--navy)]">Office Supplies</span></td><td class="num whitespace-nowrap text-right text-[13px] font-semibold">$126.88</td><td class="num whitespace-nowrap text-[12px] text-muted-foreground">1 day</td><td class="text-right"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 rounded-md px-3 text-xs">Review<span class="sr-only"> Marcus Bell expense of $126.88</span></button></td></tr><tr><td class="max-w-[22rem]"><div class="flex items-center gap-3"><span aria-hidden="true" class="flex h-8 w-8 shrink-0 items-center justify-center border border-[var(--border)] bg-[var(--muted)] text-[11px] font-semibold tracking-wide text-[var(--navy)]">EM</span><div class="min-w-0"><div class="flex min-w-0 items-baseline gap-2"><p class="truncate text-[13px] font-semibold text-[var(--navy)]">Elena Moreau</p><span class="num shrink-0 text-[11px] text-muted-foreground">$94.75 in Nov</span></div><p class="num truncate text-[11px] text-muted-foreground">Warehouse · Nov 1</p><p class="truncate text-[11px] text-muted-foreground">Loading crew lunch, twelve people</p></div></div></td><td><span class="whitespace-nowrap text-[13px] text-[var(--navy)]">Meals</span></td><td class="num whitespace-nowrap text-right text-[13px] font-semibold">$94.75</td><td class="num whitespace-nowrap text-[12px] text-muted-foreground">1 day</td><td class="text-right"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 rounded-md px-3 text-xs">Review<span class="sr-only"> Elena Moreau expense of $94.75</span></button></td></tr><tr><td class="max-w-[22rem]"><div class="flex items-center gap-3"><span aria-hidden="true" class="flex h-8 w-8 shrink-0 items-center justify-center border border-[var(--border)] bg-[var(--muted)] text-[11px] font-semibold tracking-wide text-[var(--navy)]">PN</span><div class="min-w-0"><div class="flex min-w-0 items-baseline gap-2"><p class="truncate text-[13px] font-semibold text-[var(--navy)]">Priya Nair</p><span class="num shrink-0 text-[11px] text-muted-foreground">$1,209.70 in Nov</span></div><p class="num truncate text-[11px] text-muted-foreground">Warehouse · Nov 1</p><p class="truncate text-[11px] text-muted-foreground">Replacement wheels for two pallet jacks</p></div></div></td><td><span class="whitespace-nowrap text-[13px] text-[var(--navy)]">Equipment</span></td><td class="num whitespace-nowrap text-right text-[13px] font-semibold">$389.00</td><td class="num whitespace-nowrap text-[12px] text-muted-foreground">1 day</td><td class="text-right"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 rounded-md px-3 text-xs">Review<span class="sr-only"> Priya Nair expense of $389.00</span></button></td></tr><tr><td class="max-w-[22rem]"><div class="flex items-center gap-3"><span aria-hidden="true" class="flex h-8 w-8 shrink-0 items-center justify-center border border-[var(--border)] bg-[var(--muted)] text-[11px] font-semibold tracking-wide text-[var(--navy)]">MB</span><div class="min-w-0"><div class="flex min-w-0 items-baseline gap-2"><p class="truncate text-[13px] font-semibold text-[var(--navy)]">Marcus Bell</p><span class="num shrink-0 text-[11px] text-muted-foreground">$341.38 in Nov</span></div><p class="num truncate text-[11px] text-muted-foreground">Dispatch · Nov 1</p><p class="truncate text-[11px] text-muted-foreground">Overnight near Sacramento yard for driver swap</p></div></div></td><td><span class="whitespace-nowrap text-[13px] text-[var(--navy)]">Lodging</span></td><td class="num whitespace-nowrap text-right text-[13px] font-semibold">$214.50</td><td class="num whitespace-nowrap text-[12px] text-muted-foreground">1 day</td><td class="text-right"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 rounded-md px-3 text-xs">Review<span class="sr-only"> Marcus Bell expense of $214.50</span></button></td></tr><tr><td class="max-w-[22rem]"><div class="flex items-center gap-3"><span aria-hidden="true" class="flex h-8 w-8 shrink-0 items-center justify-center border border-[var(--border)] bg-[var(--muted)] text-[11px] font-semibold tracking-wide text-[var(--navy)]">TG</span><div class="min-w-0"><div class="flex min-w-0 items-baseline gap-2"><p class="truncate text-[13px] font-semibold text-[var(--navy)]">Tobias Grant</p><span class="num shrink-0 text-[11px] text-muted-foreground">$74.25 in Nov</span></div><p class="num truncate text-[11px] text-muted-foreground">Linehaul · Nov 1</p><p class="truncate text-[11px] text-muted-foreground">I-80 tolls and yard parking, three days</p></div></div></td><td><span class="whitespace-nowrap text-[13px] text-[var(--navy)]">Tolls &amp; Parking</span></td><td class="num whitespace-nowrap text-right text-[13px] font-semibold">$74.25</td><td class="num whitespace-nowrap text-[12px] text-muted-foreground">Today</td><td class="text-right"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 rounded-md px-3 text-xs">Review<span class="sr-only"> Tobias Grant expense of $74.25</span></button></td></tr><tr><td class="max-w-[22rem]"><div class="flex items-center gap-3"><span aria-hidden="true" class="flex h-8 w-8 shrink-0 items-center justify-center border border-[var(--border)] bg-[var(--muted)] text-[11px] font-semibold tracking-wide text-[var(--navy)]">KO</span><div class="min-w-0"><div class="flex min-w-0 items-baseline gap-2"><p class="truncate text-[13px] font-semibold text-[var(--navy)]">Kwame Osei</p><span class="num shrink-0 text-[11px] text-muted-foreground">$1,564.95 in Nov</span></div><p class="num truncate text-[11px] text-muted-foreground">Dispatch · Nov 2</p><p class="truncate text-[11px] text-muted-foreground">Replacement ELD tablets, six units</p></div></div></td><td><span class="whitespace-nowrap text-[13px] text-[var(--navy)]">Equipment</span></td><td class="num whitespace-nowrap text-right text-[13px] font-semibold">$1,119.00</td><td class="num whitespace-nowrap text-[12px] text-muted-foreground">Today</td><td class="text-right"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 rounded-md px-3 text-xs">Review<span class="sr-only"> Kwame Osei expense of $1,119.00</span></button></td></tr><tr><td class="max-w-[22rem]"><div class="flex items-center gap-3"><span aria-hidden="true" class="flex h-8 w-8 shrink-0 items-center justify-center border border-[var(--border)] bg-[var(--muted)] text-[11px] font-semibold tracking-wide text-[var(--navy)]">RD</span><div class="min-w-0"><div class="flex min-w-0 items-baseline gap-2"><p class="truncate text-[13px] font-semibold text-[var(--navy)]">Rosa Delgado</p><span class="num shrink-0 text-[11px] text-muted-foreground">$642.18 in Nov</span></div><p class="num truncate text-[11px] text-muted-foreground">Linehaul · Nov 2</p><p class="truncate text-[11px] text-muted-foreground">Diesel, 118 gal at Pilot Barstow</p></div></div></td><td><span class="whitespace-nowrap text-[13px] text-[var(--navy)]">Fuel</span></td><td class="num whitespace-nowrap text-right text-[13px] font-semibold">$642.18</td><td class="num whitespace-nowrap text-[12px] text-muted-foreground">Today</td><td class="text-right"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 rounded-md px-3 text-xs">Review<span class="sr-only"> Rosa Delgado expense of $642.18</span></button></td></tr><tr><td class="max-w-[22rem]"><div class="flex items-center gap-3"><span aria-hidden="true" class="flex h-8 w-8 shrink-0 items-center justify-center border border-[var(--border)] bg-[var(--muted)] text-[11px] font-semibold tracking-wide text-[var(--navy)]">PN</span><div class="min-w-0"><div class="flex min-w-0 items-baseline gap-2"><p class="truncate text-[13px] font-semibold text-[var(--navy)]">Priya Nair</p><span class="num shrink-0 text-[11px] text-muted-foreground">$1,209.70 in Nov</span></div><p class="num truncate text-[11px] text-muted-foreground">Warehouse · Nov 2</p><p class="truncate text-[11px] text-muted-foreground">Mileage to Fresno depot audit</p></div></div></td><td><span class="whitespace-nowrap text-[13px] text-[var(--navy)]">Travel</span></td><td class="num whitespace-nowrap text-right text-[13px] font-semibold">$462.30</td><td class="num whitespace-nowrap text-[12px] text-muted-foreground">Today</td><td class="text-right"><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 rounded-md px-3 text-xs">Review<span class="sr-only"> Priya Nair expense of $462.30</span></button></td></tr></tbody></table></div><ul class="md:hidden"><li class="border-b border-[var(--border)] last:border-0"><button type="button" class="flex w-full items-start gap-3 px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"><span aria-hidden="true" class="flex h-8 w-8 shrink-0 items-center justify-center border border-[var(--border)] bg-[var(--muted)] text-[11px] font-semibold tracking-wide text-[var(--navy)]">MB</span><span class="min-w-0 flex-1"><span class="flex items-baseline justify-between gap-3"><span class="flex min-w-0 items-baseline gap-1.5"><span class="truncate text-[13px] font-semibold text-[var(--navy)]">Marcus Bell</span><span class="num shrink-0 text-[10px] text-muted-foreground">$341.38 in Nov</span></span><span class="num shrink-0 text-[13px] font-semibold">$126.88</span></span><span class="mt-0.5 flex items-center justify-between gap-3"><span class="truncate text-[11px] text-muted-foreground">Office Supplies · 1 day</span><span class="tag tag-waiting">Waiting</span></span><span class="mt-1 block truncate text-[11px] text-muted-foreground">Dispatch headsets and printer toner</span></span></button></li><li class="border-b border-[var(--border)] last:border-0"><button type="button" class="flex w-full items-start gap-3 px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"><span aria-hidden="true" class="flex h-8 w-8 shrink-0 items-center justify-center border border-[var(--border)] bg-[var(--muted)] text-[11px] font-semibold tracking-wide text-[var(--navy)]">EM</span><span class="min-w-0 flex-1"><span class="flex items-baseline justify-between gap-3"><span class="flex min-w-0 items-baseline gap-1.5"><span class="truncate text-[13px] font-semibold text-[var(--navy)]">Elena Moreau</span><span class="num shrink-0 text-[10px] text-muted-foreground">$94.75 in Nov</span></span><span class="num shrink-0 text-[13px] font-semibold">$94.75</span></span><span class="mt-0.5 flex items-center justify-between gap-3"><span class="truncate text-[11px] text-muted-foreground">Meals · 1 day</span><span class="tag tag-waiting">Waiting</span></span><span class="mt-1 block truncate text-[11px] text-muted-foreground">Loading crew lunch, twelve people</span></span></button></li><li class="border-b border-[var(--border)] last:border-0"><button type="button" class="flex w-full items-start gap-3 px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"><span aria-hidden="true" class="flex h-8 w-8 shrink-0 items-center justify-center border border-[var(--border)] bg-[var(--muted)] text-[11px] font-semibold tracking-wide text-[var(--navy)]">PN</span><span class="min-w-0 flex-1"><span class="flex items-baseline justify-between gap-3"><span class="flex min-w-0 items-baseline gap-1.5"><span class="truncate text-[13px] font-semibold text-[var(--navy)]">Priya Nair</span><span class="num shrink-0 text-[10px] text-muted-foreground">$1,209.70 in Nov</span></span><span class="num shrink-0 text-[13px] font-semibold">$389.00</span></span><span class="mt-0.5 flex items-center justify-between gap-3"><span class="truncate text-[11px] text-muted-foreground">Equipment · 1 day</span><span class="tag tag-waiting">Waiting</span></span><span class="mt-1 block truncate text-[11px] text-muted-foreground">Replacement wheels for two pallet jacks</span></span></button></li><li class="border-b border-[var(--border)] last:border-0"><button type="button" class="flex w-full items-start gap-3 px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"><span aria-hidden="true" class="flex h-8 w-8 shrink-0 items-center justify-center border border-[var(--border)] bg-[var(--muted)] text-[11px] font-semibold tracking-wide text-[var(--navy)]">MB</span><span class="min-w-0 flex-1"><span class="flex items-baseline justify-between gap-3"><span class="flex min-w-0 items-baseline gap-1.5"><span class="truncate text-[13px] font-semibold text-[var(--navy)]">Marcus Bell</span><span class="num shrink-0 text-[10px] text-muted-foreground">$341.38 in Nov</span></span><span class="num shrink-0 text-[13px] font-semibold">$214.50</span></span><span class="mt-0.5 flex items-center justify-between gap-3"><span class="truncate text-[11px] text-muted-foreground">Lodging · 1 day</span><span class="tag tag-waiting">Waiting</span></span><span class="mt-1 block truncate text-[11px] text-muted-foreground">Overnight near Sacramento yard for driver swap</span></span></button></li><li class="border-b border-[var(--border)] last:border-0"><button type="button" class="flex w-full items-start gap-3 px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"><span aria-hidden="true" class="flex h-8 w-8 shrink-0 items-center justify-center border border-[var(--border)] bg-[var(--muted)] text-[11px] font-semibold tracking-wide text-[var(--navy)]">TG</span><span class="min-w-0 flex-1"><span class="flex items-baseline justify-between gap-3"><span class="flex min-w-0 items-baseline gap-1.5"><span class="truncate text-[13px] font-semibold text-[var(--navy)]">Tobias Grant</span><span class="num shrink-0 text-[10px] text-muted-foreground">$74.25 in Nov</span></span><span class="num shrink-0 text-[13px] font-semibold">$74.25</span></span><span class="mt-0.5 flex items-center justify-between gap-3"><span class="truncate text-[11px] text-muted-foreground">Tolls &amp; Parking · Today</span><span class="tag tag-waiting">Waiting</span></span><span class="mt-1 block truncate text-[11px] text-muted-foreground">I-80 tolls and yard parking, three days</span></span></button></li><li class="border-b border-[var(--border)] last:border-0"><button type="button" class="flex w-full items-start gap-3 px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"><span aria-hidden="true" class="flex h-8 w-8 shrink-0 items-center justify-center border border-[var(--border)] bg-[var(--muted)] text-[11px] font-semibold tracking-wide text-[var(--navy)]">KO</span><span class="min-w-0 flex-1"><span class="flex items-baseline justify-between gap-3"><span class="flex min-w-0 items-baseline gap-1.5"><span class="truncate text-[13px] font-semibold text-[var(--navy)]">Kwame Osei</span><span class="num shrink-0 text-[10px] text-muted-foreground">$1,564.95 in Nov</span></span><span class="num shrink-0 text-[13px] font-semibold">$1,119.00</span></span><span class="mt-0.5 flex items-center justify-between gap-3"><span class="truncate text-[11px] text-muted-foreground">Equipment · Today</span><span class="tag tag-waiting">Waiting</span></span><span class="mt-1 block truncate text-[11px] text-muted-foreground">Replacement ELD tablets, six units</span></span></button></li><li class="border-b border-[var(--border)] last:border-0"><button type="button" class="flex w-full items-start gap-3 px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"><span aria-hidden="true" class="flex h-8 w-8 shrink-0 items-center justify-center border border-[var(--border)] bg-[var(--muted)] text-[11px] font-semibold tracking-wide text-[var(--navy)]">RD</span><span class="min-w-0 flex-1"><span class="flex items-baseline justify-between gap-3"><span class="flex min-w-0 items-baseline gap-1.5"><span class="truncate text-[13px] font-semibold text-[var(--navy)]">Rosa Delgado</span><span class="num shrink-0 text-[10px] text-muted-foreground">$642.18 in Nov</span></span><span class="num shrink-0 text-[13px] font-semibold">$642.18</span></span><span class="mt-0.5 flex items-center justify-between gap-3"><span class="truncate text-[11px] text-muted-foreground">Fuel · Today</span><span class="tag tag-waiting">Waiting</span></span><span class="mt-1 block truncate text-[11px] text-muted-foreground">Diesel, 118 gal at Pilot Barstow</span></span></button></li><li class="border-b border-[var(--border)] last:border-0"><button type="button" class="flex w-full items-start gap-3 px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"><span aria-hidden="true" class="flex h-8 w-8 shrink-0 items-center justify-center border border-[var(--border)] bg-[var(--muted)] text-[11px] font-semibold tracking-wide text-[var(--navy)]">PN</span><span class="min-w-0 flex-1"><span class="flex items-baseline justify-between gap-3"><span class="flex min-w-0 items-baseline gap-1.5"><span class="truncate text-[13px] font-semibold text-[var(--navy)]">Priya Nair</span><span class="num shrink-0 text-[10px] text-muted-foreground">$1,209.70 in Nov</span></span><span class="num shrink-0 text-[13px] font-semibold">$462.30</span></span><span class="mt-0.5 flex items-center justify-between gap-3"><span class="truncate text-[11px] text-muted-foreground">Travel · Today</span><span class="tag tag-waiting">Waiting</span></span><span class="mt-1 block truncate text-[11px] text-muted-foreground">Mileage to Fresno depot audit</span></span></button></li></ul></section></div><div class="space-y-4"><section class="panel" aria-labelledby="breakdown-heading"><div class="flex items-start justify-between gap-3 border-b border-[var(--border)] px-4 py-3"><div><h2 id="breakdown-heading" class="micro text-muted-foreground">Spend by category</h2><p class="mt-1 text-[11px] text-muted-foreground">November 2026</p></div><div class="flex gap-0 border border-[var(--border)]"><button type="button" aria-pressed="true" class="num bg-[var(--navy)] px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--on-navy)]">Nov</button><button type="button" aria-pressed="false" class="num px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-[var(--muted)]">Oct</button></div></div><div class="px-4 py-3"><div class="flex items-baseline justify-between gap-3"><span class="stat-value">$3,927.21</span><span class="num text-[11px] text-muted-foreground">12 requests</span></div><ul class="mt-4 space-y-3"><li><div class="flex items-baseline justify-between gap-3"><span class="truncate text-[12px] font-medium text-[var(--navy)]">Equipment</span><span class="num shrink-0 text-[12px] font-semibold">$1,754.00</span></div><div class="mt-1 h-1.5 w-full bg-[var(--muted)]"><div class="h-full bg-[var(--navy)]" style="width: 100%;"></div></div></li><li><div class="flex items-baseline justify-between gap-3"><span class="truncate text-[12px] font-medium text-[var(--navy)]">Fuel</span><span class="num shrink-0 text-[12px] font-semibold">$1,044.33</span></div><div class="mt-1 h-1.5 w-full bg-[var(--muted)]"><div class="h-full bg-[var(--navy)]" style="width: 60%;"></div></div></li><li><div class="flex items-baseline justify-between gap-3"><span class="truncate text-[12px] font-medium text-[var(--navy)]">Travel</span><span class="num shrink-0 text-[12px] font-semibold">$462.30</span></div><div class="mt-1 h-1.5 w-full bg-[var(--muted)]"><div class="h-full bg-[var(--navy)]" style="width: 26%;"></div></div></li><li><div class="flex items-baseline justify-between gap-3"><span class="truncate text-[12px] font-medium text-[var(--navy)]">Lodging</span><span class="num shrink-0 text-[12px] font-semibold">$214.50</span></div><div class="mt-1 h-1.5 w-full bg-[var(--muted)]"><div class="h-full bg-[var(--navy)]" style="width: 12%;"></div></div></li><li><div class="flex items-baseline justify-between gap-3"><span class="truncate text-[12px] font-medium text-[var(--navy)]">Tolls &amp; Parking</span><span class="num shrink-0 text-[12px] font-semibold">$186.65</span></div><div class="mt-1 h-1.5 w-full bg-[var(--muted)]"><div class="h-full bg-[var(--navy)]" style="width: 11%;"></div></div></li><li><div class="flex items-baseline justify-between gap-3"><span class="truncate text-[12px] font-medium text-[var(--navy)]">Meals</span><span class="num shrink-0 text-[12px] font-semibold">$138.55</span></div><div class="mt-1 h-1.5 w-full bg-[var(--muted)]"><div class="h-full bg-[var(--navy)]" style="width: 8%;"></div></div></li><li><div class="flex items-baseline justify-between gap-3"><span class="truncate text-[12px] font-medium text-[var(--navy)]">Office Supplies</span><span class="num shrink-0 text-[12px] font-semibold">$126.88</span></div><div class="mt-1 h-1.5 w-full bg-[var(--muted)]"><div class="h-full bg-[var(--navy)]" style="width: 7%;"></div></div></li></ul></div></section><section class="panel" aria-labelledby="recent-heading"><div class="border-b border-[var(--border)] px-4 py-3"><h2 id="recent-heading" class="micro text-muted-foreground">Latest decisions</h2></div><ul><li class="flex items-start justify-between gap-3 border-b border-[var(--border)] px-4 py-2.5 last:border-0"><div class="min-w-0"><p class="truncate text-[12px] font-semibold text-[var(--navy)]">Approved · Priya Nair</p><p class="truncate text-[11px] text-muted-foreground">Dana Whitfield · Nov 2</p></div><span class="num shrink-0 text-[12px] font-semibold">$246.00</span></li><li class="flex items-start justify-between gap-3 border-b border-[var(--border)] px-4 py-2.5 last:border-0"><div class="min-w-0"><p class="truncate text-[12px] font-semibold text-[var(--navy)]">Rejected · Marcus Bell</p><p class="truncate text-[11px] text-muted-foreground">Dana Whitfield · Nov 2</p></div><span class="num shrink-0 text-[12px] font-semibold">$389.00</span></li><li class="flex items-start justify-between gap-3 border-b border-[var(--border)] px-4 py-2.5 last:border-0"><div class="min-w-0"><p class="truncate text-[12px] font-semibold text-[var(--navy)]">Approved · Kwame Osei</p><p class="truncate text-[11px] text-muted-foreground">Rae Kim · Nov 2</p></div><span class="num shrink-0 text-[12px] font-semibold">$43.80</span></li><li class="flex items-start justify-between gap-3 border-b border-[var(--border)] px-4 py-2.5 last:border-0"><div class="min-w-0"><p class="truncate text-[12px] font-semibold text-[var(--navy)]">Approved · Kwame Osei</p><p class="truncate text-[11px] text-muted-foreground">Rae Kim · Nov 2</p></div><span class="num shrink-0 text-[12px] font-semibold">$402.15</span></li></ul></section></div></div></div></div></main><nav aria-label="Sections" class="brand-band fixed inset-x-0 bottom-0 z-30 grid auto-cols-fr grid-flow-col border-t border-[var(--navy-2)] lg:hidden"><a aria-current="page" class="flex min-h-[48px] flex-col items-center justify-center gap-1 border-t-2 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] border-[var(--signal)] text-[var(--on-navy)]" href="/" data-discover="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-inbox h-4 w-4" aria-hidden="true"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>Queue</a><a class="flex min-h-[48px] flex-col items-center justify-center gap-1 border-t-2 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] border-transparent band-muted" href="/expenses" data-discover="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-receipt h-4 w-4" aria-hidden="true"><path d="M12 17V7"></path><path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8"></path><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z"></path></svg>Log</a><a class="flex min-h-[48px] flex-col items-center justify-center gap-1 border-t-2 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] border-transparent band-muted" href="/mine" data-discover="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text h-4 w-4" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"></path><path d="M14 2v5a1 1 0 0 0 1 1h5"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>Mine</a><a class="flex min-h-[48px] flex-col items-center justify-center gap-1 border-t-2 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] border-transparent band-muted" href="/submit" data-discover="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus h-4 w-4" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Claim</a></nav></div></div></div></body></html>

@@ -26,10 +26,13 @@ describe('verify_page_render', () => {
 });
 
 function browserFixture({ status = 200, widgets = 1, landed = 'http://viewer.test/applications/app1/home', resource, redirect, method = 'GET', duringSettle = false, resourceType = 'document', socket = false }: {
-  status?: number; widgets?: number; landed?: string; resource?: string; redirect?: string; method?: string; duringSettle?: boolean; resourceType?: string; socket?: boolean;
+  status?: number; widgets?: number; landed?: string; resource?: string; redirect?: string; method?: string; duringSettle?: boolean; resourceType?: string;
+  /** true: a third-party socket; a string: that socket URL. */
+  socket?: boolean | string;
 } = {}) {
   let handler: (route: any) => Promise<void>;
   let onSocket: ((ws: any) => void) | undefined;
+  const ws = { url: () => (typeof socket === 'string' ? socket : 'wss://realtime.thirdparty.test/socket'), close: vi.fn(), connectToServer: vi.fn() };
   const route = {
     request: () => ({ url: () => resource ?? 'http://viewer.test/applications/app1/home', method: () => method, resourceType: () => resourceType }),
     abort: vi.fn().mockResolvedValue(undefined),
@@ -45,20 +48,20 @@ function browserFixture({ status = 200, widgets = 1, landed = 'http://viewer.tes
     routeWebSocket: vi.fn(async (_: string, cb: (ws: any) => void) => { onSocket = cb; }),
     close: vi.fn().mockResolvedValue(undefined),
     newPage: vi.fn().mockResolvedValue({
-      goto: async () => { if (socket) onSocket?.({ url: () => 'ws://viewer.test/ws', close: () => {} }); if (!duringSettle && (resource || redirect)) { await handler(route); if (route.abort.mock.calls.length) throw new Error('aborted'); } return { status: () => status }; },
+      goto: async () => { if (socket) onSocket?.(ws); if (!duringSettle && (resource || redirect)) { await handler(route); if (route.abort.mock.calls.length) throw new Error('aborted'); } return { status: () => status }; },
       waitForTimeout: vi.fn(async () => { if (duringSettle) await handler(route); }), waitForFunction: vi.fn().mockResolvedValue(undefined),
       url: () => landed, evaluate: vi.fn().mockResolvedValue({ widgets, findings: [] }),
     }),
   };
   const browser = { newContext: vi.fn().mockResolvedValue(context), close: vi.fn() };
   const driver = async () => ({ chromium: { launch: vi.fn().mockResolvedValue(browser) } });
-  return { route, context, browser, driver };
+  return { route, context, browser, driver, ws };
 }
 const target = [{ page: 'home', url: 'http://viewer.test/applications/app1/home' }];
 
 describe('render audit query execution', () => {
   const savedQueries = { version_id: 'v-library', queries: [{ id: 'q-shelves', kind: 'postgresql',
-    data_source_id: 'ds-library', options: { query: 'SELECT shelf_id FROM shelves LIMIT 5' } }] };
+    data_source_id: 'ds-library', options: { mode: 'sql', query: 'SELECT shelf_id FROM shelves LIMIT 5' } }] };
   const run = 'http://viewer.test/api/data-queries/q-shelves/versions/v-library/run/env-dev?mode=view';
 
   it.each([run, 'http://viewer.test/api/data-queries/q-shelves/run'])('allows saved static bounded reads without option overrides: %s', async resource => {
@@ -85,10 +88,10 @@ describe('render audit query execution', () => {
   });
 
   it.each([
-    { kind: 'postgresql', options: { query: 'DELETE FROM shelves' } },
-    { kind: 'postgresql', options: { query: 'SELECT shelf_id FROM shelves' } },
-    { kind: 'postgresql', options: { query: 'SELECT shelf_id FROM shelves LIMIT 5 {{variables.tail}}' } },
-    { kind: 'postgresql', options: { query: 'SELECT shelf_id FROM shelves LIMIT 5', requestConfirmation: true } },
+    { kind: 'postgresql', options: { mode: 'sql', query: 'DELETE FROM shelves' } },
+    { kind: 'postgresql', options: { mode: 'sql', query: 'SELECT shelf_id FROM shelves' } },
+    { kind: 'postgresql', options: { mode: 'sql', query: 'SELECT shelf_id FROM shelves LIMIT 5 {{variables.tail}}' } },
+    { kind: 'postgresql', options: { mode: 'sql', query: 'SELECT shelf_id FROM shelves LIMIT 5', requestConfirmation: true } },
     { kind: 'bigquery', options: { query: 'SELECT shelf_id FROM shelves LIMIT 5' } },
     { kind: 'restapi', options: { method: 'get', url: 'https://catalogue.test/shelves?limit=5' } },
     { kind: 'runjs', options: { code: 'queries.removeShelf.run()' } },
@@ -198,6 +201,52 @@ describe('render audit network boundary and honest results', () => {
 // apps are private while they are built, so no page was ever audited. The browser now carries the MCP server's own
 // session, scoped to the audit origins it may visit, and opens the version being edited (a released app's public URL
 // would show the old version).
+// The merged ToolJet viewer opens its own /ws and waits on it: with every socket blocked, some Code mode pages never rendered
+// and every result carried a finding, so the agent read each check as failed (guideline v2 check, 2026-11-02).
+describe('render audit WebSockets', () => {
+  it.each(['ws://viewer.test/ws', 'wss://viewer.test/ws'])('lets the ToolJet instance\'s own socket through: %s', async (socket) => {
+    const f = browserFixture({ socket });
+    const origins = new Set(['http://viewer.test', 'https://viewer.test']);
+    const [report] = await auditPages(target, { allowedOrigins: origins }, f.driver);
+    expect(f.ws.connectToServer).toHaveBeenCalledOnce();
+    expect(f.ws.close).not.toHaveBeenCalled();
+    expect(report.findings).toEqual([]);
+  });
+
+  it('closes a third-party socket and reports it without failing the render', async () => {
+    const f = browserFixture({ socket: true });
+    const [report] = await auditPages(target, {}, f.driver);
+    expect(f.ws.connectToServer).not.toHaveBeenCalled();
+    expect(f.ws.close).toHaveBeenCalled();
+    expect(report.widgets).toBe(1);
+    expect(report.findings).toEqual([expect.objectContaining({ kind: 'blocked_socket', reason: 'blocked_destination' })]);
+    expect(report.findings[0].detail).not.toMatch(/token|\?/);
+  });
+
+  it('does not count a blocked third-party socket against ok', async () => {
+    const f = browserFixture({ socket: true });
+    const res: any = await verifyPageRenderTool(client, () => 'http://viewer.test', f.driver).handler({ app_id: 'app1' });
+    const body = JSON.parse(res.content[0].text);
+    expect(body.ok).toBe(true);
+    // Both pages share the fixture's one context, so the socket lands on whichever page registered last.
+    expect(body.pages.flatMap((p: any) => p.findings.map((x: any) => x.kind))).toContain('blocked_socket');
+  });
+
+  it('still reports an empty page as unreachable when the only block was a third-party socket', async () => {
+    const f = browserFixture({ socket: true, widgets: 0 });
+    const [report] = await auditPages(target, {}, f.driver);
+    expect(report.findings[0].kind).toBe('unreachable');
+    expect(report.findings[0].detail).toMatch(/no widgets/);
+  });
+
+  it('blocks a socket to a look-alike host', async () => {
+    const f = browserFixture({ socket: 'ws://viewer.test.attacker.test/ws' });
+    await auditPages(target, {}, f.driver);
+    expect(f.ws.connectToServer).not.toHaveBeenCalled();
+    expect(f.ws.close).toHaveBeenCalled();
+  });
+});
+
 describe('render audit with the builder\'s session', () => {
   it('uses a separate short-lived HttpOnly cookie for the app-pinned OAuth viewer', async () => {
     const f = browserFixture();
@@ -222,7 +271,13 @@ describe('render audit with the builder\'s session', () => {
     const f = browserFixture();
     (f.context as any).addCookies = vi.fn().mockResolvedValue(undefined);
     await auditPages(target, { session: 'tok123' }, f.driver);
-    expect((f.context as any).addCookies).toHaveBeenCalledWith([{ name: 'tj_auth_token', value: 'tok123', url: 'http://viewer.test' }]);
+    expect((f.context as any).addCookies).toHaveBeenCalledWith([{ name: 'tj_auth_token', value: 'tok123', url: 'http://viewer.test', httpOnly: true, secure: false, sameSite: 'Lax' }]);
+  });
+  it('marks the cookie Secure on https', async () => {
+    const f = browserFixture();
+    (f.context as any).addCookies = vi.fn().mockResolvedValue(undefined);
+    await auditPages([{ ...target[0], url: 'https://viewer.test/app' }], { session: 'tok123', allowedOrigins: new Set(['https://viewer.test']) as any }, f.driver);
+    expect((f.context as any).addCookies).toHaveBeenCalledWith([expect.objectContaining({ httpOnly: true, secure: true, sameSite: 'Lax' })]);
   });
   it('opens the edited version of every page with the session', async () => {
     const f = browserFixture();
@@ -260,7 +315,8 @@ it('enables the Chromium sandbox and disables non-proxied WebRTC', async () => {
   const f = browserFixture();
   const launch = vi.fn().mockResolvedValue(f.browser);
   await auditPages(target, {}, async () => ({ chromium: { launch } }));
-  expect(launch).toHaveBeenCalledWith(expect.objectContaining({ chromiumSandbox: true, args: ['--force-webrtc-ip-handling-policy=disable_non_proxied_udp'] }));
+  expect(launch).toHaveBeenCalledWith(expect.objectContaining({ chromiumSandbox: true,
+    args: expect.arrayContaining(['--force-webrtc-ip-handling-policy=disable_non_proxied_udp', '--disable-sync', '--no-pings', '--disable-domain-reliability']) }));
 });
 it('shares per-grant admission across separate MCP tool instances before loading app data', async () => {
   vi.stubEnv('MCP_RENDER_AUDIT_MAX_BROWSERS', '2');
@@ -306,5 +362,100 @@ describe('render audit static assets', () => {
     await auditPages(target, {}, f.driver);
     expect(f.route.continue).not.toHaveBeenCalled();
     expect(f.route.abort).toHaveBeenCalled();
+  });
+});
+
+describe('render audit of a code page', () => {
+  it('opens one route at the requested width', async () => {
+    const f = browserFixture();
+    (f.context as any).addCookies = vi.fn().mockResolvedValue(undefined);
+    const gotoUrls: string[] = [];
+    const page = await f.context.newPage();
+    const goto = page.goto;
+    f.context.newPage = vi.fn().mockResolvedValue({ ...page, goto: async (url: string, o: unknown) => { gotoUrls.push(url); return goto(url, o); } });
+    const session = { ...client, viewerSession: async () => 'tok123', editingVersionName: async () => 'v2' };
+    const res: any = await verifyPageRenderTool(session, () => 'http://viewer.test', f.driver)
+      .handler({ app_id: 'app1', page_handle: 'home', viewport_width: 375, route: '/orders/36' });
+    expect(res.isError).toBeFalsy();
+    expect(gotoUrls).toEqual(['http://viewer.test/applications/app1/home?env=development&version=v2&route=%2Forders%2F36']);
+    expect(f.browser.newContext).toHaveBeenCalledWith(expect.objectContaining({ viewport: { width: 375, height: 812 } }));
+  });
+
+  it('keeps 1600x900 when no width is given', async () => {
+    const f = browserFixture();
+    await auditPages(target, {}, f.driver);
+    expect(f.browser.newContext).toHaveBeenCalledWith(expect.objectContaining({ viewport: { width: 1600, height: 900 } }));
+  });
+
+  it('reports what the check inside the code page found instead of the widget walk', async () => {
+    const f = browserFixture();
+    const page = await f.context.newPage();
+    const overflow = { kind: 'overflow', component: 'code page', detail: 'the app scrolls sideways at 375px (520px of content in 375px)' };
+    page.evaluate = vi.fn().mockResolvedValueOnce({ widgets: 1, findings: [{ kind: 'overlap', component: 'x', detail: 'canvas only' }] }).mockResolvedValueOnce([overflow]);
+    f.context.newPage = vi.fn().mockResolvedValue(page);
+    const [report] = await auditPages(target, { viewportWidth: 375 }, f.driver);
+    expect(report.findings).toEqual([overflow]);
+  });
+
+  it('rejects a route that is not a path', async () => {
+    const tool = verifyPageRenderTool(client, () => 'http://viewer.test');
+    const schema = (await import('zod')).z.object(tool.inputSchema as any);
+    expect(schema.safeParse({ app_id: 'a', route: 'https://elsewhere.test' }).success).toBe(false);
+    expect(schema.safeParse({ app_id: 'a', route: '/orders/:id' }).success).toBe(true);
+  });
+});
+
+describe('render audit of a code page: axe and screenshot', () => {
+  it('runs axe-core in the frame, keeps violations apart from findings, and saves a screenshot', async () => {
+    vi.stubEnv('MCP_RENDER_AUDIT_SCREENSHOTS', '/tmp/tj-audit-test');
+    const f = browserFixture();
+    const page = await f.context.newPage();
+    const violation = { id: 'button-name', impact: 'critical', help: 'Buttons must have discernible text', nodes: 2, targets: ['#a', '#b'] };
+    const frameEvaluate = vi.fn().mockResolvedValueOnce(undefined).mockResolvedValueOnce([violation]);
+    page.evaluate = vi.fn().mockResolvedValueOnce({ widgets: 1, findings: [] }).mockResolvedValueOnce([]);
+    (page as any).$ = vi.fn().mockResolvedValue({ contentFrame: async () => ({ evaluate: frameEvaluate }) });
+    (page as any).screenshot = vi.fn().mockResolvedValue(undefined);
+    f.context.newPage = vi.fn().mockResolvedValue(page);
+    const [report] = await auditPages([{ page: 'home', url: 'http://viewer.test/applications/app1/home?route=%2Forders%2F36' }], { viewportWidth: 375 }, f.driver);
+    expect(report.findings).toEqual([]);
+    expect(report.accessibility).toEqual([violation]);
+    expect(String(frameEvaluate.mock.calls[0][0])).toContain('axe');
+    expect(report.screenshot).toBe('/tmp/tj-audit-test/app1-home-orders-36-375.png');
+    expect((page as any).screenshot).toHaveBeenCalledWith({ path: '/tmp/tj-audit-test/app1-home-orders-36-375.png', fullPage: false });
+  });
+});
+
+// Equipment checkout log (2026-11-02): a working dev-track Code mode page drew its widget 3 to 4 s after load, and a
+// fixed 6 s settle during a build read it as "no widgets" twice. The audit now waits for the page to draw first.
+describe('render audit waits for the page to draw', () => {
+  it('waits for content before the settle, with its own timeout', async () => {
+    const f = browserFixture();
+    const order: string[] = [];
+    const page = await f.context.newPage();
+    const waitForFunction = vi.fn(async (_fn: unknown, _arg: unknown, opts: any) => { order.push(`content:${opts.timeout}`); });
+    const waitForTimeout = vi.fn(async (ms: number) => { order.push(`settle:${ms}`); });
+    f.context.newPage = vi.fn().mockResolvedValue({ ...page, waitForFunction, waitForTimeout });
+    await auditPages(target, { contentWaitMs: 12_000, settleMs: 100 }, f.driver);
+    expect(order[0]).toBe('content:12000');
+    expect(order[1]).toBe('settle:100');
+  });
+
+  it('counts a Code mode page as drawn only once its frame has the app', async () => {
+    const f = browserFixture();
+    const page = await f.context.newPage();
+    let predicate: (() => boolean) | undefined;
+    const waitForFunction = vi.fn(async (fn: () => boolean) => { predicate ??= fn; });
+    f.context.newPage = vi.fn().mockResolvedValue({ ...page, waitForFunction });
+    await auditPages(target, {}, f.driver);
+    const doc = (widget: boolean, frame?: { children: number }) => ({
+      querySelector: (sel: string) =>
+        sel.startsWith('[data-cy') ? (widget ? {} : null)
+          : frame ? { contentDocument: { getElementById: () => ({ children: { length: frame.children } }) } } : null,
+    });
+    const run = (d: unknown) => { (globalThis as any).document = d; try { return predicate!(); } finally { delete (globalThis as any).document; } };
+    expect(run(doc(false))).toBe(false);
+    expect(run(doc(true))).toBe(true); // a visual page: the widget is enough
+    expect(run(doc(true, { children: 0 }))).toBe(false); // the frame is there but the app has not drawn
+    expect(run(doc(true, { children: 1 }))).toBe(true);
   });
 });

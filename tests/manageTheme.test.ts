@@ -121,3 +121,16 @@ describe('manage_theme accent note', () => {
     expect(quiet.warnings).toBeUndefined();
   });
 });
+
+describe('manage_theme create without its required fields', () => {
+  it('names every missing field in one answer, before any request', async () => {
+    const client = { listAppThemes: vi.fn(), createAppTheme: vi.fn() } as unknown as ToolJetClient;
+    const both = await manageThemeTool(client).handler({ action: 'create', app_id: '11111111-1111-4111-8111-111111111111' } as never);
+    expect(both.isError).toBe(true);
+    expect(both.content[0]!.text).toMatch(/needs name .* and primary .*Send them together in one call/);
+    const primary = await manageThemeTool(client).handler({ action: 'create', name: 'Harbor Ledger' } as never);
+    expect(primary.content[0]!.text).toMatch(/needs primary \(the accent as a hex colour/);
+    expect(primary.content[0]!.text).not.toMatch(/needs name/);
+    expect(client.listAppThemes).not.toHaveBeenCalled();
+  });
+});
