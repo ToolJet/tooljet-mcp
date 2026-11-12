@@ -1,9 +1,9 @@
 import { createRequire } from "node:module";
-import { p as peekAppPlan, c as consumeAppPlan, f as frozenAppRefusal, r as replaceView, a as replaceFingerprint, d as danglingAfterReplace, b as prepareQueryOptionsForWrite, m as matchPlannedPage, l as literalCanvasColor, e as prepareComponentBatch, g as replaceIds, h as expandQueryLifecycles, v as validateEvents, n as navigationReorders, i as persistedEventSpecs } from "./chunk-C0erdRqw.js";
+import { p as peekAppPlan, c as consumeAppPlan, f as frozenAppRefusal, r as replaceView, a as replaceFingerprint, d as danglingAfterReplace, b as prepareQueryOptionsForWrite, m as matchPlannedPage, l as literalCanvasColor, e as prepareComponentBatch, g as replaceIds, h as expandQueryLifecycles, v as validateEvents, n as navigationReorders, i as persistedEventSpecs } from "./chunk-3x3mi7XK.js";
 import { e5 as fail, ef as tableQuotaError, e6 as ok } from "./chunk-addBGscc.js";
-import { r as resolveRef, D as validateQueryOptions, z as issueMessages } from "./chunk-DHwsBZfi.js";
-import { c as componentRef, j as completedPartialWrites, i as indexComponentReferences, k as isFlexContainerType, l as batchChildOrders, m as childOrderProperty } from "./chunk-DkGTJHQA.js";
-import { I as validateAppStructure, M as unpinnedLibraries, d as decodeComponentParent, e as encodeComponentParent } from "./chunk-BN-V1KBv.js";
+import { w as resolveRef, M as validateQueryOptions, J as issueMessages, O as unpinnedLibraries } from "./chunk-TA_njdhN.js";
+import { c as componentRef, j as completedPartialWrites, i as indexComponentReferences, k as isFlexContainerType, l as batchChildOrders, m as childOrderProperty } from "./chunk-B_Q-bV9o.js";
+import { C as validateAppStructure, d as decodeComponentParent, e as encodeComponentParent } from "./chunk-CoCoiCyO.js";
 import { L as LARGE_READ_ROW_THRESHOLD, a as assessQueryRead, b as resolveStaticBindings, c as resolvedReadRefusal, s as sameReadSource, e as extractRowCount, d as emptyViewerOnlyParams, f as emptyParamsNote, u as unresolvedNote } from "./chunk-Ces3cV_q.js";
 import { g as getDatasourceQuerySchema } from "./chunk-DGCi5LfA.js";
 import { b0 as external_exports } from "./chunk-Bk2YZ8cg.js";
