@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -13,10 +13,11 @@ import { buildInService, buildServiceUrl, packProject } from '../src/codeBuildSe
 let dir: string;
 const env = { ...process.env };
 
-const bundle = (): string => {
+const bundle = (extra?: (src: string) => void): string => {
   const src = mkdtempSync(join(tmpdir(), 'tj-bundle-src-'));
   writeFileSync(join(src, 'index.js'), 'built in the sandbox');
   writeFileSync(join(src, 'manifest.json'), '{"components":[]}');
+  extra?.(src);
   const out = execFileSync('tar', ['-czf', '-', '-C', src, '.']);
   rmSync(src, { recursive: true, force: true });
   return out.toString('base64');
@@ -113,5 +114,43 @@ describe('the build service', () => {
     const result = await buildInService(dir, 'production', refused);
     expect(result).toMatchObject({ code: 1 });
     expect(result.output).toContain('HTTP 401 unauthorized');
+  });
+
+  // Review, 2026-11-11: the findings below were each reproduced on the client.
+  it('cuts off a request the service never answers at the deadline', async () => {
+    process.env.MCP_CODE_BUILD_WORKER_TIMEOUT_MS = '50';
+    const stalled = ((_: string | URL, init?: RequestInit) =>
+      new Promise((_resolve, reject) => init?.signal?.addEventListener('abort', () => reject(init.signal!.reason)))) as typeof fetch;
+    const result = await buildInService(dir, 'production', stalled);
+    expect(result.code).toBe(1);
+    expect(result.output).toContain('did not finish in 1 minutes');
+    expect(readFileSync(join(dir, 'frontend', 'dist', 'index.js'), 'utf8')).toBe('old local build');
+  });
+
+  it('does not report a "done" job with no bundle as built', async () => {
+    const { impl } = service([{ status: 'done', exitCode: 0, output: 'ok' }]);
+    const result = await buildInService(dir, 'production', impl);
+    expect(result.code).toBe(1);
+    expect(result.output).toMatch(/sent no bundle\. The previous build was kept/);
+    expect(readFileSync(join(dir, 'frontend', 'dist', 'index.js'), 'utf8')).toBe('old local build');
+  });
+
+  it('does not report a "done" job with a failing exit status as built', async () => {
+    const { impl } = service([{ status: 'done', exitCode: 2, output: 'vite failed', bundleTgzBase64: bundle() }]);
+    const result = await buildInService(dir, 'production', impl);
+    expect(result.code).toBe(2);
+    expect(readFileSync(join(dir, 'frontend', 'dist', 'index.js'), 'utf8')).toBe('old local build');
+  });
+
+  it('refuses a bundle holding a link, and keeps the previous build', async () => {
+    const linked = bundle((src) => symlinkSync('/etc/hosts', join(src, 'hosts.txt')));
+    const { impl } = service([{ status: 'done', exitCode: 0, output: 'ok', bundleTgzBase64: linked }]);
+    const result = await buildInService(dir, 'production', impl);
+    expect(result.code).toBe(1);
+    expect(result.output).toMatch(/link\(s\) or special file\(s\), which are refused/);
+    expect(readFileSync(join(dir, 'frontend', 'dist', 'index.js'), 'utf8')).toBe('old local build');
+    expect(existsSync(join(dir, 'frontend', 'dist', 'hosts.txt'))).toBe(false);
+    expect(readdirSync(join(dir, 'frontend')).filter((name) => name.startsWith('.dist-incoming-'))).toEqual([]);
+    expect(lstatSync(join(dir, 'frontend', 'dist')).isDirectory()).toBe(true);
   });
 });
