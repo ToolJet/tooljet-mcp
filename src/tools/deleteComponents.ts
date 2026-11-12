@@ -44,12 +44,15 @@ export function deleteComponentsTool(client: ToolJetClient): ToolDef {
         if (missing.length) {
           throw new Error(`delete_components: component ids are not on page ${args.page_id}: ${missing.join(', ')}.`);
         }
+        const pageIds = new Set(page.components.map((component) => component.id));
         const descendants = page.components.filter(
           (component) => component.parent &&
             // Header, footer and tab children sit on "<id>-header", "<id>-t1" ...: an exact match missed them, and deleting
-            // a Tabs, Modal or Container orphaned them (review 2026-09-25).
+            // a Tabs, Modal or Container orphaned them (review 2026-09-25). A pack widget's children sit on its slots,
+            // "<id>-tab_tab1", "<id>-panel_a", "<id>-first": deleting a pack Tabs or Collapse orphaned them (QA DVRL-59).
             [...requested].some((targetId) => component.parent === targetId || component.parent?.startsWith(`${targetId}::`) ||
-              decodeComponentParent(component.parent!).parentId === targetId) &&
+              decodeComponentParent(component.parent!).parentId === targetId ||
+              (component.parent!.startsWith(`${targetId}-`) && !pageIds.has(component.parent!))) &&
             !requested.has(component.id)
         );
         if (descendants.length) {

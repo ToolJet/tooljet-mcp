@@ -34,7 +34,8 @@ import { lintBindingSyntax } from './bindingSyntax.js';
 import { lintSelectedRowProjections } from './selectedRowProjection.js';
 import { dropdownDefaultVisibilityWarning, dropdownSelfDefaultWarning } from './dropdownDefaultContract.js';
 import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from './catalog.js';
-import { decodeComponentParent, isComponentSlotName, isTabSlot, type ComponentSlotName } from './componentParent.js';
+import { decodeComponentParent, isComponentSlotName, isNativeSlotName, isTabSlot, type ComponentSlotName } from './componentParent.js';
+import { packSlotsOfType, resolvePackSlot } from './packSlots.js';
 import {
   FORM_SCHEMA_FIELD_TYPE_SET,
   SAFE_GENERATED_FORM_FIELD_TYPE_SET,
@@ -776,12 +777,20 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
   for (const component of components) {
     const persistedSlot = component.parent ? decodeComponentParent(component.parent).slotName : 'body';
     const slotName = component.slotName ?? (persistedSlot === 'body' ? undefined : persistedSlot);
-    if (!slotName) continue;
     const placement = parentPlacement(component);
     const parent = placement ? refs.get(placement.parentId) : undefined;
+    // A pack widget whose pack this server read takes the slots it draws (packSlots.ts), and a child with none named
+    // only where it has a body or a single slot (QA DVRL-9, DVRL-60).
+    if (parent && isLibraryPackType(parent.type) && packSlotsOfType(parent.type)) {
+      const slot = resolvePackSlot(parent, slotName, String(component.name ?? component.id ?? component.type));
+      if (!slot.ok) errors.push(slot.error);
+      continue;
+    }
+    if (!slotName) continue;
     // A FlexContainer has one canvas, its body: slot_name "body" there is the plain parent, as for a Container.
     // A published library's container (libraryPack.ts) takes its own named slots (ToolJet.Slot, e.g. tab_details).
     const validParent = isLibraryPackType(parent?.type) ? !['header', 'footer', 'modal'].includes(slotName) && !isTabSlot(slotName) :
+      !isNativeSlotName(slotName) ? false :
       slotName === 'modal' ? parent?.type === 'Kanban' : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? '') :
       SLOT_PARENT_TYPES.has(parent?.type ?? '') || (slotName === 'body' && ['Kanban', 'ShadKanban', 'FlexContainer'].includes(parent?.type ?? ''));
     // A child in a tab the Tabs does not have is saved but never shown (review 2026-09-25). Static tabItems only:
@@ -1860,7 +1869,7 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
 
   if (spec.slotName !== undefined) {
     if (!isComponentSlotName(spec.slotName)) {
-      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, Kanban modal, or a Tabs tab (tab-t0, tab-t1, ...).`);
+      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, Kanban modal, a Tabs tab (tab-t0, tab-t1, ...), or a pack widget's slot (body, tab_<key>, panel_<key>, first ...).`);
     }
     if (!spec.parentRef && !spec.parent) {
       errors.push(`Component "${label}": slot_name requires parent_ref or parent.`);
