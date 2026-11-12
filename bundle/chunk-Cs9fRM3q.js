@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
-import { p as peekAppPlan, c as consumeAppPlan, f as frozenAppRefusal, r as replaceView, a as replaceFingerprint, d as danglingAfterReplace, b as prepareQueryOptionsForWrite, m as matchPlannedPage, l as literalCanvasColor, e as prepareComponentBatch, g as replaceIds, h as expandQueryLifecycles, v as validateEvents, n as navigationReorders, i as persistedEventSpecs } from "./chunk-DOdbIqZ5.js";
+import { p as peekAppPlan, c as consumeAppPlan, f as frozenAppRefusal, r as replaceView, a as replaceFingerprint, d as danglingAfterReplace, b as prepareQueryOptionsForWrite, m as matchPlannedPage, l as literalCanvasColor, e as prepareComponentBatch, g as replaceIds, h as expandQueryLifecycles, v as validateEvents, n as navigationReorders, i as persistedEventSpecs } from "./chunk-C0M_-KXk.js";
 import { e5 as fail, ef as tableQuotaError, e6 as ok } from "./chunk-COW2iNTB.js";
-import { c as componentRef, j as completedPartialWrites, r as resolveRef, i as indexComponentReferences, k as isFlexContainerType, l as batchChildOrders, m as childOrderProperty } from "./chunk-D3wPtvNy.js";
+import { c as componentRef, j as completedPartialWrites, r as resolveRef, i as indexComponentReferences, k as isFlexContainerType, l as batchChildOrders, m as childOrderProperty } from "./chunk-cUJVoZMr.js";
 import { F as validateAppStructure, J as unpinnedLibraries, d as decodeComponentParent, e as encodeComponentParent } from "./chunk-D8GCORfd.js";
 import { C as validateQueryOptions, y as issueMessages } from "./chunk-BxMc6J_M.js";
 import { L as LARGE_READ_ROW_THRESHOLD, a as assessQueryRead, b as resolveStaticBindings, c as resolvedReadRefusal, s as sameReadSource, e as extractRowCount, d as emptyViewerOnlyParams, f as emptyParamsNote, u as unresolvedNote } from "./chunk-B6ef8g-7.js";

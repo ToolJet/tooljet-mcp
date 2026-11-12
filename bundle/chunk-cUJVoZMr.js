@@ -2492,7 +2492,9 @@ function createClient(auth, config) {
     const entries = params.components.map((spec) => ({ id: spec.id ?? randomUUID(), spec }));
     const refToId = new Map(entries.map((entry) => [componentRef(entry.spec), entry.id]));
     const diff = {};
-    const typeById = new Map(entries.map((e) => [e.id, e.spec.type]));
+    const typeById = new Map((params.pageComponents ?? []).map((component) => [component.id, component.type]));
+    for (const e of entries)
+      typeById.set(e.id, e.spec.type);
     for (const e of entries) {
       if (e.spec.parent && e.spec.parentRef) {
         throw new Error(`createComponents "${e.spec.name}": set EITHER parent or parentRef, not both.`);
@@ -2506,7 +2508,7 @@ function createClient(auth, config) {
         throw new Error(`createComponents "${e.spec.name}": slotName requires parent or parentRef.`);
       }
       if (resolvedParent) {
-        const parentType = typeById.get(resolvedParent) ?? e.spec.parentType;
+        const parentType = typeById.get(decodeComponentParent(resolvedParent).parentId) ?? e.spec.parentType;
         dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName, parentType);
       }
       const submit = e.spec.type === "Form" ? dto.properties?.buttonToSubmit : void 0;
