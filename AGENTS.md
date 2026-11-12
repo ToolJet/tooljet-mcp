@@ -57,7 +57,8 @@ Rebuild the bundle after every pull: a stale bundle silently runs old tools.
 | `TOOLJET_DEPLOYMENT_URL` | deployment/frontend URL; `TOOLJET_APP_URL` is the deprecated alias |
 | `MCP_ALLOWED_API_ORIGINS` | HTTP mode allow-list for `x-tooljet-url`; unset = empty |
 | `MCP_SHARED_TOKEN` | turns HTTP into gateway mode (bearer gate, binds `0.0.0.0`) |
-| `MCP_REQUIRE_USER_SESSION` / `MCP_REQUIRE_REQUEST_URL` | gateway-mode gates: reject requests with no user credential / no `x-tooljet-url` (instead of writing into the static `TOOLJET_URL`) |
+| `MCP_REQUIRE_REQUEST_URL` | gateway-mode gate: reject requests with no `x-tooljet-url` (instead of writing into the static `TOOLJET_URL`). Gateway mode always rejects a request with no user credential; the process `TOOLJET_PAT` never acts for one (`MCP_REQUIRE_USER_SESSION` is no longer needed) |
+| `MCP_ALLOWED_HOSTS` / `MCP_ALLOWED_ORIGINS` | DNS-rebinding guard on the HTTP transports: extra `Host` names (beyond loopback and the bind address; on a `0.0.0.0` bind, setting it turns the Host check on) and browser origins (beyond loopback) a request may name |
 | `MCP_GATEWAY_URL` / `MCP_GATEWAY_TOKEN` | gateway origin check; off unless both set; token must equal the gateway's `MCP_GATEWAY_TOKEN` |
 
 ## 6. Gotchas
