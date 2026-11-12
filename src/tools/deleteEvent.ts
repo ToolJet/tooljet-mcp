@@ -9,7 +9,7 @@ export function deleteEventTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Delete one event handler by id (from list_events). Use this to remove wiring that points at a ' +

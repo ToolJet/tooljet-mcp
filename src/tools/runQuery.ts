@@ -215,13 +215,16 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
   return {
     name: 'run_query',
     title: 'Run Query',
-    // Executes whatever the query holds against the customer datasource — which may write or delete.
+    // Conservative execution labels; the handler additionally enforces proven-read preflight.
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
       openWorldHint: true,
     },
     description:
+      'Execute only a saved query that passes the server\'s proven-read checks. Mutations, arbitrary RunJS, ' +
+      'unknown datasource kinds, and SELECT * are refused before execution. No operation or query-options ' +
+      'payload can be supplied to this tool; it reads the selected saved definition and applies its safety checks. ' +
       'Run an already-created query and return its REAL result — the browser-free way to see actual data. ' +
       'Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / ' +
       'distinct values (statuses, categories) before writing chart series, dropdown options, or filters. ' +

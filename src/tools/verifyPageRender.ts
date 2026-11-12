@@ -810,7 +810,7 @@ export function verifyPageRenderTool(client: ToolJetClient, viewerBase: () => st
   return {
     name: 'verify_page_render',
     title: 'Verify Page Render',
-    annotations: { readOnlyHint: true, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
     description:
       'Render audit of one page or every page of an app in a headless browser (1600x900 unless viewport_width is set; 1280 with route), after the app is built. ' +
       'On an app in Code mode it checks inside the app: sideways scrolling, content cut off at the right edge, an empty app and placeholder ' +

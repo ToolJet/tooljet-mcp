@@ -8,7 +8,8 @@ export function listEventsTool(client: ToolJetClient): ToolDef {
     title: 'List Events',
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
     },
     description:
       'List event handlers for a version, optionally filtered to one source (component/query id). ' +

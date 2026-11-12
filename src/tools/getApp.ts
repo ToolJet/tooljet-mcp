@@ -8,7 +8,8 @@ export function getAppTool(client: ToolJetClient): ToolDef {
     title: 'Get App',
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
     },
     description:
       'Fetch the FULL raw ToolJet app by id (pages, versions, every component with its complete widget ' +

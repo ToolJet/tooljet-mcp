@@ -28,7 +28,7 @@ export function updatePagesTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Update existing page sidebar metadata and/or reorder pages, with one final readback verification. ' +

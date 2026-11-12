@@ -74,7 +74,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Edit existing components IN PLACE instead of deleting + re-adding. Send only the CHANGED leaves ' +

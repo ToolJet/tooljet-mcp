@@ -9,7 +9,7 @@ export function createAppVersionTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Create a new draft version of an existing ToolJet app by cloning a specified source version. ' +

@@ -7,7 +7,7 @@ import type {
   ToolJetClient,
   WorkspaceGroup,
 } from '../tooljetClient.js';
-import { fail, ok, type ToolDef } from './types.js';
+import { exposeActions, fail, ok, type ActionTool, type ToolDef } from './types.js';
 
 type ManageAppPermissionsArgs = {
   action: 'list_subjects' | 'list_screens' | 'list_queries' | 'get' | 'set' | 'clear';
@@ -451,7 +451,7 @@ export function manageAppPermissionsTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Server-enforced access to an app\'s screens and queries: who can open a Code mode screen (route) or run a ' +
@@ -679,4 +679,24 @@ export function manageAppPermissionsTool(client: ToolJetClient): ToolDef {
       }
     },
   };
+}
+
+const appPermissions: ActionTool[] = [
+  { action: 'list_subjects', name: 'list_app_permission_subjects', title: 'List App Permission Subjects',
+    description: 'List users and groups eligible for resource access rules in one app. Subjects must already have app access. ToolJet permissions and license gates apply.',
+    required: ['app_id'], annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } },
+  { action: 'get', name: 'get_app_resource_permission', title: 'Get App Resource Permission',
+    description: 'Read server-enforced access for one page, query, or component belonging to the selected app. Use exact resource IDs from get_app_summary.',
+    required: ['app_id', 'resource_type', 'resource_id'], annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } },
+  { action: 'set', name: 'set_app_resource_permission', title: 'Set App Resource Permission',
+    description: 'Replace access to one app page, query, or component with selected users or groups. Supply user_ids for access_type users or group_ids for groups, never both. Requires confirm:true after explicit approval of the exact rule; existing app access and license gates still apply.',
+    required: ['app_id', 'resource_type', 'resource_id', 'access_type', 'confirm'], optional: ['user_ids', 'group_ids'],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } },
+  { action: 'clear', name: 'clear_app_resource_permission', title: 'Clear App Resource Permission',
+    description: 'Remove a resource access restriction, broadening access to every user who can access the app. Requires confirm:true after explicit approval of this exact page, query, or component.',
+    required: ['app_id', 'resource_type', 'resource_id', 'confirm'], annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } },
+];
+
+export function appPermissionActionTools(source: ToolDef): ToolDef[] {
+  return exposeActions(source, appPermissions);
 }

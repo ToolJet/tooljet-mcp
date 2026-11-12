@@ -50,6 +50,8 @@ For a container network with an HTTP-only internal ToolJet service, use the depl
 
 Proxy these paths to the MCP server:
 
+- `/mcp`: shared MCP requests; users choose a workspace during authorization.
+- `/.well-known/oauth-protected-resource/mcp`: shared resource metadata.
 - `/mcp/<workspace-id-or-slug>`: MCP requests.
 - `/.well-known/oauth-protected-resource/mcp/<workspace-id-or-slug>`: resource metadata.
 - `/health`: optional readiness check.
@@ -63,6 +65,14 @@ The ToolJet public proxy must also keep the browser-facing `/<subpath>/api/mcp-o
 The ToolJet backend accepts `MCP_OAUTH_TRUSTED_PROXIES`, a comma-separated list of proxy IPs/CIDRs (for example, the deployment's internal proxy subnet). Only list actual proxy networks, and prevent clients from reaching the backend through an untrusted alternate path. The proxy must append or overwrite `X-Forwarded-For`. The OAuth guard walks addresses from the socket toward the client and stops at the first untrusted address; with no configuration it uses the socket address and ignores forwarded headers. This does not change Express trust settings for unrelated APIs.
 
 Backend registration permits 10 requests/minute per resolved address. Token/revoke requests that prove possession of a stored credential and satisfy client authentication use a separate 120/minute bucket per grant; viewer minting uses the verified delegation's grant. A client ID or unsigned claim cannot select someone else's bucket. Invalid credentials use address buckets and cannot spend verified-grant capacity, even when the same proxy or MCP process forwards both. The fixed-size anonymous and authenticated stores are separate and local to each backend replica; edge limits still need to handle volumetric traffic. IPv6 callers share address budgets within a /64. When a store fills, the oldest rate window is evicted so cache pressure cannot deny every new caller; this can relax limits under high churn and is another reason to enforce edge protection. Spent or revoked credentials cannot create grant buckets (the five-second valid refresh retry remains supported). A rejected request returns HTTP 429 with `Retry-After: 60`.
+
+## OpenAI domain verification
+
+For an OpenAI plugin submission, set `MCP_OPENAI_APPS_CHALLENGE` to the public challenge token shown by the submission portal. This is optional and separate from all OAuth credentials; never use the exchange secret as the challenge value or commit a portal token.
+
+Proxy `GET /.well-known/openai-apps-challenge` at the MCP origin root to this OAuth server, including when the MCP resource has a path prefix. When configured, the route responds without authentication with the trimmed token as `text/plain; charset=utf-8` and `Cache-Control: no-store`. Other methods return 405; an unset or blank value leaves the route at 404. Both HTTP entry points use this route in OAuth mode only.
+
+After deploying, verify the exact public URL returns the portal token, then complete domain verification and rescan tools in the portal. A local build or PR does not update the hosted scan. Remove the environment setting when the token should no longer be served.
 
 ## Workspace custom domains
 
@@ -80,7 +90,17 @@ The public OAuth MCP process targets one trusted ToolJet Cloud installation and 
 
 ## Connect an AI client
 
-Add the workspace-specific URL in a client supporting HTTP MCP, OAuth Authorization Code with S256 PKCE, and a supported dynamic or previously registered client:
+Add the shared URL in a client supporting HTTP MCP, OAuth Authorization Code with S256 PKCE, and a supported dynamic or previously registered client:
+
+```text
+https://mcp.example.com/mcp
+```
+
+The browser offers ToolJet login followed by a workspace picker, or a workspace URL/ID/slug entry for users who need workspace-specific SSO. Only active memberships are listed. A sole workspace is preselected but still requires confirmation. Clicking **Continue** in the signed-in picker approves the displayed permissions for that account and creates a separate browser-bound request; simultaneous selections cannot change an existing request. If the live browser session satisfies the selected workspace's current login policy, authorization completes immediately. Otherwise, the user completes the required workspace login or SSO and authorization resumes for the same account without repeating consent. A live, policy-compatible session has no separate ten-minute login deadline; pending authorization requests still expire. Entering a workspace URL while signed out only selects the workspace and still requires explicit consent after login. Custom-domain bootstrap and SSO retain the same browser and workspace binding.
+
+The shared resource identifier remains unchanged through authorization, token exchange and refresh. Each grant is bound to one immutable workspace ID; authenticated MCP requests resolve that workspace from the grant. Changing the active workspace in ToolJet does not change a connection. Connecting another workspace requires a new authorization. Existing grant/artifact storage is reused; this addition has no database migration.
+
+Existing workspace-specific URLs continue to skip the picker and use their current login and consent flow:
 
 ```text
 https://mcp.example.com/mcp/<workspace-id>

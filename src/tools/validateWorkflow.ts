@@ -8,7 +8,7 @@ export function validateWorkflowTool(client: ToolJetClient): ToolDef {
     name: 'validate_workflow',
     title: 'Validate Workflow',
     description: 'Check persisted graph structure and query ownership without execution. Does not prove runtime correctness.',
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     inputSchema: validateWorkflowInputSchema.shape,
     async handler(args: unknown) {
       try {

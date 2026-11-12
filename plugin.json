@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "tooljet-app-builder",
-  "version": "0.11.1",
-  "description": "Build ToolJet apps end-to-end via governed MCP tools and an app-builder skill.",
+  "version": "0.13.0",
+  "description": "Build data-connected dashboards, internal tools and back-office apps in ToolJet, then refine them visually. Requires a ToolJet connection.",
   "author": {
     "name": "ToolJet"
   },
@@ -14,6 +14,9 @@
     "low-code",
     "app-builder",
     "internal-tools",
-    "mcp"
+    "mcp",
+    "dashboards",
+    "back-office",
+    "team-operations"
   ]
 }

@@ -2,7 +2,11 @@
 
 # Datasources and query contracts
 
-Read this when selecting, connecting, introspecting, or authoring datasource queries. Fetch operation contracts on demand instead of loading unrelated datasource schemas.
+Read this when replacing spreadsheets or selecting, connecting, introspecting, or authoring datasource queries. Fetch operation contracts on demand instead of loading unrelated datasource schemas.
+
+## Spreadsheet-to-app requests
+
+For spreadsheet-to-app requests, inspect the data available to this client before planning the schema. A chat attachment is not automatically accessible through MCP. If the file is unavailable, request an accessible export or sample; do not claim an import succeeded. Confirm how formulas, macros, duplicates and relationships should be handled instead of assuming they convert automatically.
 
 ## Missing or broken datasource recovery
 

@@ -29,7 +29,7 @@ export function deleteQueryTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Permanently delete one query. Inspect the target and obtain explicit approval, then pass app_id and confirm:true. ' +

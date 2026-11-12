@@ -6,7 +6,7 @@ export function switchAppVersionTool(client: ToolJetClient): ToolDef {
   return {
     name: 'switch_app_version',
     title: 'Switch App Version',
-    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     description:
       'Select an existing ToolJet app version as the version the current editor should open and subsequent ' +
       'agent edits should target. Use only when the user explicitly asks to switch, select, open, or work on ' +

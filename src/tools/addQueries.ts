@@ -21,9 +21,12 @@ export function addQueriesTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
+      'Save query definitions in the ToolJet app editor; this is an authoring operation. It never executes the ' +
+      'SQL, code, API requests, or datasource operations described by options. Options are stored configuration ' +
+      'for later app use, not commands invoked during this call. ' +
       "Create MANY queries in a single call (all share version_id). Prefer this over repeated add_query " +
       'when building an app. Each query names its own datasource_id and options. Call get_datasource_query_schema ' +
       'for the operations you use before constructing those options. The batch resolves datasource kinds once, ' +

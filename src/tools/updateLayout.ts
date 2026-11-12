@@ -70,7 +70,7 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Move / resize existing components (batch) without touching their properties. `left`/`width` are ' +

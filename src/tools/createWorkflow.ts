@@ -7,7 +7,7 @@ export function createWorkflowTool(client: ToolJetClient): ToolDef {
     name: 'create_workflow',
     title: 'Create Workflow',
     description: 'Create an editable ToolJet workflow draft. Does not execute, publish, or configure triggers. Inspect get_workflow before adding its start node.',
-    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     inputSchema: createWorkflowInputSchema.shape,
     async handler(args: unknown) {
       try {

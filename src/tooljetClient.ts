@@ -27,6 +27,7 @@ import {
 import { tableCreationLevels, TOOLJET_DB_RESERVED_COLUMN_NAMES } from './tableValidation.js';
 import { booleanBindingValue, isCanonicalStaticBooleanBinding, staticBooleanBinding } from './bindings.js';
 import { invalidSeedTimestamps } from './seedTimestampValidation.js';
+import { z } from 'zod';
 
 export interface CreateAppResult {
   app_id: string;
@@ -116,6 +117,30 @@ export interface SetAppPermissionParams {
 
 export type WorkspaceUserStatus = 'active' | 'archived' | 'invited';
 export type WorkspaceUserRole = 'admin' | 'builder' | 'end-user';
+
+export interface WorkspaceFolder {
+  id: string;
+  name: string;
+  app_count: number;
+}
+
+export interface WorkspaceFoldersPage {
+  folders: WorkspaceFolder[];
+  meta: { total_count: number };
+}
+
+const workspaceFoldersResponse = z.object({
+  folders: z.array(z.object({
+    id: z.string().min(1),
+    name: z.string(),
+    folder_apps: z.array(z.object({ app_id: z.string().min(1) })),
+  })),
+});
+
+const workspaceAppsResponse = z.object({
+  apps: z.array(z.object({ id: z.string().min(1) }).loose()),
+  meta: z.object({ folder_count: z.number().int().nonnegative() }).loose(),
+}).loose();
 
 export interface WorkspaceUser {
   id: string;
@@ -618,7 +643,8 @@ export interface ToolJetClient {
   assertWorkflowQueryTarget(options: Record<string, unknown>): Promise<void>;
   listWorkspaces(): Promise<Workspace[]>;
   useWorkspace(workspaceId: string): Promise<Workspace>;
-  listWorkspaceApps(params?: { page?: number; searchText?: string }): Promise<Record<string, unknown>>;
+  listWorkspaceApps(params?: { page?: number; searchText?: string; folderId?: string }): Promise<Record<string, unknown>>;
+  listWorkspaceFolders(params?: { searchText?: string }): Promise<WorkspaceFoldersPage>;
   listWorkspaceUsers(params?: {
     page?: number;
     searchText?: string;
@@ -919,14 +945,60 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     `${config.appUrl}/${encodeURIComponent(workspaceSlug)}/data-sources` +
     (datasourceId ? `/${encodeURIComponent(datasourceId)}` : '');
 
+  async function getWorkspaceFolders() {
+    const res = await auth.authedFetch('/api/folder-apps?type=front-end');
+    await assertOk(res, 'listWorkspaceFolders');
+    const parsed = workspaceFoldersResponse.safeParse(await res.json());
+    if (!parsed.success) throw new Error('Unexpected workspace folders response.');
+    // The backend filters folder_apps through the current user's app permissions.
+    // Keep the membership index internal; do not return raw folder/entity metadata.
+    return parsed.data.folders.map(folder => {
+      const appIds = new Set(folder.folder_apps.map(membership => membership.app_id));
+      return { summary: { id: folder.id, name: folder.name, app_count: appIds.size }, appIds };
+    });
+  }
+
+  async function listWorkspaceFolders(params: { searchText?: string } = {}): Promise<WorkspaceFoldersPage> {
+    const search = params.searchText?.trim().toLowerCase() ?? '';
+    // The API's searchKey filters APP names, so folder-name search belongs here.
+    const folders = (await getWorkspaceFolders())
+      .map(folder => folder.summary)
+      .filter(folder => folder.name.toLowerCase().includes(search));
+    return { folders, meta: { total_count: folders.length } };
+  }
+
   async function listWorkspaceApps(
-    params: { page?: number; searchText?: string } = {}
+    params: { page?: number; searchText?: string; folderId?: string } = {}
   ): Promise<Record<string, unknown>> {
+    const folders = await getWorkspaceFolders();
+    const selectedFolder = folders.find(folder => folder.summary.id === params.folderId);
+    // Resolve only against the current workspace, before sending a folder ID to /apps.
+    if (params.folderId !== undefined && !selectedFolder) {
+      throw new Error('Folder not found or not accessible in the current workspace. Use list_workspace_folders to find an accessible folder_id.');
+    }
     const query = new URLSearchParams({ page: String(params.page ?? 1), type: 'front-end' });
     if (params.searchText) query.set('searchKey', params.searchText);
+    if (params.folderId) query.set('folder', params.folderId);
     const res = await auth.authedFetch(`/api/apps?${query}`);
     await assertOk(res, 'listWorkspaceApps');
-    return (await res.json()) as Record<string, unknown>;
+    const parsed = workspaceAppsResponse.safeParse(await res.json());
+    if (!parsed.success) throw new Error('Unexpected workspace apps response.');
+    const data = parsed.data;
+    const { folder_count: folderAppCount, ...meta } = data.meta;
+    return {
+      ...data,
+      apps: data.apps.map(app => ({
+        ...app,
+        folders: folders.filter(folder => folder.appIds.has(app.id))
+          .map(({ summary: { id, name } }) => ({ id, name })),
+      })),
+      folder: selectedFolder?.summary ?? null,
+      meta: {
+        ...meta,
+        folder_app_count: selectedFolder ? folderAppCount : null,
+        workspace_folder_count: folders.length,
+      },
+    };
   }
 
   async function listWorkspaceUsers(
@@ -3373,6 +3445,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     listWorkspaces,
     useWorkspace,
     listWorkspaceApps,
+    listWorkspaceFolders,
     listWorkspaceUsers,
     listWorkspaceGroups,
     getWorkspaceGroup,

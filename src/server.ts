@@ -120,7 +120,7 @@ export function buildUnconfiguredServer(reason: string): McpServer {
       title: 'ToolJet Connection Status',
       description: 'Why this ToolJet MCP server is not configured, and how to fix it.',
       inputSchema: {},
-      annotations: { readOnlyHint: true, openWorldHint: false },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     },
     async () => ({ content: [{ type: 'text' as const, text: message }], isError: true })
   );

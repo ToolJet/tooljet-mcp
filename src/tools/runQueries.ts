@@ -15,7 +15,7 @@ export function runQueriesTool(client: ToolJetClient): ToolDef {
   return {
     name: 'run_queries',
     title: 'Run Queries',
-    // Executes whatever the queries hold against the customer datasource — which may write or delete.
+    // Conservative execution labels; every saved query is preflighted before the batch runs.
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,

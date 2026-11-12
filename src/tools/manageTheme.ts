@@ -5,8 +5,9 @@ import { ToolJetHttpError, type AppTheme, type ToolJetClient } from '../tooljetC
 export const THEME_LICENCE_USER_MESSAGE =
   'Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. ' +
   'Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.';
-import { fail, ok, type ToolDef } from './types.js';
-import { loadStandardTheme, paintsDarkCanvasInLightMode } from './createApp.js';
+import { exposeActions, fail, ok, type ActionTool, type ToolDef } from './types.js';
+import { loadStandardTheme } from './createApp.js';
+import { paintsDarkCanvasInLightMode } from '../appSettings.js';
 import { accentWarning, hsl } from '../themeAccent.js';
 import { themeDefinition } from './themeDefinition.js';
 
@@ -104,7 +105,7 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Manage workspace theme objects through ToolJet\'s typed theme API. Actions: list, create, set_default, ' +
@@ -237,4 +238,30 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
       }
     },
   };
+}
+
+const themes: ActionTool[] = [
+  { action: 'list', name: 'list_workspace_themes', title: 'List Workspace Theme Definitions',
+    description: 'Read workspace themes with id, name, and flags. Unlike list_app_themes, this also supports include_definitions:true for all definitions or theme_id for one full definition. Does not change themes.',
+    required: [], optional: ['theme_id', 'include_definitions'], annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } },
+  { action: 'create', name: 'create_workspace_theme', title: 'Create Workspace Theme',
+    description: 'Create a custom workspace theme, or reuse an existing active theme of the same name. Supply a name of at least five characters and either a full definition or primary (a hex accent), with optional font and radius, for a new theme. is_default can replace the workspace default. With both app_id and version_id, applies it to that app and selects dark mode for a dark light-mode canvas. License gates apply.',
+    required: ['name'], optional: ['definition', 'primary', 'font', 'radius', 'is_default', 'app_id', 'version_id', 'app_mode'],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } },
+  { action: 'set_default', name: 'set_default_workspace_theme', title: 'Set Default Workspace Theme',
+    description: 'Change whether an existing workspace theme is the default. is_default defaults to true; false removes its default status. Changes the workspace default used by apps.',
+    required: ['theme_id'], optional: ['is_default'], annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } },
+  { action: 'update_definition', name: 'update_workspace_theme_definition', title: 'Update Workspace Theme Definition',
+    description: 'Replace the full token definition of an existing workspace theme, affecting apps using it. Definitions require brand, text, border, systemStatus, and surface tokens with light/dark colors. License gates apply.',
+    required: ['theme_id', 'definition'], annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } },
+  { action: 'rename', name: 'rename_workspace_theme', title: 'Rename Workspace Theme',
+    description: 'Replace the name of an existing workspace theme. Requires a theme_id from the active workspace; ToolJet permissions and license gates apply.',
+    required: ['theme_id', 'name'], annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } },
+  { action: 'delete', name: 'delete_workspace_theme', title: 'Delete Workspace Theme',
+    description: 'Delete an existing workspace theme only after explicit approval of that exact theme. Requires confirm:true. ToolJet permissions and license gates apply.',
+    required: ['theme_id', 'confirm'], annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } },
+];
+
+export function themeActionTools(source: ToolDef): ToolDef[] {
+  return exposeActions(source, themes);
 }

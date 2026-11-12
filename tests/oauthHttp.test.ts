@@ -62,6 +62,59 @@ afterEach(async () => {
 });
 
 describe('public MCP OAuth HTTP boundary', () => {
+  it('serves only the configured public challenge without credential exchange', async () => {
+    const exchange = vi.fn();
+    const factory = vi.fn();
+    const base = await listen(createOAuthHttpServer({ ...options, openaiAppsChallenge: '  synthetic-observatory-proof_42  ',
+      fetchImpl: exchange, serverFactory: factory }));
+    const response = await fetch(`${base}/.well-known/openai-apps-challenge`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('text/plain; charset=utf-8');
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(await response.text()).toBe('synthetic-observatory-proof_42');
+    for (const method of ['POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD']) {
+      const rejected = await fetch(`${base}/.well-known/openai-apps-challenge`, { method });
+      expect(rejected.status).toBe(405);
+      expect(rejected.headers.get('allow')).toBe('GET');
+      expect(await rejected.text()).not.toContain('synthetic-observatory-proof_42');
+    }
+    expect((await fetch(`${base}/.well-known/openai-apps-challenge/extra`)).status).toBe(404);
+    expect((await fetch(`${base}/mcp`, { method: 'POST' })).status).toBe(401);
+    expect(exchange).not.toHaveBeenCalled();
+    expect(factory).not.toHaveBeenCalled();
+  });
+  it.each([undefined, '', '   '])('leaves domain verification unavailable with challenge %j', async openaiAppsChallenge => {
+    const base = await listen(createOAuthHttpServer({ ...options, openaiAppsChallenge, fetchImpl: vi.fn() }));
+    const response = await fetch(`${base}/.well-known/openai-apps-challenge`);
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: 'not_found' });
+  });
+
+  it('discovers the shared resource and resolves its workspace only from verified credentials', async () => {
+    const exchange = vi.fn().mockImplementation(() => success());
+    const factory = vi.fn(() => new McpServer({ name: 'synthetic', version: '1' }));
+    const base = await listen(createOAuthHttpServer({ ...options, fetchImpl: exchange, serverFactory: factory }));
+    const challenge = await fetch(`${base}/mcp`, { method: 'POST' });
+    expect(challenge.status).toBe(401);
+    expect(challenge.headers.get('www-authenticate')).toContain('resource_metadata="https://mcp.synthetic.example/.well-known/oauth-protected-resource/mcp"');
+    const metadata = await (await fetch(`${base}/.well-known/oauth-protected-resource/mcp`)).json();
+    expect(metadata.resource).toBe(resourceBase);
+    expect(metadata.authorization_servers).toEqual([options.issuer]);
+    expect(exchange).not.toHaveBeenCalled();
+    const response = await fetch(`${base}/mcp`, {
+      method: 'POST', headers: { ...headers, 'x-tooljet-workspace-id': 'injected-workspace' }, body: JSON.stringify(initialize),
+    });
+    expect(response.status).toBe(200);
+    expect(JSON.parse(exchange.mock.calls[0][1].body).resource).toBe(resourceBase);
+    expect(factory).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: 'garden-workspace' }));
+  });
+  it.each(['/mcp/', '/mcp//garden', '/mcp/garden/extra', '/mcpx', '/.well-known/oauth-protected-resource/mcpx'])(
+    'does not widen routing to malformed resource %s', async (path) => {
+      const base = await listen(createOAuthHttpServer({ ...options, fetchImpl: vi.fn() }));
+      expect((await fetch(base + path, { method: 'POST' })).status).toBe(404);
+    },
+  );
   it('publishes resource metadata and challenges clients with its exact discovery URL', async () => {
     const exchange = vi.fn();
     const base = await listen(createOAuthHttpServer({ ...options, fetchImpl: exchange }));
@@ -433,6 +486,7 @@ describe('public MCP OAuth HTTP boundary', () => {
     async (entry) => {
       for (const [name, value] of Object.entries({
         MCP_OAUTH_ENABLED: 'true',
+        MCP_OPENAI_APPS_CHALLENGE: ' synthetic-entry-point-proof ',
         MCP_OAUTH_ISSUER: options.issuer,
         MCP_OAUTH_RESOURCE_URL: resourceBase,
         MCP_OAUTH_EXCHANGE_SECRET: options.exchangeSecret,
@@ -443,6 +497,9 @@ describe('public MCP OAuth HTTP boundary', () => {
       vi.stubEnv('MCP_SHARED_TOKEN', '');
       const server = entry === 'gateway' ? createGatewayHttpServer().server : createHttpMcpServer().server;
       const base = await listen(server);
+      const challenge = await fetch(`${base}/.well-known/openai-apps-challenge`);
+      expect(challenge.status).toBe(200);
+      expect(await challenge.text()).toBe('synthetic-entry-point-proof');
       const response = await fetch(`${base}/mcp/garden`, {
         method: 'POST',
         headers: { authorization: 'Bearer tj_pat_example' },
