@@ -22,6 +22,9 @@ export interface PackSlotFamily {
 export interface PackSlots {
   fixed: string[];
   families: PackSlotFamily[];
+  /** Slots drawn once per item (a List's row, a Kanban's card): their children sit on the widget's own canvas, as
+   *  rows of ToolJet's List view do (usePackHost PackRow), and read {{listItem}}. */
+  rows: string[];
 }
 
 // The packs' slotNames (packs/*/src/lib/slots.ts, the same in each): a key's characters other than letters, digits and
@@ -91,14 +94,18 @@ export function packSlotsFromManifest(
     families.push(family);
     listed.forEach((name) => claimed.add(name));
   }
-  return { fixed: names.filter((name) => !claimed.has(name)), families };
+  return {
+    fixed: names.filter((name) => !claimed.has(name)),
+    families,
+    rows: slots.filter((slot) => slot.kind === 'rows').map((slot) => slot.name),
+  };
 }
 
 /** For the catalogue: the slot_names a widget's child components take. */
 export function describePackSlots(slots: PackSlots | undefined): string | undefined {
   if (!slots) return undefined;
   const parts = [
-    ...slots.fixed,
+    ...slots.fixed.map((name) => (slots.rows.includes(name) ? `${name} (drawn once per item; its children read {{listItem}})` : name)),
     ...slots.families.map((family) => {
       const sample = slotNames(family.prefix, keysOf(family.defaultItems, family.keyField) ?? []);
       return `${family.prefix}_<${family.keyField} of each ${family.itemsProp} item>${sample.length ? ` (by default ${sample.join(', ')})` : ''}`;

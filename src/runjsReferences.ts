@@ -21,6 +21,19 @@ function bindsNamespace(value: unknown, namespace: Namespace): boolean {
   return false;
 }
 
+/** A node that declares its own `namespace` (a variable, parameter, function or catch binding), or a with/eval that
+ *  may: reads after it are not ToolJet's namespace. */
+function shadows(value: Node, namespace: Namespace): boolean {
+  return (
+    (value.type === 'VariableDeclarator' && bindsNamespace(value.id, namespace)) ||
+    (/^(Function|Class)(Declaration|Expression)$/.test(value.type) && bindsNamespace(value.id, namespace)) ||
+    (Array.isArray(value.params) && value.params.some(item => bindsNamespace(item, namespace))) ||
+    (value.type === 'CatchClause' && bindsNamespace(value.param, namespace)) ||
+    value.type === 'WithStatement' ||
+    (value.type === 'CallExpression' && isNode(value.callee) && value.callee.type === 'Identifier' && value.callee.name === 'eval')
+  );
+}
+
 /** Parse only: never execute user code. Resolve literal reads of a ToolJet namespace.
  * If any local binding shadows that namespace, conservatively leave the body unverified rather than
  * reject valid local objects. Computed/dynamic names and syntactically invalid bodies are also
@@ -63,14 +76,7 @@ function namespaceAccesses(code: string, namespace: Namespace): Array<{ name: st
   const visit = (value: unknown): void => {
     if (Array.isArray(value)) { value.forEach(visit); return; }
     if (!isNode(value)) return;
-    if (
-      (value.type === 'VariableDeclarator' && bindsNamespace(value.id, namespace)) ||
-      (/^(Function|Class)(Declaration|Expression)$/.test(value.type) && bindsNamespace(value.id, namespace)) ||
-      (Array.isArray(value.params) && value.params.some(item => bindsNamespace(item, namespace))) ||
-      (value.type === 'CatchClause' && bindsNamespace(value.param, namespace)) ||
-      value.type === 'WithStatement' ||
-      (value.type === 'CallExpression' && isNode(value.callee) && value.callee.type === 'Identifier' && value.callee.name === 'eval')
-    ) shadowed = true;
+    if (shadows(value, namespace)) shadowed = true;
     if (
       (value.type === 'MemberExpression' || value.type === 'OptionalMemberExpression') &&
       isNode(value.object) && value.object.type === 'Identifier' && value.object.name === namespace &&
@@ -91,6 +97,43 @@ function namespaceAccesses(code: string, namespace: Namespace): Array<{ name: st
 
 export function runjsQueryReferences(code: string): string[] {
   return [...new Set(namespaceReads(code, 'queries').map(read => read.name))];
+}
+
+/** Literal reads one level into a namespace entry, <namespace>.<name>.<member> (with ?. or ["..."] too), by the same
+ *  parse-only, shadowing-aware rules as namespaceReads. */
+export function namespaceMemberReads(code: string, namespace: Namespace): Array<{ name: string; member: string }> {
+  const { source, ids } = maskSavedIds(code);
+  let root: unknown;
+  try {
+    root = parse(source, { sourceType: 'script', allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true });
+  } catch {
+    return [];
+  }
+  const isMember = (value: unknown): value is Node =>
+    isNode(value) && (value.type === 'MemberExpression' || value.type === 'OptionalMemberExpression');
+  const literal = (member: Node): string | undefined => {
+    const property = member.property;
+    if (!isNode(property)) return undefined;
+    if (!member.computed && property.type === 'Identifier') return String(property.name);
+    if (member.computed && property.type === 'StringLiteral') return String(property.value);
+    return undefined;
+  };
+  const reads: Array<{ name: string; member: string }> = [];
+  let shadowed = false;
+  const visit = (value: unknown): void => {
+    if (Array.isArray(value)) { value.forEach(visit); return; }
+    if (!isNode(value)) return;
+    if (shadows(value, namespace)) shadowed = true;
+    const entry = isMember(value) ? value.object : undefined;
+    if (isMember(entry) && isNode(entry.object) && entry.object.type === 'Identifier' && entry.object.name === namespace) {
+      const name = literal(entry);
+      const member = literal(value as Node);
+      if (name && member) reads.push({ name: ids.get(name) ?? name, member });
+    }
+    for (const child of Object.values(value)) visit(child);
+  };
+  visit(root);
+  return shadowed ? [] : reads;
 }
 
 export function runjsComponentReferences(code: string): string[] {
