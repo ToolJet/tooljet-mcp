@@ -1,4 +1,6 @@
 import { componentRef, indexComponentReferences } from './componentReferences.js';
+import { polishFlexRows } from './flexPolish.js';
+import { lintPageArchetype } from './archetypeLint.js';
 import { materializeRequiredDefaultChildren } from './defaultChildren.js';
 import { matchPlannedPage } from './pageMatch.js';
 import { validateEvents } from './eventValidation.js';
@@ -7,8 +9,9 @@ import { prepareQueryOptionsForWrite } from './queryPersistence.js';
 import { expandQueryLifecycles, type LifecycleAlert } from './queryLifecycle.js';
 import { validateTableBatch } from './tableValidation.js';
 import { invalidPlannedGeneratedPrimaryKeySeeds } from './seedGeneratedPrimaryKeyValidation.js';
+import { lintUniformSeedMetrics } from './seedVarietyLint.js';
 import { encodeComponentParent } from './componentParent.js';
-import { normalizeComponentSpec } from './componentNormalization.js';
+import { normalizeComponentSpec, plannedCurrency } from './componentNormalization.js';
 import { normalizePlannedLayouts } from './layoutNormalization.js';
 import { containsNamedBinding } from './referenceSafety.js';
 import { pageIconError } from './pageIcons.js';
@@ -33,6 +36,8 @@ export interface PlannedPage {
   name: string;
   icon: string;
   hidden?: boolean;
+  /** The page's archetype (archetypeLint.ts): checked against its blueprint's choices. */
+  archetype?: string;
   components?: ComponentSpec[];
 }
 
@@ -155,6 +160,78 @@ export function lintRunjsLoadOrder(spec: PlannedAppSpec): { errors: string[]; wa
     }
   }
   return { errors, warnings };
+}
+
+/**
+ * A query that reads a page's components without `?.` and can run while that page is closed throws "Cannot read
+ * properties of undefined": ToolJet mounts only the open page's components. DeepSeek's invoice app (2026-10-13) ran
+ * invoiceRows from allInvoices' success at app start, on Summary, and it read the Invoices page's filters; opening
+ * Invoices never ran it again. A query can run with its page closed at app start (runOnPageLoad), after a query that
+ * runs at app start, or from another page's entry or components. The home page (the first) is open at app start.
+ */
+export function lintCrossPageComponentReads(spec: PlannedAppSpec): string[] {
+  const pages = spec.pages ?? [];
+  if (pages.length < 2) return [];
+  const pageOf = new Map<string, string>();
+  for (const page of pages) {
+    for (const component of page.components ?? []) {
+      if (component.name) pageOf.set(component.name, page.name);
+      if (component.clientRef) pageOf.set(component.clientRef, page.name);
+    }
+    if (page.clientRef) pageOf.set(page.clientRef, page.name);
+  }
+  const home = pages[0]!.name;
+  const queries = spec.queries ?? [];
+  const nameOf = new Map<string, string>();
+  for (const q of queries) {
+    nameOf.set(q.name, q.name);
+    if (q.clientRef) nameOf.set(q.clientRef, q.name);
+  }
+  const startup = new Set(queries.filter((q) => isStaticTrue((q.options as Record<string, unknown> | undefined)?.runOnPageLoad)).map((q) => q.name));
+  // Who runs each query: [query name] -> list of { from, page } (page undefined = runs regardless of the open page).
+  const runners = new Map<string, Array<{ why: string; page?: string; startupChain?: string }>>();
+  const add = (target: string, entry: { why: string; page?: string; startupChain?: string }) => {
+    const name = nameOf.get(target) ?? target;
+    runners.set(name, [...(runners.get(name) ?? []), entry]);
+  };
+  for (const lifecycle of spec.lifecycles ?? []) {
+    const from = nameOf.get(lifecycle.queryRef) ?? lifecycle.queryRef;
+    for (const target of lifecycle.refreshQueryRefs ?? []) add(target, { why: `after "${from}"`, startupChain: from });
+  }
+  for (const event of spec.events ?? []) {
+    const action = event.action ?? {};
+    if (action.actionId !== 'run-query') continue;
+    const target = String(action.target_ref ?? action.queryName ?? action.queryId ?? '');
+    if (!target) continue;
+    if (event.sourceType === 'data_query') add(target, { why: `after "${nameOf.get(event.sourceRef) ?? event.sourceRef}"`, startupChain: nameOf.get(event.sourceRef) ?? event.sourceRef });
+    else if (event.sourceType === 'page') add(target, { why: `from page "${pageOf.get(event.sourceRef) ?? event.sourceRef}"`, page: pageOf.get(event.sourceRef) ?? event.sourceRef });
+    else if (event.sourceType === 'component') add(target, { why: `from page "${pageOf.get(event.sourceRef) ?? '?'}"`, page: pageOf.get(event.sourceRef) });
+  }
+  const errors: string[] = [];
+  for (const query of queries) {
+    const text = JSON.stringify(query.options ?? {});
+    const reads = new Map<string, string>();
+    for (const match of text.matchAll(/components\.([A-Za-z_$][\w$]*)\.([A-Za-z_$][\w$]*)/g)) {
+      const page = pageOf.get(match[1]!);
+      if (page && page !== home && !reads.has(match[1]!)) reads.set(match[1]!, `${match[1]}.${match[2]}`);
+    }
+    if (!reads.size) continue;
+    const [component, read] = [...reads.entries()][0]!;
+    const page = pageOf.get(component)!;
+    const closed: string[] = [];
+    if (startup.has(query.name)) closed.push('at app start');
+    for (const runner of runners.get(query.name) ?? []) {
+      if (runner.startupChain && startup.has(runner.startupChain)) closed.push(`${runner.why}, which runs at app start`);
+      else if (runner.page && runner.page !== page) closed.push(runner.why);
+    }
+    if (!closed.length) continue;
+    errors.push(
+      `Query "${query.name}" reads components.${read} (on page "${page}") but runs while "${page}" may be closed: ${[...new Set(closed)].join('; ')}. ` +
+        `Only the open page's components exist, so it throws "Cannot read properties of undefined". Read them optionally with a default ` +
+        `(components.${read.replace('.', '?.')} ?? ...), and run the query when "${page}" opens (a page onPageLoad run-query event).`
+    );
+  }
+  return errors;
 }
 
 export interface PlannedAppSpec {
@@ -340,6 +417,10 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
         }
       }
     }
+    // A table's rows may arrive in several batches: judge their variety together.
+    const rowsByTable = new Map<string, Array<Record<string, unknown>>>();
+    for (const seed of seedData) rowsByTable.set(seed.tableName, [...(rowsByTable.get(seed.tableName) ?? []), ...seed.rows]);
+    for (const [tableName, rows] of rowsByTable) warnings.push(...lintUniformSeedMetrics(tableName, rows));
   }
 
   const queryRefs = new Map<string, { id: string; name: string }>();
@@ -396,6 +477,7 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
   {
     const loadOrder = lintRunjsLoadOrder(spec);
     errors.push(...loadOrder.errors);
+    errors.push(...lintCrossPageComponentReads(spec));
     warnings.push(...loadOrder.warnings);
   }
 
@@ -424,6 +506,7 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     }
   }
   let componentCount = 0;
+  const currency = plannedCurrency((spec.pages ?? []).flatMap((page) => page.components ?? []));
 
   (spec.pages ?? []).forEach((plannedPage, pageIndex) => {
     const pageRef = plannedPage.clientRef ?? plannedPage.name;
@@ -435,17 +518,25 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
     if (iconError) errors.push(`Page "${plannedPage.name}": ${iconError}`);
 
     const normalized = (plannedPage.components ?? []).map((component) => {
-      const definition = normalizeComponentSpec(component, { stripUnknownKeys: true });
+      const definition = normalizeComponentSpec(component, { stripUnknownKeys: true, currency });
       const geometry = normalizePlannedLayouts(definition.component);
       return { component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
     });
     warnings.push(...normalized.flatMap((item) => item.warnings));
-    const expansion = materializeRequiredDefaultChildren(normalized.map((item) => item.component));
-    warnings.push(...expansion.warnings);
-    const componentLint = lintComponents(expansion.components, options);
+    const materialized = materializeRequiredDefaultChildren(normalized.map((item) => item.component));
+    warnings.push(...materialized.warnings);
+    // Row alignment polish (flexPolish.ts); prepareComponentBatch runs the same pass, so apply stores what lint saw.
+    const polished = polishFlexRows(materialized.components);
+    warnings.push(...polished.warnings.map((message) => `Page "${plannedPage.name}": ${message}`));
+    const expansion = { ...materialized, components: polished.components };
+    const componentLint = lintComponents(expansion.components, {
+      ...options,
+      flexContainerIds: (existingPage?.components ?? []).filter((component) => component.type === 'FlexContainer').map((component) => component.id),
+    });
     errors.push(...componentLint.errors.map((message) => `Page "${plannedPage.name}": ${message}`));
     errors.push(...lintQueryFedCharts(expansion.components, spec.queries ?? []).map((message) => `Page "${plannedPage.name}": ${message}`));
     warnings.push(...componentLint.warnings.map((message) => `Page "${plannedPage.name}": ${message}`));
+    warnings.push(...lintPageArchetype(plannedPage.archetype, expansion.components).map((message) => `Page "${plannedPage.name}": ${message}`));
 
     const references = indexComponentReferences(expansion.components, existingPage?.components);
     errors.push(...references.errors.map((message) => `Page "${plannedPage.name}": ${message}`));

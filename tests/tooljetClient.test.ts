@@ -529,6 +529,17 @@ describe('createClient', () => {
       expect(auth.authedFetch).toHaveBeenCalledWith('/api/v2/apps/app1/versions/ver2?mode=edit');
     });
 
+    it('reports the saved component library from the version\'s global settings', async () => {
+      const response = structuredClone(rawAppResponse) as any;
+      response.editing_version.global_settings = { appMode: 'light', componentLibrary: 'ui2' };
+      auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: response }));
+      const client = createClient(auth, config);
+
+      await expect(client.getAppSummary('app1')).resolves.toMatchObject({
+        component_library: { library: 'ui2', source: 'saved' },
+      });
+    });
+
     it('rejects an exact-version read when the response identifies another version', async () => {
       auth.authedFetch.mockResolvedValueOnce(mockResponse({ status: 200, json: rawAppResponse }));
       const client = createClient(auth, config);
@@ -545,6 +556,8 @@ describe('createClient', () => {
         app_id: 'app1',
         name: 'My App',
         version_id: 'ver1',
+        // No saved library and no Shad* widget: an app from before the setting, built in ToolJet UI 1.0.
+        component_library: { library: 'ui1', source: 'inferred' },
         pages: [
           {
             id: 'page-home',
@@ -863,7 +876,9 @@ describe('createClient', () => {
       const dto = body.diff['component-uuid-1'];
       expect(dto.styles).toEqual({ textSize: { value: 24 }, fontWeight: { value: 'bold' } });
       expect(dto.validation).toEqual({ customRule: { value: null } });
-      expect(dto.others).toEqual({ showOnMobile: { value: '{{true}}' } });
+      // Device visibility defaults first (the server leaves them unset for widget types it has no defaults for); the
+      // caller's values win.
+      expect(dto.others).toEqual({ showOnDesktop: { value: '{{true}}' }, showOnMobile: { value: '{{true}}' } });
     });
 
     it('rejects style keys placed under properties (ToolJet silently drops them)', async () => {
@@ -1609,25 +1624,75 @@ describe('createClient', () => {
   });
 
   describe('insertRows', () => {
-    it('omits generated ids and sends one object per insert-only PostgREST request', async () => {
+    it('omits generated ids and sends the rows as one list in one insert-only PostgREST request', async () => {
       auth.authedFetch
         // getTableSchema
         .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: { columns: [{ column_name: 'id', data_type: 'integer', column_default: "nextval('people_id_seq'::regclass)", constraints_type: { is_primary_key: true } }, { column_name: 'name', data_type: 'character varying' }] } } }))
         // listTables
         .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: [{ id: 'people-id', table_name: 'people' }] } }))
-        // insert-only PostgREST proxy, one object at a time because ToolJet's proxy mangles arrays
-        .mockResolvedValueOnce(mockResponse({ status: 201, json: [{ id: 41, name: 'A' }] }))
-        .mockResolvedValueOnce(mockResponse({ status: 201, json: [{ id: 42, name: 'B' }] }));
+        // one insert-only PostgREST request with both rows, in seed order
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: [{ id: 41, name: 'A' }, { id: 42, name: 'B' }] }));
 
       const client = createClient(auth, config);
       const result = await client.insertRows({ tableName: 'people', rows: [{ name: 'A' }, { name: 'B' }] });
 
-      expect(auth.authedFetch).toHaveBeenCalledTimes(4);
+      expect(auth.authedFetch).toHaveBeenCalledTimes(3);
       expect(auth.authedFetch.mock.calls[2][0]).toBe('/api/tooljet-db/proxy/people-id');
       expect(auth.authedFetch.mock.calls[2][1]).toMatchObject({ method: 'POST' });
-      expect(JSON.parse(auth.authedFetch.mock.calls[2][1].body)).toEqual({ name: 'A' });
-      expect(JSON.parse(auth.authedFetch.mock.calls[3][1].body)).toEqual({ name: 'B' });
+      expect(JSON.parse(auth.authedFetch.mock.calls[2][1].body)).toEqual([{ name: 'A' }, { name: 'B' }]);
       expect(result).toEqual({ processed_rows: 2 });
+    });
+
+    it('falls back to one row per request when a server without the proxy fix rejects the list, and stays there', async () => {
+      const schema = mockResponse({ status: 200, json: { result: { columns: [{ column_name: 'name', data_type: 'character varying' }] } } });
+      const tables = mockResponse({ status: 200, json: { result: [{ id: 'people-id', table_name: 'people' }] } });
+      const mangled = { code: 'PGRST204', message: "Could not find the '0' column of 'people' in the schema cache" };
+      auth.authedFetch
+        .mockResolvedValueOnce(schema)
+        .mockResolvedValueOnce(tables)
+        .mockResolvedValueOnce(mockResponse({ status: 400, text: JSON.stringify(mangled) }))
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: [{ id: 1, name: 'A' }] }))
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: [{ id: 2, name: 'B' }] }))
+        // a second table on the same client: no list is tried again
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: { columns: [{ column_name: 'name', data_type: 'character varying' }] } } }))
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: [{ id: 'people-id', table_name: 'people' }] } }))
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: [{ id: 3, name: 'C' }] }))
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: [{ id: 4, name: 'D' }] }));
+
+      const client = createClient(auth, config);
+      expect(await client.insertRows({ tableName: 'people', rows: [{ name: 'A' }, { name: 'B' }] })).toEqual({ processed_rows: 2 });
+      expect(JSON.parse(auth.authedFetch.mock.calls[3][1].body)).toEqual({ name: 'A' });
+      expect(JSON.parse(auth.authedFetch.mock.calls[4][1].body)).toEqual({ name: 'B' });
+      expect(await client.insertRows({ tableName: 'people', rows: [{ name: 'C' }, { name: 'D' }] })).toEqual({ processed_rows: 2 });
+      expect(JSON.parse(auth.authedFetch.mock.calls[7][1].body)).toEqual({ name: 'C' });
+      expect(auth.authedFetch).toHaveBeenCalledTimes(9);
+    });
+
+    it('never replays a list row by row after a timeout, and counts a short last list', async () => {
+      vi.useFakeTimers();
+      try {
+        auth.authedFetch
+          .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: { columns: [{ column_name: 'name', data_type: 'character varying' }] } } }))
+          .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: [{ id: 'people-id', table_name: 'people' }] } }))
+          .mockResolvedValueOnce(mockResponse({ status: 524, text: 'timeout' }));
+        const client = createClient(auth, config);
+        const pending = client.insertRows({ tableName: 'people', rows: [{ name: 'A' }, { name: 'B' }] }).catch((error: Error) => error);
+        await vi.runAllTimersAsync();
+        const error = await pending;
+        expect((error as Error).message).toMatch(/outcome unknown/i);
+        expect(auth.authedFetch).toHaveBeenCalledTimes(3);
+      } finally {
+        vi.useRealTimers();
+      }
+
+      auth.authedFetch.mockReset();
+      const rows = Array.from({ length: 61 }, (_, i) => ({ name: `R${i}` }));
+      auth.authedFetch
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: { columns: [{ column_name: 'name', data_type: 'character varying' }] } } }))
+        .mockResolvedValueOnce(mockResponse({ status: 200, json: { result: [{ id: 'people-id', table_name: 'people' }] } }))
+        .mockResolvedValueOnce(mockResponse({ status: 201, json: rows }));
+      expect(await createClient(auth, config).insertRows({ tableName: 'people', rows })).toEqual({ processed_rows: 61 });
+      expect(auth.authedFetch).toHaveBeenCalledTimes(3);
     });
 
     it('reports an uncertain insert without retrying a gateway timeout', async () => {
@@ -1743,6 +1808,8 @@ describe('createClient', () => {
           status: 200,
           json: { result: [{ id: 'people-id', table_name: 'people' }] },
         }))
+        // the list is rejected whole (PostgREST writes nothing), then the rows go one by one
+        .mockResolvedValueOnce(mockResponse({ status: 409, text: 'duplicate key value violates unique constraint' }))
         .mockResolvedValueOnce(mockResponse({ status: 201, json: [{ id: 1, name: 'A' }] }))
         .mockResolvedValueOnce(mockResponse({ status: 409, text: 'duplicate key value violates unique constraint' }));
 

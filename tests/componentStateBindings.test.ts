@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lintComponentStateBindings } from '../src/componentStateBindings.js';
+import { lintComponentStateBindings, lintEmptyDateWrites } from '../src/componentStateBindings.js';
 import { validateEvents } from '../src/eventValidation.js';
 import { validateAppStructure } from '../src/lint.js';
 import { getComponentSchema } from '../src/catalog.js';
@@ -184,5 +184,158 @@ describe('a RunJS query reading a known wrong alias', () => {
     expect(lintComponentStateBindings({ code: 'const components = {}; return components.typeFilter.label;' }, radios, 'q')).toEqual([]);
     expect(lintComponentStateBindings({ code: 'return (' }, radios, 'q')).toEqual([]);
     expect(lintComponentStateBindings({ note: 'components.typeFilter.label' }, radios, 'q')).toEqual([]);
+  });
+});
+
+// A UI 2.0 widget publishes exactly its catalogued values and actions, so any other name reads undefined. Luna builds
+// (2026-10-18): an intake form's submit check read consent.checked and could never pass; a job count read a record
+// list's data property and always showed 0.
+describe('a UI 2.0 widget read through a name it does not publish', () => {
+  const ui2 = [
+    { id: 'c', name: 'consent', type: 'ShadCheckbox' },
+    { id: 'g', name: 'courseCards', type: 'ShadCardGrid' },
+    { id: 'r', name: 'dispatchList', type: 'ShadRecordList' },
+    { id: 'n', name: 'nativeBox', type: 'Checkbox' },
+  ];
+
+  it('rejects the unpublished name and names what the widget publishes', () => {
+    const [error, ...rest] = lintComponentStateBindings('{{ components.consent?.checked && true }}', ui2, 'submit');
+    expect(rest).toEqual([]);
+    expect(error).toContain('submit: ShadCheckbox "consent" has no checked');
+    expect(error).toContain('components.consent.value');
+  });
+
+  it.each([
+    ['{{ components.courseCards?.selectedCard }}', 'components.courseCards.selectedItem'],
+    ['{{ (components.dispatchList.data || []).length }}', 'selectedItem'],
+  ])('rejects %s', (value, hint) => {
+    const errors = lintComponentStateBindings(value, ui2, 'p');
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain(hint);
+  });
+
+  it('accepts published values, actions and the id every component has', () => {
+    for (const value of [
+      '{{ components.consent.value }}',
+      '{{ components.consent.isValid && components.consent.label }}',
+      '{{ components.consent.id }}',
+      '{{ components.courseCards.selectedItem.title }}',
+    ]) expect(lintComponentStateBindings(value, ui2, 'p')).toEqual([]);
+    expect(lintComponentStateBindings({ code: 'await components.consent.setValue(true);' }, ui2, 'q')).toEqual([]);
+  });
+
+  it('leaves native widgets alone: their catalog is not a complete list of what they publish', () => {
+    expect(lintComponentStateBindings('{{ components.nativeBox.checked }}', ui2, 'p')).toEqual([]);
+  });
+});
+
+// An empty date or time picker publishes '' and a date or timestamp column rejects it, so the whole save failed
+// whenever an optional date was left blank (intake form rebuild, 2026-10-18).
+describe('a ToolJet DB write of a date picker that may be empty', () => {
+  const comps = [
+    { id: 'd', name: 'incident_date', type: 'ShadDatePicker' },
+    { id: 't', name: 'consultation', type: 'ShadDateTimePicker' },
+    { id: 'n', name: 'nativeDate', type: 'DatePickerV2' },
+    { id: 'i', name: 'full_name', type: 'ShadInput' },
+  ];
+  const write = (value: string) => ({ operation: 'create_row', create_row: { '0': { column: 'incident_date', value } } });
+
+  it.each(['{{ components.incident_date?.value }}', '{{components.consultation.value}}', '{{ components.nativeDate.value }}'])(
+    'asks for a null fallback: %s', (value) => {
+      const errors = lintEmptyDateWrites(write(value), comps, 'Query "submit"');
+      expect(errors).toHaveLength(1);
+      expect(errors[0]).toMatch(/Query "submit"\.create_row\.0\.value: .* '' .*\|\| null/);
+    });
+
+  it('checks update_rows columns too', () => {
+    const options = { operation: 'update_rows', update_rows: { columns: { '0': { column: 'when', value: '{{ components.incident_date.value }}' } } } };
+    expect(lintEmptyDateWrites(options, comps, 'Query "save"')).toHaveLength(1);
+  });
+
+  it.each([
+    '{{ components.incident_date?.value || null }}',
+    '{{ components.incident_date.value ? components.incident_date.value : null }}',
+    '{{ components.full_name.value }}',
+    '{{ components.incident_date.selectedDate }}',
+  ])('accepts %s', (value) => {
+    expect(lintEmptyDateWrites(write(value), comps, 'Query "submit"')).toEqual([]);
+  });
+
+  it('ignores the same binding outside a ToolJet DB write', () => {
+    expect(lintEmptyDateWrites({ list_rows: { '0': { value: '{{ components.incident_date.value }}' } } }, comps, 'Query "q"')).toEqual([]);
+  });
+});
+
+// A UI 2.0 value with a documented shape: a member it does not have reads undefined. A staging build (2026-10-18) saved
+// a board move with lastCardMovement.toColumn, which would have written an empty status and dropped the card from
+// every column.
+describe('a member a UI 2.0 value does not have', () => {
+  const comps = [{ id: 'b', name: 'board', type: 'ShadKanban' }, { id: 'k', name: 'nativeBoard', type: 'Kanban' }];
+
+  it('catalogs the UI 2.0 move with its members, the native names included', () => {
+    const movement = getComponentSchema('ShadKanban')!.exposedVariables!.find((variable) => variable.name === 'lastCardMovement')!;
+    expect(Object.keys((movement as { shape: Record<string, unknown> }).shape)).toEqual(
+      expect.arrayContaining(['cardId', 'card', 'from', 'to', 'toIndex', 'cardDetails', 'destinationColumnId', 'originColumnId']),
+    );
+  });
+
+  it('rejects an invented member and names the real ones', () => {
+    const errors = lintComponentStateBindings('{{ components.board.lastCardMovement.toColumn }}', comps, 'Query "move".value');
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain('ShadKanban "board" lastCardMovement has no toColumn');
+    expect(errors[0]).toContain('to');
+  });
+
+  it.each([
+    '{{ components.board.lastCardMovement.to }}',
+    '{{ components.board?.lastCardMovement?.cardId }}',
+    '{{ components.board.lastCardMovement.destinationColumnId }}',
+    '{{ components.board.lastCardMovement.cardDetails.id }}',
+    '{{ components.board.lastCardMovement.card.status }}',
+    '{{ components.nativeBoard.lastCardMovement.whatever }}',
+  ])('accepts %s', (value) => {
+    expect(lintComponentStateBindings(value, comps, 'p')).toEqual([]);
+  });
+});
+
+// A board's onCardMoved save must read the move, not the card last clicked: a staging build (2026-10-18) saved a drag
+// with lastSelectedCard.status and lastSelectedCard.id, which writes nothing, or the clicked card's old status to it.
+describe('a board move saved from the card last clicked', () => {
+  const app = (value: string, trigger = 'onCardMoved'): AppSummary => ({
+    app_id: 'test', pages: [{ id: 'home', components: [{ id: 'b1', name: 'board', type: 'ShadKanban' }] }],
+    queries: [{ id: 'q1', name: 'move_ticket', options: { operation: 'update_rows', update_rows: {
+      columns: { '0': { column: 'status', value } },
+      where_filters: { '0': { column: 'id', operator: 'eq', value: '{{ components.board?.lastSelectedCard.id }}' } },
+    } } }],
+    events: [{ id: 'e1', name: 'save move', sourceId: 'b1', target: 'component',
+      event: { eventId: trigger, actionId: 'run-query', queryId: 'q1', queryName: 'move_ticket' } }],
+  });
+  const moveErrors = (summary: AppSummary) =>
+    validateAppStructure(summary).errors.filter((error) => error.includes('lastSelectedCard'));
+
+  it('refuses it and names the move', () => {
+    const errors = moveErrors(app('{{ components.board?.lastSelectedCard.status }}'));
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain('Query "move_ticket" runs on board onCardMoved');
+    expect(errors[0]).toContain('components.board.lastCardMovement.cardId');
+  });
+
+  it('leaves a save on onCardSelected alone', () => {
+    expect(moveErrors(app('{{ components.board?.lastSelectedCard.status }}', 'onCardSelected'))).toEqual([]);
+  });
+});
+
+// The Schedule's slot: start/end are ISO date-times, startTime/endTime are 'HH:mm' text. A build read an invented
+// selectedSlot.start_time and fell back to startTime, which parses as an invalid date (2026-10-18).
+describe('the Schedule slot members', () => {
+  const comps = [{ id: 's', name: 'schedule', type: 'ShadSchedule' }];
+  it('catalogs selectedSlot with its members and their formats', () => {
+    const slot = getComponentSchema('ShadSchedule')!.exposedVariables!.find((variable) => variable.name === 'selectedSlot') as { shape: Record<string, string> };
+    expect(Object.keys(slot.shape)).toEqual(['resourceId', 'resource', 'start', 'end', 'date', 'startTime', 'endTime', 'label']);
+    expect(slot.shape.startTime).toMatch(/HH:mm/);
+  });
+  it('refuses an invented member and accepts the real ones', () => {
+    expect(lintComponentStateBindings('{{ components.schedule.selectedSlot.start_time }}', comps, 'p')[0]).toContain('has no start_time');
+    expect(lintComponentStateBindings('{{ components.schedule.selectedSlot.start }}', comps, 'p')).toEqual([]);
   });
 });

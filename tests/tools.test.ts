@@ -97,9 +97,9 @@ describe('create_app tool', () => {
       expect.objectContaining({ name: 'ToolJet Modern', isDefault: false })
     );
     expect(client.updateAppSettings).toHaveBeenCalledWith(
-      expect.objectContaining({ appId: 'app1', versionId: 'v1', globalSettings: { theme: expect.objectContaining({ id: 'theme-std' }) } })
+      expect.objectContaining({ appId: 'app1', versionId: 'v1', globalSettings: expect.objectContaining({ theme: expect.objectContaining({ id: 'theme-std' }), componentLibrary: 'pack:shadcn' }) })
     );
-    expect(textOf(result)).toEqual({ ...createdApp, theme: { mode: 'standard', id: 'theme-std', name: 'ToolJet Modern' } });
+    expect(textOf(result)).toEqual({ ...createdApp, component_library: 'ui2', component_pack: 'shadcn', theme: { mode: 'standard', id: 'theme-std', name: 'ToolJet Modern', accent_note: expect.stringMatching(/stock blue/) } });
     expect(result.isError).toBeUndefined();
   });
 
@@ -112,7 +112,22 @@ describe('create_app tool', () => {
     const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'My App' });
 
     expect(client.createAppTheme).not.toHaveBeenCalled();
-    expect(textOf(result).theme).toEqual({ mode: 'standard', id: 'theme-std', name: 'ToolJet Modern' });
+    expect(textOf(result).theme).toEqual({ mode: 'standard', id: 'theme-std', name: 'ToolJet Modern', accent_note: expect.stringMatching(/stock blue/) });
+  });
+
+  it('saves a new UI 2.0 app with the default component pack, so the panel and later builds use it', async () => {
+    const saved = process.env.MCP_AGENT_PACK;
+    process.env.MCP_AGENT_PACK = 'antd';
+    try {
+      const client = makeClient();
+      client.createApp.mockResolvedValue(createdApp);
+      const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'My App', theme: 'workspace_default' });
+      expect(client.updateAppSettings).toHaveBeenCalledWith({ appId: 'app1', versionId: 'v1', globalSettings: expect.objectContaining({ componentLibrary: 'pack:antd' }) });
+      expect(textOf(result)).toMatchObject({ component_library: 'ui2', component_pack: 'antd' });
+    } finally {
+      if (saved === undefined) delete process.env.MCP_AGENT_PACK;
+      else process.env.MCP_AGENT_PACK = saved;
+    }
   });
 
   it('leaves the workspace default untouched when theme is "workspace_default"', async () => {
@@ -122,8 +137,24 @@ describe('create_app tool', () => {
     const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'My App', theme: 'workspace_default' });
 
     expect(client.listAppThemes).not.toHaveBeenCalled();
-    expect(client.updateAppSettings).not.toHaveBeenCalled();
-    expect(textOf(result)).toEqual({ ...createdApp, theme: { mode: 'workspace_default' } });
+    // Only the component library is saved; the theme stays the workspace default.
+    expect(client.updateAppSettings).toHaveBeenCalledTimes(1);
+    expect(client.updateAppSettings).toHaveBeenCalledWith({ appId: 'app1', versionId: 'v1', globalSettings: expect.objectContaining({ componentLibrary: 'pack:shadcn' }) });
+    expect(textOf(result)).toEqual({ ...createdApp, component_library: 'ui2', component_pack: 'shadcn', theme: { mode: 'workspace_default' } });
+  });
+
+  it('saves ToolJet UI 1.0 on the new app only when the call asks for it', async () => {
+    const client = makeClient();
+    client.createApp.mockResolvedValue(createdApp);
+    client.listAppThemes.mockResolvedValue([{ id: 'theme-std', name: 'ToolJet Modern', definition: {} }]);
+    client.updateAppSettings.mockResolvedValue(undefined);
+
+    const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'My App', component_library: 'ui1' });
+
+    expect(client.updateAppSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ globalSettings: expect.objectContaining({ theme: expect.objectContaining({ id: 'theme-std' }), componentLibrary: 'ui1' }) })
+    );
+    expect(textOf(result).component_library).toBe('ui1');
   });
 
   it('applies an existing named theme when one is requested', async () => {
@@ -153,7 +184,7 @@ describe('create_app tool', () => {
 
     expect(client.createAppTheme).toHaveBeenCalledWith({ name: 'Bernal Fire Pizza theme', definition, isDefault: false });
     expect(client.updateAppSettings).toHaveBeenCalledWith(
-      expect.objectContaining({ globalSettings: { theme: expect.objectContaining({ id: 'theme-pizza' }) } })
+      expect.objectContaining({ globalSettings: expect.objectContaining({ theme: expect.objectContaining({ id: 'theme-pizza' }), componentLibrary: 'pack:shadcn' }) })
     );
     expect(textOf(result).theme).toEqual({ mode: 'derived', id: 'theme-pizza', name: 'Bernal Fire Pizza theme' });
 
@@ -168,6 +199,28 @@ describe('create_app tool', () => {
     expect(textOf(again).theme).toEqual({ mode: 'derived', id: 'theme-pizza', name: 'Bernal Fire Pizza theme' });
   });
 
+  // A stock-look pack app (Ant, MUI) keeps the basic theme only when no theme was asked for: a derived theme passed
+  // to create_app still drew in stock blue.
+  it('keeps the basic theme for a stock-look pack app, but applies a requested derived theme', async () => {
+    const prev = process.env.MCP_AGENT_PACK_LOOK;
+    process.env.MCP_AGENT_PACK_LOOK = 'own';
+    try {
+      const client = makeClient();
+      client.createApp.mockResolvedValue(createdApp);
+      client.listAppThemes.mockResolvedValue([{ id: 'basic', name: 'ToolJet', definition: {}, isBasic: true }]);
+      client.createAppTheme.mockResolvedValue({ id: 'theme-heat', name: 'Forkline Heat', definition: {} });
+      client.updateAppSettings.mockResolvedValue(undefined);
+      const plain = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'Plain' });
+      expect(textOf(plain).theme).toMatchObject({ id: 'basic' });
+      const definition = { ...loadStandardTheme().definition, brand: { colors: { primary: { light: '#EA580C', dark: '#FB923C' } } } };
+      const themed = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'Prep', theme: { name: 'Forkline Heat', definition } });
+      expect(client.createAppTheme).toHaveBeenCalledWith({ name: 'Forkline Heat', definition, isDefault: false });
+      expect(textOf(themed).theme).toMatchObject({ mode: 'derived', id: 'theme-heat' });
+    } finally {
+      if (prev === undefined) delete process.env.MCP_AGENT_PACK_LOOK; else process.env.MCP_AGENT_PACK_LOOK = prev;
+    }
+  });
+
   it('still returns the created app with a warning when the theme cannot be created', async () => {
     const client = makeClient();
     client.createApp.mockResolvedValue(createdApp);
@@ -177,7 +230,8 @@ describe('create_app tool', () => {
     const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'My App' });
 
     expect(result.isError).toBeUndefined();
-    expect(client.updateAppSettings).not.toHaveBeenCalled();
+    // The theme failed, the component library is still saved.
+    expect(client.updateAppSettings).toHaveBeenCalledWith({ appId: 'app1', versionId: 'v1', globalSettings: expect.objectContaining({ componentLibrary: 'pack:shadcn' }) });
     const body = textOf(result) as { app_id: string; theme: { mode: string; warning?: string } };
     expect(body.app_id).toBe('app1');
     expect(body.theme.mode).toBe('workspace_default');
@@ -198,9 +252,10 @@ describe('create_app tool', () => {
     const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'Console', theme: { name: 'Relay console dark', definition } });
 
     expect(client.updateAppSettings).toHaveBeenCalledWith(
-      expect.objectContaining({ globalSettings: { theme: expect.objectContaining({ id: 'theme-dark' }), appMode: 'dark' } })
+      expect.objectContaining({ globalSettings: expect.objectContaining({ theme: expect.objectContaining({ id: 'theme-dark' }), componentLibrary: 'pack:shadcn', appMode: 'dark' }) })
     );
-    expect(textOf(result).theme).toEqual({ mode: 'derived', id: 'theme-dark', name: 'Relay console dark', app_mode: 'dark' });
+    // The standard theme's stock-blue primary also earns the accent note.
+    expect(textOf(result).theme).toEqual({ mode: 'derived', id: 'theme-dark', name: 'Relay console dark', app_mode: 'dark', accent_note: expect.stringMatching(/stock blue/) });
   });
 
   it('rejects font-only and incomplete derived palettes before creating any resources', async () => {
@@ -439,7 +494,7 @@ describe('run_query tool', () => {
 
     expect(textOf(result)).toEqual({
       status: 'ok', data: [{ '?column?': 1 }],
-      execution: { query_id: 'q1', datasource_kind: 'postgresql', read_only: true },
+      execution: { query_id: 'q1', datasource_kind: 'postgresql', preflight: 'explicit_read' },
     });
   });
 
@@ -667,7 +722,7 @@ describe('run_query tool', () => {
     const client = makeClient();
     client.getQuery.mockResolvedValue({
       id: 'warehouse-page', name: 'warehousePage', kind: 'bigquery', data_source_id: 'bq-main',
-      options: { query: 'SELECT id FROM dataset.orders LIMIT 25' },
+      options: { mode: 'sql', query: 'SELECT id FROM dataset.orders LIMIT 25' },
     });
 
     const refused = await runQueryTool(client as unknown as ToolJetClient).handler({
@@ -713,12 +768,12 @@ describe('run_query tool', () => {
     expect(textOf(approved)).toMatchObject({
       status: 'ok',
       data: { tag_name: 'v19.2.8' },
-      execution: { query_id: 'latest-release', datasource_kind: 'restapi', read_only: true },
+      execution: { query_id: 'latest-release', datasource_kind: 'restapi', preflight: 'explicit_read' },
       metadata: {
         request: { params: { per_page: '3' } },
         response: { statusCode: 200 },
       },
-      warnings: [expect.stringMatching(/User-confirmed REST GET.*metadata\.request.*pagination/i)],
+      warnings: [expect.stringMatching(/User-confirmed REST GET.*metadata\.response.*pagination/i)],
     });
     expect(client.runQuery).toHaveBeenCalledOnce();
   });
@@ -775,7 +830,7 @@ describe('run_queries tool', () => {
     expect(client.runQuery).toHaveBeenCalledTimes(2);
     expect(textOf(result)).toEqual({ queries: [
       { query_id: 'q1', name: 'overview', status: 'ok', data: [{ count: 48 }],
-        execution: { query_id: 'q1', datasource_kind: 'tooljetdb', read_only: true } },
+        execution: { query_id: 'q1', datasource_kind: 'tooljetdb', preflight: 'automatic_read' } },
       {
         query_id: 'q2', name: 'page', status: 'failed', message: 'connect ETIMEDOUT',
         warnings: [expect.stringMatching(/components\.\*.*viewer/i)],
@@ -832,6 +887,18 @@ describe('get_component_catalog tool', () => {
     expect(body.components[0]).toHaveProperty('events');
     expect(body.components[0]).not.toHaveProperty('properties');
     expect(body.unknown_types).toEqual(['NotAComponent']);
+  });
+
+  it('suggests pack types for guessed shadcn names', async () => {
+    // A Luna build asked for ShadDataTable, ShadMetric and ShadCard, which do not exist, and got no guidance.
+    const client = makeClient();
+    const tool = getComponentCatalogTool(client as unknown as ToolJetClient);
+    const body = textOf(await tool.handler({ types: ['ShadDataTable', 'ShadMetric', 'ShadCard', 'ShadButton'] })) as any;
+    expect(body.unknown_types).toEqual(['ShadDataTable', 'ShadMetric', 'ShadCard']);
+    expect(body.suggestions.ShadDataTable).toContain('ShadTable');
+    expect(body.suggestions.ShadMetric).toContain('ShadStat');
+    expect(body.suggestions.ShadCard.join(' ')).toMatch(/FlexContainer/);
+    expect(body.pack_types).toContain('ShadDialog');
   });
 
   it('defaults typed reads to compact authoring contracts and preserves exact key lookups', async () => {
@@ -1013,7 +1080,7 @@ describe('add_events tool', () => {
     });
 
     expect(result.isError).toBe(true);
-    expect(result.content[0]!.text).toMatch(/show-modal target must be a Modal or ModalV2, not Text/i);
+    expect(result.content[0]!.text).toMatch(/show-modal target must be a Modal, ModalV2 or ShadDialog, not Text/i);
     expect(client.createEvents).not.toHaveBeenCalled();
   });
 

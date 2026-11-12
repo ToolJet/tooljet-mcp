@@ -2,6 +2,11 @@
   "format": "tooljet-catalog-parts-v1",
   "parts": [
     "component-schemas/part-001.json",
-    "component-schemas/part-002.json"
+    "component-schemas/part-002.json",
+    "component-schemas/part-003.json",
+    "component-schemas/part-004.json",
+    "component-schemas/part-005.json",
+    "component-schemas/part-006.json",
+    "component-schemas/part-007.json"
   ]
 }

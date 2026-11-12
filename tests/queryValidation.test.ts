@@ -190,7 +190,7 @@ describe('validateQueryOptions', () => {
     ]));
 
     const billable = validateQueryOptions('bigquery', {
-      query: 'SELECT id FROM dataset.orders LIMIT 25', runOnDependencyChange: true,
+      mode: 'sql', query: 'SELECT id FROM dataset.orders LIMIT 25', runOnDependencyChange: true,
     });
     expect(billable.errors).toEqual(expect.arrayContaining([
       expect.objectContaining({ code: 'unsafe_automatic_billable_read', path: 'runOnDependencyChange' }),
@@ -343,6 +343,51 @@ describe('tooljetdb write filters (mass-update guard)', () => {
       expect.arrayContaining([expect.objectContaining({ code: 'malformed_where_filters' })])
     );
   });
+
+  // PostgREST v12 refuses deleteRows' default limit 1 without an order; TUT-01 failed every removal.
+  it('rejects a delete_rows with no limit and no order_column', () => {
+    const where = { 0: { column: 'id', operator: 'eq', value: '{{parameters.id}}' } };
+    const codes = (deleteRows: Record<string, unknown>) =>
+      validateQueryOptions('tooljetdb', { operation: 'delete_rows', table_id: 't1', delete_rows: deleteRows })
+        .errors.map((e) => e.code);
+    expect(codes({ where_filters: where })).toContain('unordered_delete_limit');
+    expect(codes({ where_filters: where, limit: 1 })).toContain('unordered_delete_limit');
+    expect(codes({ where_filters: where, limit: '' })).not.toContain('unordered_delete_limit');
+    expect(codes({ where_filters: where, limit: 1, order_column: 'id' })).not.toContain('unordered_delete_limit');
+  });
+
+  // HOTEL-01 / I18N-01: the SQL shape `create_row.columns` was "repaired" into a column named "columns".
+  describe('ToolJet DB create_row written with the SQL "columns" level', () => {
+    const map = {
+      0: { column: 'guest_name', value: '{{parameters.guest_name}}' },
+      1: { column: 'status', value: 'confirmed' },
+    };
+    const options = (createRow: unknown) => ({ operation: 'create_row', table_id: 't1', create_row: createRow });
+
+    it('is unwrapped to the column map ToolJet DB reads', () => {
+      expect(normalizeQueryOptions('tooljetdb', options({ columns: map })).create_row).toEqual(map);
+    });
+
+    it('mends a query already saved as one "columns" column', () => {
+      const saved = options({ 0: { column: 'columns', value: map } });
+      expect(normalizeQueryOptions('tooljetdb', saved).create_row).toEqual(map);
+    });
+
+    it('refuses a column map nested under any other key instead of writing it as one column', () => {
+      const nested = options({ 0: { column: 'row', value: map } });
+      expect(normalizeQueryOptions('tooljetdb', nested).create_row).toEqual(nested.create_row);
+      const codes = validateQueryOptions('tooljetdb', nested).errors.map((e) => e.code);
+      expect(codes).toContain('malformed_write_columns');
+    });
+
+    it('leaves a correct map and a flat map repair as they were', () => {
+      const correct = options(map);
+      expect(normalizeQueryOptions('tooljetdb', correct)).toBe(correct);
+      expect(normalizeQueryOptions('tooljetdb', options({ guest_name: 'x' })).create_row).toEqual({
+        0: { column: 'guest_name', value: 'x' },
+      });
+    });
+  });
 });
 
 describe('SQL create_row blank-row guard', () => {
@@ -463,7 +508,7 @@ describe('ToolJet DB filter operator aliases', () => {
 
   it.each(['list_rows', 'update_rows', 'delete_rows'])('validates array-form operators for %s without rewriting filters', operation => {
     const original = { operation, table_id: 'synthetic-stock', [operation]: {
-      limit: 30, columns: { 0: { column: 'quantity', value: 14 } },
+      limit: 30, order_column: 'id', columns: { 0: { column: 'quantity', value: 14 } },
       where_filters: [{ column: 'id', operator: '=', value: 4 }],
     } };
     const before = structuredClone(original);

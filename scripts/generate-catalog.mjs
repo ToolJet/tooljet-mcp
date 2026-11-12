@@ -77,6 +77,16 @@ function trimDefault(v) {
   return v;
 }
 
+// A union schema ({ type: 'union', schemas: [{ type: 'array' }, { type: 'string' }] }) accepts any of its members;
+// without them the catalog said only "union", and callers could not tell metaFields: ['a', 'b'] was allowed.
+function unionTypes(schema) {
+  if (strProp(schema, 'type') !== 'union') return undefined;
+  const members = prop(schema, 'schemas');
+  if (!members || members.type !== 'ArrayExpression') return undefined;
+  const types = members.elements.map((member) => (member?.type === 'ObjectExpression' ? strProp(member, 'type') : undefined));
+  return types.length && types.every(Boolean) ? [...new Set(types)] : undefined;
+}
+
 function allowedValues(definition) {
   // clientServerSwitch presents string labels internally, but persists a boolean binding.
   // Advertising those editor-only strings as valid component values causes agents to author
@@ -100,6 +110,11 @@ const EXACT_PROPERTY_DEFAULTS = new Set([
   'Timeline:data',
   'DropdownV2:schema',
 ]);
+
+// Definition defaults ToolJet writes itself and an author never sets: the catalog leaves them out. A FlexContainer's
+// layoutVersion picks its layout (the MCP writes '2' on create, src/tooljetClient.ts); setting it on an existing
+// container would change how a saved app lays out.
+const INTERNAL_DEFINITION_PROPERTIES = new Set(['FlexContainer:layoutVersion']);
 
 // Find the exported config ObjectExpression (has a `name` string prop).
 function findConfig(ast) {
@@ -172,6 +187,7 @@ function extractProps(config, componentType) {
         key,
         label: strProp(def, 'displayName'),
         valueType: schema ? strProp(schema, 'type') : undefined,
+        valueTypes: schema ? unionTypes(schema) : undefined,
         default: validation ? trimDefault(literal(prop(validation, 'defaultValue'))) : undefined,
         allowedValues: allowedValues(def),
       };
@@ -183,6 +199,7 @@ function extractProps(config, componentType) {
     for (const pr of defProps.properties) {
       if (pr.type !== 'ObjectProperty' || pr.value.type !== 'ObjectExpression') continue;
       const key = keyName(pr);
+      if (INTERNAL_DEFINITION_PROPERTIES.has(`${componentType}:${key}`)) continue;
       const rawValue = literal(prop(pr.value, 'value'));
       const val = EXACT_PROPERTY_DEFAULTS.has(`${componentType}:${key}`) ? rawValue : trimDefault(rawValue);
       if (!meta[key]) {
@@ -213,6 +230,7 @@ function extractStyles(config) {
         key,
         label,
         valueType: schema ? strProp(schema, 'type') : undefined,
+        valueTypes: schema ? unionTypes(schema) : undefined,
         default: validation ? trimDefault(literal(prop(validation, 'defaultValue'))) : undefined,
         allowedValues: allowedValues(pr.value),
       };
@@ -441,6 +459,35 @@ if (schemas.Kanban) {
     semantics: 'Published for onCardMoved. Use cardDetails.id and destinationColumnId in persistence queries; cardId, sourceColumn and destinationColumn are not exposed members.',
   });
 }
+// The UI 2.0 board publishes its own names and the native Kanban's for a move (kanbanBoard.ts moveCard). The lint
+// refuses any other member: a build saved a move with lastCardMovement.toColumn (2026-10-18).
+if (schemas.ShadKanban) {
+  const movement = schemas.ShadKanban.exposedVariables.find((variable) => variable.name === 'lastCardMovement');
+  if (movement) Object.assign(movement, {
+    valueType: 'object',
+    shape: {
+      cardId: 'moved card id (idField value)', card: { '...': 'the moved card row, with its new status' },
+      from: 'origin column id', to: 'destination column id', toIndex: 'number',
+      cardDetails: { '...': 'the moved card row (native name)' }, originColumnId: 'origin column id (native name)',
+      destinationColumnId: 'destination column id (native name)', originCardIndex: 'number (native name)',
+      destinationIndex: 'number (native name)',
+    },
+    semantics: 'Published for onCardMoved. Save a move with lastCardMovement.cardId and .to; the native names cardDetails.id and destinationColumnId also work.',
+  });
+}
+// The UI 2.0 Schedule's slot (Schedule/scheduleModel.ts). A build read an invented selectedSlot.start_time and fell back
+// to startTime, 'HH:mm' text that parses as an invalid date (2026-10-18).
+if (schemas.ShadSchedule) {
+  const slot = schemas.ShadSchedule.exposedVariables.find((variable) => variable.name === 'selectedSlot');
+  if (slot) Object.assign(slot, {
+    valueType: 'object',
+    shape: {
+      resourceId: 'the resource id', resource: 'the resource name', start: 'ISO date-time (prefill a date-time field from this)',
+      end: 'ISO date-time', date: "'YYYY-MM-DD'", startTime: "'HH:mm' text, not a date", endTime: "'HH:mm' text, not a date",
+      label: 'a readable label for the slot',
+    },
+  });
+}
 if (schemas.Table) {
   const tableVariables = new Map(schemas.Table.exposedVariables.map((variable) => [variable.name, variable]));
   Object.assign(tableVariables.get('pageIndex') ?? {}, {
@@ -473,6 +520,18 @@ if (schemas.DropdownV2) {
     staticOptions.requires = { advanced: '{{false}}' };
     staticOptions.mutuallyExclusiveWith = ['schema'];
   }
+}
+
+// FlexContainer stores its children's order in properties.childOrder (frontend flexContainerSlice.js), a key the
+// widget config does not declare. Declare it so a written order is a known key, never stripped as unknown.
+if (schemas.FlexContainer && !schemas.FlexContainer.properties.some((property) => property.key === 'childOrder')) {
+  schemas.FlexContainer.properties.push({
+    key: 'childOrder',
+    label: 'Child order',
+    valueType: 'array',
+    default: [],
+    description: 'Child component ids in render order. MCP writes it when children are created or reparented; update_components also accepts child names.',
+  });
 }
 
 // Curated rendering hints (not harvestable from the widget defs) — sizing/readability defaults the
@@ -513,6 +572,16 @@ const RENDERING_HINTS = {
     recommendedFieldRowStepPx: 'authored field height + 30px (20px label/validation footprint + 10px gap); this is 70px only for a 40px-authored field',
     recommendedTextAreaHeightPx: '90–100',
     recommendedTwoColumnGutterCols: 2,
+  },
+  // Verified in Widgets/FlexContainer (FlexContainer.jsx, flexContainer.utils.js, useFlexWidgetLayout.js).
+  FlexContainer: {
+    childOrder: 'Children render in the order of properties.childOrder (an array of child component ids); grid top/left of a child are ignored. A child missing from childOrder lands after the listed ones in an arbitrary order. MCP writes childOrder: request order when the container and its children are created together, appended for a child added or reparented later.',
+    childWidth: 'A child fills the free main-axis width by default (layouts.desktop.fillWidth true). Fill children in a row share the line: equally by default, or by layouts.desktop.grow (grow 2 beside grow 1 takes two thirds). layouts.desktop.minWidthPx is the narrowest a fill child may get; in a row with properties.flexWrap {{true}} a child that would go narrower wraps to the next line (a responsive card grid). For a fixed width set fillWidth=false and widthPx=<pixels>. The grid width/left are still required by the API but do not change the rendered width.',
+    childHeight: 'A child is its authored layout height in px. Only a child with its own dynamicHeight on grows to its content (in view mode). In a row with properties.alignItems \"stretch\", child FlexContainers (cards) fill the line\'s height so sibling cards share one height; other children keep their own height. alignItems \"last baseline\" lines up the last text line of each child (a labelled field\'s value, a badge, a button label).',
+    containerHeight: 'With properties.dynamicHeight {{true}} the container grows to fit its children in view mode; the editor keeps the authored height. Without it, children beyond the authored height (padding included) are cut off.',
+    shadcnCard: "cardStyle 'shadcnCard' draws a ToolJet UI 2.0 card: a light surface with a 14px radius, a 1px border and a faint shadow, plus a header with cardTitle (semibold) and cardExtra as a muted description beneath it. The header takes 48px with a title only and 70px with a description, from the body. Pair it with the Shad* widgets.",
+    spacing: 'padding and gap are properties in px, not styles.',
+    surface: "A FlexContainer is pure layout and is created transparent (no background, no border) unless you give it a surface: cardStyle 'shadcnCard' (a ToolJet UI 2.0 card with optional cardTitle/cardExtra header) or your own backgroundColor/borderColor. Add a surface only where you want one; rows and columns used for layout stay invisible.",
   },
   KeyValuePair: {
     currentPaddingBehavior: 'In the current ToolJet renderer, styles.padding values "default" and "none" do not add a visible content inset. Do not rely on this property to create card padding.',
@@ -567,6 +636,13 @@ const AUTHORING_HINTS = {
   Map: {
     providerSetup: 'Map.jsx loads Google Maps using deployment public_config.GOOGLE_MAPS_API_KEY. If Google reports a configuration/access error, report the dependency and ask the deployment owner to fix it; do not invent a working key, suppress the warning, or claim the map is production-ready.',
     markerSelection: 'Use defaultMarkers entries with lat, lng and a stable source-record id. onMarkerClick publishes that whole object as selectedMarker before handlers run. Capture the selected id into the same detail context used by list selection. Do not match solely by coordinates: different visits may share a property.',
+    // 2026-10-12: the Google Map in ToolJet UI 2.0 apps, beside the pack's own key-free map.
+    look: "In an app built in ToolJet UI 2.0, prefer ShadMap: markers from rows, status-toned pins, groups for thousands of rows, a popup and selection, on open tiles that need no API key. Use this Map only when the app needs Google's map (places search, Google's own tiles) and the deployment sets GOOGLE_MAPS_API_KEY; then set styles.mapLook \"shadcn\" for the UI 2.0 frame (theme radius, hairline border, card surface). Without a key it shows 'Add a Google Maps API key to show this map'.",
+  },
+  FlexContainer: {
+    creation: 'Create the container and its children in one add_components call: the container gets a client_ref, each child the matching parent_ref, listed in display order. Children may share the same top/left (for example 0,0): flex children are not linted for overlap.',
+    reorder: 'Reorder with update_components on the container: definition.properties.childOrder = [child names or ids] in the wanted order; children left out keep their relative order after the listed ones.',
+    childOrderManaged: 'Do not author childOrder ids on create; MCP fills them in. A childOrder given on create may name batch children by client_ref or name.',
   },
   ButtonGroupV2: {
     selectionTiming: {
@@ -671,6 +747,46 @@ const AUTHORING_HINTS = {
       },
     },
   },
+  // 2026-10-10: the shadcn/ui data table. Native Table names and server-side conventions.
+  ShadTable: {
+    table: {
+      columns: 'properties.columns: [{ key, name, columnType }]. columnType: string (default), number, currency, date, datetime, badge (status chips; badgeColors per column or table-wide, or options [{value,label}]), tags (array or comma list), boolean, link (displayText, linkTarget), image (imageShape round|square), avatar (a name or {name, src}), progress (maxValue), button (buttons: [{ id, label, variant default|outline|secondary|ghost|destructive }]), json, html. Per column: horizontalAlignment, columnSize (px), decimalPlaces, currency, dateFormat, prefix, suffix, columnVisibility, sortable, isEditable, wrap, fontWeight. Per-row styling is data, never a nested binding (a {{ }} inside the columns binding breaks it): conditionalStyles: [{ condition, value, textColor, backgroundColor, fontWeight }] (first match wins; conditions as filters: equals, ne, contains, gt, lt, gte, lte, isEmpty, ...; add key to test another field of the row). A button\'s disabledWhen / hiddenWhen: { key, condition, value }. Empty columns are generated from the data.',
+      selection: 'allowSelection (single; selectedRow, selectedRowId = data index), showBulkSelector (checkbox column; selectedRows, selectedRowsId), highlightSelectedRow, disableRowDeselection, defaultSelectedRow {key: value}. onRowClicked fires after selectedRow is set; onSelectionChanged on any selection change. Row ids come from idField (default id), so a selection survives a refetch.',
+      actions: 'A button column fires onActionButtonClicked after setting lastActionClicked { buttonId, columnKey, row } and selectedRow to that row: one event handler serves every button, branching on components.<table>.lastActionClicked.buttonId.',
+      serverSide: 'Server-side pagination: serverSidePagination true, data is the current page, bind the query offset to components.<table>.pageIndex (1-based) and rowsPerPage, set totalRecords for page numbers (or toggle enableNextButton), refetch onPageChanged. serverSideSearch / serverSideSort / serverSideFilter stop the table filtering, sorting or searching locally: read searchText, sortApplied [{column, columnKey, direction}] and filters [{column, condition, value}] in the query and refetch on onSearch / onSort / onFilterChanged (each resets pageIndex to 1 except sort). setPage does not fire onPageChanged.',
+      editing: 'isEditable columns edit in place: changeSet {dataIndex: {key: value}}, dataUpdates (full edited rows), updatedData; onCellValueChanged per edit; the Save changes bar fires onBulkUpdate (save there, then refetch: edits clear when the data changes); Discard fires onCancelChanges.',
+      chrome: 'Toolbar: displaySearchBox, showFilterButton, hideColumnSelectorButton (false shows the column chooser), showDownloadButton (CSV/JSON of the filtered, sorted, edited rows), showRefreshButton (onRefresh). cellSize condensed|regular|spacious, tableType regular|striped|bordered, stickyHeader. More than 150 rows on a page are virtualised. Styles: accent, background, header background/text, cell text, secondary text, border, hover, selected, striped, radius, font size, header casing, outer border.',
+    },
+  },
+  // 2026-10-10: shadcn/ui layout containers. Same contracts as the native Tabs and Listview.
+  ShadTabs: {
+    tabs: {
+      items: 'Author properties.tabItems as [{id:"t0", title:"Profile"}, {id:"t1", title:"Billing"}] (ids t0, t1, ...), or set useDynamicOptions "{{true}}" and bind tabs to [{id, title}]. The catalog default titles (Overview / Activity / Settings) are placeholders: replace them. defaultTab is a tab id.',
+      content: 'Each tab is its own canvas: create its components with parent_ref to the Tabs and slot_name "tab-<id>" (tab-t0, tab-t1). A tab without children renders an empty panel.',
+      styles: 'variant "pills" (the default: a muted pill bar), "underline" (a bottom border with an accent indicator) or "steps" (a wizard: numbered steps, Back / Next / Finish buttons below, onFinish on the last step; linearSteps keeps steps in order). tabsAlign start | center | stretch. The tab strip is 50px; panels pad 8px; the wizard footer adds 56px. Style colours (accent, tab text, active tab, bar, panel, border, radius, font size) fall back to the theme.',
+      actions: 'setTab(id), nextTab, previousTab, setTabDisable / setTabLoading / setTabVisibility (tabId, value), setVisibility, setDisable, setLoading. Exposed: currentTab, currentTabTitle, currentStepIndex, isFirstStep, isLastStep.',
+    },
+  },
+  ShadListView: {
+    list: {
+      content: 'One canvas repeated per item: create the item components with parent_ref to the list (no slot) and bind them to {{listItem.<field>}}. Every item has the same height, properties.rowHeight in px: size it to the item content. mode "grid" with columns repeats items in a grid; each cell has its own 43-column canvas (a full-cell child is left 0, width 43).',
+      selection: 'A click selects the item and fires onRecordClicked: selectedItem (the data item) and selectedItemId (its idField value); selectedRecord / selectedRecordId keep the native Listview meaning (the item\'s component values and its index). selectItem(id) selects from an action. A button in an item acts on that item through listItem.',
+      paging: 'enablePagination with rowsPerPage slices the data client side. With serverSidePagination the data is the current page: bind the query to components.<list>.pageIndex (1-based), set totalRecords for page numbers, and refetch on onPageChanged (fired by the pager, not by setPage).',
+      styles: 'Item background, hover, selected, border, radius and shadow, dividers (showBorder, list mode), list background and padding, accent: each falls back to the theme.',
+    },
+  },
+  // 2026-10-10: the shadcn/ui board's editing contract. Its events fire for UI changes and for its actions alike.
+  ShadKanban: {
+    board: {
+      customCards: 'For card content the fields cannot express (buttons on a card, a custom layout), set cardLayout "custom" and cardHeight (px, the same for every card), then add child components with parent_ref to the board (no slot_name, or "body"). They are laid out on the card canvas: 43 grid columns across the card width (about 7px each on a 3-column board), top in px from the card top. Bind them to {{cardData.<field>}}; every card renders the same children with its own row. A button on a card can act on that card with cardData.id. Children of a board left on Fields content are never shown. Prefer Fields when the mapped fields fit: they need no layout and look right by default.',
+      sizing: 'collapsedHeight (px of card content): taller cards show only that top part with a Show more toggle; put what must always be visible above it (title, owner, status) and details below. Empty shows every card whole; the Show more toggle appears on hover. Columns fold to a narrow strip from a chevron in their header (collapsibleColumns, on by default) and still take dropped cards; collapsedColumns lists column ids folded at start (e.g. a Done or Closed column on a long-running board); components.<name>.collapsedColumns is the current list. columnWidth (px) fixes every column, and the board scrolls sideways when they do not fit; empty shares the board width (at least 240px each).',
+      content: 'A card shows only the fields you map: titleField, descriptionField, badgeField (priority words colour the badge), tagsField (an array or a comma list), progressField (0 to 100), metaField (a short date or count), avatarField (a name, shown as initials). Map what the job needs; leave the rest empty. density "compact" for long boards.',
+      saving: 'Every change shows on the board at once and fires an event with its payload: onCardMoved (lastCardMovement { cardId, card, from, to, toIndex }: card is the moved row, to its new column), onCardAdded (lastAddedCard), onCardUpdated (lastUpdatedCard), onCardRemoved (lastRemovedCard); components.<name>.updatedCardData is the whole board. A card click fires onCardSelected with lastSelectedCard. Save in that event handler with a query. The actions (addCard, updateCardData, moveCard, deleteCard) fire the same events, so either call an action and save in its event, or save with a query and refresh the data; never both, or the save runs twice. Keep allowDrag on when a column is something a card can change (stage, status, owner, assignee): dragging is how people expect to change it, so save the move in onCardMoved. Turn it off only when columns are fixed facts (a date, a site).',
+      addFlow: 'allowAdd shows an Add card button under each column: it sets addCardColumn and fires onAddCardClick. Open a modal form there; on submit run the insert with status components.<name>.addCardColumn, then refresh the data query (or call addCard without a separate insert).',
+      deleteFlow: 'allowDelete shows a delete button on card hover: the card leaves the board and onCardRemoved fires with lastRemovedCard; delete the row in that handler.',
+      styles: 'Every colour falls back to the app theme, so set only what the design needs to blend in: accentColor (selection outline, progress bars, drop line, hover borders); columns: columnBackgroundColor, columnBorderColor, columnBorderRadius (px), columnTitleColor, columnCountBackgroundColor, columnCountTextColor, columnGap (px); cards: cardBackgroundColor, cardBorderColor, cardBorderRadius (px), cardShadow ("none" | "sm" | "md" | "lg", default "sm"), cardTitleColor, cardTextColor (description, meta, progress label), progressColor (progress bars; else the accent). properties.badgeColors maps badge values to colours, e.g. { High: "#dc2626", Low: "#16a34a" } (tinted chip, coloured text); unnamed values keep the built-in colours. Take colours from the app theme or brand, never the defaults of another product.',
+    },
+  },
   Listview: {
     modes: {
       componentType: 'Listview',
@@ -694,6 +810,10 @@ const AUTHORING_HINTS = {
     },
   },
   Table: {
+    look: "styles.tableLook \"shadcn\" draws this Table in the ToolJet UI 2.0 look (card frame, search-first toolbar, quiet header, hairline rows, UI 2.0 buttons and pagination); use it for tables in apps built in ToolJet UI 2.0. Properties, columns, row action buttons, events and exposed values are the Table's own in both looks.",
+    // 2026-10-12: row actions as icons or a menu, and the checkbox column, in the ToolJet UI 2.0 look.
+    rowActionDisplay: "In the UI 2.0 table look a button column takes buttonDisplay: 'icons' (32px ghost icon buttons, the label as tooltip) for one to three actions every row needs at a glance (View, Edit, Delete), or 'menu' (one '...' button at the row's right edge opening a dropdown) for three or more actions or rarely used ones; 'buttons' (default) keeps labelled buttons, for a single primary row action ('Check in', 'Approve'). Icons come from buttonIconName with buttonIconVisibility true, else from the label's verb (Edit pencil, Delete trash, View eye, Approve check, Send, Export, Copy, Archive...): give every button a short verb label. Delete, Remove and Reject draw in the destructive colour, set apart at the end of the menu. Events, rowData bindings (buttonVisibility, disableButton) and selectedRow work as for labelled buttons; leave name empty or 'Actions' and do not pin it. The ToolJet look ignores buttonDisplay.",
+    checkboxSelection: "For bulk actions (approve, export, assign, delete several rows) turn on showBulkSelector: the table draws a checkbox column with a select-all box in the header (the UI 2.0 checkbox in that look). Read components.<table>.selectedRows (the row objects) and selectedRowsId; put the bulk action in a ShadButton above the table whose text counts them ('Approve 3') and whose disabledState is {{!(components.<table>.selectedRows || []).length}}; onSelectionChanged fires on each change. Keep allowSelection on. After the action runs, refresh the data query (the selection clears with new data). A checkbox column is for acting on several rows; for opening one record, use onRowClicked.",
     serverSideDataFlow: {
       exposedVariables: {
         pageIndex: '1-based number',
@@ -771,6 +891,113 @@ const AUTHORING_HINTS = {
 };
 for (const [type, hints] of Object.entries(AUTHORING_HINTS)) {
   if (schemas[type]) schemas[type].authoringHints = hints;
+}
+
+// 2026-10-10: every shadcn/ui widget has a style set (Kanban's hint above lists its own), each falling back to the
+// app theme, so a design can blend the widgets into its theme or brand.
+const SHAD_STYLE_HINT =
+  'Every style falls back to the app theme, so set only what the design needs to blend in (its accent, surfaces, borders and text colours), taking colours from the app theme or brand, never the defaults of another product. Radii and sizes are px. Styles are the way to restyle a pack widget: a cssClass only takes effect with workspace Custom styles, and Tailwind class names the pack does not already use are not compiled, so do not rely on either; for a one-off visual a style cannot express, use an Html component. Bind loadingState to the query\'s isLoading (each widget draws a skeleton or spinner in its own shape); tooltip shows on hover.';
+const SHAD_STYLE_EXTRAS = {
+  ShadButton: 'Each variant keeps its own colours unless set: a set backgroundColor darkens slightly on hover unless hoverBackgroundColor is set; set textColor with it.',
+  ShadBadge: 'Each variant keeps its own colours unless set; a tinted chip is a light backgroundColor with a strong textColor of the same hue.',
+  ShadTable: 'properties.badgeColors maps badge-column values to colours, e.g. { Paid: "#16a34a", Overdue: "#dc2626" } (tinted chip, coloured text); unnamed values keep the built-in colours.',
+  ShadStat: 'positiveColor and negativeColor colour the change badge (text on a light tint) for trend "up" and "down"; unset keeps a neutral outline badge.',
+  ShadAreaChart: 'properties.seriesLabels names each series in the legend and tooltip ({ revenue: "Revenue" }); without it the field name is shown made readable. chartColor alone gives an on-brand palette (lighter tints and a deeper shade of it for later series); properties.colors lists explicit series colours in order.',
+  ShadBarChart: 'properties.seriesLabels names each series in the legend and tooltip ({ food_cost_pct: "Food cost" }); without it the field name is shown made readable. chartColor alone gives an on-brand palette (lighter tints and a deeper shade of it for later series); properties.colors lists explicit series colours in order.',
+  ShadPieChart: 'chartColor alone gives an on-brand palette (lighter tints and a deeper shade of it for later slices); properties.colors lists explicit slice colours in order.',
+  ShadInput: 'accentColor colours the focus ring.',
+  ShadTextarea: 'accentColor colours the focus ring.',
+  ShadSelect: 'accentColor colours the focus ring.',
+  ShadDatePicker: "accentColor colours the focus ring and the calendar's selected days.",
+  ShadProgress: 'barColor colours the bar; the track is a tint of it unless trackColor is set.',
+};
+for (const [type, schema] of Object.entries(schemas)) {
+  if (!type.startsWith('Shad') || type === 'ShadKanban') continue;
+  schema.authoringHints = {
+    ...schema.authoringHints,
+    styles: [SHAD_STYLE_HINT, SHAD_STYLE_EXTRAS[type]].filter(Boolean).join(' '),
+  };
+}
+
+// 2026-10-10: the pack's new widgets, one usage hint each (data shapes, sizing, binding patterns).
+const SHAD_USAGE = {
+  ShadNumberInput: 'value is a number or null. Put units in prefix/suffix, not the label; min/max are validation.minValue/maxValue. Height 64 with a label, 36 without, +24 with help text.',
+  ShadPasswordInput: 'showStrength adds a weak/fair/strong meter (16px) for sign-up forms; exposes strength. Height 64 with a label.',
+  ShadPhoneInput: 'Save value (E.164, e.g. +442071234567); isValid is false for an invalid number, so gate the submit button on it. defaultCountry is an ISO code. Height 64 with a label.',
+  ShadCurrencyInput: 'value is a plain number; show formattedValue elsewhere. currency is an ISO code, locale formats it. Height 64 with a label.',
+  ShadOtpInput: 'Run the verification query on onComplete; exposes value and isComplete. length 4 to 8. Height 64 with a label.',
+  ShadTimePicker: "value is 'HH:mm' (24-hour); minTime/maxTime take '09:00' or '9:00 AM'. Height 64 with a label.",
+  ShadDateTimePicker: "value is 'YYYY-MM-DDTHH:mm', also selectedDate, selectedTime and unixTimestamp (ms); defaultValue takes ISO text, 'YYYY-MM-DD HH:mm' or a timestamp. Height 64 with a label.",
+  ShadCombobox: 'options [{ label, value, description?, icon?, group?, disabled? }]; read components.<name>.value or selectedOption. Server-side search: bind the query to searchText and turn serverSideSearch on. Height 64 with a label, 36 without.',
+  ShadMultiselect: 'options as for ShadCombobox; read components.<name>.values (an array) or selectedOptions. Height 64 with a label.',
+  ShadTagsInput: 'defaultValue is an array of text; exposes values (the array). Height 64 with a label; it grows as tags wrap.',
+  ShadColorPicker: "value is '#rrggbb' ('#rrggbbaa' with allowAlpha); swatches is an array of hex values.",
+  ShadRating: 'value is 0 when unrated; readOnly for display. About 24px tall, +22 with a label.',
+  ShadFileUpload: 'file [{ name, type, size, content (text), base64Data, dataURL, parsedData? }]: upload base64Data. About 160px tall (180 with a label) plus about 66px per listed file.',
+  ShadImage: "aspectRatio 'auto' fills the drawn box; a ratio such as '16/9' sizes it from the width. Fallback shows when the URL is empty or fails.",
+  ShadIcon: "Any lucide icon name (kebab or Pascal case). { icon: 'users', tone: 'primary', chip: 'square' } is the tinted icon chip of a KPI card; 40px tall.",
+  ShadLink: 'linkTarget opens in targetType new or same tab; with no target it acts as a button (onClick). 24px tall.',
+  ShadTags: "Read-only chips from an array or comma text; tagColors { Paid: '#16a34a' } tints them. 24px per line.",
+  ShadCircularProgress: 'value 0 to 100; centerText value, custom or none with a sub-label. Height equals the size.',
+  ShadSpinner: 'For an inline busy state; most widgets have loadingState instead. 24px tall, 52 with the label below.',
+  ShadKeyValue: "A record's details: an object or [{ label, value, type?, format? }], types text, number, currency, date, badge, link, boolean; 1 to 4 columns. About 41px per row inline.",
+  ShadTimeline: 'items [{ title, description?, time, status or color, icon? }]; status words (done, active, pending, failed...) map to theme colours. About 66px per item with a description.',
+  ShadSteps: 'steps [{ id, title, description? }], currentStep is an id; setStep, nextStep, previousStep; exposes currentStepIndex. 60px tall, 78 with descriptions.',
+  ShadPagination: 'numberOfPages, or totalRecords with pageSize; onPageChange; offset = (components.<name>.currentPageIndex - 1) * pageSize. 36px tall.',
+  ShadDropdownMenu: "triggerType 'icon' gives a row '⋯' menu; branch on components.<name>.lastClickedOption.value in onSelect. 36px tall.",
+  ShadButtonGroup: "mode 'single' with defaultValue is a view switcher: bind components.<name>.value. 'actions' fires onClick with lastClicked. 36px tall, +22 with a label.",
+  ShadNavigation: 'A vertical sidebar fills its height; a horizontal top bar is 40px. Wire onClick to switch-page on components.<name>.value (selectedItem is the clicked item); selectItem on page load does not fire onClick.',
+  ShadCalendar: "An inline month (about 300x250 per month); markers [{ date: 'YYYY-MM-DD', label, color }]; query the visible month with visibleStart/visibleEnd.",
+  ShadCarousel: "slides [{ image, title?, description?, link? }]; height follows width and aspectRatio (+28 for dots, +52 for captions below); aspectRatio 'fill' fills a fixed height.",
+  ShadLineChart: "Rows [{ month, revenue, expenses }] with xField 'month' and yFields ['revenue', 'expenses']; referenceValue draws a target line; yAxisFormat percent expects values already in percent. 200 to 320px tall.",
+  ShadComboChart: "Bars and lines over one x axis: barFields ['revenue'], lineFields ['margin']; rightAxisFields ['margin'] puts a different unit (a rate, a percent) on its own right axis with rightAxisFormat. 240 to 340px tall.",
+  ShadScatterChart: "Two measures per row: xField and yField; sizeField makes bubbles, groupField colours and a legend per value, nameField titles the tooltip; referenceX/referenceY split it into quadrants. 260 to 360px tall.",
+  ShadFunnelChart: "Ordered stages [{ stage: 'Visited', count: 12480 }] with stageField and valueField; each stage shows its value and conversion from the one before (conversionBase 'first' for overall). About 44px per stage.",
+  ShadHero: "The top of a page that should read as a product (a personal or customer-facing app, a dashboard home, a front desk): one hero in place of a heading and subtitle. background 'tint' or 'gradient' for a staff tool; 'image' with imageUrl, or 'dark', for a premium or consumer page; meta for the 2 or 3 facts that matter today; actionLabel for the page's main action (onActionClicked). A greeting is the hero's own title ('Good morning, Ada') with one subtitle line of what needs attention; the one number that matters goes in the aside (asideValue '$12,480' or 12480, asideLabel 'Revenue today' above it), or up to four header facts as asideValue [{ label: 'Open', value: 14 }] with asideLabel as their heading. Never float a separate Text, Stat or status line beside or over the hero: put it in subtitle, meta or the aside. With an aside the actions sit under the text; a hero narrower than 560px stacks text, aside, actions. About 150px tall, 190 with actions.",
+  ShadCardGrid: "Things with a face as cards instead of table rows: recipes, products, listings, rooms, people, tasks. imageField when rows have photos (without it the cards have no picture area; never draw an SVG or data: image as a picture), badgeField for a state, descriptionField for a line of detail, metaFields for 2 or 3 facts ('prep:{} min, serves:Serves'). More on a card: badgeFields for extra chips ('diet, spice', up to 4 with badgeField), eyebrowField for a small caps line above the title (a category, a city, a team, a code), avatarField for an owner or host (a photo URL, else initials), progressField for a percentage bar (a project, a goal, a course). layout 'row' puts the image left of the text: listings, people and a compact catalogue in two columns. onCardClicked with selectedItem opens details. About 300px per row with images, 150 without or in rows.",
+  ShadSummaryStrip: "Three to six headline figures in one row with hairline separators, above or beside a table or a chart, in place of a row of separate stat cards: items [{ label, value, delta, caption }] with valueFormat 'currency' (an item's own format overrides it), numeric deltas signed as percents, lowerIsBetter for churn or refunds. One strip per data view; use ShadStat when a figure needs a trend line or a progress bar. About 90px tall, 110 with captions.",
+  ShadRecordList: "A short list of records as two-line rows beside a chart or a table, the 'recent orders', 'today's bookings', 'who is on shift' or 'latest tickets' panel: titleField, metaFields for the second line ('contact, due|date:Due {}'), statusField for a toned chip, valueField with valueFormat for an amount or a date on the right, avatarField for a photo or a person's initials, progressField for a percentage bar under the meta line (onboarding, a project's completion). onItemClicked with selectedItem opens details. Use ShadTable for long, sortable or editable data. About 60px per row plus 2.",
+  ShadProgressList: "Goals, budgets, quotas, capacity and onboarding steps as rows of label, 'value of target' and a bar, in place of a table of percentages or a stack of ShadProgress widgets: data rows with labelField, valueField and targetField (or percentField 0 to 100 when the data already has a percentage; a value with no target is read as the percentage), valueFormat 'currency' (with currency) for budgets and 'number' for counts. statusField chips tone the bar by their words (On track green, At risk amber, Over budget or Behind red; a bare tone name success, warning, danger or info colours the bar with no chip); without a status, autoTone 'limit' turns budgets and quotas amber from 80% and red over 100%, 'goal' turns a target green at 100%. captionField is a short line under the bar ('12 days left', 'Renewals due in November'). listStyle 'plain' inside a card, 'card' on its own; barSize 'thin' for a dense side panel. onItemClicked with selectedItem opens details. About 64px per row, 76 with captions.",
+  ShadSchedule: "Rooms, desks, shifts, on-call rotas, vehicles, equipment and appointments: resources down the side, time across, bookings as blocks, in place of a table of start and end times or a Calendar when the question is who or what is free when. scale 'hours' is one day (date, empty for today; dayStart and dayEnd in hours; slotMinutes for empty slots), scale 'days' is a run of days (days 7 for a week, 14 for a rota). resources [{ id, name, caption }] (caption: seats, role, plate); bookings rows mapped through resourceField (a resource id or name), startField and endField (ISO date-times, 'YYYY-MM-DD HH:mm', 'HH:mm' on the shown day, or 'YYYY-MM-DD' for whole days), titleField, subtitleField (who), statusField (Confirmed green, Tentative or Pending amber, Cancelled red and struck through). Wire onSlotClicked to open a booking form prefilled from components.<name>.selectedSlot { resourceId, resource, start, end, date, startTime, endTime }, and onBookingClicked to a details sheet from selectedBooking; after saving, refresh the bookings query. resourceTitle names the column ('Room', 'Engineer'). Full width; about 40px plus 56px per resource.",
+  ShadChat: "A conversation: an assistant, a support thread, a team or customer chat, a care team, in place of a Table of messages or Html bubbles. initialChat is the history: an array of { message, type, name, avatar, timestamp, messageId } with type 'message' for this app's user (right) and 'response' for the other side (left). Bound to a messages query, map its rows: {{(queries.getMessages.data || []).filter(m => m.thread_id === variables.threadId).map(m => ({ message: m.body, type: m.sender === 'agent' ? 'message' : 'response', name: m.author, timestamp: m.sent_at, messageId: 'msg-' + m.id }))}}; a new value (another thread picked, the query refreshed) replaces the history. userName and userAvatar, respondentName and respondentAvatar name the two sides when a message has no name. Sending fires onMessageSent with the text in components.<chat>.lastMessage.message (lastMessage is the whole message object, so save .message, not lastMessage, in a text column). Wire onMessageSent to the save or AI query; on that query's success run the appendHistory action ({{ { message: <reply text>, type: 'response', name: <sender> } }}) or refresh the history query, with setResponseLoading true before and false after (a typing indicator), and setError on failure. A RunJS query can drive it in one place: await components.<chat>.setResponseLoading(true); await queries.save.run(); await components.<chat>.appendHistory({ message, type: 'response' }); await components.<chat>.setResponseLoading(false). loadingHistory shows the history loading, disableInput blocks sending (with emptyText and placeholder saying why, such as before a check-in is done). Replies render markdown (lists, bold, tables); the user's own turns are plain text. Set chatTitle '' and both header buttons off (enableClearHistoryButton, enableDownloadHistoryButton) when a card title already names it, or the header is an empty band. Fixed height (the messages scroll inside): 420 to 640px, a card, a page column or a side sheet; never fake chat bubbles with Text or Html.",
+  ShadQuestionnaire: "A step-by-step questionnaire: intake, onboarding, a survey, a triage or an assessment, one question at a time with progress, Previous, Skip (optional questions, not the last) and Next, in place of a long Form or a Tabs wizard. items is the question list: [{ name, prompt, description, required, type 'single' | 'multiple' | 'text', choices: ['Label'] or [{ label, value, description }], other: true or { label, placeholder } for a typed 'Other' answer, placeholder, multiline: false for a one-line text answer (a name, an email) }]. A required question blocks Next until answered (an Other picked but left empty does too). components.<q>.answers is keyed by item name: single gives the choice's value (or the typed Other text), multiple an array (Other text last: join it, [].concat(a.equipment || []).join(', '), for a text column), text a string. Run the save query on onSubmit, reading the answers there; the widget then shows completeTitle and completeText (completeTitle can bind to an answer: 'You are all set, ' + components.<q>.answers.preferred_name), with an 'Edit answers' link back. onStepChanged with currentIndex and currentItem.name can drive a side panel ('Why we ask'); the reset action starts a new response (a 'Start another' button shown while isComplete), goTo jumps. defaultAnswers restores saved answers. Write prompts as questions and choices as short labels with a one-line description. It draws its own card (surface 'card'; 'plain' inside a card or a dialog) and fits each question's height (dynamicHeight, on by default): give it the height of a typical question (about 160px plus 58px per choice) and nothing pinned right under it that would be pushed down.",
+  ShadMap: "Places on a map, key-free (open tiles that follow the light or dark theme): delivery stops and routes, field jobs and service zones, stores, sites, technicians, listings, incidents, in place of a table of addresses when where matters. data rows with latField and lngField (numbers or numeric text; rows without valid coordinates are skipped and counted in a footnote, so geocode addresses in the query first), titleField, subtitleField (the address), statusField and idField. Pin colours: statusField's words (Delivered or Done green, Delayed, Pending or Under offer amber, Failed, Overdue or Overloaded red, Open, Scheduled or In transit blue, Sold grey); when two states would share a colour (Open and Scheduled are both blue), set statusColors { Open: 'warning', Scheduled: 'info', Reserved: '#7c3aed' }; showLegend (on) explains the colours with counts. labelField: a stop number inside the pin (dispatch) or a price pill ('€450k'; map the rows to a formatted label first) for listings; iconField: a lucide icon per row ('snowflake', 'droplets', 'zap', 'wrench'). Routes: connectMarkers true with routeField (the driver or van: one line each, its own colour, in the legend), routeOrderField (the stop number) and routeStart (the depot { lat, lng }); or routes, a second dataset of lines { name, path: [[lat, lng], ...] or a GeoJSON LineString, status or color }; routeColors names a colour per line. Areas (service zones, territories, geofences, delivery radius): areas rows with an outline ([[lat, lng], ...], a GeoJSON Polygon or JSON text in areaShapeField) or a circle (lat, lng and a radius in metres), named by areaTitleField and filled by areaStatusField's tone (Busy amber, Overloaded red) or the row's color. popupFields lists what the popup shows under the title ('eta:ETA {}, driver, total|currency'). Wire onMarkerClick to a details sheet or a side panel from components.<map>.selectedMarker (the row) and selectedMarkerId; a list beside the map calls selectMarker(id) on its row click to bring the pin into view and open its popup. onShapeClicked with selectedShape (the route or area row) and selectedShapeType. To choose a place in a form (a new job, a new site), a ShadMap with pickLocation true and showSearch true (data '{{[]}}', defaultCenter and defaultZoom 11 on the city, fitToMarkers false, about 260px tall): the user searches an address or clicks; save components.<map>.pickedLocation.lat / .lng and .address, and react in onLocationPicked; defaultPickedLocation shows the saved spot when editing. display 'heat' (or 'both') shows density, weighted by heatField. fitToMarkers (on) opens on everything drawn and refits when data changes; off, defaultCenter at defaultZoom (12 a city, 15 a street). clusterMarkers (on) keeps thousands of rows smooth; set it off for under about 50 pins that should all show, and with numbered stops. Page scroll is never taken by the map (scrollWheelZoom off; Ctrl or Cmd with the wheel zooms); showFullscreen (on) adds a button; mapStyle 'satellite' or showStyleSwitch for site work. onBoundsChange with components.<map>.bounds { northEast, southWest } can drive a 'what is in view' query; onMapClicked exposes clickedLocation. Never put coordinates in an Html widget or an iframe map. Fixed height: 320 to 640px, a page column beside a ShadRecordList or ShadCardGrid of the same rows; not in a fit-to-content container.",
+  ShadHeatmapChart: "Two categories against each other shaded by a value: rows [{ day: 'Mon', hour: '09:00', tickets: 12 }] with yField (rows), xField (columns), valueField; yOrder/xOrder fix the order (weekdays, hours). About 32px per row plus 40.",
+  ShadRadarChart: "Rows [{ skill: 'Speed', alex: 86 }] with categoryField 'skill'; set maxValue 100 for scores. Keep it square, 240 to 320px.",
+  ShadRadialChart: "mode 'progress' (value against maxValue, centre value and label) or 'categories'. Angles 90/-270 a full ring, 180/0 a semicircle gauge (about twice as wide as tall).",
+  ShadSparkline: 'data [12, 18, ...] or [{ x, y }]; 24 to 64px tall under a ShadStat; exposes trend (up, down, flat) to bind to the Stat trend.',
+};
+for (const [type, usage] of Object.entries(SHAD_USAGE)) {
+  if (schemas[type]) schemas[type].authoringHints = { ...schemas[type].authoringHints, usage };
+}
+
+// 2026-10-10: the shadcn Dialog is ModalV2 in the pack's look: the same slots, close lifecycle and coordinate space.
+if (schemas.ShadDialog && schemas.ModalV2) {
+  schemas.ShadDialog.renderingHints = schemas.ModalV2.renderingHints;
+  schemas.ShadDialog.authoringHints = {
+    ...schemas.ModalV2.authoringHints,
+    ...schemas.ShadDialog.authoringHints,
+    composition:
+      'Header: a ShadHeading (level "h4") with a muted ShadText description under it; body: the content or form; footer: ShadButtons, an outline Cancel then the primary action, right-aligned. Set useDefaultButton false and open it with show-modal from a ShadButton or a table row event. variant "sheet" (side "right") is a full-height side panel for record details and edit forms; "dialog" is centred for confirmations and short forms. Body of a record-details sheet: one FlexContainer column holding, top to bottom, the headline figure or status (a ShadStat or a ShadBadge), one ShadKeyValue for the fields (data an array of { label, value, type } from the selected record, columns 2, layout "stacked"), then longer notes in a ShadText; never label and value ShadTexts placed by hand on a grid. Footer: every button inside one FlexContainer row (justifyContent "flex-end", gap 8), the outline or ghost action first, the primary last. Read the record as components.<table>?.selectedRow?.<field> ?? \'-\', or guard on components.<table>?.selectedRow?.id: a selection is {} when nothing is selected, which is truthy.',
+  };
+}
+
+// 2026-10-10: the pack's inputs validate like the native ones (RenderWidget runs the definition's validation section).
+const SHAD_VALIDATION_RULE =
+  'customRule fails when it resolves to a non-empty string, which becomes the message: {{components.<name>.value.includes("@") ? "" : "Enter an email"}}. The message shows under the control after the user leaves it or a surrounding Form tries to submit; components.<name>.isValid and isMandatory are exposed, so gate a submit button with disabledState on them.';
+const SHAD_VALIDATION = {
+  text: `Top-level validation (not properties), each key as {value}: mandatory ("{{true}}"), regex, minLength, maxLength, customRule. ${SHAD_VALIDATION_RULE}`,
+  choice: `Top-level validation (not properties), each key as {value}: mandatory ("{{true}}": a value must be picked, or the checkbox checked) and customRule. ${SHAD_VALIDATION_RULE}`,
+};
+for (const [type, kind] of Object.entries({
+  ShadInput: 'text',
+  ShadTextarea: 'text',
+  ShadSelect: 'choice',
+  ShadDatePicker: 'choice',
+  ShadCheckbox: 'choice',
+  ShadRadioGroup: 'choice',
+})) {
+  if (schemas[type]) schemas[type].authoringHints = { ...schemas[type].authoringHints, validation: SHAD_VALIDATION[kind] };
 }
 
 // Also deliver these contracts in selective authoringHints reads, which intentionally omit

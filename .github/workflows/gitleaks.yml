@@ -42,4 +42,12 @@ jobs:
           if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
             scan_history=--all
           fi
-          "$RUNNER_TEMP/gitleaks-bin/gitleaks" git . --log-opts="$scan_history" --redact=100 --no-banner
+          "$RUNNER_TEMP/gitleaks-bin/gitleaks" git . --log-opts="$scan_history" --redact=100 --no-banner --report-format=json --report-path="$RUNNER_TEMP/gitleaks-report.json"
+
+      - name: Upload redacted secret scan diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-redacted-report
+          path: ${{ runner.temp }}/gitleaks-report.json
+          retention-days: 7
