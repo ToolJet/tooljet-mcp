@@ -1,4 +1,4 @@
-import { isEmptyLibraryHost, isLibraryPackType, serverLibraryPacks } from './libraryPack.js';
+import { isEmptyLibraryHost, isLibraryPackType, packRowSlotNames, packSlotOnOwnId, serverLibraryPacks } from './libraryPack.js';
 import { packCanvases } from './packItemSlots.js';
 import { packValueTypeError } from './packValueTypes.js';
 import { defaultPack } from './componentLibrary.js';
@@ -840,6 +840,17 @@ export function lintPackItemSlots(components: LintComponent[], options: { persis
         errors.push(
           `${label} is a child of ${where}, which draws no canvas, so it would be saved and never shown. ` +
             'Parent it to a container (a Card, Split Pane, Stepper ...) or to the page.'
+        );
+        continue;
+      }
+      // A list's repeating rows are drawn on its own id (ToolJet's List view row): a child there is on the row, and one on
+      // "<id>-row" is where nothing draws.
+      if (bare && packSlotOnOwnId(container.type)) continue;
+      const suffixed = !!container.id && !!component.parent?.startsWith(`${container.id}-`);
+      if (suffixed && packRowSlotNames(container.type).includes(slot)) {
+        errors.push(
+          `${label} is saved on "${component.parent}", but ${where} draws its ${slot} on its own id, so it is not shown. ` +
+            `Move it with update_components (parent: ${container.name ?? container.id}, slot_name: ${slot}).`
         );
         continue;
       }

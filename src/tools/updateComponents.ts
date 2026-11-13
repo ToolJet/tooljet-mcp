@@ -16,6 +16,7 @@ import {
 } from '../lint.js';
 import { applyResolvedParent, COMPONENT_SLOT_NAMES, componentSlotSchema, decodeComponentParent, encodeComponentParent, isPackContainerType, resolveParentRef } from '../componentParent.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { packSlotOnOwnId } from '../libraryPack.js';
 import { normalizeComponentSpec, packValueAsDefault } from '../componentNormalization.js';
 import { resolveRef } from '../refResolution.js';
 import { hasNonEmptyDefinition, strictEntry } from '../strictEntry.js';
@@ -205,7 +206,10 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
               (candidate) => isPackContainerType(candidate.type) && (parent === candidate.id || parent!.startsWith(`${candidate.id}-`))
             );
             if (packParent && (slotName !== undefined || parent === packParent.id)) {
-              parent = `${packParent.id}-${slotName ?? 'body'}`;
+              // Its repeating rows (a list's row) are drawn on its own id.
+              parent = packSlotOnOwnId(packParent.type, slotName)
+                ? packParent.id
+                : `${packParent.id}-${slotName ?? 'body'}`;
               slotName = undefined;
               writeSlot = undefined;
             }

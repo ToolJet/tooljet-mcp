@@ -69,6 +69,24 @@ export function packSlotNames(type: unknown): string[] | undefined {
   return slots.map((slot) => String(slot.name ?? '')).filter(Boolean);
 }
 
+/** The canvases a pack type repeats as rows (kind "rows": a list's row, a Kanban card). ToolJet draws them as a List
+ *  view row on the component's own id (usePackHost PackRow), so their children's parent is the bare id, not
+ *  "<id>-<slot>". */
+export function packRowSlotNames(type: unknown): string[] {
+  const component = Object.values(packOfType(type)?.components ?? {}).find((entry) => entry.type === type);
+  const slots = (component as { slots?: Array<{ name?: unknown; kind?: unknown }> } | undefined)?.slots ?? [];
+  return slots.filter((slot) => slot.kind === 'rows').map((slot) => String(slot.name ?? '')).filter(Boolean);
+}
+
+/** Whether a child on this canvas of a pack type is saved on the component's own id: one of its repeating rows, or no
+ *  canvas named (a plain parent) under a component whose only canvases are rows (a list). */
+export function packSlotOnOwnId(type: unknown, slotName?: string): boolean {
+  const rows = packRowSlotNames(type);
+  if (!rows.length) return false;
+  if (slotName) return rows.includes(slotName);
+  return (packSlotNames(type) ?? []).every((name) => rows.includes(name));
+}
+
 /** The globalSettings entry that pins every known pack for an app version. */
 export function libraryPins(): Record<string, string> | undefined {
   // A shipped pack (PackComponent) needs no pin: it always draws the build the release ships.

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { packSlotOnOwnId } from './libraryPack.js';
 
 export const COMPONENT_SLOT_NAMES = ['body', 'header', 'footer', 'modal'] as const;
 
@@ -51,8 +52,12 @@ export function isPackContainerType(type: unknown): boolean {
  * tab item ids are t0, t1, ..., which no UUID segment can end with, so the suffix decodes unambiguously.
  */
 export function encodeComponentParent(parentId: string, slotName?: ComponentSlotName, parentType?: string): string {
-  // a pack widget's body is a slot of its own even when the caller leaves slot_name to its default
-  if (isPackContainerType(parentType)) return `${decodeComponentParent(parentId).parentId}-${slotName ?? 'body'}`;
+  // a pack widget's body is a slot of its own even when the caller leaves slot_name to its default; its repeating rows
+  // (a list's row, a Kanban card) are drawn on its own id
+  if (isPackContainerType(parentType)) {
+    const base = decodeComponentParent(parentId).parentId;
+    return packSlotOnOwnId(parentType, slotName) ? base : `${base}-${slotName ?? 'body'}`;
+  }
   if (!slotName) return parentId;
   if (slotName === 'body') return decodeComponentParent(parentId).parentId;
   const base = decodeComponentParent(parentId).parentId;
