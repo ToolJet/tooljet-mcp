@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { AppSummary, ToolJetClient } from '../tooljetClient.js';
 import { componentInputSchema, prepareComponentBatch, type ComponentInput } from '../componentBatch.js';
 import { applyResolvedParent, resolveParentRef } from '../componentParent.js';
+import { introducedLintFindings, lintComponentSlots, type LintComponent } from '../lint.js';
 import { fail, ok, type ToolDef } from './types.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
 import { literalCanvasColor } from '../appSettings.js';
@@ -85,6 +86,17 @@ export function addComponentBatchesTool(client: ToolJetClient): ToolDef {
       const errors = prepared.flatMap((page) =>
         page.prepared.errors.map((error) => `Page ${page.page_id}: ${error}`)
       );
+      // Canvases against the parents already on each page, as add_components checks: a page's batch alone does not hold
+      // them, so a child on a canvas an existing parent does not draw was saved and never shown.
+      for (const page of prepared) {
+        const existing = pageComponentsOf(page.page_id) as LintComponent[] | undefined;
+        if (!existing) continue;
+        const slotErrors = introducedLintFindings(
+          lintComponentSlots(existing),
+          lintComponentSlots([...existing, ...(page.prepared.components as LintComponent[])])
+        );
+        errors.push(...slotErrors.map((error) => `Page ${page.page_id}: ${error}`));
+      }
       const mapRefusal = await mapKeyRefusal(client, pages.flatMap((page) => page.components.map((c: { type?: unknown }) => String(c.type))));
       if (mapRefusal) errors.push(mapRefusal);
       if (errors.length) return fail(new Error(`${errors.join(' ')} (Nothing was saved: refused before any write.)`));
