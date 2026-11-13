@@ -179,6 +179,8 @@ function packFromManifest(
           ...(p.description ? { description: p.description } : {}),
         })),
         { key: 'visibility', label: 'Visibility', valueType: 'boolean', default: '{{true}}' },
+        // ToolJet's PackComponent saves it on every pack component; the host frees a hidden one's space with it.
+        { key: 'collapseWhenHidden', label: 'Collapse when hidden', valueType: 'boolean', default: '{{false}}' },
         { key: 'loadingState', label: 'Loading state', valueType: 'boolean', default: '{{false}}' },
         { key: 'disabledState', label: 'Disable', valueType: 'boolean', default: '{{false}}' },
         { key: 'dynamicHeight', label: 'Dynamic height', valueType: 'boolean', default: fits ? '{{true}}' : '{{false}}' },
@@ -215,6 +217,7 @@ function packFromManifest(
       properties: {
         ...Object.fromEntries(props.map((p) => [p.name, { value: sampleBlank(name, p) ?? stamp(p) }])),
         visibility: { value: '{{true}}' },
+        collapseWhenHidden: { value: '{{false}}' },
         loadingState: { value: '{{false}}' },
         disabledState: { value: '{{false}}' },
         dynamicHeight: { value: fits ? '{{true}}' : '{{false}}' },
