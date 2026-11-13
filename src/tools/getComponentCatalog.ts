@@ -2,7 +2,7 @@ import { mapKeyRefusal } from '../mapKeyGuard.js';
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import type { ComponentSchema } from '../catalog.js';
-import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from '../catalog.js';
+import { getCatalog, getComponentSchema, getLegacyComponentReplacement, internalComponentTypeNote } from '../catalog.js';
 import { ok, fail, type ToolDef } from './types.js';
 
 const CATALOG_SECTIONS = [
@@ -235,6 +235,8 @@ export function getComponentCatalogTool(client: ToolJetClient): ToolDef {
 
         // Back-compat: a lone `type` returns a single flat schema object.
         if (singleType && typesList.length === 0 && batch.length === 0) {
+          const internal = internalComponentTypeNote(singleType);
+          if (internal) return fail(new Error(`"${singleType}" ${internal}`));
           const resolved = resolveCatalogType(singleType);
           const schema = getComponentSchema(resolved.type);
           if (!schema) {
@@ -283,7 +285,8 @@ export function getComponentCatalogTool(client: ToolJetClient): ToolDef {
         for (const request of ordered) {
           if (!request.type) continue;
           const resolved = resolveCatalogType(request.type);
-          const schema = getComponentSchema(resolved.type);
+          // An internal type is not authorable: listed with the unknown ones, not served as a component to write.
+          const schema = internalComponentTypeNote(request.type) ? null : getComponentSchema(resolved.type);
           if (!schema) {
             if (!seenUnknown.has(request.type)) {
               seenUnknown.add(request.type);

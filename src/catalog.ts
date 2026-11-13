@@ -112,11 +112,31 @@ export function registerComponentSchemas(extra: Record<string, ComponentSchema>)
   Object.assign(all, extra);
 }
 
+/** ToolJet's own hosts, never written by a build (the editor's palette hides them too: ComponentManagerTab
+ *  IGNORED_ITEMS). Saved into a normal app they draw an empty box. ModuleViewer, also hidden there, is listed: it is
+ *  how an app embeds a module. */
+const INTERNAL_TYPES: Record<string, string> = {
+  LibraryComponent:
+    "is ToolJet's internal host for a custom or pack component; write the pack's own type, Lib_<pack>_<Component> " +
+    '(get_component_catalog lists them), which is stored with the component it draws.',
+  PackComponent:
+    "is ToolJet's internal host for a pack component; write the pack's own type, Lib_<pack>_<Component> " +
+    '(get_component_catalog lists them), which is stored with the component it draws.',
+  ModuleContainer:
+    "is a module app's own root, which ToolJet creates with the module; in an app it draws an empty box. " +
+    'To show a module in an app, use ModuleViewer.',
+};
+
+/** Why a type is internal and what to use instead, or null for an authorable type. */
+export function internalComponentTypeNote(type: string): string | null {
+  return INTERNAL_TYPES[type] ?? null;
+}
+
 /** The palette for new authoring: modern component types + purpose (no per-prop detail). */
 export function getCatalog(): Array<{ type: string; description?: string }> {
   const legacy = loadLegacyReplacements();
   return Object.values(load())
-    .filter((c) => !legacy[c.type])
+    .filter((c) => !legacy[c.type] && !INTERNAL_TYPES[c.type])
     .map((c) => ({ type: c.type, description: c.description }))
     .sort((a, b) => a.type.localeCompare(b.type));
 }

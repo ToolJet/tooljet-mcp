@@ -157,6 +157,18 @@ export function toLibraryComponent<T extends { type: string; properties?: Sectio
   };
 }
 
+/** A LibraryComponent or PackComponent that names no component, pack or library: it has nothing to draw and shows an
+ *  empty box (the bare host type written into an app). A workspace's own custom library, no pack the MCP knows, names
+ *  its library and is not one. */
+export function isEmptyLibraryHost(component: { type?: string; properties?: Section }): boolean {
+  if (component.type !== 'LibraryComponent' && component.type !== 'PackComponent') return false;
+  return !['componentName', 'pack', 'libraryId', 'correlationId', 'libraryName'].some((key) => {
+    const entry = component.properties?.[key];
+    const value = entry && typeof entry === 'object' && 'value' in entry ? (entry as { value?: unknown }).value : entry;
+    return typeof value === 'string' && value.trim() !== '';
+  });
+}
+
 /** The `Lib_*` type of a stored PackComponent or LibraryComponent of a known pack, for reads (summaries, lint of the
  *  saved app). */
 export function libraryTypeOf(component: { type?: string; properties?: Section }): string | undefined {

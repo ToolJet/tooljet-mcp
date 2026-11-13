@@ -1,4 +1,4 @@
-import { isLibraryPackType, serverLibraryPacks } from './libraryPack.js';
+import { isEmptyLibraryHost, isLibraryPackType, serverLibraryPacks } from './libraryPack.js';
 import { packCanvases } from './packItemSlots.js';
 import { defaultPack } from './componentLibrary.js';
 // Mechanical, catalog-independent checks that catch the render bugs the skill can only *advise*
@@ -34,7 +34,7 @@ import { runjsComponentReferences, runjsQueryReferences } from './runjsReference
 import { lintBindingSyntax } from './bindingSyntax.js';
 import { lintSelectedRowProjections } from './selectedRowProjection.js';
 import { dropdownDefaultVisibilityWarning, dropdownSelfDefaultWarning } from './dropdownDefaultContract.js';
-import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from './catalog.js';
+import { getCatalog, getComponentSchema, getLegacyComponentReplacement, internalComponentTypeNote } from './catalog.js';
 import { decodeComponentParent, isComponentSlotName, isNativeSlotName, isPackContainerType, isTabSlot, type ComponentSlotName } from './componentParent.js';
 import {
   FORM_SCHEMA_FIELD_TYPE_SET,
@@ -3326,6 +3326,12 @@ export function lintComponents(components: LintComponent[], options: { canvasCol
     // revalidated by lintComponentSpec when checking unrelated edits or app bindings.
     const nameError = componentNameError(c.name);
     if (nameError) errors.push(nameError);
+    // ToolJet's own hosts draw an empty box in an app: a module container always, a LibraryComponent or PackComponent
+    // naming no component (a custom library's copied component names its library and is kept).
+    const internal = c.type ? internalComponentTypeNote(c.type) : null;
+    if (internal && (c.type === 'ModuleContainer' || isEmptyLibraryHost(c))) {
+      errors.push(`Component "${c.name ?? c.type}": "${c.type}" ${internal} It is internal and cannot be written by a build.`);
+    }
     const r = lintComponentSpec(c, { surfaceAround: around(c) });
     errors.push(...r.errors);
     errors.push(...lintStandardSingleLineInputHeight(c));
