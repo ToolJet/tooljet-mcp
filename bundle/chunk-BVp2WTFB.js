@@ -1,13 +1,13 @@
 import { createRequire } from "node:module";
 import { b0 as external_exports, b3 as specSchema, b8 as getComponentCatalogTool, b1 as nodeCatalog, b2 as validateGraph } from "./chunk-Bk2YZ8cg.js";
 import { P as registerLibraryPacks, Q as capabilityRequestSchema, R as getWorkflowCapabilities, S as lint, T as apply, U as deleteNode, V as libraryPins, W as editContractSchema, X as generateEditContract, w as resolveRef } from "./chunk-TA_njdhN.js";
-import { s as strictEntry, o as createClient, r as registerPackDefinitions, q as listWorkspaceGroupsTool, t as manageWorkspaceGroupsTool, u as inspectDatasourceSchemaTool, w as updateComponentsTool, x as updateLayoutTool, v as validateTableBatch, y as ToolJetHttpError, P as PartialWriteError, n as normalizeComponentSpec, C as COMPONENT_FX_GUIDANCE } from "./chunk-B_Q-bV9o.js";
-import { j as dbColumnTypeSchema, k as componentInputSchema, o as lintAppSpecTool, q as projectJavascriptRuntime, s as projectAppSettings, t as compactTheme, u as pageSettingProperties, l as literalCanvasColor, w as containsExactValue, b as prepareQueryOptionsForWrite, x as inspectUpdateCompatibility, y as normalizePlanBindingAliases, z as containsNamedBinding, A as normalizePlannedLayouts, B as materializeRequiredDefaultChildren, e as prepareComponentBatch, v as validateEvents, h as expandQueryLifecycles, i as persistedEventSpecs, C as persistedEventIds } from "./chunk-3x3mi7XK.js";
+import { s as strictEntry, o as createClient, r as registerPackDefinitions, q as listWorkspaceGroupsTool, t as manageWorkspaceGroupsTool, u as updateComponentsTool, w as updateLayoutTool, v as validateTableBatch, x as ToolJetHttpError, P as PartialWriteError, n as normalizeComponentSpec, C as COMPONENT_FX_GUIDANCE } from "./chunk-CGShXQxG.js";
+import { c as componentInputSchema, q as inspectDatasourceSchemaTool, t as projectJavascriptRuntime, u as projectAppSettings, w as compactTheme, x as pageSettingProperties, l as literalCanvasColor, y as containsExactValue, e as prepareQueryOptionsForWrite, z as containsNamedBinding, A as normalizePlannedLayouts, B as materializeRequiredDefaultChildren, i as prepareComponentBatch, v as validateEvents, k as expandQueryLifecycles, o as persistedEventSpecs, C as persistedEventIds } from "./chunk-D7bdtbu6.js";
+import { K as dbColumnTypeSchema, N as verifyPageRenderTool, O as lintAppSpecTool, W as WebStandardStreamableHTTPServerTransport, Q as getRequestListener, U as inspectUpdateCompatibility, V as normalizePlanBindingAliases } from "./chunk-CvAIFwNx.js";
 import { ej as registerComponentSchemas, e6 as ok, e5 as fail, e9 as mapKeyRefusal, ek as readCatalogBytes, el as allComponentSchemas } from "./chunk-addBGscc.js";
-import { K as verifyPageRenderTool, W as WebStandardStreamableHTTPServerTransport, N as getRequestListener } from "./chunk-B4HpFiP5.js";
-import { a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, v as validatePersistedAppSummary, l as libraryPinErrors } from "./chunk-ln4ilNBW.js";
-import { M as McpServer } from "./chunk-CWzLwG8S.js";
-import { D as pageIconSchema, G as defaultPack, H as savedComponentLibrary, I as COMPONENT_PACK_DESCRIPTION, s as componentNameSchema, A as lintComponents, r as resolveParentRef, b as introducedLintFindings, J as lintRenderedGeometryBlocking, K as lintRenderedGeometryAdvisory, d as decodeComponentParent, L as packSlotsFromManifest, M as describePackSlots, N as FORM_SCHEMA_FIELD_TYPE_SET, O as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-CoCoiCyO.js";
+import { a as applyAppPhaseTool, r as runQueryTool, b as runQueriesTool, v as validatePersistedAppSummary, l as libraryPinErrors } from "./chunk-BIqbWqFW.js";
+import { M as McpServer } from "./chunk-Yau4bnvL.js";
+import { D as pageIconSchema, G as defaultPack, H as savedComponentLibrary, I as COMPONENT_PACK_DESCRIPTION, s as componentNameSchema, A as lintComponents, r as resolveParentRef, b as introducedLintFindings, J as lintRenderedGeometryBlocking, K as lintRenderedGeometryAdvisory, d as decodeComponentParent, L as packSlotsFromManifest, M as describePackSlots, N as FORM_SCHEMA_FIELD_TYPE_SET, O as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-CzALJur7.js";
 import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-DGCi5LfA.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
@@ -225,13 +225,14 @@ function packFromManifest(packId, libraryName, version, manifest, identity) {
   const schemas = {};
   const definitions = {};
   const components = {};
+  const manifestListsSlots = Object.values(manifest.components).some((entry) => entry.slots !== void 0);
   for (const [name, entry] of Object.entries(manifest.components)) {
     const type = `${prefix}${name}`;
     const allProps = entry.props ?? [];
     const runtimeValue = (p) => p.name === "value" && p.inspector === "hidden" && allProps.some((q) => q.name === "defaultValue");
     const props = allProps.filter((p) => !runtimeValue(p));
     const fits = entry.fit === true;
-    const slotInfo = packSlotsFromManifest(entry.slots, allProps);
+    const slotInfo = packSlotsFromManifest(entry.slots ?? (manifestListsSlots ? [] : void 0), allProps);
     components[name] = {
       type,
       props: props.map((p) => p.name),

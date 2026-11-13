@@ -1,11 +1,267 @@
 import { createRequire } from "node:module";
-import { e8 as getComponentSchema, e5 as fail, e9 as mapKeyRefusal, e6 as ok } from "./chunk-addBGscc.js";
-import { c as componentRef, p as packDefaultDefinition, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, a as FLEX_GROW_DESCRIPTION, b as FLEX_WIDTH_PX_DESCRIPTION, d as FLEX_FILL_WIDTH_DESCRIPTION, e as plannedCurrency, n as normalizeComponentSpec, i as indexComponentReferences, f as booleanBindingValue, v as validateTableBatch, g as normalizeType, T as TOOLJET_DB_DATA_TYPES, h as invalidSeedTimestamps, C as COMPONENT_FX_GUIDANCE } from "./chunk-B_Q-bV9o.js";
-import { H as normalizeQueryToggles, I as toggleRewriteWarning, J as issueMessages, K as queryToggleIssues, L as normalizeQueryOptions, M as validateQueryOptions, m as lintComponentStateBindings, r as retiredUi2Name, w as resolveRef$1, G as suggestedHtmlHeight, N as arithmeticWriteWarning, t as bindingSpans } from "./chunk-TA_njdhN.js";
-import { x as isModalV2Type, d as decodeComponentParent, y as minimumTextHeight, z as unifyChartAccents, s as componentNameSchema, c as componentSlotSchema, A as lintComponents, B as pageIconError, e as encodeComponentParent, C as validateAppStructure, D as pageIconSchema, o as resolveComponentLibrary, E as componentLibraryWarnings, F as namespaceReads } from "./chunk-CoCoiCyO.js";
-import { p as parseExpression } from "./chunk-SVZaINty.js";
+import { e5 as fail, e6 as ok, e8 as getComponentSchema } from "./chunk-addBGscc.js";
+import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-DGCi5LfA.js";
 import { b0 as external_exports } from "./chunk-Bk2YZ8cg.js";
+import { c as componentRef, p as packDefaultDefinition, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, a as FLEX_GROW_DESCRIPTION, b as FLEX_WIDTH_PX_DESCRIPTION, d as FLEX_FILL_WIDTH_DESCRIPTION, e as plannedCurrency, n as normalizeComponentSpec, i as indexComponentReferences, f as booleanBindingValue, v as validateTableBatch, g as normalizeType } from "./chunk-CGShXQxG.js";
+import { x as isModalV2Type, d as decodeComponentParent, y as minimumTextHeight, z as unifyChartAccents, s as componentNameSchema, c as componentSlotSchema, A as lintComponents, B as pageIconError, e as encodeComponentParent, C as validateAppStructure } from "./chunk-CzALJur7.js";
+import { H as normalizeQueryToggles, I as toggleRewriteWarning, J as issueMessages, K as queryToggleIssues, L as normalizeQueryOptions, M as validateQueryOptions, m as lintComponentStateBindings, r as retiredUi2Name, w as resolveRef$1, G as suggestedHtmlHeight } from "./chunk-TA_njdhN.js";
 import { randomUUID } from "node:crypto";
+import { p as parseExpression } from "./chunk-SVZaINty.js";
+createRequire(import.meta.url);
+var requestSchema = external_exports.object({
+  method: external_exports.string().min(1),
+  schema: external_exports.string().optional(),
+  table: external_exports.string().optional(),
+  search: external_exports.string().optional(),
+  page: external_exports.number().int().positive().optional(),
+  limit: external_exports.number().int().positive().max(1e3).optional(),
+  args: external_exports.record(external_exports.string(), external_exports.any()).optional()
+});
+function invokeArgs(request) {
+  const customValues = request.args?.values && typeof request.args.values === "object" && !Array.isArray(request.args.values) ? request.args.values : {};
+  const values = {
+    ...customValues,
+    ...request.schema !== void 0 ? { schema: request.schema } : {},
+    ...request.table !== void 0 ? { table: request.table } : {}
+  };
+  return {
+    ...request.args ?? {},
+    ...Object.keys(values).length ? { values } : {},
+    ...request.search !== void 0 ? { search: request.search } : {},
+    ...request.page !== void 0 ? { page: request.page } : {},
+    ...request.limit !== void 0 ? { limit: request.limit } : {}
+  };
+}
+var specCache = /* @__PURE__ */ new Map();
+function specText(entry) {
+  const raw = entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+  return typeof raw === "string" ? raw : void 0;
+}
+function parseSpecCached(options) {
+  const key2 = specText(options.spec) ?? specText(options.definition);
+  if (key2 === void 0)
+    return extractSpec(options);
+  const hit = specCache.get(key2);
+  if (hit)
+    return hit;
+  const parsed = extractSpec(options);
+  if (parsed) {
+    if (specCache.size > 8)
+      specCache.clear();
+    specCache.set(key2, parsed);
+  }
+  return parsed;
+}
+function openapiIntrospection(spec, request) {
+  if (request.method === "listTables") {
+    const endpoints = listEndpoints(spec);
+    const host2 = specHost(spec);
+    const header = { total: endpoints.length, ...host2 ? { host: host2 } : {} };
+    if (request.search) {
+      const ranked = rankEndpoints(spec, endpoints, request.search);
+      const limit2 = request.limit ?? 25;
+      return {
+        ...header,
+        search: request.search,
+        matched: ranked.length,
+        ...ranked.length > limit2 ? { returned: limit2 } : {},
+        // Ordered by relevance, not spec order: the caller should read from the top.
+        endpoints: ranked.slice(0, limit2).map(({ score, ...endpoint }) => endpoint),
+        ...ranked.length ? {} : { hint: "No endpoint matched. Retry with a broader term, or omit `search` to see the spec's tags." }
+      };
+    }
+    const limit = request.limit ?? 200;
+    if (endpoints.length > limit) {
+      return {
+        ...header,
+        tags: endpointTagCounts(spec, endpoints),
+        returned: limit,
+        truncated: true,
+        next_step: `This spec has ${endpoints.length} endpoints. Call listTables again with \`search\` describing what you need (a phrase is fine, it is ranked by relevance), or with a tag name from \`tags\`.`,
+        endpoints: endpoints.slice(0, limit)
+      };
+    }
+    return { ...header, endpoints };
+  }
+  const path = request.table ?? (typeof request.args?.path === "string" ? request.args.path : void 0);
+  const method = ["operation", "method", "httpMethod", "http_method", "verb"].map((key2) => request.args?.[key2]).find((value) => typeof value === "string" && !!value);
+  if (!path || !method) {
+    throw new Error('getEndpointSchema needs the endpoint path and HTTP method: pass the path as `table` and the method as `args.operation` (for example table:"/pets/{petId}", args:{operation:"get"}); `args.httpMethod` and `args.method` are accepted too.');
+  }
+  const result = endpointParameters(spec, path, method);
+  if (!result.found) {
+    throw new Error(`The spec has no ${method.toLowerCase()} operation on path "${path}". Call listTables first.`);
+  }
+  const buckets = {};
+  for (const parameter of result.parameters) {
+    const bucket = parameter.in === "header" ? "params.header" : parameter.in === "path" ? "params.path" : parameter.in === "query" ? "params.query" : `unsupported:${parameter.in}`;
+    (buckets[bucket] ??= []).push(parameter.name);
+  }
+  if (result.requestBody)
+    buckets["params.request"] = ["<request body>"];
+  const operation = method.toLowerCase();
+  const host = specHost(spec);
+  return {
+    path,
+    operation,
+    /* A runnable skeleton, not just a description: copy it and fill the buckets.
+       All four buckets are present even when empty because the plugin destructures every one of
+       them and calls Object.entries(params.path) unguarded — omitting a bucket fails the query with
+       "Cannot convert undefined or null to object" before the request is ever built. */
+    query_options: {
+      ...host ? { host } : {},
+      path,
+      operation,
+      params: { request: {}, query: {}, header: {}, path: {} }
+    },
+    // Which query-option bucket each parameter belongs in, so the caller does not have to infer it.
+    buckets,
+    parameters: result.parameters,
+    ...result.response ? { response: result.response } : {},
+    ...result.requestBody ? { requestBody: result.requestBody } : {},
+    ...host ? {} : { host_warning: 'This spec declares no server URL. The query needs an explicit `host`, or the request fails with "Invalid URL".' }
+  };
+}
+function inspectDatasourceSchemaTool(client) {
+  return {
+    name: "inspect_datasource_schema",
+    title: "Inspect Datasource Schema",
+    // Invokes only plugin-advertised read-only metadata methods.
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true
+    },
+    description: 'Invoke one read-only metadata method advertised by a connected datasource plugin (for example listSchemas, listTables, listColumns, or listCollections). This avoids creating/running ad-hoc information_schema queries. HubSpot: call listTables without schema to list spec groups, then pass schema for endpoint discovery. Use get_datasource_query_schema with sections:["introspection"] to discover exact methods. Common schema/table/search/page/limit inputs are converted to ToolJet selector args; `args` adds plugin-specific fields. Only the requested metadata method is called. Use requests (up to 20) to batch independent table/column lookups after the schema/table names are known; every method is validated before any invocation.',
+    inputSchema: {
+      version_id: external_exports.string(),
+      datasource_id: external_exports.string(),
+      method: external_exports.string().min(1).optional(),
+      schema: external_exports.string().optional(),
+      table: external_exports.string().optional(),
+      search: external_exports.string().optional(),
+      page: external_exports.number().int().positive().optional(),
+      limit: external_exports.number().int().positive().max(1e3).optional(),
+      args: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+      requests: external_exports.array(requestSchema).min(1).max(20).optional()
+    },
+    async handler(args) {
+      try {
+        const datasource = (await client.listDatasources(args.version_id)).find((candidate) => candidate.id === args.datasource_id);
+        if (!datasource) {
+          return fail(new Error(`Datasource "${args.datasource_id}" is not available on version "${args.version_id}".`));
+        }
+        const contract = getDatasourceQuerySchema(datasource.kind);
+        const kindSpec = singleSpecRef(datasource.kind);
+        const methods = [.../* @__PURE__ */ new Set([...contract?.introspectionMethods ?? [], ...kindSpec ? SPEC_DISCOVERY_METHODS : []])];
+        const topLevel = args.method ? [{
+          method: args.method,
+          schema: args.schema,
+          table: args.table,
+          search: args.search,
+          page: args.page,
+          limit: args.limit,
+          args: args.args
+        }] : [];
+        const seenRequests = /* @__PURE__ */ new Set();
+        const requests = [...args.requests ?? [], ...topLevel].filter((request) => {
+          if (!request.method)
+            return false;
+          const key2 = JSON.stringify([request.method, request.schema ?? null, request.table ?? null, request.search ?? null]);
+          if (seenRequests.has(key2))
+            return false;
+          seenRequests.add(key2);
+          return true;
+        });
+        if (!requests.length) {
+          return fail(new Error("Provide a `method` or a `requests` batch."));
+        }
+        const asBatch = !!args.requests?.length || requests.length > 1;
+        const unsupported = [...new Set(requests.map((request) => request.method).filter((method) => !methods.includes(method)))];
+        if (unsupported.length) {
+          return fail(new Error(`Datasource kind "${datasource.kind}" does not advertise introspection method(s) ${unsupported.map((method) => `"${method}"`).join(", ")}. Available methods: ${methods.length ? methods.join(", ") : "none"}.`));
+        }
+        let openapiSpec;
+        if (datasource.kind === "openapi") {
+          const details = await client.getDatasourceConnectionDetails(args.datasource_id);
+          openapiSpec = parseSpecCached(details.options);
+          if (!openapiSpec) {
+            return fail(new Error("This OpenAPI datasource has no readable spec stored in its options, so its endpoints cannot be listed. Re-save the datasource with a valid OpenAPI/Swagger (JSON or YAML) document."));
+          }
+        }
+        const hubspotDocuments = /* @__PURE__ */ new Map();
+        let kindSpecDocument;
+        const results = await Promise.all(requests.map(async (request) => {
+          if (datasource.kind === "hubspot") {
+            const specs = hubspotSpecs();
+            const selector = request.schema ?? request.args?.specType;
+            if (!selector && request.method === "listTables") {
+              return { method: request.method, result: {
+                specs,
+                next_step: "Choose a spec using schema (name, label or specType), then call listTables to find paths or getEndpointSchema to get query_options. Properties and Pipelines describe endpoints for discovering account-specific fields and stages."
+              } };
+            }
+            const selected = specs.find((spec) => [spec.name, spec.label, spec.specType].includes(String(selector)));
+            if (!selected)
+              throw new Error("HubSpot discovery requires a known schema. Call listTables without schema to list installed spec groups.");
+            if (!hubspotDocuments.has(selected.name)) {
+              hubspotDocuments.set(selected.name, client.getPluginSpec("hubspot", selected.name).then((text3) => {
+                const spec = extractSpec({ spec: text3 });
+                if (!spec)
+                  throw new Error(`HubSpot spec "${selected.name}" is unavailable or invalid. Reinstall/update the plugin; do not invent its endpoints.`);
+                return spec;
+              }));
+            }
+            const document = await hubspotDocuments.get(selected.name);
+            const result2 = openapiIntrospection(document, request);
+            if (result2.query_options) {
+              delete result2.query_options.host;
+              delete result2.query_options.params.header;
+              delete result2.host_warning;
+              result2.query_options.specType = selected.specType;
+              if (result2.buckets?.["params.header"])
+                result2.unsupported_headers = result2.buckets["params.header"];
+              result2.notes = "HubSpot fixes the API host and authentication in the plugin. The spec describes API shapes; read Properties/Pipelines endpoints to verify account-specific fields and valid stage IDs. Do not guess them.";
+            }
+            return { method: request.method, schema: selected.name, specType: selected.specType, result: result2 };
+          }
+          if (kindSpec && SPEC_DISCOVERY_METHODS.includes(request.method)) {
+            kindSpecDocument ??= loadKindSpec(client, datasource.kind, kindSpec);
+            const result2 = openapiIntrospection(await kindSpecDocument, request);
+            if (result2.query_options) {
+              delete result2.query_options.host;
+              delete result2.query_options.params?.header;
+              delete result2.host_warning;
+              if (result2.buckets?.["params.header"])
+                result2.unsupported_headers = result2.buckets["params.header"];
+              result2.notes = `The ${datasource.kind} plugin fixes the API host and authentication. Copy query_options as they are; put IDs in params.path and filters in params.query, each value flat (created[gte], expand[0]): the plugin cannot send a list or an object.`;
+            }
+            return { method: request.method, ...request.table ? { table: request.table } : {}, result: result2 };
+          }
+          if (openapiSpec) {
+            const result2 = openapiIntrospection(openapiSpec, request);
+            return { method: request.method, ...request.table ? { table: request.table } : {}, result: result2 };
+          }
+          const converted = invokeArgs(request);
+          const result = await client.invokeDatasourceMethod({
+            dataSourceId: args.datasource_id,
+            method: request.method,
+            ...Object.keys(converted).length ? { args: converted } : {}
+          });
+          return {
+            method: request.method,
+            ...request.schema ? { schema: request.schema } : {},
+            ...request.table ? { table: request.table } : {},
+            result
+          };
+        }));
+        const header = { datasource: { id: datasource.id, name: datasource.name, kind: datasource.kind } };
+        return asBatch ? ok({ ...header, results }) : ok({ ...header, method: results[0].method, result: results[0].result });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
 createRequire(import.meta.url);
 var member = (n) => n && ["MemberExpression", "OptionalMemberExpression"].includes(n.type);
 var key = (n) => n.computed ? n.property?.type === "StringLiteral" ? n.property.value : void 0 : n.property?.name;
@@ -1995,11 +2251,11 @@ function expandQueryLifecycles(summary, lifecycles) {
     }
     seenSources.add(lifecycle.queryId);
     const sourceName = query.name ?? lifecycle.queryId;
-    const refreshIds = unique$2(lifecycle.refreshQueryIds ?? [], `refresh query`, sourceName, warnings);
+    const refreshIds = unique$1(lifecycle.refreshQueryIds ?? [], `refresh query`, sourceName, warnings);
     if (refreshIds.includes(lifecycle.queryId)) {
       throw new Error(`Query "${sourceName}" cannot refresh itself after success: this repeats the query indefinitely, including any writes. Refresh a separate read query instead.`);
     }
-    const clearIds = unique$2(lifecycle.clearComponentIds ?? [], `clear component`, sourceName, warnings);
+    const clearIds = unique$1(lifecycle.clearComponentIds ?? [], `clear component`, sourceName, warnings);
     (lifecycle.beforeRefreshActions ?? []).forEach((action, index) => {
       events.push({
         sourceId: lifecycle.queryId,
@@ -2089,7 +2345,7 @@ function alertEvent(queryId, queryName, trigger, alert, defaultType) {
     name: trigger === "onDataQuerySuccess" ? `Confirm ${queryName}` : `${queryName} failed`
   };
 }
-function unique$2(values, label2, sourceName, warnings) {
+function unique$1(values, label2, sourceName, warnings) {
   const seen = /* @__PURE__ */ new Set();
   const result = [];
   for (const value of values) {
@@ -3535,729 +3791,42 @@ function resolveRef(ref, map, errors, label2) {
 function slug(value) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "page";
 }
-function unique$1(values) {
-  return [...new Set(values)];
-}
-function dropUnprefixedDuplicates(values) {
-  const distinct = unique$1(values);
-  const stripped = new Set(distinct.map((value) => value.replace(/^Page "[^"]*": /, "")).filter((value, i) => value !== distinct[i]));
-  return distinct.filter((value) => value.startsWith('Page "') || !stripped.has(value));
-}
-createRequire(import.meta.url);
-var BUILT_IN_DB = /^tool\s*jet\s*(db|data\s*base)$/i;
-function matchDatasourceByName(sources, name) {
-  if (!name)
-    return null;
-  const exact = sources.filter((s) => s.name === name);
-  if (exact.length === 1)
-    return { id: exact[0].id, note: null };
-  if (BUILT_IN_DB.test(name.trim())) {
-    const db = sources.filter((s) => s.kind === "tooljetdb");
-    if (db.length === 1)
-      return { id: db[0].id, note: `datasource_name "${name}" is ToolJet's built-in database, "${db[0].name}" in this version.` };
-  }
-  return null;
-}
-var dbColumnTypeSchema = external_exports.string().describe("ToolJet DB types: string, integer, bigint, serial, number (double precision), boolean, timestamp, jsonb. Existing aliases text/varchar/int/float/decimal/double/bool/datetime/date/json and canonical API type names are accepted. numeric is unsupported; number/decimal are floating-point, not exact decimal. For money consider integer minor units.").refine((value) => TOOLJET_DB_DATA_TYPES.has(normalizeType(value)), {
-  message: "Unsupported ToolJet DB type. Use string, integer, bigint, serial, number (double precision), boolean, timestamp or jsonb. numeric is not supported. For money choose on purpose: integer cents where sums must be exact, or number shown with a currency format for prices; never swap one in silently."
-});
-var foreignKeyAction = external_exports.enum(["RESTRICT", "NO ACTION", "CASCADE", "SET NULL", "SET DEFAULT"]);
-var foreignKeySchema = external_exports.object({
-  columns: external_exports.array(external_exports.string()).min(1),
-  referencedTable: external_exports.string(),
-  referencedColumns: external_exports.array(external_exports.string()).min(1),
-  onDelete: foreignKeyAction.optional(),
-  onUpdate: foreignKeyAction.optional()
-});
-var columnSchema = external_exports.object({
-  name: external_exports.string(),
-  type: dbColumnTypeSchema,
-  primaryKey: external_exports.boolean().optional(),
-  notNull: external_exports.boolean().optional(),
-  unique: external_exports.boolean().optional(),
-  defaultValue: external_exports.any().optional(),
-  configurations: external_exports.record(external_exports.string(), external_exports.any()).optional()
-});
-var plannedTableSchema = external_exports.object({
-  table_name: external_exports.string(),
-  columns: external_exports.array(columnSchema).min(1),
-  foreign_keys: external_exports.array(foreignKeySchema).optional()
-});
-var plannedSeedSchema = external_exports.object({
-  table_name: external_exports.string(),
-  rows: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).min(1).max(40)
-});
-var plannedQuerySchema = external_exports.object({
-  client_ref: external_exports.string().optional(),
-  datasource_id: external_exports.string().optional().describe("Exact id returned by list_datasources(version_id). Provide this OR datasource_name, not both."),
-  datasource_name: external_exports.string().optional().describe("Exact, case-sensitive unique name returned by list_datasources(version_id). Alternative to datasource_id; resolved and pinned to that id at lint time."),
-  name: external_exports.string(),
-  kind: external_exports.string().optional(),
-  /** Resolve this planned/existing ToolJet DB table name into options.table_id during lint/apply. */
-  table_ref: external_exports.string().optional().describe("Actual table_name of a planned or existing ToolJet DB table, not a client_ref, alias, or UUID."),
-  options: external_exports.record(external_exports.string(), external_exports.any()),
-  /** The app's query of this name is updated in place with this definition: see pageReplace.ts. */
-  update: external_exports.boolean().optional().describe("true: when the app already has a query of this name, it is updated in place with this definition, keeping its id and the events that run it, for every page that reads it (needs app_id). Without it, defining an existing name again is refused unless the definition is identical (then the existing query is used) or a replaced page owns it.")
-});
-var plannedPageSchema = external_exports.object({
-  client_ref: external_exports.string().optional(),
-  name: external_exports.string(),
-  icon: pageIconSchema,
-  hidden: external_exports.boolean().optional(),
-  /** The existing page of this name is replaced whole: see pageReplace.ts. */
-  replace: external_exports.boolean().optional().describe("true: the existing page of this name ends up holding exactly this plan's components and the events on them (needs app_id). It is written as a difference: a component the plan leaves as it is is not rewritten, one that only moved is moved, and one that changed keeps its id. Queries of that page the plan defines again are updated in place, keeping their ids. Refused when another page, event or query reads a component the plan drops. Not atomic: use it on draft or otherwise recoverable pages."),
-  archetype: external_exports.string().optional().describe("The page's archetype: catalog (records with a face: photo cards, search, detail sheet), personal-overview (one person's period at a glance: hero, figures, progress, recent), register (a filtered table of records with a detail sheet), queue-board (work to act on: counts, needs-attention list, queue) or other. Lint checks the page against it."),
-  components: external_exports.array(componentInputSchema).optional()
-});
-var plannedEventSchema = external_exports.object({
-  source_ref: external_exports.string(),
-  source_type: external_exports.enum(["component", "data_query", "page", "table_column", "table_action"]),
-  ref: external_exports.string().optional(),
-  trigger: external_exports.string(),
-  action: external_exports.record(external_exports.string(), external_exports.any()),
-  name: external_exports.string().optional()
-});
-var alertSchema = external_exports.object({
-  message: external_exports.string().min(1),
-  alert_type: external_exports.enum(["success", "info", "warning", "error"]).optional()
-});
-var plannedLifecycleSchema = external_exports.object({
-  query_ref: external_exports.string(),
-  before_refresh_actions: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).optional(),
-  refresh_query_refs: external_exports.array(external_exports.string()).optional(),
-  clear_component_refs: external_exports.array(external_exports.string()).optional(),
-  close_modal_ref: external_exports.string().optional(),
-  success_alert: alertSchema.optional(),
-  failure_alert: alertSchema.optional(),
-  success_actions: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).optional(),
-  failure_actions: external_exports.array(external_exports.record(external_exports.string(), external_exports.any())).optional()
-});
-var appPlanSchema = external_exports.object({
-  /** Existing app context for repair phases. Lets lint/apply resolve persisted refs safely. */
-  app_id: external_exports.string().optional(),
-  version_id: external_exports.string().optional(),
-  /** Rename the target app as part of the same governed phase. */
-  app_name: external_exports.string().trim().min(1).max(100).optional(),
-  /** The user's words asking for the other component library than the app's: see componentLibrary.ts. */
-  component_library_request: external_exports.string().trim().min(1).max(300).optional().describe('Only when the user asked in this request for the other component library than the app is built in (for example "use UI 2.0" or "use the new components" in a UI 1.0 app): their words. Without it, lint warns when the plan adds widgets from the other library.'),
-  tables: external_exports.array(plannedTableSchema).max(50).optional(),
-  seed_data: external_exports.array(plannedSeedSchema).max(50).optional(),
-  queries: external_exports.array(plannedQuerySchema).max(200).optional(),
-  pages: external_exports.array(plannedPageSchema).max(50).optional(),
-  events: external_exports.array(plannedEventSchema).max(1e3).optional(),
-  lifecycles: external_exports.array(plannedLifecycleSchema).max(200).optional()
-});
-function missingCreateRowColumns(options, columns) {
-  if (options.operation !== "create_row")
-    return;
-  const map = options.create_row;
-  if (!map || typeof map !== "object" || Array.isArray(map))
-    return;
-  const entries = Object.values(map);
-  if (entries.some((entry) => !entry || typeof entry !== "object" || typeof entry.column !== "string" || !entry.column || entry.column.includes("{{")))
-    return;
-  const supplied = new Set(entries.filter((entry) => entry.value !== void 0 && entry.value !== null).map((entry) => entry.column));
-  return columns.filter((column) => (column.primaryKey || column.notNull) && column.defaultValue == null && !/^(smallserial|serial|bigserial|serial2|serial4|serial8)$/i.test(column.type) && !supplied.has(column.name)).map((column) => column.name);
-}
-function bulkPrimaryKeyWarning(kind, options, tableName, columns) {
-  if (kind !== "tooljetdb" || options.operation !== "bulk_upsert_with_primary_key" || !columns?.length)
-    return;
-  const config = options.bulk_upsert_with_primary_key;
-  const keys = config?.primary_key;
-  if (!Array.isArray(keys) || !keys.length || keys.some((key2) => typeof key2 !== "string" || key2.includes("{{")))
-    return;
-  const invalid = keys.filter((key2) => !columns.some((column) => column.name === key2 && column.primaryKey));
-  if (!invalid.length)
-    return;
-  return `bulk_upsert_with_primary_key for "${tableName}" targets non-primary-key column(s) ${invalid.map((key2) => JSON.stringify(key2)).join(", ")}. This operation requires actual PRIMARY KEY columns; a UNIQUE business reference is not sufficient. Use the real primary key, or a supported conditional SQL upsert that preserves the intended matching and concurrency rules. Do not recreate an existing table or change its primary key merely to repair this query.`;
-}
-function updateRowsCompatibilityWarning(kind, options, tableName, columns) {
-  if (kind !== "tooljetdb" || options.operation !== "update_rows" || !columns?.length)
-    return;
-  if (columns.includes("id"))
-    return;
-  return `Table "${tableName}" has no id column, but this query uses update_rows. ToolJet deployments that append order=id to the PATCH will fail even when the filter uses the correct custom primary key. For a new schema, prefer the automatically generated serial id and keep the business reference as a separate unique column. For an existing schema, inspect the primary key and the bulk_update_with_primary_key contract. Use that operation only if it preserves the requested targeting: never drop expected-state, ownership, tenant, or other where_filters to convert the query. If extra predicates are required, use a supported conditional-write operation or report the capability gap. Do not recreate existing tables or execute a mutation just to test compatibility.`;
-}
-async function inspectUpdateCompatibility(client, queries) {
-  const targets = queries.filter((query) => query.kind === "tooljetdb" && ["update_rows", "create_row", "bulk_upsert_with_primary_key"].includes(String(query.options.operation)));
-  if (!targets.length)
-    return [];
-  let tables;
-  try {
-    tables = await client.listTables();
-  } catch {
-    return ["Structured-write schema compatibility was not checked: table metadata could not be read."];
-  }
-  const schemas = /* @__PURE__ */ new Map();
-  return (await Promise.all(targets.map(async (query) => {
-    const tableId = query.options.table_id;
-    if (typeof tableId !== "string" || tableId.includes("{{")) {
-      return `Query "${query.name}": structured-write schema compatibility was not checked for a dynamic or missing table_id.`;
-    }
-    const table = tables.find((item) => item.id === tableId);
-    if (!table)
-      return `Query "${query.name}": structured-write schema compatibility was not checked: table_id was not found in workspace metadata.`;
-    if (!schemas.has(tableId))
-      schemas.set(tableId, Promise.resolve().then(() => client.getTableSchema(table.table_name)).catch(() => void 0));
-    const schema = await schemas.get(tableId);
-    if (!schema?.length)
-      return `Query "${query.name}": structured-write schema compatibility was not checked because the schema for "${table.table_name}" was unavailable or empty.`;
-    const missing = missingCreateRowColumns(query.options, schema.map((column) => ({
-      name: column.name,
-      type: column.type,
-      primaryKey: column.isPrimaryKey,
-      notNull: column.isNotNull,
-      defaultValue: column.defaultValue
-    })));
-    const warning = missing?.length ? `create_row for "${table.table_name}" omits required non-generated column(s) ${missing.map((name) => JSON.stringify(name)).join(", ")}. Seed records do not supply values for future inserts. Supply required values or verify an existing database trigger; metadata does not verify triggers. Do not recreate tables to repair this query.` : bulkPrimaryKeyWarning("tooljetdb", query.options, table.table_name, schema.map((column) => ({ name: column.name, primaryKey: column.isPrimaryKey }))) ?? updateRowsCompatibilityWarning("tooljetdb", query.options, table.table_name, schema.map((column) => column.name));
-    const arithmetic = arithmeticWriteWarning(query.kind, query.options);
-    const combined = [warning, arithmetic].filter(Boolean).join(" ");
-    return combined ? `Query "${query.name}": ${combined}` : void 0;
-  }))).filter((warning) => !!warning);
-}
-function normalizePlanBindingAliases(plan, existing, datasourceKinds = /* @__PURE__ */ new Map(), datasourceNames = /* @__PURE__ */ new Map()) {
-  const components = (plan.pages ?? []).flatMap((page) => page.components ?? []);
-  const aliases = (items, savedNames) => {
-    const counts = /* @__PURE__ */ new Map();
-    for (const name of [...savedNames, ...items.map((item) => item.name)])
-      counts.set(name, (counts.get(name) ?? 0) + 1);
-    const candidates = /* @__PURE__ */ new Map();
-    for (const item of items)
-      if (item.client_ref && item.client_ref !== item.name) {
-        candidates.set(item.client_ref, [...candidates.get(item.client_ref) ?? [], item.name]);
-      }
-    return new Map([...candidates].flatMap(([alias, names]) => names.length === 1 && !counts.has(alias) && counts.get(names[0]) === 1 ? [[alias, names[0]]] : []));
-  };
-  const maps = {
-    components: aliases(components, (existing?.pages ?? []).flatMap((page) => page.components.flatMap((c) => c.name ? [c.name] : []))),
-    queries: aliases(plan.queries ?? [], (existing?.queries ?? []).flatMap((q) => q.name ? [q.name] : []))
-  };
-  const changed = /* @__PURE__ */ new Set();
-  const rewrite = (code) => {
-    const edits = ["components", "queries"].flatMap((namespace) => namespaceReads(code, namespace).flatMap((read) => {
-      const target = maps[namespace].get(read.name);
-      if (!target)
-        return [];
-      changed.add(`${namespace}[${JSON.stringify(read.name)}] \u2192 ${namespace}[${JSON.stringify(target)}]`);
-      return [{ ...read, text: `${namespace}${read.optional ? "?." : ""}[${JSON.stringify(target)}]` }];
-    }));
-    for (const edit of edits.sort((a, b) => b.start - a.start))
-      code = code.slice(0, edit.start) + edit.text + code.slice(edit.end);
-    return code;
-  };
-  const values = (value) => {
-    if (typeof value === "string") {
-      let result = value;
-      for (const span of bindingSpans(value).reverse()) {
-        const source = `(${span.body})`;
-        const normalized = rewrite(source);
-        if (source !== normalized)
-          result = result.slice(0, span.start) + `{{${normalized.slice(1, -1)}}}` + result.slice(span.end);
-      }
-      return result;
-    }
-    if (Array.isArray(value))
-      return value.map(values);
-    if (value && typeof value === "object")
-      return Object.fromEntries(Object.entries(value).map(([key2, child]) => [key2, values(child)]));
-    return value;
-  };
-  for (const component of components) {
-    for (const section of ["properties", "styles", "validation", "others"]) {
-      if (component[section])
-        component[section] = values(component[section]);
-    }
-  }
-  for (const query of plan.queries ?? []) {
-    const kind = datasourceKinds.get(query.datasource_id ?? "") ?? datasourceNames.get(query.datasource_name ?? "") ?? query.kind;
-    const originalCode = query.options.code;
-    const hasCode = Object.hasOwn(query.options, "code");
-    const { code: _code, ...otherOptions } = query.options;
-    query.options = values(kind === "runjs" ? otherOptions : query.options);
-    if (kind === "runjs" && hasCode) {
-      query.options.code = typeof originalCode === "string" ? rewrite(originalCode) : originalCode;
-    }
-  }
-  for (const event of plan.events ?? [])
-    event.action = values(event.action);
-  for (const lifecycle of plan.lifecycles ?? []) {
-    for (const key2 of ["before_refresh_actions", "success_actions", "failure_actions"]) {
-      if (lifecycle[key2])
-        lifecycle[key2] = values(lifecycle[key2]);
-    }
-    for (const key2 of ["success_alert", "failure_alert"]) {
-      if (lifecycle[key2])
-        lifecycle[key2] = values(lifecycle[key2]);
-    }
-  }
-  return [...changed].map((change) => `Resolved explicit binding alias ${change}; the submitted definitions now use the runtime name. No inferred names were rewritten.`);
-}
-var stable = (value) => JSON.stringify(value, (_key, inner) => inner && typeof inner === "object" && !Array.isArray(inner) ? Object.fromEntries(Object.entries(inner).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) : inner);
-function restatedQueryNames(summary, queries, tables, datasources) {
-  const restated = [];
-  for (const query of queries) {
-    const held = summary.queries.filter((existing2) => existing2.name === query.name);
-    if (held.length !== 1)
-      continue;
-    const existing = held[0];
-    const matched = query.datasource_id === void 0 ? matchDatasourceByName(datasources, query.datasource_name) : null;
-    const datasource = query.datasource_id !== void 0 ? datasources.find((source) => source.id === query.datasource_id) : matched ? datasources.find((source) => source.id === matched.id) : void 0;
-    if (!datasource || datasource.id !== existing.data_source_id)
-      continue;
-    const options = structuredClone(query.options ?? {});
-    if (query.table_ref) {
-      const table = tables.find((candidate) => candidate.table_name.toLowerCase() === query.table_ref.toLowerCase());
-      if (!table)
-        continue;
-      options.table_id = table.id;
-    }
-    const prepared = prepareQueryOptionsForWrite(datasource.kind, options, `Query "${query.name}"`);
-    if (prepared.errors.length)
-      continue;
-    if (stable(prepared.options) === stable(existing.options ?? {}))
-      restated.push(query.name);
-  }
-  return restated;
-}
-var TABLE_NAME_MAX = 31;
 function unique(values) {
   return [...new Set(values)];
 }
-function lintAppSpecTool(client) {
-  return {
-    name: "lint_app_spec",
-    title: "Lint App Spec (Dry Run)",
-    // The dry run half of the governed phase: it never mutates ToolJet.
-    annotations: {
-      readOnlyHint: true,
-      openWorldHint: true
-    },
-    description: "Dry-run an exact app phase before any writes. It validates optional ToolJet DB tables/seed_data, datasource queries, pages/components, events, and concise query lifecycles together. Give pages, queries, and components stable client_ref values; events use source_ref and targeted actions use target_ref. A query can use table_ref to resolve a planned/existing ToolJet DB table by its actual table_name into options.table_id (not a client_ref or alias). For each query use either the exact datasource_id or the exact unique datasource_name from list_datasources(version_id); names are pinned to IDs during this preflight, never guessed from kind. Set app_name when the target app should be renamed in the same governed phase. For repair/continuation phases, pass app_id so persisted page/component/query refs are included and can be targeted without redeclaring them. To rebuild an existing page whole, mark its plan page replace: true (with app_id): the plan is checked against the app with that page emptied, the page's own queries may be defined again (updated in place on apply), and a component another page, event or query still reads must be kept under its name. A Form submits through a Button inside it: set the Form's properties.buttonToSubmit to that Button's client_ref in the same plan (resolved to its id on apply). On success it returns a one-time 30-minute plan_token for apply_app_phase. Treat this call as an awaited barrier; it never mutates ToolJet. " + COMPONENT_FX_GUIDANCE,
-    inputSchema: appPlanSchema.shape,
-    async handler(args) {
-      try {
-        if (!args.app_name && ![args.tables, args.seed_data, args.queries, args.pages, args.events, args.lifecycles].some((items) => items?.length)) {
-          return fail(new Error("lint_app_spec needs at least one table, seed_data batch, query, page, event, or lifecycle."));
-        }
-        const columnless = (args.tables ?? []).filter((table) => !Array.isArray(table.columns));
-        if (columnless.length) {
-          return fail(new Error(`tables: ${columnless.map((t) => `"${t.table_name ?? "?"}"`).join(", ")} has no columns. List only new tables here, each with its columns; an existing table needs no entry (queries reach it by table_ref).`));
-        }
-        const preflightErrors = [];
-        const preflightWarnings = [];
-        const replacePages = (args.pages ?? []).filter((page) => page.replace).map((page) => `"${page.name}"`);
-        if (replacePages.length && !args.app_id) {
-          preflightErrors.push(`pages ${replacePages.join(", ")}: replace needs app_id, so the plan is checked against the page it replaces.`);
-        }
-        const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query) => query.table_ref || typeof query.options?.table_id === "string"));
-        const [existingTables, fetchedSummary] = await Promise.all([
-          needsTables ? client.listTables() : Promise.resolve([]),
-          args.app_id ? client.getAppSummary(args.app_id) : Promise.resolve(void 0)
-        ]);
-        const frozen = frozenAppRefusal(fetchedSummary);
-        if (frozen)
-          return fail(new Error(frozen));
-        const appLibrary = fetchedSummary ? fetchedSummary.component_library ?? resolveComponentLibrary(void 0, fetchedSummary.pages.flatMap((page) => page.components.map((c) => c.type))) : { library: "ui2", source: "new" };
-        preflightWarnings.push(...componentLibraryWarnings(appLibrary, args.pages, args.component_library_request));
-        const mapRefusal = await mapKeyRefusal(client, (args.pages ?? []).flatMap((page) => (page.components ?? []).map((c) => String(c.type))), appLibrary.library);
-        if (mapRefusal)
-          preflightErrors.push(mapRefusal);
-        const plannedNames = /* @__PURE__ */ new Map();
-        for (const table of args.tables ?? []) {
-          const key2 = table.table_name.toLowerCase();
-          if (plannedNames.has(key2))
-            return fail(new Error(`Ambiguous planned table name "${table.table_name}": table names must be unique ignoring case.`));
-          plannedNames.set(key2, table.table_name);
-        }
-        const existingNames = /* @__PURE__ */ new Map();
-        const ambiguousNames = /* @__PURE__ */ new Set();
-        for (const table of existingTables) {
-          const key2 = table.table_name.toLowerCase();
-          if (existingNames.has(key2))
-            ambiguousNames.add(key2);
-          existingNames.set(key2, table.table_name);
-        }
-        const existingExact = new Set(existingTables.map((table) => table.table_name));
-        const canonicalTableName = (name) => {
-          const key2 = name.toLowerCase();
-          if (ambiguousNames.has(key2) && !existingExact.has(name))
-            throw new Error(`Ambiguous existing table name "${name}": multiple workspace tables match ignoring case. No plan token was issued.`);
-          return plannedNames.get(key2) ?? (existingExact.has(name) ? name : existingNames.get(key2)) ?? name;
-        };
-        for (const name of plannedNames.values())
-          canonicalTableName(name);
-        for (const seed of args.seed_data ?? [])
-          seed.table_name = canonicalTableName(seed.table_name);
-        for (const query of args.queries ?? [])
-          if (query.table_ref)
-            query.table_ref = canonicalTableName(query.table_ref);
-        for (const table of args.tables ?? []) {
-          for (const fk of table.foreign_keys ?? []) {
-            const ref = fk;
-            for (const field of ["referencedTable", "referenced_table", "references_table"]) {
-              if (typeof ref[field] === "string")
-                ref[field] = canonicalTableName(ref[field]);
-            }
-          }
-        }
-        const hasSql = args.queries?.some((query) => query.options?.operation === "sql_execution" || query.options?.sql_execution !== void 0);
-        const datasources = args.queries?.length && args.version_id ? await client.listDatasources(args.version_id) : [];
-        if (fetchedSummary && args.queries?.length) {
-          const restated = restatedQueryNames(fetchedSummary, args.queries.filter((query) => !query.table_ref || !plannedNames.has(query.table_ref.toLowerCase())), existingTables, datasources);
-          if (restated.length) {
-            args.queries = args.queries.filter((query) => !restated.includes(query.name));
-            preflightWarnings.push(`${restated.map((name) => `"${name}"`).join(", ")}: already in the app exactly as written here, so the plan uses the existing quer` + (restated.length > 1 ? "ies" : "y") + " and defines nothing again.");
-          }
-          const planPages = new Set((args.pages ?? []).map((page) => page.name));
-          for (const query of args.queries.filter((candidate) => candidate.update)) {
-            const users = pagesUsingQuery(fetchedSummary, query.name, planPages);
-            if (users.length) {
-              preflightWarnings.push(`Query "${query.name}" is updated in place, and page${users.length > 1 ? "s" : ""} ${users.map((user) => `"${user}"`).join(", ")} also read${users.length > 1 ? "" : "s"} it: keep the fields they use.`);
-            }
-          }
-        }
-        const view = fetchedSummary ? replaceView(fetchedSummary, args) : void 0;
-        const existingSummary = view?.summary ?? fetchedSummary;
-        if (view && fetchedSummary)
-          preflightErrors.push(...danglingAfterReplace(fetchedSummary, view, args));
-        if (args.version_id && existingSummary?.version_id && args.version_id !== existingSummary.version_id) {
-          preflightErrors.push(`App "${args.app_id}" editing version is "${existingSummary.version_id}", not "${args.version_id}".`);
-        }
-        const tableIds = new Map(existingTables.map((table) => [table.table_name.toLowerCase(), table.id]));
-        const reservedTableNames = new Map([...tableIds, ...plannedNames]);
-        const plannedNew = new Set((args.tables ?? []).map((table) => table.table_name.toLowerCase()));
-        const seededExisting = [...new Set((args.seed_data ?? []).map((seed) => seed.table_name))].filter((name) => tableIds.has(name.toLowerCase()) && !plannedNew.has(name.toLowerCase()));
-        const withRows = await Promise.all(seededExisting.map(async (name) => await client.hasRows?.(tableIds.get(name.toLowerCase())).catch(() => void 0) === true ? name : void 0));
-        for (const name of withRows.filter(Boolean)) {
-          preflightErrors.push(`Seed data targets "${name}", which already has rows (seeded earlier), so they would be inserted again: leave that table out of seed_data. To add more rows to it, call insert_rows_batch with only the new rows.`);
-        }
-        for (const table of args.tables ?? []) {
-          const key2 = table.table_name.toLowerCase();
-          if (tableIds.has(key2)) {
-            if (hasSql) {
-              preflightErrors.push(`Planned table "${table.table_name}" already exists and this plan contains SQL queries. Rename the planned table and update all SQL references, seed data, table_ref and foreign keys together, then lint again. To reuse the existing table, remove it from tables instead.`);
-              continue;
-            }
-            const oldName = table.table_name;
-            const newName = nextTableName(oldName, reservedTableNames);
-            reservedTableNames.set(newName.toLowerCase(), newName);
-            table.table_name = newName;
-            for (const seed of args.seed_data ?? [])
-              if (seed.table_name === oldName)
-                seed.table_name = newName;
-            for (const query of args.queries ?? [])
-              if (query.table_ref === oldName)
-                query.table_ref = newName;
-            for (const other of args.tables ?? []) {
-              for (const fk of other.foreign_keys ?? []) {
-                const ref = fk;
-                for (const field of ["referencedTable", "referenced_table", "references_table"]) {
-                  if (ref[field] === oldName)
-                    ref[field] = newName;
-                }
-              }
-            }
-            preflightWarnings.push(`Planned table "${oldName}" already exists in this workspace, so it is created as "${newName}"; seed data, table_ref and foreign keys were updated to match. To reuse the existing table instead, drop it from tables and point queries at it with table_ref.`);
-            tableIds.set(newName.toLowerCase(), `planned-table:${newName}`);
-          } else
-            tableIds.set(key2, `planned-table:${table.table_name}`);
-        }
-        preflightWarnings.push(...autoFitHtmlHeights(args));
-        if (existingSummary) {
-          const plannedNames2 = new Set((args.pages ?? []).map((page) => page.name.toLowerCase()));
-          const createsPages = (args.pages ?? []).some((page) => !existingSummary.pages.some((existing) => existing.name?.toLowerCase() === page.name.toLowerCase() || page.name === "Home" && existing.handle === "home"));
-          const abandoned = existingSummary.pages.filter((page) => page.components.length === 0 && page.handle !== "home" && page.name && !plannedNames2.has(page.name.toLowerCase()));
-          if (createsPages && abandoned.length) {
-            preflightErrors.push(`App already has ${abandoned.length} empty page(s) this plan does not touch: ${abandoned.map((page) => `"${page.name}"`).join(", ")}. Build on them (use the exact existing name in pages[]) or delete them with delete_page before creating new pages, so the app does not end up with duplicates.`);
-          }
-        }
-        const plannedTables = new Map((args.tables ?? []).map((table) => [table.table_name.toLowerCase(), table]));
-        for (const seed of args.seed_data ?? []) {
-          if (!tableIds.has(seed.table_name.toLowerCase())) {
-            preflightErrors.push(`Seed data targets unknown planned/existing table "${seed.table_name}".`);
-          }
-          const plannedTable = plannedTables.get(seed.table_name.toLowerCase());
-          if (plannedTable) {
-            preflightErrors.push(...invalidSeedTimestamps(plannedTable.columns, seed.rows).map((error) => `Seed data for planned table "${seed.table_name}": ${error}`));
-            const requiredColumns = plannedTable.columns.filter((column) => (column.primaryKey || column.notNull) && column.defaultValue === void 0 && !/serial/i.test(column.type));
-            for (const column of requiredColumns) {
-              const missingRows = seed.rows.reduce((indexes, row, index) => {
-                if (!(column.name in row) || row[column.name] === null || row[column.name] === void 0) {
-                  indexes.push(index + 1);
-                }
-                return indexes;
-              }, []);
-              if (!missingRows.length)
-                continue;
-              if (column.primaryKey && /^(integer|bigint|int|int4|int8)$/i.test(column.type) && (args.seed_data ?? []).filter((batch) => batch.table_name.toLowerCase() === seed.table_name.toLowerCase()).every((batch) => batch.rows.every((row) => !(column.name in row)))) {
-                const originalType = column.type;
-                column.type = "serial";
-                preflightWarnings.push(`Planned table "${seed.table_name}": primary key "${column.name}" was declared ${JSON.stringify(originalType)} with no value in any seed row, so it is created as "serial" (auto-generated). Omit it from inserts.`);
-                continue;
-              }
-              const nullRows = missingRows.filter((n) => column.name in seed.rows[n - 1]);
-              const absentRows = missingRows.filter((n) => !nullRows.includes(n));
-              if (nullRows.length) {
-                preflightErrors.push(`Seed data for planned table "${seed.table_name}": required column "${column.name}" is null in row(s) ${nullRows.join(", ")}. Give each of those rows a real value (seed rows are literal values, not formulas), or add a defaultValue.`);
-              }
-              if (absentRows.length) {
-                preflightErrors.push(`Seed data for planned table "${seed.table_name}" omits required non-generated column "${column.name}" in row(s) ${absentRows.join(", ")}. Use type "serial" for a generated key, add a defaultValue, or provide explicit values.`);
-              }
-            }
-          }
-        }
-        if (args.queries?.length && !args.version_id) {
-          preflightErrors.push("version_id is required when a plan contains queries.");
-        }
-        const datasourceKinds = new Map(datasources.map((datasource) => [datasource.id, datasource.kind]));
-        const uniqueDatasourceNames = new Map(datasources.filter((source) => datasources.filter((other) => other.name === source.name).length === 1).map((source) => [source.name, source.kind]));
-        preflightWarnings.push(...normalizePlanBindingAliases(args, existingSummary, datasourceKinds, uniqueDatasourceNames));
-        const resolvedQueryIds = /* @__PURE__ */ new Map();
-        const queries = (args.queries ?? []).map((query, index) => {
-          let datasourceId = query.datasource_id;
-          const hasId = query.datasource_id !== void 0;
-          const hasName = query.datasource_name !== void 0;
-          if (hasId === hasName) {
-            preflightErrors.push(`Query "${query.name}" must provide exactly one of datasource_id or datasource_name.`);
-          } else if (hasName) {
-            const matches = datasources.filter((source) => source.name === query.datasource_name);
-            const matched = matchDatasourceByName(datasources, query.datasource_name);
-            if (!matched) {
-              preflightErrors.push(`Query "${query.name}" datasource_name "${query.datasource_name}" must match exactly one source in this version (found ${matches.length}). Use the exact name or id returned by list_datasources(version_id).`);
-            } else {
-              datasourceId = matched.id;
-              if (matched.note)
-                preflightWarnings.push(`Query "${query.name}": ${matched.note}`);
-            }
-          }
-          const datasourceKind = datasourceKinds.get(datasourceId ?? "");
-          if (args.version_id && !datasourceKind) {
-            preflightErrors.push(`Query "${query.name}" datasource "${datasourceId ?? query.datasource_name ?? ""}" is not available.`);
-          }
-          if (datasourceId && datasourceKind)
-            resolvedQueryIds.set(index, datasourceId);
-          if (query.kind && datasourceKind && query.kind !== datasourceKind) {
-            preflightErrors.push(`Query "${query.name}" kind "${query.kind}" does not match datasource kind "${datasourceKind}".`);
-          }
-          const options = structuredClone(query.options);
-          if (query.table_ref) {
-            const tableId = tableIds.get(query.table_ref.toLowerCase());
-            if (!tableId)
-              preflightErrors.push(`Query "${query.name}" has unknown table_ref "${query.table_ref}". Use the actual table_name from tables[] or list_tables, not a client_ref, alias, or UUID.`);
-            else
-              options.table_id = tableId;
-          } else if ((datasourceKind ?? query.kind) === "tooljetdb" && typeof options.table_id === "string") {
-            const known = new Set(existingTables.map((table) => table.id));
-            if (!known.has(options.table_id)) {
-              const prefix = options.table_id.slice(0, 8);
-              const nearest = existingTables.filter((table) => table.id.startsWith(prefix)).map((table) => `${table.table_name} (${table.id})`);
-              preflightErrors.push(`Query "${query.name}": table_id "${options.table_id}" is not a table in this workspace` + (nearest.length ? `; the closest id is ${nearest.join(", ")}` : "") + ". Use table_ref with the table name and let the server resolve the id instead of copying UUIDs.");
-            }
-          }
-          return {
-            clientRef: query.client_ref,
-            datasourceId: datasourceId ?? "",
-            name: query.name,
-            kind: datasourceKind ?? query.kind,
-            options
-          };
-        });
-        const schemas = /* @__PURE__ */ new Map();
-        const insertSchemas = /* @__PURE__ */ new Map();
-        for (const table of args.tables ?? []) {
-          const columns = table.columns.map((column) => column.name);
-          if (!table.columns.some((column) => column.primaryKey))
-            columns.push("id");
-          schemas.set(`planned-table:${table.table_name}`, columns);
-          insertSchemas.set(`planned-table:${table.table_name}`, table.columns.some((column) => column.primaryKey) ? table.columns : [...table.columns, { name: "id", type: "serial", primaryKey: true }]);
-        }
-        const updateTableIds = new Set(queries.filter((query) => query.kind === "tooljetdb" && ["update_rows", "create_row", "bulk_upsert_with_primary_key"].includes(String(query.options.operation)) && typeof query.options.table_id === "string").map((query) => query.options.table_id));
-        await Promise.all([...updateTableIds].map(async (tableId) => {
-          if (schemas.has(tableId))
-            return;
-          const table = existingTables.find((item) => item.id === tableId);
-          if (!table)
-            return;
-          try {
-            const schema = await client.getTableSchema(table.table_name);
-            schemas.set(tableId, schema.map((column) => column.name));
-            insertSchemas.set(tableId, schema.map((column) => ({
-              name: column.name,
-              type: column.type,
-              primaryKey: column.isPrimaryKey,
-              notNull: column.isNotNull,
-              defaultValue: column.defaultValue
-            })));
-          } catch {
-            preflightWarnings.push(`Could not inspect write target "${table.table_name}"; required insert columns were not checked and update_rows primary-key compatibility was not checked. Inspect its schema before relying on the save workflow.`);
-          }
-        }));
-        for (const query of queries) {
-          const tableId = query.options.table_id;
-          const tableName = existingTables.find((table) => table.id === tableId)?.table_name ?? (args.tables ?? []).find((table) => `planned-table:${table.table_name}` === tableId)?.table_name ?? tableId;
-          const warning = updateRowsCompatibilityWarning(query.kind, query.options, tableName, schemas.get(tableId));
-          if (warning)
-            preflightWarnings.push(`Query "${query.name}": ${warning}`);
-          const arithmetic = arithmeticWriteWarning(query.kind, query.options);
-          if (arithmetic)
-            preflightWarnings.push(`Query "${query.name}": ${arithmetic}`);
-          const bulkWarning = bulkPrimaryKeyWarning(query.kind, query.options, tableName, insertSchemas.get(tableId));
-          if (bulkWarning)
-            (tableId.startsWith("planned-table:") ? preflightErrors : preflightWarnings).push(`Query "${query.name}": ${bulkWarning}`);
-          if (query.kind === "tooljetdb" && insertSchemas.has(tableId)) {
-            const missing = missingCreateRowColumns(query.options, insertSchemas.get(tableId));
-            if (missing?.length) {
-              const message = `Query "${query.name}": create_row for "${tableName}" omits required non-generated column(s) ${missing.map((name) => JSON.stringify(name)).join(", ")}. Seed rows do not supply values for future user-created records. Include the required values in this insert, or use a generated/defaulted key when designing a new table. Never recreate an existing table or change its key merely to fix this query.`;
-              if (tableId.startsWith("planned-table:"))
-                preflightErrors.push(message);
-              else
-                preflightWarnings.push(message + " Metadata does not verify database triggers; if an existing trigger supplies these fields, confirm that contract instead.");
-            }
-          }
-        }
-        const canvasColor = args.app_id ? await literalCanvasColor(client, args.app_id, existingSummary?.version_id ?? args.version_id) : void 0;
-        const lint = lintPlannedApp({
-          tables: args.tables?.map((table) => ({
-            tableName: table.table_name,
-            columns: table.columns,
-            foreignKeys: table.foreign_keys
-          })),
-          seedData: args.seed_data?.map((seed) => ({ tableName: seed.table_name, rows: seed.rows })),
-          queries,
-          pages: args.pages?.map((page) => ({
-            clientRef: page.client_ref,
-            name: page.name,
-            icon: page.icon,
-            hidden: page.hidden,
-            archetype: page.archetype,
-            components: page.components?.map((component) => ({
-              name: component.name,
-              type: component.type,
-              properties: component.properties,
-              styles: component.styles,
-              validation: component.validation,
-              others: component.others,
-              layout: component.layout,
-              layouts: component.layouts,
-              clientRef: component.client_ref,
-              parentRef: component.parent_ref,
-              parent: component.parent,
-              slotName: component.slot_name
-            }))
-          })),
-          events: args.events?.map((event) => ({
-            sourceRef: event.source_ref,
-            sourceType: event.source_type,
-            ref: event.ref,
-            trigger: event.trigger,
-            action: event.action,
-            name: event.name
-          })),
-          lifecycles: args.lifecycles?.map((lifecycle) => ({
-            queryRef: lifecycle.query_ref,
-            beforeRefreshActions: lifecycle.before_refresh_actions,
-            refreshQueryRefs: lifecycle.refresh_query_refs,
-            clearComponentRefs: lifecycle.clear_component_refs,
-            closeModalRef: lifecycle.close_modal_ref,
-            successAlert: lifecycle.success_alert ? { message: lifecycle.success_alert.message, alertType: lifecycle.success_alert.alert_type } : void 0,
-            failureAlert: lifecycle.failure_alert ? { message: lifecycle.failure_alert.message, alertType: lifecycle.failure_alert.alert_type } : void 0,
-            successActions: lifecycle.success_actions,
-            failureActions: lifecycle.failure_actions
-          }))
-        }, existingSummary, { canvasColor });
-        const result = {
-          ...lint,
-          ok: lint.ok && preflightErrors.length === 0,
-          errors: unique([...preflightErrors, ...lint.errors]),
-          warnings: unique([...preflightWarnings, ...lint.warnings])
-        };
-        if (!result.ok)
-          return ok(result);
-        const resolvedSpec = { ...args, queries: args.queries?.map((query, index) => {
-          const { datasource_name: _name, ...rest } = query;
-          return { ...rest, datasource_id: resolvedQueryIds.get(index) };
-        }) };
-        const stored = storeAppPlan(resolvedSpec, result, view && fetchedSummary ? replaceFingerprint(fetchedSummary, view) : void 0);
-        return ok({ ...result, ...stored });
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-function nextTableName(name, taken) {
-  for (let n = 2; n < 100; n++) {
-    const suffix = `_${n}`;
-    const candidate = `${name.slice(0, Math.max(1, TABLE_NAME_MAX - suffix.length))}${suffix}`;
-    if (!taken.has(candidate.toLowerCase()))
-      return candidate;
-  }
-  return `${name.slice(0, TABLE_NAME_MAX - 7)}_${Date.now().toString(36).slice(-6)}`;
-}
-function autoFitHtmlHeights(args) {
-  const warnings = [];
-  for (const page of args.pages ?? []) {
-    const components = page.components ?? [];
-    for (const component of components) {
-      if (component.type !== "Html")
-        continue;
-      const rect = component.layouts?.desktop ?? component.layout;
-      if (!rect || typeof rect.height !== "number" || typeof rect.top !== "number")
-        continue;
-      const fix = suggestedHtmlHeight(component);
-      if (!fix)
-        continue;
-      const delta = fix.to - fix.from;
-      const oldBottom = rect.top + fix.from;
-      const parentOf = (c) => c.parent_ref ?? c.parent ?? "";
-      const moved = [];
-      for (const sibling of components) {
-        if (sibling === component || parentOf(sibling) !== parentOf(component))
-          continue;
-        for (const r of [sibling.layout, sibling.layouts?.desktop, sibling.layouts?.mobile]) {
-          if (r && typeof r.top === "number" && r.top >= oldBottom - 4)
-            r.top += delta;
-        }
-        const r0 = sibling.layouts?.desktop ?? sibling.layout;
-        if (r0 && typeof r0.top === "number" && r0.top - delta >= oldBottom - 4)
-          moved.push(sibling.name ?? sibling.client_ref ?? "?");
-      }
-      for (const r of [component.layout, component.layouts?.desktop])
-        if (r && typeof r.height === "number")
-          r.height = fix.to;
-      warnings.push(`Page "${page.name}": Html "${component.name ?? component.client_ref ?? "?"}" needed about ${fix.needed}px for its markup but was ${fix.from}px, so its height is now ${fix.to}px` + (moved.length ? ` and ${moved.length} component(s) below it moved down ${delta}px (${[...new Set(moved)].join(", ")})` : "") + ". The plan was applied with these values.");
-    }
-  }
-  return warnings;
+function dropUnprefixedDuplicates(values) {
+  const distinct = unique(values);
+  const stripped = new Set(distinct.map((value) => value.replace(/^Page "[^"]*": /, "")).filter((value, i) => value !== distinct[i]));
+  return distinct.filter((value) => value.startsWith('Page "') || !stripped.has(value));
 }
 export {
   normalizePlannedLayouts as A,
   materializeRequiredDefaultChildren as B,
   persistedEventIds as C,
-  replaceFingerprint as a,
-  prepareQueryOptionsForWrite as b,
-  consumeAppPlan as c,
+  lintPlannedApp as a,
+  replaceFingerprint as b,
+  componentInputSchema as c,
   danglingAfterReplace as d,
-  prepareComponentBatch as e,
+  prepareQueryOptionsForWrite as e,
   frozenAppRefusal as f,
-  replaceIds as g,
-  expandQueryLifecycles as h,
-  persistedEventSpecs as i,
-  dbColumnTypeSchema as j,
-  componentInputSchema as k,
+  peekAppPlan as g,
+  consumeAppPlan as h,
+  prepareComponentBatch as i,
+  replaceIds as j,
+  expandQueryLifecycles as k,
   literalCanvasColor as l,
   matchPlannedPage as m,
   navigationReorders as n,
-  lintAppSpecTool as o,
-  peekAppPlan as p,
-  projectJavascriptRuntime as q,
+  persistedEventSpecs as o,
+  pagesUsingQuery as p,
+  inspectDatasourceSchemaTool as q,
   replaceView as r,
-  projectAppSettings as s,
-  compactTheme as t,
-  pageSettingProperties as u,
+  storeAppPlan as s,
+  projectJavascriptRuntime as t,
+  projectAppSettings as u,
   validateEvents as v,
-  containsExactValue as w,
-  inspectUpdateCompatibility as x,
-  normalizePlanBindingAliases as y,
+  compactTheme as w,
+  pageSettingProperties as x,
+  containsExactValue as y,
   containsNamedBinding as z
 };

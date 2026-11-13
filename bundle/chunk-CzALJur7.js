@@ -188,7 +188,17 @@ function runjsComponentReferences(code) {
   return [...new Set(namespaceReads(code, "components").map((read) => read.name))];
 }
 var QUERY_PROPERTIES = ["data", "rawData", "isLoading", "error", "metadata", "request", "response", "responseHeaders", "id"];
-var QUERY_MEMBERS = /* @__PURE__ */ new Set([...QUERY_PROPERTIES, "run", "reset", "getData", "getRawData", "getloadingState", "abort"]);
+var ASYNC_WORKFLOW_QUERY_PROPERTIES = ["jobId", "progress", "currentData"];
+var QUERY_MEMBERS = /* @__PURE__ */ new Set([
+  ...QUERY_PROPERTIES,
+  ...ASYNC_WORKFLOW_QUERY_PROPERTIES,
+  "run",
+  "reset",
+  "getData",
+  "getRawData",
+  "getloadingState",
+  "abort"
+]);
 function unknownQueryMemberReads(value2) {
   if (Array.isArray(value2))
     return value2.flatMap(unknownQueryMemberReads);
@@ -690,8 +700,10 @@ function keysOf(items, field) {
   return keys.every(Boolean) ? keys : null;
 }
 function packSlotsFromManifest(slots, props) {
-  if (!slots?.length)
+  if (!slots)
     return void 0;
+  if (!slots.length)
+    return { fixed: [], families: [], rows: [] };
   const names = slots.map((slot) => slot.name);
   const families = [];
   const claimed = /* @__PURE__ */ new Set();
@@ -778,6 +790,12 @@ function resolvePackSlot(parent, slotName, child, options = {}) {
     return { ok: true, slotName };
   const listed = [...slots.known, ...slots.open.map((family) => `${family.prefix}_<key of each ${family.itemsProp} item>`)];
   const where = `${String(parent.type)} "${parent.name ?? parent.id ?? "?"}"`;
+  if (!listed.length) {
+    return {
+      ok: false,
+      error: `Component "${child}": ${where} draws no child components, so a component inside it is saved and never shown. Place it beside the widget, or inside a container (a Card or FlexContainer).`
+    };
+  }
   if (slotName === void 0) {
     if (slots.known.includes("body"))
       return { ok: true, slotName: "body" };
