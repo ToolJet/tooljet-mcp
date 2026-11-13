@@ -68,12 +68,14 @@ function keysOf(items: unknown[], field: string): string[] | null {
   return keys.every(Boolean) ? keys : null;
 }
 
-/** A manifest component's slots: the ones a default item list names form a family, the rest are fixed. */
+/** A manifest component's slots: the ones a default item list names form a family, the rest are fixed. An empty list
+ *  is a widget that draws no child canvas (a Button); undefined is a manifest that does not say, left unchecked. */
 export function packSlotsFromManifest(
   slots: ReadonlyArray<{ name: string; kind?: string }> | undefined,
   props: ReadonlyArray<{ name: string; default?: unknown }> | undefined
 ): PackSlots | undefined {
-  if (!slots?.length) return undefined;
+  if (!slots) return undefined;
+  if (!slots.length) return { fixed: [], families: [], rows: [] };
   const names = slots.map((slot) => slot.name);
   const families: PackSlotFamily[] = [];
   const claimed = new Set<string>();
@@ -182,6 +184,16 @@ export function resolvePackSlot(
   if (!slots) return { ok: true, slotName };
   const listed = [...slots.known, ...slots.open.map((family) => `${family.prefix}_<key of each ${family.itemsProp} item>`)];
   const where = `${String(parent.type)} "${parent.name ?? parent.id ?? '?'}"`;
+  // Review on tooljet-mcp#143: once slot_name took any pack slot name, a Text under a Button with slot_name "first"
+  // was stored on "<button>-first", a canvas the Button never draws.
+  if (!listed.length) {
+    return {
+      ok: false,
+      error:
+        `Component "${child}": ${where} draws no child components, so a component inside it is saved and never shown. ` +
+        'Place it beside the widget, or inside a container (a Card or FlexContainer).',
+    };
+  }
   if (slotName === undefined) {
     if (slots.known.includes('body')) return { ok: true, slotName: 'body' };
     if (slots.known.length === 1 && !slots.open.length) return { ok: true, slotName: slots.known[0] };

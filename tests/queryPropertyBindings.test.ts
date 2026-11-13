@@ -34,6 +34,12 @@ describe('a binding reads a property the query has', () => {
     }
   );
 
+  // Review on tooljet-mcp#143: an async workflow query also publishes jobId when it starts and progress and currentData
+  // as it runs (frontend queryPanelSlice.js setResolvedQuery).
+  it.each(['jobId', 'progress', 'currentData'])('accepts queries.getData.%s (async workflow state)', (property) => {
+    expect(errorsOf(`{{queries.getData.${property}}}`)).not.toMatch(/a query has no/);
+  });
+
   it.each(['{{queries.getData}}', '{{queries.getData.getData()}}', '{{queries.getData.data.rows.length}}'])(
     'accepts %s (the whole query, a method, a path inside data)',
     (binding) => {
