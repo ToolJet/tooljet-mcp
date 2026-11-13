@@ -1,5 +1,6 @@
 import { isEmptyLibraryHost, isLibraryPackType, serverLibraryPacks } from './libraryPack.js';
 import { packCanvases } from './packItemSlots.js';
+import { packValueTypeError } from './packValueTypes.js';
 import { defaultPack } from './componentLibrary.js';
 // Mechanical, catalog-independent checks that catch the render bugs the skill can only *advise*
 // against. Used by add_component(s) (component-level, pre-write) and validate_app (whole-app,
@@ -2015,6 +2016,12 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
       }
     }
     for (const entry of entries) {
+      // A pack boolean or number property given a value the pack cannot use: it would read as false or unset.
+      const literal = propVal(authored, entry.key);
+      if (literal !== undefined && !isDynamicBinding(literal)) {
+        const typeError = packValueTypeError(spec.type, entry.key, entry.valueType, literal);
+        if (typeError) errors.push(`Component "${label}": ${typeError}`);
+      }
       if (!entry.allowedValues?.length) continue;
       if (spec.type === 'Form' && entry.key === 'buttonToSubmit') continue; // names a Button: lintFormSubmitButtons
       const value = propVal(authored, entry.key);
