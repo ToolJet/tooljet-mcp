@@ -14,8 +14,9 @@ import {
   lintUnusableTextGeometry,
   type LintComponent,
 } from '../lint.js';
-import { COMPONENT_SLOT_NAMES, componentSlotSchema, decodeComponentParent, encodeComponentParent, resolveParentRef } from '../componentParent.js';
+import { applyResolvedParent, COMPONENT_SLOT_NAMES, componentSlotSchema, decodeComponentParent, encodeComponentParent, isPackContainerType, resolveParentRef } from '../componentParent.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { packSlotOnOwnId } from '../libraryPack.js';
 import { normalizeComponentSpec, packValueAsDefault } from '../componentNormalization.js';
 import { resolveRef } from '../refResolution.js';
 import { hasNonEmptyDefinition, strictEntry } from '../strictEntry.js';
@@ -169,11 +170,15 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
           if (typeof parent === 'string' && parent) {
             // A parent named by its component name moves the component under that component's id.
             const resolvedParent = resolveParentRef(page.components, parent);
-            if (!resolvedParent.ok) {
-              errors.push(`Component "${update.component_id}": ${resolvedParent.error}`);
+            // "<id>-<canvas>" under a pack container is that container plus slot_name (DVRL-124).
+            const entry = { parent, slot_name: update.slot_name as string | undefined };
+            const parentError = resolvedParent.ok ? applyResolvedParent(entry, resolvedParent) : resolvedParent.error;
+            if (parentError) {
+              errors.push(`Component "${update.component_id}": ${parentError}`);
               continue;
             }
-            parent = resolvedParent.parent;
+            parent = entry.parent;
+            update.slot_name = entry.slot_name as typeof update.slot_name;
           }
           let slotName = update.slot_name;
           if (slotName !== undefined) {
@@ -191,6 +196,22 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
                 errors.push(`Component "${update.component_id}": slot_name:"${slotName}" requires an existing or explicit parent.`);
                 continue;
               }
+            }
+          }
+          // A pack container draws every canvas, its body included, on "<id>-<slot>": the parent is written that way, as
+          // add_components does. Sent as the bare id, the moved child was saved where nothing draws it.
+          let writeSlot: typeof update.slot_name | undefined = update.slot_name;
+          if (parent) {
+            const packParent = page.components.find(
+              (candidate) => isPackContainerType(candidate.type) && (parent === candidate.id || parent!.startsWith(`${candidate.id}-`))
+            );
+            if (packParent && (slotName !== undefined || parent === packParent.id)) {
+              // Its repeating rows (a list's row) are drawn on its own id.
+              parent = packSlotOnOwnId(packParent.type, slotName)
+                ? packParent.id
+                : `${packParent.id}-${slotName ?? 'body'}`;
+              slotName = undefined;
+              writeSlot = undefined;
             }
           }
           // A FlexContainer's childOrder holds child ids; accept child names too and write the complete order, so
@@ -285,7 +306,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             definition: normalizedDefinition,
             name: update.name,
             parent,
-            slotName: update.slot_name,
+            slotName: writeSlot,
           });
           if (!update.definition) continue;
           errors.push(...introducedLintFindings(
@@ -302,7 +323,8 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
           changedComponents.flatMap(({ before, after }) =>
             introducedLintFindings(lint([before]), lint([after]))
           );
-        if (placementChanged) {
+        // A definition change can strand children too: a container's tab or step id renamed or the item removed.
+        if (placementChanged || changedComponents.length) {
           errors.push(...introducedLintFindings(
             lintComponentSlots(page.components as LintComponent[]),
             lintComponentSlots(allComponents)

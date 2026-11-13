@@ -60,6 +60,33 @@ const packOfType = (type: unknown): LibraryPack | undefined =>
 
 export const isLibraryPackType = (type: unknown): type is string => !!packOfType(type);
 
+/** The canvases (ToolJet.Slot names) a pack type's manifest lists, or undefined for a type no known pack has. A
+ *  container whose canvases come from its items lists only its default items' ones. */
+export function packSlotNames(type: unknown): string[] | undefined {
+  const component = Object.values(packOfType(type)?.components ?? {}).find((entry) => entry.type === type);
+  if (!component) return undefined;
+  const slots = (component as { slots?: Array<{ name?: unknown }> }).slots ?? [];
+  return slots.map((slot) => String(slot.name ?? '')).filter(Boolean);
+}
+
+/** The canvases a pack type repeats as rows (kind "rows": a list's row, a Kanban card). ToolJet draws them as a List
+ *  view row on the component's own id (usePackHost PackRow), so their children's parent is the bare id, not
+ *  "<id>-<slot>". */
+export function packRowSlotNames(type: unknown): string[] {
+  const component = Object.values(packOfType(type)?.components ?? {}).find((entry) => entry.type === type);
+  const slots = (component as { slots?: Array<{ name?: unknown; kind?: unknown }> } | undefined)?.slots ?? [];
+  return slots.filter((slot) => slot.kind === 'rows').map((slot) => String(slot.name ?? '')).filter(Boolean);
+}
+
+/** Whether a child on this canvas of a pack type is saved on the component's own id: one of its repeating rows, or no
+ *  canvas named (a plain parent) under a component whose only canvases are rows (a list). */
+export function packSlotOnOwnId(type: unknown, slotName?: string): boolean {
+  const rows = packRowSlotNames(type);
+  if (!rows.length) return false;
+  if (slotName) return rows.includes(slotName);
+  return (packSlotNames(type) ?? []).every((name) => rows.includes(name));
+}
+
 /** The globalSettings entry that pins every known pack for an app version. */
 export function libraryPins(): Record<string, string> | undefined {
   // A shipped pack (PackComponent) needs no pin: it always draws the build the release ships.
@@ -146,6 +173,18 @@ export function toLibraryComponent<T extends { type: string; properties?: Sectio
       componentName: { value: componentName },
     },
   };
+}
+
+/** A LibraryComponent or PackComponent that names no component, pack or library: it has nothing to draw and shows an
+ *  empty box (the bare host type written into an app). A workspace's own custom library, no pack the MCP knows, names
+ *  its library and is not one. */
+export function isEmptyLibraryHost(component: { type?: string; properties?: Section }): boolean {
+  if (component.type !== 'LibraryComponent' && component.type !== 'PackComponent') return false;
+  return !['componentName', 'pack', 'libraryId', 'correlationId', 'libraryName'].some((key) => {
+    const entry = component.properties?.[key];
+    const value = entry && typeof entry === 'object' && 'value' in entry ? (entry as { value?: unknown }).value : entry;
+    return typeof value === 'string' && value.trim() !== '';
+  });
 }
 
 /** The `Lib_*` type of a stored PackComponent or LibraryComponent of a known pack, for reads (summaries, lint of the
