@@ -24,6 +24,8 @@ const usableNumber = (value: unknown): boolean =>
 export function packValueTypeError(type: string | undefined, key: string, valueType: string | undefined, value: unknown): string | null {
   const pack = /^Lib_([a-z0-9]+)_(.+)$/.exec(type ?? '');
   if (!pack || (valueType !== 'boolean' && valueType !== 'number')) return null;
+  // null is the empty value (false, or no number) the pack reads without a note: a cleared minimum, MUI's defaults.
+  if (value === null) return null;
   if (Array.isArray(value) && ALSO_ARRAY.has(`${pack[1]}.${pack[2]}.${key}`)) return null;
   if (valueType === 'boolean' ? usableBoolean(value) : usableNumber(value)) return null;
   return valueType === 'boolean'

@@ -49,6 +49,19 @@ describe('a pack number property', () => {
   });
 });
 
+// Review of PR #142: the pack reads null as the type's empty value without a word (packPropertyTypes.ts), and MUI's
+// NumberField defaults value, min and max to null, so clearing a minimum with null was refused.
+describe('null, the empty value', () => {
+  it('is accepted for a number property', () => {
+    expect(lint('Lib_shadcn_ListView', { rowHeight: null })).not.toMatch(/rowHeight/);
+    expect(lint('Lib_shadcn_ListView', { rowHeight: { value: null } })).not.toMatch(/rowHeight/);
+  });
+
+  it('is accepted for a boolean property', () => {
+    expect(lint('Lib_shadcn_ListView', { showAvatar: { value: null } })).not.toMatch(/showAvatar/);
+  });
+});
+
 describe('an enum, as before', () => {
   it('is still refused outside its values', () => {
     expect(lint('Lib_shadcn_ListView', { mode: 'bogus' })).toMatch(/unsupported property value "bogus"/);
