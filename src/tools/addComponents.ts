@@ -6,7 +6,7 @@ import { lintRenderedGeometryBlocking, lintRenderedGeometryAdvisory, type LintCo
 import { introducedLintFindings, lintComponentSlots } from '../lint.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
 import { literalCanvasColor } from '../appSettings.js';
-import { resolveParentRef } from '../componentParent.js';
+import { applyResolvedParent, resolveParentRef } from '../componentParent.js';
 import { COMPONENT_FX_GUIDANCE } from '../componentFxGuidance.js';
 
 export function addComponentsTool(client: ToolJetClient): ToolDef {
@@ -69,11 +69,11 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
       // page is refused rather than stored detached (the component would never render).
       if (existingPage) {
         const parentErrors: string[] = [];
-        for (const input of inputs as Array<ComponentInput & { parent?: string; name?: string }>) {
+        for (const input of inputs as Array<ComponentInput & { parent?: string; name?: string; slot_name?: string }>) {
           if (typeof input.parent !== 'string' || !input.parent) continue;
           const resolved = resolveParentRef(existingPage.components, input.parent);
-          if (resolved.ok) input.parent = resolved.parent;
-          else parentErrors.push(`Component "${input.name ?? '?'}": ${resolved.error}`);
+          const error = resolved.ok ? applyResolvedParent(input, resolved) : resolved.error;
+          if (error) parentErrors.push(`Component "${input.name ?? '?'}": ${error}`);
         }
         if (parentErrors.length) return fail(new Error(parentErrors.join(' ')));
       }

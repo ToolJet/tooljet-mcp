@@ -2,7 +2,7 @@ import { mapKeyRefusal } from '../mapKeyGuard.js';
 import { z } from 'zod';
 import type { AppSummary, ToolJetClient } from '../tooljetClient.js';
 import { componentInputSchema, prepareComponentBatch, type ComponentInput } from '../componentBatch.js';
-import { resolveParentRef } from '../componentParent.js';
+import { applyResolvedParent, resolveParentRef } from '../componentParent.js';
 import { fail, ok, type ToolDef } from './types.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
 import { literalCanvasColor } from '../appSettings.js';
@@ -66,11 +66,11 @@ export function addComponentBatchesTool(client: ToolJetClient): ToolDef {
       for (const page of pages) {
         const existing = pageComponentsOf(page.page_id);
         if (!existing) continue;
-        for (const component of page.components as Array<{ parent?: string; name?: string }>) {
+        for (const component of page.components as Array<{ parent?: string; name?: string; slot_name?: string }>) {
           if (typeof component.parent !== 'string' || !component.parent) continue;
           const resolved = resolveParentRef(existing, component.parent);
-          if (resolved.ok) component.parent = resolved.parent;
-          else parentErrors.push(`Page ${page.page_id}: Component "${component.name ?? '?'}": ${resolved.error}`);
+          const error = resolved.ok ? applyResolvedParent(component, resolved) : resolved.error;
+          if (error) parentErrors.push(`Page ${page.page_id}: Component "${component.name ?? '?'}": ${error}`);
         }
       }
       if (parentErrors.length) return fail(new Error(`${parentErrors.join(' ')} (Nothing was saved: refused before any write.)`));
