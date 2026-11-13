@@ -70,8 +70,8 @@ function slotNames(prefix: string, ids: string[]): Set<string> {
 }
 
 /** The canvases a pack container draws now: its items' (exact while the items are a literal list, any "<prefix>_..."
- *  while they come from a binding), else those its manifest lists. Undefined for a type with no canvases, or one no
- *  known pack has. */
+ *  while they come from a binding), else those its manifest lists (none for a component that holds no children).
+ *  Undefined for a type no known pack has. */
 export function packCanvases(
   type: unknown,
   properties: Record<string, unknown> | undefined
@@ -89,7 +89,8 @@ export function packCanvases(
     }
     return { names: new Set(), prefix: container.prefix, property: container.property, bound: true };
   }
-  return listed?.length ? { names: new Set(listed), bound: false } : undefined;
+  // A known pack component its manifest lists no canvas for (a Button, a Text) draws no child at all.
+  return listed ? { names: new Set(listed), bound: false } : undefined;
 }
 
 /** The item canvases a pack container draws now, or undefined when its type is not one or its items are not a literal

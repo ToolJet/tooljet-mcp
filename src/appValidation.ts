@@ -70,7 +70,7 @@ export function validatePersistedAppSummary(summary: AppSummary, options: { canv
   errors.push(...eventValidation.errors);
   warnings.push(...eventValidation.warnings);
   for (const page of summary.pages ?? []) {
-    errors.push(...lintPackItemSlots((page.components ?? []) as LintComponent[]));
+    errors.push(...lintPackItemSlots((page.components ?? []) as LintComponent[], { persisted: true }));
     for (const component of (page.components ?? []) as HtmlFedTable[]) {
       for (const col of htmlFedTextColumns(component, summary.queries as HtmlFedQuery[])) {
         warnings.push(

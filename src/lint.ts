@@ -812,14 +812,17 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
 
 /** A child on a canvas its pack container does not draw: saved, never shown and unreachable in the editor. A plain
  *  parent is the body canvas, which a Split Pane, Stepper, Accordion Container or tabs container has none of (DVRL-129);
- *  an item canvas (tab_<id>, step_<id> ...) goes when the item's id is renamed or the item removed. */
-export function lintPackItemSlots(components: LintComponent[]): string[] {
+ *  an item canvas (tab_<id>, step_<id> ...) goes when the item's id is renamed or the item removed. A pack component
+ *  that draws no canvas (a Button) holds no child at all. `persisted`: the components are as saved, where a child on the
+ *  container's bare id is never drawn either (a pack draws its body on "<id>-body"); a tool's input there means body. */
+export function lintPackItemSlots(components: LintComponent[], options: { persisted?: boolean } = {}): string[] {
   const errors: string[] = [];
   for (const container of components) {
     const drawn = packCanvases(container.type, container.properties);
     if (!drawn) continue;
     const key = componentKey(container);
     for (const component of components) {
+      const bare = !!container.id && component.parent === container.id && !component.slotName && !component.parentRef;
       const slot =
         key && component.parentRef === key
           ? (component.slotName ?? 'body')
@@ -828,10 +831,25 @@ export function lintPackItemSlots(components: LintComponent[]): string[] {
             : container.id && component.parent?.startsWith(`${container.id}-`)
               ? component.parent.slice(container.id.length + 1)
               : undefined;
-      if (!slot || drawn.names.has(slot) || (drawn.bound && slot.startsWith(`${drawn.prefix}_`))) continue;
+      if (!slot) continue;
       const label = `Component "${component.name ?? component.id ?? component.type}"`;
       const where = `${container.type} "${container.name ?? container.id}"`;
       const canvases = drawn.bound ? `${drawn.prefix}_<item id>` : [...drawn.names].join(', ') || 'none';
+      if (!drawn.bound && !drawn.names.size) {
+        errors.push(
+          `${label} is a child of ${where}, which draws no canvas, so it would be saved and never shown. ` +
+            'Parent it to a container (a Card, Split Pane, Stepper ...) or to the page.'
+        );
+        continue;
+      }
+      if (options.persisted && bare) {
+        errors.push(
+          `${label} is saved on ${where}'s bare id, which a pack component never draws, so it is not shown. ` +
+            `Move it with update_components (parent + slot_name: ${canvases}).`
+        );
+        continue;
+      }
+      if (drawn.names.has(slot) || (drawn.bound && slot.startsWith(`${drawn.prefix}_`))) continue;
       errors.push(
         drawn.prefix && slot.startsWith(`${drawn.prefix}_`)
           ? `${label} is on ${where}'s "${slot}" canvas, but no item of its ${drawn.property} has that id (its canvases: ${canvases}), ` +

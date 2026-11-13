@@ -91,6 +91,7 @@ describe('update_components with a raw pack canvas parent', () => {
       updates: [{ component_id: 'note', parent: `${COLLAPSE}-panel_panel2` }],
     } as never);
     expect(out.isError, String(out.content[0]!.text)).toBeFalsy();
-    expect(client.updateComponents.mock.calls[0]![0].updates[0]).toMatchObject({ parent: COLLAPSE, slotName: 'panel_panel2' });
+    // Written as the pack stores it: the container's canvas, "<id>-panel_panel2".
+    expect(client.updateComponents.mock.calls[0]![0].updates[0]).toMatchObject({ parent: `${COLLAPSE}-panel_panel2` });
   });
 });

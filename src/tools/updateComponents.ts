@@ -14,7 +14,7 @@ import {
   lintUnusableTextGeometry,
   type LintComponent,
 } from '../lint.js';
-import { applyResolvedParent, COMPONENT_SLOT_NAMES, componentSlotSchema, decodeComponentParent, encodeComponentParent, resolveParentRef } from '../componentParent.js';
+import { applyResolvedParent, COMPONENT_SLOT_NAMES, componentSlotSchema, decodeComponentParent, encodeComponentParent, isPackContainerType, resolveParentRef } from '../componentParent.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { normalizeComponentSpec, packValueAsDefault } from '../componentNormalization.js';
 import { resolveRef } from '../refResolution.js';
@@ -197,6 +197,19 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
               }
             }
           }
+          // A pack container draws every canvas, its body included, on "<id>-<slot>": the parent is written that way, as
+          // add_components does. Sent as the bare id, the moved child was saved where nothing draws it.
+          let writeSlot: typeof update.slot_name | undefined = update.slot_name;
+          if (parent) {
+            const packParent = page.components.find(
+              (candidate) => isPackContainerType(candidate.type) && (parent === candidate.id || parent!.startsWith(`${candidate.id}-`))
+            );
+            if (packParent && (slotName !== undefined || parent === packParent.id)) {
+              parent = `${packParent.id}-${slotName ?? 'body'}`;
+              slotName = undefined;
+              writeSlot = undefined;
+            }
+          }
           // A FlexContainer's childOrder holds child ids; accept child names too and write the complete order, so
           // a partial list cannot leave the rest to ToolJet's arbitrary fallback order.
           const authoredOrder = (update.definition?.properties as Record<string, unknown> | undefined)?.childOrder;
@@ -289,7 +302,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             definition: normalizedDefinition,
             name: update.name,
             parent,
-            slotName: update.slot_name,
+            slotName: writeSlot,
           });
           if (!update.definition) continue;
           errors.push(...introducedLintFindings(
