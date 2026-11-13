@@ -193,3 +193,45 @@ describe('items saved as a binding of a literal list', () => {
     expect(lintComponentSlots([saved('{{queries.q.data}}'), text('note', `${STEPPER}-step_profile`)] as never)).toEqual([]);
   });
 });
+
+// Review of PR #142: a manifest records only the canvases drawn when it was built, so Ant Tabs lists tab_tab1 alone
+// (its second tab draws lazily) though its default items are tab1 and tab2. Tabs left to their defaults with a child on
+// tab_tab2 were refused as an item that does not exist.
+describe('default item canvases come from the default items, not the recorded ones', () => {
+  const TABS = 'abababab-7777-4777-8777-abababababab';
+  const tabs = { id: TABS, name: 'tbs', type: 'Lib_antd_Tabs', properties: {} };
+  const load = async () => {
+    const { packFromBuiltin } = await import('../src/packCatalog.js');
+    const { registerLibraryPacks } = await import('../src/libraryPack.js');
+    const { registerComponentSchemas } = await import('../src/catalog.js');
+    const built = packFromBuiltin({ pack: 'antd', displayName: 'Ant Design', version: '1' } as never, {
+      components: {
+        Tabs: {
+          props: [{ name: 'items', type: 'array', default: [{ key: 'tab1', label: 'Tab 1' }, { key: 'tab2', label: 'Tab 2' }] }],
+          slots: [{ name: 'tab_tab1', kind: 'slot' }],
+        },
+      },
+    } as never)!;
+    registerLibraryPacks([built.pack]);
+    registerComponentSchemas(built.schemas);
+    return () => registerLibraryPacks(null as never);
+  };
+
+  it('accepts a child on the second default tab', async () => {
+    const unload = await load();
+    try {
+      expect(lintComponentSlots([tabs, text('two', `${TABS}-tab_tab2`)] as never)).toEqual([]);
+    } finally {
+      unload();
+    }
+  });
+
+  it('still refuses a tab the defaults do not have, naming both', async () => {
+    const unload = await load();
+    try {
+      expect(lintComponentSlots([tabs, text('three', `${TABS}-tab_tab3`)] as never).join(' ')).toMatch(/tab_tab1, tab_tab2/);
+    } finally {
+      unload();
+    }
+  });
+});

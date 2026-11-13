@@ -4,6 +4,7 @@
    and names their canvases (ToolJet packs/<pack>/src: lib/slots.ts slotNames, toItems, ui2/nav/model.ts toTabs, and
    lib/data.ts toKeyedItems), so a stranded child can be refused before it is written. */
 
+import { getComponentSchema } from './catalog.js';
 import { packSlotNames } from './libraryPack.js';
 
 const MAX_SLOT_ITEMS = 50;
@@ -81,11 +82,18 @@ export function packCanvases(
   const container = typeof type === 'string' ? CONTAINERS[type] : undefined;
   const listed = packSlotNames(type);
   if (container) {
-    // Items left out are the pack's defaults, whose canvases its manifest lists; bound ones are known only at runtime.
+    // Items left out are the pack's defaults: their canvases come from the default items (a manifest records only the
+    // canvases drawn when it was built: Ant Tabs lists its first tab alone), else from the ones it lists. Bound items
+    // are known only at runtime.
     const entry = properties?.[container.property];
     const raw = isRecord(entry) && 'value' in entry ? entry.value : entry;
-    if ((raw === undefined || raw === null) && listed?.length) {
-      return { names: new Set(listed), prefix: container.prefix, property: container.property, bound: false };
+    if (raw === undefined || raw === null) {
+      const fallback = typeof type === 'string'
+        ? getComponentSchema(type)?.properties?.find((p) => p.key === container.property)?.default
+        : undefined;
+      const defaults = fallback === undefined ? undefined : packItemSlots(type, { [container.property]: fallback });
+      if (defaults?.slots.size) return { names: defaults.slots, prefix: container.prefix, property: container.property, bound: false };
+      if (listed?.length) return { names: new Set(listed), prefix: container.prefix, property: container.property, bound: false };
     }
     return { names: new Set(), prefix: container.prefix, property: container.property, bound: true };
   }
