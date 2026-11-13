@@ -60,6 +60,15 @@ const packOfType = (type: unknown): LibraryPack | undefined =>
 
 export const isLibraryPackType = (type: unknown): type is string => !!packOfType(type);
 
+/** The canvases (ToolJet.Slot names) a pack type's manifest lists, or undefined for a type no known pack has. A
+ *  container whose canvases come from its items lists only its default items' ones. */
+export function packSlotNames(type: unknown): string[] | undefined {
+  const component = Object.values(packOfType(type)?.components ?? {}).find((entry) => entry.type === type);
+  if (!component) return undefined;
+  const slots = (component as { slots?: Array<{ name?: unknown }> }).slots ?? [];
+  return slots.map((slot) => String(slot.name ?? '')).filter(Boolean);
+}
+
 /** The globalSettings entry that pins every known pack for an app version. */
 export function libraryPins(): Record<string, string> | undefined {
   // A shipped pack (PackComponent) needs no pin: it always draws the build the release ships.

@@ -7,9 +7,9 @@ export type TabSlotName = `tab-t${number}`;
 export type ComponentSlotName = (typeof COMPONENT_SLOT_NAMES)[number] | TabSlotName;
 
 const TAB_SLOT = /^tab-(t\d+)$/;
-// An item canvas of a pack container (ToolJet.Slot `tab_<item id>`, and Stepper `step_`, Accordion `section_`, Ant
-// Collapse `panel_`): stored as "<id>-tab_t0".
-const LIBRARY_TAB_SLOT = /^(tab|step|section|panel)_[A-Za-z0-9_]+$/;
+// A pack container's canvas (a ToolJet.Slot name: Split Pane `first`, ListView `row`, a tab `tab_<item id>` ...):
+// stored as "<id>-<name>". Which names a container draws is checked against it (lint.ts lintPackItemSlots).
+const LIBRARY_TAB_SLOT = /^[A-Za-z][A-Za-z0-9_]*$/;
 const TAB_CANVAS_SUFFIX = /-(t\d+)$/;
 
 export function isComponentSlotName(value: unknown): value is ComponentSlotName {
@@ -17,6 +17,11 @@ export function isComponentSlotName(value: unknown): value is ComponentSlotName 
     typeof value === 'string' &&
     ((COMPONENT_SLOT_NAMES as readonly string[]).includes(value) || TAB_SLOT.test(value) || LIBRARY_TAB_SLOT.test(value))
   );
+}
+
+/** A slot ToolJet's own containers draw: header, body, footer, Kanban modal or a Tabs tab. */
+export function isNativeSlotName(value: unknown): boolean {
+  return typeof value === 'string' && ((COMPONENT_SLOT_NAMES as readonly string[]).includes(value) || TAB_SLOT.test(value));
 }
 
 export function isTabSlot(value: unknown): value is TabSlotName {

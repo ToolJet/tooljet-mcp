@@ -1,5 +1,5 @@
 import { isLibraryPackType, serverLibraryPacks } from './libraryPack.js';
-import { packItemSlots } from './packItemSlots.js';
+import { packCanvases } from './packItemSlots.js';
 import { defaultPack } from './componentLibrary.js';
 // Mechanical, catalog-independent checks that catch the render bugs the skill can only *advise*
 // against. Used by add_component(s) (component-level, pre-write) and validate_app (whole-app,
@@ -35,7 +35,7 @@ import { lintBindingSyntax } from './bindingSyntax.js';
 import { lintSelectedRowProjections } from './selectedRowProjection.js';
 import { dropdownDefaultVisibilityWarning, dropdownSelfDefaultWarning } from './dropdownDefaultContract.js';
 import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from './catalog.js';
-import { decodeComponentParent, isComponentSlotName, isTabSlot, type ComponentSlotName } from './componentParent.js';
+import { decodeComponentParent, isComponentSlotName, isNativeSlotName, isPackContainerType, isTabSlot, type ComponentSlotName } from './componentParent.js';
 import {
   FORM_SCHEMA_FIELD_TYPE_SET,
   SAFE_GENERATED_FORM_FIELD_TYPE_SET,
@@ -782,7 +782,9 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
     const parent = placement ? refs.get(placement.parentId) : undefined;
     // A FlexContainer has one canvas, its body: slot_name "body" there is the plain parent, as for a Container.
     // A published library's container (libraryPack.ts) takes its own named slots (ToolJet.Slot, e.g. tab_details).
-    const validParent = isLibraryPackType(parent?.type) ? !['header', 'footer', 'modal'].includes(slotName) && !isTabSlot(slotName) :
+    // Which of its canvases a pack container draws is checked in lintPackItemSlots; a ToolJet container takes only its own.
+    const validParent = isLibraryPackType(parent?.type) || isPackContainerType(parent?.type) ? !['header', 'footer', 'modal'].includes(slotName) && !isTabSlot(slotName) :
+      !isNativeSlotName(slotName) ? false :
       slotName === 'modal' ? parent?.type === 'Kanban' : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? '') :
       SLOT_PARENT_TYPES.has(parent?.type ?? '') || (slotName === 'body' && ['Kanban', 'ShadKanban', 'FlexContainer'].includes(parent?.type ?? ''));
     // A child in a tab the Tabs does not have is saved but never shown (review 2026-09-25). Static tabItems only:
@@ -808,27 +810,35 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
   return errors;
 }
 
-/** A child on a pack container's item canvas (tab_<id>, step_<id> ...) that the container no longer draws: renaming an
- *  item's id or removing the item left it saved, never shown and unreachable in the editor. */
+/** A child on a canvas its pack container does not draw: saved, never shown and unreachable in the editor. A plain
+ *  parent is the body canvas, which a Split Pane, Stepper, Accordion Container or tabs container has none of (DVRL-129);
+ *  an item canvas (tab_<id>, step_<id> ...) goes when the item's id is renamed or the item removed. */
 export function lintPackItemSlots(components: LintComponent[]): string[] {
   const errors: string[] = [];
   for (const container of components) {
-    const drawn = packItemSlots(container.type, container.properties);
+    const drawn = packCanvases(container.type, container.properties);
     if (!drawn) continue;
     const key = componentKey(container);
     for (const component of components) {
       const slot =
         key && component.parentRef === key
-          ? component.slotName
-          : container.id && component.parent?.startsWith(`${container.id}-`)
-            ? component.parent.slice(container.id.length + 1)
-            : undefined;
-      if (!slot || !slot.startsWith(`${drawn.prefix}_`) || drawn.slots.has(slot)) continue;
+          ? (component.slotName ?? 'body')
+          : container.id && component.parent === container.id
+            ? (component.slotName ?? 'body')
+            : container.id && component.parent?.startsWith(`${container.id}-`)
+              ? component.parent.slice(container.id.length + 1)
+              : undefined;
+      if (!slot || drawn.names.has(slot) || (drawn.bound && slot.startsWith(`${drawn.prefix}_`))) continue;
+      const label = `Component "${component.name ?? component.id ?? component.type}"`;
+      const where = `${container.type} "${container.name ?? container.id}"`;
+      const canvases = drawn.bound ? `${drawn.prefix}_<item id>` : [...drawn.names].join(', ') || 'none';
       errors.push(
-        `Component "${component.name ?? component.id ?? component.type}" is on ${container.type} "${container.name ?? container.id}"'s ` +
-          `"${slot}" canvas, but no item of its ${drawn.property} has that id (its canvases: ${[...drawn.slots].join(', ') || 'none'}), ` +
-          'so it would be saved and never shown. Keep the item id, move the child to one of those canvases in the same call ' +
-          '(parent + slot_name), or delete it first with delete_components.'
+        drawn.prefix && slot.startsWith(`${drawn.prefix}_`)
+          ? `${label} is on ${where}'s "${slot}" canvas, but no item of its ${drawn.property} has that id (its canvases: ${canvases}), ` +
+              'so it would be saved and never shown. Keep the item id, move the child to one of those canvases in the same call ' +
+              '(parent + slot_name), or delete it first with delete_components.'
+          : `${label} is on ${where}'s "${slot}" canvas, which it does not draw, so it would be saved and never shown. ` +
+              `Pass slot_name with the parent: ${canvases}.`
       );
     }
   }

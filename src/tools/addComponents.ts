@@ -3,7 +3,7 @@ import type { AppSummary, ToolJetClient } from '../tooljetClient.js';
 import { componentInputSchema, prepareComponentBatch, type ComponentInput } from '../componentBatch.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { lintRenderedGeometryBlocking, lintRenderedGeometryAdvisory, type LintComponent } from '../lint.js';
-import { introducedLintFindings } from '../lint.js';
+import { introducedLintFindings, lintComponentSlots } from '../lint.js';
 import { normalizePlanBindingAliases } from '../planBindingAliases.js';
 import { literalCanvasColor } from '../appSettings.js';
 import { resolveParentRef } from '../componentParent.js';
@@ -82,6 +82,16 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
         flexContainerIds: existingPage?.components.filter((component) => component.type === 'FlexContainer').map((component) => component.id),
       });
       if (prepared.errors.length) return fail(new Error(prepared.errors.join(' ')));
+      // Slots against the parents already on the page: the batch alone does not hold a parent added earlier, so a child
+      // on a canvas it does not draw (a plain parent under a Split Pane or Stepper) passed and never showed (DVRL-129).
+      if (existingPage) {
+        const existing = existingPage.components as LintComponent[];
+        const slotErrors = introducedLintFindings(
+          lintComponentSlots(existing),
+          lintComponentSlots([...existing, ...(prepared.components as LintComponent[])])
+        );
+        if (slotErrors.length) return fail(new Error(`${slotErrors.join(' ')} (Nothing was saved: refused before any write.)`));
+      }
       // Geometry against the page as it already is, not the batch alone: a targeted add that lands on top
       // of an existing table (a modal's buttons placed at root, a caption over a register) passed here
       // unremarked in the 2026-09-12 review because only the new components were checked together.

@@ -4,6 +4,8 @@
    and names their canvases (ToolJet packs/<pack>/src: lib/slots.ts slotNames, toItems, ui2/nav/model.ts toTabs, and
    lib/data.ts toKeyedItems), so a stranded child can be refused before it is written. */
 
+import { packSlotNames } from './libraryPack.js';
+
 const MAX_SLOT_ITEMS = 50;
 
 type Ids = (raw: unknown[]) => string[];
@@ -67,13 +69,49 @@ function slotNames(prefix: string, ids: string[]): Set<string> {
   return taken;
 }
 
+/** The canvases a pack container draws now: its items' (exact while the items are a literal list, any "<prefix>_..."
+ *  while they come from a binding), else those its manifest lists. Undefined for a type with no canvases, or one no
+ *  known pack has. */
+export function packCanvases(
+  type: unknown,
+  properties: Record<string, unknown> | undefined
+): { names: Set<string>; prefix?: string; property?: string; bound: boolean } | undefined {
+  const items = packItemSlots(type, properties);
+  if (items) return { names: items.slots, prefix: items.prefix, property: items.property, bound: false };
+  const container = typeof type === 'string' ? CONTAINERS[type] : undefined;
+  const listed = packSlotNames(type);
+  if (container) {
+    // Items left out are the pack's defaults, whose canvases its manifest lists; bound ones are known only at runtime.
+    const entry = properties?.[container.property];
+    const raw = isRecord(entry) && 'value' in entry ? entry.value : entry;
+    if ((raw === undefined || raw === null) && listed?.length) {
+      return { names: new Set(listed), prefix: container.prefix, property: container.property, bound: false };
+    }
+    return { names: new Set(), prefix: container.prefix, property: container.property, bound: true };
+  }
+  return listed?.length ? { names: new Set(listed), bound: false } : undefined;
+}
+
 /** The item canvases a pack container draws now, or undefined when its type is not one or its items are not a literal
  *  list (a binding resolves only at runtime). */
 export function packItemSlots(type: unknown, properties: Record<string, unknown> | undefined): { prefix: string; property: string; slots: Set<string> } | undefined {
   const container = typeof type === 'string' ? CONTAINERS[type] : undefined;
   if (!container) return undefined;
   const entry = properties?.[container.property];
-  const raw = isRecord(entry) && 'value' in entry ? entry.value : entry;
+  const raw = literalList(isRecord(entry) && 'value' in entry ? entry.value : entry);
   if (!Array.isArray(raw)) return undefined;
   return { prefix: container.prefix, property: container.property, slots: slotNames(container.prefix, container.ids(raw)) };
+}
+
+/** A list as saved: an array, or ToolJet's binding of a literal one ({{[{"id":"a"}]}}, how the pack's defaults and the
+ *  editor save it). Anything else, a binding that reads app data among them, stays as it is. */
+function literalList(value: unknown): unknown {
+  if (typeof value !== 'string') return value;
+  const body = /^\s*\{\{\s*(\[[\s\S]*\])\s*\}\}\s*$/.exec(value)?.[1];
+  if (!body) return value;
+  try {
+    return JSON.parse(body);
+  } catch {
+    return value;
+  }
 }

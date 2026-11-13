@@ -132,6 +132,8 @@ function packFromManifest(
       ...(entry.roleProps ? { roleProps: entry.roleProps } : {}),
       ...(entry.roleEvents ? { roleEvents: entry.roleEvents } : {}),
       ...(entry.roleActions ? { roleActions: entry.roleActions } : {}),
+      // The canvases a child may go on (lint.ts lintPackItemSlots), as the offline catalog lists them.
+      ...(entry.slots?.length ? { slots: entry.slots } : {}),
     };
     schemas[type] = {
       type,
