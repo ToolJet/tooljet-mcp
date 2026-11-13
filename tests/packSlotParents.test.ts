@@ -23,6 +23,8 @@ const tabs = 'aaaaaaaa-2222-4222-8222-aaaaaaaaaaaa';
 const collapse = 'bbbbbbbb-3333-4333-8333-bbbbbbbbbbbb';
 const split = 'dddddddd-4444-4444-8444-dddddddddddd';
 const child = 'eeeeeeee-5555-4555-8555-eeeeeeeeeeee';
+const button = 'ffffffff-6666-4666-8666-ffffffffffff';
+const legacyBox = '99999999-7777-4777-8777-999999999999';
 
 // Two shipped packs, as GET /api/builtin-packs and their manifests give them (the slots each component drew when built).
 beforeAll(async () => {
@@ -40,6 +42,9 @@ beforeAll(async () => {
               slots: [{ name: 'tab_tab1', kind: 'slot' }],
               props: [{ name: 'items', type: 'array', default: [{ key: 'tab1', label: 'Tab 1' }, { key: 'tab2', label: 'Tab 2' }] }],
             },
+            // A widget that draws no child canvas: the shipped manifests leave its slots out.
+            Button: { props: [{ name: 'label', type: 'string', default: 'Button' }] },
+            Divider: { slots: [], props: [] },
             Collapse: {
               slots: [{ name: 'panel_panel1', kind: 'slot' }, { name: 'panel_panel2', kind: 'slot' }],
               props: [{ name: 'items', type: 'array', default: [{ key: 'panel1', label: 'Panel 1' }, { key: 'panel2', label: 'Panel 2' }] }],
@@ -58,6 +63,11 @@ beforeAll(async () => {
             },
           },
         },
+      },
+      // A pack whose manifest predates slots: none of its components says where children go, so nothing is checked.
+      {
+        info: { pack: 'legacy', displayName: 'Legacy', version: '1.0.0', hash: 'h3' },
+        manifest: { components: { Box: { props: [] } } },
       },
     ]
   );
@@ -136,6 +146,38 @@ describe('update_layout and update_components under a pack widget', () => {
     const result = await updateComponentsTool(h.client).handler({ ...ids, updates: [{ component_id: 'note', slot_name: 'tab_tab2' }] } as never);
     expect(result.isError, text(result)).not.toBe(true);
     expect(h.parentWritten('PUT')).toBe(`${tabs}-tab_tab2`);
+  });
+
+  // Review on tooljet-mcp#143: the parent's slots are read after the batch's own edits to it, in either order.
+  it.each([
+    ['after', (move: object, grow: object) => [grow, move]],
+    ['before', (move: object, grow: object) => [move, grow]],
+  ])('a move into a tab added %s it in the same update_components batch is saved', async (_, order) => {
+    const h = harness([pack(tabs, 'tabs1', 'Lib_antd_Tabs'), note()]);
+    const items = [{ key: 'tab1', label: 'Tab 1' }, { key: 'tab2', label: 'Tab 2' }, { key: 'returns', label: 'Returns' }];
+    const result = await updateComponentsTool(h.client).handler({
+      ...ids,
+      updates: order(
+        { component_id: 'note', parent: 'tabs1', slot_name: 'tab_returns' },
+        { component_id: 'tabs1', definition: { properties: { items: { value: items } } } }
+      ),
+    } as never);
+    expect(result.isError, text(result)).not.toBe(true);
+    expect(h.parentWritten('PUT')).toBe(`${tabs}-tab_returns`);
+  });
+
+  it('a move into a tab the same batch removes is refused', async () => {
+    const h = harness([pack(tabs, 'tabs1', 'Lib_antd_Tabs'), note()]);
+    const result = await updateComponentsTool(h.client).handler({
+      ...ids,
+      updates: [
+        { component_id: 'note', parent: 'tabs1', slot_name: 'tab_tab2' },
+        { component_id: 'tabs1', definition: { properties: { items: { value: [{ key: 'tab1', label: 'Tab 1' }] } } } },
+      ],
+    } as never);
+    expect(result.isError).toBe(true);
+    expect(text(result)).toMatch(/"tab_tab2"/);
+    expect(h.writes).toEqual([]);
   });
 
   it('DVRL-60: a slot the parent does not draw is refused before any write', async () => {
@@ -217,6 +259,44 @@ describe('add_components under a pack widget already on the page', () => {
     );
     expect(result.isError, text(result)).not.toBe(true);
     expect(parent).toBe(`${tabs}-tab_anything`);
+  });
+});
+
+// Review on tooljet-mcp#143: a pack widget its manifest gives no slots draws no child canvas, so a child under it is
+// refused, with or without slot_name; one from a manifest that says nothing of slots is left unchecked.
+describe('a pack widget that draws no child canvas', () => {
+  const add = async (components: Array<Record<string, unknown>>, input: Record<string, unknown>) => {
+    const h = harness(components);
+    const result = await addComponentsTool(h.client).handler({
+      ...ids,
+      components: [{ name: 'note2', type: 'Text', properties: { text: 'Hi' }, layout: { top: 0, left: 0, width: 10, height: 40 }, ...input }],
+    } as never);
+    return { result, posts: h.writes.filter((w) => w.method === 'POST') };
+  };
+
+  it.each([
+    ['Button (slots left out)', 'Lib_antd_Button', { slot_name: 'first' }],
+    ['Button (slots left out)', 'Lib_antd_Button', {}],
+    ['Divider (slots: [])', 'Lib_antd_Divider', { slot_name: 'body' }],
+  ])('a child under a %s is refused before any write', async (_, type, input) => {
+    const { result, posts } = await add([pack(button, 'btn', type)], { parent: button, ...input });
+    expect(result.isError).toBe(true);
+    expect(text(result)).toMatch(/draws no child components/);
+    expect(posts).toEqual([]);
+  });
+
+  it('update_components refuses a move under it', async () => {
+    const h = harness([pack(button, 'btn', 'Lib_antd_Button'), note()]);
+    const result = await updateComponentsTool(h.client).handler({ ...ids, updates: [{ component_id: 'note', parent: 'btn' }] } as never);
+    expect(result.isError).toBe(true);
+    expect(text(result)).toMatch(/draws no child components/);
+    expect(h.writes).toEqual([]);
+  });
+
+  it('a pack whose manifest names no slots at all is not checked', async () => {
+    const { result, posts } = await add([pack(legacyBox, 'box', 'Lib_legacy_Box')], { parent: legacyBox, slot_name: 'first' });
+    expect(result.isError, text(result)).not.toBe(true);
+    expect(posts).toHaveLength(1);
   });
 });
 

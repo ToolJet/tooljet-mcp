@@ -112,6 +112,7 @@ function packFromManifest(
   const schemas: Record<string, ComponentSchema> = {};
   const definitions: Record<string, unknown> = {};
   const components: LibraryPack['components'] = {};
+  const manifestListsSlots = Object.values(manifest.components).some((entry) => entry.slots !== undefined);
   for (const [name, entry] of Object.entries(manifest.components)) {
     const type = `${prefix}${name}`;
     const allProps = entry.props ?? [];
@@ -123,7 +124,9 @@ function packFromManifest(
     const props = allProps.filter((p) => !runtimeValue(p));
     const fits = entry.fit === true;
     // Where its child components go: fixed slots and one per item (packSlots.ts).
-    const slotInfo = packSlotsFromManifest(entry.slots, allProps);
+    // A manifest that lists slots for its containers leaves them out for widgets that draw none (a Button), so there an
+    // absent list is an empty one; a manifest that lists none anywhere says nothing, and its children stay unchecked.
+    const slotInfo = packSlotsFromManifest(entry.slots ?? (manifestListsSlots ? [] : undefined), allProps);
     components[name] = {
       type,
       props: props.map((p) => p.name),

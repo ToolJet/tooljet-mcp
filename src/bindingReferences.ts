@@ -4,7 +4,14 @@ import { bindingSpans } from './bindingSpans.js';
 /** What ToolJet publishes for a query (frontend _stores: resolvedSlice tracks isLoading, data, rawData, request,
  *  response, responseHeaders, metadata and error; every query has its id), and the methods it adds in code. */
 export const QUERY_PROPERTIES = ['data', 'rawData', 'isLoading', 'error', 'metadata', 'request', 'response', 'responseHeaders', 'id'];
-const QUERY_MEMBERS = new Set([...QUERY_PROPERTIES, 'run', 'reset', 'getData', 'getRawData', 'getloadingState', 'abort']);
+/** What an async workflow query adds while it runs (queryPanelSlice.js setResolvedQuery): jobId when it starts,
+ *  progress and currentData on each progress event. */
+const ASYNC_WORKFLOW_QUERY_PROPERTIES = ['jobId', 'progress', 'currentData'];
+const QUERY_MEMBERS = new Set([
+  ...QUERY_PROPERTIES,
+  ...ASYNC_WORKFLOW_QUERY_PROPERTIES,
+  'run', 'reset', 'getData', 'getRawData', 'getloadingState', 'abort',
+]);
 
 /** queries.<name>.<member> reads in {{ }} bindings whose member no query has: they read undefined at runtime. */
 export function unknownQueryMemberReads(value: unknown): Array<{ name: string; member: string }> {

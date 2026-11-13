@@ -117,6 +117,18 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
         const changedComponents: Array<{ before: LintComponent; after: LintComponent }> = [];
         let placementChanged = false;
         const layoutFixes: Array<{ componentId: string; desktop: never }> = [];
+        // A pack parent's slots come from its items, which another entry of this batch may change: one entry adding
+        // tab "returns" and another moving a child into tab_returns is one valid edit, in either order (review on
+        // tooljet-mcp#143). Slots are read from each component's properties as the whole batch leaves them.
+        const batchProperties = new Map<string, Record<string, unknown>>();
+        for (const update of args.updates) {
+          const properties = (update.definition as { properties?: Record<string, unknown> } | undefined)?.properties;
+          if (!properties) continue;
+          const target = resolveRef(page.components, update.component_id, 'Component', '');
+          if (!target.ok) continue;
+          const id = target.target.id;
+          batchProperties.set(id, { ...(batchProperties.get(id) ?? target.target.properties ?? {}), ...properties });
+        }
         const resolvedUpdates: Array<{
           componentId: string;
           definition?: Record<string, unknown>;
@@ -203,7 +215,11 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             const parentComponent = page.components.find((component) => component.id === decoded.parentId);
             if (parentComponent && isPackContainerType(parentComponent.type)) {
               const named = slotName ?? (parent !== decoded.parentId ? decoded.slotName : undefined);
-              const slot = resolvePackSlot(parentComponent, named, current.name ?? current.id);
+              const slot = resolvePackSlot(
+                { ...parentComponent, properties: batchProperties.get(parentComponent.id) ?? parentComponent.properties },
+                named,
+                current.name ?? current.id
+              );
               if (!slot.ok) {
                 errors.push(slot.error);
                 continue;
