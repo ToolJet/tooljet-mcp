@@ -15,7 +15,8 @@ import { packDefaultDefinition } from './packDefaults.js';
 import { downgradeFlexForLibrary, libraryTypeOf, missingLibraryPins, toLibraryComponent } from './libraryPack.js';
 import { assertPersistableQueryToggles } from './queryToggles.js';
 import { hasNonEmptyDefinition } from './strictEntry.js';
-import { decodeComponentParent, encodeComponentParent, type ComponentSlotName } from './componentParent.js';
+import { decodeComponentParent, encodeComponentParent, isPackContainerType, type ComponentSlotName } from './componentParent.js';
+import { resolvePackSlot } from './packSlots.js';
 import {
   appendedChildOrders,
   batchChildOrders,
@@ -726,6 +727,8 @@ export interface UpdateComponentSpec {
   name?: string;
   parent?: string;
   slotName?: ComponentSlotName;
+  /** The new parent's type: a pack widget's slots, body included, are suffixed (componentParent.ts). */
+  parentType?: string;
 }
 export interface UpdateComponentsParams {
   appId: string;
@@ -749,6 +752,8 @@ export interface UpdateLayoutsParams {
     mobile?: ComponentLayout;
     parent?: string;
     slotName?: ComponentSlotName;
+    /** The new parent's type: a pack widget's slots, body included, are suffixed (componentParent.ts). */
+    parentType?: string;
   }>;
 }
 export interface UpdateQueryParams {
@@ -2707,6 +2712,16 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       (params.pageComponents ?? []).map((component) => [component.id, component.type] as [string, string | undefined])
     );
     for (const e of entries) typeById.set(e.id, e.spec.type);
+    // A child of a pack widget goes in a slot the widget draws (packSlots.ts), checked against the widget as this batch
+    // or the page has it; a parent known only by its type keeps its item slots open.
+    const parentFacts = new Map<string, { name?: string; properties?: unknown }>(
+      (params.pageComponents ?? []).map((component) => [
+        component.id,
+        { name: (component as { name?: string }).name, properties: component.properties },
+      ])
+    );
+    for (const e of entries) parentFacts.set(e.id, { name: e.spec.name, properties: e.spec.properties });
+    const slotErrors: string[] = [];
     for (const e of entries) {
       if (e.spec.parent && e.spec.parentRef) {
         throw new Error(`createComponents "${e.spec.name}": set EITHER parent or parentRef, not both.`);
@@ -2722,8 +2737,26 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         throw new Error(`createComponents "${e.spec.name}": slotName requires parent or parentRef.`);
       }
       if (resolvedParent) {
-        const parentType = typeById.get(decodeComponentParent(resolvedParent).parentId) ?? e.spec.parentType;
-        dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName, parentType);
+        const decoded = decodeComponentParent(resolvedParent);
+        const parentType = typeById.get(decoded.parentId) ?? e.spec.parentType;
+        let slotName = e.spec.slotName;
+        if (isPackContainerType(parentType)) {
+          // A parent given as one of its canvases ("<id>-panel_a") names that slot.
+          const named = slotName ?? (resolvedParent !== decoded.parentId ? decoded.slotName : undefined);
+          const facts = parentFacts.get(decoded.parentId);
+          const slot = resolvePackSlot(
+            { id: decoded.parentId, name: facts?.name, type: parentType, properties: facts?.properties },
+            named,
+            e.spec.name,
+            { propertiesKnown: !!facts }
+          );
+          if (!slot.ok) {
+            slotErrors.push(slot.error);
+            continue;
+          }
+          slotName = slot.slotName;
+        }
+        dto.parent = encodeComponentParent(resolvedParent, slotName, parentType);
       }
       // A Form submits when the Button whose component id is buttonToSubmit is clicked (Form.jsx); a plan names that
       // Button by its client ref (or its name when it has none), as lint checks, and ids are made here.
@@ -2735,6 +2768,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         dto.properties = { ...(dto.properties as Record<string, unknown>), buttonToSubmit: { ...submit, value: submitId } };
       }
       diff[e.id] = dto;
+    }
+    if (slotErrors.length) {
+      throw new Error(`createComponents: ${slotErrors.join(' ')} (Nothing was saved: refused before any write.)`);
     }
 
     // FlexContainer renders its children in properties.childOrder order (ids), not by grid position. A container
@@ -2886,7 +2922,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         diff[u.componentId] = {
           component: {
             ...(u.name !== undefined ? { name: u.name } : {}),
-            ...(u.parent !== undefined ? { parent: encodeComponentParent(u.parent, u.slotName) } : {}),
+            ...(u.parent !== undefined ? { parent: encodeComponentParent(u.parent, u.slotName, u.parentType) } : {}),
           },
         };
       }
@@ -2964,7 +3000,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       if (l.slotName !== undefined && l.parent === undefined) {
         throw new Error(`updateLayouts "${l.componentId}": slotName requires parent.`);
       }
-      if (l.parent !== undefined) entry.component = { parent: encodeComponentParent(l.parent, l.slotName) };
+      if (l.parent !== undefined) entry.component = { parent: encodeComponentParent(l.parent, l.slotName, l.parentType) };
       diff[l.componentId] = entry;
     }
     const res = await auth.authedFetch(

@@ -19,7 +19,7 @@ import {
   lintTextFormat,
   lintUntriggeredDataQueries, lintAutomaticWrites,
 } from './renderReadiness.js';
-import { bindingReferences, dynamicBindingNamespaces } from './bindingReferences.js';
+import { bindingReferences, dynamicBindingNamespaces, QUERY_PROPERTIES, unknownQueryMemberReads } from './bindingReferences.js';
 import { bindingSpans } from './bindingSpans.js';
 import { componentNameError } from './componentName.js';
 import { lintEditPrefill, lintUninitializedWriteSelections } from './editPrefillContract.js';
@@ -34,7 +34,8 @@ import { lintBindingSyntax } from './bindingSyntax.js';
 import { lintSelectedRowProjections } from './selectedRowProjection.js';
 import { dropdownDefaultVisibilityWarning, dropdownSelfDefaultWarning } from './dropdownDefaultContract.js';
 import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from './catalog.js';
-import { decodeComponentParent, isComponentSlotName, isTabSlot, type ComponentSlotName } from './componentParent.js';
+import { decodeComponentParent, isComponentSlotName, isNativeSlotName, isTabSlot, type ComponentSlotName } from './componentParent.js';
+import { packSlotsOfType, resolvePackSlot } from './packSlots.js';
 import {
   FORM_SCHEMA_FIELD_TYPE_SET,
   SAFE_GENERATED_FORM_FIELD_TYPE_SET,
@@ -776,12 +777,20 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
   for (const component of components) {
     const persistedSlot = component.parent ? decodeComponentParent(component.parent).slotName : 'body';
     const slotName = component.slotName ?? (persistedSlot === 'body' ? undefined : persistedSlot);
-    if (!slotName) continue;
     const placement = parentPlacement(component);
     const parent = placement ? refs.get(placement.parentId) : undefined;
+    // A pack widget whose pack this server read takes the slots it draws (packSlots.ts), and a child with none named
+    // only where it has a body or a single slot (QA DVRL-9, DVRL-60).
+    if (parent && isLibraryPackType(parent.type) && packSlotsOfType(parent.type)) {
+      const slot = resolvePackSlot(parent, slotName, String(component.name ?? component.id ?? component.type));
+      if (!slot.ok) errors.push(slot.error);
+      continue;
+    }
+    if (!slotName) continue;
     // A FlexContainer has one canvas, its body: slot_name "body" there is the plain parent, as for a Container.
     // A published library's container (libraryPack.ts) takes its own named slots (ToolJet.Slot, e.g. tab_details).
     const validParent = isLibraryPackType(parent?.type) ? !['header', 'footer', 'modal'].includes(slotName) && !isTabSlot(slotName) :
+      !isNativeSlotName(slotName) ? false :
       slotName === 'modal' ? parent?.type === 'Kanban' : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? '') :
       SLOT_PARENT_TYPES.has(parent?.type ?? '') || (slotName === 'body' && ['Kanban', 'ShadKanban', 'FlexContainer'].includes(parent?.type ?? ''));
     // A child in a tab the Tabs does not have is saved but never shown (review 2026-09-25). Static tabItems only:
@@ -1688,6 +1697,16 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
     );
   }
 
+  // A ModuleViewer shows the module its moduleAppId names. add_components wrote one with properties {}: it showed
+  // nothing, and ToolJet failed every load of the app with a 500 (QA DVRL-1, 2026-11-12; the server skips it now).
+  if (spec.type === 'ModuleViewer' && !String(propVal(props, 'moduleAppId') ?? '').trim()) {
+    errors.push(
+      `ModuleViewer "${label}" needs properties.moduleAppId, the co_relation_id of a module app in this workspace. ` +
+        'Without one it shows nothing, and a ToolJet server without the fix fails to load the app. ' +
+        'Place the module in the ToolJet editor if its id is not known.'
+    );
+  }
+
   // A binding nested inside another (a per-row "{{rowData.x}}" inside a "{{[...]}}" columns binding) ends the outer
   // one at its first "}}": the property resolves to a broken fragment (a shadcn Table fell back to generated columns,
   // 2026-10-10).
@@ -1860,7 +1879,7 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
 
   if (spec.slotName !== undefined) {
     if (!isComponentSlotName(spec.slotName)) {
-      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, Kanban modal, or a Tabs tab (tab-t0, tab-t1, ...).`);
+      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, Kanban modal, a Tabs tab (tab-t0, tab-t1, ...), or a pack widget's slot (body, tab_<key>, panel_<key>, first ...).`);
     }
     if (!spec.parentRef && !spec.parent) {
       errors.push(`Component "${label}": slot_name requires parent_ref or parent.`);
@@ -3768,19 +3787,19 @@ export function validateAppStructure(summary: AppSummary, options: { canvasColor
           `is named "${ref.name}". Binding names are case-sensitive; use the persisted name.`);
       }
     }
+    // A query publishes a fixed set of values: validate_app passed {{queries.getData.dataa}}, which reads undefined and
+    // shows nothing (QA DVRL-112, 2026-11-12). A query that does not exist is reported above.
+    for (const read of unknownQueryMemberReads(source.value)) {
+      const query = summary.queries.find((q) => q.name === read.name || q.id === read.name);
+      const key = `queries.${query?.name ?? read.name}.${read.member}`;
+      if (!query || seen.has(key)) continue;
+      seen.add(key);
+      const meant = nearestCatalogKey(read.member, QUERY_PROPERTIES);
+      errors.push(`${source.label} reads ${key}, but a query has no ${read.member}; it reads undefined at runtime. ` +
+        (meant ? `Read queries.${query.name}.${meant}. ` : '') + `A query has ${QUERY_PROPERTIES.join(', ')}.`);
+    }
   }
   for (const c of allComponents) {
-    const blob = JSON.stringify({ p: c.properties ?? {}, s: c.styles ?? {} });
-    for (const m of blob.matchAll(/\{\{\s*queries\.([A-Za-z0-9_]+)/g)) {
-      if (!queryNames.has(m[1])) {
-        warnings.push(`Component "${c.name ?? c.id}" binds {{queries.${m[1]}…}} but no query is named "${m[1]}".`);
-      }
-    }
-    for (const m of blob.matchAll(/\{\{\s*components\.([A-Za-z0-9_]+)/g)) {
-      if (!componentNames.has(m[1])) {
-        warnings.push(`Component "${c.name ?? c.id}" binds {{components.${m[1]}…}} but no component is named "${m[1]}".`);
-      }
-    }
     const r = lintComponentSpec({
       id: c.id,
       name: c.name ?? c.id,

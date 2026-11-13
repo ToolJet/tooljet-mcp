@@ -1,32 +1,41 @@
 import { z } from 'zod';
+import { packSlotsOfType } from './packSlots.js';
 
 export const COMPONENT_SLOT_NAMES = ['body', 'header', 'footer', 'modal'] as const;
 
 /** A tab of a Tabs component: "tab-<tab item id>", the item ids being t0, t1, ... */
 export type TabSlotName = `tab-t${number}`;
-export type ComponentSlotName = (typeof COMPONENT_SLOT_NAMES)[number] | TabSlotName;
+/** A pack widget's own slot (ToolJet.Slot names: letters, digits and underscores), e.g. tab_overview, panel_a, first. */
+export type PackSlotName = string & {};
+export type ComponentSlotName = (typeof COMPONENT_SLOT_NAMES)[number] | TabSlotName | PackSlotName;
 
 const TAB_SLOT = /^tab-(t\d+)$/;
-// A tab of a published library's tabs container (ToolJet.Slot `tab_<item id>`): stored as "<id>-tab_t0".
-const LIBRARY_TAB_SLOT = /^tab_[A-Za-z0-9_]+$/;
+// A pack widget's slot (ToolJet.Slot), stored as "<id>-<slot>": a published library's tab (tab_t0), a pack's panel_a,
+// step_review, first ... Which ones a widget draws is checked against its pack (packSlots.ts).
+const PACK_SLOT = /^[A-Za-z][A-Za-z0-9_]*$/;
 const TAB_CANVAS_SUFFIX = /-(t\d+)$/;
+// A canvas of a component (component ids are UUIDs) and the slot it is: "<uuid>-<slot>".
+const SLOT_CANVAS = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-([A-Za-z][A-Za-z0-9_]*)$/i;
 
 export function isComponentSlotName(value: unknown): value is ComponentSlotName {
-  return (
-    typeof value === 'string' &&
-    ((COMPONENT_SLOT_NAMES as readonly string[]).includes(value) || TAB_SLOT.test(value) || LIBRARY_TAB_SLOT.test(value))
-  );
+  return typeof value === 'string' && (TAB_SLOT.test(value) || PACK_SLOT.test(value));
+}
+
+/** A slot one of ToolJet's own containers has: header, body, footer, Kanban modal, a Tabs tab (tab-t0). */
+export function isNativeSlotName(value: unknown): boolean {
+  return typeof value === 'string' && ((COMPONENT_SLOT_NAMES as readonly string[]).includes(value) || TAB_SLOT.test(value));
 }
 
 export function isTabSlot(value: unknown): value is TabSlotName {
   return typeof value === 'string' && TAB_SLOT.test(value);
 }
 
-/** The slot_name a tool accepts: header, body, footer, Kanban modal, or a tab ("tab-t0"). */
+/** The slot_name a tool accepts: header, body, footer, Kanban modal, a tab ("tab-t0"), or a pack widget's slot
+ *  (tab_overview, panel_a, first ...), which is checked against the parent when it is written. */
 export const componentSlotSchema = z.union([
   z.enum(COMPONENT_SLOT_NAMES),
   z.string().regex(TAB_SLOT),
-  z.string().regex(LIBRARY_TAB_SLOT),
+  z.string().regex(PACK_SLOT),
 ]) as unknown as z.ZodType<ComponentSlotName>;
 
 const ENCODED_SLOT_SUFFIXES = ['header', 'footer', 'modal'] as const;
@@ -46,7 +55,17 @@ export function isPackContainerType(type: unknown): boolean {
  */
 export function encodeComponentParent(parentId: string, slotName?: ComponentSlotName, parentType?: string): string {
   // a pack widget's body is a slot of its own even when the caller leaves slot_name to its default
-  if (isPackContainerType(parentType)) return `${decodeComponentParent(parentId).parentId}-${slotName ?? 'body'}`;
+  if (isPackContainerType(parentType)) {
+    const base = decodeComponentParent(parentId).parentId;
+    const slots = packSlotsOfType(parentType);
+    // With no slot named: the body, or the only slot of a widget without one (as resolvePackSlot picks).
+    const slot =
+      slotName ?? (slots && !slots.fixed.includes('body') && slots.fixed.length === 1 && !slots.families.length ? slots.fixed[0] : 'body');
+    // A slot drawn once per item (a List's row, a Kanban's card) is the widget's own canvas, as ToolJet's List view rows
+    // are: a child stored on "<id>-row" was never drawn (QA DVRL-110).
+    if (slots?.rows.includes(slot)) return base;
+    return `${base}-${slot}`;
+  }
   if (!slotName) return parentId;
   if (slotName === 'body') return decodeComponentParent(parentId).parentId;
   const base = decodeComponentParent(parentId).parentId;
@@ -68,6 +87,10 @@ export function decodeComponentParent(parentId: string): {
   }
   const tab = TAB_CANVAS_SUFFIX.exec(parentId);
   if (tab) return { parentId: parentId.slice(0, -tab[0].length), slotName: `tab-${tab[1]}` as TabSlotName };
+  // Any other slot of a component, a pack widget's ("<id>-tab_tab1", "<id>-panel_a", "<id>-first"): read as the bare
+  // parent, a move to another slot was stored on top of the old one, "<id>-tab_tab1-tab_tab2" (QA DVRL-8).
+  const slot = SLOT_CANVAS.exec(parentId);
+  if (slot) return { parentId: slot[1], slotName: slot[2] };
   return { parentId, slotName: 'body' };
 }
 

@@ -1818,7 +1818,9 @@ describe('validateAppStructure', () => {
     expect(warnings).not.toMatch(/serverSideSort.*onSort/);
   });
 
-  it('warns on a binding to a non-existent query', () => {
+  // QA DVRL-111 (2026-11-12): validate_app and lint_app_spec reported every broken binding twice, as an error and again
+  // as a warning.
+  it('reports a binding to a non-existent query or component once, as an error', () => {
     const bad: AppSummary = {
       ...base,
       pages: [
@@ -1827,11 +1829,19 @@ describe('validateAppStructure', () => {
           name: 'Home',
           components: [
             { id: 'c1', name: 'table1', type: 'Table', properties: { data: { value: '{{queries.missing.data}}' }, dataSourceSelector: { value: 'rawJson' }, autogenerateColumns: { value: true } } },
+            { id: 'c2', name: 'text1', type: 'Text', properties: { text: { value: '{{components.nope.value}}' } } },
           ],
         },
       ],
     };
-    expect(validateAppStructure(bad).warnings.join(' ')).toMatch(/binds \{\{queries\.missing…\}\} but no query is named "missing"/);
+    const { errors, warnings } = validateAppStructure(bad);
+    expect(errors.filter((e) => e.includes('"missing"'))).toEqual([
+      expect.stringMatching(/Component "table1" references queries\.missing, but no query is named "missing"/),
+    ]);
+    expect(errors.filter((e) => e.includes('"nope"'))).toEqual([
+      expect.stringMatching(/Component "text1" references components\.nope, but no component is named "nope"/),
+    ]);
+    expect(warnings.filter((w) => w.includes('"missing"') || w.includes('"nope"'))).toEqual([]);
   });
 
   it('warns on duplicate component names within a page', () => {

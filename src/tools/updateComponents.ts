@@ -14,7 +14,8 @@ import {
   lintUnusableTextGeometry,
   type LintComponent,
 } from '../lint.js';
-import { COMPONENT_SLOT_NAMES, componentSlotSchema, decodeComponentParent, encodeComponentParent, resolveParentRef } from '../componentParent.js';
+import { COMPONENT_SLOT_NAMES, componentSlotSchema, decodeComponentParent, encodeComponentParent, isPackContainerType, resolveParentRef } from '../componentParent.js';
+import { resolvePackSlot } from '../packSlots.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { normalizeComponentSpec, packValueAsDefault } from '../componentNormalization.js';
 import { resolveRef } from '../refResolution.js';
@@ -103,7 +104,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
         definition?: Record<string, unknown>;
         name?: string;
         parent?: string;
-        slot_name?: 'body' | 'header' | 'footer' | 'modal';
+        slot_name?: string;
       }>;
     }) {
       try {
@@ -116,12 +117,25 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
         const changedComponents: Array<{ before: LintComponent; after: LintComponent }> = [];
         let placementChanged = false;
         const layoutFixes: Array<{ componentId: string; desktop: never }> = [];
+        // A pack parent's slots come from its items, which another entry of this batch may change: one entry adding
+        // tab "returns" and another moving a child into tab_returns is one valid edit, in either order (review on
+        // tooljet-mcp#143). Slots are read from each component's properties as the whole batch leaves them.
+        const batchProperties = new Map<string, Record<string, unknown>>();
+        for (const update of args.updates) {
+          const properties = (update.definition as { properties?: Record<string, unknown> } | undefined)?.properties;
+          if (!properties) continue;
+          const target = resolveRef(page.components, update.component_id, 'Component', '');
+          if (!target.ok) continue;
+          const id = target.target.id;
+          batchProperties.set(id, { ...(batchProperties.get(id) ?? target.target.properties ?? {}), ...properties });
+        }
         const resolvedUpdates: Array<{
           componentId: string;
           definition?: Record<string, unknown>;
           name?: string;
           parent?: string;
-          slotName?: 'body' | 'header' | 'footer' | 'modal';
+          slotName?: string;
+          parentType?: string;
         }> = [];
         for (const update of args.updates) {
           // Validate explicit renames only: legacy names must not block unrelated repairs.
@@ -193,6 +207,28 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
               }
             }
           }
+          // Under a pack widget: a slot it draws, its body or only slot by default (packSlots.ts). Read as the bare parent,
+          // a child of tab_tab1 moved to tab_tab2 was stored on "<id>-tab_tab1-tab_tab2" and never shown (QA DVRL-8).
+          let parentType: string | undefined;
+          if (parent) {
+            const decoded = decodeComponentParent(parent);
+            const parentComponent = page.components.find((component) => component.id === decoded.parentId);
+            if (parentComponent && isPackContainerType(parentComponent.type)) {
+              const named = slotName ?? (parent !== decoded.parentId ? decoded.slotName : undefined);
+              const slot = resolvePackSlot(
+                { ...parentComponent, properties: batchProperties.get(parentComponent.id) ?? parentComponent.properties },
+                named,
+                current.name ?? current.id
+              );
+              if (!slot.ok) {
+                errors.push(slot.error);
+                continue;
+              }
+              parent = decoded.parentId;
+              slotName = slot.slotName;
+              parentType = parentComponent.type;
+            }
+          }
           // A FlexContainer's childOrder holds child ids; accept child names too and write the complete order, so
           // a partial list cannot leave the rest to ToolJet's arbitrary fallback order.
           const authoredOrder = (update.definition?.properties as Record<string, unknown> | undefined)?.childOrder;
@@ -237,7 +273,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             styles: { ...(current.styles ?? {}), ...(definition?.styles ?? {}) },
             layouts: current.layouts as Parameters<typeof lintComponentSpec>[0]['layouts'],
             parent: parent !== undefined
-              ? encodeComponentParent(parent, slotName)
+              ? encodeComponentParent(parent, slotName, parentType)
               : current.parent,
             slotName: slotName,
           };
@@ -285,7 +321,8 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             definition: normalizedDefinition,
             name: update.name,
             parent,
-            slotName: update.slot_name,
+            slotName: parentType ? slotName : update.slot_name,
+            parentType,
           });
           if (!update.definition) continue;
           errors.push(...introducedLintFindings(
@@ -328,7 +365,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
         // A child moved into a FlexContainer joins the end of its childOrder, as the editor does on a drop.
         const appended = appendedChildOrders(page.components, reparentAdditions(page.components, resolvedUpdates.map((update) => ({
           componentId: update.componentId,
-          parent: update.parent !== undefined ? encodeComponentParent(update.parent, update.slotName) : undefined,
+          parent: update.parent !== undefined ? encodeComponentParent(update.parent, update.slotName, update.parentType) : undefined,
         }))));
         if (appended.size) {
           await client.updateComponents({

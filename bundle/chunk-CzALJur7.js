@@ -1,139 +1,11 @@
 import { createRequire } from "node:module";
-import { s as surfaceAroundResolver, l as lintSelectedRowProjections, a as lintOversizedWidths, b as lintHtmlContentHeight, c as lintHtmlRootSurface, d as lintUnguardedComponentRefs, e as lintEmbeddedBindingSyntax, f as lintChartDataShape, g as lintUnguardedSelectionText, h as lintTextFormat, i as lintTableColumnsShape, B as BARE_QUERY_DATA_BINDING, j as lintBindingNames, k as lintUntriggeredDataQueries, m as lintAutomaticWrites, n as bindingSpans, p as parseHtml, o as stripHtmlBindings } from "./chunk-BxMc6J_M.js";
-import { ed as __toESM, e8 as getComponentSchema, e7 as getCatalog, ea as getLegacyComponentReplacement } from "./chunk-COW2iNTB.js";
-import { r as require_lib } from "./chunk-B6ef8g-7.js";
-import { p as parseExpression, a as parse } from "./chunk-DpvBXwyI.js";
-import { b0 as external_exports } from "./chunk-D-yEFdPv.js";
+import { s as surfaceAroundResolver, l as lintSelectedRowProjections, a as lintOversizedWidths, b as lintHtmlContentHeight, c as lintHtmlRootSurface, d as lintUnguardedComponentRefs, e as lintEmbeddedBindingSyntax, f as lintChartDataShape, g as lintUnguardedSelectionText, h as serverLibraryPacks, r as retiredUi2Name, i as lintTextFormat, j as lintTableColumnsShape, k as isLibraryPackType, B as BARE_QUERY_DATA_BINDING, m as lintComponentStateBindings, n as lintEmptyDateWrites, o as lintBindingNames, p as lintUntriggeredDataQueries, q as lintAutomaticWrites, t as bindingSpans, u as parseHtml, v as stripHtmlBindings } from "./chunk-TA_njdhN.js";
+import { ed as __toESM, e8 as getComponentSchema, e7 as getCatalog, ea as getLegacyComponentReplacement } from "./chunk-addBGscc.js";
+import { r as require_lib } from "./chunk-Ces3cV_q.js";
+import { p as parseExpression, a as parse } from "./chunk-SVZaINty.js";
+import { b0 as external_exports } from "./chunk-Bk2YZ8cg.js";
 import { readFileSync } from "node:fs";
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
-var discovered = null;
-var offline;
-function libraryPacksAll() {
-  if (discovered)
-    return discovered;
-  if (offline === void 0) {
-    try {
-      const path = resolve(dirname(fileURLToPath(import.meta.url)), "../data/library-pack.json");
-      offline = JSON.parse(readFileSync(path, "utf8"));
-    } catch {
-      offline = null;
-    }
-  }
-  return offline ? [offline] : [];
-}
-function registerLibraryPacks(packs) {
-  discovered = packs;
-}
-var serverLibraryPacks = () => discovered ?? [];
-function libraryPack() {
-  return libraryPacksAll()[0] ?? null;
-}
-var isBuiltin = (pack) => pack.kind === "builtin";
-var packOfType = (type) => typeof type === "string" ? libraryPacksAll().find((p) => type.startsWith(p.prefix)) : void 0;
-var isLibraryPackType = (type) => !!packOfType(type);
-function libraryPins() {
-  const packs = libraryPacksAll().filter((p) => !isBuiltin(p));
-  return packs.length ? Object.fromEntries(packs.map((p) => [p.correlationId.replace(/-/g, ""), p.version])) : void 0;
-}
-var dashless = (id) => id.replace(/-/g, "");
-var propertyValue = (properties, key) => {
-  const entry = properties?.[key];
-  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
-};
-function libraryCorrelationId(component) {
-  const properties = component.properties;
-  const id = propertyValue(properties, "correlationId");
-  return typeof id === "string" && id && !propertyValue(properties, "codePage") ? id : void 0;
-}
-var isPinned = (pins, correlationId) => pins[dashless(correlationId)] != null || pins[correlationId] != null;
-function missingLibraryPins(components, pins) {
-  const missing = {};
-  for (const component of components) {
-    const id = libraryCorrelationId(component);
-    if (!id || isPinned(pins, id))
-      continue;
-    const pack = libraryPacksAll().find((p) => !isBuiltin(p) && p.correlationId === id);
-    if (pack)
-      missing[dashless(id)] = pack.version;
-  }
-  return Object.keys(missing).length ? missing : void 0;
-}
-function unpinnedLibraries(components, pins) {
-  const byLibrary = /* @__PURE__ */ new Map();
-  for (const component of components) {
-    const id = libraryCorrelationId(component);
-    if (!id || isPinned(pins, id))
-      continue;
-    const library = String(propertyValue(component.properties, "libraryName") ?? id);
-    byLibrary.set(library, [...byLibrary.get(library) ?? [], String(component.name ?? "unnamed")]);
-  }
-  return [...byLibrary].map(([library, names]) => ({ library, components: names }));
-}
-function toLibraryComponent(spec) {
-  const pack = packOfType(spec.type);
-  if (!pack)
-    return spec;
-  const componentName = spec.type.slice(pack.prefix.length);
-  if (isBuiltin(pack)) {
-    return {
-      ...spec,
-      type: "PackComponent",
-      properties: {
-        ...spec.properties ?? {},
-        pack: { value: pack.pack },
-        componentName: { value: componentName }
-      }
-    };
-  }
-  return {
-    ...spec,
-    type: "LibraryComponent",
-    properties: {
-      ...spec.properties ?? {},
-      libraryId: { value: pack.libraryId },
-      correlationId: { value: pack.correlationId },
-      libraryName: { value: pack.libraryName },
-      componentName: { value: componentName }
-    }
-  };
-}
-function libraryTypeOf(component) {
-  if (component.type !== "LibraryComponent" && component.type !== "PackComponent")
-    return void 0;
-  const value2 = (key) => {
-    const entry = component.properties?.[key];
-    return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
-  };
-  if (component.type === "PackComponent") {
-    const id = value2("pack");
-    const name2 = value2("componentName");
-    if (typeof id !== "string" || typeof name2 !== "string")
-      return void 0;
-    const known = libraryPacksAll().find((p) => p.pack === id);
-    return !known || known.components[name2] ? `Lib_${id}_${name2}` : void 0;
-  }
-  const pack = libraryPacksAll().find((p) => p.correlationId === value2("correlationId"));
-  const name = value2("componentName");
-  return pack && typeof name === "string" && pack.components[name] ? `${pack.prefix}${name}` : void 0;
-}
-var FLEX_DOWNGRADE = {
-  alignItems: { stretch: "flex-start", "last baseline": "flex-start" },
-  justifyContent: { "space-between": "flex-start" }
-};
-function downgradeFlexForLibrary(spec) {
-  if (process.env.TOOLJET_FLEX_V1 !== "1" || !libraryPack() || spec.type !== "FlexContainer" || !spec.properties)
-    return spec;
-  const properties = { ...spec.properties };
-  for (const [key, map] of Object.entries(FLEX_DOWNGRADE)) {
-    const entry = properties[key];
-    const value2 = entry && typeof entry === "object" ? entry.value : entry;
-    if (typeof value2 === "string" && map[value2])
-      properties[key] = { value: map[value2] };
-  }
-  return { ...spec, properties };
-}
 var defaultPack = () => {
   const raw = process.env.MCP_AGENT_PACK;
   return (raw === void 0 ? "shadcn" : raw).trim().toLowerCase() || void 0;
@@ -215,6 +87,9 @@ function bindsNamespace(value2, namespace) {
   }
   return false;
 }
+function shadows(value2, namespace) {
+  return value2.type === "VariableDeclarator" && bindsNamespace(value2.id, namespace) || /^(Function|Class)(Declaration|Expression)$/.test(value2.type) && bindsNamespace(value2.id, namespace) || Array.isArray(value2.params) && value2.params.some((item) => bindsNamespace(item, namespace)) || value2.type === "CatchClause" && bindsNamespace(value2.param, namespace) || value2.type === "WithStatement" || value2.type === "CallExpression" && isNode(value2.callee) && value2.callee.type === "Identifier" && value2.callee.name === "eval";
+}
 function namespaceReads(code, namespace) {
   const { source, ids } = maskSavedIds(code);
   return namespaceAccesses(source, namespace).flatMap((read) => read.name === void 0 ? [] : [{ ...read, name: ids.get(read.name) ?? read.name }]);
@@ -248,7 +123,7 @@ function namespaceAccesses(code, namespace) {
     }
     if (!isNode(value2))
       return;
-    if (value2.type === "VariableDeclarator" && bindsNamespace(value2.id, namespace) || /^(Function|Class)(Declaration|Expression)$/.test(value2.type) && bindsNamespace(value2.id, namespace) || Array.isArray(value2.params) && value2.params.some((item) => bindsNamespace(item, namespace)) || value2.type === "CatchClause" && bindsNamespace(value2.param, namespace) || value2.type === "WithStatement" || value2.type === "CallExpression" && isNode(value2.callee) && value2.callee.type === "Identifier" && value2.callee.name === "eval")
+    if (shadows(value2, namespace))
       shadowed = true;
     if ((value2.type === "MemberExpression" || value2.type === "OptionalMemberExpression") && isNode(value2.object) && value2.object.type === "Identifier" && value2.object.name === namespace && isNode(value2.property)) {
       const name = !value2.computed && value2.property.type === "Identifier" ? value2.property.name : value2.computed && value2.property.type === "StringLiteral" ? value2.property.value : void 0;
@@ -266,8 +141,72 @@ function namespaceAccesses(code, namespace) {
 function runjsQueryReferences(code) {
   return [...new Set(namespaceReads(code, "queries").map((read) => read.name))];
 }
+function namespaceMemberReads(code, namespace) {
+  const { source, ids } = maskSavedIds(code);
+  let root;
+  try {
+    root = parse(source, { sourceType: "script", allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true });
+  } catch {
+    return [];
+  }
+  const isMember = (value2) => isNode(value2) && (value2.type === "MemberExpression" || value2.type === "OptionalMemberExpression");
+  const literal2 = (member2) => {
+    const property = member2.property;
+    if (!isNode(property))
+      return void 0;
+    if (!member2.computed && property.type === "Identifier")
+      return String(property.name);
+    if (member2.computed && property.type === "StringLiteral")
+      return String(property.value);
+    return void 0;
+  };
+  const reads = [];
+  let shadowed = false;
+  const visit = (value2) => {
+    if (Array.isArray(value2)) {
+      value2.forEach(visit);
+      return;
+    }
+    if (!isNode(value2))
+      return;
+    if (shadows(value2, namespace))
+      shadowed = true;
+    const entry = isMember(value2) ? value2.object : void 0;
+    if (isMember(entry) && isNode(entry.object) && entry.object.type === "Identifier" && entry.object.name === namespace) {
+      const name = literal2(entry);
+      const member2 = literal2(value2);
+      if (name && member2)
+        reads.push({ name: ids.get(name) ?? name, member: member2 });
+    }
+    for (const child of Object.values(value2))
+      visit(child);
+  };
+  visit(root);
+  return shadowed ? [] : reads;
+}
 function runjsComponentReferences(code) {
   return [...new Set(namespaceReads(code, "components").map((read) => read.name))];
+}
+var QUERY_PROPERTIES = ["data", "rawData", "isLoading", "error", "metadata", "request", "response", "responseHeaders", "id"];
+var ASYNC_WORKFLOW_QUERY_PROPERTIES = ["jobId", "progress", "currentData"];
+var QUERY_MEMBERS = /* @__PURE__ */ new Set([
+  ...QUERY_PROPERTIES,
+  ...ASYNC_WORKFLOW_QUERY_PROPERTIES,
+  "run",
+  "reset",
+  "getData",
+  "getRawData",
+  "getloadingState",
+  "abort"
+]);
+function unknownQueryMemberReads(value2) {
+  if (Array.isArray(value2))
+    return value2.flatMap(unknownQueryMemberReads);
+  if (value2 && typeof value2 === "object")
+    return Object.values(value2).flatMap(unknownQueryMemberReads);
+  if (typeof value2 !== "string")
+    return [];
+  return bindingSpans(value2).flatMap((binding) => namespaceMemberReads(`(${binding.body})`, "queries")).filter((read) => !QUERY_MEMBERS.has(read.member));
 }
 function bindingReferences(value2) {
   if (Array.isArray(value2))
@@ -553,267 +492,6 @@ function lintSurfaceInsets(c) {
     return [];
   return [`Text "${c.name ?? c.id}": left-aligned text sits on a rounded colored surface without an authored content inset. Native Text's styles.padding does not add inner text padding. Use padded HTML content (with enough height), inset native Text within a Container, or center a compact metric when appropriate. Keep transparent headings/plain labels unchanged; verify the visible text-to-card edge spacing.`];
 }
-var UI2_COMMON_RENAMES = {
-  actions: { visibility: "setVisibility", disable: "setDisable", loading: "setLoading" }
-};
-var CHART = { exposed: { clickedDatum: "clickedDataPoint" } };
-var PICKER = { events: { onChange: "onSelect" }, actions: { clear: "clearValue" } };
-var UI2_RENAMES = {
-  ShadAreaChart: CHART,
-  ShadBarChart: CHART,
-  ShadComboChart: CHART,
-  ShadFunnelChart: CHART,
-  ShadHeatmapChart: CHART,
-  ShadLineChart: CHART,
-  ShadPieChart: CHART,
-  ShadRadarChart: CHART,
-  ShadRadialChart: CHART,
-  ShadScatterChart: CHART,
-  ShadBreadcrumb: { events: { onItemClick: "onItemClicked" } },
-  ShadButtonGroup: { exposed: { values: "selected" } },
-  ShadCalendar: { events: { onMonthChange: "onMonthChanged" } },
-  ShadCardGrid: { events: { onCardClick: "onCardClicked" } },
-  ShadCarousel: { events: { onSlideChange: "onSlideChanged", onSlideClick: "onSlideClicked" } },
-  ShadCheckbox: { actions: { setChecked: "setValue" } },
-  ShadColorPicker: { exposed: { selectedColorHex: "value", rgb: "selectedColorRGB", rgba: "selectedColorRGBA" } },
-  ShadCombobox: { events: { onChange: "onSelect" } },
-  ShadDatePicker: {
-    events: { onChange: "onSelect" },
-    actions: { setDate: "setValue", clear: "clearValue" },
-    exposed: { selectedDate: "value" }
-  },
-  ShadDateTimePicker: { ...PICKER, actions: { setDate: "setValue", clear: "clearValue" } },
-  ShadEmpty: { events: { onAction: "onActionClicked" } },
-  ShadFileUpload: { actions: { clear: "clearFiles" }, exposed: { files: "file" } },
-  ShadHero: { events: { onActionClick: "onActionClicked", onSecondaryActionClick: "onSecondaryActionClicked" } },
-  ShadImage: { properties: { src: "source", alt: "alternativeText", fit: "imageFit" } },
-  ShadKanban: {
-    events: { onCardClicked: "onCardSelected" },
-    actions: { updateCard: "updateCardData" },
-    exposed: {
-      cards: "updatedCardData",
-      selectedCard: "lastSelectedCard",
-      lastMove: "lastCardMovement",
-      movedCard: "lastCardMovement.card"
-    }
-  },
-  ShadLink: { properties: { href: "linkTarget", text: "linkText", target: "targetType" } },
-  ShadListView: {
-    events: { onRowClicked: "onRecordClicked" },
-    exposed: { selectedRow: "selectedRecord", selectedRowId: "selectedRecordId" }
-  },
-  ShadMap: {
-    events: { onMapClick: "onMapClicked", onShapeClick: "onShapeClicked", onLocationPick: "onLocationPicked" }
-  },
-  ShadMultiselect: { events: { onChange: "onSelect" } },
-  ShadNavigation: { events: { onSelect: "onClick" }, actions: { setActive: "selectItem" }, exposed: { activeItem: "selectedItem" } },
-  ShadPhoneInput: { actions: { setCountry: "setCountryCode" } },
-  ShadNumberInput: { actions: { setValue: "setText" } },
-  ShadProgressList: { events: { onItemClick: "onItemClicked" } },
-  ShadQuestionnaire: { events: { onStepChange: "onStepChanged" } },
-  ShadRadioGroup: { events: { onChange: "onSelectionChange" } },
-  ShadRecordList: {
-    events: { onRowClicked: "onItemClicked", onRecordClicked: "onItemClicked" },
-    exposed: {
-      selectedRecord: "selectedItem",
-      selectedRow: "selectedItem",
-      selectedRecordId: "selectedItemId",
-      selectedRowId: "selectedItemId"
-    }
-  },
-  ShadSchedule: { events: { onBookingClick: "onBookingClicked", onSlotClick: "onSlotClicked" } },
-  ShadSelect: { events: { onChange: "onSelect" } },
-  ShadSteps: { actions: { setDisabled: "setDisable" }, properties: { schema: "steps" } },
-  ShadTable: { properties: { pageSize: "rowsPerPage" } },
-  ShadTags: { events: { onTagClick: "onTagClicked" } },
-  ShadTagsInput: {
-    events: { onTagRemoved: "onTagDeleted" },
-    exposed: { tags: "values", value: "values", selectedTags: "values" }
-  },
-  ShadTimePicker: { ...PICKER, actions: { setTime: "setValue", clear: "clearValue" } },
-  ShadTimeline: { events: { onItemClick: "onItemClicked" } },
-  ShadToggleGroup: { exposed: { selected: "value" } }
-};
-function retiredUi2Name(type, kind, name) {
-  if (!type || !type.startsWith("Shad"))
-    return void 0;
-  const own = UI2_RENAMES[type]?.[kind];
-  if (own && Object.prototype.hasOwnProperty.call(own, name))
-    return own[name];
-  const common = UI2_COMMON_RENAMES[kind];
-  return common && Object.prototype.hasOwnProperty.call(common, name) ? common[name] : void 0;
-}
-var isNode2 = (value2) => !!value2 && typeof value2 === "object" && typeof value2.type === "string";
-var isMember = (value2) => isNode2(value2) && ["MemberExpression", "OptionalMemberExpression"].includes(value2.type);
-function memberName(node) {
-  const property = node.property;
-  if (!isNode2(property))
-    return void 0;
-  if (!node.computed && property.type === "Identifier")
-    return String(property.name);
-  if (node.computed && property.type === "StringLiteral")
-    return String(property.value);
-  return void 0;
-}
-function bindsComponents(value2) {
-  if (!isNode2(value2))
-    return false;
-  if (value2.type === "Identifier")
-    return value2.name === "components";
-  if (value2.type === "RestElement")
-    return bindsComponents(value2.argument);
-  if (value2.type === "AssignmentPattern")
-    return bindsComponents(value2.left);
-  if (value2.type === "ArrayPattern")
-    return value2.elements.some(bindsComponents);
-  if (value2.type === "ObjectPattern")
-    return value2.properties.some((p) => bindsComponents(p.type === "RestElement" ? p.argument : p.value));
-  return false;
-}
-function lintComponentStateBindings(value2, components, path) {
-  if (Array.isArray(value2))
-    return value2.flatMap((child, i) => lintComponentStateBindings(child, components, `${path}[${i}]`));
-  if (value2 && typeof value2 === "object")
-    return Object.entries(value2).flatMap(([key, child]) => lintComponentStateBindings(child, components, `${path}.${key}`));
-  if (typeof value2 !== "string")
-    return [];
-  const binding = value2.trim().match(/^\{\{([\s\S]*)\}\}$/);
-  let root;
-  if (binding) {
-    try {
-      root = parseExpression(binding[1]);
-    } catch {
-      return [];
-    }
-  } else if (/\.code$/.test(path)) {
-    try {
-      root = parse(value2, { sourceType: "script", allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true }).program;
-    } catch {
-      return [];
-    }
-  } else
-    return [];
-  const wrongNames = /* @__PURE__ */ new Set();
-  let shadowed = false;
-  const visit = (node) => {
-    if (Array.isArray(node)) {
-      node.forEach(visit);
-      return;
-    }
-    if (!isNode2(node))
-      return;
-    if (node.type === "VariableDeclarator" && bindsComponents(node.id) || /^(Function|Class)(Declaration|Expression)$/.test(node.type) && bindsComponents(node.id) || Array.isArray(node.params) && node.params.some(bindsComponents) || node.type === "CatchClause" && bindsComponents(node.param) || node.type === "WithStatement" || node.type === "CallExpression" && isNode2(node.callee) && node.callee.type === "Identifier" && node.callee.name === "eval")
-      shadowed = true;
-    const prop2 = isMember(node) ? memberName(node) : void 0;
-    if (prop2 && isMember(node.object) && isMember(node.object.object)) {
-      const value3 = node.object;
-      const owner = value3.object;
-      if (isNode2(owner.object) && owner.object.type === "Identifier" && owner.object.name === "components") {
-        const name = memberName(owner);
-        const variable = memberName(value3);
-        const type = name ? components.find((c) => c.name === name)?.type : void 0;
-        if (name && variable && type && missingMember(type, variable, prop2)) {
-          wrongNames.add(`${name}\0${type}\0${variable}.${prop2}`);
-        }
-      }
-    }
-    if (prop2 && isMember(node.object)) {
-      const owner = node.object;
-      if (isNode2(owner.object) && owner.object.type === "Identifier" && owner.object.name === "components") {
-        const name = memberName(owner);
-        const type = name ? components.find((c) => c.name === name)?.type : void 0;
-        if (name && type && (WRONG_ALIASES[type]?.[prop2] || retiredUi2Message(type, prop2, name))) {
-          wrongNames.add(`${name}\0${type}\0${prop2}`);
-        }
-      }
-    }
-    Object.values(node).forEach(visit);
-  };
-  visit(root);
-  return shadowed ? [] : [...wrongNames].map((key) => {
-    const [name, type, prop2] = key.split("\0");
-    if (prop2.includes(".")) {
-      const [variable, member2] = prop2.split(".");
-      return `${path}: ${type} "${name}" ${variable} has no ${member2}; it reads undefined at runtime. It has ${missingMember(type, variable, member2).join(", ")}.`;
-    }
-    return `${path}: ${WRONG_ALIASES[type]?.[prop2]?.(name) ?? retiredUi2Message(type, prop2, name)}`;
-  });
-}
-function retiredUi2Message(type, prop2, name) {
-  if (!type.startsWith("Shad") && !isLibraryPackType(type))
-    return void 0;
-  const schema = getComponentSchema(type);
-  if (schema?.exposedVariables?.some((variable) => variable.name === prop2))
-    return void 0;
-  if (schema?.actions?.some((action2) => action2.handle === prop2))
-    return void 0;
-  const exposed = retiredUi2Name(type, "exposed", prop2);
-  if (exposed) {
-    return `${type} "${name}" exposes ${exposed}, not ${prop2} (renamed); read components.${name}.${exposed}. The old name is undefined at runtime.`;
-  }
-  const action = retiredUi2Name(type, "actions", prop2);
-  if (action) {
-    return `${type} "${name}" action ${prop2}() was renamed ${action}(); call components.${name}.${action}(...). The old name is undefined at runtime.`;
-  }
-  const published = schema?.exposedVariables?.map((variable) => variable.name) ?? [];
-  if (prop2 === "id" || !published.length)
-    return void 0;
-  const meant = UI2_MEANT[prop2]?.find((candidate) => published.includes(candidate));
-  return `${type} "${name}" has no ${prop2}; it reads undefined at runtime. ` + (meant ? `Read components.${name}.${meant}. ` : "") + `It publishes ${published.join(", ")}.`;
-}
-var UI2_MEANT = {
-  checked: ["value"],
-  selected: ["value", "selectedItem"],
-  selectedValue: ["value"],
-  text: ["value"],
-  selectedCard: ["selectedItem", "lastSelectedCard"],
-  selectedCardId: ["selectedItemId", "selectedItem"],
-  selectedId: ["selectedItemId", "selectedRowId"],
-  selectedRow: ["selectedItem", "selectedRow"]
-};
-var WRONG_ALIASES = {
-  Kanban: {
-    selectedCard: (name) => `Kanban "${name}" does not expose selectedCard. Use components.${name}.lastSelectedCard after onCardSelected; the incorrect alias is undefined and opens an empty detail form. Keep the selected record id and raw fields for edits.`
-  },
-  // A claims build filtered its queue on a radio's label, the caption "Type", so no row matched (2026-10-04).
-  RadioButtonV2: {
-    label: (name) => `RadioButton "${name}": label is the field's caption, not the chosen option, so a filter or write reading it matches nothing. Read components.${name}.value for the selection.`
-  },
-  // Widgets/ReorderableList/ReorderableList.jsx publishes values, including before onChange; never value.
-  ReorderableList: {
-    value: (name) => `ReorderableList "${name}" does not expose value. Use components.${name}.values for the ordered option values; the incorrect alias is undefined, even with optional chaining or a fallback.`
-  },
-  // MultiselectV2.jsx setInputValue publishes values before onSelect; DropdownV2's scalar value is different.
-  MultiselectV2: {
-    value: (name) => `MultiselectV2 "${name}" does not expose value. Use components.${name}.values for the selected option values; the incorrect alias is undefined, even with optional chaining or a fallback. An empty selection is [].`
-  }
-};
-var DATE_PICKERS = /* @__PURE__ */ new Set(["ShadDatePicker", "ShadDateTimePicker", "ShadTimePicker", "Datepicker", "DatePickerV2", "DatetimePickerV2", "TimePicker"]);
-function lintEmptyDateWrites(value2, components, path) {
-  if (Array.isArray(value2))
-    return value2.flatMap((child, i) => lintEmptyDateWrites(child, components, `${path}[${i}]`));
-  if (value2 && typeof value2 === "object")
-    return Object.entries(value2).flatMap(([key, child]) => lintEmptyDateWrites(child, components, `${path}.${key}`));
-  if (typeof value2 !== "string" || !/\.(create_row|update_rows\.columns)\.[^.]+\.value$/.test(path))
-    return [];
-  const read = value2.trim().match(/^\{\{\s*components\??\.([A-Za-z_$][\w$]*)\??\.value\s*\}\}$/);
-  const picker = read ? components.find((c) => c.name === read[1]) : void 0;
-  if (!picker?.type || !DATE_PICKERS.has(picker.type))
-    return [];
-  return [`${path}: ${picker.type} "${picker.name}" is '' while no date is picked, and a date or timestamp column rejects '', so the save fails whenever it is left blank. Write {{ components.${picker.name}.value || null }}.`];
-}
-function missingMember(type, variable, member2) {
-  if (!type.startsWith("Shad"))
-    return void 0;
-  const entry = getComponentSchema(type)?.exposedVariables?.find((v) => v.name === variable);
-  const shape = entry?.shape;
-  if (!shape || typeof shape !== "object" || Array.isArray(shape))
-    return void 0;
-  const members = Object.keys(shape);
-  if (members.includes("...") || members.includes(member2))
-    return void 0;
-  return members;
-}
 var cached;
 var normalizedName = (value2) => value2.trim().replace(/^icon/i, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
 function icons() {
@@ -985,12 +663,169 @@ function dropdownDefaultVisibilityWarning(value2, label) {
   }
   return missing ? [`DropdownV2 "${label}": an option declares a default but omits visible. ToolJet's default lookup requires visible:true even though the menu displays options with omitted visibility. Set visible:true on selectable default options; preserve intentional hidden options. Otherwise edit preselection can appear blank. This is advisory; unknown dynamic option sources are not verified.`] : [];
 }
+var import_json5 = __toESM(require_lib(), 1);
+var toSlotName = (prefix, key) => `${prefix}_${key.replace(/[^A-Za-z0-9_]/g, "_")}`;
+var keyTag = (key) => {
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i += 1)
+    h = Math.imul(h ^ key.charCodeAt(i), 16777619);
+  return (h >>> 0).toString(36);
+};
+function slotNames(prefix, keys) {
+  const names = [];
+  const taken = /* @__PURE__ */ new Set();
+  const distinct2 = [...new Set(keys)];
+  const plain = distinct2.filter((k) => /^[A-Za-z0-9_]*$/.test(k));
+  const folded = distinct2.filter((k) => !/^[A-Za-z0-9_]*$/.test(k)).sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
+  for (const k of plain) {
+    names.push(toSlotName(prefix, k));
+    taken.add(toSlotName(prefix, k));
+  }
+  for (const k of folded) {
+    const base = toSlotName(prefix, k);
+    let name = base;
+    for (let n = 1; taken.has(name); n += 1)
+      name = `${base}_${keyTag(k)}${n > 1 ? `_${n}` : ""}`;
+    names.push(name);
+    taken.add(name);
+  }
+  return names;
+}
+var KEY_FIELDS = ["key", "id", "value", "name"];
+function keysOf(items, field) {
+  const keys = items.map((item) => {
+    const value2 = item && typeof item === "object" ? item[field] : void 0;
+    return typeof value2 === "string" || typeof value2 === "number" ? String(value2) : "";
+  });
+  return keys.every(Boolean) ? keys : null;
+}
+function packSlotsFromManifest(slots, props) {
+  if (!slots)
+    return void 0;
+  if (!slots.length)
+    return { fixed: [], families: [], rows: [] };
+  const names = slots.map((slot) => slot.name);
+  const families = [];
+  const claimed = /* @__PURE__ */ new Set();
+  const prefixes = [...new Set(names.flatMap((name) => /^([A-Za-z0-9]+)_./.exec(name)?.[1] ?? []))];
+  for (const prefix of prefixes) {
+    const listed = names.filter((name) => name.startsWith(`${prefix}_`));
+    const family = (props ?? []).flatMap((prop2) => {
+      if (!Array.isArray(prop2.default) || !prop2.default.length)
+        return [];
+      return KEY_FIELDS.flatMap((field) => {
+        const keys = keysOf(prop2.default, field);
+        const drawn = keys ? new Set(slotNames(prefix, keys)) : void 0;
+        return drawn && listed.every((name) => drawn.has(name)) ? [{ prefix, itemsProp: prop2.name, keyField: field, defaultItems: prop2.default }] : [];
+      });
+    })[0];
+    if (!family)
+      continue;
+    families.push(family);
+    listed.forEach((name) => claimed.add(name));
+  }
+  return {
+    fixed: names.filter((name) => !claimed.has(name)),
+    families,
+    rows: slots.filter((slot) => slot.kind === "rows").map((slot) => slot.name)
+  };
+}
+function describePackSlots(slots) {
+  if (!slots)
+    return void 0;
+  const parts = [
+    ...slots.fixed.map((name) => slots.rows.includes(name) ? `${name} (drawn once per item; its children read {{listItem}})` : name),
+    ...slots.families.map((family) => {
+      const sample = slotNames(family.prefix, keysOf(family.defaultItems, family.keyField) ?? []);
+      return `${family.prefix}_<${family.keyField} of each ${family.itemsProp} item>${sample.length ? ` (by default ${sample.join(", ")})` : ""}`;
+    })
+  ];
+  return parts.length ? `Child components go in slot_name ${parts.join(", ")}.` : void 0;
+}
+function packSlotsOfType(type) {
+  if (typeof type !== "string" || !type.startsWith("Lib_"))
+    return void 0;
+  return getComponentSchema(type)?.pack?.slotInfo;
+}
+function itemsOf(properties, key) {
+  const entry = properties?.[key];
+  if (entry === void 0)
+    return void 0;
+  const raw = entry && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry.value : entry;
+  if (raw === void 0 || raw === null || raw === "")
+    return void 0;
+  if (Array.isArray(raw))
+    return raw;
+  if (typeof raw !== "string")
+    return [];
+  const body = /^\s*\{\{([\s\S]*)\}\}\s*$/.exec(raw)?.[1]?.trim() ?? (raw.trim().startsWith("[") ? raw : void 0);
+  if (body === void 0)
+    return raw.includes("{{") ? null : [];
+  try {
+    const value2 = import_json5.default.parse(body.replace(/^\(([\s\S]*)\)$/, "$1"));
+    return Array.isArray(value2) ? value2 : [];
+  } catch {
+    return null;
+  }
+}
+function widgetSlots(component, { propertiesKnown = true } = {}) {
+  const slots = packSlotsOfType(component.type);
+  if (!slots)
+    return void 0;
+  const known = [...slots.fixed];
+  const open = [];
+  for (const family of slots.families) {
+    const items = propertiesKnown ? itemsOf(component.properties, family.itemsProp) : null;
+    const keys = items === null ? null : keysOf(items ?? family.defaultItems, family.keyField);
+    if (keys)
+      known.push(...slotNames(family.prefix, keys));
+    else
+      open.push({ prefix: family.prefix, itemsProp: family.itemsProp });
+  }
+  return { known, open };
+}
+function resolvePackSlot(parent, slotName, child, options = {}) {
+  const slots = widgetSlots(parent, options);
+  if (!slots)
+    return { ok: true, slotName };
+  const listed = [...slots.known, ...slots.open.map((family) => `${family.prefix}_<key of each ${family.itemsProp} item>`)];
+  const where = `${String(parent.type)} "${parent.name ?? parent.id ?? "?"}"`;
+  if (!listed.length) {
+    return {
+      ok: false,
+      error: `Component "${child}": ${where} draws no child components, so a component inside it is saved and never shown. Place it beside the widget, or inside a container (a Card or FlexContainer).`
+    };
+  }
+  if (slotName === void 0) {
+    if (slots.known.includes("body"))
+      return { ok: true, slotName: "body" };
+    if (slots.known.length === 1 && !slots.open.length)
+      return { ok: true, slotName: slots.known[0] };
+    return {
+      ok: false,
+      error: `Component "${child}": ${where} draws its children in named slots; set slot_name to one of ${listed.join(", ")}. Without one the component is saved on a canvas the widget does not draw, and never shown.`
+    };
+  }
+  if (slots.known.includes(slotName))
+    return { ok: true, slotName };
+  if (slots.open.some((family) => slotName.startsWith(`${family.prefix}_`) && slotName.length > family.prefix.length + 1)) {
+    return { ok: true, slotName };
+  }
+  return {
+    ok: false,
+    error: `Component "${child}": ${where} has no slot "${slotName}" (its slots: ${listed.join(", ")}), so the component would be saved and never shown. Use one of those slots, or add the item it should go in to the widget first.`
+  };
+}
 var COMPONENT_SLOT_NAMES = ["body", "header", "footer", "modal"];
 var TAB_SLOT = /^tab-(t\d+)$/;
-var LIBRARY_TAB_SLOT = /^tab_[A-Za-z0-9_]+$/;
+var PACK_SLOT = /^[A-Za-z][A-Za-z0-9_]*$/;
 var TAB_CANVAS_SUFFIX = /-(t\d+)$/;
+var SLOT_CANVAS = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-([A-Za-z][A-Za-z0-9_]*)$/i;
 function isComponentSlotName(value2) {
-  return typeof value2 === "string" && (COMPONENT_SLOT_NAMES.includes(value2) || TAB_SLOT.test(value2) || LIBRARY_TAB_SLOT.test(value2));
+  return typeof value2 === "string" && (TAB_SLOT.test(value2) || PACK_SLOT.test(value2));
+}
+function isNativeSlotName(value2) {
+  return typeof value2 === "string" && (COMPONENT_SLOT_NAMES.includes(value2) || TAB_SLOT.test(value2));
 }
 function isTabSlot(value2) {
   return typeof value2 === "string" && TAB_SLOT.test(value2);
@@ -998,15 +833,21 @@ function isTabSlot(value2) {
 var componentSlotSchema = external_exports.union([
   external_exports.enum(COMPONENT_SLOT_NAMES),
   external_exports.string().regex(TAB_SLOT),
-  external_exports.string().regex(LIBRARY_TAB_SLOT)
+  external_exports.string().regex(PACK_SLOT)
 ]);
 var ENCODED_SLOT_SUFFIXES = ["header", "footer", "modal"];
 function isPackContainerType(type) {
   return typeof type === "string" && (type.startsWith("Lib_") || type === "PackComponent" || type === "LibraryComponent");
 }
 function encodeComponentParent(parentId, slotName, parentType) {
-  if (isPackContainerType(parentType))
-    return `${decodeComponentParent(parentId).parentId}-${slotName ?? "body"}`;
+  if (isPackContainerType(parentType)) {
+    const base2 = decodeComponentParent(parentId).parentId;
+    const slots = packSlotsOfType(parentType);
+    const slot = slotName ?? (slots && !slots.fixed.includes("body") && slots.fixed.length === 1 && !slots.families.length ? slots.fixed[0] : "body");
+    if (slots?.rows.includes(slot))
+      return base2;
+    return `${base2}-${slot}`;
+  }
   if (!slotName)
     return parentId;
   if (slotName === "body")
@@ -1027,6 +868,9 @@ function decodeComponentParent(parentId) {
   const tab = TAB_CANVAS_SUFFIX.exec(parentId);
   if (tab)
     return { parentId: parentId.slice(0, -tab[0].length), slotName: `tab-${tab[1]}` };
+  const slot = SLOT_CANVAS.exec(parentId);
+  if (slot)
+    return { parentId: slot[1], slotName: slot[2] };
   return { parentId, slotName: "body" };
 }
 function resolveParentRef(pageComponents, parent) {
@@ -1416,7 +1260,7 @@ function lintKpiCardGrids(components) {
     return figure && (delta || !valueOf4(p, "imageField")) || KPI_NAME.test(c.name ?? "") && !valueOf4(p, "imageField");
   }).map((c) => `Card grid "${c.name ?? "ShadCardGrid"}" draws figures: a card grid is for records with a face, its badge sits beside the title (a long delta is cut off) and its subtitle is small body text, not a headline number. Draw KPIs as a row of ShadStat (value, valueFormat, change, changeLabel) or one ShadSummaryStrip (items).`);
 }
-var import_json5 = __toESM(require_lib(), 1);
+var import_json52 = __toESM(require_lib(), 1);
 var FIELD_PROPS = [
   "latField",
   "lngField",
@@ -1447,7 +1291,7 @@ function literal(value2) {
   if (body === void 0)
     return typeof value2 === "string" && value2.includes("{{") ? void 0 : { value: value2 };
   try {
-    return { value: import_json5.default.parse(body.replace(/^\(([\s\S]*)\)$/, "$1")) };
+    return { value: import_json52.default.parse(body.replace(/^\(([\s\S]*)\)$/, "$1")) };
   } catch {
     return void 0;
   }
@@ -2172,11 +2016,17 @@ function lintComponentSlots(components) {
   for (const component of components) {
     const persistedSlot = component.parent ? decodeComponentParent(component.parent).slotName : "body";
     const slotName = component.slotName ?? (persistedSlot === "body" ? void 0 : persistedSlot);
-    if (!slotName)
-      continue;
     const placement = parentPlacement(component);
     const parent = placement ? refs.get(placement.parentId) : void 0;
-    const validParent = isLibraryPackType(parent?.type) ? !["header", "footer", "modal"].includes(slotName) && !isTabSlot(slotName) : slotName === "modal" ? parent?.type === "Kanban" : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? "") : SLOT_PARENT_TYPES.has(parent?.type ?? "") || slotName === "body" && ["Kanban", "ShadKanban", "FlexContainer"].includes(parent?.type ?? "");
+    if (parent && isLibraryPackType(parent.type) && packSlotsOfType(parent.type)) {
+      const slot = resolvePackSlot(parent, slotName, String(component.name ?? component.id ?? component.type));
+      if (!slot.ok)
+        errors.push(slot.error);
+      continue;
+    }
+    if (!slotName)
+      continue;
+    const validParent = isLibraryPackType(parent?.type) ? !["header", "footer", "modal"].includes(slotName) && !isTabSlot(slotName) : !isNativeSlotName(slotName) ? false : slotName === "modal" ? parent?.type === "Kanban" : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? "") : SLOT_PARENT_TYPES.has(parent?.type ?? "") || slotName === "body" && ["Kanban", "ShadKanban", "FlexContainer"].includes(parent?.type ?? "");
     if (parent && TABS_TYPES.has(parent.type ?? "") && isTabSlot(slotName) && !isTruthyBinding(propVal(parent.properties, "useDynamicOptions"))) {
       const items = propVal(parent.properties, "tabItems");
       const ids = Array.isArray(items) ? items.map((item) => String(item?.id ?? "")) : void 0;
@@ -2861,6 +2711,9 @@ function lintComponentSpec(spec, context = {}) {
   if (spec.type === "Text" && propVal(props, "text") === void 0) {
     warnings.push(`Text "${label}" has no properties.text and will render ToolJet's default greeting. Supply the intended text or binding; use an explicit empty string if this display is intentionally blank. Do not invent replacement copy or change its layout.`);
   }
+  if (spec.type === "ModuleViewer" && !String(propVal(props, "moduleAppId") ?? "").trim()) {
+    errors.push(`ModuleViewer "${label}" needs properties.moduleAppId, the co_relation_id of a module app in this workspace. Without one it shows nothing, and a ToolJet server without the fix fails to load the app. Place the module in the ToolJet editor if its id is not known.`);
+  }
   for (const key of Object.keys(props)) {
     const value2 = propVal(props, key);
     if (typeof value2 === "string" && hasUnclosedBinding(value2)) {
@@ -2959,7 +2812,7 @@ function lintComponentSpec(spec, context = {}) {
   }
   if (spec.slotName !== void 0) {
     if (!isComponentSlotName(spec.slotName)) {
-      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, Kanban modal, or a Tabs tab (tab-t0, tab-t1, ...).`);
+      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, Kanban modal, a Tabs tab (tab-t0, tab-t1, ...), or a pack widget's slot (body, tab_<key>, panel_<key>, first ...).`);
     }
     if (!spec.parentRef && !spec.parent) {
       errors.push(`Component "${label}": slot_name requires parent_ref or parent.`);
@@ -4221,19 +4074,17 @@ function validateAppStructure(summary, options = {}) {
         errors.push(`${source.label} references ${key}, but no ${ref.namespace === "components" ? "component" : "query"} is named "${ref.name}". Binding names are case-sensitive; use the persisted name.`);
       }
     }
+    for (const read of unknownQueryMemberReads(source.value)) {
+      const query = summary.queries.find((q) => q.name === read.name || q.id === read.name);
+      const key = `queries.${query?.name ?? read.name}.${read.member}`;
+      if (!query || seen.has(key))
+        continue;
+      seen.add(key);
+      const meant = nearestCatalogKey(read.member, QUERY_PROPERTIES);
+      errors.push(`${source.label} reads ${key}, but a query has no ${read.member}; it reads undefined at runtime. ` + (meant ? `Read queries.${query.name}.${meant}. ` : "") + `A query has ${QUERY_PROPERTIES.join(", ")}.`);
+    }
   }
   for (const c of allComponents) {
-    const blob = JSON.stringify({ p: c.properties ?? {}, s: c.styles ?? {} });
-    for (const m of blob.matchAll(/\{\{\s*queries\.([A-Za-z0-9_]+)/g)) {
-      if (!queryNames.has(m[1])) {
-        warnings.push(`Component "${c.name ?? c.id}" binds {{queries.${m[1]}\u2026}} but no query is named "${m[1]}".`);
-      }
-    }
-    for (const m of blob.matchAll(/\{\{\s*components\.([A-Za-z0-9_]+)/g)) {
-      if (!componentNames.has(m[1])) {
-        warnings.push(`Component "${c.name ?? c.id}" binds {{components.${m[1]}\u2026}} but no component is named "${m[1]}".`);
-      }
-    }
     const r = lintComponentSpec({
       id: c.id,
       name: c.name ?? c.id,
@@ -4373,52 +4224,47 @@ function lintInnerPageBands(summary) {
   return warnings;
 }
 export {
-  lintComponentStateBindings as A,
-  minimumTextHeight as B,
-  unifyChartAccents as C,
-  lintComponents as D,
-  pageIconError as E,
-  validateAppStructure as F,
-  pageIconSchema as G,
-  componentLibraryWarnings as H,
-  namespaceReads as I,
-  unpinnedLibraries as J,
-  registerLibraryPacks as K,
-  libraryPins as L,
-  defaultPack as M,
-  savedComponentLibrary as N,
-  COMPONENT_PACK_DESCRIPTION as O,
+  lintComponents as A,
+  pageIconError as B,
+  validateAppStructure as C,
+  pageIconSchema as D,
+  componentLibraryWarnings as E,
+  namespaceReads as F,
+  defaultPack as G,
+  savedComponentLibrary as H,
+  COMPONENT_PACK_DESCRIPTION as I,
+  lintRenderedGeometryBlocking as J,
+  lintRenderedGeometryAdvisory as K,
+  packSlotsFromManifest as L,
+  describePackSlots as M,
+  FORM_SCHEMA_FIELD_TYPE_SET as N,
+  SAFE_GENERATED_FORM_FIELD_TYPE_SET as O,
   PROPERTY_KEY_ALIASES as P,
-  lintRenderedGeometryBlocking as Q,
-  lintRenderedGeometryAdvisory as R,
   STYLE_KEYS_IN_PROPERTIES as S,
-  lintNestedContainerWidths as T,
-  FORM_SCHEMA_FIELD_TYPE_SET as U,
-  SAFE_GENERATED_FORM_FIELD_TYPE_SET as V,
-  downgradeFlexForLibrary as a,
-  assertPageIcon as b,
-  retiredUi2Name as c,
+  resolvePackSlot as a,
+  introducedLintFindings as b,
+  componentSlotSchema as c,
   decodeComponentParent as d,
   encodeComponentParent as e,
-  componentSlotSchema as f,
-  componentNameSchema as g,
-  componentNameError as h,
-  isMisplacedStyleKey as i,
-  resolveParentRef as j,
-  introducedLintFindings as k,
-  libraryTypeOf as l,
-  missingLibraryPins as m,
-  nearestCatalogKey as n,
-  lintComponentSpec as o,
-  lintComponentSlots as p,
-  lintUnusableTextGeometry as q,
-  resolveComponentLibrary as r,
-  lintStandardSingleLineInputHeight as s,
-  toLibraryComponent as t,
-  lintTextGeometry as u,
-  lintRenderedGeometry as v,
-  lintKanbanInteractions as w,
-  lintShadKanbanCards as x,
-  lintShadScheduleScale as y,
-  isModalV2Type as z
+  lintComponentSpec as f,
+  lintUnusableTextGeometry as g,
+  lintNestedContainerWidths as h,
+  isPackContainerType as i,
+  lintStandardSingleLineInputHeight as j,
+  lintTextGeometry as k,
+  lintComponentSlots as l,
+  lintRenderedGeometry as m,
+  assertPageIcon as n,
+  resolveComponentLibrary as o,
+  isMisplacedStyleKey as p,
+  nearestCatalogKey as q,
+  resolveParentRef as r,
+  componentNameSchema as s,
+  componentNameError as t,
+  lintKanbanInteractions as u,
+  lintShadKanbanCards as v,
+  lintShadScheduleScale as w,
+  isModalV2Type as x,
+  minimumTextHeight as y,
+  unifyChartAccents as z
 };

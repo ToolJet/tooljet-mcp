@@ -1,11 +1,14 @@
 import { createRequire } from "node:module";
-import { b0 as external_exports, b1 as nodeCatalog, b2 as validateGraph, b3 as specSchema, b4 as compileGraph, b5 as assertWorkflowJavaScript, b6 as controlFlowEdges } from "./chunk-D-yEFdPv.js";
-import { a as assessQueryRead, L as LARGE_READ_ROW_THRESHOLD } from "./chunk-B6ef8g-7.js";
-import { p as parseExpression, a as parse } from "./chunk-DpvBXwyI.js";
-import { h as hubspotQueryIssues, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, s as singleSpecRef, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-BOAy1nzn.js";
+import { b0 as external_exports, b1 as nodeCatalog, b2 as validateGraph, b3 as specSchema, b4 as compileGraph, b5 as assertWorkflowJavaScript, b6 as controlFlowEdges } from "./chunk-Bk2YZ8cg.js";
+import { a as assessQueryRead, L as LARGE_READ_ROW_THRESHOLD } from "./chunk-Ces3cV_q.js";
+import { p as parseExpression, a as parse } from "./chunk-SVZaINty.js";
+import { h as hubspotQueryIssues, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, s as singleSpecRef, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-DGCi5LfA.js";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import { e8 as getComponentSchema } from "./chunk-COW2iNTB.js";
+import { e8 as getComponentSchema } from "./chunk-addBGscc.js";
+import { readFileSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
 var QUERY_TOGGLES = ["runOnPageLoad", "runOnDependencyChange", "requestConfirmation", "showSuccessNotification"];
 var STATIC_TOGGLE = /^\s*(?:\{\{\s*(true|false)\s*\}\}|(true|false))\s*$/;
@@ -215,13 +218,13 @@ var ARRAY_METHODS = /* @__PURE__ */ new Set(["map", "filter", "concat", "flat", 
 var STRING_OR_ARRAY_METHODS = /* @__PURE__ */ new Set(["slice", "concat"]);
 var ROW_COLLECTIONS = /* @__PURE__ */ new Set(["currentData", "updatedData", "filteredData", "currentPageData", "selectedRows", "newRows"]);
 var ELEMENT_PATH = /\$|\.\d+(\.|$)/;
-var isMember = (n) => n?.type === "MemberExpression" || n?.type === "OptionalMemberExpression";
+var isMember$1 = (n) => n?.type === "MemberExpression" || n?.type === "OptionalMemberExpression";
 var propertyName = (n) => n.computed ? n.property?.type === "StringLiteral" ? n.property.value : void 0 : n.property?.name;
 var keyName = (p) => p.computed ? void 0 : p.key?.type === "Identifier" ? p.key.name : p.key?.type === "StringLiteral" ? p.key.value : void 0;
 var property2 = (n, key3) => n?.type === "ObjectExpression" ? n.properties.find((p) => p.type === "ObjectProperty" && keyName(p) === key3)?.value : void 0;
 function unwrap(n) {
   while (n?.type === "CallExpression") {
-    if (isMember(n.callee) && n.callee.object?.name === "JSON" && propertyName(n.callee) === "stringify" && n.arguments.length >= 1) {
+    if (isMember$1(n.callee) && n.callee.object?.name === "JSON" && propertyName(n.callee) === "stringify" && n.arguments.length >= 1) {
       n = n.arguments[0];
       continue;
     }
@@ -263,7 +266,7 @@ function referencesComponents(n) {
   if (Array.isArray(n))
     return n.some(referencesComponents);
   const node2 = n;
-  if (isMember(node2) && node2.object?.type === "Identifier" && node2.object.name === "components")
+  if (isMember$1(node2) && node2.object?.type === "Identifier" && node2.object.name === "components")
     return true;
   return Object.entries(node2).some(([key3, child]) => !["loc", "extra", "comments"].includes(key3) && referencesComponents(child));
 }
@@ -279,15 +282,15 @@ function isArrayValue(raw) {
     return true;
   if (n.type === "CallExpression" || n.type === "OptionalCallExpression") {
     const callee = n.callee;
-    const method = isMember(callee) ? propertyName(callee) ?? "" : "";
+    const method = isMember$1(callee) ? propertyName(callee) ?? "" : "";
     if (ARRAY_METHODS.has(method)) {
       return !STRING_OR_ARRAY_METHODS.has(method) || isArrayValue(callee.object);
     }
-    if (isMember(callee) && ["Array", "Object"].includes(callee.object?.name) && ["from", "values"].includes(propertyName(callee) ?? ""))
+    if (isMember$1(callee) && ["Array", "Object"].includes(callee.object?.name) && ["from", "values"].includes(propertyName(callee) ?? ""))
       return true;
     return false;
   }
-  return isMember(n) && ROW_COLLECTIONS.has(propertyName(n) ?? "");
+  return isMember$1(n) && ROW_COLLECTIONS.has(propertyName(n) ?? "");
 }
 function isComponentArray(raw) {
   const n = unwrap(raw);
@@ -759,9 +762,9 @@ var RUNJS_KNOWN_NAMES = /* @__PURE__ */ new Set([
   "Event",
   "CustomEvent"
 ]);
-var isNode = (value) => !!value && typeof value === "object" && typeof value.type === "string";
+var isNode$1 = (value) => !!value && typeof value === "object" && typeof value.type === "string";
 function patternNames(node2, out) {
-  if (!isNode(node2))
+  if (!isNode$1(node2))
     return;
   if (node2.type === "Identifier")
     out.add(String(node2.name));
@@ -825,11 +828,11 @@ function undeclaredNames(source, known) {
         node2.forEach(visit);
         return;
       }
-      if (!isNode(node2))
+      if (!isNode$1(node2))
         return;
       if (node2.type === "VariableDeclarator")
         patternNames(node2.id, into);
-      if ((node2.type === "FunctionDeclaration" || node2.type === "ClassDeclaration") && isNode(node2.id))
+      if ((node2.type === "FunctionDeclaration" || node2.type === "ClassDeclaration") && isNode$1(node2.id))
         into.add(String(node2.id.name));
       if (node2.type === "CatchClause")
         patternNames(node2.param, into);
@@ -850,7 +853,7 @@ function undeclaredNames(source, known) {
         walk22(child, parent, key3);
       return;
     }
-    if (!isNode(node2))
+    if (!isNode$1(node2))
       return;
     if (node2.type === "Identifier") {
       const p = parent?.type;
@@ -864,7 +867,7 @@ function undeclaredNames(source, known) {
     if (node2.type === "Program" || FUNCTION_TYPES.has(node2.type)) {
       const scope = /* @__PURE__ */ new Set();
       if (FUNCTION_TYPES.has(node2.type)) {
-        if (node2.type === "FunctionExpression" && isNode(node2.id))
+        if (node2.type === "FunctionExpression" && isNode$1(node2.id))
           scope.add(String(node2.id.name));
         for (const param of node2.params ?? [])
           patternNames(param, scope);
@@ -902,7 +905,7 @@ function undeclaredNames(source, known) {
     }
   };
   const walkPatternDefaults = (pattern) => {
-    if (!isNode(pattern))
+    if (!isNode$1(pattern))
       return;
     if (pattern.type === "AssignmentPattern") {
       walkPatternDefaults(pattern.left);
@@ -1798,6 +1801,416 @@ return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
   };
 }
 createRequire(import.meta.url);
+function resolveRef(candidates, ref, kind, scope, describe2 = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
+  const byId = candidates.find((candidate) => candidate.id === ref);
+  if (byId)
+    return { ok: true, target: byId };
+  const byName = candidates.filter((candidate) => candidate.name === ref);
+  if (byName.length === 1)
+    return { ok: true, target: byName[0] };
+  if (byName.length > 1) {
+    return {
+      ok: false,
+      error: `${kind} name "${ref}" is ambiguous ${scope} (${byName.length} share it). Pass the id instead: ${byName.map((candidate) => candidate.id).join(", ")}.`
+    };
+  }
+  const available = candidates.map(describe2).join(", ");
+  return {
+    ok: false,
+    // The "do not re-read" clause matters: the previous phrasing ("does not exist") invited exactly
+    // the re-read that caused the loop.
+    error: `No ${kind.toLowerCase()} with id or name "${ref}" ${scope}. Do not re-read \u2014 it currently holds: ${available || "(none)"}.`
+  };
+}
+createRequire(import.meta.url);
+var UI2_COMMON_RENAMES = {
+  actions: { visibility: "setVisibility", disable: "setDisable", loading: "setLoading" }
+};
+var CHART = { exposed: { clickedDatum: "clickedDataPoint" } };
+var PICKER = { events: { onChange: "onSelect" }, actions: { clear: "clearValue" } };
+var UI2_RENAMES = {
+  ShadAreaChart: CHART,
+  ShadBarChart: CHART,
+  ShadComboChart: CHART,
+  ShadFunnelChart: CHART,
+  ShadHeatmapChart: CHART,
+  ShadLineChart: CHART,
+  ShadPieChart: CHART,
+  ShadRadarChart: CHART,
+  ShadRadialChart: CHART,
+  ShadScatterChart: CHART,
+  ShadBreadcrumb: { events: { onItemClick: "onItemClicked" } },
+  ShadButtonGroup: { exposed: { values: "selected" } },
+  ShadCalendar: { events: { onMonthChange: "onMonthChanged" } },
+  ShadCardGrid: { events: { onCardClick: "onCardClicked" } },
+  ShadCarousel: { events: { onSlideChange: "onSlideChanged", onSlideClick: "onSlideClicked" } },
+  ShadCheckbox: { actions: { setChecked: "setValue" } },
+  ShadColorPicker: { exposed: { selectedColorHex: "value", rgb: "selectedColorRGB", rgba: "selectedColorRGBA" } },
+  ShadCombobox: { events: { onChange: "onSelect" } },
+  ShadDatePicker: {
+    events: { onChange: "onSelect" },
+    actions: { setDate: "setValue", clear: "clearValue" },
+    exposed: { selectedDate: "value" }
+  },
+  ShadDateTimePicker: { ...PICKER, actions: { setDate: "setValue", clear: "clearValue" } },
+  ShadEmpty: { events: { onAction: "onActionClicked" } },
+  ShadFileUpload: { actions: { clear: "clearFiles" }, exposed: { files: "file" } },
+  ShadHero: { events: { onActionClick: "onActionClicked", onSecondaryActionClick: "onSecondaryActionClicked" } },
+  ShadImage: { properties: { src: "source", alt: "alternativeText", fit: "imageFit" } },
+  ShadKanban: {
+    events: { onCardClicked: "onCardSelected" },
+    actions: { updateCard: "updateCardData" },
+    exposed: {
+      cards: "updatedCardData",
+      selectedCard: "lastSelectedCard",
+      lastMove: "lastCardMovement",
+      movedCard: "lastCardMovement.card"
+    }
+  },
+  ShadLink: { properties: { href: "linkTarget", text: "linkText", target: "targetType" } },
+  ShadListView: {
+    events: { onRowClicked: "onRecordClicked" },
+    exposed: { selectedRow: "selectedRecord", selectedRowId: "selectedRecordId" }
+  },
+  ShadMap: {
+    events: { onMapClick: "onMapClicked", onShapeClick: "onShapeClicked", onLocationPick: "onLocationPicked" }
+  },
+  ShadMultiselect: { events: { onChange: "onSelect" } },
+  ShadNavigation: { events: { onSelect: "onClick" }, actions: { setActive: "selectItem" }, exposed: { activeItem: "selectedItem" } },
+  ShadPhoneInput: { actions: { setCountry: "setCountryCode" } },
+  ShadNumberInput: { actions: { setValue: "setText" } },
+  ShadProgressList: { events: { onItemClick: "onItemClicked" } },
+  ShadQuestionnaire: { events: { onStepChange: "onStepChanged" } },
+  ShadRadioGroup: { events: { onChange: "onSelectionChange" } },
+  ShadRecordList: {
+    events: { onRowClicked: "onItemClicked", onRecordClicked: "onItemClicked" },
+    exposed: {
+      selectedRecord: "selectedItem",
+      selectedRow: "selectedItem",
+      selectedRecordId: "selectedItemId",
+      selectedRowId: "selectedItemId"
+    }
+  },
+  ShadSchedule: { events: { onBookingClick: "onBookingClicked", onSlotClick: "onSlotClicked" } },
+  ShadSelect: { events: { onChange: "onSelect" } },
+  ShadSteps: { actions: { setDisabled: "setDisable" }, properties: { schema: "steps" } },
+  ShadTable: { properties: { pageSize: "rowsPerPage" } },
+  ShadTags: { events: { onTagClick: "onTagClicked" } },
+  ShadTagsInput: {
+    events: { onTagRemoved: "onTagDeleted" },
+    exposed: { tags: "values", value: "values", selectedTags: "values" }
+  },
+  ShadTimePicker: { ...PICKER, actions: { setTime: "setValue", clear: "clearValue" } },
+  ShadTimeline: { events: { onItemClick: "onItemClicked" } },
+  ShadToggleGroup: { exposed: { selected: "value" } }
+};
+function retiredUi2Name(type, kind, name2) {
+  if (!type || !type.startsWith("Shad"))
+    return void 0;
+  const own = UI2_RENAMES[type]?.[kind];
+  if (own && Object.prototype.hasOwnProperty.call(own, name2))
+    return own[name2];
+  const common = UI2_COMMON_RENAMES[kind];
+  return common && Object.prototype.hasOwnProperty.call(common, name2) ? common[name2] : void 0;
+}
+var discovered = null;
+var offline;
+function libraryPacksAll() {
+  if (discovered)
+    return discovered;
+  if (offline === void 0) {
+    try {
+      const path = resolve(dirname(fileURLToPath(import.meta.url)), "../data/library-pack.json");
+      offline = JSON.parse(readFileSync(path, "utf8"));
+    } catch {
+      offline = null;
+    }
+  }
+  return offline ? [offline] : [];
+}
+function registerLibraryPacks(packs) {
+  discovered = packs;
+}
+var serverLibraryPacks = () => discovered ?? [];
+function libraryPack() {
+  return libraryPacksAll()[0] ?? null;
+}
+var isBuiltin = (pack) => pack.kind === "builtin";
+var packOfType = (type) => typeof type === "string" ? libraryPacksAll().find((p) => type.startsWith(p.prefix)) : void 0;
+var isLibraryPackType = (type) => !!packOfType(type);
+function libraryPins() {
+  const packs = libraryPacksAll().filter((p) => !isBuiltin(p));
+  return packs.length ? Object.fromEntries(packs.map((p) => [p.correlationId.replace(/-/g, ""), p.version])) : void 0;
+}
+var dashless = (id) => id.replace(/-/g, "");
+var propertyValue = (properties, key3) => {
+  const entry = properties?.[key3];
+  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+};
+function libraryCorrelationId(component) {
+  const properties = component.properties;
+  const id = propertyValue(properties, "correlationId");
+  return typeof id === "string" && id && !propertyValue(properties, "codePage") ? id : void 0;
+}
+var isPinned = (pins, correlationId) => pins[dashless(correlationId)] != null || pins[correlationId] != null;
+function missingLibraryPins(components, pins) {
+  const missing = {};
+  for (const component of components) {
+    const id = libraryCorrelationId(component);
+    if (!id || isPinned(pins, id))
+      continue;
+    const pack = libraryPacksAll().find((p) => !isBuiltin(p) && p.correlationId === id);
+    if (pack)
+      missing[dashless(id)] = pack.version;
+  }
+  return Object.keys(missing).length ? missing : void 0;
+}
+function unpinnedLibraries(components, pins) {
+  const byLibrary = /* @__PURE__ */ new Map();
+  for (const component of components) {
+    const id = libraryCorrelationId(component);
+    if (!id || isPinned(pins, id))
+      continue;
+    const library = String(propertyValue(component.properties, "libraryName") ?? id);
+    byLibrary.set(library, [...byLibrary.get(library) ?? [], String(component.name ?? "unnamed")]);
+  }
+  return [...byLibrary].map(([library, names]) => ({ library, components: names }));
+}
+function toLibraryComponent(spec) {
+  const pack = packOfType(spec.type);
+  if (!pack)
+    return spec;
+  const componentName = spec.type.slice(pack.prefix.length);
+  if (isBuiltin(pack)) {
+    return {
+      ...spec,
+      type: "PackComponent",
+      properties: {
+        ...spec.properties ?? {},
+        pack: { value: pack.pack },
+        componentName: { value: componentName }
+      }
+    };
+  }
+  return {
+    ...spec,
+    type: "LibraryComponent",
+    properties: {
+      ...spec.properties ?? {},
+      libraryId: { value: pack.libraryId },
+      correlationId: { value: pack.correlationId },
+      libraryName: { value: pack.libraryName },
+      componentName: { value: componentName }
+    }
+  };
+}
+function libraryTypeOf(component) {
+  if (component.type !== "LibraryComponent" && component.type !== "PackComponent")
+    return void 0;
+  const value = (key3) => {
+    const entry = component.properties?.[key3];
+    return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+  };
+  if (component.type === "PackComponent") {
+    const id = value("pack");
+    const name22 = value("componentName");
+    if (typeof id !== "string" || typeof name22 !== "string")
+      return void 0;
+    const known = libraryPacksAll().find((p) => p.pack === id);
+    return !known || known.components[name22] ? `Lib_${id}_${name22}` : void 0;
+  }
+  const pack = libraryPacksAll().find((p) => p.correlationId === value("correlationId"));
+  const name2 = value("componentName");
+  return pack && typeof name2 === "string" && pack.components[name2] ? `${pack.prefix}${name2}` : void 0;
+}
+var FLEX_DOWNGRADE = {
+  alignItems: { stretch: "flex-start", "last baseline": "flex-start" },
+  justifyContent: { "space-between": "flex-start" }
+};
+function downgradeFlexForLibrary(spec) {
+  if (process.env.TOOLJET_FLEX_V1 !== "1" || !libraryPack() || spec.type !== "FlexContainer" || !spec.properties)
+    return spec;
+  const properties = { ...spec.properties };
+  for (const [key3, map] of Object.entries(FLEX_DOWNGRADE)) {
+    const entry = properties[key3];
+    const value = entry && typeof entry === "object" ? entry.value : entry;
+    if (typeof value === "string" && map[value])
+      properties[key3] = { value: map[value] };
+  }
+  return { ...spec, properties };
+}
+var isNode = (value) => !!value && typeof value === "object" && typeof value.type === "string";
+var isMember = (value) => isNode(value) && ["MemberExpression", "OptionalMemberExpression"].includes(value.type);
+function memberName(node2) {
+  const property3 = node2.property;
+  if (!isNode(property3))
+    return void 0;
+  if (!node2.computed && property3.type === "Identifier")
+    return String(property3.name);
+  if (node2.computed && property3.type === "StringLiteral")
+    return String(property3.value);
+  return void 0;
+}
+function bindsComponents(value) {
+  if (!isNode(value))
+    return false;
+  if (value.type === "Identifier")
+    return value.name === "components";
+  if (value.type === "RestElement")
+    return bindsComponents(value.argument);
+  if (value.type === "AssignmentPattern")
+    return bindsComponents(value.left);
+  if (value.type === "ArrayPattern")
+    return value.elements.some(bindsComponents);
+  if (value.type === "ObjectPattern")
+    return value.properties.some((p) => bindsComponents(p.type === "RestElement" ? p.argument : p.value));
+  return false;
+}
+function lintComponentStateBindings(value, components, path) {
+  if (Array.isArray(value))
+    return value.flatMap((child, i) => lintComponentStateBindings(child, components, `${path}[${i}]`));
+  if (value && typeof value === "object")
+    return Object.entries(value).flatMap(([key3, child]) => lintComponentStateBindings(child, components, `${path}.${key3}`));
+  if (typeof value !== "string")
+    return [];
+  const binding = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
+  let root;
+  if (binding) {
+    try {
+      root = parseExpression(binding[1]);
+    } catch {
+      return [];
+    }
+  } else if (/\.code$/.test(path)) {
+    try {
+      root = parse(value, { sourceType: "script", allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true }).program;
+    } catch {
+      return [];
+    }
+  } else
+    return [];
+  const wrongNames = /* @__PURE__ */ new Set();
+  let shadowed = false;
+  const visit = (node2) => {
+    if (Array.isArray(node2)) {
+      node2.forEach(visit);
+      return;
+    }
+    if (!isNode(node2))
+      return;
+    if (node2.type === "VariableDeclarator" && bindsComponents(node2.id) || /^(Function|Class)(Declaration|Expression)$/.test(node2.type) && bindsComponents(node2.id) || Array.isArray(node2.params) && node2.params.some(bindsComponents) || node2.type === "CatchClause" && bindsComponents(node2.param) || node2.type === "WithStatement" || node2.type === "CallExpression" && isNode(node2.callee) && node2.callee.type === "Identifier" && node2.callee.name === "eval")
+      shadowed = true;
+    const prop = isMember(node2) ? memberName(node2) : void 0;
+    if (prop && isMember(node2.object) && isMember(node2.object.object)) {
+      const value2 = node2.object;
+      const owner = value2.object;
+      if (isNode(owner.object) && owner.object.type === "Identifier" && owner.object.name === "components") {
+        const name2 = memberName(owner);
+        const variable = memberName(value2);
+        const type = name2 ? components.find((c) => c.name === name2)?.type : void 0;
+        if (name2 && variable && type && missingMember(type, variable, prop)) {
+          wrongNames.add(`${name2}\0${type}\0${variable}.${prop}`);
+        }
+      }
+    }
+    if (prop && isMember(node2.object)) {
+      const owner = node2.object;
+      if (isNode(owner.object) && owner.object.type === "Identifier" && owner.object.name === "components") {
+        const name2 = memberName(owner);
+        const type = name2 ? components.find((c) => c.name === name2)?.type : void 0;
+        if (name2 && type && (WRONG_ALIASES[type]?.[prop] || retiredUi2Message(type, prop, name2))) {
+          wrongNames.add(`${name2}\0${type}\0${prop}`);
+        }
+      }
+    }
+    Object.values(node2).forEach(visit);
+  };
+  visit(root);
+  return shadowed ? [] : [...wrongNames].map((key3) => {
+    const [name2, type, prop] = key3.split("\0");
+    if (prop.includes(".")) {
+      const [variable, member3] = prop.split(".");
+      return `${path}: ${type} "${name2}" ${variable} has no ${member3}; it reads undefined at runtime. It has ${missingMember(type, variable, member3).join(", ")}.`;
+    }
+    return `${path}: ${WRONG_ALIASES[type]?.[prop]?.(name2) ?? retiredUi2Message(type, prop, name2)}`;
+  });
+}
+function retiredUi2Message(type, prop, name2) {
+  if (!type.startsWith("Shad") && !isLibraryPackType(type))
+    return void 0;
+  const schema = getComponentSchema(type);
+  if (schema?.exposedVariables?.some((variable) => variable.name === prop))
+    return void 0;
+  if (schema?.actions?.some((action2) => action2.handle === prop))
+    return void 0;
+  const exposed = retiredUi2Name(type, "exposed", prop);
+  if (exposed) {
+    return `${type} "${name2}" exposes ${exposed}, not ${prop} (renamed); read components.${name2}.${exposed}. The old name is undefined at runtime.`;
+  }
+  const action = retiredUi2Name(type, "actions", prop);
+  if (action) {
+    return `${type} "${name2}" action ${prop}() was renamed ${action}(); call components.${name2}.${action}(...). The old name is undefined at runtime.`;
+  }
+  const published = schema?.exposedVariables?.map((variable) => variable.name) ?? [];
+  if (prop === "id" || !published.length)
+    return void 0;
+  const meant = UI2_MEANT[prop]?.find((candidate) => published.includes(candidate));
+  return `${type} "${name2}" has no ${prop}; it reads undefined at runtime. ` + (meant ? `Read components.${name2}.${meant}. ` : "") + `It publishes ${published.join(", ")}.`;
+}
+var UI2_MEANT = {
+  checked: ["value"],
+  selected: ["value", "selectedItem"],
+  selectedValue: ["value"],
+  text: ["value"],
+  selectedCard: ["selectedItem", "lastSelectedCard"],
+  selectedCardId: ["selectedItemId", "selectedItem"],
+  selectedId: ["selectedItemId", "selectedRowId"],
+  selectedRow: ["selectedItem", "selectedRow"]
+};
+var WRONG_ALIASES = {
+  Kanban: {
+    selectedCard: (name2) => `Kanban "${name2}" does not expose selectedCard. Use components.${name2}.lastSelectedCard after onCardSelected; the incorrect alias is undefined and opens an empty detail form. Keep the selected record id and raw fields for edits.`
+  },
+  // A claims build filtered its queue on a radio's label, the caption "Type", so no row matched (2026-10-04).
+  RadioButtonV2: {
+    label: (name2) => `RadioButton "${name2}": label is the field's caption, not the chosen option, so a filter or write reading it matches nothing. Read components.${name2}.value for the selection.`
+  },
+  // Widgets/ReorderableList/ReorderableList.jsx publishes values, including before onChange; never value.
+  ReorderableList: {
+    value: (name2) => `ReorderableList "${name2}" does not expose value. Use components.${name2}.values for the ordered option values; the incorrect alias is undefined, even with optional chaining or a fallback.`
+  },
+  // MultiselectV2.jsx setInputValue publishes values before onSelect; DropdownV2's scalar value is different.
+  MultiselectV2: {
+    value: (name2) => `MultiselectV2 "${name2}" does not expose value. Use components.${name2}.values for the selected option values; the incorrect alias is undefined, even with optional chaining or a fallback. An empty selection is [].`
+  }
+};
+var DATE_PICKERS = /* @__PURE__ */ new Set(["ShadDatePicker", "ShadDateTimePicker", "ShadTimePicker", "Datepicker", "DatePickerV2", "DatetimePickerV2", "TimePicker"]);
+function lintEmptyDateWrites(value, components, path) {
+  if (Array.isArray(value))
+    return value.flatMap((child, i) => lintEmptyDateWrites(child, components, `${path}[${i}]`));
+  if (value && typeof value === "object")
+    return Object.entries(value).flatMap(([key3, child]) => lintEmptyDateWrites(child, components, `${path}.${key3}`));
+  if (typeof value !== "string" || !/\.(create_row|update_rows\.columns)\.[^.]+\.value$/.test(path))
+    return [];
+  const read = value.trim().match(/^\{\{\s*components\??\.([A-Za-z_$][\w$]*)\??\.value\s*\}\}$/);
+  const picker = read ? components.find((c) => c.name === read[1]) : void 0;
+  if (!picker?.type || !DATE_PICKERS.has(picker.type))
+    return [];
+  return [`${path}: ${picker.type} "${picker.name}" is '' while no date is picked, and a date or timestamp column rejects '', so the save fails whenever it is left blank. Write {{ components.${picker.name}.value || null }}.`];
+}
+function missingMember(type, variable, member3) {
+  if (!type.startsWith("Shad"))
+    return void 0;
+  const entry = getComponentSchema(type)?.exposedVariables?.find((v) => v.name === variable);
+  const shape = entry?.shape;
+  if (!shape || typeof shape !== "object" || Array.isArray(shape))
+    return void 0;
+  const members = Object.keys(shape);
+  if (members.includes("...") || members.includes(member3))
+    return void 0;
+  return members;
+}
+createRequire(import.meta.url);
 var VOID_TAGS = /* @__PURE__ */ new Set(["br", "img", "hr", "input", "meta", "link", "source", "wbr", "col"]);
 var INLINE_TAGS = /* @__PURE__ */ new Set([
   "span",
@@ -2409,7 +2822,7 @@ function eventPayload(event) {
 function queryTriggers(summary) {
   const byId = new Map(summary.queries.map((q) => [q.id, q]));
   const byName = new Map(summary.queries.flatMap((q) => q.name ? [[q.name, q]] : []));
-  const resolve = (ref) => typeof ref === "string" ? byId.get(ref) ?? byName.get(ref) : void 0;
+  const resolve2 = (ref) => typeof ref === "string" ? byId.get(ref) ?? byName.get(ref) : void 0;
   const triggers = /* @__PURE__ */ new Map();
   for (const q of summary.queries) {
     const options = q.options && typeof q.options === "object" ? q.options : {};
@@ -2421,7 +2834,7 @@ function queryTriggers(summary) {
     const payload = eventPayload(e.event);
     if (!payload || payload.actionId !== "run-query")
       continue;
-    const target = resolve(payload.queryId ?? payload.queryName);
+    const target = resolve2(payload.queryId ?? payload.queryName);
     if (!target)
       continue;
     const entry = triggers.get(target.id);
@@ -3125,17 +3538,30 @@ function lintSelectedRowProjections(components, extraSources = []) {
   return [...warnings];
 }
 export {
-  normalizeQueryOptions as A,
+  assertWorkflowQueryOptions as A,
   BARE_QUERY_DATA_BINDING as B,
-  validateQueryOptions as C,
-  arithmeticWriteWarning as D,
-  capabilityRequestSchema as E,
-  getWorkflowCapabilities as F,
-  lint as G,
-  apply as H,
-  deleteNode as I,
-  editContractSchema as J,
-  generateEditContract as K,
+  workflowMappingMatches as C,
+  toLibraryComponent as D,
+  missingLibraryPins as E,
+  libraryTypeOf as F,
+  suggestedHtmlHeight as G,
+  normalizeQueryToggles as H,
+  toggleRewriteWarning as I,
+  issueMessages as J,
+  queryToggleIssues as K,
+  normalizeQueryOptions as L,
+  validateQueryOptions as M,
+  arithmeticWriteWarning as N,
+  unpinnedLibraries as O,
+  registerLibraryPacks as P,
+  capabilityRequestSchema as Q,
+  getWorkflowCapabilities as R,
+  lint as S,
+  apply as T,
+  deleteNode as U,
+  libraryPins as V,
+  editContractSchema as W,
+  generateEditContract as X,
   lintOversizedWidths as a,
   lintHtmlContentHeight as b,
   lintHtmlRootSurface as c,
@@ -3143,23 +3569,23 @@ export {
   lintEmbeddedBindingSyntax as e,
   lintChartDataShape as f,
   lintUnguardedSelectionText as g,
-  lintTextFormat as h,
-  lintTableColumnsShape as i,
-  lintBindingNames as j,
-  lintUntriggeredDataQueries as k,
+  serverLibraryPacks as h,
+  lintTextFormat as i,
+  lintTableColumnsShape as j,
+  isLibraryPackType as k,
   lintSelectedRowProjections as l,
-  lintAutomaticWrites as m,
-  bindingSpans as n,
-  stripHtmlBindings as o,
-  parseHtml as p,
-  assertPersistableQueryToggles as q,
-  normalizeWorkflowQueryOptions as r,
+  lintComponentStateBindings as m,
+  lintEmptyDateWrites as n,
+  lintBindingNames as o,
+  lintUntriggeredDataQueries as p,
+  lintAutomaticWrites as q,
+  retiredUi2Name as r,
   surfaceAroundResolver as s,
-  assertWorkflowQueryOptions as t,
-  suggestedHtmlHeight as u,
-  normalizeQueryToggles as v,
-  workflowMappingMatches as w,
-  toggleRewriteWarning as x,
-  issueMessages as y,
-  queryToggleIssues as z
+  bindingSpans as t,
+  parseHtml as u,
+  stripHtmlBindings as v,
+  resolveRef as w,
+  assertPersistableQueryToggles as x,
+  normalizeWorkflowQueryOptions as y,
+  downgradeFlexForLibrary as z
 };
