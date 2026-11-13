@@ -63,6 +63,17 @@ const stamp = (p: ManifestProp): string => {
 };
 // Descriptive props whose palette sample an AI-built component should not show when the plan leaves them out.
 const SAMPLE_TEXT = /^(eyebrow|subtitle|description|meta|actionLabel|secondaryActionLabel|asideValue|asideLabel|changeLabel|change)$/;
+// Display text whose literal palette value is a sample (packDefaults.ts PACK_SAMPLE_TEXT: a Select labelled "Department").
+const SAMPLE_LABELS = new Set(['label', 'title', 'resourceTitle', 'subTitle', 'message']);
+// Neutral text the pack draws by default, not a sample: an Empty that says nothing, ListView rows without their action.
+const NEUTRAL_TEXT = new Set(['Empty.description', 'ListView.actionLabel']);
+/** The blank an agent-built component is saved with in place of a palette sample, or undefined to keep the default. */
+const sampleBlank = (component: string, p: ManifestProp): '' | '{{[]}}' | undefined => {
+  if (p.type === 'boolean' || NEUTRAL_TEXT.has(`${component}.${p.name}`)) return undefined;
+  if (SAMPLE_TEXT.test(p.name)) return p.type === 'array' ? '{{[]}}' : '';
+  const literal = typeof p.default === 'string' && p.default !== '' && !p.default.trim().startsWith('{{');
+  return SAMPLE_LABELS.has(p.name) && literal ? '' : undefined;
+};
 
 /** A pack that ships with ToolJet (GET /api/builtin-packs). */
 export interface BuiltinPackInfo {
@@ -188,7 +199,12 @@ function packFromManifest(
         { handle: 'setDisable', displayName: 'Set disable', params: [{ handle: 'disable', displayName: 'Value', defaultValue: '{{false}}' }] },
       ],
       exposedVariables: [
-        ...allProps.map((p) => ({ name: p.name, ...(p.default !== undefined ? { default: p.default } : {}) })),
+        // The default an agent-built component starts with: a blanked sample is advertised blank, as it is saved.
+        ...allProps.map((p) => {
+          const blank = p.default !== undefined ? sampleBlank(name, p) : undefined;
+          const advertised = blank === undefined ? p.default : blank === '{{[]}}' ? [] : '';
+          return { name: p.name, ...(advertised !== undefined ? { default: advertised } : {}) };
+        }),
         { name: 'isVisible', default: true },
         { name: 'isLoading', default: false },
         { name: 'isDisabled', default: false },
@@ -197,7 +213,7 @@ function packFromManifest(
     } as unknown as ComponentSchema;
     definitions[type] = {
       properties: {
-        ...Object.fromEntries(props.map((p) => [p.name, { value: SAMPLE_TEXT.test(p.name) && p.type !== 'boolean' ? (p.type === 'array' ? '{{[]}}' : '') : stamp(p) }])),
+        ...Object.fromEntries(props.map((p) => [p.name, { value: sampleBlank(name, p) ?? stamp(p) }])),
         visibility: { value: '{{true}}' },
         loadingState: { value: '{{false}}' },
         disabledState: { value: '{{false}}' },
