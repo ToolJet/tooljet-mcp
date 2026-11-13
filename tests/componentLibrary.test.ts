@@ -1,5 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { componentLibraryWarnings, resolveComponentLibrary, savedComponentLibrary } from '../src/componentLibrary.js';
+import { registerLibraryPacks } from '../src/libraryPack.js';
+import { packFromBuiltin } from '../src/packCatalog.js';
 import { lintAppSpecTool } from '../src/tools/lintAppSpec.js';
 import { lintComponentSpec } from '../src/lint.js';
 import type { ToolJetClient } from '../src/tooljetClient.js';
@@ -84,6 +86,48 @@ describe('componentLibraryWarnings', () => {
       ...componentLibraryWarnings(ui2, [page('Button')]),
     ].join(' ');
     expect(text).not.toMatch(/shadcn\/ui|shadcn pack/i);
+  });
+});
+
+// 2026-11-13: in an app built with a component pack, the warning said to build with the Shad* types, which a server
+// that ships packs refuses ("not available on this ToolJet ... Write the app's pack component instead").
+describe('componentLibraryWarnings in an app built with a component pack', () => {
+  const comps = (...names: string[]) => ({ components: Object.fromEntries(names.map((n) => [n, { props: [] }])) });
+  beforeEach(() => {
+    registerLibraryPacks(
+      [
+        packFromBuiltin({ pack: 'antd', displayName: 'Ant Design', version: '1' } as never, comps('Button', 'Modal', 'Drawer') as never),
+        packFromBuiltin({ pack: 'mui', displayName: 'Material UI', version: '1' } as never, comps('Button', 'Dialog') as never),
+        packFromBuiltin({ pack: 'shadcn', displayName: 'Rocket 2.0', version: '1' } as never, comps('Button', 'Dialog') as never),
+      ].map((built) => built!.pack)
+    );
+  });
+  afterEach(() => registerLibraryPacks([]));
+
+  it("names the app's pack types and its dialog and side sheet, not Shad*", () => {
+    const [warning] = componentLibraryWarnings({ library: 'ui2', source: 'saved', pack: 'antd' }, [page('Text')]);
+    expect(warning).toMatch(/Lib_antd_/);
+    expect(warning).toMatch(/Lib_antd_Modal for dialogs/);
+    expect(warning).toMatch(/Lib_antd_Drawer for side sheets/);
+    expect(warning).not.toMatch(/Shad/);
+  });
+
+  it('leaves out a side sheet the pack has none of', () => {
+    const [warning] = componentLibraryWarnings({ library: 'ui2', source: 'saved', pack: 'mui' }, [page('Text')]);
+    expect(warning).toMatch(/Lib_mui_Dialog for dialogs/);
+    expect(warning).not.toMatch(/side sheets|Shad/);
+  });
+
+  it('names the pack a new app is created with for a plan without app_id', () => {
+    const [warning] = componentLibraryWarnings({ library: 'ui2', source: 'new' }, [page('Text')]);
+    expect(warning).toMatch(/Lib_shadcn_Dialog for dialogs/);
+    expect(warning).not.toMatch(/ShadDialog/);
+  });
+
+  it('keeps the Shad* advice on a server that ships no packs', () => {
+    registerLibraryPacks([]);
+    const [warning] = componentLibraryWarnings({ library: 'ui2', source: 'inferred' }, [page('Text')]);
+    expect(warning).toMatch(/ShadDialog for dialogs and side sheets/);
   });
 });
 

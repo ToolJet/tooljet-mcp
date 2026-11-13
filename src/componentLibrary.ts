@@ -3,6 +3,7 @@
    panel lists that library. New apps are created on 'ui2'; an app from before the setting has none, so its library is
    inferred: 'ui2' when it already holds a Shad* widget, else 'ui1' (the same rule as the ToolJet frontend's
    RightSideBar/ComponentManagerTab/componentLibrary.js). */
+import { libraryPacksAll, serverLibraryPacks } from './libraryPack.js';
 
 export type ComponentLibrary = 'ui1' | 'ui2';
 export interface ResolvedComponentLibrary {
@@ -74,6 +75,28 @@ function nativeFitsUi2(component: { type?: unknown; styles?: unknown }): boolean
   return component.type === 'Table' && styleValue(component.styles, 'tableLook') !== 'default';
 }
 
+/** The pack a UI 2.0 app's widgets draw as: its saved pack, else on a server that ships packs (which has no Shad*
+ *  widgets, lint.ts refuses them) the pack a new app is created with. Undefined on a server without packs. */
+function buildPack(library: { source: string; pack?: string }): string | undefined {
+  if (library.pack) return library.pack;
+  return serverLibraryPacks().length ? defaultPack() : undefined;
+}
+
+/** The UI 2.0 advice for an app built with a pack: its Lib_<pack>_* types, and the dialog and side sheet it has. */
+function packFix(pack: string): string {
+  const components = libraryPacksAll().find((p) => p.pack === pack)?.components ?? {};
+  const first = (...names: string[]) => names.find((name) => components[name]);
+  const dialog = first('Dialog', 'Modal');
+  const sheet = first('Drawer', 'Sheet');
+  return (
+    `Build with the app's component pack instead: types whose names start with Lib_${pack}_ (get_component_catalog ` +
+    'lists them), laid out in FlexContainers; ' +
+    (dialog ? `Lib_${pack}_${dialog} for dialogs; ` : '') +
+    (sheet ? `Lib_${pack}_${sheet} for side sheets; ` : '') +
+    'for tables ToolJet\'s Table (styles.tableLook "shadcn").'
+  );
+}
+
 interface PlannedComponent {
   name?: string;
   type?: unknown;
@@ -110,10 +133,13 @@ export function componentLibraryWarnings(
     : library.source === 'inferred' ? 'the library its widgets imply'
     : 'new apps are; pass app_id to check the plan against an existing app';
   const appName = COMPONENT_LIBRARY_NAMES[library.library];
+  const pack = library.library === 'ui2' ? buildPack(library) : undefined;
   const fix = library.library === 'ui1'
     ? 'Build with the native ToolJet types instead (Table, Chart, TextInput, DropdownV2, ModalV2, Container, ...).'
-    : 'Build with the UI 2.0 types instead: types whose names start with Shad, laid out in FlexContainers; ShadDialog for ' +
-      'dialogs and side sheets; for tables ToolJet\'s Table (styles.tableLook "shadcn").';
+    : pack
+      ? packFix(pack)
+      : 'Build with the UI 2.0 types instead: types whose names start with Shad, laid out in FlexContainers; ShadDialog for ' +
+        'dialogs and side sheets; for tables ToolJet\'s Table (styles.tableLook "shadcn").';
   return [
     `This app is built in ${appName} (${how}), and the plan adds widgets from the other library: ${listed}. ${fix} ` +
       'If the user asked for the other library in this request, keep the plan and put their words in component_library_request.',
