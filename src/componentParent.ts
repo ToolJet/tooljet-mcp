@@ -7,8 +7,9 @@ export type TabSlotName = `tab-t${number}`;
 export type ComponentSlotName = (typeof COMPONENT_SLOT_NAMES)[number] | TabSlotName;
 
 const TAB_SLOT = /^tab-(t\d+)$/;
-// A tab of a published library's tabs container (ToolJet.Slot `tab_<item id>`): stored as "<id>-tab_t0".
-const LIBRARY_TAB_SLOT = /^tab_[A-Za-z0-9_]+$/;
+// An item canvas of a pack container (ToolJet.Slot `tab_<item id>`, and Stepper `step_`, Accordion `section_`, Ant
+// Collapse `panel_`): stored as "<id>-tab_t0".
+const LIBRARY_TAB_SLOT = /^(tab|step|section|panel)_[A-Za-z0-9_]+$/;
 const TAB_CANVAS_SUFFIX = /-(t\d+)$/;
 
 export function isComponentSlotName(value: unknown): value is ComponentSlotName {

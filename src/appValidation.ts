@@ -1,7 +1,7 @@
 import { htmlFedTextColumns, type HtmlFedQuery, type HtmlFedTable } from './htmlColumns.js';
 import type { AppSummary } from './tooljetClient.js';
 import { persistedEventSpecs, validateEvents } from './eventValidation.js';
-import { validateAppStructure } from './lint.js';
+import { lintPackItemSlots, validateAppStructure, type LintComponent } from './lint.js';
 import { unpinnedLibraries } from './libraryPack.js';
 import { issueMessages, validateQueryOptions } from './queryValidation.js';
 
@@ -70,6 +70,7 @@ export function validatePersistedAppSummary(summary: AppSummary, options: { canv
   errors.push(...eventValidation.errors);
   warnings.push(...eventValidation.warnings);
   for (const page of summary.pages ?? []) {
+    errors.push(...lintPackItemSlots((page.components ?? []) as LintComponent[]));
     for (const component of (page.components ?? []) as HtmlFedTable[]) {
       for (const col of htmlFedTextColumns(component, summary.queries as HtmlFedQuery[])) {
         warnings.push(

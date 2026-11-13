@@ -1,4 +1,5 @@
 import { isLibraryPackType, serverLibraryPacks } from './libraryPack.js';
+import { packItemSlots } from './packItemSlots.js';
 import { defaultPack } from './componentLibrary.js';
 // Mechanical, catalog-independent checks that catch the render bugs the skill can only *advise*
 // against. Used by add_component(s) (component-level, pre-write) and validate_app (whole-app,
@@ -800,6 +801,34 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
       errors.push(
         `Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" with ` +
           `${parent.type ?? 'unknown'} parent "${parent.name ?? parent.id}"; header/body/footer belong to ModalV2 (and ShadDialog), Form, and Container (header and body also to Accordion); Kanban supports body (card) and modal; tab-t0, tab-t1 ... belong to Tabs.`
+      );
+    }
+  }
+  errors.push(...lintPackItemSlots(components));
+  return errors;
+}
+
+/** A child on a pack container's item canvas (tab_<id>, step_<id> ...) that the container no longer draws: renaming an
+ *  item's id or removing the item left it saved, never shown and unreachable in the editor. */
+export function lintPackItemSlots(components: LintComponent[]): string[] {
+  const errors: string[] = [];
+  for (const container of components) {
+    const drawn = packItemSlots(container.type, container.properties);
+    if (!drawn) continue;
+    const key = componentKey(container);
+    for (const component of components) {
+      const slot =
+        key && component.parentRef === key
+          ? component.slotName
+          : container.id && component.parent?.startsWith(`${container.id}-`)
+            ? component.parent.slice(container.id.length + 1)
+            : undefined;
+      if (!slot || !slot.startsWith(`${drawn.prefix}_`) || drawn.slots.has(slot)) continue;
+      errors.push(
+        `Component "${component.name ?? component.id ?? component.type}" is on ${container.type} "${container.name ?? container.id}"'s ` +
+          `"${slot}" canvas, but no item of its ${drawn.property} has that id (its canvases: ${[...drawn.slots].join(', ') || 'none'}), ` +
+          'so it would be saved and never shown. Keep the item id, move the child to one of those canvases in the same call ' +
+          '(parent + slot_name), or delete it first with delete_components.'
       );
     }
   }

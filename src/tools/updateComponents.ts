@@ -302,7 +302,8 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
           changedComponents.flatMap(({ before, after }) =>
             introducedLintFindings(lint([before]), lint([after]))
           );
-        if (placementChanged) {
+        // A definition change can strand children too: a container's tab or step id renamed or the item removed.
+        if (placementChanged || changedComponents.length) {
           errors.push(...introducedLintFindings(
             lintComponentSlots(page.components as LintComponent[]),
             lintComponentSlots(allComponents)
