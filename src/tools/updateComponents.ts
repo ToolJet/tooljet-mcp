@@ -324,8 +324,12 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
           changedComponents.flatMap(({ before, after }) =>
             introducedLintFindings(lint([before]), lint([after]))
           );
-        // A definition change can strand children too: a container's tab or step id renamed or the item removed.
-        if (placementChanged || changedComponents.length) {
+        // A definition change can strand children too: a container's tab or step id renamed or the item removed. Only a
+        // component others sit in (their parent is its id, or "<id>-<canvas>") can, so an edit of any other skips the check.
+        const parents = new Set(page.components.map((component) => component.parent).filter(Boolean) as string[]);
+        const hasChildren = (id: unknown) =>
+          typeof id === 'string' && [...parents].some((parent) => parent === id || parent.startsWith(`${id}-`));
+        if (placementChanged || changedComponents.some(({ before }) => hasChildren(before.id))) {
           errors.push(...introducedLintFindings(
             lintComponentSlots(page.components as LintComponent[]),
             lintComponentSlots(allComponents),
