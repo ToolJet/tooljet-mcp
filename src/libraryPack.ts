@@ -1,0 +1,258 @@
+/* Experiment (exp/packs-adapter): a published custom-component library, exposed to the agent as ordinary types
+   (`Lib_<pack>_<Component>`, data/library-pack.json, from scripts/generate-library-pack.mjs). ToolJet stores every
+   library component as one type, LibraryComponent, with the library and component named in its properties, and an
+   app renders it only while its version pins the library (globalSettings.customComponentLibraries, keyed by the
+   library's correlation id without dashes). This file is the translation between the two.
+   A ToolJet that ships its packs (the builtin-packs module, PR #18746) stores a pack component as PackComponent with
+   only { pack, componentName } in its properties: no library identity and no version pin. A pack read from that
+   endpoint has kind 'builtin' and is written that way. */
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { activePackSet } from './packScope.js';
+
+export interface LibraryPack {
+  pack: string;
+  prefix: string;
+  /** 'builtin': shipped with ToolJet (GET /api/builtin-packs), stored as PackComponent. Absent or 'library': an
+   *  installed custom-component library, stored as LibraryComponent with its identity and a version pin. */
+  kind?: 'builtin' | 'library';
+  libraryId: string;
+  correlationId: string;
+  libraryName: string;
+  version: string;
+  components: Record<string, { type: string; props: string[]; events: string[]; [key: string]: unknown }>;
+}
+
+let offline: LibraryPack | null | undefined;
+
+/** The packs this server knows: those discovered in the workspace at start-up (packCatalog.ts), else the offline
+ *  data/library-pack.json. */
+export function libraryPacksAll(): LibraryPack[] {
+  // The active pack set's (packScope.ts): the packs of the workspace this request is for, never another's.
+  const discovered = activePackSet().packs;
+  if (discovered) return discovered;
+  if (offline === undefined) {
+    try {
+      const path = resolve(dirname(fileURLToPath(import.meta.url)), '../data/library-pack.json');
+      offline = JSON.parse(readFileSync(path, 'utf8')) as LibraryPack;
+    } catch {
+      offline = null;
+    }
+  }
+  return offline ? [offline] : [];
+}
+
+export function registerLibraryPacks(packs: LibraryPack[]): void {
+  const set = activePackSet();
+  set.packs = packs;
+}
+
+/** The packs the ToolJet server announced at start-up (none offline or in tests). */
+export const serverLibraryPacks = (): LibraryPack[] => activePackSet().packs ?? [];
+
+/** The first known pack (callers that need any pack at all). */
+export function libraryPack(): LibraryPack | null {
+  return libraryPacksAll()[0] ?? null;
+}
+
+const isBuiltin = (pack: LibraryPack): boolean => pack.kind === 'builtin';
+
+const packOfType = (type: unknown): LibraryPack | undefined =>
+  typeof type === 'string' ? libraryPacksAll().find((p) => type.startsWith(p.prefix)) : undefined;
+
+export const isLibraryPackType = (type: unknown): type is string => !!packOfType(type);
+
+type PackSlot = { name?: unknown; kind?: unknown };
+type PackComponent = LibraryPack['components'][string] & { slots?: PackSlot[]; slotsKnown?: boolean };
+
+/** A pack type's manifest entry, or undefined for a type no known pack has. */
+const packComponentOf = (type: unknown): PackComponent | undefined =>
+  Object.values(packOfType(type)?.components ?? {}).find((entry) => entry.type === type);
+
+/** The names of a manifest entry's canvases, of one kind ("rows") or all. */
+const slotNamesOf = (component: PackComponent | undefined, kind?: string): string[] =>
+  (component?.slots ?? [])
+    .filter((slot) => kind === undefined || slot.kind === kind)
+    .map((slot) => String(slot.name ?? ''))
+    .filter(Boolean);
+
+/** The canvases (ToolJet.Slot names) a pack type's manifest lists, or undefined for a type no known pack has. A
+ *  container whose canvases come from its items lists only its default items' ones. */
+export function packSlotNames(type: unknown): string[] | undefined {
+  const component = packComponentOf(type);
+  return component && component.slotsKnown !== false ? slotNamesOf(component) : undefined;
+}
+
+/** The canvases a pack type repeats as rows (kind "rows": a list's row, a Kanban card). ToolJet draws them as a List
+ *  view row on the component's own id (usePackHost PackRow), so their children's parent is the bare id, not
+ *  "<id>-<slot>". */
+export function packRowSlotNames(type: unknown): string[] {
+  return slotNamesOf(packComponentOf(type), 'rows');
+}
+
+/** Whether a child on this canvas of a pack type is saved on the component's own id: one of its repeating rows, or no
+ *  canvas named (a plain parent) under a component whose only canvases are rows (a list). */
+export function packSlotOnOwnId(type: unknown, slotName?: string): boolean {
+  const component = packComponentOf(type);
+  const rows = slotNamesOf(component, 'rows');
+  if (!rows.length) return false;
+  if (slotName) return rows.includes(slotName);
+  return slotNamesOf(component).every((name) => rows.includes(name));
+}
+
+/** The globalSettings entry that pins every known pack for an app version. */
+export function libraryPins(): Record<string, string> | undefined {
+  // A shipped pack (PackComponent) needs no pin: it always draws the build the release ships.
+  const packs = libraryPacksAll().filter((p) => !isBuiltin(p));
+  return packs.length ? Object.fromEntries(packs.map((p) => [p.correlationId.replace(/-/g, ''), p.version])) : undefined;
+}
+
+type Section = Record<string, unknown>;
+
+const dashless = (id: string): string => id.replace(/-/g, '');
+
+const propertyValue = (properties: unknown, key: string): unknown => {
+  const entry = (properties as Section | undefined)?.[key];
+  return entry && typeof entry === 'object' && 'value' in entry ? (entry as { value?: unknown }).value : entry;
+};
+
+/** The correlation id a stored library component draws from. Not a code page's root: its build owns that pin. */
+function libraryCorrelationId(component: { properties?: unknown }): string | undefined {
+  const properties = component.properties;
+  const id = propertyValue(properties, 'correlationId');
+  return typeof id === 'string' && id && !propertyValue(properties, 'codePage') ? id : undefined;
+}
+
+/** A version's pin for a library: dashless, or dashed on a version saved before pins were normalised. */
+const isPinned = (pins: Record<string, unknown>, correlationId: string): boolean =>
+  pins[dashless(correlationId)] != null || pins[correlationId] != null;
+
+/** The pin entries a version still needs for these stored components, or undefined when it has them all. An existing
+ *  pin always stands: it is the version the builder chose. Libraries this server has no version for can't be pinned. */
+export function missingLibraryPins(
+  components: Array<{ properties?: unknown }>,
+  pins: Record<string, unknown>,
+): Record<string, string> | undefined {
+  const missing: Record<string, string> = {};
+  for (const component of components) {
+    const id = libraryCorrelationId(component);
+    if (!id || isPinned(pins, id)) continue;
+    const pack = libraryPacksAll().find((p) => !isBuiltin(p) && p.correlationId === id);
+    if (pack) missing[dashless(id)] = pack.version;
+  }
+  return Object.keys(missing).length ? missing : undefined;
+}
+
+/** The libraries of stored components with no pin on the version, each with its components' names. */
+export function unpinnedLibraries(
+  components: Array<{ name?: string; properties?: unknown }>,
+  pins: Record<string, unknown>,
+): Array<{ library: string; components: string[] }> {
+  const byLibrary = new Map<string, string[]>();
+  for (const component of components) {
+    const id = libraryCorrelationId(component);
+    if (!id || isPinned(pins, id)) continue;
+    const library = String(propertyValue(component.properties, 'libraryName') ?? id);
+    byLibrary.set(library, [...(byLibrary.get(library) ?? []), String(component.name ?? 'unnamed')]);
+  }
+  return [...byLibrary].map(([library, names]) => ({ library, components: names }));
+}
+
+/** A `Lib_*` component as ToolJet stores it: PackComponent naming its pack and component for a shipped pack, else
+ *  LibraryComponent with the library identity in its properties. */
+export function toLibraryComponent<T extends { type: string; properties?: Section }>(spec: T): T {
+  const pack = packOfType(spec.type);
+  if (!pack) return spec;
+  const componentName = spec.type.slice(pack.prefix.length);
+  if (isBuiltin(pack)) {
+    return {
+      ...spec,
+      type: 'PackComponent',
+      properties: {
+        ...(spec.properties ?? {}),
+        pack: { value: pack.pack },
+        componentName: { value: componentName },
+      },
+    };
+  }
+  return {
+    ...spec,
+    type: 'LibraryComponent',
+    properties: {
+      ...(spec.properties ?? {}),
+      libraryId: { value: pack.libraryId },
+      correlationId: { value: pack.correlationId },
+      libraryName: { value: pack.libraryName },
+      componentName: { value: componentName },
+    },
+  };
+}
+
+/** A LibraryComponent or PackComponent that names no component, pack or library: it has nothing to draw and shows an
+ *  empty box (the bare host type written into an app). A workspace's own custom library, no pack the MCP knows, names
+ *  its library and is not one. */
+export function isEmptyLibraryHost(component: { type?: string; properties?: Section }): boolean {
+  if (component.type !== 'LibraryComponent' && component.type !== 'PackComponent') return false;
+  return !['componentName', 'pack', 'libraryId', 'correlationId', 'libraryName'].some((key) => {
+    const entry = component.properties?.[key];
+    const value = entry && typeof entry === 'object' && 'value' in entry ? (entry as { value?: unknown }).value : entry;
+    return typeof value === 'string' && value.trim() !== '';
+  });
+}
+
+/** Why an empty host (isEmptyLibraryHost) is refused, and what to write instead: the same for a component being written
+ *  (lintComponents) and one already saved (validate_app, `persisted`), which is deleted first. Null for any other. */
+export function emptyLibraryHostError(
+  component: { name?: string; id?: string; type?: string; properties?: Section },
+  options: { persisted?: boolean } = {}
+): string | null {
+  if (!isEmptyLibraryHost(component)) return null;
+  return (
+    `Component "${component.name ?? component.id ?? component.type}" is a ${component.type} that names no component, so it ` +
+    "draws an empty box: it is ToolJet's internal host, stored with the component it draws. " +
+    `${options.persisted ? 'Delete it and add' : 'Write'} the pack's own type, Lib_<pack>_<Component> (get_component_catalog lists them).`
+  );
+}
+
+/** The `Lib_*` type of a stored PackComponent or LibraryComponent of a known pack, for reads (summaries, lint of the
+ *  saved app). */
+export function libraryTypeOf(component: { type?: string; properties?: Section }): string | undefined {
+  if (component.type !== 'LibraryComponent' && component.type !== 'PackComponent') return undefined;
+  const value = (key: string) => {
+    const entry = component.properties?.[key] as { value?: unknown } | unknown;
+    return entry && typeof entry === 'object' && 'value' in (entry as object) ? (entry as { value?: unknown }).value : entry;
+  };
+  if (component.type === 'PackComponent') {
+    const id = value('pack');
+    const name = value('componentName');
+    if (typeof id !== 'string' || typeof name !== 'string') return undefined;
+    const known = libraryPacksAll().find((p) => p.pack === id);
+    // A pack this server has not read still reads back as a Lib_* type, so the agent sees what is on the page.
+    if (!known) return `Lib_${id.toLowerCase().replace(/[^a-z0-9]+/g, '')}_${name}`;
+    return known.components[name] ? `${known.prefix}${name}` : undefined;
+  }
+  const pack = libraryPacksAll().find((p) => p.correlationId === value('correlationId'));
+  const name = value('componentName');
+  return pack && typeof name === 'string' && pack.components[name] ? `${pack.prefix}${name}` : undefined;
+}
+
+// The FlexContainer of a ToolJet without UI 2.0's layout (the team branch): its schema has no stretch or baseline
+// alignment and no space-between, and refuses the save of a page that uses them. The MCP's own flex polish adds
+// stretch to rows of cards, so the downgrade runs at the write, after every pass.
+const FLEX_DOWNGRADE: Record<string, Record<string, string>> = {
+  alignItems: { stretch: 'flex-start', 'last baseline': 'flex-start' },
+  justifyContent: { 'space-between': 'flex-start' },
+};
+
+export function downgradeFlexForLibrary<T extends { type: string; properties?: Section }>(spec: T): T {
+  // Only for a ToolJet without UI 2.0's layout (TOOLJET_FLEX_V1=1, the team branch before the core port).
+  if (process.env.TOOLJET_FLEX_V1 !== '1' || !libraryPack() || spec.type !== 'FlexContainer' || !spec.properties) return spec;
+  const properties = { ...spec.properties };
+  for (const [key, map] of Object.entries(FLEX_DOWNGRADE)) {
+    const entry = properties[key] as { value?: unknown } | undefined;
+    const value = entry && typeof entry === 'object' ? entry.value : entry;
+    if (typeof value === 'string' && map[value]) properties[key] = { value: map[value] };
+  }
+  return { ...spec, properties };
+}

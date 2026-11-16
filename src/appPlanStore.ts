@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { currentBranchId } from './config.js';
 import type { AppSpecLintResult } from './appSpecLint.js';
 import type { AppPlanInput } from './appPlanSchema.js';
 
@@ -6,6 +7,7 @@ const PLAN_TTL_MS = 30 * 60 * 1000;
 const MAX_PLANS = 20;
 
 interface StoredPlan {
+  branchId?: string;
   spec: AppPlanInput;
   lint: AppSpecLintResult;
   expiresAt: number;
@@ -27,6 +29,7 @@ export function storeAppPlan(spec: AppPlanInput, lint: AppSpecLintResult, replac
   prune();
   const planToken = randomUUID();
   plans.set(planToken, {
+    branchId: currentBranchId(),
     spec: structuredClone(spec),
     lint: structuredClone(lint),
     expiresAt: Date.now() + PLAN_TTL_MS,
@@ -46,6 +49,7 @@ export function consumeAppPlan(planToken: string): StoredPlan {
   prune();
   const plan = plans.get(planToken);
   if (!plan) throw new Error('Unknown or expired plan_token. Run lint_app_spec again.');
+  if (plan.branchId !== currentBranchId()) throw new Error('The plan belongs to a different branch. Use the branch_id supplied to lint_app_spec.');
   plans.delete(planToken);
   return plan;
 }

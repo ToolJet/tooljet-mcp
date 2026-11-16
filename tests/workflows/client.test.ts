@@ -28,6 +28,12 @@ describe('workflow HTTP adapter', () => {
     const snapshot = await client.get('w', 'v'); expect(snapshot.editable).toBe(false);
     await expect(client.save(snapshot, snapshot.definition)).rejects.toThrow('editable draft');
   });
+  it('preserves the selected workspace branch in its editor link', async () => {
+    const value = app();
+    Object.assign(value.editing_version, { branch: { name: 'feature/ceramics' } });
+    const { client } = setup(vi.fn(async path => new Response(JSON.stringify(path === '/api/v2/resources/export' ? exported(value) : value))));
+    expect((await client.get('w', 'v')).editor_url).toBe('http://localhost:3000/workspace/apps/my-workflow?branch=feature%2Fceramics');
+  });
   it('rejects a version from a different workspace', async () => {
     const value = app(); value.organizationId = 'other';
     const { client } = setup(vi.fn(async () => new Response(JSON.stringify(value))));

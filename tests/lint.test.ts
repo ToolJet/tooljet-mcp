@@ -1342,7 +1342,7 @@ describe('lintComponents (batch)', () => {
       { name: 'board', type: 'Kanban', clientRef: 'board' },
       { name: 'badHeader', type: 'Text', parentRef: 'board', slotName: 'header', properties: {} },
     ]);
-    expect(result.errors.join(' ')).toMatch(/slot_name:"header".*Kanban parent.*ModalV2, Form, and Container/i);
+    expect(result.errors.join(' ')).toMatch(/slot_name:"header".*Kanban parent.*ModalV2 \(and ShadDialog\), Form, and Container/i);
   });
 
   it('aggregates per-component results and overlaps', () => {
@@ -1818,7 +1818,9 @@ describe('validateAppStructure', () => {
     expect(warnings).not.toMatch(/serverSideSort.*onSort/);
   });
 
-  it('warns on a binding to a non-existent query', () => {
+  // QA DVRL-111 (2026-11-12): validate_app and lint_app_spec reported every broken binding twice, as an error and again
+  // as a warning.
+  it('reports a binding to a non-existent query or component once, as an error', () => {
     const bad: AppSummary = {
       ...base,
       pages: [
@@ -1827,11 +1829,19 @@ describe('validateAppStructure', () => {
           name: 'Home',
           components: [
             { id: 'c1', name: 'table1', type: 'Table', properties: { data: { value: '{{queries.missing.data}}' }, dataSourceSelector: { value: 'rawJson' }, autogenerateColumns: { value: true } } },
+            { id: 'c2', name: 'text1', type: 'Text', properties: { text: { value: '{{components.nope.value}}' } } },
           ],
         },
       ],
     };
-    expect(validateAppStructure(bad).warnings.join(' ')).toMatch(/binds \{\{queries\.missing…\}\} but no query is named "missing"/);
+    const { errors, warnings } = validateAppStructure(bad);
+    expect(errors.filter((e) => e.includes('"missing"'))).toEqual([
+      expect.stringMatching(/Component "table1" references queries\.missing, but no query is named "missing"/),
+    ]);
+    expect(errors.filter((e) => e.includes('"nope"'))).toEqual([
+      expect.stringMatching(/Component "text1" references components\.nope, but no component is named "nope"/),
+    ]);
+    expect(warnings.filter((w) => w.includes('"missing"') || w.includes('"nope"'))).toEqual([]);
   });
 
   it('warns on duplicate component names within a page', () => {
@@ -1983,6 +1993,12 @@ describe('lintUnrenderableHeights', () => {
     expect(
       lintUnrenderableHeights([at('Divider', 'rule', 10), at('ModalV2', 'mdl', 1), at('Html', 'band', 96), at('Table', 'tbl', 300)])
     ).toEqual([]);
+  });
+
+  it('accepts the UI 2.0 widgets the app draws under 24px, and nothing lower', () => {
+    // A small-tone text line is 18px and a checkbox row 20px in the viewer (packHeights.ts).
+    expect(lintUnrenderableHeights([at('ShadText', 'note', 18), at('ShadCheckbox', 'agree', 20)])).toEqual([]);
+    expect(lintUnrenderableHeights([at('ShadText', 'note', 14), at('ShadCheckbox', 'agree', 18), at('ShadBadge', 'b', 20)])).toHaveLength(3);
   });
 });
 

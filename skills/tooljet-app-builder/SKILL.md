@@ -5,7 +5,7 @@ metadata:
   generated_by: scripts/generate-skill.mjs
   sources: >-
     Source-verified component binding rules (22 components);
-    ToolJet WidgetManager catalog (74 built-in components);
+    ToolJet WidgetManager catalog (150 built-in components);
     ToolJet appCanvasConstants (grid mechanics)
 ---
 
@@ -21,21 +21,29 @@ Use the selected ToolJet connection's tools; ask if missing or ambiguous. This s
 
 For migration/clone/replacement requests, first read `references/migration.md`. Discover expanded states, relationships and read-only journeys—not just screenshots. Map source coverage to ToolJet and report gaps. Skip this workflow for ordinary builds or visual-only inspiration.
 
+## Visual or Code mode
+
+Unless the user said, ask before `create_app`: visual (ToolJet components) or Code mode (React, `code_app_*` tools). For Code mode pass `build_mode: "code"`, then follow the `code_app_*` tool descriptions instead of lint and apply.
+
 ## Core workflow
 
-1. Call `list_workspaces`; if several exist, confirm and switch before creating anything. Decide the page architecture before components. A simple single-job app can stay on one page; separate substantial jobs into focused pages; add an overview only when cross-workflow orientation or decisions need it.
+1. Call `list_workspaces`; if several exist, confirm the workspace. Branch selection: references/workflows.md. Decide the page architecture before components. A simple single-job app can stay on one page; separate substantial jobs into focused pages; add an overview only when cross-workflow orientation or decisions need it.
 2. Treat 3+ substantive pages, 2+ complex workflows, a multi-table model, or multiple integrations as a large build. Before mutations, show the page/phase plan and rough time ranges, then ask for phased checkpoints (recommended) or the whole app in one run. Do not re-ask if the user already chose.
 3. State the short design brief with the page plan before create_app (references/ui-layout.md): the user's job, dominant surface, relevant emphasis, and theme. Resolve the theme using `references/themes.md`: honor explicit design, selected themes, else derive from brand or use case (short prompts have one); ToolJet Modern only if asked. Pass the resolved `theme` to `create_app`, preserve its ids and links, then call `list_datasources`. Report any `theme.warning`. Fetch only the component, event-action, and datasource contracts needed for the current phase, using one selective batch per contract class, and reuse them. Request exact `sections` and `property_keys`/`style_keys`, not broad full contracts. Confirm a new data model before creating it; ToolJet DB table names are at most 31 characters.
 4. Implement that brief as a complete useful phase with stable `client_ref` values. Root components omit `parent` and `slot_name`; page ids are not component parents. Await `lint_app_spec` as a standalone barrier, fix its errors and review warnings, then pass its one-time `plan_token` to `apply_app_phase`. Never run the linter alongside a write. Put planned persisted component definition patches in `component_updates`; use targeted update tools for ad-hoc repairs, never duplicate resources or rebuild the app. After an error, inspect it and change the repair—never replay an identical mutation.
 5. Verify each completed page/primary flow using `references/qa.md`. For detailed requests, reconcile a compact requirement-to-implementation ledger at these checkpoints (`references/workflows.md`); page count is not feature coverage. Static validation does not prove runtime query behavior, rendering, or event delivery.
 6. Share `editor_url` while authoring. After the first meaningful page works, open `viewer_url` in the built-in browser when available and reuse that tab. The final handoff is at most 120 words: both links, what works, one line of limitations.
 
+## Component library
+
+Build in the app's `component_library` from `get_app_summary`: `ui1` (ToolJet UI 1.0, native widgets) or `ui2` (ToolJet UI 2.0, `Shad*` types in `FlexContainer`s). New apps are UI 2.0; an explicit request for the other wins (`references/ui-layout.md`).
+
 ## Design quality — required outcomes, flexible composition
 
 Build a polished, contemporary 2026 product UI even from a short prompt: legible hierarchy, coherent theme surfaces, intentional density, clear actions and complete states. "Modern" is a quality bar, not a demand for gradients, glass, oversized cards or a fixed template. Do not claim production readiness from appearance.
 
 - **Resolve the design source:** explicit requirements/design system → existing or selected theme → recognizable brand → use case/industry/audience → ToolJet Modern. Preserve chosen themes, even on empty shells. For brand-led designs, map identity to visible component treatments—not just saved tokens (references/themes.md).
-- **Design the job, not a generic dashboard.** Identify the user's main decision and next action, then choose the dominant surface: agenda, review split-view, queue, map, board, analytics or form. Infer supporting views from the task and available data; a dashboard can need trends without the user naming charts. Do not invent metrics, records, capabilities or unrelated workflows.
+- **Design the job, not a generic dashboard.** Identify the user's main decision and next action, then choose the dominant surface: agenda, review split-view, queue, map, board, analytics or form. Work moving through stages (deals, hiring, orders) usually reads best as a board by stage. Infer supporting views from the task and available data; a dashboard can need trends without the user naming charts. Do not invent metrics, records, capabilities or unrelated workflows.
 - **Freedom with purpose.** Derive headers, region proportions, typography, accents and density from the work; do not select a palette or composition merely because it appears in an example. ToolJet themes store the resulting design tokens, not a menu of allowed designs. Zero KPIs is valid. No fixed KPI count, root-component budget, mandatory overview, all-white-card rule or universal header position applies. Familiar patterns are welcome when justified; industry identity must affect information hierarchy, not just colour.
 - **HTML where it helps.** Use theme-aware Html for read-only summaries when helpful; headers and KPIs can be native. Keep controls, charts, tables and interactions native. Read references/ui-layout.md for background and escaping safeguards.
 - **Finish the workflow.** Format values for the user's locale, give states readable labels, and provide loading, empty, error and disabled states with useful recovery. Size content to fit; use intentional spacing and accessible contrast. Before handoff, check relevance, hierarchy, interaction and actual rendering—not merely whether lint passed.
@@ -82,5 +90,5 @@ Tool schemas and warnings are authoritative. Load references as needed. Keep ins
 - Never run mutations, AI, email, OAuth, or other side effects merely to validate. Version changes require explicit intent: create only when asked, pin the returned `version_id`, and release only that exact version with `confirm:true`.
 - Seed writes are insert-only; omit generated serial keys. A duplicate-key failure is never permission to update existing rows.
 - Page/query/component/table/column deletion requires exact-target approval plus `confirm:true`, except for resources this build created itself (a diagnostic query, a scratch page): delete those before finishing rather than renaming or hiding them. Visibility is not authorization.
-- Keep app chrome controls distinct: `hide_header` hides the app header/banner; `navigation_position` places the separate generated navigation menu on the side or top; `navigation_hidden` hides that whole menu in either position; and `update_pages.hidden` hides only one non-Home page. Home cannot be hidden.
+- Keep app chrome controls distinct: `hide_header` hides the app header/banner; `navigation_position` places the separate generated navigation menu on the side or top; `navigation_hidden` hides that whole menu in either position, plus header and logo; and `update_pages.hidden` hides only one non-Home page. Home cannot be hidden.
 - Batch/phase writes can partially persist. Read reported completed resources and repair in place; never auto-delete or replay the whole batch blindly.

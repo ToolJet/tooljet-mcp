@@ -89,6 +89,13 @@ export interface DatasourceOperationContract {
 
 export const COMMON_QUERY_OPTION_FIELDS: Record<string, DatasourceFieldContract> = {
   runOnPageLoad: { path: 'runOnPageLoad', type: 'boolean|binding', description: 'Run when the app first loads.' },
+  // Query parameters, on every kind: values passed to a run (a code page's run({ ... }), a run-query action) and read in
+  // the query as {{parameters.<name>}}.
+  parameters: {
+    path: 'parameters',
+    type: 'array',
+    description: 'Query parameters [{ name, defaultValue }]: read as {{parameters.name}}, set by whoever runs the query.',
+  },
   runOnDependencyChange: { path: 'runOnDependencyChange', type: 'boolean|binding' },
   requestConfirmation: { path: 'requestConfirmation', type: 'boolean|binding' },
   requestConfirmationFx: { path: 'requestConfirmationFx', type: 'boolean' },

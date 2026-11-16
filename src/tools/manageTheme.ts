@@ -6,77 +6,84 @@ export const THEME_LICENCE_USER_MESSAGE =
   'Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. ' +
   'Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.';
 import { exposeActions, fail, ok, type ActionTool, type ToolDef } from './types.js';
+import { loadStandardTheme } from './createApp.js';
 import { paintsDarkCanvasInLightMode } from '../appSettings.js';
+import { accentWarning, hsl } from '../themeAccent.js';
+import { themeDefinition } from './themeDefinition.js';
 
-const colorPair = z.object({
-  light: z.string().trim().min(1).max(100).describe('Color used in light mode; hex is recommended.'),
-  dark: z.string().trim().min(1).max(100).describe('Color used in dark mode; hex is recommended.'),
-}).strict();
-
-export const themeDefinition = z.object({
-  brand: z.object({
-    colors: z.object({
-      primary: colorPair,
-      secondary: colorPair.optional(),
-      tertiary: colorPair.optional(),
-    }).strict(),
-  }).strict(),
-  text: z.object({
-    font: z.string().trim().min(1).max(200),
-    colors: z.object({
-      primary: colorPair,
-      placeholder: colorPair.optional(),
-      disabled: colorPair.optional(),
-    }).strict(),
-  }).strict(),
-  border: z.object({
-    radius: z.object({
-      default: z.number().nonnegative(),
-      small: z.number().nonnegative(),
-      large: z.number().nonnegative(),
-    }).strict(),
-    colors: z.object({
-      default: colorPair,
-      weak: colorPair.optional(),
-      disabled: colorPair.optional(),
-    }).strict(),
-  }).strict(),
-  systemStatus: z.object({
-    colors: z.object({
-      success: colorPair,
-      error: colorPair.optional(),
-      warning: colorPair.optional(),
-    }).strict(),
-  }).strict(),
-  surface: z.object({
-    colors: z.object({
-      appBackground: colorPair,
-      surface1: colorPair,
-      surface2: colorPair,
-      surface3: colorPair,
-    }).strict(),
-  }).strict(),
-}).strict();
+export { themeDefinition };
 
 type Args = {
   action: 'list' | 'create' | 'set_default' | 'update_definition' | 'rename' | 'delete';
   theme_id?: string;
   name?: string;
   definition?: z.infer<typeof themeDefinition>;
+  primary?: string;
+  font?: string;
+  radius?: number;
   is_default?: boolean;
   confirm?: boolean;
   include_definitions?: boolean;
   app_id?: string;
   version_id?: string;
+  app_mode?: 'light' | 'dark';
 };
 
 /** Sets the theme on an app version, in dark mode when the theme's light-mode canvas is dark (as create_app does). */
 async function applyToApp(client: ToolJetClient, theme: AppTheme, args: Args, definition: unknown) {
   if (!args.app_id || !args.version_id) return undefined;
-  const dark = paintsDarkCanvasInLightMode(definition);
+  const mode = args.app_mode ?? (paintsDarkCanvasInLightMode(definition) ? 'dark' : undefined);
   await client.updateAppSettings({ appId: args.app_id, versionId: args.version_id,
-    globalSettings: { theme, ...(dark ? { appMode: 'dark' as const } : {}) } });
-  return { app_id: args.app_id, version_id: args.version_id, ...(dark ? { app_mode: 'dark' as const } : {}) };
+    globalSettings: { theme, ...(mode ? { appMode: mode } : {}) } });
+  return { app_id: args.app_id, version_id: args.version_id, ...(mode ? { app_mode: mode } : {}) };
+}
+
+const hex = (h: number, s: number, l: number): string => {
+  const channel = (n: number): string => {
+    const k = (n + h / 30) % 12;
+    return Math.round(255 * (l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, '0');
+  };
+  return `#${channel(0)}${channel(8)}${channel(4)}`;
+};
+
+/**
+ * A theme from the few choices that make it this app's. DeepSeek left `definition` out of 62 of 63 failed calls in 9 of 10
+ * builds (2026-11-04). Keeping the standard theme's greys around the chosen accent made apps look alike, and they graded
+ * 7.71 on design against 8.00 for full themes, so the neutrals and accents here all come from the accent's hue.
+ */
+export function definitionFromChoices(args: Pick<Args, 'primary' | 'font' | 'radius'>): z.infer<typeof themeDefinition> | undefined {
+  const accent = args.primary ? hsl(args.primary) : null;
+  if (!args.primary || !accent) return undefined;
+  const { h, s: sat, l } = accent;
+  const pair = (light: [number, number], dark: [number, number], hue = h) => ({ light: hex(hue, light[0], light[1]), dark: hex(hue, dark[0], dark[1]) });
+  const base = loadStandardTheme().definition as z.infer<typeof themeDefinition>;
+  const radius = args.radius ?? base.border.radius.default;
+  return {
+    brand: {
+      colors: {
+        primary: { light: args.primary, dark: hex(h, sat, Math.max(l, 0.62)) },
+        secondary: pair([0.45, 0.22], [0.4, 0.78]),
+        tertiary: pair([0.65, 0.42], [0.65, 0.68], (h + 35) % 360),
+      },
+    },
+    text: {
+      font: args.font ?? base.text.font,
+      colors: { primary: pair([0.28, 0.13], [0.18, 0.94]), placeholder: pair([0.12, 0.45], [0.1, 0.65]), disabled: pair([0.1, 0.68], [0.08, 0.45]) },
+    },
+    border: {
+      radius: { default: radius, small: Math.max(radius - 2, 0), large: radius + 4 },
+      colors: { default: pair([0.22, 0.86], [0.12, 0.24]), weak: pair([0.24, 0.91], [0.12, 0.19]), disabled: pair([0.16, 0.82], [0.1, 0.28]) },
+    },
+    systemStatus: base.systemStatus,
+    surface: {
+      colors: {
+        appBackground: pair([0.3, 0.965], [0.16, 0.075]),
+        surface1: { light: '#ffffff', dark: hex(h, 0.14, 0.11) },
+        surface2: pair([0.28, 0.94], [0.13, 0.145]),
+        surface3: pair([0.24, 0.9], [0.12, 0.19]),
+      },
+    },
+  };
 }
 
 function requireValue<T>(value: T | undefined, label: string): T {
@@ -103,8 +110,8 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
     description:
       'Manage workspace theme objects through ToolJet\'s typed theme API. Actions: list, create, set_default, ' +
       'update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens ' +
-      'with light/dark values. create with app_id and version_id also applies the theme to that app (in dark mode when ' +
-      'its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same ' +
+      'with light/dark values. create with app_id and version_id also applies the theme to that app (in app_mode, else ' +
+      'in dark mode when its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same ' +
       'name, so there is no need to list themes first. ' +
       'Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass ' +
       'include_definitions:true (or theme_id) to get a definition.',
@@ -112,12 +119,19 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
       action: z.enum(['list', 'create', 'set_default', 'update_definition', 'rename', 'delete']),
       theme_id: z.string().uuid().optional(),
       name: z.string().trim().min(1).max(100).optional(),
+      primary: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().describe('create: the accent colour as a hex. With font and radius, this is all a theme needs; the rest is derived from its hue'),
+      font: z.string().trim().min(1).max(100).optional().describe('create, with primary: one font family name'),
+      radius: z.number().min(0).max(32).optional().describe('create, with primary: corner radius in px'),
       definition: themeDefinition.optional(),
       is_default: z.boolean().optional(),
       confirm: z.boolean().optional(),
       include_definitions: z.boolean().optional(),
       app_id: z.string().uuid().optional().describe('create only: apply the theme to this app as well'),
       version_id: z.string().uuid().optional().describe('create only, with app_id: the app version to apply it to'),
+      app_mode: z.enum(['light', 'dark']).optional().describe(
+        "create only, with app_id: open the app in this mode. Pass 'dark' when the request asks for a dark app: the " +
+        "theme's dark values then paint every surface, and ToolJet's own parts (tables, inputs) draw for them. Never " +
+        'paint dark backgrounds by hand on a light-mode app.'),
     },
     async handler(args: Args) {
       try {
@@ -137,6 +151,14 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
         }
 
         if (args.action === 'create') {
+          // Every missing field in one answer: refused for its name, then for its primary, 20 Code builds had 33 failed
+          // creates (2026-11-04), each a model call over the whole context.
+          const missing = [
+            ...(args.name === undefined ? ['name (at least 5 characters, the brand or app, e.g. "Harbor Ledger")'] : []),
+            ...(args.definition === undefined && !definitionFromChoices(args)
+              ? ['primary (the accent as a hex colour, e.g. "#0f766e"; font and radius are optional)'] : []),
+          ];
+          if (missing.length) throw new Error(`manage_theme create needs ${missing.join(' and ')}. Send them together in one call.`);
           const name = requireValue(args.name, 'name');
           if (name.length < 5) throw new Error('Theme name must contain at least 5 characters.');
           if (name === 'ToolJet') throw new Error('The reserved theme name "ToolJet" cannot be used.');
@@ -157,13 +179,15 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
             });
           }
           try {
+            const definition = requireValue(args.definition ?? definitionFromChoices(args), 'primary (a hex colour; font and radius are optional)');
             const created = await client.createAppTheme({
               name,
-              definition: requireValue(args.definition, 'definition'),
+              definition,
               isDefault: args.is_default ?? false,
             });
-            const applied = await applyToApp(client, created, args, args.definition);
-            return ok({ theme: created, ...(applied ? { applied } : {}) });
+            const applied = await applyToApp(client, created, args, definition);
+            const accent = accentWarning(definition);
+            return ok({ theme: created, ...(applied ? { applied } : {}), ...(accent ? { warnings: [accent] } : {}) });
           } catch (error) {
             // Custom themes are a licensed feature; Community Edition answers 451. That is a fact about
             // the customer's plan, not a mistake in the call, so it must not read as an error the model
@@ -195,7 +219,8 @@ export function manageThemeTool(client: ToolJetClient): ToolDef {
 
         if (args.action === 'update_definition') {
           await client.updateAppThemeDefinition(themeId, requireValue(args.definition, 'definition'));
-          return ok({ theme: await readTheme(client, themeId) });
+          const accent = accentWarning(args.definition);
+          return ok({ theme: await readTheme(client, themeId), ...(accent ? { warnings: [accent] } : {}) });
         }
 
         if (args.action === 'rename') {
@@ -220,8 +245,8 @@ const themes: ActionTool[] = [
     description: 'Read workspace themes with id, name, and flags. Unlike list_app_themes, this also supports include_definitions:true for all definitions or theme_id for one full definition. Does not change themes.',
     required: [], optional: ['theme_id', 'include_definitions'], annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } },
   { action: 'create', name: 'create_workspace_theme', title: 'Create Workspace Theme',
-    description: 'Create a custom workspace theme, or reuse an existing active theme of the same name. Supply a name of at least five characters and a full definition for a new theme. is_default can replace the workspace default. With both app_id and version_id, applies it to that app and selects dark mode for a dark light-mode canvas. License gates apply.',
-    required: ['name'], optional: ['definition', 'is_default', 'app_id', 'version_id'],
+    description: 'Create a custom workspace theme, or reuse an existing active theme of the same name. Supply a name of at least five characters and either a full definition or primary (a hex accent), with optional font and radius, for a new theme. is_default can replace the workspace default. With both app_id and version_id, applies it to that app and selects dark mode for a dark light-mode canvas. License gates apply.',
+    required: ['name'], optional: ['definition', 'primary', 'font', 'radius', 'is_default', 'app_id', 'version_id', 'app_mode'],
     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } },
   { action: 'set_default', name: 'set_default_workspace_theme', title: 'Set Default Workspace Theme',
     description: 'Change whether an existing workspace theme is the default. is_default defaults to true; false removes its default status. Changes the workspace default used by apps.',

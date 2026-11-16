@@ -5,8 +5,9 @@ import { fileURLToPath } from 'node:url';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { buildServer, buildUnconfiguredServer } from './server.js';
-import { readJsonBody } from './httpServer.js';
+import { buildServer, buildUnconfiguredServer, packsReady } from './server.js';
+import { isLoopbackHost, readJsonBody } from './httpServer.js';
+import { refuseForeignRequest } from './requestOrigin.js';
 import { createOAuthHttpServer, oauthHttpOptionsFromEnv } from './oauthHttp.js';
 import { bearerValue, checkBearerToken } from './httpAuth.js';
 import { isBuildToken, mintAuthorized, mintBuildToken, mintSecret, resolveBuildToken, revokeBuildToken } from './buildTokens.js';
@@ -35,7 +36,7 @@ export interface GatewayHttpServer {
  * bearer auth, the user-session requirement, the request-URL requirement — with real HTTP requests,
  * the same way httpServer.ts's createHttpMcpServer is tested.
  */
-export function createGatewayHttpServer(): GatewayHttpServer {
+export function createGatewayHttpServer({ bindHost }: { bindHost?: string } = {}): GatewayHttpServer {
   const oauth = oauthHttpOptionsFromEnv();
   if (oauth) return { server: createOAuthHttpServer(oauth), gatewayMode: false };
   const sharedToken = process.env.MCP_SHARED_TOKEN;
@@ -52,21 +53,27 @@ export function createGatewayHttpServer(): GatewayHttpServer {
      default precisely because that token now travels over the wire. */
   const gatewayMode = Boolean(sharedToken);
 
-  /* Gateway mode serves EVERY user, so the acting user must arrive per request. Require it
-     explicitly when asked: a deployment that also has a PAT configured would otherwise fall back to
-     that shared identity the moment the caller forgot the header, and every build would still
-     succeed, just attributed to the wrong person. Where no PAT is configured the requirement is
-     already implicit, since there would be nothing to fall back to. Direct mode is exempt: its
-     whole point is that one operator's own credential drives the server. */
-  const requireUserSession =
-    gatewayMode &&
-    (/^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_USER_SESSION ?? '') ||
-      !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN));
+  /* Gateway mode serves EVERY user, so the acting user must arrive per request, always: a request
+     that named nobody used to fall back to a TOOLJET_PAT configured on the process (unless
+     MCP_REQUIRE_USER_SESSION was set), acting as the operator for whoever held the shared bearer.
+     The process credential never acts for a gateway request now. Direct mode is exempt: its whole
+     point is that one operator's own credential drives the server. */
+  const requireUserSession = gatewayMode;
 
   /* Same idea, for the target backend rather than the acting user: gateway mode can serve many
      different ToolJet backends, so a deployment can demand every request name its own via
      x-tooljet-url rather than silently writing into this process's static TOOLJET_URL. */
   const requireRequestUrl = gatewayMode && /^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_REQUEST_URL ?? '');
+
+  /* Direct mode bound beyond loopback (MCP_HTTP_HOST): the process's TOOLJET_PAT would act for anyone who can reach
+     the port, so every request must bring its own credential, which ToolJet checks. On loopback it stays the
+     operator's own server, where the configured credential is theirs. */
+  const requireRequestCredential = !gatewayMode && bindHost !== undefined && !isLoopbackHost(bindHost);
+
+  /* DNS rebinding: a web page whose host name resolves to this machine could drive a loopback server with the
+     operator's PAT. Every request must name this server in Host, and a browser's Origin must be local or allowed
+     (requestOrigin.ts). The address is the one serveHttp listens on when none is configured. */
+  const listenHost = bindHost ?? (gatewayMode ? '0.0.0.0' : '127.0.0.1');
 
   /** POST mints a build token for the caller's own session; DELETE revokes one. Authorised by the
    *  mint secret, and the minted identity comes from this request's own headers, so a caller can only
@@ -126,6 +133,7 @@ export function createGatewayHttpServer(): GatewayHttpServer {
   };
 
   const httpServer = createServer(async (req, res) => {
+    if (refuseForeignRequest(req, res, { bindHost: listenHost })) return;
     const requestPath = new URL(req.url ?? '/', 'http://localhost').pathname;
     const bearer = bearerValue(req.headers.authorization);
 
@@ -203,14 +211,14 @@ export function createGatewayHttpServer(): GatewayHttpServer {
       return;
     }
 
-    // Direct mode with nothing to act as: no PAT on the request and none in the environment. Say so
-    // in the response rather than letting buildServer throw into a bare 500.
-    if (!gatewayMode && !hasUserCredential && !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN)) {
+    // Direct mode with nothing to act as: no PAT on the request and none in the environment (or one that may not be
+    // used off loopback). Say so in the response rather than letting buildServer throw into a bare 500.
+    if (!gatewayMode && !hasUserCredential && (requireRequestCredential || !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN))) {
       res
         .writeHead(401, { 'Content-Type': 'text/plain' })
         .end(
           `No ToolJet credential. Send your personal access token as \`Authorization: Bearer <token>\` ` +
-            `or in the ${PAT_HEADER} header, or set TOOLJET_PAT on this server. Create a token in ` +
+            `or in the ${PAT_HEADER} header${requireRequestCredential ? '' : ', or set TOOLJET_PAT on this server'}. Create a token in ` +
             'ToolJet under Settings → Access tokens.'
         );
       return;
@@ -253,7 +261,8 @@ export function createGatewayHttpServer(): GatewayHttpServer {
     const readsResource = !!parsedBody && typeof parsedBody === 'object' && !Array.isArray(parsedBody) &&
       (parsedBody as { method?: unknown }).method === 'resources/read';
 
-    const server = buildServer(identity);
+    // A gateway request always names its user (checked above), so this process's own credential never acts for it.
+    const server = buildServer(identity, { hosted: true, requireIdentity: gatewayMode });
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: readsResource });
     res.on('close', () => {
       transport.close();
@@ -286,7 +295,7 @@ async function serveHttp(): Promise<void> {
     throw new Error(`tooljet-mcp: invalid ${ALLOWED_API_ORIGINS_VAR}: ${reason}`);
   }
 
-  const { server: httpServer, gatewayMode } = createGatewayHttpServer();
+  const { server: httpServer, gatewayMode } = createGatewayHttpServer({ bindHost: process.env.MCP_HTTP_HOST });
   const host = process.env.MCP_HTTP_HOST ?? (gatewayMode ? '0.0.0.0' : '127.0.0.1');
 
   await new Promise<void>((resolve, reject) => {
@@ -315,6 +324,9 @@ async function main(): Promise<void> {
     console.error(`tooljet-mcp: ${reason}`);
     server = buildUnconfiguredServer(reason);
   }
+  // The catalogue includes the workspace's component packs before the first tool call (bounded: a slow server must
+  // not stall the handshake; the offline catalogue stands in).
+  await Promise.race([packsReady, new Promise((r) => setTimeout(r, 8000))]);
   await server.connect(new StdioServerTransport());
 }
 

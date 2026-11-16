@@ -1,0 +1,6231 @@
+{
+  "Lib_shadcn_RadialChart": {
+    "type": "Lib_shadcn_RadialChart",
+    "name": "Lib_shadcn_RadialChart",
+    "description": "Radial Chart from the shadcn UI component library. Drawn at the height you give it.",
+    "defaultSize": {
+      "width": 10,
+      "height": 220
+    },
+    "properties": [
+      {
+        "key": "mode",
+        "label": "Mode",
+        "valueType": "string",
+        "default": "progress",
+        "allowedValues": [
+          "progress",
+          "categories"
+        ]
+      },
+      {
+        "key": "value",
+        "label": "Value (progress)",
+        "valueType": "number",
+        "default": "{{72}}"
+      },
+      {
+        "key": "maxValue",
+        "label": "Max value",
+        "valueType": "number",
+        "default": "{{100}}"
+      },
+      {
+        "key": "data",
+        "label": "Data (categories)",
+        "valueType": "array",
+        "default": "{{[{\"channel\":\"Organic\",\"visitors\":420},{\"channel\":\"Paid\",\"visitors\":310},{\"channel\":\"Referral\",\"visitors\":190},{\"channel\":\"Social\",\"visitors\":120}]}}"
+      },
+      {
+        "key": "categoryField",
+        "label": "Category field",
+        "valueType": "string",
+        "default": "channel"
+      },
+      {
+        "key": "valueField",
+        "label": "Value field",
+        "valueType": "string",
+        "default": "visitors"
+      },
+      {
+        "key": "centerValue",
+        "label": "Center value",
+        "valueType": "string",
+        "default": "",
+        "description": "Empty = percent / total."
+      },
+      {
+        "key": "centerLabel",
+        "label": "Center label",
+        "valueType": "string",
+        "default": "Complete"
+      },
+      {
+        "key": "rounded",
+        "label": "Rounded ends",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showTrack",
+        "label": "Track",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showLegend",
+        "label": "Legend (categories)",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "colors",
+        "label": "Colors",
+        "valueType": "array",
+        "default": "{{[]}}"
+      },
+      {
+        "key": "emptyText",
+        "label": "Empty text",
+        "valueType": "string",
+        "default": "No data"
+      },
+      {
+        "key": "clickedDataPoint",
+        "label": "Clicked Data Point",
+        "valueType": "object",
+        "default": "{{{}}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "chartColor",
+        "label": "Bar",
+        "valueType": "string"
+      },
+      {
+        "key": "trackColor",
+        "label": "Track",
+        "valueType": "string"
+      },
+      {
+        "key": "centerValueColor",
+        "label": "Center value",
+        "valueType": "string"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onClick",
+        "label": "On click"
+      },
+      {
+        "id": "onDoubleClick",
+        "label": "On double click"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "clearClickedPoint",
+        "displayName": "Clear clicked point"
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "mode",
+        "default": "progress"
+      },
+      {
+        "name": "value",
+        "default": 72
+      },
+      {
+        "name": "maxValue",
+        "default": 100
+      },
+      {
+        "name": "data",
+        "default": [
+          {
+            "channel": "Organic",
+            "visitors": 420
+          },
+          {
+            "channel": "Paid",
+            "visitors": 310
+          },
+          {
+            "channel": "Referral",
+            "visitors": 190
+          },
+          {
+            "channel": "Social",
+            "visitors": 120
+          }
+        ]
+      },
+      {
+        "name": "categoryField",
+        "default": "channel"
+      },
+      {
+        "name": "valueField",
+        "default": "visitors"
+      },
+      {
+        "name": "centerValue",
+        "default": ""
+      },
+      {
+        "name": "centerLabel",
+        "default": "Complete"
+      },
+      {
+        "name": "rounded",
+        "default": true
+      },
+      {
+        "name": "showTrack",
+        "default": true
+      },
+      {
+        "name": "showLegend",
+        "default": true
+      },
+      {
+        "name": "colors",
+        "default": []
+      },
+      {
+        "name": "emptyText",
+        "default": "No data"
+      },
+      {
+        "name": "clickedDataPoint",
+        "default": {}
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_RadioGroup": {
+    "type": "Lib_shadcn_RadioGroup",
+    "name": "Lib_shadcn_RadioGroup",
+    "description": "Radio Group from the shadcn UI component library. Sizes to its content in the app (Dynamic height on).",
+    "defaultSize": {
+      "width": 10,
+      "height": 110
+    },
+    "properties": [
+      {
+        "key": "label",
+        "label": "Label",
+        "valueType": "string",
+        "default": "Notify me about"
+      },
+      {
+        "key": "options",
+        "label": "Options",
+        "valueType": "array",
+        "default": "{{[{\"label\":\"All new messages\",\"value\":\"all\"},{\"label\":\"Direct messages and mentions\",\"value\":\"mentions\"},{\"label\":\"Nothing\",\"value\":\"none\"}]}}",
+        "description": "Array of { label, value } objects, or plain strings."
+      },
+      {
+        "key": "value",
+        "label": "Default value",
+        "valueType": "string",
+        "default": "all"
+      },
+      {
+        "key": "orientation",
+        "label": "Layout",
+        "valueType": "string",
+        "default": "vertical",
+        "allowedValues": [
+          "vertical",
+          "horizontal"
+        ]
+      },
+      {
+        "key": "disabled",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "accentColor",
+        "label": "Selected",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Text",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Border",
+        "valueType": "string"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onChange",
+        "label": "On change"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setValue",
+        "displayName": "Select option",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value"
+          }
+        ]
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "label",
+        "default": "Notify me about"
+      },
+      {
+        "name": "options",
+        "default": [
+          {
+            "label": "All new messages",
+            "value": "all"
+          },
+          {
+            "label": "Direct messages and mentions",
+            "value": "mentions"
+          },
+          {
+            "label": "Nothing",
+            "value": "none"
+          }
+        ]
+      },
+      {
+        "name": "value",
+        "default": "all"
+      },
+      {
+        "name": "orientation",
+        "default": "vertical"
+      },
+      {
+        "name": "disabled",
+        "default": false
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_Rating": {
+    "type": "Lib_shadcn_Rating",
+    "name": "Lib_shadcn_Rating",
+    "description": "Rating from the shadcn UI component library. Sizes to its content in the app (Dynamic height on).",
+    "defaultSize": {
+      "width": 10,
+      "height": 70
+    },
+    "properties": [
+      {
+        "key": "label",
+        "label": "Label",
+        "valueType": "string",
+        "default": "Rate your experience"
+      },
+      {
+        "key": "value",
+        "label": "Default value",
+        "valueType": "number",
+        "default": "{{3}}"
+      },
+      {
+        "key": "max",
+        "label": "Stars",
+        "valueType": "number",
+        "default": "{{5}}"
+      },
+      {
+        "key": "readOnly",
+        "label": "Read only",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "starColor",
+        "label": "Star color",
+        "valueType": "string"
+      },
+      {
+        "key": "starSize",
+        "label": "Star size",
+        "valueType": "number"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onChange",
+        "label": "On change"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setValue",
+        "displayName": "Set rating",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Stars"
+          }
+        ]
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "label",
+        "default": "Rate your experience"
+      },
+      {
+        "name": "value",
+        "default": 3
+      },
+      {
+        "name": "max",
+        "default": 5
+      },
+      {
+        "name": "readOnly",
+        "default": false
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_RecordList": {
+    "type": "Lib_shadcn_RecordList",
+    "name": "Lib_shadcn_RecordList",
+    "description": "Record List from the shadcn UI component library. Sizes to its content in the app (Dynamic height on).",
+    "defaultSize": {
+      "width": 20,
+      "height": 340
+    },
+    "properties": [
+      {
+        "key": "data",
+        "label": "Data",
+        "valueType": "array",
+        "default": "{{[{\"id\":1,\"customer\":\"Olivia Martin\",\"email\":\"olivia@example.com\",\"plan\":\"Pro\",\"status\":\"Paid\",\"amount\":1999},{\"id\":2,\"customer\":\"Jackson Lee\",\"email\":\"jackson@example.com\",\"plan\":\"Team\",\"status\":\"Pending\",\"amount\":39},{\"id\":3,\"customer\":\"Isabella Nguyen\",\"email\":\"isabella@example.com\",\"plan\":\"Pro\",\"status\":\"Paid\",\"amount\":299},{\"id\":4,\"customer\":\"William Kim\",\"email\":\"will@example.com\",\"plan\":\"Free\",\"status\":\"Refunded\",\"amount\":99}]}}"
+      },
+      {
+        "key": "titleField",
+        "label": "Title field",
+        "valueType": "string",
+        "default": "customer"
+      },
+      {
+        "key": "metaFields",
+        "label": "Meta fields",
+        "valueType": "string",
+        "default": "email, plan",
+        "description": "Comma-separated."
+      },
+      {
+        "key": "avatarField",
+        "label": "Avatar URL field",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "statusField",
+        "label": "Status field",
+        "valueType": "string",
+        "default": "status"
+      },
+      {
+        "key": "progressField",
+        "label": "Progress field",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "valueField",
+        "label": "Value field",
+        "valueType": "string",
+        "default": "amount"
+      },
+      {
+        "key": "valueFormat",
+        "label": "Value format",
+        "valueType": "string",
+        "default": "currency",
+        "allowedValues": [
+          "currency",
+          "number",
+          "percent",
+          "compact"
+        ]
+      },
+      {
+        "key": "currency",
+        "label": "Currency",
+        "valueType": "string",
+        "default": "USD"
+      },
+      {
+        "key": "statusColors",
+        "label": "Status colors",
+        "valueType": "object",
+        "default": "{{{\"Paid\":\"#16a34a\",\"Pending\":\"#d97706\",\"Refunded\":\"#dc2626\"}}}"
+      },
+      {
+        "key": "idField",
+        "label": "Id field",
+        "valueType": "string",
+        "default": "id"
+      },
+      {
+        "key": "showAvatar",
+        "label": "Show avatar",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "density",
+        "label": "Density",
+        "valueType": "string",
+        "default": "default",
+        "allowedValues": [
+          "compact",
+          "default",
+          "comfortable"
+        ]
+      },
+      {
+        "key": "showDividers",
+        "label": "Dividers",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "listStyle",
+        "label": "Style",
+        "valueType": "string",
+        "default": "card",
+        "allowedValues": [
+          "card",
+          "plain"
+        ]
+      },
+      {
+        "key": "highlightSelected",
+        "label": "Highlight selected",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "emptyText",
+        "label": "Empty text",
+        "valueType": "string",
+        "default": "Nothing here yet"
+      },
+      {
+        "key": "selectedItemId",
+        "label": "Selected Item Id",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "selectedItem",
+        "label": "Selected Item",
+        "valueType": "object",
+        "default": "{{{}}}"
+      },
+      {
+        "key": "selectedItemIndex",
+        "label": "Selected Item Index",
+        "valueType": "number",
+        "default": "{{-1}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "accentColor",
+        "label": "Accent",
+        "valueType": "string"
+      },
+      {
+        "key": "backgroundColor",
+        "label": "Background",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Border radius",
+        "valueType": "number"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onItemClicked",
+        "label": "On item clicked"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "data",
+        "default": [
+          {
+            "id": 1,
+            "customer": "Olivia Martin",
+            "email": "olivia@example.com",
+            "plan": "Pro",
+            "status": "Paid",
+            "amount": 1999
+          },
+          {
+            "id": 2,
+            "customer": "Jackson Lee",
+            "email": "jackson@example.com",
+            "plan": "Team",
+            "status": "Pending",
+            "amount": 39
+          },
+          {
+            "id": 3,
+            "customer": "Isabella Nguyen",
+            "email": "isabella@example.com",
+            "plan": "Pro",
+            "status": "Paid",
+            "amount": 299
+          },
+          {
+            "id": 4,
+            "customer": "William Kim",
+            "email": "will@example.com",
+            "plan": "Free",
+            "status": "Refunded",
+            "amount": 99
+          }
+        ]
+      },
+      {
+        "name": "titleField",
+        "default": "customer"
+      },
+      {
+        "name": "metaFields",
+        "default": "email, plan"
+      },
+      {
+        "name": "avatarField",
+        "default": ""
+      },
+      {
+        "name": "statusField",
+        "default": "status"
+      },
+      {
+        "name": "progressField",
+        "default": ""
+      },
+      {
+        "name": "valueField",
+        "default": "amount"
+      },
+      {
+        "name": "valueFormat",
+        "default": "currency"
+      },
+      {
+        "name": "currency",
+        "default": "USD"
+      },
+      {
+        "name": "statusColors",
+        "default": {
+          "Paid": "#16a34a",
+          "Pending": "#d97706",
+          "Refunded": "#dc2626"
+        }
+      },
+      {
+        "name": "idField",
+        "default": "id"
+      },
+      {
+        "name": "showAvatar",
+        "default": true
+      },
+      {
+        "name": "density",
+        "default": "default"
+      },
+      {
+        "name": "showDividers",
+        "default": true
+      },
+      {
+        "name": "listStyle",
+        "default": "card"
+      },
+      {
+        "name": "highlightSelected",
+        "default": true
+      },
+      {
+        "name": "emptyText",
+        "default": "Nothing here yet"
+      },
+      {
+        "name": "selectedItemId",
+        "default": ""
+      },
+      {
+        "name": "selectedItem",
+        "default": {}
+      },
+      {
+        "name": "selectedItemIndex",
+        "default": -1
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_ScatterChart": {
+    "type": "Lib_shadcn_ScatterChart",
+    "name": "Lib_shadcn_ScatterChart",
+    "description": "Scatter Chart from the shadcn UI component library. Drawn at the height you give it.",
+    "defaultSize": {
+      "width": 16,
+      "height": 320
+    },
+    "properties": [
+      {
+        "key": "data",
+        "label": "Data",
+        "valueType": "array",
+        "default": "{{[{\"campaign\":\"Search\",\"spend\":4200,\"revenue\":18400,\"channel\":\"Paid\"},{\"campaign\":\"Display\",\"spend\":3100,\"revenue\":7600,\"channel\":\"Paid\"},{\"campaign\":\"Social\",\"spend\":2600,\"revenue\":9800,\"channel\":\"Paid\"},{\"campaign\":\"Newsletter\",\"spend\":600,\"revenue\":6400,\"channel\":\"Owned\"},{\"campaign\":\"Blog\",\"spend\":900,\"revenue\":5200,\"channel\":\"Owned\"},{\"campaign\":\"Partners\",\"spend\":1800,\"revenue\":11200,\"channel\":\"Earned\"}]}}"
+      },
+      {
+        "key": "xField",
+        "label": "X field",
+        "valueType": "string",
+        "default": "spend"
+      },
+      {
+        "key": "yField",
+        "label": "Y field",
+        "valueType": "string",
+        "default": "revenue"
+      },
+      {
+        "key": "sizeField",
+        "label": "Size field",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "groupField",
+        "label": "Group field",
+        "valueType": "string",
+        "default": "channel"
+      },
+      {
+        "key": "nameField",
+        "label": "Name field",
+        "valueType": "string",
+        "default": "campaign"
+      },
+      {
+        "key": "xLabel",
+        "label": "X label",
+        "valueType": "string",
+        "default": "Spend"
+      },
+      {
+        "key": "yLabel",
+        "label": "Y label",
+        "valueType": "string",
+        "default": "Revenue"
+      },
+      {
+        "key": "xAxisFormat",
+        "label": "X format",
+        "valueType": "string",
+        "default": "compact",
+        "allowedValues": [
+          "number",
+          "currency",
+          "percent",
+          "compact"
+        ]
+      },
+      {
+        "key": "yAxisFormat",
+        "label": "Y format",
+        "valueType": "string",
+        "default": "compact",
+        "allowedValues": [
+          "number",
+          "currency",
+          "percent",
+          "compact"
+        ]
+      },
+      {
+        "key": "currency",
+        "label": "Currency",
+        "valueType": "string",
+        "default": "USD"
+      },
+      {
+        "key": "referenceX",
+        "label": "Reference X",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "referenceY",
+        "label": "Reference Y",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "pointSize",
+        "label": "Point size",
+        "valueType": "number",
+        "default": "{{8}}"
+      },
+      {
+        "key": "showGrid",
+        "label": "Grid",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "showLegend",
+        "label": "Legend",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "colors",
+        "label": "Colors",
+        "valueType": "array",
+        "default": "{{[]}}"
+      },
+      {
+        "key": "emptyText",
+        "label": "Empty text",
+        "valueType": "string",
+        "default": "No data"
+      },
+      {
+        "key": "clickedDataPoint",
+        "label": "Clicked Data Point",
+        "valueType": "object",
+        "default": "{{{}}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "chartColor",
+        "label": "Primary series",
+        "valueType": "string"
+      },
+      {
+        "key": "gridColor",
+        "label": "Grid",
+        "valueType": "string"
+      },
+      {
+        "key": "axisTextColor",
+        "label": "Axis text",
+        "valueType": "string"
+      },
+      {
+        "key": "referenceLineColor",
+        "label": "Reference lines",
+        "valueType": "string"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onClick",
+        "label": "On click"
+      },
+      {
+        "id": "onDoubleClick",
+        "label": "On double click"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "clearClickedPoint",
+        "displayName": "Clear clicked point"
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "data",
+        "default": [
+          {
+            "campaign": "Search",
+            "spend": 4200,
+            "revenue": 18400,
+            "channel": "Paid"
+          },
+          {
+            "campaign": "Display",
+            "spend": 3100,
+            "revenue": 7600,
+            "channel": "Paid"
+          },
+          {
+            "campaign": "Social",
+            "spend": 2600,
+            "revenue": 9800,
+            "channel": "Paid"
+          },
+          {
+            "campaign": "Newsletter",
+            "spend": 600,
+            "revenue": 6400,
+            "channel": "Owned"
+          },
+          {
+            "campaign": "Blog",
+            "spend": 900,
+            "revenue": 5200,
+            "channel": "Owned"
+          },
+          {
+            "campaign": "Partners",
+            "spend": 1800,
+            "revenue": 11200,
+            "channel": "Earned"
+          }
+        ]
+      },
+      {
+        "name": "xField",
+        "default": "spend"
+      },
+      {
+        "name": "yField",
+        "default": "revenue"
+      },
+      {
+        "name": "sizeField",
+        "default": ""
+      },
+      {
+        "name": "groupField",
+        "default": "channel"
+      },
+      {
+        "name": "nameField",
+        "default": "campaign"
+      },
+      {
+        "name": "xLabel",
+        "default": "Spend"
+      },
+      {
+        "name": "yLabel",
+        "default": "Revenue"
+      },
+      {
+        "name": "xAxisFormat",
+        "default": "compact"
+      },
+      {
+        "name": "yAxisFormat",
+        "default": "compact"
+      },
+      {
+        "name": "currency",
+        "default": "USD"
+      },
+      {
+        "name": "referenceX",
+        "default": ""
+      },
+      {
+        "name": "referenceY",
+        "default": ""
+      },
+      {
+        "name": "pointSize",
+        "default": 8
+      },
+      {
+        "name": "showGrid",
+        "default": true
+      },
+      {
+        "name": "showLegend",
+        "default": true
+      },
+      {
+        "name": "colors",
+        "default": []
+      },
+      {
+        "name": "emptyText",
+        "default": "No data"
+      },
+      {
+        "name": "clickedDataPoint",
+        "default": {}
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_Schedule": {
+    "type": "Lib_shadcn_Schedule",
+    "name": "Lib_shadcn_Schedule",
+    "description": "Schedule from the shadcn UI component library. Drawn at the height you give it.",
+    "defaultSize": {
+      "width": 43,
+      "height": 300
+    },
+    "properties": [
+      {
+        "key": "resources",
+        "label": "Resources",
+        "valueType": "array",
+        "default": "{{[{\"id\":\"r1\",\"name\":\"Room Atlas\",\"subtitle\":\"8 seats\"},{\"id\":\"r2\",\"name\":\"Room Borealis\",\"subtitle\":\"4 seats\"},{\"id\":\"r3\",\"name\":\"Room Cygnus\",\"subtitle\":\"12 seats\"}]}}",
+        "description": "Array of { id, name, subtitle }."
+      },
+      {
+        "key": "bookings",
+        "label": "Bookings",
+        "valueType": "array",
+        "default": "{{[{\"id\":\"b1\",\"resource\":\"r1\",\"start\":\"2026-10-22T09:00\",\"end\":\"2026-10-22T10:30\",\"title\":\"Design review\",\"status\":\"confirmed\"},{\"id\":\"b2\",\"resource\":\"r1\",\"start\":\"2026-10-22T13:00\",\"end\":\"2026-10-22T14:00\",\"title\":\"Hiring sync\",\"status\":\"tentative\"},{\"id\":\"b3\",\"resource\":\"r2\",\"start\":\"2026-10-22T10:00\",\"end\":\"2026-10-22T12:00\",\"title\":\"Customer call\",\"subtitle\":\"Acme\",\"status\":\"confirmed\"},{\"id\":\"b4\",\"resource\":\"r3\",\"start\":\"2026-10-22T15:00\",\"end\":\"2026-10-22T17:00\",\"title\":\"All hands\",\"status\":\"done\"}]}}",
+        "description": "Array of { id, resource, start, end, title, subtitle, status }. Times are ISO strings."
+      },
+      {
+        "key": "resourceField",
+        "label": "Resource field",
+        "valueType": "string",
+        "default": "resource"
+      },
+      {
+        "key": "startField",
+        "label": "Start field",
+        "valueType": "string",
+        "default": "start"
+      },
+      {
+        "key": "endField",
+        "label": "End field",
+        "valueType": "string",
+        "default": "end"
+      },
+      {
+        "key": "titleField",
+        "label": "Title field",
+        "valueType": "string",
+        "default": "title"
+      },
+      {
+        "key": "subtitleField",
+        "label": "Subtitle field",
+        "valueType": "string",
+        "default": "subtitle"
+      },
+      {
+        "key": "statusField",
+        "label": "Status field",
+        "valueType": "string",
+        "default": "status"
+      },
+      {
+        "key": "idField",
+        "label": "Id field",
+        "valueType": "string",
+        "default": "id"
+      },
+      {
+        "key": "scale",
+        "label": "Scale",
+        "valueType": "string",
+        "default": "hours",
+        "allowedValues": [
+          "hours",
+          "days"
+        ]
+      },
+      {
+        "key": "date",
+        "label": "Date",
+        "valueType": "string",
+        "default": "2026-10-22",
+        "description": "YYYY-MM-DD; empty = today (or the first booking)."
+      },
+      {
+        "key": "dayStart",
+        "label": "Day starts (hour)",
+        "valueType": "number",
+        "default": "{{8}}"
+      },
+      {
+        "key": "dayEnd",
+        "label": "Day ends (hour)",
+        "valueType": "number",
+        "default": "{{18}}"
+      },
+      {
+        "key": "slotMinutes",
+        "label": "Slot minutes",
+        "valueType": "number",
+        "default": "{{30}}"
+      },
+      {
+        "key": "days",
+        "label": "Days shown",
+        "valueType": "number",
+        "default": "{{7}}"
+      },
+      {
+        "key": "hourFormat",
+        "label": "Hour format",
+        "valueType": "string",
+        "default": "12h",
+        "allowedValues": [
+          "12h",
+          "24h"
+        ]
+      },
+      {
+        "key": "resourceTitle",
+        "label": "Resource column title",
+        "valueType": "string",
+        "default": "Rooms"
+      },
+      {
+        "key": "resourceWidth",
+        "label": "Resource column width",
+        "valueType": "number",
+        "default": "{{160}}"
+      },
+      {
+        "key": "rowHeight",
+        "label": "Row height",
+        "valueType": "number",
+        "default": "{{56}}"
+      },
+      {
+        "key": "showNowLine",
+        "label": "Now line",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "statusColors",
+        "label": "Status colors",
+        "valueType": "object",
+        "default": "{{{}}}"
+      },
+      {
+        "key": "emptyText",
+        "label": "Empty text",
+        "valueType": "string",
+        "default": "No resources to schedule"
+      },
+      {
+        "key": "selectedBookingId",
+        "label": "Selected Booking Id",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "selectedBooking",
+        "label": "Selected Booking",
+        "valueType": "object",
+        "default": "{{{}}}"
+      },
+      {
+        "key": "selectedSlot",
+        "label": "Selected Slot",
+        "valueType": "object",
+        "default": "{{{}}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "accentColor",
+        "label": "Accent",
+        "valueType": "string"
+      },
+      {
+        "key": "nowColor",
+        "label": "Now line",
+        "valueType": "string"
+      },
+      {
+        "key": "backgroundColor",
+        "label": "Background",
+        "valueType": "string"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onBookingClicked",
+        "label": "On booking clicked"
+      },
+      {
+        "id": "onSlotClicked",
+        "label": "On slot clicked"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "resources",
+        "default": [
+          {
+            "id": "r1",
+            "name": "Room Atlas",
+            "subtitle": "8 seats"
+          },
+          {
+            "id": "r2",
+            "name": "Room Borealis",
+            "subtitle": "4 seats"
+          },
+          {
+            "id": "r3",
+            "name": "Room Cygnus",
+            "subtitle": "12 seats"
+          }
+        ]
+      },
+      {
+        "name": "bookings",
+        "default": [
+          {
+            "id": "b1",
+            "resource": "r1",
+            "start": "2026-10-22T09:00",
+            "end": "2026-10-22T10:30",
+            "title": "Design review",
+            "status": "confirmed"
+          },
+          {
+            "id": "b2",
+            "resource": "r1",
+            "start": "2026-10-22T13:00",
+            "end": "2026-10-22T14:00",
+            "title": "Hiring sync",
+            "status": "tentative"
+          },
+          {
+            "id": "b3",
+            "resource": "r2",
+            "start": "2026-10-22T10:00",
+            "end": "2026-10-22T12:00",
+            "title": "Customer call",
+            "subtitle": "Acme",
+            "status": "confirmed"
+          },
+          {
+            "id": "b4",
+            "resource": "r3",
+            "start": "2026-10-22T15:00",
+            "end": "2026-10-22T17:00",
+            "title": "All hands",
+            "status": "done"
+          }
+        ]
+      },
+      {
+        "name": "resourceField",
+        "default": "resource"
+      },
+      {
+        "name": "startField",
+        "default": "start"
+      },
+      {
+        "name": "endField",
+        "default": "end"
+      },
+      {
+        "name": "titleField",
+        "default": "title"
+      },
+      {
+        "name": "subtitleField",
+        "default": "subtitle"
+      },
+      {
+        "name": "statusField",
+        "default": "status"
+      },
+      {
+        "name": "idField",
+        "default": "id"
+      },
+      {
+        "name": "scale",
+        "default": "hours"
+      },
+      {
+        "name": "date",
+        "default": "2026-10-22"
+      },
+      {
+        "name": "dayStart",
+        "default": 8
+      },
+      {
+        "name": "dayEnd",
+        "default": 18
+      },
+      {
+        "name": "slotMinutes",
+        "default": 30
+      },
+      {
+        "name": "days",
+        "default": 7
+      },
+      {
+        "name": "hourFormat",
+        "default": "12h"
+      },
+      {
+        "name": "resourceTitle",
+        "default": "Rooms"
+      },
+      {
+        "name": "resourceWidth",
+        "default": 160
+      },
+      {
+        "name": "rowHeight",
+        "default": 56
+      },
+      {
+        "name": "showNowLine",
+        "default": true
+      },
+      {
+        "name": "statusColors",
+        "default": {}
+      },
+      {
+        "name": "emptyText",
+        "default": "No resources to schedule"
+      },
+      {
+        "name": "selectedBookingId",
+        "default": ""
+      },
+      {
+        "name": "selectedBooking",
+        "default": {}
+      },
+      {
+        "name": "selectedSlot",
+        "default": {}
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_Select": {
+    "type": "Lib_shadcn_Select",
+    "name": "Lib_shadcn_Select",
+    "description": "Select from the shadcn UI component library. One choice from options [{label,value}]: value is the picked value; selectedOption; onSelect. Sizes to its content in the app (Dynamic height on).",
+    "defaultSize": {
+      "width": 10,
+      "height": 70
+    },
+    "properties": [
+      {
+        "key": "label",
+        "label": "Label",
+        "valueType": "string",
+        "default": "Fruit"
+      },
+      {
+        "key": "placeholder",
+        "label": "Placeholder",
+        "valueType": "string",
+        "default": "Select a fruit"
+      },
+      {
+        "key": "options",
+        "label": "Options",
+        "valueType": "array",
+        "default": "{{[{\"label\":\"Apple\",\"value\":\"apple\"},{\"label\":\"Banana\",\"value\":\"banana\"},{\"label\":\"Blueberry\",\"value\":\"blueberry\"},{\"label\":\"Grapes\",\"value\":\"grapes\"},{\"label\":\"Pineapple\",\"value\":\"pineapple\"}]}}",
+        "description": "Array of { label, value } objects, or plain strings."
+      },
+      {
+        "key": "value",
+        "label": "Default value",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "selectedLabel",
+        "label": "Selected Label",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "description",
+        "label": "Help text",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "disabled",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "label",
+        "label": "Label",
+        "valueType": "string",
+        "default": "Fruit"
+      },
+      {
+        "key": "placeholder",
+        "label": "Placeholder",
+        "valueType": "string",
+        "default": "Select a fruit"
+      },
+      {
+        "key": "options",
+        "label": "Options",
+        "valueType": "array",
+        "default": "{{[{\"label\":\"Apple\",\"value\":\"apple\"},{\"label\":\"Banana\",\"value\":\"banana\"},{\"label\":\"Blueberry\",\"value\":\"blueberry\"},{\"label\":\"Grapes\",\"value\":\"grapes\"},{\"label\":\"Pineapple\",\"value\":\"pineapple\"}]}}",
+        "description": "Array of { label, value } objects, or plain strings."
+      },
+      {
+        "key": "value",
+        "label": "Default value",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "selectedLabel",
+        "label": "Selected Label",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "description",
+        "label": "Help text",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "disabled",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "selectedOption",
+        "label": "Selected Option",
+        "valueType": "object",
+        "default": "{{{}}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "backgroundColor",
+        "label": "Background",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Text",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Border",
+        "valueType": "string"
+      },
+      {
+        "key": "accentColor",
+        "label": "Focus ring",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Border radius",
+        "valueType": "number"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onSelect",
+        "label": "On select"
+      },
+      {
+        "id": "onSelect",
+        "label": "On select"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setValue",
+        "displayName": "Select option",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value"
+          }
+        ]
+      },
+      {
+        "handle": "clear",
+        "displayName": "Clear"
+      },
+      {
+        "handle": "selectOption",
+        "displayName": "Select option",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value"
+          }
+        ]
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "label",
+        "default": "Fruit"
+      },
+      {
+        "name": "placeholder",
+        "default": "Select a fruit"
+      },
+      {
+        "name": "options",
+        "default": [
+          {
+            "label": "Apple",
+            "value": "apple"
+          },
+          {
+            "label": "Banana",
+            "value": "banana"
+          },
+          {
+            "label": "Blueberry",
+            "value": "blueberry"
+          },
+          {
+            "label": "Grapes",
+            "value": "grapes"
+          },
+          {
+            "label": "Pineapple",
+            "value": "pineapple"
+          }
+        ]
+      },
+      {
+        "name": "value",
+        "default": ""
+      },
+      {
+        "name": "selectedLabel",
+        "default": ""
+      },
+      {
+        "name": "description",
+        "default": ""
+      },
+      {
+        "name": "disabled",
+        "default": false
+      },
+      {
+        "name": "label",
+        "default": "Fruit"
+      },
+      {
+        "name": "placeholder",
+        "default": "Select a fruit"
+      },
+      {
+        "name": "options",
+        "default": [
+          {
+            "label": "Apple",
+            "value": "apple"
+          },
+          {
+            "label": "Banana",
+            "value": "banana"
+          },
+          {
+            "label": "Blueberry",
+            "value": "blueberry"
+          },
+          {
+            "label": "Grapes",
+            "value": "grapes"
+          },
+          {
+            "label": "Pineapple",
+            "value": "pineapple"
+          }
+        ]
+      },
+      {
+        "name": "value",
+        "default": ""
+      },
+      {
+        "name": "selectedLabel",
+        "default": ""
+      },
+      {
+        "name": "description",
+        "default": ""
+      },
+      {
+        "name": "disabled",
+        "default": false
+      },
+      {
+        "name": "selectedOption",
+        "default": {}
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      },
+      {
+        "name": "isValid",
+        "default": true
+      },
+      {
+        "name": "isMandatory",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_Separator": {
+    "type": "Lib_shadcn_Separator",
+    "name": "Lib_shadcn_Separator",
+    "description": "Separator from the shadcn UI component library. Drawn at the height you give it.",
+    "defaultSize": {
+      "width": 20,
+      "height": 30
+    },
+    "properties": [
+      {
+        "key": "orientation",
+        "label": "Orientation",
+        "valueType": "string",
+        "default": "horizontal",
+        "allowedValues": [
+          "horizontal",
+          "vertical"
+        ]
+      },
+      {
+        "key": "label",
+        "label": "Label",
+        "valueType": "string",
+        "default": "",
+        "description": "Optional text in the middle."
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "lineColor",
+        "label": "Line",
+        "valueType": "string"
+      },
+      {
+        "key": "thickness",
+        "label": "Thickness",
+        "valueType": "number"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "orientation",
+        "default": "horizontal"
+      },
+      {
+        "name": "label",
+        "default": ""
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_Skeleton": {
+    "type": "Lib_shadcn_Skeleton",
+    "name": "Lib_shadcn_Skeleton",
+    "description": "Skeleton from the shadcn UI component library. Drawn at the height you give it.",
+    "defaultSize": {
+      "width": 10,
+      "height": 60
+    },
+    "properties": [
+      {
+        "key": "shape",
+        "label": "Shape",
+        "valueType": "string",
+        "default": "profile",
+        "allowedValues": [
+          "profile",
+          "card",
+          "lines"
+        ]
+      },
+      {
+        "key": "lines",
+        "label": "Text lines",
+        "valueType": "number",
+        "default": "{{3}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "baseColor",
+        "label": "Shade",
+        "valueType": "string"
+      },
+      {
+        "key": "backgroundColor",
+        "label": "Background",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Border radius",
+        "valueType": "number"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "shape",
+        "default": "profile"
+      },
+      {
+        "name": "lines",
+        "default": 3
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_Slider": {
+    "type": "Lib_shadcn_Slider",
+    "name": "Lib_shadcn_Slider",
+    "description": "Slider from the shadcn UI component library. Sizes to its content in the app (Dynamic height on).",
+    "defaultSize": {
+      "width": 10,
+      "height": 50
+    },
+    "properties": [
+      {
+        "key": "label",
+        "label": "Label",
+        "valueType": "string",
+        "default": "Volume"
+      },
+      {
+        "key": "value",
+        "label": "Default value",
+        "valueType": "number",
+        "default": "{{50}}"
+      },
+      {
+        "key": "min",
+        "label": "Min",
+        "valueType": "number",
+        "default": "{{0}}"
+      },
+      {
+        "key": "max",
+        "label": "Max",
+        "valueType": "number",
+        "default": "{{100}}"
+      },
+      {
+        "key": "step",
+        "label": "Step",
+        "valueType": "number",
+        "default": "{{1}}"
+      },
+      {
+        "key": "showValue",
+        "label": "Show value",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "disabled",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "accentColor",
+        "label": "Fill",
+        "valueType": "string"
+      },
+      {
+        "key": "trackColor",
+        "label": "Track",
+        "valueType": "string"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onChange",
+        "label": "On change"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setValue",
+        "displayName": "Set value",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value"
+          }
+        ]
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "label",
+        "default": "Volume"
+      },
+      {
+        "name": "value",
+        "default": 50
+      },
+      {
+        "name": "min",
+        "default": 0
+      },
+      {
+        "name": "max",
+        "default": 100
+      },
+      {
+        "name": "step",
+        "default": 1
+      },
+      {
+        "name": "showValue",
+        "default": true
+      },
+      {
+        "name": "disabled",
+        "default": false
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_Sparkline": {
+    "type": "Lib_shadcn_Sparkline",
+    "name": "Lib_shadcn_Sparkline",
+    "description": "Sparkline from the shadcn UI component library. Drawn at the height you give it.",
+    "defaultSize": {
+      "width": 8,
+      "height": 40
+    },
+    "properties": [
+      {
+        "key": "data",
+        "label": "Data",
+        "valueType": "array",
+        "default": "{{[12,18,14,22,19,26,24,31]}}",
+        "description": "Numbers, or objects with a value field."
+      },
+      {
+        "key": "type",
+        "label": "Type",
+        "valueType": "string",
+        "default": "area",
+        "allowedValues": [
+          "area",
+          "line",
+          "bar"
+        ]
+      },
+      {
+        "key": "curve",
+        "label": "Curve",
+        "valueType": "string",
+        "default": "monotone",
+        "allowedValues": [
+          "monotone",
+          "linear"
+        ]
+      },
+      {
+        "key": "strokeWidth",
+        "label": "Line width",
+        "valueType": "number",
+        "default": "{{2}}"
+      },
+      {
+        "key": "showEndDot",
+        "label": "End dot",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "colorByTrend",
+        "label": "Color by trend",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "lowerIsBetter",
+        "label": "Lower is better",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "showBand",
+        "label": "Target band",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "bandMin",
+        "label": "Band min",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "bandMax",
+        "label": "Band max",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "showTooltip",
+        "label": "Tooltip",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "emptyText",
+        "label": "Empty text",
+        "valueType": "string",
+        "default": "No data"
+      },
+      {
+        "key": "trend",
+        "label": "Trend",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "lastValue",
+        "label": "Last Value",
+        "valueType": "number",
+        "default": "{{0}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "chartColor",
+        "label": "Color",
+        "valueType": "string"
+      },
+      {
+        "key": "positiveColor",
+        "label": "Good trend",
+        "valueType": "string"
+      },
+      {
+        "key": "negativeColor",
+        "label": "Bad trend",
+        "valueType": "string"
+      },
+      {
+        "key": "bandColor",
+        "label": "Band",
+        "valueType": "string"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onClick",
+        "label": "On click"
+      },
+      {
+        "id": "onDoubleClick",
+        "label": "On double click"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "data",
+        "default": [
+          12,
+          18,
+          14,
+          22,
+          19,
+          26,
+          24,
+          31
+        ]
+      },
+      {
+        "name": "type",
+        "default": "area"
+      },
+      {
+        "name": "curve",
+        "default": "monotone"
+      },
+      {
+        "name": "strokeWidth",
+        "default": 2
+      },
+      {
+        "name": "showEndDot",
+        "default": true
+      },
+      {
+        "name": "colorByTrend",
+        "default": false
+      },
+      {
+        "name": "lowerIsBetter",
+        "default": false
+      },
+      {
+        "name": "showBand",
+        "default": false
+      },
+      {
+        "name": "bandMin",
+        "default": ""
+      },
+      {
+        "name": "bandMax",
+        "default": ""
+      },
+      {
+        "name": "showTooltip",
+        "default": false
+      },
+      {
+        "name": "emptyText",
+        "default": "No data"
+      },
+      {
+        "name": "trend",
+        "default": ""
+      },
+      {
+        "name": "lastValue",
+        "default": 0
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_Spinner": {
+    "type": "Lib_shadcn_Spinner",
+    "name": "Lib_shadcn_Spinner",
+    "description": "Spinner from the shadcn UI component library. Drawn at the height you give it.",
+    "defaultSize": {
+      "width": 6,
+      "height": 40
+    },
+    "properties": [
+      {
+        "key": "variant",
+        "label": "Variant",
+        "valueType": "string",
+        "default": "ring",
+        "allowedValues": [
+          "ring",
+          "dots",
+          "bars"
+        ]
+      },
+      {
+        "key": "size",
+        "label": "Size",
+        "valueType": "string",
+        "default": "default",
+        "allowedValues": [
+          "sm",
+          "default",
+          "lg"
+        ]
+      },
+      {
+        "key": "label",
+        "label": "Label",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "labelPosition",
+        "label": "Label position",
+        "valueType": "string",
+        "default": "right",
+        "allowedValues": [
+          "right",
+          "bottom"
+        ]
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "spinnerColor",
+        "label": "Color",
+        "valueType": "string"
+      },
+      {
+        "key": "trackColor",
+        "label": "Track",
+        "valueType": "string"
+      },
+      {
+        "key": "alignment",
+        "label": "Alignment",
+        "valueType": "string"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "variant",
+        "default": "ring"
+      },
+      {
+        "name": "size",
+        "default": "default"
+      },
+      {
+        "name": "label",
+        "default": ""
+      },
+      {
+        "name": "labelPosition",
+        "default": "right"
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_SplitPane": {
+    "type": "Lib_shadcn_SplitPane",
+    "name": "Lib_shadcn_SplitPane",
+    "description": "Split Pane from the shadcn UI component library. Drawn at the height you give it.",
+    "defaultSize": {
+      "width": 24,
+      "height": 400
+    },
+    "properties": [
+      {
+        "key": "direction",
+        "label": "Direction",
+        "valueType": "string",
+        "default": "horizontal",
+        "allowedValues": [
+          "horizontal",
+          "vertical"
+        ]
+      },
+      {
+        "key": "split",
+        "label": "First pane (%)",
+        "valueType": "number",
+        "default": "{{40}}"
+      },
+      {
+        "key": "minPane",
+        "label": "Minimum pane (%)",
+        "valueType": "number",
+        "default": "{{15}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "dividerColor",
+        "label": "Divider",
+        "valueType": "string"
+      },
+      {
+        "key": "gap",
+        "label": "Divider width",
+        "valueType": "number"
+      },
+      {
+        "key": "backgroundColor",
+        "label": "Background",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Border radius",
+        "valueType": "number"
+      },
+      {
+        "key": "padding",
+        "label": "Padding",
+        "valueType": "number"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onResize",
+        "label": "On resize"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setSplit",
+        "displayName": "Set split",
+        "params": [
+          {
+            "handle": "percent",
+            "displayName": "First pane (%)"
+          }
+        ]
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "direction",
+        "default": "horizontal"
+      },
+      {
+        "name": "split",
+        "default": 40
+      },
+      {
+        "name": "minPane",
+        "default": 15
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_Stat": {
+    "type": "Lib_shadcn_Stat",
+    "name": "Lib_shadcn_Stat",
+    "description": "Stat from the shadcn UI component library. A KPI card: label, value (a number; valueFormat auto/number/currency/percent, currency), change with trend up/down/neutral and changeLabel. Sizes to its content in the app (Dynamic height on).",
+    "defaultSize": {
+      "width": 10,
+      "height": 120
+    },
+    "properties": [
+      {
+        "key": "label",
+        "label": "Label",
+        "valueType": "string",
+        "default": "Total revenue"
+      },
+      {
+        "key": "value",
+        "label": "Value",
+        "valueType": "string",
+        "default": "$45,231.89"
+      },
+      {
+        "key": "change",
+        "label": "Change",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "valueFormat",
+        "label": "Value format",
+        "valueType": "string",
+        "default": "auto",
+        "allowedValues": [
+          "auto",
+          "number",
+          "currency",
+          "percent",
+          "text"
+        ]
+      },
+      {
+        "key": "currency",
+        "label": "Currency",
+        "valueType": "string",
+        "default": "USD"
+      },
+      {
+        "key": "trend",
+        "label": "Trend",
+        "valueType": "string",
+        "default": "up",
+        "allowedValues": [
+          "up",
+          "down",
+          "neutral"
+        ]
+      },
+      {
+        "key": "changeLabel",
+        "label": "Change context",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "icon",
+        "label": "Icon",
+        "valueType": "string",
+        "default": "none",
+        "allowedValues": [
+          "dollar",
+          "users",
+          "activity",
+          "card",
+          "none"
+        ]
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "backgroundColor",
+        "label": "Background",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Text",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Border",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Border radius",
+        "valueType": "number"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onClick",
+        "label": "On click"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setPrimaryValue",
+        "displayName": "Set value",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value"
+          }
+        ]
+      },
+      {
+        "handle": "setSecondaryValue",
+        "displayName": "Set change",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Change"
+          }
+        ]
+      },
+      {
+        "handle": "setTrend",
+        "displayName": "Set trend",
+        "params": [
+          {
+            "handle": "trend",
+            "displayName": "up, down or neutral"
+          }
+        ]
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "label",
+        "default": "Total revenue"
+      },
+      {
+        "name": "value",
+        "default": "$45,231.89"
+      },
+      {
+        "name": "change",
+        "default": ""
+      },
+      {
+        "name": "valueFormat",
+        "default": "auto"
+      },
+      {
+        "name": "currency",
+        "default": "USD"
+      },
+      {
+        "name": "trend",
+        "default": "up"
+      },
+      {
+        "name": "changeLabel",
+        "default": ""
+      },
+      {
+        "name": "icon",
+        "default": "none"
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_Stepper": {
+    "type": "Lib_shadcn_Stepper",
+    "name": "Lib_shadcn_Stepper",
+    "description": "Stepper from the shadcn UI component library. Drawn at the height you give it.",
+    "defaultSize": {
+      "width": 20,
+      "height": 500
+    },
+    "properties": [
+      {
+        "key": "steps",
+        "label": "Steps",
+        "valueType": "array",
+        "default": "{{[{\"id\":\"account\",\"label\":\"Account\"},{\"id\":\"profile\",\"label\":\"Profile\"},{\"id\":\"review\",\"label\":\"Review\"}]}}",
+        "description": "Array of { id, label } objects. Keep ids stable: dropped components stay with their step id."
+      },
+      {
+        "key": "currentStep",
+        "label": "Start step",
+        "valueType": "string",
+        "default": "account"
+      },
+      {
+        "key": "finishLabel",
+        "label": "Finish button",
+        "valueType": "string",
+        "default": "Finish"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "accentColor",
+        "label": "Accent",
+        "valueType": "string"
+      },
+      {
+        "key": "backgroundColor",
+        "label": "Background",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Border radius",
+        "valueType": "number"
+      },
+      {
+        "key": "padding",
+        "label": "Padding",
+        "valueType": "number"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onStepChange",
+        "label": "On step change"
+      },
+      {
+        "id": "onComplete",
+        "label": "On complete"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "next",
+        "displayName": "Next step"
+      },
+      {
+        "handle": "back",
+        "displayName": "Previous step"
+      },
+      {
+        "handle": "goToStep",
+        "displayName": "Go to step",
+        "params": [
+          {
+            "handle": "id",
+            "displayName": "Step id"
+          }
+        ]
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "steps",
+        "default": [
+          {
+            "id": "account",
+            "label": "Account"
+          },
+          {
+            "id": "profile",
+            "label": "Profile"
+          },
+          {
+            "id": "review",
+            "label": "Review"
+          }
+        ]
+      },
+      {
+        "name": "currentStep",
+        "default": "account"
+      },
+      {
+        "name": "finishLabel",
+        "default": "Finish"
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_Steps": {
+    "type": "Lib_shadcn_Steps",
+    "name": "Lib_shadcn_Steps",
+    "description": "Steps from the shadcn UI component library. Sizes to its content in the app (Dynamic height on).",
+    "defaultSize": {
+      "width": 24,
+      "height": 80
+    },
+    "properties": [
+      {
+        "key": "steps",
+        "label": "Steps",
+        "valueType": "array",
+        "default": "{{[{\"id\":\"cart\",\"label\":\"Cart\",\"description\":\"3 items\"},{\"id\":\"shipping\",\"label\":\"Shipping\",\"description\":\"Address\"},{\"id\":\"payment\",\"label\":\"Payment\",\"description\":\"Card\"},{\"id\":\"done\",\"label\":\"Confirm\"}]}}",
+        "description": "Array of { id, label, description } objects or strings."
+      },
+      {
+        "key": "currentStepIndex",
+        "label": "Current step (0-based)",
+        "valueType": "number",
+        "default": "{{1}}"
+      },
+      {
+        "key": "stepsSelectable",
+        "label": "Steps clickable",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "orientation",
+        "label": "Orientation",
+        "valueType": "string",
+        "default": "horizontal",
+        "allowedValues": [
+          "horizontal",
+          "vertical"
+        ]
+      },
+      {
+        "key": "variant",
+        "label": "Markers",
+        "valueType": "string",
+        "default": "numbers",
+        "allowedValues": [
+          "numbers",
+          "dots"
+        ]
+      },
+      {
+        "key": "currentStepId",
+        "label": "Current Step Id",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "completedAccent",
+        "label": "Completed",
+        "valueType": "string"
+      },
+      {
+        "key": "incompletedAccent",
+        "label": "Upcoming",
+        "valueType": "string"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onSelect",
+        "label": "On select"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setStep",
+        "displayName": "Go to step",
+        "params": [
+          {
+            "handle": "id",
+            "displayName": "Step id"
+          }
+        ]
+      },
+      {
+        "handle": "nextStep",
+        "displayName": "Next step"
+      },
+      {
+        "handle": "previousStep",
+        "displayName": "Previous step"
+      },
+      {
+        "handle": "resetSteps",
+        "displayName": "Reset"
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "steps",
+        "default": [
+          {
+            "id": "cart",
+            "label": "Cart",
+            "description": "3 items"
+          },
+          {
+            "id": "shipping",
+            "label": "Shipping",
+            "description": "Address"
+          },
+          {
+            "id": "payment",
+            "label": "Payment",
+            "description": "Card"
+          },
+          {
+            "id": "done",
+            "label": "Confirm"
+          }
+        ]
+      },
+      {
+        "name": "currentStepIndex",
+        "default": 1
+      },
+      {
+        "name": "stepsSelectable",
+        "default": true
+      },
+      {
+        "name": "orientation",
+        "default": "horizontal"
+      },
+      {
+        "name": "variant",
+        "default": "numbers"
+      },
+      {
+        "name": "currentStepId",
+        "default": ""
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_SummaryStrip": {
+    "type": "Lib_shadcn_SummaryStrip",
+    "name": "Lib_shadcn_SummaryStrip",
+    "description": "Summary Strip from the shadcn UI component library. Sizes to its content in the app (Dynamic height on).",
+    "defaultSize": {
+      "width": 43,
+      "height": 110
+    },
+    "properties": [
+      {
+        "key": "items",
+        "label": "Items",
+        "valueType": "array",
+        "default": "{{[{\"label\":\"Revenue\",\"value\":128400,\"delta\":12.4,\"format\":\"currency\"},{\"label\":\"Orders\",\"value\":1840,\"delta\":4.1},{\"label\":\"Refund rate\",\"value\":2.3,\"delta\":-0.4,\"format\":\"percent\",\"lowerIsBetter\":true},{\"label\":\"Avg. order\",\"value\":69.8,\"delta\":-1.2,\"format\":\"currency\"}]}}",
+        "description": "Array of { label, value, delta, format, lowerIsBetter }."
+      },
+      {
+        "key": "valueFormat",
+        "label": "Default format",
+        "valueType": "string",
+        "default": "auto",
+        "allowedValues": [
+          "auto",
+          "number",
+          "currency",
+          "percent",
+          "compact"
+        ]
+      },
+      {
+        "key": "currency",
+        "label": "Currency",
+        "valueType": "string",
+        "default": "USD"
+      },
+      {
+        "key": "appearance",
+        "label": "Appearance",
+        "valueType": "string",
+        "default": "panel",
+        "allowedValues": [
+          "panel",
+          "cards",
+          "plain"
+        ]
+      },
+      {
+        "key": "align",
+        "label": "Align",
+        "valueType": "string",
+        "default": "left",
+        "allowedValues": [
+          "left",
+          "center"
+        ]
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "backgroundColor",
+        "label": "Background",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Border",
+        "valueType": "string"
+      },
+      {
+        "key": "positiveColor",
+        "label": "Positive",
+        "valueType": "string"
+      },
+      {
+        "key": "negativeColor",
+        "label": "Negative",
+        "valueType": "string"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "items",
+        "default": [
+          {
+            "label": "Revenue",
+            "value": 128400,
+            "delta": 12.4,
+            "format": "currency"
+          },
+          {
+            "label": "Orders",
+            "value": 1840,
+            "delta": 4.1
+          },
+          {
+            "label": "Refund rate",
+            "value": 2.3,
+            "delta": -0.4,
+            "format": "percent",
+            "lowerIsBetter": true
+          },
+          {
+            "label": "Avg. order",
+            "value": 69.8,
+            "delta": -1.2,
+            "format": "currency"
+          }
+        ]
+      },
+      {
+        "name": "valueFormat",
+        "default": "auto"
+      },
+      {
+        "name": "currency",
+        "default": "USD"
+      },
+      {
+        "name": "appearance",
+        "default": "panel"
+      },
+      {
+        "name": "align",
+        "default": "left"
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_Switch": {
+    "type": "Lib_shadcn_Switch",
+    "name": "Lib_shadcn_Switch",
+    "description": "Switch from the shadcn UI component library. Sizes to its content in the app (Dynamic height on).",
+    "defaultSize": {
+      "width": 10,
+      "height": 30
+    },
+    "properties": [
+      {
+        "key": "label",
+        "label": "Label",
+        "valueType": "string",
+        "default": "Airplane mode"
+      },
+      {
+        "key": "description",
+        "label": "Help text",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "checked",
+        "label": "Default state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabled",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "accentColor",
+        "label": "On",
+        "valueType": "string"
+      },
+      {
+        "key": "offColor",
+        "label": "Off",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Text",
+        "valueType": "string"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onChange",
+        "label": "On change"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setChecked",
+        "displayName": "Set on/off",
+        "params": [
+          {
+            "handle": "checked",
+            "displayName": "On"
+          }
+        ]
+      },
+      {
+        "handle": "toggle",
+        "displayName": "Toggle"
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "label",
+        "default": "Airplane mode"
+      },
+      {
+        "name": "description",
+        "default": ""
+      },
+      {
+        "name": "checked",
+        "default": false
+      },
+      {
+        "name": "disabled",
+        "default": false
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_Tabs": {
+    "type": "Lib_shadcn_Tabs",
+    "name": "Lib_shadcn_Tabs",
+    "description": "Tabs from the shadcn UI component library. Sizes to its content in the app (Dynamic height on).",
+    "defaultSize": {
+      "width": 16,
+      "height": 140
+    },
+    "properties": [
+      {
+        "key": "tabs",
+        "label": "Tabs",
+        "valueType": "array",
+        "default": "{{[{\"value\":\"overview\",\"label\":\"Overview\",\"content\":\"Revenue is up 20% this quarter, driven by enterprise renewals.\"},{\"value\":\"analytics\",\"label\":\"Analytics\",\"content\":\"12,234 active users this week (+18%).\"},{\"value\":\"reports\",\"label\":\"Reports\",\"content\":\"Three reports are scheduled for Friday.\"}]}}",
+        "description": "Array of { value, label, content } objects."
+      },
+      {
+        "key": "value",
+        "label": "Default tab",
+        "valueType": "string",
+        "default": "overview"
+      },
+      {
+        "key": "variant",
+        "label": "Variant",
+        "valueType": "string",
+        "default": "pill",
+        "allowedValues": [
+          "pill",
+          "underline"
+        ]
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "listBackground",
+        "label": "Tab list",
+        "valueType": "string"
+      },
+      {
+        "key": "activeBackground",
+        "label": "Active tab",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Text",
+        "valueType": "string"
+      },
+      {
+        "key": "accentColor",
+        "label": "Underline",
+        "valueType": "string"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onChange",
+        "label": "On change"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setTab",
+        "displayName": "Set tab",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Tab value"
+          }
+        ]
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "tabs",
+        "default": [
+          {
+            "value": "overview",
+            "label": "Overview",
+            "content": "Revenue is up 20% this quarter, driven by enterprise renewals."
+          },
+          {
+            "value": "analytics",
+            "label": "Analytics",
+            "content": "12,234 active users this week (+18%)."
+          },
+          {
+            "value": "reports",
+            "label": "Reports",
+            "content": "Three reports are scheduled for Friday."
+          }
+        ]
+      },
+      {
+        "name": "value",
+        "default": "overview"
+      },
+      {
+        "name": "variant",
+        "default": "pill"
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_TabsContainer": {
+    "type": "Lib_shadcn_TabsContainer",
+    "name": "Lib_shadcn_TabsContainer",
+    "description": "Tabs Container from the shadcn UI component library. Tabs [{id,label}] each with a canvas of child components (slot tab_<id>); currentTab. Drawn at the height you give it.",
+    "defaultSize": {
+      "width": 20,
+      "height": 400
+    },
+    "properties": [
+      {
+        "key": "tabs",
+        "label": "Tabs",
+        "valueType": "array",
+        "default": "{{[{\"id\":\"details\",\"label\":\"Details\"},{\"id\":\"activity\",\"label\":\"Activity\"}]}}",
+        "description": "Array of { id, label } objects. Keep ids stable: dropped components stay with their tab id."
+      },
+      {
+        "key": "currentTab",
+        "label": "Default tab",
+        "valueType": "string",
+        "default": "details"
+      },
+      {
+        "key": "currentTabTitle",
+        "label": "Current Tab Title",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "accentColor",
+        "label": "Active tab",
+        "valueType": "string"
+      },
+      {
+        "key": "backgroundColor",
+        "label": "Background",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Border radius",
+        "valueType": "number"
+      },
+      {
+        "key": "padding",
+        "label": "Padding",
+        "valueType": "number"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onChange",
+        "label": "On change"
+      },
+      {
+        "id": "onTabSwitch",
+        "label": "On tab switch"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setTab",
+        "displayName": "Set tab",
+        "params": [
+          {
+            "handle": "id",
+            "displayName": "Tab id"
+          }
+        ]
+      },
+      {
+        "handle": "nextTab",
+        "displayName": "Next tab"
+      },
+      {
+        "handle": "previousTab",
+        "displayName": "Previous tab"
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "tabs",
+        "default": [
+          {
+            "id": "details",
+            "label": "Details"
+          },
+          {
+            "id": "activity",
+            "label": "Activity"
+          }
+        ]
+      },
+      {
+        "name": "currentTab",
+        "default": "details"
+      },
+      {
+        "name": "currentTabTitle",
+        "default": ""
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_Tags": {
+    "type": "Lib_shadcn_Tags",
+    "name": "Lib_shadcn_Tags",
+    "description": "Tags from the shadcn UI component library. Sizes to its content in the app (Dynamic height on).",
+    "defaultSize": {
+      "width": 12,
+      "height": 30
+    },
+    "properties": [
+      {
+        "key": "tags",
+        "label": "Tags",
+        "valueType": "array",
+        "default": "{{[\"Design\",\"Engineering\",\"Q4\"]}}",
+        "description": "Strings or { label, color } objects."
+      },
+      {
+        "key": "tagColors",
+        "label": "Tag colors",
+        "valueType": "object",
+        "default": "{{{}}}",
+        "description": "Map of tag → color."
+      },
+      {
+        "key": "variant",
+        "label": "Variant",
+        "valueType": "string",
+        "default": "soft",
+        "allowedValues": [
+          "soft",
+          "solid",
+          "outline"
+        ]
+      },
+      {
+        "key": "size",
+        "label": "Size",
+        "valueType": "string",
+        "default": "default",
+        "allowedValues": [
+          "sm",
+          "default"
+        ]
+      },
+      {
+        "key": "overflow",
+        "label": "Overflow",
+        "valueType": "string",
+        "default": "wrap",
+        "allowedValues": [
+          "wrap",
+          "scroll"
+        ]
+      },
+      {
+        "key": "pill",
+        "label": "Pill shape",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "lastClickedTag",
+        "label": "Last Clicked Tag",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "backgroundColor",
+        "label": "Default color",
+        "valueType": "string"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onTagClicked",
+        "label": "On tag clicked"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "tags",
+        "default": [
+          "Design",
+          "Engineering",
+          "Q4"
+        ]
+      },
+      {
+        "name": "tagColors",
+        "default": {}
+      },
+      {
+        "name": "variant",
+        "default": "soft"
+      },
+      {
+        "name": "size",
+        "default": "default"
+      },
+      {
+        "name": "overflow",
+        "default": "wrap"
+      },
+      {
+        "name": "pill",
+        "default": false
+      },
+      {
+        "name": "lastClickedTag",
+        "default": ""
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_TagsInput": {
+    "type": "Lib_shadcn_TagsInput",
+    "name": "Lib_shadcn_TagsInput",
+    "description": "Tags Input from the shadcn UI component library. Sizes to its content in the app (Dynamic height on).",
+    "defaultSize": {
+      "width": 12,
+      "height": 70
+    },
+    "properties": [
+      {
+        "key": "label",
+        "label": "Label",
+        "valueType": "string",
+        "default": "Tags"
+      },
+      {
+        "key": "description",
+        "label": "Help text",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "placeholder",
+        "label": "Placeholder",
+        "valueType": "string",
+        "default": "Add a tag..."
+      },
+      {
+        "key": "values",
+        "label": "Default tags",
+        "valueType": "array",
+        "default": "{{[\"design\",\"frontend\"]}}"
+      },
+      {
+        "key": "suggestions",
+        "label": "Suggestions",
+        "valueType": "array",
+        "default": "{{[\"design\",\"frontend\",\"backend\",\"devops\",\"research\"]}}"
+      },
+      {
+        "key": "allowCustomTags",
+        "label": "Allow custom tags",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "maxTags",
+        "label": "Max tags",
+        "valueType": "number",
+        "default": "{{0}}",
+        "description": "0 for no limit."
+      },
+      {
+        "key": "caseSensitive",
+        "label": "Case sensitive",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "tagPattern",
+        "label": "Tag pattern",
+        "valueType": "string",
+        "default": "",
+        "description": "Regex a new tag must match."
+      },
+      {
+        "key": "addOnBlur",
+        "label": "Add on blur",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "required",
+        "label": "Required",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabled",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "lastAddedTag",
+        "label": "Last Added Tag",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "lastRemovedTag",
+        "label": "Last Removed Tag",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "isValid",
+        "label": "Is Valid",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "backgroundColor",
+        "label": "Background",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Text",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Border",
+        "valueType": "string"
+      },
+      {
+        "key": "accentColor",
+        "label": "Accent",
+        "valueType": "string"
+      },
+      {
+        "key": "chipBackgroundColor",
+        "label": "Chip background",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Border radius",
+        "valueType": "number"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onChange",
+        "label": "On change"
+      },
+      {
+        "id": "onTagAdded",
+        "label": "On tag added"
+      },
+      {
+        "id": "onTagDeleted",
+        "label": "On tag deleted"
+      },
+      {
+        "id": "onFocus",
+        "label": "On focus"
+      },
+      {
+        "id": "onBlur",
+        "label": "On blur"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setTags",
+        "displayName": "Set tags",
+        "params": [
+          {
+            "handle": "tags",
+            "displayName": "Tags (array)"
+          }
+        ]
+      },
+      {
+        "handle": "clear",
+        "displayName": "Clear"
+      },
+      {
+        "handle": "focus",
+        "displayName": "Focus"
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "label",
+        "default": "Tags"
+      },
+      {
+        "name": "description",
+        "default": ""
+      },
+      {
+        "name": "placeholder",
+        "default": "Add a tag..."
+      },
+      {
+        "name": "values",
+        "default": [
+          "design",
+          "frontend"
+        ]
+      },
+      {
+        "name": "suggestions",
+        "default": [
+          "design",
+          "frontend",
+          "backend",
+          "devops",
+          "research"
+        ]
+      },
+      {
+        "name": "allowCustomTags",
+        "default": true
+      },
+      {
+        "name": "maxTags",
+        "default": 0
+      },
+      {
+        "name": "caseSensitive",
+        "default": false
+      },
+      {
+        "name": "tagPattern",
+        "default": ""
+      },
+      {
+        "name": "addOnBlur",
+        "default": false
+      },
+      {
+        "name": "required",
+        "default": false
+      },
+      {
+        "name": "disabled",
+        "default": false
+      },
+      {
+        "name": "lastAddedTag",
+        "default": ""
+      },
+      {
+        "name": "lastRemovedTag",
+        "default": ""
+      },
+      {
+        "name": "isValid",
+        "default": true
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_Text": {
+    "type": "Lib_shadcn_Text",
+    "name": "Lib_shadcn_Text",
+    "description": "Text from the shadcn UI component library. Sizes to its content in the app (Dynamic height on).",
+    "defaultSize": {
+      "width": 16,
+      "height": 30
+    },
+    "properties": [
+      {
+        "key": "text",
+        "label": "Text",
+        "valueType": "string",
+        "default": "Text"
+      },
+      {
+        "key": "tone",
+        "label": "Tone",
+        "valueType": "string",
+        "default": "paragraph",
+        "allowedValues": [
+          "paragraph",
+          "lead",
+          "large",
+          "small",
+          "muted"
+        ]
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "textColor",
+        "label": "Text color",
+        "valueType": "string"
+      },
+      {
+        "key": "textAlign",
+        "label": "Alignment",
+        "valueType": "string"
+      },
+      {
+        "key": "fontSize",
+        "label": "Font size",
+        "valueType": "number"
+      },
+      {
+        "key": "fontWeight",
+        "label": "Weight",
+        "valueType": "string"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onClick",
+        "label": "On click"
+      },
+      {
+        "id": "onHover",
+        "label": "On hover"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setText",
+        "displayName": "Set text",
+        "params": [
+          {
+            "handle": "text",
+            "displayName": "Text"
+          }
+        ]
+      },
+      {
+        "handle": "clear",
+        "displayName": "Clear"
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "text",
+        "default": "Text"
+      },
+      {
+        "name": "tone",
+        "default": "paragraph"
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_Textarea": {
+    "type": "Lib_shadcn_Textarea",
+    "name": "Lib_shadcn_Textarea",
+    "description": "Textarea from the shadcn UI component library. Sizes to its content in the app (Dynamic height on).",
+    "defaultSize": {
+      "width": 10,
+      "height": 120
+    },
+    "properties": [
+      {
+        "key": "label",
+        "label": "Label",
+        "valueType": "string",
+        "default": "Your message"
+      },
+      {
+        "key": "placeholder",
+        "label": "Placeholder",
+        "valueType": "string",
+        "default": "Type your message here."
+      },
+      {
+        "key": "value",
+        "label": "Default value",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "description",
+        "label": "Help text",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "disabled",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "backgroundColor",
+        "label": "Background",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Text",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Border",
+        "valueType": "string"
+      },
+      {
+        "key": "accentColor",
+        "label": "Focus ring",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Border radius",
+        "valueType": "number"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onChange",
+        "label": "On change"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setValue",
+        "displayName": "Set value",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value"
+          }
+        ]
+      },
+      {
+        "handle": "clear",
+        "displayName": "Clear"
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "label",
+        "default": "Your message"
+      },
+      {
+        "name": "placeholder",
+        "default": "Type your message here."
+      },
+      {
+        "name": "value",
+        "default": ""
+      },
+      {
+        "name": "description",
+        "default": ""
+      },
+      {
+        "name": "disabled",
+        "default": false
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_TimePicker": {
+    "type": "Lib_shadcn_TimePicker",
+    "name": "Lib_shadcn_TimePicker",
+    "description": "Time Picker from the shadcn UI component library. Sizes to its content in the app (Dynamic height on).",
+    "defaultSize": {
+      "width": 10,
+      "height": 70
+    },
+    "properties": [
+      {
+        "key": "label",
+        "label": "Label",
+        "valueType": "string",
+        "default": "Time"
+      },
+      {
+        "key": "description",
+        "label": "Help text",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "placeholder",
+        "label": "Placeholder",
+        "valueType": "string",
+        "default": "Pick a time"
+      },
+      {
+        "key": "value",
+        "label": "Default time",
+        "valueType": "string",
+        "default": "",
+        "description": "24h HH:mm"
+      },
+      {
+        "key": "timeFormat",
+        "label": "Format",
+        "valueType": "string",
+        "default": "12h",
+        "allowedValues": [
+          "12h",
+          "24h"
+        ]
+      },
+      {
+        "key": "minuteStep",
+        "label": "Minute step",
+        "valueType": "number",
+        "default": "{{15}}"
+      },
+      {
+        "key": "minTime",
+        "label": "Min time",
+        "valueType": "string",
+        "default": "",
+        "description": "HH:mm"
+      },
+      {
+        "key": "maxTime",
+        "label": "Max time",
+        "valueType": "string",
+        "default": "",
+        "description": "HH:mm"
+      },
+      {
+        "key": "required",
+        "label": "Required",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabled",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "formattedValue",
+        "label": "Formatted Value",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "isValid",
+        "label": "Is Valid",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "label",
+        "label": "Label",
+        "valueType": "string",
+        "default": "Time"
+      },
+      {
+        "key": "description",
+        "label": "Help text",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "placeholder",
+        "label": "Placeholder",
+        "valueType": "string",
+        "default": "Pick a time"
+      },
+      {
+        "key": "value",
+        "label": "Default time",
+        "valueType": "string",
+        "default": "",
+        "description": "24h HH:mm"
+      },
+      {
+        "key": "timeFormat",
+        "label": "Format",
+        "valueType": "string",
+        "default": "12h",
+        "allowedValues": [
+          "12h",
+          "24h"
+        ]
+      },
+      {
+        "key": "minuteStep",
+        "label": "Minute step",
+        "valueType": "number",
+        "default": "{{15}}"
+      },
+      {
+        "key": "minTime",
+        "label": "Min time",
+        "valueType": "string",
+        "default": "",
+        "description": "HH:mm"
+      },
+      {
+        "key": "maxTime",
+        "label": "Max time",
+        "valueType": "string",
+        "default": "",
+        "description": "HH:mm"
+      },
+      {
+        "key": "required",
+        "label": "Required",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabled",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "formattedValue",
+        "label": "Formatted Value",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "isValid",
+        "label": "Is Valid",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "backgroundColor",
+        "label": "Background",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Text",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Border",
+        "valueType": "string"
+      },
+      {
+        "key": "accentColor",
+        "label": "Accent",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Border radius",
+        "valueType": "number"
+      },
+      {
+        "key": "backgroundColor",
+        "label": "Background",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Text",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Border",
+        "valueType": "string"
+      },
+      {
+        "key": "accentColor",
+        "label": "Accent",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Border radius",
+        "valueType": "number"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onSelect",
+        "label": "On select"
+      },
+      {
+        "id": "onFocus",
+        "label": "On focus"
+      },
+      {
+        "id": "onBlur",
+        "label": "On blur"
+      },
+      {
+        "id": "onSelect",
+        "label": "On select"
+      },
+      {
+        "id": "onFocus",
+        "label": "On focus"
+      },
+      {
+        "id": "onBlur",
+        "label": "On blur"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setValue",
+        "displayName": "Set time",
+        "params": [
+          {
+            "handle": "time",
+            "displayName": "Time (HH:mm)"
+          }
+        ]
+      },
+      {
+        "handle": "clearValue",
+        "displayName": "Clear"
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "label",
+        "default": "Time"
+      },
+      {
+        "name": "description",
+        "default": ""
+      },
+      {
+        "name": "placeholder",
+        "default": "Pick a time"
+      },
+      {
+        "name": "value",
+        "default": ""
+      },
+      {
+        "name": "timeFormat",
+        "default": "12h"
+      },
+      {
+        "name": "minuteStep",
+        "default": 15
+      },
+      {
+        "name": "minTime",
+        "default": ""
+      },
+      {
+        "name": "maxTime",
+        "default": ""
+      },
+      {
+        "name": "required",
+        "default": false
+      },
+      {
+        "name": "disabled",
+        "default": false
+      },
+      {
+        "name": "formattedValue",
+        "default": ""
+      },
+      {
+        "name": "isValid",
+        "default": true
+      },
+      {
+        "name": "label",
+        "default": "Time"
+      },
+      {
+        "name": "description",
+        "default": ""
+      },
+      {
+        "name": "placeholder",
+        "default": "Pick a time"
+      },
+      {
+        "name": "value",
+        "default": ""
+      },
+      {
+        "name": "timeFormat",
+        "default": "12h"
+      },
+      {
+        "name": "minuteStep",
+        "default": 15
+      },
+      {
+        "name": "minTime",
+        "default": ""
+      },
+      {
+        "name": "maxTime",
+        "default": ""
+      },
+      {
+        "name": "required",
+        "default": false
+      },
+      {
+        "name": "disabled",
+        "default": false
+      },
+      {
+        "name": "formattedValue",
+        "default": ""
+      },
+      {
+        "name": "isValid",
+        "default": true
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_Timeline": {
+    "type": "Lib_shadcn_Timeline",
+    "name": "Lib_shadcn_Timeline",
+    "description": "Timeline from the shadcn UI component library. Sizes to its content in the app (Dynamic height on).",
+    "defaultSize": {
+      "width": 12,
+      "height": 360
+    },
+    "properties": [
+      {
+        "key": "items",
+        "label": "Items",
+        "valueType": "array",
+        "default": "{{[{\"title\":\"Order placed\",\"description\":\"Order #1042 was created.\",\"time\":\"09:12\",\"status\":\"done\"},{\"title\":\"Payment confirmed\",\"description\":\"Card ending 4242.\",\"time\":\"09:14\",\"status\":\"done\"},{\"title\":\"Packed\",\"description\":\"Warehouse B is packing the order.\",\"time\":\"11:30\",\"status\":\"current\"},{\"title\":\"Shipped\",\"description\":\"Waiting for pickup.\",\"time\":\"\",\"status\":\"upcoming\"}]}}",
+        "description": "Array of { title, description, time, status }. status: done, current, upcoming or error."
+      },
+      {
+        "key": "selectedItem",
+        "label": "Selected Item",
+        "valueType": "object",
+        "default": "{{{}}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "lineColor",
+        "label": "Line",
+        "valueType": "string"
+      },
+      {
+        "key": "accentColor",
+        "label": "Current item",
+        "valueType": "string"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onItemClick",
+        "label": "On item click"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "items",
+        "default": [
+          {
+            "title": "Order placed",
+            "description": "Order #1042 was created.",
+            "time": "09:12",
+            "status": "done"
+          },
+          {
+            "title": "Payment confirmed",
+            "description": "Card ending 4242.",
+            "time": "09:14",
+            "status": "done"
+          },
+          {
+            "title": "Packed",
+            "description": "Warehouse B is packing the order.",
+            "time": "11:30",
+            "status": "current"
+          },
+          {
+            "title": "Shipped",
+            "description": "Waiting for pickup.",
+            "time": "",
+            "status": "upcoming"
+          }
+        ]
+      },
+      {
+        "name": "selectedItem",
+        "default": {}
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  },
+  "Lib_shadcn_ToggleGroup": {
+    "type": "Lib_shadcn_ToggleGroup",
+    "name": "Lib_shadcn_ToggleGroup",
+    "description": "Toggle Group from the shadcn UI component library. Sizes to its content in the app (Dynamic height on).",
+    "defaultSize": {
+      "width": 12,
+      "height": 40
+    },
+    "properties": [
+      {
+        "key": "options",
+        "label": "Options",
+        "valueType": "array",
+        "default": "{{[{\"label\":\"Day\",\"value\":\"day\"},{\"label\":\"Week\",\"value\":\"week\"},{\"label\":\"Month\",\"value\":\"month\"},{\"label\":\"Year\",\"value\":\"year\"}]}}",
+        "description": "Array of { label, value } objects, or plain strings."
+      },
+      {
+        "key": "value",
+        "label": "Default value",
+        "valueType": "string",
+        "default": "week",
+        "description": "Selected value when \"Allow multiple\" is off."
+      },
+      {
+        "key": "multiple",
+        "label": "Allow multiple",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "values",
+        "label": "Default values",
+        "valueType": "array",
+        "default": "{{[]}}",
+        "description": "Selected values when \"Allow multiple\" is on."
+      },
+      {
+        "key": "variant",
+        "label": "Variant",
+        "valueType": "string",
+        "default": "outline",
+        "allowedValues": [
+          "outline",
+          "default"
+        ]
+      },
+      {
+        "key": "disabled",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "visibility",
+        "label": "Visibility",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      },
+      {
+        "key": "loadingState",
+        "label": "Loading state",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "disabledState",
+        "label": "Disable",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{true}}"
+      }
+    ],
+    "styles": [
+      {
+        "key": "backgroundColor",
+        "label": "Background",
+        "valueType": "string"
+      },
+      {
+        "key": "selectedColor",
+        "label": "Selected",
+        "valueType": "string"
+      },
+      {
+        "key": "textColor",
+        "label": "Text",
+        "valueType": "string"
+      },
+      {
+        "key": "borderColor",
+        "label": "Border",
+        "valueType": "string"
+      },
+      {
+        "key": "borderRadius",
+        "label": "Border radius",
+        "valueType": "number"
+      },
+      {
+        "key": "boxShadow",
+        "label": "Box shadow",
+        "valueType": "string"
+      }
+    ],
+    "events": [
+      {
+        "id": "onChange",
+        "label": "On change"
+      }
+    ],
+    "actions": [
+      {
+        "handle": "setValue",
+        "displayName": "Select option",
+        "params": [
+          {
+            "handle": "value",
+            "displayName": "Value"
+          }
+        ]
+      },
+      {
+        "handle": "setVisibility",
+        "displayName": "Set visibility",
+        "params": [
+          {
+            "handle": "visibility",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setLoading",
+        "displayName": "Set loading",
+        "params": [
+          {
+            "handle": "loading",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      },
+      {
+        "handle": "setDisable",
+        "displayName": "Set disable",
+        "params": [
+          {
+            "handle": "disable",
+            "displayName": "Value",
+            "defaultValue": "{{false}}"
+          }
+        ]
+      }
+    ],
+    "exposedVariables": [
+      {
+        "name": "options",
+        "default": [
+          {
+            "label": "Day",
+            "value": "day"
+          },
+          {
+            "label": "Week",
+            "value": "week"
+          },
+          {
+            "label": "Month",
+            "value": "month"
+          },
+          {
+            "label": "Year",
+            "value": "year"
+          }
+        ]
+      },
+      {
+        "name": "value",
+        "default": "week"
+      },
+      {
+        "name": "multiple",
+        "default": false
+      },
+      {
+        "name": "values",
+        "default": []
+      },
+      {
+        "name": "variant",
+        "default": "outline"
+      },
+      {
+        "name": "disabled",
+        "default": false
+      },
+      {
+        "name": "isVisible",
+        "default": true
+      },
+      {
+        "name": "isLoading",
+        "default": false
+      },
+      {
+        "name": "isDisabled",
+        "default": false
+      }
+    ]
+  }
+}

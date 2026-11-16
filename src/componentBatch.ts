@@ -1,19 +1,25 @@
 import { indexComponentReferences } from './componentReferences.js';
+import { polishFlexRows } from './flexPolish.js';
 import { suggestedHtmlHeight, type ReadinessComponent } from './renderReadiness.js';
 import { z } from 'zod';
 import { COMPONENT_SLOT_NAMES, componentSlotSchema } from './componentParent.js';
 import { materializeRequiredDefaultChildren } from './defaultChildren.js';
 import { lintComponents } from './lint.js';
-import { normalizeComponentSpec } from './componentNormalization.js';
+import { normalizeComponentSpec, plannedCurrency } from './componentNormalization.js';
 import { normalizePlannedLayouts } from './layoutNormalization.js';
 import type { ComponentSpec } from './tooljetClient.js';
 import { componentNameSchema } from './componentName.js';
+import { FLEX_FILL_WIDTH_DESCRIPTION, FLEX_GROW_DESCRIPTION, FLEX_MIN_WIDTH_PX_DESCRIPTION, FLEX_WIDTH_PX_DESCRIPTION } from './flexContainer.js';
 
 const layoutSchema = z.object({
   top: z.number(),
   left: z.number().describe('Columns in the immediate parent canvas, which has its own 43-column grid.'),
   width: z.number().describe('Columns out of 43 in the immediate parent canvas, independent of the parent outer width. Full width is 43. Container/Form/modal inset full rows use left 2, width 39; grid-mode Listview full rows use left 0, width 43.'),
   height: z.number(),
+  fillWidth: z.boolean().optional().describe(FLEX_FILL_WIDTH_DESCRIPTION),
+  widthPx: z.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION),
+  grow: z.number().positive().optional().describe(FLEX_GROW_DESCRIPTION),
+  minWidthPx: z.number().nonnegative().optional().describe(FLEX_MIN_WIDTH_PX_DESCRIPTION),
 });
 
 export const componentInputSchema = z.object({
@@ -49,7 +55,15 @@ export interface PreparedComponentBatch {
 }
 
 /** Normalize and fully lint one page's component batch before any ToolJet write. */
-export function prepareComponentBatch(inputs: ComponentInput[], options: { canvasColor?: string; existingComponents?: Array<{ id: string; name?: string }> } = {}): PreparedComponentBatch {
+export function prepareComponentBatch(
+  inputs: ComponentInput[],
+  // flexContainerIds: FlexContainers already on the page, so children added to them by id are not linted as grid items.
+  options: {
+    canvasColor?: string;
+    existingComponents?: Array<{ id: string; name?: string }>;
+    flexContainerIds?: Iterable<string>;
+  } = {}
+): PreparedComponentBatch {
   const requested = inputs.map(({ client_ref, parent_ref, slot_name, ...component }) => ({
     ...component,
     clientRef: client_ref,
@@ -58,8 +72,9 @@ export function prepareComponentBatch(inputs: ComponentInput[], options: { canva
   }));
   // Same geometry fixes as lint_app_spec: a plan that linted clean must apply clean, so the stored plan
   // gets the identical height normalisation here (an earlier split let lint pass and apply reject).
+  const currency = plannedCurrency(requested);
   const normalized = requested.map((component) => {
-    const definition = normalizeComponentSpec(component, { stripUnknownKeys: true });
+    const definition = normalizeComponentSpec(component, { stripUnknownKeys: true, currency });
     const geometry = normalizePlannedLayouts(definition.component);
     return { ...definition, component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
   });
@@ -76,7 +91,10 @@ export function prepareComponentBatch(inputs: ComponentInput[], options: { canva
         `Anything placed within ${fix.to - fix.from}px below it now overlaps; move it down.`
     );
   }
-  const expanded = materializeRequiredDefaultChildren(normalized.map((result) => result.component));
+  const materialized = materializeRequiredDefaultChildren(normalized.map((result) => result.component));
+  // Row alignment polish (flexPolish.ts), the same pass lint_app_spec runs.
+  const polished = polishFlexRows(materialized.components);
+  const expanded = { ...materialized, components: polished.components, warnings: [...materialized.warnings, ...polished.warnings] };
   const references = indexComponentReferences(expanded.components, options.existingComponents);
   const lint = lintComponents(references.components, options);
   const lateListviewChildWarnings = requested.flatMap((component) =>

@@ -12,6 +12,7 @@
 import { execSync } from 'node:child_process';
 import { mkdirSync, existsSync, rmSync, writeFileSync } from 'node:fs';
 import { reviewableBundle } from './reviewable-bundle.mjs';
+import { packagePlugin } from './plugin-package.mjs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -56,6 +57,9 @@ for (const f of [
     throw new Error(`build-plugin: missing skills/tooljet-app-builder/${f} — run "npm run generate:skill" first.`);
   }
 }
+
+// Package the existing runtime and manifests for distribution, then exercise that exact folder.
+packagePlugin(root);
 
 // Verify the emitted module graph and catalogs without node_modules or real credentials.
 run('node scripts/test-plugin-package.mjs');

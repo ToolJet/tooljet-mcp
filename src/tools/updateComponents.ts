@@ -4,21 +4,32 @@ import type { ToolJetClient } from '../tooljetClient.js';
 import {
   introducedLintFindings,
   lintComponentSlots,
+  slotFindingKey,
   lintComponentSpec,
   lintKanbanInteractions,
+  lintShadKanbanCards,
+  lintShadScheduleScale,
   lintRenderedGeometry,
   lintStandardSingleLineInputHeight,
   lintTextGeometry,
   lintUnusableTextGeometry,
   type LintComponent,
 } from '../lint.js';
-import { COMPONENT_SLOT_NAMES, componentSlotSchema, decodeComponentParent, encodeComponentParent } from '../componentParent.js';
+import { applyResolvedParent, COMPONENT_SLOT_NAMES, componentSlotSchema, decodeComponentParent, encodeComponentParent, isPackContainerType, resolveParentRef } from '../componentParent.js';
+import { resolvePackSlot } from '../packSlots.js';
 import { ok, fail, type ToolDef } from './types.js';
-import { normalizeComponentSpec } from '../componentNormalization.js';
+import { normalizeComponentSpec, packValueAsDefault } from '../componentNormalization.js';
 import { resolveRef } from '../refResolution.js';
 import { hasNonEmptyDefinition, strictEntry } from '../strictEntry.js';
 import { componentNameError, componentNameSchema } from '../componentName.js';
 import { COMPONENT_FX_UPDATE_GUIDANCE } from '../componentFxGuidance.js';
+import {
+  appendedChildOrders,
+  childOrderProperty,
+  isFlexContainerType,
+  reparentAdditions,
+  resolveAuthoredChildOrder,
+} from '../flexContainer.js';
 
 const DEFINITION_SECTIONS = ['properties', 'styles', 'validation', 'general', 'general_styles', 'others'] as const;
 
@@ -77,7 +88,8 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
       'not both. `slot_name` accepts header/body/footer and can move a child between native ModalV2/Form/Container ' +
       'regions, or modal for Kanban card-click content; omit parent to keep the current parent. Unknown entry keys are rejected (a top-level properties/styles ' +
       'patch is an error, not a silent no-op), and an entry that changes nothing fails. Get component ids + current ' +
-      'values from get_app_summary / get_component.',
+      'values from get_app_summary / get_component. To reorder a FlexContainer, set its properties.childOrder to the child ' +
+      'names or ids in the wanted order; unlisted children follow in their current order.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),
@@ -93,7 +105,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
         definition?: Record<string, unknown>;
         name?: string;
         parent?: string;
-        slot_name?: 'body' | 'header' | 'footer' | 'modal';
+        slot_name?: string;
       }>;
     }) {
       try {
@@ -106,12 +118,25 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
         const changedComponents: Array<{ before: LintComponent; after: LintComponent }> = [];
         let placementChanged = false;
         const layoutFixes: Array<{ componentId: string; desktop: never }> = [];
+        // A pack parent's slots come from its items, which another entry of this batch may change: one entry adding
+        // tab "returns" and another moving a child into tab_returns is one valid edit, in either order (review on
+        // tooljet-mcp#143). Slots are read from each component's properties as the whole batch leaves them.
+        const batchProperties = new Map<string, Record<string, unknown>>();
+        for (const update of args.updates) {
+          const properties = (update.definition as { properties?: Record<string, unknown> } | undefined)?.properties;
+          if (!properties) continue;
+          const target = resolveRef(page.components, update.component_id, 'Component', '');
+          if (!target.ok) continue;
+          const id = target.target.id;
+          batchProperties.set(id, { ...(batchProperties.get(id) ?? target.target.properties ?? {}), ...properties });
+        }
         const resolvedUpdates: Array<{
           componentId: string;
           definition?: Record<string, unknown>;
           name?: string;
           parent?: string;
-          slotName?: 'body' | 'header' | 'footer' | 'modal';
+          slotName?: string;
+          parentType?: string;
         }> = [];
         for (const update of args.updates) {
           // Validate explicit renames only: legacy names must not block unrelated repairs.
@@ -156,6 +181,19 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             continue;
           }
           let parent = update.parent;
+          if (typeof parent === 'string' && parent) {
+            // A parent named by its component name moves the component under that component's id.
+            const resolvedParent = resolveParentRef(page.components, parent);
+            // "<id>-<canvas>" under a pack container is that container plus slot_name (DVRL-124).
+            const entry = { parent, slot_name: update.slot_name as string | undefined };
+            const parentError = resolvedParent.ok ? applyResolvedParent(entry, resolvedParent) : resolvedParent.error;
+            if (parentError) {
+              errors.push(`Component "${update.component_id}": ${parentError}`);
+              continue;
+            }
+            parent = entry.parent;
+            update.slot_name = entry.slot_name as typeof update.slot_name;
+          }
           let slotName = update.slot_name;
           if (slotName !== undefined) {
             parent ??= current.parent ? decodeComponentParent(current.parent).parentId : undefined;
@@ -174,6 +212,58 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
               }
             }
           }
+          // Under a pack widget: a slot it draws, its body or only slot by default (packSlots.ts). Read as the bare parent,
+          // a child of tab_tab1 moved to tab_tab2 was stored on "<id>-tab_tab1-tab_tab2" and never shown (QA DVRL-8).
+          let parentType: string | undefined;
+          if (parent) {
+            const decoded = decodeComponentParent(parent);
+            const parentComponent = page.components.find((component) => component.id === decoded.parentId);
+            if (parentComponent && isPackContainerType(parentComponent.type)) {
+              const named = slotName ?? (parent !== decoded.parentId ? decoded.slotName : undefined);
+              const slot = resolvePackSlot(
+                { ...parentComponent, properties: batchProperties.get(parentComponent.id) ?? parentComponent.properties },
+                named,
+                current.name ?? current.id
+              );
+              if (!slot.ok) {
+                errors.push(slot.error);
+                continue;
+              }
+              parent = decoded.parentId;
+              slotName = slot.slotName;
+              parentType = parentComponent.type;
+            }
+          }
+          // A FlexContainer's childOrder holds child ids; accept child names too and write the complete order, so
+          // a partial list cannot leave the rest to ToolJet's arbitrary fallback order.
+          const authoredOrder = (update.definition?.properties as Record<string, unknown> | undefined)?.childOrder;
+          if (authoredOrder !== undefined && isFlexContainerType(current.type)) {
+            const raw = authoredOrder as { value?: unknown } | unknown[];
+            const value = Array.isArray(raw) ? raw : raw?.value;
+            if (!Array.isArray(value)) {
+              errors.push(`FlexContainer "${current.name ?? current.id}": properties.childOrder must be an array of child component ids or names.`);
+              continue;
+            }
+            const resolved = resolveAuthoredChildOrder(current, page.components, value);
+            if (resolved.unknown.length) {
+              errors.push(
+                `FlexContainer "${current.name ?? current.id}": childOrder names ${resolved.unknown.map((ref) => `"${ref}"`).join(', ')}, ` +
+                  'which are not children of this container. List its child component ids or names.'
+              );
+              continue;
+            }
+            update.definition = {
+              ...update.definition,
+              properties: { ...(update.definition!.properties as Record<string, unknown>), childOrder: childOrderProperty(resolved.order) },
+            };
+          }
+          // Judged on what this update writes: the stored definition always carries defaultValue.
+          const packValue = packValueAsDefault(current.type, current.name ?? current.id,
+            update.definition?.properties as Record<string, unknown> | undefined);
+          if (packValue.warning) {
+            warnings.push(packValue.warning);
+            update.definition = { ...update.definition, properties: packValue.properties } as typeof update.definition;
+          }
           const definition = update.definition as {
             properties?: Record<string, unknown>;
             styles?: Record<string, unknown>;
@@ -188,7 +278,7 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             styles: { ...(current.styles ?? {}), ...(definition?.styles ?? {}) },
             layouts: current.layouts as Parameters<typeof lintComponentSpec>[0]['layouts'],
             parent: parent !== undefined
-              ? encodeComponentParent(parent, slotName)
+              ? encodeComponentParent(parent, slotName, parentType)
               : current.parent,
             slotName: slotName,
           };
@@ -235,8 +325,8 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             componentId,
             definition: normalizedDefinition,
             name: update.name,
-            parent,
-            slotName: update.slot_name,
+            parent: parentType && parent !== undefined ? encodeComponentParent(parent, slotName, parentType) : parent,
+            slotName: parentType ? undefined : update.slot_name,
           });
           if (!update.definition) continue;
           errors.push(...introducedLintFindings(
@@ -253,10 +343,16 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
           changedComponents.flatMap(({ before, after }) =>
             introducedLintFindings(lint([before]), lint([after]))
           );
-        if (placementChanged) {
+        // A definition change can strand children too: a container's tab or step id renamed or the item removed. Only a
+        // component others sit in (their parent is its id, or "<id>-<canvas>") can, so an edit of any other skips the check.
+        const parents = new Set(page.components.map((component) => component.parent).filter(Boolean) as string[]);
+        const hasChildren = (id: unknown) =>
+          typeof id === 'string' && [...parents].some((parent) => parent === id || parent.startsWith(`${id}-`));
+        if (placementChanged || changedComponents.some(({ before }) => hasChildren(before.id))) {
           errors.push(...introducedLintFindings(
             lintComponentSlots(page.components as LintComponent[]),
-            lintComponentSlots(allComponents)
+            lintComponentSlots(allComponents),
+            slotFindingKey
           ));
         }
         errors.push(...introducedForChanged(lintUnusableTextGeometry));
@@ -265,6 +361,8 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
         warnings.push(...introducedForChanged(lintTextGeometry));
         warnings.push(...lintRenderedGeometry(allComponents));
         warnings.push(...lintKanbanInteractions(allComponents));
+        warnings.push(...lintShadKanbanCards(allComponents));
+        warnings.push(...lintShadScheduleScale(allComponents));
         const result = await client.updateComponents({
           appId: args.app_id,
           versionId: args.version_id,
@@ -273,6 +371,22 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
         });
         if (layoutFixes.length) {
           await client.updateLayouts({ appId: args.app_id, versionId: args.version_id, pageId: args.page_id, layouts: layoutFixes });
+        }
+        // A child moved into a FlexContainer joins the end of its childOrder, as the editor does on a drop.
+        const appended = appendedChildOrders(page.components, reparentAdditions(page.components, resolvedUpdates.map((update) => ({
+          componentId: update.componentId,
+          parent: update.parent !== undefined ? encodeComponentParent(update.parent, update.slotName, update.parentType) : undefined,
+        }))));
+        if (appended.size) {
+          await client.updateComponents({
+            appId: args.app_id,
+            versionId: args.version_id,
+            pageId: args.page_id,
+            updates: [...appended].map(([componentId, order]) => ({
+              componentId,
+              definition: { properties: { childOrder: childOrderProperty(order) } },
+            })),
+          });
         }
         return ok({ ...result, warnings: [...new Set(warnings)] });
       } catch (err) {

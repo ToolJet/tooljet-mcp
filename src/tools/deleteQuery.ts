@@ -4,6 +4,24 @@ import { containsExactValue, containsNamedBinding } from '../referenceSafety.js'
 import { ok, fail, type ToolDef } from './types.js';
 import { resolveRef } from '../refResolution.js';
 
+const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Where a Code mode app's stored source names the query: a string literal that is exactly its name, as
+ * useAppQuery('<name>') and run calls use it. The generated hooks (tooljet.gen.ts) list every query and do not count.
+ */
+export function codeReferences(files: Array<{ path: string; content: string }>, name: string): string[] {
+  const literal = new RegExp(`(['"\`])${escapeRegExp(name)}\\1`);
+  const found: string[] = [];
+  for (const file of files) {
+    if (/(^|\/)tooljet\.gen\.ts$/.test(file.path) || !/\.(tsx?|jsx?|mjs|cjs)$/.test(file.path)) continue;
+    file.content.split('\n').forEach((line, index) => {
+      if (literal.test(line)) found.push(`${file.path}:${index + 1}`);
+    });
+  }
+  return found;
+}
+
 export function deleteQueryTool(client: ToolJetClient): ToolDef {
   return {
     name: 'delete_query',
@@ -15,7 +33,7 @@ export function deleteQueryTool(client: ToolJetClient): ToolDef {
     },
     description:
       'Permanently delete one query. Inspect the target and obtain explicit approval, then pass app_id and confirm:true. ' +
-      'The tool refuses component bindings, dependent query bindings, and external events that still reference it, verifies ' +
+      'The tool refuses component bindings, dependent query bindings, external events and, in a Code mode app, stored code that still reference it, verifies ' +
       'the query disappeared, and never deletes dependencies automatically.',
     inputSchema: {
       app_id: z.string(),
@@ -50,6 +68,24 @@ export function deleteQueryTool(client: ToolJetClient): ToolDef {
           if (containsExactValue(event.event, query.id) ||
               (query.name ? containsNamedBinding(event.event, 'queries', query.name) : false)) {
             references.push(`event ${event.name ?? event.id} targets ${query.name ?? query.id}`);
+          }
+        }
+        // A Code mode app calls its queries from its stored code (useAppQuery('<name>')), which the summary does not show.
+        if (query.name && client.codeSourceFiles) {
+          let files: Array<{ path: string; content: string }> | null;
+          try {
+            files = await client.codeSourceFiles(args.app_id, args.version_id);
+          } catch (error) {
+            throw new Error(
+              `delete_query: could not read the app's code to check it for uses of ${query.name}, so nothing was deleted: ` +
+                (error instanceof Error ? error.message : String(error))
+            );
+          }
+          const used = files ? codeReferences(files, query.name) : [];
+          if (used.length) {
+            references.push(
+              `the app's code calls ${query.name} at ${used.slice(0, 8).join(', ')}${used.length > 8 ? ` and ${used.length - 8} more` : ''}`
+            );
           }
         }
         if (references.length) {

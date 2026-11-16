@@ -39,6 +39,8 @@ export function projectAppSettings(snapshot: AppSettingsSnapshot): Record<string
       mode: global.appMode,
     },
     theme: compactTheme(theme),
+    // The saved component library (ToolJet UI 1.0 or 2.0); absent on apps from before the setting.
+    component_library: global.componentLibrary,
     header: {
       hidden: properties.hideHeader,
       logo_hidden: properties.hideLogo,

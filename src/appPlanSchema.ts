@@ -58,6 +58,12 @@ export const plannedPageSchema = z.object({
       'in place, keeping their ids. Refused when another page, event or query reads a component the plan drops. Not ' +
       'atomic: use it on draft or otherwise recoverable pages.'
   ),
+  archetype: z.string().optional().describe(
+    'The page\'s archetype: catalog (records with a face: photo cards, search, detail sheet), personal-overview (one ' +
+      'person\'s period at a glance: hero, figures, progress, recent), register (a filtered table of records with a ' +
+      'detail sheet), queue-board (work to act on: counts, needs-attention list, queue) or other. Lint checks the page ' +
+      'against it.'
+  ),
   components: z.array(componentInputSchema).optional(),
 });
 export const plannedEventSchema = z.object({
@@ -90,6 +96,12 @@ export const appPlanSchema = z.object({
   version_id: z.string().optional(),
   /** Rename the target app as part of the same governed phase. */
   app_name: z.string().trim().min(1).max(100).optional(),
+  /** The user's words asking for the other component library than the app's: see componentLibrary.ts. */
+  component_library_request: z.string().trim().min(1).max(300).optional().describe(
+    'Only when the user asked in this request for the other component library than the app is built in (for example ' +
+      '"use UI 2.0" or "use the new components" in a UI 1.0 app): their words. Without it, lint warns when the plan adds ' +
+      'widgets from the other library.'
+  ),
   tables: z.array(plannedTableSchema).max(50).optional(),
   seed_data: z.array(plannedSeedSchema).max(50).optional(),
   queries: z.array(plannedQuerySchema).max(200).optional(),

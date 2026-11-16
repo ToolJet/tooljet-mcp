@@ -11,12 +11,40 @@ import {
   lintUnusableTextGeometry,
   type LintComponent,
 } from '../lint.js';
-import { COMPONENT_SLOT_NAMES, componentSlotSchema, decodeComponentParent, encodeComponentParent } from '../componentParent.js';
+import {
+  applyResolvedParent,
+  COMPONENT_SLOT_NAMES,
+  componentSlotSchema,
+  decodeComponentParent,
+  encodeComponentParent,
+  isPackContainerType,
+  resolveParentRef,
+} from '../componentParent.js';
+import { resolvePackSlot } from '../packSlots.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { resolveRef } from '../refResolution.js';
 import { strictEntry } from '../strictEntry.js';
+import {
+  appendedChildOrders,
+  childOrderProperty,
+  FLEX_FILL_WIDTH_DESCRIPTION,
+  FLEX_GROW_DESCRIPTION,
+  FLEX_MIN_WIDTH_PX_DESCRIPTION,
+  FLEX_WIDTH_PX_DESCRIPTION,
+  reparentAdditions,
+} from '../flexContainer.js';
 
-const rect = z.object({ top: z.number(), left: z.number(), width: z.number(), height: z.number() });
+const rect = z.object({
+  top: z.number(),
+  left: z.number(),
+  width: z.number(),
+  height: z.number(),
+  fillWidth: z.boolean().optional().describe(FLEX_FILL_WIDTH_DESCRIPTION),
+  widthPx: z.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION),
+  grow: z.number().positive().optional().describe(FLEX_GROW_DESCRIPTION),
+  minWidthPx: z.number().nonnegative().optional().describe(FLEX_MIN_WIDTH_PX_DESCRIPTION),
+});
+type LayoutRect = z.infer<typeof rect>;
 
 const RECT_KEYS = new Set(['top', 'left', 'width', 'height']);
 
@@ -58,7 +86,8 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
       'in the immediate parent canvas\'s own 43-column grid, including nested containers; `top`/`height` are pixels. ' +
       'Full rows use width 43, independent of the parent outer width. Container/Form/modal insets may use left 2, width 39; grid-mode Listview full rows use left 0, width 43. Provide desktop and/or mobile per ' +
       'component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` ' +
-      '(header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent.',
+      '(header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent. ' +
+      'A FlexContainer child takes its width from fillWidth/widthPx, not width/left; a component reparented into a FlexContainer is appended to its childOrder.',
     inputSchema: {
       app_id: z.string(),
       version_id: z.string(),
@@ -71,10 +100,10 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
       page_id: string;
       layouts: Array<{
         component_id: string;
-        desktop?: { top: number; left: number; width: number; height: number };
-        mobile?: { top: number; left: number; width: number; height: number };
+        desktop?: LayoutRect;
+        mobile?: LayoutRect;
         parent?: string;
-        slot_name?: 'body' | 'header' | 'footer' | 'modal';
+        slot_name?: string;
       }>;
     }) {
       try {
@@ -113,10 +142,25 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
           })),
         };
         const rootSlotWarnings: string[] = [];
+        const parentErrors: string[] = [];
         const resolvedLayouts = args.layouts.map((layout) => {
           const current = components.get(layout.component_id)!;
           let parent = layout.parent;
           let slot_name = layout.slot_name;
+          let parentType: string | undefined;
+          // A parent named by its component name goes on that component's id; one that names nothing on the page is
+          // refused: stored as written, the component was reported moved and never drew again (QA DVRL-7).
+          if (typeof parent === 'string' && parent) {
+            const resolvedParent = resolveParentRef(page.components, parent);
+            const entry = { parent, slot_name };
+            const parentError = resolvedParent.ok ? applyResolvedParent(entry, resolvedParent) : resolvedParent.error;
+            if (parentError) {
+              parentErrors.push(`Component "${layout.component_id}": ${parentError}`);
+              return { ...layout, parentType };
+            }
+            parent = entry.parent;
+            slot_name = entry.slot_name;
+          }
           if (slot_name !== undefined) {
             parent ??= current.parent ? decodeComponentParent(current.parent).parentId : undefined;
             if (!parent) {
@@ -133,8 +177,27 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
               }
             }
           }
-          return { ...layout, parent, slot_name };
+          // Under a pack widget: a slot it draws, its body or only slot by default (packSlots.ts). Read as the bare
+          // parent, a child of tab_tab1 moved to tab_tab2 was stored on "<id>-tab_tab1-tab_tab2" (QA DVRL-8).
+          if (parent) {
+            const decoded = decodeComponentParent(parent);
+            const parentComponent = components.get(decoded.parentId);
+            if (parentComponent && isPackContainerType(parentComponent.type)) {
+              const named = slot_name ?? (parent !== decoded.parentId ? decoded.slotName : undefined);
+              const slot = resolvePackSlot(parentComponent, named, current.name ?? current.id);
+              if (!slot.ok) parentErrors.push(slot.error);
+              else {
+                parent = decoded.parentId;
+                slot_name = slot.slotName;
+                parentType = parentComponent.type;
+              }
+            }
+          }
+          return { ...layout, parent, slot_name, parentType };
         });
+        if (parentErrors.length) {
+          return fail(new Error(`${parentErrors.join(' ')} (Nothing was saved: refused before any write.)`));
+        }
         const changes = new Map(resolvedLayouts.map((layout) => [layout.component_id, layout]));
         const projected = page.components.map((component) => {
           const change = changes.get(component.id);
@@ -148,7 +211,7 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
               mobile: change.mobile ?? currentLayouts?.mobile,
             },
             parent: change.parent !== undefined
-              ? encodeComponentParent(change.parent, change.slot_name)
+              ? encodeComponentParent(change.parent, change.slot_name, change.parentType)
               : component.parent,
             slotName: change.slot_name,
           } as LintComponent;
@@ -189,8 +252,25 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
             mobile: l.mobile,
             parent: l.parent,
             slotName: l.slot_name,
+            parentType: l.parentType,
           })),
         });
+        // A child moved into a FlexContainer joins the end of its childOrder, as the editor does on a drop.
+        const appended = appendedChildOrders(page.components, reparentAdditions(page.components, resolvedLayouts.map((layout) => ({
+          componentId: layout.component_id,
+          parent: layout.parent !== undefined ? encodeComponentParent(layout.parent, layout.slot_name, layout.parentType) : undefined,
+        }))));
+        if (appended.size) {
+          await client.updateComponents({
+            appId: args.app_id,
+            versionId: args.version_id,
+            pageId: args.page_id,
+            updates: [...appended].map(([componentId, order]) => ({
+              componentId,
+              definition: { properties: { childOrder: childOrderProperty(order) } },
+            })),
+          });
+        }
         return ok({ ...result, warnings });
       } catch (err) {
         return fail(err);

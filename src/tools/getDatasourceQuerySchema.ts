@@ -66,7 +66,13 @@ async function resolveKind(
     throw new Error(`Each schema request needs a \`kind\` or a \`datasource_id\`.${hint}`);
   }
   if (request.kind) return request.kind;
-  if (!versionId) throw new Error('Resolving `datasource_id` requires `version_id`.');
+  if (!versionId) {
+    // The kind of a workspace datasource does not depend on the version: 20 Code builds were refused 19 times for
+    // leaving version_id out (2026-11-04), each a model call to send it again.
+    const kind = await client.datasourceKind?.(request.datasource_id!).catch(() => undefined);
+    if (kind) return kind;
+    throw new Error('Resolving `datasource_id` needs `version_id` (or pass `kind`, such as "tooljetdb").');
+  }
   const datasource = (await datasourcesFor(versionId)).find((item) => item.id === request.datasource_id);
   if (!datasource) throw new Error(`Datasource "${request.datasource_id}" is not available on version "${versionId}".`);
   return datasource.kind;

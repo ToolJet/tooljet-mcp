@@ -24,6 +24,8 @@ const backend = createServer((req, res) => {
   res.setHeader('content-type', 'application/json');
   if (req.url === '/api/personal-access-tokens/session' && req.headers.authorization === `Bearer ${pat}`) {
     res.end(JSON.stringify({ authToken: session, organizationId: workspace, organizationSlug: 'studio' }));
+  } else if (['/api/custom-component-libraries', '/api/builtin-packs'].includes(req.url) && req.headers.cookie === `tj_auth_token=${session}`) {
+    res.end(JSON.stringify([]));
   } else if (req.url === `/api/tooljet-db/organizations/${workspace}/tables` && req.headers.cookie === `tj_auth_token=${session}`) {
     res.end(JSON.stringify({ result: [{ id: 'table-fixture', table_name: 'studio_inventory' }] }));
   } else res.writeHead(403).end(JSON.stringify({ error: 'Unexpected request in synthetic fixture' }));
@@ -58,6 +60,13 @@ try {
   const options = { deployment_url: 'https://studio.example.test', api_url: apiUrl, personal_access_token: pat };
   const env = Object.fromEntries(Object.entries(manifest.mcpServers.tooljet.env).map(([key, value]) => [key, value.replace(/\$\{user_config\.([a-z_]+)\}/g, (_, name) => options[name] ?? '')]));
   const entry = manifest.mcpServers.tooljet.args[0].replace('${CLAUDE_PLUGIN_ROOT}', extracted);
+  const originalEntry = readFileSync(entry, 'utf8');
+  // Optional browser imports may stay dynamic; startup dependencies must be bundled.
+  for (const statement of ['import "axe-core";', 'import("unexpected-package");']) {
+    writeFileSync(entry, originalEntry + '\n' + statement + '\n');
+    assert.throws(() => checkClaudePackage(extracted), /Unbundled dependency/);
+  }
+  writeFileSync(entry, originalEntry);
   const ambient = { TOOLJET_PAT: 'tj_pat_wrong_synthetic', TOOLJET_SESSION_TOKEN: 'wrong-session', TOOLJET_WORKSPACE_ID: 'wrong-workspace', TOOLJET_URL: 'http://127.0.0.1:1', MCP_TRANSPORT: 'http' };
   const { client, stderr } = await connect(entry, { ...ambient, ...env }, extracted);
   const baseline = await connect(join(root, 'bundle/index.js'), { MCP_TRANSPORT: 'stdio', TOOLJET_PAT: pat, TOOLJET_URL: apiUrl }, root);
@@ -77,26 +86,33 @@ try {
   for (const resource of resources) {
     assert.deepEqual(await client.readResource({ uri: resource.uri }), await baseline.client.readResource({ uri: resource.uri }));
   }
-  assert.equal(requests.length, 0, 'Discovery, catalogs and lint must not send credentials');
+  // Component packs now load during startup using the explicit identity in each process.
+  assert.equal(requests.filter(request => request.path === '/api/personal-access-tokens/session').length, 2);
+  assert.equal(requests.filter(request => request.path === '/api/custom-component-libraries').length, 2);
+  assert.equal(requests.filter(request => request.path === '/api/builtin-packs').length, 2);
+  for (const request of requests) {
+    if (request.path === '/api/personal-access-tokens/session') assert.equal(request.authorization, `Bearer ${pat}`);
+    else assert.equal(request.cookie, `tj_auth_token=${session}`);
+  }
+  const startupRequests = requests.length;
   const tables = await client.callTool({ name: 'list_tables', arguments: {} });
   assert(!tables.isError, JSON.stringify(tables));
   assert.equal(JSON.parse(tables.content[0].text).tables[0].table_name, 'studio_inventory');
-  assert.equal(requests.length, 2);
-  assert.equal(requests[0].authorization, `Bearer ${pat}`);
-  assert.equal(requests[1].cookie, `tj_auth_token=${session}`);
-  assert.equal(requests[1].workspace, workspace);
+  assert.equal(requests.length, startupRequests + 1);
+  assert.equal(requests.at(-1).cookie, `tj_auth_token=${session}`);
+  assert.equal(requests.at(-1).workspace, workspace);
   const missing = await connect(entry, { ...ambient, ...env, TOOLJET_CLAUDE_PAT: '' }, extracted);
   assert.deepEqual((await missing.client.listTools()).tools.map(tool => tool.name), ['tooljet_status']);
   const status = await missing.client.callTool({ name: 'tooljet_status', arguments: {} });
   assert(status.isError && status.content[0].text.includes('configuration dialog'));
-  assert.equal(requests.length, 2, 'Unconfigured plugin must not use ambient identity');
+  assert.equal(requests.length, startupRequests + 1, 'Unconfigured plugin must not use ambient identity');
   assert(!JSON.stringify(status).includes(pat));
   writeFileSync(entry, readFileSync(entry, 'utf8') + '\n// synthetic replacement build\n');
   const stale = await client.callTool({ name: 'get_runtime_info', arguments: {} });
   assert.equal(JSON.parse(stale.content[0].text).restart_required, true);
   const blocked = await client.callTool({ name: 'list_tables', arguments: {} });
   assert(blocked.isError && blocked.content[0].text.includes('MCP_RUNTIME_STALE'));
-  assert.equal(requests.length, 2);
+  assert.equal(requests.length, startupRequests + 1);
   console.log({ ...report, tools: tools.length, resources: resources.length, archiveRoundtrip: true, explicitIdentity: true, ambientIdentityRejected: true, staleRuntimeBlocked: true });
 } finally {
   await Promise.all(clients.map(client => client.close()));

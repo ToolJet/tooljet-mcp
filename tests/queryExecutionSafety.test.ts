@@ -122,7 +122,7 @@ describe('query execution safety', () => {
   it('requires explicit confirmation for warehouse reads even when row-limited', () => {
     expect(assessQueryRead({
       id: 'bq', kind: 'bigquery', data_source_id: 'warehouse',
-      options: { query: 'SELECT id FROM dataset.orders LIMIT 10' },
+      options: { mode: 'sql', query: 'SELECT id FROM dataset.orders LIMIT 10' },
     })).toMatchObject({
       provenRead: true,
       directSafe: false,

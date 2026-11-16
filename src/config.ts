@@ -1,4 +1,24 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+// HTTP is stateless; stdio can run calls concurrently. Never store a selected branch on a client.
+const branchContext = new AsyncLocalStorage<string | undefined>();
+export const withBranchContext = <T>(branchId: string | undefined, fn: () => T): T => branchContext.run(branchId, fn);
+export const currentBranchId = (): string | undefined => branchContext.getStore();
+
+export function branchIdFor(config: { branchId?: string }): string | undefined {
+  const requested = branchContext.getStore();
+  if (config.branchId && requested && config.branchId !== requested) {
+    throw new Error('This build is pinned to another branch. Start a build from the intended branch.');
+  }
+  return config.branchId ?? requested;
+}
+import { readFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+
 export interface Config {
+  /** Branch pinned by the in-product build or standalone configuration. */
+  branchId?: string;
   apiUrl: string;
   /** Where a human opens ToolJet in a browser — used only to build user-facing links (a datasource's
    *  settings page, an app's editor/viewer URL). Most self-hosted instances serve the API and the UI
@@ -38,6 +58,7 @@ export interface Config {
  * caller, the session authorises the work.
  */
 export interface RequestIdentity {
+  branchId?: string;
   /** Trusted browser base supplied by the public OAuth deployment, never a request header. */
   appUrl?: string;
   viewerUrl?: string;
@@ -63,6 +84,7 @@ export interface RequestIdentity {
 export const SESSION_TOKEN_HEADER = 'x-tooljet-session';
 export const WORKSPACE_ID_HEADER = 'x-tooljet-workspace-id';
 export const WORKSPACE_SLUG_HEADER = 'x-tooljet-workspace-slug';
+export const BRANCH_ID_HEADER = 'x-tooljet-branch-id';
 export const PAT_HEADER = 'x-tooljet-pat';
 export const BASE_URL_HEADER = 'x-tooljet-url';
 /** Self-hosted customer ID, forwarded by tooljet-agent — lets validateApiUrl check an origin outside
@@ -75,6 +97,37 @@ const GATEWAY_URL_VAR = 'MCP_GATEWAY_URL';
 const GATEWAY_TOKEN_VAR = 'MCP_GATEWAY_TOKEN';
 
 /** An environment variable, or undefined when unset OR blank. */
+/**
+ * The login `tooljet auth login` stored (~/.tooljet/credentials.json, or TOOLJET_CREDENTIALS_FILE): its default
+ * workspace's instance and token. Lets an editor's MCP config name only the server, with no token in it. Ignored
+ * when TOOLJET_URL names a different instance, so a token is never sent anywhere but where it came from.
+ */
+export function storedCliLogin(explicitApiUrl?: string): { apiUrl: string; pat: string } | undefined {
+  const file = env('TOOLJET_CREDENTIALS_FILE') ?? join(homedir(), '.tooljet', 'credentials.json');
+  let store: { default?: string; workspaces?: Record<string, { url?: string; apiToken?: string }> };
+  try {
+    store = JSON.parse(readFileSync(file, 'utf8'));
+  } catch {
+    return undefined;
+  }
+  const entry = store?.default ? store.workspaces?.[store.default] : undefined;
+  if (!entry?.url || !entry.apiToken) return undefined;
+  let origin: string;
+  try {
+    origin = new URL(entry.url).origin;
+  } catch {
+    return undefined;
+  }
+  if (explicitApiUrl) {
+    try {
+      if (new URL(explicitApiUrl).origin !== origin) return undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  return { apiUrl: origin, pat: entry.apiToken };
+}
+
 function env(name: string): string | undefined {
   const value = process.env[name]?.trim();
   return value ? value : undefined;
@@ -258,6 +311,7 @@ export async function identityFromHeaders(
 ): Promise<RequestIdentity | undefined> {
   const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
   const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
+  const branchId = readHeader(headers, BRANCH_ID_HEADER);
   const pat = readHeader(headers, PAT_HEADER);
   const rawApiUrl = readHeader(headers, BASE_URL_HEADER);
   const customerId = readHeader(headers, CUSTOMER_ID_HEADER);
@@ -289,7 +343,7 @@ export async function identityFromHeaders(
     // mechanism exists to prevent, so refuse rather than silently prefer one.
     if (sessionToken) throw new Error(`Send either ${PAT_HEADER} or ${SESSION_TOKEN_HEADER}, not both.`);
     // A PAT is pinned to the workspace it was issued in, so unlike a session it needs no companion.
-    return { pat, apiUrl, customerVerified };
+    return { pat, apiUrl, customerVerified, ...(branchId ? { branchId } : {}) };
   }
 
   if (!sessionToken && !workspaceId) {
@@ -305,6 +359,7 @@ export async function identityFromHeaders(
   return {
     sessionToken,
     workspaceId,
+    ...(branchId ? { branchId } : {}),
     workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER),
     apiUrl,
     customerVerified,
@@ -355,7 +410,7 @@ export function loadConfig(identity?: RequestIdentity): Config {
     const appUrl = identity.appUrl ?? explicitAppUrl ?? identity.apiUrl ?? explicitApiUrl ?? 'http://localhost:8082';
 
     const viewerUrl = identity.viewerUrl ?? appUrl;
-    if (identity.pat) return { apiUrl, appUrl, viewerUrl, pat: identity.pat };
+    if (identity.pat) return { apiUrl, appUrl, viewerUrl, pat: identity.pat, ...(identity.branchId ? { branchId: identity.branchId } : {}) };
     return {
       apiUrl,
       appUrl,
@@ -365,21 +420,27 @@ export function loadConfig(identity?: RequestIdentity): Config {
       oauthGrantId: identity.oauthGrantId,
       workspaceId: identity.workspaceId,
       workspaceSlug: identity.workspaceSlug,
+      ...(identity.branchId ? { branchId: identity.branchId } : {}),
     };
   }
 
   const apiUrl = staticApiUrl;
   const appUrl = explicitAppUrl ?? explicitApiUrl ?? 'http://localhost:8082';
 
-  const pat = env('TOOLJET_PAT');
   const sessionToken = env('TOOLJET_SESSION_TOKEN');
+  const stored = !env('TOOLJET_PAT') && !sessionToken ? storedCliLogin(explicitApiUrl ?? explicitAppUrl) : undefined;
+  const pat = env('TOOLJET_PAT') ?? stored?.pat;
   const workspaceId = env('TOOLJET_WORKSPACE_ID');
+  if (stored) {
+    return { apiUrl: stored.apiUrl, appUrl: explicitAppUrl ?? stored.apiUrl, pat: stored.pat,
+      ...(env('TOOLJET_BRANCH_ID') ? { branchId: env('TOOLJET_BRANCH_ID') } : {}) };
+  }
   if (!pat && !sessionToken) {
     throw new Error(
       'TOOLJET_SESSION_TOKEN or TOOLJET_PAT is required. For a standalone server, create a personal ' +
         'access token in ToolJet under Settings → Access tokens, in the workspace you want this ' +
         'server to act on, and set TOOLJET_PAT. A shared HTTP server instead receives the acting ' +
-        `user per request via the ${SESSION_TOKEN_HEADER} header.`
+        `user per request via the ${SESSION_TOKEN_HEADER} header. Or sign in once with \`tooljet auth login\`.`
     );
   }
   // A session cannot be interrogated for its workspace the way a PAT exchange response can, and
@@ -396,5 +457,6 @@ export function loadConfig(identity?: RequestIdentity): Config {
     sessionToken,
     workspaceId,
     workspaceSlug: env('TOOLJET_WORKSPACE_SLUG'),
+    ...(env('TOOLJET_BRANCH_ID') ? { branchId: env('TOOLJET_BRANCH_ID') } : {}),
   };
 }

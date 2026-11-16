@@ -72,6 +72,25 @@ describe('manage_theme create applied to an app in the same call', () => {
     expect(body.applied).toEqual({ app_id: 'a1', version_id: 'v1', app_mode: 'dark' });
   });
 
+  it('opens the app in the asked mode: a dark request on a light/dark theme pair', async () => {
+    // A "dark, focused" SaaS dashboard (2026-10-10) got a proper light/dark theme but stayed in light mode, and the
+    // build painted every card dark by hand; the Table and inputs then drew light-mode chrome on dark cards.
+    const c = client();
+    const body = textOf(await manageThemeTool(c as unknown as ToolJetClient).handler(
+      { action: 'create', name: 'Metrics theme', definition, app_id: 'a1', version_id: 'v1', app_mode: 'dark' } as never));
+    expect(c.updateAppSettings).toHaveBeenCalledWith(expect.objectContaining({ globalSettings: expect.objectContaining({ appMode: 'dark' }) }));
+    expect(body.applied).toEqual({ app_id: 'a1', version_id: 'v1', app_mode: 'dark' });
+  });
+
+  it('keeps light mode when asked, even for a dark light-mode canvas', async () => {
+    const c = client();
+    const dark = { ...definition, surface: { colors: { ...definition.surface.colors, appBackground: { light: '#0B1020', dark: '#0B1020' } } } };
+    const body = textOf(await manageThemeTool(c as unknown as ToolJetClient).handler(
+      { action: 'create', name: 'Console theme', definition: dark, app_id: 'a1', version_id: 'v1', app_mode: 'light' } as never));
+    expect(c.updateAppSettings).toHaveBeenCalledWith(expect.objectContaining({ globalSettings: expect.objectContaining({ appMode: 'light' }) }));
+    expect(body.applied).toEqual({ app_id: 'a1', version_id: 'v1', app_mode: 'light' });
+  });
+
   it('applies a reused theme of the same name too', async () => {
     const c = client();
     c.listAppThemes.mockResolvedValue([{ id: 'old', name: 'Warm Foyer theme', definition }]);
@@ -85,5 +104,33 @@ describe('manage_theme create applied to an app in the same call', () => {
     const c = client();
     await manageThemeTool(c as unknown as ToolJetClient).handler({ action: 'create', name: 'Warm Foyer theme', definition } as never);
     expect(c.updateAppSettings).not.toHaveBeenCalled();
+  });
+});
+
+describe('manage_theme accent note', () => {
+  it('warns when a created theme has a near-black primary, and stays quiet for a menu accent', async () => {
+    const client = {
+      listAppThemes: vi.fn().mockResolvedValue([]),
+      createAppTheme: vi.fn().mockImplementation(async ({ name }) => ({ id: 't1', name })),
+    } as unknown as ToolJetClient;
+    const dark = { ...definition, brand: { colors: { primary: { light: '#111827', dark: '#F9FAFB' } } } };
+    const flagged = textOf(await manageThemeTool(client).handler({ action: 'create', name: 'Ink theme', definition: dark } as never));
+    expect(flagged.warnings.join(' ')).toMatch(/near-black/);
+    const violet = { ...definition, brand: { colors: { primary: { light: '#7C3AED', dark: '#A78BFA' } } } };
+    const quiet = textOf(await manageThemeTool(client).handler({ action: 'create', name: 'Violet theme', definition: violet } as never));
+    expect(quiet.warnings).toBeUndefined();
+  });
+});
+
+describe('manage_theme create without its required fields', () => {
+  it('names every missing field in one answer, before any request', async () => {
+    const client = { listAppThemes: vi.fn(), createAppTheme: vi.fn() } as unknown as ToolJetClient;
+    const both = await manageThemeTool(client).handler({ action: 'create', app_id: '11111111-1111-4111-8111-111111111111' } as never);
+    expect(both.isError).toBe(true);
+    expect(both.content[0]!.text).toMatch(/needs name .* and primary .*Send them together in one call/);
+    const primary = await manageThemeTool(client).handler({ action: 'create', name: 'Harbor Ledger' } as never);
+    expect(primary.content[0]!.text).toMatch(/needs primary \(the accent as a hex colour/);
+    expect(primary.content[0]!.text).not.toMatch(/needs name/);
+    expect(client.listAppThemes).not.toHaveBeenCalled();
   });
 });

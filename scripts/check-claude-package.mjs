@@ -44,21 +44,21 @@ export function checkClaudePackage(directory) {
       const imports = [];
       function visit(node) {
         if (!node || typeof node !== 'object') return;
-        if (['ImportDeclaration', 'ExportNamedDeclaration', 'ExportAllDeclaration'].includes(node.type) && node.source) imports.push(node.source.value);
-        if (node.type === 'CallExpression' && (node.callee.type === 'Import' || node.callee.name === 'require') && node.arguments[0]?.type === 'StringLiteral') imports.push(node.arguments[0].value);
+        if (['ImportDeclaration', 'ExportNamedDeclaration', 'ExportAllDeclaration'].includes(node.type) && node.source) imports.push({ specifier: node.source.value, optional: false });
+        if (node.type === 'CallExpression' && (node.callee.type === 'Import' || node.callee.name === 'require') && node.arguments[0]?.type === 'StringLiteral') imports.push({ specifier: node.arguments[0].value, optional: node.callee.type === 'Import' });
         for (const value of Object.values(node)) {
           if (Array.isArray(value)) value.forEach(visit);
           else if (value && typeof value === 'object') visit(value);
         }
       }
       visit(parse(text, { sourceType: 'module' }).program);
-      for (const specifier of imports) {
+      for (const { specifier, optional } of imports) {
         if (specifier.startsWith('.')) {
           const target = resolve(root, dirname(file), specifier);
           assert(target.startsWith(root + sep) && existsSync(target), `Missing or escaping module in ${file}: ${specifier}`);
         } else {
-          // The optional browser renderer is intentionally absent in this dependency-free package.
-          assert(builtinModules.includes(specifier.replace(/^node:/, '')) || specifier === 'playwright-core', `Unbundled dependency: ${specifier}`);
+          // Browser audit dependencies remain optional, loaded on use rather than at startup.
+          assert(builtinModules.includes(specifier.replace(/^node:/, '')) || (optional && ['playwright-core', 'axe-core'].includes(specifier)), `Unbundled dependency: ${specifier}`);
         }
       }
     }

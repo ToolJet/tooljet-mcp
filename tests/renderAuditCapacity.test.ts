@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { reserveRenderAudit } from '../src/renderAuditCapacity.js';
+import { reserveRenderAudit, waitForRenderAudit } from '../src/renderAuditCapacity.js';
 afterEach(() => vi.unstubAllEnvs());
 it('shares a process cap across grants and permits only one audit per grant', () => {
   vi.stubEnv('MCP_RENDER_AUDIT_MAX_BROWSERS', '2');
@@ -14,4 +14,21 @@ it('shares a process cap across grants and permits only one audit per grant', ()
     try { expect(third).toBeTypeOf('function'); expect(reserveRenderAudit('extra')).toBeUndefined(); }
     finally { third?.(); }
   } finally { first?.(); second?.(); }
+});
+it('waits for a browser instead of refusing, and gives up at the deadline', async () => {
+  vi.stubEnv('MCP_RENDER_AUDIT_MAX_BROWSERS', '1');
+  const first = reserveRenderAudit();
+  const waiting = waitForRenderAudit(undefined, 5_000);
+  setTimeout(() => first!(), 50);
+  const second = await waiting;
+  try {
+    expect(second).toBeTypeOf('function');
+    await expect(waitForRenderAudit(undefined, 0)).resolves.toBeUndefined();
+  } finally { second?.(); }
+});
+it('still refuses a second audit on one approval at once', async () => {
+  vi.stubEnv('MCP_RENDER_AUDIT_MAX_BROWSERS', '2');
+  const first = reserveRenderAudit('orchard');
+  try { await expect(waitForRenderAudit('orchard', 5_000)).resolves.toBeUndefined(); }
+  finally { first?.(); }
 });

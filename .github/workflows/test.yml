@@ -87,7 +87,14 @@ jobs:
         run: git diff --exit-code -- bundle
       - name: Verify new bundle modules are committed
         run: test -z "$(git ls-files --others --exclude-standard -- bundle)"
-      - name: Enforce directory file-size and file-count limits
+      - name: Enforce repository file safety and both plugin package limits
         run: npm run check:plugin-package
+      - name: Upload verified standalone plugin
+        uses: actions/upload-artifact@v4
+        with:
+          name: tooljet-standalone-${{ github.sha }}
+          path: plugins/tooljet-standalone/
+          include-hidden-files: true
+          if-no-files-found: error
       - name: Check published package contents
         run: npm pack --dry-run

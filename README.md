@@ -128,6 +128,9 @@ credential may come from either side:
 - `TOOLJET_PAT` in the server's environment, or
 - per request from the client, as `Authorization: Bearer <pat>` or `x-tooljet-pat: <pat>`
 
+When `MCP_HTTP_HOST` is not a loopback address, only the per-request credential is accepted: the
+process's `TOOLJET_PAT` would otherwise act for anyone who can reach the port.
+
 A per-request token replaces the process one outright rather than merging with it, so one server can
 serve several people without any of them inheriting another's identity.
 
@@ -139,7 +142,9 @@ attribute a build to a token holder rather than to the person who asked for it.
 
 There is also `npm run start:http` (`src/http.ts`, port 3001, loopback, `TOOLJET_MCP_HTTP_HOST` /
 `TOOLJET_MCP_HTTP_PORT`, plus a `/health` endpoint) for local development. It accepts the same
-per-request credentials and, like direct mode, has no bearer gate of its own.
+per-request credentials and, like direct mode, has no bearer gate of its own. It refuses to bind
+beyond loopback unless `MCP_OAUTH_ENABLED=true` or `TOOLJET_MCP_HTTP_REQUIRE_IDENTITY=1`; the latter
+makes every session bring its own ToolJet credential and never uses the process's.
 
 The local stateful transport binds identity at initialization. Send the same bearer and acting-user
 headers on every POST, GET/SSE and DELETE; the session ID alone does not authenticate an authenticated
@@ -164,6 +169,10 @@ network policy, HTTP errors and missing widgets.
 The configured ToolJet viewer origin is trusted, including an explicitly configured localhost or
 private/self-hosted address. Alternate viewer/API/CDN origins require the operator-controlled
 MCP_RENDER_AUDIT_ALLOWED_ORIGINS comma-separated list. A tool argument cannot extend it.
+The egress proxy resolves each allowed host name itself, connects to the address it got, and refuses
+private, loopback, link-local, metadata and reserved addresses, except for the configured viewer
+origin, TOOLJET_URL, origins written as an IP address or localhost, and the operator-controlled
+MCP_RENDER_AUDIT_PRIVATE_ORIGINS list (an allowed API or CDN origin on a private network goes there).
 All HTTP(S) resources use the same allowlist; HTTP redirects are not followed (configure canonical
 URLs), service workers are blocked, and WebSocket dependencies are reported as unverified.
 Use a dedicated browser container with infrastructure egress restrictions as defense in depth:
@@ -249,6 +258,8 @@ The maintained metadata and guide live in `integrations/claude/`. The generated 
 Bundling removes dependency-install findings, but [local non-shell programs can still require manual review](https://claude.com/docs/plugins/pre-submission-checklist#choices-a-reviewer-always-checks), including at a branch root. Local validation cannot clear Anthropic's existing hold or satisfy organization-verification requirements. The publishing workflow does not edit portal settings or request publication there; subsequent branch updates follow the listing's configured review/publish policy.
 
 `npm run check:claude-package` verifies file-size/count limits, portability, icon and skill references, complete module imports, and explicit sensitive configuration. The extracted-package test starts the local server without installed dependencies, compares every tool schema and resource against the standard MCP runtime, and checks PAT exchange, ambient-credential rejection, and stale-runtime blocking. Standalone clients keep their existing entry point.
+
+`npm run build:plugin` also creates `plugins/tooljet-standalone/` with the standard runtime and existing host manifests. CI tests and uploads this separately for standalone installs. `npm run check:plugin-package` retains repository file-safety checks and enforces each generated package's 512-file limit independently. Claude directory submissions use `plugins/tooljet-claude/` and its dedicated distribution branch.
 
 For skill-only changes, run `npm run generate:skill && npm run build:plugin && npm run build:claude-plugin`; no sibling checkout,
 MCP server, Python MCP package, or credentials are needed. Generation uses the pinned grid/widget

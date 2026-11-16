@@ -2,10 +2,11 @@ import { renderAuditAvailable } from '../renderAuditAvailability.js';
 import { appVersionLifecycleTools } from './appVersionLifecycle.js';
 import { listWorkspaceGroupsTool, manageWorkspaceGroupsTool, workspaceGroupActionTools } from './workspaceGroupManagement.js';
 import { z } from 'zod';
+import { withBranchContext } from '../config.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ToolJetClient } from '../tooljetClient.js';
 import type { ToolDef } from './types.js';
-import { listWorkspacesTool } from './listWorkspaces.js';
+import { listWorkspacesTool, listWorkspaceBranchesTool } from './listWorkspaces.js';
 import { useWorkspaceTool } from './useWorkspace.js';
 import { createAppTool } from './createApp.js';
 import { createAppVersionTool } from './createAppVersion.js';
@@ -21,6 +22,8 @@ import { createTablesTool } from './createTables.js';
 import { addTableColumnTool } from './addTableColumn.js';
 import { dropTableColumnTool } from './dropTableColumn.js';
 import { dropTableTool } from './dropTable.js';
+import { codeAppScaffoldTool, noCodeIdentity, type CodeContext, codeAppReadFilesTool, codeAppWriteFilesTool, codeAppBuildTool, codeAppInstallTool, codeAppAddDependencyTool } from './codeApp.js';
+import { codeAppDataTool } from './codeAppData.js';
 import { getTableSchemaTool } from './getTableSchema.js';
 import { insertRowsTool } from './insertRows.js';
 import { insertRowsBatchTool } from './insertRowsBatch.js';
@@ -106,7 +109,8 @@ const inputSchemas = new Map<string, z.ZodObject>();
 function sharedInputSchema(tool: ToolDef): z.ZodObject {
   let schema = inputSchemas.get(tool.name);
   if (!schema) {
-    schema = tool.strictInput ? z.object(tool.inputSchema).strict() : z.object(tool.inputSchema);
+    const fields = { ...tool.inputSchema, branch_id: z.string().uuid().optional().describe('Existing workspace branch ID from list_workspace_branches; pass consistently for this task.') };
+    schema = tool.strictInput ? z.object(fields).strict() : z.object(fields);
     inputSchemas.set(tool.name, schema);
   }
   return schema;
@@ -119,8 +123,12 @@ function includeLegacySingularCreateTools(): boolean {
 export function registerTools(
   server: McpServer,
   client: ToolJetClient,
-  runtime: RuntimeFreshnessMonitor = runtimeFreshness
+  runtime: RuntimeFreshnessMonitor = runtimeFreshness,
+  code: CodeContext = noCodeIdentity(client)
 ): void {
+  const viewerBase = () => process.env.TOOLJET_APP_URL || process.env.TOOLJET_DEPLOYMENT_URL || 'http://localhost:8082';
+  const verifyPageRender = verifyPageRenderTool(client, viewerBase);
+  const canRender = renderAuditAvailable();
   const tools: ToolDef[] = [
     getWorkflowNodeCatalogTool(client),
     getWorkflowCapabilitiesTool(client),
@@ -134,7 +142,16 @@ export function registerTools(
     runWorkflowTool(client),
     getWorkflowExecutionTool(client),
     getRuntimeInfoTool(runtime),
+    codeAppScaffoldTool(code),
+    codeAppReadFilesTool(code),
+    codeAppWriteFilesTool(code),
+    codeAppBuildTool(code),
+    // verify: true renders each route through the same check verify_page_render runs.
+    codeAppInstallTool(code, canRender ? { render: verifyPageRender.handler, renderConcurrency: client.renderAuditGrant ? 1 : 2 } : {}),
+    codeAppAddDependencyTool(code),
+    codeAppDataTool(client),
     listWorkspacesTool(client),
+    listWorkspaceBranchesTool(client),
     useWorkspaceTool(client),
     manageAppPermissionsTool(client),
     listWorkspaceAppsTool(client),
@@ -172,7 +189,7 @@ export function registerTools(
     getAppSummaryTool(client),
     getComponentTool(client),
     validateAppTool(client),
-    verifyPageRenderTool(client, () => process.env.TOOLJET_APP_URL || process.env.TOOLJET_DEPLOYMENT_URL || 'http://localhost:8082'),
+    verifyPageRender,
     lintAppSpecTool(client),
     applyAppPhaseTool(client),
     addPageTool(client),
@@ -208,7 +225,6 @@ export function registerTools(
     ? tools
     : tools.filter((tool) => !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name));
 
-  const canRender = renderAuditAvailable();
   for (const tool of exposedTools) {
     if (tool.name === 'verify_page_render' && !canRender) continue;
     // The callback takes the name and handler, not `tool`: holding the def would keep its own schema copy alive.
@@ -226,7 +242,8 @@ export function registerTools(
         if (status.restart_required && name !== 'get_runtime_info') {
           return staleRuntimeResult(status);
         }
-        return withRuntimeStatus(await handler(args), status);
+        const { branch_id, ...input } = args;
+        return withRuntimeStatus(await withBranchContext(branch_id ?? client.branchId, () => handler(input)), status);
       }) as any
     );
   }

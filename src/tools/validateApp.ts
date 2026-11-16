@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
-import { validatePersistedAppSummary } from '../appValidation.js';
+import { libraryPinErrors, validatePersistedAppSummary } from '../appValidation.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { literalCanvasColor } from '../appSettings.js';
 
@@ -40,6 +40,17 @@ export function validateAppTool(client: ToolJetClient): ToolDef {
           catch (error) { validation.errors.push(`Query "${query.name ?? query.id}": workflow target could not be verified. ${String(error)}`); }
         }
         validation.checked.push('workflow target identity, workspace and explicit version ownership');
+        // Read only when something could need a pin, so an app with no library components costs no extra call.
+        if (summary.version_id && libraryPinErrors(summary, {}).length) {
+          try {
+            const { global_settings: settings } = await client.getAppSettings(args.app_id, summary.version_id);
+            const pins = settings.customComponentLibraries;
+            validation.errors.push(...libraryPinErrors(summary, pins && typeof pins === 'object' ? pins as Record<string, unknown> : {}));
+            validation.checked.push('library pins');
+          } catch {
+            validation.not_checked.push('library pins (the version settings could not be read)');
+          }
+        }
         validation.ok = validation.errors.length === 0;
         return ok(validation);
       } catch (err) {

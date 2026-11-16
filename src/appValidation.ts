@@ -1,7 +1,8 @@
 import { htmlFedTextColumns, type HtmlFedQuery, type HtmlFedTable } from './htmlColumns.js';
 import type { AppSummary } from './tooljetClient.js';
 import { persistedEventSpecs, validateEvents } from './eventValidation.js';
-import { validateAppStructure } from './lint.js';
+import { lintPackItemSlots, validateAppStructure, type LintComponent } from './lint.js';
+import { emptyLibraryHostError, unpinnedLibraries } from './libraryPack.js';
 import { issueMessages, validateQueryOptions } from './queryValidation.js';
 
 export interface PersistedAppValidation {
@@ -51,6 +52,15 @@ function scratchArtifactWarnings(summary: AppSummary): string[] {
   return warnings;
 }
 
+/** Errors for library components whose version doesn't pin their library: they draw an empty "Slot", on every page. */
+export function libraryPinErrors(summary: AppSummary, pins: Record<string, unknown>): string[] {
+  const components = (summary.pages ?? []).flatMap((page) => (page.components ?? []) as Array<{ name?: string; properties?: unknown }>);
+  return unpinnedLibraries(components, pins).map(({ library, components: names }) =>
+    `Library "${library}" is not pinned on this version, so ${names.length} of its components show an empty "Slot" ` +
+      `placeholder (${names.slice(0, 5).join(', ')}${names.length > 5 ? ', ...' : ''}). ` +
+      'Adding one of its components with add_components pins it.');
+}
+
 export function validatePersistedAppSummary(summary: AppSummary, options: { canvasColor?: string } = {}): PersistedAppValidation {
   const structural = validateAppStructure(summary, options);
   const errors = [...structural.errors];
@@ -60,6 +70,13 @@ export function validatePersistedAppSummary(summary: AppSummary, options: { canv
   errors.push(...eventValidation.errors);
   warnings.push(...eventValidation.warnings);
   for (const page of summary.pages ?? []) {
+    errors.push(...lintPackItemSlots((page.components ?? []) as LintComponent[], { persisted: true }));
+    // A host that names no component, pack or library (a raw LibraryComponent written into the app) draws an empty box.
+    // A workspace's own custom library is no pack the MCP knows and stays LibraryComponent here, naming its library.
+    for (const component of page.components ?? []) {
+      const error = emptyLibraryHostError(component as Parameters<typeof emptyLibraryHostError>[0], { persisted: true });
+      if (error) errors.push(error);
+    }
     for (const component of (page.components ?? []) as HtmlFedTable[]) {
       for (const col of htmlFedTextColumns(component, summary.queries as HtmlFedQuery[])) {
         warnings.push(
