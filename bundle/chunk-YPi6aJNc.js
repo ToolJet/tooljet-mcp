@@ -1,15 +1,16 @@
 import { createRequire } from "node:module";
-import { aA as external_exports, aH as inPackSet, aI as listWorkspaceAppsTool, aJ as listWorkspaceFoldersTool, aK as listWorkspaceUsersTool, aL as manageWorkspaceUsersTool, aM as registerComponentSchemas, ax as activePackSet, aN as newPackSet, aF as ok, aD as fail, aE as resolveRef, aO as workspaceUserActionTools, aP as readCatalogBytes, aQ as allComponentSchemas } from "./chunk-Be_TMeNG.js";
-import { s as strictEntry, l as specSchema, o as nodeSchema, q as codeAppScaffoldTool, r as codeAppReadFilesTool, t as codeAppWriteFilesTool, u as codeAppBuildTool, v as codeAppInstallTool, w as codeAppAddDependencyTool, x as getComponentCatalogTool, y as updateComponentsTool, z as updateLayoutTool, A as noCodeIdentity, B as nodeCatalog, D as capabilityRequestSchema, E as getWorkflowCapabilities, G as lint, H as apply, I as deleteNode, J as validateGraph, K as editContractSchema, L as generateEditContract, n as normalizeComponentSpec, m as mapKeyRefusal, C as COMPONENT_FX_GUIDANCE, M as browserUserBindings, N as isCodeModeApp, O as browserUserMessage } from "./chunk-BHYAODhU.js";
-import { f as loadConfig, g as createClient, m as manageAppPermissionsTool, h as createAppTool, j as manageThemeTool, r as registerPackDefinitions, k as projectJavascriptRuntime, o as projectAppSettings, q as compactTheme, s as pageSettingProperties, v as validateTableBatch, t as ToolJetHttpError, l as literalCanvasColor, P as PartialWriteError, u as themeActionTools, x as appPermissionActionTools, y as branchIdFor, z as withBranchContext } from "./chunk-DaOhvhrN.js";
-import { O as listWorkspaceGroupsTool, Q as manageWorkspaceGroupsTool, U as inspectDatasourceSchemaTool, V as datasourceMetadataTools, W as WebStandardStreamableHTTPServerTransport, X as getRequestListener, a as autoReadPreflight, Y as workspaceGroupActionTools } from "./chunk-C7ksL0jN.js";
-import { g as verifyPageRenderTool, h as containsExactValue, a as prepareQueryOptionsForWrite, i as containsNamedBinding, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, v as validateEvents, e as expandQueryLifecycles, b as persistedEventSpecs, j as persistedEventIds } from "./chunk-D4UJES-0.js";
-import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as renameAppTool, p as plannedTableSchema, v as validatePersistedAppSummary, e as libraryPinErrors, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, f as containsComponentBinding, g as runUnattended, q as queryResultBindingHint, h as failureRecovery, j as failureVerification, s as schemaNameHint, k as redactRunResult, m as capUnattendedOutput, o as redactQueryText, t as prepareComponentBatch } from "./chunk-fTt9eLvV.js";
-import { M as McpServer } from "./chunk-DsWkocH8.js";
-import { G as pageIconSchema, y as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION, p as componentNameSchema, A as lintComponents, r as resolveParentRef, b as introducedLintFindings, J as lintRenderedGeometryBlocking, K as lintRenderedGeometryAdvisory, d as decodeComponentParent, L as FORM_SCHEMA_FIELD_TYPE_SET, M as SAFE_GENERATED_FORM_FIELD_TYPE_SET, N as packSlotsFromManifest, O as describePackSlots } from "./chunk-BbJ1RRc_.js";
-import { P as registerLibraryPacks } from "./chunk-DjxXBjSx.js";
-import { g as resolveStaticBindings, u as emptyViewerOnlyParams, x as emptyParamsNote, y as unresolvedNote } from "./chunk-D078dS7Y.js";
-import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-B0-K80Ym.js";
+import { aA as external_exports, aI as inPackSet, aJ as listWorkspaceAppsTool, aK as listWorkspaceFoldersTool, aL as listWorkspaceUsersTool, aM as manageWorkspaceUsersTool, aN as registerComponentSchemas, ax as activePackSet, aO as newPackSet, aG as ok, aE as fail, aF as resolveRef, aP as workspaceUserActionTools, aQ as readCatalogBytes, aR as allComponentSchemas } from "./chunk-isfY25ah.js";
+import { s as strictEntry, k as specSchema, l as nodeSchema, o as inspectDatasourceSchemaTool, q as getComponentCatalogTool, u as updateComponentsTool, r as updateLayoutTool, t as datasourceMetadataTools, v as nodeCatalog, w as capabilityRequestSchema, x as getWorkflowCapabilities, y as lint, z as apply, A as deleteNode, B as validateGraph, D as editContractSchema, E as generateEditContract, n as normalizeComponentSpec, m as mapKeyRefusal, C as COMPONENT_FX_GUIDANCE } from "./chunk-DCBr7MCX.js";
+import { f as loadConfig, g as createClient, m as manageAppPermissionsTool, h as createAppTool, j as manageThemeTool, r as registerPackDefinitions, k as projectJavascriptRuntime, o as projectAppSettings, q as compactTheme, s as pageSettingProperties, v as validateTableBatch, t as ToolJetHttpError, l as literalCanvasColor, P as PartialWriteError, u as themeActionTools, x as appPermissionActionTools, y as branchIdFor, z as withBranchContext } from "./chunk-nPRdy4aK.js";
+import { O as verifyPageRenderTool, Q as listWorkspaceGroupsTool, U as manageWorkspaceGroupsTool, W as WebStandardStreamableHTTPServerTransport, V as getRequestListener, a as autoReadPreflight, X as workspaceGroupActionTools } from "./chunk-C4woyLGT.js";
+import { a as codeAppScaffoldTool, b as codeAppReadFilesTool, d as codeAppWriteFilesTool, e as codeAppBuildTool, f as codeAppInstallTool, g as codeAppAddDependencyTool, n as noCodeIdentity, h as browserUserBindings, i as isCodeModeApp, j as browserUserMessage } from "./chunk-DIt7eXJR.js";
+import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as renameAppTool, p as plannedTableSchema, v as validatePersistedAppSummary, e as libraryPinErrors, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, f as containsComponentBinding, g as runUnattended, q as queryResultBindingHint, h as failureRecovery, j as failureVerification, s as schemaNameHint, k as redactRunResult, m as capUnattendedOutput, o as redactQueryText, t as prepareComponentBatch } from "./chunk-B6r0HbS4.js";
+import { g as containsExactValue, a as prepareQueryOptionsForWrite, h as containsNamedBinding, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, v as validateEvents, e as expandQueryLifecycles, b as persistedEventSpecs, i as persistedEventIds } from "./chunk-CFYElZIZ.js";
+import { M as McpServer } from "./chunk-DjaUqw3m.js";
+import { I as pageIconSchema, A as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION, q as componentNameSchema, D as lintComponents, r as resolveParentRef, a as applyResolvedParent, f as introducedLintFindings, l as lintComponentSlots, M as lintRenderedGeometryBlocking, N as lintRenderedGeometryAdvisory, d as decodeComponentParent, O as FORM_SCHEMA_FIELD_TYPE_SET, Q as SAFE_GENERATED_FORM_FIELD_TYPE_SET, R as packSlotsFromManifest, T as describePackSlots } from "./chunk-BzoTtK4L.js";
+import { U as registerLibraryPacks } from "./chunk-Btd7hqFK.js";
+import { g as resolveStaticBindings, u as emptyViewerOnlyParams, x as emptyParamsNote, y as unresolvedNote } from "./chunk-CpwF2B9D.js";
+import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-DuR3nfPV.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { createServer } from "node:http";
@@ -197,6 +198,16 @@ var stamp = (p) => {
   return `{{${JSON.stringify(p.default)}}}`;
 };
 var SAMPLE_TEXT = /^(eyebrow|subtitle|description|meta|actionLabel|secondaryActionLabel|asideValue|asideLabel|changeLabel|change)$/;
+var SAMPLE_LABELS = /* @__PURE__ */ new Set(["label", "title", "resourceTitle", "subTitle", "message"]);
+var NEUTRAL_TEXT = /* @__PURE__ */ new Set(["Empty.description", "ListView.actionLabel"]);
+var sampleBlank = (component, p) => {
+  if (p.type === "boolean" || NEUTRAL_TEXT.has(`${component}.${p.name}`))
+    return void 0;
+  if (SAMPLE_TEXT.test(p.name))
+    return p.type === "array" ? "{{[]}}" : "";
+  const literal2 = typeof p.default === "string" && p.default !== "" && !p.default.trim().startsWith("{{");
+  return SAMPLE_LABELS.has(p.name) && literal2 ? "" : void 0;
+};
 function packFromLibrary(lib) {
   const manifest = lib.manifest;
   if (!manifest || manifest.manifestVersion !== 2 || !manifest.components)
@@ -246,7 +257,11 @@ function packFromManifest(packId, libraryName, version, manifest, identity) {
       ...entry.role ? { role: entry.role } : {},
       ...entry.roleProps ? { roleProps: entry.roleProps } : {},
       ...entry.roleEvents ? { roleEvents: entry.roleEvents } : {},
-      ...entry.roleActions ? { roleActions: entry.roleActions } : {}
+      ...entry.roleActions ? { roleActions: entry.roleActions } : {},
+      // Preserve whether this manifest supplies slot metadata, including explicit empty lists.
+      slotsKnown: manifestListsSlots,
+      // The canvases a child may go on (lint.ts lintPackItemSlots), as the offline catalog lists them.
+      ...entry.slots?.length ? { slots: entry.slots } : {}
     };
     schemas[type] = {
       type,
@@ -283,6 +298,8 @@ function packFromManifest(packId, libraryName, version, manifest, identity) {
           ...p.description ? { description: p.description } : {}
         })),
         { key: "visibility", label: "Visibility", valueType: "boolean", default: "{{true}}" },
+        // ToolJet's PackComponent saves it on every pack component; the host frees a hidden one's space with it.
+        { key: "collapseWhenHidden", label: "Collapse when hidden", valueType: "boolean", default: "{{false}}" },
         { key: "loadingState", label: "Loading state", valueType: "boolean", default: "{{false}}" },
         { key: "disabledState", label: "Disable", valueType: "boolean", default: "{{false}}" },
         { key: "dynamicHeight", label: "Dynamic height", valueType: "boolean", default: fits ? "{{true}}" : "{{false}}" }
@@ -303,7 +320,12 @@ function packFromManifest(packId, libraryName, version, manifest, identity) {
         { handle: "setDisable", displayName: "Set disable", params: [{ handle: "disable", displayName: "Value", defaultValue: "{{false}}" }] }
       ],
       exposedVariables: [
-        ...allProps.map((p) => ({ name: p.name, ...p.default !== void 0 ? { default: p.default } : {} })),
+        // The default an agent-built component starts with: a blanked sample is advertised blank, as it is saved.
+        ...allProps.map((p) => {
+          const blank = p.default !== void 0 ? sampleBlank(name, p) : void 0;
+          const advertised = blank === void 0 ? p.default : blank === "{{[]}}" ? [] : "";
+          return { name: p.name, ...advertised !== void 0 ? { default: advertised } : {} };
+        }),
         { name: "isVisible", default: true },
         { name: "isLoading", default: false },
         { name: "isDisabled", default: false },
@@ -312,8 +334,9 @@ function packFromManifest(packId, libraryName, version, manifest, identity) {
     };
     definitions[type] = {
       properties: {
-        ...Object.fromEntries(props.map((p) => [p.name, { value: SAMPLE_TEXT.test(p.name) && p.type !== "boolean" ? p.type === "array" ? "{{[]}}" : "" : stamp(p) }])),
+        ...Object.fromEntries(props.map((p) => [p.name, { value: sampleBlank(name, p) ?? stamp(p) }])),
         visibility: { value: "{{true}}" },
+        collapseWhenHidden: { value: "{{false}}" },
         loadingState: { value: "{{false}}" },
         disabledState: { value: "{{false}}" },
         dynamicHeight: { value: fits ? "{{true}}" : "{{false}}" }
@@ -2935,10 +2958,9 @@ function addComponentsTool(client) {
           if (typeof input.parent !== "string" || !input.parent)
             continue;
           const resolved = resolveParentRef(existingPage.components, input.parent);
-          if (resolved.ok)
-            input.parent = resolved.parent;
-          else
-            parentErrors.push(`Component "${input.name ?? "?"}": ${resolved.error}`);
+          const error = resolved.ok ? applyResolvedParent(input, resolved) : resolved.error;
+          if (error)
+            parentErrors.push(`Component "${input.name ?? "?"}": ${error}`);
         }
         if (parentErrors.length)
           return fail(new Error(parentErrors.join(" ")));
@@ -2949,6 +2971,12 @@ function addComponentsTool(client) {
       });
       if (prepared.errors.length)
         return fail(new Error(prepared.errors.join(" ")));
+      if (existingPage) {
+        const existing = existingPage.components;
+        const slotErrors = introducedLintFindings(lintComponentSlots(existing), lintComponentSlots([...existing, ...prepared.components]));
+        if (slotErrors.length)
+          return fail(new Error(`${slotErrors.join(" ")} (Nothing was saved: refused before any write.)`));
+      }
       try {
         const page = summary?.pages.find((candidate) => candidate.id === args.page_id);
         if (page) {
@@ -3034,10 +3062,9 @@ function addComponentBatchesTool(client) {
           if (typeof component.parent !== "string" || !component.parent)
             continue;
           const resolved = resolveParentRef(existing, component.parent);
-          if (resolved.ok)
-            component.parent = resolved.parent;
-          else
-            parentErrors.push(`Page ${page.page_id}: Component "${component.name ?? "?"}": ${resolved.error}`);
+          const error = resolved.ok ? applyResolvedParent(component, resolved) : resolved.error;
+          if (error)
+            parentErrors.push(`Page ${page.page_id}: Component "${component.name ?? "?"}": ${error}`);
         }
       }
       if (parentErrors.length)
@@ -3051,6 +3078,13 @@ function addComponentBatchesTool(client) {
         })
       }));
       const errors = prepared.flatMap((page) => page.prepared.errors.map((error) => `Page ${page.page_id}: ${error}`));
+      for (const page of prepared) {
+        const existing = pageComponentsOf(page.page_id);
+        if (!existing)
+          continue;
+        const slotErrors = introducedLintFindings(lintComponentSlots(existing), lintComponentSlots([...existing, ...page.prepared.components]));
+        errors.push(...slotErrors.map((error) => `Page ${page.page_id}: ${error}`));
+      }
       const mapRefusal = await mapKeyRefusal(client, pages.flatMap((page) => page.components.map((c) => String(c.type))));
       if (mapRefusal)
         errors.push(mapRefusal);

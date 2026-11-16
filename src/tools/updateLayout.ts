@@ -12,6 +12,7 @@ import {
   type LintComponent,
 } from '../lint.js';
 import {
+  applyResolvedParent,
   COMPONENT_SLOT_NAMES,
   componentSlotSchema,
   decodeComponentParent,
@@ -151,11 +152,14 @@ export function updateLayoutTool(client: ToolJetClient): ToolDef {
           // refused: stored as written, the component was reported moved and never drew again (QA DVRL-7).
           if (typeof parent === 'string' && parent) {
             const resolvedParent = resolveParentRef(page.components, parent);
-            if (!resolvedParent.ok) {
-              parentErrors.push(`Component "${layout.component_id}": ${resolvedParent.error}`);
+            const entry = { parent, slot_name };
+            const parentError = resolvedParent.ok ? applyResolvedParent(entry, resolvedParent) : resolvedParent.error;
+            if (parentError) {
+              parentErrors.push(`Component "${layout.component_id}": ${parentError}`);
               return { ...layout, parentType };
             }
-            parent = resolvedParent.parent;
+            parent = entry.parent;
+            slot_name = entry.slot_name;
           }
           if (slot_name !== undefined) {
             parent ??= current.parent ? decodeComponentParent(current.parent).parentId : undefined;

@@ -116,6 +116,25 @@ describe('a pack slot canvas decodes to its widget and slot', () => {
 });
 
 describe('update_layout and update_components under a pack widget', () => {
+  it.each([tabs, 'workspaceTabs'])('update_layout preserves the canvas in raw parent %s', async (handle) => {
+    const h = harness([pack(tabs, 'workspaceTabs', 'Lib_antd_Tabs'), note()]);
+    const result = await updateLayoutTool(h.client).handler({
+      ...ids, layouts: [{ component_id: 'note', parent: `${handle}-tab_tab2` }],
+    } as never);
+    expect(result.isError, text(result)).not.toBe(true);
+    expect(h.parentWritten('PUT')).toBe(`${tabs}-tab_tab2`);
+  });
+
+  it('update_layout refuses a raw parent canvas that disagrees with slot_name', async () => {
+    const h = harness([pack(tabs, 'workspaceTabs', 'Lib_antd_Tabs'), note()]);
+    const result = await updateLayoutTool(h.client).handler({
+      ...ids, layouts: [{ component_id: 'note', parent: 'workspaceTabs-tab_tab2', slot_name: 'tab_tab1' }],
+    } as never);
+    expect(result.isError).toBe(true);
+    expect(text(result)).toMatch(/tab_tab2.*tab_tab1/);
+    expect(h.writes).toEqual([]);
+  });
+
   it('DVRL-7: a parent named by its component name is stored as its id, in the body slot of a Card', async () => {
     const h = harness([pack(card, 'aCard', 'Lib_antd_Card'), note()]);
     const result = await updateLayoutTool(h.client).handler({ ...ids, layouts: [{ component_id: 'note', parent: 'aCard' }] } as never);

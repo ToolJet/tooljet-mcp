@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { packSlotsOfType } from './packSlots.js';
+import { packSlotOnOwnId } from './libraryPack.js';
 
 export const COMPONENT_SLOT_NAMES = ['body', 'header', 'footer', 'modal'] as const;
 
@@ -63,7 +64,7 @@ export function encodeComponentParent(parentId: string, slotName?: ComponentSlot
       slotName ?? (slots && !slots.fixed.includes('body') && slots.fixed.length === 1 && !slots.families.length ? slots.fixed[0] : 'body');
     // A slot drawn once per item (a List's row, a Kanban's card) is the widget's own canvas, as ToolJet's List view rows
     // are: a child stored on "<id>-row" was never drawn (QA DVRL-110).
-    if (slots?.rows.includes(slot)) return base;
+    if (slots?.rows.includes(slot) || packSlotOnOwnId(parentType, slotName)) return base;
     return `${base}-${slot}`;
   }
   if (!slotName) return parentId;
@@ -99,16 +100,45 @@ export function decodeComponentParent(parentId: string): {
  * slot kept). A deepseek build added four cards with parent "rowTrend" (2026-10-13): stored as written, the name
  * matched no component, ToolJet left the cards unattached and the page showed two empty rows.
  */
+/** Writes a resolved parent onto a tool entry: its id, and the canvas a "<id>-<canvas>" parent named as slot_name.
+ *  Returns an error when slot_name names another canvas than the parent does. */
+export function applyResolvedParent(
+  entry: { parent?: string; slot_name?: string },
+  resolved: { parent: string; slotName?: string }
+): string | undefined {
+  if (resolved.slotName && entry.slot_name !== undefined && entry.slot_name !== resolved.slotName) {
+    return `parent "${entry.parent}" names the "${resolved.slotName}" canvas but slot_name is "${entry.slot_name}"; pass one of them.`;
+  }
+  entry.parent = resolved.parent;
+  if (resolved.slotName) entry.slot_name = resolved.slotName;
+  return undefined;
+}
+
 export function resolveParentRef(
-  pageComponents: readonly { id: string; name?: string }[],
+  pageComponents: readonly { id: string; name?: string; type?: string }[],
   parent: string
-): { ok: true; parent: string; renamed: boolean } | { ok: false; error: string } {
+): { ok: true; parent: string; slotName?: string; renamed: boolean } | { ok: false; error: string } {
   const byId = (id: string) => pageComponents.some((component) => component.id === id);
-  if (byId(parent) || byId(decodeComponentParent(parent).parentId)) return { ok: true, parent, renamed: false };
+  if (byId(parent)) return { ok: true, parent, renamed: false };
   const named = (name: string) => pageComponents.filter((component) => component.name === name);
   const whole = named(parent);
   if (whole.length === 1) return { ok: true, parent: whole[0].id, renamed: true };
+  // A pack container's canvas as ToolJet stores it, "<id or name>-<canvas>" (panel_panel1, first, tab_details ...):
+  // the container plus slot_name, whose canvas is then checked against the ones it draws (DVRL-124).
+  for (const component of pageComponents) {
+    if (!isPackContainerType(component.type)) continue;
+    for (const [handle, renamed] of [[component.id, false], [component.name, true]] as const) {
+      if (!handle || !parent.startsWith(`${handle}-`)) continue;
+      const slotName = parent.slice(handle.length + 1);
+      if (!PACK_SLOT.test(slotName)) continue;
+      if (renamed && named(handle).length > 1) {
+        return { ok: false, error: `parent "${parent}" names more than one component on this page; pass the parent's id.` };
+      }
+      return { ok: true, parent: component.id, slotName, renamed };
+    }
+  }
   const decoded = decodeComponentParent(parent);
+  if (byId(decoded.parentId) && isNativeSlotName(decoded.slotName)) return { ok: true, parent, renamed: false };
   const base = named(decoded.parentId);
   if (whole.length === 0 && base.length === 1) {
     return { ok: true, parent: encodeComponentParent(base[0].id, decoded.slotName), renamed: true };

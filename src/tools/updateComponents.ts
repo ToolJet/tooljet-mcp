@@ -4,6 +4,7 @@ import type { ToolJetClient } from '../tooljetClient.js';
 import {
   introducedLintFindings,
   lintComponentSlots,
+  slotFindingKey,
   lintComponentSpec,
   lintKanbanInteractions,
   lintShadKanbanCards,
@@ -14,7 +15,7 @@ import {
   lintUnusableTextGeometry,
   type LintComponent,
 } from '../lint.js';
-import { COMPONENT_SLOT_NAMES, componentSlotSchema, decodeComponentParent, encodeComponentParent, isPackContainerType, resolveParentRef } from '../componentParent.js';
+import { applyResolvedParent, COMPONENT_SLOT_NAMES, componentSlotSchema, decodeComponentParent, encodeComponentParent, isPackContainerType, resolveParentRef } from '../componentParent.js';
 import { resolvePackSlot } from '../packSlots.js';
 import { ok, fail, type ToolDef } from './types.js';
 import { normalizeComponentSpec, packValueAsDefault } from '../componentNormalization.js';
@@ -183,11 +184,15 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
           if (typeof parent === 'string' && parent) {
             // A parent named by its component name moves the component under that component's id.
             const resolvedParent = resolveParentRef(page.components, parent);
-            if (!resolvedParent.ok) {
-              errors.push(`Component "${update.component_id}": ${resolvedParent.error}`);
+            // "<id>-<canvas>" under a pack container is that container plus slot_name (DVRL-124).
+            const entry = { parent, slot_name: update.slot_name as string | undefined };
+            const parentError = resolvedParent.ok ? applyResolvedParent(entry, resolvedParent) : resolvedParent.error;
+            if (parentError) {
+              errors.push(`Component "${update.component_id}": ${parentError}`);
               continue;
             }
-            parent = resolvedParent.parent;
+            parent = entry.parent;
+            update.slot_name = entry.slot_name as typeof update.slot_name;
           }
           let slotName = update.slot_name;
           if (slotName !== undefined) {
@@ -320,9 +325,8 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
             componentId,
             definition: normalizedDefinition,
             name: update.name,
-            parent,
-            slotName: parentType ? slotName : update.slot_name,
-            parentType,
+            parent: parentType && parent !== undefined ? encodeComponentParent(parent, slotName, parentType) : parent,
+            slotName: parentType ? undefined : update.slot_name,
           });
           if (!update.definition) continue;
           errors.push(...introducedLintFindings(
@@ -339,10 +343,16 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
           changedComponents.flatMap(({ before, after }) =>
             introducedLintFindings(lint([before]), lint([after]))
           );
-        if (placementChanged) {
+        // A definition change can strand children too: a container's tab or step id renamed or the item removed. Only a
+        // component others sit in (their parent is its id, or "<id>-<canvas>") can, so an edit of any other skips the check.
+        const parents = new Set(page.components.map((component) => component.parent).filter(Boolean) as string[]);
+        const hasChildren = (id: unknown) =>
+          typeof id === 'string' && [...parents].some((parent) => parent === id || parent.startsWith(`${id}-`));
+        if (placementChanged || changedComponents.some(({ before }) => hasChildren(before.id))) {
           errors.push(...introducedLintFindings(
             lintComponentSlots(page.components as LintComponent[]),
-            lintComponentSlots(allComponents)
+            lintComponentSlots(allComponents),
+            slotFindingKey
           ));
         }
         errors.push(...introducedForChanged(lintUnusableTextGeometry));

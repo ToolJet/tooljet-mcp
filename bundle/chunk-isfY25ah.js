@@ -1113,9 +1113,17 @@ function registerComponentSchemas(extra) {
   set2.schemas = { ...extra };
   set2.derived.clear();
 }
+var INTERNAL_TYPES = {
+  LibraryComponent: "is ToolJet's internal host for a custom or pack component; write the pack's own type, Lib_<pack>_<Component> (get_component_catalog lists them), which is stored with the component it draws.",
+  PackComponent: "is ToolJet's internal host for a pack component; write the pack's own type, Lib_<pack>_<Component> (get_component_catalog lists them), which is stored with the component it draws.",
+  ModuleContainer: "is a module app's own root, which ToolJet creates with the module; in an app it draws an empty box. To show a module in an app, use ModuleViewer."
+};
+function internalComponentTypeNote(type) {
+  return INTERNAL_TYPES[type] ?? null;
+}
 function getCatalog() {
   const legacy = loadLegacyReplacements();
-  return Object.values(merged()).filter((c) => !legacy[c.type]).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
+  return Object.values(merged()).filter((c) => !legacy[c.type] && !INTERNAL_TYPES[c.type]).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
 }
 function getComponentSchema(type) {
   return merged()[type] ?? null;
@@ -5743,22 +5751,23 @@ export {
   tokenIsPrefix as a8,
   tokenIsPostfix as a9,
   external_exports as aA,
-  getCatalog as aB,
-  getLegacyComponentReplacement as aC,
-  fail as aD,
-  resolveRef as aE,
-  ok as aF,
-  exposeActions as aG,
-  inPackSet as aH,
-  listWorkspaceAppsTool as aI,
-  listWorkspaceFoldersTool as aJ,
-  listWorkspaceUsersTool as aK,
-  manageWorkspaceUsersTool as aL,
-  registerComponentSchemas as aM,
-  newPackSet as aN,
-  workspaceUserActionTools as aO,
-  readCatalogBytes as aP,
-  allComponentSchemas as aQ,
+  internalComponentTypeNote as aB,
+  getCatalog as aC,
+  getLegacyComponentReplacement as aD,
+  fail as aE,
+  resolveRef as aF,
+  ok as aG,
+  exposeActions as aH,
+  inPackSet as aI,
+  listWorkspaceAppsTool as aJ,
+  listWorkspaceFoldersTool as aK,
+  listWorkspaceUsersTool as aL,
+  manageWorkspaceUsersTool as aM,
+  registerComponentSchemas as aN,
+  newPackSet as aO,
+  workspaceUserActionTools as aP,
+  readCatalogBytes as aQ,
+  allComponentSchemas as aR,
   newAsyncArrowScope as aa,
   setInnerComments as ab,
   newArrowHeadScope as ac,

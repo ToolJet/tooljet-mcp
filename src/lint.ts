@@ -1,4 +1,6 @@
-import { isLibraryPackType, serverLibraryPacks } from './libraryPack.js';
+import { emptyLibraryHostError, isLibraryPackType, packRowSlotNames, packSlotOnOwnId, serverLibraryPacks } from './libraryPack.js';
+import { packCanvases } from './packItemSlots.js';
+import { packValueTypeError } from './packValueTypes.js';
 import { defaultPack } from './componentLibrary.js';
 // Mechanical, catalog-independent checks that catch the render bugs the skill can only *advise*
 // against. Used by add_component(s) (component-level, pre-write) and validate_app (whole-app,
@@ -33,8 +35,8 @@ import { runjsComponentReferences, runjsQueryReferences, runjsReturnsNothing } f
 import { lintBindingSyntax } from './bindingSyntax.js';
 import { lintSelectedRowProjections } from './selectedRowProjection.js';
 import { dropdownDefaultVisibilityWarning, dropdownSelfDefaultWarning } from './dropdownDefaultContract.js';
-import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from './catalog.js';
-import { decodeComponentParent, isComponentSlotName, isNativeSlotName, isTabSlot, type ComponentSlotName } from './componentParent.js';
+import { getCatalog, getComponentSchema, getLegacyComponentReplacement, internalComponentTypeNote } from './catalog.js';
+import { decodeComponentParent, isComponentSlotName, isNativeSlotName, isPackContainerType, isTabSlot, type ComponentSlotName } from './componentParent.js';
 import { packSlotsOfType, resolvePackSlot } from './packSlots.js';
 import {
   FORM_SCHEMA_FIELD_TYPE_SET,
@@ -716,10 +718,19 @@ export function lintUnusableTextGeometry(components: LintComponent[]): string[] 
   return errors;
 }
 
-export function introducedLintFindings(before: string[], after: string[]): string[] {
-  const existing = new Set(before);
-  return after.filter((finding) => !existing.has(finding));
+export function introducedLintFindings(
+  before: string[],
+  after: string[],
+  keyOf: (finding: string) => string = (finding) => finding
+): string[] {
+  const existing = new Set(before.map(keyOf));
+  return after.filter((finding) => !existing.has(keyOf(finding)));
 }
+
+/** A slot finding without the container's canvas list (lintPackItemSlots), which an item change rewords: the same child
+ *  on the same canvas is the same finding, so a child already stranded does not block adding or restoring an item. */
+export const slotFindingKey = (finding: string): string =>
+  finding.replace(/ \(its canvases: [^)]*\)| \(parent \+ slot_name: [^)]*\)|Pass slot_name with the parent: .*$/, '');
 
 export function lintTextGeometry(components: LintComponent[]): string[] {
   const warnings: string[] = [];
@@ -789,7 +800,7 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
     if (!slotName) continue;
     // A FlexContainer has one canvas, its body: slot_name "body" there is the plain parent, as for a Container.
     // A published library's container (libraryPack.ts) takes its own named slots (ToolJet.Slot, e.g. tab_details).
-    const validParent = isLibraryPackType(parent?.type) ? !['header', 'footer', 'modal'].includes(slotName) && !isTabSlot(slotName) :
+    const validParent = isLibraryPackType(parent?.type) || isPackContainerType(parent?.type) ? !['header', 'footer', 'modal'].includes(slotName) && !isTabSlot(slotName) :
       !isNativeSlotName(slotName) ? false :
       slotName === 'modal' ? parent?.type === 'Kanban' : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? '') :
       SLOT_PARENT_TYPES.has(parent?.type ?? '') || (slotName === 'body' && ['Kanban', 'ShadKanban', 'FlexContainer'].includes(parent?.type ?? ''));
@@ -809,6 +820,71 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
       errors.push(
         `Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" with ` +
           `${parent.type ?? 'unknown'} parent "${parent.name ?? parent.id}"; header/body/footer belong to ModalV2 (and ShadDialog), Form, and Container (header and body also to Accordion); Kanban supports body (card) and modal; tab-t0, tab-t1 ... belong to Tabs.`
+      );
+    }
+  }
+  errors.push(...lintPackItemSlots(components));
+  return errors;
+}
+
+/** A child on a canvas its pack container does not draw: saved, never shown and unreachable in the editor. A plain
+ *  parent is the body canvas, which a Split Pane, Stepper, Accordion Container or tabs container has none of (DVRL-129);
+ *  an item canvas (tab_<id>, step_<id> ...) goes when the item's id is renamed or the item removed. A pack component
+ *  that draws no canvas (a Button) holds no child at all. `persisted`: the components are as saved, where a child on the
+ *  container's bare id is never drawn either (a pack draws its body on "<id>-body"); a tool's input there means body. */
+export function lintPackItemSlots(components: LintComponent[], options: { persisted?: boolean } = {}): string[] {
+  const errors: string[] = [];
+  for (const container of components) {
+    const drawn = packCanvases(container.type, container.properties);
+    if (!drawn) continue;
+    const key = componentKey(container);
+    for (const component of components) {
+      const bare = !!container.id && component.parent === container.id && !component.slotName && !component.parentRef;
+      const slot =
+        key && component.parentRef === key
+          ? (component.slotName ?? 'body')
+          : container.id && component.parent === container.id
+            ? (component.slotName ?? 'body')
+            : container.id && component.parent?.startsWith(`${container.id}-`)
+              ? component.parent.slice(container.id.length + 1)
+              : undefined;
+      if (!slot) continue;
+      const label = `Component "${component.name ?? component.id ?? component.type}"`;
+      const where = `${container.type} "${container.name ?? container.id}"`;
+      const canvases = drawn.bound ? `${drawn.prefix}_<item id>` : [...drawn.names].join(', ') || 'none';
+      if (!drawn.bound && !drawn.names.size) {
+        errors.push(
+          `${label} is a child of ${where}, which draws no canvas, so it would be saved and never shown. ` +
+            'Parent it to a container (a Card, Split Pane, Stepper ...) or to the page.'
+        );
+        continue;
+      }
+      // A list's repeating rows are drawn on its own id (ToolJet's List view row): a child there is on the row, and one on
+      // "<id>-row" is where nothing draws.
+      if (bare && packSlotOnOwnId(container.type)) continue;
+      const suffixed = !!container.id && !!component.parent?.startsWith(`${container.id}-`);
+      if (suffixed && packRowSlotNames(container.type).includes(slot)) {
+        errors.push(
+          `${label} is saved on "${component.parent}", but ${where} draws its ${slot} on its own id, so it is not shown. ` +
+            `Move it with update_components (parent: ${container.name ?? container.id}, slot_name: ${slot}).`
+        );
+        continue;
+      }
+      if (options.persisted && bare) {
+        errors.push(
+          `${label} is saved on ${where}'s bare id, which a pack component never draws, so it is not shown. ` +
+            `Move it with update_components (parent + slot_name: ${canvases}).`
+        );
+        continue;
+      }
+      if (drawn.names.has(slot) || (drawn.bound && slot.startsWith(`${drawn.prefix}_`))) continue;
+      errors.push(
+        drawn.prefix && slot.startsWith(`${drawn.prefix}_`)
+          ? `${label} is on ${where}'s "${slot}" canvas, but no item of its ${drawn.property} has that id (its canvases: ${canvases}), ` +
+              'so it would be saved and never shown. Keep the item id, move the child to one of those canvases in the same call ' +
+              '(parent + slot_name), or delete it first with delete_components.'
+          : `${label} is on ${where}'s "${slot}" canvas, which it does not draw, so it would be saved and never shown. ` +
+              `Pass slot_name with the parent: ${canvases}.`
       );
     }
   }
@@ -1977,6 +2053,12 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
       }
     }
     for (const entry of entries) {
+      // A pack boolean or number property given a value the pack cannot use: it would read as false or unset.
+      const literal = propVal(authored, entry.key);
+      if (literal !== undefined && !isDynamicBinding(literal)) {
+        const typeError = packValueTypeError(spec.type, entry.key, entry.valueType, literal);
+        if (typeError) errors.push(`Component "${label}": ${typeError}`);
+      }
       if (!entry.allowedValues?.length) continue;
       if (spec.type === 'Form' && entry.key === 'buttonToSubmit') continue; // names a Button: lintFormSubmitButtons
       const value = propVal(authored, entry.key);
@@ -3288,6 +3370,14 @@ export function lintComponents(components: LintComponent[], options: { canvasCol
     // revalidated by lintComponentSpec when checking unrelated edits or app bindings.
     const nameError = componentNameError(c.name);
     if (nameError) errors.push(nameError);
+    // ToolJet's own hosts draw an empty box in an app: a module container always, a LibraryComponent or PackComponent
+    // naming no component (a custom library's copied component names its library and is kept).
+    const internal = c.type === 'ModuleContainer' ? internalComponentTypeNote(c.type) : null;
+    if (internal) {
+      errors.push(`Component "${c.name ?? c.type}": "${c.type}" ${internal} It is internal and cannot be written by a build.`);
+    }
+    const emptyHost = emptyLibraryHostError(c);
+    if (emptyHost) errors.push(emptyHost);
     const r = lintComponentSpec(c, { surfaceAround: around(c) });
     errors.push(...r.errors);
     errors.push(...lintStandardSingleLineInputHeight(c));

@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
-import { ax as activePackSet, ay as getComponentSchema } from "./chunk-Be_TMeNG.js";
-import { p as parseExpression, a as parse } from "./chunk-Bi-NND__.js";
+import { ax as activePackSet, ay as getComponentSchema } from "./chunk-isfY25ah.js";
+import { p as parseExpression, a as parse } from "./chunk-nL-cG8xH.js";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -122,6 +122,24 @@ function libraryPack() {
 var isBuiltin = (pack) => pack.kind === "builtin";
 var packOfType = (type) => typeof type === "string" ? libraryPacksAll().find((p) => type.startsWith(p.prefix)) : void 0;
 var isLibraryPackType = (type) => !!packOfType(type);
+var packComponentOf = (type) => Object.values(packOfType(type)?.components ?? {}).find((entry) => entry.type === type);
+var slotNamesOf = (component, kind) => (component?.slots ?? []).filter((slot) => kind === void 0 || slot.kind === kind).map((slot) => String(slot.name ?? "")).filter(Boolean);
+function packSlotNames(type) {
+  const component = packComponentOf(type);
+  return component && component.slotsKnown !== false ? slotNamesOf(component) : void 0;
+}
+function packRowSlotNames(type) {
+  return slotNamesOf(packComponentOf(type), "rows");
+}
+function packSlotOnOwnId(type, slotName) {
+  const component = packComponentOf(type);
+  const rows = slotNamesOf(component, "rows");
+  if (!rows.length)
+    return false;
+  if (slotName)
+    return rows.includes(slotName);
+  return slotNamesOf(component).every((name) => rows.includes(name));
+}
 function libraryPins() {
   const packs = libraryPacksAll().filter((p) => !isBuiltin(p));
   return packs.length ? Object.fromEntries(packs.map((p) => [p.correlationId.replace(/-/g, ""), p.version])) : void 0;
@@ -187,6 +205,20 @@ function toLibraryComponent(spec) {
       componentName: { value: componentName }
     }
   };
+}
+function isEmptyLibraryHost(component) {
+  if (component.type !== "LibraryComponent" && component.type !== "PackComponent")
+    return false;
+  return !["componentName", "pack", "libraryId", "correlationId", "libraryName"].some((key3) => {
+    const entry = component.properties?.[key3];
+    const value = entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+    return typeof value === "string" && value.trim() !== "";
+  });
+}
+function emptyLibraryHostError(component, options = {}) {
+  if (!isEmptyLibraryHost(component))
+    return null;
+  return `Component "${component.name ?? component.id ?? component.type}" is a ${component.type} that names no component, so it draws an empty box: it is ToolJet's internal host, stored with the component it draws. ${options.persisted ? "Delete it and add" : "Write"} the pack's own type, Lib_<pack>_<Component> (get_component_catalog lists them).`;
 }
 function libraryTypeOf(component) {
   if (component.type !== "LibraryComponent" && component.type !== "PackComponent")
@@ -4685,22 +4717,27 @@ var require_parser = __commonJS({
   }
 });
 export {
-  isLibraryPackType as A,
-  BARE_QUERY_DATA_BINDING as B,
-  lintComponentStateBindings as C,
-  lintEmptyDateWrites as D,
-  lintUntriggeredDataQueries as E,
-  lintAutomaticWrites as F,
-  parseHtml as G,
-  stripHtmlBindings as H,
-  suggestedHtmlHeight as I,
-  downgradeFlexForLibrary as J,
-  toLibraryComponent as K,
-  missingLibraryPins as L,
-  libraryTypeOf as M,
-  libraryPins as N,
-  unpinnedLibraries as O,
-  registerLibraryPacks as P,
+  retiredUi2Name as A,
+  lintTextFormat as B,
+  lintTableColumnsShape as C,
+  BARE_QUERY_DATA_BINDING as D,
+  lintComponentStateBindings as E,
+  lintEmptyDateWrites as F,
+  lintUntriggeredDataQueries as G,
+  lintAutomaticWrites as H,
+  packRowSlotNames as I,
+  libraryPacksAll as J,
+  parseHtml as K,
+  stripHtmlBindings as L,
+  packSlotNames as M,
+  suggestedHtmlHeight as N,
+  downgradeFlexForLibrary as O,
+  toLibraryComponent as P,
+  missingLibraryPins as Q,
+  libraryTypeOf as R,
+  libraryPins as S,
+  unpinnedLibraries as T,
+  registerLibraryPacks as U,
   require_identity as a,
   require_Scalar as b,
   require_cst as c,
@@ -4714,17 +4751,17 @@ export {
   require_resolve_block_scalar as k,
   require_resolve_flow_scalar as l,
   lintSelectedRowProjections as m,
-  lintOversizedWidths as n,
-  lintHtmlContentHeight as o,
-  lintHtmlRootSurface as p,
-  lintUnguardedComponentRefs as q,
+  emptyLibraryHostError as n,
+  lintOversizedWidths as o,
+  packSlotOnOwnId as p,
+  lintHtmlContentHeight as q,
   require_errors as r,
   surfaceAroundResolver as s,
-  lintEmbeddedBindingSyntax as t,
-  lintChartDataShape as u,
-  lintUnguardedSelectionText as v,
-  serverLibraryPacks as w,
-  retiredUi2Name as x,
-  lintTextFormat as y,
-  lintTableColumnsShape as z
+  lintHtmlRootSurface as t,
+  lintUnguardedComponentRefs as u,
+  lintEmbeddedBindingSyntax as v,
+  lintChartDataShape as w,
+  lintUnguardedSelectionText as x,
+  isLibraryPackType as y,
+  serverLibraryPacks as z
 };

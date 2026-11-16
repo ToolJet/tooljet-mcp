@@ -1,11 +1,124 @@
 import { createRequire } from "node:module";
-import { s as surfaceAroundResolver, m as lintSelectedRowProjections, n as lintOversizedWidths, o as lintHtmlContentHeight, p as lintHtmlRootSurface, q as lintUnguardedComponentRefs, t as lintEmbeddedBindingSyntax, u as lintChartDataShape, v as lintUnguardedSelectionText, w as serverLibraryPacks, x as retiredUi2Name, y as lintTextFormat, z as lintTableColumnsShape, A as isLibraryPackType, B as BARE_QUERY_DATA_BINDING, C as lintComponentStateBindings, D as lintEmptyDateWrites, E as lintUntriggeredDataQueries, F as lintAutomaticWrites, G as parseHtml, H as stripHtmlBindings } from "./chunk-DjxXBjSx.js";
-import { r as require_lib, l as lintBindingNames, b as bindingSpans } from "./chunk-D078dS7Y.js";
-import { aA as external_exports, ay as getComponentSchema, aB as getCatalog, aC as getLegacyComponentReplacement } from "./chunk-Be_TMeNG.js";
-import { p as parseExpression, a as parse } from "./chunk-Bi-NND__.js";
+import { p as packSlotOnOwnId, s as surfaceAroundResolver, m as lintSelectedRowProjections, n as emptyLibraryHostError, o as lintOversizedWidths, q as lintHtmlContentHeight, t as lintHtmlRootSurface, u as lintUnguardedComponentRefs, v as lintEmbeddedBindingSyntax, w as lintChartDataShape, x as lintUnguardedSelectionText, y as isLibraryPackType, z as serverLibraryPacks, A as retiredUi2Name, B as lintTextFormat, C as lintTableColumnsShape, D as BARE_QUERY_DATA_BINDING, E as lintComponentStateBindings, F as lintEmptyDateWrites, G as lintUntriggeredDataQueries, H as lintAutomaticWrites, I as packRowSlotNames, J as libraryPacksAll, K as parseHtml, L as stripHtmlBindings, M as packSlotNames } from "./chunk-Btd7hqFK.js";
+import { aA as external_exports, aB as internalComponentTypeNote, ay as getComponentSchema, aC as getCatalog, aD as getLegacyComponentReplacement } from "./chunk-isfY25ah.js";
+import { r as require_lib, l as lintBindingNames, b as bindingSpans } from "./chunk-CpwF2B9D.js";
+import { p as parseExpression, a as parse } from "./chunk-nL-cG8xH.js";
 import { e8 as __toESM } from "./chunk-C1Uan0hB.js";
 import { readFileSync } from "node:fs";
 createRequire(import.meta.url);
+var MAX_SLOT_ITEMS = 50;
+var str = (value2) => value2 === void 0 || value2 === null ? "" : String(value2);
+var isRecord = (value2) => !!value2 && typeof value2 === "object" && !Array.isArray(value2);
+var shadTabIds = (raw) => raw.slice(0, MAX_SLOT_ITEMS).flatMap((item, i) => {
+  if (item === null || item === void 0 || typeof item !== "object")
+    return item === null || item === void 0 ? [] : [String(item)];
+  if (!isRecord(item))
+    return [];
+  return [str(item.id ?? item.value) || String(i + 1)];
+});
+var shadItemIds = (raw) => raw.filter(isRecord).slice(0, MAX_SLOT_ITEMS).map((item, i) => String(item.id ?? i + 1));
+var keyedIds = (raw) => raw.slice(0, MAX_SLOT_ITEMS).flatMap((item) => {
+  if (typeof item === "string")
+    return item ? [item] : [];
+  if (!isRecord(item))
+    return [];
+  const key = str(item.key ?? item.id ?? item.value ?? item.label);
+  return key ? [key] : [];
+});
+var CONTAINERS = {
+  Lib_shadcn_TabsContainer: { property: "tabs", prefix: "tab", ids: shadTabIds },
+  Lib_shadcn_Stepper: { property: "steps", prefix: "step", ids: shadItemIds },
+  Lib_shadcn_AccordionContainer: { property: "sections", prefix: "section", ids: shadItemIds },
+  Lib_antd_Tabs: { property: "items", prefix: "tab", ids: keyedIds },
+  Lib_antd_Collapse: { property: "items", prefix: "panel", ids: keyedIds },
+  Lib_mui_Tabs: { property: "tabs", prefix: "tab", ids: keyedIds }
+};
+var toSlotName = (prefix, id) => `${prefix}_${id.replace(/\W/g, "_")}`;
+var idTag = (id) => {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i += 1)
+    h = Math.imul(h ^ id.charCodeAt(i), 16777619);
+  return (h >>> 0).toString(36);
+};
+function slotNames(prefix, ids) {
+  const taken = /* @__PURE__ */ new Set();
+  const distinct2 = [...new Set(ids)];
+  for (const id of distinct2.filter((id2) => !/\W/.test(id2)))
+    taken.add(toSlotName(prefix, id));
+  for (const id of distinct2.filter((id2) => /\W/.test(id2)).sort((a, b) => a < b ? -1 : a > b ? 1 : 0)) {
+    const base = toSlotName(prefix, id);
+    let name = base;
+    for (let n = 1; taken.has(name); n += 1)
+      name = `${base}_${idTag(id)}${n > 1 ? `_${n}` : ""}`;
+    taken.add(name);
+  }
+  return taken;
+}
+function packCanvases(type, properties) {
+  const items = packItemSlots(type, properties);
+  if (items)
+    return { names: items.slots, prefix: items.prefix, property: items.property, bound: false };
+  const container = typeof type === "string" ? CONTAINERS[type] : void 0;
+  const listed = packSlotNames(type);
+  if (container) {
+    const entry = properties?.[container.property];
+    const raw = isRecord(entry) && "value" in entry ? entry.value : entry;
+    if (raw === void 0 || raw === null) {
+      const fallback = typeof type === "string" ? getComponentSchema(type)?.properties?.find((p) => p.key === container.property)?.default : void 0;
+      const defaults = fallback === void 0 ? void 0 : packItemSlots(type, { [container.property]: fallback });
+      if (defaults?.slots.size)
+        return { names: defaults.slots, prefix: container.prefix, property: container.property, bound: false };
+      if (listed?.length)
+        return { names: new Set(listed), prefix: container.prefix, property: container.property, bound: false };
+    }
+    return { names: /* @__PURE__ */ new Set(), prefix: container.prefix, property: container.property, bound: true };
+  }
+  return listed ? { names: new Set(listed), bound: false } : void 0;
+}
+function packItemSlots(type, properties) {
+  const container = typeof type === "string" ? CONTAINERS[type] : void 0;
+  if (!container)
+    return void 0;
+  const entry = properties?.[container.property];
+  const raw = literalList(isRecord(entry) && "value" in entry ? entry.value : entry);
+  if (!Array.isArray(raw))
+    return void 0;
+  return { prefix: container.prefix, property: container.property, slots: slotNames(container.prefix, container.ids(raw)) };
+}
+function literalList(value2) {
+  if (typeof value2 !== "string")
+    return value2;
+  const body = /^\s*\{\{\s*(\[[\s\S]*\])\s*\}\}\s*$/.exec(value2)?.[1];
+  if (!body)
+    return value2;
+  try {
+    return JSON.parse(body);
+  } catch {
+    return value2;
+  }
+}
+var NUMERIC = /^[-+]?\d*\.?\d+(e[-+]?\d+)?%?$/i;
+var ALSO_ARRAY = /* @__PURE__ */ new Set(["shadcn.Slider.defaultValue", "shadcn.Slider.value", "antd.Slider.value", "mui.Slider.value"]);
+var ALSO_CLOCK = /* @__PURE__ */ new Set(["shadcn.Schedule.dayStart", "shadcn.Schedule.dayEnd"]);
+var CLOCK = /^\d{1,2}(:\d{2})?\s*([ap]\.?m\.?)?$/i;
+var usableBoolean = (value2) => typeof value2 === "boolean" || typeof value2 === "number" && Number.isFinite(value2) || // Empty text is false, as ToolJet reads it (as null), without a note.
+typeof value2 === "string" && ["true", "false", ""].includes(value2.trim().toLowerCase());
+var usableNumber = (value2) => typeof value2 === "number" && Number.isFinite(value2) || // Empty text is an unset number (a default the pack does not set), as the pack reads it.
+typeof value2 === "string" && (value2.trim() === "" || NUMERIC.test(value2.trim().replace(/,/g, "")));
+function packValueTypeError(type, key, valueType, value2) {
+  const pack = /^Lib_([a-z0-9]+)_(.+)$/.exec(type ?? "");
+  if (!pack || valueType !== "boolean" && valueType !== "number")
+    return null;
+  if (value2 === null)
+    return null;
+  if (Array.isArray(value2) && ALSO_ARRAY.has(`${pack[1]}.${pack[2]}.${key}`))
+    return null;
+  if (typeof value2 === "string" && CLOCK.test(value2.trim()) && ALSO_CLOCK.has(`${pack[1]}.${pack[2]}.${key}`))
+    return null;
+  if (valueType === "boolean" ? usableBoolean(value2) : usableNumber(value2))
+    return null;
+  return valueType === "boolean" ? `"${key}" takes a boolean, and ${JSON.stringify(value2)} is not one, so the component reads it as false. Use true, false or a {{binding}}.` : `"${key}" takes a number, and ${JSON.stringify(value2)} is not one, so the component draws it as unset. Use a number or a {{binding}}.`;
+}
 var defaultPack = () => {
   const raw = process.env.MCP_AGENT_PACK;
   return (raw === void 0 ? "shadcn" : raw).trim().toLowerCase() || void 0;
@@ -44,6 +157,18 @@ function nativeFitsUi2(component) {
     return true;
   return component.type === "Table" && styleValue(component.styles, "tableLook") !== "default";
 }
+function buildPack(library) {
+  if (library.pack)
+    return library.pack;
+  return serverLibraryPacks().length ? defaultPack() : void 0;
+}
+function packFix(pack) {
+  const components = libraryPacksAll().find((p) => p.pack === pack)?.components ?? {};
+  const first = (...names) => names.find((name) => components[name]);
+  const dialog = first("Dialog", "Modal");
+  const sheet = first("Drawer", "Sheet");
+  return `Build with the app's component pack instead: types whose names start with Lib_${pack}_ (get_component_catalog lists them), laid out in FlexContainers; ` + (dialog ? `Lib_${pack}_${dialog} for dialogs; ` : "") + (sheet ? `Lib_${pack}_${sheet} for side sheets; ` : "") + `for tables ToolJet's Table (styles.tableLook "shadcn").`;
+}
 function componentLibraryWarnings(library, pages, request) {
   if (request?.trim())
     return [];
@@ -63,7 +188,8 @@ function componentLibraryWarnings(library, pages, request) {
   const listed = [...off].map(([type, names]) => `${type} (${names.slice(0, 3).join(", ")}${names.length > 3 ? ", ..." : ""})`).join("; ");
   const how = library.source === "saved" ? "its saved library" : library.source === "inferred" ? "the library its widgets imply" : "new apps are; pass app_id to check the plan against an existing app";
   const appName = COMPONENT_LIBRARY_NAMES[library.library];
-  const fix = library.library === "ui1" ? "Build with the native ToolJet types instead (Table, Chart, TextInput, DropdownV2, ModalV2, Container, ...)." : `Build with the UI 2.0 types instead: types whose names start with Shad, laid out in FlexContainers; ShadDialog for dialogs and side sheets; for tables ToolJet's Table (styles.tableLook "shadcn").`;
+  const pack = library.library === "ui2" ? buildPack(library) : void 0;
+  const fix = library.library === "ui1" ? "Build with the native ToolJet types instead (Table, Chart, TextInput, DropdownV2, ModalV2, Container, ...)." : pack ? packFix(pack) : `Build with the UI 2.0 types instead: types whose names start with Shad, laid out in FlexContainers; ShadDialog for dialogs and side sheets; for tables ToolJet's Table (styles.tableLook "shadcn").`;
   return [
     `This app is built in ${appName} (${how}), and the plan adds widgets from the other library: ${listed}. ${fix} If the user asked for the other library in this request, keep the plan and put their words in component_library_request.`
   ];
@@ -684,25 +810,25 @@ function dropdownDefaultVisibilityWarning(value2, label) {
   return missing ? [`DropdownV2 "${label}": an option declares a default but omits visible. ToolJet's default lookup requires visible:true even though the menu displays options with omitted visibility. Set visible:true on selectable default options; preserve intentional hidden options. Otherwise edit preselection can appear blank. This is advisory; unknown dynamic option sources are not verified.`] : [];
 }
 var import_json5 = __toESM(require_lib(), 1);
-var toSlotName = (prefix, key) => `${prefix}_${key.replace(/[^A-Za-z0-9_]/g, "_")}`;
+var toSlotName2 = (prefix, key) => `${prefix}_${key.replace(/[^A-Za-z0-9_]/g, "_")}`;
 var keyTag = (key) => {
   let h = 2166136261;
   for (let i = 0; i < key.length; i += 1)
     h = Math.imul(h ^ key.charCodeAt(i), 16777619);
   return (h >>> 0).toString(36);
 };
-function slotNames(prefix, keys) {
+function slotNames2(prefix, keys) {
   const names = [];
   const taken = /* @__PURE__ */ new Set();
   const distinct2 = [...new Set(keys)];
   const plain = distinct2.filter((k) => /^[A-Za-z0-9_]*$/.test(k));
   const folded = distinct2.filter((k) => !/^[A-Za-z0-9_]*$/.test(k)).sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
   for (const k of plain) {
-    names.push(toSlotName(prefix, k));
-    taken.add(toSlotName(prefix, k));
+    names.push(toSlotName2(prefix, k));
+    taken.add(toSlotName2(prefix, k));
   }
   for (const k of folded) {
-    const base = toSlotName(prefix, k);
+    const base = toSlotName2(prefix, k);
     let name = base;
     for (let n = 1; taken.has(name); n += 1)
       name = `${base}_${keyTag(k)}${n > 1 ? `_${n}` : ""}`;
@@ -735,7 +861,7 @@ function packSlotsFromManifest(slots, props) {
         return [];
       return KEY_FIELDS.flatMap((field) => {
         const keys = keysOf(prop2.default, field);
-        const drawn = keys ? new Set(slotNames(prefix, keys)) : void 0;
+        const drawn = keys ? new Set(slotNames2(prefix, keys)) : void 0;
         return drawn && listed.every((name) => drawn.has(name)) ? [{ prefix, itemsProp: prop2.name, keyField: field, defaultItems: prop2.default }] : [];
       });
     })[0];
@@ -756,7 +882,7 @@ function describePackSlots(slots) {
   const parts = [
     ...slots.fixed.map((name) => slots.rows.includes(name) ? `${name} (drawn once per item; its children read {{listItem}})` : name),
     ...slots.families.map((family) => {
-      const sample = slotNames(family.prefix, keysOf(family.defaultItems, family.keyField) ?? []);
+      const sample = slotNames2(family.prefix, keysOf(family.defaultItems, family.keyField) ?? []);
       return `${family.prefix}_<${family.keyField} of each ${family.itemsProp} item>${sample.length ? ` (by default ${sample.join(", ")})` : ""}`;
     })
   ];
@@ -798,7 +924,7 @@ function widgetSlots(component, { propertiesKnown = true } = {}) {
     const items = propertiesKnown ? itemsOf(component.properties, family.itemsProp) : null;
     const keys = items === null ? null : keysOf(items ?? family.defaultItems, family.keyField);
     if (keys)
-      known.push(...slotNames(family.prefix, keys));
+      known.push(...slotNames2(family.prefix, keys));
     else
       open.push({ prefix: family.prefix, itemsProp: family.itemsProp });
   }
@@ -864,7 +990,7 @@ function encodeComponentParent(parentId, slotName, parentType) {
     const base2 = decodeComponentParent(parentId).parentId;
     const slots = packSlotsOfType(parentType);
     const slot = slotName ?? (slots && !slots.fixed.includes("body") && slots.fixed.length === 1 && !slots.families.length ? slots.fixed[0] : "body");
-    if (slots?.rows.includes(slot))
+    if (slots?.rows.includes(slot) || packSlotOnOwnId(parentType, slotName))
       return base2;
     return `${base2}-${slot}`;
   }
@@ -893,15 +1019,41 @@ function decodeComponentParent(parentId) {
     return { parentId: slot[1], slotName: slot[2] };
   return { parentId, slotName: "body" };
 }
+function applyResolvedParent(entry, resolved) {
+  if (resolved.slotName && entry.slot_name !== void 0 && entry.slot_name !== resolved.slotName) {
+    return `parent "${entry.parent}" names the "${resolved.slotName}" canvas but slot_name is "${entry.slot_name}"; pass one of them.`;
+  }
+  entry.parent = resolved.parent;
+  if (resolved.slotName)
+    entry.slot_name = resolved.slotName;
+  return void 0;
+}
 function resolveParentRef(pageComponents, parent) {
   const byId = (id) => pageComponents.some((component) => component.id === id);
-  if (byId(parent) || byId(decodeComponentParent(parent).parentId))
+  if (byId(parent))
     return { ok: true, parent, renamed: false };
   const named = (name) => pageComponents.filter((component) => component.name === name);
   const whole = named(parent);
   if (whole.length === 1)
     return { ok: true, parent: whole[0].id, renamed: true };
+  for (const component of pageComponents) {
+    if (!isPackContainerType(component.type))
+      continue;
+    for (const [handle, renamed] of [[component.id, false], [component.name, true]]) {
+      if (!handle || !parent.startsWith(`${handle}-`))
+        continue;
+      const slotName = parent.slice(handle.length + 1);
+      if (!PACK_SLOT.test(slotName))
+        continue;
+      if (renamed && named(handle).length > 1) {
+        return { ok: false, error: `parent "${parent}" names more than one component on this page; pass the parent's id.` };
+      }
+      return { ok: true, parent: component.id, slotName, renamed };
+    }
+  }
   const decoded = decodeComponentParent(parent);
+  if (byId(decoded.parentId) && isNativeSlotName(decoded.slotName))
+    return { ok: true, parent, renamed: false };
   const base = named(decoded.parentId);
   if (whole.length === 0 && base.length === 1) {
     return { ok: true, parent: encodeComponentParent(base[0].id, decoded.slotName), renamed: true };
@@ -945,8 +1097,8 @@ var valueOf = (props, key) => {
   const entry = props?.[key];
   return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
 };
-var str = (value2) => typeof value2 === "string" ? value2 : "";
-var metaFieldNames = (value2) => (Array.isArray(value2) ? value2.filter((part) => typeof part === "string") : str(value2).split(",")).map((part) => part.split(":")[0].trim());
+var str2 = (value2) => typeof value2 === "string" ? value2 : "";
+var metaFieldNames = (value2) => (Array.isArray(value2) ? value2.filter((part) => typeof part === "string") : str2(value2).split(",")).map((part) => part.split(":")[0].trim());
 var STRONG_MONEY_WORD = /\b(prices?|amounts?|costs?|revenue|balance|fees?|salary|salaries|payments?|subtotal|refunds?|mrr|arr|payout|takings)\b/i;
 var MONEY_WORD = /\b(sales|spend|spent|budget|income|profit|invoiced?|earnings|gross|net|bill|total)\b/i;
 var COUNT_WORD = /\b(count|qty|quantity|items?|tasks?|hours?|days?|orders?|tickets?|people|users?|hires?|visits?|guests?|covers?|seats?|steps?|points?)\b/i;
@@ -993,16 +1145,16 @@ function lintUnformattedNumbers(spec) {
   const props = spec.properties;
   const out = [];
   if (["ShadText", "ShadHeading", "Text", "ShadBadge"].includes(spec.type ?? "")) {
-    const text = str(valueOf(props, "text"));
+    const text = str2(valueOf(props, "text"));
     for (const problem of bindingProblems(text, spec.name ?? "")) {
       out.push(`${label}: ${problem}. ${problem.includes("100") ? "Round it to one decimal: (x * 100).toFixed(1) + '%'." : `${LOCALE_HINT}.`}`);
     }
   }
   if (spec.type === "ShadStat") {
     const value2 = valueOf(props, "value");
-    const text = typeof value2 === "number" ? String(value2) : str(value2);
-    const format = str(valueOf(props, "valueFormat")) || "auto";
-    const named = `${str(valueOf(props, "label"))} ${spec.name ?? ""}`;
+    const text = typeof value2 === "number" ? String(value2) : str2(value2);
+    const format = str2(valueOf(props, "valueFormat")) || "auto";
+    const named = `${str2(valueOf(props, "label"))} ${spec.name ?? ""}`;
     const bodies = bindingSpans(text).map((span) => span.body).join(" ");
     const fraction = /[^/*]\/[^/*]/.test(bodies) && !/\*\s*100+\b/.test(bodies);
     if (isMoneyName(named) && format !== "currency" && !LOCALE_FORMAT.test(text) && !new RegExp(SYMBOL).test(text)) {
@@ -1019,8 +1171,8 @@ function lintUnformattedNumbers(spec) {
     }
   }
   if (spec.type === "ShadCardGrid") {
-    const data = str(valueOf(props, "data"));
-    const fields = ["titleField", "subtitleField", "descriptionField", "badgeField"].map((key) => str(valueOf(props, key))).concat(metaFieldNames(valueOf(props, "metaFields"))).filter((field) => field && isMoneyName(field) && !FORMATTED_NAME.test(words(field)));
+    const data = str2(valueOf(props, "data"));
+    const fields = ["titleField", "subtitleField", "descriptionField", "badgeField"].map((key) => str2(valueOf(props, key))).concat(metaFieldNames(valueOf(props, "metaFields"))).filter((field) => field && isMoneyName(field) && !FORMATTED_NAME.test(words(field)));
     const raw = fields.filter((field) => !LOCALE_FORMAT.test(data) || !new RegExp(`\\b${field}\\b`).test(data));
     if (raw.length) {
       out.push(`${label}: ${raw.map((f) => `"${f}"`).join(", ")} ${raw.length > 1 ? "are" : "is"} money shown as the raw number ("Amount 7.5"). Map the rows in data to a formatted string for the card, e.g. {{(queries.q.data || []).map(r => ({ ...r, ${raw[0]}: Number(r.${raw[0]}).toLocaleString('en-US', { style: 'currency', currency: 'USD' }) }))}}, in the request's currency and locale.`);
@@ -1986,10 +2138,11 @@ function lintUnusableTextGeometry(components) {
   }
   return errors;
 }
-function introducedLintFindings(before, after) {
-  const existing = new Set(before);
-  return after.filter((finding) => !existing.has(finding));
+function introducedLintFindings(before, after, keyOf = (finding) => finding) {
+  const existing = new Set(before.map(keyOf));
+  return after.filter((finding) => !existing.has(keyOf(finding)));
 }
+var slotFindingKey = (finding) => finding.replace(/ \(its canvases: [^)]*\)| \(parent \+ slot_name: [^)]*\)|Pass slot_name with the parent: .*$/, "");
 function lintTextGeometry(components) {
   const warnings = [];
   for (const component of components) {
@@ -2046,7 +2199,7 @@ function lintComponentSlots(components) {
     }
     if (!slotName)
       continue;
-    const validParent = isLibraryPackType(parent?.type) ? !["header", "footer", "modal"].includes(slotName) && !isTabSlot(slotName) : !isNativeSlotName(slotName) ? false : slotName === "modal" ? parent?.type === "Kanban" : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? "") : SLOT_PARENT_TYPES.has(parent?.type ?? "") || slotName === "body" && ["Kanban", "ShadKanban", "FlexContainer"].includes(parent?.type ?? "");
+    const validParent = isLibraryPackType(parent?.type) || isPackContainerType(parent?.type) ? !["header", "footer", "modal"].includes(slotName) && !isTabSlot(slotName) : !isNativeSlotName(slotName) ? false : slotName === "modal" ? parent?.type === "Kanban" : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? "") : SLOT_PARENT_TYPES.has(parent?.type ?? "") || slotName === "body" && ["Kanban", "ShadKanban", "FlexContainer"].includes(parent?.type ?? "");
     if (parent && TABS_TYPES.has(parent.type ?? "") && isTabSlot(slotName) && !isTruthyBinding(propVal(parent.properties, "useDynamicOptions"))) {
       const items = propVal(parent.properties, "tabItems");
       const ids = Array.isArray(items) ? items.map((item) => String(item?.id ?? "")) : void 0;
@@ -2056,6 +2209,44 @@ function lintComponentSlots(components) {
     }
     if (parent && !validParent) {
       errors.push(`Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" with ${parent.type ?? "unknown"} parent "${parent.name ?? parent.id}"; header/body/footer belong to ModalV2 (and ShadDialog), Form, and Container (header and body also to Accordion); Kanban supports body (card) and modal; tab-t0, tab-t1 ... belong to Tabs.`);
+    }
+  }
+  errors.push(...lintPackItemSlots(components));
+  return errors;
+}
+function lintPackItemSlots(components, options = {}) {
+  const errors = [];
+  for (const container of components) {
+    const drawn = packCanvases(container.type, container.properties);
+    if (!drawn)
+      continue;
+    const key = componentKey(container);
+    for (const component of components) {
+      const bare = !!container.id && component.parent === container.id && !component.slotName && !component.parentRef;
+      const slot = key && component.parentRef === key ? component.slotName ?? "body" : container.id && component.parent === container.id ? component.slotName ?? "body" : container.id && component.parent?.startsWith(`${container.id}-`) ? component.parent.slice(container.id.length + 1) : void 0;
+      if (!slot)
+        continue;
+      const label = `Component "${component.name ?? component.id ?? component.type}"`;
+      const where = `${container.type} "${container.name ?? container.id}"`;
+      const canvases = drawn.bound ? `${drawn.prefix}_<item id>` : [...drawn.names].join(", ") || "none";
+      if (!drawn.bound && !drawn.names.size) {
+        errors.push(`${label} is a child of ${where}, which draws no canvas, so it would be saved and never shown. Parent it to a container (a Card, Split Pane, Stepper ...) or to the page.`);
+        continue;
+      }
+      if (bare && packSlotOnOwnId(container.type))
+        continue;
+      const suffixed = !!container.id && !!component.parent?.startsWith(`${container.id}-`);
+      if (suffixed && packRowSlotNames(container.type).includes(slot)) {
+        errors.push(`${label} is saved on "${component.parent}", but ${where} draws its ${slot} on its own id, so it is not shown. Move it with update_components (parent: ${container.name ?? container.id}, slot_name: ${slot}).`);
+        continue;
+      }
+      if (options.persisted && bare) {
+        errors.push(`${label} is saved on ${where}'s bare id, which a pack component never draws, so it is not shown. Move it with update_components (parent + slot_name: ${canvases}).`);
+        continue;
+      }
+      if (drawn.names.has(slot) || drawn.bound && slot.startsWith(`${drawn.prefix}_`))
+        continue;
+      errors.push(drawn.prefix && slot.startsWith(`${drawn.prefix}_`) ? `${label} is on ${where}'s "${slot}" canvas, but no item of its ${drawn.property} has that id (its canvases: ${canvases}), so it would be saved and never shown. Keep the item id, move the child to one of those canvases in the same call (parent + slot_name), or delete it first with delete_components.` : `${label} is on ${where}'s "${slot}" canvas, which it does not draw, so it would be saved and never shown. Pass slot_name with the parent: ${canvases}.`);
     }
   }
   return errors;
@@ -2895,6 +3086,12 @@ function lintComponentSpec(spec, context = {}) {
       }
     }
     for (const entry of entries) {
+      const literal2 = propVal(authored, entry.key);
+      if (literal2 !== void 0 && !isDynamicBinding(literal2)) {
+        const typeError = packValueTypeError(spec.type, entry.key, entry.valueType, literal2);
+        if (typeError)
+          errors.push(`Component "${label}": ${typeError}`);
+      }
       if (!entry.allowedValues?.length)
         continue;
       if (spec.type === "Form" && entry.key === "buttonToSubmit")
@@ -3738,6 +3935,13 @@ function lintComponents(components, options = {}) {
     const nameError = componentNameError(c.name);
     if (nameError)
       errors.push(nameError);
+    const internal = c.type === "ModuleContainer" ? internalComponentTypeNote(c.type) : null;
+    if (internal) {
+      errors.push(`Component "${c.name ?? c.type}": "${c.type}" ${internal} It is internal and cannot be written by a build.`);
+    }
+    const emptyHost = emptyLibraryHostError(c);
+    if (emptyHost)
+      errors.push(emptyHost);
     const r = lintComponentSpec(c, { surfaceAround: around(c) });
     errors.push(...r.errors);
     errors.push(...lintStandardSingleLineInputHeight(c));
@@ -4255,47 +4459,50 @@ function lintInnerPageBands(summary) {
   return warnings;
 }
 export {
-  lintComponents as A,
-  validateAppStructure as B,
+  savedComponentLibrary as A,
+  pageIconError as B,
   COMPONENT_PACK_DESCRIPTION as C,
-  isModalV2Type as D,
-  minimumTextHeight as E,
-  unifyChartAccents as F,
-  pageIconSchema as G,
-  componentLibraryWarnings as H,
-  namespaceReads as I,
-  lintRenderedGeometryBlocking as J,
-  lintRenderedGeometryAdvisory as K,
-  FORM_SCHEMA_FIELD_TYPE_SET as L,
-  SAFE_GENERATED_FORM_FIELD_TYPE_SET as M,
-  packSlotsFromManifest as N,
-  describePackSlots as O,
+  lintComponents as D,
+  validateAppStructure as E,
+  isModalV2Type as F,
+  minimumTextHeight as G,
+  unifyChartAccents as H,
+  pageIconSchema as I,
+  componentLibraryWarnings as J,
+  lintPackItemSlots as K,
+  namespaceReads as L,
+  lintRenderedGeometryBlocking as M,
+  lintRenderedGeometryAdvisory as N,
+  FORM_SCHEMA_FIELD_TYPE_SET as O,
   PROPERTY_KEY_ALIASES as P,
+  SAFE_GENERATED_FORM_FIELD_TYPE_SET as Q,
+  packSlotsFromManifest as R,
   STYLE_KEYS_IN_PROPERTIES as S,
-  resolvePackSlot as a,
-  introducedLintFindings as b,
+  describePackSlots as T,
+  applyResolvedParent as a,
+  resolvePackSlot as b,
   componentSlotSchema as c,
   decodeComponentParent as d,
   encodeComponentParent as e,
-  lintComponentSpec as f,
-  lintUnusableTextGeometry as g,
-  lintNestedContainerWidths as h,
+  introducedLintFindings as f,
+  lintComponentSpec as g,
+  lintUnusableTextGeometry as h,
   isPackContainerType as i,
-  lintStandardSingleLineInputHeight as j,
-  lintTextGeometry as k,
+  lintNestedContainerWidths as j,
+  lintStandardSingleLineInputHeight as k,
   lintComponentSlots as l,
-  lintRenderedGeometry as m,
-  isMisplacedStyleKey as n,
-  nearestCatalogKey as o,
-  componentNameSchema as p,
-  componentNameError as q,
+  lintTextGeometry as m,
+  lintRenderedGeometry as n,
+  isMisplacedStyleKey as o,
+  nearestCatalogKey as p,
+  componentNameSchema as q,
   resolveParentRef as r,
-  lintKanbanInteractions as s,
-  lintShadKanbanCards as t,
-  lintShadScheduleScale as u,
-  assertPageIcon as v,
-  resolveComponentLibrary as w,
-  defaultPack as x,
-  savedComponentLibrary as y,
-  pageIconError as z
+  componentNameError as s,
+  slotFindingKey as t,
+  lintKanbanInteractions as u,
+  lintShadKanbanCards as v,
+  lintShadScheduleScale as w,
+  assertPageIcon as x,
+  resolveComponentLibrary as y,
+  defaultPack as z
 };

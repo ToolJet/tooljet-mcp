@@ -1,14 +1,14 @@
 import { createRequire } from "node:module";
-import { p as pagesUsingQuery, l as lintPlannedApp, a as prepareQueryOptionsForWrite, m as matchPlannedPage, e as expandQueryLifecycles, v as validateEvents, n as navigationReorders, b as persistedEventSpecs, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, f as polishFlexRows } from "./chunk-D4UJES-0.js";
-import { F as FLEX_MIN_WIDTH_PX_DESCRIPTION, g as FLEX_GROW_DESCRIPTION, j as FLEX_WIDTH_PX_DESCRIPTION, k as FLEX_FILL_WIDTH_DESCRIPTION, m as mapKeyRefusal, C as COMPONENT_FX_GUIDANCE, p as plannedCurrency, n as normalizeComponentSpec, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty } from "./chunk-BHYAODhU.js";
-import { aA as external_exports, aD as fail, aF as ok, aE as resolveRef } from "./chunk-Be_TMeNG.js";
-import { T as TOOLJET_DB_DATA_TYPES, n as normalizeType, b as invalidSeedTimestamps, l as literalCanvasColor, c as componentRef, d as completedPartialWrites, e as currentBranchId, i as indexComponentReferences } from "./chunk-DaOhvhrN.js";
-import { a as autoReadPreflight, N as NOT_CHECKED_AUTOMATICALLY } from "./chunk-C7ksL0jN.js";
+import { p as pagesUsingQuery, l as lintPlannedApp, a as prepareQueryOptionsForWrite, m as matchPlannedPage, e as expandQueryLifecycles, v as validateEvents, n as navigationReorders, b as persistedEventSpecs, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, f as polishFlexRows } from "./chunk-CFYElZIZ.js";
+import { F as FLEX_MIN_WIDTH_PX_DESCRIPTION, f as FLEX_GROW_DESCRIPTION, g as FLEX_WIDTH_PX_DESCRIPTION, j as FLEX_FILL_WIDTH_DESCRIPTION, m as mapKeyRefusal, C as COMPONENT_FX_GUIDANCE, p as plannedCurrency, n as normalizeComponentSpec, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty } from "./chunk-DCBr7MCX.js";
+import { aA as external_exports, aE as fail, aG as ok, aF as resolveRef } from "./chunk-isfY25ah.js";
+import { T as TOOLJET_DB_DATA_TYPES, n as normalizeType, b as invalidSeedTimestamps, l as literalCanvasColor, c as componentRef, d as completedPartialWrites, e as currentBranchId, i as indexComponentReferences } from "./chunk-nPRdy4aK.js";
+import { a as autoReadPreflight, N as NOT_CHECKED_AUTOMATICALLY } from "./chunk-C4woyLGT.js";
 import { e5 as tableQuotaError } from "./chunk-C1Uan0hB.js";
-import { p as componentNameSchema, c as componentSlotSchema, G as pageIconSchema, w as resolveComponentLibrary, H as componentLibraryWarnings, B as validateAppStructure, A as lintComponents, d as decodeComponentParent, e as encodeComponentParent, I as namespaceReads } from "./chunk-BbJ1RRc_.js";
-import { O as unpinnedLibraries, I as suggestedHtmlHeight } from "./chunk-DjxXBjSx.js";
-import { m as arithmeticWriteWarning, L as LARGE_READ_ROW_THRESHOLD, e as assessQueryRead, g as resolveStaticBindings, f as resolvedReadRefusal, o as sameReadSource, p as extractRowCount, u as emptyViewerOnlyParams, x as emptyParamsNote, y as unresolvedNote, v as validateQueryOptions, i as issueMessages, b as bindingSpans, z as declaredParameterDefaults } from "./chunk-D078dS7Y.js";
-import { g as getDatasourceQuerySchema } from "./chunk-B0-K80Ym.js";
+import { q as componentNameSchema, c as componentSlotSchema, I as pageIconSchema, y as resolveComponentLibrary, J as componentLibraryWarnings, E as validateAppStructure, K as lintPackItemSlots, D as lintComponents, d as decodeComponentParent, e as encodeComponentParent, L as namespaceReads } from "./chunk-BzoTtK4L.js";
+import { n as emptyLibraryHostError, T as unpinnedLibraries, N as suggestedHtmlHeight } from "./chunk-Btd7hqFK.js";
+import { m as arithmeticWriteWarning, L as LARGE_READ_ROW_THRESHOLD, e as assessQueryRead, g as resolveStaticBindings, f as resolvedReadRefusal, o as sameReadSource, p as extractRowCount, u as emptyViewerOnlyParams, x as emptyParamsNote, y as unresolvedNote, v as validateQueryOptions, i as issueMessages, b as bindingSpans, z as declaredParameterDefaults } from "./chunk-CpwF2B9D.js";
+import { g as getDatasourceQuerySchema } from "./chunk-DuR3nfPV.js";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
@@ -282,6 +282,12 @@ function validatePersistedAppSummary(summary, options = {}) {
   errors.push(...eventValidation.errors);
   warnings.push(...eventValidation.warnings);
   for (const page of summary.pages ?? []) {
+    errors.push(...lintPackItemSlots(page.components ?? [], { persisted: true }));
+    for (const component of page.components ?? []) {
+      const error = emptyLibraryHostError(component, { persisted: true });
+      if (error)
+        errors.push(error);
+    }
     for (const component of page.components ?? []) {
       for (const col of htmlFedTextColumns(component, summary.queries)) {
         warnings.push(`Table "${String(component.name)}" column "${String(col.key)}" is typed as text but its query returns HTML for it, so it renders as raw text (<span ...>). Set that column's columnType "html", or return plain text.`);
