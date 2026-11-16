@@ -17,6 +17,12 @@ beforeAll(() => {
         ],
       },
       Slider: { props: [{ name: 'value', type: 'number', default: 50 }] },
+      Schedule: {
+        props: [
+          { name: 'dayStart', type: 'number', default: 8 },
+          { name: 'dayEnd', type: 'number', default: 18 },
+        ],
+      },
     },
   } as never)!;
   registerComponentSchemas(pack.schemas);
@@ -59,6 +65,29 @@ describe('null, the empty value', () => {
 
   it('is accepted for a boolean property', () => {
     expect(lint('Lib_shadcn_ListView', { showAvatar: { value: null } })).not.toMatch(/showAvatar/);
+  });
+});
+
+// Review of PR #142: ToolJet reads empty text in a boolean property as false without a word, as it reads null.
+describe('empty text in a boolean property', () => {
+  it.each([[''], ['  ']])('is accepted: %j reads as false', (value) => {
+    expect(lint('Lib_shadcn_ListView', { showAvatar: value })).not.toMatch(/showAvatar/);
+  });
+});
+
+// Review of PR #142: a Schedule's Day starts at and Day ends at take a clock time as well as an hour (ToolJet
+// packPropertyTypes.ts, 2026-11-16), so "09:30" was refused here although the Schedule draws it.
+describe("a Schedule's day start and end", () => {
+  it.each([['09:30'], ['9'], [9], ['5:30 PM'], ['12am'], ['24:00']])('accepts %j', (value) => {
+    expect(lint('Lib_shadcn_Schedule', { dayStart: value, dayEnd: value })).not.toMatch(/day(Start|End)/);
+  });
+
+  it.each([['soon'], ['9h'], [true]])('refuses %j, which the Schedule cannot read as a time', (value) => {
+    expect(lint('Lib_shadcn_Schedule', { dayStart: value })).toMatch(/"w".*dayStart/);
+  });
+
+  it('another number property still refuses a time', () => {
+    expect(lint('Lib_shadcn_ListView', { rowHeight: '09:30' })).toMatch(/rowHeight.*number/);
   });
 });
 

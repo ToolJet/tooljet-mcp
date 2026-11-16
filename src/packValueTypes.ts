@@ -9,11 +9,15 @@ const NUMERIC = /^[-+]?\d*\.?\d+(e[-+]?\d+)?%?$/i;
 // Properties a pack deliberately takes as another type too (packPropertyTypes.ts ACCEPTS), of those declared boolean or
 // number: a Slider's value is a number, or [start, end] for a range.
 const ALSO_ARRAY = new Set(['shadcn.Slider.defaultValue', 'shadcn.Slider.value', 'antd.Slider.value', 'mui.Slider.value']);
+// A Schedule's day start and end: an hour, or a clock time it reads ('09:30', '5:30 PM'; the pack's schedule.ts hourOf).
+const ALSO_CLOCK = new Set(['shadcn.Schedule.dayStart', 'shadcn.Schedule.dayEnd']);
+const CLOCK = /^\d{1,2}(:\d{2})?\s*([ap]\.?m\.?)?$/i;
 
 const usableBoolean = (value: unknown): boolean =>
   typeof value === 'boolean' ||
   (typeof value === 'number' && Number.isFinite(value)) ||
-  (typeof value === 'string' && ['true', 'false'].includes(value.trim().toLowerCase()));
+  // Empty text is false, as ToolJet reads it (as null), without a note.
+  (typeof value === 'string' && ['true', 'false', ''].includes(value.trim().toLowerCase()));
 
 const usableNumber = (value: unknown): boolean =>
   (typeof value === 'number' && Number.isFinite(value)) ||
@@ -27,6 +31,7 @@ export function packValueTypeError(type: string | undefined, key: string, valueT
   // null is the empty value (false, or no number) the pack reads without a note: a cleared minimum, MUI's defaults.
   if (value === null) return null;
   if (Array.isArray(value) && ALSO_ARRAY.has(`${pack[1]}.${pack[2]}.${key}`)) return null;
+  if (typeof value === 'string' && CLOCK.test(value.trim()) && ALSO_CLOCK.has(`${pack[1]}.${pack[2]}.${key}`)) return null;
   if (valueType === 'boolean' ? usableBoolean(value) : usableNumber(value)) return null;
   return valueType === 'boolean'
     ? `"${key}" takes a boolean, and ${JSON.stringify(value)} is not one, so the component reads it as false. Use true, false or a {{binding}}.`
