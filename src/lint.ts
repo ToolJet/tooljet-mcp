@@ -717,10 +717,19 @@ export function lintUnusableTextGeometry(components: LintComponent[]): string[] 
   return errors;
 }
 
-export function introducedLintFindings(before: string[], after: string[]): string[] {
-  const existing = new Set(before);
-  return after.filter((finding) => !existing.has(finding));
+export function introducedLintFindings(
+  before: string[],
+  after: string[],
+  keyOf: (finding: string) => string = (finding) => finding
+): string[] {
+  const existing = new Set(before.map(keyOf));
+  return after.filter((finding) => !existing.has(keyOf(finding)));
 }
+
+/** A slot finding without the container's canvas list (lintPackItemSlots), which an item change rewords: the same child
+ *  on the same canvas is the same finding, so a child already stranded does not block adding or restoring an item. */
+export const slotFindingKey = (finding: string): string =>
+  finding.replace(/ \(its canvases: [^)]*\)| \(parent \+ slot_name: [^)]*\)|Pass slot_name with the parent: .*$/, '');
 
 export function lintTextGeometry(components: LintComponent[]): string[] {
   const warnings: string[] = [];

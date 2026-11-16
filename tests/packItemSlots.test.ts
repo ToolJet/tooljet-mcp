@@ -93,6 +93,54 @@ describe('update_components changing a pack container items', () => {
     expect(client.updateComponents).toHaveBeenCalledTimes(1);
   });
 
+  // Review, PR #142: a child already stranded is reported with the container's canvas list, so adding an item reworded
+  // that report and update_components refused the change as if it stranded the child. No tab could be added, nor the
+  // missing one restored, without deleting the child first.
+  describe('with a child already on a tab nothing draws', () => {
+    const strandedPage = () => [
+      container('Lib_shadcn_TabsContainer', 'tabs', [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }]),
+      child('lost', 'tab_old'),
+      child('kept', 'tab_b'),
+    ];
+    const runOn = (updates: unknown[]) => {
+      const client = {
+        getAppSummary: vi.fn().mockResolvedValue({ app_id: 'app1', queries: [], events: [], pages: [{ id: 'home', name: 'Home', components: strandedPage() }] }),
+        updateComponents: vi.fn().mockResolvedValue({ updated: updates.length }),
+        updateLayouts: vi.fn(),
+      };
+      const result = updateComponentsTool(client as never).handler({ app_id: 'app1', version_id: 'v1', page_id: 'home', updates } as never);
+      return { client, result };
+    };
+
+    it('allows adding a tab', async () => {
+      const { client, result } = runOn([
+        { component_id: TABS, definition: { properties: { tabs: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }, { id: 'c', label: 'C' }] } } },
+      ]);
+      const out = await result;
+      expect(out.isError, String(out.content[0]!.text)).toBeFalsy();
+      expect(client.updateComponents).toHaveBeenCalledTimes(1);
+    });
+
+    it('allows restoring the tab the child is on', async () => {
+      const { result } = runOn([
+        { component_id: TABS, definition: { properties: { tabs: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }, { id: 'old', label: 'Old' }] } } },
+      ]);
+      const out = await result;
+      expect(out.isError, String(out.content[0]!.text)).toBeFalsy();
+    });
+
+    it('still refuses a change that strands another child', async () => {
+      const { client, result } = runOn([
+        { component_id: TABS, definition: { properties: { tabs: [{ id: 'a', label: 'A' }] } } },
+      ]);
+      const out = await result;
+      expect(out.isError).toBe(true);
+      expect(String(out.content[0]!.text)).toMatch(/"kept".*tab_b/);
+      expect(String(out.content[0]!.text)).not.toMatch(/"lost"/);
+      expect(client.updateComponents).not.toHaveBeenCalled();
+    });
+  });
+
   it('allows a label change that keeps the ids', async () => {
     const { result } = run([
       { component_id: TABS, definition: { properties: { tabs: [{ id: 'details', label: 'Info' }, { id: 'activity', label: 'Activity' }] } } },

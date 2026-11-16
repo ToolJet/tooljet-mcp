@@ -4,6 +4,7 @@ import type { ToolJetClient } from '../tooljetClient.js';
 import {
   introducedLintFindings,
   lintComponentSlots,
+  slotFindingKey,
   lintComponentSpec,
   lintKanbanInteractions,
   lintShadKanbanCards,
@@ -327,7 +328,8 @@ export function updateComponentsTool(client: ToolJetClient): ToolDef {
         if (placementChanged || changedComponents.length) {
           errors.push(...introducedLintFindings(
             lintComponentSlots(page.components as LintComponent[]),
-            lintComponentSlots(allComponents)
+            lintComponentSlots(allComponents),
+            slotFindingKey
           ));
         }
         errors.push(...introducedForChanged(lintUnusableTextGeometry));
