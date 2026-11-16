@@ -10,6 +10,7 @@ import type { ComponentSchema } from './catalog.js';
 import { registerComponentSchemas } from './catalog.js';
 import { registerPackDefinitions } from './packDefaults.js';
 import { registerLibraryPacks, type LibraryPack } from './libraryPack.js';
+import { describePackSlots, packSlotsFromManifest } from './packSlots.js';
 
 interface ManifestProp {
   name: string;
@@ -126,6 +127,7 @@ function packFromManifest(
   const schemas: Record<string, ComponentSchema> = {};
   const definitions: Record<string, unknown> = {};
   const components: LibraryPack['components'] = {};
+  const manifestListsSlots = Object.values(manifest.components).some((entry) => entry.slots !== undefined);
   for (const [name, entry] of Object.entries(manifest.components)) {
     const type = `${prefix}${name}`;
     const allProps = entry.props ?? [];
@@ -136,6 +138,10 @@ function packFromManifest(
       p.name === 'value' && p.inspector === 'hidden' && allProps.some((q) => q.name === 'defaultValue');
     const props = allProps.filter((p) => !runtimeValue(p));
     const fits = entry.fit === true;
+    // Where its child components go: fixed slots and one per item (packSlots.ts).
+    // A manifest that lists slots for its containers leaves them out for widgets that draw none (a Button), so there an
+    // absent list is an empty one; a manifest that lists none anywhere says nothing, and its children stay unchecked.
+    const slotInfo = packSlotsFromManifest(entry.slots ?? (manifestListsSlots ? [] : undefined), allProps);
     components[name] = {
       type,
       props: props.map((p) => p.name),
@@ -147,6 +153,8 @@ function packFromManifest(
       ...(entry.roleProps ? { roleProps: entry.roleProps } : {}),
       ...(entry.roleEvents ? { roleEvents: entry.roleEvents } : {}),
       ...(entry.roleActions ? { roleActions: entry.roleActions } : {}),
+      // Preserve whether this manifest supplies slot metadata, including explicit empty lists.
+      slotsKnown: manifestListsSlots,
       // The canvases a child may go on (lint.ts lintPackItemSlots), as the offline catalog lists them.
       ...(entry.slots?.length ? { slots: entry.slots } : {}),
     };
@@ -164,12 +172,14 @@ function packFromManifest(
         ...(entry.roleValues ? { roleValues: entry.roleValues } : {}),
         ...(entry.labelCase ? { labelCase: entry.labelCase } : {}),
         slots: entry.slots ?? [],
+        ...(slotInfo ? { slotInfo } : {}),
         ...(manifest.surface ? { surface: manifest.surface } : {}),
         ...(manifest.themeMode ? { themeMode: manifest.themeMode } : {}),
       },
       description: [
         `${entry.displayName ?? words(name)} from the ${lib.name} pack.`,
         entry.usage,
+        describePackSlots(slotInfo),
         fits ? 'Sizes to its content in the app (Dynamic height on).' : 'Drawn at the height you give it.',
       ].filter(Boolean).join(' '),
       defaultSize: { width: entry.defaultWidth ?? 6, height: (entry.defaultHeight ?? 4) * 10 },

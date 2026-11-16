@@ -64,7 +64,7 @@ const packOfType = (type: unknown): LibraryPack | undefined =>
 export const isLibraryPackType = (type: unknown): type is string => !!packOfType(type);
 
 type PackSlot = { name?: unknown; kind?: unknown };
-type PackComponent = LibraryPack['components'][string] & { slots?: PackSlot[] };
+type PackComponent = LibraryPack['components'][string] & { slots?: PackSlot[]; slotsKnown?: boolean };
 
 /** A pack type's manifest entry, or undefined for a type no known pack has. */
 const packComponentOf = (type: unknown): PackComponent | undefined =>
@@ -81,7 +81,7 @@ const slotNamesOf = (component: PackComponent | undefined, kind?: string): strin
  *  container whose canvases come from its items lists only its default items' ones. */
 export function packSlotNames(type: unknown): string[] | undefined {
   const component = packComponentOf(type);
-  return component ? slotNamesOf(component) : undefined;
+  return component && component.slotsKnown !== false ? slotNamesOf(component) : undefined;
 }
 
 /** The canvases a pack type repeats as rows (kind "rows": a list's row, a Kanban card). ToolJet draws them as a List

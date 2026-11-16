@@ -1,10 +1,11 @@
 import { createRequire } from "node:module";
-import { p as plannedCurrency, n as normalizeComponentSpec, r as resolveRef } from "./chunk-DheHZYlx.js";
-import { v as validateTableBatch, i as indexComponentReferences, c as componentRef, n as normalizeType, p as packDefaultDefinition } from "./chunk-BRbavCnV.js";
-import { z as pageIconError, A as lintComponents, g as encodeComponentParent, h as introducedLintFindings, j as lintComponentSlots, B as validateAppStructure, D as isModalV2Type, d as decodeComponentParent, E as minimumTextHeight, F as unifyChartAccents, s as slotFindingKey } from "./chunk-DMqeGZea.js";
-import { n as lintComponentStateBindings, r as retiredUi2Name } from "./chunk-SbPwPcRl.js";
-import { p as normalizeQueryToggles, t as toggleRewriteWarning, q as issueMessages, u as queryToggleIssues, v as normalizeQueryOptions, x as validateQueryOptions, g as getComponentSchema } from "./chunk-x55QR8id.js";
-import { p as parseExpression } from "./chunk-8javr-CG.js";
+import { p as plannedCurrency, n as normalizeComponentSpec } from "./chunk-DCBr7MCX.js";
+import { ay as getComponentSchema, aF as resolveRef } from "./chunk-isfY25ah.js";
+import { v as validateTableBatch, i as indexComponentReferences, c as componentRef, n as normalizeType, p as packDefaultDefinition } from "./chunk-nPRdy4aK.js";
+import { B as pageIconError, D as lintComponents, e as encodeComponentParent, f as introducedLintFindings, l as lintComponentSlots, E as validateAppStructure, F as isModalV2Type, d as decodeComponentParent, G as minimumTextHeight, H as unifyChartAccents, t as slotFindingKey } from "./chunk-BzoTtK4L.js";
+import { E as lintComponentStateBindings, A as retiredUi2Name } from "./chunk-Btd7hqFK.js";
+import { k as normalizeQueryToggles, t as toggleRewriteWarning, i as issueMessages, q as queryToggleIssues, n as normalizeQueryOptions, v as validateQueryOptions } from "./chunk-CpwF2B9D.js";
+import { p as parseExpression } from "./chunk-nL-cG8xH.js";
 createRequire(import.meta.url);
 var lookOf = (c) => {
   const entry = c.styles?.tableLook;

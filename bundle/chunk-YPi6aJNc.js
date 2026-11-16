@@ -1,16 +1,16 @@
 import { createRequire } from "node:module";
-import { b0 as external_exports, b3 as specSchema, bb as nodeSchema, bc as listWorkspaceAppsTool, bd as listWorkspaceFoldersTool, be as listWorkspaceUsersTool, bf as manageWorkspaceUsersTool, b8 as ok, b1 as nodeCatalog, b7 as fail, b2 as validateGraph, bg as prepareSqlDiscoveryQueries, bh as workspaceUserActionTools } from "./chunk-Bpoy8qtq.js";
-import { I as inPackSet, J as inspectDatasourceSchemaTool, K as datasourceMetadataTools, M as registerComponentSchemas, a as activePackSet, N as newPackSet, O as capabilityRequestSchema, P as getWorkflowCapabilities, Q as lint, R as apply, T as deleteNode, U as editContractSchema, V as generateEditContract, k as resolveStaticBindings, D as emptyViewerOnlyParams, E as emptyParamsNote, F as unresolvedNote, z as COMPONENT_FX_GUIDANCE, W as allComponentSchemas } from "./chunk-x55QR8id.js";
-import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, f as FLEX_GROW_DESCRIPTION, g as FLEX_WIDTH_PX_DESCRIPTION, j as FLEX_FILL_WIDTH_DESCRIPTION, k as codeAppScaffoldTool, l as codeAppReadFilesTool, o as codeAppWriteFilesTool, q as codeAppBuildTool, t as codeAppInstallTool, u as codeAppAddDependencyTool, v as getComponentCatalogTool, w as updateComponentsTool, x as noCodeIdentity, r as resolveRef, n as normalizeComponentSpec, m as mapKeyRefusal, d as appendedChildOrders, y as reparentAdditions, c as childOrderProperty, z as browserUserBindings, A as isCodeModeApp, B as browserUserMessage } from "./chunk-DheHZYlx.js";
-import { f as loadConfig, g as createClient, m as manageAppPermissionsTool, h as createAppTool, j as manageThemeTool, r as registerPackDefinitions, k as projectJavascriptRuntime, o as projectAppSettings, q as compactTheme, s as pageSettingProperties, v as validateTableBatch, t as ToolJetHttpError, l as literalCanvasColor, P as PartialWriteError, u as themeActionTools, x as appPermissionActionTools, y as branchIdFor, z as withBranchContext } from "./chunk-BRbavCnV.js";
-import { O as verifyPageRenderTool, Q as listWorkspaceGroupsTool, U as manageWorkspaceGroupsTool, W as WebStandardStreamableHTTPServerTransport, V as getRequestListener, a as autoReadPreflight, X as workspaceGroupActionTools } from "./chunk-Tk09TFyn.js";
-import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as renameAppTool, p as plannedTableSchema, v as validatePersistedAppSummary, e as libraryPinErrors, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, f as containsComponentBinding, g as runUnattended, q as queryResultBindingHint, h as failureRecovery, j as failureVerification, s as schemaNameHint, k as redactRunResult, m as capUnattendedOutput, o as redactQueryText, t as prepareComponentBatch } from "./chunk-C0OJHNpW.js";
-import { g as containsExactValue, a as prepareQueryOptionsForWrite, h as containsNamedBinding, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, v as validateEvents, e as expandQueryLifecycles, b as persistedEventSpecs, i as persistedEventIds } from "./chunk-BupVnypn.js";
-import { M as McpServer } from "./chunk-CNdNp55U.js";
-import { G as pageIconSchema, c as componentSlotSchema, y as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION, a as componentNameSchema, A as lintComponents, r as resolveParentRef, e as applyResolvedParent, h as introducedLintFindings, j as lintComponentSlots, K as lintRenderedGeometryBlocking, L as lintRenderedGeometryAdvisory, d as decodeComponentParent, g as encodeComponentParent, l as lintComponentSpec, k as lintUnusableTextGeometry, M as lintNestedContainerWidths, m as lintStandardSingleLineInputHeight, o as lintTextGeometry, p as lintRenderedGeometry, N as FORM_SCHEMA_FIELD_TYPE_SET, O as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-DMqeGZea.js";
-import { H as registerLibraryPacks } from "./chunk-SbPwPcRl.js";
-import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-Coyhaxq-.js";
-import { b as readCatalogBytes } from "./chunk-8javr-CG.js";
+import { aA as external_exports, aI as inPackSet, aJ as listWorkspaceAppsTool, aK as listWorkspaceFoldersTool, aL as listWorkspaceUsersTool, aM as manageWorkspaceUsersTool, aN as registerComponentSchemas, ax as activePackSet, aO as newPackSet, aG as ok, aE as fail, aF as resolveRef, aP as workspaceUserActionTools, aQ as readCatalogBytes, aR as allComponentSchemas } from "./chunk-isfY25ah.js";
+import { s as strictEntry, k as specSchema, l as nodeSchema, o as inspectDatasourceSchemaTool, q as getComponentCatalogTool, u as updateComponentsTool, r as updateLayoutTool, t as datasourceMetadataTools, v as nodeCatalog, w as capabilityRequestSchema, x as getWorkflowCapabilities, y as lint, z as apply, A as deleteNode, B as validateGraph, D as editContractSchema, E as generateEditContract, n as normalizeComponentSpec, m as mapKeyRefusal, C as COMPONENT_FX_GUIDANCE } from "./chunk-DCBr7MCX.js";
+import { f as loadConfig, g as createClient, m as manageAppPermissionsTool, h as createAppTool, j as manageThemeTool, r as registerPackDefinitions, k as projectJavascriptRuntime, o as projectAppSettings, q as compactTheme, s as pageSettingProperties, v as validateTableBatch, t as ToolJetHttpError, l as literalCanvasColor, P as PartialWriteError, u as themeActionTools, x as appPermissionActionTools, y as branchIdFor, z as withBranchContext } from "./chunk-nPRdy4aK.js";
+import { O as verifyPageRenderTool, Q as listWorkspaceGroupsTool, U as manageWorkspaceGroupsTool, W as WebStandardStreamableHTTPServerTransport, V as getRequestListener, a as autoReadPreflight, X as workspaceGroupActionTools } from "./chunk-C4woyLGT.js";
+import { a as codeAppScaffoldTool, b as codeAppReadFilesTool, d as codeAppWriteFilesTool, e as codeAppBuildTool, f as codeAppInstallTool, g as codeAppAddDependencyTool, n as noCodeIdentity, h as browserUserBindings, i as isCodeModeApp, j as browserUserMessage } from "./chunk-DIt7eXJR.js";
+import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as renameAppTool, p as plannedTableSchema, v as validatePersistedAppSummary, e as libraryPinErrors, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, f as containsComponentBinding, g as runUnattended, q as queryResultBindingHint, h as failureRecovery, j as failureVerification, s as schemaNameHint, k as redactRunResult, m as capUnattendedOutput, o as redactQueryText, t as prepareComponentBatch } from "./chunk-B6r0HbS4.js";
+import { g as containsExactValue, a as prepareQueryOptionsForWrite, h as containsNamedBinding, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, v as validateEvents, e as expandQueryLifecycles, b as persistedEventSpecs, i as persistedEventIds } from "./chunk-CFYElZIZ.js";
+import { M as McpServer } from "./chunk-DjaUqw3m.js";
+import { I as pageIconSchema, A as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION, q as componentNameSchema, D as lintComponents, r as resolveParentRef, a as applyResolvedParent, f as introducedLintFindings, l as lintComponentSlots, M as lintRenderedGeometryBlocking, N as lintRenderedGeometryAdvisory, d as decodeComponentParent, O as FORM_SCHEMA_FIELD_TYPE_SET, Q as SAFE_GENERATED_FORM_FIELD_TYPE_SET, R as packSlotsFromManifest, T as describePackSlots } from "./chunk-BzoTtK4L.js";
+import { U as registerLibraryPacks } from "./chunk-Btd7hqFK.js";
+import { g as resolveStaticBindings, u as emptyViewerOnlyParams, x as emptyParamsNote, y as unresolvedNote } from "./chunk-CpwF2B9D.js";
+import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-DuR3nfPV.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { createServer } from "node:http";
@@ -86,9 +86,9 @@ function createVerifiedExchangeCache(ttlMs = 6e4, capacity = 1e4) {
   };
 }
 var StreamableHTTPServerTransport = class {
-  constructor(options = {}) {
+  constructor(options2 = {}) {
     this._requestContext = /* @__PURE__ */ new WeakMap();
-    this._webStandardTransport = new WebStandardStreamableHTTPServerTransport(options);
+    this._webStandardTransport = new WebStandardStreamableHTTPServerTransport(options2);
     this._requestListener = getRequestListener(async (webRequest) => {
       const context = this._requestContext.get(webRequest);
       return this._webStandardTransport.handleRequest(webRequest, {
@@ -146,8 +146,8 @@ var StreamableHTTPServerTransport = class {
   /**
    * Sends a JSON-RPC message through the transport.
    */
-  async send(message, options) {
-    return this._webStandardTransport.send(message, options);
+  async send(message, options2) {
+    return this._webStandardTransport.send(message, options2);
   }
   /**
    * Handles an incoming HTTP request, whether GET or POST.
@@ -205,8 +205,8 @@ var sampleBlank = (component, p) => {
     return void 0;
   if (SAMPLE_TEXT.test(p.name))
     return p.type === "array" ? "{{[]}}" : "";
-  const literal = typeof p.default === "string" && p.default !== "" && !p.default.trim().startsWith("{{");
-  return SAMPLE_LABELS.has(p.name) && literal ? "" : void 0;
+  const literal2 = typeof p.default === "string" && p.default !== "" && !p.default.trim().startsWith("{{");
+  return SAMPLE_LABELS.has(p.name) && literal2 ? "" : void 0;
 };
 function packFromLibrary(lib) {
   const manifest = lib.manifest;
@@ -239,12 +239,14 @@ function packFromManifest(packId, libraryName, version, manifest, identity) {
   const schemas = {};
   const definitions = {};
   const components = {};
+  const manifestListsSlots = Object.values(manifest.components).some((entry) => entry.slots !== void 0);
   for (const [name, entry] of Object.entries(manifest.components)) {
     const type = `${prefix}${name}`;
     const allProps = entry.props ?? [];
     const runtimeValue = (p) => p.name === "value" && p.inspector === "hidden" && allProps.some((q) => q.name === "defaultValue");
     const props = allProps.filter((p) => !runtimeValue(p));
     const fits = entry.fit === true;
+    const slotInfo = packSlotsFromManifest(entry.slots ?? (manifestListsSlots ? [] : void 0), allProps);
     components[name] = {
       type,
       props: props.map((p) => p.name),
@@ -256,6 +258,8 @@ function packFromManifest(packId, libraryName, version, manifest, identity) {
       ...entry.roleProps ? { roleProps: entry.roleProps } : {},
       ...entry.roleEvents ? { roleEvents: entry.roleEvents } : {},
       ...entry.roleActions ? { roleActions: entry.roleActions } : {},
+      // Preserve whether this manifest supplies slot metadata, including explicit empty lists.
+      slotsKnown: manifestListsSlots,
       // The canvases a child may go on (lint.ts lintPackItemSlots), as the offline catalog lists them.
       ...entry.slots?.length ? { slots: entry.slots } : {}
     };
@@ -273,12 +277,14 @@ function packFromManifest(packId, libraryName, version, manifest, identity) {
         ...entry.roleValues ? { roleValues: entry.roleValues } : {},
         ...entry.labelCase ? { labelCase: entry.labelCase } : {},
         slots: entry.slots ?? [],
+        ...slotInfo ? { slotInfo } : {},
         ...manifest.surface ? { surface: manifest.surface } : {},
         ...manifest.themeMode ? { themeMode: manifest.themeMode } : {}
       },
       description: [
         `${entry.displayName ?? words(name)} from the ${lib.name} pack.`,
         entry.usage,
+        describePackSlots(slotInfo),
         fits ? "Sizes to its content in the app (Dynamic height on)." : "Drawn at the height you give it."
       ].filter(Boolean).join(" "),
       defaultSize: { width: entry.defaultWidth ?? 6, height: (entry.defaultHeight ?? 4) * 10 },
@@ -1364,7 +1370,7 @@ function addQueriesTool(client) {
           if (prepared.errors.length)
             throw new Error(prepared.errors.join(" "));
           warnings.push(...prepared.warnings);
-          const { options } = prepared;
+          const { options: options2 } = prepared;
           const validation = prepared.validation;
           if (query.kind && query.kind !== datasource.kind) {
             warnings.push(`Query "${query.name}": caller kind "${query.kind}" was ignored; datasource kind is "${datasource.kind}".`);
@@ -1375,7 +1381,7 @@ function addQueriesTool(client) {
             operation: validation.operation,
             schema_found: validation.schemaFound
           });
-          return { query: { ...query, options }, kind: datasource.kind };
+          return { query: { ...query, options: options2 }, kind: datasource.kind };
         });
         warnings.push(...await inspectUpdateCompatibility(client, resolved.map(({ query, kind }) => ({
           name: query.name,
@@ -1471,7 +1477,7 @@ function codeAppDataTool(client) {
         if (queries?.length) {
           await refuseBrowserUser(client, args.app_id, queries);
           const datasources = await client.listDatasources(versionId);
-          const tooljetDb = datasources.find((source) => source.kind === "tooljetdb");
+          const tooljetDb = datasources.find((source2) => source2.kind === "tooljetdb");
           queries = queries.map(({ datasource_name, datasource_id, ...query }) => {
             if (datasource_id || datasource_name)
               return { ...query, ...datasource_id ? { datasource_id } : { datasource_name } };
@@ -1863,6 +1869,147 @@ function testDatasourceConnectionTool(client) {
     }
   };
 }
+var DIALECTS = {
+  postgresql: { quote: "double", limit: "limit", metadata: "postgresql" },
+  mysql: { quote: "backtick", limit: "limit", metadata: "mysql" },
+  mssql: { quote: "bracket", limit: "top", metadata: "mssql" },
+  snowflake: { quote: "double", limit: "limit" },
+  bigquery: { quote: "backtick", limit: "limit" },
+  oracledb: { quote: "double", limit: "fetch" }
+};
+function assertIdentifier(identifier, label) {
+  if (!identifier.trim() || identifier.length > 256 || /[\0-\x1f\x7f;`"\[\]\\]/.test(identifier)) {
+    throw new Error(`${label} contains unsupported or unsafe identifier characters.`);
+  }
+}
+function quote(kind, identifier) {
+  assertIdentifier(identifier, "SQL identifier");
+  const style = DIALECTS[kind].quote;
+  if (style === "backtick")
+    return `\`${identifier}\``;
+  if (style === "bracket")
+    return `[${identifier}]`;
+  return `"${identifier}"`;
+}
+function literal(value) {
+  return `'${value.replaceAll("'", "''")}'`;
+}
+function source(kind, schema, table) {
+  return schema ? `${quote(kind, schema)}.${quote(kind, table)}` : quote(kind, table);
+}
+function boundedSelect(kind, projection, from, limit, distinct = false) {
+  const prefix = `SELECT ${distinct ? "DISTINCT " : ""}`;
+  if (DIALECTS[kind].limit === "top")
+    return `${prefix}TOP (${limit}) ${projection} FROM ${from}`;
+  if (DIALECTS[kind].limit === "fetch")
+    return `${prefix}${projection} FROM ${from} FETCH FIRST ${limit} ROWS ONLY`;
+  return `${prefix}${projection} FROM ${from} LIMIT ${limit}`;
+}
+function options(kind, query) {
+  return {
+    mode: "sql",
+    query,
+    ...!["snowflake"].includes(kind) ? { query_params: [] } : {},
+    runOnPageLoad: false
+  };
+}
+function metadataSql(kind, purpose, schema, table) {
+  const metadata = "metadata" in DIALECTS[kind] ? DIALECTS[kind].metadata : void 0;
+  if (!metadata)
+    return void 0;
+  if (purpose !== "views" && !table)
+    throw new Error(`${purpose} discovery requires table.`);
+  if (metadata !== "mysql" && !schema)
+    throw new Error(`${purpose} discovery for ${kind} requires schema.`);
+  const schemaFilter = metadata === "mysql" && !schema ? "DATABASE()" : literal(schema);
+  const tableFilter = table ? literal(table) : void 0;
+  if (metadata === "postgresql") {
+    if (purpose === "primary_keys")
+      return `SELECT kcu.column_name, kcu.ordinal_position, tc.constraint_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.ordinal_position`;
+    if (purpose === "foreign_keys")
+      return `SELECT kcu.constraint_name, kcu.column_name, ccu.table_schema AS referenced_schema, ccu.table_name AS referenced_table, ccu.column_name AS referenced_column FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_catalog = tc.constraint_catalog AND ccu.constraint_schema = tc.constraint_schema AND ccu.constraint_name = tc.constraint_name WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.constraint_name, kcu.ordinal_position`;
+    if (purpose === "indexes")
+      return `SELECT indexname AS index_name, indexdef AS definition FROM pg_indexes WHERE schemaname = ${schemaFilter} AND tablename = ${tableFilter} ORDER BY indexname`;
+    return `SELECT table_schema, table_name AS view_name FROM information_schema.views WHERE table_schema = ${schemaFilter} ORDER BY table_name`;
+  }
+  if (metadata === "mysql") {
+    if (purpose === "primary_keys")
+      return `SELECT column_name, ordinal_position, constraint_name FROM information_schema.key_column_usage WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} AND constraint_name = 'PRIMARY' ORDER BY ordinal_position`;
+    if (purpose === "foreign_keys")
+      return `SELECT constraint_name, column_name, referenced_table_schema AS referenced_schema, referenced_table_name AS referenced_table, referenced_column_name AS referenced_column FROM information_schema.key_column_usage WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} AND referenced_table_name IS NOT NULL ORDER BY constraint_name, ordinal_position`;
+    if (purpose === "indexes")
+      return `SELECT index_name, column_name, non_unique, seq_in_index FROM information_schema.statistics WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} ORDER BY index_name, seq_in_index`;
+    return `SELECT table_schema, table_name AS view_name FROM information_schema.views WHERE table_schema = ${schemaFilter} ORDER BY table_name`;
+  }
+  if (purpose === "primary_keys")
+    return `SELECT kcu.COLUMN_NAME AS column_name, kcu.ORDINAL_POSITION AS ordinal_position, tc.CONSTRAINT_NAME AS constraint_name FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA AND tc.TABLE_NAME = kcu.TABLE_NAME WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY' AND tc.TABLE_SCHEMA = ${schemaFilter} AND tc.TABLE_NAME = ${tableFilter} ORDER BY kcu.ORDINAL_POSITION`;
+  if (purpose === "foreign_keys")
+    return `SELECT fk.name AS constraint_name, pc.name AS column_name, rs.name AS referenced_schema, rt.name AS referenced_table, rc.name AS referenced_column FROM sys.foreign_key_columns fkc JOIN sys.foreign_keys fk ON fk.object_id = fkc.constraint_object_id JOIN sys.tables pt ON pt.object_id = fkc.parent_object_id JOIN sys.schemas ps ON ps.schema_id = pt.schema_id JOIN sys.columns pc ON pc.object_id = pt.object_id AND pc.column_id = fkc.parent_column_id JOIN sys.tables rt ON rt.object_id = fkc.referenced_object_id JOIN sys.schemas rs ON rs.schema_id = rt.schema_id JOIN sys.columns rc ON rc.object_id = rt.object_id AND rc.column_id = fkc.referenced_column_id WHERE ps.name = ${schemaFilter} AND pt.name = ${tableFilter} ORDER BY fk.name, fkc.constraint_column_id`;
+  if (purpose === "indexes")
+    return `SELECT i.name AS index_name, c.name AS column_name, i.is_unique, ic.key_ordinal FROM sys.indexes i JOIN sys.tables t ON t.object_id = i.object_id JOIN sys.schemas s ON s.schema_id = t.schema_id JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id WHERE s.name = ${schemaFilter} AND t.name = ${tableFilter} AND i.is_hypothetical = 0 ORDER BY i.name, ic.key_ordinal`;
+  return `SELECT TABLE_SCHEMA AS table_schema, TABLE_NAME AS view_name FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = ${schemaFilter} ORDER BY TABLE_NAME`;
+}
+function boundMetadata(kind, sql) {
+  if (DIALECTS[kind].limit === "top")
+    return sql.replace(/^SELECT\s+/i, "SELECT TOP (100) ");
+  if (DIALECTS[kind].limit === "fetch")
+    return `${sql} FETCH FIRST 100 ROWS ONLY`;
+  return `${sql} LIMIT 100`;
+}
+function safeName(value) {
+  return value.replace(/[^A-Za-z0-9_]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "table";
+}
+function prepareSqlDiscoveryQueries(args) {
+  if (!(args.kind in DIALECTS))
+    throw new Error(`Datasource kind "${args.kind}" is not supported by SQL discovery.`);
+  const kind = args.kind;
+  if (args.schema)
+    assertIdentifier(args.schema, "schema");
+  if (args.table)
+    assertIdentifier(args.table, "table");
+  for (const column of [...args.columns ?? [], ...args.distinctColumns ?? []])
+    assertIdentifier(column, "column");
+  const tablePurposes = args.purposes.filter((purpose) => purpose !== "views");
+  if (tablePurposes.length && !args.table)
+    throw new Error("Table-scoped SQL discovery requires table.");
+  if (args.purposes.includes("preview") && !args.columns?.length) {
+    throw new Error("Preview discovery requires one or more explicit columns; SELECT * is never generated.");
+  }
+  if (args.purposes.includes("distinct") && !args.distinctColumns?.length) {
+    throw new Error("Distinct discovery requires one or more explicit distinct_columns.");
+  }
+  const from = args.table ? source(kind, args.schema, args.table) : void 0;
+  const prefix = safeName(args.namePrefix ?? args.table ?? args.schema ?? "schema");
+  const queries = [];
+  const unsupported = [];
+  for (const purpose of [...new Set(args.purposes)]) {
+    let sql;
+    if (purpose === "count")
+      sql = `SELECT COUNT(*) AS row_count FROM ${from}`;
+    else if (purpose === "preview") {
+      sql = boundedSelect(kind, args.columns.map((column) => quote(kind, column)).join(", "), from, args.limit);
+    } else if (purpose === "distinct") {
+      sql = boundedSelect(kind, args.distinctColumns.map((column) => quote(kind, column)).join(", "), from, args.limit, true);
+    } else {
+      sql = metadataSql(kind, purpose, args.schema, args.table);
+      if (!sql) {
+        unsupported.push({
+          purpose,
+          reason: `${args.kind} does not expose a verified ${purpose} selector and MCP has no curated read-only SQL contract for it yet.`
+        });
+        continue;
+      }
+      sql = boundMetadata(kind, sql);
+    }
+    queries.push({
+      purpose,
+      name: `${prefix}_${purpose}`,
+      datasource_id: args.datasourceId,
+      options: options(kind, sql)
+    });
+  }
+  return { queries, unsupported };
+}
 var purposes = ["count", "preview", "distinct", "primary_keys", "foreign_keys", "indexes", "views"];
 function prepareSqlDiscoveryQueriesTool(client) {
   return {
@@ -1975,12 +2122,12 @@ function bindingValue(prefix, column) {
   const access = `${prefix}[${JSON.stringify(column.name)}]`;
   return column.type.toLowerCase().includes("json") ? `{{JSON.stringify(${access})}}` : `{{${access}}}`;
 }
-function generateFormSchema(columns, options) {
-  const exclude = new Set(options.exclude ?? []);
+function generateFormSchema(columns, options2) {
+  const exclude = new Set(options2.exclude ?? []);
   const omitted = [];
   const byName = new Map(columns.map((column) => [column.name, column]));
   const seen = /* @__PURE__ */ new Set();
-  const ordered = options.include ? options.include.flatMap((name) => {
+  const ordered = options2.include ? options2.include.flatMap((name) => {
     if (seen.has(name))
       return [];
     seen.add(name);
@@ -1992,7 +2139,7 @@ function generateFormSchema(columns, options) {
   const selected = ordered.filter((column) => {
     if (exclude.has(column.name))
       return false;
-    if (options.mode === "create" && column.type.toLowerCase() === "serial") {
+    if (options2.mode === "create" && column.type.toLowerCase() === "serial") {
       omitted.push({ name: column.name, reason: "generated serial column omitted from create form" });
       return false;
     }
@@ -2006,11 +2153,11 @@ function generateFormSchema(columns, options) {
       Object.assign(field, { values: choices, displayValues: choices.map(String) });
     if (type === "datepicker")
       Object.assign(field, { enableDate: true, enableTime: true });
-    if (options.mode === "edit" && column.isPrimaryKey)
+    if (options2.mode === "edit" && column.isPrimaryKey)
       field.styles = { disabled: true };
-    if (options.initialValuesBinding) {
-      field.value = bindingValue(options.initialValuesBinding, column);
-    } else if (options.mode === "create" && column.defaultValue !== void 0) {
+    if (options2.initialValuesBinding) {
+      field.value = bindingValue(options2.initialValuesBinding, column);
+    } else if (options2.mode === "create" && column.defaultValue !== void 0) {
       if (column.type.toLowerCase().includes("json"))
         field.value = JSON.stringify(column.defaultValue);
       else if (type === "checkbox" && booleanDefault(column.defaultValue) !== void 0) {
@@ -2019,10 +2166,10 @@ function generateFormSchema(columns, options) {
         field.value = "{{0}}";
       else
         field.value = column.defaultValue;
-    } else if (options.mode === "create" && type === "datepicker") {
+    } else if (options2.mode === "create" && type === "datepicker") {
       field.value = "{{null}}";
     }
-    field = mergeField(field, options.fieldOverrides?.[column.name]);
+    field = mergeField(field, options2.fieldOverrides?.[column.name]);
     const finalType = field.type;
     if (typeof finalType !== "string" || !FORM_SCHEMA_FIELD_TYPE_SET.has(finalType)) {
       throw new Error(`Form field "${column.name}" has unsupported type "${String(finalType)}".`);
@@ -2040,9 +2187,9 @@ function generateFormSchema(columns, options) {
     throw new Error(`Generated ToolJet Form is not layout-safe for ${standaloneFields.join(", ")}. FormUtils does not pass label alignment through to generated fields; Dropdown/Multiselect labels do not align with inputs, and TextArea retains a literal "Label" and can render as a single-line control. Build the entire form from standalone components in one add_components call, set styles.alignment.value="top" on every labelled input, use a consistent two-column grid for compact fields, and make TextArea fields full-width. Generated Form is approved only for textinput, number, emailinput, password, datepicker, and checkbox fields.`);
   }
   const schema = {
-    title: options.title ?? `${options.mode === "create" ? "Create" : "Edit"} ${humanize(options.tableName)}`,
+    title: options2.title ?? `${options2.mode === "create" ? "Create" : "Edit"} ${humanize(options2.tableName)}`,
     properties: fields,
-    submitButton: { value: options.submitLabel ?? (options.mode === "create" ? "Create" : "Save changes") }
+    submitButton: { value: options2.submitLabel ?? (options2.mode === "create" ? "Create" : "Save changes") }
   };
   const recommendedCanvasHeight = Math.max(300, selected.length * 70);
   const recommendedFormHeight = recommendedCanvasHeight + 130;
@@ -2066,7 +2213,7 @@ function generateFormSchema(columns, options) {
       default_value: column.defaultValue,
       foreign_keys: column.foreignKeys,
       generated_type: fields[column.name].type,
-      overridden: !!options.fieldOverrides?.[column.name]
+      overridden: !!options2.fieldOverrides?.[column.name]
     })),
     omitted_fields: omitted,
     layout_guidance: {
@@ -2197,8 +2344,8 @@ function validatePaths(paths, roots, label) {
     }
   }
 }
-function readPath(source, segments) {
-  let cursor = source;
+function readPath(source2, segments) {
+  let cursor = source2;
   for (const segment of segments) {
     if (cursor === null || typeof cursor !== "object" || !Object.prototype.hasOwnProperty.call(cursor, segment)) {
       return { found: false };
@@ -2219,11 +2366,11 @@ function writePath(target2, segments, value) {
   }
   cursor[segments.at(-1)] = value;
 }
-function pickPaths(source, paths) {
+function pickPaths(source2, paths) {
   const result = {};
   for (const path of paths) {
     const segments = path.split(".");
-    const selected = readPath(source, segments);
+    const selected = readPath(source2, segments);
     if (selected.found)
       writePath(result, segments, selected.value);
   }
@@ -2233,9 +2380,9 @@ function stripLayoutTimestamps(component) {
   const layouts = component.layouts;
   if (!layouts || typeof layouts !== "object")
     return;
-  for (const rect2 of Object.values(layouts)) {
-    if (rect2 && typeof rect2 === "object")
-      delete rect2.updatedAt;
+  for (const rect of Object.values(layouts)) {
+    if (rect && typeof rect === "object")
+      delete rect.updatedAt;
   }
 }
 function matches(value, accepted) {
@@ -2660,17 +2807,17 @@ function addQueryTool(client) {
         const prepared = prepareQueryOptionsForWrite(datasource.kind, args.options);
         if (prepared.errors.length)
           return fail(new Error(prepared.errors.join(" ")));
-        const { options, warnings } = prepared;
+        const { options: options2, warnings } = prepared;
         const validation = prepared.validation;
         if (args.kind && args.kind !== datasource.kind) {
           warnings.push(`Caller kind "${args.kind}" was ignored; datasource "${args.datasource_id}" is kind "${datasource.kind}".`);
         }
-        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name, kind: datasource.kind, options }]));
+        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name, kind: datasource.kind, options: options2 }]));
         const result = await client.createQuery({
           versionId: args.version_id,
           dataSourceId: args.datasource_id,
           name: args.name,
-          options,
+          options: options2,
           kind: datasource.kind
         });
         return ok({
@@ -2999,9 +3146,11 @@ function deleteComponentsTool(client) {
         if (missing.length) {
           throw new Error(`delete_components: component ids are not on page ${args.page_id}: ${missing.join(", ")}.`);
         }
+        const pageIds = new Set(page.components.map((component) => component.id));
         const descendants = page.components.filter((component) => component.parent && // Header, footer and tab children sit on "<id>-header", "<id>-t1" ...: an exact match missed them, and deleting
-        // a Tabs, Modal or Container orphaned them (review 2026-09-25).
-        [...requested].some((targetId) => component.parent === targetId || component.parent?.startsWith(`${targetId}::`) || decodeComponentParent(component.parent).parentId === targetId) && !requested.has(component.id));
+        // a Tabs, Modal or Container orphaned them (review 2026-09-25). A pack widget's children sit on its slots,
+        // "<id>-tab_tab1", "<id>-panel_a", "<id>-first": deleting a pack Tabs or Collapse orphaned them (QA DVRL-59).
+        [...requested].some((targetId) => component.parent === targetId || component.parent?.startsWith(`${targetId}::`) || decodeComponentParent(component.parent).parentId === targetId || component.parent.startsWith(`${targetId}-`) && !pageIds.has(component.parent)) && !requested.has(component.id));
         if (descendants.length) {
           throw new Error(`delete_components: surviving child components still belong to a target: ` + descendants.map((component) => component.name ?? component.id).join(", ") + ". Include them in the explicitly approved deletion or reparent them first.");
         }
@@ -3053,175 +3202,6 @@ function deleteComponentsTool(client) {
           component_names: targets.map((component) => component.name).filter(Boolean),
           source_events_deleted: sourceEventsDeleted
         });
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
-var rect = external_exports.object({
-  top: external_exports.number(),
-  left: external_exports.number(),
-  width: external_exports.number(),
-  height: external_exports.number(),
-  fillWidth: external_exports.boolean().optional().describe(FLEX_FILL_WIDTH_DESCRIPTION),
-  widthPx: external_exports.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION),
-  grow: external_exports.number().positive().optional().describe(FLEX_GROW_DESCRIPTION),
-  minWidthPx: external_exports.number().nonnegative().optional().describe(FLEX_MIN_WIDTH_PX_DESCRIPTION)
-});
-var RECT_KEYS = /* @__PURE__ */ new Set(["top", "left", "width", "height"]);
-var layoutEntrySchema = strictEntry({
-  component_id: external_exports.string(),
-  desktop: rect.optional(),
-  mobile: rect.optional(),
-  parent: external_exports.string().optional(),
-  slot_name: componentSlotSchema.optional()
-}, (key) => {
-  if (RECT_KEYS.has(key)) {
-    return `Layout entry key "${key}" must be nested under desktop and/or mobile (e.g. { component_id, desktop: { top, left, width, height } }).`;
-  }
-  if (key === "layout" || key === "layouts") {
-    return `Layout entry key "${key}" is not accepted; put the rect directly under desktop and/or mobile on the entry.`;
-  }
-  if (key === "definition" || key === "properties" || key === "styles") {
-    return `Layout entry key "${key}" is not accepted by update_layout; edit component values with update_components.`;
-  }
-  return `Unknown layout entry key "${key}"; accepted keys are component_id, desktop, mobile, parent, slot_name.`;
-});
-function updateLayoutTool(client) {
-  return {
-    name: "update_layout",
-    title: "Update Layout",
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: false
-    },
-    description: "Move / resize existing components (batch) without touching their properties. `left`/`width` are in the immediate parent canvas's own 43-column grid, including nested containers; `top`/`height` are pixels. Full rows use width 43, independent of the parent outer width. Container/Form/modal insets may use left 2, width 39; grid-mode Listview full rows use left 0, width 43. Provide desktop and/or mobile per component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` (header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent. A FlexContainer child takes its width from fillWidth/widthPx, not width/left; a component reparented into a FlexContainer is appended to its childOrder.",
-    inputSchema: {
-      app_id: external_exports.string(),
-      version_id: external_exports.string(),
-      page_id: external_exports.string(),
-      layouts: external_exports.array(layoutEntrySchema).min(1)
-    },
-    async handler(args) {
-      try {
-        const summary = await client.getAppSummary(args.app_id);
-        const page = summary.pages.find((candidate) => candidate.id === args.page_id);
-        if (!page)
-          return fail(new Error(`Page "${args.page_id}" does not exist in app "${args.app_id}".`));
-        const components = new Map(page.components.map((component) => [component.id, component]));
-        const layoutWarnings = [];
-        const resolveErrors = [];
-        const resolvedIds = /* @__PURE__ */ new Map();
-        for (const layout of args.layouts) {
-          if (!layout.desktop && !layout.mobile && layout.parent === void 0 && layout.slot_name === void 0) {
-            resolveErrors.push(`Component "${layout.component_id}": nothing to update. Provide desktop and/or mobile rects, or a parent/slot_name change.`);
-            continue;
-          }
-          if (resolvedIds.has(layout.component_id))
-            continue;
-          const resolution = resolveRef(page.components, layout.component_id, "Component", `on page "${args.page_id}"`);
-          if (!resolution.ok) {
-            resolveErrors.push(resolution.error);
-            continue;
-          }
-          resolvedIds.set(layout.component_id, resolution.target.id);
-          if (resolution.warning)
-            layoutWarnings.push(resolution.warning);
-        }
-        if (resolveErrors.length)
-          return fail(new Error(resolveErrors.join(" ")));
-        args = {
-          ...args,
-          layouts: args.layouts.map((layout) => ({
-            ...layout,
-            component_id: resolvedIds.get(layout.component_id) ?? layout.component_id
-          }))
-        };
-        const rootSlotWarnings = [];
-        const resolvedLayouts = args.layouts.map((layout) => {
-          const current = components.get(layout.component_id);
-          let parent = layout.parent;
-          let slot_name = layout.slot_name;
-          if (slot_name !== void 0) {
-            parent ??= current.parent ? decodeComponentParent(current.parent).parentId : void 0;
-            if (!parent) {
-              if (slot_name === "body") {
-                rootSlotWarnings.push(`Component "${layout.component_id}": slot_name:"body" ignored on a root component (it has no parent slots).`);
-                slot_name = void 0;
-              } else {
-                throw new Error(`Component "${layout.component_id}": slot_name:"${slot_name}" requires an existing or explicit parent.`);
-              }
-            }
-          }
-          return { ...layout, parent, slot_name };
-        });
-        const changes = new Map(resolvedLayouts.map((layout) => [layout.component_id, layout]));
-        const projected = page.components.map((component) => {
-          const change = changes.get(component.id);
-          if (!change)
-            return component;
-          const currentLayouts = component.layouts ?? {};
-          return {
-            ...component,
-            layouts: {
-              ...currentLayouts,
-              desktop: change.desktop ?? currentLayouts?.desktop,
-              mobile: change.mobile ?? currentLayouts?.mobile
-            },
-            parent: change.parent !== void 0 ? encodeComponentParent(change.parent, change.slot_name) : component.parent,
-            slotName: change.slot_name
-          };
-        });
-        const changedIds = new Set(resolvedLayouts.map((layout) => layout.component_id));
-        const changed = projected.filter((component) => component.id && changedIds.has(component.id));
-        const introducedForChanged = (lint2) => changed.flatMap((component) => introducedLintFindings(lint2([components.get(component.id)]), lint2([component])));
-        const errors = [
-          ...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(projected)),
-          ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).errors)),
-          ...introducedForChanged(lintUnusableTextGeometry)
-        ];
-        if (errors.length)
-          return fail(new Error(`${errors.join(" ")} (Nothing was saved: refused before any write.)`));
-        const nestedWidths = new Set(lintNestedContainerWidths(projected));
-        const warnings = [.../* @__PURE__ */ new Set([
-          ...layoutWarnings,
-          ...rootSlotWarnings,
-          ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).warnings)),
-          ...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)),
-          ...introducedForChanged(lintTextGeometry),
-          ...lintRenderedGeometry(projected).filter((warning) => !nestedWidths.has(warning)),
-          ...introducedLintFindings(lintNestedContainerWidths(page.components), [...nestedWidths])
-        ])];
-        const result = await client.updateLayouts({
-          appId: args.app_id,
-          versionId: args.version_id,
-          pageId: args.page_id,
-          layouts: resolvedLayouts.map((l) => ({
-            componentId: l.component_id,
-            desktop: l.desktop,
-            mobile: l.mobile,
-            parent: l.parent,
-            slotName: l.slot_name
-          }))
-        });
-        const appended = appendedChildOrders(page.components, reparentAdditions(page.components, resolvedLayouts.map((layout) => ({
-          componentId: layout.component_id,
-          parent: layout.parent !== void 0 ? encodeComponentParent(layout.parent, layout.slot_name) : void 0
-        }))));
-        if (appended.size) {
-          await client.updateComponents({
-            appId: args.app_id,
-            versionId: args.version_id,
-            pageId: args.page_id,
-            updates: [...appended].map(([componentId, order]) => ({
-              componentId,
-              definition: { properties: { childOrder: childOrderProperty(order) } }
-            }))
-          });
-        }
-        return ok({ ...result, warnings });
       } catch (err) {
         return fail(err);
       }
@@ -3425,10 +3405,10 @@ function updateQueryTool(client) {
         if (prepared.errors.length)
           return fail(new Error(prepared.errors.join(" ")));
         const warnings = [...resolutionWarnings, ...prepared.warnings];
-        const { options, validation } = prepared;
+        const { options: options2, validation } = prepared;
         if (!kind)
           warnings.push("Query options were not contract-validated; pass app_id or kind on update_query.");
-        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name ?? args.query_id, kind, options }]));
+        warnings.push(...await inspectUpdateCompatibility(client, [{ name: args.name ?? args.query_id, kind, options: options2 }]));
         if (args.datasource_id && args.datasource_id !== currentDatasourceId) {
           await client.updateQueryDatasource({
             queryId: args.query_id,
@@ -3441,7 +3421,7 @@ function updateQueryTool(client) {
           result = await client.updateQuery({
             queryId: args.query_id,
             versionId: args.version_id,
-            options,
+            options: options2,
             name: args.name
           });
         } catch (error) {
@@ -3484,13 +3464,13 @@ function updateQueryTool(client) {
 }
 var escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 function codeReferences(files, name) {
-  const literal = new RegExp(`(['"\`])${escapeRegExp(name)}\\1`);
+  const literal2 = new RegExp(`(['"\`])${escapeRegExp(name)}\\1`);
   const found = [];
   for (const file of files) {
     if (/(^|\/)tooljet\.gen\.ts$/.test(file.path) || !/\.(tsx?|jsx?|mjs|cjs)$/.test(file.path))
       continue;
     file.content.split("\n").forEach((line, index) => {
-      if (literal.test(line))
+      if (literal2.test(line))
         found.push(`${file.path}:${index + 1}`);
     });
   }
@@ -3815,9 +3795,9 @@ var TOOLJET_MCP_VERSION = "0.13.0";
 function snapshot(path) {
   try {
     const stat = statSync(path);
-    const source = `${Math.round(stat.mtimeMs * 1e3)}:${stat.size}`;
+    const source2 = `${Math.round(stat.mtimeMs * 1e3)}:${stat.size}`;
     return {
-      buildId: createHash("sha256").update(source).digest("hex").slice(0, 12),
+      buildId: createHash("sha256").update(source2).digest("hex").slice(0, 12),
       modifiedMs: stat.mtimeMs,
       size: stat.size
     };
@@ -4363,7 +4343,7 @@ function managementActionTools(sources) {
     manage_workspace_groups: workspaceGroupActionTools,
     manage_theme: themeActionTools
   };
-  return sources.flatMap((source) => factories[source.name]?.(source) ?? []);
+  return sources.flatMap((source2) => factories[source2.name]?.(source2) ?? []);
 }
 var PREFACE = "Read-only catalog data, for clients that validate or build plans locally. ";
 var CATALOG_RESOURCES = [
@@ -4617,21 +4597,21 @@ async function readOAuthBody(req, maxBytes) {
   }
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
-function createOAuthHttpServer(options) {
-  const issuer = checkedUrl(options.issuer, "issuer");
-  const resourceBase = checkedUrl(options.resourceUrl, "resourceUrl");
-  const apiUrl = checkedUrl(options.apiUrl, "apiUrl");
-  const appUrl = checkedUrl(options.appUrl, "appUrl");
-  if (options.exchangeSecret.length < 32)
+function createOAuthHttpServer(options2) {
+  const issuer = checkedUrl(options2.issuer, "issuer");
+  const resourceBase = checkedUrl(options2.resourceUrl, "resourceUrl");
+  const apiUrl = checkedUrl(options2.apiUrl, "apiUrl");
+  const appUrl = checkedUrl(options2.appUrl, "appUrl");
+  if (options2.exchangeSecret.length < 32)
     throw new Error("OAuth exchange secret must contain at least 32 characters");
-  const openaiAppsChallenge = options.openaiAppsChallenge?.trim();
+  const openaiAppsChallenge = options2.openaiAppsChallenge?.trim();
   const resource = new URL(resourceBase);
-  const factory = options.serverFactory ?? buildServer;
-  const fetchImpl = options.fetchImpl ?? fetch;
-  const maxBodyBytes = options.maxBodyBytes ?? OAUTH_MAX_BODY_BYTES;
+  const factory = options2.serverFactory ?? buildServer;
+  const fetchImpl = options2.fetchImpl ?? fetch;
+  const maxBodyBytes = options2.maxBodyBytes ?? OAUTH_MAX_BODY_BYTES;
   if (!Number.isSafeInteger(maxBodyBytes) || maxBodyBytes <= 0)
     throw new Error("Invalid OAuth request body limit");
-  const allowedOrigins = new Set((options.allowedOrigins || []).map((origin) => {
+  const allowedOrigins = new Set((options2.allowedOrigins || []).map((origin) => {
     const checked = checkedUrl(origin, "allowedOrigin");
     if (new URL(checked).origin !== checked)
       throw new Error("OAuth allowed origins must not include a path");
@@ -4738,7 +4718,7 @@ function createOAuthHttpServer(options) {
           method: "POST",
           redirect: "error",
           signal: AbortSignal.timeout(1e4),
-          headers: { authorization: `Bearer ${options.exchangeSecret}`, "content-type": "application/json" },
+          headers: { authorization: `Bearer ${options2.exchangeSecret}`, "content-type": "application/json" },
           body: JSON.stringify({
             grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
             subject_token_type: "urn:ietf:params:oauth:token-type:access_token",

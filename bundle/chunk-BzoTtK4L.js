@@ -1,8 +1,8 @@
 import { createRequire } from "node:module";
-import { p as packSlotOnOwnId, s as surfaceAroundResolver, l as lintSelectedRowProjections, e as emptyLibraryHostError, a as lintOversizedWidths, b as lintHtmlContentHeight, c as lintHtmlRootSurface, d as lintUnguardedComponentRefs, f as lintEmbeddedBindingSyntax, g as lintChartDataShape, h as lintUnguardedSelectionText, i as isLibraryPackType, j as serverLibraryPacks, r as retiredUi2Name, k as lintTextFormat, m as lintTableColumnsShape, B as BARE_QUERY_DATA_BINDING, n as lintComponentStateBindings, o as lintEmptyDateWrites, q as lintUntriggeredDataQueries, t as lintAutomaticWrites, u as packRowSlotNames, v as libraryPacksAll, w as parseHtml, x as stripHtmlBindings, y as packSlotNames } from "./chunk-SbPwPcRl.js";
-import { r as require_lib, i as internalComponentTypeNote, g as getComponentSchema, b as getCatalog, c as getLegacyComponentReplacement, l as lintBindingNames, d as bindingSpans } from "./chunk-x55QR8id.js";
-import { p as parseExpression, a as parse } from "./chunk-8javr-CG.js";
-import { b0 as external_exports } from "./chunk-Bpoy8qtq.js";
+import { p as packSlotOnOwnId, s as surfaceAroundResolver, m as lintSelectedRowProjections, n as emptyLibraryHostError, o as lintOversizedWidths, q as lintHtmlContentHeight, t as lintHtmlRootSurface, u as lintUnguardedComponentRefs, v as lintEmbeddedBindingSyntax, w as lintChartDataShape, x as lintUnguardedSelectionText, y as isLibraryPackType, z as serverLibraryPacks, A as retiredUi2Name, B as lintTextFormat, C as lintTableColumnsShape, D as BARE_QUERY_DATA_BINDING, E as lintComponentStateBindings, F as lintEmptyDateWrites, G as lintUntriggeredDataQueries, H as lintAutomaticWrites, I as packRowSlotNames, J as libraryPacksAll, K as parseHtml, L as stripHtmlBindings, M as packSlotNames } from "./chunk-Btd7hqFK.js";
+import { aA as external_exports, aB as internalComponentTypeNote, ay as getComponentSchema, aC as getCatalog, aD as getLegacyComponentReplacement } from "./chunk-isfY25ah.js";
+import { r as require_lib, l as lintBindingNames, b as bindingSpans } from "./chunk-CpwF2B9D.js";
+import { p as parseExpression, a as parse } from "./chunk-nL-cG8xH.js";
 import { e8 as __toESM } from "./chunk-C1Uan0hB.js";
 import { readFileSync } from "node:fs";
 createRequire(import.meta.url);
@@ -213,6 +213,9 @@ function bindsNamespace(value2, namespace) {
   }
   return false;
 }
+function shadows(value2, namespace) {
+  return value2.type === "VariableDeclarator" && bindsNamespace(value2.id, namespace) || /^(Function|Class)(Declaration|Expression)$/.test(value2.type) && bindsNamespace(value2.id, namespace) || Array.isArray(value2.params) && value2.params.some((item) => bindsNamespace(item, namespace)) || value2.type === "CatchClause" && bindsNamespace(value2.param, namespace) || value2.type === "WithStatement" || value2.type === "CallExpression" && isNode(value2.callee) && value2.callee.type === "Identifier" && value2.callee.name === "eval";
+}
 function namespaceReads(code, namespace) {
   const { source, ids } = maskSavedIds(code);
   return namespaceAccesses(source, namespace).flatMap((read) => read.name === void 0 ? [] : [{ ...read, name: ids.get(read.name) ?? read.name }]);
@@ -246,7 +249,7 @@ function namespaceAccesses(code, namespace) {
     }
     if (!isNode(value2))
       return;
-    if (value2.type === "VariableDeclarator" && bindsNamespace(value2.id, namespace) || /^(Function|Class)(Declaration|Expression)$/.test(value2.type) && bindsNamespace(value2.id, namespace) || Array.isArray(value2.params) && value2.params.some((item) => bindsNamespace(item, namespace)) || value2.type === "CatchClause" && bindsNamespace(value2.param, namespace) || value2.type === "WithStatement" || value2.type === "CallExpression" && isNode(value2.callee) && value2.callee.type === "Identifier" && value2.callee.name === "eval")
+    if (shadows(value2, namespace))
       shadowed = true;
     if ((value2.type === "MemberExpression" || value2.type === "OptionalMemberExpression") && isNode(value2.object) && value2.object.type === "Identifier" && value2.object.name === namespace && isNode(value2.property)) {
       const name = !value2.computed && value2.property.type === "Identifier" ? value2.property.name : value2.computed && value2.property.type === "StringLiteral" ? value2.property.value : void 0;
@@ -263,6 +266,49 @@ function namespaceAccesses(code, namespace) {
 }
 function runjsQueryReferences(code) {
   return [...new Set(namespaceReads(code, "queries").map((read) => read.name))];
+}
+function namespaceMemberReads(code, namespace) {
+  const { source, ids } = maskSavedIds(code);
+  let root;
+  try {
+    root = parse(source, { sourceType: "script", allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true });
+  } catch {
+    return [];
+  }
+  const isMember = (value2) => isNode(value2) && (value2.type === "MemberExpression" || value2.type === "OptionalMemberExpression");
+  const literal2 = (member2) => {
+    const property = member2.property;
+    if (!isNode(property))
+      return void 0;
+    if (!member2.computed && property.type === "Identifier")
+      return String(property.name);
+    if (member2.computed && property.type === "StringLiteral")
+      return String(property.value);
+    return void 0;
+  };
+  const reads = [];
+  let shadowed = false;
+  const visit = (value2) => {
+    if (Array.isArray(value2)) {
+      value2.forEach(visit);
+      return;
+    }
+    if (!isNode(value2))
+      return;
+    if (shadows(value2, namespace))
+      shadowed = true;
+    const entry = isMember(value2) ? value2.object : void 0;
+    if (isMember(entry) && isNode(entry.object) && entry.object.type === "Identifier" && entry.object.name === namespace) {
+      const name = literal2(entry);
+      const member2 = literal2(value2);
+      if (name && member2)
+        reads.push({ name: ids.get(name) ?? name, member: member2 });
+    }
+    for (const child of Object.values(value2))
+      visit(child);
+  };
+  visit(root);
+  return shadowed ? [] : reads;
 }
 function runjsComponentReferences(code) {
   return [...new Set(namespaceReads(code, "components").map((read) => read.name))];
@@ -286,6 +332,27 @@ function runjsReturnsNothing(code) {
     return Object.entries(node).some(([key, child]) => !["leadingComments", "trailingComments", "innerComments", "loc"].includes(key) && typeof child === "object" && returns(child));
   };
   return !returns(root.program);
+}
+var QUERY_PROPERTIES = ["data", "rawData", "isLoading", "error", "metadata", "request", "response", "responseHeaders", "id"];
+var ASYNC_WORKFLOW_QUERY_PROPERTIES = ["jobId", "progress", "currentData"];
+var QUERY_MEMBERS = /* @__PURE__ */ new Set([
+  ...QUERY_PROPERTIES,
+  ...ASYNC_WORKFLOW_QUERY_PROPERTIES,
+  "run",
+  "reset",
+  "getData",
+  "getRawData",
+  "getloadingState",
+  "abort"
+]);
+function unknownQueryMemberReads(value2) {
+  if (Array.isArray(value2))
+    return value2.flatMap(unknownQueryMemberReads);
+  if (value2 && typeof value2 === "object")
+    return Object.values(value2).flatMap(unknownQueryMemberReads);
+  if (typeof value2 !== "string")
+    return [];
+  return bindingSpans(value2).flatMap((binding) => namespaceMemberReads(`(${binding.body})`, "queries")).filter((read) => !QUERY_MEMBERS.has(read.member));
 }
 function bindingReferences(value2) {
   if (Array.isArray(value2))
@@ -742,12 +809,166 @@ function dropdownDefaultVisibilityWarning(value2, label) {
   }
   return missing ? [`DropdownV2 "${label}": an option declares a default but omits visible. ToolJet's default lookup requires visible:true even though the menu displays options with omitted visibility. Set visible:true on selectable default options; preserve intentional hidden options. Otherwise edit preselection can appear blank. This is advisory; unknown dynamic option sources are not verified.`] : [];
 }
+var import_json5 = __toESM(require_lib(), 1);
+var toSlotName2 = (prefix, key) => `${prefix}_${key.replace(/[^A-Za-z0-9_]/g, "_")}`;
+var keyTag = (key) => {
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i += 1)
+    h = Math.imul(h ^ key.charCodeAt(i), 16777619);
+  return (h >>> 0).toString(36);
+};
+function slotNames2(prefix, keys) {
+  const names = [];
+  const taken = /* @__PURE__ */ new Set();
+  const distinct2 = [...new Set(keys)];
+  const plain = distinct2.filter((k) => /^[A-Za-z0-9_]*$/.test(k));
+  const folded = distinct2.filter((k) => !/^[A-Za-z0-9_]*$/.test(k)).sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
+  for (const k of plain) {
+    names.push(toSlotName2(prefix, k));
+    taken.add(toSlotName2(prefix, k));
+  }
+  for (const k of folded) {
+    const base = toSlotName2(prefix, k);
+    let name = base;
+    for (let n = 1; taken.has(name); n += 1)
+      name = `${base}_${keyTag(k)}${n > 1 ? `_${n}` : ""}`;
+    names.push(name);
+    taken.add(name);
+  }
+  return names;
+}
+var KEY_FIELDS = ["key", "id", "value", "name"];
+function keysOf(items, field) {
+  const keys = items.map((item) => {
+    const value2 = item && typeof item === "object" ? item[field] : void 0;
+    return typeof value2 === "string" || typeof value2 === "number" ? String(value2) : "";
+  });
+  return keys.every(Boolean) ? keys : null;
+}
+function packSlotsFromManifest(slots, props) {
+  if (!slots)
+    return void 0;
+  if (!slots.length)
+    return { fixed: [], families: [], rows: [] };
+  const names = slots.map((slot) => slot.name);
+  const families = [];
+  const claimed = /* @__PURE__ */ new Set();
+  const prefixes = [...new Set(names.flatMap((name) => /^([A-Za-z0-9]+)_./.exec(name)?.[1] ?? []))];
+  for (const prefix of prefixes) {
+    const listed = names.filter((name) => name.startsWith(`${prefix}_`));
+    const family = (props ?? []).flatMap((prop2) => {
+      if (!Array.isArray(prop2.default) || !prop2.default.length)
+        return [];
+      return KEY_FIELDS.flatMap((field) => {
+        const keys = keysOf(prop2.default, field);
+        const drawn = keys ? new Set(slotNames2(prefix, keys)) : void 0;
+        return drawn && listed.every((name) => drawn.has(name)) ? [{ prefix, itemsProp: prop2.name, keyField: field, defaultItems: prop2.default }] : [];
+      });
+    })[0];
+    if (!family)
+      continue;
+    families.push(family);
+    listed.forEach((name) => claimed.add(name));
+  }
+  return {
+    fixed: names.filter((name) => !claimed.has(name)),
+    families,
+    rows: slots.filter((slot) => slot.kind === "rows").map((slot) => slot.name)
+  };
+}
+function describePackSlots(slots) {
+  if (!slots)
+    return void 0;
+  const parts = [
+    ...slots.fixed.map((name) => slots.rows.includes(name) ? `${name} (drawn once per item; its children read {{listItem}})` : name),
+    ...slots.families.map((family) => {
+      const sample = slotNames2(family.prefix, keysOf(family.defaultItems, family.keyField) ?? []);
+      return `${family.prefix}_<${family.keyField} of each ${family.itemsProp} item>${sample.length ? ` (by default ${sample.join(", ")})` : ""}`;
+    })
+  ];
+  return parts.length ? `Child components go in slot_name ${parts.join(", ")}.` : void 0;
+}
+function packSlotsOfType(type) {
+  if (typeof type !== "string" || !type.startsWith("Lib_"))
+    return void 0;
+  return getComponentSchema(type)?.pack?.slotInfo;
+}
+function itemsOf(properties, key) {
+  const entry = properties?.[key];
+  if (entry === void 0)
+    return void 0;
+  const raw = entry && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry.value : entry;
+  if (raw === void 0 || raw === null || raw === "")
+    return void 0;
+  if (Array.isArray(raw))
+    return raw;
+  if (typeof raw !== "string")
+    return [];
+  const body = /^\s*\{\{([\s\S]*)\}\}\s*$/.exec(raw)?.[1]?.trim() ?? (raw.trim().startsWith("[") ? raw : void 0);
+  if (body === void 0)
+    return raw.includes("{{") ? null : [];
+  try {
+    const value2 = import_json5.default.parse(body.replace(/^\(([\s\S]*)\)$/, "$1"));
+    return Array.isArray(value2) ? value2 : [];
+  } catch {
+    return null;
+  }
+}
+function widgetSlots(component, { propertiesKnown = true } = {}) {
+  const slots = packSlotsOfType(component.type);
+  if (!slots)
+    return void 0;
+  const known = [...slots.fixed];
+  const open = [];
+  for (const family of slots.families) {
+    const items = propertiesKnown ? itemsOf(component.properties, family.itemsProp) : null;
+    const keys = items === null ? null : keysOf(items ?? family.defaultItems, family.keyField);
+    if (keys)
+      known.push(...slotNames2(family.prefix, keys));
+    else
+      open.push({ prefix: family.prefix, itemsProp: family.itemsProp });
+  }
+  return { known, open };
+}
+function resolvePackSlot(parent, slotName, child, options = {}) {
+  const slots = widgetSlots(parent, options);
+  if (!slots)
+    return { ok: true, slotName };
+  const listed = [...slots.known, ...slots.open.map((family) => `${family.prefix}_<key of each ${family.itemsProp} item>`)];
+  const where = `${String(parent.type)} "${parent.name ?? parent.id ?? "?"}"`;
+  if (!listed.length) {
+    return {
+      ok: false,
+      error: `Component "${child}": ${where} draws no child components, so a component inside it is saved and never shown. Place it beside the widget, or inside a container (a Card or FlexContainer).`
+    };
+  }
+  if (slotName === void 0) {
+    if (slots.known.includes("body"))
+      return { ok: true, slotName: "body" };
+    if (slots.known.length === 1 && !slots.open.length)
+      return { ok: true, slotName: slots.known[0] };
+    return {
+      ok: false,
+      error: `Component "${child}": ${where} draws its children in named slots; set slot_name to one of ${listed.join(", ")}. Without one the component is saved on a canvas the widget does not draw, and never shown.`
+    };
+  }
+  if (slots.known.includes(slotName))
+    return { ok: true, slotName };
+  if (slots.open.some((family) => slotName.startsWith(`${family.prefix}_`) && slotName.length > family.prefix.length + 1)) {
+    return { ok: true, slotName };
+  }
+  return {
+    ok: false,
+    error: `Component "${child}": ${where} has no slot "${slotName}" (its slots: ${listed.join(", ")}), so the component would be saved and never shown. Use one of those slots, or add the item it should go in to the widget first.`
+  };
+}
 var COMPONENT_SLOT_NAMES = ["body", "header", "footer", "modal"];
 var TAB_SLOT = /^tab-(t\d+)$/;
-var LIBRARY_TAB_SLOT = /^[A-Za-z][A-Za-z0-9_]*$/;
+var PACK_SLOT = /^[A-Za-z][A-Za-z0-9_]*$/;
 var TAB_CANVAS_SUFFIX = /-(t\d+)$/;
+var SLOT_CANVAS = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-([A-Za-z][A-Za-z0-9_]*)$/i;
 function isComponentSlotName(value2) {
-  return typeof value2 === "string" && (COMPONENT_SLOT_NAMES.includes(value2) || TAB_SLOT.test(value2) || LIBRARY_TAB_SLOT.test(value2));
+  return typeof value2 === "string" && (TAB_SLOT.test(value2) || PACK_SLOT.test(value2));
 }
 function isNativeSlotName(value2) {
   return typeof value2 === "string" && (COMPONENT_SLOT_NAMES.includes(value2) || TAB_SLOT.test(value2));
@@ -758,7 +979,7 @@ function isTabSlot(value2) {
 var componentSlotSchema = external_exports.union([
   external_exports.enum(COMPONENT_SLOT_NAMES),
   external_exports.string().regex(TAB_SLOT),
-  external_exports.string().regex(LIBRARY_TAB_SLOT)
+  external_exports.string().regex(PACK_SLOT)
 ]);
 var ENCODED_SLOT_SUFFIXES = ["header", "footer", "modal"];
 function isPackContainerType(type) {
@@ -767,7 +988,11 @@ function isPackContainerType(type) {
 function encodeComponentParent(parentId, slotName, parentType) {
   if (isPackContainerType(parentType)) {
     const base2 = decodeComponentParent(parentId).parentId;
-    return packSlotOnOwnId(parentType, slotName) ? base2 : `${base2}-${slotName ?? "body"}`;
+    const slots = packSlotsOfType(parentType);
+    const slot = slotName ?? (slots && !slots.fixed.includes("body") && slots.fixed.length === 1 && !slots.families.length ? slots.fixed[0] : "body");
+    if (slots?.rows.includes(slot) || packSlotOnOwnId(parentType, slotName))
+      return base2;
+    return `${base2}-${slot}`;
   }
   if (!slotName)
     return parentId;
@@ -789,6 +1014,9 @@ function decodeComponentParent(parentId) {
   const tab = TAB_CANVAS_SUFFIX.exec(parentId);
   if (tab)
     return { parentId: parentId.slice(0, -tab[0].length), slotName: `tab-${tab[1]}` };
+  const slot = SLOT_CANVAS.exec(parentId);
+  if (slot)
+    return { parentId: slot[1], slotName: slot[2] };
   return { parentId, slotName: "body" };
 }
 function applyResolvedParent(entry, resolved) {
@@ -802,7 +1030,7 @@ function applyResolvedParent(entry, resolved) {
 }
 function resolveParentRef(pageComponents, parent) {
   const byId = (id) => pageComponents.some((component) => component.id === id);
-  if (byId(parent) || byId(decodeComponentParent(parent).parentId))
+  if (byId(parent))
     return { ok: true, parent, renamed: false };
   const named = (name) => pageComponents.filter((component) => component.name === name);
   const whole = named(parent);
@@ -815,7 +1043,7 @@ function resolveParentRef(pageComponents, parent) {
       if (!handle || !parent.startsWith(`${handle}-`))
         continue;
       const slotName = parent.slice(handle.length + 1);
-      if (!LIBRARY_TAB_SLOT.test(slotName))
+      if (!PACK_SLOT.test(slotName))
         continue;
       if (renamed && named(handle).length > 1) {
         return { ok: false, error: `parent "${parent}" names more than one component on this page; pass the parent's id.` };
@@ -824,6 +1052,8 @@ function resolveParentRef(pageComponents, parent) {
     }
   }
   const decoded = decodeComponentParent(parent);
+  if (byId(decoded.parentId) && isNativeSlotName(decoded.slotName))
+    return { ok: true, parent, renamed: false };
   const base = named(decoded.parentId);
   if (whole.length === 0 && base.length === 1) {
     return { ok: true, parent: encodeComponentParent(base[0].id, decoded.slotName), renamed: true };
@@ -1202,7 +1432,7 @@ function lintKpiCardGrids(components) {
     return figure && (delta || !valueOf4(p, "imageField")) || KPI_NAME.test(c.name ?? "") && !valueOf4(p, "imageField");
   }).map((c) => `Card grid "${c.name ?? "ShadCardGrid"}" draws figures: a card grid is for records with a face, its badge sits beside the title (a long delta is cut off) and its subtitle is small body text, not a headline number. Draw KPIs as a row of ShadStat (value, valueFormat, change, changeLabel) or one ShadSummaryStrip (items).`);
 }
-var import_json5 = __toESM(require_lib(), 1);
+var import_json52 = __toESM(require_lib(), 1);
 var FIELD_PROPS = [
   "latField",
   "lngField",
@@ -1233,7 +1463,7 @@ function literal(value2) {
   if (body === void 0)
     return typeof value2 === "string" && value2.includes("{{") ? void 0 : { value: value2 };
   try {
-    return { value: import_json5.default.parse(body.replace(/^\(([\s\S]*)\)$/, "$1")) };
+    return { value: import_json52.default.parse(body.replace(/^\(([\s\S]*)\)$/, "$1")) };
   } catch {
     return void 0;
   }
@@ -1959,10 +2189,16 @@ function lintComponentSlots(components) {
   for (const component of components) {
     const persistedSlot = component.parent ? decodeComponentParent(component.parent).slotName : "body";
     const slotName = component.slotName ?? (persistedSlot === "body" ? void 0 : persistedSlot);
-    if (!slotName)
-      continue;
     const placement = parentPlacement(component);
     const parent = placement ? refs.get(placement.parentId) : void 0;
+    if (parent && isLibraryPackType(parent.type) && packSlotsOfType(parent.type)) {
+      const slot = resolvePackSlot(parent, slotName, String(component.name ?? component.id ?? component.type));
+      if (!slot.ok)
+        errors.push(slot.error);
+      continue;
+    }
+    if (!slotName)
+      continue;
     const validParent = isLibraryPackType(parent?.type) || isPackContainerType(parent?.type) ? !["header", "footer", "modal"].includes(slotName) && !isTabSlot(slotName) : !isNativeSlotName(slotName) ? false : slotName === "modal" ? parent?.type === "Kanban" : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? "") : SLOT_PARENT_TYPES.has(parent?.type ?? "") || slotName === "body" && ["Kanban", "ShadKanban", "FlexContainer"].includes(parent?.type ?? "");
     if (parent && TABS_TYPES.has(parent.type ?? "") && isTabSlot(slotName) && !isTruthyBinding(propVal(parent.properties, "useDynamicOptions"))) {
       const items = propVal(parent.properties, "tabItems");
@@ -2686,6 +2922,9 @@ function lintComponentSpec(spec, context = {}) {
   if (spec.type === "Text" && propVal(props, "text") === void 0) {
     warnings.push(`Text "${label}" has no properties.text and will render ToolJet's default greeting. Supply the intended text or binding; use an explicit empty string if this display is intentionally blank. Do not invent replacement copy or change its layout.`);
   }
+  if (spec.type === "ModuleViewer" && !String(propVal(props, "moduleAppId") ?? "").trim()) {
+    errors.push(`ModuleViewer "${label}" needs properties.moduleAppId, the co_relation_id of a module app in this workspace. Without one it shows nothing, and a ToolJet server without the fix fails to load the app. Place the module in the ToolJet editor if its id is not known.`);
+  }
   for (const key of Object.keys(props)) {
     const value2 = propVal(props, key);
     if (typeof value2 === "string" && hasUnclosedBinding(value2)) {
@@ -2784,7 +3023,7 @@ function lintComponentSpec(spec, context = {}) {
   }
   if (spec.slotName !== void 0) {
     if (!isComponentSlotName(spec.slotName)) {
-      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, Kanban modal, or a Tabs tab (tab-t0, tab-t1, ...).`);
+      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, Kanban modal, a Tabs tab (tab-t0, tab-t1, ...), or a pack widget's slot (body, tab_<key>, panel_<key>, first ...).`);
     }
     if (!spec.parentRef && !spec.parent) {
       errors.push(`Component "${label}": slot_name requires parent_ref or parent.`);
@@ -4070,19 +4309,17 @@ function validateAppStructure(summary, options = {}) {
         errors.push(`${source.label} references ${key}, but no ${ref.namespace === "components" ? "component" : "query"} is named "${ref.name}". Binding names are case-sensitive; use the persisted name.`);
       }
     }
+    for (const read of unknownQueryMemberReads(source.value)) {
+      const query = summary.queries.find((q) => q.name === read.name || q.id === read.name);
+      const key = `queries.${query?.name ?? read.name}.${read.member}`;
+      if (!query || seen.has(key))
+        continue;
+      seen.add(key);
+      const meant = nearestCatalogKey(read.member, QUERY_PROPERTIES);
+      errors.push(`${source.label} reads ${key}, but a query has no ${read.member}; it reads undefined at runtime. ` + (meant ? `Read queries.${query.name}.${meant}. ` : "") + `A query has ${QUERY_PROPERTIES.join(", ")}.`);
+    }
   }
   for (const c of allComponents) {
-    const blob = JSON.stringify({ p: c.properties ?? {}, s: c.styles ?? {} });
-    for (const m of blob.matchAll(/\{\{\s*queries\.([A-Za-z0-9_]+)/g)) {
-      if (!queryNames.has(m[1])) {
-        warnings.push(`Component "${c.name ?? c.id}" binds {{queries.${m[1]}\u2026}} but no query is named "${m[1]}".`);
-      }
-    }
-    for (const m of blob.matchAll(/\{\{\s*components\.([A-Za-z0-9_]+)/g)) {
-      if (!componentNames.has(m[1])) {
-        warnings.push(`Component "${c.name ?? c.id}" binds {{components.${m[1]}\u2026}} but no component is named "${m[1]}".`);
-      }
-    }
     const r = lintComponentSpec({
       id: c.id,
       name: c.name ?? c.id,
@@ -4222,47 +4459,50 @@ function lintInnerPageBands(summary) {
   return warnings;
 }
 export {
-  lintComponents as A,
-  validateAppStructure as B,
+  savedComponentLibrary as A,
+  pageIconError as B,
   COMPONENT_PACK_DESCRIPTION as C,
-  isModalV2Type as D,
-  minimumTextHeight as E,
-  unifyChartAccents as F,
-  pageIconSchema as G,
-  componentLibraryWarnings as H,
-  lintPackItemSlots as I,
-  namespaceReads as J,
-  lintRenderedGeometryBlocking as K,
-  lintRenderedGeometryAdvisory as L,
-  lintNestedContainerWidths as M,
-  FORM_SCHEMA_FIELD_TYPE_SET as N,
-  SAFE_GENERATED_FORM_FIELD_TYPE_SET as O,
+  lintComponents as D,
+  validateAppStructure as E,
+  isModalV2Type as F,
+  minimumTextHeight as G,
+  unifyChartAccents as H,
+  pageIconSchema as I,
+  componentLibraryWarnings as J,
+  lintPackItemSlots as K,
+  namespaceReads as L,
+  lintRenderedGeometryBlocking as M,
+  lintRenderedGeometryAdvisory as N,
+  FORM_SCHEMA_FIELD_TYPE_SET as O,
   PROPERTY_KEY_ALIASES as P,
+  SAFE_GENERATED_FORM_FIELD_TYPE_SET as Q,
+  packSlotsFromManifest as R,
   STYLE_KEYS_IN_PROPERTIES as S,
-  componentNameSchema as a,
-  componentNameError as b,
+  describePackSlots as T,
+  applyResolvedParent as a,
+  resolvePackSlot as b,
   componentSlotSchema as c,
   decodeComponentParent as d,
-  applyResolvedParent as e,
-  isPackContainerType as f,
-  encodeComponentParent as g,
-  introducedLintFindings as h,
-  isMisplacedStyleKey as i,
-  lintComponentSlots as j,
-  lintUnusableTextGeometry as k,
-  lintComponentSpec as l,
-  lintStandardSingleLineInputHeight as m,
-  nearestCatalogKey as n,
-  lintTextGeometry as o,
-  lintRenderedGeometry as p,
-  lintKanbanInteractions as q,
+  encodeComponentParent as e,
+  introducedLintFindings as f,
+  lintComponentSpec as g,
+  lintUnusableTextGeometry as h,
+  isPackContainerType as i,
+  lintNestedContainerWidths as j,
+  lintStandardSingleLineInputHeight as k,
+  lintComponentSlots as l,
+  lintTextGeometry as m,
+  lintRenderedGeometry as n,
+  isMisplacedStyleKey as o,
+  nearestCatalogKey as p,
+  componentNameSchema as q,
   resolveParentRef as r,
-  slotFindingKey as s,
-  lintShadKanbanCards as t,
-  lintShadScheduleScale as u,
-  assertPageIcon as v,
-  resolveComponentLibrary as w,
-  defaultPack as x,
-  savedComponentLibrary as y,
-  pageIconError as z
+  componentNameError as s,
+  slotFindingKey as t,
+  lintKanbanInteractions as u,
+  lintShadKanbanCards as v,
+  lintShadScheduleScale as w,
+  assertPageIcon as x,
+  resolveComponentLibrary as y,
+  defaultPack as z
 };

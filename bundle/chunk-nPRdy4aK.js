@@ -1,10 +1,11 @@
 import { createRequire } from "node:module";
-import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, e as codeCliProblem } from "./chunk-DheHZYlx.js";
-import { b0 as external_exports, ba as definition, b7 as fail, b8 as ok, b9 as exposeActions } from "./chunk-Bpoy8qtq.js";
+import { c as codeCliProblem } from "./chunk-DIt7eXJR.js";
+import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, e as definition } from "./chunk-DCBr7MCX.js";
 import { e5 as tableQuotaError, e9 as TableQuotaError } from "./chunk-C1Uan0hB.js";
-import { g as encodeComponentParent, d as decodeComponentParent, v as assertPageIcon, w as resolveComponentLibrary, i as isMisplacedStyleKey, x as defaultPack, y as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION } from "./chunk-DMqeGZea.js";
-import { A as downgradeFlexForLibrary, C as toLibraryComponent, D as missingLibraryPins, E as libraryTypeOf, F as libraryPins } from "./chunk-SbPwPcRl.js";
-import { e as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, f as assertWorkflowQueryOptions, w as workflowMappingMatches, a as activePackSet } from "./chunk-x55QR8id.js";
+import { e as encodeComponentParent, d as decodeComponentParent, i as isPackContainerType, b as resolvePackSlot, x as assertPageIcon, y as resolveComponentLibrary, o as isMisplacedStyleKey, z as defaultPack, A as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION } from "./chunk-BzoTtK4L.js";
+import { O as downgradeFlexForLibrary, P as toLibraryComponent, Q as missingLibraryPins, R as libraryTypeOf, S as libraryPins } from "./chunk-Btd7hqFK.js";
+import { aA as external_exports, ax as activePackSet, aE as fail, aG as ok, aH as exposeActions } from "./chunk-isfY25ah.js";
+import { a as assertPersistableQueryToggles, c as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches } from "./chunk-CpwF2B9D.js";
 import { randomUUID, createHash } from "node:crypto";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { readFileSync, existsSync } from "node:fs";
@@ -2777,6 +2778,13 @@ function createClient(auth, config) {
     const typeById = new Map((params.pageComponents ?? []).map((component) => [component.id, component.type]));
     for (const e of entries)
       typeById.set(e.id, e.spec.type);
+    const parentFacts = new Map((params.pageComponents ?? []).map((component) => [
+      component.id,
+      { name: component.name, properties: component.properties }
+    ]));
+    for (const e of entries)
+      parentFacts.set(e.id, { name: e.spec.name, properties: e.spec.properties });
+    const slotErrors = [];
     for (const e of entries) {
       if (e.spec.parent && e.spec.parentRef) {
         throw new Error(`createComponents "${e.spec.name}": set EITHER parent or parentRef, not both.`);
@@ -2790,8 +2798,20 @@ function createClient(auth, config) {
         throw new Error(`createComponents "${e.spec.name}": slotName requires parent or parentRef.`);
       }
       if (resolvedParent) {
-        const parentType = typeById.get(decodeComponentParent(resolvedParent).parentId) ?? e.spec.parentType;
-        dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName, parentType);
+        const decoded = decodeComponentParent(resolvedParent);
+        const parentType = typeById.get(decoded.parentId) ?? e.spec.parentType;
+        let slotName = e.spec.slotName;
+        if (isPackContainerType(parentType)) {
+          const named = slotName ?? (resolvedParent !== decoded.parentId ? decoded.slotName : void 0);
+          const facts = parentFacts.get(decoded.parentId);
+          const slot = resolvePackSlot({ id: decoded.parentId, name: facts?.name, type: parentType, properties: facts?.properties }, named, e.spec.name, { propertiesKnown: !!facts });
+          if (!slot.ok) {
+            slotErrors.push(slot.error);
+            continue;
+          }
+          slotName = slot.slotName;
+        }
+        dto.parent = encodeComponentParent(resolvedParent, slotName, parentType);
       }
       const submit = e.spec.type === "Form" ? dto.properties?.buttonToSubmit : void 0;
       const submitId = submit && typeof submit.value === "string" ? refToId.get(submit.value) : void 0;
@@ -2799,6 +2819,9 @@ function createClient(auth, config) {
         dto.properties = { ...dto.properties, buttonToSubmit: { ...submit, value: submitId } };
       }
       diff[e.id] = dto;
+    }
+    if (slotErrors.length) {
+      throw new Error(`createComponents: ${slotErrors.join(" ")} (Nothing was saved: refused before any write.)`);
     }
     const batchIds = new Set(entries.map((e) => e.id));
     const flexEntries = entries.map((e) => ({
@@ -2919,7 +2942,7 @@ function createClient(auth, config) {
         diff[u.componentId] = {
           component: {
             ...u.name !== void 0 ? { name: u.name } : {},
-            ...u.parent !== void 0 ? { parent: encodeComponentParent(u.parent, u.slotName) } : {}
+            ...u.parent !== void 0 ? { parent: encodeComponentParent(u.parent, u.slotName, u.parentType) } : {}
           }
         };
       }
@@ -2981,7 +3004,7 @@ function createClient(auth, config) {
         throw new Error(`updateLayouts "${l.componentId}": slotName requires parent.`);
       }
       if (l.parent !== void 0)
-        entry.component = { parent: encodeComponentParent(l.parent, l.slotName) };
+        entry.component = { parent: encodeComponentParent(l.parent, l.slotName, l.parentType) };
       diff[l.componentId] = entry;
     }
     const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/components/layout`, {
