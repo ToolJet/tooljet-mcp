@@ -1,6 +1,6 @@
 import { loadInstalledPacks } from './packCatalog.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { loadConfig, type RequestIdentity } from './config.js';
+import { loadConfig, type Config, type RequestIdentity } from './config.js';
 import { createAuth } from './auth.js';
 import { createClient } from './tooljetClient.js';
 import { registerTools } from './tools/index.js';
@@ -61,6 +61,17 @@ export function buildServer(
   // requireIdentity: a shared server's request with no identity must never fall back to this process's credential.
   if (requireIdentity && !identity) throw new Error('This request names no user, and this server never acts with its own credential.');
   const config = loadConfig(identity);
+  return createConfiguredServer(config, hosted
+    ? { sessionToken: identity?.sessionToken, pat: identity?.pat }
+    : { sessionToken: config.sessionToken, pat: config.pat });
+}
+
+/** Claude supplies a complete configuration without reading ambient credentials. */
+export function buildConfiguredServer(config: Config): McpServer {
+  return createConfiguredServer(config, { sessionToken: config.sessionToken, pat: config.pat });
+}
+
+function createConfiguredServer(config: Config, credential: { sessionToken?: string; pat?: string }): McpServer {
   const auth = createAuth(config);
   const client = createClient(auth, config);
   // The workspace's component packs join this server's catalogue once read (packCatalog.ts, packScope.ts); index.ts
@@ -88,9 +99,7 @@ export function buildServer(
   registerTools(server, client, undefined, {
     client,
     workspaceId: () => auth.getOrganizationId(),
-    credential: hosted
-      ? { sessionToken: identity?.sessionToken, pat: identity?.pat }
-      : { sessionToken: config.sessionToken, pat: config.pat },
+    credential,
     apiUrl: config.apiUrl,
     appUrl: config.appUrl,
   });

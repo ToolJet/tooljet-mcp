@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { checkClaudePackage } from './check-claude-package.mjs';
 import { checkFiles, packageFiles, PLUGIN_PACKAGE } from './plugin-package.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -16,3 +17,4 @@ const output = resolve(root, PLUGIN_PACKAGE);
 if (!existsSync(output)) throw new Error('Missing standalone plugin; run npm run build:plugin first.');
 const count = checkFiles(output, packageFiles(output), 512);
 console.log(`Standalone plugin: ${count} files within the 512-file inspection limit.`);
+console.log('Claude install folder:', checkClaudePackage(resolve(root, 'plugins/tooljet-claude')));

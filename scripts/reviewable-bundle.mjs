@@ -100,7 +100,8 @@ export function parserSourcePlugin() {
 }
 
 /** Discover module boundaries from esbuild's dependency graph; never cut JavaScript text. */
-export async function reviewableBundle(entry = './dist/index.js') {
+export async function reviewableBundle(entry = './dist/index.js', extension = '.js') {
+  if (!['.js', '.mjs'].includes(extension)) throw new Error('Unsupported bundle extension');
   const entryPoints = { index: entry };
   let result;
   const plugin = parserSourcePlugin();
@@ -166,7 +167,7 @@ export async function reviewableBundle(entry = './dist/index.js') {
   try {
     const { output } = await bundle.generate({
       format: 'esm', manualChunks: (id) => groups.get(id), onlyExplicitManualChunks: true,
-      entryFileNames: 'index.js', chunkFileNames: 'chunk-[hash].js',
+      entryFileNames: `index${extension}`, chunkFileNames: `chunk-[hash]${extension}`,
     });
     for (const file of output) {
       // Reprint through a JS parser: trimming text would corrupt whitespace inside

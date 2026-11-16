@@ -27,6 +27,7 @@ describe('runtime freshness', () => {
     expect(runtimeArtifactPath(pathToFileURL(join(tmpdir(), 'plugin', 'bundle', 'chunk-example.js')).href)).toBe(entry);
     const source = join(tmpdir(), 'plugin', 'dist', 'runtimeFreshness.js');
     expect(runtimeArtifactPath(pathToFileURL(source).href)).toBe(source);
+    expect(runtimeArtifactPath(pathToFileURL(join(tmpdir(), 'plugin', 'bundle', 'chunk-example.mjs')).href)).toBe(join(tmpdir(), 'plugin', 'bundle', 'index.mjs'));
   });
   it('detects an emitted runtime changed after process startup', () => {
     const file = runtimeFile();

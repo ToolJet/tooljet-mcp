@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { basename, dirname, resolve } from 'node:path';
+import { basename, dirname, extname, resolve } from 'node:path';
 import type { ToolResult } from './tools/types.js';
 
 export const TOOLJET_MCP_VERSION = '0.13.0';
@@ -43,7 +43,7 @@ function snapshot(path: string): RuntimeSnapshot {
  */
 export function runtimeArtifactPath(moduleUrl: string): string {
   const file = fileURLToPath(moduleUrl);
-  return basename(dirname(file)) === 'bundle' ? resolve(dirname(file), 'index.js') : file;
+  return basename(dirname(file)) === 'bundle' ? resolve(dirname(file), `index${extname(file)}`) : file;
 }
 
 export class RuntimeFreshnessMonitor {

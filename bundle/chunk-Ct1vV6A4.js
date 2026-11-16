@@ -2,11 +2,11 @@ import { createRequire } from "node:module";
 import { aA as external_exports, aI as inPackSet, aJ as listWorkspaceAppsTool, aK as listWorkspaceFoldersTool, aL as listWorkspaceUsersTool, aM as manageWorkspaceUsersTool, aN as registerComponentSchemas, ax as activePackSet, aO as newPackSet, aG as ok, aE as fail, aF as resolveRef, aP as workspaceUserActionTools, aQ as readCatalogBytes, aR as allComponentSchemas } from "./chunk-isfY25ah.js";
 import { s as strictEntry, k as specSchema, l as nodeSchema, o as inspectDatasourceSchemaTool, q as getComponentCatalogTool, u as updateComponentsTool, r as updateLayoutTool, t as datasourceMetadataTools, v as nodeCatalog, w as capabilityRequestSchema, x as getWorkflowCapabilities, y as lint, z as apply, A as deleteNode, B as validateGraph, D as editContractSchema, E as generateEditContract, n as normalizeComponentSpec, m as mapKeyRefusal, C as COMPONENT_FX_GUIDANCE } from "./chunk-DCBr7MCX.js";
 import { f as loadConfig, g as createClient, m as manageAppPermissionsTool, h as createAppTool, j as manageThemeTool, r as registerPackDefinitions, k as projectJavascriptRuntime, o as projectAppSettings, q as compactTheme, s as pageSettingProperties, v as validateTableBatch, t as ToolJetHttpError, l as literalCanvasColor, P as PartialWriteError, u as themeActionTools, x as appPermissionActionTools, y as branchIdFor, z as withBranchContext } from "./chunk-nPRdy4aK.js";
-import { O as verifyPageRenderTool, Q as listWorkspaceGroupsTool, U as manageWorkspaceGroupsTool, W as WebStandardStreamableHTTPServerTransport, V as getRequestListener, a as autoReadPreflight, X as workspaceGroupActionTools } from "./chunk-C4woyLGT.js";
+import { W as WebStandardStreamableHTTPServerTransport, O as getRequestListener, Q as verifyPageRenderTool, U as listWorkspaceGroupsTool, V as manageWorkspaceGroupsTool, a as autoReadPreflight, X as workspaceGroupActionTools } from "./chunk-BtFKpeIH.js";
 import { a as codeAppScaffoldTool, b as codeAppReadFilesTool, d as codeAppWriteFilesTool, e as codeAppBuildTool, f as codeAppInstallTool, g as codeAppAddDependencyTool, n as noCodeIdentity, h as browserUserBindings, i as isCodeModeApp, j as browserUserMessage } from "./chunk-DIt7eXJR.js";
-import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as renameAppTool, p as plannedTableSchema, v as validatePersistedAppSummary, e as libraryPinErrors, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, f as containsComponentBinding, g as runUnattended, q as queryResultBindingHint, h as failureRecovery, j as failureVerification, s as schemaNameHint, k as redactRunResult, m as capUnattendedOutput, o as redactQueryText, t as prepareComponentBatch } from "./chunk-B6r0HbS4.js";
+import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as renameAppTool, p as plannedTableSchema, v as validatePersistedAppSummary, e as libraryPinErrors, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, f as containsComponentBinding, g as runUnattended, q as queryResultBindingHint, h as failureRecovery, j as failureVerification, s as schemaNameHint, k as redactRunResult, m as capUnattendedOutput, o as redactQueryText, t as prepareComponentBatch } from "./chunk-Cc0sGhU_.js";
 import { g as containsExactValue, a as prepareQueryOptionsForWrite, h as containsNamedBinding, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, v as validateEvents, e as expandQueryLifecycles, b as persistedEventSpecs, i as persistedEventIds } from "./chunk-CFYElZIZ.js";
-import { M as McpServer } from "./chunk-DjaUqw3m.js";
+import { M as McpServer } from "./chunk-BeD8A7UU.js";
 import { I as pageIconSchema, A as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION, q as componentNameSchema, D as lintComponents, r as resolveParentRef, a as applyResolvedParent, f as introducedLintFindings, l as lintComponentSlots, M as lintRenderedGeometryBlocking, N as lintRenderedGeometryAdvisory, d as decodeComponentParent, O as FORM_SCHEMA_FIELD_TYPE_SET, Q as SAFE_GENERATED_FORM_FIELD_TYPE_SET, R as packSlotsFromManifest, T as describePackSlots } from "./chunk-BzoTtK4L.js";
 import { U as registerLibraryPacks } from "./chunk-Btd7hqFK.js";
 import { g as resolveStaticBindings, u as emptyViewerOnlyParams, x as emptyParamsNote, y as unresolvedNote } from "./chunk-CpwF2B9D.js";
@@ -16,7 +16,7 @@ import { isIP } from "node:net";
 import { createServer } from "node:http";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { mkdir, appendFile } from "node:fs/promises";
-import { resolve, dirname, basename, join } from "node:path";
+import { resolve, dirname, basename, extname, join } from "node:path";
 import { statSync, accessSync, constants } from "node:fs";
 import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
@@ -3807,7 +3807,7 @@ function snapshot(path) {
 }
 function runtimeArtifactPath(moduleUrl) {
   const file = fileURLToPath(moduleUrl);
-  return basename(dirname(file)) === "bundle" ? resolve(dirname(file), "index.js") : file;
+  return basename(dirname(file)) === "bundle" ? resolve(dirname(file), `index${extname(file)}`) : file;
 }
 var RuntimeFreshnessMonitor = class {
   artifactPath;
@@ -4503,6 +4503,9 @@ function buildServer(identity, { hosted = false, requireIdentity = false } = {})
   if (requireIdentity && !identity)
     throw new Error("This request names no user, and this server never acts with its own credential.");
   const config = loadConfig(identity);
+  return createConfiguredServer(config, hosted ? { sessionToken: identity?.sessionToken, pat: identity?.pat } : { sessionToken: config.sessionToken, pat: config.pat });
+}
+function createConfiguredServer(config, credential) {
   const auth = createAuth(config);
   const client = createClient(auth, config);
   const packSet = newPackSet();
@@ -4522,7 +4525,7 @@ function buildServer(identity, { hosted = false, requireIdentity = false } = {})
   registerTools(server, client, void 0, {
     client,
     workspaceId: () => auth.getOrganizationId(),
-    credential: hosted ? { sessionToken: identity?.sessionToken, pat: identity?.pat } : { sessionToken: config.sessionToken, pat: config.pat },
+    credential,
     apiUrl: config.apiUrl,
     appUrl: config.appUrl
   });

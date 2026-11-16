@@ -1,2 +1,4 @@
 # Distributed separately as the CI standalone plugin artifact.
 /tooljet-standalone/
+# Claude directory package is published on its own distribution branch.
+/tooljet-claude/

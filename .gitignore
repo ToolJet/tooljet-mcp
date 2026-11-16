@@ -19,6 +19,9 @@ plugins/*/skills/*/references/catalog/
 # Grok distribution is built in CI and published separately, not maintained in source.
 plugins/tooljet-grok/
 
+# Claude distribution is built/tested in CI and published on its own branch.
+plugins/tooljet-claude/
+
 # Copilot package is generated for review/distribution, never maintained in source.
 plugins/tooljet-copilot/
 plugins/tooljet-cursor/
