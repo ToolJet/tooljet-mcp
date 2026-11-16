@@ -121,25 +121,23 @@ function libraryPack() {
 var isBuiltin = (pack) => pack.kind === "builtin";
 var packOfType = (type) => typeof type === "string" ? libraryPacksAll().find((p) => type.startsWith(p.prefix)) : void 0;
 var isLibraryPackType = (type) => !!packOfType(type);
+var packComponentOf = (type) => Object.values(packOfType(type)?.components ?? {}).find((entry) => entry.type === type);
+var slotNamesOf = (component, kind) => (component?.slots ?? []).filter((slot) => kind === void 0 || slot.kind === kind).map((slot) => String(slot.name ?? "")).filter(Boolean);
 function packSlotNames(type) {
-  const component = Object.values(packOfType(type)?.components ?? {}).find((entry) => entry.type === type);
-  if (!component)
-    return void 0;
-  const slots = component.slots ?? [];
-  return slots.map((slot) => String(slot.name ?? "")).filter(Boolean);
+  const component = packComponentOf(type);
+  return component ? slotNamesOf(component) : void 0;
 }
 function packRowSlotNames(type) {
-  const component = Object.values(packOfType(type)?.components ?? {}).find((entry) => entry.type === type);
-  const slots = component?.slots ?? [];
-  return slots.filter((slot) => slot.kind === "rows").map((slot) => String(slot.name ?? "")).filter(Boolean);
+  return slotNamesOf(packComponentOf(type), "rows");
 }
 function packSlotOnOwnId(type, slotName) {
-  const rows = packRowSlotNames(type);
+  const component = packComponentOf(type);
+  const rows = slotNamesOf(component, "rows");
   if (!rows.length)
     return false;
   if (slotName)
     return rows.includes(slotName);
-  return (packSlotNames(type) ?? []).every((name) => rows.includes(name));
+  return slotNamesOf(component).every((name) => rows.includes(name));
 }
 function libraryPins() {
   const packs = libraryPacksAll().filter((p) => !isBuiltin(p));
@@ -215,6 +213,11 @@ function isEmptyLibraryHost(component) {
     const value = entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
     return typeof value === "string" && value.trim() !== "";
   });
+}
+function emptyLibraryHostError(component, options = {}) {
+  if (!isEmptyLibraryHost(component))
+    return null;
+  return `Component "${component.name ?? component.id ?? component.type}" is a ${component.type} that names no component, so it draws an empty box: it is ToolJet's internal host, stored with the component it draws. ${options.persisted ? "Delete it and add" : "Write"} the pack's own type, Lib_<pack>_<Component> (get_component_catalog lists them).`;
 }
 function libraryTypeOf(component) {
   if (component.type !== "LibraryComponent" && component.type !== "PackComponent")
@@ -1764,11 +1767,11 @@ export {
   lintHtmlContentHeight as b,
   lintHtmlRootSurface as c,
   lintUnguardedComponentRefs as d,
-  lintEmbeddedBindingSyntax as e,
-  lintChartDataShape as f,
-  lintUnguardedSelectionText as g,
-  isLibraryPackType as h,
-  isEmptyLibraryHost as i,
+  emptyLibraryHostError as e,
+  lintEmbeddedBindingSyntax as f,
+  lintChartDataShape as g,
+  lintUnguardedSelectionText as h,
+  isLibraryPackType as i,
   serverLibraryPacks as j,
   lintTextFormat as k,
   lintSelectedRowProjections as l,

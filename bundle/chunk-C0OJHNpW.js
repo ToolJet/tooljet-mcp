@@ -1,13 +1,13 @@
 import { createRequire } from "node:module";
-import { p as pagesUsingQuery, l as lintPlannedApp, a as prepareQueryOptionsForWrite, m as matchPlannedPage, e as expandQueryLifecycles, v as validateEvents, n as navigationReorders, b as persistedEventSpecs, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, f as polishFlexRows } from "./chunk-Ck6E_sD3.js";
+import { p as pagesUsingQuery, l as lintPlannedApp, a as prepareQueryOptionsForWrite, m as matchPlannedPage, e as expandQueryLifecycles, v as validateEvents, n as navigationReorders, b as persistedEventSpecs, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, f as polishFlexRows } from "./chunk-BupVnypn.js";
 import { y as arithmeticWriteWarning, z as COMPONENT_FX_GUIDANCE, L as LARGE_READ_ROW_THRESHOLD, h as assessQueryRead, k as resolveStaticBindings, j as resolvedReadRefusal, A as sameReadSource, B as extractRowCount, D as emptyViewerOnlyParams, E as emptyParamsNote, F as unresolvedNote, x as validateQueryOptions, q as issueMessages, d as bindingSpans, H as declaredParameterDefaults } from "./chunk-x55QR8id.js";
-import { F as FLEX_MIN_WIDTH_PX_DESCRIPTION, f as FLEX_GROW_DESCRIPTION, g as FLEX_WIDTH_PX_DESCRIPTION, j as FLEX_FILL_WIDTH_DESCRIPTION, m as mapKeyRefusal, r as resolveRef, p as plannedCurrency, n as normalizeComponentSpec, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty } from "./chunk-Bc2-Fdxk.js";
-import { T as TOOLJET_DB_DATA_TYPES, n as normalizeType, b as invalidSeedTimestamps, l as literalCanvasColor, c as componentRef, d as completedPartialWrites, e as currentBranchId, i as indexComponentReferences } from "./chunk-C4uZlUCO.js";
-import { a as autoReadPreflight, N as NOT_CHECKED_AUTOMATICALLY } from "./chunk-CL25hNxt.js";
+import { F as FLEX_MIN_WIDTH_PX_DESCRIPTION, f as FLEX_GROW_DESCRIPTION, g as FLEX_WIDTH_PX_DESCRIPTION, j as FLEX_FILL_WIDTH_DESCRIPTION, m as mapKeyRefusal, r as resolveRef, p as plannedCurrency, n as normalizeComponentSpec, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty } from "./chunk-DheHZYlx.js";
+import { T as TOOLJET_DB_DATA_TYPES, n as normalizeType, b as invalidSeedTimestamps, l as literalCanvasColor, c as componentRef, d as completedPartialWrites, e as currentBranchId, i as indexComponentReferences } from "./chunk-BRbavCnV.js";
+import { a as autoReadPreflight, N as NOT_CHECKED_AUTOMATICALLY } from "./chunk-Tk09TFyn.js";
 import { b0 as external_exports, b7 as fail, b8 as ok } from "./chunk-Bpoy8qtq.js";
 import { e5 as tableQuotaError } from "./chunk-C1Uan0hB.js";
-import { a as componentNameSchema, c as componentSlotSchema, F as pageIconSchema, v as resolveComponentLibrary, G as componentLibraryWarnings, A as validateAppStructure, H as lintPackItemSlots, z as lintComponents, d as decodeComponentParent, g as encodeComponentParent, I as namespaceReads } from "./chunk-CFkpjIJ2.js";
-import { i as isEmptyLibraryHost, G as unpinnedLibraries, z as suggestedHtmlHeight } from "./chunk-BszK73UV.js";
+import { a as componentNameSchema, c as componentSlotSchema, G as pageIconSchema, w as resolveComponentLibrary, H as componentLibraryWarnings, B as validateAppStructure, I as lintPackItemSlots, A as lintComponents, d as decodeComponentParent, g as encodeComponentParent, J as namespaceReads } from "./chunk-DMqeGZea.js";
+import { e as emptyLibraryHostError, G as unpinnedLibraries, z as suggestedHtmlHeight } from "./chunk-SbPwPcRl.js";
 import { g as getDatasourceQuerySchema } from "./chunk-Coyhaxq-.js";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -284,9 +284,9 @@ function validatePersistedAppSummary(summary, options = {}) {
   for (const page of summary.pages ?? []) {
     errors.push(...lintPackItemSlots(page.components ?? [], { persisted: true }));
     for (const component of page.components ?? []) {
-      if (!isEmptyLibraryHost(component))
-        continue;
-      errors.push(`Component "${component.name ?? component.id}" is a ${component.type} with no component to draw, so it shows an empty box. Delete it and add the pack component itself (Lib_<pack>_<Component>).`);
+      const error = emptyLibraryHostError(component, { persisted: true });
+      if (error)
+        errors.push(error);
     }
     for (const component of page.components ?? []) {
       for (const col of htmlFedTextColumns(component, summary.queries)) {

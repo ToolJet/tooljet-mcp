@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { p as packSlotOnOwnId, s as surfaceAroundResolver, l as lintSelectedRowProjections, i as isEmptyLibraryHost, a as lintOversizedWidths, b as lintHtmlContentHeight, c as lintHtmlRootSurface, d as lintUnguardedComponentRefs, e as lintEmbeddedBindingSyntax, f as lintChartDataShape, g as lintUnguardedSelectionText, h as isLibraryPackType, j as serverLibraryPacks, r as retiredUi2Name, k as lintTextFormat, m as lintTableColumnsShape, B as BARE_QUERY_DATA_BINDING, n as lintComponentStateBindings, o as lintEmptyDateWrites, q as lintUntriggeredDataQueries, t as lintAutomaticWrites, u as packRowSlotNames, v as libraryPacksAll, w as parseHtml, x as stripHtmlBindings, y as packSlotNames } from "./chunk-BszK73UV.js";
+import { p as packSlotOnOwnId, s as surfaceAroundResolver, l as lintSelectedRowProjections, e as emptyLibraryHostError, a as lintOversizedWidths, b as lintHtmlContentHeight, c as lintHtmlRootSurface, d as lintUnguardedComponentRefs, f as lintEmbeddedBindingSyntax, g as lintChartDataShape, h as lintUnguardedSelectionText, i as isLibraryPackType, j as serverLibraryPacks, r as retiredUi2Name, k as lintTextFormat, m as lintTableColumnsShape, B as BARE_QUERY_DATA_BINDING, n as lintComponentStateBindings, o as lintEmptyDateWrites, q as lintUntriggeredDataQueries, t as lintAutomaticWrites, u as packRowSlotNames, v as libraryPacksAll, w as parseHtml, x as stripHtmlBindings, y as packSlotNames } from "./chunk-SbPwPcRl.js";
 import { r as require_lib, i as internalComponentTypeNote, g as getComponentSchema, b as getCatalog, c as getLegacyComponentReplacement, l as lintBindingNames, d as bindingSpans } from "./chunk-x55QR8id.js";
 import { p as parseExpression, a as parse } from "./chunk-8javr-CG.js";
 import { b0 as external_exports } from "./chunk-Bpoy8qtq.js";
@@ -99,7 +99,10 @@ function literalList(value2) {
 }
 var NUMERIC = /^[-+]?\d*\.?\d+(e[-+]?\d+)?%?$/i;
 var ALSO_ARRAY = /* @__PURE__ */ new Set(["shadcn.Slider.defaultValue", "shadcn.Slider.value", "antd.Slider.value", "mui.Slider.value"]);
-var usableBoolean = (value2) => typeof value2 === "boolean" || typeof value2 === "number" && Number.isFinite(value2) || typeof value2 === "string" && ["true", "false"].includes(value2.trim().toLowerCase());
+var ALSO_CLOCK = /* @__PURE__ */ new Set(["shadcn.Schedule.dayStart", "shadcn.Schedule.dayEnd"]);
+var CLOCK = /^\d{1,2}(:\d{2})?\s*([ap]\.?m\.?)?$/i;
+var usableBoolean = (value2) => typeof value2 === "boolean" || typeof value2 === "number" && Number.isFinite(value2) || // Empty text is false, as ToolJet reads it (as null), without a note.
+typeof value2 === "string" && ["true", "false", ""].includes(value2.trim().toLowerCase());
 var usableNumber = (value2) => typeof value2 === "number" && Number.isFinite(value2) || // Empty text is an unset number (a default the pack does not set), as the pack reads it.
 typeof value2 === "string" && (value2.trim() === "" || NUMERIC.test(value2.trim().replace(/,/g, "")));
 function packValueTypeError(type, key, valueType, value2) {
@@ -109,6 +112,8 @@ function packValueTypeError(type, key, valueType, value2) {
   if (value2 === null)
     return null;
   if (Array.isArray(value2) && ALSO_ARRAY.has(`${pack[1]}.${pack[2]}.${key}`))
+    return null;
+  if (typeof value2 === "string" && CLOCK.test(value2.trim()) && ALSO_CLOCK.has(`${pack[1]}.${pack[2]}.${key}`))
     return null;
   if (valueType === "boolean" ? usableBoolean(value2) : usableNumber(value2))
     return null;
@@ -1903,10 +1908,11 @@ function lintUnusableTextGeometry(components) {
   }
   return errors;
 }
-function introducedLintFindings(before, after) {
-  const existing = new Set(before);
-  return after.filter((finding) => !existing.has(finding));
+function introducedLintFindings(before, after, keyOf = (finding) => finding) {
+  const existing = new Set(before.map(keyOf));
+  return after.filter((finding) => !existing.has(keyOf(finding)));
 }
+var slotFindingKey = (finding) => finding.replace(/ \(its canvases: [^)]*\)| \(parent \+ slot_name: [^)]*\)|Pass slot_name with the parent: .*$/, "");
 function lintTextGeometry(components) {
   const warnings = [];
   for (const component of components) {
@@ -3690,10 +3696,13 @@ function lintComponents(components, options = {}) {
     const nameError = componentNameError(c.name);
     if (nameError)
       errors.push(nameError);
-    const internal = c.type ? internalComponentTypeNote(c.type) : null;
-    if (internal && (c.type === "ModuleContainer" || isEmptyLibraryHost(c))) {
+    const internal = c.type === "ModuleContainer" ? internalComponentTypeNote(c.type) : null;
+    if (internal) {
       errors.push(`Component "${c.name ?? c.type}": "${c.type}" ${internal} It is internal and cannot be written by a build.`);
     }
+    const emptyHost = emptyLibraryHostError(c);
+    if (emptyHost)
+      errors.push(emptyHost);
     const r = lintComponentSpec(c, { surfaceAround: around(c) });
     errors.push(...r.errors);
     errors.push(...lintStandardSingleLineInputHeight(c));
@@ -4213,20 +4222,21 @@ function lintInnerPageBands(summary) {
   return warnings;
 }
 export {
-  validateAppStructure as A,
-  isModalV2Type as B,
+  lintComponents as A,
+  validateAppStructure as B,
   COMPONENT_PACK_DESCRIPTION as C,
-  minimumTextHeight as D,
-  unifyChartAccents as E,
-  pageIconSchema as F,
-  componentLibraryWarnings as G,
-  lintPackItemSlots as H,
-  namespaceReads as I,
-  lintRenderedGeometryBlocking as J,
-  lintRenderedGeometryAdvisory as K,
-  lintNestedContainerWidths as L,
-  FORM_SCHEMA_FIELD_TYPE_SET as M,
-  SAFE_GENERATED_FORM_FIELD_TYPE_SET as N,
+  isModalV2Type as D,
+  minimumTextHeight as E,
+  unifyChartAccents as F,
+  pageIconSchema as G,
+  componentLibraryWarnings as H,
+  lintPackItemSlots as I,
+  namespaceReads as J,
+  lintRenderedGeometryBlocking as K,
+  lintRenderedGeometryAdvisory as L,
+  lintNestedContainerWidths as M,
+  FORM_SCHEMA_FIELD_TYPE_SET as N,
+  SAFE_GENERATED_FORM_FIELD_TYPE_SET as O,
   PROPERTY_KEY_ALIASES as P,
   STYLE_KEYS_IN_PROPERTIES as S,
   componentNameSchema as a,
@@ -4247,12 +4257,12 @@ export {
   lintRenderedGeometry as p,
   lintKanbanInteractions as q,
   resolveParentRef as r,
-  lintShadKanbanCards as s,
-  lintShadScheduleScale as t,
-  assertPageIcon as u,
-  resolveComponentLibrary as v,
-  defaultPack as w,
-  savedComponentLibrary as x,
-  pageIconError as y,
-  lintComponents as z
+  slotFindingKey as s,
+  lintShadKanbanCards as t,
+  lintShadScheduleScale as u,
+  assertPageIcon as v,
+  resolveComponentLibrary as w,
+  defaultPack as x,
+  savedComponentLibrary as y,
+  pageIconError as z
 };

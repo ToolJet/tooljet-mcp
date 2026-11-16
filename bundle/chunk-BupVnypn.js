@@ -1,8 +1,8 @@
 import { createRequire } from "node:module";
-import { p as plannedCurrency, n as normalizeComponentSpec, r as resolveRef } from "./chunk-Bc2-Fdxk.js";
-import { v as validateTableBatch, i as indexComponentReferences, c as componentRef, n as normalizeType, p as packDefaultDefinition } from "./chunk-C4uZlUCO.js";
-import { y as pageIconError, z as lintComponents, g as encodeComponentParent, A as validateAppStructure, B as isModalV2Type, d as decodeComponentParent, D as minimumTextHeight, E as unifyChartAccents } from "./chunk-CFkpjIJ2.js";
-import { n as lintComponentStateBindings, r as retiredUi2Name } from "./chunk-BszK73UV.js";
+import { p as plannedCurrency, n as normalizeComponentSpec, r as resolveRef } from "./chunk-DheHZYlx.js";
+import { v as validateTableBatch, i as indexComponentReferences, c as componentRef, n as normalizeType, p as packDefaultDefinition } from "./chunk-BRbavCnV.js";
+import { z as pageIconError, A as lintComponents, g as encodeComponentParent, h as introducedLintFindings, j as lintComponentSlots, B as validateAppStructure, D as isModalV2Type, d as decodeComponentParent, E as minimumTextHeight, F as unifyChartAccents, s as slotFindingKey } from "./chunk-DMqeGZea.js";
+import { n as lintComponentStateBindings, r as retiredUi2Name } from "./chunk-SbPwPcRl.js";
 import { p as normalizeQueryToggles, t as toggleRewriteWarning, q as issueMessages, u as queryToggleIssues, v as normalizeQueryOptions, x as validateQueryOptions, g as getComponentSchema } from "./chunk-x55QR8id.js";
 import { p as parseExpression } from "./chunk-8javr-CG.js";
 createRequire(import.meta.url);
@@ -2835,6 +2835,12 @@ function lintPlannedApp(spec, existingSummary, options = {}) {
         ...component.slotName && component.slotName !== "body" ? { slot_name: component.slotName } : {}
       };
     });
+    const onPage = existingPage?.components ?? [];
+    const pageIds = new Set(onPage.map((component) => component.id));
+    const ontoExisting = componentEntries.filter(({ component }) => component.parent && pageIds.has(component.parent)).map(({ component, id }) => ({ id, name: component.name, type: component.type, parent: component.parent, slotName: component.slotName }));
+    if (ontoExisting.length) {
+      errors.push(...introducedLintFindings(lintComponentSlots(onPage), lintComponentSlots([...onPage, ...ontoExisting]), slotFindingKey).map((message) => `Page "${plannedPage.name}": ${message}`));
+    }
     const pageSummary = existingPage ?? {
       id: pageId,
       name: plannedPage.name,

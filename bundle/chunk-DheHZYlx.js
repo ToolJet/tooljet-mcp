@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import { g as getComponentSchema, C as COMPONENT_FX_UPDATE_GUIDANCE, b as getCatalog, i as internalComponentTypeNote, c as getLegacyComponentReplacement } from "./chunk-x55QR8id.js";
-import { i as isMisplacedStyleKey, P as PROPERTY_KEY_ALIASES, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey, d as decodeComponentParent, c as componentSlotSchema, a as componentNameSchema, b as componentNameError, r as resolveParentRef, e as applyResolvedParent, f as isPackContainerType, g as encodeComponentParent, h as introducedLintFindings, l as lintComponentSpec, j as lintComponentSlots, k as lintUnusableTextGeometry, m as lintStandardSingleLineInputHeight, o as lintTextGeometry, p as lintRenderedGeometry, q as lintKanbanInteractions, s as lintShadKanbanCards, t as lintShadScheduleScale } from "./chunk-CFkpjIJ2.js";
-import { r as retiredUi2Name, p as packSlotOnOwnId, z as suggestedHtmlHeight } from "./chunk-BszK73UV.js";
+import { i as isMisplacedStyleKey, P as PROPERTY_KEY_ALIASES, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey, d as decodeComponentParent, c as componentSlotSchema, a as componentNameSchema, b as componentNameError, r as resolveParentRef, e as applyResolvedParent, f as isPackContainerType, g as encodeComponentParent, h as introducedLintFindings, l as lintComponentSpec, j as lintComponentSlots, s as slotFindingKey, k as lintUnusableTextGeometry, m as lintStandardSingleLineInputHeight, o as lintTextGeometry, p as lintRenderedGeometry, q as lintKanbanInteractions, t as lintShadKanbanCards, u as lintShadScheduleScale } from "./chunk-DMqeGZea.js";
+import { r as retiredUi2Name, p as packSlotOnOwnId, z as suggestedHtmlHeight } from "./chunk-SbPwPcRl.js";
 import { b0 as external_exports, b7 as fail, b8 as ok } from "./chunk-Bpoy8qtq.js";
 import { execFile, execFileSync } from "node:child_process";
 import { promisify } from "node:util";
@@ -967,8 +967,10 @@ function updateComponentsTool(client) {
         }
         const allComponents = [...projected.values()];
         const introducedForChanged = (lint) => changedComponents.flatMap(({ before, after }) => introducedLintFindings(lint([before]), lint([after])));
-        if (placementChanged || changedComponents.length) {
-          errors.push(...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(allComponents)));
+        const parents = new Set(page.components.map((component) => component.parent).filter(Boolean));
+        const hasChildren = (id) => typeof id === "string" && [...parents].some((parent) => parent === id || parent.startsWith(`${id}-`));
+        if (placementChanged || changedComponents.some(({ before }) => hasChildren(before.id))) {
+          errors.push(...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(allComponents), slotFindingKey));
         }
         errors.push(...introducedForChanged(lintUnusableTextGeometry));
         if (errors.length)
