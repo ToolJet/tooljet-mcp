@@ -793,6 +793,8 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
     // A FlexContainer has one canvas, its body: slot_name "body" there is the plain parent, as for a Container.
     // A published library's container (libraryPack.ts) takes its own named slots (ToolJet.Slot, e.g. tab_details).
     // Which of its canvases a pack container draws is checked in lintPackItemSlots; a ToolJet container takes only its own.
+    // A pack canvas is never header, footer or modal, whatever its manifest lists: a child saved on "<id>-header" reads
+    // back as ToolJet's own header slot (decodeComponentParent), which a pack does not draw. No built-in pack names one.
     const validParent = isLibraryPackType(parent?.type) || isPackContainerType(parent?.type) ? !['header', 'footer', 'modal'].includes(slotName) && !isTabSlot(slotName) :
       !isNativeSlotName(slotName) ? false :
       slotName === 'modal' ? parent?.type === 'Kanban' : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? '') :
