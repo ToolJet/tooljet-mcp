@@ -1,8 +1,8 @@
 import { createRequire } from "node:module";
-import { g as getComponentSchema, C as COMPONENT_FX_UPDATE_GUIDANCE, b as getCatalog, c as getLegacyComponentReplacement } from "./chunk-CmizjRXJ.js";
-import { i as isMisplacedStyleKey, P as PROPERTY_KEY_ALIASES, r as retiredUi2Name, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey, d as decodeComponentParent, c as componentSlotSchema, a as componentNameSchema, b as componentNameError, e as resolveParentRef, f as encodeComponentParent, g as introducedLintFindings, l as lintComponentSpec, h as lintComponentSlots, j as lintUnusableTextGeometry, k as lintStandardSingleLineInputHeight, m as lintTextGeometry, o as lintRenderedGeometry, p as lintKanbanInteractions, q as lintShadKanbanCards, s as lintShadScheduleScale } from "./chunk-CzEla2h4.js";
-import { b0 as external_exports, b7 as fail, b8 as ok } from "./chunk-Csl8mO51.js";
-import { n as suggestedHtmlHeight } from "./chunk-CH7Qaiw9.js";
+import { g as getComponentSchema, C as COMPONENT_FX_UPDATE_GUIDANCE, b as getCatalog, i as internalComponentTypeNote, c as getLegacyComponentReplacement } from "./chunk-x55QR8id.js";
+import { i as isMisplacedStyleKey, P as PROPERTY_KEY_ALIASES, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey, d as decodeComponentParent, c as componentSlotSchema, a as componentNameSchema, b as componentNameError, r as resolveParentRef, e as applyResolvedParent, f as isPackContainerType, g as encodeComponentParent, h as introducedLintFindings, l as lintComponentSpec, j as lintComponentSlots, s as slotFindingKey, k as lintUnusableTextGeometry, m as lintStandardSingleLineInputHeight, o as lintTextGeometry, p as lintRenderedGeometry, q as lintKanbanInteractions, t as lintShadKanbanCards, u as lintShadScheduleScale } from "./chunk-DMqeGZea.js";
+import { r as retiredUi2Name, p as packSlotOnOwnId, z as suggestedHtmlHeight } from "./chunk-SbPwPcRl.js";
+import { b0 as external_exports, b7 as fail, b8 as ok } from "./chunk-Bpoy8qtq.js";
 import { execFile, execFileSync } from "node:child_process";
 import { promisify } from "node:util";
 import { AsyncLocalStorage } from "node:async_hooks";
@@ -852,11 +852,14 @@ function updateComponentsTool(client) {
           let parent = update.parent;
           if (typeof parent === "string" && parent) {
             const resolvedParent = resolveParentRef(page.components, parent);
-            if (!resolvedParent.ok) {
-              errors.push(`Component "${update.component_id}": ${resolvedParent.error}`);
+            const entry = { parent, slot_name: update.slot_name };
+            const parentError = resolvedParent.ok ? applyResolvedParent(entry, resolvedParent) : resolvedParent.error;
+            if (parentError) {
+              errors.push(`Component "${update.component_id}": ${parentError}`);
               continue;
             }
-            parent = resolvedParent.parent;
+            parent = entry.parent;
+            update.slot_name = entry.slot_name;
           }
           let slotName = update.slot_name;
           if (slotName !== void 0) {
@@ -869,6 +872,15 @@ function updateComponentsTool(client) {
                 errors.push(`Component "${update.component_id}": slot_name:"${slotName}" requires an existing or explicit parent.`);
                 continue;
               }
+            }
+          }
+          let writeSlot = update.slot_name;
+          if (parent) {
+            const packParent = page.components.find((candidate) => isPackContainerType(candidate.type) && (parent === candidate.id || parent.startsWith(`${candidate.id}-`)));
+            if (packParent && (slotName !== void 0 || parent === packParent.id)) {
+              parent = packSlotOnOwnId(packParent.type, slotName) ? packParent.id : `${packParent.id}-${slotName ?? "body"}`;
+              slotName = void 0;
+              writeSlot = void 0;
             }
           }
           const authoredOrder = update.definition?.properties?.childOrder;
@@ -946,7 +958,7 @@ function updateComponentsTool(client) {
             definition: normalizedDefinition,
             name: update.name,
             parent,
-            slotName: update.slot_name
+            slotName: writeSlot
           });
           if (!update.definition)
             continue;
@@ -955,8 +967,10 @@ function updateComponentsTool(client) {
         }
         const allComponents = [...projected.values()];
         const introducedForChanged = (lint) => changedComponents.flatMap(({ before, after }) => introducedLintFindings(lint([before]), lint([after])));
-        if (placementChanged) {
-          errors.push(...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(allComponents)));
+        const parents = new Set(page.components.map((component) => component.parent).filter(Boolean));
+        const hasChildren = (id) => typeof id === "string" && [...parents].some((parent) => parent === id || parent.startsWith(`${id}-`));
+        if (placementChanged || changedComponents.some(({ before }) => hasChildren(before.id))) {
+          errors.push(...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(allComponents), slotFindingKey));
         }
         errors.push(...introducedForChanged(lintUnusableTextGeometry));
         if (errors.length)
@@ -1201,6 +1215,9 @@ function getComponentCatalogTool(client) {
           return ok(getCatalog());
         }
         if (singleType && typesList.length === 0 && batch.length === 0) {
+          const internal = internalComponentTypeNote(singleType);
+          if (internal)
+            return fail(new Error(`"${singleType}" ${internal}`));
           const resolved = resolveCatalogType(singleType);
           const schema = getComponentSchema(resolved.type);
           if (!schema) {
@@ -1240,7 +1257,7 @@ function getComponentCatalogTool(client) {
           if (!request.type)
             continue;
           const resolved = resolveCatalogType(request.type);
-          const schema = getComponentSchema(resolved.type);
+          const schema = internalComponentTypeNote(request.type) ? null : getComponentSchema(resolved.type);
           if (!schema) {
             if (!seenUnknown.has(request.type)) {
               seenUnknown.add(request.type);

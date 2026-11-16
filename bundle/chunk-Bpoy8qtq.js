@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { _ as __export, R as util_exports, a as _uppercase, b as _trim, cJ as treeifyError, c as _toUpperCase, e as _toLowerCase, cK as toJSONSchema, f as _startsWith, g as _slugify, h as _size, cS as registry, S as regexes_exports, i as _regex, j as _property, cU as prettifyError, k as _positive, l as _overwrite, n as _normalize, o as _nonpositive, p as _nonnegative, q as _negative, r as _multipleOf, s as _minSize, t as _minLength, u as _mime, v as _maxSize, w as _maxLength, x as _lte, y as _lt, z as _lowercase, A as _length, B as _includes, C as _gte, D as _gt, aY as globalRegistry, aR as formatError, aQ as flattenError, E as _endsWith, d6 as config, at as clone, dB as TimePrecision, dC as NEVER, dE as $output, dF as $input, dG as $brand, du as _coercedString, dv as _coercedNumber, dx as _coercedBoolean, dy as _coercedBigint, dw as _coercedDate, e5 as tableQuotaError } from "./chunk-C1Uan0hB.js";
-import { x as xor, c as xid, _ as _void2, u as uuidv7, d as uuidv6, e as uuidv4, f as uuid, g as url, i as unknown, j as union, k as _undefined2, l as ulid, m as uint64, n as uint32, o as tuple, p as transform, q as templateLiteral, s as symbol, v as superRefine, w as success, y as stringbool, z as stringFormat, A as string, B as strictObject, C as set, D as safeParseAsync, E as safeParse, F as safeEncodeAsync, G as safeEncode, H as safeDecodeAsync, I as safeDecode, J as refine, K as record, L as readonly, M as promise, N as preprocess, O as prefault, P as pipe, Q as partialRecord, R as parseAsync, S as parse, T as optional, U as object, V as number, W as nullish, X as nullable, Y as _null2, Z as nonoptional, $ as never, a0 as nativeEnum, a1 as nanoid, a2 as nan, a3 as meta2, a4 as map, a5 as mac, a6 as looseRecord, a7 as looseObject, a8 as literal, a9 as lazy, aa as ksuid, ab as keyof, ac as jwt, ad as json, ae as iso_exports, af as ipv6, ag as ipv4, ah as invertCodec, ai as intersection, aj as int64, ak as int32, al as int, am as _instanceof, an as httpUrl, ao as hostname, ap as hex, aq as hash, ar as guid, as as _function, at as float64, au as float32, av as file, aw as exactOptional, ax as _enum, ay as encodeAsync, az as encode, aA as emoji, aB as email, aC as e164, aD as discriminatedUnion, aE as describe2, aF as decodeAsync, aG as decode, aH as date2$1, aI as custom, aJ as cuid2, aK as cuid, aL as codec, aM as cidrv6, aN as cidrv4, aO as check, aP as _catch, aQ as boolean, aR as bigint, aS as base64url, aT as base64, aU as array, aV as any, aW as _default, aX as _ZodString, aY as ZodXor, aZ as ZodXID, a_ as ZodVoid, a$ as ZodUnknown, b0 as ZodUnion, b1 as ZodUndefined, b2 as ZodUUID, b3 as ZodURL, b4 as ZodULID, b5 as ZodType, b6 as ZodTuple, b7 as ZodTransform, b8 as ZodTemplateLiteral, b9 as ZodSymbol, ba as ZodSuccess, bb as ZodStringFormat, bc as ZodString, bd as ZodSet, be as ZodRecord, bf as ZodRealError, bg as ZodReadonly, bh as ZodPromise, bi as ZodPreprocess, bj as ZodPrefault, bk as ZodPipe, bl as ZodOptional, bm as ZodObject, bn as ZodNumberFormat, bo as ZodNumber, bp as ZodNullable, bq as ZodNull, br as ZodNonOptional, bs as ZodNever, bt as ZodNanoID, bu as ZodNaN, bv as ZodMap, bw as ZodMAC, bx as ZodLiteral, by as ZodLazy, bz as ZodKSUID, bA as ZodJWT, bB as ZodIntersection, bC as ZodISOTime, bD as ZodISODuration, bE as ZodISODateTime, bF as ZodISODate, bG as ZodIPv6, bH as ZodIPv4, bI as ZodGUID, bJ as ZodFunction, bK as ZodFile, bL as ZodExactOptional, bM as ZodError, bN as ZodEnum, bO as ZodEmoji, bP as ZodEmail, bQ as ZodE164, bR as ZodDiscriminatedUnion, bS as ZodDefault, bT as ZodDate, bU as ZodCustomStringFormat, bV as ZodCustom, bW as ZodCodec, bX as ZodCatch, bY as ZodCUID2, bZ as ZodCUID, b_ as ZodCIDRv6, b$ as ZodCIDRv4, c0 as ZodBoolean, c1 as ZodBigIntFormat, c2 as ZodBigInt, c3 as ZodBase64URL, c4 as ZodBase64, c5 as ZodArray, c6 as ZodAny, c7 as checks_exports, c8 as schemas_exports } from "./chunk-Dl7vSZwt.js";
+import { x as xor, c as xid, _ as _void2, u as uuidv7, d as uuidv6, e as uuidv4, f as uuid, g as url, i as unknown, j as union, k as _undefined2, l as ulid, m as uint64, n as uint32, o as tuple, p as transform, q as templateLiteral, s as symbol, v as superRefine, w as success, y as stringbool, z as stringFormat, A as string, B as strictObject, C as set, D as safeParseAsync, E as safeParse, F as safeEncodeAsync, G as safeEncode, H as safeDecodeAsync, I as safeDecode, J as refine, K as record, L as readonly, M as promise, N as preprocess, O as prefault, P as pipe, Q as partialRecord, R as parseAsync, S as parse, T as optional, U as object, V as number, W as nullish, X as nullable, Y as _null2, Z as nonoptional, $ as never, a0 as nativeEnum, a1 as nanoid, a2 as nan, a3 as meta2, a4 as map, a5 as mac, a6 as looseRecord, a7 as looseObject, a8 as literal$1, a9 as lazy, aa as ksuid, ab as keyof, ac as jwt, ad as json, ae as iso_exports, af as ipv6, ag as ipv4, ah as invertCodec, ai as intersection, aj as int64, ak as int32, al as int, am as _instanceof, an as httpUrl, ao as hostname, ap as hex, aq as hash, ar as guid, as as _function, at as float64, au as float32, av as file, aw as exactOptional, ax as _enum, ay as encodeAsync, az as encode, aA as emoji, aB as email, aC as e164, aD as discriminatedUnion, aE as describe2, aF as decodeAsync, aG as decode, aH as date2$1, aI as custom, aJ as cuid2, aK as cuid, aL as codec, aM as cidrv6, aN as cidrv4, aO as check, aP as _catch, aQ as boolean, aR as bigint, aS as base64url, aT as base64, aU as array, aV as any, aW as _default, aX as _ZodString, aY as ZodXor, aZ as ZodXID, a_ as ZodVoid, a$ as ZodUnknown, b0 as ZodUnion, b1 as ZodUndefined, b2 as ZodUUID, b3 as ZodURL, b4 as ZodULID, b5 as ZodType, b6 as ZodTuple, b7 as ZodTransform, b8 as ZodTemplateLiteral, b9 as ZodSymbol, ba as ZodSuccess, bb as ZodStringFormat, bc as ZodString, bd as ZodSet, be as ZodRecord, bf as ZodRealError, bg as ZodReadonly, bh as ZodPromise, bi as ZodPreprocess, bj as ZodPrefault, bk as ZodPipe, bl as ZodOptional, bm as ZodObject, bn as ZodNumberFormat, bo as ZodNumber, bp as ZodNullable, bq as ZodNull, br as ZodNonOptional, bs as ZodNever, bt as ZodNanoID, bu as ZodNaN, bv as ZodMap, bw as ZodMAC, bx as ZodLiteral, by as ZodLazy, bz as ZodKSUID, bA as ZodJWT, bB as ZodIntersection, bC as ZodISOTime, bD as ZodISODuration, bE as ZodISODateTime, bF as ZodISODate, bG as ZodIPv6, bH as ZodIPv4, bI as ZodGUID, bJ as ZodFunction, bK as ZodFile, bL as ZodExactOptional, bM as ZodError, bN as ZodEnum, bO as ZodEmoji, bP as ZodEmail, bQ as ZodE164, bR as ZodDiscriminatedUnion, bS as ZodDefault, bT as ZodDate, bU as ZodCustomStringFormat, bV as ZodCustom, bW as ZodCodec, bX as ZodCatch, bY as ZodCUID2, bZ as ZodCUID, b_ as ZodCIDRv6, b$ as ZodCIDRv4, c0 as ZodBoolean, c1 as ZodBigIntFormat, c2 as ZodBigInt, c3 as ZodBase64URL, c4 as ZodBase64, c5 as ZodArray, c6 as ZodAny, c7 as checks_exports, c8 as schemas_exports } from "./chunk-Dl7vSZwt.js";
 import { l as locales_exports, c as core_exports, e as en_default } from "./chunk-RdBCD2ZE.js";
 import { Script } from "node:vm";
 import { randomUUID } from "node:crypto";
@@ -155,7 +155,7 @@ __export(external_exports, {
   ksuid: () => ksuid,
   lazy: () => lazy,
   length: () => _length,
-  literal: () => literal,
+  literal: () => literal$1,
   locales: () => locales_exports,
   looseObject: () => looseObject,
   looseRecord: () => looseRecord,
@@ -670,13 +670,13 @@ function convertSchema(schema, ctx) {
   let baseSchema = convertBaseSchema(schema, ctx);
   const hasExplicitType = schema.type || schema.enum !== void 0 || schema.const !== void 0;
   if (schema.anyOf && Array.isArray(schema.anyOf)) {
-    const options = schema.anyOf.map((s) => convertSchema(s, ctx));
-    const anyOfUnion = z.union(options);
+    const options2 = schema.anyOf.map((s) => convertSchema(s, ctx));
+    const anyOfUnion = z.union(options2);
     baseSchema = hasExplicitType ? z.intersection(baseSchema, anyOfUnion) : anyOfUnion;
   }
   if (schema.oneOf && Array.isArray(schema.oneOf)) {
-    const options = schema.oneOf.map((s) => convertSchema(s, ctx));
-    const oneOfUnion = z.xor(options);
+    const options2 = schema.oneOf.map((s) => convertSchema(s, ctx));
+    const oneOfUnion = z.xor(options2);
     baseSchema = hasExplicitType ? z.intersection(baseSchema, oneOfUnion) : oneOfUnion;
   }
   if (schema.allOf && Array.isArray(schema.allOf)) {
@@ -789,17 +789,17 @@ function fail(err) {
   return { content: [{ type: "text", text }], isError: true };
 }
 var schemas = /* @__PURE__ */ new Map();
-function exposeActions(source, definitions, selector = "action") {
-  source.description += " Individually exposed operations: " + definitions.map((action) => action.name).join(", ") + ".";
-  const handler = source.handler;
+function exposeActions(source2, definitions, selector = "action") {
+  source2.description += " Individually exposed operations: " + definitions.map((action) => action.name).join(", ") + ".";
+  const handler = source2.handler;
   return definitions.map(({ action, required: required2, optional: optional2 = [], ...definition2 }) => {
     let schema = schemas.get(definition2.name);
     if (!schema) {
       const fields = {};
       for (const key of [...required2, ...optional2]) {
-        if (key === selector || !source.inputSchema[key])
+        if (key === selector || !source2.inputSchema[key])
           throw new Error(`Invalid action field: ${definition2.name}.${key}`);
-        fields[key] = source.inputSchema[key];
+        fields[key] = source2.inputSchema[key];
       }
       schema = external_exports.object(fields).required(Object.fromEntries(required2.map((key) => [key, true]))).strict();
       if (required2.includes("confirm"))
@@ -1020,8 +1020,150 @@ var workspaceUsers = [
     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
   }
 ];
-function workspaceUserActionTools(source) {
-  return exposeActions(source, workspaceUsers);
+function workspaceUserActionTools(source2) {
+  return exposeActions(source2, workspaceUsers);
+}
+createRequire(import.meta.url);
+var DIALECTS = {
+  postgresql: { quote: "double", limit: "limit", metadata: "postgresql" },
+  mysql: { quote: "backtick", limit: "limit", metadata: "mysql" },
+  mssql: { quote: "bracket", limit: "top", metadata: "mssql" },
+  snowflake: { quote: "double", limit: "limit" },
+  bigquery: { quote: "backtick", limit: "limit" },
+  oracledb: { quote: "double", limit: "fetch" }
+};
+function assertIdentifier(identifier, label) {
+  if (!identifier.trim() || identifier.length > 256 || /[\0-\x1f\x7f;`"\[\]\\]/.test(identifier)) {
+    throw new Error(`${label} contains unsupported or unsafe identifier characters.`);
+  }
+}
+function quote(kind, identifier) {
+  assertIdentifier(identifier, "SQL identifier");
+  const style = DIALECTS[kind].quote;
+  if (style === "backtick")
+    return `\`${identifier}\``;
+  if (style === "bracket")
+    return `[${identifier}]`;
+  return `"${identifier}"`;
+}
+function literal(value) {
+  return `'${value.replaceAll("'", "''")}'`;
+}
+function source(kind, schema, table) {
+  return schema ? `${quote(kind, schema)}.${quote(kind, table)}` : quote(kind, table);
+}
+function boundedSelect(kind, projection, from, limit, distinct = false) {
+  const prefix2 = `SELECT ${distinct ? "DISTINCT " : ""}`;
+  if (DIALECTS[kind].limit === "top")
+    return `${prefix2}TOP (${limit}) ${projection} FROM ${from}`;
+  if (DIALECTS[kind].limit === "fetch")
+    return `${prefix2}${projection} FROM ${from} FETCH FIRST ${limit} ROWS ONLY`;
+  return `${prefix2}${projection} FROM ${from} LIMIT ${limit}`;
+}
+function options(kind, query2) {
+  return {
+    mode: "sql",
+    query: query2,
+    ...!["snowflake"].includes(kind) ? { query_params: [] } : {},
+    runOnPageLoad: false
+  };
+}
+function metadataSql(kind, purpose, schema, table) {
+  const metadata = "metadata" in DIALECTS[kind] ? DIALECTS[kind].metadata : void 0;
+  if (!metadata)
+    return void 0;
+  if (purpose !== "views" && !table)
+    throw new Error(`${purpose} discovery requires table.`);
+  if (metadata !== "mysql" && !schema)
+    throw new Error(`${purpose} discovery for ${kind} requires schema.`);
+  const schemaFilter = metadata === "mysql" && !schema ? "DATABASE()" : literal(schema);
+  const tableFilter = table ? literal(table) : void 0;
+  if (metadata === "postgresql") {
+    if (purpose === "primary_keys")
+      return `SELECT kcu.column_name, kcu.ordinal_position, tc.constraint_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.ordinal_position`;
+    if (purpose === "foreign_keys")
+      return `SELECT kcu.constraint_name, kcu.column_name, ccu.table_schema AS referenced_schema, ccu.table_name AS referenced_table, ccu.column_name AS referenced_column FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_catalog = tc.constraint_catalog AND ccu.constraint_schema = tc.constraint_schema AND ccu.constraint_name = tc.constraint_name WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = ${schemaFilter} AND tc.table_name = ${tableFilter} ORDER BY kcu.constraint_name, kcu.ordinal_position`;
+    if (purpose === "indexes")
+      return `SELECT indexname AS index_name, indexdef AS definition FROM pg_indexes WHERE schemaname = ${schemaFilter} AND tablename = ${tableFilter} ORDER BY indexname`;
+    return `SELECT table_schema, table_name AS view_name FROM information_schema.views WHERE table_schema = ${schemaFilter} ORDER BY table_name`;
+  }
+  if (metadata === "mysql") {
+    if (purpose === "primary_keys")
+      return `SELECT column_name, ordinal_position, constraint_name FROM information_schema.key_column_usage WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} AND constraint_name = 'PRIMARY' ORDER BY ordinal_position`;
+    if (purpose === "foreign_keys")
+      return `SELECT constraint_name, column_name, referenced_table_schema AS referenced_schema, referenced_table_name AS referenced_table, referenced_column_name AS referenced_column FROM information_schema.key_column_usage WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} AND referenced_table_name IS NOT NULL ORDER BY constraint_name, ordinal_position`;
+    if (purpose === "indexes")
+      return `SELECT index_name, column_name, non_unique, seq_in_index FROM information_schema.statistics WHERE table_schema = ${schemaFilter} AND table_name = ${tableFilter} ORDER BY index_name, seq_in_index`;
+    return `SELECT table_schema, table_name AS view_name FROM information_schema.views WHERE table_schema = ${schemaFilter} ORDER BY table_name`;
+  }
+  if (purpose === "primary_keys")
+    return `SELECT kcu.COLUMN_NAME AS column_name, kcu.ORDINAL_POSITION AS ordinal_position, tc.CONSTRAINT_NAME AS constraint_name FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA AND tc.TABLE_NAME = kcu.TABLE_NAME WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY' AND tc.TABLE_SCHEMA = ${schemaFilter} AND tc.TABLE_NAME = ${tableFilter} ORDER BY kcu.ORDINAL_POSITION`;
+  if (purpose === "foreign_keys")
+    return `SELECT fk.name AS constraint_name, pc.name AS column_name, rs.name AS referenced_schema, rt.name AS referenced_table, rc.name AS referenced_column FROM sys.foreign_key_columns fkc JOIN sys.foreign_keys fk ON fk.object_id = fkc.constraint_object_id JOIN sys.tables pt ON pt.object_id = fkc.parent_object_id JOIN sys.schemas ps ON ps.schema_id = pt.schema_id JOIN sys.columns pc ON pc.object_id = pt.object_id AND pc.column_id = fkc.parent_column_id JOIN sys.tables rt ON rt.object_id = fkc.referenced_object_id JOIN sys.schemas rs ON rs.schema_id = rt.schema_id JOIN sys.columns rc ON rc.object_id = rt.object_id AND rc.column_id = fkc.referenced_column_id WHERE ps.name = ${schemaFilter} AND pt.name = ${tableFilter} ORDER BY fk.name, fkc.constraint_column_id`;
+  if (purpose === "indexes")
+    return `SELECT i.name AS index_name, c.name AS column_name, i.is_unique, ic.key_ordinal FROM sys.indexes i JOIN sys.tables t ON t.object_id = i.object_id JOIN sys.schemas s ON s.schema_id = t.schema_id JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id WHERE s.name = ${schemaFilter} AND t.name = ${tableFilter} AND i.is_hypothetical = 0 ORDER BY i.name, ic.key_ordinal`;
+  return `SELECT TABLE_SCHEMA AS table_schema, TABLE_NAME AS view_name FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = ${schemaFilter} ORDER BY TABLE_NAME`;
+}
+function boundMetadata(kind, sql) {
+  if (DIALECTS[kind].limit === "top")
+    return sql.replace(/^SELECT\s+/i, "SELECT TOP (100) ");
+  if (DIALECTS[kind].limit === "fetch")
+    return `${sql} FETCH FIRST 100 ROWS ONLY`;
+  return `${sql} LIMIT 100`;
+}
+function safeName(value) {
+  return value.replace(/[^A-Za-z0-9_]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "table";
+}
+function prepareSqlDiscoveryQueries(args) {
+  if (!(args.kind in DIALECTS))
+    throw new Error(`Datasource kind "${args.kind}" is not supported by SQL discovery.`);
+  const kind = args.kind;
+  if (args.schema)
+    assertIdentifier(args.schema, "schema");
+  if (args.table)
+    assertIdentifier(args.table, "table");
+  for (const column of [...args.columns ?? [], ...args.distinctColumns ?? []])
+    assertIdentifier(column, "column");
+  const tablePurposes = args.purposes.filter((purpose) => purpose !== "views");
+  if (tablePurposes.length && !args.table)
+    throw new Error("Table-scoped SQL discovery requires table.");
+  if (args.purposes.includes("preview") && !args.columns?.length) {
+    throw new Error("Preview discovery requires one or more explicit columns; SELECT * is never generated.");
+  }
+  if (args.purposes.includes("distinct") && !args.distinctColumns?.length) {
+    throw new Error("Distinct discovery requires one or more explicit distinct_columns.");
+  }
+  const from = args.table ? source(kind, args.schema, args.table) : void 0;
+  const prefix2 = safeName(args.namePrefix ?? args.table ?? args.schema ?? "schema");
+  const queries = [];
+  const unsupported = [];
+  for (const purpose of [...new Set(args.purposes)]) {
+    let sql;
+    if (purpose === "count")
+      sql = `SELECT COUNT(*) AS row_count FROM ${from}`;
+    else if (purpose === "preview") {
+      sql = boundedSelect(kind, args.columns.map((column) => quote(kind, column)).join(", "), from, args.limit);
+    } else if (purpose === "distinct") {
+      sql = boundedSelect(kind, args.distinctColumns.map((column) => quote(kind, column)).join(", "), from, args.limit, true);
+    } else {
+      sql = metadataSql(kind, purpose, args.schema, args.table);
+      if (!sql) {
+        unsupported.push({
+          purpose,
+          reason: `${args.kind} does not expose a verified ${purpose} selector and MCP has no curated read-only SQL contract for it yet.`
+        });
+        continue;
+      }
+      sql = boundMetadata(kind, sql);
+    }
+    queries.push({
+      purpose,
+      name: `${prefix2}_${purpose}`,
+      datasource_id: args.datasourceId,
+      options: options(kind, sql)
+    });
+  }
+  return { queries, unsupported };
 }
 createRequire(import.meta.url);
 var ref = external_exports.string().min(1).max(100);
@@ -1096,13 +1238,13 @@ function validateGraph(graph, queryIds) {
   }
   const flowEdges = controlFlowEdges(graph);
   for (const edge of graph.edges) {
-    const source = nodes.get(edge.source), target = nodes.get(edge.target), path = `edges.${edge.id}`;
-    if (!source || !target) {
+    const source2 = nodes.get(edge.source), target = nodes.get(edge.target), path = `edges.${edge.id}`;
+    if (!source2 || !target) {
       error("missing_endpoint", path, "Edge endpoint does not exist.");
       continue;
     }
     if (isAttachmentEdge(edge)) {
-      if (edge.targetHandle === "ai-model" && !(source.type === "query" && source.data.isChildOfAgent === true && source.data.agentConnectionType === "ai-model" && target.type === "agent")) {
+      if (edge.targetHandle === "ai-model" && !(source2.type === "query" && source2.data.isChildOfAgent === true && source2.data.agentConnectionType === "ai-model" && target.type === "agent")) {
         error("invalid_attachment", path, "AI model attachment must connect an Agent model query child to an Agent.");
       }
       continue;
@@ -1110,9 +1252,9 @@ function validateGraph(graph, queryIds) {
     if (target.type === "input")
       error("start_inbound", path, "Start cannot have inbound edges.");
     const ports = { input: [null, void 0], query: ["success", "failure"], "if-condition": ["true", "false"], output: [], agent: ["output"] };
-    if (ports[source.type] && !ports[source.type].includes(edge.sourceHandle))
-      error("invalid_port", path, `Invalid source port for ${source.type}.`);
-    if (source.type === "query" && edge.sourceHandle === "failure" && !source.data.errorHandler)
+    if (ports[source2.type] && !ports[source2.type].includes(edge.sourceHandle))
+      error("invalid_port", path, `Invalid source port for ${source2.type}.`);
+    if (source2.type === "query" && edge.sourceHandle === "failure" && !source2.data.errorHandler)
       error("error_handler_disabled", path, "Failure edge requires query error handling.");
   }
   for (const agent of graph.nodes.filter((node) => node.type === "agent")) {
@@ -1285,19 +1427,19 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
     const old = graph.edges.find((e) => e.id === id);
     if (input.existing_id && !old)
       throw new Error(`Unknown existing edge: ${id}`);
-    const source = resolve(input.from), target = resolve(input.to);
-    if (!source || !target)
+    const source2 = resolve(input.from), target = resolve(input.to);
+    if (!source2 || !target)
       throw new Error(`Unknown endpoint in edge ${input.ref}. Use a supplied ref or existing node ID.`);
-    const sourceNode = graph.nodes.find((node) => node.id === source);
+    const sourceNode = graph.nodes.find((node) => node.id === source2);
     const sourceHandle = input.port === "default" ? sourceNode?.type === "agent" ? "output" : null : input.port;
-    const edge = { ...old, id, source, target, sourceHandle, type: "custom" };
+    const edge = { ...old, id, source: source2, target, sourceHandle, type: "custom" };
     if (old)
       graph.edges[graph.edges.indexOf(old)] = edge;
     else
       graph.edges.push(edge);
     edge_ids[input.ref] = id;
     if (input.port === "failure") {
-      const n = graph.nodes.find((n2) => n2.id === source);
+      const n = graph.nodes.find((n2) => n2.id === source2);
       if (n.type === "query")
         n.data.errorHandler = true;
     }
@@ -1799,9 +1941,9 @@ var ExportedTokenType = class {
   }
 };
 var keywords = /* @__PURE__ */ new Map();
-function createKeyword(name, options = {}) {
-  options.keyword = name;
-  const token = createToken(name, options);
+function createKeyword(name, options2 = {}) {
+  options2.keyword = name;
+  const token = createToken(name, options2);
   keywords.set(name, token);
   return token;
 }
@@ -1815,25 +1957,25 @@ var tokenBinops = [];
 var tokenBeforeExprs = [];
 var tokenStartsExprs = [];
 var tokenPrefixes = [];
-function createToken(name, options = {}) {
+function createToken(name, options2 = {}) {
   ++tokenTypeCounter;
   tokenLabels.push(name);
-  tokenBinops.push(options.binop ?? -1);
-  tokenBeforeExprs.push(options.beforeExpr ?? false);
-  tokenStartsExprs.push(options.startsExpr ?? false);
-  tokenPrefixes.push(options.prefix ?? false);
-  tokenTypes.push(new ExportedTokenType(name, options));
+  tokenBinops.push(options2.binop ?? -1);
+  tokenBeforeExprs.push(options2.beforeExpr ?? false);
+  tokenStartsExprs.push(options2.startsExpr ?? false);
+  tokenPrefixes.push(options2.prefix ?? false);
+  tokenTypes.push(new ExportedTokenType(name, options2));
   return tokenTypeCounter;
 }
-function createKeywordLike(name, options = {}) {
+function createKeywordLike(name, options2 = {}) {
   ++tokenTypeCounter;
   keywords.set(name, tokenTypeCounter);
   tokenLabels.push(name);
-  tokenBinops.push(options.binop ?? -1);
-  tokenBeforeExprs.push(options.beforeExpr ?? false);
-  tokenStartsExprs.push(options.startsExpr ?? false);
-  tokenPrefixes.push(options.prefix ?? false);
-  tokenTypes.push(new ExportedTokenType("name", options));
+  tokenBinops.push(options2.binop ?? -1);
+  tokenBeforeExprs.push(options2.beforeExpr ?? false);
+  tokenStartsExprs.push(options2.startsExpr ?? false);
+  tokenPrefixes.push(options2.prefix ?? false);
+  tokenTypes.push(new ExportedTokenType("name", options2));
   return tokenTypeCounter;
 }
 var tt = {
@@ -2711,14 +2853,15 @@ export {
   controlFlowEdges as b6,
   fail as b7,
   ok as b8,
-  definition as b9,
-  exposeActions as ba,
+  exposeActions as b9,
+  definition as ba,
   nodeSchema as bb,
   listWorkspaceAppsTool as bc,
   listWorkspaceFoldersTool as bd,
   listWorkspaceUsersTool as be,
   manageWorkspaceUsersTool as bf,
-  workspaceUserActionTools as bg,
+  prepareSqlDiscoveryQueries as bg,
+  workspaceUserActionTools as bh,
   isIdentifierChar as c,
   tokenIsLiteralPropertyName as d,
   ScopeFlag as e,

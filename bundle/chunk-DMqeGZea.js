@@ -1,141 +1,123 @@
 import { createRequire } from "node:module";
-import { s as surfaceAroundResolver, l as lintSelectedRowProjections, a as lintOversizedWidths, b as lintHtmlContentHeight, c as lintHtmlRootSurface, d as lintUnguardedComponentRefs, e as lintEmbeddedBindingSyntax, f as lintChartDataShape, g as lintUnguardedSelectionText, h as lintTextFormat, i as lintTableColumnsShape, B as BARE_QUERY_DATA_BINDING, j as lintUntriggeredDataQueries, k as lintAutomaticWrites, p as parseHtml, m as stripHtmlBindings } from "./chunk-CH7Qaiw9.js";
-import { r as require_lib, a as activePackSet, g as getComponentSchema, b as getCatalog, c as getLegacyComponentReplacement, l as lintBindingNames, d as bindingSpans } from "./chunk-CmizjRXJ.js";
-import { p as parseExpression, a as parse } from "./chunk-C1y-3rfY.js";
-import { b0 as external_exports } from "./chunk-Csl8mO51.js";
+import { p as packSlotOnOwnId, s as surfaceAroundResolver, l as lintSelectedRowProjections, e as emptyLibraryHostError, a as lintOversizedWidths, b as lintHtmlContentHeight, c as lintHtmlRootSurface, d as lintUnguardedComponentRefs, f as lintEmbeddedBindingSyntax, g as lintChartDataShape, h as lintUnguardedSelectionText, i as isLibraryPackType, j as serverLibraryPacks, r as retiredUi2Name, k as lintTextFormat, m as lintTableColumnsShape, B as BARE_QUERY_DATA_BINDING, n as lintComponentStateBindings, o as lintEmptyDateWrites, q as lintUntriggeredDataQueries, t as lintAutomaticWrites, u as packRowSlotNames, v as libraryPacksAll, w as parseHtml, x as stripHtmlBindings, y as packSlotNames } from "./chunk-SbPwPcRl.js";
+import { r as require_lib, i as internalComponentTypeNote, g as getComponentSchema, b as getCatalog, c as getLegacyComponentReplacement, l as lintBindingNames, d as bindingSpans } from "./chunk-x55QR8id.js";
+import { p as parseExpression, a as parse } from "./chunk-8javr-CG.js";
+import { b0 as external_exports } from "./chunk-Bpoy8qtq.js";
 import { e8 as __toESM } from "./chunk-C1Uan0hB.js";
 import { readFileSync } from "node:fs";
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
-var offline;
-function libraryPacksAll() {
-  const discovered = activePackSet().packs;
-  if (discovered)
-    return discovered;
-  if (offline === void 0) {
-    try {
-      const path = resolve(dirname(fileURLToPath(import.meta.url)), "../data/library-pack.json");
-      offline = JSON.parse(readFileSync(path, "utf8"));
-    } catch {
-      offline = null;
-    }
-  }
-  return offline ? [offline] : [];
-}
-function registerLibraryPacks(packs) {
-  const set = activePackSet();
-  set.packs = packs;
-}
-var serverLibraryPacks = () => activePackSet().packs ?? [];
-function libraryPack() {
-  return libraryPacksAll()[0] ?? null;
-}
-var isBuiltin = (pack) => pack.kind === "builtin";
-var packOfType = (type) => typeof type === "string" ? libraryPacksAll().find((p) => type.startsWith(p.prefix)) : void 0;
-var isLibraryPackType = (type) => !!packOfType(type);
-function libraryPins() {
-  const packs = libraryPacksAll().filter((p) => !isBuiltin(p));
-  return packs.length ? Object.fromEntries(packs.map((p) => [p.correlationId.replace(/-/g, ""), p.version])) : void 0;
-}
-var dashless = (id) => id.replace(/-/g, "");
-var propertyValue = (properties, key) => {
-  const entry = properties?.[key];
-  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+var MAX_SLOT_ITEMS = 50;
+var str = (value2) => value2 === void 0 || value2 === null ? "" : String(value2);
+var isRecord = (value2) => !!value2 && typeof value2 === "object" && !Array.isArray(value2);
+var shadTabIds = (raw) => raw.slice(0, MAX_SLOT_ITEMS).flatMap((item, i) => {
+  if (item === null || item === void 0 || typeof item !== "object")
+    return item === null || item === void 0 ? [] : [String(item)];
+  if (!isRecord(item))
+    return [];
+  return [str(item.id ?? item.value) || String(i + 1)];
+});
+var shadItemIds = (raw) => raw.filter(isRecord).slice(0, MAX_SLOT_ITEMS).map((item, i) => String(item.id ?? i + 1));
+var keyedIds = (raw) => raw.slice(0, MAX_SLOT_ITEMS).flatMap((item) => {
+  if (typeof item === "string")
+    return item ? [item] : [];
+  if (!isRecord(item))
+    return [];
+  const key = str(item.key ?? item.id ?? item.value ?? item.label);
+  return key ? [key] : [];
+});
+var CONTAINERS = {
+  Lib_shadcn_TabsContainer: { property: "tabs", prefix: "tab", ids: shadTabIds },
+  Lib_shadcn_Stepper: { property: "steps", prefix: "step", ids: shadItemIds },
+  Lib_shadcn_AccordionContainer: { property: "sections", prefix: "section", ids: shadItemIds },
+  Lib_antd_Tabs: { property: "items", prefix: "tab", ids: keyedIds },
+  Lib_antd_Collapse: { property: "items", prefix: "panel", ids: keyedIds },
+  Lib_mui_Tabs: { property: "tabs", prefix: "tab", ids: keyedIds }
 };
-function libraryCorrelationId(component) {
-  const properties = component.properties;
-  const id = propertyValue(properties, "correlationId");
-  return typeof id === "string" && id && !propertyValue(properties, "codePage") ? id : void 0;
-}
-var isPinned = (pins, correlationId) => pins[dashless(correlationId)] != null || pins[correlationId] != null;
-function missingLibraryPins(components, pins) {
-  const missing = {};
-  for (const component of components) {
-    const id = libraryCorrelationId(component);
-    if (!id || isPinned(pins, id))
-      continue;
-    const pack = libraryPacksAll().find((p) => !isBuiltin(p) && p.correlationId === id);
-    if (pack)
-      missing[dashless(id)] = pack.version;
+var toSlotName = (prefix, id) => `${prefix}_${id.replace(/\W/g, "_")}`;
+var idTag = (id) => {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i += 1)
+    h = Math.imul(h ^ id.charCodeAt(i), 16777619);
+  return (h >>> 0).toString(36);
+};
+function slotNames(prefix, ids) {
+  const taken = /* @__PURE__ */ new Set();
+  const distinct2 = [...new Set(ids)];
+  for (const id of distinct2.filter((id2) => !/\W/.test(id2)))
+    taken.add(toSlotName(prefix, id));
+  for (const id of distinct2.filter((id2) => /\W/.test(id2)).sort((a, b) => a < b ? -1 : a > b ? 1 : 0)) {
+    const base = toSlotName(prefix, id);
+    let name = base;
+    for (let n = 1; taken.has(name); n += 1)
+      name = `${base}_${idTag(id)}${n > 1 ? `_${n}` : ""}`;
+    taken.add(name);
   }
-  return Object.keys(missing).length ? missing : void 0;
+  return taken;
 }
-function unpinnedLibraries(components, pins) {
-  const byLibrary = /* @__PURE__ */ new Map();
-  for (const component of components) {
-    const id = libraryCorrelationId(component);
-    if (!id || isPinned(pins, id))
-      continue;
-    const library = String(propertyValue(component.properties, "libraryName") ?? id);
-    byLibrary.set(library, [...byLibrary.get(library) ?? [], String(component.name ?? "unnamed")]);
-  }
-  return [...byLibrary].map(([library, names]) => ({ library, components: names }));
-}
-function toLibraryComponent(spec) {
-  const pack = packOfType(spec.type);
-  if (!pack)
-    return spec;
-  const componentName = spec.type.slice(pack.prefix.length);
-  if (isBuiltin(pack)) {
-    return {
-      ...spec,
-      type: "PackComponent",
-      properties: {
-        ...spec.properties ?? {},
-        pack: { value: pack.pack },
-        componentName: { value: componentName }
-      }
-    };
-  }
-  return {
-    ...spec,
-    type: "LibraryComponent",
-    properties: {
-      ...spec.properties ?? {},
-      libraryId: { value: pack.libraryId },
-      correlationId: { value: pack.correlationId },
-      libraryName: { value: pack.libraryName },
-      componentName: { value: componentName }
+function packCanvases(type, properties) {
+  const items = packItemSlots(type, properties);
+  if (items)
+    return { names: items.slots, prefix: items.prefix, property: items.property, bound: false };
+  const container = typeof type === "string" ? CONTAINERS[type] : void 0;
+  const listed = packSlotNames(type);
+  if (container) {
+    const entry = properties?.[container.property];
+    const raw = isRecord(entry) && "value" in entry ? entry.value : entry;
+    if (raw === void 0 || raw === null) {
+      const fallback = typeof type === "string" ? getComponentSchema(type)?.properties?.find((p) => p.key === container.property)?.default : void 0;
+      const defaults = fallback === void 0 ? void 0 : packItemSlots(type, { [container.property]: fallback });
+      if (defaults?.slots.size)
+        return { names: defaults.slots, prefix: container.prefix, property: container.property, bound: false };
+      if (listed?.length)
+        return { names: new Set(listed), prefix: container.prefix, property: container.property, bound: false };
     }
-  };
+    return { names: /* @__PURE__ */ new Set(), prefix: container.prefix, property: container.property, bound: true };
+  }
+  return listed ? { names: new Set(listed), bound: false } : void 0;
 }
-function libraryTypeOf(component) {
-  if (component.type !== "LibraryComponent" && component.type !== "PackComponent")
+function packItemSlots(type, properties) {
+  const container = typeof type === "string" ? CONTAINERS[type] : void 0;
+  if (!container)
     return void 0;
-  const value2 = (key) => {
-    const entry = component.properties?.[key];
-    return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
-  };
-  if (component.type === "PackComponent") {
-    const id = value2("pack");
-    const name2 = value2("componentName");
-    if (typeof id !== "string" || typeof name2 !== "string")
-      return void 0;
-    const known = libraryPacksAll().find((p) => p.pack === id);
-    if (!known)
-      return `Lib_${id.toLowerCase().replace(/[^a-z0-9]+/g, "")}_${name2}`;
-    return known.components[name2] ? `${known.prefix}${name2}` : void 0;
-  }
-  const pack = libraryPacksAll().find((p) => p.correlationId === value2("correlationId"));
-  const name = value2("componentName");
-  return pack && typeof name === "string" && pack.components[name] ? `${pack.prefix}${name}` : void 0;
+  const entry = properties?.[container.property];
+  const raw = literalList(isRecord(entry) && "value" in entry ? entry.value : entry);
+  if (!Array.isArray(raw))
+    return void 0;
+  return { prefix: container.prefix, property: container.property, slots: slotNames(container.prefix, container.ids(raw)) };
 }
-var FLEX_DOWNGRADE = {
-  alignItems: { stretch: "flex-start", "last baseline": "flex-start" },
-  justifyContent: { "space-between": "flex-start" }
-};
-function downgradeFlexForLibrary(spec) {
-  if (process.env.TOOLJET_FLEX_V1 !== "1" || !libraryPack() || spec.type !== "FlexContainer" || !spec.properties)
-    return spec;
-  const properties = { ...spec.properties };
-  for (const [key, map] of Object.entries(FLEX_DOWNGRADE)) {
-    const entry = properties[key];
-    const value2 = entry && typeof entry === "object" ? entry.value : entry;
-    if (typeof value2 === "string" && map[value2])
-      properties[key] = { value: map[value2] };
+function literalList(value2) {
+  if (typeof value2 !== "string")
+    return value2;
+  const body = /^\s*\{\{\s*(\[[\s\S]*\])\s*\}\}\s*$/.exec(value2)?.[1];
+  if (!body)
+    return value2;
+  try {
+    return JSON.parse(body);
+  } catch {
+    return value2;
   }
-  return { ...spec, properties };
+}
+var NUMERIC = /^[-+]?\d*\.?\d+(e[-+]?\d+)?%?$/i;
+var ALSO_ARRAY = /* @__PURE__ */ new Set(["shadcn.Slider.defaultValue", "shadcn.Slider.value", "antd.Slider.value", "mui.Slider.value"]);
+var ALSO_CLOCK = /* @__PURE__ */ new Set(["shadcn.Schedule.dayStart", "shadcn.Schedule.dayEnd"]);
+var CLOCK = /^\d{1,2}(:\d{2})?\s*([ap]\.?m\.?)?$/i;
+var usableBoolean = (value2) => typeof value2 === "boolean" || typeof value2 === "number" && Number.isFinite(value2) || // Empty text is false, as ToolJet reads it (as null), without a note.
+typeof value2 === "string" && ["true", "false", ""].includes(value2.trim().toLowerCase());
+var usableNumber = (value2) => typeof value2 === "number" && Number.isFinite(value2) || // Empty text is an unset number (a default the pack does not set), as the pack reads it.
+typeof value2 === "string" && (value2.trim() === "" || NUMERIC.test(value2.trim().replace(/,/g, "")));
+function packValueTypeError(type, key, valueType, value2) {
+  const pack = /^Lib_([a-z0-9]+)_(.+)$/.exec(type ?? "");
+  if (!pack || valueType !== "boolean" && valueType !== "number")
+    return null;
+  if (value2 === null)
+    return null;
+  if (Array.isArray(value2) && ALSO_ARRAY.has(`${pack[1]}.${pack[2]}.${key}`))
+    return null;
+  if (typeof value2 === "string" && CLOCK.test(value2.trim()) && ALSO_CLOCK.has(`${pack[1]}.${pack[2]}.${key}`))
+    return null;
+  if (valueType === "boolean" ? usableBoolean(value2) : usableNumber(value2))
+    return null;
+  return valueType === "boolean" ? `"${key}" takes a boolean, and ${JSON.stringify(value2)} is not one, so the component reads it as false. Use true, false or a {{binding}}.` : `"${key}" takes a number, and ${JSON.stringify(value2)} is not one, so the component draws it as unset. Use a number or a {{binding}}.`;
 }
 var defaultPack = () => {
   const raw = process.env.MCP_AGENT_PACK;
@@ -175,6 +157,18 @@ function nativeFitsUi2(component) {
     return true;
   return component.type === "Table" && styleValue(component.styles, "tableLook") !== "default";
 }
+function buildPack(library) {
+  if (library.pack)
+    return library.pack;
+  return serverLibraryPacks().length ? defaultPack() : void 0;
+}
+function packFix(pack) {
+  const components = libraryPacksAll().find((p) => p.pack === pack)?.components ?? {};
+  const first = (...names) => names.find((name) => components[name]);
+  const dialog = first("Dialog", "Modal");
+  const sheet = first("Drawer", "Sheet");
+  return `Build with the app's component pack instead: types whose names start with Lib_${pack}_ (get_component_catalog lists them), laid out in FlexContainers; ` + (dialog ? `Lib_${pack}_${dialog} for dialogs; ` : "") + (sheet ? `Lib_${pack}_${sheet} for side sheets; ` : "") + `for tables ToolJet's Table (styles.tableLook "shadcn").`;
+}
 function componentLibraryWarnings(library, pages, request) {
   if (request?.trim())
     return [];
@@ -194,7 +188,8 @@ function componentLibraryWarnings(library, pages, request) {
   const listed = [...off].map(([type, names]) => `${type} (${names.slice(0, 3).join(", ")}${names.length > 3 ? ", ..." : ""})`).join("; ");
   const how = library.source === "saved" ? "its saved library" : library.source === "inferred" ? "the library its widgets imply" : "new apps are; pass app_id to check the plan against an existing app";
   const appName = COMPONENT_LIBRARY_NAMES[library.library];
-  const fix = library.library === "ui1" ? "Build with the native ToolJet types instead (Table, Chart, TextInput, DropdownV2, ModalV2, Container, ...)." : `Build with the UI 2.0 types instead: types whose names start with Shad, laid out in FlexContainers; ShadDialog for dialogs and side sheets; for tables ToolJet's Table (styles.tableLook "shadcn").`;
+  const pack = library.library === "ui2" ? buildPack(library) : void 0;
+  const fix = library.library === "ui1" ? "Build with the native ToolJet types instead (Table, Chart, TextInput, DropdownV2, ModalV2, Container, ...)." : pack ? packFix(pack) : `Build with the UI 2.0 types instead: types whose names start with Shad, laid out in FlexContainers; ShadDialog for dialogs and side sheets; for tables ToolJet's Table (styles.tableLook "shadcn").`;
   return [
     `This app is built in ${appName} (${how}), and the plan adds widgets from the other library: ${listed}. ${fix} If the user asked for the other library in this request, keep the plan and put their words in component_library_request.`
   ];
@@ -576,267 +571,6 @@ function lintSurfaceInsets(c) {
     return [];
   return [`Text "${c.name ?? c.id}": left-aligned text sits on a rounded colored surface without an authored content inset. Native Text's styles.padding does not add inner text padding. Use padded HTML content (with enough height), inset native Text within a Container, or center a compact metric when appropriate. Keep transparent headings/plain labels unchanged; verify the visible text-to-card edge spacing.`];
 }
-var UI2_COMMON_RENAMES = {
-  actions: { visibility: "setVisibility", disable: "setDisable", loading: "setLoading" }
-};
-var CHART = { exposed: { clickedDatum: "clickedDataPoint" } };
-var PICKER = { events: { onChange: "onSelect" }, actions: { clear: "clearValue" } };
-var UI2_RENAMES = {
-  ShadAreaChart: CHART,
-  ShadBarChart: CHART,
-  ShadComboChart: CHART,
-  ShadFunnelChart: CHART,
-  ShadHeatmapChart: CHART,
-  ShadLineChart: CHART,
-  ShadPieChart: CHART,
-  ShadRadarChart: CHART,
-  ShadRadialChart: CHART,
-  ShadScatterChart: CHART,
-  ShadBreadcrumb: { events: { onItemClick: "onItemClicked" } },
-  ShadButtonGroup: { exposed: { values: "selected" } },
-  ShadCalendar: { events: { onMonthChange: "onMonthChanged" } },
-  ShadCardGrid: { events: { onCardClick: "onCardClicked" } },
-  ShadCarousel: { events: { onSlideChange: "onSlideChanged", onSlideClick: "onSlideClicked" } },
-  ShadCheckbox: { actions: { setChecked: "setValue" } },
-  ShadColorPicker: { exposed: { selectedColorHex: "value", rgb: "selectedColorRGB", rgba: "selectedColorRGBA" } },
-  ShadCombobox: { events: { onChange: "onSelect" } },
-  ShadDatePicker: {
-    events: { onChange: "onSelect" },
-    actions: { setDate: "setValue", clear: "clearValue" },
-    exposed: { selectedDate: "value" }
-  },
-  ShadDateTimePicker: { ...PICKER, actions: { setDate: "setValue", clear: "clearValue" } },
-  ShadEmpty: { events: { onAction: "onActionClicked" } },
-  ShadFileUpload: { actions: { clear: "clearFiles" }, exposed: { files: "file" } },
-  ShadHero: { events: { onActionClick: "onActionClicked", onSecondaryActionClick: "onSecondaryActionClicked" } },
-  ShadImage: { properties: { src: "source", alt: "alternativeText", fit: "imageFit" } },
-  ShadKanban: {
-    events: { onCardClicked: "onCardSelected" },
-    actions: { updateCard: "updateCardData" },
-    exposed: {
-      cards: "updatedCardData",
-      selectedCard: "lastSelectedCard",
-      lastMove: "lastCardMovement",
-      movedCard: "lastCardMovement.card"
-    }
-  },
-  ShadLink: { properties: { href: "linkTarget", text: "linkText", target: "targetType" } },
-  ShadListView: {
-    events: { onRowClicked: "onRecordClicked" },
-    exposed: { selectedRow: "selectedRecord", selectedRowId: "selectedRecordId" }
-  },
-  ShadMap: {
-    events: { onMapClick: "onMapClicked", onShapeClick: "onShapeClicked", onLocationPick: "onLocationPicked" }
-  },
-  ShadMultiselect: { events: { onChange: "onSelect" } },
-  ShadNavigation: { events: { onSelect: "onClick" }, actions: { setActive: "selectItem" }, exposed: { activeItem: "selectedItem" } },
-  ShadPhoneInput: { actions: { setCountry: "setCountryCode" } },
-  ShadNumberInput: { actions: { setValue: "setText" } },
-  ShadProgressList: { events: { onItemClick: "onItemClicked" } },
-  ShadQuestionnaire: { events: { onStepChange: "onStepChanged" } },
-  ShadRadioGroup: { events: { onChange: "onSelectionChange" } },
-  ShadRecordList: {
-    events: { onRowClicked: "onItemClicked", onRecordClicked: "onItemClicked" },
-    exposed: {
-      selectedRecord: "selectedItem",
-      selectedRow: "selectedItem",
-      selectedRecordId: "selectedItemId",
-      selectedRowId: "selectedItemId"
-    }
-  },
-  ShadSchedule: { events: { onBookingClick: "onBookingClicked", onSlotClick: "onSlotClicked" } },
-  ShadSelect: { events: { onChange: "onSelect" } },
-  ShadSteps: { actions: { setDisabled: "setDisable" }, properties: { schema: "steps" } },
-  ShadTable: { properties: { pageSize: "rowsPerPage" } },
-  ShadTags: { events: { onTagClick: "onTagClicked" } },
-  ShadTagsInput: {
-    events: { onTagRemoved: "onTagDeleted" },
-    exposed: { tags: "values", value: "values", selectedTags: "values" }
-  },
-  ShadTimePicker: { ...PICKER, actions: { setTime: "setValue", clear: "clearValue" } },
-  ShadTimeline: { events: { onItemClick: "onItemClicked" } },
-  ShadToggleGroup: { exposed: { selected: "value" } }
-};
-function retiredUi2Name(type, kind, name) {
-  if (!type || !type.startsWith("Shad"))
-    return void 0;
-  const own = UI2_RENAMES[type]?.[kind];
-  if (own && Object.prototype.hasOwnProperty.call(own, name))
-    return own[name];
-  const common = UI2_COMMON_RENAMES[kind];
-  return common && Object.prototype.hasOwnProperty.call(common, name) ? common[name] : void 0;
-}
-var isNode2 = (value2) => !!value2 && typeof value2 === "object" && typeof value2.type === "string";
-var isMember = (value2) => isNode2(value2) && ["MemberExpression", "OptionalMemberExpression"].includes(value2.type);
-function memberName(node) {
-  const property = node.property;
-  if (!isNode2(property))
-    return void 0;
-  if (!node.computed && property.type === "Identifier")
-    return String(property.name);
-  if (node.computed && property.type === "StringLiteral")
-    return String(property.value);
-  return void 0;
-}
-function bindsComponents(value2) {
-  if (!isNode2(value2))
-    return false;
-  if (value2.type === "Identifier")
-    return value2.name === "components";
-  if (value2.type === "RestElement")
-    return bindsComponents(value2.argument);
-  if (value2.type === "AssignmentPattern")
-    return bindsComponents(value2.left);
-  if (value2.type === "ArrayPattern")
-    return value2.elements.some(bindsComponents);
-  if (value2.type === "ObjectPattern")
-    return value2.properties.some((p) => bindsComponents(p.type === "RestElement" ? p.argument : p.value));
-  return false;
-}
-function lintComponentStateBindings(value2, components, path) {
-  if (Array.isArray(value2))
-    return value2.flatMap((child, i) => lintComponentStateBindings(child, components, `${path}[${i}]`));
-  if (value2 && typeof value2 === "object")
-    return Object.entries(value2).flatMap(([key, child]) => lintComponentStateBindings(child, components, `${path}.${key}`));
-  if (typeof value2 !== "string")
-    return [];
-  const binding = value2.trim().match(/^\{\{([\s\S]*)\}\}$/);
-  let root;
-  if (binding) {
-    try {
-      root = parseExpression(binding[1]);
-    } catch {
-      return [];
-    }
-  } else if (/\.code$/.test(path)) {
-    try {
-      root = parse(value2, { sourceType: "script", allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true }).program;
-    } catch {
-      return [];
-    }
-  } else
-    return [];
-  const wrongNames = /* @__PURE__ */ new Set();
-  let shadowed = false;
-  const visit = (node) => {
-    if (Array.isArray(node)) {
-      node.forEach(visit);
-      return;
-    }
-    if (!isNode2(node))
-      return;
-    if (node.type === "VariableDeclarator" && bindsComponents(node.id) || /^(Function|Class)(Declaration|Expression)$/.test(node.type) && bindsComponents(node.id) || Array.isArray(node.params) && node.params.some(bindsComponents) || node.type === "CatchClause" && bindsComponents(node.param) || node.type === "WithStatement" || node.type === "CallExpression" && isNode2(node.callee) && node.callee.type === "Identifier" && node.callee.name === "eval")
-      shadowed = true;
-    const prop2 = isMember(node) ? memberName(node) : void 0;
-    if (prop2 && isMember(node.object) && isMember(node.object.object)) {
-      const value3 = node.object;
-      const owner = value3.object;
-      if (isNode2(owner.object) && owner.object.type === "Identifier" && owner.object.name === "components") {
-        const name = memberName(owner);
-        const variable = memberName(value3);
-        const type = name ? components.find((c) => c.name === name)?.type : void 0;
-        if (name && variable && type && missingMember(type, variable, prop2)) {
-          wrongNames.add(`${name}\0${type}\0${variable}.${prop2}`);
-        }
-      }
-    }
-    if (prop2 && isMember(node.object)) {
-      const owner = node.object;
-      if (isNode2(owner.object) && owner.object.type === "Identifier" && owner.object.name === "components") {
-        const name = memberName(owner);
-        const type = name ? components.find((c) => c.name === name)?.type : void 0;
-        if (name && type && (WRONG_ALIASES[type]?.[prop2] || retiredUi2Message(type, prop2, name))) {
-          wrongNames.add(`${name}\0${type}\0${prop2}`);
-        }
-      }
-    }
-    Object.values(node).forEach(visit);
-  };
-  visit(root);
-  return shadowed ? [] : [...wrongNames].map((key) => {
-    const [name, type, prop2] = key.split("\0");
-    if (prop2.includes(".")) {
-      const [variable, member2] = prop2.split(".");
-      return `${path}: ${type} "${name}" ${variable} has no ${member2}; it reads undefined at runtime. It has ${missingMember(type, variable, member2).join(", ")}.`;
-    }
-    return `${path}: ${WRONG_ALIASES[type]?.[prop2]?.(name) ?? retiredUi2Message(type, prop2, name)}`;
-  });
-}
-function retiredUi2Message(type, prop2, name) {
-  if (!type.startsWith("Shad") && !isLibraryPackType(type))
-    return void 0;
-  const schema = getComponentSchema(type);
-  if (schema?.exposedVariables?.some((variable) => variable.name === prop2))
-    return void 0;
-  if (schema?.actions?.some((action2) => action2.handle === prop2))
-    return void 0;
-  const exposed = retiredUi2Name(type, "exposed", prop2);
-  if (exposed) {
-    return `${type} "${name}" exposes ${exposed}, not ${prop2} (renamed); read components.${name}.${exposed}. The old name is undefined at runtime.`;
-  }
-  const action = retiredUi2Name(type, "actions", prop2);
-  if (action) {
-    return `${type} "${name}" action ${prop2}() was renamed ${action}(); call components.${name}.${action}(...). The old name is undefined at runtime.`;
-  }
-  const published = schema?.exposedVariables?.map((variable) => variable.name) ?? [];
-  if (prop2 === "id" || !published.length)
-    return void 0;
-  const meant = UI2_MEANT[prop2]?.find((candidate) => published.includes(candidate));
-  return `${type} "${name}" has no ${prop2}; it reads undefined at runtime. ` + (meant ? `Read components.${name}.${meant}. ` : "") + `It publishes ${published.join(", ")}.`;
-}
-var UI2_MEANT = {
-  checked: ["value"],
-  selected: ["value", "selectedItem"],
-  selectedValue: ["value"],
-  text: ["value"],
-  selectedCard: ["selectedItem", "lastSelectedCard"],
-  selectedCardId: ["selectedItemId", "selectedItem"],
-  selectedId: ["selectedItemId", "selectedRowId"],
-  selectedRow: ["selectedItem", "selectedRow"]
-};
-var WRONG_ALIASES = {
-  Kanban: {
-    selectedCard: (name) => `Kanban "${name}" does not expose selectedCard. Use components.${name}.lastSelectedCard after onCardSelected; the incorrect alias is undefined and opens an empty detail form. Keep the selected record id and raw fields for edits.`
-  },
-  // A claims build filtered its queue on a radio's label, the caption "Type", so no row matched (2026-10-04).
-  RadioButtonV2: {
-    label: (name) => `RadioButton "${name}": label is the field's caption, not the chosen option, so a filter or write reading it matches nothing. Read components.${name}.value for the selection.`
-  },
-  // Widgets/ReorderableList/ReorderableList.jsx publishes values, including before onChange; never value.
-  ReorderableList: {
-    value: (name) => `ReorderableList "${name}" does not expose value. Use components.${name}.values for the ordered option values; the incorrect alias is undefined, even with optional chaining or a fallback.`
-  },
-  // MultiselectV2.jsx setInputValue publishes values before onSelect; DropdownV2's scalar value is different.
-  MultiselectV2: {
-    value: (name) => `MultiselectV2 "${name}" does not expose value. Use components.${name}.values for the selected option values; the incorrect alias is undefined, even with optional chaining or a fallback. An empty selection is [].`
-  }
-};
-var DATE_PICKERS = /* @__PURE__ */ new Set(["ShadDatePicker", "ShadDateTimePicker", "ShadTimePicker", "Datepicker", "DatePickerV2", "DatetimePickerV2", "TimePicker"]);
-function lintEmptyDateWrites(value2, components, path) {
-  if (Array.isArray(value2))
-    return value2.flatMap((child, i) => lintEmptyDateWrites(child, components, `${path}[${i}]`));
-  if (value2 && typeof value2 === "object")
-    return Object.entries(value2).flatMap(([key, child]) => lintEmptyDateWrites(child, components, `${path}.${key}`));
-  if (typeof value2 !== "string" || !/\.(create_row|update_rows\.columns)\.[^.]+\.value$/.test(path))
-    return [];
-  const read = value2.trim().match(/^\{\{\s*components\??\.([A-Za-z_$][\w$]*)\??\.value\s*\}\}$/);
-  const picker = read ? components.find((c) => c.name === read[1]) : void 0;
-  if (!picker?.type || !DATE_PICKERS.has(picker.type))
-    return [];
-  return [`${path}: ${picker.type} "${picker.name}" is '' while no date is picked, and a date or timestamp column rejects '', so the save fails whenever it is left blank. Write {{ components.${picker.name}.value || null }}.`];
-}
-function missingMember(type, variable, member2) {
-  if (!type.startsWith("Shad"))
-    return void 0;
-  const entry = getComponentSchema(type)?.exposedVariables?.find((v) => v.name === variable);
-  const shape = entry?.shape;
-  if (!shape || typeof shape !== "object" || Array.isArray(shape))
-    return void 0;
-  const members = Object.keys(shape);
-  if (members.includes("...") || members.includes(member2))
-    return void 0;
-  return members;
-}
 var cached;
 var normalizedName = (value2) => value2.trim().replace(/^icon/i, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
 function icons() {
@@ -1010,10 +744,13 @@ function dropdownDefaultVisibilityWarning(value2, label) {
 }
 var COMPONENT_SLOT_NAMES = ["body", "header", "footer", "modal"];
 var TAB_SLOT = /^tab-(t\d+)$/;
-var LIBRARY_TAB_SLOT = /^tab_[A-Za-z0-9_]+$/;
+var LIBRARY_TAB_SLOT = /^[A-Za-z][A-Za-z0-9_]*$/;
 var TAB_CANVAS_SUFFIX = /-(t\d+)$/;
 function isComponentSlotName(value2) {
   return typeof value2 === "string" && (COMPONENT_SLOT_NAMES.includes(value2) || TAB_SLOT.test(value2) || LIBRARY_TAB_SLOT.test(value2));
+}
+function isNativeSlotName(value2) {
+  return typeof value2 === "string" && (COMPONENT_SLOT_NAMES.includes(value2) || TAB_SLOT.test(value2));
 }
 function isTabSlot(value2) {
   return typeof value2 === "string" && TAB_SLOT.test(value2);
@@ -1028,8 +765,10 @@ function isPackContainerType(type) {
   return typeof type === "string" && (type.startsWith("Lib_") || type === "PackComponent" || type === "LibraryComponent");
 }
 function encodeComponentParent(parentId, slotName, parentType) {
-  if (isPackContainerType(parentType))
-    return `${decodeComponentParent(parentId).parentId}-${slotName ?? "body"}`;
+  if (isPackContainerType(parentType)) {
+    const base2 = decodeComponentParent(parentId).parentId;
+    return packSlotOnOwnId(parentType, slotName) ? base2 : `${base2}-${slotName ?? "body"}`;
+  }
   if (!slotName)
     return parentId;
   if (slotName === "body")
@@ -1052,6 +791,15 @@ function decodeComponentParent(parentId) {
     return { parentId: parentId.slice(0, -tab[0].length), slotName: `tab-${tab[1]}` };
   return { parentId, slotName: "body" };
 }
+function applyResolvedParent(entry, resolved) {
+  if (resolved.slotName && entry.slot_name !== void 0 && entry.slot_name !== resolved.slotName) {
+    return `parent "${entry.parent}" names the "${resolved.slotName}" canvas but slot_name is "${entry.slot_name}"; pass one of them.`;
+  }
+  entry.parent = resolved.parent;
+  if (resolved.slotName)
+    entry.slot_name = resolved.slotName;
+  return void 0;
+}
 function resolveParentRef(pageComponents, parent) {
   const byId = (id) => pageComponents.some((component) => component.id === id);
   if (byId(parent) || byId(decodeComponentParent(parent).parentId))
@@ -1060,6 +808,21 @@ function resolveParentRef(pageComponents, parent) {
   const whole = named(parent);
   if (whole.length === 1)
     return { ok: true, parent: whole[0].id, renamed: true };
+  for (const component of pageComponents) {
+    if (!isPackContainerType(component.type))
+      continue;
+    for (const [handle, renamed] of [[component.id, false], [component.name, true]]) {
+      if (!handle || !parent.startsWith(`${handle}-`))
+        continue;
+      const slotName = parent.slice(handle.length + 1);
+      if (!LIBRARY_TAB_SLOT.test(slotName))
+        continue;
+      if (renamed && named(handle).length > 1) {
+        return { ok: false, error: `parent "${parent}" names more than one component on this page; pass the parent's id.` };
+      }
+      return { ok: true, parent: component.id, slotName, renamed };
+    }
+  }
   const decoded = decodeComponentParent(parent);
   const base = named(decoded.parentId);
   if (whole.length === 0 && base.length === 1) {
@@ -1104,8 +867,8 @@ var valueOf = (props, key) => {
   const entry = props?.[key];
   return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
 };
-var str = (value2) => typeof value2 === "string" ? value2 : "";
-var metaFieldNames = (value2) => (Array.isArray(value2) ? value2.filter((part) => typeof part === "string") : str(value2).split(",")).map((part) => part.split(":")[0].trim());
+var str2 = (value2) => typeof value2 === "string" ? value2 : "";
+var metaFieldNames = (value2) => (Array.isArray(value2) ? value2.filter((part) => typeof part === "string") : str2(value2).split(",")).map((part) => part.split(":")[0].trim());
 var STRONG_MONEY_WORD = /\b(prices?|amounts?|costs?|revenue|balance|fees?|salary|salaries|payments?|subtotal|refunds?|mrr|arr|payout|takings)\b/i;
 var MONEY_WORD = /\b(sales|spend|spent|budget|income|profit|invoiced?|earnings|gross|net|bill|total)\b/i;
 var COUNT_WORD = /\b(count|qty|quantity|items?|tasks?|hours?|days?|orders?|tickets?|people|users?|hires?|visits?|guests?|covers?|seats?|steps?|points?)\b/i;
@@ -1152,16 +915,16 @@ function lintUnformattedNumbers(spec) {
   const props = spec.properties;
   const out = [];
   if (["ShadText", "ShadHeading", "Text", "ShadBadge"].includes(spec.type ?? "")) {
-    const text = str(valueOf(props, "text"));
+    const text = str2(valueOf(props, "text"));
     for (const problem of bindingProblems(text, spec.name ?? "")) {
       out.push(`${label}: ${problem}. ${problem.includes("100") ? "Round it to one decimal: (x * 100).toFixed(1) + '%'." : `${LOCALE_HINT}.`}`);
     }
   }
   if (spec.type === "ShadStat") {
     const value2 = valueOf(props, "value");
-    const text = typeof value2 === "number" ? String(value2) : str(value2);
-    const format = str(valueOf(props, "valueFormat")) || "auto";
-    const named = `${str(valueOf(props, "label"))} ${spec.name ?? ""}`;
+    const text = typeof value2 === "number" ? String(value2) : str2(value2);
+    const format = str2(valueOf(props, "valueFormat")) || "auto";
+    const named = `${str2(valueOf(props, "label"))} ${spec.name ?? ""}`;
     const bodies = bindingSpans(text).map((span) => span.body).join(" ");
     const fraction = /[^/*]\/[^/*]/.test(bodies) && !/\*\s*100+\b/.test(bodies);
     if (isMoneyName(named) && format !== "currency" && !LOCALE_FORMAT.test(text) && !new RegExp(SYMBOL).test(text)) {
@@ -1178,8 +941,8 @@ function lintUnformattedNumbers(spec) {
     }
   }
   if (spec.type === "ShadCardGrid") {
-    const data = str(valueOf(props, "data"));
-    const fields = ["titleField", "subtitleField", "descriptionField", "badgeField"].map((key) => str(valueOf(props, key))).concat(metaFieldNames(valueOf(props, "metaFields"))).filter((field) => field && isMoneyName(field) && !FORMATTED_NAME.test(words(field)));
+    const data = str2(valueOf(props, "data"));
+    const fields = ["titleField", "subtitleField", "descriptionField", "badgeField"].map((key) => str2(valueOf(props, key))).concat(metaFieldNames(valueOf(props, "metaFields"))).filter((field) => field && isMoneyName(field) && !FORMATTED_NAME.test(words(field)));
     const raw = fields.filter((field) => !LOCALE_FORMAT.test(data) || !new RegExp(`\\b${field}\\b`).test(data));
     if (raw.length) {
       out.push(`${label}: ${raw.map((f) => `"${f}"`).join(", ")} ${raw.length > 1 ? "are" : "is"} money shown as the raw number ("Amount 7.5"). Map the rows in data to a formatted string for the card, e.g. {{(queries.q.data || []).map(r => ({ ...r, ${raw[0]}: Number(r.${raw[0]}).toLocaleString('en-US', { style: 'currency', currency: 'USD' }) }))}}, in the request's currency and locale.`);
@@ -2145,10 +1908,11 @@ function lintUnusableTextGeometry(components) {
   }
   return errors;
 }
-function introducedLintFindings(before, after) {
-  const existing = new Set(before);
-  return after.filter((finding) => !existing.has(finding));
+function introducedLintFindings(before, after, keyOf = (finding) => finding) {
+  const existing = new Set(before.map(keyOf));
+  return after.filter((finding) => !existing.has(keyOf(finding)));
 }
+var slotFindingKey = (finding) => finding.replace(/ \(its canvases: [^)]*\)| \(parent \+ slot_name: [^)]*\)|Pass slot_name with the parent: .*$/, "");
 function lintTextGeometry(components) {
   const warnings = [];
   for (const component of components) {
@@ -2199,7 +1963,7 @@ function lintComponentSlots(components) {
       continue;
     const placement = parentPlacement(component);
     const parent = placement ? refs.get(placement.parentId) : void 0;
-    const validParent = isLibraryPackType(parent?.type) ? !["header", "footer", "modal"].includes(slotName) && !isTabSlot(slotName) : slotName === "modal" ? parent?.type === "Kanban" : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? "") : SLOT_PARENT_TYPES.has(parent?.type ?? "") || slotName === "body" && ["Kanban", "ShadKanban", "FlexContainer"].includes(parent?.type ?? "");
+    const validParent = isLibraryPackType(parent?.type) || isPackContainerType(parent?.type) ? !["header", "footer", "modal"].includes(slotName) && !isTabSlot(slotName) : !isNativeSlotName(slotName) ? false : slotName === "modal" ? parent?.type === "Kanban" : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? "") : SLOT_PARENT_TYPES.has(parent?.type ?? "") || slotName === "body" && ["Kanban", "ShadKanban", "FlexContainer"].includes(parent?.type ?? "");
     if (parent && TABS_TYPES.has(parent.type ?? "") && isTabSlot(slotName) && !isTruthyBinding(propVal(parent.properties, "useDynamicOptions"))) {
       const items = propVal(parent.properties, "tabItems");
       const ids = Array.isArray(items) ? items.map((item) => String(item?.id ?? "")) : void 0;
@@ -2209,6 +1973,44 @@ function lintComponentSlots(components) {
     }
     if (parent && !validParent) {
       errors.push(`Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" with ${parent.type ?? "unknown"} parent "${parent.name ?? parent.id}"; header/body/footer belong to ModalV2 (and ShadDialog), Form, and Container (header and body also to Accordion); Kanban supports body (card) and modal; tab-t0, tab-t1 ... belong to Tabs.`);
+    }
+  }
+  errors.push(...lintPackItemSlots(components));
+  return errors;
+}
+function lintPackItemSlots(components, options = {}) {
+  const errors = [];
+  for (const container of components) {
+    const drawn = packCanvases(container.type, container.properties);
+    if (!drawn)
+      continue;
+    const key = componentKey(container);
+    for (const component of components) {
+      const bare = !!container.id && component.parent === container.id && !component.slotName && !component.parentRef;
+      const slot = key && component.parentRef === key ? component.slotName ?? "body" : container.id && component.parent === container.id ? component.slotName ?? "body" : container.id && component.parent?.startsWith(`${container.id}-`) ? component.parent.slice(container.id.length + 1) : void 0;
+      if (!slot)
+        continue;
+      const label = `Component "${component.name ?? component.id ?? component.type}"`;
+      const where = `${container.type} "${container.name ?? container.id}"`;
+      const canvases = drawn.bound ? `${drawn.prefix}_<item id>` : [...drawn.names].join(", ") || "none";
+      if (!drawn.bound && !drawn.names.size) {
+        errors.push(`${label} is a child of ${where}, which draws no canvas, so it would be saved and never shown. Parent it to a container (a Card, Split Pane, Stepper ...) or to the page.`);
+        continue;
+      }
+      if (bare && packSlotOnOwnId(container.type))
+        continue;
+      const suffixed = !!container.id && !!component.parent?.startsWith(`${container.id}-`);
+      if (suffixed && packRowSlotNames(container.type).includes(slot)) {
+        errors.push(`${label} is saved on "${component.parent}", but ${where} draws its ${slot} on its own id, so it is not shown. Move it with update_components (parent: ${container.name ?? container.id}, slot_name: ${slot}).`);
+        continue;
+      }
+      if (options.persisted && bare) {
+        errors.push(`${label} is saved on ${where}'s bare id, which a pack component never draws, so it is not shown. Move it with update_components (parent + slot_name: ${canvases}).`);
+        continue;
+      }
+      if (drawn.names.has(slot) || drawn.bound && slot.startsWith(`${drawn.prefix}_`))
+        continue;
+      errors.push(drawn.prefix && slot.startsWith(`${drawn.prefix}_`) ? `${label} is on ${where}'s "${slot}" canvas, but no item of its ${drawn.property} has that id (its canvases: ${canvases}), so it would be saved and never shown. Keep the item id, move the child to one of those canvases in the same call (parent + slot_name), or delete it first with delete_components.` : `${label} is on ${where}'s "${slot}" canvas, which it does not draw, so it would be saved and never shown. Pass slot_name with the parent: ${canvases}.`);
     }
   }
   return errors;
@@ -3045,6 +2847,12 @@ function lintComponentSpec(spec, context = {}) {
       }
     }
     for (const entry of entries) {
+      const literal2 = propVal(authored, entry.key);
+      if (literal2 !== void 0 && !isDynamicBinding(literal2)) {
+        const typeError = packValueTypeError(spec.type, entry.key, entry.valueType, literal2);
+        if (typeError)
+          errors.push(`Component "${label}": ${typeError}`);
+      }
       if (!entry.allowedValues?.length)
         continue;
       if (spec.type === "Form" && entry.key === "buttonToSubmit")
@@ -3888,6 +3696,13 @@ function lintComponents(components, options = {}) {
     const nameError = componentNameError(c.name);
     if (nameError)
       errors.push(nameError);
+    const internal = c.type === "ModuleContainer" ? internalComponentTypeNote(c.type) : null;
+    if (internal) {
+      errors.push(`Component "${c.name ?? c.type}": "${c.type}" ${internal} It is internal and cannot be written by a build.`);
+    }
+    const emptyHost = emptyLibraryHostError(c);
+    if (emptyHost)
+      errors.push(emptyHost);
     const r = lintComponentSpec(c, { surfaceAround: around(c) });
     errors.push(...r.errors);
     errors.push(...lintStandardSingleLineInputHeight(c));
@@ -4407,52 +4222,47 @@ function lintInnerPageBands(summary) {
   return warnings;
 }
 export {
-  defaultPack as A,
-  savedComponentLibrary as B,
+  lintComponents as A,
+  validateAppStructure as B,
   COMPONENT_PACK_DESCRIPTION as C,
-  pageIconError as D,
-  lintComponents as E,
-  validateAppStructure as F,
-  isModalV2Type as G,
-  lintComponentStateBindings as H,
-  minimumTextHeight as I,
-  unifyChartAccents as J,
-  pageIconSchema as K,
-  componentLibraryWarnings as L,
-  unpinnedLibraries as M,
-  namespaceReads as N,
-  registerLibraryPacks as O,
+  isModalV2Type as D,
+  minimumTextHeight as E,
+  unifyChartAccents as F,
+  pageIconSchema as G,
+  componentLibraryWarnings as H,
+  lintPackItemSlots as I,
+  namespaceReads as J,
+  lintRenderedGeometryBlocking as K,
+  lintRenderedGeometryAdvisory as L,
+  lintNestedContainerWidths as M,
+  FORM_SCHEMA_FIELD_TYPE_SET as N,
+  SAFE_GENERATED_FORM_FIELD_TYPE_SET as O,
   PROPERTY_KEY_ALIASES as P,
-  lintRenderedGeometryBlocking as Q,
-  lintRenderedGeometryAdvisory as R,
   STYLE_KEYS_IN_PROPERTIES as S,
-  lintNestedContainerWidths as T,
-  FORM_SCHEMA_FIELD_TYPE_SET as U,
-  SAFE_GENERATED_FORM_FIELD_TYPE_SET as V,
   componentNameSchema as a,
   componentNameError as b,
   componentSlotSchema as c,
   decodeComponentParent as d,
-  resolveParentRef as e,
-  encodeComponentParent as f,
-  introducedLintFindings as g,
-  lintComponentSlots as h,
+  applyResolvedParent as e,
+  isPackContainerType as f,
+  encodeComponentParent as g,
+  introducedLintFindings as h,
   isMisplacedStyleKey as i,
-  lintUnusableTextGeometry as j,
-  lintStandardSingleLineInputHeight as k,
+  lintComponentSlots as j,
+  lintUnusableTextGeometry as k,
   lintComponentSpec as l,
-  lintTextGeometry as m,
+  lintStandardSingleLineInputHeight as m,
   nearestCatalogKey as n,
-  lintRenderedGeometry as o,
-  lintKanbanInteractions as p,
-  lintShadKanbanCards as q,
-  retiredUi2Name as r,
-  lintShadScheduleScale as s,
-  downgradeFlexForLibrary as t,
-  assertPageIcon as u,
-  resolveComponentLibrary as v,
-  toLibraryComponent as w,
-  missingLibraryPins as x,
-  libraryTypeOf as y,
-  libraryPins as z
+  lintTextGeometry as o,
+  lintRenderedGeometry as p,
+  lintKanbanInteractions as q,
+  resolveParentRef as r,
+  slotFindingKey as s,
+  lintShadKanbanCards as t,
+  lintShadScheduleScale as u,
+  assertPageIcon as v,
+  resolveComponentLibrary as w,
+  defaultPack as x,
+  savedComponentLibrary as y,
+  pageIconError as z
 };

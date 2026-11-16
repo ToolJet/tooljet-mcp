@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
-import { b0 as external_exports, b1 as nodeCatalog, b2 as validateGraph, b3 as specSchema, b4 as compileGraph, b5 as assertWorkflowJavaScript, b6 as controlFlowEdges } from "./chunk-Csl8mO51.js";
-import { p as parseExpression, a as parse, r as readCatalog } from "./chunk-C1y-3rfY.js";
-import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-Cd-rK1dm.js";
+import { b0 as external_exports, b1 as nodeCatalog, b2 as validateGraph, b3 as specSchema, b4 as compileGraph, b5 as assertWorkflowJavaScript, b6 as controlFlowEdges, b7 as fail, b8 as ok, b9 as exposeActions } from "./chunk-Bpoy8qtq.js";
+import { p as parseExpression, a as parse, r as readCatalog } from "./chunk-8javr-CG.js";
+import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-Coyhaxq-.js";
 import { r as require_moment } from "./chunk-B2ExoG2l.js";
 import { e8 as __toESM, e6 as __commonJS } from "./chunk-C1Uan0hB.js";
 import { randomUUID } from "node:crypto";
@@ -4599,9 +4599,17 @@ function registerComponentSchemas(extra) {
   set.schemas = { ...extra };
   set.derived.clear();
 }
+var INTERNAL_TYPES = {
+  LibraryComponent: "is ToolJet's internal host for a custom or pack component; write the pack's own type, Lib_<pack>_<Component> (get_component_catalog lists them), which is stored with the component it draws.",
+  PackComponent: "is ToolJet's internal host for a pack component; write the pack's own type, Lib_<pack>_<Component> (get_component_catalog lists them), which is stored with the component it draws.",
+  ModuleContainer: "is a module app's own root, which ToolJet creates with the module; in an app it draws an empty box. To show a module in an app, use ModuleViewer."
+};
+function internalComponentTypeNote(type) {
+  return INTERNAL_TYPES[type] ?? null;
+}
 function getCatalog() {
   const legacy = loadLegacyReplacements();
-  return Object.values(merged()).filter((c) => !legacy[c.type]).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
+  return Object.values(merged()).filter((c) => !legacy[c.type] && !INTERNAL_TYPES[c.type]).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
 }
 function getComponentSchema(type) {
   return merged()[type] ?? null;
@@ -4792,29 +4800,310 @@ return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
   };
 }
 createRequire(import.meta.url);
+var requestSchema = external_exports.object({
+  method: external_exports.string().min(1),
+  schema: external_exports.string().optional(),
+  table: external_exports.string().optional(),
+  search: external_exports.string().optional(),
+  page: external_exports.number().int().positive().optional(),
+  limit: external_exports.number().int().positive().max(1e3).optional(),
+  args: external_exports.record(external_exports.string(), external_exports.any()).optional()
+});
+function datasourceMetadataTools(source) {
+  const methods = [
+    ["listDatasets", "list_datasource_datasets", "List Datasource Datasets", "List dataset names in a connected datasource."],
+    ["listTables", "list_datasource_tables", "List Datasource Tables", "List tables or API endpoint paths from a connected datasource; for HubSpot, an omitted schema lists spec groups."],
+    ["listColumns", "list_datasource_columns", "List Datasource Columns", "Read column definitions for one datasource table."],
+    ["getSheets", "list_datasource_sheets", "List Datasource Sheets", "List sheets in a connected spreadsheet datasource."],
+    ["getSpreadsheets", "list_datasource_spreadsheets", "List Datasource Spreadsheets", "List spreadsheets available to a connected datasource."],
+    ["getEndpointSchema", "get_datasource_endpoint_schema", "Get Datasource Endpoint Schema", "Read the request contract for one API endpoint from its specification; never send the endpoint request."],
+    ["listCollections", "list_datasource_collections", "List Datasource Collections", "List collection names in a connected document datasource."],
+    ["listSchemas", "list_datasource_schemas", "List Datasource Schemas", "List database schema names in a connected datasource."],
+    ["getTenants", "list_datasource_tenants", "List Datasource Tenants", "List tenant metadata available through a connected datasource."]
+  ];
+  return exposeActions(source, methods.map(([action, name2, title, description]) => ({
+    action,
+    name: name2,
+    title,
+    description: `${description} Uses the fixed ${action} metadata method, only when the datasource advertises it. Does not execute saved queries, author resources, or invoke the API endpoints described by a returned schema. schema/table/search/page/limit are selectors; args supplies datasource-specific selectors such as spreadsheet ID or endpoint HTTP method.`,
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    required: ["version_id", "datasource_id"],
+    optional: ["schema", "table", "search", "page", "limit", "args"]
+  })), "method");
+}
+function invokeArgs(request) {
+  const customValues = request.args?.values && typeof request.args.values === "object" && !Array.isArray(request.args.values) ? request.args.values : {};
+  const values = {
+    ...customValues,
+    ...request.schema !== void 0 ? { schema: request.schema } : {},
+    ...request.table !== void 0 ? { table: request.table } : {}
+  };
+  return {
+    ...request.args ?? {},
+    ...Object.keys(values).length ? { values } : {},
+    ...request.search !== void 0 ? { search: request.search } : {},
+    ...request.page !== void 0 ? { page: request.page } : {},
+    ...request.limit !== void 0 ? { limit: request.limit } : {}
+  };
+}
+var specCache = /* @__PURE__ */ new Map();
+function specText(entry) {
+  const raw = entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+  return typeof raw === "string" ? raw : void 0;
+}
+function parseSpecCached(options) {
+  const key = specText(options.spec) ?? specText(options.definition);
+  if (key === void 0)
+    return extractSpec(options);
+  const hit = specCache.get(key);
+  if (hit)
+    return hit;
+  const parsed = extractSpec(options);
+  if (parsed) {
+    if (specCache.size > 8)
+      specCache.clear();
+    specCache.set(key, parsed);
+  }
+  return parsed;
+}
+function openapiIntrospection(spec, request) {
+  if (request.method === "listTables") {
+    const endpoints = listEndpoints(spec);
+    const host2 = specHost(spec);
+    const header = { total: endpoints.length, ...host2 ? { host: host2 } : {} };
+    if (request.search) {
+      const ranked = rankEndpoints(spec, endpoints, request.search);
+      const limit2 = request.limit ?? 25;
+      return {
+        ...header,
+        search: request.search,
+        matched: ranked.length,
+        ...ranked.length > limit2 ? { returned: limit2 } : {},
+        // Ordered by relevance, not spec order: the caller should read from the top.
+        endpoints: ranked.slice(0, limit2).map(({ score, ...endpoint }) => endpoint),
+        ...ranked.length ? {} : { hint: "No endpoint matched. Retry with a broader term, or omit `search` to see the spec's tags." }
+      };
+    }
+    const limit = request.limit ?? 200;
+    if (endpoints.length > limit) {
+      return {
+        ...header,
+        tags: endpointTagCounts(spec, endpoints),
+        returned: limit,
+        truncated: true,
+        next_step: `This spec has ${endpoints.length} endpoints. Call listTables again with \`search\` describing what you need (a phrase is fine, it is ranked by relevance), or with a tag name from \`tags\`.`,
+        endpoints: endpoints.slice(0, limit)
+      };
+    }
+    return { ...header, endpoints };
+  }
+  const path = request.table ?? (typeof request.args?.path === "string" ? request.args.path : void 0);
+  const method = ["operation", "method", "httpMethod", "http_method", "verb"].map((key) => request.args?.[key]).find((value) => typeof value === "string" && !!value);
+  if (!path || !method) {
+    throw new Error('getEndpointSchema needs the endpoint path and HTTP method: pass the path as `table` and the method as `args.operation` (for example table:"/pets/{petId}", args:{operation:"get"}); `args.httpMethod` and `args.method` are accepted too.');
+  }
+  const result = endpointParameters(spec, path, method);
+  if (!result.found) {
+    throw new Error(`The spec has no ${method.toLowerCase()} operation on path "${path}". Call listTables first.`);
+  }
+  const buckets = {};
+  for (const parameter of result.parameters) {
+    const bucket = parameter.in === "header" ? "params.header" : parameter.in === "path" ? "params.path" : parameter.in === "query" ? "params.query" : `unsupported:${parameter.in}`;
+    (buckets[bucket] ??= []).push(parameter.name);
+  }
+  if (result.requestBody)
+    buckets["params.request"] = ["<request body>"];
+  const operation = method.toLowerCase();
+  const host = specHost(spec);
+  return {
+    path,
+    operation,
+    /* A runnable skeleton, not just a description: copy it and fill the buckets.
+       All four buckets are present even when empty because the plugin destructures every one of
+       them and calls Object.entries(params.path) unguarded — omitting a bucket fails the query with
+       "Cannot convert undefined or null to object" before the request is ever built. */
+    query_options: {
+      ...host ? { host } : {},
+      path,
+      operation,
+      params: { request: {}, query: {}, header: {}, path: {} }
+    },
+    // Which query-option bucket each parameter belongs in, so the caller does not have to infer it.
+    buckets,
+    parameters: result.parameters,
+    ...result.response ? { response: result.response } : {},
+    ...result.requestBody ? { requestBody: result.requestBody } : {},
+    ...host ? {} : { host_warning: 'This spec declares no server URL. The query needs an explicit `host`, or the request fails with "Invalid URL".' }
+  };
+}
+function inspectDatasourceSchemaTool(client) {
+  return {
+    name: "inspect_datasource_schema",
+    title: "Inspect Datasource Schema",
+    // Invokes only plugin-advertised read-only metadata methods.
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      openWorldHint: true
+    },
+    description: 'Invoke one read-only metadata method advertised by a connected datasource plugin (for example listSchemas, listTables, listColumns, or listCollections). This avoids creating/running ad-hoc information_schema queries. HubSpot: call listTables without schema to list spec groups, then pass schema for endpoint discovery. Use get_datasource_query_schema with sections:["introspection"] to discover exact methods. Common schema/table/search/page/limit inputs are converted to ToolJet selector args; `args` adds plugin-specific fields. Only the requested metadata method is called. Use requests (up to 20) to batch independent table/column lookups after the schema/table names are known; every method is validated before any invocation.',
+    inputSchema: {
+      version_id: external_exports.string(),
+      datasource_id: external_exports.string(),
+      method: external_exports.string().min(1).optional(),
+      schema: external_exports.string().optional(),
+      table: external_exports.string().optional(),
+      search: external_exports.string().optional(),
+      page: external_exports.number().int().positive().optional(),
+      limit: external_exports.number().int().positive().max(1e3).optional(),
+      args: external_exports.record(external_exports.string(), external_exports.any()).optional(),
+      requests: external_exports.array(requestSchema).min(1).max(20).optional()
+    },
+    async handler(args) {
+      try {
+        const datasource = (await client.listDatasources(args.version_id)).find((candidate) => candidate.id === args.datasource_id);
+        if (!datasource) {
+          return fail(new Error(`Datasource "${args.datasource_id}" is not available on version "${args.version_id}".`));
+        }
+        const contract = getDatasourceQuerySchema(datasource.kind);
+        const kindSpec = singleSpecRef(datasource.kind);
+        const methods = [.../* @__PURE__ */ new Set([...contract?.introspectionMethods ?? [], ...kindSpec ? SPEC_DISCOVERY_METHODS : []])];
+        const topLevel = args.method ? [{
+          method: args.method,
+          schema: args.schema,
+          table: args.table,
+          search: args.search,
+          page: args.page,
+          limit: args.limit,
+          args: args.args
+        }] : [];
+        const seenRequests = /* @__PURE__ */ new Set();
+        const requests = [...args.requests ?? [], ...topLevel].filter((request) => {
+          if (!request.method)
+            return false;
+          const key = JSON.stringify([request.method, request.schema ?? null, request.table ?? null, request.search ?? null]);
+          if (seenRequests.has(key))
+            return false;
+          seenRequests.add(key);
+          return true;
+        });
+        if (!requests.length) {
+          return fail(new Error("Provide a `method` or a `requests` batch."));
+        }
+        const asBatch = !!args.requests?.length || requests.length > 1;
+        const unsupported2 = [...new Set(requests.map((request) => request.method).filter((method) => !methods.includes(method)))];
+        if (unsupported2.length) {
+          return fail(new Error(`Datasource kind "${datasource.kind}" does not advertise introspection method(s) ${unsupported2.map((method) => `"${method}"`).join(", ")}. Available methods: ${methods.length ? methods.join(", ") : "none"}.`));
+        }
+        let openapiSpec;
+        if (datasource.kind === "openapi") {
+          const details = await client.getDatasourceConnectionDetails(args.datasource_id);
+          openapiSpec = parseSpecCached(details.options);
+          if (!openapiSpec) {
+            return fail(new Error("This OpenAPI datasource has no readable spec stored in its options, so its endpoints cannot be listed. Re-save the datasource with a valid OpenAPI/Swagger (JSON or YAML) document."));
+          }
+        }
+        const hubspotDocuments = /* @__PURE__ */ new Map();
+        let kindSpecDocument;
+        const results = await Promise.all(requests.map(async (request) => {
+          if (datasource.kind === "hubspot") {
+            const specs = hubspotSpecs();
+            const selector = request.schema ?? request.args?.specType;
+            if (!selector && request.method === "listTables") {
+              return { method: request.method, result: {
+                specs,
+                next_step: "Choose a spec using schema (name, label or specType), then call listTables to find paths or getEndpointSchema to get query_options. Properties and Pipelines describe endpoints for discovering account-specific fields and stages."
+              } };
+            }
+            const selected = specs.find((spec) => [spec.name, spec.label, spec.specType].includes(String(selector)));
+            if (!selected)
+              throw new Error("HubSpot discovery requires a known schema. Call listTables without schema to list installed spec groups.");
+            if (!hubspotDocuments.has(selected.name)) {
+              hubspotDocuments.set(selected.name, client.getPluginSpec("hubspot", selected.name).then((text2) => {
+                const spec = extractSpec({ spec: text2 });
+                if (!spec)
+                  throw new Error(`HubSpot spec "${selected.name}" is unavailable or invalid. Reinstall/update the plugin; do not invent its endpoints.`);
+                return spec;
+              }));
+            }
+            const document = await hubspotDocuments.get(selected.name);
+            const result2 = openapiIntrospection(document, request);
+            if (result2.query_options) {
+              delete result2.query_options.host;
+              delete result2.query_options.params.header;
+              delete result2.host_warning;
+              result2.query_options.specType = selected.specType;
+              if (result2.buckets?.["params.header"])
+                result2.unsupported_headers = result2.buckets["params.header"];
+              result2.notes = "HubSpot fixes the API host and authentication in the plugin. The spec describes API shapes; read Properties/Pipelines endpoints to verify account-specific fields and valid stage IDs. Do not guess them.";
+            }
+            return { method: request.method, schema: selected.name, specType: selected.specType, result: result2 };
+          }
+          if (kindSpec && SPEC_DISCOVERY_METHODS.includes(request.method)) {
+            kindSpecDocument ??= loadKindSpec(client, datasource.kind, kindSpec);
+            const result2 = openapiIntrospection(await kindSpecDocument, request);
+            if (result2.query_options) {
+              delete result2.query_options.host;
+              delete result2.query_options.params?.header;
+              delete result2.host_warning;
+              if (result2.buckets?.["params.header"])
+                result2.unsupported_headers = result2.buckets["params.header"];
+              result2.notes = `The ${datasource.kind} plugin fixes the API host and authentication. Copy query_options as they are; put IDs in params.path and filters in params.query, each value flat (created[gte], expand[0]): the plugin cannot send a list or an object.`;
+            }
+            return { method: request.method, ...request.table ? { table: request.table } : {}, result: result2 };
+          }
+          if (openapiSpec) {
+            const result2 = openapiIntrospection(openapiSpec, request);
+            return { method: request.method, ...request.table ? { table: request.table } : {}, result: result2 };
+          }
+          const converted = invokeArgs(request);
+          const result = await client.invokeDatasourceMethod({
+            dataSourceId: args.datasource_id,
+            method: request.method,
+            ...Object.keys(converted).length ? { args: converted } : {}
+          });
+          return {
+            method: request.method,
+            ...request.schema ? { schema: request.schema } : {},
+            ...request.table ? { table: request.table } : {},
+            result
+          };
+        }));
+        const header = { datasource: { id: datasource.id, name: datasource.name, kind: datasource.kind } };
+        return asBatch ? ok({ ...header, results }) : ok({ ...header, method: results[0].method, result: results[0].result });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+createRequire(import.meta.url);
 var COMPONENT_FX_GUIDANCE = "For properties/styles/validation with an FX toggle, use `{ value: <expression>, fxActive: true }` only for bindings/conditions/calculations the normal control cannot express. Keep defaults and panel-editable constants (including `{{true}}`/`{{false}}`, numbers, selections, colors) out of FX. For nested Table columns/buttons/options and KeyValuePair fields, add the property key (e.g. `columnVisibility`, `disableButton`, `fieldVisibility`, `isEditable`) to that object's `fxActiveFields`, preserving other entries. ";
 var COMPONENT_FX_UPDATE_GUIDANCE = COMPONENT_FX_GUIDANCE + "Updates must include both `value` and `fxActive`; revert with `{ value: <constant>, fxActive: false }`. For nested Table fields, remove only reverted property keys from `fxActiveFields`. KeyValuePair arrays merge by index; verify flag removals and report retained flags. ";
 export {
-  extractRowCount as A,
-  emptyViewerOnlyParams as B,
+  sameReadSource as A,
+  extractRowCount as B,
   COMPONENT_FX_UPDATE_GUIDANCE as C,
-  emptyParamsNote as D,
-  unresolvedNote as E,
-  declaredParameterDefaults as F,
+  emptyViewerOnlyParams as D,
+  emptyParamsNote as E,
+  unresolvedNote as F,
   GUI_LIST_ROWS_KEYS as G,
-  inPackSet as H,
-  registerComponentSchemas as I,
-  newPackSet as J,
-  capabilityRequestSchema as K,
+  declaredParameterDefaults as H,
+  inPackSet as I,
+  inspectDatasourceSchemaTool as J,
+  datasourceMetadataTools as K,
   LARGE_READ_ROW_THRESHOLD as L,
-  getWorkflowCapabilities as M,
-  lint as N,
-  apply as O,
-  deleteNode as P,
-  editContractSchema as Q,
-  generateEditContract as R,
+  registerComponentSchemas as M,
+  newPackSet as N,
+  capabilityRequestSchema as O,
+  getWorkflowCapabilities as P,
+  lint as Q,
+  apply as R,
   SQL_DIALECT as S,
-  allComponentSchemas as T,
+  deleteNode as T,
+  editContractSchema as U,
+  generateEditContract as V,
+  allComponentSchemas as W,
   activePackSet as a,
   getCatalog as b,
   getLegacyComponentReplacement as c,
@@ -4823,22 +5112,22 @@ export {
   assertWorkflowQueryOptions as f,
   getComponentSchema as g,
   assessQueryRead as h,
-  resolvedReadRefusal as i,
-  resolveStaticBindings as j,
-  applyResolvedBindings as k,
+  internalComponentTypeNote as i,
+  resolvedReadRefusal as j,
+  resolveStaticBindings as k,
   lintBindingNames as l,
-  connectorLabel as m,
+  applyResolvedBindings as m,
   normalizeWorkflowQueryOptions as n,
-  normalizeQueryToggles as o,
-  issueMessages as p,
-  queryToggleIssues as q,
+  connectorLabel as o,
+  normalizeQueryToggles as p,
+  issueMessages as q,
   require_lib as r,
   sqlConnectorPath as s,
   toggleRewriteWarning as t,
-  normalizeQueryOptions as u,
-  validateQueryOptions as v,
+  queryToggleIssues as u,
+  normalizeQueryOptions as v,
   workflowMappingMatches as w,
-  arithmeticWriteWarning as x,
-  COMPONENT_FX_GUIDANCE as y,
-  sameReadSource as z
+  validateQueryOptions as x,
+  arithmeticWriteWarning as y,
+  COMPONENT_FX_GUIDANCE as z
 };

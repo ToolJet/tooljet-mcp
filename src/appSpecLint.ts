@@ -4,7 +4,14 @@ import { lintPageArchetype } from './archetypeLint.js';
 import { materializeRequiredDefaultChildren } from './defaultChildren.js';
 import { matchPlannedPage } from './pageMatch.js';
 import { validateEvents } from './eventValidation.js';
-import { lintComponents, validateAppStructure, type LintComponent } from './lint.js';
+import {
+  introducedLintFindings,
+  lintComponents,
+  lintComponentSlots,
+  slotFindingKey,
+  validateAppStructure,
+  type LintComponent,
+} from './lint.js';
 import { prepareQueryOptionsForWrite } from './queryPersistence.js';
 import { expandQueryLifecycles, type LifecycleAlert } from './queryLifecycle.js';
 import { validateTableBatch } from './tableValidation.js';
@@ -586,6 +593,20 @@ export function lintPlannedApp(spec: PlannedAppSpec, existingSummary?: AppSummar
         ...(component.slotName && component.slotName !== 'body' ? { slot_name: component.slotName } : {}),
       };
     });
+    // A child parented to a component already on the page: its canvas is checked against that parent here, as
+    // add_components does (lintComponents above sees only the planned components, so it cannot find the parent).
+    const onPage = (existingPage?.components ?? []) as LintComponent[];
+    const pageIds = new Set(onPage.map((component) => component.id));
+    const ontoExisting = componentEntries
+      .filter(({ component }) => component.parent && pageIds.has(component.parent))
+      .map(({ component, id }) => ({ id, name: component.name, type: component.type, parent: component.parent, slotName: component.slotName }) as LintComponent);
+    if (ontoExisting.length) {
+      errors.push(
+        ...introducedLintFindings(lintComponentSlots(onPage), lintComponentSlots([...onPage, ...ontoExisting]), slotFindingKey).map(
+          (message) => `Page "${plannedPage.name}": ${message}`
+        )
+      );
+    }
     const pageSummary = existingPage ?? {
       id: pageId,
       name: plannedPage.name,

@@ -1,5 +1,432 @@
 import { createRequire } from "node:module";
-import { p as parseExpression } from "./chunk-C1y-3rfY.js";
+import { a as activePackSet, g as getComponentSchema } from "./chunk-x55QR8id.js";
+import { p as parseExpression, a as parse } from "./chunk-8javr-CG.js";
+import { readFileSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+createRequire(import.meta.url);
+var UI2_COMMON_RENAMES = {
+  actions: { visibility: "setVisibility", disable: "setDisable", loading: "setLoading" }
+};
+var CHART = { exposed: { clickedDatum: "clickedDataPoint" } };
+var PICKER = { events: { onChange: "onSelect" }, actions: { clear: "clearValue" } };
+var UI2_RENAMES = {
+  ShadAreaChart: CHART,
+  ShadBarChart: CHART,
+  ShadComboChart: CHART,
+  ShadFunnelChart: CHART,
+  ShadHeatmapChart: CHART,
+  ShadLineChart: CHART,
+  ShadPieChart: CHART,
+  ShadRadarChart: CHART,
+  ShadRadialChart: CHART,
+  ShadScatterChart: CHART,
+  ShadBreadcrumb: { events: { onItemClick: "onItemClicked" } },
+  ShadButtonGroup: { exposed: { values: "selected" } },
+  ShadCalendar: { events: { onMonthChange: "onMonthChanged" } },
+  ShadCardGrid: { events: { onCardClick: "onCardClicked" } },
+  ShadCarousel: { events: { onSlideChange: "onSlideChanged", onSlideClick: "onSlideClicked" } },
+  ShadCheckbox: { actions: { setChecked: "setValue" } },
+  ShadColorPicker: { exposed: { selectedColorHex: "value", rgb: "selectedColorRGB", rgba: "selectedColorRGBA" } },
+  ShadCombobox: { events: { onChange: "onSelect" } },
+  ShadDatePicker: {
+    events: { onChange: "onSelect" },
+    actions: { setDate: "setValue", clear: "clearValue" },
+    exposed: { selectedDate: "value" }
+  },
+  ShadDateTimePicker: { ...PICKER, actions: { setDate: "setValue", clear: "clearValue" } },
+  ShadEmpty: { events: { onAction: "onActionClicked" } },
+  ShadFileUpload: { actions: { clear: "clearFiles" }, exposed: { files: "file" } },
+  ShadHero: { events: { onActionClick: "onActionClicked", onSecondaryActionClick: "onSecondaryActionClicked" } },
+  ShadImage: { properties: { src: "source", alt: "alternativeText", fit: "imageFit" } },
+  ShadKanban: {
+    events: { onCardClicked: "onCardSelected" },
+    actions: { updateCard: "updateCardData" },
+    exposed: {
+      cards: "updatedCardData",
+      selectedCard: "lastSelectedCard",
+      lastMove: "lastCardMovement",
+      movedCard: "lastCardMovement.card"
+    }
+  },
+  ShadLink: { properties: { href: "linkTarget", text: "linkText", target: "targetType" } },
+  ShadListView: {
+    events: { onRowClicked: "onRecordClicked" },
+    exposed: { selectedRow: "selectedRecord", selectedRowId: "selectedRecordId" }
+  },
+  ShadMap: {
+    events: { onMapClick: "onMapClicked", onShapeClick: "onShapeClicked", onLocationPick: "onLocationPicked" }
+  },
+  ShadMultiselect: { events: { onChange: "onSelect" } },
+  ShadNavigation: { events: { onSelect: "onClick" }, actions: { setActive: "selectItem" }, exposed: { activeItem: "selectedItem" } },
+  ShadPhoneInput: { actions: { setCountry: "setCountryCode" } },
+  ShadNumberInput: { actions: { setValue: "setText" } },
+  ShadProgressList: { events: { onItemClick: "onItemClicked" } },
+  ShadQuestionnaire: { events: { onStepChange: "onStepChanged" } },
+  ShadRadioGroup: { events: { onChange: "onSelectionChange" } },
+  ShadRecordList: {
+    events: { onRowClicked: "onItemClicked", onRecordClicked: "onItemClicked" },
+    exposed: {
+      selectedRecord: "selectedItem",
+      selectedRow: "selectedItem",
+      selectedRecordId: "selectedItemId",
+      selectedRowId: "selectedItemId"
+    }
+  },
+  ShadSchedule: { events: { onBookingClick: "onBookingClicked", onSlotClick: "onSlotClicked" } },
+  ShadSelect: { events: { onChange: "onSelect" } },
+  ShadSteps: { actions: { setDisabled: "setDisable" }, properties: { schema: "steps" } },
+  ShadTable: { properties: { pageSize: "rowsPerPage" } },
+  ShadTags: { events: { onTagClick: "onTagClicked" } },
+  ShadTagsInput: {
+    events: { onTagRemoved: "onTagDeleted" },
+    exposed: { tags: "values", value: "values", selectedTags: "values" }
+  },
+  ShadTimePicker: { ...PICKER, actions: { setTime: "setValue", clear: "clearValue" } },
+  ShadTimeline: { events: { onItemClick: "onItemClicked" } },
+  ShadToggleGroup: { exposed: { selected: "value" } }
+};
+function retiredUi2Name(type, kind, name) {
+  if (!type || !type.startsWith("Shad"))
+    return void 0;
+  const own = UI2_RENAMES[type]?.[kind];
+  if (own && Object.prototype.hasOwnProperty.call(own, name))
+    return own[name];
+  const common = UI2_COMMON_RENAMES[kind];
+  return common && Object.prototype.hasOwnProperty.call(common, name) ? common[name] : void 0;
+}
+var offline;
+function libraryPacksAll() {
+  const discovered = activePackSet().packs;
+  if (discovered)
+    return discovered;
+  if (offline === void 0) {
+    try {
+      const path = resolve(dirname(fileURLToPath(import.meta.url)), "../data/library-pack.json");
+      offline = JSON.parse(readFileSync(path, "utf8"));
+    } catch {
+      offline = null;
+    }
+  }
+  return offline ? [offline] : [];
+}
+function registerLibraryPacks(packs) {
+  const set = activePackSet();
+  set.packs = packs;
+}
+var serverLibraryPacks = () => activePackSet().packs ?? [];
+function libraryPack() {
+  return libraryPacksAll()[0] ?? null;
+}
+var isBuiltin = (pack) => pack.kind === "builtin";
+var packOfType = (type) => typeof type === "string" ? libraryPacksAll().find((p) => type.startsWith(p.prefix)) : void 0;
+var isLibraryPackType = (type) => !!packOfType(type);
+var packComponentOf = (type) => Object.values(packOfType(type)?.components ?? {}).find((entry) => entry.type === type);
+var slotNamesOf = (component, kind) => (component?.slots ?? []).filter((slot) => kind === void 0 || slot.kind === kind).map((slot) => String(slot.name ?? "")).filter(Boolean);
+function packSlotNames(type) {
+  const component = packComponentOf(type);
+  return component ? slotNamesOf(component) : void 0;
+}
+function packRowSlotNames(type) {
+  return slotNamesOf(packComponentOf(type), "rows");
+}
+function packSlotOnOwnId(type, slotName) {
+  const component = packComponentOf(type);
+  const rows = slotNamesOf(component, "rows");
+  if (!rows.length)
+    return false;
+  if (slotName)
+    return rows.includes(slotName);
+  return slotNamesOf(component).every((name) => rows.includes(name));
+}
+function libraryPins() {
+  const packs = libraryPacksAll().filter((p) => !isBuiltin(p));
+  return packs.length ? Object.fromEntries(packs.map((p) => [p.correlationId.replace(/-/g, ""), p.version])) : void 0;
+}
+var dashless = (id) => id.replace(/-/g, "");
+var propertyValue = (properties, key3) => {
+  const entry = properties?.[key3];
+  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+};
+function libraryCorrelationId(component) {
+  const properties = component.properties;
+  const id = propertyValue(properties, "correlationId");
+  return typeof id === "string" && id && !propertyValue(properties, "codePage") ? id : void 0;
+}
+var isPinned = (pins, correlationId) => pins[dashless(correlationId)] != null || pins[correlationId] != null;
+function missingLibraryPins(components, pins) {
+  const missing = {};
+  for (const component of components) {
+    const id = libraryCorrelationId(component);
+    if (!id || isPinned(pins, id))
+      continue;
+    const pack = libraryPacksAll().find((p) => !isBuiltin(p) && p.correlationId === id);
+    if (pack)
+      missing[dashless(id)] = pack.version;
+  }
+  return Object.keys(missing).length ? missing : void 0;
+}
+function unpinnedLibraries(components, pins) {
+  const byLibrary = /* @__PURE__ */ new Map();
+  for (const component of components) {
+    const id = libraryCorrelationId(component);
+    if (!id || isPinned(pins, id))
+      continue;
+    const library = String(propertyValue(component.properties, "libraryName") ?? id);
+    byLibrary.set(library, [...byLibrary.get(library) ?? [], String(component.name ?? "unnamed")]);
+  }
+  return [...byLibrary].map(([library, names]) => ({ library, components: names }));
+}
+function toLibraryComponent(spec) {
+  const pack = packOfType(spec.type);
+  if (!pack)
+    return spec;
+  const componentName = spec.type.slice(pack.prefix.length);
+  if (isBuiltin(pack)) {
+    return {
+      ...spec,
+      type: "PackComponent",
+      properties: {
+        ...spec.properties ?? {},
+        pack: { value: pack.pack },
+        componentName: { value: componentName }
+      }
+    };
+  }
+  return {
+    ...spec,
+    type: "LibraryComponent",
+    properties: {
+      ...spec.properties ?? {},
+      libraryId: { value: pack.libraryId },
+      correlationId: { value: pack.correlationId },
+      libraryName: { value: pack.libraryName },
+      componentName: { value: componentName }
+    }
+  };
+}
+function isEmptyLibraryHost(component) {
+  if (component.type !== "LibraryComponent" && component.type !== "PackComponent")
+    return false;
+  return !["componentName", "pack", "libraryId", "correlationId", "libraryName"].some((key3) => {
+    const entry = component.properties?.[key3];
+    const value = entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+    return typeof value === "string" && value.trim() !== "";
+  });
+}
+function emptyLibraryHostError(component, options = {}) {
+  if (!isEmptyLibraryHost(component))
+    return null;
+  return `Component "${component.name ?? component.id ?? component.type}" is a ${component.type} that names no component, so it draws an empty box: it is ToolJet's internal host, stored with the component it draws. ${options.persisted ? "Delete it and add" : "Write"} the pack's own type, Lib_<pack>_<Component> (get_component_catalog lists them).`;
+}
+function libraryTypeOf(component) {
+  if (component.type !== "LibraryComponent" && component.type !== "PackComponent")
+    return void 0;
+  const value = (key3) => {
+    const entry = component.properties?.[key3];
+    return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+  };
+  if (component.type === "PackComponent") {
+    const id = value("pack");
+    const name2 = value("componentName");
+    if (typeof id !== "string" || typeof name2 !== "string")
+      return void 0;
+    const known = libraryPacksAll().find((p) => p.pack === id);
+    if (!known)
+      return `Lib_${id.toLowerCase().replace(/[^a-z0-9]+/g, "")}_${name2}`;
+    return known.components[name2] ? `${known.prefix}${name2}` : void 0;
+  }
+  const pack = libraryPacksAll().find((p) => p.correlationId === value("correlationId"));
+  const name = value("componentName");
+  return pack && typeof name === "string" && pack.components[name] ? `${pack.prefix}${name}` : void 0;
+}
+var FLEX_DOWNGRADE = {
+  alignItems: { stretch: "flex-start", "last baseline": "flex-start" },
+  justifyContent: { "space-between": "flex-start" }
+};
+function downgradeFlexForLibrary(spec) {
+  if (process.env.TOOLJET_FLEX_V1 !== "1" || !libraryPack() || spec.type !== "FlexContainer" || !spec.properties)
+    return spec;
+  const properties = { ...spec.properties };
+  for (const [key3, map] of Object.entries(FLEX_DOWNGRADE)) {
+    const entry = properties[key3];
+    const value = entry && typeof entry === "object" ? entry.value : entry;
+    if (typeof value === "string" && map[value])
+      properties[key3] = { value: map[value] };
+  }
+  return { ...spec, properties };
+}
+var isNode = (value) => !!value && typeof value === "object" && typeof value.type === "string";
+var isMember = (value) => isNode(value) && ["MemberExpression", "OptionalMemberExpression"].includes(value.type);
+function memberName(node2) {
+  const property = node2.property;
+  if (!isNode(property))
+    return void 0;
+  if (!node2.computed && property.type === "Identifier")
+    return String(property.name);
+  if (node2.computed && property.type === "StringLiteral")
+    return String(property.value);
+  return void 0;
+}
+function bindsComponents(value) {
+  if (!isNode(value))
+    return false;
+  if (value.type === "Identifier")
+    return value.name === "components";
+  if (value.type === "RestElement")
+    return bindsComponents(value.argument);
+  if (value.type === "AssignmentPattern")
+    return bindsComponents(value.left);
+  if (value.type === "ArrayPattern")
+    return value.elements.some(bindsComponents);
+  if (value.type === "ObjectPattern")
+    return value.properties.some((p) => bindsComponents(p.type === "RestElement" ? p.argument : p.value));
+  return false;
+}
+function lintComponentStateBindings(value, components, path) {
+  if (Array.isArray(value))
+    return value.flatMap((child, i) => lintComponentStateBindings(child, components, `${path}[${i}]`));
+  if (value && typeof value === "object")
+    return Object.entries(value).flatMap(([key3, child]) => lintComponentStateBindings(child, components, `${path}.${key3}`));
+  if (typeof value !== "string")
+    return [];
+  const binding = value.trim().match(/^\{\{([\s\S]*)\}\}$/);
+  let root;
+  if (binding) {
+    try {
+      root = parseExpression(binding[1]);
+    } catch {
+      return [];
+    }
+  } else if (/\.code$/.test(path)) {
+    try {
+      root = parse(value, { sourceType: "script", allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true }).program;
+    } catch {
+      return [];
+    }
+  } else
+    return [];
+  const wrongNames = /* @__PURE__ */ new Set();
+  let shadowed = false;
+  const visit = (node2) => {
+    if (Array.isArray(node2)) {
+      node2.forEach(visit);
+      return;
+    }
+    if (!isNode(node2))
+      return;
+    if (node2.type === "VariableDeclarator" && bindsComponents(node2.id) || /^(Function|Class)(Declaration|Expression)$/.test(node2.type) && bindsComponents(node2.id) || Array.isArray(node2.params) && node2.params.some(bindsComponents) || node2.type === "CatchClause" && bindsComponents(node2.param) || node2.type === "WithStatement" || node2.type === "CallExpression" && isNode(node2.callee) && node2.callee.type === "Identifier" && node2.callee.name === "eval")
+      shadowed = true;
+    const prop = isMember(node2) ? memberName(node2) : void 0;
+    if (prop && isMember(node2.object) && isMember(node2.object.object)) {
+      const value2 = node2.object;
+      const owner = value2.object;
+      if (isNode(owner.object) && owner.object.type === "Identifier" && owner.object.name === "components") {
+        const name = memberName(owner);
+        const variable = memberName(value2);
+        const type = name ? components.find((c) => c.name === name)?.type : void 0;
+        if (name && variable && type && missingMember(type, variable, prop)) {
+          wrongNames.add(`${name}\0${type}\0${variable}.${prop}`);
+        }
+      }
+    }
+    if (prop && isMember(node2.object)) {
+      const owner = node2.object;
+      if (isNode(owner.object) && owner.object.type === "Identifier" && owner.object.name === "components") {
+        const name = memberName(owner);
+        const type = name ? components.find((c) => c.name === name)?.type : void 0;
+        if (name && type && (WRONG_ALIASES[type]?.[prop] || retiredUi2Message(type, prop, name))) {
+          wrongNames.add(`${name}\0${type}\0${prop}`);
+        }
+      }
+    }
+    Object.values(node2).forEach(visit);
+  };
+  visit(root);
+  return shadowed ? [] : [...wrongNames].map((key3) => {
+    const [name, type, prop] = key3.split("\0");
+    if (prop.includes(".")) {
+      const [variable, member3] = prop.split(".");
+      return `${path}: ${type} "${name}" ${variable} has no ${member3}; it reads undefined at runtime. It has ${missingMember(type, variable, member3).join(", ")}.`;
+    }
+    return `${path}: ${WRONG_ALIASES[type]?.[prop]?.(name) ?? retiredUi2Message(type, prop, name)}`;
+  });
+}
+function retiredUi2Message(type, prop, name) {
+  if (!type.startsWith("Shad") && !isLibraryPackType(type))
+    return void 0;
+  const schema = getComponentSchema(type);
+  if (schema?.exposedVariables?.some((variable) => variable.name === prop))
+    return void 0;
+  if (schema?.actions?.some((action2) => action2.handle === prop))
+    return void 0;
+  const exposed = retiredUi2Name(type, "exposed", prop);
+  if (exposed) {
+    return `${type} "${name}" exposes ${exposed}, not ${prop} (renamed); read components.${name}.${exposed}. The old name is undefined at runtime.`;
+  }
+  const action = retiredUi2Name(type, "actions", prop);
+  if (action) {
+    return `${type} "${name}" action ${prop}() was renamed ${action}(); call components.${name}.${action}(...). The old name is undefined at runtime.`;
+  }
+  const published = schema?.exposedVariables?.map((variable) => variable.name) ?? [];
+  if (prop === "id" || !published.length)
+    return void 0;
+  const meant = UI2_MEANT[prop]?.find((candidate) => published.includes(candidate));
+  return `${type} "${name}" has no ${prop}; it reads undefined at runtime. ` + (meant ? `Read components.${name}.${meant}. ` : "") + `It publishes ${published.join(", ")}.`;
+}
+var UI2_MEANT = {
+  checked: ["value"],
+  selected: ["value", "selectedItem"],
+  selectedValue: ["value"],
+  text: ["value"],
+  selectedCard: ["selectedItem", "lastSelectedCard"],
+  selectedCardId: ["selectedItemId", "selectedItem"],
+  selectedId: ["selectedItemId", "selectedRowId"],
+  selectedRow: ["selectedItem", "selectedRow"]
+};
+var WRONG_ALIASES = {
+  Kanban: {
+    selectedCard: (name) => `Kanban "${name}" does not expose selectedCard. Use components.${name}.lastSelectedCard after onCardSelected; the incorrect alias is undefined and opens an empty detail form. Keep the selected record id and raw fields for edits.`
+  },
+  // A claims build filtered its queue on a radio's label, the caption "Type", so no row matched (2026-10-04).
+  RadioButtonV2: {
+    label: (name) => `RadioButton "${name}": label is the field's caption, not the chosen option, so a filter or write reading it matches nothing. Read components.${name}.value for the selection.`
+  },
+  // Widgets/ReorderableList/ReorderableList.jsx publishes values, including before onChange; never value.
+  ReorderableList: {
+    value: (name) => `ReorderableList "${name}" does not expose value. Use components.${name}.values for the ordered option values; the incorrect alias is undefined, even with optional chaining or a fallback.`
+  },
+  // MultiselectV2.jsx setInputValue publishes values before onSelect; DropdownV2's scalar value is different.
+  MultiselectV2: {
+    value: (name) => `MultiselectV2 "${name}" does not expose value. Use components.${name}.values for the selected option values; the incorrect alias is undefined, even with optional chaining or a fallback. An empty selection is [].`
+  }
+};
+var DATE_PICKERS = /* @__PURE__ */ new Set(["ShadDatePicker", "ShadDateTimePicker", "ShadTimePicker", "Datepicker", "DatePickerV2", "DatetimePickerV2", "TimePicker"]);
+function lintEmptyDateWrites(value, components, path) {
+  if (Array.isArray(value))
+    return value.flatMap((child, i) => lintEmptyDateWrites(child, components, `${path}[${i}]`));
+  if (value && typeof value === "object")
+    return Object.entries(value).flatMap(([key3, child]) => lintEmptyDateWrites(child, components, `${path}.${key3}`));
+  if (typeof value !== "string" || !/\.(create_row|update_rows\.columns)\.[^.]+\.value$/.test(path))
+    return [];
+  const read = value.trim().match(/^\{\{\s*components\??\.([A-Za-z_$][\w$]*)\??\.value\s*\}\}$/);
+  const picker = read ? components.find((c) => c.name === read[1]) : void 0;
+  if (!picker?.type || !DATE_PICKERS.has(picker.type))
+    return [];
+  return [`${path}: ${picker.type} "${picker.name}" is '' while no date is picked, and a date or timestamp column rejects '', so the save fails whenever it is left blank. Write {{ components.${picker.name}.value || null }}.`];
+}
+function missingMember(type, variable, member3) {
+  if (!type.startsWith("Shad"))
+    return void 0;
+  const entry = getComponentSchema(type)?.exposedVariables?.find((v) => v.name === variable);
+  const shape = entry?.shape;
+  if (!shape || typeof shape !== "object" || Array.isArray(shape))
+    return void 0;
+  const members = Object.keys(shape);
+  if (members.includes("...") || members.includes(member3))
+    return void 0;
+  return members;
+}
 createRequire(import.meta.url);
 var VOID_TAGS = /* @__PURE__ */ new Set(["br", "img", "hr", "input", "meta", "link", "source", "wbr", "col"]);
 var INLINE_TAGS = /* @__PURE__ */ new Set([
@@ -612,7 +1039,7 @@ function eventPayload(event) {
 function queryTriggers(summary) {
   const byId = new Map(summary.queries.map((q) => [q.id, q]));
   const byName = new Map(summary.queries.flatMap((q) => q.name ? [[q.name, q]] : []));
-  const resolve = (ref) => typeof ref === "string" ? byId.get(ref) ?? byName.get(ref) : void 0;
+  const resolve2 = (ref) => typeof ref === "string" ? byId.get(ref) ?? byName.get(ref) : void 0;
   const triggers = /* @__PURE__ */ new Map();
   for (const q of summary.queries) {
     const options = q.options && typeof q.options === "object" ? q.options : {};
@@ -624,7 +1051,7 @@ function queryTriggers(summary) {
     const payload = eventPayload(e.event);
     if (!payload || payload.actionId !== "run-query")
       continue;
-    const target = resolve(payload.queryId ?? payload.queryName);
+    const target = resolve2(payload.queryId ?? payload.queryName);
     if (!target)
       continue;
     const entry = triggers.get(target.id);
@@ -1328,21 +1755,38 @@ function lintSelectedRowProjections(components, extraSources = []) {
   return [...warnings];
 }
 export {
+  downgradeFlexForLibrary as A,
   BARE_QUERY_DATA_BINDING as B,
+  toLibraryComponent as C,
+  missingLibraryPins as D,
+  libraryTypeOf as E,
+  libraryPins as F,
+  unpinnedLibraries as G,
+  registerLibraryPacks as H,
   lintOversizedWidths as a,
   lintHtmlContentHeight as b,
   lintHtmlRootSurface as c,
   lintUnguardedComponentRefs as d,
-  lintEmbeddedBindingSyntax as e,
-  lintChartDataShape as f,
-  lintUnguardedSelectionText as g,
-  lintTextFormat as h,
-  lintTableColumnsShape as i,
-  lintUntriggeredDataQueries as j,
-  lintAutomaticWrites as k,
+  emptyLibraryHostError as e,
+  lintEmbeddedBindingSyntax as f,
+  lintChartDataShape as g,
+  lintUnguardedSelectionText as h,
+  isLibraryPackType as i,
+  serverLibraryPacks as j,
+  lintTextFormat as k,
   lintSelectedRowProjections as l,
-  stripHtmlBindings as m,
-  suggestedHtmlHeight as n,
-  parseHtml as p,
-  surfaceAroundResolver as s
+  lintTableColumnsShape as m,
+  lintComponentStateBindings as n,
+  lintEmptyDateWrites as o,
+  packSlotOnOwnId as p,
+  lintUntriggeredDataQueries as q,
+  retiredUi2Name as r,
+  surfaceAroundResolver as s,
+  lintAutomaticWrites as t,
+  packRowSlotNames as u,
+  libraryPacksAll as v,
+  parseHtml as w,
+  stripHtmlBindings as x,
+  packSlotNames as y,
+  suggestedHtmlHeight as z
 };

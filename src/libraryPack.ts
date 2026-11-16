@@ -63,6 +63,44 @@ const packOfType = (type: unknown): LibraryPack | undefined =>
 
 export const isLibraryPackType = (type: unknown): type is string => !!packOfType(type);
 
+type PackSlot = { name?: unknown; kind?: unknown };
+type PackComponent = LibraryPack['components'][string] & { slots?: PackSlot[] };
+
+/** A pack type's manifest entry, or undefined for a type no known pack has. */
+const packComponentOf = (type: unknown): PackComponent | undefined =>
+  Object.values(packOfType(type)?.components ?? {}).find((entry) => entry.type === type);
+
+/** The names of a manifest entry's canvases, of one kind ("rows") or all. */
+const slotNamesOf = (component: PackComponent | undefined, kind?: string): string[] =>
+  (component?.slots ?? [])
+    .filter((slot) => kind === undefined || slot.kind === kind)
+    .map((slot) => String(slot.name ?? ''))
+    .filter(Boolean);
+
+/** The canvases (ToolJet.Slot names) a pack type's manifest lists, or undefined for a type no known pack has. A
+ *  container whose canvases come from its items lists only its default items' ones. */
+export function packSlotNames(type: unknown): string[] | undefined {
+  const component = packComponentOf(type);
+  return component ? slotNamesOf(component) : undefined;
+}
+
+/** The canvases a pack type repeats as rows (kind "rows": a list's row, a Kanban card). ToolJet draws them as a List
+ *  view row on the component's own id (usePackHost PackRow), so their children's parent is the bare id, not
+ *  "<id>-<slot>". */
+export function packRowSlotNames(type: unknown): string[] {
+  return slotNamesOf(packComponentOf(type), 'rows');
+}
+
+/** Whether a child on this canvas of a pack type is saved on the component's own id: one of its repeating rows, or no
+ *  canvas named (a plain parent) under a component whose only canvases are rows (a list). */
+export function packSlotOnOwnId(type: unknown, slotName?: string): boolean {
+  const component = packComponentOf(type);
+  const rows = slotNamesOf(component, 'rows');
+  if (!rows.length) return false;
+  if (slotName) return rows.includes(slotName);
+  return slotNamesOf(component).every((name) => rows.includes(name));
+}
+
 /** The globalSettings entry that pins every known pack for an app version. */
 export function libraryPins(): Record<string, string> | undefined {
   // A shipped pack (PackComponent) needs no pin: it always draws the build the release ships.
@@ -149,6 +187,32 @@ export function toLibraryComponent<T extends { type: string; properties?: Sectio
       componentName: { value: componentName },
     },
   };
+}
+
+/** A LibraryComponent or PackComponent that names no component, pack or library: it has nothing to draw and shows an
+ *  empty box (the bare host type written into an app). A workspace's own custom library, no pack the MCP knows, names
+ *  its library and is not one. */
+export function isEmptyLibraryHost(component: { type?: string; properties?: Section }): boolean {
+  if (component.type !== 'LibraryComponent' && component.type !== 'PackComponent') return false;
+  return !['componentName', 'pack', 'libraryId', 'correlationId', 'libraryName'].some((key) => {
+    const entry = component.properties?.[key];
+    const value = entry && typeof entry === 'object' && 'value' in entry ? (entry as { value?: unknown }).value : entry;
+    return typeof value === 'string' && value.trim() !== '';
+  });
+}
+
+/** Why an empty host (isEmptyLibraryHost) is refused, and what to write instead: the same for a component being written
+ *  (lintComponents) and one already saved (validate_app, `persisted`), which is deleted first. Null for any other. */
+export function emptyLibraryHostError(
+  component: { name?: string; id?: string; type?: string; properties?: Section },
+  options: { persisted?: boolean } = {}
+): string | null {
+  if (!isEmptyLibraryHost(component)) return null;
+  return (
+    `Component "${component.name ?? component.id ?? component.type}" is a ${component.type} that names no component, so it ` +
+    "draws an empty box: it is ToolJet's internal host, stored with the component it draws. " +
+    `${options.persisted ? 'Delete it and add' : 'Write'} the pack's own type, Lib_<pack>_<Component> (get_component_catalog lists them).`
+  );
 }
 
 /** The `Lib_*` type of a stored PackComponent or LibraryComponent of a known pack, for reads (summaries, lint of the
