@@ -50,7 +50,7 @@ export function addEventsTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Wire interactivity and lifecycle behavior to components, data queries, pages, or Table sub-elements. Each event uses ' +

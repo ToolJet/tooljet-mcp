@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, onTestFinished } from 'vitest';
 import type { ToolJetClient } from '../src/tooljetClient.js';
 import { createAppTool, loadStandardTheme } from '../src/tools/createApp.js';
 import { createAppVersionTool } from '../src/tools/createAppVersion.js';
@@ -82,6 +82,52 @@ function textOf(result: { content: Array<{ type: string; text: string }> }): unk
 }
 
 describe('create_app tool', () => {
+  it('creates a Code mode app with build_mode "code", without the visual build\'s theme or library settings', async () => {
+    const client = makeClient();
+    client.createApp.mockResolvedValue({ ...createdApp, build_mode: 'code' });
+
+    const result = await createAppTool(client as unknown as ToolJetClient).handler({
+      name: 'Accord',
+      build_mode: 'code',
+      theme: 'workspace_default',
+      component_pack: 'shadcn',
+    });
+
+    expect(client.createApp).toHaveBeenCalledWith('Accord', { buildMode: 'code' });
+    expect(client.listAppThemes).not.toHaveBeenCalled();
+    expect(client.updateAppSettings).not.toHaveBeenCalled();
+    expect(textOf(result)).toEqual({
+      ...createdApp,
+      build_mode: 'code',
+      note: expect.stringMatching(/Not applied to a Code mode app: theme, component_pack/),
+      next: 'code_app_scaffold with this app_id.',
+    });
+    expect(result.isError).toBeUndefined();
+  });
+
+  it('refuses a Code mode app before creating it when this machine has no ToolJet CLI', async () => {
+    vi.stubEnv('MCP_CODE_CLI_HANDSHAKE', '1'); // vitest.config turns the handshake off for every other test
+    vi.stubEnv('TOOLJET_CLI', '/nonexistent/tooljet-cli/bin/run');
+    onTestFinished(() => vi.unstubAllEnvs());
+    const client = makeClient();
+
+    const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'Accord', build_mode: 'code' });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/ToolJet CLI .* not installed.*npm install -g @tooljet\/cli@beta.*No app was created/);
+    expect(client.createApp).not.toHaveBeenCalled();
+  });
+
+  it('reports a server without Code mode as a failure', async () => {
+    const client = makeClient();
+    client.createApp.mockRejectedValue(new Error('This ToolJet server does not support Code mode apps: it created a visual app instead.'));
+
+    const result = await createAppTool(client as unknown as ToolJetClient).handler({ name: 'Accord', build_mode: 'code' });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toMatch(/does not support Code mode/);
+  });
+
   it('creates the app, creates the standard theme once, and applies it to the new version', async () => {
     const client = makeClient();
     client.createApp.mockResolvedValue(createdApp);
@@ -494,7 +540,7 @@ describe('run_query tool', () => {
 
     expect(textOf(result)).toEqual({
       status: 'ok', data: [{ '?column?': 1 }],
-      execution: { query_id: 'q1', datasource_kind: 'postgresql', read_only: true },
+      execution: { query_id: 'q1', datasource_kind: 'postgresql', preflight: 'explicit_read' },
     });
   });
 
@@ -722,7 +768,7 @@ describe('run_query tool', () => {
     const client = makeClient();
     client.getQuery.mockResolvedValue({
       id: 'warehouse-page', name: 'warehousePage', kind: 'bigquery', data_source_id: 'bq-main',
-      options: { query: 'SELECT id FROM dataset.orders LIMIT 25' },
+      options: { mode: 'sql', query: 'SELECT id FROM dataset.orders LIMIT 25' },
     });
 
     const refused = await runQueryTool(client as unknown as ToolJetClient).handler({
@@ -768,12 +814,12 @@ describe('run_query tool', () => {
     expect(textOf(approved)).toMatchObject({
       status: 'ok',
       data: { tag_name: 'v19.2.8' },
-      execution: { query_id: 'latest-release', datasource_kind: 'restapi', read_only: true },
+      execution: { query_id: 'latest-release', datasource_kind: 'restapi', preflight: 'explicit_read' },
       metadata: {
         request: { params: { per_page: '3' } },
         response: { statusCode: 200 },
       },
-      warnings: [expect.stringMatching(/User-confirmed REST GET.*metadata\.request.*pagination/i)],
+      warnings: [expect.stringMatching(/User-confirmed REST GET.*metadata\.response.*pagination/i)],
     });
     expect(client.runQuery).toHaveBeenCalledOnce();
   });
@@ -830,7 +876,7 @@ describe('run_queries tool', () => {
     expect(client.runQuery).toHaveBeenCalledTimes(2);
     expect(textOf(result)).toEqual({ queries: [
       { query_id: 'q1', name: 'overview', status: 'ok', data: [{ count: 48 }],
-        execution: { query_id: 'q1', datasource_kind: 'tooljetdb', read_only: true } },
+        execution: { query_id: 'q1', datasource_kind: 'tooljetdb', preflight: 'automatic_read' } },
       {
         query_id: 'q2', name: 'page', status: 'failed', message: 'connect ETIMEDOUT',
         warnings: [expect.stringMatching(/components\.\*.*viewer/i)],

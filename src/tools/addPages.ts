@@ -16,7 +16,7 @@ export function addPagesTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Add multiple pages to an app in one call. Names/handles are preflighted together, page order follows the input order, and ' +

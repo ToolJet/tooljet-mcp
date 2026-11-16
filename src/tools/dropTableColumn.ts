@@ -9,7 +9,7 @@ export function dropTableColumnTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Permanently drop a ToolJet DB column and its stored values. This is destructive. Inspect the schema and ' +

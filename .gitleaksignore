@@ -1,0 +1,2 @@
+# Synthetic redaction-test marker in historical staging commit; never a real Stripe credential.
+7e1d833718f1976180bbf898a37f4bce6d53fbd6:tests/runQueryRedaction.test.ts:stripe-access-token:12

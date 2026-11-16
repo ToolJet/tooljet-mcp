@@ -22,6 +22,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TOOLJET_MCP_VERSION } from './runtimeFreshness.js';
+import { activePackSet, type PackSet } from './packScope.js';
 
 export interface CatalogResource {
   /** Resource name in resources/list. */
@@ -69,10 +70,24 @@ export const CATALOG_RESOURCES: readonly CatalogResource[] = [
 // Resolves to <repo>/data/... whether running from src (tsx), dist (built) or bundle (esbuild).
 const dataDir = resolve(dirname(fileURLToPath(import.meta.url)), '../data');
 
-/** Per process, like the catalog modules' own caches: the data files do not change under a running server. The
- *  version is cheap (one hash) and computed when the resources are registered; the payload only on a read. */
-const versions = new Map<string, string>();
-const payloads = new Map<string, string>();
+/** The data files do not change under a running server, so what is read from them is kept: per process while no
+ *  component packs are registered, else per pack set (packScope.ts), since the components part then holds that
+ *  workspace's packs and must never be served to another. The version is cheap (one hash) and computed when the
+ *  resources are registered; the payload only on a read. */
+interface ResourceCache {
+  versions: Map<string, string>;
+  payloads: Map<string, string>;
+  catalogVersion?: string;
+}
+const newCache = (): ResourceCache => ({ versions: new Map(), payloads: new Map() });
+const baseCache = newCache();
+const cache = (): ResourceCache => {
+  const set = activePackSet();
+  if (!set.schemas) return baseCache;
+  let own = set.derived.get('resources') as ResourceCache | undefined;
+  if (!own) set.derived.set('resources', (own = newCache()));
+  return own;
+};
 
 // The components part is the live catalogue: the data file plus the workspace's component packs (packCatalog.ts),
 // which are read before the first request, so the compiler plans with the packs this workspace has.
@@ -87,7 +102,7 @@ const readPart = (file: string): Buffer => {
 function readData(resource: CatalogResource): { bytes: Buffer; dataVersion: string } {
   const bytes = readPart(resource.file);
   const dataVersion = createHash('sha256').update(bytes).digest('hex').slice(0, 12);
-  versions.set(resource.file, dataVersion);
+  cache().versions.set(resource.file, dataVersion);
   return { bytes, dataVersion };
 }
 
@@ -102,15 +117,14 @@ export function catalogVersionOf(parts: ReadonlyArray<{ file: string; bytes: Buf
   return hash.digest('hex').slice(0, 12);
 }
 
-let catalogVersionCache: string | undefined;
-
 /** This server's catalog_version. Throws when a part cannot be read: no part is served under a version that does not
  *  describe the whole catalog. */
 function catalogVersion(): string {
-  catalogVersionCache ??= catalogVersionOf(CATALOG_RESOURCES.map((resource) => ({
+  const own = cache();
+  own.catalogVersion ??= catalogVersionOf(CATALOG_RESOURCES.map((resource) => ({
     file: resource.file, bytes: readPart(resource.file),
   })));
-  return catalogVersionCache;
+  return own.catalogVersion;
 }
 
 function listedCatalogVersion(): string | undefined {
@@ -124,13 +138,14 @@ function listedCatalogVersion(): string | undefined {
 /** The `data_version` a list entry advertises; undefined when the file cannot be read (a read then says why). */
 function listedVersion(resource: CatalogResource): string | undefined {
   try {
-    return versions.get(resource.file) ?? readData(resource).dataVersion;
+    return cache().versions.get(resource.file) ?? readData(resource).dataVersion;
   } catch {
     return undefined;
   }
 }
 
 function payload(resource: CatalogResource): string {
+  const payloads = cache().payloads;
   let text = payloads.get(resource.file);
   if (text === undefined) {
     const { bytes, dataVersion } = readData(resource);
@@ -150,18 +165,22 @@ const metadataOf = (resource: CatalogResource, catalog: string | undefined) => {
     ...(dataVersion ? { _meta: { data_version: dataVersion, ...(catalog ? { catalog_version: catalog } : {}) } } : {}),
   };
 };
-const registered: Array<{ resource: CatalogResource; handle: { update: (u: { metadata: Record<string, unknown> }) => void } }> = [];
+type Registered = Array<{ resource: CatalogResource; handle: { update: (u: { metadata: Record<string, unknown> }) => void } }>;
+/** Each server's resource handles, by the pack set it was registered in: a refresh re-lists that server's only. */
+const registered = new WeakMap<PackSet, Registered>();
 
-/** The packs joined the components part after registration: drop the cached versions and payloads and re-list. */
+/** The packs joined the components part after registration: drop the set's cached versions and payloads and re-list. */
 export function refreshCatalogResources(): void {
-  versions.clear();
-  payloads.clear();
-  catalogVersionCache = undefined;
+  const set = activePackSet();
+  set.derived.delete('resources');
   const catalog = listedCatalogVersion();
-  for (const { resource, handle } of registered) handle.update({ metadata: metadataOf(resource, catalog) });
+  for (const { resource, handle } of registered.get(set) ?? []) handle.update({ metadata: metadataOf(resource, catalog) });
 }
 
 export function registerCatalogResources(server: McpServer): void {
+  const set = activePackSet();
+  const handles: Registered = registered.get(set) ?? [];
+  registered.set(set, handles);
   const catalog = listedCatalogVersion();
   for (const resource of CATALOG_RESOURCES) {
     const handle = server.registerResource(
@@ -172,6 +191,6 @@ export function registerCatalogResources(server: McpServer): void {
         contents: [{ uri: resource.uri, mimeType: 'application/json', text: payload(resource) }],
       })
     );
-    registered.push({ resource, handle });
+    handles.push({ resource, handle });
   }
 }

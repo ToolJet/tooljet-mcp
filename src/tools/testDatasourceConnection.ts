@@ -38,6 +38,7 @@ export function testDatasourceConnectionTool(client: ToolJetClient): ToolDef {
     // Probes reachability; changes nothing on either side.
     annotations: {
       readOnlyHint: true,
+      destructiveHint: false,
       openWorldHint: true,
     },
     description:

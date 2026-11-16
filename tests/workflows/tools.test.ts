@@ -5,7 +5,7 @@ import { listWorkflowsTool } from '../../src/tools/listWorkflows.js';
 import { createWorkflowTool } from '../../src/tools/createWorkflow.js';
 import { getWorkflowTool } from '../../src/tools/getWorkflow.js';
 import { lintWorkflowSpecTool } from '../../src/tools/lintWorkflowSpec.js';
-import { applyWorkflowSpecTool } from '../../src/tools/applyWorkflowSpec.js';
+import { applyWorkflowSpecTool, workflowMutationTools } from '../../src/tools/applyWorkflowSpec.js';
 import { deleteWorkflowNodeTool } from '../../src/tools/deleteWorkflowNode.js';
 import { validateWorkflowTool } from '../../src/tools/validateWorkflow.js';
 import { runWorkflowTool } from '../../src/tools/runWorkflow.js';
@@ -23,6 +23,54 @@ vi.mock('../../src/workflows/planner.js', () => planner);
 const VERSION_ID = '11111111-1111-4111-8111-111111111111';
 
 describe('workflow tools', () => {
+  const edits = [
+    ['upsert_workflow_start_node', { node: { ref: 'begin' } }, { nodes: [{ ref: 'begin', type: 'start' }] }],
+    ['upsert_workflow_javascript_node', { node: { ref: 'compute', name: 'computeMass', code: 'return 12;' } }, { nodes: [{ type: 'javascript' }] }],
+    ['upsert_workflow_query_node', { node: { ref: 'read', name: 'readStars', datasource_id: 'catalog-source', options: { query: 'SELECT radius FROM stars LIMIT 4' } } }, { nodes: [{ type: 'query' }] }],
+    ['upsert_workflow_loop_node', { node: { ref: 'loop', name: 'orbitLoop', iteration_values_code: 'return [3, 5];', code: 'return value;' } }, { nodes: [{ type: 'loop' }] }],
+    ['upsert_workflow_condition_node', { node: { ref: 'check', code: 'true' } }, { nodes: [{ type: 'condition' }] }],
+    ['upsert_workflow_response_node', { node: { ref: 'result', code: 'return { mass: 12 };' } }, { nodes: [{ type: 'response' }] }],
+    ['upsert_workflow_agent_node', { node: { ref: 'assistant', system_prompt: 'Summarize synthetic star measurements.' } }, { nodes: [{ type: 'agent' }] }],
+    ['upsert_workflow_edge', { edge: { ref: 'link', from: 'begin-node', to: 'read-node', port: 'default' } }, { edges: [{ ref: 'link' }] }],
+    ['delete_workflow_edge', { edge_id: 'old-link' }, { remove_edge_ids: ['old-link'] }],
+    ['set_workflow_test_parameters', { parameters: { radius: 4 } }, { test_parameters: { radius: 4 } }],
+  ] as const;
+
+  it.each(edits)('exposes the fixed authoring action %s through the existing planner', async (name, input, expected) => {
+    planner.lint.mockReset().mockResolvedValue({ plan_token: VERSION_ID });
+    planner.apply.mockReset().mockResolvedValue({ validation: { errors: [] } });
+    const client = { workflows: {} } as unknown as ToolJetClient;
+    const tool = workflowMutationTools(client).find(t => t.name === name)!;
+    const args = { workflow_id: VERSION_ID, version_id: VERSION_ID, ...input };
+    const result = await tool.handler(args);
+    expect(result.isError).not.toBe(true);
+    expect(planner.lint).toHaveBeenCalledOnce();
+    expect(planner.lint.mock.calls[0]!.slice(0, 3)).toEqual([client.workflows, VERSION_ID, VERSION_ID]);
+    expect(planner.lint.mock.calls[0]![3]).toMatchObject(expected);
+    expect(planner.lint.mock.calls[0]![4]).toBe(true);
+    expect(planner.apply).toHaveBeenCalledExactlyOnceWith(client.workflows, VERSION_ID);
+    expect((await tool.handler({ ...args, spec: { remove_node_ids: ['unrelated-node'] } })).isError).toBe(true);
+    if ('node' in args) expect((await tool.handler({ ...args, node: { ...args.node, type: 'query' } })).isError).toBe(true);
+    expect(planner.apply).toHaveBeenCalledOnce();
+  });
+
+  it('does not apply a fixed authoring operation when lint rejects it', async () => {
+    planner.lint.mockReset().mockResolvedValue({ errors: [{ message: 'Version is not editable' }] });
+    planner.apply.mockReset();
+    const tool = workflowMutationTools({ workflows: {} } as ToolJetClient)[0]!;
+    const result = await tool.handler({ workflow_id: VERSION_ID, version_id: VERSION_ID, node: { ref: 'begin' } });
+    expect(result.isError).toBe(true);
+    expect(planner.apply).not.toHaveBeenCalled();
+  });
+
+  it('preserves failed partial writes from a fixed authoring operation', async () => {
+    planner.lint.mockReset().mockResolvedValue({ plan_token: VERSION_ID });
+    planner.apply.mockReset().mockResolvedValue({ failed: true, completed: [{ query_id: 'partial-query' }] });
+    const tool = workflowMutationTools({ workflows: {} } as ToolJetClient)[0]!;
+    const result = await tool.handler({ workflow_id: VERSION_ID, version_id: VERSION_ID, node: { ref: 'begin' } });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0]!.text)).toMatchObject({ failed: true, completed: [{ query_id: 'partial-query' }] });
+  });
   it('keeps one public factory per workflow tool', () => {
     const client = { workflows: {} } as unknown as ToolJetClient;
     const names = [

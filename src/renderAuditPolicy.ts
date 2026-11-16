@@ -1,5 +1,5 @@
 import type { AppSummary } from './tooljetClient.js';
-import { assessQueryRead } from './queryExecutionSafety.js';
+import { autoReadPreflight } from './autoReadPreflight.js';
 
 /** Host-controlled allowlist. Private/self-hosted destinations are valid only when explicitly
  * configured; model-supplied viewer_url is never authority to expand browser network access. */
@@ -16,8 +16,36 @@ export function renderAuditOrigins(configuredBase: string, additional = ''): Set
     .filter(Boolean).map((s) => httpUrl(s).origin)]);
 }
 
+/** The document a Code mode app's frame runs in, on the deployment's sandbox domain. Nothing else exists on that domain. */
+function isSandboxFrameDocument(url: URL, configured = process.env.CODE_MODE_SANDBOX_URL): boolean {
+  if (!configured || !url.pathname.endsWith('/api/code-frame/frame.html')) return false;
+  try {
+    const sandbox = new URL(configured.replace('*.', 'wildcard.'));
+    const host = sandbox.hostname.replace(/^wildcard\./, '');
+    const hostMatches = configured.includes('*.') ? url.hostname.endsWith(`.${host}`) : url.hostname === host;
+    return hostMatches && url.protocol === sandbox.protocol && url.port === sandbox.port;
+  } catch {
+    return false;
+  }
+}
+
 export function renderAuditUrlAllowed(value: string, origins: Set<string>): boolean {
-  try { return origins.has(httpUrl(value).origin); } catch { return false; }
+  try {
+    const url = httpUrl(value);
+    return origins.has(url.origin) || isSandboxFrameDocument(url);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Audit origins the egress proxy lets resolve to private or loopback addresses: the ToolJet host the check is
+ * configured for and this process's TOOLJET_URL (on a dev stack or a private network that is where they live), and
+ * MCP_RENDER_AUDIT_PRIVATE_ORIGINS. Any other allowed host name must resolve to public addresses (renderEgressProxy.ts).
+ */
+export function renderAuditPrivateOrigins(configuredBase: string): Set<string> {
+  const named = [process.env.TOOLJET_URL, process.env.MCP_RENDER_AUDIT_PRIVATE_ORIGINS].filter(Boolean).join(',');
+  return renderAuditOrigins(configuredBase, named);
 }
 
 export function renderAuditBase(configuredBase: string, override?: string): { base: string; origins: Set<string> } {
@@ -52,11 +80,8 @@ export function renderAuditRequest(
   const options = query.options as Record<string, unknown> | undefined;
   if (hasBinding(options)) return blocked('A query with dynamic bindings was blocked');
   if (options?.requestConfirmation || options?.request_confirmation) return blocked('A query requiring confirmation was blocked');
-  const read = assessQueryRead(query);
-  if (!read.provenRead || !read.directSafe || read.requiresCountPreflight ||
-      read.requiresRemoteReadConfirmation || read.requiresBillableReadConfirmation) {
-    return blocked('A query that is not a proven bounded read was blocked');
-  }
+  // The same preflight as every other run nobody asked for (autoReadPreflight.ts, CM-36/CM-37).
+  if (!autoReadPreflight(query).run) return blocked('A query that is not a proven bounded read was blocked');
   // Never forward browser-supplied options: the run endpoint can persist them. Static saved
   // options need no binding values, so neither overrides nor resolved SQL can cross this boundary.
   return { allowed: true, postData: JSON.stringify({ resolvedOptions: {} }) };

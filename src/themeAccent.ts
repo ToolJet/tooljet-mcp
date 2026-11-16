@@ -16,7 +16,7 @@ export const ACCENT_MENU = [
 
 const MENU_TEXT = ACCENT_MENU.map((a) => `${a.name} ${a.hex} (${a.fits})`).join(', ');
 
-const hsl = (hex: string): { h: number; s: number; l: number } | null => {
+export const hsl = (hex: string): { h: number; s: number; l: number } | null => {
   const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(hex.trim());
   if (!m) return null;
   const full = m[1].length === 3 ? m[1].replace(/./g, (c) => c + c) : m[1];

@@ -16,7 +16,7 @@ export function addComponentsTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Place MANY components on one page in a single call (all share app_id/version_id/page_id). ' +

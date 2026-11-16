@@ -28,3 +28,8 @@ Not `WHERE priority = '{{components.priorityFilter.value}}'` — that is escaped
 - Parameters bind **values**, not identifiers. A table or column name cannot be a parameter, so choose those from a fixed allowlist in the query text rather than from user input.
 - An empty component still needs a valid statement. Handle the empty case in SQL (`WHERE (:priority = '' OR priority = :priority)`) rather than by removing the placeholder.
 - Constants you wrote yourself are not the concern. This is about values you do not control.
+
+
+## Sharing a team app
+
+For team-sharing requests, verify the intended audience and access using the existing security and QA references. A viewer URL alone does not prove teammate access or authorize public sharing. Keep the requested platform choice; do not move an existing app from another product unless asked.

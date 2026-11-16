@@ -44,7 +44,7 @@ export function addQueryLifecyclesTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Create standard mutation success/failure behavior for many queries in one call. For each query, declare refresh_query_ids, ' +

@@ -192,6 +192,9 @@ Build only what these MCP tools and ToolJet's **real** components/features actua
 - \`generate_form_schema({ table_name, mode, initial_values_binding?, include?, field_overrides? })\` → a ready-to-place Form \`properties\` block only for the layout-safe generated types: \`textinput\`, \`number\`, \`emailinput\`, \`password\`, \`datepicker\`, and \`checkbox\`. It rejects schemas needing Dropdown/Multiselect/TextArea/Radio/Toggle/StarRating/FilePicker and tells you to build the entire form from standalone components.
 
 - \`list_workspaces()\` → \`[{ id, name, slug, is_default, is_current, datasources_url }]\`. The workspaces (organizations) this user belongs to; \`datasources_url\` is the manual connection-repair page.
+- \`list_workspace_branches()\` lists existing branch IDs and names. When multi-branching is enabled, use the requested feature branch (ask if none is selected) and pass its exact \`branch_id\` on every app/data call, including lint and apply. The default branch is protected; never select another branch to bypass a refusal. In-product builds already pin their branch. This does not create, push, or merge Git branches.
+- \`list_workspace_folders({ search_text? })\` lists visible front-end app folders in the current connection's workspace, returning \`{ folders: [{id,name,app_count}], meta: {total_count} }\`. Search matches folder names. Use a returned folder ID to inspect its apps.
+- \`list_workspace_apps({ page?, search_text?, folder_id? })\` lists front-end apps with \`folders: [{id,name}]\` on each app. Search matches app names and combines with \`folder_id\`; follow \`meta.total_pages\` for pagination. \`meta.workspace_folder_count\` counts visible folders; \`meta.folder_app_count\` counts matching apps in the selected folder (null without a filter). \`meta.total_count\` remains the workspace-wide count of matching apps even with \`folder_id\`; use \`meta.folder_app_count\` for the folder.
 - \`use_workspace(workspace_id)\` → switch the ACTIVE workspace for all later calls (apps/tables/datasources are scoped to it). Returns the now-active \`{ id, name, slug, datasources_url }\`.
 - \`create_app(name)\` → \`{ app_id, version_id, home_page_id, editor_url, viewer_url, app_url, datasources_url }\`. \`app_url\` is a backward-compatible alias for \`editor_url\`. Call first and keep the ids. Share \`editor_url\` so the user can follow authoring live. If a built-in browser is available, wait until the first meaningful page works, then open \`viewer_url\` and reuse that tab at page-level checkpoints. When no browser is available, share both links rather than calling the editor URL a viewer.
 - \`create_app_version({ app_id, version_name, version_from_id, version_description? })\` clones an exact source into a new draft and returns its \`version_id\`. Name conflicts fail without adopting any existing draft, including after a timeout. Inspect the versions and ask the user before choosing an existing version or another name. Inspect that version for cloned resource IDs before editing; never keep writing to the source.
@@ -882,7 +885,7 @@ Use \`add_table_column\` to evolve a ToolJet DB table in place. Destructive dele
 - **Write operations** (for edit/create flows) use indexed-object option shapes:
   - Create: \`{ "operation": "create_row", "table_id": "<id>", "create_row": { "0": { "column": "title", "value": "{{...}}" }, "1": { "column": "status", "value": "Open" } } }\`
   - Update: \`{ "operation": "update_rows", "table_id": "<id>", "update_rows": { "where_filters": { "0": { "column": "id", "operator": "eq", "value": "{{...}}" } }, "columns": { "0": { "column": "status", "value": "{{...}}" } } } }\`
-  - Delete: \`{ "operation": "delete_rows", "table_id": "<id>", "delete_rows": { "where_filters": { "0": { "column": "id", "operator": "eq", "value": "{{...}}" } } } }\`
+  - Delete: \`{ "operation": "delete_rows", "table_id": "<id>", "delete_rows": { "where_filters": { "0": { "column": "id", "operator": "eq", "value": "{{...}}" } }, "limit": "" } }\` (\`"limit": ""\` deletes every matching row; with no limit ToolJet applies limit 1 with no order, which the production database refuses)
 - After a write succeeds, re-run list/count queries from the mutation's \`onDataQuerySuccess\` event.
 
 ### MongoDB writes to embedded arrays (\`kind: "mongodb"\`)
@@ -1089,12 +1092,12 @@ Specs describe API shapes, not the account's custom fields or pipeline stage val
 `;
 const datasources = `# Datasources and query contracts
 
-Read this when selecting, connecting, introspecting, or authoring datasource queries. Fetch operation contracts on demand instead of loading unrelated datasource schemas.\n\n${datasourceRepair}\n\n${extractSection(fullSkill, '### Large-data read safety')}\n\n${extractSection(reference, '## Datasource query reference')}\n\n${restApiGuidance}\n\n${hubspotGuidance}\n`;
+Read this when replacing spreadsheets or selecting, connecting, introspecting, or authoring datasource queries. Fetch operation contracts on demand instead of loading unrelated datasource schemas.\n\n## Spreadsheet-to-app requests\n\nFor spreadsheet-to-app requests, inspect the data available to this client before planning the schema. A chat attachment is not automatically accessible through MCP. If the file is unavailable, request an accessible export or sample; do not claim an import succeeded. Confirm how formulas, macros, duplicates and relationships should be handled instead of assuming they convert automatically.\n\n${datasourceRepair}\n\n${extractSection(fullSkill, '### Large-data read safety')}\n\n${extractSection(reference, '## Datasource query reference')}\n\n${restApiGuidance}\n\n${hubspotGuidance}\n`;
 const security = makeReference(
   'Security and authorization boundaries',
   'Read this before adding sensitive data access, user-scoped behavior, permissions, or destructive writes.',
   routedSections.security
-);
+) + `\n\n## Sharing a team app\n\nFor team-sharing requests, verify the intended audience and access using the existing security and QA references. A viewer URL alone does not prove teammate access or authorize public sharing. Keep the requested platform choice; do not move an existing app from another product unless asked.\n`;
 const qa = makeReference(
   'Verification and browser QA',
   'Read this when a page or primary flow is ready to verify. It defines the bounded static, runtime, and visual checks required before claiming the work is complete.',
@@ -1109,7 +1112,7 @@ const components = `# Component contracts and specialized rendering\n\nRead this
 
 const skill = `---
 name: tooljet-app-builder
-description: "Build ToolJet apps end-to-end via tooljet-mcp: plan pages, create or reuse data/query/component resources, wire behavior, and verify the result. Use for ToolJet apps, dashboards, internal tools, or changes to existing ToolJet apps."
+description: "Build or update ToolJet dashboards, internal tools, back-office and team operations apps, including spreadsheet replacements. Requires a ToolJet MCP connection. Excludes one-off spreadsheet analysis, static charts, advice-only comparisons and standalone code projects outside ToolJet."
 metadata:
   generated_by: scripts/generate-skill.mjs
   sources: >-
@@ -1130,9 +1133,13 @@ Use the selected ToolJet connection's tools; ask if missing or ambiguous. This s
 
 For migration/clone/replacement requests, first read \`references/migration.md\`. Discover expanded states, relationships and read-only journeys—not just screenshots. Map source coverage to ToolJet and report gaps. Skip this workflow for ordinary builds or visual-only inspiration.
 
+## Visual or Code mode
+
+Unless the user said, ask before \`create_app\`: visual (ToolJet components) or Code mode (React, \`code_app_*\` tools). For Code mode pass \`build_mode: "code"\`, then follow the \`code_app_*\` tool descriptions instead of lint and apply.
+
 ## Core workflow
 
-1. Call \`list_workspaces\`; if several exist, confirm and switch before creating anything. Decide the page architecture before components. A simple single-job app can stay on one page; separate substantial jobs into focused pages; add an overview only when cross-workflow orientation or decisions need it.
+1. Call \`list_workspaces\`; if several exist, confirm the workspace. Branch selection: references/workflows.md. Decide the page architecture before components. A simple single-job app can stay on one page; separate substantial jobs into focused pages; add an overview only when cross-workflow orientation or decisions need it.
 2. Treat 3+ substantive pages, 2+ complex workflows, a multi-table model, or multiple integrations as a large build. Before mutations, show the page/phase plan and rough time ranges, then ask for phased checkpoints (recommended) or the whole app in one run. Do not re-ask if the user already chose.
 3. State the short design brief with the page plan before create_app (references/ui-layout.md): the user's job, dominant surface, relevant emphasis, and theme. Resolve the theme using \`references/themes.md\`: honor explicit design, selected themes, else derive from brand or use case (short prompts have one); ToolJet Modern only if asked. Pass the resolved \`theme\` to \`create_app\`, preserve its ids and links, then call \`list_datasources\`. Report any \`theme.warning\`. Fetch only the component, event-action, and datasource contracts needed for the current phase, using one selective batch per contract class, and reuse them. Request exact \`sections\` and \`property_keys\`/\`style_keys\`, not broad full contracts. Confirm a new data model before creating it; ToolJet DB table names are at most 31 characters.
 4. Implement that brief as a complete useful phase with stable \`client_ref\` values. Root components omit \`parent\` and \`slot_name\`; page ids are not component parents. Await \`lint_app_spec\` as a standalone barrier, fix its errors and review warnings, then pass its one-time \`plan_token\` to \`apply_app_phase\`. Never run the linter alongside a write. Put planned persisted component definition patches in \`component_updates\`; use targeted update tools for ad-hoc repairs, never duplicate resources or rebuild the app. After an error, inspect it and change the repair—never replay an identical mutation.

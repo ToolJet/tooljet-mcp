@@ -7,7 +7,7 @@ export function listWorkflowsTool(client: ToolJetClient): ToolDef {
     name: 'list_workflows',
     title: 'List Workflows',
     description: 'List workflows in the active workspace.',
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     inputSchema: listWorkflowsInputSchema.shape,
     async handler(args: unknown) {
       try {

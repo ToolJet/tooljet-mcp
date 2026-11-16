@@ -7,7 +7,7 @@ export function getWorkflowTool(client: ToolJetClient): ToolDef {
     name: 'get_workflow',
     title: 'Get Workflow',
     description: 'Read a workflow graph and query options. Use returned node IDs as existing_id when editing. Omitted version selects the current editing version, which may be read-only.',
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     inputSchema: getWorkflowInputSchema.shape,
     async handler(args: unknown) {
       try {

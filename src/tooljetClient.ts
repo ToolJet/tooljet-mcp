@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { assertPageIcon } from './pageIcons.js';
 import type { Auth, Workspace, ViewerSession } from './auth.js';
-import type { Config } from './config.js';
+import { branchIdFor, type Config } from './config.js';
 import { isMisplacedStyleKey } from './lint.js';
 import { packDefaultDefinition } from './packDefaults.js';
 import { downgradeFlexForLibrary, libraryTypeOf, missingLibraryPins, toLibraryComponent } from './libraryPack.js';
@@ -27,8 +27,12 @@ import {
 import { tableCreationLevels, TOOLJET_DB_RESERVED_COLUMN_NAMES } from './tableValidation.js';
 import { booleanBindingValue, isCanonicalStaticBooleanBinding, staticBooleanBinding } from './bindings.js';
 import { invalidSeedTimestamps } from './seedTimestampValidation.js';
+import { z } from 'zod';
 
 export interface CreateAppResult {
+  branch_id?: string;
+  /** "code" for a Code mode app (React, built with the code_app_* tools); "visual" otherwise. */
+  build_mode?: 'visual' | 'code';
   app_id: string;
   version_id: string;
   home_page_id: string;
@@ -116,6 +120,30 @@ export interface SetAppPermissionParams {
 
 export type WorkspaceUserStatus = 'active' | 'archived' | 'invited';
 export type WorkspaceUserRole = 'admin' | 'builder' | 'end-user';
+
+export interface WorkspaceFolder {
+  id: string;
+  name: string;
+  app_count: number;
+}
+
+export interface WorkspaceFoldersPage {
+  folders: WorkspaceFolder[];
+  meta: { total_count: number };
+}
+
+const workspaceFoldersResponse = z.object({
+  folders: z.array(z.object({
+    id: z.string().min(1),
+    name: z.string(),
+    folder_apps: z.array(z.object({ app_id: z.string().min(1) })),
+  })),
+});
+
+const workspaceAppsResponse = z.object({
+  apps: z.array(z.object({ id: z.string().min(1) }).loose()),
+  meta: z.object({ folder_count: z.number().int().nonnegative() }).loose(),
+}).loose();
 
 export interface WorkspaceUser {
   id: string;
@@ -384,6 +412,25 @@ export interface CreateTablesParams {
   tables: CreateTableParams[];
 }
 
+/** Give every row the keys any row has, as null, for columns with no default (see insertRows). */
+export function alignSeedRowKeys(schema: SchemaColumn[], rows: Record<string, unknown>[]): void {
+  const noDefault = new Set(schema.filter((column) => column.defaultValue === undefined || column.defaultValue === null).map((column) => column.name));
+  const keys = new Set(rows.flatMap((row) => Object.keys(row)));
+  for (const key of keys) {
+    if (!noDefault.has(key)) continue;
+    for (const row of rows) if (!(key in row)) row[key] = null;
+  }
+}
+
+/** The rows from `start` that share the first row's keys, up to `limit`, so they can go up as one list. */
+export function sameKeysRun(rows: Record<string, unknown>[], start: number, limit: number): Record<string, unknown>[] {
+  const keysOf = (row: Record<string, unknown>) => Object.keys(row).sort().join('\0');
+  const keys = keysOf(rows[start]);
+  let end = start + 1;
+  while (end < rows.length && end - start < limit && keysOf(rows[end]) === keys) end++;
+  return rows.slice(start, end);
+}
+
 export interface SchemaColumn {
   name: string;
   type: string;
@@ -594,12 +641,14 @@ export interface QuerySummary {
    back, which left the app public whenever the restore failed — a best-effort call with nobody watching.
    An app's visibility belongs to its owner, changed by them, in the product. Do not add it back. */
 export interface ToolJetClient {
+  branchId?: string;
   appVersions: ReturnType<typeof createAppVersionLifecycle>;
   workflows: WorkflowClient;
   assertWorkflowQueryTarget(options: Record<string, unknown>): Promise<void>;
   listWorkspaces(): Promise<Workspace[]>;
   useWorkspace(workspaceId: string): Promise<Workspace>;
-  listWorkspaceApps(params?: { page?: number; searchText?: string }): Promise<Record<string, unknown>>;
+  listWorkspaceApps(params?: { page?: number; searchText?: string; folderId?: string }): Promise<Record<string, unknown>>;
+  listWorkspaceFolders(params?: { searchText?: string }): Promise<WorkspaceFoldersPage>;
   listWorkspaceUsers(params?: {
     page?: number;
     searchText?: string;
@@ -621,14 +670,24 @@ export interface ToolJetClient {
   inviteWorkspaceUser(params: InviteWorkspaceUserParams): Promise<void>;
   updateWorkspaceUser(organizationUserId: string, params: UpdateWorkspaceUserParams): Promise<{ user: WorkspaceUser; updated: boolean }>;
   setWorkspaceUserArchived(organizationUserId: string, archived: boolean): Promise<void>;
-  createApp(name: string): Promise<CreateAppResult>;
+  createApp(name: string, options?: { buildMode?: 'visual' | 'code' }): Promise<CreateAppResult>;
+  listWorkspaceBranches(): Promise<Record<string, unknown>>;
   createAppVersion(params: CreateAppVersionParams): Promise<AppVersionResult>;
   switchAppVersion(appId: string, versionId: string): Promise<SwitchAppVersionResult>;
   releaseApp(appId: string, versionId: string): Promise<ReleaseAppResult>;
   renameApp(appId: string, versionId: string, name: string): Promise<void>;
   getApp(appId: string): Promise<any>;
+  /**
+   * What ToolJet's Code source API lets the caller do with the app's code (its own answer, public apps included): read
+   * for editors and for builders who can view the app, write for editors. Both false for an end user or no access.
+   */
+  codeSourceAccess(appId: string, versionId: string): Promise<{ read: boolean; write: boolean }>;
+  /** The app version's stored Code mode source files, or null when it has none (a visual app, or no Code mode here). */
+  codeSourceFiles?(appId: string, versionId: string): Promise<Array<{ path: string; content: string }> | null>;
   getAppSummary(appId: string, versionId?: string): Promise<AppSummary>;
   listAppPermissionSubjects(appId: string): Promise<AppPermissionSubjects>;
+  /** The workspace's license features (GET /api/license/access): serverSideGlobalResolve, appPermissionQuery, ... */
+  getLicenseFeatureAccess(): Promise<Record<string, unknown>>;
   getAppPermission(
     appId: string,
     resourceType: AppPermissionResourceType,
@@ -689,6 +748,8 @@ export interface ToolJetClient {
   assertDatasourceAllowed(dataSourceId: string, versionId?: string, environmentId?: string): Promise<void>;
   invokeDatasourceMethod(params: InvokeDatasourceMethodParams): Promise<RunQueryResult>;
   getDatasourceConnectionDetails(dataSourceId: string, environmentId?: string): Promise<DatasourceConnectionDetails>;
+  /** A workspace datasource's kind without a version: the identity already listed, else its own record. */
+  datasourceKind?(dataSourceId: string): Promise<string | undefined>;
   getPluginSpec(pluginKind: string, specName: string): Promise<string>;
   /** Which ToolJet server and workspace this client reads plugin specs from, for a cache shared across clients.
    *  Undefined when it cannot be established; such a client's specs are not cached. */
@@ -889,14 +950,60 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     `${config.appUrl}/${encodeURIComponent(workspaceSlug)}/data-sources` +
     (datasourceId ? `/${encodeURIComponent(datasourceId)}` : '');
 
+  async function getWorkspaceFolders() {
+    const res = await auth.authedFetch('/api/folder-apps?type=front-end');
+    await assertOk(res, 'listWorkspaceFolders');
+    const parsed = workspaceFoldersResponse.safeParse(await res.json());
+    if (!parsed.success) throw new Error('Unexpected workspace folders response.');
+    // The backend filters folder_apps through the current user's app permissions.
+    // Keep the membership index internal; do not return raw folder/entity metadata.
+    return parsed.data.folders.map(folder => {
+      const appIds = new Set(folder.folder_apps.map(membership => membership.app_id));
+      return { summary: { id: folder.id, name: folder.name, app_count: appIds.size }, appIds };
+    });
+  }
+
+  async function listWorkspaceFolders(params: { searchText?: string } = {}): Promise<WorkspaceFoldersPage> {
+    const search = params.searchText?.trim().toLowerCase() ?? '';
+    // The API's searchKey filters APP names, so folder-name search belongs here.
+    const folders = (await getWorkspaceFolders())
+      .map(folder => folder.summary)
+      .filter(folder => folder.name.toLowerCase().includes(search));
+    return { folders, meta: { total_count: folders.length } };
+  }
+
   async function listWorkspaceApps(
-    params: { page?: number; searchText?: string } = {}
+    params: { page?: number; searchText?: string; folderId?: string } = {}
   ): Promise<Record<string, unknown>> {
+    const folders = await getWorkspaceFolders();
+    const selectedFolder = folders.find(folder => folder.summary.id === params.folderId);
+    // Resolve only against the current workspace, before sending a folder ID to /apps.
+    if (params.folderId !== undefined && !selectedFolder) {
+      throw new Error('Folder not found or not accessible in the current workspace. Use list_workspace_folders to find an accessible folder_id.');
+    }
     const query = new URLSearchParams({ page: String(params.page ?? 1), type: 'front-end' });
     if (params.searchText) query.set('searchKey', params.searchText);
+    if (params.folderId) query.set('folder', params.folderId);
     const res = await auth.authedFetch(`/api/apps?${query}`);
     await assertOk(res, 'listWorkspaceApps');
-    return (await res.json()) as Record<string, unknown>;
+    const parsed = workspaceAppsResponse.safeParse(await res.json());
+    if (!parsed.success) throw new Error('Unexpected workspace apps response.');
+    const data = parsed.data;
+    const { folder_count: folderAppCount, ...meta } = data.meta;
+    return {
+      ...data,
+      apps: data.apps.map(app => ({
+        ...app,
+        folders: folders.filter(folder => folder.appIds.has(app.id))
+          .map(({ summary: { id, name } }) => ({ id, name })),
+      })),
+      folder: selectedFolder?.summary ?? null,
+      meta: {
+        ...meta,
+        folder_app_count: selectedFolder ? folderAppCount : null,
+        workspace_folder_count: folders.length,
+      },
+    };
   }
 
   async function listWorkspaceUsers(
@@ -1176,6 +1283,37 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return res.json();
   }
 
+  /*
+    GET /api/code-mode-source/:id/versions/:versionId (no content) is authorized by the Code source module's GET_SOURCE
+    feature, which is checked on public apps too (shouldNotSkipPublicApp): editors and builders who can view the app get
+    200, with canWrite from WRITE_SOURCE (editors only); an end user gets 403, and an app outside the caller's workspace
+    or a backend without Code mode 404. The apps module's UPDATE check (GET /api/apps/:id/tables, used before) passes
+    for any workspace member on a public app, so it never said whether the caller may edit.
+  */
+  async function codeSourceAccess(appId: string, versionId: string): Promise<{ read: boolean; write: boolean }> {
+    const res = await auth.authedFetch(
+      `/api/code-mode-source/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`
+    );
+    if (res.status === 403 || res.status === 404) return { read: false, write: false };
+    await assertOk(res, 'codeSourceAccess');
+    const body = (await res.json().catch(() => null)) as { canWrite?: unknown } | null;
+    if (!body || typeof body !== 'object') throw new Error('codeSourceAccess: ToolJet sent no answer');
+    return { read: true, write: body.canWrite === true };
+  }
+
+  /** GET /api/code-mode-source/:id/versions/:versionId?content=1: the stored files, or null when there are none. */
+  async function codeSourceFiles(appId: string, versionId: string): Promise<Array<{ path: string; content: string }> | null> {
+    const res = await auth.authedFetch(
+      `/api/code-mode-source/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}?content=1`
+    );
+    if (res.status === 404) return null;
+    await assertOk(res, 'codeSourceFiles');
+    const body = (await res.json().catch(() => null)) as { exists?: boolean; files?: Array<{ path?: unknown; content?: unknown }> } | null;
+    if (!body || body.exists === false || !Array.isArray(body.files)) return null;
+    return body.files.flatMap((file) =>
+      typeof file.path === 'string' && typeof file.content === 'string' ? [{ path: file.path, content: file.content }] : []);
+  }
+
   // In GET /api/apps/:id, each placed component lives at pages[].components[<id>] as
   // { component: { name, component: <type>, definition: { properties, styles, others } }, layouts }.
   // `component.definition` holds the ACTUAL bound values; `component.properties`/`styles` is the full
@@ -1295,6 +1433,16 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         ...(typeof group.count === 'number' ? { count: group.count } : {}),
       })),
     };
+  }
+
+  async function getLicenseFeatureAccess(): Promise<Record<string, unknown>> {
+    const res = await auth.authedFetch('/api/license/access');
+    await assertOk(res, 'getLicenseFeatureAccess');
+    const body = await res.json();
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      throw new Error('ToolJet getLicenseFeatureAccess failed: expected an object response.');
+    }
+    return body as Record<string, unknown>;
   }
 
   async function getAppPermission(
@@ -1464,7 +1612,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return auth.switchWorkspace(workspaceId);
   }
 
-  async function createApp(name: string): Promise<CreateAppResult> {
+  async function createApp(name: string, options: { buildMode?: 'visual' | 'code' } = {}): Promise<CreateAppResult> {
+    const wantsCode = options.buildMode === 'code';
+    const branchId = branchIdFor(config);
     // A taken name is a 409 that used to bounce back to the model, which then spent a turn (and at
     // max reasoning effort, a minute) inventing "… 2026" or "… A9". Every build in a shared workspace
     // paid it twice. Append a counter ourselves; the model sees the name it got in the result.
@@ -1475,7 +1625,13 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       createRes = await auth.authedFetch('/api/apps', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: finalName, type: 'front-end' }),
+        body: JSON.stringify({
+          name: finalName,
+          type: 'front-end',
+          ...(branchId ? { branchId } : {}),
+          // The build mode is set when the app is created, as the dashboard does: ToolJet has no call that changes it later.
+          ...(wantsCode ? { buildMode: 'code' } : {}),
+        }),
       });
       if (createRes.status !== 409) break;
     }
@@ -1483,6 +1639,20 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const created = (await createRes!.json()) as { id: string; slug?: string };
 
     const app = await getApp(created.id);
+    const buildMode = app?.build_mode ?? app?.buildMode;
+    if (wantsCode && buildMode !== 'code') {
+      // A ToolJet without Code mode drops the unknown field and makes a visual app. Remove it, so nothing gets built on
+      // an app that can never hold code; a failed delete is named so the app can be removed by hand.
+      const removed = await auth
+        .authedFetch(`/api/apps/${created.id}`, { method: 'DELETE' })
+        .then((res) => res.ok)
+        .catch(() => false);
+      throw new Error(
+        'This ToolJet server does not support Code mode apps: it created a visual app instead. ' +
+          (removed ? 'That app was deleted. ' : `Delete app ${created.id} ("${finalName}"); it could not be removed here. `) +
+          'Build a visual app (create_app without build_mode), or connect to a ToolJet version with Code mode.'
+      );
+    }
     const versionId: string = app.editing_version.id;
     const versionName: string = app.editing_version.name ?? 'v1';
     const pages: Array<{ id: string; name: string; handle?: string }> = app.pages ?? [];
@@ -1495,14 +1665,18 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const orgSlug = await auth.getOrganizationSlug();
     const appSlug = created.slug ?? created.id;
 
-    const editorUrl = `${config.appUrl}/${orgSlug}/apps/${appSlug}`;
+    const branchName = app.editing_version.branch?.name;
+    const branchQuery = typeof branchName === 'string' ? `branch=${encodeURIComponent(branchName)}` : '';
+    const editorUrl = `${config.appUrl}/${orgSlug}/apps/${appSlug}${branchQuery ? `?${branchQuery}` : ''}`;
     const homeHandle = homePage.handle ?? 'home';
     const viewerUrl =
       `${config.appUrl}/applications/${created.id}/${encodeURIComponent(homeHandle)}` +
-      `?env=development&version=${encodeURIComponent(versionName)}`;
+      `?env=development&version=${encodeURIComponent(versionName)}${branchQuery ? `&${branchQuery}` : ''}`;
 
     return {
       app_id: created.id,
+      ...(branchId ? { branch_id: branchId } : {}),
+      build_mode: buildMode === 'code' ? 'code' : 'visual',
       version_id: versionId,
       home_page_id: homePage.id,
       app_url: editorUrl,
@@ -1513,6 +1687,23 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   }
 
   async function createAppVersion(params: CreateAppVersionParams): Promise<AppVersionResult> {
+    const inventory = await auth.authedFetch(`/api/apps/${encodeURIComponent(params.appId)}/versions`);
+    await assertOk(inventory, 'createAppVersion.readSource');
+    const body = (await inventory.json()) as { versions?: Array<Record<string, unknown>> };
+    const source = body.versions?.find(version => version.id === params.versionFromId);
+    if (!source) {
+      throw new Error(`ToolJet createAppVersion failed: version ${params.versionFromId} was not found in app ${params.appId}.`);
+    }
+    // Feature branches allow one branch head, not a second named draft. Native Save
+    // creates a published snapshot on the default branch, which is a different operation.
+    if (String(source.version_type ?? source.versionType).toLowerCase() === 'branch') {
+      throw new Error('Cannot clone a branch head into a named draft. Save a named version in ToolJet, then use its version_id as the clone source. No version was created or published.');
+    }
+    const sourceBranchId = source.branch_id ?? source.branchId;
+    const selectedBranchId = branchIdFor(config);
+    if (selectedBranchId && typeof sourceBranchId === 'string' && sourceBranchId !== selectedBranchId) {
+      throw new Error('Cannot create a named draft on a different branch from its source. Select the source version\'s branch before cloning. No version was created.');
+    }
     const res = await auth.authedFetch(`/api/apps/${encodeURIComponent(params.appId)}/versions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1597,6 +1788,10 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       const version = body.versions?.find((candidate) => candidate.id === versionId);
       if (!version) {
         throw new Error(`ToolJet releaseApp failed: version ${versionId} was not found in app ${appId}.`);
+      }
+      // Branch publication creates a different version; never release the branch head by mistake.
+      if (String(version.version_type ?? version.versionType).toLowerCase() === 'branch') {
+        throw new Error('Cannot release a branch head. Save a named version in ToolJet, then select that exact version for release.');
       }
       return {
         id: versionId,
@@ -2450,9 +2645,15 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     // used to object-spread POST bodies while validating JSONB values, turning a list of rows into columns "0", "1",
     // ...; a server without that fix rejects the list, PostgREST writes nothing for a rejected statement, and the
     // rows then go one per request as before (one ~180 ms request a row was most of an apply, 2026-10-22).
+    //
+    // PostgREST rejects a list whose rows have different keys, which sent any batch with an optional column left out of
+    // some rows one row per request (7 of 46 seed calls and 188 s in 10 builds, 2026-11-03). So a key a row leaves out
+    // goes in as null when the column has no default, which is what leaving it out means. A column with a default keeps
+    // its default: rows that differ there go in separate lists, in order.
+    alignSeedRowKeys(schema, rows);
     let processedRows = 0;
     while (bulkInsertAccepted && rows.length - processedRows >= 2) {
-      const chunk = rows.slice(processedRows, processedRows + BULK_INSERT_ROWS);
+      const chunk = sameKeysRun(rows, processedRows, BULK_INSERT_ROWS);
       let res: Response;
       try {
         res = await insertRowViaProxy(table.id, chunk);
@@ -3195,6 +3396,11 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     };
   }
 
+  async function datasourceKind(dataSourceId: string): Promise<string | undefined> {
+    const known = datasourceIdentities.get(`${await auth.getOrganizationId()}:${dataSourceId}`);
+    return known?.kind ?? (await getDatasourceConnectionDetails(dataSourceId)).kind;
+  }
+
   /** Run ToolJet's own connection test for a saved datasource — the same call the datasource
    *  settings page makes. Options are the stored ones; a caller never supplies its own, so no
    *  credential passes through this process. */
@@ -3291,6 +3497,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     listWorkspaces,
     useWorkspace,
     listWorkspaceApps,
+    listWorkspaceFolders,
     listWorkspaceUsers,
     listWorkspaceGroups,
     getWorkspaceGroup,
@@ -3307,14 +3514,29 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     inviteWorkspaceUser,
     updateWorkspaceUser,
     setWorkspaceUserArchived,
+    branchId: config.branchId,
     createApp,
+    async listWorkspaceBranches() {
+      const res = await auth.authedFetch('/api/workspace-branches');
+      if (res.status === 404) return { branches: [], is_multi_branching_enabled: false };
+      await assertOk(res, 'listWorkspaceBranches');
+      const body = await res.json();
+      return {
+        branches: body.branches.map((branch: any) => ({ id: branch.id, name: branch.name, is_default: branch.isDefault })),
+        active_branch_id: branchIdFor(config) ?? body.activeBranchId,
+        is_multi_branching_enabled: body.isMultiBranchingEnabled,
+      };
+    },
     createAppVersion,
     switchAppVersion,
     releaseApp,
     renameApp,
     getApp,
+    codeSourceAccess,
+    codeSourceFiles,
     getAppSummary,
     listAppPermissionSubjects,
+    getLicenseFeatureAccess,
     getAppPermission,
     setAppPermission,
     clearAppPermission,
@@ -3367,6 +3589,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     assertDatasourceAllowed,
     invokeDatasourceMethod,
     getDatasourceConnectionDetails,
+    datasourceKind,
     getPluginSpec,
     specCacheScope,
     testDatasourceConnection,

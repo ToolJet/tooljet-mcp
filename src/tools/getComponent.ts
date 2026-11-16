@@ -8,7 +8,8 @@ export function getComponentTool(client: ToolJetClient): ToolDef {
     title: 'Get Component',
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
     },
     description:
       'Fetch ONE placed component by id — its actual bound values only: ' +

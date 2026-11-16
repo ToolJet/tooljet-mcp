@@ -3,7 +3,7 @@ import { assessQueryRead } from '../src/queryExecutionSafety.js';
 
 // A BigQuery telemetry dashboard (2026-09-28) wrote its reads as WITH ... SELECT, the usual shape for analytics SQL,
 // and every one was refused as "not a single proven read statement", so nothing was checked before handoff.
-const q = (query: string, kind = 'postgresql') => assessQueryRead({ id: 'q', name: 'q', kind, options: { query } } as never);
+const q = (query: string, kind = 'postgresql') => assessQueryRead({ id: 'q', name: 'q', kind, options: { mode: 'sql', query } } as never);
 
 describe('a WITH (CTE) read', () => {
   it('is assessed by its final SELECT', () => {

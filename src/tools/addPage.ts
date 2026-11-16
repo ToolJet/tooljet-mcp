@@ -10,7 +10,7 @@ export function addPageTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Add a page to an app. Returns { page_id, name }; pass that page_id to add_component(s) to place ' +

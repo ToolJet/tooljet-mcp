@@ -1,26 +1,28 @@
 #!/usr/bin/env node
 import { createRequire } from "node:module";
-import { b as buildServer, a as buildUnconfiguredServer, p as packsReady, c as allowedApiOrigins, A as ALLOWED_API_ORIGINS_VAR, o as oauthHttpOptionsFromEnv, d as createOAuthHttpServer, i as identityFromHeaders, S as SESSION_TOKEN_HEADER, B as BASE_URL_HEADER, P as PAT_HEADER, e as StreamableHTTPServerTransport } from "./chunk-GGhJyiWc.js";
-import "./chunk-COW2iNTB.js";
-import "./chunk-D-yEFdPv.js";
-import "./chunk-BxMc6J_M.js";
-import "./chunk-cUJVoZMr.js";
-import "./chunk-C0M_-KXk.js";
-import { O as JSONRPCMessageSchema } from "./chunk-B4bJ-UtR.js";
-import "./chunk-Cs9fRM3q.js";
-import "./chunk-D1aEcTJo.js";
-import "./chunk-CZENqhAr.js";
-import "./chunk-D1IDMaPw.js";
-import "./chunk-D8GCORfd.js";
-import "./chunk-B6ef8g-7.js";
-import "./chunk-DpvBXwyI.js";
-import "./chunk-DANUAAtT.js";
-import "./chunk-BOAy1nzn.js";
+import { b as buildServer, a as buildUnconfiguredServer, p as packsReady, o as oauthHttpOptionsFromEnv, c as createOAuthHttpServer, S as StreamableHTTPServerTransport } from "./chunk-Yqd07ufu.js";
+import "./chunk-Bpoy8qtq.js";
+import "./chunk-x55QR8id.js";
+import "./chunk-Bc2-Fdxk.js";
+import { A as allowedApiOrigins, B as ALLOWED_API_ORIGINS_VAR, C as identityFromHeaders, S as SESSION_TOKEN_HEADER, D as BASE_URL_HEADER, E as PAT_HEADER } from "./chunk-C4uZlUCO.js";
+import { Y as JSONRPCMessageSchema } from "./chunk-CL25hNxt.js";
+import "./chunk-CbugX2sg.js";
+import "./chunk-Ck6E_sD3.js";
+import "./chunk-CLG0aY0_.js";
+import "./chunk-BT0pQMhR.js";
+import "./chunk-MHLZ8jnv.js";
+import "./chunk-C1Uan0hB.js";
+import "./chunk-CFkpjIJ2.js";
+import "./chunk-BszK73UV.js";
+import "./chunk-8javr-CG.js";
+import "./chunk-Coyhaxq-.js";
+import "./chunk-D__Gc1xH.js";
 import "./chunk-Biq-LW6M.js";
-import "./chunk-vH-Ppdo3.js";
-import "./chunk-BkLFnVGw.js";
-import "./chunk-xFxVk1SE.js";
-import "./chunk-gKwy6Ul-.js";
+import "./chunk-Dl7vSZwt.js";
+import "./chunk-RdBCD2ZE.js";
+import "./chunk-B2ExoG2l.js";
+import "./chunk-BPw1UCUr.js";
+import "./chunk-oT5nGevS.js";
 import { createServer } from "node:http";
 import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -32,8 +34,11 @@ import "node:fs/promises";
 import "node:path";
 import "node:vm";
 import "node:util";
+import "node:child_process";
+import "node:os";
 import "node:http2";
 import "node:stream";
+import "node:dns/promises";
 createRequire(import.meta.url);
 var STDIO_DEFAULT_MAX_BUFFER_SIZE = 10 * 1024 * 1024;
 var ReadBuffer = class {
@@ -209,6 +214,58 @@ function mintAuthorized(authHeader, secret) {
   const b = Buffer.from(secret);
   return a.length === b.length && timingSafeEqual(a, b);
 }
+var list = (value) => (value ?? "").split(",").map((entry) => entry.trim().toLowerCase()).filter(Boolean);
+var bare = (host) => host.trim().toLowerCase().replace(/^\[|\]$/g, "");
+function hostName(header) {
+  const value = header.trim().toLowerCase();
+  if (value.startsWith("["))
+    return value.slice(1, value.indexOf("]") > 0 ? value.indexOf("]") : void 0);
+  const colon = value.lastIndexOf(":");
+  return colon > 0 && value.indexOf(":") === colon ? value.slice(0, colon) : value;
+}
+function isLoopbackName(name) {
+  const host = bare(name);
+  return host === "localhost" || host.endsWith(".localhost") || host === "::1" || /^127(\.\d{1,3}){3}$/.test(host) || /^::ffff:127(\.\d{1,3}){3}$/.test(host);
+}
+var isWildcard = (bind) => ["0.0.0.0", "::", "[::]", ""].includes(bare(bind));
+function foreignRequest(req, { bindHost, env = process.env }) {
+  const allowedHosts = list(env.MCP_ALLOWED_HOSTS).map((entry) => hostName(entry));
+  const ownHost = isWildcard(bindHost) ? void 0 : bare(bindHost);
+  const known = (name) => isLoopbackName(name) || name === ownHost || allowedHosts.includes(name);
+  const hostHeader = req.headers.host;
+  if (hostHeader && (!isWildcard(bindHost) || allowedHosts.length)) {
+    const name = hostName(hostHeader);
+    if (!known(name))
+      return `Host "${hostHeader.slice(0, 100)}" is not this server`;
+  }
+  const origin = req.headers.origin;
+  if (origin !== void 0) {
+    if (list(env.MCP_ALLOWED_ORIGINS).includes(origin.trim().toLowerCase()))
+      return void 0;
+    let parsed;
+    try {
+      parsed = new URL(origin);
+    } catch {
+      return `Origin "${String(origin).slice(0, 100)}" is not allowed`;
+    }
+    if (!known(bare(parsed.hostname)))
+      return `Origin "${origin.slice(0, 100)}" is not allowed`;
+  }
+  return void 0;
+}
+function refuseForeignRequest(req, res, policy) {
+  const why = foreignRequest(req, policy);
+  if (!why)
+    return false;
+  if (!res.headersSent) {
+    res.writeHead(403, { "content-type": "application/json" }).end(JSON.stringify({
+      jsonrpc: "2.0",
+      error: { code: -32e3, message: `Forbidden: ${why}. Set MCP_ALLOWED_HOSTS or MCP_ALLOWED_ORIGINS to allow it.` },
+      id: null
+    }));
+  }
+  return true;
+}
 async function readJsonBody(req, maxBodyBytes) {
   const chunks = [];
   let totalBytes = 0;
@@ -224,15 +281,21 @@ async function readJsonBody(req, maxBodyBytes) {
     throw new Error("Request body is required");
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
+function isLoopbackHost(host) {
+  const h = host.trim().toLowerCase().replace(/^\[|\]$/g, "");
+  return h === "localhost" || h === "::1" || /^127(\.\d{1,3}){3}$/.test(h) || /^::ffff:127(\.\d{1,3}){3}$/.test(h);
+}
 var MAX_REQUEST_BODY_BYTES = 64 * 1024 * 1024;
-function createGatewayHttpServer() {
+function createGatewayHttpServer({ bindHost } = {}) {
   const oauth = oauthHttpOptionsFromEnv();
   if (oauth)
     return { server: createOAuthHttpServer(oauth), gatewayMode: false };
   const sharedToken = process.env.MCP_SHARED_TOKEN;
   const gatewayMode = Boolean(sharedToken);
-  const requireUserSession = gatewayMode && (/^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_USER_SESSION ?? "") || !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN));
+  const requireUserSession = gatewayMode;
   const requireRequestUrl = gatewayMode && /^(1|true|yes|on)$/i.test(process.env.MCP_REQUIRE_REQUEST_URL ?? "");
+  const requireRequestCredential = !gatewayMode && bindHost !== void 0 && !isLoopbackHost(bindHost);
+  const listenHost = bindHost ?? (gatewayMode ? "0.0.0.0" : "127.0.0.1");
   const handleBuildTokenRequest = async (req, res) => {
     const secret = mintSecret();
     const json = (status, body) => {
@@ -285,6 +348,8 @@ function createGatewayHttpServer() {
     json(200, { token: minted.token, expires_at: new Date(minted.expiresAt).toISOString() });
   };
   const httpServer = createServer(async (req, res) => {
+    if (refuseForeignRequest(req, res, { bindHost: listenHost }))
+      return;
     const requestPath = new URL(req.url ?? "/", "http://localhost").pathname;
     const bearer = bearerValue(req.headers.authorization);
     if (requestPath === "/build-token") {
@@ -325,8 +390,8 @@ function createGatewayHttpServer() {
       res.writeHead(400, { "Content-Type": "text/plain" }).end(`This server acts only on the backend named in the request: send the ${BASE_URL_HEADER} header. Refusing rather than falling back to a fixed TOOLJET_URL.`);
       return;
     }
-    if (!gatewayMode && !hasUserCredential && !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN)) {
-      res.writeHead(401, { "Content-Type": "text/plain" }).end(`No ToolJet credential. Send your personal access token as \`Authorization: Bearer <token>\` or in the ${PAT_HEADER} header, or set TOOLJET_PAT on this server. Create a token in ToolJet under Settings \u2192 Access tokens.`);
+    if (!gatewayMode && !hasUserCredential && (requireRequestCredential || !(process.env.TOOLJET_PAT || process.env.TOOLJET_SESSION_TOKEN))) {
+      res.writeHead(401, { "Content-Type": "text/plain" }).end(`No ToolJet credential. Send your personal access token as \`Authorization: Bearer <token>\` or in the ${PAT_HEADER} header${requireRequestCredential ? "" : ", or set TOOLJET_PAT on this server"}. Create a token in ToolJet under Settings \u2192 Access tokens.`);
       return;
     }
     if (req.method !== "POST") {
@@ -351,7 +416,7 @@ function createGatewayHttpServer() {
       }
     }
     const readsResource = !!parsedBody && typeof parsedBody === "object" && !Array.isArray(parsedBody) && parsedBody.method === "resources/read";
-    const server = buildServer(identity);
+    const server = buildServer(identity, { hosted: true, requireIdentity: gatewayMode });
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: void 0, enableJsonResponse: readsResource });
     res.on("close", () => {
       transport.close();
@@ -374,7 +439,7 @@ async function serveHttp() {
     const reason = err instanceof Error ? err.message : String(err);
     throw new Error(`tooljet-mcp: invalid ${ALLOWED_API_ORIGINS_VAR}: ${reason}`);
   }
-  const { server: httpServer, gatewayMode } = createGatewayHttpServer();
+  const { server: httpServer, gatewayMode } = createGatewayHttpServer({ bindHost: process.env.MCP_HTTP_HOST });
   const host = process.env.MCP_HTTP_HOST ?? (gatewayMode ? "0.0.0.0" : "127.0.0.1");
   await new Promise((resolve, reject) => {
     httpServer.once("error", reject);

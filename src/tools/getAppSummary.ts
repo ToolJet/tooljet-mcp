@@ -36,7 +36,8 @@ export function getAppSummaryTool(client: ToolJetClient): ToolDef {
     title: 'Get App Summary',
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
     },
     description:
       'Selective, bounded inspection of an app — use this instead of get_app. Pass version_id after ' +

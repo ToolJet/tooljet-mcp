@@ -9,7 +9,8 @@ export function getAppSettingsTool(client: ToolJetClient): ToolDef {
     title: 'Get App Settings',
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
     },
     description:
       'Read the current editing version\'s compact app-wide visual settings: canvas background/width/mode, ' +

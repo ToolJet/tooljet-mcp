@@ -8,7 +8,8 @@ export function listAppThemesTool(client: ToolJetClient): ToolDef {
     title: 'List App Themes',
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
     },
     description:
       'List compact workspace themes available for app settings. Disabled themes are returned but cannot be ' +

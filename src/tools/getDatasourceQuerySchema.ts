@@ -12,7 +12,7 @@ const requestSchema = z.object({
   kind: z.string().optional(),
   datasource_id: z.string().optional(),
   version_id: z.string().optional(),
-  operation: z.string().optional(),
+  operation: z.string().describe('Catalog filter only: return the schema for this operation; never execute it.').optional(),
   sections: z.array(z.enum(SECTIONS)).min(1).optional(),
 });
 
@@ -66,7 +66,13 @@ async function resolveKind(
     throw new Error(`Each schema request needs a \`kind\` or a \`datasource_id\`.${hint}`);
   }
   if (request.kind) return request.kind;
-  if (!versionId) throw new Error('Resolving `datasource_id` requires `version_id`.');
+  if (!versionId) {
+    // The kind of a workspace datasource does not depend on the version: 20 Code builds were refused 19 times for
+    // leaving version_id out (2026-11-04), each a model call to send it again.
+    const kind = await client.datasourceKind?.(request.datasource_id!).catch(() => undefined);
+    if (kind) return kind;
+    throw new Error('Resolving `datasource_id` needs `version_id` (or pass `kind`, such as "tooljetdb").');
+  }
   const datasource = (await datasourcesFor(versionId)).find((item) => item.id === request.datasource_id);
   if (!datasource) throw new Error(`Datasource "${request.datasource_id}" is not available on version "${versionId}".`);
   return datasource.kind;
@@ -78,10 +84,11 @@ export function getDatasourceQuerySchemaTool(client: ToolJetClient): ToolDef {
     title: 'Get Datasource Query Schema',
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
     },
     description:
-      'Get compact, operation-specific request contracts plus response shape/status when known. Unknown and runtime-dependent ' +
+      'Read datasource authoring metadata from the bundled catalog. This tool never invokes a datasource operation, creates a query, or executes SQL/API requests. Get compact, operation-specific request contracts plus response shape/status when known. Unknown and runtime-dependent ' +
       'responses are labelled explicitly so callers know when a safe run or remote schema is still required. Call with no selector for the ' +
       'datasource palette; select by `kind`, or by `datasource_id` + `version_id` to resolve the kind automatically. ' +
       'Pass `operation` to avoid loading unrelated branches. `sections` defaults to summary/request/response for one ' +
@@ -92,7 +99,7 @@ export function getDatasourceQuerySchemaTool(client: ToolJetClient): ToolDef {
       kind: z.string().optional(),
       datasource_id: z.string().optional(),
       version_id: z.string().optional(),
-      operation: z.string().optional(),
+      operation: z.string().describe('Catalog filter only: return the schema for this operation; never execute it.').optional(),
       sections: z.array(z.enum(SECTIONS)).min(1).optional(),
       requests: z.array(requestSchema).min(1).max(10).optional(),
     },

@@ -68,7 +68,7 @@ export function updateAppSettingsTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Patch app-wide visual settings on the current editing version in one version update, then read them back. ' +

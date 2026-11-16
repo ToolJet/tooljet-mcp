@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { WORKSPACE_PERMISSION_KEYS, WORKSPACE_ACCESS_KEYS, workspaceAccessKeys, type ToolJetClient } from '../tooljetClient.js';
-import { fail, ok, type ToolDef } from './types.js';
+import { exposeActions, fail, ok, type ActionTool, type ToolDef } from './types.js';
 
 const listWorkspaceGroupsInput = z.object({ group_id: z.string().uuid().optional(), include_permissions: z.boolean().optional(),
   resource_type: z.enum(['app', 'module', 'workflow', 'data_source']).optional() }).strict();
@@ -9,7 +9,7 @@ export function listWorkspaceGroupsTool(client: ToolJetClient): ToolDef {
   return {
     name: 'list_workspace_groups',
     title: 'List Workspace Groups',
-    annotations: { readOnlyHint: true, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     description:
       'List groups in the workspace pinned to the current connection. OAuth connections require the workspace_users scope. Supply group_id to list its non-archived members ' +
       'with group_user_id (membership id, distinct from user_id and organization_user_id). ' +
@@ -57,7 +57,7 @@ export function manageWorkspaceGroupsTool(client: ToolJetClient): ToolDef {
     name: 'manage_workspace_groups',
     title: 'Manage Workspace Groups',
     strictInput: true,
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     description:
       'Create, rename, delete custom groups or remove a member in the workspace pinned to the current connection. OAuth connections require the workspace_users scope. ' +
       'All actions require confirm:true after reviewing the exact change. create needs name; rename needs ' +
@@ -209,4 +209,43 @@ export function manageWorkspaceGroupsTool(client: ToolJetClient): ToolDef {
       }
     },
   };
+}
+
+const groupBoundary = ' Requires confirm:true for the exact change, workspace_users OAuth scope, and ToolJet admin permissions. License restrictions apply.';
+const accessBehavior = ' App actions: canEdit/canView/hideFromDashboard/canAccessDevelopment/canAccessStaging/canAccessProduction/canAccessReleased; module: canEdit/canView/hideFromDashboard; workflow: canEdit/canView; data_source: canConfigure/canUse. canEdit/canView and canConfigure/canUse are exclusive pairs; enabling one disables the other. is_all:true includes current and future resources.';
+const workspaceGroups: ActionTool[] = [
+  { action: 'create', name: 'create_workspace_group', title: 'Create Workspace Group',
+    description: 'Create an empty custom group in the pinned workspace.' + groupBoundary,
+    required: ['name', 'confirm'], annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } },
+  { action: 'rename', name: 'rename_workspace_group', title: 'Rename Workspace Group',
+    description: 'Rename an existing custom group. Default group names cannot be changed.' + groupBoundary,
+    required: ['group_id', 'name', 'confirm'], annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } },
+  { action: 'delete', name: 'delete_workspace_group', title: 'Delete Workspace Group',
+    description: 'Delete an existing custom group, including its memberships and permissions. Cannot delete default groups.' + groupBoundary,
+    required: ['group_id', 'confirm'], annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } },
+  { action: 'remove_member', name: 'remove_workspace_group_member', title: 'Remove Workspace Group Member',
+    description: 'Remove one membership from a custom group without deleting the workspace user. group_user_id is the membership ID returned by list_workspace_groups, not a user ID; membership must belong to this group.' + groupBoundary,
+    required: ['group_id', 'group_user_id', 'confirm'], annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } },
+  { action: 'duplicate', name: 'duplicate_workspace_group', title: 'Duplicate Workspace Group',
+    description: 'Duplicate a group with selected categories: permissions, members, apps, modules, workflows, or data_sources. At least one copy flag must be true; omitted flags are false. ToolJet assigns the copy name. Copying members and permissions can grant access through the new group.' + groupBoundary,
+    required: ['group_id', 'copy', 'confirm'], annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } },
+  { action: 'update_permissions', name: 'update_workspace_group_permissions', title: 'Update Workspace Group Permissions',
+    description: 'Update only supplied permission switches on a group. Admin permissions cannot be changed. allow_role_change requires explicit consent to change affected member roles.' + groupBoundary,
+    required: ['group_id', 'permissions', 'confirm'], optional: ['allow_role_change'],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } },
+  { action: 'create_access', name: 'create_workspace_group_access', title: 'Create Workspace Group Access Rule',
+    description: 'Create a granular group access rule for the selected resource type. access requires name, is_all, and actions; selected-resource rules also need resource_ids from list_workspace_groups. Omitted action switches are disabled.' + accessBehavior + groupBoundary,
+    required: ['group_id', 'resource_type', 'access', 'confirm'], annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false } },
+  { action: 'update_access', name: 'update_workspace_group_access', title: 'Update Workspace Group Access Rule',
+    description: 'Update an existing rule belonging to this group; read IDs with list_workspace_groups include_permissions:true. Only supplied fields change. add_resource_ids/remove_resource_ids preserve other selections and require a selected-resource rule; do not combine with resource_ids or is_all. resource_ids replaces the entire selection. Optional resource_type must match the rule. allow_role_change needs explicit role-change consent.' + accessBehavior + groupBoundary,
+    required: ['group_id', 'rule_id', 'access', 'confirm'], optional: ['resource_type', 'allow_role_change'],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } },
+  { action: 'delete_access', name: 'delete_workspace_group_access', title: 'Delete Workspace Group Access Rule',
+    description: 'Delete a granular access rule belonging to this group. Read rule IDs with list_workspace_groups include_permissions:true. Optional resource_type must match. Read-only rules cannot be deleted.' + groupBoundary,
+    required: ['group_id', 'rule_id', 'confirm'], optional: ['resource_type'],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false } },
+];
+
+export function workspaceGroupActionTools(source: ToolDef): ToolDef[] {
+  return exposeActions(source, workspaceGroups);
 }

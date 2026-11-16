@@ -128,6 +128,9 @@ credential may come from either side:
 - `TOOLJET_PAT` in the server's environment, or
 - per request from the client, as `Authorization: Bearer <pat>` or `x-tooljet-pat: <pat>`
 
+When `MCP_HTTP_HOST` is not a loopback address, only the per-request credential is accepted: the
+process's `TOOLJET_PAT` would otherwise act for anyone who can reach the port.
+
 A per-request token replaces the process one outright rather than merging with it, so one server can
 serve several people without any of them inheriting another's identity.
 
@@ -139,7 +142,9 @@ attribute a build to a token holder rather than to the person who asked for it.
 
 There is also `npm run start:http` (`src/http.ts`, port 3001, loopback, `TOOLJET_MCP_HTTP_HOST` /
 `TOOLJET_MCP_HTTP_PORT`, plus a `/health` endpoint) for local development. It accepts the same
-per-request credentials and, like direct mode, has no bearer gate of its own.
+per-request credentials and, like direct mode, has no bearer gate of its own. It refuses to bind
+beyond loopback unless `MCP_OAUTH_ENABLED=true` or `TOOLJET_MCP_HTTP_REQUIRE_IDENTITY=1`; the latter
+makes every session bring its own ToolJet credential and never uses the process's.
 
 The local stateful transport binds identity at initialization. Send the same bearer and acting-user
 headers on every POST, GET/SSE and DELETE; the session ID alone does not authenticate an authenticated
@@ -164,6 +169,10 @@ network policy, HTTP errors and missing widgets.
 The configured ToolJet viewer origin is trusted, including an explicitly configured localhost or
 private/self-hosted address. Alternate viewer/API/CDN origins require the operator-controlled
 MCP_RENDER_AUDIT_ALLOWED_ORIGINS comma-separated list. A tool argument cannot extend it.
+The egress proxy resolves each allowed host name itself, connects to the address it got, and refuses
+private, loopback, link-local, metadata and reserved addresses, except for the configured viewer
+origin, TOOLJET_URL, origins written as an IP address or localhost, and the operator-controlled
+MCP_RENDER_AUDIT_PRIVATE_ORIGINS list (an allowed API or CDN origin on a private network goes there).
 All HTTP(S) resources use the same allowlist; HTTP redirects are not followed (configure canonical
 URLs), service workers are blocked, and WebSocket dependencies are reported as unverified.
 Use a dedicated browser container with infrastructure egress restrictions as defense in depth:
@@ -269,7 +278,8 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 |---|---|
 | `list_workspaces()` / `use_workspace(workspace_id)` | Inspect or switch the active ToolJet workspace; results include its manual datasource-settings URL |
 | `manage_app_permissions(...)` | List eligible users/groups and inspect, restrict, or clear page/query/component access; mutations are confirmed and license-gated |
-| `list_workspace_apps(...)` | List apps in the workspace pinned to the current PAT |
+| `list_workspace_folders(search_text?)` | List visible app folders with IDs, names, and accessible app counts; search folder names |
+| `list_workspace_apps(page?, search_text?, folder_id?)` | List/search front-end apps with folder memberships; optionally filter by a discovered folder ID |
 | `list_workspace_users(...)` | List/search workspace users with pagination and status filtering through PAT auth |
 | `list_workspace_groups(...)` | List groups/members; read permission switches and granular rules with `include_permissions:true`; discover selectable resources with `resource_type` |
 | `manage_workspace_groups(...)` | Create/rename/delete/duplicate groups, remove members, update permission switches, and create/update/delete granular access; requires confirmation and ToolJet admin permissions |
@@ -295,6 +305,10 @@ Codex should: `list_datasources` → `create_app` → `lint_app_spec` → `apply
 | `add_components(...)` / `add_component_batches(...)` | Place one page or several independent pages, including atomic parent/child batches and native header/body/footer slots |
 | `add_events(...)` / `add_query_lifecycles(...)` | Add arbitrary interactions or expand standard mutation success/failure flows in one batch |
 | `update_*` / confirmed `delete_*` / `run_query(...)` | Repair apps in place; require exact-target confirmation for deletion and explicit approval for large/billable reads |
+
+To browse a folder, call `list_workspace_folders({search_text:"Nursery"})`, then pass its returned ID to `list_workspace_apps({folder_id:"<returned-id>",page:1})`. Folder search matches folder names; app search matches app names and can be combined with `folder_id`. Both tools use the current connection's workspace and ToolJet permissions. They list front-end app folders, not workflow or query folders.
+
+Each app includes `folders: [{id,name}]`, with an empty array for unfiled apps. The app-list response includes `folder` (the selected folder or `null`), `meta.workspace_folder_count` (all visible app folders), and `meta.folder_app_count` (accessible apps matching the search in the selected folder, or `null` without a folder filter). The ambiguous backend `meta.folder_count` field is omitted from MCP responses; use the explicit counts above. `meta.total_count` remains the workspace-wide count of matching apps even with `folder_id`; use `meta.folder_app_count` for the folder. `meta.total_pages` follows the selected folder when filtered. Folder discovery makes one API request; app listing makes two regardless of the number of apps on the page.
 
 Group management stays within the PAT workspace. `manage_workspace_groups` supports `create`, `rename`, `delete`, `remove_member`, `duplicate`, `update_permissions`, `create_access`, `update_access`, and `delete_access`. Read groups and membership IDs with `list_workspace_groups`; add `group_id` and `include_permissions:true` for permission switches and granular rule IDs. Use `resource_type` (`app`, `module`, `workflow`, or `data_source`) to discover selectable resources.
 

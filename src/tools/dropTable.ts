@@ -9,7 +9,7 @@ export function dropTableTool(client: ToolJetClient): ToolDef {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
       'Permanently drop a ToolJet DB table and all its rows. This is destructive. Inspect dependent queries/components, ' +

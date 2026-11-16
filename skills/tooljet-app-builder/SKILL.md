@@ -1,12 +1,12 @@
 ---
 name: tooljet-app-builder
-description: "Build ToolJet apps end-to-end via tooljet-mcp: plan pages, create or reuse data/query/component resources, wire behavior, and verify the result. Use for ToolJet apps, dashboards, internal tools, or changes to existing ToolJet apps."
+description: "Build or update ToolJet dashboards, internal tools, back-office and team operations apps, including spreadsheet replacements. Requires a ToolJet MCP connection. Excludes one-off spreadsheet analysis, static charts, advice-only comparisons and standalone code projects outside ToolJet."
 metadata:
   generated_by: scripts/generate-skill.mjs
-  sources:
-    - Source-verified component binding rules (22 components)
-    - ToolJet WidgetManager catalog (150 built-in components)
-    - ToolJet appCanvasConstants (grid mechanics)
+  sources: >-
+    Source-verified component binding rules (22 components);
+    ToolJet WidgetManager catalog (150 built-in components);
+    ToolJet appCanvasConstants (grid mechanics)
 ---
 
 <!-- GENERATED FILE — do not edit by hand. Run `node scripts/generate-skill.mjs` to regenerate every host package. -->
@@ -21,9 +21,13 @@ Use the selected ToolJet connection's tools; ask if missing or ambiguous. This s
 
 For migration/clone/replacement requests, first read `references/migration.md`. Discover expanded states, relationships and read-only journeys—not just screenshots. Map source coverage to ToolJet and report gaps. Skip this workflow for ordinary builds or visual-only inspiration.
 
+## Visual or Code mode
+
+Unless the user said, ask before `create_app`: visual (ToolJet components) or Code mode (React, `code_app_*` tools). For Code mode pass `build_mode: "code"`, then follow the `code_app_*` tool descriptions instead of lint and apply.
+
 ## Core workflow
 
-1. Call `list_workspaces`; if several exist, confirm and switch before creating anything. Decide the page architecture before components. A simple single-job app can stay on one page; separate substantial jobs into focused pages; add an overview only when cross-workflow orientation or decisions need it.
+1. Call `list_workspaces`; if several exist, confirm the workspace. Branch selection: references/workflows.md. Decide the page architecture before components. A simple single-job app can stay on one page; separate substantial jobs into focused pages; add an overview only when cross-workflow orientation or decisions need it.
 2. Treat 3+ substantive pages, 2+ complex workflows, a multi-table model, or multiple integrations as a large build. Before mutations, show the page/phase plan and rough time ranges, then ask for phased checkpoints (recommended) or the whole app in one run. Do not re-ask if the user already chose.
 3. State the short design brief with the page plan before create_app (references/ui-layout.md): the user's job, dominant surface, relevant emphasis, and theme. Resolve the theme using `references/themes.md`: honor explicit design, selected themes, else derive from brand or use case (short prompts have one); ToolJet Modern only if asked. Pass the resolved `theme` to `create_app`, preserve its ids and links, then call `list_datasources`. Report any `theme.warning`. Fetch only the component, event-action, and datasource contracts needed for the current phase, using one selective batch per contract class, and reuse them. Request exact `sections` and `property_keys`/`style_keys`, not broad full contracts. Confirm a new data model before creating it; ToolJet DB table names are at most 31 characters.
 4. Implement that brief as a complete useful phase with stable `client_ref` values. Root components omit `parent` and `slot_name`; page ids are not component parents. Await `lint_app_spec` as a standalone barrier, fix its errors and review warnings, then pass its one-time `plan_token` to `apply_app_phase`. Never run the linter alongside a write. Put planned persisted component definition patches in `component_updates`; use targeted update tools for ad-hoc repairs, never duplicate resources or rebuild the app. After an error, inspect it and change the repair—never replay an identical mutation.

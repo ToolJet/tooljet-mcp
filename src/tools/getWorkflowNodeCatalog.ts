@@ -8,7 +8,7 @@ export function getWorkflowNodeCatalogTool(_client: ToolJetClient): ToolDef {
     name: 'get_workflow_node_catalog',
     title: 'Get Workflow Node Catalog',
     description: 'Supported workflow node types, ports and exact authoring schema. Unsupported native nodes are preserved, not authored.',
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     inputSchema: {},
     async handler() {
       try {

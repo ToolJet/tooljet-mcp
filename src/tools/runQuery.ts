@@ -1,4 +1,5 @@
 import { emptyParamsNote, emptyViewerOnlyParams, resolveStaticBindings, unresolvedNote } from '../staticBindings.js';
+import { redactQueryText, redactRunResult } from '../resultRedaction.js';
 import { z } from 'zod';
 import type { QuerySummary, ToolJetClient } from '../tooljetClient.js';
 import { getDatasourceQuerySchema } from '../datasourceCatalog.js';
@@ -214,13 +215,16 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
   return {
     name: 'run_query',
     title: 'Run Query',
-    // Executes whatever the query holds against the customer datasource — which may write or delete.
+    // Conservative execution labels; the handler additionally enforces proven-read preflight.
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
       openWorldHint: true,
     },
     description:
+      'Execute only a saved query that passes the server\'s proven-read checks. Mutations, arbitrary RunJS, ' +
+      'unknown datasource kinds, and SELECT * are refused before execution. No operation or query-options ' +
+      'payload can be supplied to this tool; it reads the selected saved definition and applies its safety checks. ' +
       'Run an already-created query and return its REAL result — the browser-free way to see actual data. ' +
       'Use it to (a) verify a query works before binding UI to it, and (b) inspect real column values / ' +
       'distinct values (statuses, categories) before writing chart series, dropdown options, or filters. ' +
@@ -290,7 +294,7 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
         }
         if (assessment.requiresRemoteReadConfirmation) {
           warnings.push(assessment.datasourceKind === 'restapi'
-            ? 'User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.request and metadata.response, and add API-specific pagination before another run when needed.'
+            ? 'User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.response (status and paging headers), and add API-specific pagination before another run when needed.'
             : 'User-confirmed remote read: the datasource controls response size and quota.');
         }
 
@@ -368,7 +372,7 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
         } catch (error) {
           return ok({
             status: 'failed',
-            message: error instanceof Error ? error.message : String(error),
+            message: redactQueryText(error instanceof Error ? error.message : String(error)),
             ...(preflight ? { preflight } : {}),
             ...(warnings.length ? { warnings } : {}),
           });
@@ -383,10 +387,12 @@ export function runQueryTool(client: ToolJetClient): ToolDef {
           : { result: result as Record<string, unknown> };
         if (output.warning) warnings.push(output.warning);
         return ok({
-          ...output.result,
+          // Credentials around the rows (request headers, URL secrets, cookies) never reach the model (resultRedaction.ts).
+          ...redactRunResult(output.result),
           // Trusted execution evidence, separate from datasource-supplied data. No credentials,
           // URLs or row contents are needed for the agent's early migration/readiness checkpoint.
-          execution: { query_id: query.id, datasource_kind: query.kind, read_only: true },
+          // What let it run, not a claim about its effects: the read classifier is a static check (CM-37).
+          execution: { query_id: query.id, datasource_kind: query.kind, preflight: 'explicit_read' },
           ...(bindingHint ? { binding_hint: bindingHint } : {}),
           ...(preflight ? { preflight } : {}),
           ...(warnings.length ? { warnings } : {}),

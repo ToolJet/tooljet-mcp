@@ -8,7 +8,7 @@ export function getWorkflowExecutionTool(client: ToolJetClient): ToolDef {
     name: 'get_workflow_execution',
     title: 'Get Workflow Execution',
     description: 'Inspect execution status and a bounded page of node results. Does not start or retry executions.',
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     inputSchema: getWorkflowExecutionInputSchema.shape,
     async handler(args: unknown) {
       try {

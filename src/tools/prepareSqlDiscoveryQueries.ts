@@ -13,7 +13,8 @@ export function prepareSqlDiscoveryQueriesTool(client: ToolJetClient): ToolDef {
     // Returns query specs; deliberately neither creates nor runs them.
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
     },
     description:
       'Prepare—but do not create or run—read-only SQL query specs for a connected SQL datasource. Produces ' +

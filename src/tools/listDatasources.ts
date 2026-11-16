@@ -9,7 +9,8 @@ export function listDatasourcesTool(client: ToolJetClient): ToolDef {
     title: 'List Datasources',
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
     },
     description:
       "List AI-eligible workspace-connected datasources. The shared Sample data source is excluded and must never be used by AI. Includes the built-in " +

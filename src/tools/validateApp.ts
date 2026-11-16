@@ -10,7 +10,8 @@ export function validateAppTool(client: ToolJetClient): ToolDef {
     title: 'Validate App',
     annotations: {
       readOnlyHint: true,
-      openWorldHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
     },
     description:
       'Validate persisted app structure and saved query contracts WITHOUT executing queries or opening a browser. ' +

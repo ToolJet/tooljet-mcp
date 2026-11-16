@@ -4,7 +4,7 @@ import { frozenAppRefusal } from '../frozenApp.js';
 import { peekAppPlan } from '../appPlanStore.js';
 import { tableQuotaError } from '../tableQuotaError.js';
 import { z } from 'zod';
-import type { AppPlanInput } from '../appPlanSchema.js';
+import { appPlanSchema, type AppPlanInput } from '../appPlanSchema.js';
 import { consumeAppPlan } from '../appPlanStore.js';
 import { validatePersistedAppSummary } from '../appValidation.js';
 import { prepareComponentBatch } from '../componentBatch.js';
@@ -23,6 +23,32 @@ import { danglingAfterReplace, replaceFingerprint, replaceIds, replaceView } fro
 import { diffPageInPlace, type InPlaceDiff } from '../pageReplaceInPlace.js';
 import { checkPlanReads, type ReadCheck } from '../applyReadCheck.js';
 import { literalCanvasColor } from '../appSettings.js';
+import { lintAppSpecTool } from './lintAppSpec.js';
+
+const renameAppInput = z.object({ app_id: z.string().min(1), version_id: z.string().min(1), name: appPlanSchema.shape.app_name.unwrap() }).strict();
+
+/** The app-metadata action used by apply_app_phase is also available independently. */
+export function renameAppTool(client: ToolJetClient): ToolDef {
+  const lint = lintAppSpecTool(client).handler;
+  const apply = applyAppPhaseTool(client).handler;
+  return {
+    name: 'rename_app', title: 'Rename App',
+    description: 'Rename one existing app through its editable version. Uses the same preflight, name-collision handling, scoped one-use plan, and readback as apply_app_phase, with no table, page, query, component, or event edits. Returns the persisted app result; does not execute queries.',
+    strictInput: true,
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+    inputSchema: renameAppInput.shape,
+    async handler(input: unknown) {
+      try {
+        const args = renameAppInput.parse(input);
+        const result = await lint({ app_id: args.app_id, version_id: args.version_id, app_name: args.name });
+        if (result.isError) return result;
+        const planned = JSON.parse(result.content[0]!.text);
+        if (!planned.plan_token) return { ...result, isError: true };
+        return await apply({ app_id: args.app_id, version_id: args.version_id, plan_token: planned.plan_token, check_reads: false });
+      } catch (error) { return fail(error); }
+    },
+  };
+}
 
 interface LogicalTarget { id: string; name: string; type?: string }
 
@@ -139,15 +165,20 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
       readOnlyHint: false,
       // A plan page marked replace has its components and their events deleted before the plan's are created.
       destructiveHint: true,
-      openWorldHint: true,
+      openWorldHint: false,
     },
     description:
+      'Apply one app-authoring plan, whose operations are also exposed as rename_app, create_tables, insert_rows_batch, ' +
+      'add_pages/update_pages/delete_page, add_queries/update_query, add_components/update_components/delete_components, ' +
+      'update_layout, add_events/update_events/delete_event, and add_query_lifecycles. Saving a query or event definition ' +
+      'does not execute it. The optional read check described below is the only query execution in this tool. ' +
       'Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates ' +
       'tables/pages/queries in dependency order, seeds rows, creates independent page component batches concurrently, combines ' +
       'ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It then ' +
       'runs the proven read queries the phase created or updated once and reports them in read_check (failed: fix the query; ' +
-      'inconclusive: the read takes a component value a browser-free run leaves empty; not_run: writes, remote or paid calls and ' +
-      'RunJS, which are never run here). A failing read does not fail the phase. ToolJet has no cross-resource transaction: a rare ' +
+      'inconclusive: the read takes a component value a browser-free run leaves empty; not_run: writes, remote or paid calls, ' +
+      'RunJS and reads the automatic check cannot prove, which are never run here; queries: each one checked, refused or skipped, ' +
+      'and only checked with outcome passed is a pass). A failing read does not fail the phase. ToolJet has no cross-resource transaction: a rare ' +
       'upstream partial failure reports the completed stage/counts and never auto-deletes user data, except for a plan page marked ' +
       'replace: that page ends up holding exactly the plan\'s components. It is written as a difference: a component the plan ' +
       'leaves as it is is not rewritten, one that only moved is moved, one that changed is created again under its own id, and ' +
@@ -164,8 +195,8 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
       plan_token: z.string(),
       check_reads: z.boolean().optional().describe(
         'Default true: after the phase is written, the proven read queries it created or updated are run once and ' +
-          'the result carries read_check {ran, rows, failed, inconclusive, not_run}. Writes, remote or paid calls and ' +
-          'RunJS are never run. false skips the check.'
+          'the result carries read_check {ran, rows, failed, inconclusive, not_run, queries}. Writes, remote or paid calls, ' +
+          'RunJS and reads the automatic check cannot prove are never run. false skips the check.'
       ),
     },
     async handler(input: { app_id: string; version_id?: string; plan_token: string; check_reads?: boolean }) {

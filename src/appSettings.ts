@@ -117,3 +117,16 @@ export async function literalCanvasColor(client: Partial<Pick<ToolJetClient, 'ge
     return undefined;
   }
 }
+
+/** A derived theme whose light-mode canvas is dark: the request wants a dark app. Left in light mode, ToolJet draws
+ *  its own light-mode parts (table tags, inputs' chrome) for a light surface, and they read dark on dark. */
+export function paintsDarkCanvasInLightMode(definition: unknown): boolean {
+  const light = (definition as { surface?: { colors?: { appBackground?: { light?: unknown } } } })?.surface?.colors?.appBackground?.light;
+  const hex = typeof light === 'string' ? /^#([0-9a-f]{6})$/i.exec(light.trim())?.[1] : undefined;
+  if (!hex) return false;
+  const [r, g, b] = [0, 2, 4].map((at) => {
+    const channel = parseInt(hex.slice(at, at + 2), 16) / 255;
+    return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r! + 0.7152 * g! + 0.0722 * b! < 0.18;
+}

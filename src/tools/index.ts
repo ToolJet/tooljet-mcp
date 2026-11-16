@@ -1,11 +1,12 @@
 import { renderAuditAvailable } from '../renderAuditAvailability.js';
 import { appVersionLifecycleTools } from './appVersionLifecycle.js';
-import { listWorkspaceGroupsTool, manageWorkspaceGroupsTool } from './workspaceGroupManagement.js';
+import { listWorkspaceGroupsTool, manageWorkspaceGroupsTool, workspaceGroupActionTools } from './workspaceGroupManagement.js';
 import { z } from 'zod';
+import { withBranchContext } from '../config.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ToolJetClient } from '../tooljetClient.js';
 import type { ToolDef } from './types.js';
-import { listWorkspacesTool } from './listWorkspaces.js';
+import { listWorkspacesTool, listWorkspaceBranchesTool } from './listWorkspaces.js';
 import { useWorkspaceTool } from './useWorkspace.js';
 import { createAppTool } from './createApp.js';
 import { createAppVersionTool } from './createAppVersion.js';
@@ -21,12 +22,14 @@ import { createTablesTool } from './createTables.js';
 import { addTableColumnTool } from './addTableColumn.js';
 import { dropTableColumnTool } from './dropTableColumn.js';
 import { dropTableTool } from './dropTable.js';
+import { codeAppScaffoldTool, noCodeIdentity, type CodeContext, codeAppReadFilesTool, codeAppWriteFilesTool, codeAppBuildTool, codeAppInstallTool, codeAppAddDependencyTool } from './codeApp.js';
+import { codeAppDataTool } from './codeAppData.js';
 import { getTableSchemaTool } from './getTableSchema.js';
 import { insertRowsTool } from './insertRows.js';
 import { insertRowsBatchTool } from './insertRowsBatch.js';
 import { getComponentCatalogTool } from './getComponentCatalog.js';
 import { getDatasourceQuerySchemaTool } from './getDatasourceQuerySchema.js';
-import { inspectDatasourceSchemaTool } from './inspectDatasourceSchema.js';
+import { inspectDatasourceSchemaTool, datasourceMetadataTools } from './inspectDatasourceSchema.js';
 import { testDatasourceConnectionTool } from './testDatasourceConnection.js';
 import { prepareSqlDiscoveryQueriesTool } from './prepareSqlDiscoveryQueries.js';
 import { generateFormSchemaTool } from './generateFormSchema.js';
@@ -37,7 +40,7 @@ import { getComponentTool } from './getComponent.js';
 import { validateAppTool } from './validateApp.js';
 import { verifyPageRenderTool } from './verifyPageRender.js';
 import { lintAppSpecTool } from './lintAppSpec.js';
-import { applyAppPhaseTool } from './applyAppPhase.js';
+import { applyAppPhaseTool, renameAppTool } from './applyAppPhase.js';
 import { addPageTool } from './addPage.js';
 import { addPagesTool } from './addPages.js';
 import { updatePagesTool } from './updatePages.js';
@@ -67,12 +70,14 @@ import {
   type RuntimeFreshnessMonitor,
 } from '../runtimeFreshness.js';
 import { getRuntimeInfoTool } from './getRuntimeInfo.js';
-import { manageThemeTool } from './manageTheme.js';
-import { manageAppPermissionsTool } from './manageAppPermissions.js';
+import { manageThemeTool, themeActionTools } from './manageTheme.js';
+import { manageAppPermissionsTool, appPermissionActionTools } from './manageAppPermissions.js';
 import {
   listWorkspaceAppsTool,
+  listWorkspaceFoldersTool,
   listWorkspaceUsersTool,
   manageWorkspaceUsersTool,
+  workspaceUserActionTools,
 } from './workspaceUserManagement.js';
 import { getWorkflowNodeCatalogTool } from './getWorkflowNodeCatalog.js';
 import { getWorkflowCapabilitiesTool } from './getWorkflowCapabilities.js';
@@ -80,7 +85,7 @@ import { listWorkflowsTool } from './listWorkflows.js';
 import { createWorkflowTool } from './createWorkflow.js';
 import { getWorkflowTool } from './getWorkflow.js';
 import { lintWorkflowSpecTool } from './lintWorkflowSpec.js';
-import { applyWorkflowSpecTool } from './applyWorkflowSpec.js';
+import { applyWorkflowSpecTool, workflowMutationTools } from './applyWorkflowSpec.js';
 import { deleteWorkflowNodeTool } from './deleteWorkflowNode.js';
 import { validateWorkflowTool } from './validateWorkflow.js';
 import { runWorkflowTool } from './runWorkflow.js';
@@ -95,7 +100,7 @@ export const LEGACY_SINGULAR_CREATE_TOOL_NAMES = new Set([
 ]);
 
 /* The HTTP transport builds a server per request and keeps it until the response closes, so every
-   open request held its own copy of all 73 input schemas: about 4.2 MB of zod closures each, which
+   open request held its own copy of all input schemas (73 at the time): about 4.2 MB of zod closures each, which
    took the hosted server to its heap limit at roughly 115 open requests. A tool's schema depends only
    on its name (the factories build it from constants, never from the client), so the first copy is
    kept for the process and the per-request copies become garbage at once. */
@@ -104,7 +109,8 @@ const inputSchemas = new Map<string, z.ZodObject>();
 function sharedInputSchema(tool: ToolDef): z.ZodObject {
   let schema = inputSchemas.get(tool.name);
   if (!schema) {
-    schema = tool.strictInput ? z.object(tool.inputSchema).strict() : z.object(tool.inputSchema);
+    const fields = { ...tool.inputSchema, branch_id: z.string().uuid().optional().describe('Existing workspace branch ID from list_workspace_branches; pass consistently for this task.') };
+    schema = tool.strictInput ? z.object(fields).strict() : z.object(fields);
     inputSchemas.set(tool.name, schema);
   }
   return schema;
@@ -117,8 +123,12 @@ function includeLegacySingularCreateTools(): boolean {
 export function registerTools(
   server: McpServer,
   client: ToolJetClient,
-  runtime: RuntimeFreshnessMonitor = runtimeFreshness
+  runtime: RuntimeFreshnessMonitor = runtimeFreshness,
+  code: CodeContext = noCodeIdentity(client)
 ): void {
+  const viewerBase = () => process.env.TOOLJET_APP_URL || process.env.TOOLJET_DEPLOYMENT_URL || 'http://localhost:8082';
+  const verifyPageRender = verifyPageRenderTool(client, viewerBase);
+  const canRender = renderAuditAvailable();
   const tools: ToolDef[] = [
     getWorkflowNodeCatalogTool(client),
     getWorkflowCapabilitiesTool(client),
@@ -132,10 +142,20 @@ export function registerTools(
     runWorkflowTool(client),
     getWorkflowExecutionTool(client),
     getRuntimeInfoTool(runtime),
+    codeAppScaffoldTool(code),
+    codeAppReadFilesTool(code),
+    codeAppWriteFilesTool(code),
+    codeAppBuildTool(code),
+    // verify: true renders each route through the same check verify_page_render runs.
+    codeAppInstallTool(code, canRender ? { render: verifyPageRender.handler, renderConcurrency: client.renderAuditGrant ? 1 : 2 } : {}),
+    codeAppAddDependencyTool(code),
+    codeAppDataTool(client),
     listWorkspacesTool(client),
+    listWorkspaceBranchesTool(client),
     useWorkspaceTool(client),
     manageAppPermissionsTool(client),
     listWorkspaceAppsTool(client),
+    listWorkspaceFoldersTool(client),
     listWorkspaceUsersTool(client),
     manageWorkspaceUsersTool(client),
     listWorkspaceGroupsTool(client),
@@ -169,7 +189,7 @@ export function registerTools(
     getAppSummaryTool(client),
     getComponentTool(client),
     validateAppTool(client),
-    verifyPageRenderTool(client, () => process.env.TOOLJET_APP_URL || process.env.TOOLJET_DEPLOYMENT_URL || 'http://localhost:8082'),
+    verifyPageRender,
     lintAppSpecTool(client),
     applyAppPhaseTool(client),
     addPageTool(client),
@@ -196,11 +216,15 @@ export function registerTools(
     manageThemeTool(client),
   ];
 
+  tools.push(...managementActionTools(tools));
+  tools.push(...datasourceMetadataTools(tools.find(tool => tool.name === 'inspect_datasource_schema')!));
+  tools.push(...workflowMutationTools(client));
+  tools.push(renameAppTool(client));
+
   const exposedTools = includeLegacySingularCreateTools()
     ? tools
     : tools.filter((tool) => !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name));
 
-  const canRender = renderAuditAvailable();
   for (const tool of exposedTools) {
     if (tool.name === 'verify_page_render' && !canRender) continue;
     // The callback takes the name and handler, not `tool`: holding the def would keep its own schema copy alive.
@@ -218,8 +242,20 @@ export function registerTools(
         if (status.restart_required && name !== 'get_runtime_info') {
           return staleRuntimeResult(status);
         }
-        return withRuntimeStatus(await handler(args), status);
+        const { branch_id, ...input } = args;
+        return withRuntimeStatus(await withBranchContext(branch_id ?? client.branchId, () => handler(input)), status);
       }) as any
     );
   }
+}
+
+/** Compatibility tools stay callable while each fixed operation is also exposed upfront. */
+export function managementActionTools(sources: ToolDef[]): ToolDef[] {
+  const factories: Record<string, (source: ToolDef) => ToolDef[]> = {
+    manage_app_permissions: appPermissionActionTools,
+    manage_workspace_users: workspaceUserActionTools,
+    manage_workspace_groups: workspaceGroupActionTools,
+    manage_theme: themeActionTools,
+  };
+  return sources.flatMap(source => factories[source.name]?.(source) ?? []);
 }
