@@ -1,15 +1,8 @@
 import { createRequire } from "node:module";
-import { b0 as external_exports, b1 as nodeCatalog, b2 as validateGraph, b3 as specSchema, b4 as compileGraph, b5 as assertWorkflowJavaScript, b6 as controlFlowEdges } from "./chunk-Csl8mO51.js";
-import { p as parseExpression, a as parse, r as readCatalog } from "./chunk-C1y-3rfY.js";
-import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-Cd-rK1dm.js";
+import { p as parseExpression, a as parse } from "./chunk-Bi-NND__.js";
+import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-B0-K80Ym.js";
 import { r as require_moment } from "./chunk-B2ExoG2l.js";
 import { e8 as __toESM, e6 as __commonJS } from "./chunk-C1Uan0hB.js";
-import { randomUUID } from "node:crypto";
-import { isDeepStrictEqual } from "node:util";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { resolve, dirname } from "node:path";
-import { AsyncLocalStorage } from "node:async_hooks";
 createRequire(import.meta.url);
 var require_unicode = __commonJS({
   "node_modules/json5/lib/unicode.js"(exports, module) {
@@ -71,8 +64,8 @@ var require_parse = __commonJS({
       }
       return root;
     };
-    function internalize(holder, name2, reviver) {
-      const value = holder[name2];
+    function internalize(holder, name, reviver) {
+      const value = holder[name];
       if (value != null && typeof value === "object") {
         if (Array.isArray(value)) {
           for (let i = 0; i < value.length; i++) {
@@ -105,7 +98,7 @@ var require_parse = __commonJS({
           }
         }
       }
-      return reviver.call(holder, name2, value);
+      return reviver.call(holder, name, value);
     }
     var lexState;
     var buffer;
@@ -1286,8 +1279,8 @@ var STRING_METHODS = {
 function unsupported() {
   throw new Unsupported();
 }
-function own(table, name2) {
-  return typeof name2 === "string" && Object.prototype.hasOwnProperty.call(table, name2) ? table[name2] : void 0;
+function own(table, name) {
+  return typeof name === "string" && Object.prototype.hasOwnProperty.call(table, name) ? table[name] : void 0;
 }
 function isUnit(v) {
   return typeof v === "string" && UNITS.has(v);
@@ -1415,19 +1408,19 @@ function interpret(node) {
     case "MemberExpression": {
       if (node.computed)
         return unsupported();
-      const name2 = node.property?.name;
+      const name = node.property?.name;
       if (node.object?.type === "Identifier" && node.object.name === "Math") {
-        const constant = own(MATH_CONSTANTS, name2);
+        const constant = own(MATH_CONSTANTS, name);
         return constant ?? unsupported();
       }
       if (node.object?.type === "Identifier" && node.object.name === "parameters") {
-        if (!currentParameters || typeof name2 !== "string" || !Object.prototype.hasOwnProperty.call(currentParameters, name2)) {
+        if (!currentParameters || typeof name !== "string" || !Object.prototype.hasOwnProperty.call(currentParameters, name)) {
           return unsupported();
         }
-        return currentParameters[name2];
+        return currentParameters[name];
       }
       const target = interpret(node.object);
-      if (typeof target === "string" && name2 === "length")
+      if (typeof target === "string" && name === "length")
         return target.length;
       return unsupported();
     }
@@ -1451,31 +1444,31 @@ function interpret(node) {
       }
       if (callee.type !== "MemberExpression" || callee.computed)
         return unsupported();
-      const name2 = callee.property?.name;
+      const name = callee.property?.name;
       const object2 = callee.object;
       if (object2.type === "Identifier" && object2.name === "moment") {
-        if (name2 === "utc")
+        if (name === "utc")
           return box(import_moment.default.utc(...momentArgs(args)));
-        if (name2 === "unix" && args.length === 1)
+        if (name === "unix" && args.length === 1)
           return box(import_moment.default.unix(num(args[0])));
         return unsupported();
       }
       if (object2.type === "Identifier" && object2.name === "Math") {
-        const fn = own(MATH_FNS, name2);
+        const fn = own(MATH_FNS, name);
         return fn ? fn(...args.map((a) => num(a))) : unsupported();
       }
-      if (object2.type === "Identifier" && object2.name === "Date" && name2 === "now" && args.length === 0)
+      if (object2.type === "Identifier" && object2.name === "Date" && name === "now" && args.length === 0)
         return Date.now();
-      if (object2.type === "Identifier" && object2.name === "JSON" && name2 === "stringify" && args.length === 1) {
+      if (object2.type === "Identifier" && object2.name === "JSON" && name === "stringify" && args.length === 1) {
         return JSON.stringify(primitive(args[0]));
       }
       const target = interpret(object2);
       if (isMoment(target)) {
-        const check = own(MOMENT_METHODS, name2);
+        const check = own(MOMENT_METHODS, name);
         if (!check || !check(args))
           return unsupported();
         const unwrapped = args.map((a) => isMoment(a) ? a.m : a);
-        const result = target.m[name2](...unwrapped);
+        const result = target.m[name](...unwrapped);
         if (import_moment.default.isMoment(result))
           return box(result);
         if (typeof result === "string" || typeof result === "number" || typeof result === "boolean")
@@ -1483,13 +1476,13 @@ function interpret(node) {
         return unsupported();
       }
       if (typeof target === "string") {
-        const fn = own(STRING_METHODS, name2);
+        const fn = own(STRING_METHODS, name);
         return fn ? fn(target, args) : unsupported();
       }
       if (typeof target === "number") {
-        if (name2 === "toFixed" && args.length <= 1)
+        if (name === "toFixed" && args.length <= 1)
           return target.toFixed(args[0] === void 0 ? 0 : capped(args[0], 100));
-        if (name2 === "toString" && args.length === 0)
+        if (name === "toString" && args.length === 0)
           return String(target);
         return unsupported();
       }
@@ -1508,20 +1501,20 @@ function declaredParameterDefaults(options) {
   for (const parameter of declared) {
     if (!parameter || typeof parameter !== "object")
       continue;
-    const { name: name2, defaultValue } = parameter;
-    if (typeof name2 !== "string" || !name2 || defaultValue === void 0 || defaultValue === null)
+    const { name, defaultValue } = parameter;
+    if (typeof name !== "string" || !name || defaultValue === void 0 || defaultValue === null)
       continue;
     if (typeof defaultValue === "number" || typeof defaultValue === "boolean") {
-      values[name2] = defaultValue;
+      values[name] = defaultValue;
     } else if (typeof defaultValue === "string") {
       if (!defaultValue.includes("{{")) {
-        values[name2] = defaultValue;
+        values[name] = defaultValue;
         continue;
       }
       const outcome = resolveString(defaultValue);
       const value = outcome.ok ? outcome.value : void 0;
       if (outcome.ok && (value === null || ["string", "number", "boolean"].includes(typeof value)))
-        values[name2] = value;
+        values[name] = value;
     }
   }
   return values;
@@ -1904,7 +1897,7 @@ var FLUX_EGRESS_PACKAGES = [
   "influxdata/influxdb/secrets",
   "influxdata/influxdb/tasks"
 ];
-var FLUX_EGRESS_IMPORT = new RegExp(String.raw`(^|\n)\s*import\s+(?:[A-Za-z_][A-Za-z0-9_]*\s+)?"(?:` + FLUX_EGRESS_PACKAGES.map((name2) => name2.replace(/\//g, String.raw`\/`)).join("|") + String.raw`)"`);
+var FLUX_EGRESS_IMPORT = new RegExp(String.raw`(^|\n)\s*import\s+(?:[A-Za-z_][A-Za-z0-9_]*\s+)?"(?:` + FLUX_EGRESS_PACKAGES.map((name) => name.replace(/\//g, String.raw`\/`)).join("|") + String.raw`)"`);
 var FLUX_LIMIT = /(^|[^A-Za-z0-9_.])limit\s*\(\s*n\s*:\s*(\d+)/;
 function assessInflux(options, datasourceId) {
   const identity = { datasourceKind: "influxdb", ...datasourceId ? { datasourceId } : {} };
@@ -2440,10 +2433,10 @@ function mainStatementAfterCtes(sql) {
     return void 0;
   let i = head[0].length;
   for (let guard = 0; guard < 50; guard++) {
-    const name2 = /^\s*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\s*(?:\([^()]*\)\s*)?as\s+(?:not\s+)?(?:materialized\s+)?\(/i.exec(blank.slice(i));
-    if (!name2)
+    const name = /^\s*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\s*(?:\([^()]*\)\s*)?as\s+(?:not\s+)?(?:materialized\s+)?\(/i.exec(blank.slice(i));
+    if (!name)
       return void 0;
-    i += name2[0].length;
+    i += name[0].length;
     let depth = 1;
     while (i < blank.length && depth > 0) {
       if (blank[i] === "(")
@@ -3752,7 +3745,7 @@ function undeclaredNames(source, known) {
   };
   const used = [];
   const scopes = [];
-  const isDeclared = (name2) => scopes.some((scope) => scope.has(name2));
+  const isDeclared = (name) => scopes.some((scope) => scope.has(name));
   const walk2 = (node, parent, key) => {
     if (Array.isArray(node)) {
       for (const child of node)
@@ -3765,9 +3758,9 @@ function undeclaredNames(source, known) {
       const p = parent?.type;
       const notARead = (p === "MemberExpression" || p === "OptionalMemberExpression") && key === "property" && !parent.computed || (p === "ObjectProperty" || p === "ObjectMethod" || p === "ClassMethod" || p === "ClassProperty" || p === "ClassPrivateProperty") && key === "key" && !parent.computed || (p === "LabeledStatement" || p === "BreakStatement" || p === "ContinueStatement") && key === "label" || p === "UnaryExpression" && parent.operator === "typeof" || p === "MetaProperty" || // a declaration's own name, a parameter or a pattern binding is not a read
       p === "VariableDeclarator" && key === "id" || p !== void 0 && FUNCTION_TYPES.has(p) && (key === "id" || key === "params") || (p === "ClassDeclaration" || p === "ClassExpression") && key === "id" || p === "CatchClause" && key === "param";
-      const name2 = String(node.name);
-      if (!notARead && !isDeclared(name2))
-        used.push(name2);
+      const name = String(node.name);
+      if (!notARead && !isDeclared(name))
+        used.push(name);
       return;
     }
     if (node.type === "Program" || FUNCTION_TYPES.has(node.type)) {
@@ -3833,7 +3826,7 @@ function undeclaredNames(source, known) {
       walkPatternDefaults(pattern.argument);
   };
   walk2(ast);
-  return [...new Set(used.filter((name2) => !known.has(name2) && name2 !== "__runjs__" && name2 !== "__binding__"))];
+  return [...new Set(used.filter((name) => !known.has(name) && name !== "__runjs__" && name !== "__binding__"))];
 }
 function transformationWarnings(options) {
   const warnings = [];
@@ -4316,529 +4309,34 @@ function normalizeQueryOptions(kind, rawOptions) {
   }
   return options;
 }
-createRequire(import.meta.url);
-var capabilityRequestSchema = external_exports.object({
-  version_id: external_exports.string().uuid()
-}).strict();
-var datasourceCapabilitySchema = external_exports.enum(["query", "ai-model", "email"]);
-var workflowCapabilityReportSchema = external_exports.object({
-  version_id: external_exports.string().uuid(),
-  authorable_node_types: external_exports.array(external_exports.string()),
-  datasources: external_exports.array(external_exports.object({
-    id: external_exports.string(),
-    name: external_exports.string(),
-    kind: external_exports.string(),
-    capabilities: external_exports.array(datasourceCapabilitySchema)
-  }).strict())
-}).strict();
-var AI_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["openai", "anthropic", "gemini", "mistral_ai"]);
-var EMAIL_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["smtp", "sendgrid", "mailgun"]);
-function datasourceCapabilities(kind) {
-  const capabilities = ["query"];
-  if (AI_DATASOURCE_KINDS.has(kind))
-    capabilities.push("ai-model");
-  if (EMAIL_DATASOURCE_KINDS.has(kind))
-    capabilities.push("email");
-  return capabilities;
-}
-async function getWorkflowCapabilities(client, input) {
-  const { version_id } = capabilityRequestSchema.parse(input);
-  const datasources = await client.workflows.listDatasources(version_id);
-  return workflowCapabilityReportSchema.parse({
-    version_id,
-    authorable_node_types: nodeCatalog.nodes.map((node) => node.type),
-    datasources: datasources.map((datasource) => ({
-      id: datasource.id,
-      name: datasource.name,
-      kind: datasource.kind,
-      capabilities: datasourceCapabilities(datasource.kind)
-    }))
-  });
-}
-function workflowReadiness(graph, structuralErrors) {
-  if (structuralErrors.length)
-    return { runtime_readiness: "blocked", blockers: structuralErrors };
-  const adjacency = new Map(graph.nodes.map((node) => [node.id, []]));
-  for (const edge of controlFlowEdges(graph))
-    adjacency.get(edge.source)?.push(edge.target);
-  const reachable = /* @__PURE__ */ new Set();
-  const visit = (id) => {
-    if (reachable.has(id))
-      return;
-    reachable.add(id);
-    for (const target of adjacency.get(id) ?? [])
-      visit(target);
-  };
-  for (const start of graph.nodes.filter((node) => node.type === "input" && node.data.nodeType === "start"))
-    visit(start.id);
-  const blockers = [];
-  for (const agent of graph.nodes.filter((node) => node.type === "agent" && reachable.has(node.id))) {
-    const attachment = graph.edges.find((edge) => edge.target === agent.id && edge.targetHandle === "ai-model");
-    const child = attachment && graph.nodes.find((node) => node.id === attachment.source);
-    const definitionId = child?.data.idOnDefinition;
-    const mapping = typeof definitionId === "string" && graph.queries.find((query) => query.idOnDefinition === definitionId);
-    if (!attachment || !child || !mapping)
-      blockers.push({
-        code: "agent_missing_model",
-        path: `nodes.${agent.id}.model`,
-        message: "Reachable Agent requires one configured AI model attachment."
-      });
-  }
-  return { runtime_readiness: blockers.length ? "draft_only" : "runnable", blockers };
-}
-var plans = /* @__PURE__ */ new Map();
-var TTL = 30 * 6e4;
-function prune() {
-  for (const [key, plan] of plans)
-    if (plan.expires <= Date.now())
-      plans.delete(key);
-}
-async function prepare(client, workflowId, versionId, spec, ids) {
-  const snapshot = await client.get(workflowId, versionId);
-  if (!snapshot.editable)
-    throw new Error("Only editable draft workflow versions can be changed.");
-  const [queries, datasources] = await Promise.all([client.getQueries(versionId), client.listDatasources(versionId)]);
-  const compiled = compileGraph(snapshot.definition, spec, ids, new Map(datasources.map((datasource) => [datasource.id, datasource.kind])));
-  const warnings = [];
-  const writes = [];
-  const finalDefinitionIds = new Set(compiled.graph.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string"));
-  const removedDefinitionIds = new Set(snapshot.definition.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string" && !finalDefinitionIds.has(value)));
-  const deletions = [];
-  for (const mapping of snapshot.definition.queries) {
-    if (!removedDefinitionIds.has(mapping.idOnDefinition))
-      continue;
-    if (compiled.graph.queries.some((retained) => retained.id === mapping.id))
-      continue;
-    if (deletions.some((deletion) => deletion.query_id === mapping.id))
-      continue;
-    const node = snapshot.definition.nodes.find((candidate) => candidate.data.idOnDefinition === mapping.idOnDefinition);
-    if (!node)
-      continue;
-    if (!queries.some((query) => query.id === mapping.id))
-      throw new Error(`Query ${mapping.id} is missing from the target version.`);
-    deletions.push({ node_id: node.id, definition_id: mapping.idOnDefinition, query_id: mapping.id });
-  }
-  const claimedNames = /* @__PURE__ */ new Set();
-  for (const item of compiled.query_nodes) {
-    const existingMapping = snapshot.definition.queries.find((q) => q.idOnDefinition === item.definition_id);
-    const oldQuery = queries.find((q) => q.id === existingMapping?.id);
-    if (existingMapping && !oldQuery)
-      throw new Error(`Query ${existingMapping.id} is missing from the target version.`);
-    if (oldQuery && snapshot.definition.nodes.filter((n) => snapshot.definition.queries.some((q) => q.id === oldQuery.id && q.idOnDefinition === n.data.idOnDefinition)).length > 1)
-      throw new Error(`Query ${oldQuery.id} is shared by multiple nodes. Shared query editing is unsupported.`);
-    const input = item.role === "workflow-node" ? item.spec : void 0;
-    const datasource = item.role === "agent-model" ? datasources.find((d) => d.id === item.datasource_id) : input.type === "javascript" || input.type === "loop" ? datasources.find((d) => d.kind === "runjs") : datasources.find((d) => d.id === input.datasource_id);
-    const label = item.role === "agent-model" ? "Agent model" : `node ${input.ref}`;
-    if (!datasource)
-      throw new Error(`Datasource unavailable for ${label}.`);
-    if (item.role === "agent-model" && !AI_DATASOURCE_KINDS.has(datasource.kind))
-      throw new Error(`Datasource ${datasource.id} is not an AI model datasource.`);
-    const kind = datasource.kind;
-    const dataSourceId = datasource.id;
-    const name2 = item.role === "agent-model" ? item.name : input.name;
-    if (oldQuery && (oldQuery.kind !== kind || oldQuery.data_source_id !== dataSourceId))
-      throw new Error(item.role === "agent-model" ? "Changing an Agent model datasource is unsupported; remove the model first, then add its replacement in a second phase." : "Changing an existing query datasource is unsupported; add a new node.");
-    if (oldQuery?.name !== void 0 && oldQuery.name !== name2)
-      throw new Error(item.role === "agent-model" ? "Renaming an Agent model query is unsupported; remove the model first, then add its replacement in a second phase." : "Renaming existing queries is unsupported because code references cannot be rewritten safely.");
-    if (claimedNames.has(name2) || queries.some((q) => q.name === name2 && q.id !== oldQuery?.id))
-      throw new Error(`Duplicate query name: ${name2}`);
-    claimedNames.add(name2);
-    const requestedOptions = item.role === "agent-model" ? item.options : input.type === "javascript" || input.type === "loop" ? { ...oldQuery?.options ?? {}, code: input.code } : input.options;
-    const options = item.role === "agent-model" ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
-    if (item.role === "workflow-node" && kind === "runjs")
-      assertWorkflowJavaScript(options.code, label);
-    if (item.role === "workflow-node") {
-      const validation2 = validateQueryOptions(kind, options, "workflow");
-      if (validation2.errors.length)
-        throw new Error(issueMessages(validation2.errors).join(" "));
-      warnings.push(...issueMessages(validation2.warnings));
-    }
-    writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name: name2, dataSourceId: dataSourceId ?? "", kind, options });
-    if (!existingMapping && !compiled.graph.queries.some((mapping) => mapping.idOnDefinition === item.definition_id))
-      compiled.graph.queries.push({ idOnDefinition: item.definition_id, id: `pending:${item.node_id}` });
-  }
-  const queryIds = /* @__PURE__ */ new Set([...queries.map((q) => q.id), ...writes.filter((q) => !q.existing_id).map((q) => `pending:${q.node_id}`)]);
-  const validation = validateGraph(compiled.graph, queryIds);
-  const readiness = workflowReadiness(compiled.graph, validation.errors);
-  return { snapshot, compiled, writes, deletions, validation, readiness, warnings };
-}
-async function lint(client, workflowId, versionId, spec, allowDraft = false) {
-  const prepared = await prepare(client, workflowId, versionId, spec);
-  if (prepared.validation.errors.length || prepared.readiness.runtime_readiness === "draft_only" && !allowDraft)
-    return { ...prepared.validation, ...prepared.readiness, query_warnings: prepared.warnings };
-  prune();
-  while (plans.size >= 200)
-    plans.delete(plans.keys().next().value);
-  const token = randomUUID();
-  plans.set(token, { scope: await client.planScope(), workflowId, versionId, spec: structuredClone(spec), ids: prepared.compiled, allowDraft, expires: Date.now() + TTL });
-  return {
-    plan_token: token,
-    expires_in_seconds: TTL / 1e3,
-    node_ids: prepared.compiled.node_ids,
-    edge_ids: prepared.compiled.edge_ids,
-    ...prepared.validation,
-    ...prepared.readiness,
-    query_warnings: prepared.warnings,
-    changes: { node_upserts: spec.nodes.length, edge_upserts: spec.edges.length, node_removals: spec.remove_node_ids, edge_removals: spec.remove_edge_ids, queries: [...prepared.writes.map((q) => ({ name: q.name, operation: q.existing_id ? "update" : "create" })), ...prepared.deletions.map((q) => ({ query_id: q.query_id, operation: "delete" }))] }
-  };
-}
-async function apply(client, token) {
-  prune();
-  const scope = await client.planScope();
-  const plan = plans.get(token);
-  if (!plan || plan.scope !== scope)
-    throw new Error("Unknown, expired, consumed, or differently scoped plan. Run lint_workflow_spec again.");
-  plans.delete(token);
-  const { compiled, snapshot, writes, deletions, validation, readiness } = await prepare(client, plan.workflowId, plan.versionId, plan.spec, plan.ids);
-  if (validation.errors.length)
-    throw new Error(JSON.stringify(validation.errors));
-  if (readiness.runtime_readiness === "draft_only" && !plan.allowDraft)
-    throw new Error(JSON.stringify(readiness.blockers));
-  const completed = [];
-  let phase = "queries";
-  let attemptedQuery;
-  try {
-    for (const write of writes) {
-      attemptedQuery = { name: write.name, node_id: write.node_id, existing_id: write.existing_id };
-      const result = write.existing_id ? await client.updateQuery({ queryId: write.existing_id, versionId: plan.versionId, name: write.name, options: write.options }) : await client.createWorkflowQuery({ workflowId: plan.workflowId, versionId: plan.versionId, name: write.name, dataSourceId: write.dataSourceId || void 0, kind: write.kind, options: write.options });
-      completed.push({ operation: write.existing_id ? "update" : "create", query_id: result.query_id, node_id: write.node_id });
-      compiled.graph.queries = compiled.graph.queries.filter((q) => q.idOnDefinition !== write.definition_id);
-      compiled.graph.queries.push({ idOnDefinition: write.definition_id, id: result.query_id });
-      attemptedQuery = void 0;
-    }
-    phase = "save";
-    await client.save(snapshot, compiled.graph);
-    phase = "readback";
-    const [saved, queries] = await Promise.all([client.get(plan.workflowId, plan.versionId), client.getQueries(plan.versionId)]);
-    const validation2 = validateGraph(saved.definition, new Set(queries.map((q) => q.id)));
-    if (!isDeepStrictEqual(saved.definition, compiled.graph))
-      throw new Error("Saved definition differs from the intended graph. Inspect get_workflow before retrying.");
-    for (const write of writes) {
-      const id = completed.find((q) => q.node_id === write.node_id).query_id;
-      const persisted = queries.find((q) => q.id === id);
-      if (!persisted || persisted.name !== write.name || persisted.kind !== write.kind || persisted.data_source_id !== write.dataSourceId || !isDeepStrictEqual(persisted.options, write.options))
-        throw new Error(`Query ${id} readback differs from intended datasource, kind, name, or options.`);
-    }
-    if (validation2.errors.length)
-      throw new Error(JSON.stringify(validation2.errors));
-    phase = "query_deletions";
-    for (const deletion of deletions) {
-      attemptedQuery = { name: deletion.query_id, node_id: deletion.node_id, existing_id: deletion.query_id };
-      await client.deleteQuery({ queryId: deletion.query_id, versionId: plan.versionId });
-      completed.push({ operation: "delete", query_id: deletion.query_id, node_id: deletion.node_id });
-      attemptedQuery = void 0;
-    }
-    return { workflow_id: plan.workflowId, version_id: plan.versionId, editor_url: saved.editor_url, node_ids: compiled.node_ids, edge_ids: compiled.edge_ids, completed, validation: validation2, ...readiness };
-  } catch (error) {
-    return {
-      failed: true,
-      workflow_id: plan.workflowId,
-      version_id: plan.versionId,
-      phase,
-      completed,
-      attempted_query: attemptedQuery,
-      node_ids: compiled.node_ids,
-      edge_ids: compiled.edge_ids,
-      graph_persistence: phase === "queries" ? "not_attempted" : phase === "save" ? "unknown" : "saved",
-      error: error instanceof Error ? error.message : String(error),
-      recovery: "Inspect get_workflow and its queries; reuse persisted IDs when replanning. Do not repeat creation blindly. No resources were automatically deleted."
-    };
-  }
-}
-async function deleteNode(client, workflowId, versionId, nodeId) {
-  const snapshot = await client.get(workflowId, versionId);
-  if (!snapshot.definition.nodes.some((node) => node.id === nodeId))
-    throw new Error(`Unknown workflow node: ${nodeId}`);
-  const spec = specSchema.parse({ remove_node_ids: [nodeId], remove_edge_ids: snapshot.definition.edges.filter((edge) => edge.source === nodeId || edge.target === nodeId).map((edge) => edge.id) });
-  const result = await lint(client, workflowId, versionId, spec, true);
-  if (!("plan_token" in result))
-    throw new Error(JSON.stringify({ errors: result.errors, blockers: result.blockers }));
-  return apply(client, result.plan_token);
-}
-createRequire(import.meta.url);
-var newPackSet = () => ({ schemas: null, definitions: {}, packs: null, derived: /* @__PURE__ */ new Map() });
-var processSet = newPackSet();
-var store = new AsyncLocalStorage();
-var activePackSet = () => store.getStore() ?? processSet;
-var inPackSet = (set, work) => store.run(set, work);
-var dataPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-schemas.json");
-var compatibilityPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-compatibility.json");
-var cache = null;
-var legacyReplacements = null;
-function load() {
-  if (!cache)
-    cache = readCatalog(dataPath);
-  return cache;
-}
-function loadLegacyReplacements() {
-  if (!legacyReplacements) {
-    const compatibility = JSON.parse(readFileSync(compatibilityPath, "utf8"));
-    legacyReplacements = compatibility.legacyReplacements ?? {};
-  }
-  return legacyReplacements;
-}
-var PACK_TYPE = /^Lib_[a-z0-9]+_/;
-function merged() {
-  const set = activePackSet();
-  if (!set.schemas)
-    return load();
-  let all = set.derived.get("catalog");
-  if (!all) {
-    const extra = set.schemas;
-    all = Object.fromEntries(Object.entries(load()).filter(([key]) => !PACK_TYPE.test(key) || key in extra));
-    Object.assign(all, extra);
-    set.derived.set("catalog", all);
-  }
-  return all;
-}
-function allComponentSchemas() {
-  return merged();
-}
-function registerComponentSchemas(extra) {
-  const set = activePackSet();
-  set.schemas = { ...extra };
-  set.derived.clear();
-}
-function getCatalog() {
-  const legacy = loadLegacyReplacements();
-  return Object.values(merged()).filter((c) => !legacy[c.type]).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
-}
-function getComponentSchema(type) {
-  return merged()[type] ?? null;
-}
-function getLegacyComponentReplacement(type) {
-  return loadLegacyReplacements()[type] ?? null;
-}
-createRequire(import.meta.url);
-var name = external_exports.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/).refine((v) => !["__proto__", "prototype", "constructor"].includes(v));
-var editContractSchema = external_exports.object({
-  source_query: name.describe("Already-loaded bounded raw row-array query; never a display projection."),
-  table_component: name,
-  id_field: name.default("id"),
-  prefix: name.describe("Unique prefix for generated snapshot/draft variables and RunJS query names."),
-  fields: external_exports.array(external_exports.object({
-    field: name,
-    component: name,
-    type: external_exports.enum(["text", "number", "date_only", "boolean"]),
-    required: external_exports.boolean().default(false),
-    nullable: external_exports.boolean().default(false).describe("Opt in to clearing to null; a user change event is also required."),
-    trim: external_exports.boolean().default(false),
-    choices: external_exports.union([
-      external_exports.array(external_exports.object({ label: external_exports.string(), value: external_exports.union([external_exports.string(), external_exports.number().finite()]) }).strict()).min(1).max(100),
-      external_exports.object({ query: name, value_field: name, label_field: name }).strict()
-    ]).optional().describe("Opt-in DropdownV2 for text/number fields: literal label/value options or an already-loaded bounded raw option query. Values must match the declared field type.")
-  })).min(1).max(40)
-}).strict();
-function canonical(value, field) {
-  if (value === void 0)
-    throw new Error(`Missing input: ${field.field}`);
-  if (value === null || value === "") {
-    if (field.required)
-      throw new Error(`Required field: ${field.field}`);
-    if (value === null && !field.nullable)
-      throw new Error(`Null not allowed: ${field.field}`);
-    return value;
-  }
-  if (field.type === "text") {
-    if (typeof value !== "string")
-      throw new Error(`Expected text: ${field.field}`);
-    if (field.required && !value.trim())
-      throw new Error(`Required field: ${field.field}`);
-    return field.trim ? value.trim() : value;
-  }
-  if (field.type === "boolean") {
-    if (typeof value !== "boolean")
-      throw new Error(`Expected boolean: ${field.field}`);
-    return value;
-  }
-  if (field.type === "number") {
-    if (typeof value !== "number" && typeof value !== "string" || typeof value === "string" && !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value) || !Number.isFinite(Number(value)))
-      throw new Error(`Expected finite number: ${field.field}`);
-    return Number(value);
-  }
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))?$/.test(value)) {
-    throw new Error(`Expected ISO date: ${field.field}`);
-  }
-  const day = value.slice(0, 10);
-  const parsed = /* @__PURE__ */ new Date(day + "T00:00:00Z");
-  if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== day || !Number.isFinite(Date.parse(value))) {
-    throw new Error(`Invalid date: ${field.field}`);
-  }
-  return day;
-}
-function generateEditContract(input) {
-  const spec = editContractSchema.parse(input);
-  for (const key of ["field", "component"]) {
-    if (new Set(spec.fields.map((f) => f[key])).size !== spec.fields.length)
-      throw new Error(`Duplicate ${key} in edit contract`);
-  }
-  if (spec.fields.some((f) => f.field === spec.id_field))
-    throw new Error("The stable primary key cannot be edited");
-  if (spec.fields.some((f) => f.required && f.nullable))
-    throw new Error("A required field cannot be nullable");
-  for (const f of spec.fields)
-    if (f.choices) {
-      if (!["text", "number"].includes(f.type))
-        throw new Error("Choices require a text or number field");
-      if (Array.isArray(f.choices)) {
-        if (f.choices.some((o) => typeof o.value !== (f.type === "text" ? "string" : "number")))
-          throw new Error("Choice values must match field type");
-        if (new Set(f.choices.map((o) => o.value)).size !== f.choices.length)
-          throw new Error("Duplicate choice value");
-      }
-    }
-  const snapshot = `${spec.prefix}Snapshot`, draft = `${spec.prefix}Draft`;
-  const openName = `${spec.prefix}Open`, prepareName = `${spec.prefix}Prepare`;
-  const q = JSON.stringify;
-  const helpers = `const canonical = ${canonical.toString()};
-const fields = ${q(spec.fields)};
-const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
-`;
-  const openCode = helpers + `await actions.setVariable(${q(snapshot)}, null);
-await actions.setVariable(${q(draft)}, null);
-const selection = components.${spec.table_component}.selectedRow;
-const id = selection && selection[${q(spec.id_field)}];
-if ((typeof id !== 'string' && typeof id !== 'number') || id === '' || (typeof id === 'number' && !Number.isFinite(id))) throw new Error('Select a record first');
-const rows = queries.${spec.source_query}.data;
-if (!Array.isArray(rows)) throw new Error('Raw records are not loaded');
-const matches = rows.filter(r => r && own(r, ${q(spec.id_field)}) && r[${q(spec.id_field)}] === id);
-if (matches.length !== 1) throw new Error('Expected exactly one raw record for the selected ID');
-const values = {};
-for (const field of fields) {
-  if (!own(matches[0], field.field)) throw new Error('Raw record omits: ' + field.field);
-  // Existing incomplete records must be openable for correction. Validate required
-  // values on Prepare, not before the user can edit them.
-  values[field.field] = canonical(matches[0][field.field], { ...field, required: false, nullable: true });
-}
-await actions.setVariable(${q(snapshot)}, { id, values });
-return { id };`;
-  const prepareCode = helpers + `const snapshot = variables.${snapshot};
-const draft = variables.${draft};
-const selection = components.${spec.table_component}.selectedRow;
-if (!snapshot || !selection || selection[${q(spec.id_field)}] !== snapshot.id) throw new Error('Reopen the selected record before saving');
-if (draft && draft.id !== snapshot.id) throw new Error('Draft belongs to another record');
-const changes = draft ? draft.values : {};
-if (!changes || typeof changes !== 'object' || Array.isArray(changes)) throw new Error('Invalid draft');
-const patch = {};
-for (const key of Object.keys(changes)) if (!fields.some(f => f.field === key)) throw new Error('Unknown draft field: ' + key);
-for (const field of fields) {
-  if (!own(snapshot.values, field.field)) throw new Error('Incomplete edit snapshot');
-  if (!own(changes, field.field)) {
-    canonical(snapshot.values[field.field], field);
-    continue;
-  }
-  const raw = changes[field.field];
-  let value = canonical(raw, field);
-  if (value === '' && field.type !== 'text') value = null;
-  if (value === '' || value === null) {
-    if (!field.nullable) throw new Error('Clearing is not allowed: ' + field.field);
-    value = null;
-  }
-  if (value !== snapshot.values[field.field]) patch[field.field] = value;
-}
-return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
-  const inputs = spec.fields.map((f) => {
-    const type = f.choices ? "DropdownV2" : { text: "TextInput", number: "NumberInput", date_only: "DatePickerV2", boolean: "Checkbox" }[f.type];
-    const initialKey = f.choices ? "schema" : ["date_only", "boolean"].includes(f.type) ? "defaultValue" : "value";
-    const exposed = f.type === "date_only" ? "selectedDate" : "value";
-    const trigger = f.choices || f.type === "date_only" ? "onSelect" : "onChange";
-    const schema = getComponentSchema(type);
-    if (!schema?.properties.some((p) => p.key === initialKey) || !schema.events?.some((e) => e.id === trigger))
-      throw new Error(`Unsupported edit adapter: ${type}`);
-    const initial = `variables.${snapshot} && variables.${snapshot}.values[${q(f.field)}]`;
-    let value = `{{${initial} != null ? variables.${snapshot}.values[${q(f.field)}] : ${f.type === "boolean" ? "false" : "''"}}}`;
-    if (f.choices) {
-      const options = Array.isArray(f.choices) ? q(f.choices) : `(queries.${f.choices.query}.data || []).map(r=>({label:r[${q(f.choices.label_field)}],value:r[${q(f.choices.value_field)}]}))`;
-      value = `{{(${options}).map(option=>({label:option.label,value:option.value,visible:true,default:!!variables.${snapshot} && option.value === variables.${snapshot}.values[${q(f.field)}]}))}}`;
-    }
-    const exposedValue = `components.${f.component}.${exposed}`;
-    const changedValue = f.choices && f.nullable ? `(${exposedValue} == null ? null : ${exposedValue})` : exposedValue;
-    const draftValue = `{{({id:variables.${snapshot}.id,values:Object.assign({},variables.${draft} && variables.${draft}.id === variables.${snapshot}.id ? variables.${draft}.values : {},{${q(f.field)}:${changedValue}})})}}`;
-    return {
-      name: f.component,
-      type,
-      properties: { [initialKey]: value, ...f.choices ? { advanced: "{{true}}", showClearBtn: f.nullable } : {}, ...f.type === "date_only" ? { dateFormat: "YYYY-MM-DD" } : {} },
-      validation: { mandatory: f.required },
-      events: [{ source_ref: f.component, source_type: "component", trigger, action: {
-        actionId: "set-custom-variable",
-        key: draft,
-        value: draftValue,
-        runOnlyIf: `{{!!variables.${snapshot}}}`
-      } }]
-    };
-  });
-  return {
-    queries: [
-      { name: openName, kind: "runjs", options: { code: openCode } },
-      { name: prepareName, kind: "runjs", options: { code: prepareCode } }
-    ],
-    inputs,
-    mutation_contract: {
-      id: `{{queries.${prepareName}.data.id}}`,
-      patch: `{{queries.${prepareName}.data.patch}}`,
-      runOnlyIf: `{{queries.${prepareName}.data && queries.${prepareName}.data.changed === true}}`
-    },
-    wiring: [
-      `Run ${openName} on Edit; open the editor only on its success. Merge the returned input properties and change events into your native layout. Never use display selectedRow fields as defaults.`,
-      `Run ${prepareName} on Save; run a datasource-specific PATCH/update ONLY on its success and with mutation_contract.runOnlyIf. No change means no write. Bind the ID and patch from mutation_contract; never expand missing patch keys to null or empty strings.`,
-      "Gate Save while open/prepare/write are loading. Preserve the editor on failure. Refresh affected queries and close/reset only after the actual mutation succeeds; refresh actions are not assumed to complete in order."
-    ],
-    limitations: [
-      "Requires an already-loaded bounded raw row array and a single stable scalar ID. This generates wiring only; it does not create resources or persist data.",
-      "Only text, finite number, ISO date-only and boolean fields are covered; text/number fields can opt into dropdown choices. Required/nullable/trim are explicit opt-ins; domain constraints, authorization and optimistic concurrency must be enforced separately.",
-      "Dropdown option queries must already return bounded raw arrays with matching ID types and include the current value, including inactive owners when necessary. Missing options are not permission to clear stored relationships. Validate membership/authorization separately; this helper does not create or execute option queries.",
-      "Draft tracks native change events, not every displayed input value. Programmatic field changes must update the draft explicitly. Browser-verify that all change events fire, including both checkbox transitions."
-    ]
-  };
-}
-createRequire(import.meta.url);
-var COMPONENT_FX_GUIDANCE = "For properties/styles/validation with an FX toggle, use `{ value: <expression>, fxActive: true }` only for bindings/conditions/calculations the normal control cannot express. Keep defaults and panel-editable constants (including `{{true}}`/`{{false}}`, numbers, selections, colors) out of FX. For nested Table columns/buttons/options and KeyValuePair fields, add the property key (e.g. `columnVisibility`, `disableButton`, `fieldVisibility`, `isEditable`) to that object's `fxActiveFields`, preserving other entries. ";
-var COMPONENT_FX_UPDATE_GUIDANCE = COMPONENT_FX_GUIDANCE + "Updates must include both `value` and `fxActive`; revert with `{ value: <constant>, fxActive: false }`. For nested Table fields, remove only reverted property keys from `fxActiveFields`. KeyValuePair arrays merge by index; verify flag removals and report retained flags. ";
 export {
-  extractRowCount as A,
-  emptyViewerOnlyParams as B,
-  COMPONENT_FX_UPDATE_GUIDANCE as C,
-  emptyParamsNote as D,
-  unresolvedNote as E,
-  declaredParameterDefaults as F,
   GUI_LIST_ROWS_KEYS as G,
-  inPackSet as H,
-  registerComponentSchemas as I,
-  newPackSet as J,
-  capabilityRequestSchema as K,
   LARGE_READ_ROW_THRESHOLD as L,
-  getWorkflowCapabilities as M,
-  lint as N,
-  apply as O,
-  deleteNode as P,
-  editContractSchema as Q,
-  generateEditContract as R,
   SQL_DIALECT as S,
-  allComponentSchemas as T,
-  activePackSet as a,
-  getCatalog as b,
-  getLegacyComponentReplacement as c,
-  bindingSpans as d,
-  assertPersistableQueryToggles as e,
-  assertWorkflowQueryOptions as f,
-  getComponentSchema as g,
-  assessQueryRead as h,
-  resolvedReadRefusal as i,
-  resolveStaticBindings as j,
-  applyResolvedBindings as k,
+  assertPersistableQueryToggles as a,
+  bindingSpans as b,
+  normalizeWorkflowQueryOptions as c,
+  assertWorkflowQueryOptions as d,
+  assessQueryRead as e,
+  resolvedReadRefusal as f,
+  resolveStaticBindings as g,
+  applyResolvedBindings as h,
+  issueMessages as i,
+  connectorLabel as j,
+  normalizeQueryToggles as k,
   lintBindingNames as l,
-  connectorLabel as m,
-  normalizeWorkflowQueryOptions as n,
-  normalizeQueryToggles as o,
-  issueMessages as p,
+  arithmeticWriteWarning as m,
+  normalizeQueryOptions as n,
+  sameReadSource as o,
+  extractRowCount as p,
   queryToggleIssues as q,
   require_lib as r,
   sqlConnectorPath as s,
   toggleRewriteWarning as t,
-  normalizeQueryOptions as u,
+  emptyViewerOnlyParams as u,
   validateQueryOptions as v,
   workflowMappingMatches as w,
-  arithmeticWriteWarning as x,
-  COMPONENT_FX_GUIDANCE as y,
-  sameReadSource as z
+  emptyParamsNote as x,
+  unresolvedNote as y,
+  declaredParameterDefaults as z
 };

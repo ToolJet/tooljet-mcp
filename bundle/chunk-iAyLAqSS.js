@@ -1,15 +1,15 @@
 import { createRequire } from "node:module";
-import { b0 as external_exports, b3 as specSchema, bb as nodeSchema, bc as listWorkspaceAppsTool, bd as listWorkspaceFoldersTool, be as listWorkspaceUsersTool, bf as manageWorkspaceUsersTool, b8 as ok, b1 as nodeCatalog, b7 as fail, b2 as validateGraph, bg as workspaceUserActionTools } from "./chunk-Csl8mO51.js";
-import { H as inPackSet, I as registerComponentSchemas, a as activePackSet, J as newPackSet, K as capabilityRequestSchema, M as getWorkflowCapabilities, N as lint, O as apply, P as deleteNode, Q as editContractSchema, R as generateEditContract, j as resolveStaticBindings, B as emptyViewerOnlyParams, D as emptyParamsNote, E as unresolvedNote, y as COMPONENT_FX_GUIDANCE, T as allComponentSchemas } from "./chunk-CmizjRXJ.js";
-import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, f as FLEX_GROW_DESCRIPTION, g as FLEX_WIDTH_PX_DESCRIPTION, j as FLEX_FILL_WIDTH_DESCRIPTION, k as codeAppScaffoldTool, l as codeAppReadFilesTool, o as codeAppWriteFilesTool, q as codeAppBuildTool, t as codeAppInstallTool, u as codeAppAddDependencyTool, v as getComponentCatalogTool, w as updateComponentsTool, x as noCodeIdentity, r as resolveRef, n as normalizeComponentSpec, m as mapKeyRefusal, d as appendedChildOrders, y as reparentAdditions, c as childOrderProperty, z as browserUserBindings, A as isCodeModeApp, B as browserUserMessage } from "./chunk-BmwE9MbG.js";
-import { f as loadConfig, g as createClient, m as manageAppPermissionsTool, h as createAppTool, j as manageThemeTool, r as registerPackDefinitions, k as projectJavascriptRuntime, o as projectAppSettings, q as compactTheme, s as pageSettingProperties, v as validateTableBatch, t as ToolJetHttpError, l as literalCanvasColor, P as PartialWriteError, u as themeActionTools, x as appPermissionActionTools, y as branchIdFor, z as withBranchContext } from "./chunk-M7e4iJ0f.js";
-import { O as listWorkspaceGroupsTool, Q as manageWorkspaceGroupsTool, U as inspectDatasourceSchemaTool, V as datasourceMetadataTools, W as WebStandardStreamableHTTPServerTransport, X as getRequestListener, a as autoReadPreflight, Y as workspaceGroupActionTools } from "./chunk-CLiX8A3Y.js";
-import { g as verifyPageRenderTool, h as containsExactValue, a as prepareQueryOptionsForWrite, i as containsNamedBinding, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, v as validateEvents, e as expandQueryLifecycles, b as persistedEventSpecs, j as persistedEventIds } from "./chunk-D7JTlazJ.js";
-import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as renameAppTool, p as plannedTableSchema, v as validatePersistedAppSummary, e as libraryPinErrors, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, f as containsComponentBinding, g as runUnattended, q as queryResultBindingHint, h as failureRecovery, j as failureVerification, s as schemaNameHint, k as redactRunResult, m as capUnattendedOutput, o as redactQueryText, t as prepareComponentBatch } from "./chunk-DSQkV0X9.js";
-import { M as McpServer } from "./chunk-2DPLSg7N.js";
-import { K as pageIconSchema, c as componentSlotSchema, O as registerLibraryPacks, B as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION, a as componentNameSchema, E as lintComponents, e as resolveParentRef, g as introducedLintFindings, Q as lintRenderedGeometryBlocking, R as lintRenderedGeometryAdvisory, d as decodeComponentParent, f as encodeComponentParent, h as lintComponentSlots, l as lintComponentSpec, j as lintUnusableTextGeometry, T as lintNestedContainerWidths, k as lintStandardSingleLineInputHeight, m as lintTextGeometry, o as lintRenderedGeometry, U as FORM_SCHEMA_FIELD_TYPE_SET, V as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-CzEla2h4.js";
-import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-Cd-rK1dm.js";
-import { b as readCatalogBytes } from "./chunk-C1y-3rfY.js";
+import { aA as external_exports, aH as inPackSet, aI as listWorkspaceAppsTool, aJ as listWorkspaceFoldersTool, aK as listWorkspaceUsersTool, aL as manageWorkspaceUsersTool, aM as registerComponentSchemas, ax as activePackSet, aN as newPackSet, aF as ok, aD as fail, aE as resolveRef, aO as workspaceUserActionTools, aP as readCatalogBytes, aQ as allComponentSchemas } from "./chunk-Be_TMeNG.js";
+import { s as strictEntry, l as specSchema, o as nodeSchema, q as codeAppScaffoldTool, r as codeAppReadFilesTool, t as codeAppWriteFilesTool, u as codeAppBuildTool, v as codeAppInstallTool, w as codeAppAddDependencyTool, x as getComponentCatalogTool, y as updateComponentsTool, z as updateLayoutTool, A as noCodeIdentity, B as nodeCatalog, D as capabilityRequestSchema, E as getWorkflowCapabilities, G as lint, H as apply, I as deleteNode, J as validateGraph, K as editContractSchema, L as generateEditContract, n as normalizeComponentSpec, m as mapKeyRefusal, C as COMPONENT_FX_GUIDANCE, M as browserUserBindings, N as isCodeModeApp, O as browserUserMessage } from "./chunk-BHYAODhU.js";
+import { f as loadConfig, g as createClient, m as manageAppPermissionsTool, h as createAppTool, j as manageThemeTool, r as registerPackDefinitions, k as projectJavascriptRuntime, o as projectAppSettings, q as compactTheme, s as pageSettingProperties, v as validateTableBatch, t as ToolJetHttpError, l as literalCanvasColor, P as PartialWriteError, u as themeActionTools, x as appPermissionActionTools, y as branchIdFor, z as withBranchContext } from "./chunk-DaOhvhrN.js";
+import { O as listWorkspaceGroupsTool, Q as manageWorkspaceGroupsTool, U as inspectDatasourceSchemaTool, V as datasourceMetadataTools, W as WebStandardStreamableHTTPServerTransport, X as getRequestListener, a as autoReadPreflight, Y as workspaceGroupActionTools } from "./chunk-C7ksL0jN.js";
+import { g as verifyPageRenderTool, h as containsExactValue, a as prepareQueryOptionsForWrite, i as containsNamedBinding, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, v as validateEvents, e as expandQueryLifecycles, b as persistedEventSpecs, j as persistedEventIds } from "./chunk-D4UJES-0.js";
+import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as renameAppTool, p as plannedTableSchema, v as validatePersistedAppSummary, e as libraryPinErrors, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, f as containsComponentBinding, g as runUnattended, q as queryResultBindingHint, h as failureRecovery, j as failureVerification, s as schemaNameHint, k as redactRunResult, m as capUnattendedOutput, o as redactQueryText, t as prepareComponentBatch } from "./chunk-fTt9eLvV.js";
+import { M as McpServer } from "./chunk-DsWkocH8.js";
+import { G as pageIconSchema, y as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION, p as componentNameSchema, A as lintComponents, r as resolveParentRef, b as introducedLintFindings, J as lintRenderedGeometryBlocking, K as lintRenderedGeometryAdvisory, d as decodeComponentParent, L as FORM_SCHEMA_FIELD_TYPE_SET, M as SAFE_GENERATED_FORM_FIELD_TYPE_SET, N as packSlotsFromManifest, O as describePackSlots } from "./chunk-BbJ1RRc_.js";
+import { P as registerLibraryPacks } from "./chunk-DjxXBjSx.js";
+import { g as resolveStaticBindings, u as emptyViewerOnlyParams, x as emptyParamsNote, y as unresolvedNote } from "./chunk-D078dS7Y.js";
+import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-B0-K80Ym.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { createServer } from "node:http";
@@ -228,12 +228,14 @@ function packFromManifest(packId, libraryName, version, manifest, identity) {
   const schemas = {};
   const definitions = {};
   const components = {};
+  const manifestListsSlots = Object.values(manifest.components).some((entry) => entry.slots !== void 0);
   for (const [name, entry] of Object.entries(manifest.components)) {
     const type = `${prefix}${name}`;
     const allProps = entry.props ?? [];
     const runtimeValue = (p) => p.name === "value" && p.inspector === "hidden" && allProps.some((q) => q.name === "defaultValue");
     const props = allProps.filter((p) => !runtimeValue(p));
     const fits = entry.fit === true;
+    const slotInfo = packSlotsFromManifest(entry.slots ?? (manifestListsSlots ? [] : void 0), allProps);
     components[name] = {
       type,
       props: props.map((p) => p.name),
@@ -260,12 +262,14 @@ function packFromManifest(packId, libraryName, version, manifest, identity) {
         ...entry.roleValues ? { roleValues: entry.roleValues } : {},
         ...entry.labelCase ? { labelCase: entry.labelCase } : {},
         slots: entry.slots ?? [],
+        ...slotInfo ? { slotInfo } : {},
         ...manifest.surface ? { surface: manifest.surface } : {},
         ...manifest.themeMode ? { themeMode: manifest.themeMode } : {}
       },
       description: [
         `${entry.displayName ?? words(name)} from the ${lib.name} pack.`,
         entry.usage,
+        describePackSlots(slotInfo),
         fits ? "Sizes to its content in the app (Dynamic height on)." : "Drawn at the height you give it."
       ].filter(Boolean).join(" "),
       defaultSize: { width: entry.defaultWidth ?? 6, height: (entry.defaultHeight ?? 4) * 10 },
@@ -2353,9 +2357,9 @@ function stripLayoutTimestamps(component) {
   const layouts = component.layouts;
   if (!layouts || typeof layouts !== "object")
     return;
-  for (const rect2 of Object.values(layouts)) {
-    if (rect2 && typeof rect2 === "object")
-      delete rect2.updatedAt;
+  for (const rect of Object.values(layouts)) {
+    if (rect && typeof rect === "object")
+      delete rect.updatedAt;
   }
 }
 function matches(value, accepted) {
@@ -3108,9 +3112,11 @@ function deleteComponentsTool(client) {
         if (missing.length) {
           throw new Error(`delete_components: component ids are not on page ${args.page_id}: ${missing.join(", ")}.`);
         }
+        const pageIds = new Set(page.components.map((component) => component.id));
         const descendants = page.components.filter((component) => component.parent && // Header, footer and tab children sit on "<id>-header", "<id>-t1" ...: an exact match missed them, and deleting
-        // a Tabs, Modal or Container orphaned them (review 2026-09-25).
-        [...requested].some((targetId) => component.parent === targetId || component.parent?.startsWith(`${targetId}::`) || decodeComponentParent(component.parent).parentId === targetId) && !requested.has(component.id));
+        // a Tabs, Modal or Container orphaned them (review 2026-09-25). A pack widget's children sit on its slots,
+        // "<id>-tab_tab1", "<id>-panel_a", "<id>-first": deleting a pack Tabs or Collapse orphaned them (QA DVRL-59).
+        [...requested].some((targetId) => component.parent === targetId || component.parent?.startsWith(`${targetId}::`) || decodeComponentParent(component.parent).parentId === targetId || component.parent.startsWith(`${targetId}-`) && !pageIds.has(component.parent)) && !requested.has(component.id));
         if (descendants.length) {
           throw new Error(`delete_components: surviving child components still belong to a target: ` + descendants.map((component) => component.name ?? component.id).join(", ") + ". Include them in the explicitly approved deletion or reparent them first.");
         }
@@ -3162,175 +3168,6 @@ function deleteComponentsTool(client) {
           component_names: targets.map((component) => component.name).filter(Boolean),
           source_events_deleted: sourceEventsDeleted
         });
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
-var rect = external_exports.object({
-  top: external_exports.number(),
-  left: external_exports.number(),
-  width: external_exports.number(),
-  height: external_exports.number(),
-  fillWidth: external_exports.boolean().optional().describe(FLEX_FILL_WIDTH_DESCRIPTION),
-  widthPx: external_exports.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION),
-  grow: external_exports.number().positive().optional().describe(FLEX_GROW_DESCRIPTION),
-  minWidthPx: external_exports.number().nonnegative().optional().describe(FLEX_MIN_WIDTH_PX_DESCRIPTION)
-});
-var RECT_KEYS = /* @__PURE__ */ new Set(["top", "left", "width", "height"]);
-var layoutEntrySchema = strictEntry({
-  component_id: external_exports.string(),
-  desktop: rect.optional(),
-  mobile: rect.optional(),
-  parent: external_exports.string().optional(),
-  slot_name: componentSlotSchema.optional()
-}, (key) => {
-  if (RECT_KEYS.has(key)) {
-    return `Layout entry key "${key}" must be nested under desktop and/or mobile (e.g. { component_id, desktop: { top, left, width, height } }).`;
-  }
-  if (key === "layout" || key === "layouts") {
-    return `Layout entry key "${key}" is not accepted; put the rect directly under desktop and/or mobile on the entry.`;
-  }
-  if (key === "definition" || key === "properties" || key === "styles") {
-    return `Layout entry key "${key}" is not accepted by update_layout; edit component values with update_components.`;
-  }
-  return `Unknown layout entry key "${key}"; accepted keys are component_id, desktop, mobile, parent, slot_name.`;
-});
-function updateLayoutTool(client) {
-  return {
-    name: "update_layout",
-    title: "Update Layout",
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: false
-    },
-    description: "Move / resize existing components (batch) without touching their properties. `left`/`width` are in the immediate parent canvas's own 43-column grid, including nested containers; `top`/`height` are pixels. Full rows use width 43, independent of the parent outer width. Container/Form/modal insets may use left 2, width 39; grid-mode Listview full rows use left 0, width 43. Provide desktop and/or mobile per component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` (header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent. A FlexContainer child takes its width from fillWidth/widthPx, not width/left; a component reparented into a FlexContainer is appended to its childOrder.",
-    inputSchema: {
-      app_id: external_exports.string(),
-      version_id: external_exports.string(),
-      page_id: external_exports.string(),
-      layouts: external_exports.array(layoutEntrySchema).min(1)
-    },
-    async handler(args) {
-      try {
-        const summary = await client.getAppSummary(args.app_id);
-        const page = summary.pages.find((candidate) => candidate.id === args.page_id);
-        if (!page)
-          return fail(new Error(`Page "${args.page_id}" does not exist in app "${args.app_id}".`));
-        const components = new Map(page.components.map((component) => [component.id, component]));
-        const layoutWarnings = [];
-        const resolveErrors = [];
-        const resolvedIds = /* @__PURE__ */ new Map();
-        for (const layout of args.layouts) {
-          if (!layout.desktop && !layout.mobile && layout.parent === void 0 && layout.slot_name === void 0) {
-            resolveErrors.push(`Component "${layout.component_id}": nothing to update. Provide desktop and/or mobile rects, or a parent/slot_name change.`);
-            continue;
-          }
-          if (resolvedIds.has(layout.component_id))
-            continue;
-          const resolution = resolveRef(page.components, layout.component_id, "Component", `on page "${args.page_id}"`);
-          if (!resolution.ok) {
-            resolveErrors.push(resolution.error);
-            continue;
-          }
-          resolvedIds.set(layout.component_id, resolution.target.id);
-          if (resolution.warning)
-            layoutWarnings.push(resolution.warning);
-        }
-        if (resolveErrors.length)
-          return fail(new Error(resolveErrors.join(" ")));
-        args = {
-          ...args,
-          layouts: args.layouts.map((layout) => ({
-            ...layout,
-            component_id: resolvedIds.get(layout.component_id) ?? layout.component_id
-          }))
-        };
-        const rootSlotWarnings = [];
-        const resolvedLayouts = args.layouts.map((layout) => {
-          const current = components.get(layout.component_id);
-          let parent = layout.parent;
-          let slot_name = layout.slot_name;
-          if (slot_name !== void 0) {
-            parent ??= current.parent ? decodeComponentParent(current.parent).parentId : void 0;
-            if (!parent) {
-              if (slot_name === "body") {
-                rootSlotWarnings.push(`Component "${layout.component_id}": slot_name:"body" ignored on a root component (it has no parent slots).`);
-                slot_name = void 0;
-              } else {
-                throw new Error(`Component "${layout.component_id}": slot_name:"${slot_name}" requires an existing or explicit parent.`);
-              }
-            }
-          }
-          return { ...layout, parent, slot_name };
-        });
-        const changes = new Map(resolvedLayouts.map((layout) => [layout.component_id, layout]));
-        const projected = page.components.map((component) => {
-          const change = changes.get(component.id);
-          if (!change)
-            return component;
-          const currentLayouts = component.layouts ?? {};
-          return {
-            ...component,
-            layouts: {
-              ...currentLayouts,
-              desktop: change.desktop ?? currentLayouts?.desktop,
-              mobile: change.mobile ?? currentLayouts?.mobile
-            },
-            parent: change.parent !== void 0 ? encodeComponentParent(change.parent, change.slot_name) : component.parent,
-            slotName: change.slot_name
-          };
-        });
-        const changedIds = new Set(resolvedLayouts.map((layout) => layout.component_id));
-        const changed = projected.filter((component) => component.id && changedIds.has(component.id));
-        const introducedForChanged = (lint2) => changed.flatMap((component) => introducedLintFindings(lint2([components.get(component.id)]), lint2([component])));
-        const errors = [
-          ...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(projected)),
-          ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).errors)),
-          ...introducedForChanged(lintUnusableTextGeometry)
-        ];
-        if (errors.length)
-          return fail(new Error(`${errors.join(" ")} (Nothing was saved: refused before any write.)`));
-        const nestedWidths = new Set(lintNestedContainerWidths(projected));
-        const warnings = [.../* @__PURE__ */ new Set([
-          ...layoutWarnings,
-          ...rootSlotWarnings,
-          ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).warnings)),
-          ...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)),
-          ...introducedForChanged(lintTextGeometry),
-          ...lintRenderedGeometry(projected).filter((warning) => !nestedWidths.has(warning)),
-          ...introducedLintFindings(lintNestedContainerWidths(page.components), [...nestedWidths])
-        ])];
-        const result = await client.updateLayouts({
-          appId: args.app_id,
-          versionId: args.version_id,
-          pageId: args.page_id,
-          layouts: resolvedLayouts.map((l) => ({
-            componentId: l.component_id,
-            desktop: l.desktop,
-            mobile: l.mobile,
-            parent: l.parent,
-            slotName: l.slot_name
-          }))
-        });
-        const appended = appendedChildOrders(page.components, reparentAdditions(page.components, resolvedLayouts.map((layout) => ({
-          componentId: layout.component_id,
-          parent: layout.parent !== void 0 ? encodeComponentParent(layout.parent, layout.slot_name) : void 0
-        }))));
-        if (appended.size) {
-          await client.updateComponents({
-            appId: args.app_id,
-            versionId: args.version_id,
-            pageId: args.page_id,
-            updates: [...appended].map(([componentId, order]) => ({
-              componentId,
-              definition: { properties: { childOrder: childOrderProperty(order) } }
-            }))
-          });
-        }
-        return ok({ ...result, warnings });
       } catch (err) {
         return fail(err);
       }

@@ -1,13 +1,13 @@
 import { createRequire } from "node:module";
 import { j as union, A as string, V as number, a7 as looseObject, U as object, a8 as literal, i as unknown, ax as _enum, aU as array, ai as intersection, K as record$1, aQ as boolean, N as preprocess, T as optional, ae as iso_exports, aD as discriminatedUnion, aI as custom, Y as _null2 } from "./chunk-Dl7vSZwt.js";
 import { e8 as __toESM, e6 as __commonJS } from "./chunk-C1Uan0hB.js";
-import { b0 as external_exports, b8 as ok, b7 as fail, ba as exposeActions } from "./chunk-Csl8mO51.js";
-import { W as WORKSPACE_ACCESS_KEYS, a as WORKSPACE_PERMISSION_KEYS, w as workspaceAccessKeys } from "./chunk-M7e4iJ0f.js";
-import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-Cd-rK1dm.js";
+import { aA as external_exports, aF as ok, aD as fail, aG as exposeActions } from "./chunk-Be_TMeNG.js";
+import { W as WORKSPACE_ACCESS_KEYS, a as WORKSPACE_PERMISSION_KEYS, w as workspaceAccessKeys } from "./chunk-DaOhvhrN.js";
+import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-B0-K80Ym.js";
 import "node:http";
 import { Http2ServerRequest, constants } from "node:http2";
 import { Readable } from "node:stream";
-import { h as assessQueryRead, i as resolvedReadRefusal, j as resolveStaticBindings, s as sqlConnectorPath, G as GUI_LIST_ROWS_KEYS, k as applyResolvedBindings, m as connectorLabel, S as SQL_DIALECT } from "./chunk-CmizjRXJ.js";
+import { e as assessQueryRead, f as resolvedReadRefusal, g as resolveStaticBindings, s as sqlConnectorPath, G as GUI_LIST_ROWS_KEYS, h as applyResolvedBindings, j as connectorLabel, S as SQL_DIALECT } from "./chunk-D078dS7Y.js";
 createRequire(import.meta.url);
 var LATEST_PROTOCOL_VERSION = "2025-11-25";
 var DEFAULT_NEGOTIATED_PROTOCOL_VERSION = "2025-03-26";

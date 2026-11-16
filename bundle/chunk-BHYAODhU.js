@@ -1,15 +1,1092 @@
 import { createRequire } from "node:module";
-import { g as getComponentSchema, C as COMPONENT_FX_UPDATE_GUIDANCE, b as getCatalog, c as getLegacyComponentReplacement } from "./chunk-CmizjRXJ.js";
-import { i as isMisplacedStyleKey, P as PROPERTY_KEY_ALIASES, r as retiredUi2Name, S as STYLE_KEYS_IN_PROPERTIES, n as nearestCatalogKey, d as decodeComponentParent, c as componentSlotSchema, a as componentNameSchema, b as componentNameError, e as resolveParentRef, f as encodeComponentParent, g as introducedLintFindings, l as lintComponentSpec, h as lintComponentSlots, j as lintUnusableTextGeometry, k as lintStandardSingleLineInputHeight, m as lintTextGeometry, o as lintRenderedGeometry, p as lintKanbanInteractions, q as lintShadKanbanCards, s as lintShadScheduleScale } from "./chunk-CzEla2h4.js";
-import { b0 as external_exports, b7 as fail, b8 as ok } from "./chunk-Csl8mO51.js";
-import { n as suggestedHtmlHeight } from "./chunk-CH7Qaiw9.js";
+import { aA as external_exports, aD as fail, aE as resolveRef, aF as ok, ay as getComponentSchema, aB as getCatalog, aC as getLegacyComponentReplacement } from "./chunk-Be_TMeNG.js";
+import { d as decodeComponentParent, c as componentSlotSchema, r as resolveParentRef, i as isPackContainerType, a as resolvePackSlot, e as encodeComponentParent, b as introducedLintFindings, l as lintComponentSlots, f as lintComponentSpec, g as lintUnusableTextGeometry, h as lintNestedContainerWidths, j as lintStandardSingleLineInputHeight, k as lintTextGeometry, m as lintRenderedGeometry, n as isMisplacedStyleKey, P as PROPERTY_KEY_ALIASES, S as STYLE_KEYS_IN_PROPERTIES, o as nearestCatalogKey, p as componentNameSchema, q as componentNameError, s as lintKanbanInteractions, t as lintShadKanbanCards, u as lintShadScheduleScale } from "./chunk-BbJ1RRc_.js";
+import { Script } from "node:vm";
+import { randomUUID, createHash } from "node:crypto";
+import { n as normalizeQueryOptions, v as validateQueryOptions, i as issueMessages } from "./chunk-D078dS7Y.js";
+import { isDeepStrictEqual, promisify } from "node:util";
+import { x as retiredUi2Name, I as suggestedHtmlHeight } from "./chunk-DjxXBjSx.js";
 import { execFile, execFileSync } from "node:child_process";
-import { promisify } from "node:util";
 import { AsyncLocalStorage } from "node:async_hooks";
-import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync, existsSync, mkdirSync, writeFileSync, readFileSync, statSync, readdirSync, renameSync, lstatSync, realpathSync, utimesSync, openSync, closeSync } from "node:fs";
 import { tmpdir, homedir } from "node:os";
 import { join, relative, sep, dirname, resolve, basename, isAbsolute } from "node:path";
+createRequire(import.meta.url);
+function strictEntry(shape, describeUnknown) {
+  return external_exports.strictObject(shape, {
+    error: (issue) => issue.code === "unrecognized_keys" ? issue.keys.map(describeUnknown).join(" ") : void 0
+  });
+}
+function hasNonEmptyDefinition(definition2) {
+  if (!definition2)
+    return false;
+  return Object.values(definition2).some((section) => section !== null && typeof section === "object" && Object.keys(section).length > 0);
+}
+var FLEX_CONTAINER_TYPE = "FlexContainer";
+var FLEX_FILL_WIDTH_DESCRIPTION = "FlexContainer child only: true (the default) fills the free main-axis width; false uses widthPx. Ignored elsewhere.";
+var FLEX_WIDTH_PX_DESCRIPTION = "FlexContainer child only: fixed width in pixels, applied when fillWidth is false. Ignored elsewhere.";
+var FLEX_GROW_DESCRIPTION = "FlexContainer row child only: share of the free width among fill children (default 1; 2 beside 1 takes two thirds). Ignored elsewhere.";
+var FLEX_MIN_WIDTH_PX_DESCRIPTION = "FlexContainer row child only: narrowest a fill child may get, in pixels; in a wrapping row a narrower child moves to the next line. Ignored elsewhere.";
+function isFlexContainerType(type) {
+  return type === FLEX_CONTAINER_TYPE;
+}
+function storedChildOrder(properties) {
+  const entry = properties?.childOrder;
+  const value = Array.isArray(entry) ? entry : entry?.value;
+  return Array.isArray(value) ? value.filter((id) => typeof id === "string" && id.length > 0) : [];
+}
+function normalizeChildOrder(childOrder, actualChildIds) {
+  const actual = new Set(actualChildIds);
+  const seen = /* @__PURE__ */ new Set();
+  const normalized = [];
+  for (const id of [...childOrder.filter((id2) => actual.has(id2)), ...actualChildIds]) {
+    if (seen.has(id))
+      continue;
+    seen.add(id);
+    normalized.push(id);
+  }
+  return normalized;
+}
+function desktopRect(component) {
+  const desktop = component.layouts?.desktop;
+  return {
+    top: typeof desktop?.top === "number" ? desktop.top : 0,
+    left: typeof desktop?.left === "number" ? desktop.left : 0
+  };
+}
+function bodyParentId(parent) {
+  if (!parent)
+    return void 0;
+  const decoded = decodeComponentParent(parent);
+  return decoded.slotName === "body" ? decoded.parentId : void 0;
+}
+function currentChildOrder(container, page) {
+  const children = page.filter((component) => bodyParentId(component.parent) === container.id);
+  const stored = storedChildOrder(container.properties);
+  const storedSet = new Set(stored);
+  const unordered = children.filter((child) => !storedSet.has(child.id)).sort((a, b) => {
+    const ra = desktopRect(a), rb = desktopRect(b);
+    return ra.top - rb.top || ra.left - rb.left;
+  }).map((child) => child.id);
+  return normalizeChildOrder(stored, [...children.map((child) => child.id).filter((id) => storedSet.has(id)), ...unordered]);
+}
+function appendedChildOrders(page, additions) {
+  const byId = new Map(page.map((component) => [component.id, component]));
+  const added = /* @__PURE__ */ new Map();
+  for (const { parentId, childId } of additions) {
+    const container = byId.get(parentId);
+    if (!container || !isFlexContainerType(container.type))
+      continue;
+    const ids = added.get(parentId) ?? [];
+    if (!ids.includes(childId))
+      ids.push(childId);
+    added.set(parentId, ids);
+  }
+  const orders = /* @__PURE__ */ new Map();
+  for (const [parentId, newIds] of added) {
+    const container = byId.get(parentId);
+    const newSet = new Set(newIds);
+    const existing = currentChildOrder(container, page.filter((component) => !newSet.has(component.id)));
+    const stored = storedChildOrder(container.properties);
+    const next = normalizeChildOrder(stored, [...existing, ...newIds]);
+    if (next.length !== stored.length || next.some((id, index) => stored[index] !== id))
+      orders.set(parentId, next);
+  }
+  return orders;
+}
+function batchChildOrders(entries, explicit = /* @__PURE__ */ new Map(), resolveRef2 = () => void 0) {
+  const orders = /* @__PURE__ */ new Map();
+  for (const container of entries) {
+    if (!isFlexContainerType(container.type))
+      continue;
+    const children = entries.filter((entry) => entry.parentId === container.id).map((entry) => entry.id);
+    const authored = (explicit.get(container.id) ?? []).flatMap((ref2) => typeof ref2 === "string" ? [resolveRef2(ref2) ?? ref2] : []);
+    orders.set(container.id, [.../* @__PURE__ */ new Set([...authored, ...children])]);
+  }
+  return orders;
+}
+function childOrderProperty(order) {
+  return { value: order };
+}
+function reparentAdditions(page, moves) {
+  const byId = new Map(page.map((component) => [component.id, component]));
+  return moves.flatMap(({ componentId, parent }) => {
+    if (parent === void 0)
+      return [];
+    const nextParent = bodyParentId(parent);
+    if (!nextParent || nextParent === bodyParentId(byId.get(componentId)?.parent))
+      return [];
+    return [{ parentId: nextParent, childId: componentId }];
+  });
+}
+function resolveAuthoredChildOrder(container, page, authored) {
+  const children = page.filter((component) => bodyParentId(component.parent) === container.id);
+  const unknown = [];
+  const ids = authored.flatMap((item) => {
+    const ref2 = typeof item === "string" ? item : String(item);
+    const child = children.find((candidate) => candidate.id === ref2) ?? children.find((candidate) => candidate.name === ref2);
+    if (!child) {
+      unknown.push(ref2);
+      return [];
+    }
+    return [child.id];
+  });
+  return { order: normalizeChildOrder(ids, [...ids, ...currentChildOrder(container, page)]), unknown };
+}
+createRequire(import.meta.url);
+var rect = external_exports.object({
+  top: external_exports.number(),
+  left: external_exports.number(),
+  width: external_exports.number(),
+  height: external_exports.number(),
+  fillWidth: external_exports.boolean().optional().describe(FLEX_FILL_WIDTH_DESCRIPTION),
+  widthPx: external_exports.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION),
+  grow: external_exports.number().positive().optional().describe(FLEX_GROW_DESCRIPTION),
+  minWidthPx: external_exports.number().nonnegative().optional().describe(FLEX_MIN_WIDTH_PX_DESCRIPTION)
+});
+var RECT_KEYS = /* @__PURE__ */ new Set(["top", "left", "width", "height"]);
+var layoutEntrySchema = strictEntry({
+  component_id: external_exports.string(),
+  desktop: rect.optional(),
+  mobile: rect.optional(),
+  parent: external_exports.string().optional(),
+  slot_name: componentSlotSchema.optional()
+}, (key) => {
+  if (RECT_KEYS.has(key)) {
+    return `Layout entry key "${key}" must be nested under desktop and/or mobile (e.g. { component_id, desktop: { top, left, width, height } }).`;
+  }
+  if (key === "layout" || key === "layouts") {
+    return `Layout entry key "${key}" is not accepted; put the rect directly under desktop and/or mobile on the entry.`;
+  }
+  if (key === "definition" || key === "properties" || key === "styles") {
+    return `Layout entry key "${key}" is not accepted by update_layout; edit component values with update_components.`;
+  }
+  return `Unknown layout entry key "${key}"; accepted keys are component_id, desktop, mobile, parent, slot_name.`;
+});
+function updateLayoutTool(client) {
+  return {
+    name: "update_layout",
+    title: "Update Layout",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: false
+    },
+    description: "Move / resize existing components (batch) without touching their properties. `left`/`width` are in the immediate parent canvas's own 43-column grid, including nested containers; `top`/`height` are pixels. Full rows use width 43, independent of the parent outer width. Container/Form/modal insets may use left 2, width 39; grid-mode Listview full rows use left 0, width 43. Provide desktop and/or mobile per component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` (header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent. A FlexContainer child takes its width from fillWidth/widthPx, not width/left; a component reparented into a FlexContainer is appended to its childOrder.",
+    inputSchema: {
+      app_id: external_exports.string(),
+      version_id: external_exports.string(),
+      page_id: external_exports.string(),
+      layouts: external_exports.array(layoutEntrySchema).min(1)
+    },
+    async handler(args) {
+      try {
+        const summary = await client.getAppSummary(args.app_id);
+        const page = summary.pages.find((candidate) => candidate.id === args.page_id);
+        if (!page)
+          return fail(new Error(`Page "${args.page_id}" does not exist in app "${args.app_id}".`));
+        const components = new Map(page.components.map((component) => [component.id, component]));
+        const layoutWarnings = [];
+        const resolveErrors = [];
+        const resolvedIds = /* @__PURE__ */ new Map();
+        for (const layout of args.layouts) {
+          if (!layout.desktop && !layout.mobile && layout.parent === void 0 && layout.slot_name === void 0) {
+            resolveErrors.push(`Component "${layout.component_id}": nothing to update. Provide desktop and/or mobile rects, or a parent/slot_name change.`);
+            continue;
+          }
+          if (resolvedIds.has(layout.component_id))
+            continue;
+          const resolution = resolveRef(page.components, layout.component_id, "Component", `on page "${args.page_id}"`);
+          if (!resolution.ok) {
+            resolveErrors.push(resolution.error);
+            continue;
+          }
+          resolvedIds.set(layout.component_id, resolution.target.id);
+          if (resolution.warning)
+            layoutWarnings.push(resolution.warning);
+        }
+        if (resolveErrors.length)
+          return fail(new Error(resolveErrors.join(" ")));
+        args = {
+          ...args,
+          layouts: args.layouts.map((layout) => ({
+            ...layout,
+            component_id: resolvedIds.get(layout.component_id) ?? layout.component_id
+          }))
+        };
+        const rootSlotWarnings = [];
+        const parentErrors = [];
+        const resolvedLayouts = args.layouts.map((layout) => {
+          const current2 = components.get(layout.component_id);
+          let parent = layout.parent;
+          let slot_name = layout.slot_name;
+          let parentType;
+          if (typeof parent === "string" && parent) {
+            const resolvedParent = resolveParentRef(page.components, parent);
+            if (!resolvedParent.ok) {
+              parentErrors.push(`Component "${layout.component_id}": ${resolvedParent.error}`);
+              return { ...layout, parentType };
+            }
+            parent = resolvedParent.parent;
+          }
+          if (slot_name !== void 0) {
+            parent ??= current2.parent ? decodeComponentParent(current2.parent).parentId : void 0;
+            if (!parent) {
+              if (slot_name === "body") {
+                rootSlotWarnings.push(`Component "${layout.component_id}": slot_name:"body" ignored on a root component (it has no parent slots).`);
+                slot_name = void 0;
+              } else {
+                throw new Error(`Component "${layout.component_id}": slot_name:"${slot_name}" requires an existing or explicit parent.`);
+              }
+            }
+          }
+          if (parent) {
+            const decoded = decodeComponentParent(parent);
+            const parentComponent = components.get(decoded.parentId);
+            if (parentComponent && isPackContainerType(parentComponent.type)) {
+              const named = slot_name ?? (parent !== decoded.parentId ? decoded.slotName : void 0);
+              const slot = resolvePackSlot(parentComponent, named, current2.name ?? current2.id);
+              if (!slot.ok)
+                parentErrors.push(slot.error);
+              else {
+                parent = decoded.parentId;
+                slot_name = slot.slotName;
+                parentType = parentComponent.type;
+              }
+            }
+          }
+          return { ...layout, parent, slot_name, parentType };
+        });
+        if (parentErrors.length) {
+          return fail(new Error(`${parentErrors.join(" ")} (Nothing was saved: refused before any write.)`));
+        }
+        const changes = new Map(resolvedLayouts.map((layout) => [layout.component_id, layout]));
+        const projected = page.components.map((component) => {
+          const change = changes.get(component.id);
+          if (!change)
+            return component;
+          const currentLayouts = component.layouts ?? {};
+          return {
+            ...component,
+            layouts: {
+              ...currentLayouts,
+              desktop: change.desktop ?? currentLayouts?.desktop,
+              mobile: change.mobile ?? currentLayouts?.mobile
+            },
+            parent: change.parent !== void 0 ? encodeComponentParent(change.parent, change.slot_name, change.parentType) : component.parent,
+            slotName: change.slot_name
+          };
+        });
+        const changedIds = new Set(resolvedLayouts.map((layout) => layout.component_id));
+        const changed = projected.filter((component) => component.id && changedIds.has(component.id));
+        const introducedForChanged = (lint2) => changed.flatMap((component) => introducedLintFindings(lint2([components.get(component.id)]), lint2([component])));
+        const errors = [
+          ...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(projected)),
+          ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).errors)),
+          ...introducedForChanged(lintUnusableTextGeometry)
+        ];
+        if (errors.length)
+          return fail(new Error(`${errors.join(" ")} (Nothing was saved: refused before any write.)`));
+        const nestedWidths = new Set(lintNestedContainerWidths(projected));
+        const warnings = [.../* @__PURE__ */ new Set([
+          ...layoutWarnings,
+          ...rootSlotWarnings,
+          ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).warnings)),
+          ...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)),
+          ...introducedForChanged(lintTextGeometry),
+          ...lintRenderedGeometry(projected).filter((warning) => !nestedWidths.has(warning)),
+          ...introducedLintFindings(lintNestedContainerWidths(page.components), [...nestedWidths])
+        ])];
+        const result = await client.updateLayouts({
+          appId: args.app_id,
+          versionId: args.version_id,
+          pageId: args.page_id,
+          layouts: resolvedLayouts.map((l) => ({
+            componentId: l.component_id,
+            desktop: l.desktop,
+            mobile: l.mobile,
+            parent: l.parent,
+            slotName: l.slot_name,
+            parentType: l.parentType
+          }))
+        });
+        const appended = appendedChildOrders(page.components, reparentAdditions(page.components, resolvedLayouts.map((layout) => ({
+          componentId: layout.component_id,
+          parent: layout.parent !== void 0 ? encodeComponentParent(layout.parent, layout.slot_name, layout.parentType) : void 0
+        }))));
+        if (appended.size) {
+          await client.updateComponents({
+            appId: args.app_id,
+            versionId: args.version_id,
+            pageId: args.page_id,
+            updates: [...appended].map(([componentId, order]) => ({
+              componentId,
+              definition: { properties: { childOrder: childOrderProperty(order) } }
+            }))
+          });
+        }
+        return ok({ ...result, warnings });
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+createRequire(import.meta.url);
+var ref = external_exports.string().min(1).max(100);
+var base = { ref, existing_id: external_exports.string().uuid().optional(), label: external_exports.string().max(100).optional(), position: external_exports.object({ x: external_exports.number().finite(), y: external_exports.number().finite() }).optional() };
+var query = { name: external_exports.string().regex(/^[A-Za-z_$][\w$]*$/), datasource_id: external_exports.string().min(1), options: external_exports.record(external_exports.string(), external_exports.unknown()) };
+var agentModel = external_exports.object(query).strict();
+var nodeSchema = external_exports.discriminatedUnion("type", [
+  external_exports.object({ ...base, type: external_exports.literal("start") }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("javascript"), name: query.name, code: external_exports.string().min(1) }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("query"), ...query }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("loop"), name: query.name, iteration_values_code: external_exports.string().min(1), code: external_exports.string().min(1) }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("condition"), code: external_exports.string().min(1) }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("response"), code: external_exports.string().min(1), status_code: external_exports.number().int().min(100).max(599).optional() }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("agent"), system_prompt: external_exports.string().optional(), user_prompt: external_exports.string().optional(), output_format: external_exports.record(external_exports.string(), external_exports.unknown()).nullable().optional(), model: agentModel.nullable().optional() }).strict()
+]);
+var specSchema = external_exports.object({
+  schema_version: external_exports.literal(1).default(1),
+  nodes: external_exports.array(nodeSchema).max(200).default([]),
+  edges: external_exports.array(external_exports.object({ ref, existing_id: external_exports.string().optional(), from: ref, to: ref, port: external_exports.enum(["default", "success", "failure", "true", "false"]) }).strict()).max(500).default([]),
+  remove_node_ids: external_exports.array(external_exports.string()).default([]),
+  remove_edge_ids: external_exports.array(external_exports.string()).default([]),
+  test_parameters: external_exports.record(external_exports.string(), external_exports.unknown()).optional()
+}).strict();
+function assertWorkflowJavaScript(code, label) {
+  if (typeof code !== "string" || !code.trim())
+    throw new Error(`Missing JavaScript code in ${label}.`);
+  try {
+    new Script(`(async function() {${code}
+})`);
+  } catch {
+    throw new Error(`Invalid JavaScript syntax in ${label}.`);
+  }
+}
+function isAttachmentEdge(edge) {
+  return edge.targetHandle === "ai-model" || edge.targetHandle === "tool";
+}
+function controlFlowEdges(graph) {
+  return graph.edges.filter((edge) => !isAttachmentEdge(edge));
+}
+function definition(value) {
+  if (value == null)
+    return { nodes: [], edges: [], queries: [] };
+  const parsed = external_exports.object({
+    nodes: external_exports.array(external_exports.object({ id: external_exports.string(), type: external_exports.string(), data: external_exports.record(external_exports.string(), external_exports.unknown()) }).passthrough()).default([]),
+    edges: external_exports.array(external_exports.object({ id: external_exports.string(), source: external_exports.string(), target: external_exports.string(), sourceHandle: external_exports.string().nullable().optional(), targetHandle: external_exports.string().nullable().optional(), data: external_exports.record(external_exports.string(), external_exports.unknown()).optional() }).passthrough()).default([]),
+    queries: external_exports.array(external_exports.object({ id: external_exports.string(), idOnDefinition: external_exports.string() }).passthrough()).default([])
+  }).passthrough().parse(value);
+  return structuredClone(parsed);
+}
+function validateGraph(graph, queryIds) {
+  const errors = [], warnings = [];
+  const error = (code, path, message) => errors.push({ code, path, message });
+  const nodes = new Map(graph.nodes.map((n) => [n.id, n]));
+  if (nodes.size !== graph.nodes.length)
+    error("duplicate_node", "nodes", "Node IDs must be unique.");
+  if (new Set(graph.edges.map((e) => e.id)).size !== graph.edges.length)
+    error("duplicate_edge", "edges", "Edge IDs must be unique.");
+  const starts = graph.nodes.filter((n) => n.type === "input" && n.data.nodeType === "start");
+  if (starts.length !== 1)
+    error("start_count", "nodes", "Exactly one start node is required.");
+  const mappings = new Map(graph.queries.map((q) => [q.idOnDefinition, q.id]));
+  if (mappings.size !== graph.queries.length)
+    error("duplicate_mapping", "queries", "Query definition IDs must be unique.");
+  for (const mapping of graph.queries)
+    if (queryIds && !queryIds.has(mapping.id))
+      error("missing_query", "queries", `Query ${mapping.id} does not belong to this version.`);
+  for (const n of graph.nodes) {
+    if (n.type === "query" && !mappings.has(String(n.data.idOnDefinition)))
+      error("missing_mapping", `nodes.${n.id}`, "Query node has no query mapping.");
+    if (!["input", "query", "if-condition", "output", "agent"].includes(n.type))
+      warnings.push({ code: "unsupported_node", path: `nodes.${n.id}`, message: `Retained ${n.type} node; configuration not validated.` });
+  }
+  const flowEdges = controlFlowEdges(graph);
+  for (const edge of graph.edges) {
+    const source = nodes.get(edge.source), target = nodes.get(edge.target), path = `edges.${edge.id}`;
+    if (!source || !target) {
+      error("missing_endpoint", path, "Edge endpoint does not exist.");
+      continue;
+    }
+    if (isAttachmentEdge(edge)) {
+      if (edge.targetHandle === "ai-model" && !(source.type === "query" && source.data.isChildOfAgent === true && source.data.agentConnectionType === "ai-model" && target.type === "agent")) {
+        error("invalid_attachment", path, "AI model attachment must connect an Agent model query child to an Agent.");
+      }
+      continue;
+    }
+    if (target.type === "input")
+      error("start_inbound", path, "Start cannot have inbound edges.");
+    const ports = { input: [null, void 0], query: ["success", "failure"], "if-condition": ["true", "false"], output: [], agent: ["output"] };
+    if (ports[source.type] && !ports[source.type].includes(edge.sourceHandle))
+      error("invalid_port", path, `Invalid source port for ${source.type}.`);
+    if (source.type === "query" && edge.sourceHandle === "failure" && !source.data.errorHandler)
+      error("error_handler_disabled", path, "Failure edge requires query error handling.");
+  }
+  for (const agent of graph.nodes.filter((node) => node.type === "agent")) {
+    if (graph.edges.filter((edge) => edge.target === agent.id && edge.targetHandle === "ai-model").length > 1) {
+      error("duplicate_agent_model", `nodes.${agent.id}.model`, "Agent can have only one AI model attachment.");
+    }
+  }
+  const adjacency = new Map(graph.nodes.map((n) => [n.id, flowEdges.filter((e) => e.source === n.id).map((e) => e.target)]));
+  const visited = /* @__PURE__ */ new Set(), active = /* @__PURE__ */ new Set();
+  const visit = (id) => {
+    if (active.has(id))
+      return true;
+    if (visited.has(id))
+      return false;
+    visited.add(id);
+    active.add(id);
+    const cyclic = (adjacency.get(id) ?? []).some(visit);
+    active.delete(id);
+    return cyclic;
+  };
+  if (graph.nodes.some((n) => visit(n.id)))
+    error("cycle", "edges", "Cycles are unsupported in the basic node set.");
+  const reachable = /* @__PURE__ */ new Set();
+  const reach = (id) => {
+    if (reachable.has(id))
+      return;
+    reachable.add(id);
+    (adjacency.get(id) ?? []).forEach(reach);
+  };
+  starts.forEach((n) => reach(n.id));
+  for (const n of graph.nodes)
+    if (!reachable.has(n.id) && n.data.isChildOfAgent !== true)
+      warnings.push({ code: "unreachable", path: `nodes.${n.id}`, message: "Node is unreachable from start." });
+  return { errors, warnings, runtime_verified: false };
+}
+function compileGraph(current2, spec, ids, datasourceKinds = /* @__PURE__ */ new Map()) {
+  const graph = structuredClone(current2);
+  const node_ids = /* @__PURE__ */ Object.create(null), edge_ids = /* @__PURE__ */ Object.create(null);
+  const model_ids = /* @__PURE__ */ Object.create(null);
+  const query_nodes = [];
+  const checkUnique = (refs) => {
+    if (new Set(refs).size !== refs.length)
+      throw new Error("Duplicate logical refs.");
+  };
+  checkUnique(spec.nodes.map((n) => n.ref));
+  checkUnique(spec.edges.map((e) => e.ref));
+  for (const id of spec.remove_node_ids)
+    if (!graph.nodes.some((n) => n.id === id))
+      throw new Error(`Unknown node to remove: ${id}`);
+  for (const id of spec.remove_edge_ids)
+    if (!graph.edges.some((e) => e.id === id))
+      throw new Error(`Unknown edge to remove: ${id}`);
+  const removedNodeIds = new Set(spec.remove_node_ids);
+  const cascadedChildIds = /* @__PURE__ */ new Set();
+  for (const agentId of spec.remove_node_ids) {
+    for (const edge of graph.edges.filter((candidate) => candidate.target === agentId && candidate.targetHandle === "ai-model")) {
+      removedNodeIds.add(edge.source);
+      cascadedChildIds.add(edge.source);
+    }
+  }
+  const removedDefinitionIds = graph.nodes.filter((n) => removedNodeIds.has(n.id)).map((n) => n.data.idOnDefinition);
+  graph.nodes = graph.nodes.filter((n) => !removedNodeIds.has(n.id));
+  graph.edges = graph.edges.filter((e) => !spec.remove_edge_ids.includes(e.id) && !cascadedChildIds.has(e.source) && !cascadedChildIds.has(e.target));
+  const editedIds = /* @__PURE__ */ new Set();
+  for (const input of spec.nodes) {
+    if ("code" in input) {
+      try {
+        new Script(input.type === "condition" ? `(${input.code})` : `(async function() {${input.code}
+})`);
+      } catch {
+        throw new Error(`Invalid JavaScript syntax in node ${input.ref}.`);
+      }
+    }
+    if (input.type === "loop") {
+      try {
+        new Script(`(async function() {${input.iteration_values_code}
+})`);
+      } catch {
+        throw new Error(`Invalid iteration JavaScript syntax in node ${input.ref}.`);
+      }
+    }
+    const id = input.existing_id ?? ids?.node_ids[input.ref] ?? randomUUID();
+    if (editedIds.has(id))
+      throw new Error("Multiple node edits target the same ID.");
+    editedIds.add(id);
+    const old = graph.nodes.find((n) => n.id === id);
+    if (input.existing_id && !old)
+      throw new Error(`Unknown existing node: ${id}`);
+    const type = { start: "input", javascript: "query", query: "query", loop: "query", condition: "if-condition", response: "output", agent: "agent" }[input.type];
+    if (old && old.type !== type)
+      throw new Error("Changing node type is unsupported; remove and add explicitly.");
+    const data = { ...old?.data, label: input.label ?? old?.data.label ?? input.ref };
+    if (input.type !== "condition")
+      data.nodeType = input.type === "javascript" || input.type === "loop" ? "query" : input.type;
+    if (input.type === "condition" || input.type === "response")
+      data.code = input.code;
+    if (input.type === "response" && (input.status_code !== void 0 || data.statusCode === void 0)) {
+      data.statusCode = { fxActive: false, value: String(input.status_code ?? 200) };
+    }
+    if (input.type === "loop") {
+      data.looped = true;
+      data.iterationValuesCode = input.iteration_values_code;
+    }
+    if (input.type === "agent") {
+      const oldOptions = old?.data.options && typeof old.data.options === "object" && !Array.isArray(old.data.options) ? old.data.options : {};
+      data.nodeName = old?.data.nodeName ?? input.ref;
+      data.options = {
+        ...oldOptions,
+        systemPrompt: input.system_prompt ?? oldOptions.systemPrompt ?? "",
+        userPrompt: input.user_prompt ?? oldOptions.userPrompt ?? "",
+        outputFormat: input.output_format === void 0 ? oldOptions.outputFormat ?? null : input.output_format === null ? null : { example: input.output_format }
+      };
+      const attachments = graph.edges.filter((edge) => edge.target === id && edge.targetHandle === "ai-model");
+      if (attachments.length > 1)
+        throw new Error(`Agent ${input.ref} has multiple AI model attachments.`);
+      const attachment = attachments[0];
+      const child = attachment && graph.nodes.find((node2) => node2.id === attachment.source);
+      if (input.model === null && attachment) {
+        if (typeof child?.data.idOnDefinition === "string")
+          removedDefinitionIds.push(child.data.idOnDefinition);
+        graph.edges = graph.edges.filter((edge) => edge.id !== attachment.id);
+        graph.nodes = graph.nodes.filter((node2) => node2.id !== attachment.source);
+      } else if (input.model) {
+        const modelNodeId = child?.id ?? ids?.model_ids[input.ref]?.node_id ?? randomUUID();
+        const definitionId = typeof child?.data.idOnDefinition === "string" ? child.data.idOnDefinition : randomUUID();
+        const kind = datasourceKinds.get(input.model.datasource_id);
+        const modelNode = {
+          ...child,
+          id: modelNodeId,
+          type: "query",
+          sourcePosition: "right",
+          targetPosition: "left",
+          deletable: false,
+          data: { ...child?.data, idOnDefinition: definitionId, nodeType: "query", kind, isChildOfAgent: true, agentConnectionType: "ai-model" },
+          position: child?.position ?? { x: 100, y: 70 }
+        };
+        if (child)
+          graph.nodes[graph.nodes.indexOf(child)] = modelNode;
+        else
+          graph.nodes.push(modelNode);
+        const edgeId = attachment?.id ?? ids?.model_ids[input.ref]?.edge_id ?? randomUUID();
+        const modelEdge = { ...attachment, id: edgeId, source: modelNodeId, target: id, sourceHandle: "output", targetHandle: "ai-model", type: "custom", data: { direction: "vertical" } };
+        if (attachment)
+          graph.edges[graph.edges.indexOf(attachment)] = modelEdge;
+        else
+          graph.edges.push(modelEdge);
+        model_ids[input.ref] = { node_id: modelNodeId, edge_id: edgeId };
+        query_nodes.push({ role: "agent-model", parent_agent_id: id, node_id: modelNodeId, definition_id: definitionId, datasource_id: input.model.datasource_id, name: input.model.name, options: input.model.options });
+      }
+    }
+    if (input.type === "query" || input.type === "javascript" || input.type === "loop") {
+      const definitionId = typeof data.idOnDefinition === "string" ? data.idOnDefinition : randomUUID();
+      data.idOnDefinition = definitionId;
+      query_nodes.push({ role: "workflow-node", spec: input, node_id: id, definition_id: definitionId });
+    }
+    const node = { ...old, id, type, sourcePosition: "right", targetPosition: "left", deletable: false, data, position: input.position ?? old?.position ?? { x: 100 + graph.nodes.length * 320, y: 250 } };
+    if (old)
+      graph.nodes[graph.nodes.indexOf(old)] = node;
+    else
+      graph.nodes.push(node);
+    node_ids[input.ref] = id;
+  }
+  const resolve2 = (ref2) => node_ids[ref2] ?? (graph.nodes.some((n) => n.id === ref2) ? ref2 : void 0);
+  const editedEdges = /* @__PURE__ */ new Set();
+  for (const input of spec.edges) {
+    const id = input.existing_id ?? ids?.edge_ids[input.ref] ?? randomUUID();
+    if (editedEdges.has(id))
+      throw new Error("Multiple edge edits target the same ID.");
+    editedEdges.add(id);
+    const old = graph.edges.find((e) => e.id === id);
+    if (input.existing_id && !old)
+      throw new Error(`Unknown existing edge: ${id}`);
+    const source = resolve2(input.from), target = resolve2(input.to);
+    if (!source || !target)
+      throw new Error(`Unknown endpoint in edge ${input.ref}. Use a supplied ref or existing node ID.`);
+    const sourceNode = graph.nodes.find((node) => node.id === source);
+    const sourceHandle = input.port === "default" ? sourceNode?.type === "agent" ? "output" : null : input.port;
+    const edge = { ...old, id, source, target, sourceHandle, type: "custom" };
+    if (old)
+      graph.edges[graph.edges.indexOf(old)] = edge;
+    else
+      graph.edges.push(edge);
+    edge_ids[input.ref] = id;
+    if (input.port === "failure") {
+      const n = graph.nodes.find((n2) => n2.id === source);
+      if (n.type === "query")
+        n.data.errorHandler = true;
+    }
+  }
+  graph.queries = graph.queries.filter((q) => !removedDefinitionIds.includes(q.idOnDefinition) || graph.nodes.some((n) => n.data.idOnDefinition === q.idOnDefinition));
+  const depths = new Map(graph.nodes.map((n) => [n.id, 0]));
+  for (let pass = 0; pass < graph.nodes.length; pass++) {
+    let changed = false;
+    for (const edge of controlFlowEdges(graph)) {
+      const next = (depths.get(edge.source) ?? 0) + 1;
+      if (next > (depths.get(edge.target) ?? 0)) {
+        depths.set(edge.target, next);
+        changed = true;
+      }
+    }
+    if (!changed)
+      break;
+  }
+  const placed = graph.nodes.filter((n) => current2.nodes.some((old) => old.id === n.id) || spec.nodes.some((input) => node_ids[input.ref] === n.id && input.position));
+  for (const n of graph.nodes.filter((n2) => !placed.includes(n2))) {
+    const x = 100 + (depths.get(n.id) ?? 0) * 320;
+    let y = 250;
+    while (placed.some((other) => other.position && Math.abs(other.position.x - x) < 300 && Math.abs(other.position.y - y) < 160))
+      y += 180;
+    n.position = { x, y };
+    placed.push(n);
+  }
+  if (spec.test_parameters !== void 0)
+    graph.defaultParams = JSON.stringify(spec.test_parameters);
+  return { graph, node_ids, edge_ids, model_ids, query_nodes };
+}
+var nodeCatalog = {
+  schema_version: 1,
+  runtime_context: {
+    inputs: "Read workflow inputs from startTrigger.params, for example startTrigger.params.left. A logical start-node ref does not create a JavaScript global.",
+    query_results: "Read a preceding query result as <persisted_query_name>.data, for example computeSum.data. There is no app-style queries namespace in workflow code.",
+    code: "JavaScript and response code runs in a server-side function body; return the result explicitly. Condition code is a boolean expression without a return statement. Read only preceding nodes on the current execution path.",
+    example: {
+      query_name: "computeSum",
+      javascript: "return { sum: Number(startTrigger.params.left) + Number(startTrigger.params.right) };",
+      condition: "computeSum.data.sum > 0",
+      response: "return computeSum.data;"
+    }
+  },
+  nodes: [
+    { type: "start", renderer: "input", ports: ["default"] },
+    { type: "javascript", renderer: "query", ports: ["success", "failure"], fields: ["name", "code"] },
+    { type: "query", renderer: "query", ports: ["success", "failure"], fields: ["name", "datasource_id", "options"] },
+    { type: "loop", renderer: "query", ports: ["success", "failure"], fields: ["name", "iteration_values_code", "code"] },
+    { type: "condition", renderer: "if-condition", ports: ["true", "false"], fields: ["code"] },
+    { type: "response", renderer: "output", ports: [], fields: ["code", "status_code"] },
+    { type: "agent", renderer: "agent", ports: ["default"], fields: ["system_prompt", "user_prompt", "output_format", "model"] }
+  ],
+  edit_semantics: "Patch. Use existing_id to edit nodes/edges; edge endpoints may use existing node IDs. Omitted objects are preserved. Removal requires explicit IDs and incident edge removal.",
+  limitations: ["Agent tool connections are not authored", "No publishing or trigger setup", "No concurrent-edit protection", "No automatic execution during authoring", "Advanced nodes are preserved but not authored"]
+};
+createRequire(import.meta.url);
+var capabilityRequestSchema = external_exports.object({
+  version_id: external_exports.string().uuid()
+}).strict();
+var datasourceCapabilitySchema = external_exports.enum(["query", "ai-model", "email"]);
+var workflowCapabilityReportSchema = external_exports.object({
+  version_id: external_exports.string().uuid(),
+  authorable_node_types: external_exports.array(external_exports.string()),
+  datasources: external_exports.array(external_exports.object({
+    id: external_exports.string(),
+    name: external_exports.string(),
+    kind: external_exports.string(),
+    capabilities: external_exports.array(datasourceCapabilitySchema)
+  }).strict())
+}).strict();
+var AI_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["openai", "anthropic", "gemini", "mistral_ai"]);
+var EMAIL_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["smtp", "sendgrid", "mailgun"]);
+function datasourceCapabilities(kind) {
+  const capabilities = ["query"];
+  if (AI_DATASOURCE_KINDS.has(kind))
+    capabilities.push("ai-model");
+  if (EMAIL_DATASOURCE_KINDS.has(kind))
+    capabilities.push("email");
+  return capabilities;
+}
+async function getWorkflowCapabilities(client, input) {
+  const { version_id } = capabilityRequestSchema.parse(input);
+  const datasources = await client.workflows.listDatasources(version_id);
+  return workflowCapabilityReportSchema.parse({
+    version_id,
+    authorable_node_types: nodeCatalog.nodes.map((node) => node.type),
+    datasources: datasources.map((datasource) => ({
+      id: datasource.id,
+      name: datasource.name,
+      kind: datasource.kind,
+      capabilities: datasourceCapabilities(datasource.kind)
+    }))
+  });
+}
+function workflowReadiness(graph, structuralErrors) {
+  if (structuralErrors.length)
+    return { runtime_readiness: "blocked", blockers: structuralErrors };
+  const adjacency = new Map(graph.nodes.map((node) => [node.id, []]));
+  for (const edge of controlFlowEdges(graph))
+    adjacency.get(edge.source)?.push(edge.target);
+  const reachable = /* @__PURE__ */ new Set();
+  const visit = (id) => {
+    if (reachable.has(id))
+      return;
+    reachable.add(id);
+    for (const target of adjacency.get(id) ?? [])
+      visit(target);
+  };
+  for (const start of graph.nodes.filter((node) => node.type === "input" && node.data.nodeType === "start"))
+    visit(start.id);
+  const blockers = [];
+  for (const agent of graph.nodes.filter((node) => node.type === "agent" && reachable.has(node.id))) {
+    const attachment = graph.edges.find((edge) => edge.target === agent.id && edge.targetHandle === "ai-model");
+    const child = attachment && graph.nodes.find((node) => node.id === attachment.source);
+    const definitionId = child?.data.idOnDefinition;
+    const mapping = typeof definitionId === "string" && graph.queries.find((query2) => query2.idOnDefinition === definitionId);
+    if (!attachment || !child || !mapping)
+      blockers.push({
+        code: "agent_missing_model",
+        path: `nodes.${agent.id}.model`,
+        message: "Reachable Agent requires one configured AI model attachment."
+      });
+  }
+  return { runtime_readiness: blockers.length ? "draft_only" : "runnable", blockers };
+}
+var plans = /* @__PURE__ */ new Map();
+var TTL = 30 * 6e4;
+function prune() {
+  for (const [key, plan] of plans)
+    if (plan.expires <= Date.now())
+      plans.delete(key);
+}
+async function prepare(client, workflowId, versionId, spec, ids) {
+  const snapshot = await client.get(workflowId, versionId);
+  if (!snapshot.editable)
+    throw new Error("Only editable draft workflow versions can be changed.");
+  const [queries, datasources] = await Promise.all([client.getQueries(versionId), client.listDatasources(versionId)]);
+  const compiled = compileGraph(snapshot.definition, spec, ids, new Map(datasources.map((datasource) => [datasource.id, datasource.kind])));
+  const warnings = [];
+  const writes = [];
+  const finalDefinitionIds = new Set(compiled.graph.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string"));
+  const removedDefinitionIds = new Set(snapshot.definition.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string" && !finalDefinitionIds.has(value)));
+  const deletions = [];
+  for (const mapping of snapshot.definition.queries) {
+    if (!removedDefinitionIds.has(mapping.idOnDefinition))
+      continue;
+    if (compiled.graph.queries.some((retained) => retained.id === mapping.id))
+      continue;
+    if (deletions.some((deletion) => deletion.query_id === mapping.id))
+      continue;
+    const node = snapshot.definition.nodes.find((candidate) => candidate.data.idOnDefinition === mapping.idOnDefinition);
+    if (!node)
+      continue;
+    if (!queries.some((query2) => query2.id === mapping.id))
+      throw new Error(`Query ${mapping.id} is missing from the target version.`);
+    deletions.push({ node_id: node.id, definition_id: mapping.idOnDefinition, query_id: mapping.id });
+  }
+  const claimedNames = /* @__PURE__ */ new Set();
+  for (const item of compiled.query_nodes) {
+    const existingMapping = snapshot.definition.queries.find((q) => q.idOnDefinition === item.definition_id);
+    const oldQuery = queries.find((q) => q.id === existingMapping?.id);
+    if (existingMapping && !oldQuery)
+      throw new Error(`Query ${existingMapping.id} is missing from the target version.`);
+    if (oldQuery && snapshot.definition.nodes.filter((n) => snapshot.definition.queries.some((q) => q.id === oldQuery.id && q.idOnDefinition === n.data.idOnDefinition)).length > 1)
+      throw new Error(`Query ${oldQuery.id} is shared by multiple nodes. Shared query editing is unsupported.`);
+    const input = item.role === "workflow-node" ? item.spec : void 0;
+    const datasource = item.role === "agent-model" ? datasources.find((d) => d.id === item.datasource_id) : input.type === "javascript" || input.type === "loop" ? datasources.find((d) => d.kind === "runjs") : datasources.find((d) => d.id === input.datasource_id);
+    const label = item.role === "agent-model" ? "Agent model" : `node ${input.ref}`;
+    if (!datasource)
+      throw new Error(`Datasource unavailable for ${label}.`);
+    if (item.role === "agent-model" && !AI_DATASOURCE_KINDS.has(datasource.kind))
+      throw new Error(`Datasource ${datasource.id} is not an AI model datasource.`);
+    const kind = datasource.kind;
+    const dataSourceId = datasource.id;
+    const name2 = item.role === "agent-model" ? item.name : input.name;
+    if (oldQuery && (oldQuery.kind !== kind || oldQuery.data_source_id !== dataSourceId))
+      throw new Error(item.role === "agent-model" ? "Changing an Agent model datasource is unsupported; remove the model first, then add its replacement in a second phase." : "Changing an existing query datasource is unsupported; add a new node.");
+    if (oldQuery?.name !== void 0 && oldQuery.name !== name2)
+      throw new Error(item.role === "agent-model" ? "Renaming an Agent model query is unsupported; remove the model first, then add its replacement in a second phase." : "Renaming existing queries is unsupported because code references cannot be rewritten safely.");
+    if (claimedNames.has(name2) || queries.some((q) => q.name === name2 && q.id !== oldQuery?.id))
+      throw new Error(`Duplicate query name: ${name2}`);
+    claimedNames.add(name2);
+    const requestedOptions = item.role === "agent-model" ? item.options : input.type === "javascript" || input.type === "loop" ? { ...oldQuery?.options ?? {}, code: input.code } : input.options;
+    const options = item.role === "agent-model" ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
+    if (item.role === "workflow-node" && kind === "runjs")
+      assertWorkflowJavaScript(options.code, label);
+    if (item.role === "workflow-node") {
+      const validation2 = validateQueryOptions(kind, options, "workflow");
+      if (validation2.errors.length)
+        throw new Error(issueMessages(validation2.errors).join(" "));
+      warnings.push(...issueMessages(validation2.warnings));
+    }
+    writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name: name2, dataSourceId: dataSourceId ?? "", kind, options });
+    if (!existingMapping && !compiled.graph.queries.some((mapping) => mapping.idOnDefinition === item.definition_id))
+      compiled.graph.queries.push({ idOnDefinition: item.definition_id, id: `pending:${item.node_id}` });
+  }
+  const queryIds = /* @__PURE__ */ new Set([...queries.map((q) => q.id), ...writes.filter((q) => !q.existing_id).map((q) => `pending:${q.node_id}`)]);
+  const validation = validateGraph(compiled.graph, queryIds);
+  const readiness = workflowReadiness(compiled.graph, validation.errors);
+  return { snapshot, compiled, writes, deletions, validation, readiness, warnings };
+}
+async function lint(client, workflowId, versionId, spec, allowDraft = false) {
+  const prepared = await prepare(client, workflowId, versionId, spec);
+  if (prepared.validation.errors.length || prepared.readiness.runtime_readiness === "draft_only" && !allowDraft)
+    return { ...prepared.validation, ...prepared.readiness, query_warnings: prepared.warnings };
+  prune();
+  while (plans.size >= 200)
+    plans.delete(plans.keys().next().value);
+  const token = randomUUID();
+  plans.set(token, { scope: await client.planScope(), workflowId, versionId, spec: structuredClone(spec), ids: prepared.compiled, allowDraft, expires: Date.now() + TTL });
+  return {
+    plan_token: token,
+    expires_in_seconds: TTL / 1e3,
+    node_ids: prepared.compiled.node_ids,
+    edge_ids: prepared.compiled.edge_ids,
+    ...prepared.validation,
+    ...prepared.readiness,
+    query_warnings: prepared.warnings,
+    changes: { node_upserts: spec.nodes.length, edge_upserts: spec.edges.length, node_removals: spec.remove_node_ids, edge_removals: spec.remove_edge_ids, queries: [...prepared.writes.map((q) => ({ name: q.name, operation: q.existing_id ? "update" : "create" })), ...prepared.deletions.map((q) => ({ query_id: q.query_id, operation: "delete" }))] }
+  };
+}
+async function apply(client, token) {
+  prune();
+  const scope2 = await client.planScope();
+  const plan = plans.get(token);
+  if (!plan || plan.scope !== scope2)
+    throw new Error("Unknown, expired, consumed, or differently scoped plan. Run lint_workflow_spec again.");
+  plans.delete(token);
+  const { compiled, snapshot, writes, deletions, validation, readiness } = await prepare(client, plan.workflowId, plan.versionId, plan.spec, plan.ids);
+  if (validation.errors.length)
+    throw new Error(JSON.stringify(validation.errors));
+  if (readiness.runtime_readiness === "draft_only" && !plan.allowDraft)
+    throw new Error(JSON.stringify(readiness.blockers));
+  const completed = [];
+  let phase = "queries";
+  let attemptedQuery;
+  try {
+    for (const write of writes) {
+      attemptedQuery = { name: write.name, node_id: write.node_id, existing_id: write.existing_id };
+      const result = write.existing_id ? await client.updateQuery({ queryId: write.existing_id, versionId: plan.versionId, name: write.name, options: write.options }) : await client.createWorkflowQuery({ workflowId: plan.workflowId, versionId: plan.versionId, name: write.name, dataSourceId: write.dataSourceId || void 0, kind: write.kind, options: write.options });
+      completed.push({ operation: write.existing_id ? "update" : "create", query_id: result.query_id, node_id: write.node_id });
+      compiled.graph.queries = compiled.graph.queries.filter((q) => q.idOnDefinition !== write.definition_id);
+      compiled.graph.queries.push({ idOnDefinition: write.definition_id, id: result.query_id });
+      attemptedQuery = void 0;
+    }
+    phase = "save";
+    await client.save(snapshot, compiled.graph);
+    phase = "readback";
+    const [saved, queries] = await Promise.all([client.get(plan.workflowId, plan.versionId), client.getQueries(plan.versionId)]);
+    const validation2 = validateGraph(saved.definition, new Set(queries.map((q) => q.id)));
+    if (!isDeepStrictEqual(saved.definition, compiled.graph))
+      throw new Error("Saved definition differs from the intended graph. Inspect get_workflow before retrying.");
+    for (const write of writes) {
+      const id = completed.find((q) => q.node_id === write.node_id).query_id;
+      const persisted = queries.find((q) => q.id === id);
+      if (!persisted || persisted.name !== write.name || persisted.kind !== write.kind || persisted.data_source_id !== write.dataSourceId || !isDeepStrictEqual(persisted.options, write.options))
+        throw new Error(`Query ${id} readback differs from intended datasource, kind, name, or options.`);
+    }
+    if (validation2.errors.length)
+      throw new Error(JSON.stringify(validation2.errors));
+    phase = "query_deletions";
+    for (const deletion of deletions) {
+      attemptedQuery = { name: deletion.query_id, node_id: deletion.node_id, existing_id: deletion.query_id };
+      await client.deleteQuery({ queryId: deletion.query_id, versionId: plan.versionId });
+      completed.push({ operation: "delete", query_id: deletion.query_id, node_id: deletion.node_id });
+      attemptedQuery = void 0;
+    }
+    return { workflow_id: plan.workflowId, version_id: plan.versionId, editor_url: saved.editor_url, node_ids: compiled.node_ids, edge_ids: compiled.edge_ids, completed, validation: validation2, ...readiness };
+  } catch (error) {
+    return {
+      failed: true,
+      workflow_id: plan.workflowId,
+      version_id: plan.versionId,
+      phase,
+      completed,
+      attempted_query: attemptedQuery,
+      node_ids: compiled.node_ids,
+      edge_ids: compiled.edge_ids,
+      graph_persistence: phase === "queries" ? "not_attempted" : phase === "save" ? "unknown" : "saved",
+      error: error instanceof Error ? error.message : String(error),
+      recovery: "Inspect get_workflow and its queries; reuse persisted IDs when replanning. Do not repeat creation blindly. No resources were automatically deleted."
+    };
+  }
+}
+async function deleteNode(client, workflowId, versionId, nodeId) {
+  const snapshot = await client.get(workflowId, versionId);
+  if (!snapshot.definition.nodes.some((node) => node.id === nodeId))
+    throw new Error(`Unknown workflow node: ${nodeId}`);
+  const spec = specSchema.parse({ remove_node_ids: [nodeId], remove_edge_ids: snapshot.definition.edges.filter((edge) => edge.source === nodeId || edge.target === nodeId).map((edge) => edge.id) });
+  const result = await lint(client, workflowId, versionId, spec, true);
+  if (!("plan_token" in result))
+    throw new Error(JSON.stringify({ errors: result.errors, blockers: result.blockers }));
+  return apply(client, result.plan_token);
+}
+createRequire(import.meta.url);
+var name = external_exports.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/).refine((v) => !["__proto__", "prototype", "constructor"].includes(v));
+var editContractSchema = external_exports.object({
+  source_query: name.describe("Already-loaded bounded raw row-array query; never a display projection."),
+  table_component: name,
+  id_field: name.default("id"),
+  prefix: name.describe("Unique prefix for generated snapshot/draft variables and RunJS query names."),
+  fields: external_exports.array(external_exports.object({
+    field: name,
+    component: name,
+    type: external_exports.enum(["text", "number", "date_only", "boolean"]),
+    required: external_exports.boolean().default(false),
+    nullable: external_exports.boolean().default(false).describe("Opt in to clearing to null; a user change event is also required."),
+    trim: external_exports.boolean().default(false),
+    choices: external_exports.union([
+      external_exports.array(external_exports.object({ label: external_exports.string(), value: external_exports.union([external_exports.string(), external_exports.number().finite()]) }).strict()).min(1).max(100),
+      external_exports.object({ query: name, value_field: name, label_field: name }).strict()
+    ]).optional().describe("Opt-in DropdownV2 for text/number fields: literal label/value options or an already-loaded bounded raw option query. Values must match the declared field type.")
+  })).min(1).max(40)
+}).strict();
+function canonical(value, field) {
+  if (value === void 0)
+    throw new Error(`Missing input: ${field.field}`);
+  if (value === null || value === "") {
+    if (field.required)
+      throw new Error(`Required field: ${field.field}`);
+    if (value === null && !field.nullable)
+      throw new Error(`Null not allowed: ${field.field}`);
+    return value;
+  }
+  if (field.type === "text") {
+    if (typeof value !== "string")
+      throw new Error(`Expected text: ${field.field}`);
+    if (field.required && !value.trim())
+      throw new Error(`Required field: ${field.field}`);
+    return field.trim ? value.trim() : value;
+  }
+  if (field.type === "boolean") {
+    if (typeof value !== "boolean")
+      throw new Error(`Expected boolean: ${field.field}`);
+    return value;
+  }
+  if (field.type === "number") {
+    if (typeof value !== "number" && typeof value !== "string" || typeof value === "string" && !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value) || !Number.isFinite(Number(value)))
+      throw new Error(`Expected finite number: ${field.field}`);
+    return Number(value);
+  }
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))?$/.test(value)) {
+    throw new Error(`Expected ISO date: ${field.field}`);
+  }
+  const day = value.slice(0, 10);
+  const parsed = /* @__PURE__ */ new Date(day + "T00:00:00Z");
+  if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== day || !Number.isFinite(Date.parse(value))) {
+    throw new Error(`Invalid date: ${field.field}`);
+  }
+  return day;
+}
+function generateEditContract(input) {
+  const spec = editContractSchema.parse(input);
+  for (const key of ["field", "component"]) {
+    if (new Set(spec.fields.map((f) => f[key])).size !== spec.fields.length)
+      throw new Error(`Duplicate ${key} in edit contract`);
+  }
+  if (spec.fields.some((f) => f.field === spec.id_field))
+    throw new Error("The stable primary key cannot be edited");
+  if (spec.fields.some((f) => f.required && f.nullable))
+    throw new Error("A required field cannot be nullable");
+  for (const f of spec.fields)
+    if (f.choices) {
+      if (!["text", "number"].includes(f.type))
+        throw new Error("Choices require a text or number field");
+      if (Array.isArray(f.choices)) {
+        if (f.choices.some((o) => typeof o.value !== (f.type === "text" ? "string" : "number")))
+          throw new Error("Choice values must match field type");
+        if (new Set(f.choices.map((o) => o.value)).size !== f.choices.length)
+          throw new Error("Duplicate choice value");
+      }
+    }
+  const snapshot = `${spec.prefix}Snapshot`, draft = `${spec.prefix}Draft`;
+  const openName = `${spec.prefix}Open`, prepareName = `${spec.prefix}Prepare`;
+  const q = JSON.stringify;
+  const helpers = `const canonical = ${canonical.toString()};
+const fields = ${q(spec.fields)};
+const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+`;
+  const openCode = helpers + `await actions.setVariable(${q(snapshot)}, null);
+await actions.setVariable(${q(draft)}, null);
+const selection = components.${spec.table_component}.selectedRow;
+const id = selection && selection[${q(spec.id_field)}];
+if ((typeof id !== 'string' && typeof id !== 'number') || id === '' || (typeof id === 'number' && !Number.isFinite(id))) throw new Error('Select a record first');
+const rows = queries.${spec.source_query}.data;
+if (!Array.isArray(rows)) throw new Error('Raw records are not loaded');
+const matches = rows.filter(r => r && own(r, ${q(spec.id_field)}) && r[${q(spec.id_field)}] === id);
+if (matches.length !== 1) throw new Error('Expected exactly one raw record for the selected ID');
+const values = {};
+for (const field of fields) {
+  if (!own(matches[0], field.field)) throw new Error('Raw record omits: ' + field.field);
+  // Existing incomplete records must be openable for correction. Validate required
+  // values on Prepare, not before the user can edit them.
+  values[field.field] = canonical(matches[0][field.field], { ...field, required: false, nullable: true });
+}
+await actions.setVariable(${q(snapshot)}, { id, values });
+return { id };`;
+  const prepareCode = helpers + `const snapshot = variables.${snapshot};
+const draft = variables.${draft};
+const selection = components.${spec.table_component}.selectedRow;
+if (!snapshot || !selection || selection[${q(spec.id_field)}] !== snapshot.id) throw new Error('Reopen the selected record before saving');
+if (draft && draft.id !== snapshot.id) throw new Error('Draft belongs to another record');
+const changes = draft ? draft.values : {};
+if (!changes || typeof changes !== 'object' || Array.isArray(changes)) throw new Error('Invalid draft');
+const patch = {};
+for (const key of Object.keys(changes)) if (!fields.some(f => f.field === key)) throw new Error('Unknown draft field: ' + key);
+for (const field of fields) {
+  if (!own(snapshot.values, field.field)) throw new Error('Incomplete edit snapshot');
+  if (!own(changes, field.field)) {
+    canonical(snapshot.values[field.field], field);
+    continue;
+  }
+  const raw = changes[field.field];
+  let value = canonical(raw, field);
+  if (value === '' && field.type !== 'text') value = null;
+  if (value === '' || value === null) {
+    if (!field.nullable) throw new Error('Clearing is not allowed: ' + field.field);
+    value = null;
+  }
+  if (value !== snapshot.values[field.field]) patch[field.field] = value;
+}
+return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
+  const inputs = spec.fields.map((f) => {
+    const type = f.choices ? "DropdownV2" : { text: "TextInput", number: "NumberInput", date_only: "DatePickerV2", boolean: "Checkbox" }[f.type];
+    const initialKey = f.choices ? "schema" : ["date_only", "boolean"].includes(f.type) ? "defaultValue" : "value";
+    const exposed = f.type === "date_only" ? "selectedDate" : "value";
+    const trigger = f.choices || f.type === "date_only" ? "onSelect" : "onChange";
+    const schema = getComponentSchema(type);
+    if (!schema?.properties.some((p) => p.key === initialKey) || !schema.events?.some((e) => e.id === trigger))
+      throw new Error(`Unsupported edit adapter: ${type}`);
+    const initial = `variables.${snapshot} && variables.${snapshot}.values[${q(f.field)}]`;
+    let value = `{{${initial} != null ? variables.${snapshot}.values[${q(f.field)}] : ${f.type === "boolean" ? "false" : "''"}}}`;
+    if (f.choices) {
+      const options = Array.isArray(f.choices) ? q(f.choices) : `(queries.${f.choices.query}.data || []).map(r=>({label:r[${q(f.choices.label_field)}],value:r[${q(f.choices.value_field)}]}))`;
+      value = `{{(${options}).map(option=>({label:option.label,value:option.value,visible:true,default:!!variables.${snapshot} && option.value === variables.${snapshot}.values[${q(f.field)}]}))}}`;
+    }
+    const exposedValue = `components.${f.component}.${exposed}`;
+    const changedValue = f.choices && f.nullable ? `(${exposedValue} == null ? null : ${exposedValue})` : exposedValue;
+    const draftValue = `{{({id:variables.${snapshot}.id,values:Object.assign({},variables.${draft} && variables.${draft}.id === variables.${snapshot}.id ? variables.${draft}.values : {},{${q(f.field)}:${changedValue}})})}}`;
+    return {
+      name: f.component,
+      type,
+      properties: { [initialKey]: value, ...f.choices ? { advanced: "{{true}}", showClearBtn: f.nullable } : {}, ...f.type === "date_only" ? { dateFormat: "YYYY-MM-DD" } : {} },
+      validation: { mandatory: f.required },
+      events: [{ source_ref: f.component, source_type: "component", trigger, action: {
+        actionId: "set-custom-variable",
+        key: draft,
+        value: draftValue,
+        runOnlyIf: `{{!!variables.${snapshot}}}`
+      } }]
+    };
+  });
+  return {
+    queries: [
+      { name: openName, kind: "runjs", options: { code: openCode } },
+      { name: prepareName, kind: "runjs", options: { code: prepareCode } }
+    ],
+    inputs,
+    mutation_contract: {
+      id: `{{queries.${prepareName}.data.id}}`,
+      patch: `{{queries.${prepareName}.data.patch}}`,
+      runOnlyIf: `{{queries.${prepareName}.data && queries.${prepareName}.data.changed === true}}`
+    },
+    wiring: [
+      `Run ${openName} on Edit; open the editor only on its success. Merge the returned input properties and change events into your native layout. Never use display selectedRow fields as defaults.`,
+      `Run ${prepareName} on Save; run a datasource-specific PATCH/update ONLY on its success and with mutation_contract.runOnlyIf. No change means no write. Bind the ID and patch from mutation_contract; never expand missing patch keys to null or empty strings.`,
+      "Gate Save while open/prepare/write are loading. Preserve the editor on failure. Refresh affected queries and close/reset only after the actual mutation succeeds; refresh actions are not assumed to complete in order."
+    ],
+    limitations: [
+      "Requires an already-loaded bounded raw row array and a single stable scalar ID. This generates wiring only; it does not create resources or persist data.",
+      "Only text, finite number, ISO date-only and boolean fields are covered; text/number fields can opt into dropdown choices. Required/nullable/trim are explicit opt-ins; domain constraints, authorization and optimistic concurrency must be enforced separately.",
+      "Dropdown option queries must already return bounded raw arrays with matching ID types and include the current value, including inactive owners when necessary. Missing options are not permission to clear stored relationships. Validate membership/authorization separately; this helper does not create or execute option queries.",
+      "Draft tracks native change events, not every displayed input value. Programmatic field changes must update the draft explicitly. Browser-verify that all change events fire, including both checkbox transitions."
+    ]
+  };
+}
+createRequire(import.meta.url);
+var COMPONENT_FX_GUIDANCE = "For properties/styles/validation with an FX toggle, use `{ value: <expression>, fxActive: true }` only for bindings/conditions/calculations the normal control cannot express. Keep defaults and panel-editable constants (including `{{true}}`/`{{false}}`, numbers, selections, colors) out of FX. For nested Table columns/buttons/options and KeyValuePair fields, add the property key (e.g. `columnVisibility`, `disableButton`, `fieldVisibility`, `isEditable`) to that object's `fxActiveFields`, preserving other entries. ";
+var COMPONENT_FX_UPDATE_GUIDANCE = COMPONENT_FX_GUIDANCE + "Updates must include both `value` and `fxActive`; revert with `{ value: <constant>, fxActive: false }`. For nested Table fields, remove only reverted property keys from `fxActiveFields`. KeyValuePair arrays merge by index; verify flag removals and report retained flags. ";
 createRequire(import.meta.url);
 function separateAdjacentClosingBraces(text) {
   let out = "";
@@ -110,10 +1187,10 @@ function normalizeSection(section) {
   const value = {};
   const patch = {};
   for (const [key, entry] of Object.entries(section)) {
-    const canonical = entry !== null && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry : { value: entry };
-    value[key] = canonical;
-    if (canonical !== entry)
-      patch[key] = canonical;
+    const canonical2 = entry !== null && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry : { value: entry };
+    value[key] = canonical2;
+    if (canonical2 !== entry)
+      patch[key] = canonical2;
   }
   return {
     value,
@@ -180,7 +1257,7 @@ function isStrippableUnknownKey(type, section, key, knownKeys) {
     return false;
   return true;
 }
-function packValueAsDefault(type, name, properties) {
+function packValueAsDefault(type, name2, properties) {
   if (!properties || properties.value === void 0)
     return { properties };
   const schema = type ? getComponentSchema(type) : void 0;
@@ -189,11 +1266,11 @@ function packValueAsDefault(type, name, properties) {
     return { properties };
   const { value, ...rest } = properties;
   if (rest.defaultValue !== void 0) {
-    return { properties: rest, warning: `${type} "${name}": dropped properties.value, the input's runtime value; it starts from defaultValue.` };
+    return { properties: rest, warning: `${type} "${name2}": dropped properties.value, the input's runtime value; it starts from defaultValue.` };
   }
   return {
     properties: { ...rest, defaultValue: value },
-    warning: `${type} "${name}": moved properties.value to defaultValue, where the input takes its starting value from.`
+    warning: `${type} "${name2}": moved properties.value to defaultValue, where the input takes its starting value from.`
   };
 }
 function normalizeComponentSpec(component, options = {}) {
@@ -237,21 +1314,21 @@ function normalizeComponentSpec(component, options = {}) {
   };
   for (const key of Object.keys(properties)) {
     const aliasTarget = aliasTargetFor(key);
-    const canonical = aliasTarget ?? key;
-    const belongsInStyles = canonical !== "styles" && (isMisplacedStyleKey(component.type, canonical) || !!aliasTarget && !!knownStyleKeys?.has(canonical) && !knownPropertyKeys?.has(canonical));
+    const canonical2 = aliasTarget ?? key;
+    const belongsInStyles = canonical2 !== "styles" && (isMisplacedStyleKey(component.type, canonical2) || !!aliasTarget && !!knownStyleKeys?.has(canonical2) && !knownPropertyKeys?.has(canonical2));
     if (!aliasTarget && !belongsInStyles)
       continue;
     if (belongsInStyles) {
-      if (stylesValue[canonical] === void 0)
-        stylesValue[canonical] = properties[key];
+      if (stylesValue[canonical2] === void 0)
+        stylesValue[canonical2] = properties[key];
       delete properties[key];
       stylesChanged = true;
-      warnings.push(`${component.type} "${component.name}": moved ${aliasTarget ? `alias "${key}"` : `style key "${key}"`} to styles.${canonical} (ToolJet reads it from styles, not properties).`);
-    } else if (canonical !== key) {
-      if (properties[canonical] === void 0)
-        properties[canonical] = properties[key];
+      warnings.push(`${component.type} "${component.name}": moved ${aliasTarget ? `alias "${key}"` : `style key "${key}"`} to styles.${canonical2} (ToolJet reads it from styles, not properties).`);
+    } else if (canonical2 !== key) {
+      if (properties[canonical2] === void 0)
+        properties[canonical2] = properties[key];
       delete properties[key];
-      warnings.push(`${component.type} "${component.name}": renamed alias "${key}" to "${canonical}".`);
+      warnings.push(`${component.type} "${component.name}": renamed alias "${key}" to "${canonical2}".`);
     }
   }
   if (schema && options.stripUnknownKeys) {
@@ -627,149 +1704,6 @@ function normalizeComponentSpec(component, options = {}) {
     warnings
   };
 }
-function resolveRef(candidates, ref, kind, scope2, describe = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
-  const byId = candidates.find((candidate) => candidate.id === ref);
-  if (byId)
-    return { ok: true, target: byId };
-  const byName = candidates.filter((candidate) => candidate.name === ref);
-  if (byName.length === 1)
-    return { ok: true, target: byName[0] };
-  if (byName.length > 1) {
-    return {
-      ok: false,
-      error: `${kind} name "${ref}" is ambiguous ${scope2} (${byName.length} share it). Pass the id instead: ${byName.map((candidate) => candidate.id).join(", ")}.`
-    };
-  }
-  const available = candidates.map(describe).join(", ");
-  return {
-    ok: false,
-    // The "do not re-read" clause matters: the previous phrasing ("does not exist") invited exactly
-    // the re-read that caused the loop.
-    error: `No ${kind.toLowerCase()} with id or name "${ref}" ${scope2}. Do not re-read \u2014 it currently holds: ${available || "(none)"}.`
-  };
-}
-createRequire(import.meta.url);
-function strictEntry(shape, describeUnknown) {
-  return external_exports.strictObject(shape, {
-    error: (issue) => issue.code === "unrecognized_keys" ? issue.keys.map(describeUnknown).join(" ") : void 0
-  });
-}
-function hasNonEmptyDefinition(definition) {
-  if (!definition)
-    return false;
-  return Object.values(definition).some((section) => section !== null && typeof section === "object" && Object.keys(section).length > 0);
-}
-var FLEX_CONTAINER_TYPE = "FlexContainer";
-var FLEX_FILL_WIDTH_DESCRIPTION = "FlexContainer child only: true (the default) fills the free main-axis width; false uses widthPx. Ignored elsewhere.";
-var FLEX_WIDTH_PX_DESCRIPTION = "FlexContainer child only: fixed width in pixels, applied when fillWidth is false. Ignored elsewhere.";
-var FLEX_GROW_DESCRIPTION = "FlexContainer row child only: share of the free width among fill children (default 1; 2 beside 1 takes two thirds). Ignored elsewhere.";
-var FLEX_MIN_WIDTH_PX_DESCRIPTION = "FlexContainer row child only: narrowest a fill child may get, in pixels; in a wrapping row a narrower child moves to the next line. Ignored elsewhere.";
-function isFlexContainerType(type) {
-  return type === FLEX_CONTAINER_TYPE;
-}
-function storedChildOrder(properties) {
-  const entry = properties?.childOrder;
-  const value = Array.isArray(entry) ? entry : entry?.value;
-  return Array.isArray(value) ? value.filter((id) => typeof id === "string" && id.length > 0) : [];
-}
-function normalizeChildOrder(childOrder, actualChildIds) {
-  const actual = new Set(actualChildIds);
-  const seen = /* @__PURE__ */ new Set();
-  const normalized = [];
-  for (const id of [...childOrder.filter((id2) => actual.has(id2)), ...actualChildIds]) {
-    if (seen.has(id))
-      continue;
-    seen.add(id);
-    normalized.push(id);
-  }
-  return normalized;
-}
-function desktopRect(component) {
-  const desktop = component.layouts?.desktop;
-  return {
-    top: typeof desktop?.top === "number" ? desktop.top : 0,
-    left: typeof desktop?.left === "number" ? desktop.left : 0
-  };
-}
-function bodyParentId(parent) {
-  if (!parent)
-    return void 0;
-  const decoded = decodeComponentParent(parent);
-  return decoded.slotName === "body" ? decoded.parentId : void 0;
-}
-function currentChildOrder(container, page) {
-  const children = page.filter((component) => bodyParentId(component.parent) === container.id);
-  const stored = storedChildOrder(container.properties);
-  const storedSet = new Set(stored);
-  const unordered = children.filter((child) => !storedSet.has(child.id)).sort((a, b) => {
-    const ra = desktopRect(a), rb = desktopRect(b);
-    return ra.top - rb.top || ra.left - rb.left;
-  }).map((child) => child.id);
-  return normalizeChildOrder(stored, [...children.map((child) => child.id).filter((id) => storedSet.has(id)), ...unordered]);
-}
-function appendedChildOrders(page, additions) {
-  const byId = new Map(page.map((component) => [component.id, component]));
-  const added = /* @__PURE__ */ new Map();
-  for (const { parentId, childId } of additions) {
-    const container = byId.get(parentId);
-    if (!container || !isFlexContainerType(container.type))
-      continue;
-    const ids = added.get(parentId) ?? [];
-    if (!ids.includes(childId))
-      ids.push(childId);
-    added.set(parentId, ids);
-  }
-  const orders = /* @__PURE__ */ new Map();
-  for (const [parentId, newIds] of added) {
-    const container = byId.get(parentId);
-    const newSet = new Set(newIds);
-    const existing = currentChildOrder(container, page.filter((component) => !newSet.has(component.id)));
-    const stored = storedChildOrder(container.properties);
-    const next = normalizeChildOrder(stored, [...existing, ...newIds]);
-    if (next.length !== stored.length || next.some((id, index) => stored[index] !== id))
-      orders.set(parentId, next);
-  }
-  return orders;
-}
-function batchChildOrders(entries, explicit = /* @__PURE__ */ new Map(), resolveRef2 = () => void 0) {
-  const orders = /* @__PURE__ */ new Map();
-  for (const container of entries) {
-    if (!isFlexContainerType(container.type))
-      continue;
-    const children = entries.filter((entry) => entry.parentId === container.id).map((entry) => entry.id);
-    const authored = (explicit.get(container.id) ?? []).flatMap((ref) => typeof ref === "string" ? [resolveRef2(ref) ?? ref] : []);
-    orders.set(container.id, [.../* @__PURE__ */ new Set([...authored, ...children])]);
-  }
-  return orders;
-}
-function childOrderProperty(order) {
-  return { value: order };
-}
-function reparentAdditions(page, moves) {
-  const byId = new Map(page.map((component) => [component.id, component]));
-  return moves.flatMap(({ componentId, parent }) => {
-    if (parent === void 0)
-      return [];
-    const nextParent = bodyParentId(parent);
-    if (!nextParent || nextParent === bodyParentId(byId.get(componentId)?.parent))
-      return [];
-    return [{ parentId: nextParent, childId: componentId }];
-  });
-}
-function resolveAuthoredChildOrder(container, page, authored) {
-  const children = page.filter((component) => bodyParentId(component.parent) === container.id);
-  const unknown = [];
-  const ids = authored.flatMap((item) => {
-    const ref = typeof item === "string" ? item : String(item);
-    const child = children.find((candidate) => candidate.id === ref) ?? children.find((candidate) => candidate.name === ref);
-    if (!child) {
-      unknown.push(ref);
-      return [];
-    }
-    return [child.id];
-  });
-  return { order: normalizeChildOrder(ids, [...ids, ...currentChildOrder(container, page)]), unknown };
-}
 createRequire(import.meta.url);
 var DEFINITION_SECTIONS = ["properties", "styles", "validation", "general", "general_styles", "others"];
 var definitionSchema = strictEntry({
@@ -823,6 +1757,17 @@ function updateComponentsTool(client) {
         const changedComponents = [];
         let placementChanged = false;
         const layoutFixes = [];
+        const batchProperties = /* @__PURE__ */ new Map();
+        for (const update of args.updates) {
+          const properties = update.definition?.properties;
+          if (!properties)
+            continue;
+          const target = resolveRef(page.components, update.component_id, "Component", "");
+          if (!target.ok)
+            continue;
+          const id = target.target.id;
+          batchProperties.set(id, { ...batchProperties.get(id) ?? target.target.properties ?? {}, ...properties });
+        }
         const resolvedUpdates = [];
         for (const update of args.updates) {
           if (update.name !== void 0) {
@@ -871,6 +1816,22 @@ function updateComponentsTool(client) {
               }
             }
           }
+          let parentType;
+          if (parent) {
+            const decoded = decodeComponentParent(parent);
+            const parentComponent = page.components.find((component) => component.id === decoded.parentId);
+            if (parentComponent && isPackContainerType(parentComponent.type)) {
+              const named = slotName ?? (parent !== decoded.parentId ? decoded.slotName : void 0);
+              const slot = resolvePackSlot({ ...parentComponent, properties: batchProperties.get(parentComponent.id) ?? parentComponent.properties }, named, current2.name ?? current2.id);
+              if (!slot.ok) {
+                errors.push(slot.error);
+                continue;
+              }
+              parent = decoded.parentId;
+              slotName = slot.slotName;
+              parentType = parentComponent.type;
+            }
+          }
           const authoredOrder = update.definition?.properties?.childOrder;
           if (authoredOrder !== void 0 && isFlexContainerType(current2.type)) {
             const raw = authoredOrder;
@@ -881,7 +1842,7 @@ function updateComponentsTool(client) {
             }
             const resolved = resolveAuthoredChildOrder(current2, page.components, value);
             if (resolved.unknown.length) {
-              errors.push(`FlexContainer "${current2.name ?? current2.id}": childOrder names ${resolved.unknown.map((ref) => `"${ref}"`).join(", ")}, which are not children of this container. List its child component ids or names.`);
+              errors.push(`FlexContainer "${current2.name ?? current2.id}": childOrder names ${resolved.unknown.map((ref2) => `"${ref2}"`).join(", ")}, which are not children of this container. List its child component ids or names.`);
               continue;
             }
             update.definition = {
@@ -894,15 +1855,15 @@ function updateComponentsTool(client) {
             warnings.push(packValue.warning);
             update.definition = { ...update.definition, properties: packValue.properties };
           }
-          const definition = update.definition;
+          const definition2 = update.definition;
           const next = {
             id: current2.id,
             name: update.name ?? current2.name ?? current2.id,
             type: current2.type,
-            properties: { ...current2.properties ?? {}, ...definition?.properties ?? {} },
-            styles: { ...current2.styles ?? {}, ...definition?.styles ?? {} },
+            properties: { ...current2.properties ?? {}, ...definition2?.properties ?? {} },
+            styles: { ...current2.styles ?? {}, ...definition2?.styles ?? {} },
             layouts: current2.layouts,
-            parent: parent !== void 0 ? encodeComponentParent(parent, slotName) : current2.parent,
+            parent: parent !== void 0 ? encodeComponentParent(parent, slotName, parentType) : current2.parent,
             slotName
           };
           const normalized = normalizeComponentSpec({
@@ -910,8 +1871,8 @@ function updateComponentsTool(client) {
             type: next.type ?? current2.type ?? "",
             properties: next.properties ?? {},
             styles: next.styles,
-            validation: definition?.validation,
-            others: { ...current2.others ?? {}, ...definition?.others ?? {} },
+            validation: definition2?.validation,
+            others: { ...current2.others ?? {}, ...definition2?.others ?? {} },
             layouts: next.layouts,
             parent: next.parent
           });
@@ -927,7 +1888,7 @@ function updateComponentsTool(client) {
           if (update.definition)
             changedComponents.push({ before: current2, after: normalizedNext });
           placementChanged ||= update.parent !== void 0 || update.slot_name !== void 0;
-          warnings.push(...onlyTouchedBraceNotes(normalized.warnings, definition));
+          warnings.push(...onlyTouchedBraceNotes(normalized.warnings, definition2));
           let normalizedDefinition = update.definition;
           if (update.definition && Object.keys(normalized.patch).length) {
             normalizedDefinition = { ...update.definition };
@@ -946,7 +1907,8 @@ function updateComponentsTool(client) {
             definition: normalizedDefinition,
             name: update.name,
             parent,
-            slotName: update.slot_name
+            slotName: parentType ? slotName : update.slot_name,
+            parentType
           });
           if (!update.definition)
             continue;
@@ -954,7 +1916,7 @@ function updateComponentsTool(client) {
           warnings.push(...introducedLintFindings(lintComponentSpec(current2).warnings, lintComponentSpec(normalizedNext).warnings));
         }
         const allComponents = [...projected.values()];
-        const introducedForChanged = (lint) => changedComponents.flatMap(({ before, after }) => introducedLintFindings(lint([before]), lint([after])));
+        const introducedForChanged = (lint2) => changedComponents.flatMap(({ before, after }) => introducedLintFindings(lint2([before]), lint2([after])));
         if (placementChanged) {
           errors.push(...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(allComponents)));
         }
@@ -978,7 +1940,7 @@ function updateComponentsTool(client) {
         }
         const appended = appendedChildOrders(page.components, reparentAdditions(page.components, resolvedUpdates.map((update) => ({
           componentId: update.componentId,
-          parent: update.parent !== void 0 ? encodeComponentParent(update.parent, update.slotName) : void 0
+          parent: update.parent !== void 0 ? encodeComponentParent(update.parent, update.slotName, update.parentType) : void 0
         }))));
         if (appended.size) {
           await client.updateComponents({
@@ -998,10 +1960,10 @@ function updateComponentsTool(client) {
     }
   };
 }
-function onlyTouchedBraceNotes(warnings, definition) {
+function onlyTouchedBraceNotes(warnings, definition2) {
   const touched = /* @__PURE__ */ new Set([
-    ...Object.keys(definition?.properties ?? {}).map((key) => `properties.${key}`),
-    ...Object.keys(definition?.styles ?? {}).map((key) => `styles.${key}`)
+    ...Object.keys(definition2?.properties ?? {}).map((key) => `properties.${key}`),
+    ...Object.keys(definition2?.styles ?? {}).map((key) => `styles.${key}`)
   ]);
   return warnings.flatMap((warning) => {
     const m = /^(.*?: separated adjacent closing braces inside )(.+?)( \(ToolJet ends.*)$/s.exec(warning);
@@ -1283,8 +2245,8 @@ function getComponentCatalogTool(client) {
   };
 }
 createRequire(import.meta.url);
-var positive = (name, fallback) => {
-  const value = Number(process.env[name]);
+var positive = (name2, fallback) => {
+  const value = Number(process.env[name2]);
   return Number.isInteger(value) && value > 0 ? value : fallback;
 };
 var MAX_SLOT_AGE_MS = 10 * 6e4;
@@ -1366,9 +2328,9 @@ function touchProject(dir) {
   }
 }
 var lastUsed = (dir) => {
-  for (const name of [LAST_USED, "app.json"]) {
+  for (const name2 of [LAST_USED, "app.json"]) {
     try {
-      return statSync(join(dir, name)).mtimeMs;
+      return statSync(join(dir, name2)).mtimeMs;
     } catch {
     }
   }
@@ -1440,9 +2402,9 @@ function isCodeModeApp(app) {
 }
 function browserUserQueryProblems(app) {
   const queries = Array.isArray(app?.data_queries) ? app.data_queries : [];
-  return queries.flatMap((query) => {
-    const paths = browserUserBindings(query?.options ?? {});
-    return paths.length ? [browserUserMessage(String(query?.name ?? query?.id ?? "query"), paths)] : [];
+  return queries.flatMap((query2) => {
+    const paths = browserUserBindings(query2?.options ?? {});
+    return paths.length ? [browserUserMessage(String(query2?.name ?? query2?.id ?? "query"), paths)] : [];
   });
 }
 var TS_LINE = /^(\S+?):(\d+):(\d+) - error (TS\d+): (.*)$/;
@@ -1547,8 +2509,8 @@ async function packProject(dir) {
   return stdout;
 }
 async function buildInService(dir, env, fetchImpl = fetch) {
-  const base = buildServiceUrl();
-  if (!base)
+  const base2 = buildServiceUrl();
+  if (!base2)
     throw new Error("MCP_CODE_BUILD_WORKER_URL is not set");
   const token = process.env.MCP_CODE_BUILD_WORKER_TOKEN ?? "";
   const headers = { authorization: `Bearer ${token}` };
@@ -1565,7 +2527,7 @@ async function buildInService(dir, env, fetchImpl = fetch) {
   let id;
   try {
     const body = await packProject(dir);
-    const res = await fetchImpl(`${base}/jobs?env=${env}`, bounded({ method: "POST", headers: { ...headers, "content-type": "application/gzip" }, body: new Uint8Array(body) }));
+    const res = await fetchImpl(`${base2}/jobs?env=${env}`, bounded({ method: "POST", headers: { ...headers, "content-type": "application/gzip" }, body: new Uint8Array(body) }));
     if (res.status !== 202)
       return unreachable(`HTTP ${res.status} ${(await res.text()).trim().slice(0, 200)}`);
     id = (await res.json()).id;
@@ -1575,7 +2537,7 @@ async function buildInService(dir, env, fetchImpl = fetch) {
   let job;
   try {
     for (; ; ) {
-      const res = await fetchImpl(`${base}/jobs/${id}`, bounded({ headers }));
+      const res = await fetchImpl(`${base2}/jobs/${id}`, bounded({ headers }));
       if (!res.ok)
         return unreachable(`HTTP ${res.status} reading build ${id}`);
       job = await res.json();
@@ -1588,7 +2550,7 @@ async function buildInService(dir, env, fetchImpl = fetch) {
   } catch (error) {
     return unreachable(reason(error));
   } finally {
-    void fetchImpl(`${base}/jobs/${id}`, { method: "DELETE", headers }).catch(() => void 0);
+    void fetchImpl(`${base2}/jobs/${id}`, { method: "DELETE", headers }).catch(() => void 0);
   }
   const output = strip([job.output ?? "", job.error ? `
 ${job.error}` : ""].join("")).trim();
@@ -1660,8 +2622,8 @@ function realOrNearest(target) {
     }
   }
 }
-var isInside = (base, target) => {
-  const rel = relative(base, target);
+var isInside = (base2, target) => {
+  const rel = relative(base2, target);
   return rel === "" || !rel.startsWith("..") && !isAbsolute(rel);
 };
 function insideProject(dir, path, label = path) {
@@ -1774,10 +2736,10 @@ function manifestProblems(dir) {
     const deps = pkg[field];
     if (!deps || typeof deps !== "object")
       continue;
-    for (const [name, spec] of Object.entries(deps)) {
+    for (const [name2, spec] of Object.entries(deps)) {
       const why = nonRegistrySpec(spec);
       if (why)
-        problems.push(`frontend/package.json ${field} "${name}": "${String(spec).slice(0, 120)}": ${why}`);
+        problems.push(`frontend/package.json ${field} "${name2}": "${String(spec).slice(0, 120)}": ${why}`);
     }
   }
   if (pkg.workspaces !== void 0)
@@ -1799,42 +2761,42 @@ function manifestProblems(dir) {
 }
 function lockfileProblems(dir, registry2 = configuredRegistry()) {
   const problems = [];
-  for (const name of ["package-lock.json", "npm-shrinkwrap.json"]) {
-    const file = insideProject(dir, `frontend/${name}`);
+  for (const name2 of ["package-lock.json", "npm-shrinkwrap.json"]) {
+    const file = insideProject(dir, `frontend/${name2}`);
     if (!existsSync(file))
       continue;
     let lock;
     try {
       lock = JSON.parse(readFileSync(file, "utf8"));
     } catch {
-      problems.push(`frontend/${name} is not valid JSON`);
+      problems.push(`frontend/${name2} is not valid JSON`);
       continue;
     }
     for (const [key, entry] of Object.entries(lock.packages ?? {})) {
       if (key === "")
         continue;
       if (!/^node_modules\/(?:@[^/]+\/)?[^/]+(?:\/node_modules\/(?:@[^/]+\/)?[^/]+)*$/.test(key)) {
-        problems.push(`frontend/${name} entry "${key.slice(0, 120)}" is not an installed package (a linked folder)`);
+        problems.push(`frontend/${name2} entry "${key.slice(0, 120)}" is not an installed package (a linked folder)`);
         continue;
       }
       if (entry?.link) {
-        problems.push(`frontend/${name} entry "${key.slice(0, 120)}" is a link to a folder`);
+        problems.push(`frontend/${name2} entry "${key.slice(0, 120)}" is a link to a folder`);
         continue;
       }
       const why = entry?.resolved === void 0 ? void 0 : foreignResolved(entry.resolved, registry2);
       if (why)
-        problems.push(`frontend/${name} entry "${key.slice(0, 120)}": ${why}`);
+        problems.push(`frontend/${name2} entry "${key.slice(0, 120)}": ${why}`);
     }
     const walkV1 = (deps, at) => {
       for (const [dep, entry] of Object.entries(deps ?? {})) {
         const where = at ? `${at} > ${dep}` : dep;
         const version = typeof entry?.version === "string" ? entry.version : "";
         if (/^(file|link|git|github|http|https):|^\.|\//.test(version))
-          problems.push(`frontend/${name} dependency "${where}" is "${version.slice(0, 120)}", not a registry package`);
+          problems.push(`frontend/${name2} dependency "${where}" is "${version.slice(0, 120)}", not a registry package`);
         else if (entry?.resolved !== void 0) {
           const why = foreignResolved(entry.resolved, registry2);
           if (why)
-            problems.push(`frontend/${name} dependency "${where}": ${why}`);
+            problems.push(`frontend/${name2} dependency "${where}": ${why}`);
         }
         walkV1(entry?.dependencies, where);
       }
@@ -1856,9 +2818,9 @@ function escapingLinks(dir) {
   const modules = join(dir, "frontend", "node_modules");
   if (!existsSync(modules))
     return [];
-  let base;
+  let base2;
   try {
-    base = realpathSync(dir);
+    base2 = realpathSync(dir);
   } catch {
     return [];
   }
@@ -1885,7 +2847,7 @@ function escapingLinks(dir) {
     } catch {
       return;
     }
-    if (isInside(base, target) || sdkReal && target === sdkReal)
+    if (isInside(base2, target) || sdkReal && target === sdkReal)
       return;
     out.push(relative(dir, full).split(sep).join("/"));
   };
@@ -2013,8 +2975,8 @@ var deploymentKey = (apiUrl) => {
   }
   if (!["http:", "https:"].includes(url.protocol))
     throw new Error("This request names no valid ToolJet backend.");
-  const canonical = `${url.protocol}//${url.host}${url.pathname.replace(/\/+$/, "")}`;
-  return `d_${createHash("sha256").update(canonical).digest("hex").slice(0, 24)}`;
+  const canonical2 = `${url.protocol}//${url.host}${url.pathname.replace(/\/+$/, "")}`;
+  return `d_${createHash("sha256").update(canonical2).digest("hex").slice(0, 24)}`;
 };
 var inScope = (context, handler) => async (args) => {
   try {
@@ -2085,10 +3047,10 @@ var legacyFolders = () => {
   return [join(baseRoot(), current().workspace), baseRoot()];
 };
 var NAME = /^[a-z][a-z0-9-]{1,40}$/;
-var projectDir = (name) => {
-  if (!NAME.test(name))
+var projectDir = (name2) => {
+  if (!NAME.test(name2))
     throw new Error(`name must match ${NAME} (lowercase letters, digits, hyphens)`);
-  return join(root(), name);
+  return join(root(), name2);
 };
 var appIdOf = (dir) => {
   try {
@@ -2104,10 +3066,10 @@ var projectsIn = (folder, appId) => {
 };
 var projectsForApp = (appId) => {
   for (const folder of legacyFolders()) {
-    for (const name of projectsIn(folder, appId)) {
+    for (const name2 of projectsIn(folder, appId)) {
       mkdirSync(root(), { recursive: true });
-      if (!existsSync(join(root(), name)))
-        renameSync(join(folder, name), join(root(), name));
+      if (!existsSync(join(root(), name2)))
+        renameSync(join(folder, name2), join(root(), name2));
     }
   }
   return projectsIn(root(), appId);
@@ -2155,7 +3117,7 @@ var editable = (dir, path) => {
   return insideProject(dir, rel, path);
 };
 var TEXT = /\.(tsx?|jsx?|json|css|md)$/i;
-var listFiles = (dir, base = dir, out = []) => {
+var listFiles = (dir, base2 = dir, out = []) => {
   if (!existsSync(dir))
     return out;
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -2163,9 +3125,9 @@ var listFiles = (dir, base = dir, out = []) => {
       continue;
     const full = join(dir, entry.name);
     if (entry.isDirectory())
-      listFiles(full, base, out);
+      listFiles(full, base2, out);
     else if (entry.isFile() && TEXT.test(entry.name) && entry.name !== "package-lock.json")
-      out.push(relative(base, full).split(sep).join("/"));
+      out.push(relative(base2, full).split(sep).join("/"));
   }
   return out.sort();
 };
@@ -2190,7 +3152,7 @@ var HOST_ENV = [
   "TOOLJET_APP_SCANNER_BIN"
 ];
 var SECRET_NAME = /TOKEN|SECRET|PASSWORD|PASSWD|KEY|PAT$|CREDENTIAL|COOKIE/i;
-var operatorEnv = () => (process.env.MCP_CODE_CLI_ENV_PASS ?? "").split(",").map((name) => name.trim()).filter((name) => name && !SECRET_NAME.test(name));
+var operatorEnv = () => (process.env.MCP_CODE_CLI_ENV_PASS ?? "").split(",").map((name2) => name2.trim()).filter((name2) => name2 && !SECRET_NAME.test(name2));
 var cliHome;
 var buildHome = () => cliHome ??= mkdtempSync(join(tmpdir(), CLI_HOME_PREFIX));
 process.once("exit", () => {
@@ -2200,9 +3162,9 @@ process.once("exit", () => {
 var cliEnv = () => {
   const active = current();
   const env = {};
-  for (const name of [...HOST_ENV, ...operatorEnv()])
-    if (process.env[name] !== void 0)
-      env[name] = process.env[name];
+  for (const name2 of [...HOST_ENV, ...operatorEnv()])
+    if (process.env[name2] !== void 0)
+      env[name2] = process.env[name2];
   const { sessionToken, pat } = active.credential ?? {};
   return {
     ...env,
@@ -2252,9 +3214,9 @@ var codeCliProblem = () => {
   cliReady ??= (async () => {
     const [cmd, pre] = process.env.TOOLJET_CLI ? ["node", [process.env.TOOLJET_CLI]] : ["tooljet", []];
     const env = { HOME: buildHome(), USERPROFILE: buildHome(), FORCE_COLOR: "0", NODE_ENV: "production", TOOLJET_CLI_SERVER_MODE: "1" };
-    for (const name of HOST_ENV)
-      if (process.env[name] !== void 0)
-        env[name] = process.env[name];
+    for (const name2 of HOST_ENV)
+      if (process.env[name2] !== void 0)
+        env[name2] = process.env[name2];
     try {
       const { stdout, stderr } = await run2(cmd, [...pre, "app", "server-mode"], { timeout: 6e4, env });
       if (strip2(stdout + stderr).includes("tooljet-server-mode:1"))
@@ -2285,7 +3247,7 @@ async function cli(cwd, args, timeoutMs = 3e5) {
   return withBuildSlot(baseRoot(), `${current().deployment}.${current().workspace}`, () => runCli(cwd, args, timeoutMs));
 }
 var PLACEHOLDER_NAME = /^Untitled App\b/;
-async function nameApp(client, dir, name, replaceName) {
+async function nameApp(client, dir, name2, replaceName) {
   let snapshot;
   try {
     snapshot = JSON.parse(readFileSync(join(dir, ".tooljet", "snapshot.json"), "utf8"));
@@ -2293,18 +3255,18 @@ async function nameApp(client, dir, name, replaceName) {
     return {};
   }
   const standIn = PLACEHOLDER_NAME.test(snapshot.appName ?? "") || !!replaceName && snapshot.appName === replaceName;
-  if (!client || !snapshot.appId || !snapshot.versionId || !standIn || snapshot.appName === name)
+  if (!client || !snapshot.appId || !snapshot.versionId || !standIn || snapshot.appName === name2)
     return {};
   try {
-    await client.renameApp(snapshot.appId, snapshot.versionId, name);
-    return { renamed_to: name };
+    await client.renameApp(snapshot.appId, snapshot.versionId, name2);
+    return { renamed_to: name2 };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (!/exist|unique|duplicate|taken|conflict|409|422/i.test(message))
       return { rename_warning: `Could not name the app: ${message}` };
-    const fallback = `${name} ${Math.random().toString(36).slice(2, 5)}`;
+    const fallback = `${name2} ${Math.random().toString(36).slice(2, 5)}`;
     await client.renameApp(snapshot.appId, snapshot.versionId, fallback);
-    return { renamed_to: fallback, rename_warning: `App name "${name}" is already used in this workspace; the app was named "${fallback}" instead.` };
+    return { renamed_to: fallback, rename_warning: `App name "${name2}" is already used in this workspace; the app was named "${fallback}" instead.` };
   }
 }
 function parseReport(output) {
@@ -2333,7 +3295,7 @@ function withDependencies(pkg, packages) {
   return { ...pkg, dependencies: Object.fromEntries(Object.entries(dependencies).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) };
 }
 function withoutDependencies(pkg, names) {
-  const drop = (deps) => deps && Object.fromEntries(Object.entries(deps).filter(([name]) => !names.includes(name)));
+  const drop = (deps) => deps && Object.fromEntries(Object.entries(deps).filter(([name2]) => !names.includes(name2)));
   return { ...pkg, ...pkg.dependencies ? { dependencies: drop(pkg.dependencies) } : {}, ...pkg.devDependencies ? { devDependencies: drop(pkg.devDependencies) } : {} };
 }
 var PACKAGE_NAME = /^(@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
@@ -2355,19 +3317,19 @@ function codeAppScaffoldTool(context) {
         await authorizeApp(args.app_id, "edit");
         cleanOldProjects(baseRoot());
         const [existing] = projectsForApp(args.app_id);
-        let name = args.name;
-        const taken = !existing && appIdOf(projectDir(name));
+        let name2 = args.name;
+        const taken = !existing && appIdOf(projectDir(name2));
         if (taken && taken !== args.app_id && process.env.MCP_CODE_SCAFFOLD_FREE_NAME !== "0")
-          name = `${args.name.slice(0, 32).replace(/-+$/, "")}-${args.app_id.slice(0, 8)}`;
-        const dir = existing ? join(root(), existing) : projectDir(name);
+          name2 = `${args.name.slice(0, 32).replace(/-+$/, "")}-${args.app_id.slice(0, 8)}`;
+        const dir = existing ? join(root(), existing) : projectDir(name2);
         return await onProject(dir, async () => {
           const owner = appIdOf(dir);
           if (!existing && owner && owner !== args.app_id)
-            throw new Error(`project "${name}" belongs to app ${owner}; choose another name`);
+            throw new Error(`project "${name2}" belongs to app ${owner}; choose another name`);
           const created = !existsSync(join(dir, "app.json"));
           if (created) {
             mkdirSync(root(), { recursive: true });
-            const init = await cli(root(), ["app", "init", name, "--name", args.display_name, "--no-install"]);
+            const init = await cli(root(), ["app", "init", name2, "--name", args.display_name, "--no-install"]);
             if (init.code !== 0)
               throw new Error(`tooljet app init failed: ${init.output}`);
             const appFile = join(dir, "app.json");
@@ -3138,33 +4100,45 @@ Nothing was added; package.json restored.`);
   };
 }
 export {
-  isCodeModeApp as A,
-  browserUserMessage as B,
+  noCodeIdentity as A,
+  nodeCatalog as B,
+  COMPONENT_FX_GUIDANCE as C,
+  capabilityRequestSchema as D,
+  getWorkflowCapabilities as E,
   FLEX_MIN_WIDTH_PX_DESCRIPTION as F,
+  lint as G,
+  apply as H,
+  deleteNode as I,
+  validateGraph as J,
+  editContractSchema as K,
+  generateEditContract as L,
+  browserUserBindings as M,
+  isCodeModeApp as N,
+  browserUserMessage as O,
   batchChildOrders as a,
   bodyParentId as b,
   childOrderProperty as c,
   appendedChildOrders as d,
-  codeCliProblem as e,
-  FLEX_GROW_DESCRIPTION as f,
-  FLEX_WIDTH_PX_DESCRIPTION as g,
+  definition as e,
+  codeCliProblem as f,
+  FLEX_GROW_DESCRIPTION as g,
   hasNonEmptyDefinition as h,
   isFlexContainerType as i,
-  FLEX_FILL_WIDTH_DESCRIPTION as j,
-  codeAppScaffoldTool as k,
-  codeAppReadFilesTool as l,
+  FLEX_WIDTH_PX_DESCRIPTION as j,
+  FLEX_FILL_WIDTH_DESCRIPTION as k,
+  specSchema as l,
   mapKeyRefusal as m,
   normalizeComponentSpec as n,
-  codeAppWriteFilesTool as o,
+  nodeSchema as o,
   plannedCurrency as p,
-  codeAppBuildTool as q,
-  resolveRef as r,
+  codeAppScaffoldTool as q,
+  codeAppReadFilesTool as r,
   strictEntry as s,
-  codeAppInstallTool as t,
-  codeAppAddDependencyTool as u,
-  getComponentCatalogTool as v,
-  updateComponentsTool as w,
-  noCodeIdentity as x,
-  reparentAdditions as y,
-  browserUserBindings as z
+  codeAppWriteFilesTool as t,
+  codeAppBuildTool as u,
+  codeAppInstallTool as v,
+  codeAppAddDependencyTool as w,
+  getComponentCatalogTool as x,
+  updateComponentsTool as y,
+  updateLayoutTool as z
 };
