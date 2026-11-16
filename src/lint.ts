@@ -1,4 +1,4 @@
-import { isEmptyLibraryHost, isLibraryPackType, packRowSlotNames, packSlotOnOwnId, serverLibraryPacks } from './libraryPack.js';
+import { emptyLibraryHostError, isLibraryPackType, packRowSlotNames, packSlotOnOwnId, serverLibraryPacks } from './libraryPack.js';
 import { packCanvases } from './packItemSlots.js';
 import { packValueTypeError } from './packValueTypes.js';
 import { defaultPack } from './componentLibrary.js';
@@ -3355,10 +3355,12 @@ export function lintComponents(components: LintComponent[], options: { canvasCol
     if (nameError) errors.push(nameError);
     // ToolJet's own hosts draw an empty box in an app: a module container always, a LibraryComponent or PackComponent
     // naming no component (a custom library's copied component names its library and is kept).
-    const internal = c.type ? internalComponentTypeNote(c.type) : null;
-    if (internal && (c.type === 'ModuleContainer' || isEmptyLibraryHost(c))) {
+    const internal = c.type === 'ModuleContainer' ? internalComponentTypeNote(c.type) : null;
+    if (internal) {
       errors.push(`Component "${c.name ?? c.type}": "${c.type}" ${internal} It is internal and cannot be written by a build.`);
     }
+    const emptyHost = emptyLibraryHostError(c);
+    if (emptyHost) errors.push(emptyHost);
     const r = lintComponentSpec(c, { surfaceAround: around(c) });
     errors.push(...r.errors);
     errors.push(...lintStandardSingleLineInputHeight(c));

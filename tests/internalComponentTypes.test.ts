@@ -98,3 +98,23 @@ describe('internal types that are kept', () => {
     expect(errors.join(' ')).not.toMatch(/internal/);
   });
 });
+
+// Review, PR #142: the empty host was reported in two places with different reasons and fixes (add_components: "internal
+// and cannot be written"; validate_app: "an empty box"). Both now say why it is empty and what to write instead.
+describe('an empty LibraryComponent or PackComponent', () => {
+  const authored = (type: string) =>
+    lintComponents([{ name: 'box', type, properties: {}, layout: { top: 0, left: 0, width: 10, height: 40 } }] as never).errors.join(' ');
+  const saved = (type: string) =>
+    validatePersistedAppSummary({
+      app_id: 'a', queries: [], events: [],
+      pages: [{ id: 'home', name: 'Home', handle: 'home', components: [{ id: 'c1', name: 'box', type, properties: {} }] }],
+    } as never).errors.join(' ');
+
+  it.each(['LibraryComponent', 'PackComponent'])('%s: authoring and validate_app give the same reason and the same type to write', (type) => {
+    for (const message of [authored(type), saved(type)]) {
+      expect(message).toMatch(new RegExp(`"box".*${type}.*names no component.*empty box`));
+      expect(message).toMatch(/Lib_<pack>_<Component> \(get_component_catalog lists them\)/);
+    }
+    expect(saved(type)).toMatch(/Delete it/);
+  });
+});

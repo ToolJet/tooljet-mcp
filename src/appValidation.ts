@@ -2,7 +2,7 @@ import { htmlFedTextColumns, type HtmlFedQuery, type HtmlFedTable } from './html
 import type { AppSummary } from './tooljetClient.js';
 import { persistedEventSpecs, validateEvents } from './eventValidation.js';
 import { lintPackItemSlots, validateAppStructure, type LintComponent } from './lint.js';
-import { isEmptyLibraryHost, unpinnedLibraries } from './libraryPack.js';
+import { emptyLibraryHostError, unpinnedLibraries } from './libraryPack.js';
 import { issueMessages, validateQueryOptions } from './queryValidation.js';
 
 export interface PersistedAppValidation {
@@ -74,11 +74,8 @@ export function validatePersistedAppSummary(summary: AppSummary, options: { canv
     // A host that names no component, pack or library (a raw LibraryComponent written into the app) draws an empty box.
     // A workspace's own custom library is no pack the MCP knows and stays LibraryComponent here, naming its library.
     for (const component of page.components ?? []) {
-      if (!isEmptyLibraryHost(component as { type?: string; properties?: Record<string, unknown> })) continue;
-      errors.push(
-        `Component "${component.name ?? component.id}" is a ${component.type} with no component to draw, so it shows an ` +
-          'empty box. Delete it and add the pack component itself (Lib_<pack>_<Component>).'
-      );
+      const error = emptyLibraryHostError(component as Parameters<typeof emptyLibraryHostError>[0], { persisted: true });
+      if (error) errors.push(error);
     }
     for (const component of (page.components ?? []) as HtmlFedTable[]) {
       for (const col of htmlFedTextColumns(component, summary.queries as HtmlFedQuery[])) {

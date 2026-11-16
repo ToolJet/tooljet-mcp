@@ -201,6 +201,20 @@ export function isEmptyLibraryHost(component: { type?: string; properties?: Sect
   });
 }
 
+/** Why an empty host (isEmptyLibraryHost) is refused, and what to write instead: the same for a component being written
+ *  (lintComponents) and one already saved (validate_app, `persisted`), which is deleted first. Null for any other. */
+export function emptyLibraryHostError(
+  component: { name?: string; id?: string; type?: string; properties?: Section },
+  options: { persisted?: boolean } = {}
+): string | null {
+  if (!isEmptyLibraryHost(component)) return null;
+  return (
+    `Component "${component.name ?? component.id ?? component.type}" is a ${component.type} that names no component, so it ` +
+    "draws an empty box: it is ToolJet's internal host, stored with the component it draws. " +
+    `${options.persisted ? 'Delete it and add' : 'Write'} the pack's own type, Lib_<pack>_<Component> (get_component_catalog lists them).`
+  );
+}
+
 /** The `Lib_*` type of a stored PackComponent or LibraryComponent of a known pack, for reads (summaries, lint of the
  *  saved app). */
 export function libraryTypeOf(component: { type?: string; properties?: Section }): string | undefined {
