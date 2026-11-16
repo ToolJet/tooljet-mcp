@@ -8,14 +8,13 @@ import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { readCatalogBytes } from '../lib/catalogFiles.js';
+import { PLUGIN_PACKAGE } from './plugin-package.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const directory = mkdtempSync(join(tmpdir(), 'tooljet-plugin-smoke-'));
 const client = new Client({ name: 'packaging-smoke', version: '1' });
 try {
-  cpSync(resolve(root, 'bundle'), join(directory, 'bundle'), { recursive: true });
-  cpSync(resolve(root, 'data'), join(directory, 'data'), { recursive: true });
-  writeFileSync(join(directory, 'package.json'), '{"type":"module"}\n');
+  cpSync(resolve(root, PLUGIN_PACKAGE), directory, { recursive: true });
   const transport = new StdioClientTransport({
     command: process.execPath, args: [join(directory, 'bundle/index.js')], cwd: directory,
     env: {
