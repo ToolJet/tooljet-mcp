@@ -11,6 +11,10 @@ RUN mkdir -p /opt/render-audit && cd /opt/render-audit \
  && npm init -y >/dev/null && npm install --omit=dev playwright-core@1.63.0
 ENV MCP_RENDER_AUDIT_PLAYWRIGHT=/opt/render-audit/node_modules/playwright-core \
     MCP_RENDER_AUDIT_CHROME=/usr/bin/chromium
+# The ToolJet CLI that the Code mode tools run (`tooljet app init/install/build`, in server mode). Keep it at the
+# version the ToolJet server ships; without it every Code mode tool fails its server-mode check.
+ARG TOOLJET_CLI_VERSION=0.0.15-beta.2
+RUN npm install -g @tooljet/cli@${TOOLJET_CLI_VERSION} && npm cache clean --force
 WORKDIR /app
 COPY --chown=node:node package.json ./
 COPY --chown=node:node bundle/ ./bundle/
