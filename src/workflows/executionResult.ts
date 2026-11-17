@@ -27,7 +27,7 @@ export function boundWorkflowExecutionResult(value: unknown): unknown {
     });
     const result = {
       execution_id: data.execution_id, truncated: true,
-      status: { status: status.status, execution_status: status.execution_status, approval_request_id: status.approval_request_id, logs: bounded(status.logs, 8_000) },
+      status: { status: status.status, execution_status: status.execution_status, approval_request_id: status.approval_request_id, approval_lookup: bounded(status.approval_lookup, 1_000), logs: bounded(status.logs, 8_000) },
       page: data.page, per_page: data.per_page,
       nodes: { data: nodes, page: page.page, per_page: page.per_page, total: page.total, total_pages: page.total_pages },
     };

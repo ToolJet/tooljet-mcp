@@ -271,6 +271,7 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
           } catch { approvalLookup = 'Approval lookup unavailable; use list_workflow_approvals with an authorized account.'; }
         }
       }
+      if (executionStatus === 'waiting' && !approvalId && !approvalLookup) approvalLookup = 'No matching pending approval is visible to this account; use list_workflow_approvals with an authorized account.';
       const status = { status: response.status, execution_status: executionStatus, approval_request_id: approvalId, ...(approvalLookup ? {approval_lookup:approvalLookup} : {}), logs: response.logs };
       const nodes = await request(`${base}/nodes?${new URLSearchParams({ page: String(page), per_page: String(perPage) })}`);
       return { execution_id: id, status, nodes, page, per_page: perPage };

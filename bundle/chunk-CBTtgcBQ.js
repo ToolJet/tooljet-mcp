@@ -21,14 +21,43 @@ var moving = /* @__PURE__ */ new Set(["__current_branch__", "__default_branch_dr
 async function resolveWorkflowReference(auth, raw, consumer) {
   const options = normalizeWorkflowQueryOptions(raw);
   assertWorkflowQueryOptions(options);
-  const workflowId = String(options.workflowId);
+  const requestedId = String(options.workflowId);
+  let workflowId = requestedId;
   async function read(path) {
     const response = await auth.authedFetch(path);
     if (!response.ok)
       throw new Error(`Cannot inspect workflow reference (HTTP ${response.status}); no query was executed.`);
     return record(await response.json());
   }
-  const app = await read(`/api/apps/${encodeURIComponent(workflowId)}`);
+  let app;
+  const initial = await auth.authedFetch(`/api/apps/${encodeURIComponent(workflowId)}`);
+  if (initial.status === 404) {
+    const matches = /* @__PURE__ */ new Set();
+    for (let page2 = 1; page2 <= 100; page2++) {
+      const result = await read(`/api/apps?type=workflow&page=${page2}`);
+      if (!Array.isArray(result.apps))
+        throw new Error("Authorized workflow list unavailable.");
+      for (const candidate of result.apps.map(record)) {
+        if ((candidate.co_relation_id ?? candidate.coRelationId) === requestedId && typeof candidate.id === "string")
+          matches.add(candidate.id);
+      }
+      const total = Number(record(result.meta).total_pages ?? record(result.meta).totalPages);
+      if (!Number.isInteger(total) || total < 0 || total > 100)
+        throw new Error("Cannot verify the complete authorized workflow list. Use a physical workflow ID.");
+      if (page2 >= total)
+        break;
+    }
+    if (matches.size !== 1)
+      throw new Error("Workflow stable ID is unavailable or ambiguous in the active workspace.");
+    workflowId = [...matches][0];
+    app = await read(`/api/apps/${encodeURIComponent(workflowId)}`);
+    if ((app.co_relation_id ?? app.coRelationId) !== requestedId)
+      throw new Error("Workflow stable ID mapping changed; no query was executed.");
+  } else {
+    if (!initial.ok)
+      throw new Error(`Cannot inspect workflow reference (HTTP ${initial.status}); no query was executed.`);
+    app = record(await initial.json());
+  }
   if (app.id !== workflowId || app.type !== "workflow" || (app.organizationId ?? app.organization_id) !== await auth.getOrganizationId())
     throw new Error("Workflow identity or workspace mismatch. Use the workflow ID from list_workflows.");
   const listing = await read(`/api/apps/${encodeURIComponent(workflowId)}/versions?includeDefaultBranchVersions=true`);
@@ -48,7 +77,12 @@ async function resolveWorkflowReference(auth, raw, consumer) {
   let selected;
   if (pin && moving.has(pin)) {
     if (pin === "__current_branch__" && !context) {
-      return { workflow_id: workflowId, version_id: null, pin, options: { ...options, workflowVersionId: pin } };
+      return {
+        workflow_id: workflowId,
+        version_id: null,
+        pin,
+        options: { ...options, workflowVersionId: pin }
+      };
     }
     const defaultId = branchId(defaultVersions[0] ?? {});
     if (pin === "__current_branch__" && context?.branch_id && context.branch_id !== defaultId) {
@@ -73,6 +107,10 @@ async function resolveWorkflowReference(auth, raw, consumer) {
       if (released.id !== workflowId || (released.organizationId ?? released.organization_id) !== await auth.getOrganizationId() || selected.id !== releasedId)
         throw new Error("Released workflow version identity mismatch.");
     }
+  }
+  const hidesDrafts = versions.some((version) => version.status === "DRAFT" && (version.isSynced ?? version.is_synced) === true);
+  if (hidesDrafts && (selected?.status === "DRAFT" && versionType(selected) === "VERSION" || !pin && !(app.currentVersionId ?? app.current_version_id))) {
+    throw new Error("The version list may hide local drafts, so the runtime target cannot be verified. Select a published named version.");
   }
   if (!selected?.id)
     throw new Error("Workflow version cannot be verified from available metadata. Open the workflow on the intended branch or select a visible named version.");
@@ -1123,6 +1161,8 @@ function createWorkflowClient(auth, config, queries) {
           }
         }
       }
+      if (executionStatus === "waiting" && !approvalId && !approvalLookup)
+        approvalLookup = "No matching pending approval is visible to this account; use list_workflow_approvals with an authorized account.";
       const status = { status: response.status, execution_status: executionStatus, approval_request_id: approvalId, ...approvalLookup ? { approval_lookup: approvalLookup } : {}, logs: response.logs };
       const nodes = await request(`${base}/nodes?${new URLSearchParams({ page: String(page2), per_page: String(perPage) })}`);
       return { execution_id: id2, status, nodes, page: page2, per_page: perPage };
