@@ -1,6 +1,7 @@
 import { Script } from 'node:vm';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
+import { conditionBranches, elseBranch, workflowInputs, humanConfig, conditionHandles, humanConfigurationErrors } from './nodeContracts.js';
 
 const ref = z.string().min(1).max(100);
 const base = { ref, existing_id: z.string().uuid().optional(), label: z.string().max(100).optional(), position: z.object({ x: z.number().finite(), y: z.number().finite() }).optional() };
@@ -11,16 +12,20 @@ export const nodeSchema = z.discriminatedUnion('type', [
   z.object({ ...base, type: z.literal('javascript'), name: query.name, code: z.string().min(1) }).strict(),
   z.object({ ...base, type: z.literal('query'), ...query }).strict(),
   z.object({ ...base, type: z.literal('loop'), name: query.name, iteration_values_code: z.string().min(1), code: z.string().min(1) }).strict(),
-  z.object({ ...base, type: z.literal('condition'), code: z.string().min(1) }).strict(),
+  z.object({ ...base, type: z.literal('condition'), code: z.string().min(1).optional(), conditions: conditionBranches.optional(), else_branch: elseBranch.optional() }).strict(),
+  z.object({ ...base, type: z.literal('filter'), name: query.name, input_expression: z.string().min(1), predicate_expression: z.string().min(1) }).strict(),
+  z.object({ ...base, type: z.literal('wait'), name: query.name, duration_seconds: z.number().finite().min(1).max(2592000) }).strict(),
+  z.object({ ...base, type: z.literal('human'), name: query.name, ...humanConfig }).strict(),
   z.object({ ...base, type: z.literal('response'), code: z.string().min(1), status_code: z.number().int().min(100).max(599).optional() }).strict(),
   z.object({ ...base, type: z.literal('agent'), system_prompt: z.string().optional(), user_prompt: z.string().optional(), output_format: z.record(z.string(), z.unknown()).nullable().optional(), model: agentModel.nullable().optional() }).strict(),
 ]);
 export const specSchema = z.object({
   schema_version: z.literal(1).default(1),
   nodes: z.array(nodeSchema).max(200).default([]),
-  edges: z.array(z.object({ ref, existing_id: z.string().optional(), from: ref, to: ref, port: z.enum(['default', 'success', 'failure', 'true', 'false']) }).strict()).max(500).default([]),
+  edges: z.array(z.object({ ref, existing_id: z.string().optional(), from: ref, to: ref, port: z.string().min(1) }).strict()).max(500).default([]),
   remove_node_ids: z.array(z.string()).default([]),
   remove_edge_ids: z.array(z.string()).default([]),
+  workflow_inputs: workflowInputs.optional(),
   test_parameters: z.record(z.string(), z.unknown()).optional(),
 }).strict();
 /** Workflows run code in a server-side async IIFE, without app RunJS parameters. */
@@ -63,7 +68,7 @@ export function validateGraph(graph: Definition, queryIds?: Set<string>) {
   for (const mapping of graph.queries) if (queryIds && !queryIds.has(mapping.id)) error('missing_query', 'queries', `Query ${mapping.id} does not belong to this version.`);
   for (const n of graph.nodes) {
     if (n.type === 'query' && !mappings.has(String(n.data.idOnDefinition))) error('missing_mapping', `nodes.${n.id}`, 'Query node has no query mapping.');
-    if (!['input', 'query', 'if-condition', 'output', 'agent'].includes(n.type)) warnings.push({ code: 'unsupported_node', path: `nodes.${n.id}`, message: `Retained ${n.type} node; configuration not validated.` });
+    if (!['input', 'query', 'if-condition', 'output', 'agent', 'human', 'filter', 'wait'].includes(n.type)) warnings.push({ code: 'unsupported_node', path: `nodes.${n.id}`, message: `Retained ${n.type} node; configuration not validated.` });
   }
   const flowEdges = controlFlowEdges(graph);
   for (const edge of graph.edges) {
@@ -76,9 +81,12 @@ export function validateGraph(graph: Definition, queryIds?: Set<string>) {
       continue;
     }
     if (target.type === 'input') error('start_inbound', path, 'Start cannot have inbound edges.');
-    const ports: Record<string, Array<string | null | undefined>> = { input: [null, undefined], query: ['success', 'failure'], 'if-condition': ['true', 'false'], output: [], agent: ['output'] };
+    const ports: Record<string, Array<string | null | undefined>> = { input: [null, undefined], query: ['success', 'failure'], 'if-condition': conditionHandles(source.data), human: ((source.data.outcomes ?? []) as Array<{ key: string }>).map(outcome => outcome.key), filter: [null, undefined], wait: [null, undefined], output: [], agent: ['output'] };
     if (ports[source.type] && !ports[source.type].includes(edge.sourceHandle)) error('invalid_port', path, `Invalid source port for ${source.type}.`);
     if (source.type === 'query' && edge.sourceHandle === 'failure' && !source.data.errorHandler) error('error_handler_disabled', path, 'Failure edge requires query error handling.');
+  }
+  for (const filter of graph.nodes.filter(node => node.type === 'filter')) {
+    if (flowEdges.filter(edge => edge.target === filter.id).length > 1) error('filter_inbound', `nodes.${filter.id}`, 'Filter accepts exactly one upstream connection.');
   }
   for (const agent of graph.nodes.filter(node => node.type === 'agent')) {
     if (graph.edges.filter(edge => edge.target === agent.id && edge.targetHandle === 'ai-model').length > 1) {
@@ -130,7 +138,7 @@ export function compileGraph(current: Definition, spec: WorkflowSpec, ids?: Grap
   graph.edges = graph.edges.filter(e => !spec.remove_edge_ids.includes(e.id) && !cascadedChildIds.has(e.source) && !cascadedChildIds.has(e.target));
   const editedIds = new Set<string>();
   for (const input of spec.nodes) {
-    if ('code' in input) {
+    if ('code' in input && input.code !== undefined) {
       try { new Script(input.type === 'condition' ? `(${input.code})` : `(async function() {${input.code}\n})`); }
       catch { throw new Error(`Invalid JavaScript syntax in node ${input.ref}.`); }
     }
@@ -143,11 +151,48 @@ export function compileGraph(current: Definition, spec: WorkflowSpec, ids?: Grap
     editedIds.add(id);
     const old = graph.nodes.find(n => n.id === id);
     if (input.existing_id && !old) throw new Error(`Unknown existing node: ${id}`);
-    const type = { start: 'input', javascript: 'query', query: 'query', loop: 'query', condition: 'if-condition', response: 'output', agent: 'agent' }[input.type];
+    const type = { start: 'input', javascript: 'query', query: 'query', loop: 'query', condition: 'if-condition', response: 'output', agent: 'agent', human: 'human', filter: 'filter', wait: 'wait' }[input.type];
     if (old && old.type !== type) throw new Error('Changing node type is unsupported; remove and add explicitly.');
     const data: Record<string, unknown> = { ...old?.data, label: input.label ?? old?.data.label ?? input.ref };
     if (input.type !== 'condition') data.nodeType = input.type === 'javascript' || input.type === 'loop' ? 'query' : input.type;
-    if (input.type === 'condition' || input.type === 'response') data.code = input.code;
+    if (input.type === 'condition') {
+      if (input.code !== undefined && input.conditions !== undefined) throw new Error('Specify code or conditions, not both.');
+      if (input.code !== undefined) {
+        if (Array.isArray(data.conditions) && data.conditions.length) throw new Error('This node uses ordered conditions. Edit conditions explicitly; code would leave active branches unchanged.');
+        data.code = input.code;
+      }
+      if (input.conditions !== undefined) {
+        if (new Set(input.conditions.map(branch => branch.id)).size !== input.conditions.length || input.conditions.some(branch => branch.id === 'false')) throw new Error('Condition IDs must be unique and cannot be false.');
+        input.conditions.forEach(branch => { new Script(`(${branch.code})`); });
+        data.conditions = input.conditions.map(branch => ({ ...((data.conditions as Array<{ id: string }> | undefined)?.find(old => old.id === branch.id) ?? {}), ...branch }));
+        delete data.code;
+      }
+      if (input.else_branch !== undefined) {
+        // Legacy execution ignores elseBranch. Promote the legacy expression while
+        // keeping its true handle so existing edges continue to route correctly.
+        if (!Array.isArray(data.conditions) && typeof data.code === 'string') {
+          data.conditions = [{ id: 'true', code: data.code, label: 'If' }];
+          delete data.code;
+        }
+        data.elseBranch = { ...(data.elseBranch as object ?? {}), ...input.else_branch };
+      }
+      if (data.code === undefined && !Array.isArray(data.conditions)) throw new Error('Condition requires code or conditions.');
+    }
+    if (input.type === 'response') data.code = input.code;
+    if (input.type === 'filter') {
+      new Script(`(${input.input_expression})`); new Script(`(${input.predicate_expression})`);
+      Object.assign(data, { nodeName: input.name, inputExpression: input.input_expression, predicateExpression: input.predicate_expression });
+    }
+    if (input.type === 'wait') Object.assign(data, { nodeName: input.name, durationSeconds: input.duration_seconds });
+    if (input.type === 'human') {
+      Object.assign(data, { nodeName: input.name, outcomes: input.outcomes.map(outcome => ({ ...((data.outcomes as Array<{ key: string }> | undefined)?.find(old => old.key === outcome.key) ?? {}), ...outcome })), approvers: { ...(data.approvers as object ?? {}), ...input.approvers } });
+      for (const [from, to] of Object.entries({ description: 'description', input_schema: 'inputSchema', timeout: 'timeout', reminders: 'reminders', notification: 'notification' })) {
+        const value = input[from as keyof typeof input];
+        if (value !== undefined) data[to] = structuredClone(value);
+      }
+      const configurationErrors = humanConfigurationErrors(data);
+      if (configurationErrors.length) throw new Error(configurationErrors.join(' '));
+    }
     if (input.type === 'response' && (input.status_code !== undefined || data.statusCode === undefined)) {
       data.statusCode = { fxActive: false, value: String(input.status_code ?? 200) };
     }
@@ -216,7 +261,7 @@ export function compileGraph(current: Definition, spec: WorkflowSpec, ids?: Grap
     const source = resolve(input.from), target = resolve(input.to);
     if (!source || !target) throw new Error(`Unknown endpoint in edge ${input.ref}. Use a supplied ref or existing node ID.`);
     const sourceNode = graph.nodes.find((node) => node.id === source);
-    const sourceHandle = input.port === 'default' ? sourceNode?.type === 'agent' ? 'output' : null : input.port;
+    const sourceHandle = input.port === 'default' && !['if-condition', 'human'].includes(sourceNode?.type ?? '') ? sourceNode?.type === 'agent' ? 'output' : null : input.port;
     const edge = { ...old, id, source, target, sourceHandle, type: 'custom' };
     if (old) graph.edges[graph.edges.indexOf(old)] = edge; else graph.edges.push(edge);
     edge_ids[input.ref] = id;
@@ -243,6 +288,7 @@ export function compileGraph(current: Definition, spec: WorkflowSpec, ids?: Grap
     while (placed.some(other => other.position && Math.abs(other.position.x - x) < 300 && Math.abs(other.position.y - y) < 160)) y += 180;
     n.position = { x, y }; placed.push(n);
   }
+  if (spec.workflow_inputs !== undefined) graph.workflowInputs = structuredClone(spec.workflow_inputs);
   if (spec.test_parameters !== undefined) graph.defaultParams = JSON.stringify(spec.test_parameters);
   return { graph, node_ids, edge_ids, model_ids, query_nodes };
 }
@@ -264,10 +310,15 @@ export const nodeCatalog = {
     { type: 'javascript', renderer: 'query', ports: ['success', 'failure'], fields: ['name', 'code'] },
     { type: 'query', renderer: 'query', ports: ['success', 'failure'], fields: ['name', 'datasource_id', 'options'] },
     { type: 'loop', renderer: 'query', ports: ['success', 'failure'], fields: ['name', 'iteration_values_code', 'code'] },
-    { type: 'condition', renderer: 'if-condition', ports: ['true', 'false'], fields: ['code'] },
+    { type: 'condition', renderer: 'if-condition', ports: ['condition id', 'false (else)'], fields: ['code (legacy only)', 'conditions', 'else_branch'] },
+    { type: 'filter', renderer: 'filter', ports: ['default'], fields: ['name', 'input_expression', 'predicate_expression'] },
+    { type: 'wait', renderer: 'wait', ports: ['default'], fields: ['name', 'duration_seconds'] },
+    { type: 'human', renderer: 'human', ports: ['outcome key'], fields: ['name', 'outcomes', 'input_schema', 'approvers', 'timeout', 'reminders', 'notification'] },
     { type: 'response', renderer: 'output', ports: [], fields: ['code', 'status_code'] },
     { type: 'agent', renderer: 'agent', ports: ['default'], fields: ['system_prompt', 'user_prompt', 'output_format', 'model'] },
   ],
   edit_semantics: 'Patch. Use existing_id to edit nodes/edges; edge endpoints may use existing node IDs. Omitted objects are preserved. Removal requires explicit IDs and incident edge removal.',
-  limitations: ['Agent tool connections are not authored', 'No publishing or trigger setup', 'No concurrent-edit protection', 'No automatic execution during authoring', 'Advanced nodes are preserved but not authored'],
+  workflow_inputs: 'Use workflow_inputs to replace typed declarations; omission preserves them and [] clears them. test_parameters remains separate.',
+  advanced_nodes: 'Filter expressions use value and index in the predicate. Human and Wait suspend durably and cannot run as child workflows. Human approval resolution remains in ToolJet.',
+  limitations: ['Agent tool connections are not authored', 'No publishing or trigger setup', 'No concurrent-edit protection', 'No automatic execution during authoring', 'Unknown node types are preserved but not authored'],
 };
