@@ -780,6 +780,9 @@ var authorizeApp = async (appId, need) => {
   const owner = app?.organizationId ?? app?.organization_id;
   if (!owner || owner !== active.workspace)
     throw new Error(`App ${appId} was not found in this workspace.`);
+  if (app?.type === "module") {
+    throw new Error(`App ${appId} is a module, and Code mode is for apps only: its code cannot be read, changed, built or installed here. Nothing was changed. For a Code mode build, create an app with create_app build_mode "code".`);
+  }
   const versionId = app?.editing_version?.id ?? app?.editingVersion?.id;
   let access;
   try {

@@ -190,7 +190,10 @@ const authorizeApp = async (appId: string, need: Need): Promise<void> => {
   const known = active.authorized.get(key);
   if (known && Date.now() - known.at < grantTtlMs() && known[need]) return;
   active.authorized.delete(key);
-  let app: { organizationId?: string; organization_id?: string; editing_version?: { id?: string }; editingVersion?: { id?: string } };
+  let app: {
+    organizationId?: string; organization_id?: string; type?: string;
+    editing_version?: { id?: string }; editingVersion?: { id?: string };
+  };
   try {
     app = await active.client.getApp(appId);
   } catch {
@@ -198,6 +201,15 @@ const authorizeApp = async (appId: string, need: Need): Promise<void> => {
   }
   const owner = app?.organizationId ?? app?.organization_id;
   if (!owner || owner !== active.workspace) throw new Error(`App ${appId} was not found in this workspace.`);
+  // A module is drawn inside other apps' pages, in its module container: it has no page for code to own. ToolJet
+  // answers for it like an app and lets an admin write its source, so an install went through and each one added
+  // another code component to the container (2026-11-17). Its type is the only thing that says so.
+  if (app?.type === 'module') {
+    throw new Error(
+      `App ${appId} is a module, and Code mode is for apps only: its code cannot be read, changed, built or installed ` +
+        'here. Nothing was changed. For a Code mode build, create an app with create_app build_mode "code".'
+    );
+  }
   const versionId = app?.editing_version?.id ?? app?.editingVersion?.id;
   let access: { read: boolean; write: boolean };
   try {

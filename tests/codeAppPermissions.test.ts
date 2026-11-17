@@ -206,6 +206,54 @@ describe('an end user who can use the app but may not read its code', () => {
   });
 });
 
+describe('a module', () => {
+  // GET /api/apps/:id answers for a module too (type "module"), and an admin may write its source: only the type says
+  // it is not an app. A module has no page for code to own, and each install added another code component to its container.
+  const moduleCaller = () => {
+    const codeSourceAccess = vi.fn(async () => ({ read: true, write: true }));
+    const getApp = vi.fn(async () => ({ organizationId: WORKSPACE, type: 'module', editing_version: { id: VERSION } }));
+    return { context: codeContext({ client: { getApp, codeSourceAccess } as any }), codeSourceAccess };
+  };
+
+  it('is refused by every Code mode tool, by app id and by name, before ToolJet is asked for its source', async () => {
+    project();
+    const before = pkg();
+    const { context, codeSourceAccess } = moduleCaller();
+    for (const out of [
+      await codeAppReadFilesTool(context).handler({ app_id: APP, paths: ['frontend/src/App.tsx'] } as any),
+      await codeAppReadFilesTool(context).handler({ name: 'demo' } as any),
+      await codeAppWriteFilesTool(context).handler({ app_id: APP, files: [{ path: 'frontend/src/New.tsx', content: 'x' }] } as any),
+      await codeAppBuildTool(context).handler({ app_id: APP } as any),
+      await codeAppInstallTool(context).handler({ name: 'demo' } as any),
+      await codeAppAddDependencyTool(context).handler({ app_id: APP, packages: ['date-fns'] } as any),
+    ]) {
+      expect(text(out)).toMatch(/is a module, and Code mode is for apps only/);
+      expect(text(out)).not.toContain('export default 1');
+    }
+    expect(calls()).toEqual([]);
+    expect(pkg()).toBe(before);
+    expect(existsSync(join(root, 'apps', DEPLOYMENT, WORKSPACE, 'demo', 'frontend', 'src', 'New.tsx'))).toBe(false);
+    expect(codeSourceAccess).not.toHaveBeenCalled();
+  });
+
+  it('gets no project from a scaffold', async () => {
+    const { context } = moduleCaller();
+    const out = text(await codeAppScaffoldTool(context).handler({ name: 'widget', display_name: 'Widget', app_id: APP }));
+    expect(out).toMatch(/is a module, and Code mode is for apps only/);
+    expect(out).toMatch(/create_app/);
+    expect(calls()).toEqual([]);
+    expect(existsSync(join(root, 'apps', DEPLOYMENT, WORKSPACE, 'widget'))).toBe(false);
+  });
+
+  it('is not what a front-end app is taken for', async () => {
+    project();
+    const getApp = vi.fn(async () => ({ organizationId: WORKSPACE, type: 'front-end', editing_version: { id: VERSION } }));
+    const context = codeContext({ client: { getApp, codeSourceAccess: async () => ({ read: true, write: true }) } as any });
+    const out = JSON.parse(text(await codeAppReadFilesTool(context).handler({ app_id: APP, paths: ['app.json'] } as any)));
+    expect(out.files['app.json']).toContain(APP);
+  });
+});
+
 describe('a workspace member viewing a public app', () => {
   // GET /api/apps/:id/tables passed for any member on a public app; the source API checks public apps like private ones.
   it('is refused a remove-only dependency change because the source API says it may not write', async () => {
