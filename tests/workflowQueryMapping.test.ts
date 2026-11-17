@@ -113,6 +113,11 @@ function persistenceFixture(readback?: Record<string, unknown> | 'unavailable', 
   let saved = structuredClone(valid) as Record<string, unknown>;
   let wrote = false;
   const fetcher = vi.fn(async (path: string, init?: RequestInit) => {
+    if (path.includes('/resolve-version?')) {
+      if (Object.keys(targetOverrides).length) return new Response('Workflow access denied', { status: 403 });
+      const url = new URL(path, 'http://localhost');
+      return Response.json({ workflow_id: url.pathname.split('/')[3], version_id: workflowVersionId, pin: url.searchParams.get('pin') });
+    }
     if (path.startsWith('/api/apps/') || path.startsWith('/api/v2/apps/')) return Response.json({
       id: path.split('/')[path.startsWith('/api/v2/') ? 4 : 3], type: 'workflow', organizationId: 'workspace',
       editing_version: { id: workflowVersionId }, ...targetOverrides,

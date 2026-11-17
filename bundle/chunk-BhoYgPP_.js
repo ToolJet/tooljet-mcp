@@ -1,5 +1,27 @@
 import { createRequire } from "node:module";
 createRequire(import.meta.url);
+function resolveRef(candidates, ref, kind, scope, describe2 = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
+  const byId = candidates.find((candidate) => candidate.id === ref);
+  if (byId)
+    return { ok: true, target: byId };
+  const byName = candidates.filter((candidate) => candidate.name === ref);
+  if (byName.length === 1)
+    return { ok: true, target: byName[0] };
+  if (byName.length > 1) {
+    return {
+      ok: false,
+      error: `${kind} name "${ref}" is ambiguous ${scope} (${byName.length} share it). Pass the id instead: ${byName.map((candidate) => candidate.id).join(", ")}.`
+    };
+  }
+  const available = candidates.map(describe2).join(", ");
+  return {
+    ok: false,
+    // The "do not re-read" clause matters: the previous phrasing ("does not exist") invited exactly
+    // the re-read that caused the loop.
+    error: `No ${kind.toLowerCase()} with id or name "${ref}" ${scope}. Do not re-read \u2014 it currently holds: ${available || "(none)"}.`
+  };
+}
+createRequire(import.meta.url);
 var TableQuotaError = class extends Error {
   code = "TJDB_TABLE_LIMIT_REACHED";
   status = 451;
@@ -6167,9 +6189,10 @@ export {
   __commonJS as e6,
   __require as e7,
   __toESM as e8,
-  TableQuotaError as e9,
-  normalizeParams as ea,
-  defineLazy as eb,
+  resolveRef as e9,
+  TableQuotaError as ea,
+  normalizeParams as eb,
+  defineLazy as ec,
   _startsWith as f,
   _slugify as g,
   _size as h,

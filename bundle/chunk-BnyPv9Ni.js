@@ -1,11 +1,11 @@
 import { createRequire } from "node:module";
-import { c as codeCliProblem } from "./chunk-CAr0IhXy.js";
-import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, e as definition } from "./chunk-NPyNDSUZ.js";
-import { e5 as tableQuotaError, e9 as TableQuotaError } from "./chunk-C1Uan0hB.js";
-import { e as encodeComponentParent, d as decodeComponentParent, i as isPackContainerType, b as resolvePackSlot, x as assertPageIcon, y as resolveComponentLibrary, o as isMisplacedStyleKey, z as defaultPack, A as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION } from "./chunk-BzoTtK4L.js";
-import { O as downgradeFlexForLibrary, P as toLibraryComponent, Q as missingLibraryPins, R as libraryTypeOf, S as libraryPins } from "./chunk-Btd7hqFK.js";
-import { aA as external_exports, ax as activePackSet, aE as fail, aG as ok, aH as exposeActions } from "./chunk-isfY25ah.js";
-import { a as assertPersistableQueryToggles, c as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches } from "./chunk-CpwF2B9D.js";
+import { c as codeCliProblem } from "./chunk-Cr2zggej.js";
+import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, e as definition } from "./chunk-CgMc8eXR.js";
+import { e5 as tableQuotaError, ea as TableQuotaError } from "./chunk-BhoYgPP_.js";
+import { e as encodeComponentParent, d as decodeComponentParent, i as isPackContainerType, b as resolvePackSlot, x as assertPageIcon, y as resolveComponentLibrary, o as isMisplacedStyleKey, z as defaultPack, A as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION } from "./chunk-DfrPsyM8.js";
+import { O as downgradeFlexForLibrary, P as toLibraryComponent, Q as missingLibraryPins, R as libraryTypeOf, S as libraryPins } from "./chunk-D1B51Cza.js";
+import { aA as external_exports, ax as activePackSet, aE as fail, aF as ok, aG as exposeActions } from "./chunk-B6ozJ2M5.js";
+import { a as assertPersistableQueryToggles, c as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches } from "./chunk-O6Dwgt9j.js";
 import { randomUUID, createHash } from "node:crypto";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { readFileSync, existsSync } from "node:fs";
@@ -14,6 +14,22 @@ import { join, resolve, dirname } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
+async function resolveWorkflowReference(auth, raw, consumerVersionId) {
+  const options = normalizeWorkflowQueryOptions(raw);
+  assertWorkflowQueryOptions(options);
+  const search = new URLSearchParams();
+  if (typeof options.workflowVersionId === "string")
+    search.set("pin", options.workflowVersionId);
+  if (consumerVersionId)
+    search.set("consumer_version_id", consumerVersionId);
+  const response = await auth.authedFetch(`/api/workflows/${encodeURIComponent(String(options.workflowId))}/resolve-version?${search}`);
+  if (!response.ok)
+    throw new Error(`Cannot resolve workflow reference (HTTP ${response.status}). The server must support workflow reference resolution; no query was executed.`);
+  const result = await response.json();
+  if (typeof result.workflow_id !== "string" || !(result.version_id === null || typeof result.version_id === "string") || !(result.pin === null || typeof result.pin === "string"))
+    throw new Error("Invalid workflow reference resolution response.");
+  return { ...result, options: { ...options, workflowId: result.workflow_id, workflowVersionId: result.pin } };
+}
 function componentRef(component) {
   return component.clientRef ?? component.name;
 }
@@ -95,10 +111,10 @@ function createAppVersionLifecycle(auth, getApp) {
     };
   }
   async function versions(appId) {
-    const data = await (await request(`/api/apps/${enc(appId)}/versions`)).json();
-    if (!Array.isArray(data.versions))
+    const data2 = await (await request(`/api/apps/${enc(appId)}/versions`)).json();
+    if (!Array.isArray(data2.versions))
       throw new Error("Missing app version inventory.");
-    return data.versions.map(normalize);
+    return data2.versions.map(normalize);
   }
   async function version(appId, versionId) {
     const found = (await versions(appId)).find((v) => v.id === versionId);
@@ -107,10 +123,10 @@ function createAppVersionLifecycle(auth, getApp) {
     return found;
   }
   async function environments(appId) {
-    const data = await (await request(`/api/app-environments?app_id=${enc(appId)}`)).json();
-    if (!Array.isArray(data.environments))
+    const data2 = await (await request(`/api/app-environments?app_id=${enc(appId)}`)).json();
+    if (!Array.isArray(data2.environments))
       throw new Error("Missing environment inventory.");
-    return data.environments.map((e) => {
+    return data2.environments.map((e) => {
       if (typeof e.id !== "string" || typeof e.name !== "string" || typeof e.priority !== "number") {
         throw new Error("Cannot verify environment promotion order.");
       }
@@ -139,8 +155,8 @@ function createAppVersionLifecycle(auth, getApp) {
     };
   }
   async function available(appId, v, env2) {
-    const data = await (await request(`/api/app-environments/${enc(env2.id)}/versions?app_id=${enc(appId)}`)).json();
-    const rows = data.appVersions ?? data.app_versions;
+    const data2 = await (await request(`/api/app-environments/${enc(env2.id)}/versions?app_id=${enc(appId)}`)).json();
+    const rows = data2.appVersions ?? data2.app_versions;
     if (!Array.isArray(rows) || !rows.some((row) => row.id === v.id)) {
       throw new Error(`Version ${v.name} is not available in ${env2.name}. No promotion or release was performed.`);
     }
@@ -247,6 +263,242 @@ function createAppVersionLifecycle(auth, getApp) {
   }
   return { list, switchEnvironment, promote, update, remove };
 }
+var id = external_exports.string().uuid();
+var data = external_exports.record(external_exports.string(), external_exports.unknown());
+var page = { page: external_exports.number().int().min(1).default(1), per_page: external_exports.number().int().min(1).max(50).default(20) };
+var scope = { app_id: id.optional(), folder_id: id.optional(), environment_id: id.optional() };
+var dates = { from: external_exports.string().optional(), to: external_exports.string().optional() };
+var language = external_exports.enum(["javascript", "python"]);
+var schedule = {
+  name: external_exports.string().trim().min(1).max(100),
+  workflowId: id,
+  environmentId: id,
+  type: external_exports.enum(["interval", "cron"]),
+  timezone: external_exports.string().min(1),
+  details: external_exports.object({
+    frequency: external_exports.enum(["minute", "hour", "day", "week", "month"]).optional(),
+    minutes: external_exports.union([external_exports.number(), external_exports.string()]).optional().describe("Minute within each hour, for frequency hour."),
+    hour: external_exports.string().optional().describe("Time such as 9:30 AM, for day/week/month."),
+    day: external_exports.string().optional().describe("Weekday name for weekly schedules."),
+    date: external_exports.union([external_exports.number(), external_exports.string()]).optional(),
+    minute: external_exports.string().optional(),
+    hours: external_exports.string().optional(),
+    dayOfMonth: external_exports.string().optional(),
+    month: external_exports.string().optional(),
+    dayOfWeek: external_exports.string().optional()
+  }).strict().describe("Interval: frequency minute runs every minute; hour also needs minutes; day/week/month need hour and day/date as applicable. Cron: all five fields minute, hours, dayOfMonth, month, dayOfWeek."),
+  params: data.nullable().optional()
+};
+var encoded = (value) => encodeURIComponent(String(value));
+var query = (values) => {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(values))
+    if (value !== void 0) {
+      for (const entry of Array.isArray(value) ? value : [value])
+        search.append(key, String(entry));
+    }
+  return search.toString();
+};
+var workflowOperations = {
+  list_workflow_executions: {
+    description: "List workspace execution history with filters and pagination.",
+    schema: external_exports.object({
+      ...page,
+      ...scope,
+      ...dates,
+      status: external_exports.array(external_exports.enum(["running", "waiting", "success", "failed", "terminated"])).optional(),
+      trigger: external_exports.array(external_exports.enum(["manual", "schedule", "webhook", "app", "workflow", "unknown"])).optional()
+    }).strict(),
+    method: "GET",
+    path: (a) => `/api/workflow_executions/workspace?${query(a)}`
+  },
+  get_workflow_execution_states: {
+    description: "Read queue and termination state for selected runs.",
+    schema: external_exports.object({ execution_ids: external_exports.array(id).min(1).max(100) }).strict(),
+    method: "POST",
+    path: () => "/api/workflow_executions/workspace/states",
+    body: (a) => ({ executionIds: a.execution_ids })
+  },
+  stop_workflow_execution: {
+    description: "Request termination of one run. Cancels pending waits and approvals. Use only when stopping that run is requested.",
+    schema: external_exports.object({ execution_id: id }).strict(),
+    method: "DELETE",
+    path: (a) => `/api/workflow_executions/${a.execution_id}/terminate`,
+    body: () => ({})
+  },
+  list_workflow_consumers: {
+    description: "List apps and workflows that reference this workflow.",
+    schema: external_exports.object({ workflow_id: id }).strict(),
+    method: "GET",
+    path: (a) => `/api/workflows/${a.workflow_id}/consumers`
+  },
+  list_workflow_schedules: {
+    description: "List schedules for a workflow, including pinned versions and input overrides.",
+    schema: external_exports.object({
+      app_id: id,
+      page: page.page,
+      limit: external_exports.number().int().min(1).max(50).default(20),
+      search: external_exports.string().optional(),
+      environment_id: id.optional(),
+      workflow_id: id.optional()
+    }).strict(),
+    method: "GET",
+    path: (a) => `/api/workflow-schedules?${query(a)}`
+  },
+  get_workflow_schedule: {
+    description: "Read one schedule.",
+    schema: external_exports.object({ schedule_id: id }).strict(),
+    method: "GET",
+    path: (a) => `/api/workflow-schedules/${a.schedule_id}`
+  },
+  create_workflow_schedule: {
+    description: "Create a schedule pinned to workflowId (a VERSION ID). Defaults inactive. Activating authorizes repeated workflow execution and its effects.",
+    schema: external_exports.object({ ...schedule, workflow_id: id, active: external_exports.boolean().default(false) }).strict(),
+    method: "POST",
+    path: () => "/api/workflow-schedules",
+    body: (a) => {
+      const { workflow_id, ...body } = a;
+      return body;
+    },
+    execution: true
+  },
+  update_workflow_schedule: {
+    description: "Update a schedule. May change future executions; preserves omitted properties.",
+    schema: external_exports.object({ schedule_id: id, changes: external_exports.object(schedule).partial().strict() }).strict(),
+    method: "PUT",
+    path: (a) => `/api/workflow-schedules/${a.schedule_id}`,
+    body: (a) => a.changes,
+    execution: true
+  },
+  set_workflow_schedule_active: {
+    description: "Activate or pause a schedule. Activation authorizes repeated executions and their effects.",
+    schema: external_exports.object({ schedule_id: id, active: external_exports.boolean() }).strict(),
+    method: "PUT",
+    path: (a) => `/api/workflow-schedules/activate/${a.schedule_id}`,
+    body: (a) => ({ active: a.active }),
+    execution: true
+  },
+  delete_workflow_schedule: {
+    description: "Delete one schedule and remove its future jobs.",
+    schema: external_exports.object({ schedule_id: id }).strict(),
+    method: "DELETE",
+    path: (a) => `/api/workflow-schedules/${a.schedule_id}`,
+    body: () => ({})
+  },
+  list_upcoming_workflow_runs: {
+    description: "List upcoming scheduled executions scoped to the workspace.",
+    schema: external_exports.object(scope).strict(),
+    method: "GET",
+    path: (a) => `/api/workflow_executions/workspace/upcoming?${query(a)}`
+  },
+  list_workflow_approvals: {
+    description: "List approvals visible to the signed-in user. Approval tokens are not required.",
+    schema: external_exports.object({
+      ...page,
+      ...scope,
+      ...dates,
+      status: external_exports.array(external_exports.enum(["pending", "resolved", "expired", "cancelled"])).optional(),
+      approver: external_exports.string().optional()
+    }).strict(),
+    method: "GET",
+    path: (a) => `/api/workflow-approvals?${query(a)}`
+  },
+  get_workflow_approval: {
+    description: "Read an approval from its explicitly supplied approval-link token. Treat the token as a secret; do not log or share it.",
+    schema: external_exports.object({ token: id }).strict(),
+    method: "GET",
+    path: (a) => `/api/workflow-approvals/${a.token}`
+  },
+  resolve_workflow_approval: {
+    description: "Submit the user-selected outcome and form inputs as the signed-in approver. Resumes the workflow and its effects. Never decide an approval outcome without user instruction.",
+    schema: external_exports.object({ approval_id: id, outcome: external_exports.string().min(1), input: data.default({}) }).strict(),
+    method: "POST",
+    path: (a) => `/api/workflow-approvals/by-id/${a.approval_id}/resolve`,
+    body: (a) => ({ outcome: a.outcome, input: a.input }),
+    execution: true
+  },
+  cancel_workflow_approval: {
+    description: "Cancel a pending approval and its workflow continuation.",
+    schema: external_exports.object({ approval_id: id }).strict(),
+    method: "POST",
+    path: (a) => `/api/workflow-approvals/${a.approval_id}/cancel`,
+    body: () => ({})
+  },
+  set_workflow_webhook_enabled: {
+    description: "Enable or disable webhook triggering on the current branch. Enabling allows external executions. Backend branch, license and permission checks remain enforced.",
+    schema: external_exports.object({ workflow_id: id, enabled: external_exports.boolean() }).strict(),
+    method: "PATCH",
+    path: (a) => `/api/v2/webhooks/workflows/${a.workflow_id}`,
+    body: (a) => ({ isEnable: a.enabled ? "endPointTrigger" : "none" }),
+    execution: true
+  },
+  get_workflow_packages: {
+    description: "Read JavaScript dependencies or Python requirements for a version.",
+    schema: external_exports.object({ version_id: id, language }).strict(),
+    method: "GET",
+    path: (a) => `/api/workflows/${a.version_id}/packages/${a.language}`
+  },
+  set_workflow_packages: {
+    description: "Replace dependencies and start a bundle build. Package installation may execute build tooling; only install requested packages in an editable draft.",
+    schema: external_exports.object({
+      workflow_id: id,
+      version_id: id,
+      language,
+      dependencies: external_exports.union([external_exports.record(external_exports.string(), external_exports.string()), external_exports.string()])
+    }).strict(),
+    method: "PUT",
+    path: (a) => `/api/workflows/${a.version_id}/packages/${a.language}`,
+    body: (a) => ({ dependencies: a.dependencies }),
+    draft: true
+  },
+  get_workflow_bundle_status: {
+    description: "Read dependency bundle build status.",
+    schema: external_exports.object({ version_id: id, language }).strict(),
+    method: "GET",
+    path: (a) => `/api/workflows/${a.version_id}/bundle/${a.language}/status`
+  },
+  rebuild_workflow_bundle: {
+    description: "Rebuild the selected draft version dependency bundle.",
+    schema: external_exports.object({ workflow_id: id, version_id: id, language }).strict(),
+    method: "POST",
+    path: (a) => `/api/workflows/${a.version_id}/bundle/${a.language}/rebuild`,
+    body: () => ({}),
+    draft: true
+  },
+  search_workflow_packages: {
+    description: "Search the package registry for workflow dependencies.",
+    schema: external_exports.object({ language, q: external_exports.string().min(1), limit: external_exports.number().int().min(1).max(50).default(10) }).strict(),
+    method: "GET",
+    path: (a) => `/api/workflows/packages/${a.language}/search?${query({ q: a.q, limit: a.limit })}`
+  },
+  get_workflow_package: {
+    description: "Read package metadata and available versions.",
+    schema: external_exports.object({ language, name: external_exports.string().min(1) }).strict(),
+    method: "GET",
+    path: (a) => `/api/workflows/packages/${a.language}/${encoded(a.name)}`
+  },
+  preview_workflow_node: {
+    description: "Execute a node preview against supplied state. Can run code and datasource writes; authorize those effects first.",
+    schema: external_exports.object({
+      workflow_id: id,
+      version_id: id,
+      environment_id: id,
+      node_id: id,
+      query_id: id.optional(),
+      state: data.default({})
+    }).strict(),
+    method: "POST",
+    path: () => "/api/workflow_executions/previewQueryNode",
+    body: (a) => ({
+      appVersionId: a.version_id,
+      appEnvId: a.environment_id,
+      nodeId: a.node_id,
+      queryId: a.query_id,
+      state: a.state
+    }),
+    execution: true
+  }
+};
 var branchContext = new AsyncLocalStorage();
 var withBranchContext = (branchId, fn) => branchContext.run(branchId, fn);
 var currentBranchId = () => branchContext.getStore();
@@ -505,8 +757,8 @@ var required = (x, label) => {
   return x;
 };
 function createWorkflowClient(auth, config, queries) {
-  async function request(path, body, method = "POST") {
-    const mutation = body !== void 0;
+  async function request(path, body, method = body === void 0 ? "GET" : "POST") {
+    const mutation = method !== "GET";
     let response;
     try {
       response = await auth.authedFetch(path, { ...mutation ? { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}, signal: AbortSignal.timeout(9e4) });
@@ -522,7 +774,7 @@ function createWorkflowClient(auth, config, queries) {
     const text = await response.text();
     return text ? JSON.parse(text) : {};
   }
-  const versionPath = (id, version) => `/api/v2/apps/${encodeURIComponent(id)}/versions/${encodeURIComponent(version)}`;
+  const versionPath = (id2, version) => `/api/v2/apps/${encodeURIComponent(id2)}/versions/${encodeURIComponent(version)}`;
   async function get(workflowId, versionId) {
     if (!versionId) {
       const app2 = record(await request(`/api/apps/${encodeURIComponent(workflowId)}`));
@@ -566,6 +818,7 @@ function createWorkflowClient(auth, config, queries) {
       environment_id: environmentId,
       editable: status === "DRAFT" && !released && !frozen,
       enabled: (app.isMaintenanceOn ?? app.is_maintenance_on) === true,
+      webhook_enabled: (version.workflowEnabled ?? version.workflow_enabled) === true,
       editor_url: `${config.appUrl}/${encodeURIComponent(await auth.getOrganizationSlug())}/apps/${encodeURIComponent(typeof app.slug === "string" && app.slug ? app.slug : workflowId)}${branchQuery}`,
       definition: definition(rawVersion.definition)
     };
@@ -577,30 +830,21 @@ function createWorkflowClient(auth, config, queries) {
       throw new Error("Cannot verify all nested workflow datasources; refusing AI execution.");
     visited.add(versionId);
     const saved = await queries.getQueries(versionId);
-    const savedIds = new Set(saved.map((query) => query.id));
+    const savedIds = new Set(saved.map((query2) => query2.id));
     if (graph.queries.some((mapping) => !savedIds.has(mapping.id))) {
       throw new Error("Workflow definition references a query outside its version; refusing AI execution.");
     }
-    if (saved.some((query) => !query.data_source_id))
+    if (saved.some((query2) => !query2.data_source_id))
       throw new Error("Cannot verify a workflow query datasource; refusing AI execution.");
     if (saved.length)
       await queries.listDatasources(versionId);
-    await Promise.all([...new Set(saved.map((query) => query.data_source_id))].map((id) => queries.assertDatasourceAllowed(id, versionId, environmentId)));
-    for (const query of saved) {
-      if (query.kind !== "workflows")
+    await Promise.all([...new Set(saved.map((query2) => query2.data_source_id))].map((id2) => queries.assertDatasourceAllowed(id2, versionId, environmentId)));
+    for (const query2 of saved) {
+      if (query2.kind !== "workflows")
         continue;
-      const options = record(query.options);
-      const workflowId = required(options.workflowId, "nested workflow ID");
-      if (!/^[A-Za-z0-9_-]+$/.test(workflowId))
-        throw new Error("Cannot verify a dynamic nested workflow target.");
-      let childVersion = options.workflowVersionId;
-      if (!childVersion) {
-        const child2 = record(await request(`/api/apps/${encodeURIComponent(workflowId)}`));
-        childVersion = child2.current_version_id ?? child2.currentVersionId;
-      }
-      const childVersionId = required(childVersion, "nested workflow version");
-      if (!/^[A-Za-z0-9_-]+$/.test(childVersionId))
-        throw new Error("Cannot verify a dynamic nested workflow version.");
+      const resolved = await resolveWorkflowReference(auth, record(query2.options), versionId);
+      const workflowId = resolved.workflow_id;
+      const childVersionId = required(resolved.version_id, "nested workflow released or pinned version");
       if (visited.has(childVersionId))
         continue;
       const childApp = record(await request(versionPath(workflowId, childVersionId)));
@@ -613,6 +857,7 @@ function createWorkflowClient(auth, config, queries) {
   }
   return {
     ...queries,
+    resolveReference: (options, consumerVersionId) => resolveWorkflowReference(auth, options, consumerVersionId),
     workspaceId: () => auth.getOrganizationId(),
     async planScope() {
       if (config.isOAuthDelegation && !config.oauthGrantId)
@@ -620,18 +865,18 @@ function createWorkflowClient(auth, config, queries) {
       const identity = config.isOAuthDelegation ? ["oauth", config.oauthGrantId] : config.sessionToken ?? config.pat;
       return createHash("sha256").update(JSON.stringify([config.apiUrl, identity, await auth.getOrganizationId(), branchIdFor(config)])).digest("hex");
     },
-    async list(page = 1, search = "") {
-      return request(`/api/apps?${new URLSearchParams({ type: "workflow", page: String(page), searchKey: search })}`);
+    async list(page2 = 1, search = "") {
+      return request(`/api/apps?${new URLSearchParams({ type: "workflow", page: String(page2), searchKey: search })}`);
     },
     get,
     async create(name) {
       const branchId = branchIdFor(config);
       const created = record(await request("/api/workflows", { name, type: "workflow", ...branchId ? { branchId } : {} }));
-      const id = required(created.id, "created workflow ID");
+      const id2 = required(created.id, "created workflow ID");
       try {
-        return await get(id);
+        return await get(id2);
       } catch (error) {
-        throw new Error(`Workflow ${id} was created, but readback failed. Do not recreate it. ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Workflow ${id2} was created, but readback failed. Do not recreate it. ${error instanceof Error ? error.message : String(error)}`);
       }
     },
     async save(snapshot, graph) {
@@ -654,21 +899,152 @@ function createWorkflowClient(auth, config, queries) {
       }));
       return { query_id: required(body.id, "created workflow query ID"), name: required(body.name, "created workflow query name") };
     },
-    async run(workflowId, versionId, environmentId, params) {
+    async run(workflowId, versionId, environmentId, params, step) {
       const snapshot = await get(workflowId, versionId);
       if (snapshot.environment_id !== environmentId)
         throw new Error("Environment must match the selected workflow version.");
       if (!snapshot.enabled)
         throw new Error("Workflow is disabled. Enable it in ToolJet before running it.");
       await assertWorkflowDatasources(versionId, environmentId, snapshot.definition);
-      return request("/api/workflow_executions", { executeUsing: "version", appVersionId: versionId, appId: workflowId, environmentId, params });
+      if (step?.start_node_id && !snapshot.definition.nodes.some((node) => node.id === step.start_node_id))
+        throw new Error("Step node does not belong to this version.");
+      if (step?.state && ["__humanDecision", "__waitResume"].some((key) => Object.hasOwn(step.state, key)))
+        throw new Error("Internal resume markers are not accepted.");
+      return request("/api/workflow_executions", { executeUsing: "version", appVersionId: versionId, appId: workflowId, environmentId, params, ...step?.start_node_id ? { startNodeId: step.start_node_id, injectedState: step.state ?? {} } : {} });
     },
-    async execution(id, page = 1, perPage = 20) {
-      const base = `/api/workflow_executions/${encodeURIComponent(id)}`;
+    async manage(name, input) {
+      const operation = workflowOperations[name];
+      const args = operation.schema.parse(input);
+      if ("draft" in operation && operation.draft && !(await get(args.workflow_id, args.version_id)).editable)
+        throw new Error("Package changes require an editable draft.");
+      if (name === "set_workflow_packages" && (args.language === "python" ? typeof args.dependencies !== "string" : typeof args.dependencies !== "object" || Array.isArray(args.dependencies)))
+        throw new Error("JavaScript requires a dependency map; Python requires requirements text.");
+      if (name === "preview_workflow_node") {
+        const snapshot = await get(args.workflow_id, args.version_id);
+        if (snapshot.environment_id !== args.environment_id)
+          throw new Error("Environment must match the selected workflow version.");
+        const node = snapshot.definition.nodes.find((node2) => node2.id === args.node_id);
+        if (!node)
+          throw new Error("Preview node does not belong to this version.");
+        const queryId = snapshot.definition.queries.find((query2) => query2.idOnDefinition === node.data.idOnDefinition)?.id;
+        if (args.query_id && args.query_id !== queryId)
+          throw new Error("Preview query does not belong to this node.");
+        args.query_id = queryId;
+        if (["__humanDecision", "__waitResume"].some((key) => Object.hasOwn(args.state, key)))
+          throw new Error("Internal resume markers are not accepted.");
+        await assertWorkflowDatasources(args.version_id, args.environment_id, snapshot.definition);
+      }
+      if (["create_workflow_schedule", "update_workflow_schedule", "set_workflow_schedule_active"].includes(name) && !(name === "set_workflow_schedule_active" && args.active === false)) {
+        const existing = args.schedule_id ? record(await request(`/api/workflow-schedules/${args.schedule_id}`)) : {};
+        const changes = args.changes ?? args;
+        const versionId = required(changes.workflowId ?? record(existing.workflow).id ?? existing.workflowId, "schedule version");
+        const workflowId = required(args.workflow_id ?? existing.appId ?? existing.app_id, "schedule workflow");
+        const environmentId = required(changes.environmentId ?? existing.environmentId ?? existing.environment_id, "schedule environment");
+        const snapshot = await get(workflowId, versionId);
+        if (snapshot.environment_id !== environmentId)
+          throw new Error("Schedule environment must match its pinned version.");
+        await assertWorkflowDatasources(versionId, environmentId, snapshot.definition);
+      }
+      if (name === "set_workflow_webhook_enabled" && args.enabled) {
+        const app = record(await request(`/api/apps/${encodeURIComponent(args.workflow_id)}`));
+        const listing = record(await request(`/api/apps/${encodeURIComponent(args.workflow_id)}/versions?includeDefaultBranchVersions=true`));
+        if (!Array.isArray(listing.versions))
+          throw new Error("Cannot verify webhook versions.");
+        const versions = new Set(listing.versions.map((value) => required(record(value).id, "webhook version")));
+        const released = app.current_version_id ?? app.currentVersionId;
+        if (typeof released === "string")
+          versions.add(released);
+        const editing = record(app.editing_version ?? app.editingVersion).id;
+        if (typeof editing === "string")
+          versions.add(editing);
+        if (!versions.size || versions.size > 100)
+          throw new Error("Cannot verify all webhook versions.");
+        for (const versionId of versions) {
+          const snapshot = await get(args.workflow_id, versionId);
+          await assertWorkflowDatasources(snapshot.version_id, snapshot.environment_id, snapshot.definition);
+        }
+      }
+      const result = await request(operation.path(args), "body" in operation ? operation.body(args) : void 0, operation.method);
+      if (record(result).success === false)
+        throw new Error(String(record(result).message ?? "Workflow operation failed."));
+      return result;
+    },
+    async webhook(workflowId, includeCredentials = false) {
+      const snapshot = await get(workflowId);
+      const app = record(await request(`/api/apps/${encodeURIComponent(workflowId)}`));
+      const releasedId = app.current_version_id ?? app.currentVersionId;
+      const released = typeof releasedId === "string" ? await get(workflowId, releasedId) : void 0;
+      return {
+        workflow_id: workflowId,
+        configured_version_id: snapshot.version_id,
+        enabled: snapshot.webhook_enabled,
+        trigger_url: `${config.apiUrl}/api/v2/webhooks/workflows/${encodeURIComponent(workflowId)}/trigger`,
+        default_trigger: released ? {
+          version_id: released.version_id,
+          enabled: released.webhook_enabled,
+          inputs: released.definition.workflowInputs ?? [],
+          legacy_parameters: released.definition.webhookParams ?? []
+        } : { version_id: null, message: "No released version. The default webhook URL cannot execute until a version is released." },
+        ...includeCredentials ? { token: app.workflow_api_token ?? app.workflowApiToken } : {},
+        inputs: snapshot.definition.workflowInputs ?? [],
+        legacy_parameters: snapshot.definition.webhookParams ?? []
+      };
+    },
+    async watch(executionId, seconds) {
+      await request(`/api/workflow_executions/${encodeURIComponent(executionId)}/status`);
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), seconds * 1e3);
+      const events = [];
+      let reader;
+      try {
+        const response = await auth.authedFetch(`/api/workflow_executions/${encodeURIComponent(executionId)}/stream`, { signal: controller.signal, headers: { Accept: "text/event-stream" } });
+        if (!response.ok || !response.body)
+          throw new Error(`Workflow event stream failed (HTTP ${response.status}).`);
+        reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let bytes = 0;
+        while (events.length < 100 && bytes < 6e4) {
+          const chunk = await reader.read();
+          if (chunk.done)
+            break;
+          bytes += chunk.value.byteLength;
+          if (bytes > 6e4)
+            break;
+          buffer += decoder.decode(chunk.value, { stream: true });
+          buffer = buffer.replace(/\r\n/g, "\n");
+          let boundary;
+          while (events.length < 100 && (boundary = buffer.indexOf("\n\n")) >= 0) {
+            const frame = buffer.slice(0, boundary);
+            buffer = buffer.slice(boundary + 2);
+            const payload = frame.split("\n").filter((line) => line.startsWith("data:")).map((line) => line.slice(5).trimStart()).join("\n");
+            if (payload) {
+              try {
+                events.push(JSON.parse(payload));
+              } catch {
+                events.push({ data: payload });
+              }
+            }
+          }
+        }
+        return { execution_id: executionId, events, bounded: true };
+      } catch (error) {
+        if (!controller.signal.aborted)
+          throw error;
+        return { execution_id: executionId, events, bounded: true };
+      } finally {
+        clearTimeout(timer);
+        controller.abort();
+        await reader?.cancel().catch(() => {
+        });
+      }
+    },
+    async execution(id2, page2 = 1, perPage = 20) {
+      const base = `/api/workflow_executions/${encodeURIComponent(id2)}`;
       const response = record(await request(`${base}/status`));
-      const status = { status: response.status, logs: response.logs };
-      const nodes = await request(`${base}/nodes?${new URLSearchParams({ page: String(page), per_page: String(perPage) })}`);
-      return { execution_id: id, status, nodes, page, per_page: perPage };
+      const status = { status: response.status, execution_status: response.execution_status ?? (response.status === true ? "completed" : "unknown"), approval_request_id: response.approval_request_id ?? null, logs: response.logs };
+      const nodes = await request(`${base}/nodes?${new URLSearchParams({ page: String(page2), per_page: String(perPage) })}`);
+      return { execution_id: id2, status, nodes, page: page2, per_page: perPage };
     }
   };
 }
@@ -1022,9 +1398,9 @@ function isCanonicalStaticBooleanBinding(value, expected) {
   return binding.value === `{{${expected}}}` && binding.fxActive === false;
 }
 function invalidSeedTimestamps(columns, rows) {
-  const dates = columns.filter((c) => /^(date|timestamp(?:tz)?(?:\(\d+\))?(?: (?:with|without) time zone)?)$/i.test(c.type.trim()));
+  const dates2 = columns.filter((c) => /^(date|timestamp(?:tz)?(?:\(\d+\))?(?: (?:with|without) time zone)?)$/i.test(c.type.trim()));
   const errors = [];
-  for (const column of dates) {
+  for (const column of dates2) {
     const invalid = [];
     for (const [index, row] of rows.entries()) {
       const value = row[column.name];
@@ -1160,13 +1536,13 @@ var ToolJetHttpError = class extends Error {
     this.name = "ToolJetHttpError";
   }
 };
-function isPageHidden(page) {
-  return booleanBindingValue(page?.hidden?.value) === true;
+function isPageHidden(page2) {
+  return booleanBindingValue(page2?.hidden?.value) === true;
 }
-function pageHiddenNeedsUpdate(page, expected) {
-  if (page?.hidden === void 0 || page?.hidden === null)
+function pageHiddenNeedsUpdate(page2, expected) {
+  if (page2?.hidden === void 0 || page2?.hidden === null)
     return expected;
-  return booleanBindingValue(page.hidden?.value) !== expected || !isCanonicalStaticBooleanBinding(page.hidden, expected);
+  return booleanBindingValue(page2.hidden?.value) !== expected || !isCanonicalStaticBooleanBinding(page2.hidden, expected);
 }
 async function assertOk(res, method) {
   if (!res.ok) {
@@ -1254,23 +1630,23 @@ function createClient(auth, config) {
     if (params.folderId !== void 0 && !selectedFolder) {
       throw new Error("Folder not found or not accessible in the current workspace. Use list_workspace_folders to find an accessible folder_id.");
     }
-    const query = new URLSearchParams({ page: String(params.page ?? 1), type: "front-end" });
+    const query2 = new URLSearchParams({ page: String(params.page ?? 1), type: "front-end" });
     if (params.searchText)
-      query.set("searchKey", params.searchText);
+      query2.set("searchKey", params.searchText);
     if (params.folderId)
-      query.set("folder", params.folderId);
-    const res = await auth.authedFetch(`/api/apps?${query}`);
+      query2.set("folder", params.folderId);
+    const res = await auth.authedFetch(`/api/apps?${query2}`);
     await assertOk(res, "listWorkspaceApps");
     const parsed = workspaceAppsResponse.safeParse(await res.json());
     if (!parsed.success)
       throw new Error("Unexpected workspace apps response.");
-    const data = parsed.data;
-    const { folder_count: folderAppCount, ...meta } = data.meta;
+    const data2 = parsed.data;
+    const { folder_count: folderAppCount, ...meta } = data2.meta;
     return {
-      ...data,
-      apps: data.apps.map((app) => ({
+      ...data2,
+      apps: data2.apps.map((app) => ({
         ...app,
-        folders: folders.filter((folder) => folder.appIds.has(app.id)).map(({ summary: { id, name } }) => ({ id, name }))
+        folders: folders.filter((folder) => folder.appIds.has(app.id)).map(({ summary: { id: id2, name } }) => ({ id: id2, name }))
       })),
       folder: selectedFolder?.summary ?? null,
       meta: {
@@ -1281,19 +1657,19 @@ function createClient(auth, config) {
     };
   }
   async function listWorkspaceUsers(params = {}) {
-    const query = new URLSearchParams({ page: String(params.page ?? 1) });
+    const query2 = new URLSearchParams({ page: String(params.page ?? 1) });
     if (params.searchText)
-      query.set("searchText", params.searchText);
+      query2.set("searchText", params.searchText);
     if (params.status)
-      query.set("status", params.status);
-    const res = await auth.authedFetch(`/api/organization-users?${query}`);
+      query2.set("status", params.status);
+    const res = await auth.authedFetch(`/api/organization-users?${query2}`);
     await assertOk(res, "listWorkspaceUsers");
-    const data = await res.json();
-    if (!Array.isArray(data?.users) || !Number.isInteger(data?.meta?.total_pages) || data.meta.total_pages < 0) {
+    const data2 = await res.json();
+    if (!Array.isArray(data2?.users) || !Number.isInteger(data2?.meta?.total_pages) || data2.meta.total_pages < 0) {
       throw new Error("Unexpected workspace users response.");
     }
     const fields = ["id", "user_id", "email", "first_name", "last_name", "name", "status", "groups", "user_metadata"];
-    return { meta: data.meta, users: data.users.map((user) => {
+    return { meta: data2.meta, users: data2.users.map((user) => {
       if (!user || typeof user.id !== "string")
         throw new Error("Unexpected workspace user response.");
       const result = Object.fromEntries(fields.filter((key) => Object.hasOwn(user, key)).map((key) => [key, user[key]]));
@@ -1399,10 +1775,10 @@ function createClient(auth, config) {
   async function listWorkspaceGroups() {
     const res = await auth.authedFetch(groupPath);
     await assertOk(res, "listWorkspaceGroups");
-    const data = await res.json();
-    if (!Array.isArray(data.groupPermissions))
+    const data2 = await res.json();
+    if (!Array.isArray(data2.groupPermissions))
       throw new Error("Unexpected workspace groups response.");
-    return data.groupPermissions.map(workspaceGroup);
+    return data2.groupPermissions.map(workspaceGroup);
   }
   async function getWorkspaceGroup(groupId) {
     const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}`);
@@ -1412,10 +1788,10 @@ function createClient(auth, config) {
   async function listWorkspaceGroupMembers(groupId) {
     const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}/users`);
     await assertOk(res, "listWorkspaceGroupMembers");
-    const data = await res.json();
-    if (!Array.isArray(data))
+    const data2 = await res.json();
+    if (!Array.isArray(data2))
       throw new Error("Unexpected workspace group members response.");
-    return data.map((entry) => {
+    return data2.map((entry) => {
       if (typeof entry?.id !== "string" || typeof entry?.userId !== "string") {
         throw new Error("Unexpected workspace group member response.");
       }
@@ -1478,12 +1854,12 @@ function createClient(auth, config) {
       throw new Error("update requires a role, non-empty group_ids, or user_metadata change. An empty group_ids list never removes memberships.");
     }
     async function readUser() {
-      for (let page = 1; ; page++) {
-        const result = await listWorkspaceUsers({ page });
+      for (let page2 = 1; ; page2++) {
+        const result = await listWorkspaceUsers({ page: page2 });
         const user = result.users.find((item) => item.id === organizationUserId);
         if (user)
           return user;
-        if (page >= result.meta.total_pages)
+        if (page2 >= result.meta.total_pages)
           throw new Error("User not found in this workspace. List workspace users again.");
       }
     }
@@ -1500,7 +1876,7 @@ function createClient(auth, config) {
       throw new Error("Custom groups are disabled under the current plan; existing memberships cannot be safely preserved. No changes were made.");
     }
     const groupIds = [.../* @__PURE__ */ new Set([...before.groups.map((group) => group.id), ...params.addGroupIds ?? []])];
-    if (groupIds.some((id) => !groups.some((group) => group.id === id && group.type === "custom" && !group.disabled))) {
+    if (groupIds.some((id2) => !groups.some((group) => group.id === id2 && group.type === "custom" && !group.disabled))) {
       throw new Error("Every group must be an existing, enabled custom group in this workspace. No changes were made.");
     }
     let metadata;
@@ -1527,7 +1903,7 @@ function createClient(auth, config) {
     try {
       const after = await readUser();
       const actualIds = after.groups?.map((group) => group.id);
-      if (!actualIds || actualIds.length !== groupIds.length || groupIds.some((id) => !actualIds.includes(id)) || after.role !== (params.role ?? before.role) || after.first_name !== before.first_name || after.last_name !== before.last_name || after.status !== before.status || !isDeepStrictEqual(after.user_metadata, metadata ?? before.user_metadata)) {
+      if (!actualIds || actualIds.length !== groupIds.length || groupIds.some((id2) => !actualIds.includes(id2)) || after.role !== (params.role ?? before.role) || after.first_name !== before.first_name || after.last_name !== before.last_name || after.status !== before.status || !isDeepStrictEqual(after.user_metadata, metadata ?? before.user_metadata)) {
         throw new Error("Saved user state does not match the requested changes and preserved fields.");
       }
       return { user: after, updated: true };
@@ -1569,13 +1945,13 @@ function createClient(auth, config) {
       return null;
     return body.files.flatMap((file) => typeof file.path === "string" && typeof file.content === "string" ? [{ path: file.path, content: file.content }] : []);
   }
-  function projectComponent(id, entry) {
+  function projectComponent(id2, entry) {
     const c = entry?.component ?? {};
     const def = c.definition ?? {};
     const persistedParent = typeof c.parent === "string" ? c.parent : void 0;
     const decodedParent = persistedParent ? decodeComponentParent(persistedParent) : void 0;
     return {
-      id,
+      id: id2,
       name: c.name,
       // A component of the published library reads back as its Lib_* type, so the catalogue checks its events,
       // actions and properties (libraryPack.ts).
@@ -1611,7 +1987,7 @@ function createClient(auth, config) {
       ...typeof pageOrderIndex(p) === "number" ? { index: pageOrderIndex(p) } : {},
       ...typeof p.isPageGroup === "boolean" ? { is_page_group: p.isPageGroup } : {},
       ...typeof p.pageGroupId === "string" ? { page_group_id: p.pageGroupId } : {},
-      components: Object.entries(p.components ?? {}).map(([id, entry]) => projectComponent(id, entry))
+      components: Object.entries(p.components ?? {}).map(([id2, entry]) => projectComponent(id2, entry))
     }));
     const queries = (full.data_queries ?? []).map((q) => ({
       id: q.id,
@@ -1629,7 +2005,7 @@ function createClient(auth, config) {
       ...typeof e.index === "number" ? { index: e.index } : {}
     }));
     const globalSettings = full.editing_version?.global_settings ?? full.editing_version?.globalSettings ?? full.editingVersion?.globalSettings ?? full.global_settings ?? full.globalSettings;
-    const componentLibrary = resolveComponentLibrary(globalSettings, pages.flatMap((page) => page.components.map((component) => component.type)));
+    const componentLibrary = resolveComponentLibrary(globalSettings, pages.flatMap((page2) => page2.components.map((component) => component.type)));
     return {
       app_id: full.id,
       name: full.name,
@@ -2056,28 +2432,28 @@ function createClient(auth, config) {
     return body.result ?? [];
   }
   async function createPages(params) {
-    for (const page of params.pages) {
-      if (page.icon !== void 0)
-        assertPageIcon(page.icon, `Page "${page.name}"`);
+    for (const page2 of params.pages) {
+      if (page2.icon !== void 0)
+        assertPageIcon(page2.icon, `Page "${page2.name}"`);
     }
     const app = await getApp(params.appId);
     const existingPages = app.pages ?? [];
-    const highestPersistedIndex = existingPages.reduce((highest, page) => {
-      const index = pageOrderIndex(page);
+    const highestPersistedIndex = existingPages.reduce((highest, page2) => {
+      const index = pageOrderIndex(page2);
       return typeof index === "number" && Number.isFinite(index) ? Math.max(highest, index) : highest;
     }, 0);
     const startIndex = Math.max(highestPersistedIndex, existingPages.length) + 1;
     const handleOf = (name) => name.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "page";
-    const existingNames = new Set((app.pages ?? []).map((page) => String(page.name).toLowerCase()));
-    const existingHandles = new Set((app.pages ?? []).map((page) => String(page.handle).toLowerCase()));
+    const existingNames = new Set((app.pages ?? []).map((page2) => String(page2.name).toLowerCase()));
+    const existingHandles = new Set((app.pages ?? []).map((page2) => String(page2.handle).toLowerCase()));
     const seenNames = /* @__PURE__ */ new Set();
     const seenHandles = /* @__PURE__ */ new Set();
-    const entries = params.pages.map((page, offset) => {
-      const nameKey = page.name.toLowerCase();
+    const entries = params.pages.map((page2, offset) => {
+      const nameKey = page2.name.toLowerCase();
       if (existingNames.has(nameKey) || seenNames.has(nameKey)) {
-        throw new Error(`ToolJet createPages failed: duplicate page name "${page.name}".`);
+        throw new Error(`ToolJet createPages failed: duplicate page name "${page2.name}".`);
       }
-      const base = handleOf(page.name);
+      const base = handleOf(page2.name);
       let handle = base;
       for (let suffix = 2; existingHandles.has(handle) || seenHandles.has(handle); suffix++) {
         const tail = `-${suffix}`;
@@ -2085,42 +2461,42 @@ function createClient(auth, config) {
       }
       seenNames.add(nameKey);
       seenHandles.add(handle);
-      return { ...page, id: randomUUID(), handle, index: startIndex + offset };
+      return { ...page2, id: randomUUID(), handle, index: startIndex + offset };
     });
-    const createSettled = await Promise.allSettled(entries.map(async (page) => {
+    const createSettled = await Promise.allSettled(entries.map(async (page2) => {
       const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: page.id,
-          name: page.name,
-          handle: page.handle,
-          index: page.index,
-          ...page.icon ? { icon: page.icon } : {}
+          id: page2.id,
+          name: page2.name,
+          handle: page2.handle,
+          index: page2.index,
+          ...page2.icon ? { icon: page2.icon } : {}
         })
       });
-      await assertOk(res, `createPages "${page.name}"`);
-      return page;
+      await assertOk(res, `createPages "${page2.name}"`);
+      return page2;
     }));
     const createdEntries = createSettled.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
     const failures = createSettled.flatMap((result, index) => result.status === "rejected" ? [`${entries[index].name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []);
-    const metadataTasks = createdEntries.flatMap((page) => [
-      ...page.icon ? [{ page, field: "icon", promise: persistFieldForPage(page.id, "icon", page.icon, `createPages "${page.name}" icon update`) }] : [],
-      ...page.hidden ? [{ page, field: "hidden", promise: persistFieldForPage(page.id, "hidden", staticBooleanBinding(true), `createPages "${page.name}" hidden update`) }] : []
+    const metadataTasks = createdEntries.flatMap((page2) => [
+      ...page2.icon ? [{ page: page2, field: "icon", promise: persistFieldForPage(page2.id, "icon", page2.icon, `createPages "${page2.name}" icon update`) }] : [],
+      ...page2.hidden ? [{ page: page2, field: "hidden", promise: persistFieldForPage(page2.id, "hidden", staticBooleanBinding(true), `createPages "${page2.name}" hidden update`) }] : []
     ]);
     const metadataSettled = await Promise.allSettled(metadataTasks.map((task) => task.promise));
     failures.push(...metadataSettled.flatMap((result, index) => result.status === "rejected" ? [`${metadataTasks[index].page.name} ${metadataTasks[index].field}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []));
     let persistedById = /* @__PURE__ */ new Map();
-    if (createdEntries.some((page) => page.icon || page.hidden)) {
+    if (createdEntries.some((page2) => page2.icon || page2.hidden)) {
       try {
         const refreshed = await getApp(params.appId);
-        persistedById = new Map((refreshed.pages ?? []).map((page) => [page.id, page]));
+        persistedById = new Map((refreshed.pages ?? []).map((page2) => [page2.id, page2]));
         for (const entry of createdEntries) {
-          const page = persistedById.get(entry.id);
-          if (entry.icon && page?.icon !== entry.icon) {
+          const page2 = persistedById.get(entry.id);
+          if (entry.icon && page2?.icon !== entry.icon) {
             failures.push(`page "${entry.name}" exists, but sidebar icon "${entry.icon}" did not persist`);
           }
-          if (entry.hidden && !isPageHidden(page)) {
+          if (entry.hidden && !isPageHidden(page2)) {
             failures.push(`page "${entry.name}" exists, but hidden-from-sidebar did not persist`);
           }
         }
@@ -2128,12 +2504,12 @@ function createClient(auth, config) {
         failures.push(`page metadata readback: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
-    const completed = createdEntries.map((page) => ({
-      page_id: page.id,
-      name: page.name,
-      index: page.index,
-      ...persistedById.get(page.id)?.icon ? { icon: persistedById.get(page.id).icon } : {},
-      ...isPageHidden(persistedById.get(page.id)) ? { hidden: true } : {}
+    const completed = createdEntries.map((page2) => ({
+      page_id: page2.id,
+      name: page2.name,
+      index: page2.index,
+      ...persistedById.get(page2.id)?.icon ? { icon: persistedById.get(page2.id).icon } : {},
+      ...isPageHidden(persistedById.get(page2.id)) ? { hidden: true } : {}
     }));
     if (failures.length)
       throw new PartialWriteError("createPages", completed, failures);
@@ -2148,12 +2524,12 @@ function createClient(auth, config) {
     }
   }
   async function createPage(params) {
-    const [page] = await createPages({
+    const [page2] = await createPages({
       appId: params.appId,
       versionId: params.versionId,
       pages: [{ name: params.name, icon: params.icon, hidden: params.hidden }]
     });
-    return page;
+    return page2;
   }
   async function updatePages(params) {
     const updates = params.updates ?? [];
@@ -2167,7 +2543,7 @@ function createClient(auth, config) {
     }
     const app = await getApp(params.appId);
     const pages = app.pages ?? [];
-    const pagesById = new Map(pages.map((page) => [String(page.id), page]));
+    const pagesById = new Map(pages.map((page2) => [String(page2.id), page2]));
     const editingVersion = app.editing_version ?? app.editingVersion ?? {};
     const homePageId = String(editingVersion.home_page_id ?? editingVersion.homePageId ?? app.home_page_id ?? app.homePageId ?? "");
     const seenUpdateIds = /* @__PURE__ */ new Set();
@@ -2194,9 +2570,9 @@ function createClient(auth, config) {
       }
     }
     const requestedNames = new Map(updates.map((update) => [update.pageId, update.name]));
-    const finalNames = pages.map((page) => {
-      const kind = page.isPageGroup === true ? "group" : "page";
-      const name = String(requestedNames.get(String(page.id)) ?? page.name ?? "").trim().toLowerCase();
+    const finalNames = pages.map((page2) => {
+      const kind = page2.isPageGroup === true ? "group" : "page";
+      const name = String(requestedNames.get(String(page2.id)) ?? page2.name ?? "").trim().toLowerCase();
       return `${kind}:${name}`;
     });
     if (new Set(finalNames).size !== finalNames.length) {
@@ -2207,7 +2583,7 @@ function createClient(auth, config) {
       if (order.length !== pages.length || orderedIds.size !== order.length) {
         throw new Error("ToolJet updatePages failed: order must contain every current page id exactly once.");
       }
-      const missing = pages.filter((page) => !orderedIds.has(String(page.id))).map((page) => page.id);
+      const missing = pages.filter((page2) => !orderedIds.has(String(page2.id))).map((page2) => page2.id);
       if (missing.length || order.some((pageId) => !pagesById.has(pageId))) {
         throw new Error("ToolJet updatePages failed: order must contain every current page id exactly once.");
       }
@@ -2244,16 +2620,16 @@ function createClient(auth, config) {
     }
     const refreshed = await getApp(params.appId);
     const refreshedPages = refreshed.pages ?? [];
-    const refreshedById = new Map(refreshedPages.map((page) => [String(page.id), page]));
+    const refreshedById = new Map(refreshedPages.map((page2) => [String(page2.id), page2]));
     for (const update of updates) {
-      const page = refreshedById.get(update.pageId);
-      if (update.name !== void 0 && page?.name !== update.name) {
+      const page2 = refreshedById.get(update.pageId);
+      if (update.name !== void 0 && page2?.name !== update.name) {
         throw new Error(`ToolJet updatePages failed: page "${update.pageId}" name did not persist.`);
       }
-      if (update.icon !== void 0 && page?.icon !== update.icon) {
+      if (update.icon !== void 0 && page2?.icon !== update.icon) {
         throw new Error(`ToolJet updatePages failed: page "${update.pageId}" icon did not persist.`);
       }
-      if (update.hidden !== void 0 && isPageHidden(page) !== update.hidden) {
+      if (update.hidden !== void 0 && isPageHidden(page2) !== update.hidden) {
         throw new Error(`ToolJet updatePages failed: page "${update.pageId}" hidden state did not persist.`);
       }
     }
@@ -2267,13 +2643,13 @@ function createClient(auth, config) {
     return {
       updated_fields: fieldUpdates.length,
       reordered: order !== void 0,
-      pages: refreshedPages.slice().sort((left, right) => (pageOrderIndex(left) ?? 0) - (pageOrderIndex(right) ?? 0)).map((page) => ({
-        page_id: page.id,
-        name: page.name,
-        handle: page.handle,
-        icon: page.icon,
-        hidden: isPageHidden(page),
-        ...typeof pageOrderIndex(page) === "number" ? { index: pageOrderIndex(page) } : {}
+      pages: refreshedPages.slice().sort((left, right) => (pageOrderIndex(left) ?? 0) - (pageOrderIndex(right) ?? 0)).map((page2) => ({
+        page_id: page2.id,
+        name: page2.name,
+        handle: page2.handle,
+        icon: page2.icon,
+        hidden: isPageHidden(page2),
+        ...typeof pageOrderIndex(page2) === "number" ? { index: pageOrderIndex(page2) } : {}
       }))
     };
   }
@@ -2354,11 +2730,11 @@ function createClient(auth, config) {
     await getDatasourceConnectionDetails(dataSourceId, environmentId);
   }
   async function assertQueryDatasourceAllowed(queryId, versionId, environmentId) {
-    const query = await getQuery(queryId, versionId);
-    if (!query.data_source_id)
+    const query2 = await getQuery(queryId, versionId);
+    if (!query2.data_source_id)
       throw new Error("Cannot verify the saved query datasource; refusing AI access.");
-    await assertDatasourceAllowed(query.data_source_id, versionId, environmentId);
-    return query;
+    await assertDatasourceAllowed(query2.data_source_id, versionId, environmentId);
+    return query2;
   }
   async function listDatasources(versionId) {
     const [orgId, orgSlug, envId] = await Promise.all([
@@ -2656,7 +3032,7 @@ function createClient(auth, config) {
     const kind = params.kind ?? await resolveDatasourceKind(params.versionId, params.dataSourceId);
     if (kind === "workflows") {
       params = { ...params, options: normalizeWorkflowQueryOptions(params.options) };
-      await assertWorkflowQueryTarget(params.options);
+      params = { ...params, options: (await resolveWorkflowReference(auth, params.options, params.versionId)).options };
     }
     await assertDatasourceAllowed(params.dataSourceId, params.versionId);
     const res = await auth.authedFetch(`/api/data-queries/data-sources/${params.dataSourceId}/versions/${params.versionId}`, {
@@ -2678,9 +3054,9 @@ function createClient(auth, config) {
   async function createQueries(params) {
     const batchCheck = (async () => {
       const datasources = await listDatasources(params.versionId);
-      for (const query of params.queries) {
-        if (datasources.find((source) => source.id === query.dataSourceId)?.kind === "workflows")
-          await assertWorkflowQueryTarget(query.options);
+      for (const query2 of params.queries) {
+        if (datasources.find((source) => source.id === query2.dataSourceId)?.kind === "workflows")
+          await assertWorkflowQueryTarget(query2.options, params.versionId);
       }
       await Promise.all(params.queries.map((q) => assertDatasourceAllowed(q.dataSourceId)));
       return void 0;
@@ -2836,8 +3212,8 @@ function createClient(auth, config) {
     }));
     const nameToId = new Map(entries.map((e) => [e.spec.name, e.id]));
     const orders = batchChildOrders(flexEntries, explicitOrders, (ref) => refToId.get(ref) ?? nameToId.get(ref));
-    for (const [id, order] of orders) {
-      const dto = diff[id];
+    for (const [id2, order] of orders) {
+      const dto = diff[id2];
       dto.properties = { ...dto.properties ?? {}, childOrder: childOrderProperty(order) };
     }
     const additions = flexEntries.flatMap((e) => e.parentId && !batchIds.has(e.parentId) ? [{ parentId: e.parentId, childId: e.id }] : []);
@@ -2852,7 +3228,7 @@ function createClient(auth, config) {
     let pageComponents = params.pageComponents;
     if (additions.length && !pageComponents) {
       const summary = await getAppSummary(params.appId, params.versionId).catch(() => void 0);
-      pageComponents = summary?.pages.find((page) => page.id === params.pageId)?.components ?? [];
+      pageComponents = summary?.pages.find((page2) => page2.id === params.pageId)?.components ?? [];
     }
     const appended = additions.length ? appendedChildOrders(pageComponents ?? [], additions) : /* @__PURE__ */ new Map();
     if (appended.size) {
@@ -2871,7 +3247,7 @@ function createClient(auth, config) {
     const wanted = missingLibraryPins(components, {});
     if (!wanted)
       return Promise.resolve();
-    const fresh = Object.keys(wanted).filter((id) => !pinChecks.has(`${versionId}:${id}`));
+    const fresh = Object.keys(wanted).filter((id2) => !pinChecks.has(`${versionId}:${id2}`));
     const check = fresh.length ? (async () => {
       const settings = await getAppSettings(appId, versionId);
       const stored = settings.global_settings.customComponentLibraries;
@@ -2881,16 +3257,16 @@ function createClient(auth, config) {
         await updateAppSettings({ appId, versionId, globalSettings: { customComponentLibraries: { ...pins, ...missing } } });
       }
     })().catch(() => {
-      for (const id of fresh)
-        pinChecks.delete(`${versionId}:${id}`);
+      for (const id2 of fresh)
+        pinChecks.delete(`${versionId}:${id2}`);
     }) : Promise.resolve();
-    for (const id of fresh)
-      pinChecks.set(`${versionId}:${id}`, check);
-    return Promise.all(Object.keys(wanted).map((id) => pinChecks.get(`${versionId}:${id}`)));
+    for (const id2 of fresh)
+      pinChecks.set(`${versionId}:${id2}`, check);
+    return Promise.all(Object.keys(wanted).map((id2) => pinChecks.get(`${versionId}:${id2}`)));
   }
   async function writeFlexChildOrders(appId, versionId, pageId, orders) {
-    const diff = Object.fromEntries([...orders].map(([id, order]) => [
-      id,
+    const diff = Object.fromEntries([...orders].map(([id2, order]) => [
+      id2,
       { component: { definition: { properties: { childOrder: childOrderProperty(order) } } } }
     ]));
     const res = await auth.authedFetch(`/api/v2/apps/${appId}/versions/${versionId}/components`, {
@@ -3017,10 +3393,10 @@ function createClient(auth, config) {
   }
   async function updateQuery(params) {
     assertPersistableQueryToggles(params.options, `ToolJet updateQuery refused query "${params.queryId}"`);
-    const query = await assertQueryDatasourceAllowed(params.queryId, params.versionId);
-    if (query.kind === "workflows") {
+    const query2 = await assertQueryDatasourceAllowed(params.queryId, params.versionId);
+    if (query2.kind === "workflows") {
       params = { ...params, options: normalizeWorkflowQueryOptions(params.options) };
-      await assertWorkflowQueryTarget(params.options);
+      params = { ...params, options: (await resolveWorkflowReference(auth, params.options, params.versionId)).options };
     }
     const body = { options: params.options };
     if (params.name !== void 0)
@@ -3031,11 +3407,11 @@ function createClient(auth, config) {
       body: JSON.stringify(body)
     });
     await assertOk(res, "updateQuery");
-    if (query.kind === "workflows") {
+    if (query2.kind === "workflows") {
       try {
         await verifyWorkflowMapping(params.queryId, params.versionId, params.options);
       } catch (error) {
-        throw new PartialWriteError("updateQuery", [{ query_id: params.queryId, datasource_id: query.data_source_id }], [String(error)]);
+        throw new PartialWriteError("updateQuery", [{ query_id: params.queryId, datasource_id: query2.data_source_id }], [String(error)]);
       }
     }
     return { query_id: params.queryId };
@@ -3050,21 +3426,8 @@ function createClient(auth, config) {
       throw new Error(`Query ${queryId} was written, but its workflow mapping could not be verified. Inspect this query and repair it in place; do not recreate it. ${String(error)}`);
     }
   }
-  async function assertWorkflowQueryTarget(raw) {
-    assertWorkflowQueryOptions(raw);
-    const options = normalizeWorkflowQueryOptions(raw);
-    const workflowId = options.workflowId;
-    const versionId = options.workflowVersionId;
-    const path = versionId ? `/api/v2/apps/${encodeURIComponent(workflowId)}/versions/${encodeURIComponent(versionId)}` : `/api/apps/${encodeURIComponent(workflowId)}`;
-    const response = await auth.authedFetch(path);
-    await assertOk(response, "verify workflow query target");
-    const app = await response.json();
-    if (app?.id !== workflowId || app.type !== "workflow" || (app.organizationId ?? app.organization_id) !== await auth.getOrganizationId()) {
-      throw new Error("Workflow query target must be an accessible workflow in the active workspace.");
-    }
-    if (versionId && (app.editing_version ?? app.editingVersion)?.id !== versionId) {
-      throw new Error("Workflow query version does not belong to the selected workflow.");
-    }
+  async function assertWorkflowQueryTarget(raw, consumerVersionId) {
+    await resolveWorkflowReference(auth, raw, consumerVersionId);
   }
   async function updateQueryDatasource(params) {
     await assertDatasourceAllowed(params.dataSourceId, params.versionId);
@@ -3097,16 +3460,16 @@ function createClient(auth, config) {
     await assertOk(res, "getQueries");
     const body = await res.json();
     const orgSlug = await auth.getOrganizationSlug();
-    return (body.data_queries ?? []).map((query) => ({
-      ...query,
-      ...query.data_source_id ? { datasource_settings_url: datasourceManagementUrl(orgSlug, query.data_source_id) } : {}
+    return (body.data_queries ?? []).map((query2) => ({
+      ...query2,
+      ...query2.data_source_id ? { datasource_settings_url: datasourceManagementUrl(orgSlug, query2.data_source_id) } : {}
     }));
   }
   async function getQuery(queryId, versionId) {
-    const query = (await getQueries(versionId)).find((candidate) => candidate.id === queryId);
-    if (!query)
+    const query2 = (await getQueries(versionId)).find((candidate) => candidate.id === queryId);
+    if (!query2)
       throw new Error(`ToolJet getQuery failed: query ${queryId} not found in version ${versionId}`);
-    return query;
+    return query2;
   }
   async function runQuery(params) {
     await assertQueryDatasourceAllowed(params.queryId, params.versionId, params.environmentId);
@@ -3346,10 +3709,10 @@ function createClient(auth, config) {
     deleteEvent
   };
 }
-function pageOrderIndex(page) {
-  if (typeof page?.pageGroupIndex === "number" && Number.isFinite(page.pageGroupIndex))
-    return page.pageGroupIndex;
-  return typeof page?.index === "number" ? page.index : void 0;
+function pageOrderIndex(page2) {
+  if (typeof page2?.pageGroupIndex === "number" && Number.isFinite(page2.pageGroupIndex))
+    return page2.pageGroupIndex;
+  return typeof page2?.index === "number" ? page2.index : void 0;
 }
 createRequire(import.meta.url);
 function asRecord(value) {
@@ -3785,7 +4148,7 @@ function manageThemeTool(client) {
             return one ? ok({ themes: [one] }) : fail(new Error(`Theme "${args.theme_id}" not found.`));
           }
           return ok({
-            themes: themes2.map(({ id, name, isDefault, isBasic, isDisabled }) => ({ id, name, isDefault, isBasic, isDisabled })),
+            themes: themes2.map(({ id: id2, name, isDefault, isBasic, isDisabled }) => ({ id: id2, name, isDefault, isBasic, isDisabled })),
             note: "Definitions omitted; pass include_definitions:true or theme_id to read one."
           });
         }
@@ -3919,584 +4282,11 @@ var themes = [
 function themeActionTools(source) {
   return exposeActions(source, themes);
 }
-createRequire(import.meta.url);
-var CODE_PAGE_TRUE = /* @__PURE__ */ new Set([true, "true", "{{true}}"]);
-function codeScreens(summary) {
-  const pageIds = new Set(summary.pages.map((page) => page.id));
-  const screens = [];
-  for (const page of summary.pages) {
-    for (const component of page.components) {
-      const props = component.properties ?? {};
-      if (component.parent || !CODE_PAGE_TRUE.has(props.codePage?.value))
-        continue;
-      let routes = props.routes?.value;
-      if (typeof routes === "string") {
-        try {
-          routes = JSON.parse(routes);
-        } catch {
-          routes = [];
-        }
-      }
-      if (!Array.isArray(routes))
-        continue;
-      for (const route of routes) {
-        if (typeof route?.id !== "string" || typeof route?.path !== "string")
-          continue;
-        if (typeof route.pageId !== "string" || !pageIds.has(route.pageId))
-          continue;
-        screens.push({
-          route_id: route.id,
-          path: route.path,
-          ...typeof route.title === "string" ? { title: route.title } : {},
-          page_id: route.pageId,
-          code_page_id: page.id
-        });
-      }
-    }
-  }
-  return screens;
-}
-function findScreen(summary, route) {
-  const screens = codeScreens(summary);
-  const screen = screens.find((s) => s.route_id === route) ?? screens.find((s) => s.path === route);
-  if (screen)
-    return screen;
-  throw new Error(`No Code mode screen "${route}" in app "${summary.app_id}". ` + (screens.length ? `Its screens: ${screens.map((s) => `${s.route_id} (${s.path})`).join(", ")}.` : "The app has no Code mode screens."));
-}
-function findQuery(summary, ref) {
-  const lower = ref.toLowerCase();
-  return summary.queries.find((q) => q.id === ref) ?? summary.queries.find((q) => q.name === ref) ?? summary.queries.find((q) => q.name?.toLowerCase() === lower);
-}
-function isCodeApp(summary) {
-  return summary.pages.some((page) => page.components.some((component) => {
-    const props = component.properties ?? {};
-    return !component.parent && CODE_PAGE_TRUE.has(props.codePage?.value);
-  }));
-}
-function findResource(summary, resourceType, resourceId) {
-  if (resourceType === "page") {
-    const page = summary.pages.find((candidate) => candidate.id === resourceId) ?? summary.pages.find((candidate) => candidate.name === resourceId);
-    if (page)
-      return { type: resourceType, id: page.id, name: page.name };
-  } else if (resourceType === "query") {
-    const query = findQuery(summary, resourceId);
-    if (query)
-      return { type: resourceType, id: query.id, name: query.name };
-  } else {
-    for (const page of summary.pages) {
-      const component = page.components.find((candidate) => candidate.id === resourceId);
-      if (component) {
-        return {
-          type: resourceType,
-          id: component.id,
-          name: component.name,
-          component_type: component.type,
-          page_id: page.id,
-          page_name: page.name
-        };
-      }
-    }
-  }
-  throw new Error(`${resourceType} "${resourceId}" does not belong to app "${summary.app_id}". Use get_app_summary and do not guess resource ids.`);
-}
-function normalizePermission(permissions) {
-  const permission = permissions[0];
-  if (!permission)
-    return { access: "all", permission_id: null };
-  if (permission.type === "SINGLE") {
-    return {
-      access: "users",
-      permission_id: permission.id,
-      users: (Array.isArray(permission.users) ? permission.users : []).map((entry) => entry?.user).filter(Boolean).map((user) => ({
-        id: user.id,
-        name: [user.firstName, user.lastName].filter(Boolean).join(" ") || void 0,
-        email: user.email
-      }))
-    };
-  }
-  if (permission.type === "GROUP") {
-    return {
-      access: "groups",
-      permission_id: permission.id,
-      groups: (Array.isArray(permission.groups) ? permission.groups : []).map((entry) => entry?.permissionGroup).filter(Boolean).map((group) => ({ id: group.id, name: group.name }))
-    };
-  }
-  return { access: String(permission.type ?? "unknown").toLowerCase(), permission_id: permission.id };
-}
-function planLimits(features) {
-  if (!features)
-    return void 0;
-  const known = Object.entries({
-    query_limits: features.appPermissionQuery,
-    screen_limits: features.appPermissionPages,
-    server_side_current_user: features.serverSideGlobalResolve
-  }).filter(([, value]) => typeof value === "boolean");
-  return known.length ? Object.fromEntries(known) : void 0;
-}
-async function subjectGroups(client, open) {
-  const openIds = new Map(open.map((group) => [group.id, group]));
-  let workspace;
-  try {
-    workspace = await client.listWorkspaceGroups();
-  } catch {
-    workspace = void 0;
-  }
-  if (!workspace) {
-    return {
-      groups: open.map((group) => ({ ...group, can_open_app: true })),
-      complete: false
-    };
-  }
-  const groups = workspace.map((group) => ({
-    id: group.id,
-    name: group.name,
-    type: group.type,
-    ...typeof openIds.get(group.id)?.count === "number" ? { count: openIds.get(group.id).count } : {},
-    can_open_app: openIds.has(group.id),
-    ...group.disabled ? { disabled: true } : {}
-  }));
-  for (const group of open)
-    if (!groups.some((known) => known.id === group.id))
-      groups.push({ ...group, can_open_app: true });
-  return { groups, complete: true };
-}
-function viewRule(appId, appName, groupId) {
-  return {
-    name: `${(appName || "App").slice(0, 40)} (view)`,
-    type: "app",
-    groupId,
-    isAll: false,
-    createResourcePermissionObject: {
-      canEdit: false,
-      canView: true,
-      hideFromDashboard: false,
-      canAccessDevelopment: false,
-      canAccessStaging: false,
-      canAccessProduction: false,
-      canAccessReleased: true,
-      resourcesToAdd: [{ appId }]
-    }
-  };
-}
-async function groupDirectory(client, appId) {
-  const subjects = await client.listAppPermissionSubjects(appId);
-  const { groups, complete } = await subjectGroups(client, subjects.groups);
-  return { groups, complete, openIds: new Set(subjects.groups.map((group) => group.id)) };
-}
-function resolveGroups(directory, refs) {
-  const ids = [];
-  const unknown = [];
-  for (const ref of refs) {
-    const lower = ref.toLowerCase();
-    const group = directory.groups.find((g) => g.id === ref) ?? directory.groups.find((g) => g.name === ref) ?? directory.groups.find((g) => g.name?.toLowerCase() === lower);
-    if (group)
-      ids.push(group.id);
-    else if (!directory.complete && UUID.test(ref))
-      ids.push(ref);
-    else
-      unknown.push(ref);
-  }
-  return { ids: [...new Set(ids)], unknown };
-}
-var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-function groupsToGrant(directory, groupIds, grant) {
-  const missing = groupIds.filter((id) => !directory.openIds.has(id));
-  if (!missing.length)
-    return [];
-  const byId = new Map(directory.groups.map((group) => [group.id, group]));
-  const names = missing.map((id) => byId.get(id)?.name ?? id);
-  if (!grant) {
-    throw new Error(`${names.join(", ")} cannot open this app yet, so a limit to ${missing.length > 1 ? "them" : "it"} would leave ${missing.length > 1 ? "their" : "its"} members without the screen or query. Pass grant_app_access: true to give each of them view access to this app only (the released app), or give them access in Workspace settings > Groups. Nothing was changed.`);
-  }
-  const disabled = missing.filter((id) => byId.get(id)?.disabled);
-  if (disabled.length) {
-    throw new Error(`${disabled.map((id) => byId.get(id)?.name ?? id).join(", ")} cannot be changed under the current plan, so it cannot be given access to this app. Nothing was changed.`);
-  }
-  return missing;
-}
-async function removeGrants(client, appId, granted) {
-  const left = [];
-  for (const grant of granted) {
-    try {
-      const rules = await client.listWorkspaceGroupAccess(grant.group_id);
-      const added = rules.filter((rule) => rule.id && rule.name === grant.rule_name && rule.resources.some((r) => r.id === appId));
-      for (const rule of added)
-        await client.writeWorkspaceGroupAccess("DELETE", grant.group_id, "app", rule.id);
-    } catch {
-      left.push(grant.name ?? grant.group_id);
-    }
-  }
-  return left;
-}
-async function grantGroups(client, appId, appName, directory, missing) {
-  const byId = new Map(directory.groups.map((group) => [group.id, group]));
-  const granted = [];
-  const undo = async (reason) => {
-    const left = await removeGrants(client, appId, granted);
-    throw new Error(`${reason} The access rules added here were removed${left.length ? `, except for ${left.join(", ")} (remove it in Workspace settings > Groups)` : ""}.`);
-  };
-  for (const id of missing) {
-    const rule = viewRule(appId, appName, id);
-    try {
-      await client.writeWorkspaceGroupAccess("POST", id, "app", void 0, rule);
-    } catch (error) {
-      await undo(`${byId.get(id)?.name ?? id} could not be given access to this app: ${error.message}.`);
-    }
-    granted.push({ group_id: id, ...byId.get(id)?.name ? { name: byId.get(id).name } : {}, rule_name: rule.name });
-  }
-  const after = new Set((await client.listAppPermissionSubjects(appId)).groups.map((group) => group.id));
-  const still = missing.filter((id) => !after.has(id));
-  if (still.length) {
-    await undo(`ToolJet did not confirm that ${still.map((id) => byId.get(id)?.name ?? id).join(", ")} can open this app after the access rule was added.`);
-  }
-  return granted;
-}
-function resolveTargets(args, summary, problems) {
-  const targets = [];
-  const routes = [...args.route !== void 0 ? [args.route] : [], ...args.routes ?? []];
-  const queries = [...args.query !== void 0 ? [args.query] : [], ...args.queries ?? []];
-  const type = args.resource_type === "screen" ? "page" : args.resource_type;
-  if (routes.length && type && type !== "page") {
-    problems.push(`route names a Code mode screen (a page permission), so resource_type "${args.resource_type}" does not fit: leave resource_type out.`);
-  }
-  if (queries.length && type && type !== "query") {
-    problems.push(`query names a query, so resource_type "${args.resource_type}" does not fit: leave resource_type out.`);
-  }
-  for (const route of [...new Set(routes)]) {
-    try {
-      const screen = findScreen(summary, route);
-      targets.push({
-        resourceType: "page",
-        resourceId: screen.page_id,
-        resource: {
-          ...findResource(summary, "page", screen.page_id),
-          screen: { route_id: screen.route_id, path: screen.path, title: screen.title }
-        }
-      });
-    } catch (error) {
-      problems.push(error.message);
-    }
-  }
-  const unknownQueries = [];
-  for (const ref of [...new Set(queries)]) {
-    const query = findQuery(summary, ref);
-    if (!query)
-      unknownQueries.push(ref);
-    else
-      targets.push({ resourceType: "query", resourceId: query.id, resource: { type: "query", id: query.id, name: query.name } });
-  }
-  if (unknownQueries.length) {
-    const names = summary.queries.map((q) => q.name ?? q.id);
-    problems.push(`No query ${unknownQueries.map((q) => `"${q}"`).join(", ")} in this app. ` + (names.length ? `Its queries: ${names.join(", ")}.` : "The app has no queries."));
-  }
-  if (args.resource_id !== void 0) {
-    const kinds = type ? [type] : ["query", "page", "component"];
-    let found;
-    for (const kind of kinds) {
-      try {
-        found = { resourceType: kind, resourceId: "", resource: findResource(summary, kind, args.resource_id) };
-        found.resourceId = String(found.resource.id);
-        break;
-      } catch {
-      }
-    }
-    if (found)
-      targets.push(found);
-    else
-      problems.push(`resource_id "${args.resource_id}" is no ${type ?? "page, query or component"} of this app. Pass a query by its name with query, or a screen with route.`);
-  }
-  if (!routes.length && !queries.length && args.resource_id === void 0) {
-    const screens = codeScreens(summary);
-    problems.push("Name what to limit: route (or routes) for screens, query (or queries) for queries, by name or id." + (screens.length ? ` Screens: ${screens.map((s) => s.path).join(", ")}.` : "") + (summary.queries.length ? ` Queries: ${summary.queries.map((q) => q.name ?? q.id).join(", ")}.` : "") + // A build sent set with groups and grant_app_access but nothing to limit, four times over (2026-11-09).
-    (args.grant_app_access || args.groups?.length || args.group_ids?.length ? " There is no app-wide grant: a group gets into this app with the first screen or query limited to it (grant_app_access does that part). Everyone who can open the app already sees what is not limited, so when no screen or query should be limited, there is nothing to set." + (isCodeApp(summary) && !screens.length ? " Screens are listed here after code_app_install has saved the routes." : "") : ""));
-  }
-  const seen = /* @__PURE__ */ new Set();
-  return targets.filter((target) => {
-    const key = `${target.resourceType}:${target.resourceId}`;
-    if (seen.has(key))
-      return false;
-    seen.add(key);
-    return true;
-  });
-}
-function exampleCall(args, summary, codeApp) {
-  const example = { action: args.action === "get" ? "get" : args.action, app_id: args.app_id };
-  const screens = summary ? codeScreens(summary) : [];
-  if (args.routes?.length)
-    example.routes = args.routes;
-  else if (args.route)
-    example.route = args.route;
-  else if (args.queries?.length)
-    example.queries = args.queries;
-  else if (args.query)
-    example.query = args.query;
-  else if (screens.length)
-    example.route = screens[screens.length - 1].path;
-  else if (summary?.queries.length)
-    example.query = summary.queries[0].name ?? summary.queries[0].id;
-  else
-    example.route = "/finance";
-  if (args.action === "set") {
-    if (args.users?.length || args.user_ids?.length)
-      example.users = args.users ?? args.user_ids;
-    else
-      example.groups = args.groups ?? args.group_ids ?? ["Finance"];
-    if (!codeApp)
-      example.confirm = true;
-  }
-  if (args.action === "clear")
-    example.confirm = true;
-  return JSON.stringify(example);
-}
-function manageAppPermissionsTool(client) {
-  return {
-    name: "manage_app_permissions",
-    title: "Manage App Permissions",
-    // get/list_subjects only read, but set overwrites an access rule and clear broadens access to
-    // every user who can reach the app, so the hint covers its widest action.
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: false
-    },
-    description: `Server-enforced access to an app's screens and queries: who can open a Code mode screen (route) or run a query. Example: {"action":"set","app_id":"<id>","route":"/finance","groups":["Finance"]}; for queries "query":"finance_queue" (name or id), and "routes" or "queries" take several at once with the same groups. groups take names or ids, users take emails or ids; access_type and resource_type are inferred. In a Code mode app, set needs no confirm, and a named group that cannot open the app first gets view access to this app only (grant_app_access defaults to true; false refuses instead). In other apps set needs confirm:true after the user approves the exact rule. clear (back to everyone who can open the app) always needs confirm:true. list_subjects: every workspace group with can_open_app, and plan (whether this plan enforces query and screen limits and resolves {{globals.server.currentUser}} on the server). list_screens: each route with its access. list_queries: each query of the app with its access. A screen limit hides the screen; the data it shows is protected only by limiting the queries that return it. Visual pages and components: resource_id (resource_type is optional). License gates apply.`,
-    inputSchema: {
-      action: external_exports.enum(["list_subjects", "list_screens", "list_queries", "get", "set", "clear"]),
-      app_id: external_exports.string().uuid(),
-      route: external_exports.string().min(1).max(200).optional().describe("A Code mode screen by route path or id (app.json routes)."),
-      routes: external_exports.array(external_exports.string().min(1).max(200)).min(1).max(50).optional().describe("Several screens at once."),
-      query: external_exports.string().min(1).max(200).optional().describe("A query by name or id."),
-      queries: external_exports.array(external_exports.string().min(1).max(200)).min(1).max(100).optional().describe("Several queries at once."),
-      groups: external_exports.array(external_exports.string().min(1).max(200)).min(1).max(100).optional().describe("Group names or ids."),
-      users: external_exports.array(external_exports.string().min(1).max(320)).min(1).max(100).optional().describe("User emails or ids."),
-      resource_type: external_exports.enum(["page", "query", "component", "screen"]).optional().describe("Inferred; only needed with resource_id."),
-      resource_id: external_exports.string().min(1).max(200).optional(),
-      access_type: external_exports.enum(["users", "groups"]).optional().describe("Inferred from groups or users."),
-      user_ids: external_exports.array(external_exports.string().min(1)).min(1).max(100).optional(),
-      group_ids: external_exports.array(external_exports.string().min(1)).min(1).max(100).optional(),
-      confirm: external_exports.boolean().optional(),
-      grant_app_access: external_exports.boolean().optional().describe("set with groups: give a group that cannot open the app view access to this app only first (default true in a Code mode app)")
-    },
-    async handler(args) {
-      try {
-        if (args.action === "list_subjects") {
-          const [subjects, features] = await Promise.all([
-            client.listAppPermissionSubjects(args.app_id),
-            client.getLicenseFeatureAccess().catch(() => void 0)
-          ]);
-          const { groups, complete } = await subjectGroups(client, subjects.groups);
-          const plan = planLimits(features);
-          return ok({
-            app_id: args.app_id,
-            users: subjects.users,
-            groups,
-            ...plan ? { plan } : {},
-            note: complete ? "A group with can_open_app false cannot open the app: a set naming it gives it view access to this app only first (in a Code mode app by default, elsewhere with grant_app_access:true)." : "Only the groups that can open the app are listed: the workspace group list could not be read."
-          });
-        }
-        if (args.action === "list_screens") {
-          const summary2 = await client.getAppSummary(args.app_id);
-          const screens = await Promise.all(codeScreens(summary2).map(async (screen) => ({
-            ...screen,
-            ...normalizePermission(await client.getAppPermission(args.app_id, "page", screen.page_id))
-          })));
-          return ok({ app_id: args.app_id, screens });
-        }
-        if (args.action === "list_queries") {
-          const summary2 = await client.getAppSummary(args.app_id);
-          const queries = await Promise.all(summary2.queries.map(async (q) => ({
-            query_id: q.id,
-            name: q.name,
-            ...normalizePermission(await client.getAppPermission(args.app_id, "query", q.id))
-          })));
-          return ok({ app_id: args.app_id, queries, limited: queries.filter((q) => q.access !== "all").length });
-        }
-        const summary = await client.getAppSummary(args.app_id);
-        const codeApp = isCodeApp(summary);
-        const problems = [];
-        const targets = resolveTargets(args, summary, problems);
-        let accessType;
-        let subjectIds = [];
-        let directory;
-        if (args.action === "set") {
-          const groupRefs = [...args.groups ?? [], ...args.group_ids ?? []];
-          const userRefs = [...args.users ?? [], ...args.user_ids ?? []];
-          if (groupRefs.length && userRefs.length) {
-            problems.push("Pass groups or users, not both: one limit is to groups or to named users.");
-          } else if (!groupRefs.length && !userRefs.length) {
-            problems.push("Name who keeps access: groups (names or ids) or users (emails or ids).");
-          } else {
-            accessType = groupRefs.length ? "groups" : "users";
-            if (args.access_type && args.access_type !== accessType) {
-              problems.push(`access_type "${args.access_type}" does not match the ${accessType} passed: leave access_type out.`);
-            }
-          }
-          if (accessType === "groups") {
-            directory = await groupDirectory(client, args.app_id);
-            const { ids, unknown } = resolveGroups(directory, groupRefs);
-            if (unknown.length) {
-              problems.push(`${unknown.map((g) => `"${g}"`).join(", ")} ${unknown.length > 1 ? "are not groups" : "is not a group"} of this workspace. Its groups: ${directory.groups.map((g) => g.name ?? g.id).join(", ")}.`);
-            }
-            subjectIds = ids;
-          } else if (accessType === "users") {
-            const users = (await client.listAppPermissionSubjects(args.app_id)).users;
-            const unknown = [];
-            for (const ref of userRefs) {
-              const lower = ref.toLowerCase();
-              const user = users.find((u) => u.id === ref) ?? users.find((u) => u.email?.toLowerCase() === lower);
-              if (user)
-                subjectIds.push(user.id);
-              else
-                unknown.push(ref);
-            }
-            if (unknown.length) {
-              problems.push(`${unknown.map((u) => `"${u}"`).join(", ")} cannot open this app or is not a user of this workspace (users must already have access to the app; list_subjects lists them).`);
-            }
-            subjectIds = [...new Set(subjectIds)];
-            if (args.grant_app_access === true) {
-              problems.push("grant_app_access applies only to a limit to groups: leave it out with users.");
-            }
-          }
-          if (!codeApp && args.confirm !== true) {
-            problems.push("set on this app needs confirm:true after the user explicitly approves the exact access rule.");
-          }
-        }
-        if (args.action === "clear" && args.confirm !== true) {
-          problems.push("clear opens the resource to everyone who can open the app, so it needs confirm:true after the user approves it.");
-        }
-        if (problems.length) {
-          throw new Error(`manage_app_permissions ${args.action} was refused and nothing was changed:
-` + problems.map((problem) => `- ${problem}`).join("\n") + `
-A call that works: ${exampleCall(args, summary, codeApp)}`);
-        }
-        const one = targets.length === 1;
-        if (args.action === "get") {
-          const results2 = await Promise.all(targets.map(async (t) => ({ resource: t.resource, ...normalizePermission(await client.getAppPermission(args.app_id, t.resourceType, t.resourceId)) })));
-          return ok(one ? { app_id: args.app_id, ...results2[0] } : { app_id: args.app_id, results: results2 });
-        }
-        if (args.action === "clear") {
-          for (const t of targets)
-            await client.clearAppPermission(args.app_id, t.resourceType, t.resourceId);
-          const results2 = targets.map((t) => ({ resource: t.resource, access: "all", permission_id: null }));
-          return ok(one ? { app_id: args.app_id, ...results2[0] } : { app_id: args.app_id, results: results2 });
-        }
-        const grant = args.grant_app_access ?? codeApp;
-        const toGrant = accessType === "groups" ? groupsToGrant(directory, subjectIds, grant) : [];
-        const results = [];
-        for (const t of targets) {
-          try {
-            const permissions = await client.setAppPermission({
-              appId: args.app_id,
-              resourceType: t.resourceType,
-              resourceId: t.resourceId,
-              accessType,
-              subjectIds
-            });
-            results.push({ resource: t.resource, ...normalizePermission(permissions) });
-          } catch (error) {
-            results.push({ resource: t.resource, error: error.message });
-          }
-        }
-        const failed = results.filter((r) => r.error);
-        const failures = failed.map((r) => `${r.resource.name ?? r.resource.id}: ${r.error}`).join("; ");
-        if (failed.length === results.length) {
-          throw new Error(failures + (toGrant.length ? " No access to the app was given." : ""));
-        }
-        if (failed.length) {
-          return {
-            content: [{
-              type: "text",
-              text: JSON.stringify({
-                error: `${failed.length} of ${results.length} limits were not set: ${failures}.` + (toGrant.length ? " No access to the app was given." : "") + " Set the failed ones again; the others are in place.",
-                app_id: args.app_id,
-                applied: results.filter((r) => !r.error),
-                failed
-              })
-            }],
-            isError: true
-          };
-        }
-        let granted = [];
-        if (toGrant.length) {
-          try {
-            granted = await grantGroups(client, args.app_id, summary.name, directory, toGrant);
-          } catch (error) {
-            throw new Error(`The limits were set, but their groups cannot open this app, so their members cannot use those screens or queries yet: ${error.message} Give the groups access in Workspace settings > Groups, or run this again.`);
-          }
-        }
-        const grantNote = granted.length ? `${granted.map((g) => g.name ?? g.group_id).join(", ")} could not open this app, so ${granted.length > 1 ? "each now has" : "it now has"} view access to this app only (released app, rule "${granted[0].rule_name}").` : void 0;
-        const body = {
-          app_id: args.app_id,
-          ...one ? results[0] : { results },
-          ...granted.length ? { granted_app_access: granted, note: grantNote } : {}
-        };
-        return ok(body);
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-var appPermissions = [
-  {
-    action: "list_screens",
-    name: "list_app_permission_screens",
-    title: "List App Screen Permissions",
-    description: "Read the Code mode screens and their access restrictions for one app. Does not change access.",
-    required: ["app_id"],
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
-  },
-  {
-    action: "list_queries",
-    name: "list_app_permission_queries",
-    title: "List App Query Permissions",
-    description: "Read the queries and their access restrictions for one app. Does not change access.",
-    required: ["app_id"],
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
-  },
-  {
-    action: "list_subjects",
-    name: "list_app_permission_subjects",
-    title: "List App Permission Subjects",
-    description: "List users and groups eligible for resource access rules in one app. Subjects must already have app access. ToolJet permissions and license gates apply.",
-    required: ["app_id"],
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
-  },
-  {
-    action: "get",
-    name: "get_app_resource_permission",
-    title: "Get App Resource Permission",
-    description: "Read server-enforced access for one page, query, or component belonging to the selected app. Use exact resource IDs from get_app_summary.",
-    required: ["app_id", "resource_type", "resource_id"],
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
-  },
-  {
-    action: "set",
-    name: "set_app_resource_permission",
-    title: "Set App Resource Permission",
-    description: "Replace access to one app page, query, or component with selected users or groups. Supply user_ids for access_type users or group_ids for groups, never both. Requires confirm:true after explicit approval of the exact rule; existing app access and license gates still apply.",
-    required: ["app_id", "resource_type", "resource_id", "access_type", "confirm"],
-    optional: ["user_ids", "group_ids"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  },
-  {
-    action: "clear",
-    name: "clear_app_resource_permission",
-    title: "Clear App Resource Permission",
-    description: "Remove a resource access restriction, broadening access to every user who can access the app. Requires confirm:true after explicit approval of this exact page, query, or component.",
-    required: ["app_id", "resource_type", "resource_id", "confirm"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  }
-];
-function appPermissionActionTools(source) {
-  return exposeActions(source, appPermissions);
-}
 export {
-  allowedApiOrigins as A,
-  ALLOWED_API_ORIGINS_VAR as B,
-  identityFromHeaders as C,
-  BASE_URL_HEADER as D,
-  PAT_HEADER as E,
+  ALLOWED_API_ORIGINS_VAR as A,
+  identityFromHeaders as B,
+  BASE_URL_HEADER as C,
+  PAT_HEADER as D,
   PartialWriteError as P,
   SESSION_TOKEN_HEADER as S,
   TOOLJET_DB_DATA_TYPES as T,
@@ -4510,21 +4300,21 @@ export {
   createClient as g,
   createAppTool as h,
   indexComponentReferences as i,
-  manageThemeTool as j,
-  projectJavascriptRuntime as k,
+  projectJavascriptRuntime as j,
+  projectAppSettings as k,
   literalCanvasColor as l,
-  manageAppPermissionsTool as m,
+  manageThemeTool as m,
   normalizeType as n,
-  projectAppSettings as o,
+  compactTheme as o,
   packDefaultDefinition as p,
-  compactTheme as q,
+  pageSettingProperties as q,
   registerPackDefinitions as r,
-  pageSettingProperties as s,
-  ToolJetHttpError as t,
-  themeActionTools as u,
+  ToolJetHttpError as s,
+  themeActionTools as t,
+  workflowOperations as u,
   validateTableBatch as v,
   workspaceAccessKeys as w,
-  appPermissionActionTools as x,
-  branchIdFor as y,
-  withBranchContext as z
+  branchIdFor as x,
+  withBranchContext as y,
+  allowedApiOrigins as z
 };

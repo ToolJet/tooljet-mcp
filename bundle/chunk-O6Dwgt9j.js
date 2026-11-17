@@ -1,8 +1,8 @@
 import { createRequire } from "node:module";
-import { p as parseExpression, a as parse } from "./chunk-nL-cG8xH.js";
-import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-DuR3nfPV.js";
-import { r as require_moment } from "./chunk-B2ExoG2l.js";
-import { e8 as __toESM, e6 as __commonJS } from "./chunk-C1Uan0hB.js";
+import { p as parseExpression, a as parse } from "./chunk-Be6oakQ4.js";
+import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-wRCgCKcA.js";
+import { r as require_moment } from "./chunk-fcOflnoe.js";
+import { e8 as __toESM, e6 as __commonJS } from "./chunk-BhoYgPP_.js";
 createRequire(import.meta.url);
 var require_unicode = __commonJS({
   "node_modules/json5/lib/unicode.js"(exports, module) {
@@ -3285,11 +3285,11 @@ function workflowQueryIssues(options) {
     const value = options[field];
     if (field === "workflowVersionId" && (value === void 0 || value === null))
       continue;
-    if (typeof value !== "string" || !UUID.test(value))
+    if (typeof value !== "string" || (field === "workflowId" ? !UUID.test(value) : !value.trim() || value.length > 255))
       errors.push({
         code: "invalid_workflow_target",
         path: field,
-        message: `Workflow query options.${field} must be a literal workflow ${field === "workflowId" ? "ID from list_workflows/get_workflow" : "version ID from list_app_versions/get_workflow"}. A query and its success/failure handlers do not establish the workflow mapping.`
+        message: `Workflow query options.${field} must be a literal workflow ${field === "workflowId" ? "ID from list_workflows/get_workflow" : "version name, __current_branch__, __default_branch_draft__, or legacy version UUID"}. A query and its success/failure handlers do not establish the workflow mapping.`
       });
   }
   if (options.syncExecution !== void 0 && typeof options.syncExecution !== "boolean") {

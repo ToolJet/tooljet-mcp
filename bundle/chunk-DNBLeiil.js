@@ -1,16 +1,17 @@
 import { createRequire } from "node:module";
-import { aA as external_exports, aI as inPackSet, aJ as listWorkspaceAppsTool, aK as listWorkspaceFoldersTool, aL as listWorkspaceUsersTool, aM as manageWorkspaceUsersTool, aN as registerComponentSchemas, ax as activePackSet, aO as newPackSet, aG as ok, aE as fail, aF as resolveRef, aP as workspaceUserActionTools, aQ as readCatalogBytes, aR as allComponentSchemas } from "./chunk-isfY25ah.js";
-import { s as strictEntry, k as specSchema, l as nodeSchema, o as inspectDatasourceSchemaTool, q as getComponentCatalogTool, u as updateComponentsTool, r as updateLayoutTool, t as datasourceMetadataTools, v as nodeCatalog, w as capabilityRequestSchema, x as getWorkflowCapabilities, y as lint, z as apply, A as deleteNode, B as validateGraph, D as editContractSchema, E as generateEditContract, n as normalizeComponentSpec, m as mapKeyRefusal, C as COMPONENT_FX_GUIDANCE } from "./chunk-NPyNDSUZ.js";
-import { f as loadConfig, g as createClient, m as manageAppPermissionsTool, h as createAppTool, j as manageThemeTool, r as registerPackDefinitions, k as projectJavascriptRuntime, o as projectAppSettings, q as compactTheme, s as pageSettingProperties, v as validateTableBatch, t as ToolJetHttpError, l as literalCanvasColor, P as PartialWriteError, u as themeActionTools, x as appPermissionActionTools, y as branchIdFor, z as withBranchContext } from "./chunk-tO42Apxg.js";
-import { W as WebStandardStreamableHTTPServerTransport, O as getRequestListener, Q as verifyPageRenderTool, U as listWorkspaceGroupsTool, V as manageWorkspaceGroupsTool, a as autoReadPreflight, X as workspaceGroupActionTools } from "./chunk-Dnb7j_j6.js";
-import { a as codeAppScaffoldTool, b as codeAppReadFilesTool, d as codeAppWriteFilesTool, e as codeAppBuildTool, f as codeAppInstallTool, g as codeAppAddDependencyTool, n as noCodeIdentity, h as browserUserBindings, i as isCodeModeApp, j as browserUserMessage } from "./chunk-CAr0IhXy.js";
-import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as renameAppTool, p as plannedTableSchema, v as validatePersistedAppSummary, e as libraryPinErrors, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, f as containsComponentBinding, g as runUnattended, q as queryResultBindingHint, h as failureRecovery, j as failureVerification, s as schemaNameHint, k as redactRunResult, m as capUnattendedOutput, o as redactQueryText, t as prepareComponentBatch } from "./chunk-DAJgV19e.js";
-import { g as containsExactValue, a as prepareQueryOptionsForWrite, h as containsNamedBinding, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, v as validateEvents, e as expandQueryLifecycles, b as persistedEventSpecs, i as persistedEventIds } from "./chunk-C3f6iF0Y.js";
-import { M as McpServer } from "./chunk-ZRfzx01w.js";
-import { I as pageIconSchema, A as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION, q as componentNameSchema, D as lintComponents, r as resolveParentRef, a as applyResolvedParent, f as introducedLintFindings, l as lintComponentSlots, M as lintRenderedGeometryBlocking, N as lintRenderedGeometryAdvisory, d as decodeComponentParent, O as FORM_SCHEMA_FIELD_TYPE_SET, Q as SAFE_GENERATED_FORM_FIELD_TYPE_SET, R as packSlotsFromManifest, T as describePackSlots } from "./chunk-BzoTtK4L.js";
-import { U as registerLibraryPacks } from "./chunk-Btd7hqFK.js";
-import { g as resolveStaticBindings, u as emptyViewerOnlyParams, x as emptyParamsNote, y as unresolvedNote } from "./chunk-CpwF2B9D.js";
-import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-DuR3nfPV.js";
+import { s as strictEntry, k as specSchema, l as nodeSchema, o as listWorkspaceAppsTool, q as listWorkspaceFoldersTool, r as listWorkspaceUsersTool, t as manageWorkspaceUsersTool, u as inspectDatasourceSchemaTool, v as getComponentCatalogTool, w as updateComponentsTool, x as updateLayoutTool, y as datasourceMetadataTools, z as nodeCatalog, A as capabilityRequestSchema, B as getWorkflowCapabilities, D as lint, E as apply, G as deleteNode, H as validateGraph, I as editContractSchema, J as generateEditContract, n as normalizeComponentSpec, m as mapKeyRefusal, C as COMPONENT_FX_GUIDANCE, K as workspaceUserActionTools } from "./chunk-CgMc8eXR.js";
+import { f as loadConfig, g as createClient, h as createAppTool, m as manageThemeTool, r as registerPackDefinitions, j as projectJavascriptRuntime, k as projectAppSettings, o as compactTheme, q as pageSettingProperties, v as validateTableBatch, s as ToolJetHttpError, l as literalCanvasColor, P as PartialWriteError, t as themeActionTools, u as workflowOperations, x as branchIdFor, y as withBranchContext } from "./chunk-BnyPv9Ni.js";
+import { W as WebStandardStreamableHTTPServerTransport, O as getRequestListener, Q as manageAppPermissionsTool, U as listWorkspaceGroupsTool, V as manageWorkspaceGroupsTool, a as autoReadPreflight, X as workspaceGroupActionTools, Y as appPermissionActionTools } from "./chunk-BHilAYW1.js";
+import { a as codeAppScaffoldTool, b as codeAppReadFilesTool, d as codeAppWriteFilesTool, e as codeAppBuildTool, f as codeAppInstallTool, g as codeAppAddDependencyTool, n as noCodeIdentity, h as browserUserBindings, i as isCodeModeApp, j as browserUserMessage } from "./chunk-Cr2zggej.js";
+import { g as verifyPageRenderTool, h as containsExactValue, a as prepareQueryOptionsForWrite, i as containsNamedBinding, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, v as validateEvents, e as expandQueryLifecycles, b as persistedEventSpecs, j as persistedEventIds } from "./chunk-DASZasLw.js";
+import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as renameAppTool, p as plannedTableSchema, v as validatePersistedAppSummary, e as libraryPinErrors, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, f as containsComponentBinding, g as runUnattended, q as queryResultBindingHint, h as failureRecovery, j as failureVerification, s as schemaNameHint, k as redactRunResult, m as capUnattendedOutput, o as redactQueryText, t as prepareComponentBatch } from "./chunk-xNOCGhem.js";
+import { e9 as resolveRef } from "./chunk-BhoYgPP_.js";
+import { aA as external_exports, aH as inPackSet, aI as registerComponentSchemas, ax as activePackSet, aJ as newPackSet, aF as ok, aE as fail, aK as readCatalogBytes, aL as allComponentSchemas } from "./chunk-B6ozJ2M5.js";
+import { M as McpServer } from "./chunk-BDMI7x_D.js";
+import { I as pageIconSchema, A as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION, q as componentNameSchema, D as lintComponents, r as resolveParentRef, a as applyResolvedParent, f as introducedLintFindings, l as lintComponentSlots, M as lintRenderedGeometryBlocking, N as lintRenderedGeometryAdvisory, d as decodeComponentParent, O as FORM_SCHEMA_FIELD_TYPE_SET, Q as SAFE_GENERATED_FORM_FIELD_TYPE_SET, R as packSlotsFromManifest, T as describePackSlots } from "./chunk-DfrPsyM8.js";
+import { U as registerLibraryPacks } from "./chunk-D1B51Cza.js";
+import { g as resolveStaticBindings, u as emptyViewerOnlyParams, x as emptyParamsNote, y as unresolvedNote } from "./chunk-O6Dwgt9j.js";
+import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-wRCgCKcA.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { createServer } from "node:http";
@@ -636,6 +637,67 @@ function createAuth(config, fetchImpl = fetch) {
     return token;
   }
   return { authedFetch, getOrganizationId, getOrganizationSlug, listWorkspaces, switchWorkspace, viewerSession };
+}
+function workflowOperationTools(client) {
+  const tools = Object.entries(workflowOperations).map(([name, operation]) => ({
+    name,
+    title: name.replaceAll("_", " "),
+    description: operation.description + " Uses the signed-in user, current workspace and server permissions. Do not retry a mutation automatically after a timeout.",
+    strictInput: true,
+    inputSchema: operation.schema.shape,
+    annotations: {
+      readOnlyHint: operation.method === "GET" || name === "get_workflow_execution_states",
+      destructiveHint: operation.method !== "GET" && name !== "get_workflow_execution_states",
+      openWorldHint: "execution" in operation && operation.execution === true || [
+        "set_workflow_packages",
+        "rebuild_workflow_bundle",
+        "search_workflow_packages",
+        "get_workflow_package"
+      ].includes(name)
+    },
+    async handler(input) {
+      try {
+        return ok(await client.workflows.manage(name, input));
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  }));
+  const webhook = external_exports.object({ workflow_id: external_exports.string().uuid(), include_credentials: external_exports.boolean().default(false) }).strict();
+  const watch = external_exports.object({ execution_id: external_exports.string().uuid(), seconds: external_exports.number().int().min(1).max(30).default(10) }).strict();
+  tools.push({
+    name: "get_workflow_webhook",
+    title: "Get workflow webhook",
+    description: "Read webhook configuration. include_credentials exposes its bearer token only when explicitly needed; never share it.",
+    strictInput: true,
+    inputSchema: webhook.shape,
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+    async handler(input) {
+      try {
+        const a = webhook.parse(input);
+        return ok(await client.workflows.webhook(a.workflow_id, a.include_credentials));
+      } catch (e) {
+        return fail(e);
+      }
+    }
+  });
+  tools.push({
+    name: "watch_workflow_execution",
+    title: "Watch workflow execution",
+    description: "Collect up to 30 seconds of live SSE execution events, bounded to 100 events and 60 KB. Does not run or retry the workflow. Call get_workflow_execution for the final state.",
+    strictInput: true,
+    inputSchema: watch.shape,
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+    async handler(input) {
+      try {
+        const a = watch.parse(input);
+        return ok(await client.workflows.watch(a.execution_id, a.seconds));
+      } catch (e) {
+        return fail(e);
+      }
+    }
+  });
+  return tools;
 }
 function renderAuditAvailable() {
   if (process.env.MCP_RENDER_AUDIT_ENABLED === "false")
@@ -2586,7 +2648,7 @@ function validateAppTool(client) {
         const validation = validatePersistedAppSummary(summary, { canvasColor: await literalCanvasColor(client, args.app_id, summary.version_id) });
         for (const query of summary.queries.filter((query2) => query2.kind === "workflows")) {
           try {
-            await client.assertWorkflowQueryTarget(query.options);
+            await client.assertWorkflowQueryTarget(query.options, summary.version_id);
           } catch (error) {
             validation.errors.push(`Query "${query.name ?? query.id}": workflow target could not be verified. ${String(error)}`);
           }
@@ -3925,7 +3987,9 @@ var validateWorkflowInputSchema = external_exports.object(workflowTargetShape).s
 var runWorkflowInputSchema = external_exports.object({
   ...workflowTargetShape,
   environment_id: workflowIdSchema,
-  params: external_exports.record(external_exports.string(), external_exports.unknown()).default({})
+  params: external_exports.record(external_exports.string(), external_exports.unknown()).default({}),
+  start_node_id: external_exports.string().uuid().optional(),
+  state: external_exports.record(external_exports.string(), external_exports.unknown()).optional()
 }).strict();
 var getWorkflowExecutionInputSchema = external_exports.object({
   execution_id: workflowIdSchema,
@@ -4045,6 +4109,27 @@ var mutationInputs = [
     spec: (args) => ({ remove_edge_ids: [args.edge_id] })
   },
   {
+    name: "upsert_workflow_agent_tool",
+    title: "Attach Workflow Agent Tool",
+    description: "Attach an existing query node to an Agent as a callable tool. Store toolDescription and $ai parameters in the query options. Does not execute the tool.",
+    schema: external_exports.object({ ...workflowTargetShape, attachment: specSchema.shape.agent_tools.unwrap().element, allow_draft: external_exports.boolean().default(true) }).strict(),
+    spec: (args) => ({ agent_tools: [args.attachment] })
+  },
+  {
+    name: "set_workflow_setup_script",
+    title: "Set Workflow Setup Script",
+    description: "Replace the workflow setup script in an editable draft. It runs during workflow execution; this edit does not execute it.",
+    schema: external_exports.object({ ...workflowTargetShape, setup_script: specSchema.shape.setup_script.unwrap(), allow_draft: external_exports.boolean().default(true) }).strict(),
+    spec: (args) => ({ setup_script: args.setup_script })
+  },
+  {
+    name: "set_workflow_webhook_parameters",
+    title: "Set Legacy Workflow Webhook Parameters",
+    description: "Replace legacy webhook parameter declarations. Prefer typed workflow inputs for new workflows. This does not enable webhooks.",
+    schema: external_exports.object({ ...workflowTargetShape, parameters: specSchema.shape.webhook_parameters.unwrap(), allow_draft: external_exports.boolean().default(true) }).strict(),
+    spec: (args) => ({ webhook_parameters: args.parameters })
+  },
+  {
     name: "set_workflow_inputs",
     title: "Set Workflow Inputs",
     description: "Replace typed workflow input declarations. An empty list clears declarations; does not execute the workflow.",
@@ -4155,7 +4240,7 @@ function boundWorkflowExecutionResult(value) {
     const result = {
       execution_id: data.execution_id,
       truncated: true,
-      status: { status: status.status, logs: bounded(status.logs, 8e3) },
+      status: { status: status.status, execution_status: status.execution_status, approval_request_id: status.approval_request_id, logs: bounded(status.logs, 8e3) },
       page: data.page,
       per_page: data.per_page,
       nodes: { data: nodes, page: page.page, per_page: page.per_page, total: page.total, total_pages: page.total_pages }
@@ -4177,13 +4262,13 @@ function runWorkflowTool(client) {
   return {
     name: "run_workflow",
     title: "Run Workflow",
-    description: "Start one execution of an existing saved ToolJet workflow version in the selected environment, passing its input data in params. This calls the workflow-run API; params are workflow data, not an operation selector or executable graph. The saved workflow itself can perform datasource writes, send requests, and execute arbitrary code, so authorize that workflow and its effects before calling. This tool does not author or modify the workflow, publish it, or enable a disabled workflow. Never automatically retry a timeout: execution may have completed.",
+    description: "Start one execution of an existing saved ToolJet workflow version in the selected environment, passing its input data in params. Optional start_node_id and state perform an explicitly requested step run. This calls the workflow-run API; params are workflow data, not an operation selector or executable graph. The saved workflow itself can perform datasource writes, send requests, and execute arbitrary code, so authorize that workflow and its effects before calling. This tool does not author or modify the workflow, publish it, or enable a disabled workflow. Never automatically retry a timeout: execution may have completed.",
     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
     inputSchema: runWorkflowInputSchema.shape,
     async handler(args) {
       try {
         const input = runWorkflowInputSchema.parse(args);
-        const result = await client.workflows.run(input.workflow_id, input.version_id, input.environment_id, input.params);
+        const result = await client.workflows.run(input.workflow_id, input.version_id, input.environment_id, input.params, { start_node_id: input.start_node_id, state: input.state });
         return ok(boundWorkflowExecutionResult(result));
       } catch (error) {
         return fail(error);
@@ -4321,7 +4406,7 @@ function registerTools(server, client, runtime = runtimeFreshness, code = noCode
   ];
   tools.push(...managementActionTools(tools));
   tools.push(...datasourceMetadataTools(tools.find((tool) => tool.name === "inspect_datasource_schema")));
-  tools.push(...workflowMutationTools(client));
+  tools.push(...workflowMutationTools(client), ...workflowOperationTools(client));
   tools.push(renameAppTool(client));
   const exposedTools = includeLegacySingularCreateTools() ? tools : tools.filter((tool) => !LEGACY_SINGULAR_CREATE_TOOL_NAMES.has(tool.name));
   for (const tool of exposedTools) {

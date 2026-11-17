@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-const name = z.string().regex(/^[A-Za-z_$][\w$]*$/);
+export const workflowName = z.string().min(1).refine(value => value.trim().length > 0, 'Name must not be blank.');
+const name = workflowName;
 export const conditionBranches = z.array(z.object({ id: z.string().min(1), code: z.string().min(1), label: z.string() }).strict()).min(1);
 export const elseBranch = z.object({ enabled: z.boolean(), label: z.string().optional() }).strict();
 export const workflowInputs = z.array(z.object({
@@ -9,8 +10,9 @@ export const workflowInputs = z.array(z.object({
 }).strict()).superRefine((inputs, ctx) => {
   const keys = new Set<string>();
   inputs.forEach((input, i) => {
-    if (keys.has(input.key)) ctx.addIssue({ code: 'custom', path: [i, 'key'], message: 'Duplicate workflow input.' });
-    keys.add(input.key);
+    const canonicalKey = input.key.trim().toLowerCase();
+    if (keys.has(canonicalKey)) ctx.addIssue({ code: 'custom', path: [i, 'key'], message: 'Duplicate workflow input.' });
+    keys.add(canonicalKey);
     const value = input.defaultValue;
     if (value === undefined) return;
     const valid = input.type === 'null' ? value === null : input.type === 'array' ? Array.isArray(value)
@@ -37,6 +39,8 @@ export function humanConfigurationErrors(data: Record<string, unknown>): string[
   const outcomes = Array.isArray(data.outcomes) ? data.outcomes.map(record) : [];
   if (!outcomes.length || outcomes.some(outcome => typeof outcome.key !== 'string' || !outcome.key.trim())) errors.push('Human approval requires named outcomes.');
   if (new Set(outcomes.map(outcome => outcome.key)).size !== outcomes.length) errors.push('Human outcome keys must be unique.');
+  const fields = Array.isArray(data.inputSchema) ? data.inputSchema.map(record) : [];
+  if (fields.some(field => typeof field.name !== 'string' || !field.name.trim()) || new Set(fields.map(field => field.name)).size !== fields.length) errors.push('Human input field names must be nonblank and unique.');
   const timeout = record(data.timeout);
   if (timeout.enabled === true && !atLeastOneSecond(timeout.durationSeconds)) errors.push('Human timeout must be at least one second.');
   if (timeout.enabled === true && timeout.onExpire === 'branch' && !outcomes.some(outcome => outcome.key === timeout.timeoutOutcome)) errors.push('Human timeout must select an existing outcome.');
