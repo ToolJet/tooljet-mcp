@@ -187,3 +187,13 @@ describe('workflow operation safety and payloads', () => {
     expect((await client.webhook(wid)).default_trigger).toMatchObject({ version_id: releasedId });
   });
 });
+
+it('reads legacy execution status and pending approval identity through existing APIs',async()=>{
+ const {client,fetcher}=setup();fetcher.mockImplementation(async(path:string)=> {
+   if(path.endsWith('/status')) return Response.json({status:false,logs:[],nodes:[]});
+   if(path===`/api/workflow_executions/${eid}`) return Response.json({status:'waiting',executed:false,app_id:wid});
+   if(path.startsWith('/api/workflow-approvals?')) return Response.json({requests:[{id:nid,executionId:eid,status:'pending'}],meta:{total:1}});
+   return Response.json({data:[],page:1});
+ });
+ expect((await client.execution(eid)).status).toMatchObject({execution_status:'waiting',approval_request_id:nid});
+});

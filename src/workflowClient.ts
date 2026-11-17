@@ -1,5 +1,5 @@
 import { workflowOperations, type WorkflowOperationName } from './workflows/operations.js';
-import { resolveWorkflowReference } from './workflowReference.js';
+import { resolveWorkflowReference, type WorkflowConsumer } from './workflowReference.js';
 import { createHash } from 'node:crypto';
 import type { Auth } from './auth.js';
 import { branchIdFor, type Config } from './config.js';
@@ -8,7 +8,7 @@ import { definition, type Definition } from './workflows/graph.js';
 
 export interface WorkflowSnapshot {
   workflow_id: string; version_id: string; workspace_id: string; environment_id: string;
-  editable: boolean; enabled: boolean; webhook_enabled?: boolean; editor_url: string; definition: Definition;
+  editable: boolean; enabled: boolean; webhook_enabled?: boolean; branch_id?: string; status?: string; editor_url: string; definition: Definition;
 }
 export type WorkflowClient = ReturnType<typeof createWorkflowClient>;
 const record = (x: unknown): Record<string, unknown> => x && typeof x === 'object' && !Array.isArray(x) ? x as Record<string, unknown> : {};
@@ -71,11 +71,12 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
       editable: status === 'DRAFT' && !released && !frozen,
       enabled: (app.isMaintenanceOn ?? app.is_maintenance_on) === true,
       webhook_enabled: (version.workflowEnabled ?? version.workflow_enabled) === true,
+      branch_id: typeof (version.branchId ?? version.branch_id ?? record(version.branch).id) === 'string' ? String(version.branchId ?? version.branch_id ?? record(version.branch).id) : undefined, status,
       editor_url: `${config.appUrl}/${encodeURIComponent(await auth.getOrganizationSlug())}/apps/${encodeURIComponent(typeof app.slug === 'string' && app.slug ? app.slug : workflowId)}${branchQuery}`,
       definition: definition(rawVersion.definition),
     };
   }
-  async function assertWorkflowDatasources(versionId: string, environmentId: string, graph: Definition, visited = new Set<string>()): Promise<void> {
+  async function assertWorkflowDatasources(versionId: string, environmentId: string, graph: Definition, visited = new Set<string>(), consumer?: WorkflowConsumer): Promise<void> {
     if (visited.has(versionId)) return;
     if (visited.size >= 50) throw new Error('Cannot verify all nested workflow datasources; refusing AI execution.');
     visited.add(versionId);
@@ -92,7 +93,7 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
       .map(id => queries.assertDatasourceAllowed(id, versionId, environmentId)));
     for (const query of saved) {
       if (query.kind !== 'workflows') continue;
-      const resolved = await resolveWorkflowReference(auth, record(query.options), versionId);
+      const resolved = await resolveWorkflowReference(auth, record(query.options), consumer);
       const workflowId = resolved.workflow_id;
       const childVersionId = required(resolved.version_id, 'nested workflow released or pinned version');
       if (visited.has(childVersionId)) continue;
@@ -105,12 +106,12 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
       }
       // Only query mapping IDs are inspected, so camel-casing of opaque definition
       // content by the version endpoint cannot alter the authorization check.
-      await assertWorkflowDatasources(childVersionId, environmentId, definition(child.definition), visited);
+      await assertWorkflowDatasources(childVersionId, environmentId, definition(child.definition), visited, {branch_id: String(child.branchId ?? child.branch_id ?? record(child.branch).id ?? '') || undefined, status: String(child.status ?? '')});
     }
   }
   return {
     ...queries,
-    resolveReference: (options: Record<string, unknown>, consumerVersionId?: string) => resolveWorkflowReference(auth, options, consumerVersionId),
+    resolveReference: (options: Record<string, unknown>, consumer?: WorkflowConsumer | string) => resolveWorkflowReference(auth, options, consumer),
     workspaceId: () => auth.getOrganizationId(),
     async planScope() {
       if (config.isOAuthDelegation && !config.oauthGrantId) throw new Error('OAuth workflow plans require a trusted grant identifier.');
@@ -153,7 +154,7 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
       const snapshot = await get(workflowId, versionId);
       if (snapshot.environment_id !== environmentId) throw new Error('Environment must match the selected workflow version.');
       if (!snapshot.enabled) throw new Error('Workflow is disabled. Enable it in ToolJet before running it.');
-      await assertWorkflowDatasources(versionId, environmentId, snapshot.definition);
+      await assertWorkflowDatasources(versionId, environmentId, snapshot.definition, new Set(), snapshot);
       if (step?.start_node_id && !snapshot.definition.nodes.some(node => node.id === step.start_node_id)) throw new Error('Step node does not belong to this version.');
       if (step?.state && ['__humanDecision','__waitResume'].some(key => Object.hasOwn(step.state!, key))) throw new Error('Internal resume markers are not accepted.');
       return request('/api/workflow_executions', { executeUsing: 'version', appVersionId: versionId, appId: workflowId, environmentId, params, ...(step?.start_node_id ? { startNodeId: step.start_node_id, injectedState: step.state ?? {} } : {}) });
@@ -172,7 +173,7 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
         if (args.query_id && args.query_id !== queryId) throw new Error('Preview query does not belong to this node.');
         args.query_id = queryId;
         if (['__humanDecision','__waitResume'].some(key => Object.hasOwn(args.state, key))) throw new Error('Internal resume markers are not accepted.');
-        await assertWorkflowDatasources(args.version_id, args.environment_id, snapshot.definition);
+        await assertWorkflowDatasources(args.version_id, args.environment_id, snapshot.definition, new Set(), snapshot);
       }
       if (['create_workflow_schedule','update_workflow_schedule','set_workflow_schedule_active'].includes(name) && !(name === 'set_workflow_schedule_active' && args.active === false)) {
         const existing = args.schedule_id ? record(await request(`/api/workflow-schedules/${args.schedule_id}`)) : {};
@@ -182,7 +183,7 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
         const environmentId = required(changes.environmentId ?? existing.environmentId ?? existing.environment_id, 'schedule environment');
         const snapshot = await get(workflowId, versionId);
         if (snapshot.environment_id !== environmentId) throw new Error('Schedule environment must match its pinned version.');
-        await assertWorkflowDatasources(versionId, environmentId, snapshot.definition);
+        await assertWorkflowDatasources(versionId, environmentId, snapshot.definition, new Set(), snapshot);
       }
       if (name === 'set_workflow_webhook_enabled' && args.enabled) {
         // Webhooks can execute the release or a caller-selected named version. Enabling
@@ -198,7 +199,7 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
         if (!versions.size || versions.size > 100) throw new Error('Cannot verify all webhook versions.');
         for (const versionId of versions) {
           const snapshot = await get(args.workflow_id, versionId);
-          await assertWorkflowDatasources(snapshot.version_id, snapshot.environment_id, snapshot.definition);
+          await assertWorkflowDatasources(snapshot.version_id, snapshot.environment_id, snapshot.definition, new Set(), snapshot);
         }
       }
       const result = await request(operation.path(args), 'body' in operation ? operation.body(args) : undefined, operation.method);
@@ -251,7 +252,26 @@ export function createWorkflowClient(auth: Auth, config: Config, queries: Pick<T
       const response = record(await request(`${base}/status`));
       // /status repeats every node result. Only /nodes is paginated; omit those
       // duplicated results before applying the MCP response size limit.
-      const status = { status: response.status, execution_status: response.execution_status ?? (response.status === true ? 'completed' : 'unknown'), approval_request_id: response.approval_request_id ?? null, logs: response.logs };
+      const detail = response.execution_status ? {} : record(await request(base));
+      const executionStatus = response.execution_status ?? (detail.executed === false && detail.status === 'success' ? 'running' : detail.status) ?? 'unknown';
+      let approvalId: unknown = response.approval_request_id ?? null;
+      let approvalLookup: string | undefined;
+      if (executionStatus === 'waiting' && !approvalId) {
+        const appId = detail.app_id ?? detail.appId;
+        if (typeof appId === 'string') {
+          try {
+            for (let approvalPage = 1; approvalPage <= 10; approvalPage++) {
+              const result = record(await request(`/api/workflow-approvals?${new URLSearchParams({app_id:appId,status:'pending',page:String(approvalPage),per_page:'50'})}`));
+              const rows = Array.isArray(result.requests) ? result.requests : [];
+              const found = rows.map(record).find(row => (row.executionId ?? row.execution_id) === id);
+              if (found) { approvalId = found.id; break; }
+              if (rows.length < 50) break;
+              if (approvalPage === 10) approvalLookup = 'More approvals are available; use list_workflow_approvals.';
+            }
+          } catch { approvalLookup = 'Approval lookup unavailable; use list_workflow_approvals with an authorized account.'; }
+        }
+      }
+      const status = { status: response.status, execution_status: executionStatus, approval_request_id: approvalId, ...(approvalLookup ? {approval_lookup:approvalLookup} : {}), logs: response.logs };
       const nodes = await request(`${base}/nodes?${new URLSearchParams({ page: String(page), per_page: String(perPage) })}`);
       return { execution_id: id, status, nodes, page, per_page: perPage };
     },

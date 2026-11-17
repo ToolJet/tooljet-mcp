@@ -20,7 +20,9 @@ export function applyWorkflowSpecTool(client: ToolJetClient): ToolDef {
           ? { ...ok(result), isError: true }
           : ok(result);
       } catch (error) {
-        return fail(error);
+        // apply() returns partial-write failures as data. Its thrown errors occur
+        // during plan lookup or preflight, before its first write.
+        return { ...ok({ error: error instanceof Error ? error.message : String(error), not_written: true }), isError: true };
       }
     },
   };

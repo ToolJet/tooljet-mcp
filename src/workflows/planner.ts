@@ -64,7 +64,7 @@ export async function prepare(client: WorkflowClient, workflowId: string, versio
     let options = item.role === 'agent-model' ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
     // Workflow RunJS uses a server-side IIFE and workflow state, not browser
     // RunJS parameters. Validate that code separately, retaining common option checks.
-    if (kind === 'workflows') options = (await client.resolveReference(options, versionId)).options;
+    if (kind === 'workflows') options = (await client.resolveReference(options, snapshot)).options;
     if (item.role === 'workflow-node' && kind === 'runjs') assertWorkflowJavaScript(options.code, label);
     if (item.role === 'workflow-node') {
       const validation = validateQueryOptions(kind, options, 'workflow');

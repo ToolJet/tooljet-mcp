@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { c as codeCliProblem } from "./chunk-Cr2zggej.js";
-import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, e as definition } from "./chunk-CgMc8eXR.js";
+import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, e as definition } from "./chunk-CB78rxY_.js";
 import { e5 as tableQuotaError, ea as TableQuotaError } from "./chunk-BhoYgPP_.js";
 import { e as encodeComponentParent, d as decodeComponentParent, i as isPackContainerType, b as resolvePackSlot, x as assertPageIcon, y as resolveComponentLibrary, o as isMisplacedStyleKey, z as defaultPack, A as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION } from "./chunk-DfrPsyM8.js";
 import { O as downgradeFlexForLibrary, P as toLibraryComponent, Q as missingLibraryPins, R as libraryTypeOf, S as libraryPins } from "./chunk-D1B51Cza.js";
@@ -14,21 +14,74 @@ import { join, resolve, dirname } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
-async function resolveWorkflowReference(auth, raw, consumerVersionId) {
+var record = (value) => value && typeof value === "object" && !Array.isArray(value) ? value : {};
+var branchId = (version) => version.branchId ?? version.branch_id ?? record(version.branch).id;
+var versionType = (version) => String(version.versionType ?? version.version_type ?? "").toUpperCase();
+var moving = /* @__PURE__ */ new Set(["__current_branch__", "__default_branch_draft__"]);
+async function resolveWorkflowReference(auth, raw, consumer) {
   const options = normalizeWorkflowQueryOptions(raw);
   assertWorkflowQueryOptions(options);
-  const search = new URLSearchParams();
-  if (typeof options.workflowVersionId === "string")
-    search.set("pin", options.workflowVersionId);
-  if (consumerVersionId)
-    search.set("consumer_version_id", consumerVersionId);
-  const response = await auth.authedFetch(`/api/workflows/${encodeURIComponent(String(options.workflowId))}/resolve-version?${search}`);
-  if (!response.ok)
-    throw new Error(`Cannot resolve workflow reference (HTTP ${response.status}). The server must support workflow reference resolution; no query was executed.`);
-  const result = await response.json();
-  if (typeof result.workflow_id !== "string" || !(result.version_id === null || typeof result.version_id === "string") || !(result.pin === null || typeof result.pin === "string"))
-    throw new Error("Invalid workflow reference resolution response.");
-  return { ...result, options: { ...options, workflowId: result.workflow_id, workflowVersionId: result.pin } };
+  const workflowId = String(options.workflowId);
+  async function read(path) {
+    const response = await auth.authedFetch(path);
+    if (!response.ok)
+      throw new Error(`Cannot inspect workflow reference (HTTP ${response.status}); no query was executed.`);
+    return record(await response.json());
+  }
+  const app = await read(`/api/apps/${encodeURIComponent(workflowId)}`);
+  if (app.id !== workflowId || app.type !== "workflow" || (app.organizationId ?? app.organization_id) !== await auth.getOrganizationId())
+    throw new Error("Workflow identity or workspace mismatch. Use the workflow ID from list_workflows.");
+  const listing = await read(`/api/apps/${encodeURIComponent(workflowId)}/versions?includeDefaultBranchVersions=true`);
+  if (!Array.isArray(listing.versions))
+    throw new Error("Workflow versions are unavailable.");
+  const versions = listing.versions.map(record).filter((version) => !(version.isStub ?? version.is_stub));
+  let pin = typeof options.workflowVersionId === "string" ? options.workflowVersionId : null;
+  const context = typeof consumer === "object" ? consumer : void 0;
+  if (context?.status === "PUBLISHED" && pin && moving.has(pin))
+    pin = null;
+  const defaultVersions = versions.filter((version) => record(version.branch).isDefault === true || record(version.branch).is_default === true);
+  const latest = (rows, field) => [...rows].sort((a, b) => String(b[field] ?? b[field.replace(/[A-Z]/g, (c) => "_" + c.toLowerCase())] ?? "").localeCompare(String(a[field] ?? a[field.replace(/[A-Z]/g, (c) => "_" + c.toLowerCase())] ?? "")))[0];
+  const named = (name) => {
+    const candidates = defaultVersions.filter((version) => version.name === name && versionType(version) === "VERSION");
+    return latest(candidates.filter((version) => version.status === "PUBLISHED"), "createdAt") ?? latest(candidates.filter((version) => version.status === "DRAFT"), "createdAt");
+  };
+  let selected;
+  if (pin && moving.has(pin)) {
+    if (pin === "__current_branch__" && !context) {
+      return { workflow_id: workflowId, version_id: null, pin, options: { ...options, workflowVersionId: pin } };
+    }
+    const defaultId = branchId(defaultVersions[0] ?? {});
+    if (pin === "__current_branch__" && context?.branch_id && context.branch_id !== defaultId) {
+      selected = versions.find((version) => branchId(version) === context.branch_id && versionType(version) === "BRANCH");
+    } else
+      selected = latest(defaultVersions.filter((version) => versionType(version) === "VERSION" && version.status === "DRAFT"), "createdAt");
+  } else if (pin) {
+    const legacy = versions.find((version) => version.id === pin);
+    if (legacy) {
+      selected = named(legacy.name);
+      if (selected?.id !== legacy.id)
+        throw new Error("Workflow UUID cannot be translated without changing its version. Use a native named version or branch pin.");
+      pin = legacy.name;
+    } else
+      selected = named(pin);
+  } else {
+    const releasedId = app.currentVersionId ?? app.current_version_id;
+    selected = releasedId ? versions.find((version) => version.id === releasedId) : latest(defaultVersions.filter((version) => versionType(version) === "VERSION"), "updatedAt");
+    if (releasedId && !selected) {
+      const released = await read(`/api/v2/apps/${encodeURIComponent(workflowId)}/versions/${encodeURIComponent(releasedId)}`);
+      selected = record(released.editing_version ?? released.editingVersion);
+      if (released.id !== workflowId || (released.organizationId ?? released.organization_id) !== await auth.getOrganizationId() || selected.id !== releasedId)
+        throw new Error("Released workflow version identity mismatch.");
+    }
+  }
+  if (!selected?.id)
+    throw new Error("Workflow version cannot be verified from available metadata. Open the workflow on the intended branch or select a visible named version.");
+  return {
+    workflow_id: workflowId,
+    version_id: String(selected.id),
+    pin,
+    options: { ...options, workflowVersionId: pin }
+  };
 }
 function componentRef(component) {
   return component.clientRef ?? component.name;
@@ -96,16 +149,16 @@ function createAppVersionLifecycle(auth, getApp) {
     if (typeof raw.id !== "string" || typeof raw.name !== "string")
       throw new Error("Invalid version metadata.");
     const environmentId = raw.current_environment_id ?? raw.currentEnvironmentId;
-    const versionType = raw.version_type ?? raw.versionType;
-    const branchId = raw.branch_id ?? raw.branchId;
+    const versionType2 = raw.version_type ?? raw.versionType;
+    const branchId2 = raw.branch_id ?? raw.branchId;
     const displayName = raw.display_name ?? raw.displayName;
     return {
       id: raw.id,
       name: raw.name,
       ...typeof raw.description === "string" || raw.description === null ? { description: raw.description } : {},
       ...typeof raw.status === "string" ? { status: raw.status } : {},
-      ...typeof versionType === "string" ? { versionType } : {},
-      ...typeof branchId === "string" ? { branchId } : {},
+      ...typeof versionType2 === "string" ? { versionType: versionType2 } : {},
+      ...typeof branchId2 === "string" ? { branchId: branchId2 } : {},
       ...typeof displayName === "string" ? { displayName } : {},
       ...typeof environmentId === "string" ? { environmentId } : {}
     };
@@ -500,7 +553,7 @@ var workflowOperations = {
   }
 };
 var branchContext = new AsyncLocalStorage();
-var withBranchContext = (branchId, fn) => branchContext.run(branchId, fn);
+var withBranchContext = (branchId2, fn) => branchContext.run(branchId2, fn);
 var currentBranchId = () => branchContext.getStore();
 function branchIdFor(config) {
   const requested = branchContext.getStore();
@@ -656,7 +709,7 @@ async function validateApiUrl(raw, customerId) {
 async function identityFromHeaders(headers, { allowPat = true } = {}) {
   const sessionToken = readHeader(headers, SESSION_TOKEN_HEADER);
   const workspaceId = readHeader(headers, WORKSPACE_ID_HEADER);
-  const branchId = readHeader(headers, BRANCH_ID_HEADER);
+  const branchId2 = readHeader(headers, BRANCH_ID_HEADER);
   const pat = readHeader(headers, PAT_HEADER);
   const rawApiUrl = readHeader(headers, BASE_URL_HEADER);
   const customerId = readHeader(headers, CUSTOMER_ID_HEADER);
@@ -677,7 +730,7 @@ async function identityFromHeaders(headers, { allowPat = true } = {}) {
     }
     if (sessionToken)
       throw new Error(`Send either ${PAT_HEADER} or ${SESSION_TOKEN_HEADER}, not both.`);
-    return { pat, apiUrl, customerVerified, ...branchId ? { branchId } : {} };
+    return { pat, apiUrl, customerVerified, ...branchId2 ? { branchId: branchId2 } : {} };
   }
   if (!sessionToken && !workspaceId) {
     return apiUrl || customerVerified ? { apiUrl, customerVerified } : void 0;
@@ -691,7 +744,7 @@ async function identityFromHeaders(headers, { allowPat = true } = {}) {
   return {
     sessionToken,
     workspaceId,
-    ...branchId ? { branchId } : {},
+    ...branchId2 ? { branchId: branchId2 } : {},
     workspaceSlug: readHeader(headers, WORKSPACE_SLUG_HEADER),
     apiUrl,
     customerVerified
@@ -750,7 +803,7 @@ function loadConfig(identity) {
     ...env("TOOLJET_BRANCH_ID") ? { branchId: env("TOOLJET_BRANCH_ID") } : {}
   };
 }
-var record = (x) => x && typeof x === "object" && !Array.isArray(x) ? x : {};
+var record2 = (x) => x && typeof x === "object" && !Array.isArray(x) ? x : {};
 var required = (x, label) => {
   if (typeof x !== "string" || !x)
     throw new Error(`Workflow response missing ${label}.`);
@@ -777,10 +830,10 @@ function createWorkflowClient(auth, config, queries) {
   const versionPath = (id2, version) => `/api/v2/apps/${encodeURIComponent(id2)}/versions/${encodeURIComponent(version)}`;
   async function get(workflowId, versionId) {
     if (!versionId) {
-      const app2 = record(await request(`/api/apps/${encodeURIComponent(workflowId)}`));
-      versionId = required(record(app2.editing_version ?? app2.editingVersion).id, "editing version");
+      const app2 = record2(await request(`/api/apps/${encodeURIComponent(workflowId)}`));
+      versionId = required(record2(app2.editing_version ?? app2.editingVersion).id, "editing version");
     }
-    const app = record(await request(versionPath(workflowId, versionId)));
+    const app = record2(await request(versionPath(workflowId, versionId)));
     if (app.type !== "workflow")
       throw new Error("Target is not a workflow.");
     const workspace = await auth.getOrganizationId();
@@ -788,28 +841,28 @@ function createWorkflowClient(auth, config, queries) {
       throw new Error("Workflow does not belong to the active workspace.");
     if (app.id !== workflowId)
       throw new Error("Workflow response ID mismatch.");
-    const version = record(app.editing_version ?? app.editingVersion);
+    const version = record2(app.editing_version ?? app.editingVersion);
     if (version.id !== versionId)
       throw new Error("Workflow version response mismatch.");
     const environmentId = required(version.currentEnvironmentId ?? version.current_environment_id, "environment ID");
     const status = String(version.status ?? "").toUpperCase();
     const released = (app.currentVersionId ?? app.current_version_id) === versionId;
     const frozen = Boolean(app.should_freeze_editor ?? app.shouldFreezeEditor);
-    const exported = record(await request("/api/v2/resources/export", {
+    const exported = record2(await request("/api/v2/resources/export", {
       organization_id: workspace,
       app: [{ id: workflowId, search_params: { version_id: versionId } }]
     }));
     const apps = Array.isArray(exported.app) ? exported.app : [];
-    const rawApp = record(record(record(apps[0]).definition).appV2);
+    const rawApp = record2(record2(record2(apps[0]).definition).appV2);
     if (apps.length !== 1 || rawApp.id !== workflowId || rawApp.type !== "workflow" || rawApp.organizationId !== workspace) {
       throw new Error("Lossless workflow export response mismatch. No definition can be safely edited.");
     }
     const versions = Array.isArray(rawApp.appVersions) ? rawApp.appVersions : [];
-    const rawVersion = record(versions.find((candidate) => record(candidate).id === versionId));
+    const rawVersion = record2(versions.find((candidate) => record2(candidate).id === versionId));
     if (rawVersion.id !== versionId || !Object.hasOwn(rawVersion, "definition")) {
       throw new Error("Lossless workflow export is missing the requested version definition.");
     }
-    const branchName = record(version.branch).name;
+    const branchName = record2(version.branch).name;
     const branchQuery = typeof branchName === "string" && branchName ? `?branch=${encodeURIComponent(branchName)}` : "";
     return {
       workflow_id: workflowId,
@@ -819,11 +872,13 @@ function createWorkflowClient(auth, config, queries) {
       editable: status === "DRAFT" && !released && !frozen,
       enabled: (app.isMaintenanceOn ?? app.is_maintenance_on) === true,
       webhook_enabled: (version.workflowEnabled ?? version.workflow_enabled) === true,
+      branch_id: typeof (version.branchId ?? version.branch_id ?? record2(version.branch).id) === "string" ? String(version.branchId ?? version.branch_id ?? record2(version.branch).id) : void 0,
+      status,
       editor_url: `${config.appUrl}/${encodeURIComponent(await auth.getOrganizationSlug())}/apps/${encodeURIComponent(typeof app.slug === "string" && app.slug ? app.slug : workflowId)}${branchQuery}`,
       definition: definition(rawVersion.definition)
     };
   }
-  async function assertWorkflowDatasources(versionId, environmentId, graph, visited = /* @__PURE__ */ new Set()) {
+  async function assertWorkflowDatasources(versionId, environmentId, graph, visited = /* @__PURE__ */ new Set(), consumer) {
     if (visited.has(versionId))
       return;
     if (visited.size >= 50)
@@ -842,22 +897,22 @@ function createWorkflowClient(auth, config, queries) {
     for (const query2 of saved) {
       if (query2.kind !== "workflows")
         continue;
-      const resolved = await resolveWorkflowReference(auth, record(query2.options), versionId);
+      const resolved = await resolveWorkflowReference(auth, record2(query2.options), consumer);
       const workflowId = resolved.workflow_id;
       const childVersionId = required(resolved.version_id, "nested workflow released or pinned version");
       if (visited.has(childVersionId))
         continue;
-      const childApp = record(await request(versionPath(workflowId, childVersionId)));
-      const child = record(childApp.editing_version ?? childApp.editingVersion);
+      const childApp = record2(await request(versionPath(workflowId, childVersionId)));
+      const child = record2(childApp.editing_version ?? childApp.editingVersion);
       if (childApp.type !== "workflow" || childApp.id !== workflowId || child.id !== childVersionId || (childApp.organizationId ?? childApp.organization_id) !== await auth.getOrganizationId() || !Object.hasOwn(child, "definition")) {
         throw new Error("Cannot verify the nested workflow version definition; refusing AI execution.");
       }
-      await assertWorkflowDatasources(childVersionId, environmentId, definition(child.definition), visited);
+      await assertWorkflowDatasources(childVersionId, environmentId, definition(child.definition), visited, { branch_id: String(child.branchId ?? child.branch_id ?? record2(child.branch).id ?? "") || void 0, status: String(child.status ?? "") });
     }
   }
   return {
     ...queries,
-    resolveReference: (options, consumerVersionId) => resolveWorkflowReference(auth, options, consumerVersionId),
+    resolveReference: (options, consumer) => resolveWorkflowReference(auth, options, consumer),
     workspaceId: () => auth.getOrganizationId(),
     async planScope() {
       if (config.isOAuthDelegation && !config.oauthGrantId)
@@ -870,8 +925,8 @@ function createWorkflowClient(auth, config, queries) {
     },
     get,
     async create(name) {
-      const branchId = branchIdFor(config);
-      const created = record(await request("/api/workflows", { name, type: "workflow", ...branchId ? { branchId } : {} }));
+      const branchId2 = branchIdFor(config);
+      const created = record2(await request("/api/workflows", { name, type: "workflow", ...branchId2 ? { branchId: branchId2 } : {} }));
       const id2 = required(created.id, "created workflow ID");
       try {
         return await get(id2);
@@ -889,7 +944,7 @@ function createWorkflowClient(auth, config, queries) {
     async createWorkflowQuery(params) {
       if (params.dataSourceId)
         await queries.assertDatasourceAllowed(params.dataSourceId, params.versionId);
-      const body = record(await request("/api/data-queries/workflow-node", {
+      const body = record2(await request("/api/data-queries/workflow-node", {
         app_id: params.workflowId,
         app_version_id: params.versionId,
         name: params.name,
@@ -905,7 +960,7 @@ function createWorkflowClient(auth, config, queries) {
         throw new Error("Environment must match the selected workflow version.");
       if (!snapshot.enabled)
         throw new Error("Workflow is disabled. Enable it in ToolJet before running it.");
-      await assertWorkflowDatasources(versionId, environmentId, snapshot.definition);
+      await assertWorkflowDatasources(versionId, environmentId, snapshot.definition, /* @__PURE__ */ new Set(), snapshot);
       if (step?.start_node_id && !snapshot.definition.nodes.some((node) => node.id === step.start_node_id))
         throw new Error("Step node does not belong to this version.");
       if (step?.state && ["__humanDecision", "__waitResume"].some((key) => Object.hasOwn(step.state, key)))
@@ -932,46 +987,46 @@ function createWorkflowClient(auth, config, queries) {
         args.query_id = queryId;
         if (["__humanDecision", "__waitResume"].some((key) => Object.hasOwn(args.state, key)))
           throw new Error("Internal resume markers are not accepted.");
-        await assertWorkflowDatasources(args.version_id, args.environment_id, snapshot.definition);
+        await assertWorkflowDatasources(args.version_id, args.environment_id, snapshot.definition, /* @__PURE__ */ new Set(), snapshot);
       }
       if (["create_workflow_schedule", "update_workflow_schedule", "set_workflow_schedule_active"].includes(name) && !(name === "set_workflow_schedule_active" && args.active === false)) {
-        const existing = args.schedule_id ? record(await request(`/api/workflow-schedules/${args.schedule_id}`)) : {};
+        const existing = args.schedule_id ? record2(await request(`/api/workflow-schedules/${args.schedule_id}`)) : {};
         const changes = args.changes ?? args;
-        const versionId = required(changes.workflowId ?? record(existing.workflow).id ?? existing.workflowId, "schedule version");
+        const versionId = required(changes.workflowId ?? record2(existing.workflow).id ?? existing.workflowId, "schedule version");
         const workflowId = required(args.workflow_id ?? existing.appId ?? existing.app_id, "schedule workflow");
         const environmentId = required(changes.environmentId ?? existing.environmentId ?? existing.environment_id, "schedule environment");
         const snapshot = await get(workflowId, versionId);
         if (snapshot.environment_id !== environmentId)
           throw new Error("Schedule environment must match its pinned version.");
-        await assertWorkflowDatasources(versionId, environmentId, snapshot.definition);
+        await assertWorkflowDatasources(versionId, environmentId, snapshot.definition, /* @__PURE__ */ new Set(), snapshot);
       }
       if (name === "set_workflow_webhook_enabled" && args.enabled) {
-        const app = record(await request(`/api/apps/${encodeURIComponent(args.workflow_id)}`));
-        const listing = record(await request(`/api/apps/${encodeURIComponent(args.workflow_id)}/versions?includeDefaultBranchVersions=true`));
+        const app = record2(await request(`/api/apps/${encodeURIComponent(args.workflow_id)}`));
+        const listing = record2(await request(`/api/apps/${encodeURIComponent(args.workflow_id)}/versions?includeDefaultBranchVersions=true`));
         if (!Array.isArray(listing.versions))
           throw new Error("Cannot verify webhook versions.");
-        const versions = new Set(listing.versions.map((value) => required(record(value).id, "webhook version")));
+        const versions = new Set(listing.versions.map((value) => required(record2(value).id, "webhook version")));
         const released = app.current_version_id ?? app.currentVersionId;
         if (typeof released === "string")
           versions.add(released);
-        const editing = record(app.editing_version ?? app.editingVersion).id;
+        const editing = record2(app.editing_version ?? app.editingVersion).id;
         if (typeof editing === "string")
           versions.add(editing);
         if (!versions.size || versions.size > 100)
           throw new Error("Cannot verify all webhook versions.");
         for (const versionId of versions) {
           const snapshot = await get(args.workflow_id, versionId);
-          await assertWorkflowDatasources(snapshot.version_id, snapshot.environment_id, snapshot.definition);
+          await assertWorkflowDatasources(snapshot.version_id, snapshot.environment_id, snapshot.definition, /* @__PURE__ */ new Set(), snapshot);
         }
       }
       const result = await request(operation.path(args), "body" in operation ? operation.body(args) : void 0, operation.method);
-      if (record(result).success === false)
-        throw new Error(String(record(result).message ?? "Workflow operation failed."));
+      if (record2(result).success === false)
+        throw new Error(String(record2(result).message ?? "Workflow operation failed."));
       return result;
     },
     async webhook(workflowId, includeCredentials = false) {
       const snapshot = await get(workflowId);
-      const app = record(await request(`/api/apps/${encodeURIComponent(workflowId)}`));
+      const app = record2(await request(`/api/apps/${encodeURIComponent(workflowId)}`));
       const releasedId = app.current_version_id ?? app.currentVersionId;
       const released = typeof releasedId === "string" ? await get(workflowId, releasedId) : void 0;
       return {
@@ -1041,8 +1096,34 @@ function createWorkflowClient(auth, config, queries) {
     },
     async execution(id2, page2 = 1, perPage = 20) {
       const base = `/api/workflow_executions/${encodeURIComponent(id2)}`;
-      const response = record(await request(`${base}/status`));
-      const status = { status: response.status, execution_status: response.execution_status ?? (response.status === true ? "completed" : "unknown"), approval_request_id: response.approval_request_id ?? null, logs: response.logs };
+      const response = record2(await request(`${base}/status`));
+      const detail = response.execution_status ? {} : record2(await request(base));
+      const executionStatus = response.execution_status ?? (detail.executed === false && detail.status === "success" ? "running" : detail.status) ?? "unknown";
+      let approvalId = response.approval_request_id ?? null;
+      let approvalLookup;
+      if (executionStatus === "waiting" && !approvalId) {
+        const appId = detail.app_id ?? detail.appId;
+        if (typeof appId === "string") {
+          try {
+            for (let approvalPage = 1; approvalPage <= 10; approvalPage++) {
+              const result = record2(await request(`/api/workflow-approvals?${new URLSearchParams({ app_id: appId, status: "pending", page: String(approvalPage), per_page: "50" })}`));
+              const rows = Array.isArray(result.requests) ? result.requests : [];
+              const found = rows.map(record2).find((row) => (row.executionId ?? row.execution_id) === id2);
+              if (found) {
+                approvalId = found.id;
+                break;
+              }
+              if (rows.length < 50)
+                break;
+              if (approvalPage === 10)
+                approvalLookup = "More approvals are available; use list_workflow_approvals.";
+            }
+          } catch {
+            approvalLookup = "Approval lookup unavailable; use list_workflow_approvals with an authorized account.";
+          }
+        }
+      }
+      const status = { status: response.status, execution_status: executionStatus, approval_request_id: approvalId, ...approvalLookup ? { approval_lookup: approvalLookup } : {}, logs: response.logs };
       const nodes = await request(`${base}/nodes?${new URLSearchParams({ page: String(page2), per_page: String(perPage) })}`);
       return { execution_id: id2, status, nodes, page: page2, per_page: perPage };
     }
@@ -2178,7 +2259,7 @@ function createClient(auth, config) {
   }
   async function createApp(name, options = {}) {
     const wantsCode = options.buildMode === "code";
-    const branchId = branchIdFor(config);
+    const branchId2 = branchIdFor(config);
     let createRes;
     let finalName = name;
     for (let attempt = 1; attempt <= 6; attempt++) {
@@ -2189,7 +2270,7 @@ function createClient(auth, config) {
         body: JSON.stringify({
           name: finalName,
           type: "front-end",
-          ...branchId ? { branchId } : {},
+          ...branchId2 ? { branchId: branchId2 } : {},
           // The build mode is set when the app is created, as the dashboard does: ToolJet has no call that changes it later.
           ...wantsCode ? { buildMode: "code" } : {}
         })
@@ -2221,7 +2302,7 @@ function createClient(auth, config) {
     const viewerUrl = `${config.appUrl}/applications/${created.id}/${encodeURIComponent(homeHandle)}?env=development&version=${encodeURIComponent(versionName)}${branchQuery ? `&${branchQuery}` : ""}`;
     return {
       app_id: created.id,
-      ...branchId ? { branch_id: branchId } : {},
+      ...branchId2 ? { branch_id: branchId2 } : {},
       build_mode: buildMode === "code" ? "code" : "visual",
       version_id: versionId,
       home_page_id: homePage.id,

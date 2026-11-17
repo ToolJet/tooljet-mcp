@@ -1024,7 +1024,7 @@ async function prepare(client, workflowId, versionId, spec, ids) {
     const requestedOptions = item.role === "agent-model" ? item.options : input.type === "javascript" || input.type === "loop" ? { ...oldQuery?.options ?? {}, code: input.code } : input.options;
     let options = item.role === "agent-model" ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
     if (kind === "workflows")
-      options = (await client.resolveReference(options, versionId)).options;
+      options = (await client.resolveReference(options, snapshot)).options;
     if (item.role === "workflow-node" && kind === "runjs")
       assertWorkflowJavaScript(options.code, label);
     if (item.role === "workflow-node") {

@@ -134,17 +134,12 @@ describe('workflow API parity', () => {
     expect(again.graph.edges).toEqual(compiled.graph.edges);
     expect(again.graph.nodes[1].data).toMatchObject({ isChildOfAgent: true, agentConnectionType: 'tool' });
   });
-  it('resolves native branch pins and normalizes legacy UUIDs through the backend', async () => {
-    const auth = {
-      authedFetch: vi.fn().mockResolvedValue(Response.json({ workflow_id: wid, version_id: vid, pin: 'v2' })),
-    };
-    const resolved = await resolveWorkflowReference(auth as any, { workflowId: wid, workflowVersionId: vid }, vid);
+  it('normalizes legacy UUIDs using existing version metadata without a new backend endpoint', async () => {
+    const auth = {getOrganizationId:async()=> 'workspace', authedFetch:vi.fn(async(path:string)=>Response.json(path.includes('/versions?')?{versions:[{id:vid,name:'v2',status:'DRAFT',versionType:'VERSION',branch:{id:'main',isDefault:true}}]}:{id:wid,type:'workflow',organizationId:'workspace'}))};
+    const resolved=await resolveWorkflowReference(auth as any,{workflowId:wid,workflowVersionId:vid});
     expect(resolved.options.workflowVersionId).toBe('v2');
-    expect(auth.authedFetch.mock.calls[0][0]).toContain(`consumer_version_id=${vid}`);
-    auth.authedFetch.mockResolvedValue(Response.json({ workflow_id: wid, version_id: vid, pin: '__current_branch__' }));
-    expect(
-      (await resolveWorkflowReference(auth as any, { workflowId: wid, workflowVersionId: '__current_branch__' })).pin,
-    ).toBe('__current_branch__');
+    expect(auth.authedFetch.mock.calls.every(([path])=>!path.includes('resolve-version'))).toBe(true);
+    expect((await resolveWorkflowReference(auth as any,{workflowId:wid,workflowVersionId:'__current_branch__'},{status:'DRAFT',branch_id:'main'})).version_id).toBe(vid);
   });
   it('fails closed if native resolution is unavailable', async () => {
     const auth = { authedFetch: vi.fn().mockResolvedValue(new Response('', { status: 404 })) };

@@ -9,9 +9,13 @@ function exported(value = app()) {
 function setup(fetcher = vi.fn(async (path: string) => new Response(JSON.stringify(path === '/api/v2/resources/export' ? exported() : path.startsWith('/api/v2/apps/') ? app(path.split('/')[4], path.split('/')[6]) : app())))) {
   const originalFetch = fetcher.getMockImplementation();
   fetcher.mockImplementation(async (path: string, init?: any) => {
-    if (path.includes('/resolve-version?')) {
-      const url = new URL(path, 'http://localhost');
-      return Response.json({ workflow_id: url.pathname.split('/')[3], version_id: url.searchParams.get('pin') ?? 'child-v', pin: url.searchParams.get('pin') });
+    if (/^\/api\/apps\/[^/]+(?:\/versions\?includeDefaultBranchVersions=true)?$/.test(path)) {
+      const id = path.split('/')[3];
+      const selected = id === '116910ef-8aaa-4c9f-8cff-a760244dfb37' ? 'v' : 'child-v';
+      const response = await originalFetch!(`/api/v2/apps/${id}/versions/${selected}`, init);
+      const value = await response.json();
+      if (path.includes('/versions?')) return Response.json({versions:[{...value.editing_version,name:selected,versionType:'VERSION',branchId:'main',branch:{id:'main',isDefault:true},createdAt:'2026-01-01',updatedAt:'2026-01-01'}]});
+      return Response.json(value);
     }
     return originalFetch!(path, init);
   });
@@ -190,9 +194,9 @@ describe('lossless workflow reads', () => {
   it('omits all-node status payloads so small result pages remain readable', async () => {
     const nodePage = { data: [{ id: 'small-node', result: { parcel_count: 8 } }], total: 2, total_pages: 2, page: 2, per_page: 1 };
     const { client } = setup(vi.fn(async path => new Response(JSON.stringify(path.endsWith('/status')
-      ? { status: true, logs: [], nodes: [{ id: 'large-node', result: 'x'.repeat(80_000) }] } : nodePage))));
+      ? { status: true, logs: [], nodes: [{ id: 'large-node', result: 'x'.repeat(80_000) }] } : path === '/api/workflow_executions/execution' ? {status:'success',executed:true} : nodePage))));
     const result = await client.execution('execution', 2, 1);
-    expect(result.status).toEqual({ status: true, execution_status: 'completed', approval_request_id: null, logs: [] });
+    expect(result.status).toEqual({ status: true, execution_status: 'success', approval_request_id: null, logs: [] });
     expect(result.nodes).toEqual(nodePage);
     expect(JSON.stringify(result).length).toBeLessThan(1000);
   });
