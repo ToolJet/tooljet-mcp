@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { c as codeCliProblem } from "./chunk-CAr0IhXy.js";
-import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, e as definition } from "./chunk-DCBr7MCX.js";
+import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, e as definition } from "./chunk-BPlPF8l0.js";
 import { e5 as tableQuotaError, e9 as TableQuotaError } from "./chunk-C1Uan0hB.js";
 import { e as encodeComponentParent, d as decodeComponentParent, i as isPackContainerType, b as resolvePackSlot, x as assertPageIcon, y as resolveComponentLibrary, o as isMisplacedStyleKey, z as defaultPack, A as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION } from "./chunk-BzoTtK4L.js";
 import { O as downgradeFlexForLibrary, P as toLibraryComponent, Q as missingLibraryPins, R as libraryTypeOf, S as libraryPins } from "./chunk-Btd7hqFK.js";

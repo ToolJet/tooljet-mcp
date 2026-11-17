@@ -52,6 +52,12 @@ const mutationInputs = [
     spec: (args: any) => ({ remove_edge_ids: [args.edge_id] }),
   },
   {
+    name: 'set_workflow_inputs', title: 'Set Workflow Inputs',
+    description: 'Replace typed workflow input declarations. An empty list clears declarations; does not execute the workflow.',
+    schema: z.object({ ...workflowTargetShape, inputs: specSchema.shape.workflow_inputs.unwrap(), allow_draft: z.boolean().default(true) }).strict(),
+    spec: (args: any) => ({ workflow_inputs: args.inputs }),
+  },
+  {
     name: 'set_workflow_test_parameters', title: 'Set Workflow Test Parameters',
     description: 'Replace the saved default test parameters of an editable workflow draft. Saves data only; does not start a test or execute the workflow.',
     schema: z.object({ ...workflowTargetShape, parameters: z.record(z.string(), z.unknown()), allow_draft: z.boolean().default(true) }).strict(),

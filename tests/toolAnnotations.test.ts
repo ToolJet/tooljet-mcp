@@ -80,10 +80,10 @@ describe('tool annotations', () => {
   const tools = registeredTools();
 
   it.each([
-    { legacy: false, render: false, count: 126 },
-    { legacy: true, render: false, count: 131 },
-    { legacy: false, render: true, count: 127 },
-    { legacy: true, render: true, count: 132 },
+    { legacy: false, render: false, count: 130 },
+    { legacy: true, render: false, count: 135 },
+    { legacy: false, render: true, count: 131 },
+    { legacy: true, render: true, count: 136 },
   ])('publishes complete wire annotations with legacy=$legacy and render=$render', async ({ legacy, render, count }) => {
     const previous = process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS;
     process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS = String(legacy);

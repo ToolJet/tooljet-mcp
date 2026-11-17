@@ -1,0 +1,38 @@
+import { z } from 'zod';
+
+const name = z.string().regex(/^[A-Za-z_$][\w$]*$/);
+export const conditionBranches = z.array(z.object({ id: z.string().min(1), code: z.string().min(1), label: z.string() }).strict()).min(1);
+export const elseBranch = z.object({ enabled: z.boolean(), label: z.string().optional() }).strict();
+export const workflowInputs = z.array(z.object({
+  key: name, type: z.enum(['string', 'number', 'object', 'array', 'boolean', 'null']),
+  required: z.boolean(), defaultValue: z.unknown().optional(), description: z.string().optional(),
+}).strict()).superRefine((inputs, ctx) => {
+  const keys = new Set<string>();
+  inputs.forEach((input, i) => {
+    if (keys.has(input.key)) ctx.addIssue({ code: 'custom', path: [i, 'key'], message: 'Duplicate workflow input.' });
+    keys.add(input.key);
+    const value = input.defaultValue;
+    if (value === undefined) return;
+    const valid = input.type === 'null' ? value === null : input.type === 'array' ? Array.isArray(value)
+      : input.type === 'object' ? value !== null && typeof value === 'object' && !Array.isArray(value)
+      : typeof value === input.type;
+    if (!valid) ctx.addIssue({ code: 'custom', path: [i, 'defaultValue'], message: 'Default must match input type.' });
+  });
+});
+export const humanConfig = {
+  description: z.string().optional(),
+  outcomes: z.array(z.object({ key: name, label: z.string().min(1) }).strict()).min(1),
+  input_schema: z.array(z.object({ name, type: z.enum(['text', 'number', 'boolean', 'select']), label: z.string().optional(), required: z.boolean().optional(), options: z.array(z.string()).optional(), default: z.unknown().optional() }).strict()).optional(),
+  approvers: z.object({ users: z.array(z.string().uuid()).optional(), groups: z.array(z.string().uuid()).optional(), dynamic: z.string().optional(), tokenBypass: z.boolean().optional() }).strict(),
+  timeout: z.object({ enabled: z.boolean(), durationSeconds: z.number().finite().positive().optional(), onExpire: z.enum(['fail', 'branch']).optional(), timeoutOutcome: z.string().optional() }).strict().optional(),
+  reminders: z.array(z.object({ id: z.string().optional(), afterSeconds: z.number().finite().min(1) }).strict()).optional(),
+  notification: z.object({ url: z.string().optional(), method: z.string().optional(), headers: z.record(z.string(), z.string()).optional(), bodyTemplate: z.string().optional(), includeResolveUrl: z.boolean().optional() }).strict().optional(),
+};
+
+/** These checks also run on retained definitions, not just new spec entries. */
+export function conditionHandles(data: Record<string, unknown>): string[] {
+  const branches = data.conditions as Array<{ id: string }> | undefined;
+  return Array.isArray(branches) && branches.length
+    ? [...branches.map(branch => branch.id), 'false']
+    : ['true', 'false'];
+}

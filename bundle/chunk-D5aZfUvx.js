@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
-import { p as plannedCurrency, n as normalizeComponentSpec } from "./chunk-DCBr7MCX.js";
+import { p as plannedCurrency, n as normalizeComponentSpec } from "./chunk-BPlPF8l0.js";
 import { ay as getComponentSchema, aF as resolveRef } from "./chunk-isfY25ah.js";
-import { v as validateTableBatch, i as indexComponentReferences, c as componentRef, n as normalizeType, p as packDefaultDefinition } from "./chunk-BsNBjHca.js";
+import { v as validateTableBatch, i as indexComponentReferences, c as componentRef, n as normalizeType, p as packDefaultDefinition } from "./chunk-N4_k0Dv1.js";
 import { B as pageIconError, D as lintComponents, e as encodeComponentParent, f as introducedLintFindings, l as lintComponentSlots, E as validateAppStructure, F as isModalV2Type, d as decodeComponentParent, G as minimumTextHeight, H as unifyChartAccents, t as slotFindingKey } from "./chunk-BzoTtK4L.js";
 import { E as lintComponentStateBindings, A as retiredUi2Name } from "./chunk-Btd7hqFK.js";
 import { k as normalizeQueryToggles, t as toggleRewriteWarning, i as issueMessages, q as queryToggleIssues, n as normalizeQueryOptions, v as validateQueryOptions } from "./chunk-CpwF2B9D.js";

@@ -76,6 +76,8 @@ Rebuild the bundle after every pull: a stale bundle silently runs old tools.
 - **`src/http.ts` has no bearer gate:** keep it on loopback; use `MCP_TRANSPORT=http` + `MCP_SHARED_TOKEN` for anything off-box.
 - **HTTP port default** (`TOOLJET_MCP_HTTP_PORT`, falls back to `PORT`) can clash with other local services; set it explicitly.
 
+- Workflow condition ports come from persisted `conditions[].id` (legacy: true/false); Human ports come from outcomes. Never edit only `code` on a modern condition. New node/input contracts live in `src/workflows/nodeContracts.ts`; update the compiler, tool catalog, generated guidance, and regression tests together.
+
 ## 7. See also
 
 ToolJet/tooljet-agent, `ai-stack/SETUP.md` (whole-stack overview and local setup).

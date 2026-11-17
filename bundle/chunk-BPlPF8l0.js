@@ -332,6 +332,42 @@ function updateLayoutTool(client) {
   };
 }
 createRequire(import.meta.url);
+var name$1 = external_exports.string().regex(/^[A-Za-z_$][\w$]*$/);
+var conditionBranches = external_exports.array(external_exports.object({ id: external_exports.string().min(1), code: external_exports.string().min(1), label: external_exports.string() }).strict()).min(1);
+var elseBranch = external_exports.object({ enabled: external_exports.boolean(), label: external_exports.string().optional() }).strict();
+var workflowInputs = external_exports.array(external_exports.object({
+  key: name$1,
+  type: external_exports.enum(["string", "number", "object", "array", "boolean", "null"]),
+  required: external_exports.boolean(),
+  defaultValue: external_exports.unknown().optional(),
+  description: external_exports.string().optional()
+}).strict()).superRefine((inputs, ctx) => {
+  const keys = /* @__PURE__ */ new Set();
+  inputs.forEach((input, i) => {
+    if (keys.has(input.key))
+      ctx.addIssue({ code: "custom", path: [i, "key"], message: "Duplicate workflow input." });
+    keys.add(input.key);
+    const value = input.defaultValue;
+    if (value === void 0)
+      return;
+    const valid = input.type === "null" ? value === null : input.type === "array" ? Array.isArray(value) : input.type === "object" ? value !== null && typeof value === "object" && !Array.isArray(value) : typeof value === input.type;
+    if (!valid)
+      ctx.addIssue({ code: "custom", path: [i, "defaultValue"], message: "Default must match input type." });
+  });
+});
+var humanConfig = {
+  description: external_exports.string().optional(),
+  outcomes: external_exports.array(external_exports.object({ key: name$1, label: external_exports.string().min(1) }).strict()).min(1),
+  input_schema: external_exports.array(external_exports.object({ name: name$1, type: external_exports.enum(["text", "number", "boolean", "select"]), label: external_exports.string().optional(), required: external_exports.boolean().optional(), options: external_exports.array(external_exports.string()).optional(), default: external_exports.unknown().optional() }).strict()).optional(),
+  approvers: external_exports.object({ users: external_exports.array(external_exports.string().uuid()).optional(), groups: external_exports.array(external_exports.string().uuid()).optional(), dynamic: external_exports.string().optional(), tokenBypass: external_exports.boolean().optional() }).strict(),
+  timeout: external_exports.object({ enabled: external_exports.boolean(), durationSeconds: external_exports.number().finite().positive().optional(), onExpire: external_exports.enum(["fail", "branch"]).optional(), timeoutOutcome: external_exports.string().optional() }).strict().optional(),
+  reminders: external_exports.array(external_exports.object({ id: external_exports.string().optional(), afterSeconds: external_exports.number().finite().min(1) }).strict()).optional(),
+  notification: external_exports.object({ url: external_exports.string().optional(), method: external_exports.string().optional(), headers: external_exports.record(external_exports.string(), external_exports.string()).optional(), bodyTemplate: external_exports.string().optional(), includeResolveUrl: external_exports.boolean().optional() }).strict().optional()
+};
+function conditionHandles(data) {
+  const branches = data.conditions;
+  return Array.isArray(branches) && branches.length ? [...branches.map((branch) => branch.id), "false"] : ["true", "false"];
+}
 var ref = external_exports.string().min(1).max(100);
 var base = { ref, existing_id: external_exports.string().uuid().optional(), label: external_exports.string().max(100).optional(), position: external_exports.object({ x: external_exports.number().finite(), y: external_exports.number().finite() }).optional() };
 var query = { name: external_exports.string().regex(/^[A-Za-z_$][\w$]*$/), datasource_id: external_exports.string().min(1), options: external_exports.record(external_exports.string(), external_exports.unknown()) };
@@ -341,16 +377,20 @@ var nodeSchema = external_exports.discriminatedUnion("type", [
   external_exports.object({ ...base, type: external_exports.literal("javascript"), name: query.name, code: external_exports.string().min(1) }).strict(),
   external_exports.object({ ...base, type: external_exports.literal("query"), ...query }).strict(),
   external_exports.object({ ...base, type: external_exports.literal("loop"), name: query.name, iteration_values_code: external_exports.string().min(1), code: external_exports.string().min(1) }).strict(),
-  external_exports.object({ ...base, type: external_exports.literal("condition"), code: external_exports.string().min(1) }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("condition"), code: external_exports.string().min(1).optional(), conditions: conditionBranches.optional(), else_branch: elseBranch.optional() }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("filter"), name: query.name, input_expression: external_exports.string().min(1), predicate_expression: external_exports.string().min(1) }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("wait"), name: query.name, duration_seconds: external_exports.number().finite().min(1).max(2592e3) }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("human"), name: query.name, ...humanConfig }).strict(),
   external_exports.object({ ...base, type: external_exports.literal("response"), code: external_exports.string().min(1), status_code: external_exports.number().int().min(100).max(599).optional() }).strict(),
   external_exports.object({ ...base, type: external_exports.literal("agent"), system_prompt: external_exports.string().optional(), user_prompt: external_exports.string().optional(), output_format: external_exports.record(external_exports.string(), external_exports.unknown()).nullable().optional(), model: agentModel.nullable().optional() }).strict()
 ]);
 var specSchema = external_exports.object({
   schema_version: external_exports.literal(1).default(1),
   nodes: external_exports.array(nodeSchema).max(200).default([]),
-  edges: external_exports.array(external_exports.object({ ref, existing_id: external_exports.string().optional(), from: ref, to: ref, port: external_exports.enum(["default", "success", "failure", "true", "false"]) }).strict()).max(500).default([]),
+  edges: external_exports.array(external_exports.object({ ref, existing_id: external_exports.string().optional(), from: ref, to: ref, port: external_exports.string().min(1) }).strict()).max(500).default([]),
   remove_node_ids: external_exports.array(external_exports.string()).default([]),
   remove_edge_ids: external_exports.array(external_exports.string()).default([]),
+  workflow_inputs: workflowInputs.optional(),
   test_parameters: external_exports.record(external_exports.string(), external_exports.unknown()).optional()
 }).strict();
 function assertWorkflowJavaScript(code, label) {
@@ -399,7 +439,7 @@ function validateGraph(graph, queryIds) {
   for (const n of graph.nodes) {
     if (n.type === "query" && !mappings.has(String(n.data.idOnDefinition)))
       error("missing_mapping", `nodes.${n.id}`, "Query node has no query mapping.");
-    if (!["input", "query", "if-condition", "output", "agent"].includes(n.type))
+    if (!["input", "query", "if-condition", "output", "agent", "human", "filter", "wait"].includes(n.type))
       warnings.push({ code: "unsupported_node", path: `nodes.${n.id}`, message: `Retained ${n.type} node; configuration not validated.` });
   }
   const flowEdges = controlFlowEdges(graph);
@@ -417,11 +457,15 @@ function validateGraph(graph, queryIds) {
     }
     if (target.type === "input")
       error("start_inbound", path, "Start cannot have inbound edges.");
-    const ports = { input: [null, void 0], query: ["success", "failure"], "if-condition": ["true", "false"], output: [], agent: ["output"] };
+    const ports = { input: [null, void 0], query: ["success", "failure"], "if-condition": conditionHandles(source.data), human: (source.data.outcomes ?? []).map((outcome) => outcome.key), filter: [null, void 0], wait: [null, void 0], output: [], agent: ["output"] };
     if (ports[source.type] && !ports[source.type].includes(edge.sourceHandle))
       error("invalid_port", path, `Invalid source port for ${source.type}.`);
     if (source.type === "query" && edge.sourceHandle === "failure" && !source.data.errorHandler)
       error("error_handler_disabled", path, "Failure edge requires query error handling.");
+  }
+  for (const filter of graph.nodes.filter((node) => node.type === "filter")) {
+    if (flowEdges.filter((edge) => edge.target === filter.id).length > 1)
+      error("filter_inbound", `nodes.${filter.id}`, "Filter accepts exactly one upstream connection.");
   }
   for (const agent of graph.nodes.filter((node) => node.type === "agent")) {
     if (graph.edges.filter((edge) => edge.target === agent.id && edge.targetHandle === "ai-model").length > 1) {
@@ -486,7 +530,7 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
   graph.edges = graph.edges.filter((e) => !spec.remove_edge_ids.includes(e.id) && !cascadedChildIds.has(e.source) && !cascadedChildIds.has(e.target));
   const editedIds = /* @__PURE__ */ new Set();
   for (const input of spec.nodes) {
-    if ("code" in input) {
+    if ("code" in input && input.code !== void 0) {
       try {
         new Script(input.type === "condition" ? `(${input.code})` : `(async function() {${input.code}
 })`);
@@ -509,14 +553,59 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
     const old = graph.nodes.find((n) => n.id === id);
     if (input.existing_id && !old)
       throw new Error(`Unknown existing node: ${id}`);
-    const type = { start: "input", javascript: "query", query: "query", loop: "query", condition: "if-condition", response: "output", agent: "agent" }[input.type];
+    const type = { start: "input", javascript: "query", query: "query", loop: "query", condition: "if-condition", response: "output", agent: "agent", human: "human", filter: "filter", wait: "wait" }[input.type];
     if (old && old.type !== type)
       throw new Error("Changing node type is unsupported; remove and add explicitly.");
     const data = { ...old?.data, label: input.label ?? old?.data.label ?? input.ref };
     if (input.type !== "condition")
       data.nodeType = input.type === "javascript" || input.type === "loop" ? "query" : input.type;
-    if (input.type === "condition" || input.type === "response")
+    if (input.type === "condition") {
+      if (input.code !== void 0 && input.conditions !== void 0)
+        throw new Error("Specify code or conditions, not both.");
+      if (input.code !== void 0) {
+        if (Array.isArray(data.conditions) && data.conditions.length)
+          throw new Error("This node uses ordered conditions. Edit conditions explicitly; code would leave active branches unchanged.");
+        data.code = input.code;
+      }
+      if (input.conditions !== void 0) {
+        if (new Set(input.conditions.map((branch) => branch.id)).size !== input.conditions.length || input.conditions.some((branch) => branch.id === "false"))
+          throw new Error("Condition IDs must be unique and cannot be false.");
+        input.conditions.forEach((branch) => {
+          new Script(`(${branch.code})`);
+        });
+        data.conditions = input.conditions.map((branch) => ({ ...data.conditions?.find((old2) => old2.id === branch.id) ?? {}, ...branch }));
+        delete data.code;
+      }
+      if (input.else_branch !== void 0)
+        data.elseBranch = { ...data.elseBranch ?? {}, ...input.else_branch };
+      if (data.code === void 0 && !Array.isArray(data.conditions))
+        throw new Error("Condition requires code or conditions.");
+    }
+    if (input.type === "response")
       data.code = input.code;
+    if (input.type === "filter") {
+      new Script(`(${input.input_expression})`);
+      new Script(`(${input.predicate_expression})`);
+      Object.assign(data, { nodeName: input.name, inputExpression: input.input_expression, predicateExpression: input.predicate_expression });
+    }
+    if (input.type === "wait")
+      Object.assign(data, { nodeName: input.name, durationSeconds: input.duration_seconds });
+    if (input.type === "human") {
+      if (new Set(input.outcomes.map((outcome) => outcome.key)).size !== input.outcomes.length)
+        throw new Error("Human outcome keys must be unique.");
+      if (input.timeout?.enabled && (input.timeout.durationSeconds === void 0 || input.timeout.durationSeconds < 1))
+        throw new Error("Human timeout must be at least one second.");
+      if (input.timeout?.enabled && input.timeout.onExpire === "branch" && !input.outcomes.some((outcome) => outcome.key === input.timeout?.timeoutOutcome))
+        throw new Error("Human timeout must select an existing outcome.");
+      if (input.approvers.tokenBypass === false && !input.approvers.users?.length && !input.approvers.groups?.length && !input.approvers.dynamic?.trim())
+        throw new Error("Human requires an approver when token bypass is disabled.");
+      Object.assign(data, { nodeName: input.name, outcomes: input.outcomes.map((outcome) => ({ ...data.outcomes?.find((old2) => old2.key === outcome.key) ?? {}, ...outcome })), approvers: { ...data.approvers ?? {}, ...input.approvers } });
+      for (const [from, to] of Object.entries({ description: "description", input_schema: "inputSchema", timeout: "timeout", reminders: "reminders", notification: "notification" })) {
+        const value = input[from];
+        if (value !== void 0)
+          data[to] = structuredClone(value);
+      }
+    }
     if (input.type === "response" && (input.status_code !== void 0 || data.statusCode === void 0)) {
       data.statusCode = { fxActive: false, value: String(input.status_code ?? 200) };
     }
@@ -597,7 +686,7 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
     if (!source || !target)
       throw new Error(`Unknown endpoint in edge ${input.ref}. Use a supplied ref or existing node ID.`);
     const sourceNode = graph.nodes.find((node) => node.id === source);
-    const sourceHandle = input.port === "default" ? sourceNode?.type === "agent" ? "output" : null : input.port;
+    const sourceHandle = input.port === "default" && !["if-condition", "human"].includes(sourceNode?.type ?? "") ? sourceNode?.type === "agent" ? "output" : null : input.port;
     const edge = { ...old, id, source, target, sourceHandle, type: "custom" };
     if (old)
       graph.edges[graph.edges.indexOf(old)] = edge;
@@ -633,6 +722,8 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
     n.position = { x, y };
     placed.push(n);
   }
+  if (spec.workflow_inputs !== void 0)
+    graph.workflowInputs = structuredClone(spec.workflow_inputs);
   if (spec.test_parameters !== void 0)
     graph.defaultParams = JSON.stringify(spec.test_parameters);
   return { graph, node_ids, edge_ids, model_ids, query_nodes };
@@ -655,11 +746,16 @@ var nodeCatalog = {
     { type: "javascript", renderer: "query", ports: ["success", "failure"], fields: ["name", "code"] },
     { type: "query", renderer: "query", ports: ["success", "failure"], fields: ["name", "datasource_id", "options"] },
     { type: "loop", renderer: "query", ports: ["success", "failure"], fields: ["name", "iteration_values_code", "code"] },
-    { type: "condition", renderer: "if-condition", ports: ["true", "false"], fields: ["code"] },
+    { type: "condition", renderer: "if-condition", ports: ["condition id", "false (else)"], fields: ["code (legacy only)", "conditions", "else_branch"] },
+    { type: "filter", renderer: "filter", ports: ["default"], fields: ["name", "input_expression", "predicate_expression"] },
+    { type: "wait", renderer: "wait", ports: ["default"], fields: ["name", "duration_seconds"] },
+    { type: "human", renderer: "human", ports: ["outcome key"], fields: ["name", "outcomes", "input_schema", "approvers", "timeout", "reminders", "notification"] },
     { type: "response", renderer: "output", ports: [], fields: ["code", "status_code"] },
     { type: "agent", renderer: "agent", ports: ["default"], fields: ["system_prompt", "user_prompt", "output_format", "model"] }
   ],
   edit_semantics: "Patch. Use existing_id to edit nodes/edges; edge endpoints may use existing node IDs. Omitted objects are preserved. Removal requires explicit IDs and incident edge removal.",
+  workflow_inputs: "Use workflow_inputs to replace typed declarations; omission preserves them and [] clears them. test_parameters remains separate.",
+  advanced_nodes: "Filter expressions use value and index in the predicate. Human and Wait suspend durably and cannot run as child workflows. Human approval resolution remains in ToolJet.",
   limitations: ["Agent tool connections are not authored", "No publishing or trigger setup", "No concurrent-edit protection", "No automatic execution during authoring", "Advanced nodes are preserved but not authored"]
 };
 createRequire(import.meta.url);

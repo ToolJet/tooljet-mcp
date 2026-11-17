@@ -1003,7 +1003,7 @@ Discover the workflow with \`list_workflows/get_workflow\`, then fetch \`get_dat
 
 ### Author a workflow graph
 
-Use the workflow tools for a ToolJet automation graph, not for an app's page-level interaction flow. The supported authoring subset is Start, JavaScript, datasource query, Loop, condition, Agent, and response nodes.
+Use the workflow tools for a ToolJet automation graph, not for an app's page-level interaction flow. Supported authoring nodes are Start, JavaScript, datasource query, Loop, condition, Agent, response, Filter, Wait, and Human. Modern condition nodes use ordered conditions with stable IDs and an optional else_branch; edge ports are condition IDs or false for Else. Edit conditions explicitly on modern nodes; code is only for legacy nodes. Filter takes input_expression and predicate_expression (expressions, not return statements), with value/index in the predicate and exactly one upstream connection. Wait uses duration_seconds (1 second through 30 days). Human uses named outcomes, approvers, optional input_schema, timeout, reminders, and notification; edge ports are outcome keys. Human and Wait cannot run as child workflows. Approval resolution and schedule/webhook setup remain in ToolJet. Use workflow_inputs in a spec or set_workflow_inputs to replace typed input declarations; omission preserves declarations and [] clears them. Saved test_parameters are separate from typed input defaults.
 
 Use this capability-first sequence:
 
