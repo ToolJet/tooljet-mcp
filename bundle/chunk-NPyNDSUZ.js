@@ -364,6 +364,31 @@ var humanConfig = {
   reminders: external_exports.array(external_exports.object({ id: external_exports.string().optional(), afterSeconds: external_exports.number().finite().min(1) }).strict()).optional(),
   notification: external_exports.object({ url: external_exports.string().optional(), method: external_exports.string().optional(), headers: external_exports.record(external_exports.string(), external_exports.string()).optional(), bodyTemplate: external_exports.string().optional(), includeResolveUrl: external_exports.boolean().optional() }).strict().optional()
 };
+function humanConfigurationErrors(data) {
+  const record = (value) => value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  const atLeastOneSecond = (value) => typeof value === "number" && Number.isFinite(value) && value >= 1;
+  const errors = [];
+  const outcomes = Array.isArray(data.outcomes) ? data.outcomes.map(record) : [];
+  if (!outcomes.length || outcomes.some((outcome) => typeof outcome.key !== "string" || !outcome.key.trim()))
+    errors.push("Human approval requires named outcomes.");
+  if (new Set(outcomes.map((outcome) => outcome.key)).size !== outcomes.length)
+    errors.push("Human outcome keys must be unique.");
+  const timeout = record(data.timeout);
+  if (timeout.enabled === true && !atLeastOneSecond(timeout.durationSeconds))
+    errors.push("Human timeout must be at least one second.");
+  if (timeout.enabled === true && timeout.onExpire === "branch" && !outcomes.some((outcome) => outcome.key === timeout.timeoutOutcome))
+    errors.push("Human timeout must select an existing outcome.");
+  const reminders = [...Array.isArray(data.reminders) ? data.reminders : [], ...Array.isArray(timeout.reminders) ? timeout.reminders : []];
+  if (reminders.some((reminder) => !atLeastOneSecond(record(reminder).afterSeconds)))
+    errors.push("Human reminders must be at least one second.");
+  const approvers = record(data.approvers);
+  const hasUsers = Array.isArray(approvers.users) && approvers.users.length > 0;
+  const hasGroups = Array.isArray(approvers.groups) && approvers.groups.length > 0;
+  const hasDynamic = typeof approvers.dynamic === "string" && approvers.dynamic.trim().length > 0;
+  if (approvers.tokenBypass === false && !hasUsers && !hasGroups && !hasDynamic)
+    errors.push("Human requires an approver when token bypass is disabled.");
+  return errors;
+}
 function conditionHandles(data) {
   const branches = data.conditions;
   return Array.isArray(branches) && branches.length ? [...branches.map((branch) => branch.id), "false"] : ["true", "false"];
@@ -576,8 +601,13 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
         data.conditions = input.conditions.map((branch) => ({ ...data.conditions?.find((old2) => old2.id === branch.id) ?? {}, ...branch }));
         delete data.code;
       }
-      if (input.else_branch !== void 0)
+      if (input.else_branch !== void 0) {
+        if (!Array.isArray(data.conditions) && typeof data.code === "string") {
+          data.conditions = [{ id: "true", code: data.code, label: "If" }];
+          delete data.code;
+        }
         data.elseBranch = { ...data.elseBranch ?? {}, ...input.else_branch };
+      }
       if (data.code === void 0 && !Array.isArray(data.conditions))
         throw new Error("Condition requires code or conditions.");
     }
@@ -591,20 +621,15 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
     if (input.type === "wait")
       Object.assign(data, { nodeName: input.name, durationSeconds: input.duration_seconds });
     if (input.type === "human") {
-      if (new Set(input.outcomes.map((outcome) => outcome.key)).size !== input.outcomes.length)
-        throw new Error("Human outcome keys must be unique.");
-      if (input.timeout?.enabled && (input.timeout.durationSeconds === void 0 || input.timeout.durationSeconds < 1))
-        throw new Error("Human timeout must be at least one second.");
-      if (input.timeout?.enabled && input.timeout.onExpire === "branch" && !input.outcomes.some((outcome) => outcome.key === input.timeout?.timeoutOutcome))
-        throw new Error("Human timeout must select an existing outcome.");
-      if (input.approvers.tokenBypass === false && !input.approvers.users?.length && !input.approvers.groups?.length && !input.approvers.dynamic?.trim())
-        throw new Error("Human requires an approver when token bypass is disabled.");
       Object.assign(data, { nodeName: input.name, outcomes: input.outcomes.map((outcome) => ({ ...data.outcomes?.find((old2) => old2.key === outcome.key) ?? {}, ...outcome })), approvers: { ...data.approvers ?? {}, ...input.approvers } });
       for (const [from, to] of Object.entries({ description: "description", input_schema: "inputSchema", timeout: "timeout", reminders: "reminders", notification: "notification" })) {
         const value = input[from];
         if (value !== void 0)
           data[to] = structuredClone(value);
       }
+      const configurationErrors = humanConfigurationErrors(data);
+      if (configurationErrors.length)
+        throw new Error(configurationErrors.join(" "));
     }
     if (input.type === "response" && (input.status_code !== void 0 || data.statusCode === void 0)) {
       data.statusCode = { fxActive: false, value: String(input.status_code ?? 200) };
@@ -756,7 +781,7 @@ var nodeCatalog = {
   edit_semantics: "Patch. Use existing_id to edit nodes/edges; edge endpoints may use existing node IDs. Omitted objects are preserved. Removal requires explicit IDs and incident edge removal.",
   workflow_inputs: "Use workflow_inputs to replace typed declarations; omission preserves them and [] clears them. test_parameters remains separate.",
   advanced_nodes: "Filter expressions use value and index in the predicate. Human and Wait suspend durably and cannot run as child workflows. Human approval resolution remains in ToolJet.",
-  limitations: ["Agent tool connections are not authored", "No publishing or trigger setup", "No concurrent-edit protection", "No automatic execution during authoring", "Advanced nodes are preserved but not authored"]
+  limitations: ["Agent tool connections are not authored", "No publishing or trigger setup", "No concurrent-edit protection", "No automatic execution during authoring", "Unknown node types are preserved but not authored"]
 };
 createRequire(import.meta.url);
 var capabilityRequestSchema = external_exports.object({
@@ -814,6 +839,33 @@ function workflowReadiness(graph, structuralErrors) {
   for (const start of graph.nodes.filter((node) => node.type === "input" && node.data.nodeType === "start"))
     visit(start.id);
   const blockers = [];
+  for (const node of graph.nodes.filter((node2) => reachable.has(node2.id))) {
+    const issues = [];
+    if (node.type === "human")
+      issues.push(...humanConfigurationErrors(node.data));
+    if (node.type === "wait") {
+      const duration = node.data.durationSeconds;
+      if (typeof duration !== "number" || !Number.isFinite(duration) || duration < 1 || duration > 2592e3)
+        issues.push("Wait duration must be between 1 second and 30 days.");
+    }
+    if (node.type === "filter" && [node.data.inputExpression, node.data.predicateExpression].some((value) => typeof value !== "string" || !value.trim()))
+      issues.push("Filter requires input and predicate expressions.");
+    if (node.type === "if-condition") {
+      const conditions = Array.isArray(node.data.conditions) ? node.data.conditions : [{ code: node.data.code }];
+      if (!conditions.length || conditions.some((branch) => !branch || typeof branch.code !== "string" || !branch.code.trim()))
+        issues.push("Every condition branch requires an expression.");
+    }
+    for (const message of issues)
+      blockers.push({ code: "node_configuration", path: `nodes.${node.id}`, message });
+  }
+  for (const filter of graph.nodes.filter((node) => node.type === "filter")) {
+    if (!controlFlowEdges(graph).some((edge) => edge.target === filter.id))
+      blockers.push({
+        code: "filter_missing_input",
+        path: `nodes.${filter.id}`,
+        message: "Filter requires one upstream connection before it can run."
+      });
+  }
   for (const agent of graph.nodes.filter((node) => node.type === "agent" && reachable.has(node.id))) {
     const attachment = graph.edges.find((edge) => edge.target === agent.id && edge.targetHandle === "ai-model");
     const child = attachment && graph.nodes.find((node) => node.id === attachment.source);

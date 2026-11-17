@@ -1,7 +1,7 @@
 import { Script } from 'node:vm';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { conditionBranches, elseBranch, workflowInputs, humanConfig, conditionHandles } from './nodeContracts.js';
+import { conditionBranches, elseBranch, workflowInputs, humanConfig, conditionHandles, humanConfigurationErrors } from './nodeContracts.js';
 
 const ref = z.string().min(1).max(100);
 const base = { ref, existing_id: z.string().uuid().optional(), label: z.string().max(100).optional(), position: z.object({ x: z.number().finite(), y: z.number().finite() }).optional() };
@@ -167,7 +167,15 @@ export function compileGraph(current: Definition, spec: WorkflowSpec, ids?: Grap
         data.conditions = input.conditions.map(branch => ({ ...((data.conditions as Array<{ id: string }> | undefined)?.find(old => old.id === branch.id) ?? {}), ...branch }));
         delete data.code;
       }
-      if (input.else_branch !== undefined) data.elseBranch = { ...(data.elseBranch as object ?? {}), ...input.else_branch };
+      if (input.else_branch !== undefined) {
+        // Legacy execution ignores elseBranch. Promote the legacy expression while
+        // keeping its true handle so existing edges continue to route correctly.
+        if (!Array.isArray(data.conditions) && typeof data.code === 'string') {
+          data.conditions = [{ id: 'true', code: data.code, label: 'If' }];
+          delete data.code;
+        }
+        data.elseBranch = { ...(data.elseBranch as object ?? {}), ...input.else_branch };
+      }
       if (data.code === undefined && !Array.isArray(data.conditions)) throw new Error('Condition requires code or conditions.');
     }
     if (input.type === 'response') data.code = input.code;
@@ -177,15 +185,13 @@ export function compileGraph(current: Definition, spec: WorkflowSpec, ids?: Grap
     }
     if (input.type === 'wait') Object.assign(data, { nodeName: input.name, durationSeconds: input.duration_seconds });
     if (input.type === 'human') {
-      if (new Set(input.outcomes.map(outcome => outcome.key)).size !== input.outcomes.length) throw new Error('Human outcome keys must be unique.');
-      if (input.timeout?.enabled && (input.timeout.durationSeconds === undefined || input.timeout.durationSeconds < 1)) throw new Error('Human timeout must be at least one second.');
-      if (input.timeout?.enabled && input.timeout.onExpire === 'branch' && !input.outcomes.some(outcome => outcome.key === input.timeout?.timeoutOutcome)) throw new Error('Human timeout must select an existing outcome.');
-      if (input.approvers.tokenBypass === false && !input.approvers.users?.length && !input.approvers.groups?.length && !input.approvers.dynamic?.trim()) throw new Error('Human requires an approver when token bypass is disabled.');
       Object.assign(data, { nodeName: input.name, outcomes: input.outcomes.map(outcome => ({ ...((data.outcomes as Array<{ key: string }> | undefined)?.find(old => old.key === outcome.key) ?? {}), ...outcome })), approvers: { ...(data.approvers as object ?? {}), ...input.approvers } });
       for (const [from, to] of Object.entries({ description: 'description', input_schema: 'inputSchema', timeout: 'timeout', reminders: 'reminders', notification: 'notification' })) {
         const value = input[from as keyof typeof input];
         if (value !== undefined) data[to] = structuredClone(value);
       }
+      const configurationErrors = humanConfigurationErrors(data);
+      if (configurationErrors.length) throw new Error(configurationErrors.join(' '));
     }
     if (input.type === 'response' && (input.status_code !== undefined || data.statusCode === undefined)) {
       data.statusCode = { fxActive: false, value: String(input.status_code ?? 200) };
@@ -314,5 +320,5 @@ export const nodeCatalog = {
   edit_semantics: 'Patch. Use existing_id to edit nodes/edges; edge endpoints may use existing node IDs. Omitted objects are preserved. Removal requires explicit IDs and incident edge removal.',
   workflow_inputs: 'Use workflow_inputs to replace typed declarations; omission preserves them and [] clears them. test_parameters remains separate.',
   advanced_nodes: 'Filter expressions use value and index in the predicate. Human and Wait suspend durably and cannot run as child workflows. Human approval resolution remains in ToolJet.',
-  limitations: ['Agent tool connections are not authored', 'No publishing or trigger setup', 'No concurrent-edit protection', 'No automatic execution during authoring', 'Advanced nodes are preserved but not authored'],
+  limitations: ['Agent tool connections are not authored', 'No publishing or trigger setup', 'No concurrent-edit protection', 'No automatic execution during authoring', 'Unknown node types are preserved but not authored'],
 };

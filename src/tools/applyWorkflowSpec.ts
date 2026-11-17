@@ -9,7 +9,7 @@ export function applyWorkflowSpecTool(client: ToolJetClient): ToolDef {
   return {
     name: 'apply_workflow_spec',
     title: 'Apply Workflow Spec',
-    description: 'Apply a validated authoring plan to an editable draft and verify readback. Saves node/edge configuration, creates or updates the associated query definitions, removes explicitly deleted graph objects and their obsolete queries, and optionally saves test parameters. Does not execute node code, send datasource requests, run the workflow, or publish. The same authoring actions are individually exposed as upsert_workflow_<type>_node, upsert_workflow_edge, delete_workflow_edge, delete_workflow_node, and set_workflow_test_parameters. Partial writes return IDs for recovery; never blindly retry creation.',
+    description: 'Apply a validated authoring plan to an editable draft and verify readback. Saves node/edge configuration, creates or updates the associated query definitions, removes explicitly deleted graph objects and their obsolete queries, and optionally saves test parameters. Does not execute node code, send datasource requests, run the workflow, or publish. The same authoring actions are individually exposed as upsert_workflow_<type>_node, upsert_workflow_edge, delete_workflow_edge, delete_workflow_node, set_workflow_test_parameters, and set_workflow_inputs. Partial writes return IDs for recovery; never blindly retry creation.',
     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     inputSchema: applyWorkflowSpecInputSchema.shape,
     async handler(args: unknown) {

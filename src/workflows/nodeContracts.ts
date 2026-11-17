@@ -29,6 +29,27 @@ export const humanConfig = {
   notification: z.object({ url: z.string().optional(), method: z.string().optional(), headers: z.record(z.string(), z.string()).optional(), bodyTemplate: z.string().optional(), includeResolveUrl: z.boolean().optional() }).strict().optional(),
 };
 
+/** Validate the persisted configuration after applying a patch, including retained values. */
+export function humanConfigurationErrors(data: Record<string, unknown>): string[] {
+  const record = (value: unknown): Record<string, unknown> => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  const atLeastOneSecond = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 1;
+  const errors: string[] = [];
+  const outcomes = Array.isArray(data.outcomes) ? data.outcomes.map(record) : [];
+  if (!outcomes.length || outcomes.some(outcome => typeof outcome.key !== 'string' || !outcome.key.trim())) errors.push('Human approval requires named outcomes.');
+  if (new Set(outcomes.map(outcome => outcome.key)).size !== outcomes.length) errors.push('Human outcome keys must be unique.');
+  const timeout = record(data.timeout);
+  if (timeout.enabled === true && !atLeastOneSecond(timeout.durationSeconds)) errors.push('Human timeout must be at least one second.');
+  if (timeout.enabled === true && timeout.onExpire === 'branch' && !outcomes.some(outcome => outcome.key === timeout.timeoutOutcome)) errors.push('Human timeout must select an existing outcome.');
+  const reminders = [...(Array.isArray(data.reminders) ? data.reminders : []), ...(Array.isArray(timeout.reminders) ? timeout.reminders : [])];
+  if (reminders.some(reminder => !atLeastOneSecond(record(reminder).afterSeconds))) errors.push('Human reminders must be at least one second.');
+  const approvers = record(data.approvers);
+  const hasUsers = Array.isArray(approvers.users) && approvers.users.length > 0;
+  const hasGroups = Array.isArray(approvers.groups) && approvers.groups.length > 0;
+  const hasDynamic = typeof approvers.dynamic === 'string' && approvers.dynamic.trim().length > 0;
+  if (approvers.tokenBypass === false && !hasUsers && !hasGroups && !hasDynamic) errors.push('Human requires an approver when token bypass is disabled.');
+  return errors;
+}
+
 /** These checks also run on retained definitions, not just new spec entries. */
 export function conditionHandles(data: Record<string, unknown>): string[] {
   const branches = data.conditions as Array<{ id: string }> | undefined;
