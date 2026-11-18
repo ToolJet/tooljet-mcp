@@ -2470,7 +2470,7 @@ function validateAppTool(client) {
       app_id: external_exports.string(),
       version_id: external_exports.string().min(1).optional(),
       expected_library_selection: external_exports.string().optional().describe("Verify that the target version and newly authored widgets use this component library."),
-      existing_component_ids: external_exports.array(external_exports.string()).optional().describe("Component IDs present before the build. Existing widgets may belong to another library.")
+      existing_component_ids: external_exports.array(external_exports.string()).optional().describe("Required with expected_library_selection. Pass the component IDs present before the build, or [] for an initially empty app.")
     },
     async handler(args) {
       try {
@@ -2495,7 +2495,9 @@ function validateAppTool(client) {
           }
         }
         if (args.expected_library_selection) {
-          const errors = verifyLibrarySelection(summary.component_library, summary.pages, args.expected_library_selection, args.existing_component_ids ?? []);
+          if (!args.existing_component_ids)
+            throw new Error("Pass existing_component_ids from before the build, or [] if the app started empty.");
+          const errors = verifyLibrarySelection(summary.component_library, summary.pages, args.expected_library_selection, args.existing_component_ids);
           validation.errors.push(...errors);
           validation.checked.push("selected library and newly authored component types");
           return ok({ ...validation, ok: validation.errors.length === 0, component_library_ok: errors.length === 0 });

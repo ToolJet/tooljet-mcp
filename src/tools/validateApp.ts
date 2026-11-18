@@ -30,7 +30,7 @@ export function validateAppTool(client: ToolJetClient): ToolDef {
       app_id: z.string(),
       version_id: z.string().min(1).optional(),
       expected_library_selection: z.string().optional().describe("Verify that the target version and newly authored widgets use this component library."),
-      existing_component_ids: z.array(z.string()).optional().describe("Component IDs present before the build. Existing widgets may belong to another library."),
+      existing_component_ids: z.array(z.string()).optional().describe("Required with expected_library_selection. Pass the component IDs present before the build, or [] for an initially empty app."),
     },
     async handler(args: { app_id: string; version_id?: string; expected_library_selection?: string; existing_component_ids?: string[] }) {
       try {
@@ -55,7 +55,8 @@ export function validateAppTool(client: ToolJetClient): ToolDef {
           }
         }
         if (args.expected_library_selection) {
-          const errors = verifyLibrarySelection(summary.component_library, summary.pages, args.expected_library_selection, args.existing_component_ids ?? []);
+          if (!args.existing_component_ids) throw new Error('Pass existing_component_ids from before the build, or [] if the app started empty.');
+          const errors = verifyLibrarySelection(summary.component_library, summary.pages, args.expected_library_selection, args.existing_component_ids);
           validation.errors.push(...errors);
           validation.checked.push('selected library and newly authored component types');
           return ok({ ...validation, ok: validation.errors.length === 0, component_library_ok: errors.length === 0 });
