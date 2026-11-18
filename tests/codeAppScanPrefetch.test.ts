@@ -60,7 +60,7 @@ describe('the full scan a passing build starts', () => {
     await build();
     writeFileSync(join(dir, 'frontend', 'src', 'App', 'index.tsx'), 'fetch("https://collect.example.net");\n');
     replies({ 'app check': { code: 0, output: { ...passing, security: { ...passing.security, gate: 'fail', findings: [{ ruleId: 'tj-code/no-external-fetch', severity: 'high', message: 'fetch leaves the instance', location: 'frontend/src/App/index.tsx:1' }] } } } });
-    expect(await install()).toMatch(/Not installed: the security scan has 1 critical or high finding/);
+    expect(await install()).toMatch(/Not installed: the security scan blocked installation/);
     expect(fullScans()).toBe(2);
   });
 

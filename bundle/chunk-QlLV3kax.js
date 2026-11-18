@@ -1046,7 +1046,6 @@ function parseReport(output) {
     return null;
   }
 }
-var mustFix = (security) => (security?.findings ?? []).filter((f) => f.severity === "critical" || f.severity === "high");
 var securitySummary = (security) => !security ? { error: "no security report (the CLI predates tooljet app check --json)" } : security.error ? { error: security.error } : {
   gate: security.gate,
   counts: security.counts,
@@ -1637,7 +1636,7 @@ async function buildProject(dir, appId) {
     ...selects.length ? { native_controls: { fix: "Use Select from components/ui/select instead of a native <select>.", at: selects } } : {},
     // jsx-a11y recommended rules, warnings only (tooljet app check); fix them when they are cheap to fix.
     a11y_warnings: report?.accessibility?.length ?? Number(/(\d+) accessibility warnings?/.exec(check.output)?.[1] ?? 0),
-    // The offline scan (no dependency network checks): fix critical and high before code_app_install.
+    // The build reports the offline scan. Installation uses the full scan's gate.
     security: securitySummary(report?.security)
   };
 }
@@ -1678,7 +1677,7 @@ function codeAppInstallTool(context, options = {}) {
     name: "code_app_install",
     title: "Install Code Mode App",
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-    description: "Upload the app's code (tooljet app dev --once --source platform): it creates or updates the app's Code mode page, one hidden page per route (set each route's page permissions on it) and the component that runs the code, points the app version at this code as a Live preview, and stores the source on ToolJet so the Code panel can edit it. Build first. Runs the full security scan first and refuses while it has critical or high findings, listing them. Returns the editor URL. If it says the source was edited in the ToolJet editor, call code_app_read_files to bring those edits down, reapply your change, and install again. verify: true makes it one check round: the build (as code_app_build; on any error it stops there, not installed, listing every error), the install, then the render check of every route in app.json (each once, at 1280 px unless widths says otherwise), in one report: build, install, render [{ route, width, ok, pages: [{ findings, accessibility }] }]. This is the last step of a build or edit: saving the app version (release_app saves a draft first) freezes the code." + USER_WORDS,
+    description: "Upload the app's code (tooljet app dev --once --source platform): it creates or updates the app's Code mode page, one hidden page per route (set each route's page permissions on it) and the component that runs the code, points the app version at this code as a Live preview, and stores the source on ToolJet so the Code panel can edit it. Build first. Installs when the full security scan passes, including when it reports nonblocking warnings. Returns the editor URL. If it says the source was edited in the ToolJet editor, call code_app_read_files to bring those edits down, reapply your change, and install again. verify: true makes it one check round: the build (as code_app_build; on any error it stops there, not installed, listing every error), the install, then the render check of every route in app.json (each once, at 1280 px unless widths says otherwise), in one report: build, install, render [{ route, width, ok, pages: [{ findings, accessibility }] }]. This is the last step of a build or edit: saving the app version (release_app saves a draft first) freezes the code." + USER_WORDS,
     inputSchema: {
       app_id: APP_ID,
       name: PROJECT_NAME,
@@ -1754,10 +1753,18 @@ async function installProject(dir) {
   const security = parseReport(check.output)?.security;
   if (!security || security.error)
     throw new Error(`The security scan did not run, so nothing was installed: ${security?.error ?? check.output.trim().slice(0, 2e3)}`);
-  const blocking = mustFix(security);
-  if (blocking.length)
-    return new Error(`Not installed: the security scan has ${blocking.length} critical or high finding${blocking.length > 1 ? "s" : ""}. Fix them in the code (or remove the package), code_app_build, then install again:
-` + blocking.map((f) => `${f.severity.toUpperCase()} ${f.ruleId} ${f.package ?? f.location}: ${f.message}`).join("\n"));
+  if (security.gate === "fail") {
+    const details = [
+      ...(security.findings ?? []).filter((f) => f.blocking).map((f) => `${f.severity.toUpperCase()} ${f.ruleId} ${f.package ?? f.location}: ${f.message}`),
+      ...(security.notRun ?? []).map((check2) => `Check did not run: ${check2.id}${check2.reason ? ` (${check2.reason})` : ""}`)
+    ];
+    return new Error([
+      "Not installed: the security scan blocked installation. If you cannot resolve the blocker, stop and tell the user.",
+      ...details
+    ].join("\n"));
+  }
+  if (security.gate !== "pass")
+    return new Error("Not installed: the security scan did not report a pass or fail decision.");
   let prebuilt = [];
   if (buildServiceUrl()) {
     const built = await buildInService(dir, "development");

@@ -38,7 +38,7 @@ import {
     code_app_write_files  write app.json, frontend/src and frontend/styles/{theme,global}.css
     code_app_build        refresh typed hooks from the app's queries, build, and check the code against the app
     code_app_install      tooljet app dev --once: upload to the dev track and link the code page, its route pages and
-                          the version pin. Refuses while the security scan has critical or high findings. Saving the
+                          the version pin. Requires the full security scan to pass. Saving the
                           app version freezes its code (one version line, as for visual apps; no separate publish).
     code_app_add_dependency  tooljet app vet (malware, known vulnerabilities, versions under 7 days old, licence,
                           blocklist) and only then add the packages to frontend/package.json and install them
@@ -533,10 +533,6 @@ export function parseReport<T = Record<string, unknown>>(output: string): T | nu
     return null;
   }
 }
-
-/** Findings an agent must fix before installing: critical and high, whatever the workspace policy blocks. */
-export const mustFix = (security: SecurityReport | undefined): SecurityFinding[] =>
-  (security?.findings ?? []).filter((f) => f.severity === 'critical' || f.severity === 'high');
 
 /** The scan for a tool result: counts, gate, what did not run, and the findings (most severe first, at most 40). */
 export const securitySummary = (security: SecurityReport | undefined) =>
@@ -1340,7 +1336,7 @@ async function buildProject(dir: string, appId: string | undefined): Promise<Rec
     ...(selects.length ? { native_controls: { fix: 'Use Select from components/ui/select instead of a native <select>.', at: selects } } : {}),
     // jsx-a11y recommended rules, warnings only (tooljet app check); fix them when they are cheap to fix.
     a11y_warnings: report?.accessibility?.length ?? Number(/(\d+) accessibility warnings?/.exec(check.output)?.[1] ?? 0),
-    // The offline scan (no dependency network checks): fix critical and high before code_app_install.
+    // The build reports the offline scan. Installation uses the full scan's gate.
     security: securitySummary(report?.security),
   };
 }
@@ -1410,7 +1406,7 @@ export function codeAppInstallTool(context: CodeContext, options: InstallOptions
     description:
       "Upload the app's code (tooljet app dev --once --source platform): it creates or updates the app's Code mode page, one hidden page per route " +
       "(set each route's page permissions on it) and the component that runs the code, points the app version at this code as a Live preview, and stores the source on " +
-      'ToolJet so the Code panel can edit it. Build first. Runs the full security scan first and refuses while it has critical or high findings, listing them. ' +
+      'ToolJet so the Code panel can edit it. Build first. Installs when the full security scan passes, including when it reports nonblocking warnings. ' +
       'Returns the editor URL. If it says the source was edited in the ToolJet editor, ' +
       'call code_app_read_files to bring those edits down, reapply your change, and install again. ' +
       'verify: true makes it one check round: the build (as code_app_build; on any error it stops there, not installed, listing every error), ' +
@@ -1497,13 +1493,18 @@ async function installProject(dir: string): Promise<Record<string, unknown> | Er
   const security = parseReport<{ security?: SecurityReport }>(check.output)?.security;
   if (!security || security.error)
     throw new Error(`The security scan did not run, so nothing was installed: ${security?.error ?? check.output.trim().slice(0, 2000)}`);
-  const blocking = mustFix(security);
-  if (blocking.length)
-    return new Error(
-      `Not installed: the security scan has ${blocking.length} critical or high finding${blocking.length > 1 ? 's' : ''}. ` +
-        'Fix them in the code (or remove the package), code_app_build, then install again:\n' +
-        blocking.map((f) => `${f.severity.toUpperCase()} ${f.ruleId} ${f.package ?? f.location}: ${f.message}`).join('\n')
-    );
+  if (security.gate === 'fail') {
+    const details = [
+      ...(security.findings ?? []).filter((f) => f.blocking).map((f) =>
+        `${f.severity.toUpperCase()} ${f.ruleId} ${f.package ?? f.location}: ${f.message}`),
+      ...(security.notRun ?? []).map((check) => `Check did not run: ${check.id}${check.reason ? ` (${check.reason})` : ''}`),
+    ];
+    return new Error([
+      'Not installed: the security scan blocked installation. If you cannot resolve the blocker, stop and tell the user.',
+      ...details,
+    ].join('\n'));
+  }
+  if (security.gate !== 'pass') return new Error('Not installed: the security scan did not report a pass or fail decision.');
   // Agent-built apps keep their source on ToolJet (owner platform) unless a repository owns it; the CLI refuses
   // to take a repository-owned source over and to overwrite editor edits it has not pulled.
   // In the sandbox when the build service is set: the CLI here then only uploads the bundle it sent back and links it.
