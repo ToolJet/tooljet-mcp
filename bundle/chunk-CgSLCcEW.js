@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
-import { a as assessQueryRead, L as LARGE_READ_ROW_THRESHOLD } from "./chunk-JkmarBOr.js";
-import { p as parseExpression, a as parse } from "./chunk-DyR1HbdA.js";
-import { h as hubspotQueryIssues, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, s as singleSpecRef, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-DFfPGgwi.js";
+import { a as assessQueryRead, L as LARGE_READ_ROW_THRESHOLD } from "./chunk-BDIq0MDT.js";
+import { p as parseExpression, a as parse } from "./chunk-BNro-MpC.js";
+import { h as hubspotQueryIssues, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, s as singleSpecRef, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-BIWKBVpC.js";
 createRequire(import.meta.url);
 var QUERY_TOGGLES = ["runOnPageLoad", "runOnDependencyChange", "requestConfirmation", "showSuccessNotification"];
 var STATIC_TOGGLE = /^\s*(?:\{\{\s*(true|false)\s*\}\}|(true|false))\s*$/;

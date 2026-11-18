@@ -1,7 +1,11 @@
 import { createRequire } from "node:module";
-import { _ as __export, G as util_exports, ar as toJSONSchema, as as registry, C as globalRegistry, c as config, H as clone, ax as NEVER, ay as $output, az as $input, aA as $brand, aD as tableQuotaError } from "./chunk-BTCQQriH.js";
-import { d7 as xor, d8 as xid, d9 as _void2, da as uuidv7, db as uuidv6, dc as uuidv4, dd as uuid, de as url, F as _uppercase, df as unknown, dg as union, dh as _undefined2, di as ulid, dj as uint64, dk as uint32, dl as tuple, N as _trim, t as treeifyError, dm as transform, P as _toUpperCase, Q as _toLowerCase, dn as templateLiteral, dp as symbol, dq as superRefine, dr as success, ds as stringbool, dt as stringFormat, du as string, dv as strictObject, Y as _startsWith, Z as _slugify, $ as _size, dw as set, dx as safeParseAsync, dy as safeParse, dz as safeEncodeAsync, dA as safeEncode, dB as safeDecodeAsync, dC as safeDecode, r as regexes_exports, a7 as _regex, dD as refine, dE as record, dF as readonly, ab as _property, dG as promise, p as prettifyError, dH as preprocess, dI as prefault, ad as _positive, dJ as pipe, dK as partialRecord, dL as parseAsync, dM as parse, ah as _overwrite, dN as optional, dO as object, dP as number, dQ as nullish, dR as nullable, dS as _null2, am as _normalize, an as _nonpositive, dT as nonoptional, ap as _nonnegative, dU as never, ar as _negative, dV as nativeEnum, dW as nanoid, dX as nan, av as _multipleOf, aw as _minSize, ax as _minLength, az as _mime, dY as meta2, aA as _maxSize, aB as _maxLength, dZ as map, d_ as mac, aC as _lte, aF as _lt, aG as _lowercase, d$ as looseRecord, e0 as looseObject, e1 as literal, aI as _length, e2 as lazy, e3 as ksuid, e4 as keyof, e5 as jwt, e6 as json, e7 as iso_exports, e8 as ipv6, e9 as ipv4, ea as invertCodec, eb as intersection, ec as int64, ed as int32, ee as int, ef as _instanceof, aW as _includes, eg as httpUrl, eh as hostname, ei as hex, ej as hash, ek as guid, ay as _gte, aY as _gt, el as _function, l as formatError, em as float64, en as float32, n as flattenError, eo as file, ep as exactOptional, eq as _enum, b1 as _endsWith, er as encodeAsync, es as encode, et as emoji, eu as email, ev as e164, ew as discriminatedUnion, ex as describe2, ey as decodeAsync, ez as decode, eA as date2$1, eB as custom, eC as cuid2, eD as cuid, eE as codec, eF as cidrv6, eG as cidrv4, eH as check, eI as _catch, eJ as boolean, eK as bigint, eL as base64url, eM as base64, eN as array, eO as any, eP as _default, eQ as _ZodString, eR as ZodXor, eS as ZodXID, eT as ZodVoid, eU as ZodUnknown, eV as ZodUnion, eW as ZodUndefined, eX as ZodUUID, eY as ZodURL, eZ as ZodULID, e_ as ZodType, e$ as ZodTuple, f0 as ZodTransform, f1 as ZodTemplateLiteral, f2 as ZodSymbol, f3 as ZodSuccess, f4 as ZodStringFormat, f5 as ZodString, f6 as ZodSet, f7 as ZodRecord, f8 as ZodRealError, f9 as ZodReadonly, fa as ZodPromise, fb as ZodPreprocess, fc as ZodPrefault, fd as ZodPipe, fe as ZodOptional, ff as ZodObject, fg as ZodNumberFormat, fh as ZodNumber, fi as ZodNullable, fj as ZodNull, fk as ZodNonOptional, fl as ZodNever, fm as ZodNanoID, fn as ZodNaN, fo as ZodMap, fp as ZodMAC, fq as ZodLiteral, fr as ZodLazy, fs as ZodKSUID, ft as ZodJWT, fu as ZodIntersection, fv as ZodISOTime, fw as ZodISODuration, fx as ZodISODateTime, fy as ZodISODate, fz as ZodIPv6, fA as ZodIPv4, fB as ZodGUID, fC as ZodFunction, fD as ZodFile, fE as ZodExactOptional, fF as ZodError, fG as ZodEnum, fH as ZodEmoji, fI as ZodEmail, fJ as ZodE164, fK as ZodDiscriminatedUnion, fL as ZodDefault, fM as ZodDate, fN as ZodCustomStringFormat, fO as ZodCustom, fP as ZodCodec, fQ as ZodCatch, fR as ZodCUID2, fS as ZodCUID, fT as ZodCIDRv6, fU as ZodCIDRv4, fV as ZodBoolean, fW as ZodBigIntFormat, fX as ZodBigInt, fY as ZodBase64URL, fZ as ZodBase64, f_ as ZodArray, f$ as ZodAny, bu as TimePrecision, g0 as checks_exports, g1 as schemas_exports, bf as _coercedString, bg as _coercedNumber, bi as _coercedBoolean, bj as _coercedBigint, bh as _coercedDate } from "./chunk-DkUWlPU9.js";
-import { l as locales_exports, c as core_exports, e as en_default } from "./chunk-D5p4qVxT.js";
+import { _ as __export, R as util_exports, a as _uppercase, b as _trim, cJ as treeifyError, c as _toUpperCase, e as _toLowerCase, cK as toJSONSchema, f as _startsWith, g as _slugify, h as _size, cS as registry, S as regexes_exports, i as _regex, j as _property, cU as prettifyError, k as _positive, l as _overwrite, n as _normalize, o as _nonpositive, p as _nonnegative, q as _negative, r as _multipleOf, s as _minSize, t as _minLength, u as _mime, v as _maxSize, w as _maxLength, x as _lte, y as _lt, z as _lowercase, A as _length, B as _includes, C as _gte, D as _gt, aY as globalRegistry, aR as formatError, aQ as flattenError, E as _endsWith, d6 as config, at as clone, dB as TimePrecision, dC as NEVER, dE as $output, dF as $input, dG as $brand, du as _coercedString, dv as _coercedNumber, dx as _coercedBoolean, dy as _coercedBigint, dw as _coercedDate, e5 as tableQuotaError } from "./chunk-BrqxMLVS.js";
+import { x as xor, c as xid, _ as _void2, u as uuidv7, d as uuidv6, e as uuidv4, f as uuid, g as url, i as unknown, j as union, k as _undefined2, l as ulid, m as uint64, n as uint32, o as tuple, p as transform, q as templateLiteral, s as symbol, v as superRefine, w as success, y as stringbool, z as stringFormat, A as string, B as strictObject, C as set, D as safeParseAsync, E as safeParse, F as safeEncodeAsync, G as safeEncode, H as safeDecodeAsync, I as safeDecode, J as refine, K as record, L as readonly, M as promise, N as preprocess, O as prefault, P as pipe, Q as partialRecord, R as parseAsync, S as parse, T as optional, U as object, V as number, W as nullish, X as nullable, Y as _null2, Z as nonoptional, $ as never, a0 as nativeEnum, a1 as nanoid, a2 as nan, a3 as meta2, a4 as map, a5 as mac, a6 as looseRecord, a7 as looseObject, a8 as literal, a9 as lazy, aa as ksuid, ab as keyof, ac as jwt, ad as json$1, ae as iso_exports, af as ipv6, ag as ipv4, ah as invertCodec, ai as intersection, aj as int64, ak as int32, al as int, am as _instanceof, an as httpUrl, ao as hostname, ap as hex, aq as hash, ar as guid, as as _function, at as float64, au as float32, av as file, aw as exactOptional, ax as _enum, ay as encodeAsync, az as encode, aA as emoji, aB as email, aC as e164, aD as discriminatedUnion, aE as describe2, aF as decodeAsync, aG as decode, aH as date2$1, aI as custom, aJ as cuid2, aK as cuid, aL as codec, aM as cidrv6, aN as cidrv4, aO as check, aP as _catch, aQ as boolean, aR as bigint, aS as base64url, aT as base64, aU as array, aV as any, aW as _default, aX as _ZodString, aY as ZodXor, aZ as ZodXID, a_ as ZodVoid, a$ as ZodUnknown, b0 as ZodUnion, b1 as ZodUndefined, b2 as ZodUUID, b3 as ZodURL, b4 as ZodULID, b5 as ZodType, b6 as ZodTuple, b7 as ZodTransform, b8 as ZodTemplateLiteral, b9 as ZodSymbol, ba as ZodSuccess, bb as ZodStringFormat, bc as ZodString, bd as ZodSet, be as ZodRecord, bf as ZodRealError, bg as ZodReadonly, bh as ZodPromise, bi as ZodPreprocess, bj as ZodPrefault, bk as ZodPipe, bl as ZodOptional, bm as ZodObject, bn as ZodNumberFormat, bo as ZodNumber, bp as ZodNullable, bq as ZodNull, br as ZodNonOptional, bs as ZodNever, bt as ZodNanoID, bu as ZodNaN, bv as ZodMap, bw as ZodMAC, bx as ZodLiteral, by as ZodLazy, bz as ZodKSUID, bA as ZodJWT, bB as ZodIntersection, bC as ZodISOTime, bD as ZodISODuration, bE as ZodISODateTime, bF as ZodISODate, bG as ZodIPv6, bH as ZodIPv4, bI as ZodGUID, bJ as ZodFunction, bK as ZodFile, bL as ZodExactOptional, bM as ZodError, bN as ZodEnum, bO as ZodEmoji, bP as ZodEmail, bQ as ZodE164, bR as ZodDiscriminatedUnion, bS as ZodDefault, bT as ZodDate, bU as ZodCustomStringFormat, bV as ZodCustom, bW as ZodCodec, bX as ZodCatch, bY as ZodCUID2, bZ as ZodCUID, b_ as ZodCIDRv6, b$ as ZodCIDRv4, c0 as ZodBoolean, c1 as ZodBigIntFormat, c2 as ZodBigInt, c3 as ZodBase64URL, c4 as ZodBase64, c5 as ZodArray, c6 as ZodAny, c7 as checks_exports, c8 as schemas_exports } from "./chunk-CEQ-hlWx.js";
+import { l as locales_exports, c as core_exports, e as en_default } from "./chunk-DXgpe9d2.js";
+import { readFileSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { AsyncLocalStorage } from "node:async_hooks";
 createRequire(import.meta.url);
 var external_exports = {};
 __export(external_exports, {
@@ -147,7 +151,7 @@ __export(external_exports, {
   ipv4: () => ipv4,
   ipv6: () => ipv6,
   iso: () => iso_exports,
-  json: () => json,
+  json: () => json$1,
   jwt: () => jwt,
   keyof: () => keyof,
   ksuid: () => ksuid,
@@ -818,6 +822,248 @@ function exposeActions(source, definitions, selector = "action") {
       }
     };
   });
+}
+createRequire(import.meta.url);
+var FORMAT = "tooljet-catalog-parts-v1";
+var json = (value) => JSON.stringify(value, null, 2) + "\n";
+function readCatalog(file2) {
+  const index = JSON.parse(readFileSync(file2, "utf8"));
+  if (index.format !== FORMAT) return index;
+  const result = {};
+  for (const part of index.parts) {
+    if (!/^[\w-]+\/part-\d+\.json$/.test(part)) throw new Error(`Invalid catalog part: ${part}`);
+    const data = JSON.parse(readFileSync(resolve(dirname(file2), part), "utf8"));
+    for (const [key, value] of Object.entries(data)) {
+      if (Object.hasOwn(result, key)) throw new Error(`Duplicate catalog key: ${key}`);
+      Object.defineProperty(result, key, { value, enumerable: true, writable: true, configurable: true });
+    }
+  }
+  return result;
+}
+function readCatalogBytes(file2) {
+  const bytes = readFileSync(file2);
+  const value = JSON.parse(bytes.toString("utf8"));
+  return value.format === FORMAT ? Buffer.from(json(readCatalog(file2))) : bytes;
+}
+createRequire(import.meta.url);
+var newPackSet = () => ({ schemas: null, definitions: {}, packs: null, derived: /* @__PURE__ */ new Map() });
+var processSet = newPackSet();
+var store = new AsyncLocalStorage();
+var activePackSet = () => store.getStore() ?? processSet;
+var inPackSet = (set2, work) => store.run(set2, work);
+var dataPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-schemas.json");
+var compatibilityPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-compatibility.json");
+var cache = null;
+var legacyReplacements = null;
+function load() {
+  if (!cache)
+    cache = readCatalog(dataPath);
+  return cache;
+}
+function loadLegacyReplacements() {
+  if (!legacyReplacements) {
+    const compatibility = JSON.parse(readFileSync(compatibilityPath, "utf8"));
+    legacyReplacements = compatibility.legacyReplacements ?? {};
+  }
+  return legacyReplacements;
+}
+var PACK_TYPE = /^Lib_[a-z0-9]+_/;
+function merged() {
+  const set2 = activePackSet();
+  if (!set2.schemas)
+    return load();
+  let all = set2.derived.get("catalog");
+  if (!all) {
+    const extra = set2.schemas;
+    all = Object.fromEntries(Object.entries(load()).filter(([key]) => !PACK_TYPE.test(key) || key in extra));
+    Object.assign(all, extra);
+    set2.derived.set("catalog", all);
+  }
+  return all;
+}
+function allComponentSchemas() {
+  return merged();
+}
+function registerComponentSchemas(extra) {
+  const set2 = activePackSet();
+  set2.schemas = { ...extra };
+  set2.derived.clear();
+}
+var INTERNAL_TYPES = {
+  LibraryComponent: "is ToolJet's internal host for a custom or pack component; write the pack's own type, Lib_<pack>_<Component> (get_component_catalog lists them), which is stored with the component it draws.",
+  PackComponent: "is ToolJet's internal host for a pack component; write the pack's own type, Lib_<pack>_<Component> (get_component_catalog lists them), which is stored with the component it draws.",
+  ModuleContainer: "is a module app's own root, which ToolJet creates with the module; in an app it draws an empty box. To show a module in an app, use ModuleViewer."
+};
+function internalComponentTypeNote(type) {
+  return INTERNAL_TYPES[type] ?? null;
+}
+function getCatalog() {
+  const legacy = loadLegacyReplacements();
+  return Object.values(merged()).filter((c) => !legacy[c.type] && !INTERNAL_TYPES[c.type]).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
+}
+function getComponentSchema(type) {
+  return merged()[type] ?? null;
+}
+function getLegacyComponentReplacement(type) {
+  return loadLegacyReplacements()[type] ?? null;
+}
+createRequire(import.meta.url);
+var offline;
+function libraryPacksAll() {
+  const discovered = activePackSet().packs;
+  if (discovered)
+    return discovered;
+  if (offline === void 0) {
+    try {
+      const path = resolve(dirname(fileURLToPath(import.meta.url)), "../data/library-pack.json");
+      offline = JSON.parse(readFileSync(path, "utf8"));
+    } catch {
+      offline = null;
+    }
+  }
+  return offline ? [offline] : [];
+}
+function registerLibraryPacks(packs) {
+  const set2 = activePackSet();
+  set2.packs = packs;
+}
+var serverLibraryPacks = () => activePackSet().packs ?? [];
+function libraryPack() {
+  return libraryPacksAll()[0] ?? null;
+}
+var isBuiltin = (pack) => pack.kind === "builtin";
+var packOfType = (type) => typeof type === "string" ? libraryPacksAll().find((p) => type.startsWith(p.prefix)) : void 0;
+var isLibraryPackType = (type) => !!packOfType(type);
+var packComponentOf = (type) => Object.values(packOfType(type)?.components ?? {}).find((entry) => entry.type === type);
+var slotNamesOf = (component, kind) => (component?.slots ?? []).filter((slot) => kind === void 0 || slot.kind === kind).map((slot) => String(slot.name ?? "")).filter(Boolean);
+function packSlotNames(type) {
+  const component = packComponentOf(type);
+  return component && component.slotsKnown !== false ? slotNamesOf(component) : void 0;
+}
+function packRowSlotNames(type) {
+  return slotNamesOf(packComponentOf(type), "rows");
+}
+function packSlotOnOwnId(type, slotName) {
+  const component = packComponentOf(type);
+  const rows = slotNamesOf(component, "rows");
+  if (!rows.length)
+    return false;
+  if (slotName)
+    return rows.includes(slotName);
+  return slotNamesOf(component).every((name) => rows.includes(name));
+}
+var dashless = (id) => id.replace(/-/g, "");
+var propertyValue = (properties, key) => {
+  const entry = properties?.[key];
+  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+};
+function libraryCorrelationId(component) {
+  const properties = component.properties;
+  const id = propertyValue(properties, "correlationId");
+  return typeof id === "string" && id && !propertyValue(properties, "codePage") ? id : void 0;
+}
+var isPinned = (pins, correlationId) => pins[dashless(correlationId)] != null || pins[correlationId] != null;
+function missingLibraryPins(components, pins) {
+  const missing = {};
+  for (const component of components) {
+    const id = libraryCorrelationId(component);
+    if (!id || isPinned(pins, id))
+      continue;
+    const pack = libraryPacksAll().find((p) => !isBuiltin(p) && p.correlationId === id);
+    if (pack)
+      missing[dashless(id)] = pack.version;
+  }
+  return Object.keys(missing).length ? missing : void 0;
+}
+function unpinnedLibraries(components, pins) {
+  const byLibrary = /* @__PURE__ */ new Map();
+  for (const component of components) {
+    const id = libraryCorrelationId(component);
+    if (!id || isPinned(pins, id))
+      continue;
+    const library = String(propertyValue(component.properties, "libraryName") ?? id);
+    byLibrary.set(library, [...byLibrary.get(library) ?? [], String(component.name ?? "unnamed")]);
+  }
+  return [...byLibrary].map(([library, names]) => ({ library, components: names }));
+}
+function toLibraryComponent(spec) {
+  const pack = packOfType(spec.type);
+  if (!pack)
+    return spec;
+  const componentName = spec.type.slice(pack.prefix.length);
+  if (isBuiltin(pack)) {
+    return {
+      ...spec,
+      type: "PackComponent",
+      properties: {
+        ...spec.properties ?? {},
+        pack: { value: pack.pack },
+        componentName: { value: componentName }
+      }
+    };
+  }
+  return {
+    ...spec,
+    type: "LibraryComponent",
+    properties: {
+      ...spec.properties ?? {},
+      libraryId: { value: pack.libraryId },
+      correlationId: { value: pack.correlationId },
+      libraryName: { value: pack.libraryName },
+      componentName: { value: componentName }
+    }
+  };
+}
+function isEmptyLibraryHost(component) {
+  if (component.type !== "LibraryComponent" && component.type !== "PackComponent")
+    return false;
+  return !["componentName", "pack", "libraryId", "correlationId", "libraryName"].some((key) => {
+    const entry = component.properties?.[key];
+    const value = entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+    return typeof value === "string" && value.trim() !== "";
+  });
+}
+function emptyLibraryHostError(component, options = {}) {
+  if (!isEmptyLibraryHost(component))
+    return null;
+  return `Component "${component.name ?? component.id ?? component.type}" is a ${component.type} that names no component, so it draws an empty box: it is ToolJet's internal host, stored with the component it draws. ${options.persisted ? "Delete it and add" : "Write"} the pack's own type, Lib_<pack>_<Component> (get_component_catalog lists them).`;
+}
+function libraryTypeOf(component) {
+  if (component.type !== "LibraryComponent" && component.type !== "PackComponent")
+    return void 0;
+  const value = (key) => {
+    const entry = component.properties?.[key];
+    return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+  };
+  if (component.type === "PackComponent") {
+    const id = value("pack");
+    const name2 = value("componentName");
+    if (typeof id !== "string" || typeof name2 !== "string")
+      return void 0;
+    const known = libraryPacksAll().find((p) => p.pack === id);
+    if (!known)
+      return `Lib_${id.toLowerCase().replace(/[^a-z0-9]+/g, "")}_${name2}`;
+    return known.components[name2] ? `${known.prefix}${name2}` : void 0;
+  }
+  const pack = libraryPacksAll().find((p) => p.correlationId === value("correlationId"));
+  const name = value("componentName");
+  return pack && typeof name === "string" && pack.components[name] ? `${pack.prefix}${name}` : void 0;
+}
+var FLEX_DOWNGRADE = {
+  alignItems: { stretch: "flex-start", "last baseline": "flex-start" },
+  justifyContent: { "space-between": "flex-start" }
+};
+function downgradeFlexForLibrary(spec) {
+  if (process.env.TOOLJET_FLEX_V1 !== "1" || !libraryPack() || spec.type !== "FlexContainer" || !spec.properties)
+    return spec;
+  const properties = { ...spec.properties };
+  for (const [key, map2] of Object.entries(FLEX_DOWNGRADE)) {
+    const entry = properties[key];
+    const value = entry && typeof entry === "object" ? entry.value : entry;
+    if (typeof value === "string" && map2[value])
+      properties[key] = { value: map2[value] };
+  }
+  return { ...spec, properties };
 }
 createRequire(import.meta.url);
 var Position = class {
@@ -5438,7 +5684,31 @@ export {
   UnparenthesizedPipeBodyDescriptions as a7,
   tokenIsPrefix as a8,
   tokenIsPostfix as a9,
-  exposeActions as aA,
+  libraryPacksAll as aA,
+  readCatalog as aB,
+  external_exports as aC,
+  packSlotOnOwnId as aD,
+  internalComponentTypeNote as aE,
+  emptyLibraryHostError as aF,
+  getCatalog as aG,
+  getLegacyComponentReplacement as aH,
+  packRowSlotNames as aI,
+  packSlotNames as aJ,
+  fail as aK,
+  ok as aL,
+  activePackSet as aM,
+  registerComponentSchemas as aN,
+  registerLibraryPacks as aO,
+  exposeActions as aP,
+  downgradeFlexForLibrary as aQ,
+  toLibraryComponent as aR,
+  missingLibraryPins as aS,
+  libraryTypeOf as aT,
+  unpinnedLibraries as aU,
+  inPackSet as aV,
+  newPackSet as aW,
+  readCatalogBytes as aX,
+  allComponentSchemas as aY,
   newAsyncArrowScope as aa,
   setInnerComments as ab,
   newArrowHeadScope as ac,
@@ -5462,9 +5732,9 @@ export {
   dash as au,
   exclamationMark as av,
   tokenComesBeforeExpression as aw,
-  external_exports as ax,
-  fail as ay,
-  ok as az,
+  getComponentSchema as ax,
+  isLibraryPackType as ay,
+  serverLibraryPacks as az,
   ParseBindingListFlags as b,
   tokenIsKeywordOrIdentifier as c,
   colon as d,

@@ -1,9 +1,9 @@
 import { createRequire } from "node:module";
-import { aK as __toESM, aM as require_lib, aN as packSlotsOfType, aO as packSlotOnOwnId, aP as internalComponentTypeNote, aQ as emptyLibraryHostError, aF as isLibraryPackType, aR as resolvePackSlot, aE as getComponentSchema, aS as getCatalog, aG as serverLibraryPacks, aT as getLegacyComponentReplacement, aU as packRowSlotNames, aV as packSlotNames } from "./chunk-BTCQQriH.js";
-import { s as surfaceAroundResolver, m as lintSelectedRowProjections, n as lintOversizedWidths, o as lintHtmlContentHeight, p as lintHtmlRootSurface, q as lintUnguardedComponentRefs, t as lintEmbeddedBindingSyntax, u as lintChartDataShape, v as lintUnguardedSelectionText, w as defaultPack, x as retiredUi2Name, y as lintTextFormat, z as lintTableColumnsShape, B as BARE_QUERY_DATA_BINDING, A as lintComponentStateBindings, C as lintEmptyDateWrites, D as lintUntriggeredDataQueries, E as lintAutomaticWrites, F as parseHtml, G as stripHtmlBindings } from "./chunk-CDn2XiRi.js";
-import { l as lintBindingNames, b as bindingSpans } from "./chunk-DpFb8fvk.js";
-import { p as parseExpression, a as parse } from "./chunk-DyR1HbdA.js";
-import { ax as external_exports } from "./chunk-CUSUSGze.js";
+import { m as require_lib, p as packSlotsOfType, s as surfaceAroundResolver, n as lintSelectedRowProjections, o as lintOversizedWidths, q as lintHtmlContentHeight, t as lintHtmlRootSurface, u as lintUnguardedComponentRefs, v as lintEmbeddedBindingSyntax, w as lintChartDataShape, x as lintUnguardedSelectionText, y as resolvePackSlot, z as defaultPack, A as retiredUi2Name, B as lintTextFormat, C as lintTableColumnsShape, D as BARE_QUERY_DATA_BINDING, E as lintComponentStateBindings, F as lintEmptyDateWrites, G as lintUntriggeredDataQueries, H as lintAutomaticWrites, I as parseHtml, J as stripHtmlBindings } from "./chunk-BZWhmyFq.js";
+import { aC as external_exports, aD as packSlotOnOwnId, aE as internalComponentTypeNote, aF as emptyLibraryHostError, ay as isLibraryPackType, ax as getComponentSchema, aG as getCatalog, az as serverLibraryPacks, aH as getLegacyComponentReplacement, aI as packRowSlotNames, aJ as packSlotNames } from "./chunk-CS6hDtiZ.js";
+import { l as lintBindingNames, b as bindingSpans } from "./chunk-CgSLCcEW.js";
+import { p as parseExpression, a as parse } from "./chunk-BNro-MpC.js";
+import { e7 as __toESM } from "./chunk-BrqxMLVS.js";
 import { readFileSync } from "node:fs";
 createRequire(import.meta.url);
 var MAX_SLOT_ITEMS = 50;

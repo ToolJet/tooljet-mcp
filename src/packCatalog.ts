@@ -256,10 +256,9 @@ export async function loadInstalledPacks(
   listLibraries: () => Promise<InstalledLibrary[]>,
   listBuiltin?: () => Promise<Array<{ info: BuiltinPackInfo; manifest: PackManifest | null }> | null>,
 ): Promise<string[]> {
-  const [builtin, libraries] = await Promise.all([
-    listBuiltin?.().catch(() => null),
-    listLibraries().catch(() => []),
-  ]);
+  // The first authenticated request establishes the PAT session used by both reads.
+  const builtin = await listBuiltin?.().catch(() => null);
+  const libraries = await listLibraries().catch(() => []);
   const packs = (builtin ?? []).map(b => packFromBuiltin(b.info, b.manifest)).filter((p): p is PackResult => !!p);
   const occupied = new Set(packs.map(p => p.pack.prefix.slice(4, -1)));
   // Stable IDs disambiguate names that normalize to the same catalog prefix.
