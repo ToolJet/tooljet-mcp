@@ -1,6 +1,6 @@
 {
   "name": "tooljet-app-builder",
-  "version": "0.13.1",
+  "version": "1.0.0",
   "icon": "./assets/tooljet-icon.png",
   "description": "Build data-connected dashboards, internal tools and back-office apps in ToolJet, then refine them visually. Requires a ToolJet connection.",
   "author": {
@@ -48,7 +48,7 @@
     "personal_access_token": {
       "type": "string",
       "title": "ToolJet personal access token",
-      "description": "Create a token in Settings \u2192 Access tokens in your intended workspace. The plugin acts with that token's permissions. Enter it here, never in chat.",
+      "description": "Create a token in Settings → Access tokens in your intended workspace. The plugin acts with that token's permissions. Enter it here, never in chat.",
       "required": true,
       "sensitive": true
     }

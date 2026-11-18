@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { basename, dirname, extname, resolve } from 'node:path';
 import type { ToolResult } from './tools/types.js';
 
-export const TOOLJET_MCP_VERSION = '0.13.0';
+export const TOOLJET_MCP_VERSION = '1.0.0';
 
 interface RuntimeSnapshot {
   buildId: string;
