@@ -9,7 +9,6 @@ import {
   codeAppAddDependencyTool,
   codeAppBuildTool,
   codeAppInstallTool,
-  mustFix,
   parseReport,
   withDependencies,
 } from '../src/tools/codeApp.js';
@@ -72,11 +71,6 @@ describe('report helpers', () => {
     expect(parseReport('Error: no project')).toBeNull();
     expect(parseReport('{ broken')).toBeNull();
   });
-  it('must fix critical and high only', () => {
-    const list = [finding('critical'), finding('high'), finding('medium'), finding('low')];
-    expect(mustFix({ findings: list }).map((f) => f.severity)).toEqual(['critical', 'high']);
-    expect(mustFix(undefined)).toEqual([]);
-  });
   it('pins vetted packages to the exact version, sorted', () => {
     expect(withDependencies({ dependencies: { react: '19.1.0', zod: '^3' } }, [{ name: 'date-fns', version: '4.1.0' }, { name: 'zod', version: '3.25.0' }]))
       .toEqual({ dependencies: { 'date-fns': '4.1.0', react: '19.1.0', zod: '3.25.0' } });
@@ -106,13 +100,15 @@ describe('code_app_build', () => {
 });
 
 describe('code_app_install', () => {
-  it('refuses on critical or high findings, lists them, and uploads nothing', async () => {
-    replies({ 'app check': { code: 1, output: checkReport([finding('high'), finding('medium', { ruleId: 'tj-code/no-token-storage' })]) } });
+  it('refuses a failed gate and lists only the findings the policy blocks', async () => {
+    replies({ 'app check': { code: 1, output: checkReport([
+      finding('medium', { blocking: true }),
+      finding('high', { ruleId: 'accepted-advisory', blocking: false }),
+    ]) } });
     const result = await codeAppInstallTool(codeContext()).handler({ name: 'demo' });
     expect(result.isError).toBe(true);
-    expect(text(result)).toMatch(/1 critical or high finding/);
-    expect(text(result)).toMatch(/HIGH tj-code\/no-external-fetch frontend\/src\/App\/index.tsx:6/);
-    expect(text(result)).not.toMatch(/no-token-storage/);
+    expect(text(result)).toMatch(/MEDIUM tj-code\/no-external-fetch frontend\/src\/App\/index.tsx:6/);
+    expect(text(result)).not.toMatch(/accepted-advisory/);
     expect(calls()).toEqual(['app check --json']);
   });
   it('refuses when the scan did not run', async () => {
@@ -121,14 +117,28 @@ describe('code_app_install', () => {
     expect(text(result)).toMatch(/did not run, so nothing was installed/);
     expect(calls()).toEqual(['app check --json']);
   });
-  it('installs when only medium and low remain', async () => {
+  it('refuses a failed gate even when a required check produced no findings', async () => {
+    const security = { gate: 'fail', findings: [], notRun: [{ id: 'licenses', reason: 'timed out' }] };
+    replies({ 'app check': { code: 1, output: { security } } });
+    const result = await codeAppInstallTool(codeContext()).handler({ name: 'demo' });
+    expect(result.isError).toBe(true);
+    expect(text(result)).toContain('Check did not run: licenses (timed out)');
+    expect(calls()).toEqual(['app check --json']);
+  });
+  it('requires an explicit scan decision before uploading', async () => {
+    replies({ 'app check': { code: 0, output: { security: { findings: [] } } } });
+    const result = await codeAppInstallTool(codeContext()).handler({ name: 'demo' });
+    expect(result.isError).toBe(true);
+    expect(calls()).toEqual(['app check --json']);
+  });
+  it('installs on a passing gate and returns accepted high findings as warnings', async () => {
     replies({
-      'app check': { code: 0, output: checkReport([finding('medium')]) },
+      'app check': { code: 0, output: checkReport([finding('high', { blocking: false })]) },
       'app dev': { code: 0, output: 'Linked\nOpen: http://tj.test/apps/app-1' },
     });
     const result = JSON.parse(text(await codeAppInstallTool(codeContext()).handler({ name: 'demo' })));
     expect(calls()).toEqual(['app check --json', 'app dev --once --source platform']);
-    expect(result).toMatchObject({ linked: true, editor_url: 'http://tj.test/apps/app-1', security: { findings: [{ severity: 'medium' }] } });
+    expect(result).toMatchObject({ linked: true, editor_url: 'http://tj.test/apps/app-1', security: { gate: 'pass', findings: [{ severity: 'high', blocking: false }] } });
   });
 });
 

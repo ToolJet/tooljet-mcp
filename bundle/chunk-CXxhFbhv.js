@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { a as autoReadPreflight } from "./chunk-CtwH5_77.js";
+import { a as autoReadPreflight } from "./chunk-CVVUvxfj.js";
 import { aE as fail, aF as ok, aA as external_exports, ay as getComponentSchema } from "./chunk-B6ozJ2M5.js";
 import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -9,7 +9,7 @@ import { lookup } from "node:dns/promises";
 import { BlockList, isIP, connect } from "node:net";
 import { p as plannedCurrency, n as normalizeComponentSpec } from "./chunk-CB78rxY_.js";
 import { e9 as resolveRef } from "./chunk-BhoYgPP_.js";
-import { v as validateTableBatch, i as indexComponentReferences, c as componentRef, n as normalizeType, p as packDefaultDefinition } from "./chunk-CBTtgcBQ.js";
+import { v as validateTableBatch, i as indexComponentReferences, c as componentRef, n as normalizeType, p as packDefaultDefinition } from "./chunk-CbiroNH-.js";
 import { B as pageIconError, D as lintComponents, e as encodeComponentParent, f as introducedLintFindings, l as lintComponentSlots, E as validateAppStructure, F as isModalV2Type, d as decodeComponentParent, G as minimumTextHeight, H as unifyChartAccents, t as slotFindingKey } from "./chunk-DfrPsyM8.js";
 import { E as lintComponentStateBindings, A as retiredUi2Name } from "./chunk-D1B51Cza.js";
 import { k as normalizeQueryToggles, t as toggleRewriteWarning, i as issueMessages, q as queryToggleIssues, n as normalizeQueryOptions, v as validateQueryOptions } from "./chunk-O6Dwgt9j.js";
