@@ -1,11 +1,123 @@
 import { createRequire } from "node:module";
-import { bd as external_exports, bh as tableQuotaError, bi as TableQuotaError, bj as definition, bk as nodeCatalog, bl as validateGraph, bm as specSchema, bn as compileGraph, bo as assertWorkflowJavaScript, bp as controlFlowEdges, be as getComponentSchema } from "./chunk-DOMNI22J.mjs";
-import { e as encodeComponentParent, a as assertPageIcon, S as STYLE_KEYS_IN_PROPERTIES, d as decodeComponentParent } from "./chunk-BkAHE-8T.mjs";
-import { c as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches, e as normalizeQueryOptions, v as validateQueryOptions, i as issueMessages } from "./chunk-bAm-dTe9.mjs";
+import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, e as codeCliProblem } from "./chunk-DRRtluDi.mjs";
+import { b0 as external_exports, b8 as definition } from "./chunk-5U2_zDJi.mjs";
+import { e as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, t as tableQuotaError, T as TableQuotaError, h as assertWorkflowQueryOptions, w as workflowMappingMatches, a as activePackSet, f as fail, o as ok, j as exposeActions } from "./chunk-w14kofOC.mjs";
+import { h as encodeComponentParent, d as decodeComponentParent, f as isPackContainerType, g as resolvePackSlot, w as assertPageIcon, i as isMisplacedStyleKey } from "./chunk-_cASSUa6.mjs";
+import { C as downgradeFlexForLibrary, D as resolveComponentLibrary, A as componentLibraryChoices, E as toLibraryComponent, F as missingLibraryPins, G as libraryTypeOf, H as savedComponentLibrary, I as checkedLibrarySelection, j as defaultPack, J as COMPONENT_PACK_DESCRIPTION } from "./chunk-DGkwZJJU.mjs";
 import { randomUUID, createHash } from "node:crypto";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { isDeepStrictEqual } from "node:util";
-import { g as getDatasourceQuerySchema, s as singleSpecRef, c as SPEC_DISCOVERY_METHODS, d as hubspotSpecs, e as extractSpec, l as loadKindSpec, f as listEndpoints, i as specHost, j as rankEndpoints, k as endpointTagCounts, m as endpointParameters } from "./chunk-bLt8_DOY.mjs";
+import { readFileSync, existsSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
+var record = (value) => value && typeof value === "object" && !Array.isArray(value) ? value : {};
+var branchId = (version) => version.branchId ?? version.branch_id ?? record(version.branch).id;
+var versionType = (version) => String(version.versionType ?? version.version_type ?? "").toUpperCase();
+var moving = /* @__PURE__ */ new Set(["__current_branch__", "__default_branch_draft__"]);
+async function resolveWorkflowReference(auth, raw, consumer) {
+  const options = normalizeWorkflowQueryOptions(raw);
+  assertWorkflowQueryOptions(options);
+  const requestedId = String(options.workflowId);
+  let workflowId = requestedId;
+  async function read(path) {
+    const response = await auth.authedFetch(path);
+    if (!response.ok)
+      throw new Error(`Cannot inspect workflow reference (HTTP ${response.status}); no query was executed.`);
+    return record(await response.json());
+  }
+  let app;
+  const initial = await auth.authedFetch(`/api/apps/${encodeURIComponent(workflowId)}`);
+  if (initial.status === 404) {
+    const matches = /* @__PURE__ */ new Set();
+    for (let page2 = 1; page2 <= 100; page2++) {
+      const result = await read(`/api/apps?type=workflow&page=${page2}`);
+      if (!Array.isArray(result.apps))
+        throw new Error("Authorized workflow list unavailable.");
+      for (const candidate of result.apps.map(record)) {
+        if ((candidate.co_relation_id ?? candidate.coRelationId) === requestedId && typeof candidate.id === "string")
+          matches.add(candidate.id);
+      }
+      const total = Number(record(result.meta).total_pages ?? record(result.meta).totalPages);
+      if (!Number.isInteger(total) || total < 0 || total > 100)
+        throw new Error("Cannot verify the complete authorized workflow list. Use a physical workflow ID.");
+      if (page2 >= total)
+        break;
+    }
+    if (matches.size !== 1)
+      throw new Error("Workflow stable ID is unavailable or ambiguous in the active workspace.");
+    workflowId = [...matches][0];
+    app = await read(`/api/apps/${encodeURIComponent(workflowId)}`);
+    if ((app.co_relation_id ?? app.coRelationId) !== requestedId)
+      throw new Error("Workflow stable ID mapping changed; no query was executed.");
+  } else {
+    if (!initial.ok)
+      throw new Error(`Cannot inspect workflow reference (HTTP ${initial.status}); no query was executed.`);
+    app = record(await initial.json());
+  }
+  if (app.id !== workflowId || app.type !== "workflow" || (app.organizationId ?? app.organization_id) !== await auth.getOrganizationId())
+    throw new Error("Workflow identity or workspace mismatch. Use the workflow ID from list_workflows.");
+  const listing = await read(`/api/apps/${encodeURIComponent(workflowId)}/versions?includeDefaultBranchVersions=true`);
+  if (!Array.isArray(listing.versions))
+    throw new Error("Workflow versions are unavailable.");
+  const versions = listing.versions.map(record).filter((version) => !(version.isStub ?? version.is_stub));
+  let pin = typeof options.workflowVersionId === "string" ? options.workflowVersionId : null;
+  const context = typeof consumer === "object" ? consumer : void 0;
+  if (context?.status === "PUBLISHED" && pin && moving.has(pin))
+    pin = null;
+  const defaultVersions = versions.filter((version) => record(version.branch).isDefault === true || record(version.branch).is_default === true);
+  const latest = (rows, field) => [...rows].sort((a, b) => String(b[field] ?? b[field.replace(/[A-Z]/g, (c) => "_" + c.toLowerCase())] ?? "").localeCompare(String(a[field] ?? a[field.replace(/[A-Z]/g, (c) => "_" + c.toLowerCase())] ?? "")))[0];
+  const named = (name) => {
+    const candidates = defaultVersions.filter((version) => version.name === name && versionType(version) === "VERSION");
+    return latest(candidates.filter((version) => version.status === "PUBLISHED"), "createdAt") ?? latest(candidates.filter((version) => version.status === "DRAFT"), "createdAt");
+  };
+  let selected;
+  if (pin && moving.has(pin)) {
+    if (pin === "__current_branch__" && !context) {
+      return {
+        workflow_id: workflowId,
+        version_id: null,
+        pin,
+        options: { ...options, workflowVersionId: pin }
+      };
+    }
+    const defaultId = branchId(defaultVersions[0] ?? {});
+    if (pin === "__current_branch__" && context?.branch_id && context.branch_id !== defaultId) {
+      selected = versions.find((version) => branchId(version) === context.branch_id && versionType(version) === "BRANCH");
+    } else
+      selected = latest(defaultVersions.filter((version) => versionType(version) === "VERSION" && version.status === "DRAFT"), "createdAt");
+  } else if (pin) {
+    const legacy = versions.find((version) => version.id === pin);
+    if (legacy) {
+      selected = named(legacy.name);
+      if (selected?.id !== legacy.id)
+        throw new Error("Workflow UUID cannot be translated without changing its version. Use a native named version or branch pin.");
+      pin = legacy.name;
+    } else
+      selected = named(pin);
+  } else {
+    const releasedId = app.currentVersionId ?? app.current_version_id;
+    selected = releasedId ? versions.find((version) => version.id === releasedId) : latest(defaultVersions.filter((version) => versionType(version) === "VERSION"), "updatedAt");
+    if (releasedId && !selected) {
+      const released = await read(`/api/v2/apps/${encodeURIComponent(workflowId)}/versions/${encodeURIComponent(releasedId)}`);
+      selected = record(released.editing_version ?? released.editingVersion);
+      if (released.id !== workflowId || (released.organizationId ?? released.organization_id) !== await auth.getOrganizationId() || selected.id !== releasedId)
+        throw new Error("Released workflow version identity mismatch.");
+    }
+  }
+  const hidesDrafts = versions.some((version) => version.status === "DRAFT" && (version.isSynced ?? version.is_synced) === true);
+  if (hidesDrafts && (selected?.status === "DRAFT" && versionType(selected) === "VERSION" || !pin && !(app.currentVersionId ?? app.current_version_id))) {
+    throw new Error("The version list may hide local drafts, so the runtime target cannot be verified. Select a published named version.");
+  }
+  if (!selected?.id)
+    throw new Error("Workflow version cannot be verified from available metadata. Open the workflow on the intended branch or select a visible named version.");
+  return {
+    workflow_id: workflowId,
+    version_id: String(selected.id),
+    pin,
+    options: { ...options, workflowVersionId: pin }
+  };
+}
 function componentRef(component) {
   return component.clientRef ?? component.name;
 }
@@ -72,19 +184,25 @@ function createAppVersionLifecycle(auth, getApp) {
     if (typeof raw.id !== "string" || typeof raw.name !== "string")
       throw new Error("Invalid version metadata.");
     const environmentId = raw.current_environment_id ?? raw.currentEnvironmentId;
+    const versionType2 = raw.version_type ?? raw.versionType;
+    const branchId2 = raw.branch_id ?? raw.branchId;
+    const displayName = raw.display_name ?? raw.displayName;
     return {
       id: raw.id,
       name: raw.name,
       ...typeof raw.description === "string" || raw.description === null ? { description: raw.description } : {},
       ...typeof raw.status === "string" ? { status: raw.status } : {},
+      ...typeof versionType2 === "string" ? { versionType: versionType2 } : {},
+      ...typeof branchId2 === "string" ? { branchId: branchId2 } : {},
+      ...typeof displayName === "string" ? { displayName } : {},
       ...typeof environmentId === "string" ? { environmentId } : {}
     };
   }
   async function versions(appId) {
-    const data = await (await request(`/api/apps/${enc(appId)}/versions`)).json();
-    if (!Array.isArray(data.versions))
+    const data2 = await (await request(`/api/apps/${enc(appId)}/versions`)).json();
+    if (!Array.isArray(data2.versions))
       throw new Error("Missing app version inventory.");
-    return data.versions.map(normalize);
+    return data2.versions.map(normalize);
   }
   async function version(appId, versionId) {
     const found = (await versions(appId)).find((v) => v.id === versionId);
@@ -93,22 +211,22 @@ function createAppVersionLifecycle(auth, getApp) {
     return found;
   }
   async function environments(appId) {
-    const data = await (await request(`/api/app-environments?app_id=${enc(appId)}`)).json();
-    if (!Array.isArray(data.environments))
+    const data2 = await (await request(`/api/app-environments?app_id=${enc(appId)}`)).json();
+    if (!Array.isArray(data2.environments))
       throw new Error("Missing environment inventory.");
-    return data.environments.map((e) => {
+    return data2.environments.map((e) => {
       if (typeof e.id !== "string" || typeof e.name !== "string" || typeof e.priority !== "number") {
         throw new Error("Cannot verify environment promotion order.");
       }
       return { id: e.id, name: e.name, priority: e.priority, enabled: e.enabled !== false };
     }).sort((a, b) => a.priority - b.priority);
   }
-  function environment(envs, name2) {
-    const matches = envs.filter((e) => e.name.toLowerCase() === name2.trim().toLowerCase());
+  function environment(envs, name) {
+    const matches = envs.filter((e) => e.name.toLowerCase() === name.trim().toLowerCase());
     if (matches.length !== 1)
-      throw new Error(`Unknown or ambiguous environment: ${name2}. Inspect list_app_versions.`);
+      throw new Error(`Unknown or ambiguous environment: ${name}. Inspect list_app_versions.`);
     if (!matches[0].enabled)
-      throw new Error(`Environment ${name2} is not enabled for this workspace.`);
+      throw new Error(`Environment ${name} is not enabled for this workspace.`);
     return matches[0];
   }
   function selection(appId, v, environmentId = v.environmentId) {
@@ -117,13 +235,16 @@ function createAppVersionLifecycle(auth, getApp) {
       version_id: v.id,
       version_name: v.name,
       selected: true,
+      ...v.versionType ? { version_type: v.versionType } : {},
+      ...v.branchId ? { branch_id: v.branchId } : {},
+      ...v.displayName ? { display_name: v.displayName } : {},
       ...v.status ? { status: v.status } : {},
       ...environmentId ? { current_environment_id: environmentId } : {}
     };
   }
   async function available(appId, v, env) {
-    const data = await (await request(`/api/app-environments/${enc(env.id)}/versions?app_id=${enc(appId)}`)).json();
-    const rows = data.appVersions ?? data.app_versions;
+    const data2 = await (await request(`/api/app-environments/${enc(env.id)}/versions?app_id=${enc(appId)}`)).json();
+    const rows = data2.appVersions ?? data2.app_versions;
     if (!Array.isArray(rows) || !rows.some((row) => row.id === v.id)) {
       throw new Error(`Version ${v.name} is not available in ${env.name}. No promotion or release was performed.`);
     }
@@ -141,6 +262,9 @@ function createAppVersionLifecycle(auth, getApp) {
   }
   async function promote(appId, versionId, environmentName) {
     let v = await version(appId, versionId);
+    if (v.versionType?.toLowerCase() === "branch") {
+      throw new Error("Cannot promote a branch head. Save a named version in ToolJet, then select that exact version for promotion.");
+    }
     const envs = await environments(appId);
     const target = environment(envs, environmentName);
     const start = envs.find((e) => e.id === v.environmentId);
@@ -227,15 +351,261 @@ function createAppVersionLifecycle(auth, getApp) {
   }
   return { list, switchEnvironment, promote, update, remove };
 }
-var record = (x) => x && typeof x === "object" && !Array.isArray(x) ? x : {};
+var id = external_exports.string().uuid();
+var data = external_exports.record(external_exports.string(), external_exports.unknown());
+var page = { page: external_exports.number().int().min(1).default(1), per_page: external_exports.number().int().min(1).max(50).default(20) };
+var scope = { app_id: id.optional(), folder_id: id.optional(), environment_id: id.optional() };
+var dates = { from: external_exports.string().optional(), to: external_exports.string().optional() };
+var language = external_exports.enum(["javascript", "python"]);
+var schedule = {
+  name: external_exports.string().trim().min(1).max(100),
+  workflowId: id,
+  environmentId: id,
+  type: external_exports.enum(["interval", "cron"]),
+  timezone: external_exports.string().min(1),
+  details: external_exports.object({
+    frequency: external_exports.enum(["minute", "hour", "day", "week", "month"]).optional(),
+    minutes: external_exports.union([external_exports.number(), external_exports.string()]).optional().describe("Minute within each hour, for frequency hour."),
+    hour: external_exports.string().optional().describe("Time such as 9:30 AM, for day/week/month."),
+    day: external_exports.string().optional().describe("Weekday name for weekly schedules."),
+    date: external_exports.union([external_exports.number(), external_exports.string()]).optional(),
+    minute: external_exports.string().optional(),
+    hours: external_exports.string().optional(),
+    dayOfMonth: external_exports.string().optional(),
+    month: external_exports.string().optional(),
+    dayOfWeek: external_exports.string().optional()
+  }).strict().describe("Interval: frequency minute runs every minute; hour also needs minutes; day/week/month need hour and day/date as applicable. Cron: all five fields minute, hours, dayOfMonth, month, dayOfWeek."),
+  params: data.nullable().optional()
+};
+var encoded = (value) => encodeURIComponent(String(value));
+var query = (values) => {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(values))
+    if (value !== void 0) {
+      for (const entry of Array.isArray(value) ? value : [value])
+        search.append(key, String(entry));
+    }
+  return search.toString();
+};
+var workflowOperations = {
+  list_workflow_executions: {
+    description: "List workspace execution history with filters and pagination.",
+    schema: external_exports.object({
+      ...page,
+      ...scope,
+      ...dates,
+      status: external_exports.array(external_exports.enum(["running", "waiting", "success", "failed", "terminated"])).optional(),
+      trigger: external_exports.array(external_exports.enum(["manual", "schedule", "webhook", "app", "workflow", "unknown"])).optional()
+    }).strict(),
+    method: "GET",
+    path: (a) => `/api/workflow_executions/workspace?${query(a)}`
+  },
+  get_workflow_execution_states: {
+    description: "Read queue and termination state for selected runs.",
+    schema: external_exports.object({ execution_ids: external_exports.array(id).min(1).max(100) }).strict(),
+    method: "POST",
+    path: () => "/api/workflow_executions/workspace/states",
+    body: (a) => ({ executionIds: a.execution_ids })
+  },
+  stop_workflow_execution: {
+    description: "Request termination of one run. Cancels pending waits and approvals. Use only when stopping that run is requested.",
+    schema: external_exports.object({ execution_id: id }).strict(),
+    method: "DELETE",
+    path: (a) => `/api/workflow_executions/${a.execution_id}/terminate`,
+    body: () => ({})
+  },
+  list_workflow_consumers: {
+    description: "List apps and workflows that reference this workflow.",
+    schema: external_exports.object({ workflow_id: id }).strict(),
+    method: "GET",
+    path: (a) => `/api/workflows/${a.workflow_id}/consumers`
+  },
+  list_workflow_schedules: {
+    description: "List schedules for a workflow, including pinned versions and input overrides.",
+    schema: external_exports.object({
+      app_id: id,
+      page: page.page,
+      limit: external_exports.number().int().min(1).max(50).default(20),
+      search: external_exports.string().optional(),
+      environment_id: id.optional(),
+      workflow_id: id.optional()
+    }).strict(),
+    method: "GET",
+    path: (a) => `/api/workflow-schedules?${query(a)}`
+  },
+  get_workflow_schedule: {
+    description: "Read one schedule.",
+    schema: external_exports.object({ schedule_id: id }).strict(),
+    method: "GET",
+    path: (a) => `/api/workflow-schedules/${a.schedule_id}`
+  },
+  create_workflow_schedule: {
+    description: "Create a schedule pinned to workflowId (a VERSION ID). Defaults inactive. Activating authorizes repeated workflow execution and its effects.",
+    schema: external_exports.object({ ...schedule, workflow_id: id, active: external_exports.boolean().default(false) }).strict(),
+    method: "POST",
+    path: () => "/api/workflow-schedules",
+    body: (a) => {
+      const { workflow_id, ...body } = a;
+      return body;
+    },
+    execution: true
+  },
+  update_workflow_schedule: {
+    description: "Update a schedule. May change future executions; preserves omitted properties.",
+    schema: external_exports.object({ schedule_id: id, changes: external_exports.object(schedule).partial().strict() }).strict(),
+    method: "PUT",
+    path: (a) => `/api/workflow-schedules/${a.schedule_id}`,
+    body: (a) => a.changes,
+    execution: true
+  },
+  set_workflow_schedule_active: {
+    description: "Activate or pause a schedule. Activation authorizes repeated executions and their effects.",
+    schema: external_exports.object({ schedule_id: id, active: external_exports.boolean() }).strict(),
+    method: "PUT",
+    path: (a) => `/api/workflow-schedules/activate/${a.schedule_id}`,
+    body: (a) => ({ active: a.active }),
+    execution: true
+  },
+  delete_workflow_schedule: {
+    description: "Delete one schedule and remove its future jobs.",
+    schema: external_exports.object({ schedule_id: id }).strict(),
+    method: "DELETE",
+    path: (a) => `/api/workflow-schedules/${a.schedule_id}`,
+    body: () => ({})
+  },
+  list_upcoming_workflow_runs: {
+    description: "List upcoming scheduled executions scoped to the workspace.",
+    schema: external_exports.object(scope).strict(),
+    method: "GET",
+    path: (a) => `/api/workflow_executions/workspace/upcoming?${query(a)}`
+  },
+  list_workflow_approvals: {
+    description: "List approvals visible to the signed-in user. Approval tokens are not required.",
+    schema: external_exports.object({
+      ...page,
+      ...scope,
+      ...dates,
+      status: external_exports.array(external_exports.enum(["pending", "resolved", "expired", "cancelled"])).optional(),
+      approver: external_exports.string().optional()
+    }).strict(),
+    method: "GET",
+    path: (a) => `/api/workflow-approvals?${query(a)}`
+  },
+  get_workflow_approval: {
+    description: "Read an approval from its explicitly supplied approval-link token. Treat the token as a secret; do not log or share it.",
+    schema: external_exports.object({ token: id }).strict(),
+    method: "GET",
+    path: (a) => `/api/workflow-approvals/${a.token}`
+  },
+  resolve_workflow_approval: {
+    description: "Submit the user-selected outcome and form inputs as the signed-in approver. Resumes the workflow and its effects. Never decide an approval outcome without user instruction.",
+    schema: external_exports.object({ approval_id: id, outcome: external_exports.string().min(1), input: data.default({}) }).strict(),
+    method: "POST",
+    path: (a) => `/api/workflow-approvals/by-id/${a.approval_id}/resolve`,
+    body: (a) => ({ outcome: a.outcome, input: a.input }),
+    execution: true
+  },
+  cancel_workflow_approval: {
+    description: "Cancel a pending approval and its workflow continuation.",
+    schema: external_exports.object({ approval_id: id }).strict(),
+    method: "POST",
+    path: (a) => `/api/workflow-approvals/${a.approval_id}/cancel`,
+    body: () => ({})
+  },
+  set_workflow_webhook_enabled: {
+    description: "Enable or disable webhook triggering on the current branch. Enabling allows external executions. Backend branch, license and permission checks remain enforced.",
+    schema: external_exports.object({ workflow_id: id, enabled: external_exports.boolean() }).strict(),
+    method: "PATCH",
+    path: (a) => `/api/v2/webhooks/workflows/${a.workflow_id}`,
+    body: (a) => ({ isEnable: a.enabled ? "endPointTrigger" : "none" }),
+    execution: true
+  },
+  get_workflow_packages: {
+    description: "Read JavaScript dependencies or Python requirements for a version.",
+    schema: external_exports.object({ version_id: id, language }).strict(),
+    method: "GET",
+    path: (a) => `/api/workflows/${a.version_id}/packages/${a.language}`
+  },
+  set_workflow_packages: {
+    description: "Replace dependencies and start a bundle build. Package installation may execute build tooling; only install requested packages in an editable draft.",
+    schema: external_exports.object({
+      workflow_id: id,
+      version_id: id,
+      language,
+      dependencies: external_exports.union([external_exports.record(external_exports.string(), external_exports.string()), external_exports.string()])
+    }).strict(),
+    method: "PUT",
+    path: (a) => `/api/workflows/${a.version_id}/packages/${a.language}`,
+    body: (a) => ({ dependencies: a.dependencies }),
+    draft: true
+  },
+  get_workflow_bundle_status: {
+    description: "Read dependency bundle build status.",
+    schema: external_exports.object({ version_id: id, language }).strict(),
+    method: "GET",
+    path: (a) => `/api/workflows/${a.version_id}/bundle/${a.language}/status`
+  },
+  rebuild_workflow_bundle: {
+    description: "Rebuild the selected draft version dependency bundle.",
+    schema: external_exports.object({ workflow_id: id, version_id: id, language }).strict(),
+    method: "POST",
+    path: (a) => `/api/workflows/${a.version_id}/bundle/${a.language}/rebuild`,
+    body: () => ({}),
+    draft: true
+  },
+  search_workflow_packages: {
+    description: "Search the package registry for workflow dependencies.",
+    schema: external_exports.object({ language, q: external_exports.string().min(1), limit: external_exports.number().int().min(1).max(50).default(10) }).strict(),
+    method: "GET",
+    path: (a) => `/api/workflows/packages/${a.language}/search?${query({ q: a.q, limit: a.limit })}`
+  },
+  get_workflow_package: {
+    description: "Read package metadata and available versions.",
+    schema: external_exports.object({ language, name: external_exports.string().min(1) }).strict(),
+    method: "GET",
+    path: (a) => `/api/workflows/packages/${a.language}/${encoded(a.name)}`
+  },
+  preview_workflow_node: {
+    description: "Execute a node preview against supplied state. Can run code and datasource writes; authorize those effects first.",
+    schema: external_exports.object({
+      workflow_id: id,
+      version_id: id,
+      environment_id: id,
+      node_id: id,
+      query_id: id.optional(),
+      state: data.default({})
+    }).strict(),
+    method: "POST",
+    path: () => "/api/workflow_executions/previewQueryNode",
+    body: (a) => ({
+      appVersionId: a.version_id,
+      appEnvId: a.environment_id,
+      nodeId: a.node_id,
+      queryId: a.query_id,
+      state: a.state
+    }),
+    execution: true
+  }
+};
+var branchContext = new AsyncLocalStorage();
+var withBranchContext = (branchId2, fn) => branchContext.run(branchId2, fn);
+var currentBranchId = () => branchContext.getStore();
+function branchIdFor(config) {
+  const requested = branchContext.getStore();
+  if (config.branchId && requested && config.branchId !== requested) {
+    throw new Error("This build is pinned to another branch. Start a build from the intended branch.");
+  }
+  return config.branchId ?? requested;
+}
+var record2 = (x) => x && typeof x === "object" && !Array.isArray(x) ? x : {};
 var required = (x, label) => {
   if (typeof x !== "string" || !x)
     throw new Error(`Workflow response missing ${label}.`);
   return x;
 };
 function createWorkflowClient(auth, config, queries) {
-  async function request(path, body, method = "POST") {
-    const mutation = body !== void 0;
+  async function request(path, body, method = body === void 0 ? "GET" : "POST") {
+    const mutation = method !== "GET";
     let response;
     try {
       response = await auth.authedFetch(path, { ...mutation ? { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}, signal: AbortSignal.timeout(9e4) });
@@ -251,13 +621,13 @@ function createWorkflowClient(auth, config, queries) {
     const text = await response.text();
     return text ? JSON.parse(text) : {};
   }
-  const versionPath = (id, version) => `/api/v2/apps/${encodeURIComponent(id)}/versions/${encodeURIComponent(version)}`;
+  const versionPath = (id2, version) => `/api/v2/apps/${encodeURIComponent(id2)}/versions/${encodeURIComponent(version)}`;
   async function get(workflowId, versionId) {
     if (!versionId) {
-      const app2 = record(await request(`/api/apps/${encodeURIComponent(workflowId)}`));
-      versionId = required(record(app2.editing_version ?? app2.editingVersion).id, "editing version");
+      const app2 = record2(await request(`/api/apps/${encodeURIComponent(workflowId)}`));
+      versionId = required(record2(app2.editing_version ?? app2.editingVersion).id, "editing version");
     }
-    const app = record(await request(versionPath(workflowId, versionId)));
+    const app = record2(await request(versionPath(workflowId, versionId)));
     if (app.type !== "workflow")
       throw new Error("Target is not a workflow.");
     const workspace = await auth.getOrganizationId();
@@ -265,27 +635,29 @@ function createWorkflowClient(auth, config, queries) {
       throw new Error("Workflow does not belong to the active workspace.");
     if (app.id !== workflowId)
       throw new Error("Workflow response ID mismatch.");
-    const version = record(app.editing_version ?? app.editingVersion);
+    const version = record2(app.editing_version ?? app.editingVersion);
     if (version.id !== versionId)
       throw new Error("Workflow version response mismatch.");
     const environmentId = required(version.currentEnvironmentId ?? version.current_environment_id, "environment ID");
     const status = String(version.status ?? "").toUpperCase();
     const released = (app.currentVersionId ?? app.current_version_id) === versionId;
     const frozen = Boolean(app.should_freeze_editor ?? app.shouldFreezeEditor);
-    const exported = record(await request("/api/v2/resources/export", {
+    const exported = record2(await request("/api/v2/resources/export", {
       organization_id: workspace,
       app: [{ id: workflowId, search_params: { version_id: versionId } }]
     }));
     const apps = Array.isArray(exported.app) ? exported.app : [];
-    const rawApp = record(record(record(apps[0]).definition).appV2);
+    const rawApp = record2(record2(record2(apps[0]).definition).appV2);
     if (apps.length !== 1 || rawApp.id !== workflowId || rawApp.type !== "workflow" || rawApp.organizationId !== workspace) {
       throw new Error("Lossless workflow export response mismatch. No definition can be safely edited.");
     }
     const versions = Array.isArray(rawApp.appVersions) ? rawApp.appVersions : [];
-    const rawVersion = record(versions.find((candidate) => record(candidate).id === versionId));
+    const rawVersion = record2(versions.find((candidate) => record2(candidate).id === versionId));
     if (rawVersion.id !== versionId || !Object.hasOwn(rawVersion, "definition")) {
       throw new Error("Lossless workflow export is missing the requested version definition.");
     }
+    const branchName = record2(version.branch).name;
+    const branchQuery = typeof branchName === "string" && branchName ? `?branch=${encodeURIComponent(branchName)}` : "";
     return {
       workflow_id: workflowId,
       version_id: versionId,
@@ -293,71 +665,67 @@ function createWorkflowClient(auth, config, queries) {
       environment_id: environmentId,
       editable: status === "DRAFT" && !released && !frozen,
       enabled: (app.isMaintenanceOn ?? app.is_maintenance_on) === true,
-      editor_url: `${config.appUrl}/${encodeURIComponent(await auth.getOrganizationSlug())}/apps/${encodeURIComponent(typeof app.slug === "string" && app.slug ? app.slug : workflowId)}`,
+      webhook_enabled: (version.workflowEnabled ?? version.workflow_enabled) === true,
+      branch_id: typeof (version.branchId ?? version.branch_id ?? record2(version.branch).id) === "string" ? String(version.branchId ?? version.branch_id ?? record2(version.branch).id) : void 0,
+      status,
+      editor_url: `${config.appUrl}/${encodeURIComponent(await auth.getOrganizationSlug())}/apps/${encodeURIComponent(typeof app.slug === "string" && app.slug ? app.slug : workflowId)}${branchQuery}`,
       definition: definition(rawVersion.definition)
     };
   }
-  async function assertWorkflowDatasources(versionId, environmentId, graph, visited = /* @__PURE__ */ new Set()) {
+  async function assertWorkflowDatasources(versionId, environmentId, graph, visited = /* @__PURE__ */ new Set(), consumer) {
     if (visited.has(versionId))
       return;
     if (visited.size >= 50)
       throw new Error("Cannot verify all nested workflow datasources; refusing AI execution.");
     visited.add(versionId);
     const saved = await queries.getQueries(versionId);
-    const savedIds = new Set(saved.map((query) => query.id));
+    const savedIds = new Set(saved.map((query2) => query2.id));
     if (graph.queries.some((mapping) => !savedIds.has(mapping.id))) {
       throw new Error("Workflow definition references a query outside its version; refusing AI execution.");
     }
-    if (saved.some((query) => !query.data_source_id))
+    if (saved.some((query2) => !query2.data_source_id))
       throw new Error("Cannot verify a workflow query datasource; refusing AI execution.");
     if (saved.length)
       await queries.listDatasources(versionId);
-    await Promise.all([...new Set(saved.map((query) => query.data_source_id))].map((id) => queries.assertDatasourceAllowed(id, versionId, environmentId)));
-    for (const query of saved) {
-      if (query.kind !== "workflows")
+    await Promise.all([...new Set(saved.map((query2) => query2.data_source_id))].map((id2) => queries.assertDatasourceAllowed(id2, versionId, environmentId)));
+    for (const query2 of saved) {
+      if (query2.kind !== "workflows")
         continue;
-      const options = record(query.options);
-      const workflowId = required(options.workflowId, "nested workflow ID");
-      if (!/^[A-Za-z0-9_-]+$/.test(workflowId))
-        throw new Error("Cannot verify a dynamic nested workflow target.");
-      let childVersion = options.workflowVersionId;
-      if (!childVersion) {
-        const child2 = record(await request(`/api/apps/${encodeURIComponent(workflowId)}`));
-        childVersion = child2.current_version_id ?? child2.currentVersionId;
-      }
-      const childVersionId = required(childVersion, "nested workflow version");
-      if (!/^[A-Za-z0-9_-]+$/.test(childVersionId))
-        throw new Error("Cannot verify a dynamic nested workflow version.");
+      const resolved = await resolveWorkflowReference(auth, record2(query2.options), consumer);
+      const workflowId = resolved.workflow_id;
+      const childVersionId = required(resolved.version_id, "nested workflow released or pinned version");
       if (visited.has(childVersionId))
         continue;
-      const childApp = record(await request(versionPath(workflowId, childVersionId)));
-      const child = record(childApp.editing_version ?? childApp.editingVersion);
+      const childApp = record2(await request(versionPath(workflowId, childVersionId)));
+      const child = record2(childApp.editing_version ?? childApp.editingVersion);
       if (childApp.type !== "workflow" || childApp.id !== workflowId || child.id !== childVersionId || (childApp.organizationId ?? childApp.organization_id) !== await auth.getOrganizationId() || !Object.hasOwn(child, "definition")) {
         throw new Error("Cannot verify the nested workflow version definition; refusing AI execution.");
       }
-      await assertWorkflowDatasources(childVersionId, environmentId, definition(child.definition), visited);
+      await assertWorkflowDatasources(childVersionId, environmentId, definition(child.definition), visited, { branch_id: String(child.branchId ?? child.branch_id ?? record2(child.branch).id ?? "") || void 0, status: String(child.status ?? "") });
     }
   }
   return {
     ...queries,
+    resolveReference: (options, consumer) => resolveWorkflowReference(auth, options, consumer),
     workspaceId: () => auth.getOrganizationId(),
     async planScope() {
       if (config.isOAuthDelegation && !config.oauthGrantId)
         throw new Error("OAuth workflow plans require a trusted grant identifier.");
       const identity = config.isOAuthDelegation ? ["oauth", config.oauthGrantId] : config.sessionToken ?? config.pat;
-      return createHash("sha256").update(JSON.stringify([config.apiUrl, identity, await auth.getOrganizationId()])).digest("hex");
+      return createHash("sha256").update(JSON.stringify([config.apiUrl, identity, await auth.getOrganizationId(), branchIdFor(config)])).digest("hex");
     },
-    async list(page = 1, search = "") {
-      return request(`/api/apps?${new URLSearchParams({ type: "workflow", page: String(page), searchKey: search })}`);
+    async list(page2 = 1, search = "") {
+      return request(`/api/apps?${new URLSearchParams({ type: "workflow", page: String(page2), searchKey: search })}`);
     },
     get,
-    async create(name2) {
-      const created = record(await request("/api/workflows", { name: name2, type: "workflow" }));
-      const id = required(created.id, "created workflow ID");
+    async create(name) {
+      const branchId2 = branchIdFor(config);
+      const created = record2(await request("/api/workflows", { name, type: "workflow", ...branchId2 ? { branchId: branchId2 } : {} }));
+      const id2 = required(created.id, "created workflow ID");
       try {
-        return await get(id);
+        return await get(id2);
       } catch (error) {
-        throw new Error(`Workflow ${id} was created, but readback failed. Do not recreate it. ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Workflow ${id2} was created, but readback failed. Do not recreate it. ${error instanceof Error ? error.message : String(error)}`);
       }
     },
     async save(snapshot, graph) {
@@ -370,7 +738,7 @@ function createWorkflowClient(auth, config, queries) {
     async createWorkflowQuery(params) {
       if (params.dataSourceId)
         await queries.assertDatasourceAllowed(params.dataSourceId, params.versionId);
-      const body = record(await request("/api/data-queries/workflow-node", {
+      const body = record2(await request("/api/data-queries/workflow-node", {
         app_id: params.workflowId,
         app_version_id: params.versionId,
         name: params.name,
@@ -380,33 +748,245 @@ function createWorkflowClient(auth, config, queries) {
       }));
       return { query_id: required(body.id, "created workflow query ID"), name: required(body.name, "created workflow query name") };
     },
-    async run(workflowId, versionId, environmentId, params) {
+    async run(workflowId, versionId, environmentId, params, step) {
       const snapshot = await get(workflowId, versionId);
       if (snapshot.environment_id !== environmentId)
         throw new Error("Environment must match the selected workflow version.");
       if (!snapshot.enabled)
         throw new Error("Workflow is disabled. Enable it in ToolJet before running it.");
-      await assertWorkflowDatasources(versionId, environmentId, snapshot.definition);
-      return request("/api/workflow_executions", { executeUsing: "version", appVersionId: versionId, appId: workflowId, environmentId, params });
+      await assertWorkflowDatasources(versionId, environmentId, snapshot.definition, /* @__PURE__ */ new Set(), snapshot);
+      if (step?.start_node_id && !snapshot.definition.nodes.some((node) => node.id === step.start_node_id))
+        throw new Error("Step node does not belong to this version.");
+      if (step?.state && ["__humanDecision", "__waitResume"].some((key) => Object.hasOwn(step.state, key)))
+        throw new Error("Internal resume markers are not accepted.");
+      return request("/api/workflow_executions", { executeUsing: "version", appVersionId: versionId, appId: workflowId, environmentId, params, ...step?.start_node_id ? { startNodeId: step.start_node_id, injectedState: step.state ?? {} } : {} });
     },
-    async execution(id, page = 1, perPage = 20) {
-      const base = `/api/workflow_executions/${encodeURIComponent(id)}`;
-      const response = record(await request(`${base}/status`));
-      const status = { status: response.status, logs: response.logs };
-      const nodes = await request(`${base}/nodes?${new URLSearchParams({ page: String(page), per_page: String(perPage) })}`);
-      return { execution_id: id, status, nodes, page, per_page: perPage };
+    async manage(name, input) {
+      const operation = workflowOperations[name];
+      const args = operation.schema.parse(input);
+      if ("draft" in operation && operation.draft && !(await get(args.workflow_id, args.version_id)).editable)
+        throw new Error("Package changes require an editable draft.");
+      if (name === "set_workflow_packages" && (args.language === "python" ? typeof args.dependencies !== "string" : typeof args.dependencies !== "object" || Array.isArray(args.dependencies)))
+        throw new Error("JavaScript requires a dependency map; Python requires requirements text.");
+      if (name === "preview_workflow_node") {
+        const snapshot = await get(args.workflow_id, args.version_id);
+        if (snapshot.environment_id !== args.environment_id)
+          throw new Error("Environment must match the selected workflow version.");
+        const node = snapshot.definition.nodes.find((node2) => node2.id === args.node_id);
+        if (!node)
+          throw new Error("Preview node does not belong to this version.");
+        const queryId = snapshot.definition.queries.find((query2) => query2.idOnDefinition === node.data.idOnDefinition)?.id;
+        if (args.query_id && args.query_id !== queryId)
+          throw new Error("Preview query does not belong to this node.");
+        args.query_id = queryId;
+        if (["__humanDecision", "__waitResume"].some((key) => Object.hasOwn(args.state, key)))
+          throw new Error("Internal resume markers are not accepted.");
+        await assertWorkflowDatasources(args.version_id, args.environment_id, snapshot.definition, /* @__PURE__ */ new Set(), snapshot);
+      }
+      if (["create_workflow_schedule", "update_workflow_schedule", "set_workflow_schedule_active"].includes(name) && !(name === "set_workflow_schedule_active" && args.active === false)) {
+        const existing = args.schedule_id ? record2(await request(`/api/workflow-schedules/${args.schedule_id}`)) : {};
+        const changes = args.changes ?? args;
+        const versionId = required(changes.workflowId ?? record2(existing.workflow).id ?? existing.workflowId, "schedule version");
+        const workflowId = required(args.workflow_id ?? existing.appId ?? existing.app_id, "schedule workflow");
+        const environmentId = required(changes.environmentId ?? existing.environmentId ?? existing.environment_id, "schedule environment");
+        const snapshot = await get(workflowId, versionId);
+        if (snapshot.environment_id !== environmentId)
+          throw new Error("Schedule environment must match its pinned version.");
+        await assertWorkflowDatasources(versionId, environmentId, snapshot.definition, /* @__PURE__ */ new Set(), snapshot);
+      }
+      if (name === "set_workflow_webhook_enabled" && args.enabled) {
+        const app = record2(await request(`/api/apps/${encodeURIComponent(args.workflow_id)}`));
+        const listing = record2(await request(`/api/apps/${encodeURIComponent(args.workflow_id)}/versions?includeDefaultBranchVersions=true`));
+        if (!Array.isArray(listing.versions))
+          throw new Error("Cannot verify webhook versions.");
+        const versions = new Set(listing.versions.map((value) => required(record2(value).id, "webhook version")));
+        const released = app.current_version_id ?? app.currentVersionId;
+        if (typeof released === "string")
+          versions.add(released);
+        const editing = record2(app.editing_version ?? app.editingVersion).id;
+        if (typeof editing === "string")
+          versions.add(editing);
+        if (!versions.size || versions.size > 100)
+          throw new Error("Cannot verify all webhook versions.");
+        for (const versionId of versions) {
+          const snapshot = await get(args.workflow_id, versionId);
+          await assertWorkflowDatasources(snapshot.version_id, snapshot.environment_id, snapshot.definition, /* @__PURE__ */ new Set(), snapshot);
+        }
+      }
+      const result = await request(operation.path(args), "body" in operation ? operation.body(args) : void 0, operation.method);
+      if (record2(result).success === false)
+        throw new Error(String(record2(result).message ?? "Workflow operation failed."));
+      return result;
+    },
+    async webhook(workflowId, includeCredentials = false) {
+      const snapshot = await get(workflowId);
+      const app = record2(await request(`/api/apps/${encodeURIComponent(workflowId)}`));
+      const releasedId = app.current_version_id ?? app.currentVersionId;
+      const released = typeof releasedId === "string" ? await get(workflowId, releasedId) : void 0;
+      return {
+        workflow_id: workflowId,
+        configured_version_id: snapshot.version_id,
+        enabled: snapshot.webhook_enabled,
+        trigger_url: `${config.apiUrl}/api/v2/webhooks/workflows/${encodeURIComponent(workflowId)}/trigger`,
+        default_trigger: released ? {
+          version_id: released.version_id,
+          enabled: released.webhook_enabled,
+          inputs: released.definition.workflowInputs ?? [],
+          legacy_parameters: released.definition.webhookParams ?? []
+        } : { version_id: null, message: "No released version. The default webhook URL cannot execute until a version is released." },
+        ...includeCredentials ? { token: app.workflow_api_token ?? app.workflowApiToken } : {},
+        inputs: snapshot.definition.workflowInputs ?? [],
+        legacy_parameters: snapshot.definition.webhookParams ?? []
+      };
+    },
+    async watch(executionId, seconds) {
+      await request(`/api/workflow_executions/${encodeURIComponent(executionId)}/status`);
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), seconds * 1e3);
+      const events = [];
+      let reader;
+      try {
+        const response = await auth.authedFetch(`/api/workflow_executions/${encodeURIComponent(executionId)}/stream`, { signal: controller.signal, headers: { Accept: "text/event-stream" } });
+        if (!response.ok || !response.body)
+          throw new Error(`Workflow event stream failed (HTTP ${response.status}).`);
+        reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let bytes = 0;
+        while (events.length < 100 && bytes < 6e4) {
+          const chunk = await reader.read();
+          if (chunk.done)
+            break;
+          bytes += chunk.value.byteLength;
+          if (bytes > 6e4)
+            break;
+          buffer += decoder.decode(chunk.value, { stream: true });
+          buffer = buffer.replace(/\r\n/g, "\n");
+          let boundary;
+          while (events.length < 100 && (boundary = buffer.indexOf("\n\n")) >= 0) {
+            const frame = buffer.slice(0, boundary);
+            buffer = buffer.slice(boundary + 2);
+            const payload = frame.split("\n").filter((line) => line.startsWith("data:")).map((line) => line.slice(5).trimStart()).join("\n");
+            if (payload) {
+              try {
+                events.push(JSON.parse(payload));
+              } catch {
+                events.push({ data: payload });
+              }
+            }
+          }
+        }
+        return { execution_id: executionId, events, bounded: true };
+      } catch (error) {
+        if (!controller.signal.aborted)
+          throw error;
+        return { execution_id: executionId, events, bounded: true };
+      } finally {
+        clearTimeout(timer);
+        controller.abort();
+        await reader?.cancel().catch(() => {
+        });
+      }
+    },
+    async execution(id2, page2 = 1, perPage = 20) {
+      const base = `/api/workflow_executions/${encodeURIComponent(id2)}`;
+      const response = record2(await request(`${base}/status`));
+      const detail = response.execution_status ? {} : record2(await request(base));
+      const executionStatus = response.execution_status ?? (detail.executed === false && detail.status === "success" ? "running" : detail.status) ?? "unknown";
+      let approvalId = response.approval_request_id ?? null;
+      let approvalLookup;
+      if (executionStatus === "waiting" && !approvalId) {
+        const appId = detail.app_id ?? detail.appId;
+        if (typeof appId === "string") {
+          try {
+            for (let approvalPage = 1; approvalPage <= 10; approvalPage++) {
+              const result = record2(await request(`/api/workflow-approvals?${new URLSearchParams({ app_id: appId, status: "pending", page: String(approvalPage), per_page: "50" })}`));
+              const rows = Array.isArray(result.requests) ? result.requests : [];
+              const found = rows.map(record2).find((row) => (row.executionId ?? row.execution_id) === id2);
+              if (found) {
+                approvalId = found.id;
+                break;
+              }
+              if (rows.length < 50)
+                break;
+              if (approvalPage === 10)
+                approvalLookup = "More approvals are available; use list_workflow_approvals.";
+            }
+          } catch {
+            approvalLookup = "Approval lookup unavailable; use list_workflow_approvals with an authorized account.";
+          }
+        }
+      }
+      if (executionStatus === "waiting" && !approvalId && !approvalLookup)
+        approvalLookup = "No matching pending approval is visible to this account; use list_workflow_approvals with an authorized account.";
+      const status = { status: response.status, execution_status: executionStatus, approval_request_id: approvalId, ...approvalLookup ? { approval_lookup: approvalLookup } : {}, logs: response.logs };
+      const nodes = await request(`${base}/nodes?${new URLSearchParams({ page: String(page2), per_page: String(perPage) })}`);
+      return { execution_id: id2, status, nodes, page: page2, per_page: perPage };
     }
   };
 }
-function strictEntry(shape, describeUnknown) {
-  return external_exports.strictObject(shape, {
-    error: (issue) => issue.code === "unrecognized_keys" ? issue.keys.map(describeUnknown).join(" ") : void 0
-  });
+var cached;
+var SAMPLE_BLANKS = {
+  ShadHero: { eyebrow: "", subtitle: "", meta: "{{[]}}", actionLabel: "" },
+  ShadCardGrid: { badgeField: "", descriptionField: "", metaFields: "" },
+  ShadRecordList: { metaFields: "", valueField: "", valueFormat: "auto" },
+  // The sample's budget fields (spent, budget, note, status) are not a build's data: the config's own names stand.
+  ShadProgressList: {
+    labelField: "label",
+    valueField: "value",
+    targetField: "target",
+    captionField: "",
+    statusField: "",
+    valueFormat: "auto"
+  },
+  ShadSchedule: { resourceField: "resource", resourceTitle: "" },
+  // The sample's delivery stops (customer, address, eta, driver) are not a build's data: no rows, generic fields.
+  ShadMap: { data: "{{[]}}", titleField: "name", subtitleField: "", popupFields: "" },
+  // 'auto' reads money from a figure's label; the 'currency' default showed counts of rooms as dollars.
+  ShadSummaryStrip: { valueFormat: "auto" },
+  ShadTags: { tags: "{{[]}}", tagColors: "{{{}}}" },
+  ShadAvatar: { names: "" },
+  ShadLink: { linkTarget: "" },
+  ShadCombobox: { searchPlaceholder: "Search..." },
+  ShadMultiselect: { searchPlaceholder: "Search..." },
+  ShadTagsInput: { suggestions: "{{[]}}" },
+  // The sample greeting talks about orders, invoices and deliveries; a build's chat starts from its own history.
+  ShadChat: { initialChat: "{{[]}}" },
+  // The sample's 'set up your workspace' line is not a build's; completeTitle alone reads fine.
+  ShadQuestionnaire: { completeText: "" }
+};
+var PACK_SAMPLE_TEXT = ["label", "title", "resourceTitle", "subTitle", "message"];
+function registerPackDefinitions(extra) {
+  packDefaultDefinition("");
+  const defs = extra;
+  for (const def of Object.values(defs)) {
+    for (const key of PACK_SAMPLE_TEXT) {
+      const entry = def?.properties?.[key];
+      if (entry && typeof entry.value === "string" && entry.value && !entry.value.trim().startsWith("{{"))
+        def.properties[key] = { ...entry, value: "" };
+    }
+  }
+  Object.assign(activePackSet().definitions, defs);
 }
-function hasNonEmptyDefinition(definition2) {
-  if (!definition2)
-    return false;
-  return Object.values(definition2).some((section) => section !== null && typeof section === "object" && Object.keys(section).length > 0);
+function packDefaultDefinition(type) {
+  if (!cached) {
+    try {
+      const path = resolve(dirname(fileURLToPath(import.meta.url)), "../data/pack-default-definitions.json");
+      cached = JSON.parse(readFileSync(path, "utf8")).definitions ?? {};
+      for (const [type2, blanks] of Object.entries(SAMPLE_BLANKS)) {
+        const def = cached[type2];
+        if (!def?.properties)
+          continue;
+        for (const [key, value] of Object.entries(blanks)) {
+          if (key in def.properties)
+            def.properties[key] = { ...def.properties[key], value };
+        }
+      }
+    } catch {
+      cached = {};
+    }
+  }
+  return activePackSet().definitions[type] ?? cached[type];
 }
 var TOOLJET_DB_RESERVED_COLUMN_NAMES = /* @__PURE__ */ new Set([
   "abort",
@@ -665,14 +1245,14 @@ function tableCreationLevels(tables) {
   const completed = /* @__PURE__ */ new Set();
   const levels = [];
   while (remaining.size) {
-    const ready = [...remaining].filter((name2) => [...dependencies.get(name2) ?? []].every((dependency) => completed.has(dependency)));
+    const ready = [...remaining].filter((name) => [...dependencies.get(name) ?? []].every((dependency) => completed.has(dependency)));
     if (!ready.length) {
-      throw new Error(`Table batch contains a circular foreign-key dependency: ${[...remaining].map((name2) => byName.get(name2)?.tableName ?? name2).join(", ")}. Create one side first, then add the circular foreign key as a column change.`);
+      throw new Error(`Table batch contains a circular foreign-key dependency: ${[...remaining].map((name) => byName.get(name)?.tableName ?? name).join(", ")}. Create one side first, then add the circular foreign key as a column change.`);
     }
-    levels.push(ready.map((name2) => byName.get(name2)));
-    ready.forEach((name2) => {
-      remaining.delete(name2);
-      completed.add(name2);
+    levels.push(ready.map((name) => byName.get(name)));
+    ready.forEach((name) => {
+      remaining.delete(name);
+      completed.add(name);
     });
   }
   return levels;
@@ -695,9 +1275,9 @@ function isCanonicalStaticBooleanBinding(value, expected) {
   return binding.value === `{{${expected}}}` && binding.fxActive === false;
 }
 function invalidSeedTimestamps(columns, rows) {
-  const dates = columns.filter((c) => /^(date|timestamp(?:tz)?(?:\(\d+\))?(?: (?:with|without) time zone)?)$/i.test(c.type.trim()));
+  const dates2 = columns.filter((c) => /^(date|timestamp(?:tz)?(?:\(\d+\))?(?: (?:with|without) time zone)?)$/i.test(c.type.trim()));
   const errors = [];
-  for (const column of dates) {
+  for (const column of dates2) {
     const invalid = [];
     for (const [index, row] of rows.entries()) {
       const value = row[column.name];
@@ -789,10 +1369,29 @@ function completedPartialWrites(error) {
   return error instanceof PartialWriteError ? error.completed : [];
 }
 function assertAllowedToolJetDbColumnNames(operation, columns) {
-  const reserved = columns.map((column) => column.name).filter((name2) => TOOLJET_DB_RESERVED_COLUMN_NAMES.has(name2.toLowerCase()));
+  const reserved = columns.map((column) => column.name).filter((name) => TOOLJET_DB_RESERVED_COLUMN_NAMES.has(name.toLowerCase()));
   if (reserved.length) {
     throw new Error(`ToolJet ${operation} failed: reserved column name${reserved.length === 1 ? "" : "s"}: ${reserved.join(", ")}. Use a descriptive name such as step_action, result_comment, or item_condition.`);
   }
+}
+function alignSeedRowKeys(schema, rows) {
+  const noDefault = new Set(schema.filter((column) => column.defaultValue === void 0 || column.defaultValue === null).map((column) => column.name));
+  const keys = new Set(rows.flatMap((row) => Object.keys(row)));
+  for (const key of keys) {
+    if (!noDefault.has(key))
+      continue;
+    for (const row of rows)
+      if (!(key in row))
+        row[key] = null;
+  }
+}
+function sameKeysRun(rows, start, limit) {
+  const keysOf = (row) => Object.keys(row).sort().join("\0");
+  const keys = keysOf(rows[start]);
+  let end = start + 1;
+  while (end < rows.length && end - start < limit && keysOf(rows[end]) === keys)
+    end++;
+  return rows.slice(start, end);
 }
 function condenseErrorBody(detail, limit = 600) {
   const text = String(detail ?? "");
@@ -814,13 +1413,13 @@ var ToolJetHttpError = class extends Error {
     this.name = "ToolJetHttpError";
   }
 };
-function isPageHidden(page) {
-  return booleanBindingValue(page?.hidden?.value) === true;
+function isPageHidden(page2) {
+  return booleanBindingValue(page2?.hidden?.value) === true;
 }
-function pageHiddenNeedsUpdate(page, expected) {
-  if (page?.hidden === void 0 || page?.hidden === null)
+function pageHiddenNeedsUpdate(page2, expected) {
+  if (page2?.hidden === void 0 || page2?.hidden === null)
     return expected;
-  return booleanBindingValue(page.hidden?.value) !== expected || !isCanonicalStaticBooleanBinding(page.hidden, expected);
+  return booleanBindingValue(page2.hidden?.value) !== expected || !isCanonicalStaticBooleanBinding(page2.hidden, expected);
 }
 async function assertOk(res, method) {
   if (!res.ok) {
@@ -908,23 +1507,23 @@ function createClient(auth, config) {
     if (params.folderId !== void 0 && !selectedFolder) {
       throw new Error("Folder not found or not accessible in the current workspace. Use list_workspace_folders to find an accessible folder_id.");
     }
-    const query = new URLSearchParams({ page: String(params.page ?? 1), type: "front-end" });
+    const query2 = new URLSearchParams({ page: String(params.page ?? 1), type: "front-end" });
     if (params.searchText)
-      query.set("searchKey", params.searchText);
+      query2.set("searchKey", params.searchText);
     if (params.folderId)
-      query.set("folder", params.folderId);
-    const res = await auth.authedFetch(`/api/apps?${query}`);
+      query2.set("folder", params.folderId);
+    const res = await auth.authedFetch(`/api/apps?${query2}`);
     await assertOk(res, "listWorkspaceApps");
     const parsed = workspaceAppsResponse.safeParse(await res.json());
     if (!parsed.success)
       throw new Error("Unexpected workspace apps response.");
-    const data = parsed.data;
-    const { folder_count: folderAppCount, ...meta } = data.meta;
+    const data2 = parsed.data;
+    const { folder_count: folderAppCount, ...meta } = data2.meta;
     return {
-      ...data,
-      apps: data.apps.map((app) => ({
+      ...data2,
+      apps: data2.apps.map((app) => ({
         ...app,
-        folders: folders.filter((folder) => folder.appIds.has(app.id)).map(({ summary: { id, name: name2 } }) => ({ id, name: name2 }))
+        folders: folders.filter((folder) => folder.appIds.has(app.id)).map(({ summary: { id: id2, name } }) => ({ id: id2, name }))
       })),
       folder: selectedFolder?.summary ?? null,
       meta: {
@@ -935,19 +1534,19 @@ function createClient(auth, config) {
     };
   }
   async function listWorkspaceUsers(params = {}) {
-    const query = new URLSearchParams({ page: String(params.page ?? 1) });
+    const query2 = new URLSearchParams({ page: String(params.page ?? 1) });
     if (params.searchText)
-      query.set("searchText", params.searchText);
+      query2.set("searchText", params.searchText);
     if (params.status)
-      query.set("status", params.status);
-    const res = await auth.authedFetch(`/api/organization-users?${query}`);
+      query2.set("status", params.status);
+    const res = await auth.authedFetch(`/api/organization-users?${query2}`);
     await assertOk(res, "listWorkspaceUsers");
-    const data = await res.json();
-    if (!Array.isArray(data?.users) || !Number.isInteger(data?.meta?.total_pages) || data.meta.total_pages < 0) {
+    const data2 = await res.json();
+    if (!Array.isArray(data2?.users) || !Number.isInteger(data2?.meta?.total_pages) || data2.meta.total_pages < 0) {
       throw new Error("Unexpected workspace users response.");
     }
     const fields = ["id", "user_id", "email", "first_name", "last_name", "name", "status", "groups", "user_metadata"];
-    return { meta: data.meta, users: data.users.map((user) => {
+    return { meta: data2.meta, users: data2.users.map((user) => {
       if (!user || typeof user.id !== "string")
         throw new Error("Unexpected workspace user response.");
       const result = Object.fromEntries(fields.filter((key) => Object.hasOwn(user, key)).map((key) => [key, user[key]]));
@@ -1053,10 +1652,10 @@ function createClient(auth, config) {
   async function listWorkspaceGroups() {
     const res = await auth.authedFetch(groupPath);
     await assertOk(res, "listWorkspaceGroups");
-    const data = await res.json();
-    if (!Array.isArray(data.groupPermissions))
+    const data2 = await res.json();
+    if (!Array.isArray(data2.groupPermissions))
       throw new Error("Unexpected workspace groups response.");
-    return data.groupPermissions.map(workspaceGroup);
+    return data2.groupPermissions.map(workspaceGroup);
   }
   async function getWorkspaceGroup(groupId) {
     const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}`);
@@ -1066,10 +1665,10 @@ function createClient(auth, config) {
   async function listWorkspaceGroupMembers(groupId) {
     const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}/users`);
     await assertOk(res, "listWorkspaceGroupMembers");
-    const data = await res.json();
-    if (!Array.isArray(data))
+    const data2 = await res.json();
+    if (!Array.isArray(data2))
       throw new Error("Unexpected workspace group members response.");
-    return data.map((entry) => {
+    return data2.map((entry) => {
       if (typeof entry?.id !== "string" || typeof entry?.userId !== "string") {
         throw new Error("Unexpected workspace group member response.");
       }
@@ -1082,11 +1681,11 @@ function createClient(auth, config) {
       };
     });
   }
-  async function createWorkspaceGroup(name2) {
+  async function createWorkspaceGroup(name) {
     const res = await auth.authedFetch(groupPath, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name2 })
+      body: JSON.stringify({ name })
     });
     await assertOk(res, "createWorkspaceGroup");
     const created = await res.json();
@@ -1094,11 +1693,11 @@ function createClient(auth, config) {
       throw new Error("Create group response did not include an id.");
     return getWorkspaceGroup(created.id);
   }
-  async function renameWorkspaceGroup(groupId, name2) {
+  async function renameWorkspaceGroup(groupId, name) {
     const res = await auth.authedFetch(`${groupPath}/${encodeURIComponent(groupId)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name2 })
+      body: JSON.stringify({ name })
     });
     await assertOk(res, "renameWorkspaceGroup");
   }
@@ -1132,12 +1731,12 @@ function createClient(auth, config) {
       throw new Error("update requires a role, non-empty group_ids, or user_metadata change. An empty group_ids list never removes memberships.");
     }
     async function readUser() {
-      for (let page = 1; ; page++) {
-        const result = await listWorkspaceUsers({ page });
+      for (let page2 = 1; ; page2++) {
+        const result = await listWorkspaceUsers({ page: page2 });
         const user = result.users.find((item) => item.id === organizationUserId);
         if (user)
           return user;
-        if (page >= result.meta.total_pages)
+        if (page2 >= result.meta.total_pages)
           throw new Error("User not found in this workspace. List workspace users again.");
       }
     }
@@ -1154,7 +1753,7 @@ function createClient(auth, config) {
       throw new Error("Custom groups are disabled under the current plan; existing memberships cannot be safely preserved. No changes were made.");
     }
     const groupIds = [.../* @__PURE__ */ new Set([...before.groups.map((group) => group.id), ...params.addGroupIds ?? []])];
-    if (groupIds.some((id) => !groups.some((group) => group.id === id && group.type === "custom" && !group.disabled))) {
+    if (groupIds.some((id2) => !groups.some((group) => group.id === id2 && group.type === "custom" && !group.disabled))) {
       throw new Error("Every group must be an existing, enabled custom group in this workspace. No changes were made.");
     }
     let metadata;
@@ -1181,7 +1780,7 @@ function createClient(auth, config) {
     try {
       const after = await readUser();
       const actualIds = after.groups?.map((group) => group.id);
-      if (!actualIds || actualIds.length !== groupIds.length || groupIds.some((id) => !actualIds.includes(id)) || after.role !== (params.role ?? before.role) || after.first_name !== before.first_name || after.last_name !== before.last_name || after.status !== before.status || !isDeepStrictEqual(after.user_metadata, metadata ?? before.user_metadata)) {
+      if (!actualIds || actualIds.length !== groupIds.length || groupIds.some((id2) => !actualIds.includes(id2)) || after.role !== (params.role ?? before.role) || after.first_name !== before.first_name || after.last_name !== before.last_name || after.status !== before.status || !isDeepStrictEqual(after.user_metadata, metadata ?? before.user_metadata)) {
         throw new Error("Saved user state does not match the requested changes and preserved fields.");
       }
       return { user: after, updated: true };
@@ -1203,15 +1802,37 @@ function createClient(auth, config) {
     await assertOk(res, "getApp");
     return res.json();
   }
-  function projectComponent(id, entry) {
+  async function codeSourceAccess(appId, versionId) {
+    const res = await auth.authedFetch(`/api/code-mode-source/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`);
+    if (res.status === 403 || res.status === 404)
+      return { read: false, write: false };
+    await assertOk(res, "codeSourceAccess");
+    const body = await res.json().catch(() => null);
+    if (!body || typeof body !== "object")
+      throw new Error("codeSourceAccess: ToolJet sent no answer");
+    return { read: true, write: body.canWrite === true };
+  }
+  async function codeSourceFiles(appId, versionId) {
+    const res = await auth.authedFetch(`/api/code-mode-source/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}?content=1`);
+    if (res.status === 404)
+      return null;
+    await assertOk(res, "codeSourceFiles");
+    const body = await res.json().catch(() => null);
+    if (!body || body.exists === false || !Array.isArray(body.files))
+      return null;
+    return body.files.flatMap((file) => typeof file.path === "string" && typeof file.content === "string" ? [{ path: file.path, content: file.content }] : []);
+  }
+  function projectComponent(id2, entry) {
     const c = entry?.component ?? {};
     const def = c.definition ?? {};
     const persistedParent = typeof c.parent === "string" ? c.parent : void 0;
     const decodedParent = persistedParent ? decodeComponentParent(persistedParent) : void 0;
     return {
-      id,
+      id: id2,
       name: c.name,
-      type: c.component,
+      // A component of the published library reads back as its Lib_* type, so the catalogue checks its events,
+      // actions and properties (libraryPack.ts).
+      type: libraryTypeOf({ type: c.component, properties: def.properties }) ?? c.component,
       layouts: entry?.layouts,
       properties: def.properties,
       styles: def.styles,
@@ -1243,7 +1864,7 @@ function createClient(auth, config) {
       ...typeof pageOrderIndex(p) === "number" ? { index: pageOrderIndex(p) } : {},
       ...typeof p.isPageGroup === "boolean" ? { is_page_group: p.isPageGroup } : {},
       ...typeof p.pageGroupId === "string" ? { page_group_id: p.pageGroupId } : {},
-      components: Object.entries(p.components ?? {}).map(([id, entry]) => projectComponent(id, entry))
+      components: Object.entries(p.components ?? {}).map(([id2, entry]) => projectComponent(id2, entry))
     }));
     const queries = (full.data_queries ?? []).map((q) => ({
       id: q.id,
@@ -1260,10 +1881,14 @@ function createClient(auth, config) {
       event: e.event,
       ...typeof e.index === "number" ? { index: e.index } : {}
     }));
+    const globalSettings = full.editing_version?.global_settings ?? full.editing_version?.globalSettings ?? full.editingVersion?.globalSettings ?? full.global_settings ?? full.globalSettings;
+    const componentLibrary = resolveComponentLibrary(globalSettings, pages.flatMap((page2) => page2.components.map((component) => component.type)));
     return {
       app_id: full.id,
       name: full.name,
       version_id: full.editing_version?.id,
+      component_library: componentLibrary,
+      component_libraries: componentLibraryChoices(),
       ...full.should_freeze_editor === true ? { editor_frozen: true } : {},
       ...typeof full.editorEnvironment?.name === "string" ? { environment: full.editorEnvironment.name } : {},
       pages,
@@ -1300,6 +1925,15 @@ function createClient(auth, config) {
         ...typeof group.count === "number" ? { count: group.count } : {}
       }))
     };
+  }
+  async function getLicenseFeatureAccess() {
+    const res = await auth.authedFetch("/api/license/access");
+    await assertOk(res, "getLicenseFeatureAccess");
+    const body = await res.json();
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      throw new Error("ToolJet getLicenseFeatureAccess failed: expected an object response.");
+    }
+    return body;
   }
   async function getAppPermission(appId, resourceType, resourceId) {
     const res = await auth.authedFetch(appPermissionPath(appId, resourceType, resourceId));
@@ -1382,8 +2016,8 @@ function createClient(auth, config) {
   async function updateAppThemeDefinition(themeId, definition2) {
     await updateAppTheme(themeId, "definition", { definition: definition2 }, "updateAppThemeDefinition");
   }
-  async function renameAppTheme(themeId, name2) {
-    await updateAppTheme(themeId, "name", { name: name2 }, "renameAppTheme");
+  async function renameAppTheme(themeId, name) {
+    await updateAppTheme(themeId, "name", { name }, "renameAppTheme");
   }
   async function deleteAppTheme(themeId) {
     const res = await auth.authedFetch(`/api/themes/${encodeURIComponent(themeId)}`, { method: "DELETE" });
@@ -1420,15 +2054,23 @@ function createClient(auth, config) {
   async function useWorkspace(workspaceId) {
     return auth.switchWorkspace(workspaceId);
   }
-  async function createApp(name2) {
+  async function createApp(name, options = {}) {
+    const wantsCode = options.buildMode === "code";
+    const branchId2 = branchIdFor(config);
     let createRes;
-    let finalName = name2;
+    let finalName = name;
     for (let attempt = 1; attempt <= 6; attempt++) {
-      finalName = attempt === 1 ? name2 : `${name2} ${attempt}`;
+      finalName = attempt === 1 ? name : `${name} ${attempt}`;
       createRes = await auth.authedFetch("/api/apps", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: finalName, type: "front-end" })
+        body: JSON.stringify({
+          name: finalName,
+          type: "front-end",
+          ...branchId2 ? { branchId: branchId2 } : {},
+          // The build mode is set when the app is created, as the dashboard does: ToolJet has no call that changes it later.
+          ...wantsCode ? { buildMode: "code" } : {}
+        })
       });
       if (createRes.status !== 409)
         break;
@@ -1436,6 +2078,11 @@ function createClient(auth, config) {
     await assertOk(createRes, "createApp");
     const created = await createRes.json();
     const app = await getApp(created.id);
+    const buildMode = app?.build_mode ?? app?.buildMode;
+    if (wantsCode && buildMode !== "code") {
+      const removed = await auth.authedFetch(`/api/apps/${created.id}`, { method: "DELETE" }).then((res) => res.ok).catch(() => false);
+      throw new Error("This ToolJet server does not support Code mode apps: it created a visual app instead. " + (removed ? "That app was deleted. " : `Delete app ${created.id} ("${finalName}"); it could not be removed here. `) + "Build a visual app (create_app without build_mode), or connect to a ToolJet version with Code mode.");
+    }
     const versionId = app.editing_version.id;
     const versionName = app.editing_version.name ?? "v1";
     const pages = app.pages ?? [];
@@ -1445,11 +2092,15 @@ function createClient(auth, config) {
     }
     const orgSlug = await auth.getOrganizationSlug();
     const appSlug = created.slug ?? created.id;
-    const editorUrl = `${config.appUrl}/${orgSlug}/apps/${appSlug}`;
+    const branchName = app.editing_version.branch?.name;
+    const branchQuery = typeof branchName === "string" ? `branch=${encodeURIComponent(branchName)}` : "";
+    const editorUrl = `${config.appUrl}/${orgSlug}/apps/${appSlug}${branchQuery ? `?${branchQuery}` : ""}`;
     const homeHandle = homePage.handle ?? "home";
-    const viewerUrl = `${config.appUrl}/applications/${created.id}/${encodeURIComponent(homeHandle)}?env=development&version=${encodeURIComponent(versionName)}`;
+    const viewerUrl = `${config.appUrl}/applications/${created.id}/${encodeURIComponent(homeHandle)}?env=development&version=${encodeURIComponent(versionName)}${branchQuery ? `&${branchQuery}` : ""}`;
     return {
       app_id: created.id,
+      ...branchId2 ? { branch_id: branchId2 } : {},
+      build_mode: buildMode === "code" ? "code" : "visual",
       version_id: versionId,
       home_page_id: homePage.id,
       app_url: editorUrl,
@@ -1459,6 +2110,21 @@ function createClient(auth, config) {
     };
   }
   async function createAppVersion(params) {
+    const inventory = await auth.authedFetch(`/api/apps/${encodeURIComponent(params.appId)}/versions`);
+    await assertOk(inventory, "createAppVersion.readSource");
+    const body = await inventory.json();
+    const source = body.versions?.find((version) => version.id === params.versionFromId);
+    if (!source) {
+      throw new Error(`ToolJet createAppVersion failed: version ${params.versionFromId} was not found in app ${params.appId}.`);
+    }
+    if (String(source.version_type ?? source.versionType).toLowerCase() === "branch") {
+      throw new Error("Cannot clone a branch head into a named draft. Save a named version in ToolJet, then use its version_id as the clone source. No version was created or published.");
+    }
+    const sourceBranchId = source.branch_id ?? source.branchId;
+    const selectedBranchId = branchIdFor(config);
+    if (selectedBranchId && typeof sourceBranchId === "string" && sourceBranchId !== selectedBranchId) {
+      throw new Error("Cannot create a named draft on a different branch from its source. Select the source version's branch before cloning. No version was created.");
+    }
     const res = await auth.authedFetch(`/api/apps/${encodeURIComponent(params.appId)}/versions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1511,6 +2177,9 @@ function createClient(auth, config) {
       const version2 = body.versions?.find((candidate) => candidate.id === versionId);
       if (!version2) {
         throw new Error(`ToolJet releaseApp failed: version ${versionId} was not found in app ${appId}.`);
+      }
+      if (String(version2.version_type ?? version2.versionType).toLowerCase() === "branch") {
+        throw new Error("Cannot release a branch head. Save a named version in ToolJet, then select that exact version for release.");
       }
       return {
         id: versionId,
@@ -1621,16 +2290,16 @@ function createClient(auth, config) {
       promoted_to_environments: promotedToEnvironments
     };
   }
-  async function renameApp(appId, versionId, name2) {
+  async function renameApp(appId, versionId, name) {
     const res = await auth.authedFetch(`/api/apps/${appId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ app: { name: name2, editingVersionId: versionId } })
+      body: JSON.stringify({ app: { name, editingVersionId: versionId } })
     });
     await assertOk(res, "renameApp");
     const refreshed = await getApp(appId);
-    if (refreshed.name !== name2) {
-      throw new Error(`ToolJet renameApp failed: expected name "${name2}", received "${String(refreshed.name)}".`);
+    if (refreshed.name !== name) {
+      throw new Error(`ToolJet renameApp failed: expected name "${name}", received "${String(refreshed.name)}".`);
     }
   }
   async function listTables() {
@@ -1641,28 +2310,28 @@ function createClient(auth, config) {
     return body.result ?? [];
   }
   async function createPages(params) {
-    for (const page of params.pages) {
-      if (page.icon !== void 0)
-        assertPageIcon(page.icon, `Page "${page.name}"`);
+    for (const page2 of params.pages) {
+      if (page2.icon !== void 0)
+        assertPageIcon(page2.icon, `Page "${page2.name}"`);
     }
     const app = await getApp(params.appId);
     const existingPages = app.pages ?? [];
-    const highestPersistedIndex = existingPages.reduce((highest, page) => {
-      const index = pageOrderIndex(page);
+    const highestPersistedIndex = existingPages.reduce((highest, page2) => {
+      const index = pageOrderIndex(page2);
       return typeof index === "number" && Number.isFinite(index) ? Math.max(highest, index) : highest;
     }, 0);
     const startIndex = Math.max(highestPersistedIndex, existingPages.length) + 1;
-    const handleOf = (name2) => name2.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "page";
-    const existingNames = new Set((app.pages ?? []).map((page) => String(page.name).toLowerCase()));
-    const existingHandles = new Set((app.pages ?? []).map((page) => String(page.handle).toLowerCase()));
+    const handleOf = (name) => name.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "page";
+    const existingNames = new Set((app.pages ?? []).map((page2) => String(page2.name).toLowerCase()));
+    const existingHandles = new Set((app.pages ?? []).map((page2) => String(page2.handle).toLowerCase()));
     const seenNames = /* @__PURE__ */ new Set();
     const seenHandles = /* @__PURE__ */ new Set();
-    const entries = params.pages.map((page, offset) => {
-      const nameKey = page.name.toLowerCase();
+    const entries = params.pages.map((page2, offset) => {
+      const nameKey = page2.name.toLowerCase();
       if (existingNames.has(nameKey) || seenNames.has(nameKey)) {
-        throw new Error(`ToolJet createPages failed: duplicate page name "${page.name}".`);
+        throw new Error(`ToolJet createPages failed: duplicate page name "${page2.name}".`);
       }
-      const base = handleOf(page.name);
+      const base = handleOf(page2.name);
       let handle = base;
       for (let suffix = 2; existingHandles.has(handle) || seenHandles.has(handle); suffix++) {
         const tail = `-${suffix}`;
@@ -1670,42 +2339,42 @@ function createClient(auth, config) {
       }
       seenNames.add(nameKey);
       seenHandles.add(handle);
-      return { ...page, id: randomUUID(), handle, index: startIndex + offset };
+      return { ...page2, id: randomUUID(), handle, index: startIndex + offset };
     });
-    const createSettled = await Promise.allSettled(entries.map(async (page) => {
+    const createSettled = await Promise.allSettled(entries.map(async (page2) => {
       const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/pages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: page.id,
-          name: page.name,
-          handle: page.handle,
-          index: page.index,
-          ...page.icon ? { icon: page.icon } : {}
+          id: page2.id,
+          name: page2.name,
+          handle: page2.handle,
+          index: page2.index,
+          ...page2.icon ? { icon: page2.icon } : {}
         })
       });
-      await assertOk(res, `createPages "${page.name}"`);
-      return page;
+      await assertOk(res, `createPages "${page2.name}"`);
+      return page2;
     }));
     const createdEntries = createSettled.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
     const failures = createSettled.flatMap((result, index) => result.status === "rejected" ? [`${entries[index].name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []);
-    const metadataTasks = createdEntries.flatMap((page) => [
-      ...page.icon ? [{ page, field: "icon", promise: persistFieldForPage(page.id, "icon", page.icon, `createPages "${page.name}" icon update`) }] : [],
-      ...page.hidden ? [{ page, field: "hidden", promise: persistFieldForPage(page.id, "hidden", staticBooleanBinding(true), `createPages "${page.name}" hidden update`) }] : []
+    const metadataTasks = createdEntries.flatMap((page2) => [
+      ...page2.icon ? [{ page: page2, field: "icon", promise: persistFieldForPage(page2.id, "icon", page2.icon, `createPages "${page2.name}" icon update`) }] : [],
+      ...page2.hidden ? [{ page: page2, field: "hidden", promise: persistFieldForPage(page2.id, "hidden", staticBooleanBinding(true), `createPages "${page2.name}" hidden update`) }] : []
     ]);
     const metadataSettled = await Promise.allSettled(metadataTasks.map((task) => task.promise));
     failures.push(...metadataSettled.flatMap((result, index) => result.status === "rejected" ? [`${metadataTasks[index].page.name} ${metadataTasks[index].field}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`] : []));
     let persistedById = /* @__PURE__ */ new Map();
-    if (createdEntries.some((page) => page.icon || page.hidden)) {
+    if (createdEntries.some((page2) => page2.icon || page2.hidden)) {
       try {
         const refreshed = await getApp(params.appId);
-        persistedById = new Map((refreshed.pages ?? []).map((page) => [page.id, page]));
+        persistedById = new Map((refreshed.pages ?? []).map((page2) => [page2.id, page2]));
         for (const entry of createdEntries) {
-          const page = persistedById.get(entry.id);
-          if (entry.icon && page?.icon !== entry.icon) {
+          const page2 = persistedById.get(entry.id);
+          if (entry.icon && page2?.icon !== entry.icon) {
             failures.push(`page "${entry.name}" exists, but sidebar icon "${entry.icon}" did not persist`);
           }
-          if (entry.hidden && !isPageHidden(page)) {
+          if (entry.hidden && !isPageHidden(page2)) {
             failures.push(`page "${entry.name}" exists, but hidden-from-sidebar did not persist`);
           }
         }
@@ -1713,12 +2382,12 @@ function createClient(auth, config) {
         failures.push(`page metadata readback: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
-    const completed = createdEntries.map((page) => ({
-      page_id: page.id,
-      name: page.name,
-      index: page.index,
-      ...persistedById.get(page.id)?.icon ? { icon: persistedById.get(page.id).icon } : {},
-      ...isPageHidden(persistedById.get(page.id)) ? { hidden: true } : {}
+    const completed = createdEntries.map((page2) => ({
+      page_id: page2.id,
+      name: page2.name,
+      index: page2.index,
+      ...persistedById.get(page2.id)?.icon ? { icon: persistedById.get(page2.id).icon } : {},
+      ...isPageHidden(persistedById.get(page2.id)) ? { hidden: true } : {}
     }));
     if (failures.length)
       throw new PartialWriteError("createPages", completed, failures);
@@ -1733,12 +2402,12 @@ function createClient(auth, config) {
     }
   }
   async function createPage(params) {
-    const [page] = await createPages({
+    const [page2] = await createPages({
       appId: params.appId,
       versionId: params.versionId,
       pages: [{ name: params.name, icon: params.icon, hidden: params.hidden }]
     });
-    return page;
+    return page2;
   }
   async function updatePages(params) {
     const updates = params.updates ?? [];
@@ -1752,7 +2421,7 @@ function createClient(auth, config) {
     }
     const app = await getApp(params.appId);
     const pages = app.pages ?? [];
-    const pagesById = new Map(pages.map((page) => [String(page.id), page]));
+    const pagesById = new Map(pages.map((page2) => [String(page2.id), page2]));
     const editingVersion = app.editing_version ?? app.editingVersion ?? {};
     const homePageId = String(editingVersion.home_page_id ?? editingVersion.homePageId ?? app.home_page_id ?? app.homePageId ?? "");
     const seenUpdateIds = /* @__PURE__ */ new Set();
@@ -1779,10 +2448,10 @@ function createClient(auth, config) {
       }
     }
     const requestedNames = new Map(updates.map((update) => [update.pageId, update.name]));
-    const finalNames = pages.map((page) => {
-      const kind = page.isPageGroup === true ? "group" : "page";
-      const name2 = String(requestedNames.get(String(page.id)) ?? page.name ?? "").trim().toLowerCase();
-      return `${kind}:${name2}`;
+    const finalNames = pages.map((page2) => {
+      const kind = page2.isPageGroup === true ? "group" : "page";
+      const name = String(requestedNames.get(String(page2.id)) ?? page2.name ?? "").trim().toLowerCase();
+      return `${kind}:${name}`;
     });
     if (new Set(finalNames).size !== finalNames.length) {
       throw new Error("ToolJet updatePages failed: page names must remain unique.");
@@ -1792,7 +2461,7 @@ function createClient(auth, config) {
       if (order.length !== pages.length || orderedIds.size !== order.length) {
         throw new Error("ToolJet updatePages failed: order must contain every current page id exactly once.");
       }
-      const missing = pages.filter((page) => !orderedIds.has(String(page.id))).map((page) => page.id);
+      const missing = pages.filter((page2) => !orderedIds.has(String(page2.id))).map((page2) => page2.id);
       if (missing.length || order.some((pageId) => !pagesById.has(pageId))) {
         throw new Error("ToolJet updatePages failed: order must contain every current page id exactly once.");
       }
@@ -1829,16 +2498,16 @@ function createClient(auth, config) {
     }
     const refreshed = await getApp(params.appId);
     const refreshedPages = refreshed.pages ?? [];
-    const refreshedById = new Map(refreshedPages.map((page) => [String(page.id), page]));
+    const refreshedById = new Map(refreshedPages.map((page2) => [String(page2.id), page2]));
     for (const update of updates) {
-      const page = refreshedById.get(update.pageId);
-      if (update.name !== void 0 && page?.name !== update.name) {
+      const page2 = refreshedById.get(update.pageId);
+      if (update.name !== void 0 && page2?.name !== update.name) {
         throw new Error(`ToolJet updatePages failed: page "${update.pageId}" name did not persist.`);
       }
-      if (update.icon !== void 0 && page?.icon !== update.icon) {
+      if (update.icon !== void 0 && page2?.icon !== update.icon) {
         throw new Error(`ToolJet updatePages failed: page "${update.pageId}" icon did not persist.`);
       }
-      if (update.hidden !== void 0 && isPageHidden(page) !== update.hidden) {
+      if (update.hidden !== void 0 && isPageHidden(page2) !== update.hidden) {
         throw new Error(`ToolJet updatePages failed: page "${update.pageId}" hidden state did not persist.`);
       }
     }
@@ -1852,13 +2521,13 @@ function createClient(auth, config) {
     return {
       updated_fields: fieldUpdates.length,
       reordered: order !== void 0,
-      pages: refreshedPages.slice().sort((left, right) => (pageOrderIndex(left) ?? 0) - (pageOrderIndex(right) ?? 0)).map((page) => ({
-        page_id: page.id,
-        name: page.name,
-        handle: page.handle,
-        icon: page.icon,
-        hidden: isPageHidden(page),
-        ...typeof pageOrderIndex(page) === "number" ? { index: pageOrderIndex(page) } : {}
+      pages: refreshedPages.slice().sort((left, right) => (pageOrderIndex(left) ?? 0) - (pageOrderIndex(right) ?? 0)).map((page2) => ({
+        page_id: page2.id,
+        name: page2.name,
+        handle: page2.handle,
+        icon: page2.icon,
+        hidden: isPageHidden(page2),
+        ...typeof pageOrderIndex(page2) === "number" ? { index: pageOrderIndex(page2) } : {}
       }))
     };
   }
@@ -1939,11 +2608,11 @@ function createClient(auth, config) {
     await getDatasourceConnectionDetails(dataSourceId, environmentId);
   }
   async function assertQueryDatasourceAllowed(queryId, versionId, environmentId) {
-    const query = await getQuery(queryId, versionId);
-    if (!query.data_source_id)
+    const query2 = await getQuery(queryId, versionId);
+    if (!query2.data_source_id)
       throw new Error("Cannot verify the saved query datasource; refusing AI access.");
-    await assertDatasourceAllowed(query.data_source_id, versionId, environmentId);
-    return query;
+    await assertDatasourceAllowed(query2.data_source_id, versionId, environmentId);
+    return query2;
   }
   async function listDatasources(versionId) {
     const [orgId, orgSlug, envId] = await Promise.all([
@@ -2092,6 +2761,7 @@ function createClient(auth, config) {
   }
   const SCHEMA_CACHE_RETRY_DELAYS_MS = [300, 600, 1200, 2400, 4e3];
   const INSERT_ATTEMPT_TIMEOUT_MS = 45e3;
+  const BULK_INSERT_ROWS = 500;
   const UNKNOWN_INSERT_OUTCOME = "Insert outcome unknown: the row may already have been inserted. Verify persisted rows before retrying; do not replay the whole batch.";
   async function hasRows(tableId) {
     try {
@@ -2131,10 +2801,13 @@ function createClient(auth, config) {
       const body = await res.clone().text().catch(() => "");
       if (!/PGRST205|schema cache/i.test(body))
         return res;
-      await new Promise((resolve) => setTimeout(resolve, SCHEMA_CACHE_RETRY_DELAYS_MS[schemaWaits]));
+      if (Array.isArray(row) && /['"]0['"] column|column ['"]0['"]/i.test(body))
+        return res;
+      await new Promise((resolve2) => setTimeout(resolve2, SCHEMA_CACHE_RETRY_DELAYS_MS[schemaWaits]));
       schemaWaits += 1;
     }
   }
+  let bulkInsertAccepted = true;
   async function insertRows(params) {
     if (!params.rows.length)
       return { processed_rows: 0 };
@@ -2150,8 +2823,31 @@ function createClient(auth, config) {
     const table = (await listTables()).find((candidate) => candidate.table_name === params.tableName);
     if (!table)
       throw new Error(`insertRows: ToolJet DB table "${params.tableName}" was not found in the active workspace.`);
+    alignSeedRowKeys(schema, rows);
     let processedRows = 0;
+    while (bulkInsertAccepted && rows.length - processedRows >= 2) {
+      const chunk = sameKeysRun(rows, processedRows, BULK_INSERT_ROWS);
+      let res;
+      try {
+        res = await insertRowViaProxy(table.id, chunk);
+      } catch (error) {
+        if (!processedRows)
+          throw error;
+        throw new PartialWriteError("insertRows", [{ processed_rows: processedRows }], [
+          `rows ${processedRows + 1}-${processedRows + chunk.length}/${rows.length}: ${error instanceof Error ? error.message : String(error)}`
+        ]);
+      }
+      if (res.ok) {
+        processedRows += chunk.length;
+        continue;
+      }
+      if (/['"]0['"] column|column ['"]0['"]/i.test(await res.clone().text().catch(() => "")))
+        bulkInsertAccepted = false;
+      break;
+    }
     for (const [index, row] of rows.entries()) {
+      if (index < processedRows)
+        continue;
       try {
         const res = await insertRowViaProxy(table.id, row);
         await assertOk(res, "insertRows");
@@ -2193,8 +2889,8 @@ function createClient(auth, config) {
   async function createQuery(params, batchCheck) {
     const previous = queryCreateTails.get(params.versionId);
     let release;
-    const tail = new Promise((resolve) => {
-      release = resolve;
+    const tail = new Promise((resolve2) => {
+      release = resolve2;
     });
     queryCreateTails.set(params.versionId, tail);
     await previous;
@@ -2214,7 +2910,7 @@ function createClient(auth, config) {
     const kind = params.kind ?? await resolveDatasourceKind(params.versionId, params.dataSourceId);
     if (kind === "workflows") {
       params = { ...params, options: normalizeWorkflowQueryOptions(params.options) };
-      await assertWorkflowQueryTarget(params.options);
+      params = { ...params, options: (await resolveWorkflowReference(auth, params.options, params.versionId)).options };
     }
     await assertDatasourceAllowed(params.dataSourceId, params.versionId);
     const res = await auth.authedFetch(`/api/data-queries/data-sources/${params.dataSourceId}/versions/${params.versionId}`, {
@@ -2236,9 +2932,9 @@ function createClient(auth, config) {
   async function createQueries(params) {
     const batchCheck = (async () => {
       const datasources = await listDatasources(params.versionId);
-      for (const query of params.queries) {
-        if (datasources.find((source) => source.id === query.dataSourceId)?.kind === "workflows")
-          await assertWorkflowQueryTarget(query.options);
+      for (const query2 of params.queries) {
+        if (datasources.find((source) => source.id === query2.dataSourceId)?.kind === "workflows")
+          await assertWorkflowQueryTarget(query2.options, params.versionId);
       }
       await Promise.all(params.queries.map((q) => assertDatasourceAllowed(q.dataSourceId)));
       return void 0;
@@ -2257,17 +2953,67 @@ function createClient(auth, config) {
     return completed;
   }
   function buildComponentDto(spec) {
-    const misplaced = Object.keys(spec.properties ?? {}).filter((k) => STYLE_KEYS_IN_PROPERTIES.has(k));
+    const misplaced = Object.keys(spec.properties ?? {}).filter((k) => isMisplacedStyleKey(spec.type, k));
     if (misplaced.length) {
       throw new Error(`Component "${spec.name}": style keys ${JSON.stringify(misplaced)} were placed under \`properties\`, where ToolJet silently ignores them. Move them to the top-level \`styles\` object instead.`);
     }
+    const pack = packDefaultDefinition(spec.type);
+    if (pack) {
+      const ownData = spec.properties?.data !== void 0;
+      const sample = (entry) => {
+        const value = entry?.value;
+        return typeof value === "string" && /^\{\{\s*[[{]/.test(value);
+      };
+      const sampleField = (key) => /Chart$|^ShadSparkline$/.test(spec.type) && [
+        "xField",
+        "yFields",
+        "categoryField",
+        "valueField",
+        "nameField",
+        "barFields",
+        "lineFields",
+        "rightAxisFields",
+        "yField",
+        "sizeField",
+        "groupField",
+        "stageField",
+        "xLabel",
+        "yLabel",
+        "seriesLabels"
+      ].includes(key);
+      const packProperties = Object.fromEntries(Object.entries(pack.properties ?? {}).filter(([key, entry]) => !(ownData && (sample(entry) || sampleField(key)))));
+      spec = {
+        ...spec,
+        properties: { ...packProperties, ...spec.properties ?? {} },
+        styles: { ...pack.styles ?? {}, ...spec.styles ?? {} },
+        others: { ...pack.others ?? {}, ...spec.others ?? {} }
+      };
+    }
+    spec = downgradeFlexForLibrary(toLibraryComponent(spec));
     const dto = {
       name: spec.name,
       type: spec.type,
-      properties: spec.properties,
-      styles: spec.styles ?? {},
+      // A FlexContainer grows with its children unless the author fixes its height: with dynamic height off, a row or
+      // card whose children grew scrolled inside or clipped them (Air India fleet build, 2026-10-09).
+      // ToolJet gives a FlexContainer the UI 2.0 layout only when it carries layoutVersion '2', and the server adds no
+      // defaults on create, so the MCP writes it, with Equal heights on, as the widget's default definition does.
+      properties: spec.type === "FlexContainer" ? {
+        dynamicHeight: { value: "{{true}}" },
+        layoutVersion: { value: "2" },
+        equalHeights: { value: "{{true}}" },
+        ...spec.properties ?? {}
+      } : spec.properties,
+      // A FlexContainer is layout: invisible unless the author gives it a surface (cardStyle 'shadcnCard', or a
+      // background or border). ToolJet's own default draws every row and column as a bordered box.
+      styles: spec.type === "FlexContainer" ? { backgroundColor: { value: "transparent" }, borderColor: { value: "transparent" }, ...spec.styles ?? {} } : spec.styles ?? {},
       validation: spec.validation ?? {},
-      others: spec.others ?? {}
+      // Device visibility defaults, as a drag and drop sets them. The server fills these for its own widget types but
+      // not for types it has no defaults for, which then count as hidden on desktop.
+      others: { showOnDesktop: { value: "{{true}}" }, showOnMobile: { value: "{{false}}" }, ...spec.others ?? {} },
+      // The editor always sends these two sections. For a widget type the server has no defaults for (for example
+      // the UI 2.0 widgets) an omitted section is stored as null, and one null section stops the page loading.
+      general: {},
+      generalStyles: { boxShadow: { value: "0px 0px 0px 0px #00000040" } }
     };
     const desktop = spec.layouts?.desktop ?? spec.layout;
     const mobile = spec.layouts?.mobile ?? spec.layout;
@@ -2283,6 +3029,16 @@ function createClient(auth, config) {
     const entries = params.components.map((spec) => ({ id: spec.id ?? randomUUID(), spec }));
     const refToId = new Map(entries.map((entry) => [componentRef(entry.spec), entry.id]));
     const diff = {};
+    const typeById = new Map((params.pageComponents ?? []).map((component) => [component.id, component.type]));
+    for (const e of entries)
+      typeById.set(e.id, e.spec.type);
+    const parentFacts = new Map((params.pageComponents ?? []).map((component) => [
+      component.id,
+      { name: component.name, properties: component.properties }
+    ]));
+    for (const e of entries)
+      parentFacts.set(e.id, { name: e.spec.name, properties: e.spec.properties });
+    const slotErrors = [];
     for (const e of entries) {
       if (e.spec.parent && e.spec.parentRef) {
         throw new Error(`createComponents "${e.spec.name}": set EITHER parent or parentRef, not both.`);
@@ -2295,8 +3051,22 @@ function createClient(auth, config) {
       if (e.spec.slotName && !resolvedParent) {
         throw new Error(`createComponents "${e.spec.name}": slotName requires parent or parentRef.`);
       }
-      if (resolvedParent)
-        dto.parent = encodeComponentParent(resolvedParent, e.spec.slotName);
+      if (resolvedParent) {
+        const decoded = decodeComponentParent(resolvedParent);
+        const parentType = typeById.get(decoded.parentId) ?? e.spec.parentType;
+        let slotName = e.spec.slotName;
+        if (isPackContainerType(parentType)) {
+          const named = slotName ?? (resolvedParent !== decoded.parentId ? decoded.slotName : void 0);
+          const facts = parentFacts.get(decoded.parentId);
+          const slot = resolvePackSlot({ id: decoded.parentId, name: facts?.name, type: parentType, properties: facts?.properties }, named, e.spec.name, { propertiesKnown: !!facts });
+          if (!slot.ok) {
+            slotErrors.push(slot.error);
+            continue;
+          }
+          slotName = slot.slotName;
+        }
+        dto.parent = encodeComponentParent(resolvedParent, slotName, parentType);
+      }
       const submit = e.spec.type === "Form" ? dto.properties?.buttonToSubmit : void 0;
       const submitId = submit && typeof submit.value === "string" ? refToId.get(submit.value) : void 0;
       if (submit && submitId) {
@@ -2304,13 +3074,85 @@ function createClient(auth, config) {
       }
       diff[e.id] = dto;
     }
+    if (slotErrors.length) {
+      throw new Error(`createComponents: ${slotErrors.join(" ")} (Nothing was saved: refused before any write.)`);
+    }
+    const batchIds = new Set(entries.map((e) => e.id));
+    const flexEntries = entries.map((e) => ({
+      id: e.id,
+      type: e.spec.type,
+      parentId: bodyParentId(diff[e.id].parent)
+    }));
+    const explicitOrders = new Map(entries.filter((e) => isFlexContainerType(e.spec.type) && e.spec.properties?.childOrder !== void 0).map((e) => {
+      const raw = e.spec.properties.childOrder;
+      const value = Array.isArray(raw) ? raw : raw?.value;
+      return [e.id, Array.isArray(value) ? value : []];
+    }));
+    const nameToId = new Map(entries.map((e) => [e.spec.name, e.id]));
+    const orders = batchChildOrders(flexEntries, explicitOrders, (ref) => refToId.get(ref) ?? nameToId.get(ref));
+    for (const [id2, order] of orders) {
+      const dto = diff[id2];
+      dto.properties = { ...dto.properties ?? {}, childOrder: childOrderProperty(order) };
+    }
+    const additions = flexEntries.flatMap((e) => e.parentId && !batchIds.has(e.parentId) ? [{ parentId: e.parentId, childId: e.id }] : []);
     const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/components`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ is_user_switched_version: false, pageId: params.pageId, diff })
     });
     await assertOk(res, "createComponents");
-    return entries.map((e) => ({ component_id: e.id, name: e.spec.name }));
+    const created = entries.map((e) => ({ component_id: e.id, name: e.spec.name }));
+    await pinWrittenLibraries(params.appId, params.versionId, Object.values(diff));
+    let pageComponents = params.pageComponents;
+    if (additions.length && !pageComponents) {
+      const summary = await getAppSummary(params.appId, params.versionId).catch(() => void 0);
+      pageComponents = summary?.pages.find((page2) => page2.id === params.pageId)?.components ?? [];
+    }
+    const appended = additions.length ? appendedChildOrders(pageComponents ?? [], additions) : /* @__PURE__ */ new Map();
+    if (appended.size) {
+      try {
+        await writeFlexChildOrders(params.appId, params.versionId, params.pageId, appended);
+      } catch (err) {
+        throw new PartialWriteError("createComponents", created, [
+          `FlexContainer child order (${[...appended.keys()].join(", ")}): ${err instanceof Error ? err.message : String(err)}. The components exist; set the container's childOrder with update_components.`
+        ], err);
+      }
+    }
+    return created;
+  }
+  const pinChecks = /* @__PURE__ */ new Map();
+  function pinWrittenLibraries(appId, versionId, components) {
+    const wanted = missingLibraryPins(components, {});
+    if (!wanted)
+      return Promise.resolve();
+    const fresh = Object.keys(wanted).filter((id2) => !pinChecks.has(`${versionId}:${id2}`));
+    const check = fresh.length ? (async () => {
+      const settings = await getAppSettings(appId, versionId);
+      const stored = settings.global_settings.customComponentLibraries;
+      const pins = stored && typeof stored === "object" ? stored : {};
+      const missing = missingLibraryPins(components, pins);
+      if (missing) {
+        await updateAppSettings({ appId, versionId, globalSettings: { customComponentLibraries: { ...pins, ...missing } } });
+      }
+    })().catch(() => {
+      for (const id2 of fresh)
+        pinChecks.delete(`${versionId}:${id2}`);
+    }) : Promise.resolve();
+    for (const id2 of fresh)
+      pinChecks.set(`${versionId}:${id2}`, check);
+    return Promise.all(Object.keys(wanted).map((id2) => pinChecks.get(`${versionId}:${id2}`)));
+  }
+  async function writeFlexChildOrders(appId, versionId, pageId, orders) {
+    const diff = Object.fromEntries([...orders].map(([id2, order]) => [
+      id2,
+      { component: { definition: { properties: { childOrder: childOrderProperty(order) } } } }
+    ]));
+    const res = await auth.authedFetch(`/api/v2/apps/${appId}/versions/${versionId}/components`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_user_switched_version: false, pageId, diff })
+    });
+    await assertOk(res, "writeFlexChildOrders");
   }
   async function createComponent(params) {
     const [r] = await createComponents({
@@ -2347,12 +3189,14 @@ function createClient(auth, config) {
         throw new Error(`updateComponents "${u.componentId}": slotName requires parent.`);
       }
       if (hasDef) {
-        diff[u.componentId] = { component: { definition: u.definition } };
+        const definition2 = u.definition;
+        const properties = definition2?.properties ? downgradeFlexForLibrary({ type: "FlexContainer", properties: definition2.properties }).properties : void 0;
+        diff[u.componentId] = { component: { definition: properties ? { ...definition2, properties } : u.definition } };
       } else {
         diff[u.componentId] = {
           component: {
             ...u.name !== void 0 ? { name: u.name } : {},
-            ...u.parent !== void 0 ? { parent: encodeComponentParent(u.parent, u.slotName) } : {}
+            ...u.parent !== void 0 ? { parent: encodeComponentParent(u.parent, u.slotName, u.parentType) } : {}
           }
         };
       }
@@ -2364,6 +3208,26 @@ function createClient(auth, config) {
     });
     await assertOk(res, "updateComponents");
     return { updated: params.updates.length };
+  }
+  async function listComponentLibraries() {
+    const res = await auth.authedFetch("/api/custom-component-libraries");
+    await assertOk(res, "listComponentLibraries");
+    const body = await res.json();
+    return Array.isArray(body) ? body : body?.libraries ?? [];
+  }
+  async function listBuiltinPacks() {
+    const res = await auth.authedFetch("/api/builtin-packs");
+    if (!res.ok)
+      return null;
+    const body = await res.json();
+    if (!Array.isArray(body))
+      return null;
+    const packs = body;
+    return Promise.all(packs.map(async (info) => {
+      const file = await auth.authedFetch(`/api/builtin-packs/${encodeURIComponent(info.pack)}/${encodeURIComponent(info.hash)}/manifest.json`);
+      const manifest = file.ok ? await file.json() : null;
+      return { info, manifest };
+    }));
   }
   async function deleteComponents(params) {
     const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/components`, {
@@ -2394,7 +3258,7 @@ function createClient(auth, config) {
         throw new Error(`updateLayouts "${l.componentId}": slotName requires parent.`);
       }
       if (l.parent !== void 0)
-        entry.component = { parent: encodeComponentParent(l.parent, l.slotName) };
+        entry.component = { parent: encodeComponentParent(l.parent, l.slotName, l.parentType) };
       diff[l.componentId] = entry;
     }
     const res = await auth.authedFetch(`/api/v2/apps/${params.appId}/versions/${params.versionId}/components/layout`, {
@@ -2407,10 +3271,10 @@ function createClient(auth, config) {
   }
   async function updateQuery(params) {
     assertPersistableQueryToggles(params.options, `ToolJet updateQuery refused query "${params.queryId}"`);
-    const query = await assertQueryDatasourceAllowed(params.queryId, params.versionId);
-    if (query.kind === "workflows") {
+    const query2 = await assertQueryDatasourceAllowed(params.queryId, params.versionId);
+    if (query2.kind === "workflows") {
       params = { ...params, options: normalizeWorkflowQueryOptions(params.options) };
-      await assertWorkflowQueryTarget(params.options);
+      params = { ...params, options: (await resolveWorkflowReference(auth, params.options, params.versionId)).options };
     }
     const body = { options: params.options };
     if (params.name !== void 0)
@@ -2421,11 +3285,11 @@ function createClient(auth, config) {
       body: JSON.stringify(body)
     });
     await assertOk(res, "updateQuery");
-    if (query.kind === "workflows") {
+    if (query2.kind === "workflows") {
       try {
         await verifyWorkflowMapping(params.queryId, params.versionId, params.options);
       } catch (error) {
-        throw new PartialWriteError("updateQuery", [{ query_id: params.queryId, datasource_id: query.data_source_id }], [String(error)]);
+        throw new PartialWriteError("updateQuery", [{ query_id: params.queryId, datasource_id: query2.data_source_id }], [String(error)]);
       }
     }
     return { query_id: params.queryId };
@@ -2440,21 +3304,8 @@ function createClient(auth, config) {
       throw new Error(`Query ${queryId} was written, but its workflow mapping could not be verified. Inspect this query and repair it in place; do not recreate it. ${String(error)}`);
     }
   }
-  async function assertWorkflowQueryTarget(raw) {
-    assertWorkflowQueryOptions(raw);
-    const options = normalizeWorkflowQueryOptions(raw);
-    const workflowId = options.workflowId;
-    const versionId = options.workflowVersionId;
-    const path = versionId ? `/api/v2/apps/${encodeURIComponent(workflowId)}/versions/${encodeURIComponent(versionId)}` : `/api/apps/${encodeURIComponent(workflowId)}`;
-    const response = await auth.authedFetch(path);
-    await assertOk(response, "verify workflow query target");
-    const app = await response.json();
-    if (app?.id !== workflowId || app.type !== "workflow" || (app.organizationId ?? app.organization_id) !== await auth.getOrganizationId()) {
-      throw new Error("Workflow query target must be an accessible workflow in the active workspace.");
-    }
-    if (versionId && (app.editing_version ?? app.editingVersion)?.id !== versionId) {
-      throw new Error("Workflow query version does not belong to the selected workflow.");
-    }
+  async function assertWorkflowQueryTarget(raw, consumerVersionId) {
+    await resolveWorkflowReference(auth, raw, consumerVersionId);
   }
   async function updateQueryDatasource(params) {
     await assertDatasourceAllowed(params.dataSourceId, params.versionId);
@@ -2487,16 +3338,16 @@ function createClient(auth, config) {
     await assertOk(res, "getQueries");
     const body = await res.json();
     const orgSlug = await auth.getOrganizationSlug();
-    return (body.data_queries ?? []).map((query) => ({
-      ...query,
-      ...query.data_source_id ? { datasource_settings_url: datasourceManagementUrl(orgSlug, query.data_source_id) } : {}
+    return (body.data_queries ?? []).map((query2) => ({
+      ...query2,
+      ...query2.data_source_id ? { datasource_settings_url: datasourceManagementUrl(orgSlug, query2.data_source_id) } : {}
     }));
   }
   async function getQuery(queryId, versionId) {
-    const query = (await getQueries(versionId)).find((candidate) => candidate.id === queryId);
-    if (!query)
+    const query2 = (await getQueries(versionId)).find((candidate) => candidate.id === queryId);
+    if (!query2)
       throw new Error(`ToolJet getQuery failed: query ${queryId} not found in version ${versionId}`);
-    return query;
+    return query2;
   }
   async function runQuery(params) {
     await assertQueryDatasourceAllowed(params.queryId, params.versionId, params.environmentId);
@@ -2567,6 +3418,10 @@ function createClient(auth, config) {
       ...pluginId ? { pluginId } : {},
       options: body.options ?? {}
     };
+  }
+  async function datasourceKind(dataSourceId) {
+    const known = datasourceIdentities.get(`${await auth.getOrganizationId()}:${dataSourceId}`);
+    return known?.kind ?? (await getDatasourceConnectionDetails(dataSourceId)).kind;
   }
   async function testDatasourceConnection(params) {
     await assertDatasourceAllowed(params.dataSourceId, void 0, params.environmentId);
@@ -2647,14 +3502,30 @@ function createClient(auth, config) {
     inviteWorkspaceUser,
     updateWorkspaceUser,
     setWorkspaceUserArchived,
+    branchId: config.branchId,
     createApp,
+    async listWorkspaceBranches() {
+      const res = await auth.authedFetch("/api/workspace-branches");
+      if (res.status === 404)
+        return { branches: [], is_multi_branching_enabled: false };
+      await assertOk(res, "listWorkspaceBranches");
+      const body = await res.json();
+      return {
+        branches: body.branches.map((branch) => ({ id: branch.id, name: branch.name, is_default: branch.isDefault })),
+        active_branch_id: branchIdFor(config) ?? body.activeBranchId,
+        is_multi_branching_enabled: body.isMultiBranchingEnabled
+      };
+    },
     createAppVersion,
     switchAppVersion,
     releaseApp,
     renameApp,
     getApp,
+    codeSourceAccess,
+    codeSourceFiles,
     getAppSummary,
     listAppPermissionSubjects,
+    getLicenseFeatureAccess,
     getAppPermission,
     setAppPermission,
     clearAppPermission,
@@ -2694,6 +3565,8 @@ function createClient(auth, config) {
     createComponents,
     updateComponents,
     deleteComponents,
+    listComponentLibraries,
+    listBuiltinPacks,
     updateLayouts,
     updateQuery,
     updateQueryDatasource,
@@ -2705,6 +3578,7 @@ function createClient(auth, config) {
     assertDatasourceAllowed,
     invokeDatasourceMethod,
     getDatasourceConnectionDetails,
+    datasourceKind,
     getPluginSpec,
     specCacheScope,
     testDatasourceConnection,
@@ -2713,10 +3587,10 @@ function createClient(auth, config) {
     deleteEvent
   };
 }
-function pageOrderIndex(page) {
-  if (typeof page?.pageGroupIndex === "number" && Number.isFinite(page.pageGroupIndex))
-    return page.pageGroupIndex;
-  return typeof page?.index === "number" ? page.index : void 0;
+function pageOrderIndex(page2) {
+  if (typeof page2?.pageGroupIndex === "number" && Number.isFinite(page2.pageGroupIndex))
+    return page2.pageGroupIndex;
+  return typeof page2?.index === "number" ? page2.index : void 0;
 }
 createRequire(import.meta.url);
 function asRecord(value) {
@@ -2753,6 +3627,8 @@ function projectAppSettings(snapshot) {
       mode: global.appMode
     },
     theme: compactTheme(theme),
+    // The saved component library (ToolJet UI 1.0 or 2.0); absent on apps from before the setting.
+    component_library: global.componentLibrary ?? global.component_library,
     header: {
       hidden: properties.hideHeader,
       logo_hidden: properties.hideLogo,
@@ -2825,66 +3701,16 @@ async function literalCanvasColor(client, appId, versionId) {
 }
 function paintsDarkCanvasInLightMode(definition2) {
   const light = definition2?.surface?.colors?.appBackground?.light;
-  const hex = typeof light === "string" ? /^#([0-9a-f]{6})$/i.exec(light.trim())?.[1] : void 0;
-  if (!hex)
+  const hex2 = typeof light === "string" ? /^#([0-9a-f]{6})$/i.exec(light.trim())?.[1] : void 0;
+  if (!hex2)
     return false;
   const [r, g, b] = [0, 2, 4].map((at) => {
-    const channel = parseInt(hex.slice(at, at + 2), 16) / 255;
+    const channel = parseInt(hex2.slice(at, at + 2), 16) / 255;
     return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
   });
   return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.18;
 }
 createRequire(import.meta.url);
-function ok(value) {
-  return { content: [{ type: "text", text: JSON.stringify(value) }] };
-}
-function fail(err) {
-  const message = err instanceof Error ? err.message : String(err);
-  const quota = tableQuotaError(err);
-  const text = quota ? JSON.stringify({ error: {
-    code: quota.code,
-    status: quota.status,
-    retryable: quota.retryable,
-    message: quota.message,
-    details: message
-  } }) : `Error: ${message}`;
-  return { content: [{ type: "text", text }], isError: true };
-}
-var schemas = /* @__PURE__ */ new Map();
-function exposeActions(source, definitions, selector = "action") {
-  source.description += " Individually exposed operations: " + definitions.map((action) => action.name).join(", ") + ".";
-  const handler = source.handler;
-  return definitions.map(({ action, required: required2, optional = [], ...definition2 }) => {
-    let schema = schemas.get(definition2.name);
-    if (!schema) {
-      const fields = {};
-      for (const key of [...required2, ...optional]) {
-        if (key === selector || !source.inputSchema[key])
-          throw new Error(`Invalid action field: ${definition2.name}.${key}`);
-        fields[key] = source.inputSchema[key];
-      }
-      schema = external_exports.object(fields).required(Object.fromEntries(required2.map((key) => [key, true]))).strict();
-      if (required2.includes("confirm"))
-        schema = schema.extend({ confirm: external_exports.literal(true) });
-      schemas.set(definition2.name, schema);
-    }
-    const input = schema;
-    return {
-      ...definition2,
-      strictInput: true,
-      inputSchema: input.shape,
-      async handler(args) {
-        try {
-          return await handler({ ...input.parse(args), [selector]: action });
-        } catch (error) {
-          return fail(error);
-        }
-      }
-    };
-  });
-}
-createRequire(import.meta.url);
-var THEME_LICENCE_USER_MESSAGE = "Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.";
 var colorPair = external_exports.object({
   light: external_exports.string().trim().min(1).max(100).describe("Color used in light mode; hex is recommended."),
   dark: external_exports.string().trim().min(1).max(100).describe("Color used in dark mode; hex is recommended.")
@@ -2933,16 +3759,224 @@ var themeDefinition = external_exports.object({
     }).strict()
   }).strict()
 }).strict();
+var ACCENT_MENU = [
+  { name: "Indigo", hex: "#4F46E5", fits: "software, analytics, internal tools" },
+  { name: "Violet", hex: "#7C3AED", fits: "creative, education, product teams" },
+  { name: "Fuchsia", hex: "#C026D3", fits: "consumer, beauty, events" },
+  { name: "Rose", hex: "#E11D48", fits: "hospitality, retail, food" },
+  { name: "Coral", hex: "#EA580C", fits: "logistics, field service, sports" },
+  { name: "Amber", hex: "#B45309", fits: "manufacturing, construction, real estate" },
+  { name: "Emerald", hex: "#059669", fits: "finance, sustainability, health" },
+  { name: "Teal", hex: "#0D9488", fits: "healthcare, travel, operations" },
+  { name: "Sky", hex: "#0284C7", fits: "support, IT, aviation, marine" }
+];
+var MENU_TEXT = ACCENT_MENU.map((a) => `${a.name} ${a.hex} (${a.fits})`).join(", ");
+var hsl = (hex2) => {
+  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(hex2.trim());
+  if (!m)
+    return null;
+  const full = m[1].length === 3 ? m[1].replace(/./g, (c) => c + c) : m[1];
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d === 0)
+    return { h: 0, s: 0, l };
+  const s = d / (1 - Math.abs(2 * l - 1));
+  const h = max === r ? (g - b) / d % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return { h: (h * 60 + 360) % 360, s, l };
+};
+var accentWarning = (definition2) => {
+  const light = definition2?.brand?.colors?.primary?.light;
+  if (typeof light !== "string")
+    return null;
+  const c = hsl(light);
+  if (!c)
+    return null;
+  const kind = c.l < 0.22 ? "near-black" : c.s < 0.2 ? "grey" : c.h >= 212 && c.h <= 226 && c.s > 0.75 && c.l >= 0.45 && c.l <= 0.66 ? "the stock blue" : null;
+  if (!kind)
+    return null;
+  return `The theme's primary ${light} is ${kind}, which reads plain. Unless the request names this colour or the brand uses it, pick an accent from the menu by the request's brand, industry or mood: ${MENU_TEXT}. Keep the canvas and neutrals light and lightly tinted toward it.`;
+};
+var STANDARD_PRIMARY = { brand: { colors: { primary: { light: "#2563EB" } } } };
+var here = dirname(fileURLToPath(import.meta.url));
+var standardThemeCandidates = [
+  resolve(here, "../../data/default-theme.json"),
+  resolve(here, "../data/default-theme.json")
+];
+var standardThemeCache;
+function loadStandardTheme() {
+  if (!standardThemeCache) {
+    const path = standardThemeCandidates.find((candidate) => existsSync(candidate));
+    if (!path) {
+      throw new Error(`standard theme file not found (looked in ${standardThemeCandidates.join(", ")})`);
+    }
+    standardThemeCache = JSON.parse(readFileSync(path, "utf8"));
+  }
+  return standardThemeCache;
+}
+var derivedThemeSchema = external_exports.object({
+  name: external_exports.string().trim().min(5).max(100),
+  definition: themeDefinition
+}).strict();
+async function resolveTheme(client, choice) {
+  const themes2 = await client.listAppThemes();
+  if (process.env.MCP_AGENT_PACK_LOOK === "own" && (choice === "standard" || choice === "workspace_default")) {
+    const basic = themes2.find((theme) => theme.isBasic && !theme.isDisabled);
+    if (basic)
+      return basic;
+  }
+  const wanted = choice === "standard" ? loadStandardTheme() : typeof choice === "object" ? choice : void 0;
+  if (wanted) {
+    const existing = themes2.find((theme) => theme.name === wanted.name && !theme.isDisabled);
+    if (existing)
+      return existing;
+    return client.createAppTheme({ name: wanted.name, definition: wanted.definition, isDefault: false });
+  }
+  const named = themes2.find((theme) => theme.name === choice || theme.id === choice);
+  if (!named)
+    throw new Error(`Theme "${String(choice)}" is not available in the active workspace.`);
+  if (named.isDisabled)
+    throw new Error(`Theme "${named.name}" is disabled and cannot be selected.`);
+  return named;
+}
+function createAppTool(client) {
+  return {
+    name: "create_app",
+    title: "Create App",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: false
+    },
+    description: 'Create a new ToolJet app with a first version and home page. Returns app_id, version_id, home_page_id, editor_url, viewer_url, datasources_url, app_url (a backward-compatible alias for editor_url), and the theme that was applied. Honor explicit or selected themes first. Otherwise derive a theme from a brand, industry or customer type (see references/themes.md) and pass theme:{name, definition}; include complete brand, text, border, systemStatus and surface tokens with light/dark values, not a font-only or partial definition. It is created once per workspace by name and applied. Otherwise the app gets the standard theme ("ToolJet Modern": neutral greys, hairline borders, 8/6/12 radii, blue primary). Pass theme:"workspace_default" to leave the app on the workspace default, or an existing theme name/id to reuse one. No theme is ever set as the workspace default. If a theme cannot be created (for example a licence gate) the app is still created and the result carries a theme warning. New apps are built in ToolJet UI 2.0 (component_library "ui2": types starting with Shad, laid out in FlexContainers); pass component_library "ui1" only when the user asks for the classic ToolJet widgets. For a Code mode app (React code, built with the code_app_* tools) pass build_mode "code": the build mode is fixed when the app is created, so an app created without it stays visual. A Code mode app takes no theme, component_library or component_pack (its look lives in its code); call code_app_scaffold with its app_id next.',
+    inputSchema: {
+      name: external_exports.string().min(1),
+      theme: external_exports.union([external_exports.string().min(1), derivedThemeSchema]).optional(),
+      app_mode: external_exports.enum(["light", "dark"]).optional().describe("Open the app in this mode. Pass 'dark' when the request asks for a dark app, so the theme's dark values paint every surface; never paint dark backgrounds by hand on a light-mode app."),
+      component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in, saved on the app (the components panel lists it). Default "ui2", ToolJet UI 2.0; "ui1" (ToolJet UI 1.0, the native widgets) only when the user asks for it.'),
+      library_selection: external_exports.string().optional().describe("Exact picker value published in the workspace catalog; use for a named pack or custom library."),
+      component_pack: external_exports.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION),
+      build_mode: external_exports.enum(["visual", "code"]).optional().describe('How the app is built, fixed at creation. Default "visual" (ToolJet components on the canvas). "code" makes a Code mode app: React code written with the code_app_* tools. Ask the user which they want when the request does not say.')
+    },
+    async handler(args) {
+      try {
+        if (args.build_mode === "code") {
+          const cliProblem = await codeCliProblem();
+          if (cliProblem)
+            return fail(new Error(cliProblem));
+          const created2 = await client.createApp(args.name, { buildMode: "code" });
+          const ignored = ["theme", "app_mode", "component_library", "component_pack", "library_selection"].filter((k) => args[k] !== void 0);
+          return ok({
+            ...created2,
+            ...ignored.length ? { note: `Not applied to a Code mode app: ${ignored.join(", ")}. Its look is set in its code (frontend/styles/theme.css).` } : {},
+            next: "code_app_scaffold with this app_id."
+          });
+        }
+        if (typeof args.theme === "object")
+          derivedThemeSchema.parse(args.theme);
+        const savedLibrary = args.library_selection === void 0 ? savedComponentLibrary(args.component_library ?? "ui2", args.component_pack) : checkedLibrarySelection(args.library_selection, args.component_library, args.component_pack);
+        const created = await client.createApp(args.name);
+        const componentLibrary = args.component_library ?? "ui2";
+        const choice = args.theme ?? "standard";
+        const result = {
+          ...created,
+          component_library: componentLibrary,
+          ...args.library_selection ? { library_selection: args.library_selection } : {},
+          ...!args.library_selection && componentLibrary === "ui2" && (args.component_pack || defaultPack()) ? { component_pack: (args.component_pack || defaultPack()).toLowerCase() } : {},
+          theme: { mode: "workspace_default" }
+        };
+        const saveLibrary = () => Promise.resolve().then(() => client.updateAppSettings({
+          appId: created.app_id,
+          versionId: created.version_id,
+          globalSettings: { componentLibrary: savedLibrary }
+        })).catch((libraryErr) => {
+          result.component_library_warning = `Could not save component_library "${savedLibrary}": ${libraryErr instanceof Error ? libraryErr.message : String(libraryErr)}. ` + (args.library_selection ? "Retry update_app_settings on this version before placing components." : "Build in it anyway.");
+        });
+        if (choice === "workspace_default") {
+          await saveLibrary();
+          return ok(result);
+        }
+        const label = typeof choice === "object" ? choice.name : choice;
+        try {
+          const theme = await resolveTheme(client, choice);
+          const appMode = args.app_mode ?? (typeof choice === "object" && paintsDarkCanvasInLightMode(choice.definition) ? "dark" : void 0);
+          await client.updateAppSettings({
+            appId: created.app_id,
+            versionId: created.version_id,
+            globalSettings: { theme, componentLibrary: savedLibrary, ...appMode ? { appMode } : {} }
+          });
+          const mode = choice === "standard" ? "standard" : typeof choice === "object" ? "derived" : "named";
+          const accentNote = mode === "standard" ? accentWarning(STANDARD_PRIMARY) : mode === "derived" ? accentWarning(choice.definition) : null;
+          result.theme = { mode, id: theme.id, name: theme.name, ...appMode ? { app_mode: appMode } : {}, ...accentNote ? { accent_note: accentNote } : {} };
+        } catch (themeErr) {
+          await saveLibrary();
+          result.theme = {
+            mode: "workspace_default",
+            warning: `Could not apply theme "${label}": ${themeErr instanceof Error ? themeErr.message : String(themeErr)}. The app was created on the workspace default theme.`
+          };
+        }
+        return ok(result);
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  };
+}
+var THEME_LICENCE_USER_MESSAGE = "Custom themes are not included in your current ToolJet plan, so this app uses the workspace default theme. Upgrading your plan enables branded themes; the app can be re-themed in one request afterwards.";
 async function applyToApp(client, theme, args, definition2) {
   if (!args.app_id || !args.version_id)
     return void 0;
-  const dark = paintsDarkCanvasInLightMode(definition2);
+  const mode = args.app_mode ?? (paintsDarkCanvasInLightMode(definition2) ? "dark" : void 0);
   await client.updateAppSettings({
     appId: args.app_id,
     versionId: args.version_id,
-    globalSettings: { theme, ...dark ? { appMode: "dark" } : {} }
+    globalSettings: { theme, ...mode ? { appMode: mode } : {} }
   });
-  return { app_id: args.app_id, version_id: args.version_id, ...dark ? { app_mode: "dark" } : {} };
+  return { app_id: args.app_id, version_id: args.version_id, ...mode ? { app_mode: mode } : {} };
+}
+var hex = (h, s, l) => {
+  const channel = (n) => {
+    const k = (n + h / 30) % 12;
+    return Math.round(255 * (l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, "0");
+  };
+  return `#${channel(0)}${channel(8)}${channel(4)}`;
+};
+function definitionFromChoices(args) {
+  const accent = args.primary ? hsl(args.primary) : null;
+  if (!args.primary || !accent)
+    return void 0;
+  const { h, s: sat, l } = accent;
+  const pair = (light, dark, hue = h) => ({ light: hex(hue, light[0], light[1]), dark: hex(hue, dark[0], dark[1]) });
+  const base = loadStandardTheme().definition;
+  const radius = args.radius ?? base.border.radius.default;
+  return {
+    brand: {
+      colors: {
+        primary: { light: args.primary, dark: hex(h, sat, Math.max(l, 0.62)) },
+        secondary: pair([0.45, 0.22], [0.4, 0.78]),
+        tertiary: pair([0.65, 0.42], [0.65, 0.68], (h + 35) % 360)
+      }
+    },
+    text: {
+      font: args.font ?? base.text.font,
+      colors: { primary: pair([0.28, 0.13], [0.18, 0.94]), placeholder: pair([0.12, 0.45], [0.1, 0.65]), disabled: pair([0.1, 0.68], [0.08, 0.45]) }
+    },
+    border: {
+      radius: { default: radius, small: Math.max(radius - 2, 0), large: radius + 4 },
+      colors: { default: pair([0.22, 0.86], [0.12, 0.24]), weak: pair([0.24, 0.91], [0.12, 0.19]), disabled: pair([0.16, 0.82], [0.1, 0.28]) }
+    },
+    systemStatus: base.systemStatus,
+    surface: {
+      colors: {
+        appBackground: pair([0.3, 0.965], [0.16, 0.075]),
+        surface1: { light: "#ffffff", dark: hex(h, 0.14, 0.11) },
+        surface2: pair([0.28, 0.94], [0.13, 0.145]),
+        surface3: pair([0.24, 0.9], [0.12, 0.19])
+      }
+    }
+  };
 }
 function requireValue(value, label) {
   if (value === void 0)
@@ -2965,17 +3999,21 @@ function manageThemeTool(client) {
       destructiveHint: true,
       openWorldHint: false
     },
-    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. create with app_id and version_id also applies the theme to that app (in dark mode when its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same name, so there is no need to list themes first. Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass include_definitions:true (or theme_id) to get a definition.",
+    description: "Manage workspace theme objects through ToolJet's typed theme API. Actions: list, create, set_default, update_definition, rename, delete. Definitions contain brand, text, border, systemStatus, and surface tokens with light/dark values. create with app_id and version_id also applies the theme to that app (in app_mode, else in dark mode when its light-mode canvas is dark), so a new app needs no update_app_settings call; create reuses a theme of the same name, so there is no need to list themes first. Delete requires confirm:true after exact-target approval. list returns id, name and flags only; pass include_definitions:true (or theme_id) to get a definition.",
     inputSchema: {
       action: external_exports.enum(["list", "create", "set_default", "update_definition", "rename", "delete"]),
       theme_id: external_exports.string().uuid().optional(),
       name: external_exports.string().trim().min(1).max(100).optional(),
+      primary: external_exports.string().regex(/^#[0-9a-fA-F]{6}$/).optional().describe("create: the accent colour as a hex. With font and radius, this is all a theme needs; the rest is derived from its hue"),
+      font: external_exports.string().trim().min(1).max(100).optional().describe("create, with primary: one font family name"),
+      radius: external_exports.number().min(0).max(32).optional().describe("create, with primary: corner radius in px"),
       definition: themeDefinition.optional(),
       is_default: external_exports.boolean().optional(),
       confirm: external_exports.boolean().optional(),
       include_definitions: external_exports.boolean().optional(),
       app_id: external_exports.string().uuid().optional().describe("create only: apply the theme to this app as well"),
-      version_id: external_exports.string().uuid().optional().describe("create only, with app_id: the app version to apply it to")
+      version_id: external_exports.string().uuid().optional().describe("create only, with app_id: the app version to apply it to"),
+      app_mode: external_exports.enum(["light", "dark"]).optional().describe("create only, with app_id: open the app in this mode. Pass 'dark' when the request asks for a dark app: the theme's dark values then paint every surface, and ToolJet's own parts (tables, inputs) draw for them. Never paint dark backgrounds by hand on a light-mode app.")
     },
     async handler(args) {
       try {
@@ -2988,17 +4026,23 @@ function manageThemeTool(client) {
             return one ? ok({ themes: [one] }) : fail(new Error(`Theme "${args.theme_id}" not found.`));
           }
           return ok({
-            themes: themes2.map(({ id, name: name2, isDefault, isBasic, isDisabled }) => ({ id, name: name2, isDefault, isBasic, isDisabled })),
+            themes: themes2.map(({ id: id2, name, isDefault, isBasic, isDisabled }) => ({ id: id2, name, isDefault, isBasic, isDisabled })),
             note: "Definitions omitted; pass include_definitions:true or theme_id to read one."
           });
         }
         if (args.action === "create") {
-          const name2 = requireValue(args.name, "name");
-          if (name2.length < 5)
+          const missing = [
+            ...args.name === void 0 ? ['name (at least 5 characters, the brand or app, e.g. "Harbor Ledger")'] : [],
+            ...args.definition === void 0 && !definitionFromChoices(args) ? ['primary (the accent as a hex colour, e.g. "#0f766e"; font and radius are optional)'] : []
+          ];
+          if (missing.length)
+            throw new Error(`manage_theme create needs ${missing.join(" and ")}. Send them together in one call.`);
+          const name = requireValue(args.name, "name");
+          if (name.length < 5)
             throw new Error("Theme name must contain at least 5 characters.");
-          if (name2 === "ToolJet")
+          if (name === "ToolJet")
             throw new Error('The reserved theme name "ToolJet" cannot be used.');
-          const existing = (await client.listAppThemes()).find((theme) => theme.name === name2 && !theme.isDisabled);
+          const existing = (await client.listAppThemes()).find((theme) => theme.name === name && !theme.isDisabled);
           if (existing) {
             const applied = await applyToApp(client, existing, args, existing.definition ?? args.definition);
             return ok({
@@ -3006,18 +4050,20 @@ function manageThemeTool(client) {
               reused: true,
               ...applied ? { applied } : {},
               warnings: [
-                `Theme "${name2}" already exists in this workspace; returned it instead of creating a duplicate. ` + (applied ? "It is applied to the app." : "Apply it with update_app_settings, or use update_definition to change it.")
+                `Theme "${name}" already exists in this workspace; returned it instead of creating a duplicate. ` + (applied ? "It is applied to the app." : "Apply it with update_app_settings, or use update_definition to change it.")
               ]
             });
           }
           try {
+            const definition2 = requireValue(args.definition ?? definitionFromChoices(args), "primary (a hex colour; font and radius are optional)");
             const created = await client.createAppTheme({
-              name: name2,
-              definition: requireValue(args.definition, "definition"),
+              name,
+              definition: definition2,
               isDefault: args.is_default ?? false
             });
-            const applied = await applyToApp(client, created, args, args.definition);
-            return ok({ theme: created, ...applied ? { applied } : {} });
+            const applied = await applyToApp(client, created, args, definition2);
+            const accent = accentWarning(definition2);
+            return ok({ theme: created, ...applied ? { applied } : {}, ...accent ? { warnings: [accent] } : {} });
           } catch (error) {
             if (error instanceof ToolJetHttpError && error.status === 451) {
               return ok({
@@ -3040,7 +4086,8 @@ function manageThemeTool(client) {
         }
         if (args.action === "update_definition") {
           await client.updateAppThemeDefinition(themeId, requireValue(args.definition, "definition"));
-          return ok({ theme: await readTheme(client, themeId) });
+          const accent = accentWarning(args.definition);
+          return ok({ theme: await readTheme(client, themeId), ...accent ? { warnings: [accent] } : {} });
         }
         if (args.action === "rename") {
           await client.renameAppTheme(themeId, requireValue(args.name, "name"));
@@ -3071,9 +4118,9 @@ var themes = [
     action: "create",
     name: "create_workspace_theme",
     title: "Create Workspace Theme",
-    description: "Create a custom workspace theme, or reuse an existing active theme of the same name. Supply a name of at least five characters and a full definition for a new theme. is_default can replace the workspace default. With both app_id and version_id, applies it to that app and selects dark mode for a dark light-mode canvas. License gates apply.",
+    description: "Create a custom workspace theme, or reuse an existing active theme of the same name. Supply a name of at least five characters and either a full definition or primary (a hex accent), with optional font and radius, for a new theme. is_default can replace the workspace default. With both app_id and version_id, applies it to that app and selects dark mode for a dark light-mode canvas. License gates apply.",
     required: ["name"],
-    optional: ["definition", "is_default", "app_id", "version_id"],
+    optional: ["definition", "primary", "font", "radius", "is_default", "app_id", "version_id", "app_mode"],
     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
   },
   {
@@ -3114,1045 +4161,605 @@ function themeActionTools(source) {
   return exposeActions(source, themes);
 }
 createRequire(import.meta.url);
-var listWorkspaceGroupsInput = external_exports.object({
-  group_id: external_exports.string().uuid().optional(),
-  include_permissions: external_exports.boolean().optional(),
-  resource_type: external_exports.enum(["app", "module", "workflow", "data_source"]).optional()
-}).strict();
-function listWorkspaceGroupsTool(client) {
-  return {
-    name: "list_workspace_groups",
-    title: "List Workspace Groups",
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
-    description: "List groups in the workspace pinned to the current connection. OAuth connections require the workspace_users scope. Supply group_id to list its non-archived members with group_user_id (membership id, distinct from user_id and organization_user_id). Use include_permissions:true with group_id to read permission switches and granular access rules. Use resource_type (app/module/workflow/data_source) to discover selectable resources and their names/IDs. Use exact returned ids for group changes. Requires ToolJet admin permissions.",
-    inputSchema: listWorkspaceGroupsInput.shape,
-    async handler(input) {
-      try {
-        const args = listWorkspaceGroupsInput.parse(input);
-        if (args.include_permissions && !args.group_id)
-          throw new Error("group_id is required with include_permissions.");
-        const resources = args.resource_type ? { resources: await client.listWorkspaceGroupResources(args.resource_type) } : {};
-        if (!args.group_id)
-          return ok({ ...args.resource_type ? {} : { groups: await client.listWorkspaceGroups() }, ...resources });
-        const group = await client.getWorkspaceGroup(args.group_id);
-        return ok({
-          group,
-          members: await client.listWorkspaceGroupMembers(args.group_id),
-          ...resources,
-          ...args.include_permissions ? { access_rules: await client.listWorkspaceGroupAccess(args.group_id) } : {}
+var CODE_PAGE_TRUE = /* @__PURE__ */ new Set([true, "true", "{{true}}"]);
+function codeScreens(summary) {
+  const pageIds = new Set(summary.pages.map((page2) => page2.id));
+  const screens = [];
+  for (const page2 of summary.pages) {
+    for (const component of page2.components) {
+      const props = component.properties ?? {};
+      if (component.parent || !CODE_PAGE_TRUE.has(props.codePage?.value))
+        continue;
+      let routes = props.routes?.value;
+      if (typeof routes === "string") {
+        try {
+          routes = JSON.parse(routes);
+        } catch {
+          routes = [];
+        }
+      }
+      if (!Array.isArray(routes))
+        continue;
+      for (const route of routes) {
+        if (typeof route?.id !== "string" || typeof route?.path !== "string")
+          continue;
+        if (typeof route.pageId !== "string" || !pageIds.has(route.pageId))
+          continue;
+        screens.push({
+          route_id: route.id,
+          path: route.path,
+          ...typeof route.title === "string" ? { title: route.title } : {},
+          page_id: route.pageId,
+          code_page_id: page2.id
         });
-      } catch (error) {
-        return fail(error);
       }
     }
-  };
+  }
+  return screens;
 }
-var manageWorkspaceGroupsInput = external_exports.object({
-  action: external_exports.enum(["create", "rename", "delete", "remove_member", "duplicate", "update_permissions", "create_access", "update_access", "delete_access"]),
-  group_id: external_exports.string().uuid().optional(),
-  name: external_exports.string().trim().min(1).max(50).optional(),
-  group_user_id: external_exports.string().uuid().optional(),
-  confirm: external_exports.boolean().optional(),
-  permissions: external_exports.object(Object.fromEntries(WORKSPACE_PERMISSION_KEYS.map((key) => [key, external_exports.boolean().optional()]))).strict().optional(),
-  copy: external_exports.object({
-    permissions: external_exports.boolean().optional(),
-    members: external_exports.boolean().optional(),
-    apps: external_exports.boolean().optional(),
-    modules: external_exports.boolean().optional(),
-    workflows: external_exports.boolean().optional(),
-    data_sources: external_exports.boolean().optional()
-  }).strict().optional(),
-  rule_id: external_exports.string().uuid().optional(),
-  resource_type: external_exports.enum(["app", "module", "workflow", "data_source"]).optional(),
-  access: external_exports.object({
-    name: external_exports.string().trim().min(1).max(255).optional(),
-    is_all: external_exports.boolean().optional(),
-    actions: external_exports.object(Object.fromEntries(WORKSPACE_ACCESS_KEYS.map((key) => [key, external_exports.boolean().optional()]))).strict().optional(),
-    resource_ids: external_exports.array(external_exports.string().uuid()).max(1e3).optional(),
-    add_resource_ids: external_exports.array(external_exports.string().uuid()).min(1).max(1e3).optional(),
-    remove_resource_ids: external_exports.array(external_exports.string().uuid()).min(1).max(1e3).optional()
-  }).strict().optional(),
-  allow_role_change: external_exports.boolean().optional()
-}).strict();
-function manageWorkspaceGroupsTool(client) {
-  return {
-    name: "manage_workspace_groups",
-    title: "Manage Workspace Groups",
-    strictInput: true,
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
-    description: "Create, rename, delete custom groups or remove a member in the workspace pinned to the current connection. OAuth connections require the workspace_users scope. All actions require confirm:true after reviewing the exact change. create needs name; rename needs group_id and name; delete needs group_id; remove_member needs group_id and group_user_id from list_workspace_groups. Removing membership does not delete the workspace user. Deleting a group removes its memberships and permissions. duplicate needs group_id and at least one true copy flag (permissions/members/apps/modules/workflows/data_sources; omitted flags false); ToolJet assigns the copy name. update_permissions needs group_id and permissions (only supplied switches change). create_access needs group_id, resource_type and access {name,is_all,actions,resource_ids}; update_access needs group_id, rule_id and access (only supplied fields change); delete_access needs group_id and rule_id. For update/delete access, optional resource_type must match the existing rule. Read include_permissions:true first to resolve rule IDs; resource_type discovers selectable resource IDs. On update_access, use access.add_resource_ids/remove_resource_ids to change only those resources and preserve the rest. access.resource_ids is only for an explicitly requested replacement of the entire rule selection; do not combine it with add/remove_resource_ids. Resource additions/removals require a selected-resource rule; is_all:true applies to ALL current and future resources of its type. On create_access, omitted action switches are disabled. App actions: canEdit/canView/hideFromDashboard/canAccessDevelopment/canAccessStaging/canAccessProduction/canAccessReleased. Module actions: canEdit/canView/hideFromDashboard. Workflow actions: canEdit/canView. Data source actions: canConfigure/canUse. canEdit/canView and canConfigure/canUse are exclusive pairs: enabling one disables the other, including on partial updates. Disabled groups and read_only rules are not editable under the current license/plan. allow_role_change is only for permission updates and access updates, and only with explicit consent to change affected member roles. Admin permissions cannot be changed; default group names/memberships cannot be changed here. To add members use manage_workspace_users with group_ids. ToolJet admin and license checks apply.",
-    inputSchema: manageWorkspaceGroupsInput.shape,
-    async handler(input) {
-      try {
-        const args = manageWorkspaceGroupsInput.parse(input);
-        if (args.confirm !== true)
-          throw new Error(`${args.action} requires confirm:true after reviewing the exact change.`);
-        const needsName = args.action === "create" || args.action === "rename";
-        if (needsName !== (args.name !== void 0))
-          throw new Error(needsName ? "name is required." : "name must be omitted.");
-        if (args.action !== "create" !== (args.group_id !== void 0)) {
-          throw new Error(args.action === "create" ? "group_id must be omitted for create." : "group_id is required.");
-        }
-        if (args.action === "remove_member" !== (args.group_user_id !== void 0)) {
-          throw new Error(args.action === "remove_member" ? "group_user_id is required." : "group_user_id must be omitted.");
-        }
-        const expected = {
-          duplicate: ["copy"],
-          update_permissions: ["permissions", "allow_role_change"],
-          create_access: ["resource_type", "access"],
-          update_access: ["rule_id", "access", "allow_role_change", "resource_type"],
-          delete_access: ["rule_id", "resource_type"]
+function findScreen(summary, route) {
+  const screens = codeScreens(summary);
+  const screen = screens.find((s) => s.route_id === route) ?? screens.find((s) => s.path === route);
+  if (screen)
+    return screen;
+  throw new Error(`No Code mode screen "${route}" in app "${summary.app_id}". ` + (screens.length ? `Its screens: ${screens.map((s) => `${s.route_id} (${s.path})`).join(", ")}.` : "The app has no Code mode screens."));
+}
+function findQuery(summary, ref) {
+  const lower = ref.toLowerCase();
+  return summary.queries.find((q) => q.id === ref) ?? summary.queries.find((q) => q.name === ref) ?? summary.queries.find((q) => q.name?.toLowerCase() === lower);
+}
+function isCodeApp(summary) {
+  return summary.pages.some((page2) => page2.components.some((component) => {
+    const props = component.properties ?? {};
+    return !component.parent && CODE_PAGE_TRUE.has(props.codePage?.value);
+  }));
+}
+function findResource(summary, resourceType, resourceId) {
+  if (resourceType === "page") {
+    const page2 = summary.pages.find((candidate) => candidate.id === resourceId) ?? summary.pages.find((candidate) => candidate.name === resourceId);
+    if (page2)
+      return { type: resourceType, id: page2.id, name: page2.name };
+  } else if (resourceType === "query") {
+    const query2 = findQuery(summary, resourceId);
+    if (query2)
+      return { type: resourceType, id: query2.id, name: query2.name };
+  } else {
+    for (const page2 of summary.pages) {
+      const component = page2.components.find((candidate) => candidate.id === resourceId);
+      if (component) {
+        return {
+          type: resourceType,
+          id: component.id,
+          name: component.name,
+          component_type: component.type,
+          page_id: page2.id,
+          page_name: page2.name
         };
-        for (const key of ["copy", "permissions", "resource_type", "access", "rule_id", "allow_role_change"]) {
-          if (args[key] !== void 0 && !expected[args.action]?.includes(key))
-            throw new Error(`${key} must be omitted for ${args.action}.`);
-        }
-        for (const key of expected[args.action] ?? []) {
-          if (key !== "allow_role_change" && !(key === "resource_type" && args.action !== "create_access") && args[key] === void 0)
-            throw new Error(`${key} is required.`);
-        }
-        if (args.permissions && !Object.keys(args.permissions).length)
-          throw new Error("permissions must contain at least one switch.");
-        if (args.access && !Object.keys(args.access).length)
-          throw new Error("access must contain at least one change.");
-        if (args.action === "create")
-          return ok({ group: await client.createWorkspaceGroup(args.name) });
-        const group = await client.getWorkspaceGroup(args.group_id);
-        if (group.disabled === true)
-          throw new Error(`Group "${group.name}" is read-only under the current license/plan.`);
-        const permissionAction = ["update_permissions", "create_access", "update_access", "delete_access"].includes(args.action);
-        if (group.type !== "custom" && args.action !== "duplicate" && !(permissionAction && group.name !== "admin")) {
-          throw new Error("Only custom groups can be changed with this tool.");
-        }
-        if (args.action === "duplicate") {
-          const copy = args.copy;
-          if (!Object.values(copy).some((value) => value === true))
-            throw new Error("Select at least one category to duplicate.");
-          return ok({ group: await client.duplicateWorkspaceGroup(group.id, {
-            addPermission: copy.permissions ?? false,
-            addUsers: copy.members ?? false,
-            addApps: copy.apps ?? false,
-            addModules: copy.modules ?? false,
-            addWorkflows: copy.workflows ?? false,
-            addDataSource: copy.data_sources ?? false
-          }) });
-        }
-        if (args.action === "update_permissions") {
-          await client.updateWorkspaceGroupPermissions(group.id, args.permissions, args.allow_role_change);
-          return ok({ group: await client.getWorkspaceGroup(group.id), updated: true });
-        }
-        if (["create_access", "update_access", "delete_access"].includes(args.action)) {
-          const rules = await client.listWorkspaceGroupAccess(group.id);
-          const rule = args.rule_id ? rules.find((item) => item.id === args.rule_id) : void 0;
-          if (args.rule_id && !rule)
-            throw new Error("Access rule not found in this group. Read include_permissions:true again.");
-          if (rule?.read_only)
-            throw new Error(rule.read_only_reason || "This access rule is read-only under the current license/plan.");
-          if (rule && args.resource_type && args.resource_type !== rule.type)
-            throw new Error("resource_type does not match this access rule.");
-          const type = rule?.type ?? args.resource_type;
-          if (args.action === "delete_access") {
-            await client.writeWorkspaceGroupAccess("DELETE", group.id, type, rule.id);
-            return ok({ group_id: group.id, name: group.name, rule_id: rule.id, rule_name: rule.name, deleted: true });
-          }
-          const access = args.access;
-          const creating = args.action === "create_access";
-          const delta = access.add_resource_ids !== void 0 || access.remove_resource_ids !== void 0;
-          if (delta && (creating || access.resource_ids !== void 0 || access.is_all !== void 0)) {
-            throw new Error("Resource additions/removals only update an existing selected-resource rule; do not combine them with resource_ids or is_all.");
-          }
-          if (creating && (!access.name || access.is_all === void 0 || !access.actions)) {
-            throw new Error("create_access requires access.name, is_all and actions.");
-          }
-          const actionKeys = workspaceAccessKeys(type);
-          if (access.actions && (!Object.keys(access.actions).length || Object.keys(access.actions).some((key) => !actionKeys.includes(key)))) {
-            throw new Error(`Invalid actions for ${type}. Use ${actionKeys.join(", ")}.`);
-          }
-          const all = access.is_all ?? rule.is_all;
-          const currentIds = rule?.resources.map((item) => item.id) ?? [];
-          if (delta && all)
-            throw new Error("An all-resource rule cannot add/remove individual resources. Explicitly choose a replacement selected-resource scope instead.");
-          if (delta && (new Set(access.add_resource_ids).size !== (access.add_resource_ids?.length ?? 0) || new Set(access.remove_resource_ids).size !== (access.remove_resource_ids?.length ?? 0) || access.add_resource_ids?.some((id) => access.remove_resource_ids?.includes(id)) || access.remove_resource_ids?.some((id) => !currentIds.includes(id)))) {
-            throw new Error("Use unique, non-overlapping resource additions/removals; removed resources must belong to this rule.");
-          }
-          const selected = delta ? [.../* @__PURE__ */ new Set([...currentIds.filter((id) => !access.remove_resource_ids?.includes(id)), ...access.add_resource_ids ?? []])] : access.resource_ids ?? (all ? [] : currentIds);
-          if (new Set(selected).size !== selected.length || all && selected.length || !all && !selected.length) {
-            throw new Error("Use unique resource_ids for a selected-resource rule; omit them or use [] for is_all:true.");
-          }
-          if (access.resource_ids || access.add_resource_ids || creating || rule?.is_all && !all) {
-            const available = await client.listWorkspaceGroupResources(type);
-            if (selected.some((id) => !available.some((item) => item.id === id)))
-              throw new Error("Resource not found in this workspace/resource type.");
-          }
-          const resourceKey = type === "data_source" ? "dataSourceId" : "appId";
-          const actions = { ...creating ? Object.fromEntries(actionKeys.map((key) => [key, false])) : rule.actions, ...access.actions };
-          const [primary, secondary] = type === "data_source" ? ["canConfigure", "canUse"] : ["canEdit", "canView"];
-          if (access.actions?.[primary] === true && access.actions?.[secondary] === void 0)
-            actions[secondary] = false;
-          if (access.actions?.[secondary] === true && access.actions?.[primary] === void 0)
-            actions[primary] = false;
-          if (actions[primary] && actions[secondary])
-            throw new Error(`${primary} and ${secondary} cannot both be enabled.`);
-          if (creating) {
-            await client.writeWorkspaceGroupAccess("POST", group.id, type, void 0, {
-              name: access.name,
-              type,
-              groupId: group.id,
-              isAll: all,
-              createResourcePermissionObject: {
-                ...type === "data_source" ? { action: actions } : actions,
-                resourcesToAdd: selected.map((id) => ({ [resourceKey]: id }))
-              }
-            });
-          } else {
-            const current = rule.resources;
-            await client.writeWorkspaceGroupAccess("PUT", group.id, type, rule.id, {
-              ...access.name !== void 0 ? { name: access.name } : {},
-              isAll: all,
-              actions,
-              resourcesToAdd: selected.filter((id) => !current.some((item) => item.id === id)).map((id) => ({ [resourceKey]: id })),
-              resourcesToDelete: current.filter((item) => !selected.includes(item.id)).map((item) => ({ id: item.membership_id })),
-              allowRoleChange: args.allow_role_change ?? false
-            });
-          }
-          return ok({ group_id: group.id, name: group.name, access_rules: await client.listWorkspaceGroupAccess(group.id) });
-        }
-        if (args.action === "rename") {
-          await client.renameWorkspaceGroup(group.id, args.name);
-          return ok({ group_id: group.id, name: args.name, renamed: true });
-        }
-        if (args.action === "delete") {
-          await client.deleteWorkspaceGroup(group.id);
-          return ok({ group_id: group.id, name: group.name, deleted: true });
-        }
-        const members = await client.listWorkspaceGroupMembers(group.id);
-        if (!members.some((member) => member.group_user_id === args.group_user_id)) {
-          throw new Error("Membership not found in this group. Use list_workspace_groups with group_id for current member ids.");
-        }
-        await client.removeWorkspaceGroupMember(args.group_user_id);
-        return ok({ group_id: group.id, group_user_id: args.group_user_id, removed: true });
-      } catch (error) {
-        return fail(error);
       }
     }
-  };
-}
-var groupBoundary = " Requires confirm:true for the exact change, workspace_users OAuth scope, and ToolJet admin permissions. License restrictions apply.";
-var accessBehavior = " App actions: canEdit/canView/hideFromDashboard/canAccessDevelopment/canAccessStaging/canAccessProduction/canAccessReleased; module: canEdit/canView/hideFromDashboard; workflow: canEdit/canView; data_source: canConfigure/canUse. canEdit/canView and canConfigure/canUse are exclusive pairs; enabling one disables the other. is_all:true includes current and future resources.";
-var workspaceGroups = [
-  {
-    action: "create",
-    name: "create_workspace_group",
-    title: "Create Workspace Group",
-    description: "Create an empty custom group in the pinned workspace." + groupBoundary,
-    required: ["name", "confirm"],
-    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false }
-  },
-  {
-    action: "rename",
-    name: "rename_workspace_group",
-    title: "Rename Workspace Group",
-    description: "Rename an existing custom group. Default group names cannot be changed." + groupBoundary,
-    required: ["group_id", "name", "confirm"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  },
-  {
-    action: "delete",
-    name: "delete_workspace_group",
-    title: "Delete Workspace Group",
-    description: "Delete an existing custom group, including its memberships and permissions. Cannot delete default groups." + groupBoundary,
-    required: ["group_id", "confirm"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  },
-  {
-    action: "remove_member",
-    name: "remove_workspace_group_member",
-    title: "Remove Workspace Group Member",
-    description: "Remove one membership from a custom group without deleting the workspace user. group_user_id is the membership ID returned by list_workspace_groups, not a user ID; membership must belong to this group." + groupBoundary,
-    required: ["group_id", "group_user_id", "confirm"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  },
-  {
-    action: "duplicate",
-    name: "duplicate_workspace_group",
-    title: "Duplicate Workspace Group",
-    description: "Duplicate a group with selected categories: permissions, members, apps, modules, workflows, or data_sources. At least one copy flag must be true; omitted flags are false. ToolJet assigns the copy name. Copying members and permissions can grant access through the new group." + groupBoundary,
-    required: ["group_id", "copy", "confirm"],
-    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false }
-  },
-  {
-    action: "update_permissions",
-    name: "update_workspace_group_permissions",
-    title: "Update Workspace Group Permissions",
-    description: "Update only supplied permission switches on a group. Admin permissions cannot be changed. allow_role_change requires explicit consent to change affected member roles." + groupBoundary,
-    required: ["group_id", "permissions", "confirm"],
-    optional: ["allow_role_change"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  },
-  {
-    action: "create_access",
-    name: "create_workspace_group_access",
-    title: "Create Workspace Group Access Rule",
-    description: "Create a granular group access rule for the selected resource type. access requires name, is_all, and actions; selected-resource rules also need resource_ids from list_workspace_groups. Omitted action switches are disabled." + accessBehavior + groupBoundary,
-    required: ["group_id", "resource_type", "access", "confirm"],
-    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false }
-  },
-  {
-    action: "update_access",
-    name: "update_workspace_group_access",
-    title: "Update Workspace Group Access Rule",
-    description: "Update an existing rule belonging to this group; read IDs with list_workspace_groups include_permissions:true. Only supplied fields change. add_resource_ids/remove_resource_ids preserve other selections and require a selected-resource rule; do not combine with resource_ids or is_all. resource_ids replaces the entire selection. Optional resource_type must match the rule. allow_role_change needs explicit role-change consent." + accessBehavior + groupBoundary,
-    required: ["group_id", "rule_id", "access", "confirm"],
-    optional: ["resource_type", "allow_role_change"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  },
-  {
-    action: "delete_access",
-    name: "delete_workspace_group_access",
-    title: "Delete Workspace Group Access Rule",
-    description: "Delete a granular access rule belonging to this group. Read rule IDs with list_workspace_groups include_permissions:true. Optional resource_type must match. Read-only rules cannot be deleted." + groupBoundary,
-    required: ["group_id", "rule_id", "confirm"],
-    optional: ["resource_type"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
   }
-];
-function workspaceGroupActionTools(source) {
-  return exposeActions(source, workspaceGroups);
+  throw new Error(`${resourceType} "${resourceId}" does not belong to app "${summary.app_id}". Use get_app_summary and do not guess resource ids.`);
 }
-createRequire(import.meta.url);
-var requestSchema = external_exports.object({
-  method: external_exports.string().min(1),
-  schema: external_exports.string().optional(),
-  table: external_exports.string().optional(),
-  search: external_exports.string().optional(),
-  page: external_exports.number().int().positive().optional(),
-  limit: external_exports.number().int().positive().max(1e3).optional(),
-  args: external_exports.record(external_exports.string(), external_exports.any()).optional()
-});
-function datasourceMetadataTools(source) {
-  const methods = [
-    ["listDatasets", "list_datasource_datasets", "List Datasource Datasets", "List dataset names in a connected datasource."],
-    ["listTables", "list_datasource_tables", "List Datasource Tables", "List tables or API endpoint paths from a connected datasource; for HubSpot, an omitted schema lists spec groups."],
-    ["listColumns", "list_datasource_columns", "List Datasource Columns", "Read column definitions for one datasource table."],
-    ["getSheets", "list_datasource_sheets", "List Datasource Sheets", "List sheets in a connected spreadsheet datasource."],
-    ["getSpreadsheets", "list_datasource_spreadsheets", "List Datasource Spreadsheets", "List spreadsheets available to a connected datasource."],
-    ["getEndpointSchema", "get_datasource_endpoint_schema", "Get Datasource Endpoint Schema", "Read the request contract for one API endpoint from its specification; never send the endpoint request."],
-    ["listCollections", "list_datasource_collections", "List Datasource Collections", "List collection names in a connected document datasource."],
-    ["listSchemas", "list_datasource_schemas", "List Datasource Schemas", "List database schema names in a connected datasource."],
-    ["getTenants", "list_datasource_tenants", "List Datasource Tenants", "List tenant metadata available through a connected datasource."]
-  ];
-  return exposeActions(source, methods.map(([action, name2, title, description]) => ({
-    action,
-    name: name2,
-    title,
-    description: `${description} Uses the fixed ${action} metadata method, only when the datasource advertises it. Does not execute saved queries, author resources, or invoke the API endpoints described by a returned schema. schema/table/search/page/limit are selectors; args supplies datasource-specific selectors such as spreadsheet ID or endpoint HTTP method.`,
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
-    required: ["version_id", "datasource_id"],
-    optional: ["schema", "table", "search", "page", "limit", "args"]
-  })), "method");
+function normalizePermission(permissions) {
+  const permission = permissions[0];
+  if (!permission)
+    return { access: "all", permission_id: null };
+  if (permission.type === "SINGLE") {
+    return {
+      access: "users",
+      permission_id: permission.id,
+      users: (Array.isArray(permission.users) ? permission.users : []).map((entry) => entry?.user).filter(Boolean).map((user) => ({
+        id: user.id,
+        name: [user.firstName, user.lastName].filter(Boolean).join(" ") || void 0,
+        email: user.email
+      }))
+    };
+  }
+  if (permission.type === "GROUP") {
+    return {
+      access: "groups",
+      permission_id: permission.id,
+      groups: (Array.isArray(permission.groups) ? permission.groups : []).map((entry) => entry?.permissionGroup).filter(Boolean).map((group) => ({ id: group.id, name: group.name }))
+    };
+  }
+  return { access: String(permission.type ?? "unknown").toLowerCase(), permission_id: permission.id };
 }
-function invokeArgs(request) {
-  const customValues = request.args?.values && typeof request.args.values === "object" && !Array.isArray(request.args.values) ? request.args.values : {};
-  const values = {
-    ...customValues,
-    ...request.schema !== void 0 ? { schema: request.schema } : {},
-    ...request.table !== void 0 ? { table: request.table } : {}
-  };
+function planLimits(features) {
+  if (!features)
+    return void 0;
+  const known = Object.entries({
+    query_limits: features.appPermissionQuery,
+    screen_limits: features.appPermissionPages,
+    server_side_current_user: features.serverSideGlobalResolve
+  }).filter(([, value]) => typeof value === "boolean");
+  return known.length ? Object.fromEntries(known) : void 0;
+}
+async function subjectGroups(client, open) {
+  const openIds = new Map(open.map((group) => [group.id, group]));
+  let workspace;
+  try {
+    workspace = await client.listWorkspaceGroups();
+  } catch {
+    workspace = void 0;
+  }
+  if (!workspace) {
+    return {
+      groups: open.map((group) => ({ ...group, can_open_app: true })),
+      complete: false
+    };
+  }
+  const groups = workspace.map((group) => ({
+    id: group.id,
+    name: group.name,
+    type: group.type,
+    ...typeof openIds.get(group.id)?.count === "number" ? { count: openIds.get(group.id).count } : {},
+    can_open_app: openIds.has(group.id),
+    ...group.disabled ? { disabled: true } : {}
+  }));
+  for (const group of open)
+    if (!groups.some((known) => known.id === group.id))
+      groups.push({ ...group, can_open_app: true });
+  return { groups, complete: true };
+}
+function viewRule(appId, appName, groupId) {
   return {
-    ...request.args ?? {},
-    ...Object.keys(values).length ? { values } : {},
-    ...request.search !== void 0 ? { search: request.search } : {},
-    ...request.page !== void 0 ? { page: request.page } : {},
-    ...request.limit !== void 0 ? { limit: request.limit } : {}
-  };
-}
-var specCache = /* @__PURE__ */ new Map();
-function specText(entry) {
-  const raw = entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
-  return typeof raw === "string" ? raw : void 0;
-}
-function parseSpecCached(options) {
-  const key = specText(options.spec) ?? specText(options.definition);
-  if (key === void 0)
-    return extractSpec(options);
-  const hit = specCache.get(key);
-  if (hit)
-    return hit;
-  const parsed = extractSpec(options);
-  if (parsed) {
-    if (specCache.size > 8)
-      specCache.clear();
-    specCache.set(key, parsed);
-  }
-  return parsed;
-}
-function openapiIntrospection(spec, request) {
-  if (request.method === "listTables") {
-    const endpoints = listEndpoints(spec);
-    const host2 = specHost(spec);
-    const header = { total: endpoints.length, ...host2 ? { host: host2 } : {} };
-    if (request.search) {
-      const ranked = rankEndpoints(spec, endpoints, request.search);
-      const limit2 = request.limit ?? 25;
-      return {
-        ...header,
-        search: request.search,
-        matched: ranked.length,
-        ...ranked.length > limit2 ? { returned: limit2 } : {},
-        // Ordered by relevance, not spec order: the caller should read from the top.
-        endpoints: ranked.slice(0, limit2).map(({ score, ...endpoint }) => endpoint),
-        ...ranked.length ? {} : { hint: "No endpoint matched. Retry with a broader term, or omit `search` to see the spec's tags." }
-      };
+    name: `${(appName || "App").slice(0, 40)} (view)`,
+    type: "app",
+    groupId,
+    isAll: false,
+    createResourcePermissionObject: {
+      canEdit: false,
+      canView: true,
+      hideFromDashboard: false,
+      canAccessDevelopment: false,
+      canAccessStaging: false,
+      canAccessProduction: false,
+      canAccessReleased: true,
+      resourcesToAdd: [{ appId }]
     }
-    const limit = request.limit ?? 200;
-    if (endpoints.length > limit) {
-      return {
-        ...header,
-        tags: endpointTagCounts(spec, endpoints),
-        returned: limit,
-        truncated: true,
-        next_step: `This spec has ${endpoints.length} endpoints. Call listTables again with \`search\` describing what you need (a phrase is fine, it is ranked by relevance), or with a tag name from \`tags\`.`,
-        endpoints: endpoints.slice(0, limit)
-      };
-    }
-    return { ...header, endpoints };
-  }
-  const path = request.table ?? (typeof request.args?.path === "string" ? request.args.path : void 0);
-  const method = ["operation", "method", "httpMethod", "http_method", "verb"].map((key) => request.args?.[key]).find((value) => typeof value === "string" && !!value);
-  if (!path || !method) {
-    throw new Error('getEndpointSchema needs the endpoint path and HTTP method: pass the path as `table` and the method as `args.operation` (for example table:"/pets/{petId}", args:{operation:"get"}); `args.httpMethod` and `args.method` are accepted too.');
-  }
-  const result = endpointParameters(spec, path, method);
-  if (!result.found) {
-    throw new Error(`The spec has no ${method.toLowerCase()} operation on path "${path}". Call listTables first.`);
-  }
-  const buckets = {};
-  for (const parameter of result.parameters) {
-    const bucket = parameter.in === "header" ? "params.header" : parameter.in === "path" ? "params.path" : parameter.in === "query" ? "params.query" : `unsupported:${parameter.in}`;
-    (buckets[bucket] ??= []).push(parameter.name);
-  }
-  if (result.requestBody)
-    buckets["params.request"] = ["<request body>"];
-  const operation = method.toLowerCase();
-  const host = specHost(spec);
-  return {
-    path,
-    operation,
-    /* A runnable skeleton, not just a description: copy it and fill the buckets.
-       All four buckets are present even when empty because the plugin destructures every one of
-       them and calls Object.entries(params.path) unguarded — omitting a bucket fails the query with
-       "Cannot convert undefined or null to object" before the request is ever built. */
-    query_options: {
-      ...host ? { host } : {},
-      path,
-      operation,
-      params: { request: {}, query: {}, header: {}, path: {} }
-    },
-    // Which query-option bucket each parameter belongs in, so the caller does not have to infer it.
-    buckets,
-    parameters: result.parameters,
-    ...result.response ? { response: result.response } : {},
-    ...result.requestBody ? { requestBody: result.requestBody } : {},
-    ...host ? {} : { host_warning: 'This spec declares no server URL. The query needs an explicit `host`, or the request fails with "Invalid URL".' }
   };
 }
-function inspectDatasourceSchemaTool(client) {
+async function groupDirectory(client, appId) {
+  const subjects = await client.listAppPermissionSubjects(appId);
+  const { groups, complete } = await subjectGroups(client, subjects.groups);
+  return { groups, complete, openIds: new Set(subjects.groups.map((group) => group.id)) };
+}
+function resolveGroups(directory, refs) {
+  const ids = [];
+  const unknown = [];
+  for (const ref of refs) {
+    const lower = ref.toLowerCase();
+    const group = directory.groups.find((g) => g.id === ref) ?? directory.groups.find((g) => g.name === ref) ?? directory.groups.find((g) => g.name?.toLowerCase() === lower);
+    if (group)
+      ids.push(group.id);
+    else if (!directory.complete && UUID.test(ref))
+      ids.push(ref);
+    else
+      unknown.push(ref);
+  }
+  return { ids: [...new Set(ids)], unknown };
+}
+var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function groupsToGrant(directory, groupIds, grant) {
+  const missing = groupIds.filter((id2) => !directory.openIds.has(id2));
+  if (!missing.length)
+    return [];
+  const byId = new Map(directory.groups.map((group) => [group.id, group]));
+  const names = missing.map((id2) => byId.get(id2)?.name ?? id2);
+  if (!grant) {
+    throw new Error(`${names.join(", ")} cannot open this app yet, so a limit to ${missing.length > 1 ? "them" : "it"} would leave ${missing.length > 1 ? "their" : "its"} members without the screen or query. Pass grant_app_access: true to give each of them view access to this app only (the released app), or give them access in Workspace settings > Groups. Nothing was changed.`);
+  }
+  const disabled = missing.filter((id2) => byId.get(id2)?.disabled);
+  if (disabled.length) {
+    throw new Error(`${disabled.map((id2) => byId.get(id2)?.name ?? id2).join(", ")} cannot be changed under the current plan, so it cannot be given access to this app. Nothing was changed.`);
+  }
+  return missing;
+}
+async function removeGrants(client, appId, granted) {
+  const left = [];
+  for (const grant of granted) {
+    try {
+      const rules = await client.listWorkspaceGroupAccess(grant.group_id);
+      const added = rules.filter((rule) => rule.id && rule.name === grant.rule_name && rule.resources.some((r) => r.id === appId));
+      for (const rule of added)
+        await client.writeWorkspaceGroupAccess("DELETE", grant.group_id, "app", rule.id);
+    } catch {
+      left.push(grant.name ?? grant.group_id);
+    }
+  }
+  return left;
+}
+async function grantGroups(client, appId, appName, directory, missing) {
+  const byId = new Map(directory.groups.map((group) => [group.id, group]));
+  const granted = [];
+  const undo = async (reason) => {
+    const left = await removeGrants(client, appId, granted);
+    throw new Error(`${reason} The access rules added here were removed${left.length ? `, except for ${left.join(", ")} (remove it in Workspace settings > Groups)` : ""}.`);
+  };
+  for (const id2 of missing) {
+    const rule = viewRule(appId, appName, id2);
+    try {
+      await client.writeWorkspaceGroupAccess("POST", id2, "app", void 0, rule);
+    } catch (error) {
+      await undo(`${byId.get(id2)?.name ?? id2} could not be given access to this app: ${error.message}.`);
+    }
+    granted.push({ group_id: id2, ...byId.get(id2)?.name ? { name: byId.get(id2).name } : {}, rule_name: rule.name });
+  }
+  const after = new Set((await client.listAppPermissionSubjects(appId)).groups.map((group) => group.id));
+  const still = missing.filter((id2) => !after.has(id2));
+  if (still.length) {
+    await undo(`ToolJet did not confirm that ${still.map((id2) => byId.get(id2)?.name ?? id2).join(", ")} can open this app after the access rule was added.`);
+  }
+  return granted;
+}
+function resolveTargets(args, summary, problems) {
+  const targets = [];
+  const routes = [...args.route !== void 0 ? [args.route] : [], ...args.routes ?? []];
+  const queries = [...args.query !== void 0 ? [args.query] : [], ...args.queries ?? []];
+  const type = args.resource_type === "screen" ? "page" : args.resource_type;
+  if (routes.length && type && type !== "page") {
+    problems.push(`route names a Code mode screen (a page permission), so resource_type "${args.resource_type}" does not fit: leave resource_type out.`);
+  }
+  if (queries.length && type && type !== "query") {
+    problems.push(`query names a query, so resource_type "${args.resource_type}" does not fit: leave resource_type out.`);
+  }
+  for (const route of [...new Set(routes)]) {
+    try {
+      const screen = findScreen(summary, route);
+      targets.push({
+        resourceType: "page",
+        resourceId: screen.page_id,
+        resource: {
+          ...findResource(summary, "page", screen.page_id),
+          screen: { route_id: screen.route_id, path: screen.path, title: screen.title }
+        }
+      });
+    } catch (error) {
+      problems.push(error.message);
+    }
+  }
+  const unknownQueries = [];
+  for (const ref of [...new Set(queries)]) {
+    const query2 = findQuery(summary, ref);
+    if (!query2)
+      unknownQueries.push(ref);
+    else
+      targets.push({ resourceType: "query", resourceId: query2.id, resource: { type: "query", id: query2.id, name: query2.name } });
+  }
+  if (unknownQueries.length) {
+    const names = summary.queries.map((q) => q.name ?? q.id);
+    problems.push(`No query ${unknownQueries.map((q) => `"${q}"`).join(", ")} in this app. ` + (names.length ? `Its queries: ${names.join(", ")}.` : "The app has no queries."));
+  }
+  if (args.resource_id !== void 0) {
+    const kinds = type ? [type] : ["query", "page", "component"];
+    let found;
+    for (const kind of kinds) {
+      try {
+        found = { resourceType: kind, resourceId: "", resource: findResource(summary, kind, args.resource_id) };
+        found.resourceId = String(found.resource.id);
+        break;
+      } catch {
+      }
+    }
+    if (found)
+      targets.push(found);
+    else
+      problems.push(`resource_id "${args.resource_id}" is no ${type ?? "page, query or component"} of this app. Pass a query by its name with query, or a screen with route.`);
+  }
+  if (!routes.length && !queries.length && args.resource_id === void 0) {
+    const screens = codeScreens(summary);
+    problems.push("Name what to limit: route (or routes) for screens, query (or queries) for queries, by name or id." + (screens.length ? ` Screens: ${screens.map((s) => s.path).join(", ")}.` : "") + (summary.queries.length ? ` Queries: ${summary.queries.map((q) => q.name ?? q.id).join(", ")}.` : "") + // A build sent set with groups and grant_app_access but nothing to limit, four times over (2026-11-09).
+    (args.grant_app_access || args.groups?.length || args.group_ids?.length ? " There is no app-wide grant: a group gets into this app with the first screen or query limited to it (grant_app_access does that part). Everyone who can open the app already sees what is not limited, so when no screen or query should be limited, there is nothing to set." + (isCodeApp(summary) && !screens.length ? " Screens are listed here after code_app_install has saved the routes." : "") : ""));
+  }
+  const seen = /* @__PURE__ */ new Set();
+  return targets.filter((target) => {
+    const key = `${target.resourceType}:${target.resourceId}`;
+    if (seen.has(key))
+      return false;
+    seen.add(key);
+    return true;
+  });
+}
+function exampleCall(args, summary, codeApp) {
+  const example = { action: args.action === "get" ? "get" : args.action, app_id: args.app_id };
+  const screens = summary ? codeScreens(summary) : [];
+  if (args.routes?.length)
+    example.routes = args.routes;
+  else if (args.route)
+    example.route = args.route;
+  else if (args.queries?.length)
+    example.queries = args.queries;
+  else if (args.query)
+    example.query = args.query;
+  else if (screens.length)
+    example.route = screens[screens.length - 1].path;
+  else if (summary?.queries.length)
+    example.query = summary.queries[0].name ?? summary.queries[0].id;
+  else
+    example.route = "/finance";
+  if (args.action === "set") {
+    if (args.users?.length || args.user_ids?.length)
+      example.users = args.users ?? args.user_ids;
+    else
+      example.groups = args.groups ?? args.group_ids ?? ["Finance"];
+    if (!codeApp)
+      example.confirm = true;
+  }
+  if (args.action === "clear")
+    example.confirm = true;
+  return JSON.stringify(example);
+}
+function manageAppPermissionsTool(client) {
   return {
-    name: "inspect_datasource_schema",
-    title: "Inspect Datasource Schema",
-    // Invokes only plugin-advertised read-only metadata methods.
+    name: "manage_app_permissions",
+    title: "Manage App Permissions",
+    // get/list_subjects only read, but set overwrites an access rule and clear broadens access to
+    // every user who can reach the app, so the hint covers its widest action.
     annotations: {
-      readOnlyHint: true,
-      destructiveHint: false,
-      openWorldHint: true
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: false
     },
-    description: 'Invoke one read-only metadata method advertised by a connected datasource plugin (for example listSchemas, listTables, listColumns, or listCollections). This avoids creating/running ad-hoc information_schema queries. HubSpot: call listTables without schema to list spec groups, then pass schema for endpoint discovery. Use get_datasource_query_schema with sections:["introspection"] to discover exact methods. Common schema/table/search/page/limit inputs are converted to ToolJet selector args; `args` adds plugin-specific fields. Only the requested metadata method is called. Use requests (up to 20) to batch independent table/column lookups after the schema/table names are known; every method is validated before any invocation.',
+    description: `Server-enforced access to an app's screens and queries: who can open a Code mode screen (route) or run a query. Example: {"action":"set","app_id":"<id>","route":"/finance","groups":["Finance"]}; for queries "query":"finance_queue" (name or id), and "routes" or "queries" take several at once with the same groups. groups take names or ids, users take emails or ids; access_type and resource_type are inferred. In a Code mode app, set needs no confirm, and a named group that cannot open the app first gets view access to this app only (grant_app_access defaults to true; false refuses instead). In other apps set needs confirm:true after the user approves the exact rule. clear (back to everyone who can open the app) always needs confirm:true. list_subjects: every workspace group with can_open_app, and plan (whether this plan enforces query and screen limits and resolves {{globals.server.currentUser}} on the server). list_screens: each route with its access. list_queries: each query of the app with its access. A screen limit hides the screen; the data it shows is protected only by limiting the queries that return it. Visual pages and components: resource_id (resource_type is optional). License gates apply.`,
     inputSchema: {
-      version_id: external_exports.string(),
-      datasource_id: external_exports.string(),
-      method: external_exports.string().min(1).optional(),
-      schema: external_exports.string().optional(),
-      table: external_exports.string().optional(),
-      search: external_exports.string().optional(),
-      page: external_exports.number().int().positive().optional(),
-      limit: external_exports.number().int().positive().max(1e3).optional(),
-      args: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-      requests: external_exports.array(requestSchema).min(1).max(20).optional()
+      action: external_exports.enum(["list_subjects", "list_screens", "list_queries", "get", "set", "clear"]),
+      app_id: external_exports.string().uuid(),
+      route: external_exports.string().min(1).max(200).optional().describe("A Code mode screen by route path or id (app.json routes)."),
+      routes: external_exports.array(external_exports.string().min(1).max(200)).min(1).max(50).optional().describe("Several screens at once."),
+      query: external_exports.string().min(1).max(200).optional().describe("A query by name or id."),
+      queries: external_exports.array(external_exports.string().min(1).max(200)).min(1).max(100).optional().describe("Several queries at once."),
+      groups: external_exports.array(external_exports.string().min(1).max(200)).min(1).max(100).optional().describe("Group names or ids."),
+      users: external_exports.array(external_exports.string().min(1).max(320)).min(1).max(100).optional().describe("User emails or ids."),
+      resource_type: external_exports.enum(["page", "query", "component", "screen"]).optional().describe("Inferred; only needed with resource_id."),
+      resource_id: external_exports.string().min(1).max(200).optional(),
+      access_type: external_exports.enum(["users", "groups"]).optional().describe("Inferred from groups or users."),
+      user_ids: external_exports.array(external_exports.string().min(1)).min(1).max(100).optional(),
+      group_ids: external_exports.array(external_exports.string().min(1)).min(1).max(100).optional(),
+      confirm: external_exports.boolean().optional(),
+      grant_app_access: external_exports.boolean().optional().describe("set with groups: give a group that cannot open the app view access to this app only first (default true in a Code mode app)")
     },
     async handler(args) {
       try {
-        const datasource = (await client.listDatasources(args.version_id)).find((candidate) => candidate.id === args.datasource_id);
-        if (!datasource) {
-          return fail(new Error(`Datasource "${args.datasource_id}" is not available on version "${args.version_id}".`));
-        }
-        const contract = getDatasourceQuerySchema(datasource.kind);
-        const kindSpec = singleSpecRef(datasource.kind);
-        const methods = [.../* @__PURE__ */ new Set([...contract?.introspectionMethods ?? [], ...kindSpec ? SPEC_DISCOVERY_METHODS : []])];
-        const topLevel = args.method ? [{
-          method: args.method,
-          schema: args.schema,
-          table: args.table,
-          search: args.search,
-          page: args.page,
-          limit: args.limit,
-          args: args.args
-        }] : [];
-        const seenRequests = /* @__PURE__ */ new Set();
-        const requests = [...args.requests ?? [], ...topLevel].filter((request) => {
-          if (!request.method)
-            return false;
-          const key = JSON.stringify([request.method, request.schema ?? null, request.table ?? null, request.search ?? null]);
-          if (seenRequests.has(key))
-            return false;
-          seenRequests.add(key);
-          return true;
-        });
-        if (!requests.length) {
-          return fail(new Error("Provide a `method` or a `requests` batch."));
-        }
-        const asBatch = !!args.requests?.length || requests.length > 1;
-        const unsupported = [...new Set(requests.map((request) => request.method).filter((method) => !methods.includes(method)))];
-        if (unsupported.length) {
-          return fail(new Error(`Datasource kind "${datasource.kind}" does not advertise introspection method(s) ${unsupported.map((method) => `"${method}"`).join(", ")}. Available methods: ${methods.length ? methods.join(", ") : "none"}.`));
-        }
-        let openapiSpec;
-        if (datasource.kind === "openapi") {
-          const details = await client.getDatasourceConnectionDetails(args.datasource_id);
-          openapiSpec = parseSpecCached(details.options);
-          if (!openapiSpec) {
-            return fail(new Error("This OpenAPI datasource has no readable spec stored in its options, so its endpoints cannot be listed. Re-save the datasource with a valid OpenAPI/Swagger (JSON or YAML) document."));
-          }
-        }
-        const hubspotDocuments = /* @__PURE__ */ new Map();
-        let kindSpecDocument;
-        const results = await Promise.all(requests.map(async (request) => {
-          if (datasource.kind === "hubspot") {
-            const specs = hubspotSpecs();
-            const selector = request.schema ?? request.args?.specType;
-            if (!selector && request.method === "listTables") {
-              return { method: request.method, result: {
-                specs,
-                next_step: "Choose a spec using schema (name, label or specType), then call listTables to find paths or getEndpointSchema to get query_options. Properties and Pipelines describe endpoints for discovering account-specific fields and stages."
-              } };
-            }
-            const selected = specs.find((spec) => [spec.name, spec.label, spec.specType].includes(String(selector)));
-            if (!selected)
-              throw new Error("HubSpot discovery requires a known schema. Call listTables without schema to list installed spec groups.");
-            if (!hubspotDocuments.has(selected.name)) {
-              hubspotDocuments.set(selected.name, client.getPluginSpec("hubspot", selected.name).then((text) => {
-                const spec = extractSpec({ spec: text });
-                if (!spec)
-                  throw new Error(`HubSpot spec "${selected.name}" is unavailable or invalid. Reinstall/update the plugin; do not invent its endpoints.`);
-                return spec;
-              }));
-            }
-            const document = await hubspotDocuments.get(selected.name);
-            const result2 = openapiIntrospection(document, request);
-            if (result2.query_options) {
-              delete result2.query_options.host;
-              delete result2.query_options.params.header;
-              delete result2.host_warning;
-              result2.query_options.specType = selected.specType;
-              if (result2.buckets?.["params.header"])
-                result2.unsupported_headers = result2.buckets["params.header"];
-              result2.notes = "HubSpot fixes the API host and authentication in the plugin. The spec describes API shapes; read Properties/Pipelines endpoints to verify account-specific fields and valid stage IDs. Do not guess them.";
-            }
-            return { method: request.method, schema: selected.name, specType: selected.specType, result: result2 };
-          }
-          if (kindSpec && SPEC_DISCOVERY_METHODS.includes(request.method)) {
-            kindSpecDocument ??= loadKindSpec(client, datasource.kind, kindSpec);
-            const result2 = openapiIntrospection(await kindSpecDocument, request);
-            if (result2.query_options) {
-              delete result2.query_options.host;
-              delete result2.query_options.params?.header;
-              delete result2.host_warning;
-              if (result2.buckets?.["params.header"])
-                result2.unsupported_headers = result2.buckets["params.header"];
-              result2.notes = `The ${datasource.kind} plugin fixes the API host and authentication. Copy query_options as they are; put IDs in params.path and filters in params.query, each value flat (created[gte], expand[0]): the plugin cannot send a list or an object.`;
-            }
-            return { method: request.method, ...request.table ? { table: request.table } : {}, result: result2 };
-          }
-          if (openapiSpec) {
-            const result2 = openapiIntrospection(openapiSpec, request);
-            return { method: request.method, ...request.table ? { table: request.table } : {}, result: result2 };
-          }
-          const converted = invokeArgs(request);
-          const result = await client.invokeDatasourceMethod({
-            dataSourceId: args.datasource_id,
-            method: request.method,
-            ...Object.keys(converted).length ? { args: converted } : {}
+        if (args.action === "list_subjects") {
+          const [subjects, features] = await Promise.all([
+            client.listAppPermissionSubjects(args.app_id),
+            client.getLicenseFeatureAccess().catch(() => void 0)
+          ]);
+          const { groups, complete } = await subjectGroups(client, subjects.groups);
+          const plan = planLimits(features);
+          return ok({
+            app_id: args.app_id,
+            users: subjects.users,
+            groups,
+            ...plan ? { plan } : {},
+            note: complete ? "A group with can_open_app false cannot open the app: a set naming it gives it view access to this app only first (in a Code mode app by default, elsewhere with grant_app_access:true)." : "Only the groups that can open the app are listed: the workspace group list could not be read."
           });
+        }
+        if (args.action === "list_screens") {
+          const summary2 = await client.getAppSummary(args.app_id);
+          const screens = await Promise.all(codeScreens(summary2).map(async (screen) => ({
+            ...screen,
+            ...normalizePermission(await client.getAppPermission(args.app_id, "page", screen.page_id))
+          })));
+          return ok({ app_id: args.app_id, screens });
+        }
+        if (args.action === "list_queries") {
+          const summary2 = await client.getAppSummary(args.app_id);
+          const queries = await Promise.all(summary2.queries.map(async (q) => ({
+            query_id: q.id,
+            name: q.name,
+            ...normalizePermission(await client.getAppPermission(args.app_id, "query", q.id))
+          })));
+          return ok({ app_id: args.app_id, queries, limited: queries.filter((q) => q.access !== "all").length });
+        }
+        const summary = await client.getAppSummary(args.app_id);
+        const codeApp = isCodeApp(summary);
+        const problems = [];
+        const targets = resolveTargets(args, summary, problems);
+        let accessType;
+        let subjectIds = [];
+        let directory;
+        if (args.action === "set") {
+          const groupRefs = [...args.groups ?? [], ...args.group_ids ?? []];
+          const userRefs = [...args.users ?? [], ...args.user_ids ?? []];
+          if (groupRefs.length && userRefs.length) {
+            problems.push("Pass groups or users, not both: one limit is to groups or to named users.");
+          } else if (!groupRefs.length && !userRefs.length) {
+            problems.push("Name who keeps access: groups (names or ids) or users (emails or ids).");
+          } else {
+            accessType = groupRefs.length ? "groups" : "users";
+            if (args.access_type && args.access_type !== accessType) {
+              problems.push(`access_type "${args.access_type}" does not match the ${accessType} passed: leave access_type out.`);
+            }
+          }
+          if (accessType === "groups") {
+            directory = await groupDirectory(client, args.app_id);
+            const { ids, unknown } = resolveGroups(directory, groupRefs);
+            if (unknown.length) {
+              problems.push(`${unknown.map((g) => `"${g}"`).join(", ")} ${unknown.length > 1 ? "are not groups" : "is not a group"} of this workspace. Its groups: ${directory.groups.map((g) => g.name ?? g.id).join(", ")}.`);
+            }
+            subjectIds = ids;
+          } else if (accessType === "users") {
+            const users = (await client.listAppPermissionSubjects(args.app_id)).users;
+            const unknown = [];
+            for (const ref of userRefs) {
+              const lower = ref.toLowerCase();
+              const user = users.find((u) => u.id === ref) ?? users.find((u) => u.email?.toLowerCase() === lower);
+              if (user)
+                subjectIds.push(user.id);
+              else
+                unknown.push(ref);
+            }
+            if (unknown.length) {
+              problems.push(`${unknown.map((u) => `"${u}"`).join(", ")} cannot open this app or is not a user of this workspace (users must already have access to the app; list_subjects lists them).`);
+            }
+            subjectIds = [...new Set(subjectIds)];
+            if (args.grant_app_access === true) {
+              problems.push("grant_app_access applies only to a limit to groups: leave it out with users.");
+            }
+          }
+          if (!codeApp && args.confirm !== true) {
+            problems.push("set on this app needs confirm:true after the user explicitly approves the exact access rule.");
+          }
+        }
+        if (args.action === "clear" && args.confirm !== true) {
+          problems.push("clear opens the resource to everyone who can open the app, so it needs confirm:true after the user approves it.");
+        }
+        if (problems.length) {
+          throw new Error(`manage_app_permissions ${args.action} was refused and nothing was changed:
+` + problems.map((problem) => `- ${problem}`).join("\n") + `
+A call that works: ${exampleCall(args, summary, codeApp)}`);
+        }
+        const one = targets.length === 1;
+        if (args.action === "get") {
+          const results2 = await Promise.all(targets.map(async (t) => ({ resource: t.resource, ...normalizePermission(await client.getAppPermission(args.app_id, t.resourceType, t.resourceId)) })));
+          return ok(one ? { app_id: args.app_id, ...results2[0] } : { app_id: args.app_id, results: results2 });
+        }
+        if (args.action === "clear") {
+          for (const t of targets)
+            await client.clearAppPermission(args.app_id, t.resourceType, t.resourceId);
+          const results2 = targets.map((t) => ({ resource: t.resource, access: "all", permission_id: null }));
+          return ok(one ? { app_id: args.app_id, ...results2[0] } : { app_id: args.app_id, results: results2 });
+        }
+        const grant = args.grant_app_access ?? codeApp;
+        const toGrant = accessType === "groups" ? groupsToGrant(directory, subjectIds, grant) : [];
+        const results = [];
+        for (const t of targets) {
+          try {
+            const permissions = await client.setAppPermission({
+              appId: args.app_id,
+              resourceType: t.resourceType,
+              resourceId: t.resourceId,
+              accessType,
+              subjectIds
+            });
+            results.push({ resource: t.resource, ...normalizePermission(permissions) });
+          } catch (error) {
+            results.push({ resource: t.resource, error: error.message });
+          }
+        }
+        const failed = results.filter((r) => r.error);
+        const failures = failed.map((r) => `${r.resource.name ?? r.resource.id}: ${r.error}`).join("; ");
+        if (failed.length === results.length) {
+          throw new Error(failures + (toGrant.length ? " No access to the app was given." : ""));
+        }
+        if (failed.length) {
           return {
-            method: request.method,
-            ...request.schema ? { schema: request.schema } : {},
-            ...request.table ? { table: request.table } : {},
-            result
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                error: `${failed.length} of ${results.length} limits were not set: ${failures}.` + (toGrant.length ? " No access to the app was given." : "") + " Set the failed ones again; the others are in place.",
+                app_id: args.app_id,
+                applied: results.filter((r) => !r.error),
+                failed
+              })
+            }],
+            isError: true
           };
-        }));
-        const header = { datasource: { id: datasource.id, name: datasource.name, kind: datasource.kind } };
-        return asBatch ? ok({ ...header, results }) : ok({ ...header, method: results[0].method, result: results[0].result });
-      } catch (err) {
-        return fail(err);
+        }
+        let granted = [];
+        if (toGrant.length) {
+          try {
+            granted = await grantGroups(client, args.app_id, summary.name, directory, toGrant);
+          } catch (error) {
+            throw new Error(`The limits were set, but their groups cannot open this app, so their members cannot use those screens or queries yet: ${error.message} Give the groups access in Workspace settings > Groups, or run this again.`);
+          }
+        }
+        const grantNote = granted.length ? `${granted.map((g) => g.name ?? g.group_id).join(", ")} could not open this app, so ${granted.length > 1 ? "each now has" : "it now has"} view access to this app only (released app, rule "${granted[0].rule_name}").` : void 0;
+        const body = {
+          app_id: args.app_id,
+          ...one ? results[0] : { results },
+          ...granted.length ? { granted_app_access: granted, note: grantNote } : {}
+        };
+        return ok(body);
+      } catch (error) {
+        return fail(error);
       }
     }
   };
 }
-createRequire(import.meta.url);
-var capabilityRequestSchema = external_exports.object({
-  version_id: external_exports.string().uuid()
-}).strict();
-var datasourceCapabilitySchema = external_exports.enum(["query", "ai-model", "email"]);
-var workflowCapabilityReportSchema = external_exports.object({
-  version_id: external_exports.string().uuid(),
-  authorable_node_types: external_exports.array(external_exports.string()),
-  datasources: external_exports.array(external_exports.object({
-    id: external_exports.string(),
-    name: external_exports.string(),
-    kind: external_exports.string(),
-    capabilities: external_exports.array(datasourceCapabilitySchema)
-  }).strict())
-}).strict();
-var AI_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["openai", "anthropic", "gemini", "mistral_ai"]);
-var EMAIL_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["smtp", "sendgrid", "mailgun"]);
-function datasourceCapabilities(kind) {
-  const capabilities = ["query"];
-  if (AI_DATASOURCE_KINDS.has(kind))
-    capabilities.push("ai-model");
-  if (EMAIL_DATASOURCE_KINDS.has(kind))
-    capabilities.push("email");
-  return capabilities;
-}
-async function getWorkflowCapabilities(client, input) {
-  const { version_id } = capabilityRequestSchema.parse(input);
-  const datasources = await client.workflows.listDatasources(version_id);
-  return workflowCapabilityReportSchema.parse({
-    version_id,
-    authorable_node_types: nodeCatalog.nodes.map((node) => node.type),
-    datasources: datasources.map((datasource) => ({
-      id: datasource.id,
-      name: datasource.name,
-      kind: datasource.kind,
-      capabilities: datasourceCapabilities(datasource.kind)
-    }))
-  });
-}
-function workflowReadiness(graph, structuralErrors) {
-  if (structuralErrors.length)
-    return { runtime_readiness: "blocked", blockers: structuralErrors };
-  const adjacency = new Map(graph.nodes.map((node) => [node.id, []]));
-  for (const edge of controlFlowEdges(graph))
-    adjacency.get(edge.source)?.push(edge.target);
-  const reachable = /* @__PURE__ */ new Set();
-  const visit = (id) => {
-    if (reachable.has(id))
-      return;
-    reachable.add(id);
-    for (const target of adjacency.get(id) ?? [])
-      visit(target);
-  };
-  for (const start of graph.nodes.filter((node) => node.type === "input" && node.data.nodeType === "start"))
-    visit(start.id);
-  const blockers = [];
-  for (const agent of graph.nodes.filter((node) => node.type === "agent" && reachable.has(node.id))) {
-    const attachment = graph.edges.find((edge) => edge.target === agent.id && edge.targetHandle === "ai-model");
-    const child = attachment && graph.nodes.find((node) => node.id === attachment.source);
-    const definitionId = child?.data.idOnDefinition;
-    const mapping = typeof definitionId === "string" && graph.queries.find((query) => query.idOnDefinition === definitionId);
-    if (!attachment || !child || !mapping)
-      blockers.push({
-        code: "agent_missing_model",
-        path: `nodes.${agent.id}.model`,
-        message: "Reachable Agent requires one configured AI model attachment."
-      });
+var appPermissions = [
+  {
+    action: "list_screens",
+    name: "list_app_permission_screens",
+    title: "List App Screen Permissions",
+    description: "Read the Code mode screens and their access restrictions for one app. Does not change access.",
+    required: ["app_id"],
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
+  },
+  {
+    action: "list_queries",
+    name: "list_app_permission_queries",
+    title: "List App Query Permissions",
+    description: "Read the queries and their access restrictions for one app. Does not change access.",
+    required: ["app_id"],
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
+  },
+  {
+    action: "list_subjects",
+    name: "list_app_permission_subjects",
+    title: "List App Permission Subjects",
+    description: "List users and groups eligible for resource access rules in one app. Subjects must already have app access. ToolJet permissions and license gates apply.",
+    required: ["app_id"],
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
+  },
+  {
+    action: "get",
+    name: "get_app_resource_permission",
+    title: "Get App Resource Permission",
+    description: "Read server-enforced access for one page, query, or component belonging to the selected app. Use exact resource IDs from get_app_summary.",
+    required: ["app_id", "resource_type", "resource_id"],
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
+  },
+  {
+    action: "set",
+    name: "set_app_resource_permission",
+    title: "Set App Resource Permission",
+    description: "Replace access to one app page, query, or component with selected users or groups. Supply user_ids for access_type users or group_ids for groups, never both. Requires confirm:true after explicit approval of the exact rule; existing app access and license gates still apply.",
+    required: ["app_id", "resource_type", "resource_id", "access_type", "confirm"],
+    optional: ["user_ids", "group_ids"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
+  },
+  {
+    action: "clear",
+    name: "clear_app_resource_permission",
+    title: "Clear App Resource Permission",
+    description: "Remove a resource access restriction, broadening access to every user who can access the app. Requires confirm:true after explicit approval of this exact page, query, or component.",
+    required: ["app_id", "resource_type", "resource_id", "confirm"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
   }
-  return { runtime_readiness: blockers.length ? "draft_only" : "runnable", blockers };
-}
-var plans = /* @__PURE__ */ new Map();
-var TTL = 30 * 6e4;
-function prune() {
-  for (const [key, plan] of plans)
-    if (plan.expires <= Date.now())
-      plans.delete(key);
-}
-async function prepare(client, workflowId, versionId, spec, ids) {
-  const snapshot = await client.get(workflowId, versionId);
-  if (!snapshot.editable)
-    throw new Error("Only editable draft workflow versions can be changed.");
-  const [queries, datasources] = await Promise.all([client.getQueries(versionId), client.listDatasources(versionId)]);
-  const compiled = compileGraph(snapshot.definition, spec, ids, new Map(datasources.map((datasource) => [datasource.id, datasource.kind])));
-  const warnings = [];
-  const writes = [];
-  const finalDefinitionIds = new Set(compiled.graph.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string"));
-  const removedDefinitionIds = new Set(snapshot.definition.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string" && !finalDefinitionIds.has(value)));
-  const deletions = [];
-  for (const mapping of snapshot.definition.queries) {
-    if (!removedDefinitionIds.has(mapping.idOnDefinition))
-      continue;
-    if (compiled.graph.queries.some((retained) => retained.id === mapping.id))
-      continue;
-    if (deletions.some((deletion) => deletion.query_id === mapping.id))
-      continue;
-    const node = snapshot.definition.nodes.find((candidate) => candidate.data.idOnDefinition === mapping.idOnDefinition);
-    if (!node)
-      continue;
-    if (!queries.some((query) => query.id === mapping.id))
-      throw new Error(`Query ${mapping.id} is missing from the target version.`);
-    deletions.push({ node_id: node.id, definition_id: mapping.idOnDefinition, query_id: mapping.id });
-  }
-  const claimedNames = /* @__PURE__ */ new Set();
-  for (const item of compiled.query_nodes) {
-    const existingMapping = snapshot.definition.queries.find((q) => q.idOnDefinition === item.definition_id);
-    const oldQuery = queries.find((q) => q.id === existingMapping?.id);
-    if (existingMapping && !oldQuery)
-      throw new Error(`Query ${existingMapping.id} is missing from the target version.`);
-    if (oldQuery && snapshot.definition.nodes.filter((n) => snapshot.definition.queries.some((q) => q.id === oldQuery.id && q.idOnDefinition === n.data.idOnDefinition)).length > 1)
-      throw new Error(`Query ${oldQuery.id} is shared by multiple nodes. Shared query editing is unsupported.`);
-    const input = item.role === "workflow-node" ? item.spec : void 0;
-    const datasource = item.role === "agent-model" ? datasources.find((d) => d.id === item.datasource_id) : input.type === "javascript" || input.type === "loop" ? datasources.find((d) => d.kind === "runjs") : datasources.find((d) => d.id === input.datasource_id);
-    const label = item.role === "agent-model" ? "Agent model" : `node ${input.ref}`;
-    if (!datasource)
-      throw new Error(`Datasource unavailable for ${label}.`);
-    if (item.role === "agent-model" && !AI_DATASOURCE_KINDS.has(datasource.kind))
-      throw new Error(`Datasource ${datasource.id} is not an AI model datasource.`);
-    const kind = datasource.kind;
-    const dataSourceId = datasource.id;
-    const name2 = item.role === "agent-model" ? item.name : input.name;
-    if (oldQuery && (oldQuery.kind !== kind || oldQuery.data_source_id !== dataSourceId))
-      throw new Error(item.role === "agent-model" ? "Changing an Agent model datasource is unsupported; remove the model first, then add its replacement in a second phase." : "Changing an existing query datasource is unsupported; add a new node.");
-    if (oldQuery?.name !== void 0 && oldQuery.name !== name2)
-      throw new Error(item.role === "agent-model" ? "Renaming an Agent model query is unsupported; remove the model first, then add its replacement in a second phase." : "Renaming existing queries is unsupported because code references cannot be rewritten safely.");
-    if (claimedNames.has(name2) || queries.some((q) => q.name === name2 && q.id !== oldQuery?.id))
-      throw new Error(`Duplicate query name: ${name2}`);
-    claimedNames.add(name2);
-    const requestedOptions = item.role === "agent-model" ? item.options : input.type === "javascript" || input.type === "loop" ? { ...oldQuery?.options ?? {}, code: input.code } : input.options;
-    const options = item.role === "agent-model" ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
-    if (item.role === "workflow-node" && kind === "runjs")
-      assertWorkflowJavaScript(options.code, label);
-    if (item.role === "workflow-node") {
-      const validation2 = validateQueryOptions(kind, options, "workflow");
-      if (validation2.errors.length)
-        throw new Error(issueMessages(validation2.errors).join(" "));
-      warnings.push(...issueMessages(validation2.warnings));
-    }
-    writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name: name2, dataSourceId: dataSourceId ?? "", kind, options });
-    if (!existingMapping && !compiled.graph.queries.some((mapping) => mapping.idOnDefinition === item.definition_id))
-      compiled.graph.queries.push({ idOnDefinition: item.definition_id, id: `pending:${item.node_id}` });
-  }
-  const queryIds = /* @__PURE__ */ new Set([...queries.map((q) => q.id), ...writes.filter((q) => !q.existing_id).map((q) => `pending:${q.node_id}`)]);
-  const validation = validateGraph(compiled.graph, queryIds);
-  const readiness = workflowReadiness(compiled.graph, validation.errors);
-  return { snapshot, compiled, writes, deletions, validation, readiness, warnings };
-}
-async function lint(client, workflowId, versionId, spec, allowDraft = false) {
-  const prepared = await prepare(client, workflowId, versionId, spec);
-  if (prepared.validation.errors.length || prepared.readiness.runtime_readiness === "draft_only" && !allowDraft)
-    return { ...prepared.validation, ...prepared.readiness, query_warnings: prepared.warnings };
-  prune();
-  while (plans.size >= 200)
-    plans.delete(plans.keys().next().value);
-  const token = randomUUID();
-  plans.set(token, { scope: await client.planScope(), workflowId, versionId, spec: structuredClone(spec), ids: prepared.compiled, allowDraft, expires: Date.now() + TTL });
-  return {
-    plan_token: token,
-    expires_in_seconds: TTL / 1e3,
-    node_ids: prepared.compiled.node_ids,
-    edge_ids: prepared.compiled.edge_ids,
-    ...prepared.validation,
-    ...prepared.readiness,
-    query_warnings: prepared.warnings,
-    changes: { node_upserts: spec.nodes.length, edge_upserts: spec.edges.length, node_removals: spec.remove_node_ids, edge_removals: spec.remove_edge_ids, queries: [...prepared.writes.map((q) => ({ name: q.name, operation: q.existing_id ? "update" : "create" })), ...prepared.deletions.map((q) => ({ query_id: q.query_id, operation: "delete" }))] }
-  };
-}
-async function apply(client, token) {
-  prune();
-  const scope = await client.planScope();
-  const plan = plans.get(token);
-  if (!plan || plan.scope !== scope)
-    throw new Error("Unknown, expired, consumed, or differently scoped plan. Run lint_workflow_spec again.");
-  plans.delete(token);
-  const { compiled, snapshot, writes, deletions, validation, readiness } = await prepare(client, plan.workflowId, plan.versionId, plan.spec, plan.ids);
-  if (validation.errors.length)
-    throw new Error(JSON.stringify(validation.errors));
-  if (readiness.runtime_readiness === "draft_only" && !plan.allowDraft)
-    throw new Error(JSON.stringify(readiness.blockers));
-  const completed = [];
-  let phase = "queries";
-  let attemptedQuery;
-  try {
-    for (const write of writes) {
-      attemptedQuery = { name: write.name, node_id: write.node_id, existing_id: write.existing_id };
-      const result = write.existing_id ? await client.updateQuery({ queryId: write.existing_id, versionId: plan.versionId, name: write.name, options: write.options }) : await client.createWorkflowQuery({ workflowId: plan.workflowId, versionId: plan.versionId, name: write.name, dataSourceId: write.dataSourceId || void 0, kind: write.kind, options: write.options });
-      completed.push({ operation: write.existing_id ? "update" : "create", query_id: result.query_id, node_id: write.node_id });
-      compiled.graph.queries = compiled.graph.queries.filter((q) => q.idOnDefinition !== write.definition_id);
-      compiled.graph.queries.push({ idOnDefinition: write.definition_id, id: result.query_id });
-      attemptedQuery = void 0;
-    }
-    phase = "save";
-    await client.save(snapshot, compiled.graph);
-    phase = "readback";
-    const [saved, queries] = await Promise.all([client.get(plan.workflowId, plan.versionId), client.getQueries(plan.versionId)]);
-    const validation2 = validateGraph(saved.definition, new Set(queries.map((q) => q.id)));
-    if (!isDeepStrictEqual(saved.definition, compiled.graph))
-      throw new Error("Saved definition differs from the intended graph. Inspect get_workflow before retrying.");
-    for (const write of writes) {
-      const id = completed.find((q) => q.node_id === write.node_id).query_id;
-      const persisted = queries.find((q) => q.id === id);
-      if (!persisted || persisted.name !== write.name || persisted.kind !== write.kind || persisted.data_source_id !== write.dataSourceId || !isDeepStrictEqual(persisted.options, write.options))
-        throw new Error(`Query ${id} readback differs from intended datasource, kind, name, or options.`);
-    }
-    if (validation2.errors.length)
-      throw new Error(JSON.stringify(validation2.errors));
-    phase = "query_deletions";
-    for (const deletion of deletions) {
-      attemptedQuery = { name: deletion.query_id, node_id: deletion.node_id, existing_id: deletion.query_id };
-      await client.deleteQuery({ queryId: deletion.query_id, versionId: plan.versionId });
-      completed.push({ operation: "delete", query_id: deletion.query_id, node_id: deletion.node_id });
-      attemptedQuery = void 0;
-    }
-    return { workflow_id: plan.workflowId, version_id: plan.versionId, editor_url: saved.editor_url, node_ids: compiled.node_ids, edge_ids: compiled.edge_ids, completed, validation: validation2, ...readiness };
-  } catch (error) {
-    return {
-      failed: true,
-      workflow_id: plan.workflowId,
-      version_id: plan.versionId,
-      phase,
-      completed,
-      attempted_query: attemptedQuery,
-      node_ids: compiled.node_ids,
-      edge_ids: compiled.edge_ids,
-      graph_persistence: phase === "queries" ? "not_attempted" : phase === "save" ? "unknown" : "saved",
-      error: error instanceof Error ? error.message : String(error),
-      recovery: "Inspect get_workflow and its queries; reuse persisted IDs when replanning. Do not repeat creation blindly. No resources were automatically deleted."
-    };
-  }
-}
-async function deleteNode(client, workflowId, versionId, nodeId) {
-  const snapshot = await client.get(workflowId, versionId);
-  if (!snapshot.definition.nodes.some((node) => node.id === nodeId))
-    throw new Error(`Unknown workflow node: ${nodeId}`);
-  const spec = specSchema.parse({ remove_node_ids: [nodeId], remove_edge_ids: snapshot.definition.edges.filter((edge) => edge.source === nodeId || edge.target === nodeId).map((edge) => edge.id) });
-  const result = await lint(client, workflowId, versionId, spec, true);
-  if (!("plan_token" in result))
-    throw new Error(JSON.stringify({ errors: result.errors, blockers: result.blockers }));
-  return apply(client, result.plan_token);
-}
-createRequire(import.meta.url);
-var name = external_exports.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/).refine((v) => !["__proto__", "prototype", "constructor"].includes(v));
-var editContractSchema = external_exports.object({
-  source_query: name.describe("Already-loaded bounded raw row-array query; never a display projection."),
-  table_component: name,
-  id_field: name.default("id"),
-  prefix: name.describe("Unique prefix for generated snapshot/draft variables and RunJS query names."),
-  fields: external_exports.array(external_exports.object({
-    field: name,
-    component: name,
-    type: external_exports.enum(["text", "number", "date_only", "boolean"]),
-    required: external_exports.boolean().default(false),
-    nullable: external_exports.boolean().default(false).describe("Opt in to clearing to null; a user change event is also required."),
-    trim: external_exports.boolean().default(false),
-    choices: external_exports.union([
-      external_exports.array(external_exports.object({ label: external_exports.string(), value: external_exports.union([external_exports.string(), external_exports.number().finite()]) }).strict()).min(1).max(100),
-      external_exports.object({ query: name, value_field: name, label_field: name }).strict()
-    ]).optional().describe("Opt-in DropdownV2 for text/number fields: literal label/value options or an already-loaded bounded raw option query. Values must match the declared field type.")
-  })).min(1).max(40)
-}).strict();
-function canonical(value, field) {
-  if (value === void 0)
-    throw new Error(`Missing input: ${field.field}`);
-  if (value === null || value === "") {
-    if (field.required)
-      throw new Error(`Required field: ${field.field}`);
-    if (value === null && !field.nullable)
-      throw new Error(`Null not allowed: ${field.field}`);
-    return value;
-  }
-  if (field.type === "text") {
-    if (typeof value !== "string")
-      throw new Error(`Expected text: ${field.field}`);
-    if (field.required && !value.trim())
-      throw new Error(`Required field: ${field.field}`);
-    return field.trim ? value.trim() : value;
-  }
-  if (field.type === "boolean") {
-    if (typeof value !== "boolean")
-      throw new Error(`Expected boolean: ${field.field}`);
-    return value;
-  }
-  if (field.type === "number") {
-    if (typeof value !== "number" && typeof value !== "string" || typeof value === "string" && !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value) || !Number.isFinite(Number(value)))
-      throw new Error(`Expected finite number: ${field.field}`);
-    return Number(value);
-  }
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))?$/.test(value)) {
-    throw new Error(`Expected ISO date: ${field.field}`);
-  }
-  const day = value.slice(0, 10);
-  const parsed = /* @__PURE__ */ new Date(day + "T00:00:00Z");
-  if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== day || !Number.isFinite(Date.parse(value))) {
-    throw new Error(`Invalid date: ${field.field}`);
-  }
-  return day;
-}
-function generateEditContract(input) {
-  const spec = editContractSchema.parse(input);
-  for (const key of ["field", "component"]) {
-    if (new Set(spec.fields.map((f) => f[key])).size !== spec.fields.length)
-      throw new Error(`Duplicate ${key} in edit contract`);
-  }
-  if (spec.fields.some((f) => f.field === spec.id_field))
-    throw new Error("The stable primary key cannot be edited");
-  if (spec.fields.some((f) => f.required && f.nullable))
-    throw new Error("A required field cannot be nullable");
-  for (const f of spec.fields)
-    if (f.choices) {
-      if (!["text", "number"].includes(f.type))
-        throw new Error("Choices require a text or number field");
-      if (Array.isArray(f.choices)) {
-        if (f.choices.some((o) => typeof o.value !== (f.type === "text" ? "string" : "number")))
-          throw new Error("Choice values must match field type");
-        if (new Set(f.choices.map((o) => o.value)).size !== f.choices.length)
-          throw new Error("Duplicate choice value");
-      }
-    }
-  const snapshot = `${spec.prefix}Snapshot`, draft = `${spec.prefix}Draft`;
-  const openName = `${spec.prefix}Open`, prepareName = `${spec.prefix}Prepare`;
-  const q = JSON.stringify;
-  const helpers = `const canonical = ${canonical.toString()};
-const fields = ${q(spec.fields)};
-const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
-`;
-  const openCode = helpers + `await actions.setVariable(${q(snapshot)}, null);
-await actions.setVariable(${q(draft)}, null);
-const selection = components.${spec.table_component}.selectedRow;
-const id = selection && selection[${q(spec.id_field)}];
-if ((typeof id !== 'string' && typeof id !== 'number') || id === '' || (typeof id === 'number' && !Number.isFinite(id))) throw new Error('Select a record first');
-const rows = queries.${spec.source_query}.data;
-if (!Array.isArray(rows)) throw new Error('Raw records are not loaded');
-const matches = rows.filter(r => r && own(r, ${q(spec.id_field)}) && r[${q(spec.id_field)}] === id);
-if (matches.length !== 1) throw new Error('Expected exactly one raw record for the selected ID');
-const values = {};
-for (const field of fields) {
-  if (!own(matches[0], field.field)) throw new Error('Raw record omits: ' + field.field);
-  // Existing incomplete records must be openable for correction. Validate required
-  // values on Prepare, not before the user can edit them.
-  values[field.field] = canonical(matches[0][field.field], { ...field, required: false, nullable: true });
-}
-await actions.setVariable(${q(snapshot)}, { id, values });
-return { id };`;
-  const prepareCode = helpers + `const snapshot = variables.${snapshot};
-const draft = variables.${draft};
-const selection = components.${spec.table_component}.selectedRow;
-if (!snapshot || !selection || selection[${q(spec.id_field)}] !== snapshot.id) throw new Error('Reopen the selected record before saving');
-if (draft && draft.id !== snapshot.id) throw new Error('Draft belongs to another record');
-const changes = draft ? draft.values : {};
-if (!changes || typeof changes !== 'object' || Array.isArray(changes)) throw new Error('Invalid draft');
-const patch = {};
-for (const key of Object.keys(changes)) if (!fields.some(f => f.field === key)) throw new Error('Unknown draft field: ' + key);
-for (const field of fields) {
-  if (!own(snapshot.values, field.field)) throw new Error('Incomplete edit snapshot');
-  if (!own(changes, field.field)) {
-    canonical(snapshot.values[field.field], field);
-    continue;
-  }
-  const raw = changes[field.field];
-  let value = canonical(raw, field);
-  if (value === '' && field.type !== 'text') value = null;
-  if (value === '' || value === null) {
-    if (!field.nullable) throw new Error('Clearing is not allowed: ' + field.field);
-    value = null;
-  }
-  if (value !== snapshot.values[field.field]) patch[field.field] = value;
-}
-return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
-  const inputs = spec.fields.map((f) => {
-    const type = f.choices ? "DropdownV2" : { text: "TextInput", number: "NumberInput", date_only: "DatePickerV2", boolean: "Checkbox" }[f.type];
-    const initialKey = f.choices ? "schema" : ["date_only", "boolean"].includes(f.type) ? "defaultValue" : "value";
-    const exposed = f.type === "date_only" ? "selectedDate" : "value";
-    const trigger = f.choices || f.type === "date_only" ? "onSelect" : "onChange";
-    const schema = getComponentSchema(type);
-    if (!schema?.properties.some((p) => p.key === initialKey) || !schema.events?.some((e) => e.id === trigger))
-      throw new Error(`Unsupported edit adapter: ${type}`);
-    const initial = `variables.${snapshot} && variables.${snapshot}.values[${q(f.field)}]`;
-    let value = `{{${initial} != null ? variables.${snapshot}.values[${q(f.field)}] : ${f.type === "boolean" ? "false" : "''"}}}`;
-    if (f.choices) {
-      const options = Array.isArray(f.choices) ? q(f.choices) : `(queries.${f.choices.query}.data || []).map(r=>({label:r[${q(f.choices.label_field)}],value:r[${q(f.choices.value_field)}]}))`;
-      value = `{{(${options}).map(option=>({label:option.label,value:option.value,visible:true,default:!!variables.${snapshot} && option.value === variables.${snapshot}.values[${q(f.field)}]}))}}`;
-    }
-    const exposedValue = `components.${f.component}.${exposed}`;
-    const changedValue = f.choices && f.nullable ? `(${exposedValue} == null ? null : ${exposedValue})` : exposedValue;
-    const draftValue = `{{({id:variables.${snapshot}.id,values:Object.assign({},variables.${draft} && variables.${draft}.id === variables.${snapshot}.id ? variables.${draft}.values : {},{${q(f.field)}:${changedValue}})})}}`;
-    return {
-      name: f.component,
-      type,
-      properties: { [initialKey]: value, ...f.choices ? { advanced: "{{true}}", showClearBtn: f.nullable } : {}, ...f.type === "date_only" ? { dateFormat: "YYYY-MM-DD" } : {} },
-      validation: { mandatory: f.required },
-      events: [{ source_ref: f.component, source_type: "component", trigger, action: {
-        actionId: "set-custom-variable",
-        key: draft,
-        value: draftValue,
-        runOnlyIf: `{{!!variables.${snapshot}}}`
-      } }]
-    };
-  });
-  return {
-    queries: [
-      { name: openName, kind: "runjs", options: { code: openCode } },
-      { name: prepareName, kind: "runjs", options: { code: prepareCode } }
-    ],
-    inputs,
-    mutation_contract: {
-      id: `{{queries.${prepareName}.data.id}}`,
-      patch: `{{queries.${prepareName}.data.patch}}`,
-      runOnlyIf: `{{queries.${prepareName}.data && queries.${prepareName}.data.changed === true}}`
-    },
-    wiring: [
-      `Run ${openName} on Edit; open the editor only on its success. Merge the returned input properties and change events into your native layout. Never use display selectedRow fields as defaults.`,
-      `Run ${prepareName} on Save; run a datasource-specific PATCH/update ONLY on its success and with mutation_contract.runOnlyIf. No change means no write. Bind the ID and patch from mutation_contract; never expand missing patch keys to null or empty strings.`,
-      "Gate Save while open/prepare/write are loading. Preserve the editor on failure. Refresh affected queries and close/reset only after the actual mutation succeeds; refresh actions are not assumed to complete in order."
-    ],
-    limitations: [
-      "Requires an already-loaded bounded raw row array and a single stable scalar ID. This generates wiring only; it does not create resources or persist data.",
-      "Only text, finite number, ISO date-only and boolean fields are covered; text/number fields can opt into dropdown choices. Required/nullable/trim are explicit opt-ins; domain constraints, authorization and optimistic concurrency must be enforced separately.",
-      "Dropdown option queries must already return bounded raw arrays with matching ID types and include the current value, including inactive owners when necessary. Missing options are not permission to clear stored relationships. Validate membership/authorization separately; this helper does not create or execute option queries.",
-      "Draft tracks native change events, not every displayed input value. Programmatic field changes must update the draft explicitly. Browser-verify that all change events fire, including both checkbox transitions."
-    ]
-  };
+];
+function appPermissionActionTools(source) {
+  return exposeActions(source, appPermissions);
 }
 export {
-  pageSettingProperties as A,
-  ToolJetHttpError as B,
-  editContractSchema as C,
-  generateEditContract as D,
-  hasNonEmptyDefinition as E,
-  themeActionTools as F,
-  workspaceGroupActionTools as G,
-  exposeActions as H,
   PartialWriteError as P,
   TOOLJET_DB_DATA_TYPES as T,
-  completedPartialWrites as a,
-  indexComponentReferences as b,
+  WORKSPACE_ACCESS_KEYS as W,
+  WORKSPACE_PERMISSION_KEYS as a,
+  invalidSeedTimestamps as b,
   componentRef as c,
-  createClient as d,
-  listWorkspaceGroupsTool as e,
-  fail as f,
-  inspectDatasourceSchemaTool as g,
+  completedPartialWrites as d,
+  currentBranchId as e,
+  createClient as f,
+  createAppTool as g,
   manageThemeTool as h,
-  invalidSeedTimestamps as i,
-  datasourceMetadataTools as j,
-  capabilityRequestSchema as k,
+  indexComponentReferences as i,
+  projectJavascriptRuntime as j,
+  projectAppSettings as k,
   literalCanvasColor as l,
-  manageWorkspaceGroupsTool as m,
+  manageAppPermissionsTool as m,
   normalizeType as n,
-  ok as o,
-  getWorkflowCapabilities as p,
-  lint as q,
-  apply as r,
-  strictEntry as s,
-  themeDefinition as t,
-  deleteNode as u,
+  compactTheme as o,
+  packDefaultDefinition as p,
+  pageSettingProperties as q,
+  ToolJetHttpError as r,
+  appPermissionActionTools as s,
+  themeActionTools as t,
+  workflowOperations as u,
   validateTableBatch as v,
-  paintsDarkCanvasInLightMode as w,
-  projectJavascriptRuntime as x,
-  projectAppSettings as y,
-  compactTheme as z
+  workspaceAccessKeys as w,
+  withBranchContext as x,
+  registerPackDefinitions as y,
+  branchIdFor as z
 };

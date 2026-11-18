@@ -1,36 +1,18 @@
 import { createRequire } from "node:module";
-import { T as TOOLJET_DB_DATA_TYPES, n as normalizeType, f as fail, i as invalidSeedTimestamps, l as literalCanvasColor, o as ok, c as componentRef, a as completedPartialWrites, v as validateTableBatch, b as indexComponentReferences } from "./chunk-ntbhSVhB.mjs";
-import { bd as external_exports, bh as tableQuotaError, be as getComponentSchema } from "./chunk-DOMNI22J.mjs";
-import { c as componentNameSchema, b as componentSlotSchema, p as pageIconSchema, v as validateAppStructure, s as suggestedHtmlHeight, f as pageIconError, l as lintComponents, e as encodeComponentParent, g as lintComponentStateBindings, d as decodeComponentParent, S as STYLE_KEYS_IN_PROPERTIES, m as minimumTextHeight, n as namespaceReads, P as PROPERTY_KEY_ALIASES, h as nearestCatalogKey } from "./chunk-BkAHE-8T.mjs";
-import { g as arithmeticWriteWarning, L as LARGE_READ_ROW_THRESHOLD, f as assessQueryRead, r as resolveStaticBindings, h as resolvedReadRefusal, s as sameReadSource, j as extractRowCount, k as emptyViewerOnlyParams, m as emptyParamsNote, u as unresolvedNote, v as validateQueryOptions, i as issueMessages, o as normalizeQueryToggles, t as toggleRewriteWarning, q as queryToggleIssues, e as normalizeQueryOptions, b as bindingSpans, p as parseExpression } from "./chunk-bAm-dTe9.mjs";
-import { g as getDatasourceQuerySchema } from "./chunk-bLt8_DOY.mjs";
+import { p as pagesUsingQuery, l as lintPlannedApp, a as prepareQueryOptionsForWrite, m as matchPlannedPage, e as expandQueryLifecycles, v as validateEvents, n as navigationReorders, b as persistedEventSpecs, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, f as polishFlexRows } from "./chunk-s23ZUDq4.mjs";
+import { f as fail, D as arithmeticWriteWarning, o as ok, E as COMPONENT_FX_GUIDANCE, t as tableQuotaError, L as LARGE_READ_ROW_THRESHOLD, k as assessQueryRead, p as resolveStaticBindings, m as resolvedReadRefusal, F as sameReadSource, H as extractRowCount, I as emptyViewerOnlyParams, J as emptyParamsNote, K as unresolvedNote, B as validateQueryOptions, y as issueMessages, d as bindingSpans, M as declaredParameterDefaults } from "./chunk-w14kofOC.mjs";
+import { F as FLEX_MIN_WIDTH_PX_DESCRIPTION, f as FLEX_GROW_DESCRIPTION, g as FLEX_WIDTH_PX_DESCRIPTION, j as FLEX_FILL_WIDTH_DESCRIPTION, m as mapKeyRefusal, r as resolveRef, p as plannedCurrency, n as normalizeComponentSpec, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty } from "./chunk-DRRtluDi.mjs";
+import { T as TOOLJET_DB_DATA_TYPES, n as normalizeType, b as invalidSeedTimestamps, l as literalCanvasColor, c as componentRef, d as completedPartialWrites, e as currentBranchId, i as indexComponentReferences } from "./chunk-d_W8P3vu.mjs";
+import { a as autoReadPreflight, N as NOT_CHECKED_AUTOMATICALLY } from "./chunk-C1F2Fxyy.mjs";
+import { a as componentNameSchema, c as componentSlotSchema, D as pageIconSchema, z as validateAppStructure, E as lintPackItemSlots, y as lintComponents, d as decodeComponentParent, h as encodeComponentParent, F as namespaceReads } from "./chunk-_cASSUa6.mjs";
+import { D as resolveComponentLibrary, K as componentLibraryWarnings, e as emptyLibraryHostError, L as unpinnedLibraries, z as suggestedHtmlHeight } from "./chunk-DGkwZJJU.mjs";
+import { b0 as external_exports } from "./chunk-5U2_zDJi.mjs";
+import { g as getDatasourceQuerySchema } from "./chunk-D7K0V5QF.mjs";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
-function prepareQueryOptionsForWrite(kind, raw, subject) {
-  const prefix = subject ? `${subject}: ` : "";
-  const line = (text) => subject ? `${prefix}${text}` : text.charAt(0).toUpperCase() + text.slice(1);
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return { options: raw, errors: [line("options must be an object.")], warnings: [] };
-  }
-  const toggled = normalizeQueryToggles(raw);
-  const warnings = [];
-  const rewrite = toggleRewriteWarning(raw, toggled);
-  if (rewrite)
-    warnings.push(`${prefix}${rewrite}`);
-  if (!kind) {
-    return { options: toggled, errors: issueMessages(queryToggleIssues(toggled), subject), warnings };
-  }
-  const options = normalizeQueryOptions(kind, toggled);
-  if (options !== toggled) {
-    warnings.push(line(kind === "workflows" ? "normalized legacy workflow selectors to workflowId/workflowVersionId." : kind === "mongodb" ? "serialized MongoDB document fields to the JSON text expected by the plugin." : `rewrote the ${String(options.operation)} column map to ToolJet's {index: {column, value}} shape; the flat {column: value} form sends an empty body and fails at runtime.`));
-  }
-  const validation = validateQueryOptions(kind, options);
-  warnings.push(...issueMessages(validation.warnings, subject));
-  return { options, errors: issueMessages(validation.errors, subject), warnings, validation };
-}
 function frozenAppRefusal(summary) {
   if (!summary?.editor_frozen)
     return void 0;
@@ -51,6 +33,7 @@ function storeAppPlan(spec, lint, replaceFingerprint2) {
   prune();
   const planToken = randomUUID();
   plans.set(planToken, {
+    branchId: currentBranchId(),
     spec: structuredClone(spec),
     lint: structuredClone(lint),
     expiresAt: Date.now() + PLAN_TTL_MS,
@@ -67,489 +50,23 @@ function consumeAppPlan(planToken) {
   const plan = plans.get(planToken);
   if (!plan)
     throw new Error("Unknown or expired plan_token. Run lint_app_spec again.");
+  if (plan.branchId !== currentBranchId())
+    throw new Error("The plan belongs to a different branch. Use the branch_id supplied to lint_app_spec.");
   plans.delete(planToken);
   return plan;
 }
 var dbColumnTypeSchema = external_exports.string().describe("ToolJet DB types: string, integer, bigint, serial, number (double precision), boolean, timestamp, jsonb. Existing aliases text/varchar/int/float/decimal/double/bool/datetime/date/json and canonical API type names are accepted. numeric is unsupported; number/decimal are floating-point, not exact decimal. For money consider integer minor units.").refine((value) => TOOLJET_DB_DATA_TYPES.has(normalizeType(value)), {
   message: "Unsupported ToolJet DB type. Use string, integer, bigint, serial, number (double precision), boolean, timestamp or jsonb. numeric is not supported. For money choose on purpose: integer cents where sums must be exact, or number shown with a currency format for prices; never swap one in silently."
 });
-var AUTO_MATERIALIZE_DEFAULTS = /* @__PURE__ */ new Set(["Kanban"]);
-var TOOLJET_DESKTOP_GRID_COLUMNS = 43;
-function wrappedValues(keys, defaults) {
-  if (!keys?.length)
-    return void 0;
-  return Object.fromEntries(keys.map((key2) => [key2, { value: defaults[key2] ?? "" }]));
-}
-function childLayout(child, parentType, index) {
-  const schema = getComponentSchema(child.componentName);
-  if (parentType === "Kanban" && child.componentName === "Text") {
-    return { top: index === 0 ? 12 : 44, left: 2, width: 39, height: child.layout?.height ?? 30 };
-  }
-  return {
-    top: child.layout?.top ?? 0,
-    left: child.layout?.left ?? 0,
-    width: child.layout?.width ?? (schema?.defaultSize?.width ?? 1) * 100 / TOOLJET_DESKTOP_GRID_COLUMNS,
-    height: child.layout?.height ?? schema?.defaultSize?.height ?? 40
-  };
-}
-function childName(parentName, child, index) {
-  const cardField = Object.values(child.defaultValue ?? {}).find((value) => typeof value === "string")?.match(/cardData\.([A-Za-z0-9_]+)/)?.[1];
-  const baseRole = cardField ?? child.accessorKey ?? child.componentName;
-  const role = baseRole.charAt(0).toUpperCase() + baseRole.slice(1) + (cardField ? "" : index + 1);
-  return `${parentName}Card${role}`;
-}
-function materializeRequiredDefaultChildren(input) {
-  const explicitParentRefs = new Set(input.flatMap((component) => component.parentRef && (!component.slotName || component.slotName === "body") ? [component.parentRef] : []));
-  const components = [];
-  const warnings = [];
-  let materializedChildren = 0;
-  input.forEach((original) => {
-    if (!AUTO_MATERIALIZE_DEFAULTS.has(original.type)) {
-      components.push(original);
-      return;
-    }
-    const schema = getComponentSchema(original.type);
-    const defaults = schema?.defaultChildren ?? [];
-    if (!defaults.length || explicitParentRefs.has(componentRef(original))) {
-      components.push(original);
-      return;
-    }
-    const clientRef = componentRef(original);
-    components.push(original);
-    defaults.forEach((child, childIndex) => {
-      const defaultValue = child.defaultValue ?? {};
-      components.push({
-        name: childName(original.name, child, childIndex),
-        type: child.componentName,
-        properties: wrappedValues(child.properties, defaultValue) ?? {},
-        styles: wrappedValues(child.styles, defaultValue),
-        layout: childLayout(child, original.type, childIndex),
-        parentRef: clientRef
-      });
-    });
-    materializedChildren += defaults.length;
-    warnings.push(`Kanban "${original.name}" had no explicit card children; materialized ${defaults.length} catalog default children so cards render content. For wrapped multi-line card text, use add_components with a Kanban client_ref and an explicit Html child using the matching parent_ref.`);
-  });
-  return { components, warnings, materializedChildren };
-}
-function separateAdjacentClosingBraces(text) {
-  let out = "";
-  let i = 0;
-  const n = text.length;
-  while (i < n) {
-    if (!text.startsWith("{{", i)) {
-      out += text[i];
-      i += 1;
-      continue;
-    }
-    let j = i + 2;
-    let depth = 0;
-    let quote = null;
-    let expr = "";
-    let terminated = false;
-    while (j < n) {
-      const c = text[j];
-      if (quote) {
-        expr += c;
-        if (c === "\\" && j + 1 < n) {
-          expr += text[j + 1];
-          j += 2;
-          continue;
-        }
-        if (c === quote)
-          quote = null;
-        j += 1;
-        continue;
-      }
-      if (c === "'" || c === '"' || c === "`") {
-        quote = c;
-        expr += c;
-        j += 1;
-        continue;
-      }
-      if (c === "{") {
-        depth += 1;
-        expr += c;
-        j += 1;
-        continue;
-      }
-      if (c === "}") {
-        if (depth === 0 && text[j + 1] === "}") {
-          terminated = true;
-          break;
-        }
-        depth = Math.max(depth - 1, 0);
-        expr += c;
-        if (text[j + 1] === "}")
-          expr += " ";
-        j += 1;
-        continue;
-      }
-      expr += c;
-      j += 1;
-    }
-    if (!terminated) {
-      out += text.slice(i);
-      break;
-    }
-    out += `{{${expr}}}`;
-    i = j + 2;
-  }
-  return out;
-}
-function separateAdjacentClosingBracesDeep(value) {
-  if (typeof value === "string") {
-    if (!value.includes("{{"))
-      return { value, changed: false };
-    const fixed = separateAdjacentClosingBraces(value);
-    return { value: fixed, changed: fixed !== value };
-  }
-  if (Array.isArray(value)) {
-    let changed = false;
-    const next = value.map((item) => {
-      const result = separateAdjacentClosingBracesDeep(item);
-      changed ||= result.changed;
-      return result.value;
-    });
-    return { value: changed ? next : value, changed };
-  }
-  if (value && typeof value === "object") {
-    let changed = false;
-    const next = {};
-    for (const [key2, item] of Object.entries(value)) {
-      const result = separateAdjacentClosingBracesDeep(item);
-      changed ||= result.changed;
-      next[key2] = result.value;
-    }
-    return { value: changed ? next : value, changed };
-  }
-  return { value, changed: false };
-}
-function normalizeSection(section) {
-  if (!section)
-    return { value: void 0, patch: void 0 };
-  const value = {};
-  const patch = {};
-  for (const [key2, entry] of Object.entries(section)) {
-    const canonical2 = entry !== null && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry : { value: entry };
-    value[key2] = canonical2;
-    if (canonical2 !== entry)
-      patch[key2] = canonical2;
-  }
-  return {
-    value,
-    patch: Object.keys(patch).length ? patch : void 0
-  };
-}
-function propValue(properties, key2) {
-  const entry = properties[key2];
-  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
-}
-function isTruthy(value) {
-  if (value === true || value === 1)
-    return true;
-  if (typeof value !== "string")
-    return false;
-  const compact = value.replace(/\s+/g, "").toLowerCase();
-  return compact === "true" || compact === "{{true}}" || compact === "1" || compact === "{{1}}";
-}
-function catalogDefault(type, key2, fallback) {
-  return getComponentSchema(type)?.properties.find((property) => property.key === key2)?.default ?? fallback;
-}
-var CLIENT_SERVER_BOOLEAN_KEYS = /* @__PURE__ */ new Set([
-  "serverSidePagination",
-  "serverSideSearch",
-  "serverSideSort",
-  "serverSideFilter"
-]);
-var STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS = 24;
-function isStrippableUnknownKey(type, section, key2, knownKeys) {
-  if (knownKeys.includes(key2))
-    return false;
-  if (type === "DropdownV2" && section === "properties" && ["value", "defaultValue"].includes(key2))
-    return false;
-  if (section === "properties" && STYLE_KEYS_IN_PROPERTIES.has(key2))
-    return false;
-  const aliasTarget = PROPERTY_KEY_ALIASES[key2.toLowerCase()];
-  if (aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget)))
-    return false;
-  if (nearestCatalogKey(key2, knownKeys))
-    return false;
-  return true;
-}
-function normalizeComponentSpec(component, options = {}) {
-  const normalizedSections = Object.fromEntries(["properties", "styles", "validation", "others"].map((section) => [
-    section,
-    normalizeSection(component[section])
-  ]));
-  const properties = { ...normalizedSections.properties.value ?? {} };
-  const propertyPatch = {};
-  const stylePatch = {};
-  const warnings = [];
-  const setProperty = (key2, value) => {
-    const current = properties[key2];
-    const wrapped = current && typeof current === "object" && !Array.isArray(current) ? { ...current, value } : { value };
-    properties[key2] = wrapped;
-    propertyPatch[key2] = wrapped;
-  };
-  const stylesValue = normalizedSections.styles.value ?? {};
-  let stylesChanged = false;
-  const setStyle = (key2, value) => {
-    const current = stylesValue[key2];
-    stylesValue[key2] = current && typeof current === "object" && !Array.isArray(current) ? { ...current, value } : { value };
-    stylePatch[key2] = stylesValue[key2];
-    normalizedSections.styles.value = stylesValue;
-  };
-  const schema = getComponentSchema(component.type);
-  const knownPropertyKeys = schema ? new Set(schema.properties.map((entry) => entry.key)) : void 0;
-  const knownStyleKeys = schema ? new Set(schema.styles.map((entry) => entry.key)) : void 0;
-  const aliasTargetFor = (key2) => {
-    if (knownPropertyKeys?.has(key2))
-      return void 0;
-    const target = PROPERTY_KEY_ALIASES[key2.toLowerCase()];
-    if (!target)
-      return void 0;
-    if (!schema)
-      return target;
-    return knownStyleKeys.has(target) || knownPropertyKeys.has(target) ? target : void 0;
-  };
-  for (const key2 of Object.keys(properties)) {
-    const aliasTarget = aliasTargetFor(key2);
-    const canonical2 = aliasTarget ?? key2;
-    const belongsInStyles = canonical2 !== "styles" && (STYLE_KEYS_IN_PROPERTIES.has(canonical2) || !!aliasTarget && !!knownStyleKeys?.has(canonical2) && !knownPropertyKeys?.has(canonical2));
-    if (!aliasTarget && !belongsInStyles)
-      continue;
-    if (belongsInStyles) {
-      if (stylesValue[canonical2] === void 0)
-        stylesValue[canonical2] = properties[key2];
-      delete properties[key2];
-      stylesChanged = true;
-      warnings.push(`${component.type} "${component.name}": moved ${aliasTarget ? `alias "${key2}"` : `style key "${key2}"`} to styles.${canonical2} (ToolJet reads it from styles, not properties).`);
-    } else if (canonical2 !== key2) {
-      if (properties[canonical2] === void 0)
-        properties[canonical2] = properties[key2];
-      delete properties[key2];
-      warnings.push(`${component.type} "${component.name}": renamed alias "${key2}" to "${canonical2}".`);
-    }
-  }
-  if (stylesChanged)
-    normalizedSections.styles.value = stylesValue;
-  if (options.stripUnknownKeys && component.type === "NumberInput") {
-    for (const key2 of ["minValue", "maxValue"]) {
-      const value = propValue(properties, key2);
-      if (value == null || typeof value === "string" && !value.trim())
-        continue;
-      const validation = normalizedSections.validation.value ?? {};
-      const current = propValue(validation, key2);
-      if (validation[key2] !== void 0 && current !== value)
-        continue;
-      validation[key2] = properties[key2];
-      normalizedSections.validation.value = validation;
-      normalizedSections.validation.patch = { ...normalizedSections.validation.patch, [key2]: validation[key2] };
-      delete properties[key2];
-      warnings.push(`NumberInput "${component.name}": moved properties.${key2} to validation.${key2}, where the renderer reads the bound.`);
-    }
-  }
-  for (const key2 of CLIENT_SERVER_BOOLEAN_KEYS) {
-    const current = propValue(properties, key2);
-    if (current !== "clientSide" && current !== "serverSide")
-      continue;
-    setProperty(key2, current === "serverSide");
-    warnings.push(`${component.name} "${key2}": normalized ${JSON.stringify(current)} to a boolean ToolJet binding.`);
-  }
-  if (component.type === "Table") {
-    if (properties.useDynamicColumn === void 0) {
-      setProperty("useDynamicColumn", catalogDefault("Table", "useDynamicColumn", "{{false}}"));
-    }
-    if (properties.columnData === void 0) {
-      setProperty("columnData", catalogDefault("Table", "columnData", "{{[{name: 'email', key: 'email', id: '1'}, {name: 'Full name', key: 'name', id: '2', isEditable: true}]}}"));
-    }
-    const columns = propValue(properties, "columns");
-    const dynamicColumns = isTruthy(propValue(properties, "useDynamicColumn"));
-    const autogenerateColumns = propValue(properties, "autogenerateColumns");
-    if (options.stripUnknownKeys && columns === void 0 && !dynamicColumns && isTruthy(autogenerateColumns) && typeof propValue(properties, "data") === "string" && /\bqueries(?:\.|\[)/.test(String(propValue(properties, "data")))) {
-      setProperty("columns", []);
-    }
-    if (Array.isArray(columns) && !dynamicColumns && !isTruthy(autogenerateColumns)) {
-      setProperty("autogenerateColumns", true);
-      if (autogenerateColumns !== void 0) {
-        warnings.push(`Table "${component.name}": normalized autogenerateColumns from false to true for runtime compatibility. Some ToolJet Table versions crash while generating transformations for explicit static columns when it is false. Project the data binding to intended keys and declare behavior-only keys with columnVisibility:false.`);
-      }
-    }
-    if (Array.isArray(columns)) {
-      let changedColumns = false;
-      const repairedColumns = columns.map((column) => {
-        if (options.stripUnknownKeys && column && typeof column === "object" && !Array.isArray(column) && column.columnType === "button" && Array.isArray(column.buttons)) {
-          const buttons = column.buttons.map((button) => {
-            if (!button || typeof button !== "object" || Array.isArray(button))
-              return button;
-            const b = button;
-            if (typeof b.label !== "string" || b.buttonLabel !== void 0)
-              return button;
-            const { label, ...rest } = b;
-            changedColumns = true;
-            warnings.push(`Table "${component.name}" action "${b.id}": moved label to buttonLabel, where the renderer reads the caption.`);
-            return { ...rest, buttonLabel: label };
-          });
-          column = { ...column, buttons };
-        }
-        if (column && typeof column === "object" && !Array.isArray(column) && column.columnType === "datepicker" && column.isDateSelectionEnabled === false && column.isTimeChecked !== true) {
-          changedColumns = true;
-          const entry = column;
-          warnings.push(`Table "${component.name}" date column "${entry.name ?? entry.key}": enabled date selection \u2014 a datepicker column with both date selection and time disabled renders blank regardless of the data.`);
-          return { ...entry, isDateSelectionEnabled: true };
-        }
-        return column;
-      });
-      if (changedColumns)
-        setProperty("columns", repairedColumns);
-    }
-  }
-  if (component.type === "KeyValuePair") {
-    const fields = propValue(properties, "fields");
-    if (Array.isArray(fields) && fields.length > 0) {
-      const explicitIds = new Set(fields.flatMap((field) => {
-        const id = field && typeof field === "object" ? field.id : void 0;
-        return typeof id === "string" && id.length > 0 ? [id] : [];
-      }));
-      const demoFields = catalogDefault("KeyValuePair", "fields", []);
-      const currentHistory = propValue(properties, "fieldDeletionHistory");
-      const deletionHistory = new Set(Array.isArray(currentHistory) ? currentHistory.filter((key2) => typeof key2 === "string" && key2.length > 0) : []);
-      const before = deletionHistory.size;
-      if (Array.isArray(demoFields)) {
-        for (const field of demoFields) {
-          if (!field || typeof field !== "object")
-            continue;
-          const { id, key: key2 } = field;
-          if (typeof key2 === "string" && !explicitIds.has(String(id ?? "")))
-            deletionHistory.add(key2);
-        }
-      }
-      if (deletionHistory.size > before || properties.fieldDeletionHistory === void 0) {
-        setProperty("fieldDeletionHistory", [...deletionHistory]);
-        warnings.push(`KeyValuePair "${component.name}": normalized fieldDeletionHistory so ToolJet does not append or positionally merge catalog demo fields into the explicit fields array.`);
-      }
-    }
-  }
-  if (component.type === "Statistics") {
-    const width = (component.layouts?.desktop ?? component.layout)?.width;
-    const iconName = propValue(properties, "icon");
-    const iconVisible = typeof iconName === "string" && iconName.trim() !== "" && propValue(properties, "iconVisibility") !== false && propValue(properties, "iconVisibility") !== "{{false}}";
-    const rawSize = propValue(stylesValue, "primaryValueSize") ?? propValue(properties, "primaryValueSize");
-    const sizeText = typeof rawSize === "string" ? rawSize.replace(/[{}]/g, "").trim() : rawSize;
-    const numericSize = typeof sizeText === "number" ? sizeText : typeof sizeText === "string" && /^\d+$/.test(sizeText) ? Number(sizeText) : void 0;
-    const rawValue = propValue(properties, "primaryValue");
-    const currencyValue = typeof rawValue === "string" && /minimumFractionDigits|style\s*:\s*['"]currency['"]|[$£€¥]/.test(rawValue);
-    const widthKnown = typeof width === "number";
-    const narrowTile = widthKnown && width < STATISTICS_ICON_VALUE_MIN_SAFE_WIDTH_COLS;
-    const clipProne = iconVisible && narrowTile || currencyValue && (narrowTile || !widthKnown);
-    if (isTruthy(propValue(properties, "hideSecondary")) && (numericSize === void 0 || numericSize > 22) && clipProne) {
-      setStyle("primaryValueSize", "{{22}}");
-      warnings.push(`Statistics "${component.name}": set styles.primaryValueSize to 22 so the ${currencyValue ? "currency " : ""}value fits a value-only tile${widthKnown ? ` (${width} columns wide)` : ""} (larger sizes clip or wrap the value).`);
-    }
-  }
-  if (options.stripUnknownKeys) {
-    const schema2 = getComponentSchema(component.type);
-    if (schema2) {
-      const sections = [
-        ["properties", properties],
-        ["styles", normalizedSections.styles.value]
-      ];
-      for (const [section, sectionValue] of sections) {
-        if (!sectionValue)
-          continue;
-        const knownKeys = (schema2[section] ?? []).map((entry) => entry.key);
-        for (const key2 of Object.keys(sectionValue)) {
-          if (!isStrippableUnknownKey(component.type, section, key2, knownKeys))
-            continue;
-          delete sectionValue[key2];
-          warnings.push(`${component.type} "${component.name}": removed unknown ${section} key "${key2}" \u2014 ToolJet ignores it, so it is kept out of the saved definition rather than persisted as an unusable key.`);
-        }
-      }
-    }
-  }
-  const braceFixedKeys = [];
-  for (const key2 of Object.keys(properties)) {
-    const result = separateAdjacentClosingBracesDeep(propValue(properties, key2));
-    if (!result.changed)
-      continue;
-    setProperty(key2, result.value);
-    braceFixedKeys.push(`properties.${key2}`);
-  }
-  for (const key2 of Object.keys(stylesValue)) {
-    const result = separateAdjacentClosingBracesDeep(propValue(stylesValue, key2));
-    if (!result.changed)
-      continue;
-    setStyle(key2, result.value);
-    braceFixedKeys.push(`styles.${key2}`);
-  }
-  if (braceFixedKeys.length) {
-    warnings.push(`${component.type} "${component.name}": separated adjacent closing braces inside ${braceFixedKeys.join(", ")} (ToolJet ends a {{ }} expression at the first "}}", which would have left the component blank). Write nested closes as "} }" inside bindings.`);
-  }
-  const patch = Object.fromEntries(["properties", "styles", "validation", "others"].flatMap((section) => {
-    const envelopePatch = normalizedSections[section].patch ?? {};
-    const semanticPatch = section === "properties" ? propertyPatch : section === "styles" ? stylePatch : {};
-    const merged = { ...envelopePatch, ...semanticPatch };
-    return Object.keys(merged).length ? [[section, merged]] : [];
-  }));
-  return {
-    component: {
-      ...component,
-      properties,
-      ...normalizedSections.styles.value ? { styles: normalizedSections.styles.value } : {},
-      ...normalizedSections.validation.value ? { validation: normalizedSections.validation.value } : {},
-      ...normalizedSections.others.value ? { others: normalizedSections.others.value } : {}
-    },
-    patch,
-    warnings
-  };
-}
-function normalizePlannedLayouts(component) {
-  const warnings = [];
-  const label = `${component.type ?? "component"} "${component.name ?? "?"}"`;
-  const targets = [];
-  if (component.layout)
-    targets.push(["layout", component.layout]);
-  if (component.layouts?.desktop)
-    targets.push(["desktop", component.layouts.desktop]);
-  if (component.layouts?.mobile)
-    targets.push(["mobile", component.layouts.mobile]);
-  if (!targets.length)
-    return { component, warnings };
-  const textMinimum = component.type === "Text" ? minimumTextHeight(component) : void 0;
-  const schema = component.type ? getComponentSchema(component.type) : void 0;
-  const compactHeight = schema?.renderingHints?.compactFormHeight ? schema?.defaultSize?.height : void 0;
-  const fixed = /* @__PURE__ */ new Map();
-  for (const [name, rect] of targets) {
-    if (typeof rect.height !== "number")
-      continue;
-    if (textMinimum !== void 0 && rect.height < textMinimum) {
-      fixed.set(name, { ...rect, height: textMinimum });
-      warnings.push(`${label}: raised ${name} height ${rect.height}px to ${textMinimum}px so one line of text renders.`);
-    } else if (compactHeight !== void 0 && rect.height > compactHeight) {
-      fixed.set(name, { ...rect, height: compactHeight });
-      warnings.push(`${label}: lowered ${name} height ${rect.height}px to the standard single-line ${compactHeight}px (oversizing does not enlarge the value text; a top label renders outside the box).`);
-    }
-  }
-  if (!fixed.size)
-    return { component, warnings };
-  const next = { ...component };
-  if (fixed.has("layout"))
-    next.layout = fixed.get("layout");
-  if (fixed.has("desktop") || fixed.has("mobile")) {
-    next.layouts = {
-      ...component.layouts,
-      ...fixed.has("desktop") ? { desktop: fixed.get("desktop") } : {},
-      ...fixed.has("mobile") ? { mobile: fixed.get("mobile") } : {}
-    };
-  }
-  return { component: next, warnings };
-}
 var layoutSchema = external_exports.object({
   top: external_exports.number(),
   left: external_exports.number().describe("Columns in the immediate parent canvas, which has its own 43-column grid."),
   width: external_exports.number().describe("Columns out of 43 in the immediate parent canvas, independent of the parent outer width. Full width is 43. Container/Form/modal inset full rows use left 2, width 39; grid-mode Listview full rows use left 0, width 43."),
-  height: external_exports.number()
+  height: external_exports.number(),
+  fillWidth: external_exports.boolean().optional().describe(FLEX_FILL_WIDTH_DESCRIPTION),
+  widthPx: external_exports.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION),
+  grow: external_exports.number().positive().optional().describe(FLEX_GROW_DESCRIPTION),
+  minWidthPx: external_exports.number().nonnegative().optional().describe(FLEX_MIN_WIDTH_PX_DESCRIPTION)
 });
 var componentInputSchema = external_exports.object({
   name: componentNameSchema,
@@ -582,8 +99,9 @@ function prepareComponentBatch(inputs, options = {}) {
     parentRef: parent_ref,
     slotName: slot_name
   }));
+  const currency = plannedCurrency(requested);
   const normalized = requested.map((component) => {
-    const definition = normalizeComponentSpec(component, { stripUnknownKeys: true });
+    const definition = normalizeComponentSpec(component, { stripUnknownKeys: true, currency });
     const geometry = normalizePlannedLayouts(definition.component);
     return { ...definition, component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
   });
@@ -598,7 +116,9 @@ function prepareComponentBatch(inputs, options = {}) {
         rect.height = fix.to;
     heightFixes.push(`Html "${component.name ?? "?"}" needed about ${fix.needed}px for its markup but was ${fix.from}px; saved at ${fix.to}px. Anything placed within ${fix.to - fix.from}px below it now overlaps; move it down.`);
   }
-  const expanded = materializeRequiredDefaultChildren(normalized.map((result) => result.component));
+  const materialized = materializeRequiredDefaultChildren(normalized.map((result) => result.component));
+  const polished = polishFlexRows(materialized.components);
+  const expanded = { components: polished.components, warnings: [...materialized.warnings, ...polished.warnings] };
   const references = indexComponentReferences(expanded.components, options.existingComponents);
   const lint = lintComponents(references.components, options);
   const lateListviewChildWarnings = requested.flatMap((component) => component.parent && containsListItemBinding({
@@ -666,6 +186,7 @@ var plannedPageSchema = external_exports.object({
   hidden: external_exports.boolean().optional(),
   /** The existing page of this name is replaced whole: see pageReplace.ts. */
   replace: external_exports.boolean().optional().describe("true: the existing page of this name ends up holding exactly this plan's components and the events on them (needs app_id). It is written as a difference: a component the plan leaves as it is is not rewritten, one that only moved is moved, and one that changed keeps its id. Queries of that page the plan defines again are updated in place, keeping their ids. Refused when another page, event or query reads a component the plan drops. Not atomic: use it on draft or otherwise recoverable pages."),
+  archetype: external_exports.string().optional().describe("The page's archetype: catalog (records with a face: photo cards, search, detail sheet), personal-overview (one person's period at a glance: hero, figures, progress, recent), register (a filtered table of records with a detail sheet), queue-board (work to act on: counts, needs-attention list, queue) or other. Lint checks the page against it."),
   components: external_exports.array(componentInputSchema).optional()
 });
 var plannedEventSchema = external_exports.object({
@@ -697,6 +218,8 @@ var appPlanSchema = external_exports.object({
   version_id: external_exports.string().optional(),
   /** Rename the target app as part of the same governed phase. */
   app_name: external_exports.string().trim().min(1).max(100).optional(),
+  /** The user's words asking for the other component library than the app's: see componentLibrary.ts. */
+  component_library_request: external_exports.string().trim().min(1).max(300).optional().describe('Only when the user asked in this request for the other component library than the app is built in (for example "use UI 2.0" or "use the new components" in a UI 1.0 app): their words. Without it, lint warns when the plan adds widgets from the other library.'),
   tables: external_exports.array(plannedTableSchema).max(50).optional(),
   seed_data: external_exports.array(plannedSeedSchema).max(50).optional(),
   queries: external_exports.array(plannedQuerySchema).max(200).optional(),
@@ -719,712 +242,12 @@ function htmlFedTextColumns(table, queries) {
   return columns.filter((col) => {
     if ((col.columnType ?? "string") !== "string" || typeof col.key !== "string" || !col.key)
       return false;
-    const key2 = col.key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    if (new RegExp(`\\b${key2}\\s*:[^,;{}]*?['"\`]\\s*<[a-zA-Z]`).test(code))
+    const key = col.key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (new RegExp(`\\b${key}\\s*:[^,;{}]*?['"\`]\\s*<[a-zA-Z]`).test(code))
       return true;
-    const idents = [...code.matchAll(new RegExp(`\\b${key2}\\s*:\\s*([A-Za-z_$][\\w$]*)\\s*[,}]`, "g"))].map((m) => m[1]);
+    const idents = [...code.matchAll(new RegExp(`\\b${key}\\s*:\\s*([A-Za-z_$][\\w$]*)\\s*[,}]`, "g"))].map((m) => m[1]);
     return idents.some((id) => new RegExp(`\\b${id}\\s*=(?!=)[^;]*?['"\`]\\s*<[a-zA-Z]`).test(code));
   });
-}
-function resolveRef(candidates, ref, kind, scope, describe = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
-  const byId = candidates.find((candidate) => candidate.id === ref);
-  if (byId)
-    return { ok: true, target: byId };
-  const byName = candidates.filter((candidate) => candidate.name === ref);
-  if (byName.length === 1)
-    return { ok: true, target: byName[0] };
-  if (byName.length > 1) {
-    return {
-      ok: false,
-      error: `${kind} name "${ref}" is ambiguous ${scope} (${byName.length} share it). Pass the id instead: ${byName.map((candidate) => candidate.id).join(", ")}.`
-    };
-  }
-  const available = candidates.map(describe).join(", ");
-  return {
-    ok: false,
-    // The "do not re-read" clause matters: the previous phrasing ("does not exist") invited exactly
-    // the re-read that caused the loop.
-    error: `No ${kind.toLowerCase()} with id or name "${ref}" ${scope}. Do not re-read \u2014 it currently holds: ${available || "(none)"}.`
-  };
-}
-var member = (n) => n && ["MemberExpression", "OptionalMemberExpression"].includes(n.type);
-var key = (n) => n.computed ? n.property?.type === "StringLiteral" ? n.property.value : void 0 : n.property?.name;
-var unwrap = (v) => v && typeof v === "object" && "value" in v ? v.value : v;
-function inputRefs(value) {
-  const refs2 = /* @__PURE__ */ new Set();
-  const scan = (v) => {
-    if (Array.isArray(v)) {
-      v.forEach(scan);
-      return;
-    }
-    if (v && typeof v === "object") {
-      Object.values(v).forEach(scan);
-      return;
-    }
-    if (typeof v !== "string")
-      return;
-    const binding = v.trim().match(/^\{\{([\s\S]*)\}\}$/);
-    if (!binding)
-      return;
-    let root;
-    try {
-      root = parseExpression(binding[1]);
-    } catch {
-      return;
-    }
-    const found = /* @__PURE__ */ new Set();
-    let uncertain = false;
-    const visit = (n) => {
-      if (!n || typeof n !== "object")
-        return;
-      if (Array.isArray(n)) {
-        n.forEach(visit);
-        return;
-      }
-      if (n.params || n.type === "VariableDeclarator" || n.type === "WithStatement")
-        uncertain = true;
-      if (member(n) && ["value", "selectedDate", "isValid"].includes(key(n)) && member(n.object)) {
-        const owner = n.object;
-        if (owner.object?.type === "Identifier" && owner.object.name === "components" && key(owner))
-          found.add(key(owner));
-      }
-      Object.values(n).forEach(visit);
-    };
-    visit(root);
-    if (!uncertain)
-      found.forEach((name) => refs2.add(name));
-  };
-  scan(value);
-  return refs2;
-}
-function truthyOnlyRequiredText(value, disabled) {
-  const raw = unwrap(value);
-  if (typeof raw !== "string")
-    return /* @__PURE__ */ new Set();
-  const binding = raw.trim().match(/^\{\{([\s\S]*)\}\}$/);
-  if (!binding)
-    return /* @__PURE__ */ new Set();
-  let root;
-  try {
-    root = parseExpression(binding[1]);
-  } catch {
-    return /* @__PURE__ */ new Set();
-  }
-  const refs2 = /* @__PURE__ */ new Set();
-  const rooted = (n, name) => member(n) && n.object?.type === "Identifier" && n.object.name === name && key(n);
-  const visit = (n) => {
-    if (n.type === "LogicalExpression" && n.operator === (disabled ? "||" : "&&"))
-      return visit(n.left) && visit(n.right);
-    if (disabled && n.type === "UnaryExpression" && n.operator === "!") {
-      const v2 = n.argument;
-      if (member(v2) && key(v2) === "value" && rooted(v2.object, "components")) {
-        refs2.add(key(v2.object));
-        return true;
-      }
-    }
-    if (!disabled && member(n) && key(n) === "value" && rooted(n.object, "components")) {
-      refs2.add(key(n.object));
-      return true;
-    }
-    const v = n.type === "UnaryExpression" && n.operator === "!" ? n.argument : n;
-    return Boolean(member(v) && key(v) === "isLoading" && rooted(v.object, "queries"));
-  };
-  return visit(root) ? refs2 : /* @__PURE__ */ new Set();
-}
-function requiredMutationGuardWarnings(source, query, action, components) {
-  const inputs = inputRefs(query.options);
-  const guarded = inputRefs([source.properties?.disabledState, action.runOnlyIf]);
-  const missing = components.filter((c) => c.name && inputs.has(c.name) && !guarded.has(c.name) && ["TextInput", "TextArea", "NumberInput", "CurrencyInput", "DatePickerV2"].includes(c.type ?? "") && [true, "true", "{{true}}"].includes(unwrap(c.validation?.mandatory)));
-  const warnings = missing.length ? [`Button "${source.name ?? source.id}" directly runs mutation "${query.name ?? query.id}" using required inputs ${missing.map((c) => `"${c.name}"`).join(", ")}, but no field validation is visible in disabledState or runOnlyIf. A required marker alone does not stop this query. Validate before writing (including whitespace-only text), or route through a validating Form/RunJS success chain. Preserve zero and false; keep database constraints authoritative. This advisory does not prove arbitrary guards or server validation.`] : [];
-  const disabledRefs = inputRefs(source.properties?.disabledState), actionRefs = inputRefs(action.runOnlyIf);
-  const disabledTruthy = truthyOnlyRequiredText(source.properties?.disabledState, true);
-  const actionTruthy = truthyOnlyRequiredText(action.runOnlyIf, false);
-  const weak = components.filter((c) => c.name && inputs.has(c.name) && ["TextInput", "TextArea"].includes(c.type ?? "") && (disabledTruthy.has(c.name) || actionTruthy.has(c.name)) && (!disabledRefs.has(c.name) || disabledTruthy.has(c.name)) && (!actionRefs.has(c.name) || actionTruthy.has(c.name)));
-  if (weak.length)
-    warnings.push(`Button "${source.name ?? source.id}" checks text ${weak.map((c) => `"${c.name}"`).join(", ")} using only truthiness. Whitespace-only text can pass this guard. If blank text is invalid, trim before checking length (and validate before writing); do not apply truthiness validation to numbers or booleans.`);
-  return warnings;
-}
-function unconditional(action) {
-  if (action.disabled)
-    return false;
-  const guard = action.runOnlyIf;
-  return !guard || guard === true || typeof guard === "string" && /^(?:true|\{\{\s*true\s*\}\})$/.test(guard.trim());
-}
-function queryEventCycleErrors(summary, additions, persisted) {
-  const names = new Map(summary.queries.map((q) => [q.id, q.name ?? q.id]));
-  const resolve2 = (value) => {
-    if (typeof value !== "string")
-      return void 0;
-    if (names.has(value))
-      return value;
-    const matches = summary.queries.filter((q) => q.name === value);
-    return matches.length === 1 ? matches[0].id : void 0;
-  };
-  const edge = (event) => {
-    if (event.sourceType !== "data_query" || !names.has(event.sourceId) || event.action.actionId !== "run-query" || !unconditional(event.action))
-      return void 0;
-    const target = resolve2(event.action.queryId);
-    return target ? [event.sourceId, target] : void 0;
-  };
-  const graph = /* @__PURE__ */ new Map();
-  for (const event of [...persisted, ...additions]) {
-    if (event.trigger !== "onDataQuerySuccess")
-      continue;
-    const pair = edge(event);
-    if (!pair)
-      continue;
-    const targets = graph.get(pair[0]) ?? /* @__PURE__ */ new Set();
-    targets.add(pair[1]);
-    graph.set(pair[0], targets);
-  }
-  const reaches = (start, end) => {
-    const queue = [start], visited = /* @__PURE__ */ new Set();
-    while (queue.length) {
-      const current = queue.pop();
-      if (current === end)
-        return true;
-      if (visited.has(current))
-        continue;
-      visited.add(current);
-      for (const next of graph.get(current) ?? [])
-        queue.push(next);
-    }
-    return false;
-  };
-  const errors = [];
-  for (const event of additions) {
-    const pair = edge(event);
-    if (!pair)
-      continue;
-    const [source, target] = pair;
-    const successCycle = event.trigger === "onDataQuerySuccess" && reaches(target, source);
-    const failureSelfRetry = event.trigger === "onDataQueryFailure" && source === target;
-    if (successCycle || failureSelfRetry)
-      errors.push(`Query "${names.get(source)}" -> "${names.get(target)}" creates an unconditional query ${failureSelfRetry ? "failure retry" : "success cycle"}. This can repeat queries and writes after one click. Refresh a separate read query with no return edge, or use an explicit bounded retry/termination guard.`);
-  }
-  return [...new Set(errors)];
-}
-var ACTION_IDS = /* @__PURE__ */ new Set([
-  "run-query",
-  "switch-page",
-  "show-alert",
-  "show-modal",
-  "close-modal",
-  "set-custom-variable",
-  "unset-custom-variable",
-  "set-page-variable",
-  "set-table-page",
-  "copy-to-clipboard",
-  "generate-file",
-  "open-webpage",
-  "go-to-app",
-  "logout",
-  "control-component",
-  "set-localstorage-value",
-  "scroll-component-into-view"
-]);
-function propVal(properties, key2) {
-  const value = properties?.[key2];
-  return value && typeof value === "object" && "value" in value ? value.value : value;
-}
-function isFalseBinding(value) {
-  return value === false || value === "false" || value === "{{false}}";
-}
-function isRecord(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-function nonEmptyString(value) {
-  return typeof value === "string" && value.trim().length > 0;
-}
-function navigationItemRef(source, ref) {
-  let unknown = false;
-  let found = false;
-  let group = false;
-  const visit = (items) => {
-    if (typeof items === "string" && items.includes("{{")) {
-      unknown = true;
-      return;
-    }
-    if (!Array.isArray(items)) {
-      if (items == null)
-        unknown = true;
-      return;
-    }
-    for (const item of items) {
-      if (!isRecord(item))
-        continue;
-      if (item.id === ref) {
-        if (item.isGroup)
-          group = true;
-        else
-          found = true;
-      }
-      if (typeof item.id === "string" && item.id.includes("{{"))
-        unknown = true;
-      if (item.isGroup)
-        visit(item.children ?? []);
-    }
-  };
-  visit(propVal(source.properties, "menuItems"));
-  return group ? "invalid" : found ? "valid" : unknown ? "unknown" : "invalid";
-}
-function effectiveRef(event) {
-  return Object.prototype.hasOwnProperty.call(event.action, "ref") ? event.action.ref : event.ref;
-}
-function validateTableColumnRef(source, ref) {
-  if (!ref)
-    return 'Table Button-column events require ref "<column key or name>::<button id>".';
-  const separator = ref.lastIndexOf("::");
-  if (separator <= 0 || separator === ref.length - 2)
-    return `Table Button-column ref "${ref}" is malformed.`;
-  const columnRef = ref.slice(0, separator);
-  const buttonId = ref.slice(separator + 2);
-  const columns = propVal(source.properties, "columns");
-  if (!Array.isArray(columns))
-    return `Table "${source.name ?? source.id}" has no explicit columns array for ref "${ref}".`;
-  const column = columns.find((candidate) => {
-    const item = candidate;
-    return item?.key === columnRef || item?.name === columnRef;
-  });
-  if (!column || column.columnType !== "button") {
-    return `Table "${source.name ?? source.id}" has no Button column keyed/named "${columnRef}".`;
-  }
-  if (!Array.isArray(column.buttons) || !column.buttons.some((button) => button?.id === buttonId)) {
-    return `Table Button column "${columnRef}" has no button id "${buttonId}".`;
-  }
-  return void 0;
-}
-var MUTATION_OPERATIONS = /* @__PURE__ */ new Set([
-  "create_row",
-  "update_row",
-  "update_rows",
-  "upsert_rows",
-  "delete_row",
-  "delete_rows",
-  "bulk_insert",
-  "bulk_update_pkey",
-  "bulk_upsert_pkey",
-  "bulk_update_with_primary_key",
-  "bulk_upsert_with_primary_key"
-]);
-function isMutationQuery(query) {
-  const options = query.options ?? {};
-  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : void 0;
-  if (operation && MUTATION_OPERATIONS.has(operation))
-    return true;
-  const sqlExecution = options.sql_execution;
-  const sql = typeof options.query === "string" ? options.query : typeof options.sql === "string" ? options.sql : typeof sqlExecution?.sqlQuery === "string" ? sqlExecution.sqlQuery : void 0;
-  return typeof sql === "string" && /^\s*(insert|update|delete|merge|upsert|replace)\b/i.test(sql);
-}
-function validateEvents(summary, events, options = {}) {
-  const errors = [];
-  const warnings = [];
-  const components = new Map(summary.pages.flatMap((page) => page.components).map((component) => [component.id, component]));
-  const queries = new Set(summary.queries.map((query) => query.id));
-  const queryById = new Map(summary.queries.map((query) => [query.id, query]));
-  const pages = new Set(summary.pages.map((page) => page.id));
-  const pageOfComponent = new Map(summary.pages.flatMap((page) => page.components.map((c) => [c.id, page.id])));
-  const pageName = new Map(summary.pages.map((page) => [page.id, page.name ?? page.handle ?? page.id]));
-  const queryTriggerPages = /* @__PURE__ */ new Map();
-  const noteTrigger = (queryId, pageId) => {
-    if (!queryId)
-      return;
-    const set = queryTriggerPages.get(queryId) ?? /* @__PURE__ */ new Set();
-    set.add(pageId ?? "*");
-    queryTriggerPages.set(queryId, set);
-  };
-  for (const query of summary.queries) {
-    const opts = query.options && typeof query.options === "object" ? query.options : {};
-    const onLoad = opts.runOnPageLoad;
-    const raw = onLoad && typeof onLoad === "object" ? onLoad.value : onLoad;
-    if (raw === true || String(raw ?? "").replace(/[{}\s]/g, "").toLowerCase() === "true")
-      noteTrigger(query.id, void 0);
-  }
-  for (const persisted of summary.events ?? []) {
-    const payload = persisted.event && typeof persisted.event === "object" ? persisted.event : void 0;
-    if (!payload || payload.actionId !== "run-query")
-      continue;
-    const queryId = String(payload.queryId ?? "");
-    if (persisted.target === "page")
-      noteTrigger(queryId, persisted.sourceId);
-    else if (persisted.target === "component" && persisted.sourceId)
-      noteTrigger(queryId, pageOfComponent.get(persisted.sourceId));
-  }
-  for (const event of events) {
-    if (event.action?.actionId !== "run-query")
-      continue;
-    const queryId = String(event.action.queryId ?? "");
-    if (event.sourceType === "page")
-      noteTrigger(queryId, event.sourceId);
-    else if (event.sourceType === "component" || event.sourceType === "table_column")
-      noteTrigger(queryId, pageOfComponent.get(event.sourceId));
-  }
-  const pageScopedTarget = (action) => {
-    const id = action.actionId;
-    if (id === "set-table-page")
-      return typeof action.table === "string" ? action.table : void 0;
-    if (id === "control-component" || id === "scroll-component-into-view")
-      return typeof action.componentId === "string" ? action.componentId : void 0;
-    if (id === "show-modal" || id === "close-modal")
-      return typeof action.modal === "string" ? action.modal : void 0;
-    return void 0;
-  };
-  events.forEach((event, index) => {
-    const label = event.name ? `Event "${event.name}"` : `Event[${index}]`;
-    errors.push(...lintComponentStateBindings(event.action, [...components.values()], label));
-    if (event.sourceType === "component") {
-      const source = components.get(event.sourceId);
-      for (const ref of new Set([event.ref, event.action.ref].filter((ref2) => ref2 != null && ref2 !== ""))) {
-        if (source?.type !== "Navigation" || event.trigger !== "onClick") {
-          (options.savedRefs?.has(event) ? warnings : errors).push(`${label}: ordinary component events cannot use ref; use name to label the handler. Only Navigation onClick item refs and Table Button-column refs have component sub-element scopes.`);
-        } else if (!nonEmptyString(ref) || ref.includes("{{")) {
-          errors.push(`${label}: Navigation onClick ref must be a literal non-empty item id.`);
-        } else {
-          const membership = navigationItemRef(source, ref);
-          if (membership === "invalid")
-            errors.push(`${label}: Navigation ref "${ref}" does not identify a non-group menu item.`);
-          if (membership === "unknown")
-            warnings.push(`${label}: Navigation ref "${ref}" membership cannot be verified because menuItems are unresolved/dynamic. Verify the runtime item id; no item membership was inferred.`);
-        }
-      }
-      if (!source)
-        errors.push(`${label}: component source "${event.sourceId}" does not exist.`);
-      else if (source.type) {
-        const schema = getComponentSchema(source.type);
-        const validTriggers = schema?.events?.map((item) => item.id) ?? [];
-        if (schema && !validTriggers.includes(event.trigger)) {
-          errors.push(`${label}: trigger "${event.trigger}" is not valid for ${source.type}. Valid triggers: ${validTriggers.join(", ") || "none"}.`);
-        }
-        if (source.type === "Kanban" && event.trigger === "onCardSelected" && isFalseBinding(propVal(source.properties, "openModalOnCardClick"))) {
-          errors.push(`${label}: Kanban onCardSelected cannot fire while openModalOnCardClick is false; ToolJet returns before it sets lastSelectedCard or fires the event. Enable the native card modal AND populate it with children parented to the Kanban using slot_name:"modal", or remove this handler and use a separate supported detail flow.`);
-        }
-      }
-    } else if (event.sourceType === "data_query") {
-      if (!queries.has(event.sourceId))
-        errors.push(`${label}: query source "${event.sourceId}" does not exist.`);
-      if (!["onDataQuerySuccess", "onDataQueryFailure"].includes(event.trigger)) {
-        errors.push(`${label}: query trigger must be onDataQuerySuccess or onDataQueryFailure, not "${event.trigger}".`);
-      }
-    } else if (event.sourceType === "page") {
-      if (!pages.has(event.sourceId))
-        errors.push(`${label}: page source "${event.sourceId}" does not exist.`);
-      if (event.trigger !== "onPageLoad")
-        errors.push(`${label}: page trigger must be onPageLoad, not "${event.trigger}".`);
-    } else if (event.sourceType === "table_column") {
-      const source = components.get(event.sourceId);
-      if (!source)
-        errors.push(`${label}: Table source "${event.sourceId}" does not exist.`);
-      else if (source.type !== "Table")
-        errors.push(`${label}: table_column source must be a Table, not ${source.type ?? "unknown"}.`);
-      else {
-        if (event.trigger !== "onClick")
-          errors.push(`${label}: Table Button-column trigger must be onClick.`);
-        const refError = validateTableColumnRef(source, event.ref);
-        if (refError)
-          errors.push(`${label}: ${refError}`);
-      }
-    } else if (event.sourceType === "table_action") {
-      errors.push(`${label}: deprecated table_action handlers are not authored reliably. Use a columnType:"button" column with source_type:"table_column".`);
-    }
-    const actionId = event.action.actionId;
-    if (typeof actionId !== "string" || !ACTION_IDS.has(actionId)) {
-      errors.push(`${label}: unknown actionId "${String(actionId)}"; ToolJet silently ignores invalid action ids.`);
-      return;
-    }
-    const targetId = pageScopedTarget(event.action);
-    const targetPage = targetId ? pageOfComponent.get(targetId) : void 0;
-    if (targetId && targetPage) {
-      const targetLabel = `${components.get(targetId)?.type ?? "component"} "${components.get(targetId)?.name ?? targetId}" on page "${pageName.get(targetPage)}"`;
-      const sourcePage = event.sourceType === "page" ? event.sourceId : event.sourceType === "component" || event.sourceType === "table_column" ? pageOfComponent.get(event.sourceId) : void 0;
-      if (sourcePage && sourcePage !== targetPage) {
-        errors.push(`${label}: ${actionId} targets ${targetLabel} from page "${pageName.get(sourcePage)}". A page-scoped action only reaches components on the page that is open; on another page the target is not mounted and the action fails at runtime. Put this handler on page "${pageName.get(targetPage)}" (its onPageLoad, or a component there), or drop it: switch-page mounts that page fresh.`);
-      } else if (event.sourceType === "data_query") {
-        const triggerPages = queryTriggerPages.get(event.sourceId);
-        const elsewhere = triggerPages ? [...triggerPages].filter((page) => page !== targetPage) : [];
-        if (elsewhere.length) {
-          const where = elsewhere.includes("*") ? "on every page load (runOnPageLoad)" : `from page "${elsewhere.map((p) => pageName.get(p) ?? p).join('", "')}"`;
-          errors.push(`${label}: ${actionId} targets ${targetLabel}, but query "${queryById.get(event.sourceId)?.name ?? event.sourceId}" runs ${where}, where that component is not mounted, so the success handler fails at runtime. Move the action to page "${pageName.get(targetPage)}" (its onPageLoad, or the filter's own event there), or run the query only from that page.`);
-        }
-      }
-    }
-    if (actionId === "run-query") {
-      let queryId = event.action.queryId;
-      if (typeof queryId === "string" && !queries.has(queryId)) {
-        const resolution = resolveRef(summary.queries, queryId, "Query", "in this app");
-        if (resolution.ok) {
-          if (resolution.warning)
-            warnings.push(`${label}: ${resolution.warning}`);
-          queryId = resolution.target.id;
-          event.action.queryId = queryId;
-        }
-      }
-      if (typeof queryId !== "string" || !queries.has(queryId)) {
-        const available = summary.queries.map((q) => `${q.name ?? "(unnamed)"}=${q.id}`).join(", ");
-        errors.push(`${label}: no query with id or name "${String(queryId)}" in this app. Do not re-read \u2014 the app currently has: ${available || "(no queries)"}.`);
-      } else if (event.sourceType === "component" && event.trigger === "onClick") {
-        const source = components.get(event.sourceId);
-        const query = queryById.get(queryId);
-        if (source?.type === "Button" && query && isMutationQuery(query)) {
-          warnings.push(...requiredMutationGuardWarnings(source, query, event.action, [...components.values()]));
-          const disabled = propVal(source.properties, "disabledState");
-          const guarded = typeof disabled === "string" && disabled.includes("{{") && /isloading/i.test(disabled);
-          if (!guarded) {
-            warnings.push(`Button "${source.name ?? source.id}" runs the mutation query "${query.name ?? queryId}" on click but its disabledState does not gate on the query's loading state, so it can be double-submitted. Set disabledState to {{queries.${query.name ?? queryId}.isLoading}}.`);
-          }
-        }
-      }
-    }
-    if (actionId === "switch-page") {
-      const pageId = event.action.pageId;
-      if (typeof pageId !== "string" || !pages.has(pageId)) {
-        errors.push(`${label}: switch-page target "${String(pageId)}" does not exist.`);
-      }
-    }
-    if (["show-modal", "close-modal"].includes(actionId)) {
-      const modal = event.action.modal;
-      const target = typeof modal === "string" ? components.get(modal) : void 0;
-      if (!target) {
-        errors.push(`${label}: ${actionId} modal target "${String(modal)}" does not exist.`);
-      } else if (!["Modal", "ModalV2"].includes(target.type ?? "")) {
-        errors.push(`${label}: ${actionId} target must be a Modal or ModalV2, not ${target.type ?? "unknown"} "${target.name ?? target.id}".`);
-      }
-    }
-    if (actionId === "control-component") {
-      const componentId = event.action.componentId;
-      const target = typeof componentId === "string" ? components.get(componentId) : void 0;
-      if (!target) {
-        errors.push(`${label}: control-component target "${String(componentId)}" does not exist.`);
-      } else {
-        const handle = event.action.componentSpecificActionHandle;
-        const schema = target.type ? getComponentSchema(target.type) : null;
-        const componentAction = typeof handle === "string" ? schema?.actions?.find((candidate) => candidate.handle === handle) : void 0;
-        if (!nonEmptyString(handle)) {
-          errors.push(`${label}: control-component requires componentSpecificActionHandle.`);
-        } else if (!componentAction) {
-          errors.push(`${label}: control-component action "${handle}" is not valid for ${target.type ?? "unknown"} "${target.name ?? target.id}". Valid actions: ${schema?.actions?.map((candidate) => candidate.handle).join(", ") || "none"}.`);
-        } else {
-          const params = event.action.componentSpecificActionParams;
-          if (params !== void 0 && !Array.isArray(params)) {
-            errors.push(`${label}: componentSpecificActionParams must be an array.`);
-          } else if (Array.isArray(params)) {
-            const supplied = new Set(params.flatMap((param) => isRecord(param) && nonEmptyString(param.handle) ? [param.handle] : []));
-            if (params.some((param) => !isRecord(param) || !nonEmptyString(param.handle))) {
-              errors.push(`${label}: every componentSpecificActionParams entry requires a string handle.`);
-            }
-            const requiredHandles = (componentAction.params ?? []).flatMap((param) => nonEmptyString(param.handle) ? [param.handle] : []);
-            const missing = requiredHandles.filter((required) => !supplied.has(required));
-            if (missing.length) {
-              errors.push(`${label}: control-component action "${handle}" is missing parameter handles: ${missing.join(", ")}.`);
-            }
-          } else if ((componentAction.params?.length ?? 0) > 0) {
-            errors.push(`${label}: control-component action "${handle}" requires componentSpecificActionParams for ${componentAction.params.map((param) => String(param.handle)).join(", ")}.`);
-          }
-        }
-      }
-    }
-    if (actionId === "scroll-component-into-view") {
-      const componentId = event.action.componentId;
-      if (typeof componentId !== "string" || !components.has(componentId)) {
-        errors.push(`${label}: scroll-component-into-view target "${String(componentId)}" does not exist.`);
-      }
-    }
-    if (actionId === "show-alert") {
-      if (!nonEmptyString(event.action.message))
-        errors.push(`${label}: show-alert requires a non-empty message.`);
-      if (!["success", "info", "warning", "error"].includes(String(event.action.alertType))) {
-        errors.push(`${label}: show-alert alertType must be success, info, warning, or error.`);
-      }
-    }
-    if (["set-custom-variable", "set-page-variable", "set-localstorage-value"].includes(actionId)) {
-      if (!nonEmptyString(event.action.key))
-        errors.push(`${label}: ${actionId} requires a non-empty key.`);
-      if (!Object.prototype.hasOwnProperty.call(event.action, "value"))
-        errors.push(`${label}: ${actionId} requires value.`);
-    }
-    if (actionId === "unset-custom-variable" && !nonEmptyString(event.action.key)) {
-      errors.push(`${label}: unset-custom-variable requires a non-empty key.`);
-    }
-    if (actionId === "open-webpage" && !nonEmptyString(event.action.url)) {
-      errors.push(`${label}: open-webpage requires a non-empty url.`);
-    }
-    if (actionId === "copy-to-clipboard" && !Object.prototype.hasOwnProperty.call(event.action, "contentToCopy")) {
-      errors.push(`${label}: copy-to-clipboard requires contentToCopy.`);
-    }
-    if (actionId === "set-table-page") {
-      const tableId = event.action.table;
-      const table = typeof tableId === "string" ? components.get(tableId) : void 0;
-      if (!table) {
-        errors.push(`${label}: set-table-page Table target "${String(tableId)}" does not exist.`);
-      } else if (table.type !== "Table") {
-        errors.push(`${label}: set-table-page target must be a Table, not ${table.type ?? "unknown"}.`);
-      }
-      const pageIndex = event.action.pageIndex;
-      if (!["string", "number"].includes(typeof pageIndex) || String(pageIndex).trim() === "") {
-        errors.push(`${label}: set-table-page requires a numeric value or binding in pageIndex.`);
-      }
-    }
-    if (actionId === "generate-file") {
-      const format = ["fileType", "type", "format", "extension"].map((key2) => event.action[key2]).find((value) => typeof value === "string");
-      if (format && /\bpdf\b/i.test(format)) {
-        warnings.push(`${label}: generate-file PDF is a pass-through and expects pre-formed PDF bytes; it does not convert text/HTML/data into a PDF. Use CSV/plaintext, or supply and browser-verify real PDF bytes.`);
-      }
-    }
-  });
-  const chainKey = (event) => [event.sourceType, event.sourceId, event.ref ?? "", event.trigger].join("\0");
-  const touchedChains = new Set(events.map(chainKey));
-  const chains = /* @__PURE__ */ new Map();
-  for (const persisted of options.includePersistedChains === false ? [] : summary.events) {
-    const raw = isRecord(persisted.event) ? persisted.event : void 0;
-    const sourceType = persisted.target;
-    const trigger = raw?.eventId;
-    if (!raw || !persisted.sourceId || !sourceType || !nonEmptyString(trigger))
-      continue;
-    const event = {
-      sourceId: persisted.sourceId,
-      sourceType,
-      ref: nonEmptyString(raw.ref) ? raw.ref : void 0,
-      trigger,
-      action: raw,
-      name: persisted.name
-    };
-    const key2 = chainKey(event);
-    if (!touchedChains.has(key2))
-      continue;
-    const chain = chains.get(key2) ?? [];
-    chain.push({ event, index: persisted.index ?? 0, persisted: true });
-    chains.set(key2, chain);
-  }
-  events.forEach((event, index) => {
-    const key2 = chainKey(event);
-    const chain = chains.get(key2) ?? [];
-    const lastPersistedIndex = chain.reduce((maximum, item) => item.persisted ? Math.max(maximum, item.index) : maximum, -1);
-    chain.push({ event, index: lastPersistedIndex + index + 1, persisted: false });
-    chains.set(key2, chain);
-  });
-  for (const chain of chains.values()) {
-    chain.sort((left, right) => left.index - right.index || Number(right.persisted) - Number(left.persisted));
-    chain.forEach(({ event }, index) => {
-      if (event.action.actionId !== "control-component" || !["selectOption", "selectOptions", "setText", "setValue"].includes(String(event.action.componentSpecificActionHandle)))
-        return;
-      let child = components.get(String(event.action.componentId));
-      const visited = /* @__PURE__ */ new Set();
-      while (child?.parent && !visited.has(child.id)) {
-        visited.add(child.id);
-        const parent = components.get(decodeComponentParent(child.parent).parentId);
-        if (!parent)
-          break;
-        if (parent.type === "ModalV2" && chain.slice(index + 1).some(({ event: later2 }) => later2.action.actionId === "show-modal" && later2.action.modal === parent.id)) {
-          errors.push(`Event "${event.name ?? index}": prefill targets a child of ModalV2 "${parent.name ?? parent.id}" before show-modal. Closed modal children are not mounted; these values can be lost. Bind input defaults to the selected record, or initialize after the modal opens.`);
-          break;
-        }
-        child = parent;
-      }
-    });
-    const navigationIndex = chain.findIndex(({ event }) => event.action.actionId === "switch-page");
-    if (navigationIndex === -1 || navigationIndex === chain.length - 1)
-      continue;
-    const navigation = chain[navigationIndex];
-    const afterNavigation = chain.slice(navigationIndex + 1);
-    if (options.navigationMovedLast && navigation.persisted && afterNavigation.every((item) => !item.persisted && item.event.action.actionId !== "switch-page"))
-      continue;
-    const later = chain.slice(navigationIndex + 1).map(({ event }) => String(event.action.actionId)).join(", ");
-    const label = navigation.event.name ? `${navigation.persisted ? "Persisted event" : "Event"} "${navigation.event.name}"` : `${navigation.persisted ? "Persisted event" : "Event"}[${navigation.index}]`;
-    errors.push(`${label}: switch-page must be the LAST handler for the same source and trigger; ToolJet does not run later handlers (${later}). Put state updates and run-query actions before navigation.`);
-  }
-  errors.push(...queryEventCycleErrors(summary, events, options.includePersistedChains === false ? [] : persistedEventSpecs(summary)));
-  const persistedMode = options.includePersistedChains === false;
-  const isNavigation = (sourceType, sourceId, trigger) => sourceType === "component" && components.get(sourceId)?.type === "Navigation" && trigger === "onClick";
-  const runKey = (sourceType, sourceId, trigger, queryId) => JSON.stringify([sourceType, sourceId, trigger, queryId]);
-  const runScope = (sourceType, sourceId, trigger, ref) => sourceType === "table_column" || isNavigation(sourceType, sourceId, trigger) ? ref || null : null;
-  const overlaps = (left, right, navigation) => left === right || navigation && (left === null || right === null);
-  const payloadKey = (payload) => JSON.stringify(Object.keys(payload).filter((k) => k !== "index" && k !== "name").sort().map((k) => [k, payload[k]]));
-  const heldRuns = /* @__PURE__ */ new Map();
-  if (!persistedMode) {
-    for (const held of summary.events ?? []) {
-      const payload = held.event && typeof held.event === "object" ? held.event : void 0;
-      if (!payload || payload.actionId !== "run-query" || !held.sourceId)
-        continue;
-      if (held.target !== "component" && held.target !== "table_column")
-        continue;
-      const key2 = runKey(held.target, held.sourceId, payload.eventId, payload.queryId);
-      const scope = runScope(held.target, held.sourceId, payload.eventId, payload.ref);
-      heldRuns.set(key2, [...heldRuns.get(key2) ?? [], { id: held.id, payload: payloadKey(payload), scope }]);
-    }
-  }
-  const plannedRuns = /* @__PURE__ */ new Map();
-  for (const event of events) {
-    if (event.action?.actionId !== "run-query")
-      continue;
-    if (event.sourceType !== "component" && event.sourceType !== "table_column")
-      continue;
-    const key2 = runKey(event.sourceType, event.sourceId, event.trigger, event.action.queryId);
-    const scope = runScope(event.sourceType, event.sourceId, event.trigger, effectiveRef(event));
-    const navigation = isNavigation(event.sourceType, event.sourceId, event.trigger);
-    const sourceName = components.get(event.sourceId)?.name ?? event.sourceId;
-    const queryName = queryById.get(String(event.action.queryId ?? ""))?.name ?? String(event.action.queryName ?? event.action.queryId);
-    const mine = payloadKey({ eventId: event.trigger, ...event.ref ? { ref: event.ref } : {}, ...event.action });
-    const held = (heldRuns.get(key2) ?? []).filter((h) => overlaps(h.scope, scope, navigation));
-    if (held.length && !held.some((h) => h.payload === mine)) {
-      errors.push(`"${sourceName}" ${event.trigger} already runs query "${queryName}" (event ${held[0].id}); a second handler would run it twice on one ${event.trigger}. Change that handler with update_events, or delete it with delete_event before adding this one.`);
-    } else if ((plannedRuns.get(key2) ?? []).some((previous) => overlaps(previous, scope, navigation))) {
-      (persistedMode ? warnings : errors).push(`"${sourceName}" ${event.trigger} runs query "${queryName}" twice: two handlers on it run the same query, so one ${event.trigger} runs it two times. Keep one.`);
-    }
-    plannedRuns.set(key2, [...plannedRuns.get(key2) ?? [], scope]);
-  }
-  return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
-}
-var persistedEventIds = /* @__PURE__ */ new WeakMap();
-function persistedEventSpecs(summary) {
-  return summary.events.map((event, position) => ({ event, position })).sort((left, right) => (left.event.index ?? left.position) - (right.event.index ?? right.position)).flatMap(({ event }) => {
-    if (!event.sourceId || !event.target || !event.event || typeof event.event !== "object")
-      return [];
-    const payload = event.event;
-    if (typeof payload.eventId !== "string")
-      return [];
-    const { eventId, ref, ...action } = payload;
-    if (event.target === "component" && ref != null && typeof ref !== "string")
-      action.ref = ref;
-    const spec = {
-      sourceId: event.sourceId,
-      sourceType: event.target,
-      ...typeof ref === "string" ? { ref } : {},
-      trigger: eventId,
-      action,
-      name: event.name
-    };
-    if (event.id)
-      persistedEventIds.set(spec, event.id);
-    return [spec];
-  });
-}
-function navigationReorders(summary, touched, diagnostics) {
-  const touchedKeys = touched ? new Set(touched.map((event) => [event.sourceType, event.sourceId, event.ref ?? "", event.trigger].join("\0"))) : void 0;
-  const chains = /* @__PURE__ */ new Map();
-  for (const saved of summary.events ?? []) {
-    const raw = isRecord(saved.event) ? saved.event : void 0;
-    if (!raw || !saved.sourceId || !nonEmptyString(raw.eventId))
-      continue;
-    const key2 = [saved.target, saved.sourceId, nonEmptyString(raw.ref) ? raw.ref : "", raw.eventId].join("\0");
-    const chain = chains.get(key2) ?? [];
-    chain.push({ id: saved.id, index: saved.index ?? 0, nav: raw.actionId === "switch-page" });
-    chains.set(key2, chain);
-  }
-  const moves = [];
-  for (const [key2, chain] of chains) {
-    chain.sort((a, b) => a.index - b.index);
-    const navs = chain.filter((item) => item.nav);
-    if (!navs.length || chain.slice(-navs.length).every((item) => item.nav))
-      continue;
-    if (touchedKeys && !touchedKeys.has(key2)) {
-      const [, sourceId, ref, trigger] = key2.split("\0");
-      diagnostics?.push(`The saved ${trigger} chain of "${sourceId}"${ref ? ` (${ref})` : ""} has a page switch before other handlers, so those never run; this phase did not touch it, so it was left as it is.`);
-      continue;
-    }
-    let next = Math.max(...chain.map((item) => item.index)) + 1;
-    for (const nav of navs)
-      moves.push({ eventId: nav.id, index: next++ });
-  }
-  return moves;
 }
 var SCRATCH_NAME = /^(debug|diag|diagnostic|probe|tmp|temp|scratch|dummy|sample_test|testonly)[_-]|^hidden[A-Z]|[_-](probe|scratch)$/i;
 function scratchArtifactWarnings(summary) {
@@ -1445,6 +268,10 @@ function scratchArtifactWarnings(summary) {
   }
   return warnings;
 }
+function libraryPinErrors(summary, pins) {
+  const components = (summary.pages ?? []).flatMap((page) => page.components ?? []);
+  return unpinnedLibraries(components, pins).map(({ library, components: names }) => `Library "${library}" is not pinned on this version, so ${names.length} of its components show an empty "Slot" placeholder (${names.slice(0, 5).join(", ")}${names.length > 5 ? ", ..." : ""}). Adding one of its components with add_components pins it.`);
+}
 function validatePersistedAppSummary(summary, options = {}) {
   const structural = validateAppStructure(summary, options);
   const errors = [...structural.errors];
@@ -1454,6 +281,12 @@ function validatePersistedAppSummary(summary, options = {}) {
   errors.push(...eventValidation.errors);
   warnings.push(...eventValidation.warnings);
   for (const page of summary.pages ?? []) {
+    errors.push(...lintPackItemSlots(page.components ?? [], { persisted: true }));
+    for (const component of page.components ?? []) {
+      const error = emptyLibraryHostError(component, { persisted: true });
+      if (error)
+        errors.push(error);
+    }
     for (const component of page.components ?? []) {
       for (const col of htmlFedTextColumns(component, summary.queries)) {
         warnings.push(`Table "${String(component.name)}" column "${String(col.key)}" is typed as text but its query returns HTML for it, so it renders as raw text (<span ...>). Set that column's columnType "html", or return plain text.`);
@@ -1489,134 +322,6 @@ function validatePersistedAppSummary(summary, options = {}) {
     errors: [...new Set(errors)],
     warnings: [...new Set(warnings)]
   };
-}
-function expandQueryLifecycles(summary, lifecycles) {
-  const queries = new Map(summary.queries.map((query) => [query.id, query]));
-  const components = new Map(summary.pages.flatMap((page) => page.components).map((component) => [component.id, component]));
-  const warnings = [];
-  const events = [];
-  const seenSources = /* @__PURE__ */ new Set();
-  for (const lifecycle of lifecycles) {
-    const query = queries.get(lifecycle.queryId);
-    if (!query)
-      throw new Error(`Query lifecycle source "${lifecycle.queryId}" does not exist.`);
-    if (seenSources.has(lifecycle.queryId)) {
-      throw new Error(`Query "${query.name ?? lifecycle.queryId}" has more than one lifecycle declaration in this batch.`);
-    }
-    seenSources.add(lifecycle.queryId);
-    const sourceName = query.name ?? lifecycle.queryId;
-    const refreshIds = unique(lifecycle.refreshQueryIds ?? [], `refresh query`, sourceName, warnings);
-    if (refreshIds.includes(lifecycle.queryId)) {
-      throw new Error(`Query "${sourceName}" cannot refresh itself after success: this repeats the query indefinitely, including any writes. Refresh a separate read query instead.`);
-    }
-    const clearIds = unique(lifecycle.clearComponentIds ?? [], `clear component`, sourceName, warnings);
-    (lifecycle.beforeRefreshActions ?? []).forEach((action, index) => {
-      events.push({
-        sourceId: lifecycle.queryId,
-        sourceType: "data_query",
-        trigger: "onDataQuerySuccess",
-        action,
-        name: `${sourceName} before refresh action ${index + 1}`
-      });
-    });
-    for (const queryId of refreshIds) {
-      const refresh = queries.get(queryId);
-      if (!refresh)
-        throw new Error(`Query "${sourceName}" lifecycle refresh target "${queryId}" does not exist.`);
-      events.push({
-        sourceId: lifecycle.queryId,
-        sourceType: "data_query",
-        trigger: "onDataQuerySuccess",
-        action: { actionId: "run-query", queryId, queryName: refresh.name ?? queryId },
-        name: `Refresh ${refresh.name ?? queryId} after ${sourceName}`
-      });
-    }
-    (lifecycle.successActions ?? []).forEach((action, index) => {
-      events.push({
-        sourceId: lifecycle.queryId,
-        sourceType: "data_query",
-        trigger: "onDataQuerySuccess",
-        action,
-        name: `${sourceName} success action ${index + 1}`
-      });
-    });
-    if (lifecycle.closeModalId) {
-      const modal = components.get(lifecycle.closeModalId);
-      if (!modal)
-        throw new Error(`Query "${sourceName}" lifecycle modal "${lifecycle.closeModalId}" does not exist.`);
-      if (!["Modal", "ModalV2"].includes(modal.type ?? "")) {
-        throw new Error(`Query "${sourceName}" lifecycle close target "${modal.name ?? modal.id}" is ${modal.type ?? "unknown"}, not a Modal.`);
-      }
-      events.push({
-        sourceId: lifecycle.queryId,
-        sourceType: "data_query",
-        trigger: "onDataQuerySuccess",
-        action: { actionId: "close-modal", modal: lifecycle.closeModalId },
-        name: `Close ${modal.name ?? modal.id} after ${sourceName}`
-      });
-    }
-    for (const componentId of clearIds) {
-      const component = components.get(componentId);
-      if (!component)
-        throw new Error(`Query "${sourceName}" lifecycle clear target "${componentId}" does not exist.`);
-      events.push({
-        sourceId: lifecycle.queryId,
-        sourceType: "data_query",
-        trigger: "onDataQuerySuccess",
-        action: {
-          actionId: "control-component",
-          componentId,
-          componentSpecificActionHandle: "clear",
-          componentSpecificActionParams: []
-        },
-        name: `Clear ${component.name ?? componentId} after ${sourceName}`
-      });
-    }
-    if (lifecycle.successAlert) {
-      events.push(alertEvent(lifecycle.queryId, sourceName, "onDataQuerySuccess", lifecycle.successAlert, "success"));
-    }
-    (lifecycle.failureActions ?? []).forEach((action, index) => {
-      events.push({
-        sourceId: lifecycle.queryId,
-        sourceType: "data_query",
-        trigger: "onDataQueryFailure",
-        action,
-        name: `${sourceName} failure action ${index + 1}`
-      });
-    });
-    if (lifecycle.failureAlert) {
-      events.push(alertEvent(lifecycle.queryId, sourceName, "onDataQueryFailure", lifecycle.failureAlert, "error"));
-    }
-  }
-  return { events, warnings };
-}
-function alertEvent(queryId, queryName, trigger, alert, defaultType) {
-  return {
-    sourceId: queryId,
-    sourceType: "data_query",
-    trigger,
-    action: { actionId: "show-alert", message: alert.message, alertType: alert.alertType ?? defaultType },
-    name: trigger === "onDataQuerySuccess" ? `Confirm ${queryName}` : `${queryName} failed`
-  };
-}
-function unique(values, label, sourceName, warnings) {
-  const seen = /* @__PURE__ */ new Set();
-  const result = [];
-  for (const value of values) {
-    if (seen.has(value)) {
-      warnings.push(`Query "${sourceName}" lifecycle listed ${label} "${value}" more than once; duplicate ignored.`);
-      continue;
-    }
-    seen.add(value);
-    result.push(value);
-  }
-  return result;
-}
-function matchPlannedPage(pages, name, plannedNames, claimed = /* @__PURE__ */ new Set()) {
-  const byName = pages.find((page) => page.name === name && !claimed.has(page.id));
-  if (byName || name !== "Home" || pages.some((page) => page.name === "Home"))
-    return byName;
-  return pages.find((page) => page.handle === "home" && !claimed.has(page.id) && !plannedNames.has(page.name ?? ""));
 }
 var escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 var idPattern = (ids) => new RegExp(`(?<![\\w-])(?:${[...ids].sort((a, b) => b.length - a.length).map(escapeRegExp).join("|")})(?![\\w-])`, "g");
@@ -1718,9 +423,9 @@ function replaceView(summary, plan) {
   };
   const planned = /* @__PURE__ */ new Set();
   const plan_ = (source, trigger, action) => {
-    const key2 = action && actionKey(action);
-    if (key2)
-      planned.add(`${source}|${trigger ?? ""}|${key2}`);
+    const key = action && actionKey(action);
+    if (key)
+      planned.add(`${source}|${trigger ?? ""}|${key}`);
   };
   for (const event of plan.events ?? []) {
     if (event.source_type === "data_query")
@@ -1738,8 +443,8 @@ function replaceView(summary, plan) {
       plan_(source, "onDataQueryFailure", action);
   }
   const replannedFrom = (source, action) => {
-    const key2 = actionKey(action);
-    return !!key2 && planned.has(`${source}|${String(action.eventId ?? "")}|${key2}`);
+    const key = actionKey(action);
+    return !!key && planned.has(`${source}|${String(action.eventId ?? "")}|${key}`);
   };
   const alertedQueries = /* @__PURE__ */ new Set([
     ...(plan.lifecycles ?? []).filter((lc) => lc.success_alert || lc.failure_alert).map((lc) => nameOfQuery(lc.query_ref)),
@@ -1832,7 +537,7 @@ function danglingAfterReplace(summary, view, plan) {
   return errors;
 }
 function canonical(value) {
-  return JSON.stringify(value, (_key, item) => item && typeof item === "object" && !Array.isArray(item) ? Object.fromEntries(Object.keys(item).sort().map((key2) => [key2, item[key2]])) : item);
+  return JSON.stringify(value, (_key, item) => item && typeof item === "object" && !Array.isArray(item) ? Object.fromEntries(Object.keys(item).sort().map((key) => [key, item[key]])) : item);
 }
 function replaceFingerprint(summary, view) {
   const pageIds = new Set(view.replacedPageIds);
@@ -1925,10 +630,10 @@ function mergeLikeServer(target, source, wholeArrays) {
   }
   if (isPlainObject(source)) {
     const base = isPlainObject(target) ? { ...target } : {};
-    for (const [key2, value] of Object.entries(source)) {
-      const merged = mergeLikeServer(base[key2], value, wholeArrays);
-      if (merged !== void 0 || !(key2 in base))
-        base[key2] = merged;
+    for (const [key, value] of Object.entries(source)) {
+      const merged = mergeLikeServer(base[key], value, wholeArrays);
+      if (merged !== void 0 || !(key in base))
+        base[key] = merged;
     }
     return base;
   }
@@ -1942,19 +647,21 @@ function sectionAsRead(type, section, stored, definitions = bundledDefinitions()
 function differingKey(type, section, planned, stored, definitions) {
   const asRead = sectionAsRead(type, section, planned, definitions);
   const have = stored ?? {};
-  for (const key2 of /* @__PURE__ */ new Set([...Object.keys(asRead), ...Object.keys(have)])) {
-    if (stable(asRead[key2]) !== stable(have[key2]))
-      return key2;
+  for (const key of /* @__PURE__ */ new Set([...Object.keys(asRead), ...Object.keys(have)])) {
+    if (stable(asRead[key]) !== stable(have[key]))
+      return key;
   }
   return void 0;
 }
 var RECT_KEYS = ["top", "left", "width", "height"];
+var FLEX_LAYOUT_KEYS = ["fillWidth", "widthPx", "grow", "minWidthPx"];
 var sameRect = (planned, stored) => {
   if (!planned)
     return true;
   if (!stored || typeof stored !== "object")
     return false;
-  return RECT_KEYS.every((key2) => Number(stored[key2]) === Number(planned[key2]));
+  const held = stored;
+  return RECT_KEYS.every((key) => Number(held[key]) === Number(planned[key])) && FLEX_LAYOUT_KEYS.every((key) => planned[key] === void 0 || held[key] === planned[key]);
 };
 function diffPageInPlace(stored, planned, definitions = bundledDefinitions(), newId = randomUUID) {
   const references = indexComponentReferences(planned);
@@ -1968,6 +675,21 @@ function diffPageInPlace(stored, planned, definitions = bundledDefinitions(), ne
     idOf.set(spec, id);
     ids.set(componentRef(spec), id);
   }
+  const plannedParentId = (spec) => {
+    const parent = spec.parentRef ? ids.get(spec.parentRef) : spec.parent;
+    if (!parent)
+      return void 0;
+    const slot = spec.slotName ?? decodeComponentParent(parent).slotName;
+    return slot === "body" ? decodeComponentParent(parent).parentId : void 0;
+  };
+  const explicitOrders = new Map(planned.flatMap((spec) => {
+    if (!isFlexContainerType(spec.type) || spec.properties?.childOrder === void 0)
+      return [];
+    const raw = spec.properties.childOrder;
+    const value = Array.isArray(raw) ? raw : raw?.value;
+    return [[idOf.get(spec), Array.isArray(value) ? value : []]];
+  }));
+  const childOrders = batchChildOrders(planned.map((spec) => ({ id: idOf.get(spec), type: spec.type, parentId: plannedParentId(spec) })), explicitOrders, (ref) => ids.get(ref));
   const diff = { ids, keep: [], relayout: [], create: [], recreated: [], deleteIds: [], why: {} };
   const plannedNames = new Set(planned.map((spec) => spec.name));
   for (const component of stored)
@@ -1978,9 +700,13 @@ function diffPageInPlace(stored, planned, definitions = bundledDefinitions(), ne
     const parent = spec.parentRef ? ids.get(spec.parentRef) : spec.parent;
     const submit = spec.type === "Form" ? spec.properties?.buttonToSubmit : void 0;
     const submitId = submit && typeof submit.value === "string" ? ids.get(submit.value) : void 0;
-    const properties = submit && submitId ? { ...spec.properties, buttonToSubmit: { ...submit, value: submitId } } : spec.properties;
+    let properties = submit && submitId ? { ...spec.properties, buttonToSubmit: { ...submit, value: submitId } } : spec.properties;
+    const childOrder = childOrders.get(id);
+    if (childOrder)
+      properties = { ...properties, childOrder: childOrderProperty(childOrder) };
     const { clientRef: _clientRef, parentRef: _parentRef, ...rest } = spec;
-    const resolved = { ...rest, properties, id, ...parent ? { parent } : {} };
+    const parentType = parent ? planned.find((other) => idOf.get(other) === decodeComponentParent(parent).parentId)?.type : void 0;
+    const resolved = { ...rest, properties, id, ...parent ? { parent } : {}, ...parentType ? { parentType } : {} };
     if (!parent)
       delete resolved.parent;
     const existing = storedByName.get(spec.name);
@@ -1991,15 +717,15 @@ function diffPageInPlace(stored, planned, definitions = bundledDefinitions(), ne
     let why;
     if (existing.type !== spec.type)
       why = `type ${existing.type} -> ${spec.type}`;
-    else if ((existing.parent ?? void 0) !== (parent ? encodeComponentParent(parent, spec.slotName) : void 0))
+    else if ((existing.parent ?? void 0) !== (parent ? encodeComponentParent(parent, spec.slotName, parentType) : void 0))
       why = "parent";
     else if (!definitions[spec.type])
       why = "no default definition for this widget";
     else {
       for (const section of SECTIONS) {
-        const key2 = differingKey(spec.type, section, section === "properties" ? properties : spec[section], existing[section], definitions);
-        if (key2 !== void 0) {
-          why = `${section}.${key2}`;
+        const key = differingKey(spec.type, section, section === "properties" ? properties : spec[section], existing[section], definitions);
+        if (key !== void 0) {
+          why = `${section}.${key}`;
           break;
         }
       }
@@ -2020,6 +746,198 @@ function diffPageInPlace(stored, planned, definitions = bundledDefinitions(), ne
       diff.relayout.push({ componentId: existing.id, ...desktop ? { desktop } : {}, ...mobile ? { mobile } : {} });
   }
   return diff;
+}
+var positive = (name, fallback) => {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+};
+var unattendedTimeoutMs = () => positive("MCP_UNATTENDED_READ_TIMEOUT_MS", 3e4);
+var maxRows = () => positive("MCP_UNATTENDED_READ_MAX_ROWS", 200);
+var maxBytes = () => positive("MCP_UNATTENDED_READ_MAX_BYTES", 256 * 1024);
+async function runUnattended(client, params) {
+  const timeout = unattendedTimeoutMs();
+  let timer;
+  const late = new Promise((resolve2) => {
+    timer = setTimeout(() => resolve2({
+      status: "failed",
+      timed_out: true,
+      message: `The automatic check stopped waiting after ${Math.round(timeout / 1e3)} s, so this query was not checked. Make it cheaper (an index, a narrower filter, a smaller LIMIT) or run it once with run_query.`
+    }), timeout);
+  });
+  try {
+    return await Promise.race([client.runQuery(params), late]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+var rowsOf = (result) => {
+  const data = result.data;
+  if (Array.isArray(data))
+    return { rows: data, nested: false };
+  const results = data?.results;
+  return Array.isArray(results) ? { rows: results, nested: true } : void 0;
+};
+function capUnattendedOutput(result) {
+  const found = rowsOf(result);
+  const size = (value) => {
+    try {
+      return JSON.stringify(value)?.length ?? 0;
+    } catch {
+      return Infinity;
+    }
+  };
+  if (!found) {
+    if (size(result.data) <= maxBytes())
+      return result;
+    return { ...result, data: void 0, truncated: { note: `The result was larger than ${maxBytes()} characters and is not shown.` } };
+  }
+  let shown = found.rows.slice(0, maxRows());
+  while (shown.length > 1 && size(shown) > maxBytes())
+    shown = shown.slice(0, Math.floor(shown.length / 2));
+  if (shown.length === 1 && size(shown) > maxBytes())
+    shown = [];
+  if (shown.length === found.rows.length)
+    return result;
+  const data = found.nested ? { ...result.data, results: shown } : shown;
+  return { ...result, data, truncated: { row_count: found.rows.length, rows_shown: shown.length } };
+}
+var REDACTED = "[redacted]";
+var SECRET_NAME = /(^|[-_.\s])(auth|authorization|bearer|token|access[-_]?token|refresh[-_]?token|id[-_]?token|secret|client[-_]?secret|password|passwd|pwd|api[-_]?key|apikey|key|private[-_]?key|access[-_]?key|signature|sig|session|cookie|set[-_]?cookie|credential|credentials|connection[-_]?string|dsn)([-_.\s]|$)|^x-api-|token$|secret$|password$|apikey$|api_key$/i;
+var RESPONSE_HEADERS = /* @__PURE__ */ new Set([
+  "content-type",
+  "content-length",
+  "content-range",
+  "content-encoding",
+  "link",
+  "etag",
+  "last-modified",
+  "date",
+  "cache-control",
+  "retry-after",
+  "x-total-count",
+  "x-total",
+  "x-total-pages",
+  "x-page",
+  "x-per-page",
+  "x-next-page",
+  "x-request-id",
+  "x-ratelimit-limit",
+  "x-ratelimit-remaining",
+  "x-ratelimit-reset",
+  "ratelimit-limit",
+  "ratelimit-remaining",
+  "ratelimit-reset"
+]);
+var isSecretName = (name) => SECRET_NAME.test(name);
+function redactUrl(value) {
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    return redactQueryText(value);
+  }
+  if (url.username || url.password) {
+    url.username = "";
+    url.password = "";
+  }
+  for (const name of [...url.searchParams.keys()])
+    if (isSecretName(name))
+      url.searchParams.set(name, REDACTED);
+  return url.toString();
+}
+function redactQueryText(text) {
+  return text.replace(/([?&;]([A-Za-z0-9_.\-[\]]+)=)([^&\s"'<>#]+)/g, (match, prefix, name) => isSecretName(name) ? `${prefix}${REDACTED}` : match).replace(/(\b[a-z][a-z0-9+.-]*:\/\/)([^/\s:@"']+):([^/\s@"']+)@/gi, `$1${REDACTED}@`).replace(/\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=-]{8,}/g, `$1 ${REDACTED}`);
+}
+var isRecord = (value) => !!value && typeof value === "object" && !Array.isArray(value);
+function scrub(value, depth = 0) {
+  if (depth > 8)
+    return REDACTED;
+  if (typeof value === "string")
+    return /^[a-z][a-z0-9+.-]*:\/\//i.test(value) ? redactUrl(value) : redactQueryText(value);
+  if (Array.isArray(value)) {
+    if (value.length === 2 && typeof value[0] === "string" && isSecretName(value[0]))
+      return [value[0], REDACTED];
+    return value.map((item) => scrub(item, depth + 1));
+  }
+  if (!isRecord(value))
+    return value;
+  const out = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (isSecretName(key) && child !== null && child !== void 0 && child !== "")
+      out[key] = REDACTED;
+    else
+      out[key] = scrub(child, depth + 1);
+  }
+  return out;
+}
+function responseHeaders(headers) {
+  if (!isRecord(headers))
+    return void 0;
+  return Object.fromEntries(Object.entries(headers).filter(([name]) => RESPONSE_HEADERS.has(name.toLowerCase())));
+}
+var REQUEST_KEYS = ["method", "url", "requestUrl", "params", "requestParams", "statusCode"];
+function request(value) {
+  if (!isRecord(value))
+    return typeof value === "string" ? redactUrl(value) : void 0;
+  const out = {};
+  for (const key of REQUEST_KEYS)
+    if (value[key] !== void 0)
+      out[key] = scrub(value[key]);
+  return out;
+}
+function response(value) {
+  if (!isRecord(value))
+    return void 0;
+  const out = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (/^(headers|responseHeaders)$/i.test(key))
+      out[key] = responseHeaders(child);
+    else
+      out[key] = scrub(child);
+  }
+  return out;
+}
+function metadata(value) {
+  if (!isRecord(value))
+    return value;
+  const out = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (key === "request")
+      out[key] = request(child);
+    else if (key === "response")
+      out[key] = response(child);
+    else if (key === "queryDefinition")
+      out[key] = typeof child === "string" && /^[a-z][a-z0-9+.-]*:\/\//i.test(child) ? redactUrl(child) : void 0;
+    else
+      out[key] = scrub(child);
+  }
+  return out;
+}
+function failureParts(value) {
+  const out = { ...value };
+  if ("requestObject" in out)
+    out.requestObject = request(out.requestObject);
+  if ("responseObject" in out)
+    out.responseObject = response(out.responseObject);
+  if ("responseHeaders" in out)
+    out.responseHeaders = responseHeaders(out.responseHeaders);
+  for (const key of ["options", "connection", "connectionOptions", "sourceOptions"])
+    if (key in out)
+      delete out[key];
+  return out;
+}
+function redactRunResult(result) {
+  if (!isRecord(result))
+    return result;
+  const out = failureParts(result);
+  if ("metadata" in out)
+    out.metadata = metadata(out.metadata);
+  for (const key of ["message", "description", "errorMessage"])
+    if (typeof out[key] === "string")
+      out[key] = redactQueryText(out[key]);
+  if (isRecord(out.data))
+    out.data = failureParts(out.data);
+  return out;
 }
 var REMOTE_RESULT_MAX_JSON_CHARS = 3e4;
 function queryResultBindingHint(query, result) {
@@ -2224,7 +1142,7 @@ function runQueryTool(client) {
           return fail(new Error(`run_query refused remote read "${query.name ?? query.id}" before execution: remote reads can expose sensitive data, consume API quota, and return an unbounded payload. Tell the user which saved query will run and ask explicitly; retry with user_confirmed_remote_read:true only after they approve that request.`));
         }
         if (assessment.requiresRemoteReadConfirmation) {
-          warnings.push(assessment.datasourceKind === "restapi" ? "User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.request and metadata.response, and add API-specific pagination before another run when needed." : "User-confirmed remote read: the datasource controls response size and quota.");
+          warnings.push(assessment.datasourceKind === "restapi" ? "User-confirmed REST GET: the remote API controls response size and quota. Inspect metadata.response (status and paging headers), and add API-specific pagination before another run when needed." : "User-confirmed remote read: the datasource controls response size and quota.");
         }
         if (assessment.requiresBillableReadConfirmation && !args.user_confirmed_billable_read) {
           return fail(new Error(`run_query refused query "${query.name ?? query.id}" before execution: ${query.kind} reads can incur warehouse/scan charges even with a row LIMIT. Explain that cost to the user and retry with user_confirmed_billable_read:true only after explicit approval.`));
@@ -2278,7 +1196,7 @@ function runQueryTool(client) {
         } catch (error) {
           return ok({
             status: "failed",
-            message: error instanceof Error ? error.message : String(error),
+            message: redactQueryText(error instanceof Error ? error.message : String(error)),
             ...preflight ? { preflight } : {},
             ...warnings.length ? { warnings } : {}
           });
@@ -2292,10 +1210,12 @@ function runQueryTool(client) {
         if (output.warning)
           warnings.push(output.warning);
         return ok({
-          ...output.result,
+          // Credentials around the rows (request headers, URL secrets, cookies) never reach the model (resultRedaction.ts).
+          ...redactRunResult(output.result),
           // Trusted execution evidence, separate from datasource-supplied data. No credentials,
           // URLs or row contents are needed for the agent's early migration/readiness checkpoint.
-          execution: { query_id: query.id, datasource_kind: query.kind, read_only: true },
+          // What let it run, not a claim about its effects: the read classifier is a static check (CM-37).
+          execution: { query_id: query.id, datasource_kind: query.kind, preflight: "explicit_read" },
           ...bindingHint ? { binding_hint: bindingHint } : {},
           ...preflight ? { preflight } : {},
           ...warnings.length ? { warnings } : {},
@@ -2309,127 +1229,45 @@ function runQueryTool(client) {
     }
   };
 }
-function batchSafeRead(query) {
-  const assessment = assessQueryRead(query);
-  if (assessment.provenRead && assessment.directSafe && !assessment.selectStar) {
-    const refusal = resolvedReadRefusal(query, assessment, resolveStaticBindings(query.options).resolved);
-    return refusal ? { safe: false, reason: refusal } : { safe: true };
-  }
-  if (assessment.provenRead && assessment.requiresRemoteReadConfirmation) {
-    return {
-      safe: false,
-      reason: `${assessment.reason ?? "remote read"} run_queries cannot run remote reads at all. Use singular run_query for this one: tell the user which saved query will run, and once they approve, call run_query with user_confirmed_remote_read:true. Do not retry run_queries with it.`
-    };
-  }
-  return {
-    safe: false,
-    reason: assessment.reason ?? (assessment.requiresCountPreflight ? "read requires a count-first preflight through singular run_query" : "query is not a proven bounded read")
-  };
-}
-function runQueriesTool(client) {
-  return {
-    name: "run_queries",
-    title: "Run Queries",
-    // Conservative execution labels; every saved query is preflighted before the batch runs.
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: true
-    },
-    description: "Run 1\u201310 already-created, proven read-only queries concurrently and return ordered per-query results. It currently accepts ToolJet DB list_rows/join_tables and SQL datasource list_rows or one bounded explicit-column SELECT/SHOW/DESCRIBE/EXPLAIN read. Every query is preflighted before any execution; SELECT *, unbounded reads, mutations, RunJS, paid/remote API operations, and unknown kinds are refused \u2014 remote API reads (restapi, openapi, servicenow, influxdb) can never run here; use singular run_query with user_confirmed_remote_read. Metadata and the environment are loaded once. Returns {queries:[{query_id,name,status,data|message,warnings?}]}; one runtime failure does not hide other read results. Pass include_data:false to only confirm each query runs \u2014 the result drops the rows and returns {status,row_count} instead, for lightweight post-build verification. Use singular run_query with count_query_id for a count-first large-read preflight. Component-bound options receive the run_query viewer warning.",
-    inputSchema: {
-      query_ids: external_exports.array(external_exports.string()).min(1).max(10),
-      version_id: external_exports.string(),
-      environment_id: external_exports.string().optional(),
-      include_data: external_exports.boolean().optional().describe("Default true. Set false to verify execution without returning rows: each result keeps status/message/warnings and adds row_count, but omits data. Use for smoke checks that only need the run status.")
-    },
-    async handler(args) {
-      try {
-        if (new Set(args.query_ids).size !== args.query_ids.length) {
-          return fail(new Error("run_queries query_ids must be unique."));
-        }
-        const saved = await client.getQueries(args.version_id);
-        const byId = new Map(saved.map((query) => [query.id, query]));
-        const resolveWarnings = [];
-        const resolveErrors = [];
-        args = {
-          ...args,
-          query_ids: args.query_ids.map((queryId) => {
-            if (byId.has(queryId))
-              return queryId;
-            const resolution = resolveRef(saved, queryId, "Query", `on version "${args.version_id}"`);
-            if (!resolution.ok) {
-              resolveErrors.push(resolution.error);
-              return queryId;
-            }
-            if (resolution.warning)
-              resolveWarnings.push(resolution.warning);
-            return resolution.target.id;
-          })
-        };
-        if (resolveErrors.length)
-          return fail(new Error(resolveErrors.join(" ")));
-        const unsafe = args.query_ids.flatMap((queryId) => {
-          const verdict = batchSafeRead(byId.get(queryId));
-          return verdict.safe ? [] : [`${queryId}: ${verdict.reason}`];
-        });
-        if (unsafe.length) {
-          return fail(new Error(`run_queries refused ${unsafe.length === 1 ? "a query" : "queries"} before execution: ${unsafe.join("; ")}`));
-        }
-        const environmentId = args.environment_id ?? await client.getDevelopmentEnvironmentId();
-        const queries = await Promise.all(args.query_ids.map(async (queryId) => {
-          const query = byId.get(queryId);
-          const warnings = containsComponentBinding(query.options) ? ["Saved query options reference components.*. Browser-free run_queries does not resolve live component state; verify pagination/filter values in the viewer."] : [];
-          try {
-            const bindings = resolveStaticBindings(query.options);
-            const emptied = emptyViewerOnlyParams(query.options, bindings);
-            if (emptied.length)
-              warnings.push(emptyParamsNote(emptied));
-            const liveOnly = bindings.unresolved.filter((b) => !/components\./.test(b));
-            if (liveOnly.length)
-              warnings.push(unresolvedNote(liveOnly));
-            const result = await client.runQuery({ queryId, versionId: args.version_id, environmentId, resolvedOptions: bindings.resolved });
-            const failed = result.status === "failed";
-            const bindingHint = queryResultBindingHint(query, result);
-            const recovery = failed ? failureRecovery(query, result) : void 0;
-            const verification = failed ? failureVerification(query, result) : void 0;
-            const schemaHint = failed ? await schemaNameHint(client, query, result) : void 0;
-            const shaped = args.include_data === false ? (() => {
-              const { data, ...rest } = result;
-              return Array.isArray(data) ? { ...rest, row_count: data.length } : bindingHint ? { ...rest, row_count: bindingHint.row_count } : rest;
-            })() : result;
-            return {
-              query_id: queryId,
-              ...query.name ? { name: query.name } : {},
-              ...shaped,
-              execution: { query_id: queryId, datasource_kind: query.kind, read_only: true },
-              ...bindingHint ? { binding_hint: bindingHint } : {},
-              ...warnings.length ? { warnings } : {},
-              ...recovery ? { recovery } : {},
-              ...verification ? { verification } : {},
-              ...schemaHint ? { schema_hint: schemaHint } : {}
-            };
-          } catch (error) {
-            const failure = { status: "failed", message: error instanceof Error ? error.message : String(error) };
-            return {
-              query_id: queryId,
-              ...query.name ? { name: query.name } : {},
-              ...failure,
-              ...warnings.length ? { warnings } : {}
-            };
-          }
-        }));
-        return ok({ queries });
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
 var MAX_READS = 10;
 var CLOCK_SKEW = /JWT issued at future/i;
 var CLOCK_SKEW_RETRY_MS = 1500;
 var REASON_CHARS = 160;
+var PARAMETER_BINDING = /^\{\{\s*parameters\.([A-Za-z_$][\w$]*)\s*\}\}$/;
+var SQL_EQUALS_PARAMETER = /=\s*\{\{\s*parameters\.([A-Za-z_$][\w$]*)\s*\}\}/g;
+var SQL_EQUALS_PLACEHOLDER = /=\s*:([A-Za-z_]\w*)/g;
+function parametersWithoutValue(options) {
+  const defaults = declaredParameterDefaults(options);
+  const bound = /* @__PURE__ */ new Set();
+  const sqlPlaceholders = /* @__PURE__ */ new Set();
+  const visit = (value) => {
+    if (typeof value === "string") {
+      for (const m of value.matchAll(SQL_EQUALS_PARAMETER))
+        bound.add(m[1]);
+      for (const m of value.matchAll(SQL_EQUALS_PLACEHOLDER))
+        sqlPlaceholders.add(m[1]);
+    } else if (Array.isArray(value))
+      value.forEach(visit);
+    else if (value && typeof value === "object") {
+      const clause = value;
+      const m = clause.operator === "eq" && typeof clause.value === "string" ? clause.value.trim().match(PARAMETER_BINDING) : null;
+      if (m)
+        bound.add(m[1]);
+      Object.values(value).forEach(visit);
+    }
+  };
+  visit(options);
+  const params = options && typeof options === "object" ? options.query_params : void 0;
+  for (const pair of Array.isArray(params) ? params : []) {
+    const m = Array.isArray(pair) && typeof pair[1] === "string" ? pair[1].trim().match(PARAMETER_BINDING) : null;
+    if (m && sqlPlaceholders.has(String(pair[0])))
+      bound.add(m[1]);
+  }
+  return [...bound].filter((name) => {
+    const value = defaults[name];
+    return value === void 0 || value === null || typeof value === "string" && !value.trim();
+  });
+}
 var rowCount = (result) => {
   const data = result.data;
   if (Array.isArray(data))
@@ -2442,24 +1280,38 @@ async function checkPlanReads(client, params) {
     return void 0;
   const saved = await client.getQueries(params.versionId);
   const byId = new Map(saved.map((query) => [query.id, query]));
-  const check = { ran: 0, rows: {}, failed: [], inconclusive: [], not_run: [] };
+  const check = { ran: 0, rows: {}, failed: [], inconclusive: [], not_run: [], queries: [] };
+  const entries = /* @__PURE__ */ new Map();
   const runnable = [];
+  let missing = [];
   for (const id of wanted) {
     const query = byId.get(id);
     if (!query)
       continue;
     const name = query.name ?? id;
-    const verdict = batchSafeRead(query);
-    if (!verdict.safe) {
-      check.not_run.push({ name, reason: String(verdict.reason ?? "not a proven bounded read").slice(0, REASON_CHARS) });
+    const verdict = autoReadPreflight(query);
+    if (!verdict.run) {
+      const reason = verdict.reason.startsWith(NOT_CHECKED_AUTOMATICALLY) ? verdict.reason : verdict.reason.slice(0, REASON_CHARS);
+      check.not_run.push({ name, reason });
+      entries.set(id, { name, status: "refused", reason });
+    } else if ((missing = parametersWithoutValue(query.options)).length) {
+      const reason = `not checked: needs a value for ${missing.map((p) => `parameters.${p}`).join(", ")}, which ${missing.length > 1 ? "have" : "has"} no default (a record's detail runs with the id the screen passes). Neither passed nor failed: open a record in the app to check it.`;
+      check.not_run.push({ name, reason });
+      entries.set(id, { name, status: "skipped", reason });
     } else if (runnable.length >= MAX_READS) {
-      check.not_run.push({ name, reason: `only the first ${MAX_READS} reads of a phase are checked; run this one with run_queries` });
+      const reason = `only the first ${MAX_READS} reads of a phase are checked; run this one with run_queries`;
+      check.not_run.push({ name, reason });
+      entries.set(id, { name, status: "skipped", reason });
     } else {
       runnable.push(id);
     }
   }
-  if (!runnable.length)
+  const ledger = () => {
+    check.queries = wanted.flatMap((id) => entries.get(id) ?? []);
     return check;
+  };
+  if (!runnable.length)
+    return ledger();
   const environmentId = params.environmentId ?? await client.getDevelopmentEnvironmentId();
   await Promise.all(runnable.map(async (id) => {
     const query = byId.get(id);
@@ -2469,7 +1321,7 @@ async function checkPlanReads(client, params) {
       try {
         const bindings = resolveStaticBindings(query.options);
         emptyViewerOnlyParams(query.options, bindings);
-        return await client.runQuery({ queryId: id, versionId: params.versionId, environmentId, resolvedOptions: bindings.resolved });
+        return await runUnattended(client, { queryId: id, versionId: params.versionId, environmentId, resolvedOptions: bindings.resolved });
       } catch (error) {
         return { status: "failed", message: error instanceof Error ? error.message : String(error) };
       }
@@ -2479,11 +1331,18 @@ async function checkPlanReads(client, params) {
       await new Promise((resolve2) => setTimeout(resolve2, params.retryDelayMs ?? CLOCK_SKEW_RETRY_MS));
       result = await run();
     }
+    if (result.timed_out === true) {
+      const reason = String(result.message);
+      check.not_run.push({ name, reason });
+      entries.set(id, { name, status: "skipped", reason });
+      return;
+    }
     check.ran += 1;
     if (result.status !== "failed") {
       const rows = rowCount(result);
       if (rows !== void 0)
         check.rows[name] = rows;
+      entries.set(id, { name, status: "checked", outcome: "passed" });
       return;
     }
     const message = String(result.message ?? result.description ?? "the query failed").slice(0, 600);
@@ -2493,614 +1352,28 @@ async function checkPlanReads(client, params) {
         message,
         note: "This query reads components.*, which a browser-free run leaves empty: the failure may be about the missing value. Check that the query also works when that input is empty, or give the input a default."
       });
+      entries.set(id, { name, status: "checked", outcome: "inconclusive" });
       return;
     }
     const schemaHint = await schemaNameHint(client, query, result).catch(() => void 0);
     check.failed.push({ name, message, ...schemaHint ? { schema_hint: schemaHint } : {} });
+    entries.set(id, { name, status: "checked", outcome: "failed" });
   }));
-  return check;
+  return ledger();
 }
-function invalidPlannedGeneratedPrimaryKeySeeds(columns, rows) {
-  const primaryKeys = columns.some((column) => column.primaryKey) ? columns.filter((column) => column.primaryKey) : [{ name: "id", type: "serial", primaryKey: true }];
-  const errors = [];
-  for (const column of primaryKeys) {
-    if (normalizeType(column.type) !== "serial" && !/^nextval\(/i.test(String(column.defaultValue ?? "").trim()))
-      continue;
-    const supplied = rows.flatMap((row, index) => column.name in row ? [index + 1] : []);
-    if (supplied.length) {
-      errors.push(`Omit generated primary key "${column.name}" from seed row(s) ${supplied.slice(0, 12).join(", ")}${supplied.length > 12 ? ` and ${supplied.length - 12} more` : ""}. ToolJet allocates it from the table sequence; explicit keys can collide or desynchronize future inserts. No seed values were removed or rewritten.`);
-    }
+var BUILT_IN_DB = /^tool\s*jet\s*(db|data\s*base)$/i;
+function matchDatasourceByName(sources, name) {
+  if (!name)
+    return null;
+  const exact = sources.filter((s) => s.name === name);
+  if (exact.length === 1)
+    return { id: exact[0].id, note: null };
+  if (BUILT_IN_DB.test(name.trim())) {
+    const db = sources.filter((s) => s.kind === "tooljetdb");
+    if (db.length === 1)
+      return { id: db[0].id, note: `datasource_name "${name}" is ToolJet's built-in database, "${db[0].name}" in this version.` };
   }
-  return errors;
-}
-function escapeRegExp2(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-function containsExactValue(value, expected) {
-  if (value === expected)
-    return true;
-  if (Array.isArray(value))
-    return value.some((entry) => containsExactValue(entry, expected));
-  if (value && typeof value === "object") {
-    return Object.values(value).some((entry) => containsExactValue(entry, expected));
-  }
-  return false;
-}
-function containsNamedBinding(value, namespace, name) {
-  if (typeof value === "string") {
-    return new RegExp(`\\b${namespace}\\s*\\.\\s*${escapeRegExp2(name)}(?:\\b|\\s*\\[)`).test(value);
-  }
-  if (Array.isArray(value))
-    return value.some((entry) => containsNamedBinding(entry, namespace, name));
-  if (value && typeof value === "object") {
-    return Object.values(value).some((entry) => containsNamedBinding(entry, namespace, name));
-  }
-  return false;
-}
-var CHART_QUERY_BINDING = /^\s*\{\{\s*queries\.([A-Za-z_$][\w$]*)\.data\s*\}\}\s*$/;
-function lintQueryFedCharts(components, queries) {
-  const errors = [];
-  for (const component of components) {
-    if (component.type !== "Chart")
-      continue;
-    const raw = component.properties?.jsonDescription;
-    const description = typeof raw === "string" ? raw : raw && typeof raw === "object" && "value" in raw ? String(raw.value ?? "") : "";
-    const match = CHART_QUERY_BINDING.exec(description);
-    if (!match)
-      continue;
-    const query = queries.find((candidate) => candidate.name === match[1] || candidate.clientRef === match[1]);
-    if (!query)
-      continue;
-    if (query.kind !== "runjs")
-      continue;
-    const code = String(query.options?.code ?? "");
-    const label = component.name ?? "Chart";
-    if (!code.trim()) {
-      errors.push(`Chart "${label}" is bound to query "${query.name}", which has no JavaScript code to build the chart object.`);
-      continue;
-    }
-    if (/textposition\s*:\s*['"]outside['"]/.test(code) && !/cliponaxis\s*:\s*false/.test(code)) {
-      errors.push(`Chart "${label}" is bound to query "${query.name}", whose bar trace places its text outside without cliponaxis:false, so the tallest bar's value label is cut in half by the plot area. Add cliponaxis:false to the trace.`);
-    }
-    const missing = ["data", "layout"].filter((key2) => !code.includes(key2));
-    if (missing.length) {
-      errors.push(`Chart "${label}" is bound to query "${query.name}", whose code never mentions ${missing.join(", ")}: a query feeding a chart must return the whole { data: [trace], layout: { font, xaxis, yaxis, ... } } object from references/ui-layout.md. A bare array of points draws empty axes in Plotly's default font.`);
-    }
-  }
-  return errors;
-}
-var QUERY_DATA_REF = /queries\.([A-Za-z_$][\w$]*)\.data\b/g;
-var isStaticTrue = (value) => value === true || value === "true" || value === "{{true}}";
-function lintRunjsLoadOrder(spec) {
-  const errors = [];
-  const warnings = [];
-  const queries = spec.queries ?? [];
-  const byRef = /* @__PURE__ */ new Map();
-  for (const query of queries) {
-    byRef.set(query.name, query);
-    if (query.clientRef)
-      byRef.set(query.clientRef, query);
-  }
-  const chained = /* @__PURE__ */ new Set();
-  for (const lifecycle of spec.lifecycles ?? []) {
-    for (const target of lifecycle.refreshQueryRefs ?? [])
-      chained.add(`${lifecycle.queryRef}->${target}`);
-  }
-  for (const event of spec.events ?? []) {
-    const action = event.action ?? {};
-    if (event.sourceType !== "data_query" || event.trigger !== "onDataQuerySuccess" || action.actionId !== "run-query")
-      continue;
-    const target = String(action.target_ref ?? action.queryName ?? action.queryId ?? "");
-    if (target)
-      chained.add(`${event.sourceRef}->${target}`);
-  }
-  const keysOf = (query) => [query.name, ...query.clientRef ? [query.clientRef] : []];
-  for (const query of queries) {
-    if (query.kind !== "runjs")
-      continue;
-    const code = String(query.options?.code ?? "");
-    if (!isStaticTrue(query.options?.runOnPageLoad))
-      continue;
-    const refs2 = new Set([...code.matchAll(QUERY_DATA_REF)].map((match) => match[1]));
-    for (const ref of refs2) {
-      const source = byRef.get(ref);
-      if (!source || source === query)
-        continue;
-      const isChained = keysOf(source).some((from) => keysOf(query).some((to) => chained.has(`${from}->${to}`)));
-      if (isChained) {
-        warnings.push(`Query "${query.name}" is already run from "${source.name}"'s success but also has runOnPageLoad on, so it runs twice and the first run reads queries.${ref}.data before it exists. Set runOnPageLoad to false.`);
-      } else {
-        errors.push(`Query "${query.name}" reads queries.${ref}.data and runs on page load, so it races "${source.name}" and reads undefined on first load (the chart or table it feeds stays empty). Set runOnPageLoad to false and run it from "${source.name}"'s success: a lifecycle { queryRef: "${source.clientRef ?? source.name}", refreshQueryRefs: ["${query.clientRef ?? query.name}"] } or an onDataQuerySuccess run-query event.`);
-      }
-    }
-  }
-  return { errors, warnings };
-}
-function lintChartNumericBindings(pages, queries) {
-  const warnings = [];
-  const sqlByName = /* @__PURE__ */ new Map();
-  for (const query of queries) {
-    const sql = query.options?.query;
-    if (query.name && typeof sql === "string")
-      sqlByName.set(query.name, sql);
-  }
-  if (!sqlByName.size)
-    return warnings;
-  for (const page of pages) {
-    for (const component of page.components) {
-      if (component.type !== "Chart")
-        continue;
-      const properties = component.properties;
-      const entry = properties?.data;
-      const binding = typeof entry?.value === "string" ? entry.value : typeof entry === "string" ? entry : "";
-      if (!binding.includes("{{"))
-        continue;
-      const yMatch = binding.match(/y\s*:\s*(?:\w+\.)?([A-Za-z_]\w*)/);
-      const queryMatch = binding.match(/queries\.([A-Za-z_$][\w$]*)/);
-      if (!yMatch || !queryMatch)
-        continue;
-      const column = yMatch[1];
-      const sql = sqlByName.get(queryMatch[1]);
-      if (!sql)
-        continue;
-      const aggregate = new RegExp(`\\b(count|sum|avg|min|max)\\s*\\([^)]*\\)\\s+as\\s+${column}\\b`, "i").test(sql);
-      if (!aggregate)
-        continue;
-      const cast = new RegExp(`(cast\\s*\\(|::\\s*(float|numeric|decimal|int|bigint|double))`, "i").test(sql);
-      const coerced = /Number\s*\(|parseFloat\s*\(|parseInt\s*\(|\+\s*r\./.test(binding);
-      if (cast || coerced)
-        continue;
-      warnings.push(`Chart "${component.name ?? component.id}" plots y from "${column}", an uncast SQL aggregate in query "${queryMatch[1]}". Many drivers return numeric aggregates as STRINGS (BigQuery INT64 from COUNT(*) especially), and a Chart given string y values renders blank with no error. Cast in SQL (CAST(... AS FLOAT64) / ::float) or coerce in the binding (y: Number(r.${column})).`);
-    }
-  }
-  return warnings;
-}
-function lintServerSidePaginationRace(pages, queries) {
-  const errors = [];
-  const queryByName = /* @__PURE__ */ new Map();
-  for (const query of queries)
-    if (query.name)
-      queryByName.set(query.name, query);
-  const propValue2 = (properties, key2) => {
-    const entry = properties?.[key2];
-    return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
-  };
-  const isTrue = (value) => value === true || typeof value === "string" && value.replace(/\s+/g, "").toLowerCase() === "{{true}}";
-  const runsOnPageLoad = (options) => {
-    const opts = options;
-    return !!opts && (opts.runOnPageLoad === true || opts.runOnPageLoad === "{{true}}");
-  };
-  const referencedQueryNames = (dataBinding) => {
-    if (typeof dataBinding !== "string")
-      return [];
-    const names = /* @__PURE__ */ new Set();
-    for (const match of dataBinding.matchAll(/queries\.([A-Za-z_$][\w$]*)/g))
-      names.add(match[1]);
-    return [...names];
-  };
-  for (const page of pages) {
-    for (const component of page.components) {
-      if (component.type !== "Table" || !component.name)
-        continue;
-      const properties = component.properties;
-      if (!isTrue(propValue2(properties, "serverSidePagination")))
-        continue;
-      for (const queryName of referencedQueryNames(propValue2(properties, "data"))) {
-        const query = queryByName.get(queryName);
-        if (!query)
-          continue;
-        if (runsOnPageLoad(query.options) && containsNamedBinding(query.options, "components", component.name)) {
-          errors.push(`Table "${component.name}" uses server-side pagination and its data query "${queryName}" runs on page load while referencing components.${component.name}.* in its SQL. On first load the table is not registered yet, so those bindings resolve to "undefined" and the query fails (e.g. column "undefined" does not exist) \u2014 the table then shows "No data" even though the record count is non-zero. For a bounded result set, prefer client-side pagination: set serverSidePagination:false, bind the table data to the full query, and drop the separate count query. If server-side pagination is genuinely needed, set the data query's runOnPageLoad:false and drive it from the table's onPageChanged/onSearch events so it runs after the table mounts.`);
-        }
-      }
-    }
-  }
-  return errors;
-}
-function pagesUsingQuery(summary, name, planPages) {
-  if (!summary)
-    return [];
-  const query = (summary.queries ?? []).find((q) => q.name === name);
-  const reads = new RegExp(`queries\\??\\.${name.replace(/[$]/g, "\\$&")}\\b`);
-  return (summary.pages ?? []).filter((page) => {
-    if (!page.name || planPages.has(page.name))
-      return false;
-    const ids = new Set(page.components.map((component) => component.id));
-    return page.components.some((component) => reads.test(JSON.stringify([component.properties ?? {}, component.styles ?? {}]))) || !!query && (summary.events ?? []).some((event) => !!event.sourceId && (ids.has(event.sourceId) || event.sourceId === page.id) && JSON.stringify(event.event ?? {}).includes(`"${query.id}"`));
-  }).map((page) => page.name);
-}
-function lintPlannedApp(spec, existingSummary, options = {}) {
-  const errors = [];
-  const warnings = [];
-  const checked = [];
-  const tables = spec.tables ?? [];
-  if (tables.length) {
-    checked.push("ToolJet DB table names, columns, foreign keys, reserved names, and dependency order");
-    errors.push(...validateTableBatch(tables));
-  }
-  const seedData = spec.seedData ?? [];
-  const seedRows = seedData.reduce((total, seed) => total + seed.rows.length, 0);
-  if (seedData.length) {
-    checked.push("seed batches have non-empty rows");
-    for (const [batchIndex, seed] of seedData.entries()) {
-      if (!seed.rows.length)
-        errors.push(`Seed data for table "${seed.tableName}" has no rows.`);
-      const plannedTable = tables.find((table) => table.tableName.toLowerCase() === seed.tableName.toLowerCase());
-      if (plannedTable) {
-        errors.push(...invalidPlannedGeneratedPrimaryKeySeeds(plannedTable.columns, seed.rows).map((error) => `Seed data for planned table "${seed.tableName}" (batch ${batchIndex + 1}): ${error}`));
-      }
-      const columns = plannedTable?.columns ?? [];
-      for (const column of columns) {
-        if (!/^jsonb?$/i.test(String(column.type ?? "")))
-          continue;
-        const bad = seed.rows.flatMap((row, index) => {
-          const value = row[column.name];
-          return value === void 0 || value === null || typeof value === "object" ? [] : [index + 1];
-        });
-        if (bad.length) {
-          errors.push(`Seed data for table "${seed.tableName}": column "${column.name}" is jsonb, so each value must be an object or an array (or null), not ${typeof seed.rows[bad[0] - 1][column.name]}; row(s) ${bad.slice(0, 8).join(", ")}. Store a list as ["a","b"], or make the column string if it holds text.`);
-        }
-      }
-    }
-  }
-  const queryRefs = /* @__PURE__ */ new Map();
-  const queryIds = /* @__PURE__ */ new Map();
-  const existingQueries = existingSummary?.queries ?? [];
-  const existingQueryNames = /* @__PURE__ */ new Set();
-  for (const query of existingQueries) {
-    const target = { id: query.id, name: query.name ?? query.id };
-    queryRefs.set(query.id, target);
-    queryIds.set(query.id, target);
-    if (query.name) {
-      if (existingQueryNames.has(query.name))
-        errors.push(`Existing app has duplicate query name "${query.name}".`);
-      existingQueryNames.add(query.name);
-      queryRefs.set(query.name, target);
-    }
-  }
-  const plannedQueries = (spec.queries ?? []).map((query, index) => {
-    const ref = query.clientRef ?? query.name;
-    const id = `planned-query:${index}:${ref}`;
-    if (existingQueryNames.has(query.name)) {
-      const users = pagesUsingQuery(existingSummary, query.name, new Set((spec.pages ?? []).map((page) => page.name)));
-      errors.push(`App already has a query named "${query.name}"` + (users.length ? `, which page${users.length > 1 ? "s" : ""} ${users.map((u) => `"${u}"`).join(", ")} also read${users.length > 1 ? "" : "s"} or run${users.length > 1 ? "" : "s"}. To use it as it is, refer to it by name here without defining it. To change it for every page that reads it, mark this definition update: true.` : ". To use it as it is, refer to it by name without defining it in this plan; to change it, mark this definition update: true."));
-    }
-    registerRef(queryRefs, ref, { id, name: query.name }, "query", errors);
-    if (ref !== query.name)
-      registerRef(queryRefs, query.name, { id, name: query.name }, "query", errors);
-    queryIds.set(id, { id, name: query.name });
-    if (!query.kind) {
-      errors.push(`Query "${query.name}" has no resolved datasource kind; pass kind or a resolvable datasource_id + version_id.`);
-    }
-    const prepared = prepareQueryOptionsForWrite(query.kind, query.options, `Query "${query.name}"`);
-    const options2 = prepared.options;
-    errors.push(...prepared.errors);
-    warnings.push(...prepared.warnings);
-    return {
-      id,
-      name: query.name,
-      kind: query.kind,
-      data_source_id: query.datasourceId,
-      options: options2
-    };
-  });
-  const queries = [...existingQueries, ...plannedQueries];
-  if (plannedQueries.length)
-    checked.push("datasource query option contracts and duplicate logical query references");
-  {
-    const loadOrder = lintRunjsLoadOrder(spec);
-    errors.push(...loadOrder.errors);
-    warnings.push(...loadOrder.warnings);
-  }
-  const pageRefs = /* @__PURE__ */ new Map();
-  const componentRefs = /* @__PURE__ */ new Map();
-  const pages = (existingSummary?.pages ?? []).map((page) => ({
-    ...page,
-    components: page.components.map((component) => ({ ...component }))
-  }));
-  const componentNameCounts = /* @__PURE__ */ new Map();
-  for (const page of pages) {
-    bindRef(pageRefs, page.id, { id: page.id, name: page.name ?? page.id });
-    if (page.name)
-      bindRef(pageRefs, page.name, { id: page.id, name: page.name });
-    if (page.handle)
-      bindRef(pageRefs, page.handle, { id: page.id, name: page.name ?? page.handle });
-    for (const component of page.components) {
-      const target = { id: component.id, name: component.name ?? component.id, type: component.type };
-      bindRef(componentRefs, component.id, target);
-      if (component.name)
-        componentNameCounts.set(component.name, (componentNameCounts.get(component.name) ?? 0) + 1);
-    }
-  }
-  for (const page of pages) {
-    for (const component of page.components) {
-      if (component.name && componentNameCounts.get(component.name) === 1) {
-        bindRef(componentRefs, component.name, { id: component.id, name: component.name, type: component.type });
-      }
-    }
-  }
-  let componentCount = 0;
-  (spec.pages ?? []).forEach((plannedPage, pageIndex) => {
-    const pageRef = plannedPage.clientRef ?? plannedPage.name;
-    const existingPage = matchPlannedPage(pages, plannedPage.name, new Set((spec.pages ?? []).map((page) => page.name)));
-    const pageId = existingPage?.id ?? `planned-page:${pageIndex}:${pageRef}`;
-    bindRef(pageRefs, pageRef, { id: pageId, name: plannedPage.name }, "page", errors);
-    const iconError = pageIconError(plannedPage.icon);
-    if (iconError)
-      errors.push(`Page "${plannedPage.name}": ${iconError}`);
-    const normalized = (plannedPage.components ?? []).map((component) => {
-      const definition = normalizeComponentSpec(component, { stripUnknownKeys: true });
-      const geometry = normalizePlannedLayouts(definition.component);
-      return { component: geometry.component, warnings: [...definition.warnings, ...geometry.warnings] };
-    });
-    warnings.push(...normalized.flatMap((item) => item.warnings));
-    const expansion = materializeRequiredDefaultChildren(normalized.map((item) => item.component));
-    warnings.push(...expansion.warnings);
-    const componentLint = lintComponents(expansion.components, options);
-    errors.push(...componentLint.errors.map((message) => `Page "${plannedPage.name}": ${message}`));
-    errors.push(...lintQueryFedCharts(expansion.components, spec.queries ?? []).map((message) => `Page "${plannedPage.name}": ${message}`));
-    warnings.push(...componentLint.warnings.map((message) => `Page "${plannedPage.name}": ${message}`));
-    const references = indexComponentReferences(expansion.components, existingPage?.components);
-    errors.push(...references.errors.map((message) => `Page "${plannedPage.name}": ${message}`));
-    const localRefs = /* @__PURE__ */ new Map();
-    const componentEntries = references.components.map((component, componentIndex) => {
-      const ref = componentRef(component);
-      const id = `planned-component:${pageIndex}:${componentIndex}:${ref}`;
-      if ((existingPage?.components ?? []).some((candidate) => candidate.name === component.name)) {
-        errors.push(`Page "${plannedPage.name}" already has a component named "${component.name}".`);
-      }
-      if (localRefs.has(ref))
-        errors.push(`Page "${plannedPage.name}" has duplicate component ref "${ref}".`);
-      else
-        localRefs.set(ref, id);
-      registerRef(componentRefs, ref, { id, name: component.name, type: component.type }, "component", errors);
-      componentCount += 1;
-      return { component, id, originalParentRef: expansion.components[componentIndex].parentRef };
-    });
-    const plannedComponents = componentEntries.map(({ component, id, originalParentRef }) => {
-      let parent;
-      if (component.parentRef) {
-        parent = localRefs.get(component.parentRef);
-        if (!parent) {
-          errors.push(`Page "${plannedPage.name}" component "${component.name}" has unknown parent_ref "${component.parentRef}".`);
-        }
-      } else if (component.parent) {
-        if (!originalParentRef)
-          warnings.push(`Page "${plannedPage.name}" component "${component.name}" uses persisted parent id "${component.parent}"; its parent relationship cannot be verified in a pre-write plan. Prefer parent_ref.`);
-        parent = component.parent;
-      }
-      if (parent)
-        parent = encodeComponentParent(parent, component.slotName);
-      return {
-        id,
-        name: component.name,
-        type: component.type,
-        properties: component.properties,
-        styles: component.styles,
-        validation: component.validation,
-        others: component.others,
-        layouts: component.layouts ?? (component.layout ? { desktop: component.layout, mobile: component.layout } : void 0),
-        parent,
-        ...component.slotName && component.slotName !== "body" ? { slot_name: component.slotName } : {}
-      };
-    });
-    const pageSummary = existingPage ?? {
-      id: pageId,
-      name: plannedPage.name,
-      handle: plannedPage.name === "Home" ? "home" : slug(plannedPage.name),
-      icon: plannedPage.icon,
-      components: []
-    };
-    pageSummary.name = plannedPage.name;
-    pageSummary.icon = plannedPage.icon;
-    if (plannedPage.hidden !== void 0)
-      pageSummary.hidden = plannedPage.hidden;
-    pageSummary.components.push(...plannedComponents);
-    if (!existingPage)
-      pages.push(pageSummary);
-  });
-  if (pages.length)
-    checked.push("page icons, component contracts, bindings, rendered geometry, modal sizing, and nested refs");
-  errors.push(...lintServerSidePaginationRace(pages, queries));
-  warnings.push(...lintChartNumericBindings(pages, queries));
-  const eventSpecs = [];
-  const scanners = new Set((spec.pages ?? []).flatMap((p) => (p.components ?? []).filter((c) => c.type === "QrScanner").flatMap((c) => [c.clientRef, c.name].filter(Boolean))));
-  (spec.events ?? []).forEach((event, index) => {
-    if (event.sourceType === "component" && event.trigger === "onDetect" && scanners.has(String(event.sourceRef)) && !event.action?.debounce) {
-      errors.push(`Event[${index}] (QrScanner "${event.sourceRef}" onDetect): add debounce: "300" to the action. The scanner runs onDetect before it sets lastDetectedValue, so an undelayed action reads the previous scan (nothing on the first).`);
-    }
-    const source = sourceMap(event.sourceType, componentRefs, queryRefs, pageRefs).get(event.sourceRef);
-    if (!source)
-      errors.push(`Event[${index}] has unknown ${event.sourceType} source_ref "${event.sourceRef}".`);
-    eventSpecs.push({
-      sourceId: source?.id ?? `missing-source:${event.sourceRef}`,
-      sourceType: event.sourceType,
-      ref: event.ref,
-      trigger: event.trigger,
-      action: resolveAction(event.action, queryRefs, pageRefs, componentRefs, errors, `Event[${index}]`),
-      name: event.name
-    });
-  });
-  if ((spec.lifecycles ?? []).length) {
-    const lifecycleSpecs = (spec.lifecycles ?? []).flatMap((lifecycle, index) => {
-      const source = queryRefs.get(lifecycle.queryRef);
-      if (!source) {
-        errors.push(`Lifecycle[${index}] has unknown query_ref "${lifecycle.queryRef}".`);
-        return [];
-      }
-      return [{
-        queryId: source.id,
-        refreshQueryIds: resolveRefs(lifecycle.refreshQueryRefs, queryRefs, errors, `Lifecycle[${index}] refresh query`),
-        clearComponentIds: resolveRefs(lifecycle.clearComponentRefs, componentRefs, errors, `Lifecycle[${index}] clear component`),
-        closeModalId: resolveRef2(lifecycle.closeModalRef, componentRefs, errors, `Lifecycle[${index}] modal`),
-        successAlert: lifecycle.successAlert,
-        failureAlert: lifecycle.failureAlert,
-        beforeRefreshActions: lifecycle.beforeRefreshActions?.map((action, actionIndex) => resolveAction(action, queryRefs, pageRefs, componentRefs, errors, `Lifecycle[${index}] before refresh action[${actionIndex}]`)),
-        successActions: lifecycle.successActions?.map((action, actionIndex) => resolveAction(action, queryRefs, pageRefs, componentRefs, errors, `Lifecycle[${index}] success action[${actionIndex}]`)),
-        failureActions: lifecycle.failureActions?.map((action, actionIndex) => resolveAction(action, queryRefs, pageRefs, componentRefs, errors, `Lifecycle[${index}] failure action[${actionIndex}]`))
-      }];
-    });
-    try {
-      const expanded = expandQueryLifecycles({ app_id: existingSummary?.app_id ?? "planned-app", pages, queries, events: existingSummary?.events ?? [] }, lifecycleSpecs);
-      eventSpecs.push(...expanded.events);
-      warnings.push(...expanded.warnings);
-    } catch (error) {
-      errors.push(error instanceof Error ? error.message : String(error));
-    }
-  }
-  const summary = {
-    app_id: existingSummary?.app_id ?? "planned-app",
-    name: existingSummary?.name ?? "Planned app",
-    version_id: existingSummary?.version_id ?? "planned-version",
-    pages,
-    queries,
-    events: [
-      ...existingSummary?.events ?? [],
-      ...eventSpecs.map((event, index) => ({
-        id: `planned-event:${index}`,
-        name: event.name,
-        sourceId: event.sourceId,
-        target: event.sourceType,
-        event: { eventId: event.trigger, ...event.ref ? { ref: event.ref } : {}, ...event.action }
-      }))
-    ]
-  };
-  if (eventSpecs.length) {
-    checked.push("event/lifecycle sources, triggers, action ids, and logical targets");
-    const eventValidation = validateEvents(
-      { ...summary, events: existingSummary?.events ?? [] },
-      eventSpecs,
-      // apply_app_phase moves a saved page switch behind the handlers a plan adds (navigationReorders).
-      { navigationMovedLast: true }
-    );
-    errors.push(...eventValidation.errors);
-    warnings.push(...eventValidation.warnings);
-  }
-  const structure = validateAppStructure(summary, options);
-  const forward = splitForwardComponentRefs(structure.errors, existingQueryNames);
-  errors.push(...forward.errors);
-  warnings.push(...structure.warnings, ...forward.notes);
-  const deduped = dropUnprefixedDuplicates(errors);
-  return {
-    ok: deduped.length === 0,
-    errors: deduped,
-    warnings: dropUnprefixedDuplicates(warnings),
-    checked,
-    not_checked: [
-      "server acceptance of writes or external datasource connectivity",
-      "query execution results and mutation side effects",
-      "browser event delivery, dynamic bindings, and visual rendering"
-    ],
-    counts: {
-      tables: tables.length,
-      seed_rows: seedRows,
-      pages: spec.pages?.length ?? 0,
-      components: componentCount,
-      queries: plannedQueries.length,
-      events: eventSpecs.length,
-      lifecycles: spec.lifecycles?.length ?? 0
-    }
-  };
-}
-function splitForwardComponentRefs(structureErrors, existingQueryNames) {
-  const errors = [];
-  const missing = /* @__PURE__ */ new Map();
-  for (const error of structureErrors) {
-    const m = error.match(/^Query "([^"]+)" references components\.([^,]+), but no component is named /) ?? error.match(/^RunJS query "([^"]+)" references components\["([^"]+)"\], but no component is named /);
-    if (m && existingQueryNames.has(m[1])) {
-      const names = missing.get(m[1]) ?? [];
-      if (!names.includes(m[2]))
-        names.push(m[2]);
-      missing.set(m[1], names);
-    } else {
-      errors.push(error);
-    }
-  }
-  const notes = [...missing].map(([query, names]) => `Query "${query}" reads ${names.map((n) => `components.${n}`).join(", ")}, which no page has yet. Build them on a later page with that exact name, or the query reads undefined.`);
-  return { errors, notes };
-}
-function bindRef(map, ref, value, type, errors) {
-  const existing = map.get(ref);
-  if (!existing || existing.id === value.id)
-    map.set(ref, value);
-  else if (type && errors)
-    errors.push(`Duplicate ${type} client_ref/name "${ref}" in planned app.`);
-}
-function registerRef(map, ref, value, type, errors) {
-  if (map.has(ref))
-    errors.push(`Duplicate ${type} client_ref/name "${ref}" in planned app.`);
-  else
-    map.set(ref, value);
-}
-function sourceMap(sourceType, components, queries, pages) {
-  if (sourceType === "data_query")
-    return queries;
-  if (sourceType === "page")
-    return pages;
-  return components;
-}
-function resolveAction(raw, queries, pages, components, errors, label) {
-  const { target_ref: explicitRef, ...action } = raw;
-  const targetRef = explicitRef ?? (action.actionId === "run-query" ? action.queryId ?? action.queryName : void 0);
-  if (Object.values(action).some((value) => typeof value === "string" && /^planned-(query|page|component):/.test(value))) {
-    errors.push(`${label}: synthetic planned ids cannot be saved. Use action.target_ref with the logical client_ref or name.`);
-    return action;
-  }
-  if (targetRef === void 0)
-    return action;
-  if (typeof targetRef !== "string") {
-    errors.push(`${label} target_ref must be a string.`);
-    return action;
-  }
-  const actionId = action.actionId;
-  const target = actionId === "run-query" ? queries.get(targetRef) : actionId === "switch-page" ? pages.get(targetRef) : ["show-modal", "close-modal", "control-component", "set-table-page", "scroll-component-into-view"].includes(String(actionId)) ? components.get(targetRef) : void 0;
-  if (!target) {
-    errors.push(`${label} action "${String(actionId)}" has unknown or unsupported target_ref "${targetRef}".`);
-    return action;
-  }
-  if (actionId === "run-query")
-    return { ...action, queryId: target.id, queryName: target.name };
-  if (actionId === "switch-page")
-    return { ...action, pageId: target.id };
-  if (actionId === "show-modal" || actionId === "close-modal")
-    return { ...action, modal: target.id };
-  if (actionId === "control-component" || actionId === "scroll-component-into-view") {
-    return { ...action, componentId: target.id };
-  }
-  if (actionId === "set-table-page")
-    return { ...action, table: target.id };
-  return action;
-}
-function resolveRefs(refs2, map, errors, label) {
-  return refs2?.flatMap((ref) => {
-    const value = map.get(ref);
-    if (!value) {
-      errors.push(`${label} ref "${ref}" does not exist.`);
-      return [];
-    }
-    return [value.id];
-  });
-}
-function resolveRef2(ref, map, errors, label) {
-  if (!ref)
-    return void 0;
-  const value = map.get(ref);
-  if (!value) {
-    errors.push(`${label} ref "${ref}" does not exist.`);
-    return void 0;
-  }
-  return value.id;
-}
-function slug(value) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "page";
-}
-function unique2(values) {
-  return [...new Set(values)];
-}
-function dropUnprefixedDuplicates(values) {
-  const distinct = unique2(values);
-  const stripped = new Set(distinct.map((value) => value.replace(/^Page "[^"]*": /, "")).filter((value, i) => value !== distinct[i]));
-  return distinct.filter((value) => value.startsWith('Page "') || !stripped.has(value));
+  return null;
 }
 function missingCreateRowColumns(options, columns) {
   if (options.operation !== "create_row")
@@ -3119,12 +1392,12 @@ function bulkPrimaryKeyWarning(kind, options, tableName, columns) {
     return;
   const config = options.bulk_upsert_with_primary_key;
   const keys = config?.primary_key;
-  if (!Array.isArray(keys) || !keys.length || keys.some((key2) => typeof key2 !== "string" || key2.includes("{{")))
+  if (!Array.isArray(keys) || !keys.length || keys.some((key) => typeof key !== "string" || key.includes("{{")))
     return;
-  const invalid = keys.filter((key2) => !columns.some((column) => column.name === key2 && column.primaryKey));
+  const invalid = keys.filter((key) => !columns.some((column) => column.name === key && column.primaryKey));
   if (!invalid.length)
     return;
-  return `bulk_upsert_with_primary_key for "${tableName}" targets non-primary-key column(s) ${invalid.map((key2) => JSON.stringify(key2)).join(", ")}. This operation requires actual PRIMARY KEY columns; a UNIQUE business reference is not sufficient. Use the real primary key, or a supported conditional SQL upsert that preserves the intended matching and concurrency rules. Do not recreate an existing table or change its primary key merely to repair this query.`;
+  return `bulk_upsert_with_primary_key for "${tableName}" targets non-primary-key column(s) ${invalid.map((key) => JSON.stringify(key)).join(", ")}. This operation requires actual PRIMARY KEY columns; a UNIQUE business reference is not sufficient. Use the real primary key, or a supported conditional SQL upsert that preserves the intended matching and concurrency rules. Do not recreate an existing table or change its primary key merely to repair this query.`;
 }
 function updateRowsCompatibilityWarning(kind, options, tableName, columns) {
   if (kind !== "tooljetdb" || options.operation !== "update_rows" || !columns?.length)
@@ -3214,7 +1487,7 @@ function normalizePlanBindingAliases(plan, existing, datasourceKinds = /* @__PUR
     if (Array.isArray(value))
       return value.map(values);
     if (value && typeof value === "object")
-      return Object.fromEntries(Object.entries(value).map(([key2, child]) => [key2, values(child)]));
+      return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, values(child)]));
     return value;
   };
   for (const component of components) {
@@ -3236,13 +1509,13 @@ function normalizePlanBindingAliases(plan, existing, datasourceKinds = /* @__PUR
   for (const event of plan.events ?? [])
     event.action = values(event.action);
   for (const lifecycle of plan.lifecycles ?? []) {
-    for (const key2 of ["before_refresh_actions", "success_actions", "failure_actions"]) {
-      if (lifecycle[key2])
-        lifecycle[key2] = values(lifecycle[key2]);
+    for (const key of ["before_refresh_actions", "success_actions", "failure_actions"]) {
+      if (lifecycle[key])
+        lifecycle[key] = values(lifecycle[key]);
     }
-    for (const key2 of ["success_alert", "failure_alert"]) {
-      if (lifecycle[key2])
-        lifecycle[key2] = values(lifecycle[key2]);
+    for (const key of ["success_alert", "failure_alert"]) {
+      if (lifecycle[key])
+        lifecycle[key] = values(lifecycle[key]);
     }
   }
   return [...changed].map((change) => `Resolved explicit binding alias ${change}; the submitted definitions now use the runtime name. No inferred names were rewritten.`);
@@ -3255,8 +1528,8 @@ function restatedQueryNames(summary, queries, tables, datasources) {
     if (held.length !== 1)
       continue;
     const existing = held[0];
-    const named = query.datasource_name !== void 0 ? datasources.filter((source) => source.name === query.datasource_name) : [];
-    const datasource = query.datasource_id !== void 0 ? datasources.find((source) => source.id === query.datasource_id) : named.length === 1 ? named[0] : void 0;
+    const matched = query.datasource_id === void 0 ? matchDatasourceByName(datasources, query.datasource_name) : null;
+    const datasource = query.datasource_id !== void 0 ? datasources.find((source) => source.id === query.datasource_id) : matched ? datasources.find((source) => source.id === matched.id) : void 0;
     if (!datasource || datasource.id !== existing.data_source_id)
       continue;
     const options = structuredClone(query.options ?? {});
@@ -3274,23 +1547,8 @@ function restatedQueryNames(summary, queries, tables, datasources) {
   }
   return restated;
 }
-var COMPONENT_FX_GUIDANCE = "For properties/styles/validation with an FX toggle, use `{ value: <expression>, fxActive: true }` only for bindings/conditions/calculations the normal control cannot express. Keep defaults and panel-editable constants (including `{{true}}`/`{{false}}`, numbers, selections, colors) out of FX. For nested Table columns/buttons/options and KeyValuePair fields, add the property key (e.g. `columnVisibility`, `disableButton`, `fieldVisibility`, `isEditable`) to that object's `fxActiveFields`, preserving other entries. ";
-var COMPONENT_FX_UPDATE_GUIDANCE = COMPONENT_FX_GUIDANCE + "Updates must include both `value` and `fxActive`; revert with `{ value: <constant>, fxActive: false }`. For nested Table fields, remove only reverted property keys from `fxActiveFields`. KeyValuePair arrays merge by index; verify flag removals and report retained flags. ";
-async function mapKeyRefusal(client, componentTypes) {
-  if (![...componentTypes].includes("Map") || typeof client?.hasGoogleMapsKey !== "function")
-    return void 0;
-  let hasKey;
-  try {
-    hasKey = await client.hasGoogleMapsKey();
-  } catch {
-    return void 0;
-  }
-  if (hasKey !== false)
-    return void 0;
-  return "This ToolJet instance has no Google Maps API key (GOOGLE_MAPS_API_KEY), so a Map component shows a Google error instead of a map. Show the locations in a Table (a link column to https://www.google.com/maps?q=<lat>,<lng> opens each one), and tell the user in your reply that an in-app map needs the Google Maps API key on the instance.";
-}
 var TABLE_NAME_MAX = 31;
-function unique3(values) {
+function unique(values) {
   return [...new Set(values)];
 }
 function lintAppSpecTool(client) {
@@ -3320,9 +1578,6 @@ function lintAppSpecTool(client) {
         if (replacePages.length && !args.app_id) {
           preflightErrors.push(`pages ${replacePages.join(", ")}: replace needs app_id, so the plan is checked against the page it replaces.`);
         }
-        const mapRefusal = await mapKeyRefusal(client, (args.pages ?? []).flatMap((page) => (page.components ?? []).map((c) => String(c.type))));
-        if (mapRefusal)
-          preflightErrors.push(mapRefusal);
         const needsTables = Boolean(args.tables?.length || args.seed_data?.length || args.queries?.some((query) => query.table_ref || typeof query.options?.table_id === "string"));
         const [existingTables, fetchedSummary] = await Promise.all([
           needsTables ? client.listTables() : Promise.resolve([]),
@@ -3331,27 +1586,32 @@ function lintAppSpecTool(client) {
         const frozen = frozenAppRefusal(fetchedSummary);
         if (frozen)
           return fail(new Error(frozen));
+        const appLibrary = fetchedSummary ? fetchedSummary.component_library ?? resolveComponentLibrary(void 0, fetchedSummary.pages.flatMap((page) => page.components.map((c) => c.type))) : { library: "ui2", source: "new" };
+        preflightWarnings.push(...componentLibraryWarnings(appLibrary, args.pages, args.component_library_request));
+        const mapRefusal = await mapKeyRefusal(client, (args.pages ?? []).flatMap((page) => (page.components ?? []).map((c) => String(c.type))), appLibrary.library);
+        if (mapRefusal)
+          preflightErrors.push(mapRefusal);
         const plannedNames = /* @__PURE__ */ new Map();
         for (const table of args.tables ?? []) {
-          const key2 = table.table_name.toLowerCase();
-          if (plannedNames.has(key2))
+          const key = table.table_name.toLowerCase();
+          if (plannedNames.has(key))
             return fail(new Error(`Ambiguous planned table name "${table.table_name}": table names must be unique ignoring case.`));
-          plannedNames.set(key2, table.table_name);
+          plannedNames.set(key, table.table_name);
         }
         const existingNames = /* @__PURE__ */ new Map();
         const ambiguousNames = /* @__PURE__ */ new Set();
         for (const table of existingTables) {
-          const key2 = table.table_name.toLowerCase();
-          if (existingNames.has(key2))
-            ambiguousNames.add(key2);
-          existingNames.set(key2, table.table_name);
+          const key = table.table_name.toLowerCase();
+          if (existingNames.has(key))
+            ambiguousNames.add(key);
+          existingNames.set(key, table.table_name);
         }
         const existingExact = new Set(existingTables.map((table) => table.table_name));
         const canonicalTableName = (name) => {
-          const key2 = name.toLowerCase();
-          if (ambiguousNames.has(key2) && !existingExact.has(name))
+          const key = name.toLowerCase();
+          if (ambiguousNames.has(key) && !existingExact.has(name))
             throw new Error(`Ambiguous existing table name "${name}": multiple workspace tables match ignoring case. No plan token was issued.`);
-          return plannedNames.get(key2) ?? (existingExact.has(name) ? name : existingNames.get(key2)) ?? name;
+          return plannedNames.get(key) ?? (existingExact.has(name) ? name : existingNames.get(key)) ?? name;
         };
         for (const name of plannedNames.values())
           canonicalTableName(name);
@@ -3401,8 +1661,8 @@ function lintAppSpecTool(client) {
           preflightErrors.push(`Seed data targets "${name}", which already has rows (seeded earlier), so they would be inserted again: leave that table out of seed_data. To add more rows to it, call insert_rows_batch with only the new rows.`);
         }
         for (const table of args.tables ?? []) {
-          const key2 = table.table_name.toLowerCase();
-          if (tableIds.has(key2)) {
+          const key = table.table_name.toLowerCase();
+          if (tableIds.has(key)) {
             if (hasSql) {
               preflightErrors.push(`Planned table "${table.table_name}" already exists and this plan contains SQL queries. Rename the planned table and update all SQL references, seed data, table_ref and foreign keys together, then lint again. To reuse the existing table, remove it from tables instead.`);
               continue;
@@ -3429,7 +1689,7 @@ function lintAppSpecTool(client) {
             preflightWarnings.push(`Planned table "${oldName}" already exists in this workspace, so it is created as "${newName}"; seed data, table_ref and foreign keys were updated to match. To reuse the existing table instead, drop it from tables and point queries at it with table_ref.`);
             tableIds.set(newName.toLowerCase(), `planned-table:${newName}`);
           } else
-            tableIds.set(key2, `planned-table:${table.table_name}`);
+            tableIds.set(key, `planned-table:${table.table_name}`);
         }
         preflightWarnings.push(...autoFitHtmlHeights(args));
         if (existingSummary) {
@@ -3490,10 +1750,14 @@ function lintAppSpecTool(client) {
             preflightErrors.push(`Query "${query.name}" must provide exactly one of datasource_id or datasource_name.`);
           } else if (hasName) {
             const matches = datasources.filter((source) => source.name === query.datasource_name);
-            if (!query.datasource_name || matches.length !== 1) {
+            const matched = matchDatasourceByName(datasources, query.datasource_name);
+            if (!matched) {
               preflightErrors.push(`Query "${query.name}" datasource_name "${query.datasource_name}" must match exactly one source in this version (found ${matches.length}). Use the exact name or id returned by list_datasources(version_id).`);
-            } else
-              datasourceId = matches[0].id;
+            } else {
+              datasourceId = matched.id;
+              if (matched.note)
+                preflightWarnings.push(`Query "${query.name}": ${matched.note}`);
+            }
           }
           const datasourceKind = datasourceKinds.get(datasourceId ?? "");
           if (args.version_id && !datasourceKind) {
@@ -3594,6 +1858,7 @@ function lintAppSpecTool(client) {
             name: page.name,
             icon: page.icon,
             hidden: page.hidden,
+            archetype: page.archetype,
             components: page.components?.map((component) => ({
               name: component.name,
               type: component.type,
@@ -3632,8 +1897,8 @@ function lintAppSpecTool(client) {
         const result = {
           ...lint,
           ok: lint.ok && preflightErrors.length === 0,
-          errors: unique3([...preflightErrors, ...lint.errors]),
-          warnings: unique3([...preflightWarnings, ...lint.warnings])
+          errors: unique([...preflightErrors, ...lint.errors]),
+          warnings: unique([...preflightWarnings, ...lint.warnings])
         };
         if (!result.ok)
           return ok(result);
@@ -3731,7 +1996,7 @@ function sourceTarget(sourceType, ref, pages, queries, components) {
     return queries.get(ref);
   return components.get(ref);
 }
-function resolveAction2(raw, pages, queries, components) {
+function resolveAction(raw, pages, queries, components) {
   const { target_ref: explicitRef, ...action } = raw;
   const targetRef = explicitRef ?? (action.actionId === "run-query" ? action.queryId ?? action.queryName : void 0);
   if (targetRef === void 0)
@@ -3772,7 +2037,7 @@ function oneRef(value, targets, label) {
   return target.id;
 }
 function appliedSummary(applied) {
-  return Object.entries(applied).map(([key2, value]) => `${key2}=${value}`).join(", ");
+  return Object.entries(applied).map(([key, value]) => `${key}=${value}`).join(", ");
 }
 var TABLE_READY_DELAYS_MS = [100, 200, 400, 800, 1e3];
 async function waitForCreatedTables(client, tableNames) {
@@ -3810,12 +2075,12 @@ function applyAppPhaseTool(client) {
       destructiveHint: true,
       openWorldHint: false
     },
-    description: "Apply one app-authoring plan, whose operations are also exposed as rename_app, create_tables, insert_rows_batch, add_pages/update_pages/delete_page, add_queries/update_query, add_components/update_components/delete_components, update_layout, add_events/update_events/delete_event, and add_query_lifecycles. Saving a query or event definition does not execute it. The optional read check described below is the only query execution in this tool. Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates tables/pages/queries in dependency order, seeds rows, creates independent page component batches concurrently, combines ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It then runs the proven read queries the phase created or updated once and reports them in read_check (failed: fix the query; inconclusive: the read takes a component value a browser-free run leaves empty; not_run: writes, remote or paid calls and RunJS, which are never run here). A failing read does not fail the phase. ToolJet has no cross-resource transaction: a rare upstream partial failure reports the completed stage/counts and never auto-deletes user data, except for a plan page marked replace: that page ends up holding exactly the plan's components. It is written as a difference: a component the plan leaves as it is is not rewritten, one that only moved is moved, one that changed is created again under its own id, and one the plan drops is deleted, with the events on the page's components replaced by the plan's (page events and query events only where the plan declares them again); queries the plan defines again are updated in place keeping their ids. A replace is refused before any write if the page changed since lint (any component, redefined query or related event edited), and every component and event ref is prepared before the first write. A replace is not atomic: a failure midway leaves the page to be repaired (the result says what was removed; there is no rollback), so use replace on draft or otherwise recoverable pages. The one-time token prevents an accidental retry from duplicating objects.",
+    description: "Apply one app-authoring plan, whose operations are also exposed as rename_app, create_tables, insert_rows_batch, add_pages/update_pages/delete_page, add_queries/update_query, add_components/update_components/delete_components, update_layout, add_events/update_events/delete_event, and add_query_lifecycles. Saving a query or event definition does not execute it. The optional read check described below is the only query execution in this tool. Consume one successful lint_app_spec plan_token and apply that exact phase once. The tool resolves logical refs, creates tables/pages/queries in dependency order, seeds rows, creates independent page component batches concurrently, combines ordinary events and mutation lifecycles into one bulk write, then returns persisted structural/contract validation. It then runs the proven read queries the phase created or updated once and reports them in read_check (failed: fix the query; inconclusive: the read takes a component value a browser-free run leaves empty; not_run: writes, remote or paid calls, RunJS and reads the automatic check cannot prove, which are never run here; queries: each one checked, refused or skipped, and only checked with outcome passed is a pass). A failing read does not fail the phase. ToolJet has no cross-resource transaction: a rare upstream partial failure reports the completed stage/counts and never auto-deletes user data, except for a plan page marked replace: that page ends up holding exactly the plan's components. It is written as a difference: a component the plan leaves as it is is not rewritten, one that only moved is moved, one that changed is created again under its own id, and one the plan drops is deleted, with the events on the page's components replaced by the plan's (page events and query events only where the plan declares them again); queries the plan defines again are updated in place keeping their ids. A replace is refused before any write if the page changed since lint (any component, redefined query or related event edited), and every component and event ref is prepared before the first write. A replace is not atomic: a failure midway leaves the page to be repaired (the result says what was removed; there is no rollback), so use replace on draft or otherwise recoverable pages. The one-time token prevents an accidental retry from duplicating objects.",
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string().optional().describe("Defaults to the version the plan was linted for."),
       plan_token: external_exports.string(),
-      check_reads: external_exports.boolean().optional().describe("Default true: after the phase is written, the proven read queries it created or updated are run once and the result carries read_check {ran, rows, failed, inconclusive, not_run}. Writes, remote or paid calls and RunJS are never run. false skips the check.")
+      check_reads: external_exports.boolean().optional().describe("Default true: after the phase is written, the proven read queries it created or updated are run once and the result carries read_check {ran, rows, failed, inconclusive, not_run, queries}. Writes, remote or paid calls, RunJS and reads the automatic check cannot prove are never run. false skips the check.")
     },
     async handler(input) {
       const peeked = peekAppPlan(input.plan_token);
@@ -3901,7 +2166,7 @@ function applyAppPhaseTool(client) {
         });
         for (const query of preparedQueryOptions) {
           if (query.kind === "workflows")
-            await client.assertWorkflowQueryTarget(query.options);
+            await client.assertWorkflowQueryTarget(query.options, args.version_id);
         }
         const plannedPageMatches = /* @__PURE__ */ new Map();
         const claimedPageIds = /* @__PURE__ */ new Set();
@@ -3936,20 +2201,20 @@ function applyAppPhaseTool(client) {
               sourceType: event.source_type,
               ref: event.ref,
               trigger: event.trigger,
-              action: resolveAction2(event.action, pageTargets2, queryTargets2, targets),
+              action: resolveAction(event.action, pageTargets2, queryTargets2, targets),
               name: event.name
             };
           });
           const lifecycleSpecs2 = (spec.lifecycles ?? []).map((lifecycle) => ({
             queryId: oneRef(lifecycle.query_ref, queryTargets2, "Lifecycle query"),
-            beforeRefreshActions: lifecycle.before_refresh_actions?.map((action) => resolveAction2(action, pageTargets2, queryTargets2, targets)),
+            beforeRefreshActions: lifecycle.before_refresh_actions?.map((action) => resolveAction(action, pageTargets2, queryTargets2, targets)),
             refreshQueryIds: refs(lifecycle.refresh_query_refs, queryTargets2, "Lifecycle refresh query"),
             clearComponentIds: refs(lifecycle.clear_component_refs, targets, "Lifecycle clear component"),
             closeModalId: oneRef(lifecycle.close_modal_ref, targets, "Lifecycle modal"),
             successAlert: lifecycle.success_alert ? { message: lifecycle.success_alert.message, alertType: lifecycle.success_alert.alert_type } : void 0,
             failureAlert: lifecycle.failure_alert ? { message: lifecycle.failure_alert.message, alertType: lifecycle.failure_alert.alert_type } : void 0,
-            successActions: lifecycle.success_actions?.map((action) => resolveAction2(action, pageTargets2, queryTargets2, targets)),
-            failureActions: lifecycle.failure_actions?.map((action) => resolveAction2(action, pageTargets2, queryTargets2, targets))
+            successActions: lifecycle.success_actions?.map((action) => resolveAction(action, pageTargets2, queryTargets2, targets)),
+            failureActions: lifecycle.failure_actions?.map((action) => resolveAction(action, pageTargets2, queryTargets2, targets))
           }));
           return { ordinaryEvents: ordinaryEvents2, lifecycleSpecs: lifecycleSpecs2 };
         };
@@ -4348,40 +2613,36 @@ function selectedRefs(targets, refs2) {
   }));
 }
 function withoutExistingEvents(planned, existing) {
-  const key2 = (sourceType, sourceId, payload) => JSON.stringify([sourceType, sourceId, Object.keys(payload).sort().map((k) => [k, payload[k]])]);
+  const key = (sourceType, sourceId, payload) => JSON.stringify([sourceType, sourceId, Object.keys(payload).sort().map((k) => [k, payload[k]])]);
   const have = new Set(existing.flatMap((e) => {
     const raw = e.event && typeof e.event === "object" && !Array.isArray(e.event) ? e.event : void 0;
     if (!raw)
       return [];
     const { index: _index, name: _name, ...payload } = raw;
-    return [key2(e.target, e.sourceId, payload)];
+    return [key(e.target, e.sourceId, payload)];
   }));
-  return planned.filter((e) => !have.has(key2(e.sourceType, e.sourceId, { eventId: e.trigger, ...e.ref ? { ref: e.ref } : {}, ...e.action })));
+  return planned.filter((e) => !have.has(key(e.sourceType, e.sourceId, { eventId: e.trigger, ...e.ref ? { ref: e.ref } : {}, ...e.action })));
 }
 export {
-  COMPONENT_FX_GUIDANCE as C,
   applyAppPhaseTool as a,
-  runQueriesTool as b,
+  renameAppTool as b,
   componentInputSchema as c,
   dbColumnTypeSchema as d,
-  renameAppTool as e,
-  containsExactValue as f,
-  resolveRef as g,
-  containsNamedBinding as h,
+  libraryPinErrors as e,
+  containsComponentBinding as f,
+  runUnattended as g,
+  failureRecovery as h,
   inspectUpdateCompatibility as i,
-  normalizeComponentSpec as j,
-  normalizePlannedLayouts as k,
+  failureVerification as j,
+  redactRunResult as k,
   lintAppSpecTool as l,
-  materializeRequiredDefaultChildren as m,
+  capUnattendedOutput as m,
   normalizePlanBindingAliases as n,
-  mapKeyRefusal as o,
-  prepareQueryOptionsForWrite as p,
-  prepareComponentBatch as q,
+  redactQueryText as o,
+  plannedTableSchema as p,
+  queryResultBindingHint as q,
   runQueryTool as r,
-  COMPONENT_FX_UPDATE_GUIDANCE as s,
-  validateEvents as t,
-  expandQueryLifecycles as u,
-  validatePersistedAppSummary as v,
-  persistedEventSpecs as w,
-  persistedEventIds as x
+  schemaNameHint as s,
+  prepareComponentBatch as t,
+  validatePersistedAppSummary as v
 };

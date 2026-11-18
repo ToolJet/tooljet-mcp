@@ -29,7 +29,12 @@
       {
         "key": "value",
         "label": "Default value",
-        "valueType": "union"
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number",
+          "boolean"
+        ]
       },
       {
         "key": "schema",
@@ -242,18 +247,30 @@
         "key": "fieldBorderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -474,12 +491,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -686,12 +711,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -794,6 +827,10 @@
         "key": "defaultValue",
         "label": "Default value",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "array"
+        ],
         "default": "{{[\t{type: 'RECTANGLE',width: 40,height:24, x:41,y:62,text:'Car'},{type: 'RECTANGLE',width: 40,height:24, x:41,y:12,text:'Tree'}\t]}}"
       },
       {
@@ -873,9 +910,6 @@
   },
   "Button": {
     "type": "Button",
-    "authoringHints": {
-      "outlineContrast": "styles.type=outline renders a transparent background, ignoring backgroundColor. Set textColor, visible iconColor and loaderColor for contrast against the actual page/card; var(--cc-primary-text) is appropriate on a normal light surface. The primary-button default var(--cc-surface1-surface) can disappear there. Preserve intentional contrasting colors on dark parents; do not assume changing type remaps semantic color tokens."
-    },
     "name": "Button",
     "description": "Trigger actions: queries, alerts, set variables etc.",
     "defaultSize": {
@@ -967,6 +1001,10 @@
         "key": "textSize",
         "label": "Font size",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{14}}"
       },
       {
@@ -1015,18 +1053,30 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000090"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -1167,7 +1217,10 @@
         "name": "isLoading",
         "default": false
       }
-    ]
+    ],
+    "authoringHints": {
+      "outlineContrast": "styles.type=outline renders a transparent background, ignoring backgroundColor. Set textColor, visible iconColor and loaderColor for contrast against the actual page/card; var(--cc-primary-text) is appropriate on a normal light surface. The primary-button default var(--cc-surface1-surface) can disappear there. Preserve intentional contrasting colors on dark parents; do not assume changing type remaps semantic color tokens."
+    }
   },
   "ButtonGroup": {
     "type": "ButtonGroup",
@@ -1188,18 +1241,27 @@
         "key": "values",
         "label": "values",
         "valueType": "union",
+        "valueTypes": [
+          "array"
+        ],
         "default": "{{[1,2,3]}}"
       },
       {
         "key": "labels",
         "label": "Labels",
         "valueType": "union",
+        "valueTypes": [
+          "array"
+        ],
         "default": "{{[]}}"
       },
       {
         "key": "defaultSelected",
         "label": "Default selected",
         "valueType": "union",
+        "valueTypes": [
+          "array"
+        ],
         "default": "{{[1]}}"
       },
       {
@@ -1262,6 +1324,10 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -1357,6 +1423,12 @@
         "default": "{{true}}"
       },
       {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "collapseWhenHidden",
         "label": "Collapse when hidden",
         "valueType": "boolean",
@@ -1430,12 +1502,6 @@
             }
           }
         ]
-      },
-      {
-        "key": "dynamicHeight",
-        "label": "Dynamic height",
-        "valueType": "boolean",
-        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -1509,6 +1575,10 @@
         "key": "textSize",
         "label": "Font size",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{14}}"
       },
       {
@@ -1569,12 +1639,20 @@
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -1916,12 +1994,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -2006,6 +2092,12 @@
       "height": 40
     },
     "properties": [
+      {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
       {
         "key": "label",
         "label": "Label",
@@ -2245,12 +2337,6 @@
             }
           }
         ]
-      },
-      {
-        "key": "legacyInputSize",
-        "label": "Legacy input size",
-        "valueType": "boolean",
-        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -2338,12 +2424,20 @@
         "key": "fieldBorderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -2361,12 +2455,20 @@
         "key": "menuCustomWidth",
         "label": "Custom menu width",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "256"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -2544,6 +2646,10 @@
         "key": "data",
         "label": "Data",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "array"
+        ],
         "default": "[\n    { \"x\": \"Jan\", \"y\": 100},\n    { \"x\": \"Feb\", \"y\": 80},\n    { \"x\": \"Mar\", \"y\": 40}\n  ]"
       },
       {
@@ -2574,6 +2680,11 @@
         "key": "type",
         "label": "Chart type",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "boolean",
+          "number"
+        ],
         "default": "line",
         "allowedValues": [
           "line",
@@ -2585,6 +2696,10 @@
         "key": "jsonDescription",
         "label": "Json Description",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "object"
+        ],
         "default": "{ \"data\": [ { \"x\": [ \"Jan\", \"Feb\",…"
       },
       {
@@ -2622,6 +2737,10 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "number",
+          "string"
+        ],
         "default": "50"
       },
       {
@@ -3133,6 +3252,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000090"
       },
       {
@@ -3149,6 +3272,10 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -3404,6 +3531,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -3726,18 +3857,30 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -3956,12 +4099,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -4066,6 +4217,12 @@
     },
     "properties": [
       {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "label",
         "label": "Label",
         "valueType": "string",
@@ -4080,13 +4237,21 @@
       {
         "key": "value",
         "label": "Default value",
-        "valueType": "number",
+        "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0"
       },
       {
         "key": "decimalPlaces",
         "label": "Decimal places",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "2"
       },
       {
@@ -4150,12 +4315,6 @@
       {
         "key": "numberFormat",
         "default": "us"
-      },
-      {
-        "key": "legacyInputSize",
-        "label": "Legacy input size",
-        "valueType": "boolean",
-        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -4221,18 +4380,30 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -4288,6 +4459,17 @@
           {
             "handle": "country",
             "displayName": "country",
+            "defaultValue": ""
+          }
+        ]
+      },
+      {
+        "handle": "setCountryCode",
+        "displayName": "Set country code",
+        "params": [
+          {
+            "handle": "countryCode",
+            "displayName": "Country code",
             "defaultValue": ""
           }
         ]
@@ -4411,6 +4593,10 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
@@ -4687,18 +4873,30 @@
         "key": "fieldBorderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -5060,18 +5258,30 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -5449,18 +5659,30 @@
         "key": "fieldBorderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -5781,12 +6003,20 @@
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -5834,6 +6064,11 @@
         "key": "value",
         "label": "Default value",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number",
+          "boolean"
+        ],
         "default": "{{2}}"
       },
       {
@@ -5865,6 +6100,10 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "number",
+          "string"
+        ],
         "default": "4"
       },
       {
@@ -6198,12 +6437,20 @@
         "key": "fieldBorderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -6221,12 +6468,20 @@
         "key": "menuCustomWidth",
         "label": "Custom menu width",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "256"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -6376,6 +6631,12 @@
     },
     "properties": [
       {
+        "key": "legacyInputSize",
+        "label": "Legacy input size",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "label",
         "label": "Label",
         "valueType": "string",
@@ -6438,12 +6699,6 @@
         "label": "Tooltip",
         "valueType": "string",
         "default": ""
-      },
-      {
-        "key": "legacyInputSize",
-        "label": "Legacy input size",
-        "valueType": "boolean",
-        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -6521,18 +6776,30 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box Shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -6760,6 +7027,10 @@
         "key": "labelSize",
         "label": "Label size",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "14"
       },
       {
@@ -6827,12 +7098,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -7116,18 +7395,30 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -7261,7 +7552,7 @@
     "description": "File Picker",
     "defaultSize": {
       "width": 15,
-      "height": 140
+      "height": 220
     },
     "properties": [
       {
@@ -7320,6 +7611,12 @@
         "default": ","
       },
       {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "loadingState",
         "label": "Show loading state",
         "valueType": "boolean",
@@ -7330,6 +7627,12 @@
         "label": "Visibility",
         "valueType": "boolean",
         "default": "{{true}}"
+      },
+      {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
       },
       {
         "key": "disabledState",
@@ -7352,18 +7655,6 @@
         "label": "Tooltip",
         "valueType": "string",
         "default": ""
-      },
-      {
-        "key": "dynamicHeight",
-        "label": "Dynamic height",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
-        "key": "collapseWhenHidden",
-        "label": "Collapse when hidden",
-        "valueType": "boolean",
-        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -7389,6 +7680,10 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -7530,6 +7825,46 @@
     },
     "properties": [
       {
+        "key": "cardStyle",
+        "label": "Surface",
+        "valueType": "string",
+        "default": "none",
+        "allowedValues": [
+          "none",
+          "shadcnCard"
+        ]
+      },
+      {
+        "key": "cardLook",
+        "label": "Card look",
+        "valueType": "string",
+        "allowedValues": [
+          "theme",
+          "own"
+        ],
+        "default": "theme",
+        "description": "Set by the compiler for a card on a component pack's own surface: 'own' draws the card's written background, border, radius and shadow."
+      },
+      {
+        "key": "cardHeaderDivider",
+        "label": "Header divider",
+        "valueType": "boolean",
+        "default": "{{false}}",
+        "description": "Set by the compiler for a component pack whose card header is a divided strip (Ant): title left, description right."
+      },
+      {
+        "key": "cardTitle",
+        "label": "Card title",
+        "valueType": "string",
+        "default": ""
+      },
+      {
+        "key": "cardExtra",
+        "label": "Card description",
+        "valueType": "string",
+        "default": ""
+      },
+      {
         "key": "direction",
         "label": "Direction",
         "valueType": "string",
@@ -7547,7 +7882,8 @@
         "allowedValues": [
           "flex-start",
           "center",
-          "flex-end"
+          "flex-end",
+          "space-between"
         ]
       },
       {
@@ -7558,19 +7894,35 @@
         "allowedValues": [
           "flex-start",
           "center",
-          "flex-end"
+          "flex-end",
+          "stretch",
+          "last baseline"
         ]
+      },
+      {
+        "key": "equalHeights",
+        "label": "Equal heights in a row",
+        "valueType": "boolean",
+        "default": "{{true}}"
       },
       {
         "key": "gap",
         "label": "Gap (px)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "12"
       },
       {
         "key": "padding",
         "label": "Padding (px)",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "12"
       },
       {
@@ -7626,6 +7978,13 @@
         "label": "Tooltip",
         "valueType": "string",
         "default": "Tooltip text"
+      },
+      {
+        "key": "childOrder",
+        "label": "Child order",
+        "valueType": "array",
+        "default": [],
+        "description": "Child component ids in render order. MCP writes it when children are created or reparented; update_components also accepts child names."
       }
     ],
     "styles": [
@@ -7645,12 +8004,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -7695,7 +8062,21 @@
         "name": "isDisabled",
         "default": false
       }
-    ]
+    ],
+    "renderingHints": {
+      "childOrder": "Children render in the order of properties.childOrder (an array of child component ids); grid top/left of a child are ignored. A child missing from childOrder lands after the listed ones in an arbitrary order. MCP writes childOrder: request order when the container and its children are created together, appended for a child added or reparented later.",
+      "childWidth": "A child fills the free main-axis width by default (layouts.desktop.fillWidth true). Fill children in a row share the line: equally by default, or by layouts.desktop.grow (grow 2 beside grow 1 takes two thirds). layouts.desktop.minWidthPx is the narrowest a fill child may get; in a row with properties.flexWrap {{true}} a child that would go narrower wraps to the next line (a responsive card grid). For a fixed width set fillWidth=false and widthPx=<pixels>. The grid width/left are still required by the API but do not change the rendered width.",
+      "childHeight": "A child is its authored layout height in px. Only a child with its own dynamicHeight on grows to its content (in view mode). In a row with properties.alignItems \"stretch\", child FlexContainers (cards) fill the line's height so sibling cards share one height; other children keep their own height. alignItems \"last baseline\" lines up the last text line of each child (a labelled field's value, a badge, a button label).",
+      "containerHeight": "With properties.dynamicHeight {{true}} the container grows to fit its children in view mode; the editor keeps the authored height. Without it, children beyond the authored height (padding included) are cut off.",
+      "shadcnCard": "cardStyle 'shadcnCard' draws a ToolJet UI 2.0 card: a light surface with a 14px radius, a 1px border and a faint shadow, plus a header with cardTitle (semibold) and cardExtra as a muted description beneath it. The header takes 48px with a title only and 70px with a description, from the body. Pair it with the Shad* widgets.",
+      "spacing": "padding and gap are properties in px, not styles.",
+      "surface": "A FlexContainer is pure layout and is created transparent (no background, no border) unless you give it a surface: cardStyle 'shadcnCard' (a ToolJet UI 2.0 card with optional cardTitle/cardExtra header) or your own backgroundColor/borderColor. Add a surface only where you want one; rows and columns used for layout stay invisible."
+    },
+    "authoringHints": {
+      "creation": "Create the container and its children in one add_components call: the container gets a client_ref, each child the matching parent_ref, listed in display order. Children may share the same top/left (for example 0,0): flex children are not linted for overlap.",
+      "reorder": "Reorder with update_components on the container: definition.properties.childOrder = [child names or ids] in the wanted order; children left out keep their relative order after the listed ones.",
+      "childOrderManaged": "Do not author childOrder ids on create; MCP fills them in. A childOrder given on create may name batch children by client_ref or name."
+    }
   },
   "Form": {
     "type": "Form",
@@ -7729,6 +8110,10 @@
         "key": "generateFormFrom",
         "label": "Generate form from",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "object"
+        ],
         "default": "",
         "allowedValues": [
           "rawJson",
@@ -7789,18 +8174,30 @@
         "key": "headerHeight",
         "label": "Header height",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": 60
       },
       {
         "key": "canvasHeight",
         "label": "Canvas height",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": 80
       },
       {
         "key": "footerHeight",
         "label": "Footer height",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": 60
       },
       {
@@ -7879,6 +8276,10 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "6"
       },
       {
@@ -8124,9 +8525,19 @@
     ],
     "styles": [
       {
+        "key": "backgroundColor",
+        "label": "Background color",
+        "valueType": "string",
+        "default": ""
+      },
+      {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -8242,7 +8653,7 @@
         "key": "iconColor",
         "label": "Color",
         "valueType": "string",
-        "default": "#000"
+        "default": "var(--cc-default-icon)"
       },
       {
         "key": "iconAlign",
@@ -8254,6 +8665,10 @@
         "key": "padding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "default",
         "allowedValues": [
           "default",
@@ -8264,6 +8679,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -8354,6 +8773,12 @@
         "default": "{{true}}"
       },
       {
+        "key": "collapseWhenHidden",
+        "label": "Collapse when hidden",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "disabledState",
         "label": "Disable",
         "valueType": "boolean",
@@ -8374,12 +8799,6 @@
         "label": "Tooltip",
         "valueType": "string",
         "default": ""
-      },
-      {
-        "key": "collapseWhenHidden",
-        "label": "Collapse when hidden",
-        "valueType": "boolean",
-        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -8387,6 +8806,10 @@
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -8529,6 +8952,12 @@
         "default": "{{true}}"
       },
       {
+        "key": "dynamicHeight",
+        "label": "Dynamic height",
+        "valueType": "boolean",
+        "default": "{{false}}"
+      },
+      {
         "key": "collapseWhenHidden",
         "label": "Collapse when hidden",
         "valueType": "boolean",
@@ -8555,12 +8984,6 @@
         "label": "Tooltip",
         "valueType": "string",
         "default": ""
-      },
-      {
-        "key": "dynamicHeight",
-        "label": "Dynamic height",
-        "valueType": "boolean",
-        "default": "{{false}}"
       }
     ],
     "styles": [
@@ -8610,12 +9033,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{0}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -8632,6 +9063,10 @@
         "key": "customPadding",
         "label": "Padding",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{0}}"
       },
       {
@@ -8714,6 +9149,10 @@
         "key": "value",
         "label": "Json",
         "valueType": "union",
+        "valueTypes": [
+          "array",
+          "object"
+        ],
         "default": "{{{ text : \"Hello World\", number : 64, boolean : true, nullValue : null, fruits : [ \"banana\", \"mango\", \"grape\" ], objectA : { value : \"…"
       },
       {
@@ -8798,12 +9237,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -8913,6 +9360,10 @@
         "key": "value",
         "label": "Json",
         "valueType": "union",
+        "valueTypes": [
+          "array",
+          "object"
+        ],
         "default": "{{{ text : \"Hello World\", number : 64, boolean : true, nullValue : null, fruits : [ \"banana\", \"mango\", \"grape\" ], objectA : { value : \"…"
       },
       {
@@ -9003,12 +9454,20 @@
         "key": "borderRadius",
         "label": "Border radius",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "{{6}}"
       },
       {
         "key": "boxShadow",
         "label": "Box shadow",
         "valueType": "union",
+        "valueTypes": [
+          "string",
+          "number"
+        ],
         "default": "0px 0px 0px 0px #00000040"
       },
       {
@@ -9520,671 +9979,5 @@
         "default": {}
       }
     ]
-  },
-  "KeyValuePair": {
-    "type": "KeyValuePair",
-    "name": "KeyValuePair",
-    "description": "Display data in key-value format",
-    "defaultSize": {
-      "width": 10,
-      "height": 450
-    },
-    "properties": [
-      {
-        "key": "dataSourceSelector",
-        "label": "Data source",
-        "valueType": "union",
-        "default": "rawJson",
-        "allowedValues": [
-          "rawJson"
-        ]
-      },
-      {
-        "key": "data",
-        "label": " ",
-        "valueType": "object",
-        "default": "{{ { name: 'Olivia Nguyen', date: '15/05/2022', email: 'olivia.nguyen@example.com', website: 'oliviaexample.com', mobile_number: 9876543210, categories: ['R…"
-      },
-      {
-        "key": "fields",
-        "label": "Fields",
-        "default": [
-          {
-            "name": "Name",
-            "key": "name",
-            "id": "ca231bf75648bf1de4dec17c55ee9e479e390725e8838da5ba15de8a3a1038e0",
-            "autogenerated": true,
-            "fxActiveFields": [],
-            "fieldType": "string",
-            "visibility": true
-          },
-          {
-            "name": "Date",
-            "key": "date",
-            "id": "86662ab2979f5dee51324e0f633e9fe8436e26a4519e046a73db099e939e0e7a",
-            "autogenerated": true,
-            "fxActiveFields": [],
-            "fieldType": "datepicker",
-            "isTimeChecked": false,
-            "dateFormat": "DD/MM/YYYY",
-            "parseDateFormat": "DD/MM/YYYY",
-            "isDateSelectionEnabled": true
-          },
-          {
-            "name": "Email",
-            "key": "email",
-            "id": "5a3f4a7aa34b0f5ad011e03651ce2adad842dd6c0cf45cc21af141d8258e529d",
-            "autogenerated": true,
-            "fxActiveFields": [],
-            "fieldType": "string"
-          },
-          {
-            "name": "Website",
-            "key": "website",
-            "id": "af2899e427729627796a8142682585ca6cfae0603889152631eba13284b56072",
-            "autogenerated": true,
-            "fxActiveFields": [],
-            "fieldType": "link"
-          },
-          {
-            "name": "Categories",
-            "key": "categories",
-            "id": "624dddb3b5dcbf07065966f53b1fedbf8392dd4c4b42185192a2c1c5995f15ae",
-            "autogenerated": true,
-            "fxActiveFields": [],
-            "fieldType": "newMultiSelect",
-            "autoAssignColors": true,
-            "options": [
-              {
-                "label": "Reading",
-                "value": "Reading"
-              },
-              {
-                "label": "Traveling",
-                "value": "Traveling"
-              },
-              {
-                "label": "Photography",
-                "value": "Photography"
-              },
-              {
-                "label": "Music",
-                "value": "Music"
-              },
-              {
-                "label": "Cooking",
-                "value": "Cooking"
-              },
-              {
-                "label": "Crafting",
-                "value": "Crafting"
-              },
-              {
-                "label": "Volunteering",
-                "value": "Volunteering"
-              },
-              {
-                "label": "Gardening",
-                "value": "Gardening"
-              },
-              {
-                "label": "Dancing",
-                "value": "Dancing"
-              },
-              {
-                "label": "Hiking",
-                "value": "Hiking"
-              }
-            ]
-          },
-          {
-            "name": "Tags",
-            "key": "tags",
-            "id": "a26ccea171e28ca5091016ffe431167710d89b94132b3e60975526a8fe5ced3a",
-            "autogenerated": true,
-            "fxActiveFields": [],
-            "fieldType": "select",
-            "options": [
-              {
-                "label": "Reading",
-                "value": "Reading"
-              },
-              {
-                "label": "Traveling",
-                "value": "Traveling"
-              },
-              {
-                "label": "Photography",
-                "value": "Photography"
-              },
-              {
-                "label": "Music",
-                "value": "Music"
-              },
-              {
-                "label": "Cooking",
-                "value": "Cooking"
-              },
-              {
-                "label": "Crafting",
-                "value": "Crafting"
-              },
-              {
-                "label": "Volunteering",
-                "value": "Volunteering"
-              },
-              {
-                "label": "Gardening",
-                "value": "Gardening"
-              },
-              {
-                "label": "Dancing",
-                "value": "Dancing"
-              },
-              {
-                "label": "Hiking",
-                "value": "Hiking"
-              }
-            ]
-          },
-          {
-            "name": "Mobile Number",
-            "key": "mobile_number",
-            "id": "cda4d0efff55cdd487fd08c1a8ee79d94c8c78e17880e637473f8d894f99c559",
-            "autogenerated": true,
-            "fxActiveFields": [],
-            "fieldType": "number"
-          },
-          {
-            "name": "Status",
-            "key": "status",
-            "id": "d3a586ad2990e589d23a9ebf8ea957ad7fe07d68fc5c1482364d1a589b6e03ec",
-            "autogenerated": true,
-            "fxActiveFields": [],
-            "fieldType": "boolean"
-          }
-        ]
-      },
-      {
-        "key": "useDynamicField",
-        "label": "Use dynamic field",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
-        "key": "fieldDynamicData",
-        "label": "Field data",
-        "valueType": "array",
-        "default": "{{[{name: 'Name', key: 'name'}, {name: 'Email', key: 'email'}, {name: 'Website', key: 'website'}]}}"
-      },
-      {
-        "key": "dynamicHeight",
-        "label": "Dynamic height",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
-        "key": "showUpdateActions",
-        "label": "Show update buttons",
-        "valueType": "boolean",
-        "default": "{{true}}"
-      },
-      {
-        "key": "loadingState",
-        "label": "Show loading state",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
-        "key": "visibility",
-        "label": "Visibility",
-        "valueType": "boolean",
-        "default": "{{true}}"
-      },
-      {
-        "key": "collapseWhenHidden",
-        "label": "Collapse when hidden",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
-        "key": "disabledState",
-        "label": "Disable",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
-        "key": "tooltipFormat",
-        "label": "Tooltip",
-        "default": "plainText",
-        "allowedValues": [
-          "plainText",
-          "markdown",
-          "html"
-        ]
-      },
-      {
-        "key": "tooltip",
-        "label": "Tooltip",
-        "valueType": "string",
-        "default": ""
-      },
-      {
-        "key": "fieldDeletionHistory",
-        "default": []
-      }
-    ],
-    "styles": [
-      {
-        "key": "labelColor",
-        "label": "Color",
-        "valueType": "string",
-        "default": "var(--cc-primary-text)"
-      },
-      {
-        "key": "alignment",
-        "label": "Alignment",
-        "valueType": "string",
-        "default": "side",
-        "allowedValues": [
-          "top",
-          "side"
-        ]
-      },
-      {
-        "key": "autoLabelWidth",
-        "label": "Width",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
-        "key": "accentColor",
-        "label": "Accent",
-        "valueType": "string",
-        "default": "var(--cc-primary-brand)"
-      },
-      {
-        "key": "textColor",
-        "label": "Text",
-        "valueType": "string",
-        "default": "var(--cc-primary-text)"
-      },
-      {
-        "key": "padding",
-        "label": "Padding",
-        "valueType": "union",
-        "default": "default",
-        "allowedValues": [
-          "default",
-          "none"
-        ]
-      },
-      {
-        "key": "backgroundColor",
-        "label": "Background",
-        "valueType": "string",
-        "default": "var(--cc-surface1-surface)"
-      },
-      {
-        "key": "borderColor",
-        "label": "Border color",
-        "valueType": "string",
-        "default": "var(--cc-weak-border)"
-      },
-      {
-        "key": "borderRadius",
-        "label": "Border radius",
-        "valueType": "union",
-        "default": "6"
-      },
-      {
-        "key": "boxShadow",
-        "label": "Box shadow",
-        "valueType": "union",
-        "default": "0px 0px 0px 0px #00000040"
-      },
-      {
-        "key": "hoverBackgroundMode",
-        "label": "Hover background",
-        "valueType": "string",
-        "default": "auto",
-        "allowedValues": [
-          "auto",
-          "manual"
-        ]
-      },
-      {
-        "key": "direction",
-        "default": "left"
-      },
-      {
-        "key": "labelWidth",
-        "default": "{{33}}"
-      },
-      {
-        "key": "hoverBackgroundColor",
-        "default": "var(--cc-surface2-surface)"
-      },
-      {
-        "key": "cssClass",
-        "label": "CSS class",
-        "default": ""
-      }
-    ],
-    "events": [
-      {
-        "id": "onFieldClick",
-        "label": "Field clicked"
-      },
-      {
-        "id": "onSaveKeyValuePairChanges",
-        "label": "Save changes"
-      },
-      {
-        "id": "onFieldValueChanged",
-        "label": "Field edited"
-      },
-      {
-        "id": "onCancelKeyValuePairChanges",
-        "label": "Cancel changes"
-      }
-    ],
-    "actions": [
-      {
-        "handle": "setVisibility",
-        "displayName": "Set visibility",
-        "params": [
-          {
-            "handle": "value",
-            "displayName": "Value",
-            "defaultValue": "{{true}}",
-            "type": "toggle"
-          }
-        ]
-      },
-      {
-        "handle": "setDisable",
-        "displayName": "Set disable",
-        "params": [
-          {
-            "handle": "value",
-            "displayName": "Value",
-            "defaultValue": "{{false}}",
-            "type": "toggle"
-          }
-        ]
-      },
-      {
-        "handle": "setLoading",
-        "displayName": "Set loading",
-        "params": [
-          {
-            "handle": "value",
-            "displayName": "Value",
-            "defaultValue": "{{false}}",
-            "type": "toggle"
-          }
-        ]
-      }
-    ],
-    "exposedVariables": [
-      {
-        "name": "data",
-        "default": {}
-      },
-      {
-        "name": "changeSet",
-        "default": {}
-      },
-      {
-        "name": "lastClickedField",
-        "default": {}
-      }
-    ],
-    "renderingHints": {
-      "currentPaddingBehavior": "In the current ToolJet renderer, styles.padding values \"default\" and \"none\" do not add a visible content inset. Do not rely on this property to create card padding.",
-      "compactSideAlignment": "The persisted defaults alignment=\"side\", autoLabelWidth=false, and labelWidth=33 reserve one third of a wide component for labels and look broken. For a native horizontal details panel, set styles.autoLabelWidth.value=\"{{true}}\" so the value column starts after the longest label.",
-      "approximateStaticHeight": "Rows occupy about 38px plus a 12px gap. For N read-only fields, start near 50*N-12px rather than stretching the component; browser-verify wrapping and date/JSON fields.",
-      "polishedReadOnlyAlternative": "For a display-only details card that needs reliable inset, spacing, and responsive columns, prefer one Html component with an explicitly projected binding and root CSS padding/box-sizing instead of KeyValuePair."
-    },
-    "authoringHints": {
-      "dataProjection": {
-        "rule": "An explicit fields array does not suppress undeclared keys from data; ToolJet appends those keys as visible rows. Bind data to a new object containing only intended field keys.",
-        "safeExample": "{{({work_order:variables.selectedWorkOrder.wo_ref,client:variables.selectedWorkOrder.client_name,status:variables.selectedWorkOrder.status})}}",
-        "unsafeExamples": [
-          "{{variables.selectedWorkOrder}}",
-          "{{({...variables.selectedWorkOrder, status:variables.selectedWorkOrder.status})}}"
-        ],
-        "updateRule": "Keep the complete fields array and the projected data object keyed identically. Object spreads are not safe projections.",
-        "defaultFieldRule": "When explicit fields are authored, MCP populates fieldDeletionHistory to suppress ToolJet catalog demo fields that would otherwise be appended or positionally merged into custom field definitions."
-      },
-      "detailPanelLayout": {
-        "nativeSideRule": "Never accept the persisted side-alignment defaults for a wide details panel. Set styles.autoLabelWidth.value=\"{{true}}\"; fixed autoLabelWidth=false with labelWidth=33 creates an oversized empty label column.",
-        "paddingCaveat": "In the current renderer, styles.padding default/none does not create a content inset. Use the native component only when that edge treatment is acceptable and browser-verified.",
-        "readOnlyAlternative": "For a polished read-only details card, prefer Html with a freshly projected object and explicit root padding, gap, and box-sizing. Keep KeyValuePair when native field editing/changeSet behavior is required."
-      }
-    }
-  },
-  "Link": {
-    "type": "Link",
-    "name": "Link",
-    "description": "Add link to the text",
-    "defaultSize": {
-      "width": 6,
-      "height": 30
-    },
-    "properties": [
-      {
-        "key": "linkText",
-        "label": "Link text",
-        "valueType": "string",
-        "default": "Click here"
-      },
-      {
-        "key": "linkTarget",
-        "label": "Link target",
-        "valueType": "string",
-        "default": "https://dev.to/"
-      },
-      {
-        "key": "targetType",
-        "label": "Target type",
-        "valueType": "string",
-        "default": "new",
-        "allowedValues": [
-          "new",
-          "same"
-        ]
-      },
-      {
-        "key": "loadingState",
-        "label": "Loading state",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
-        "key": "visibility",
-        "label": "Visibility",
-        "valueType": "boolean",
-        "default": "{{true}}"
-      },
-      {
-        "key": "disabledState",
-        "label": "Disable",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
-        "key": "tooltipFormat",
-        "label": "Tooltip",
-        "default": "plainText",
-        "allowedValues": [
-          "plainText",
-          "markdown",
-          "html"
-        ]
-      },
-      {
-        "key": "tooltip",
-        "label": "Tooltip",
-        "valueType": "string",
-        "default": ""
-      },
-      {
-        "key": "dynamicHeight",
-        "label": "Dynamic height",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      },
-      {
-        "key": "collapseWhenHidden",
-        "label": "Collapse when hidden",
-        "valueType": "boolean",
-        "default": "{{false}}"
-      }
-    ],
-    "styles": [
-      {
-        "key": "textColor",
-        "label": "Text color",
-        "valueType": "string",
-        "default": "var(--cc-primary-brand)"
-      },
-      {
-        "key": "textSize",
-        "label": "Text size",
-        "valueType": "number",
-        "default": "{{14}}"
-      },
-      {
-        "key": "horizontalAlignment",
-        "label": "Alignment",
-        "valueType": "string",
-        "default": "left"
-      },
-      {
-        "key": "icon",
-        "label": "Icon",
-        "valueType": "string",
-        "default": "IconLink"
-      },
-      {
-        "key": "underline",
-        "label": "Underline",
-        "valueType": "string",
-        "default": "on-hover",
-        "allowedValues": [
-          "no-underline",
-          "on-hover",
-          "underline"
-        ]
-      },
-      {
-        "key": "boxShadow",
-        "label": "Box Shadow",
-        "valueType": "union",
-        "default": "0px 0px 0px 0px #00000040"
-      },
-      {
-        "key": "padding",
-        "label": "Padding",
-        "valueType": "union",
-        "default": "default",
-        "allowedValues": [
-          "default",
-          "none"
-        ]
-      },
-      {
-        "key": "verticalAlignment",
-        "default": "center"
-      },
-      {
-        "key": "iconVisibility",
-        "default": false
-      },
-      {
-        "key": "cssClass",
-        "label": "CSS class",
-        "default": ""
-      }
-    ],
-    "events": [
-      {
-        "id": "onClick",
-        "label": "On click"
-      },
-      {
-        "id": "onHover",
-        "label": "On hover"
-      }
-    ],
-    "actions": [
-      {
-        "handle": "click",
-        "displayName": "Click"
-      },
-      {
-        "handle": "setLinkTarget",
-        "displayName": "Set link target",
-        "params": [
-          {
-            "handle": "setLinkTargetState",
-            "displayName": "Value",
-            "defaultValue": "",
-            "type": "code"
-          }
-        ]
-      },
-      {
-        "handle": "setLinkText",
-        "displayName": "Set link text",
-        "params": [
-          {
-            "handle": "setLinkTextState",
-            "displayName": "Value",
-            "defaultValue": "",
-            "type": "code"
-          }
-        ]
-      },
-      {
-        "handle": "setVisibility",
-        "displayName": "Set visibility",
-        "params": [
-          {
-            "handle": "isVisible",
-            "displayName": "Value",
-            "defaultValue": "{{false}}",
-            "type": "toggle"
-          }
-        ]
-      },
-      {
-        "handle": "setDisable",
-        "displayName": "Set disable",
-        "params": [
-          {
-            "handle": "isDisabled",
-            "displayName": "Value",
-            "defaultValue": "{{false}}",
-            "type": "toggle"
-          }
-        ]
-      },
-      {
-        "handle": "setLoading",
-        "displayName": "Set loading",
-        "params": [
-          {
-            "handle": "isLoading",
-            "displayName": "Value",
-            "defaultValue": "{{false}}",
-            "type": "toggle"
-          }
-        ]
-      }
-    ],
-    "exposedVariables": []
   }
 }

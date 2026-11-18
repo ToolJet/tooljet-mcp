@@ -1,12 +1,890 @@
 import { createRequire } from "node:module";
-import { aR as ParseErrorEnum, ba as getExportedToken, t as tt, bc as jsx_default, a4 as percentSign, aA as tokenLabelName, aS as tokenIsIdentifier, E as Errors } from "./chunk-DOMNI22J.mjs";
-import { r as require_parse, a as require_util, h as hubspotQueryIssues, s as singleSpecRef, b as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-bLt8_DOY.mjs";
-import { r as require_moment, a as ScopeHandler } from "./chunk-ryBkEJai.mjs";
-import { g as getOptions, O as OptionFlags, t as typescript_default } from "./chunk-L4m7c7qX.mjs";
-import { f as flow_default } from "./chunk-GF4VJ2_i.mjs";
-import { S as StatementParser } from "./chunk-Lx2sQ3Xq.mjs";
+import { b0 as external_exports, b1 as nodeCatalog, b2 as validateGraph, b3 as specSchema, b4 as compileGraph, b5 as assertWorkflowJavaScript, b6 as controlFlowEdges, b7 as humanConfigurationErrors } from "./chunk-5U2_zDJi.mjs";
+import { p as parseExpression, a as parse, r as readCatalog } from "./chunk-CyEU6e6J.mjs";
+import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues, g as getDatasourceQuerySchema, C as COMMON_QUERY_OPTION_FIELDS, S as SPEC_DISCOVERY_NOTE } from "./chunk-D7K0V5QF.mjs";
+import { r as require_moment } from "./chunk-I3vl7cMJ.mjs";
 import { e7 as __toESM, e5 as __commonJS } from "./chunk-DcxxRLvp.mjs";
+import { randomUUID } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { resolve, dirname } from "node:path";
+import { AsyncLocalStorage } from "node:async_hooks";
 createRequire(import.meta.url);
+var require_unicode = __commonJS({
+  "node_modules/json5/lib/unicode.js"(exports, module) {
+    module.exports.Space_Separator = /[\u1680\u2000-\u200A\u202F\u205F\u3000]/;
+    module.exports.ID_Start = /[\xAA\xB5\xBA\xC0-\xD6\xD8-\xF6\xF8-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0370-\u0374\u0376\u0377\u037A-\u037D\u037F\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03F5\u03F7-\u0481\u048A-\u052F\u0531-\u0556\u0559\u0561-\u0587\u05D0-\u05EA\u05F0-\u05F2\u0620-\u064A\u066E\u066F\u0671-\u06D3\u06D5\u06E5\u06E6\u06EE\u06EF\u06FA-\u06FC\u06FF\u0710\u0712-\u072F\u074D-\u07A5\u07B1\u07CA-\u07EA\u07F4\u07F5\u07FA\u0800-\u0815\u081A\u0824\u0828\u0840-\u0858\u0860-\u086A\u08A0-\u08B4\u08B6-\u08BD\u0904-\u0939\u093D\u0950\u0958-\u0961\u0971-\u0980\u0985-\u098C\u098F\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BD\u09CE\u09DC\u09DD\u09DF-\u09E1\u09F0\u09F1\u09FC\u0A05-\u0A0A\u0A0F\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32\u0A33\u0A35\u0A36\u0A38\u0A39\u0A59-\u0A5C\u0A5E\u0A72-\u0A74\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2\u0AB3\u0AB5-\u0AB9\u0ABD\u0AD0\u0AE0\u0AE1\u0AF9\u0B05-\u0B0C\u0B0F\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32\u0B33\u0B35-\u0B39\u0B3D\u0B5C\u0B5D\u0B5F-\u0B61\u0B71\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99\u0B9A\u0B9C\u0B9E\u0B9F\u0BA3\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BD0\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C39\u0C3D\u0C58-\u0C5A\u0C60\u0C61\u0C80\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBD\u0CDE\u0CE0\u0CE1\u0CF1\u0CF2\u0D05-\u0D0C\u0D0E-\u0D10\u0D12-\u0D3A\u0D3D\u0D4E\u0D54-\u0D56\u0D5F-\u0D61\u0D7A-\u0D7F\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0E01-\u0E30\u0E32\u0E33\u0E40-\u0E46\u0E81\u0E82\u0E84\u0E87\u0E88\u0E8A\u0E8D\u0E94-\u0E97\u0E99-\u0E9F\u0EA1-\u0EA3\u0EA5\u0EA7\u0EAA\u0EAB\u0EAD-\u0EB0\u0EB2\u0EB3\u0EBD\u0EC0-\u0EC4\u0EC6\u0EDC-\u0EDF\u0F00\u0F40-\u0F47\u0F49-\u0F6C\u0F88-\u0F8C\u1000-\u102A\u103F\u1050-\u1055\u105A-\u105D\u1061\u1065\u1066\u106E-\u1070\u1075-\u1081\u108E\u10A0-\u10C5\u10C7\u10CD\u10D0-\u10FA\u10FC-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u1380-\u138F\u13A0-\u13F5\u13F8-\u13FD\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16EE-\u16F8\u1700-\u170C\u170E-\u1711\u1720-\u1731\u1740-\u1751\u1760-\u176C\u176E-\u1770\u1780-\u17B3\u17D7\u17DC\u1820-\u1877\u1880-\u1884\u1887-\u18A8\u18AA\u18B0-\u18F5\u1900-\u191E\u1950-\u196D\u1970-\u1974\u1980-\u19AB\u19B0-\u19C9\u1A00-\u1A16\u1A20-\u1A54\u1AA7\u1B05-\u1B33\u1B45-\u1B4B\u1B83-\u1BA0\u1BAE\u1BAF\u1BBA-\u1BE5\u1C00-\u1C23\u1C4D-\u1C4F\u1C5A-\u1C7D\u1C80-\u1C88\u1CE9-\u1CEC\u1CEE-\u1CF1\u1CF5\u1CF6\u1D00-\u1DBF\u1E00-\u1F15\u1F18-\u1F1D\u1F20-\u1F45\u1F48-\u1F4D\u1F50-\u1F57\u1F59\u1F5B\u1F5D\u1F5F-\u1F7D\u1F80-\u1FB4\u1FB6-\u1FBC\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FCC\u1FD0-\u1FD3\u1FD6-\u1FDB\u1FE0-\u1FEC\u1FF2-\u1FF4\u1FF6-\u1FFC\u2071\u207F\u2090-\u209C\u2102\u2107\u210A-\u2113\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u212F-\u2139\u213C-\u213F\u2145-\u2149\u214E\u2160-\u2188\u2C00-\u2C2E\u2C30-\u2C5E\u2C60-\u2CE4\u2CEB-\u2CEE\u2CF2\u2CF3\u2D00-\u2D25\u2D27\u2D2D\u2D30-\u2D67\u2D6F\u2D80-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u2E2F\u3005-\u3007\u3021-\u3029\u3031-\u3035\u3038-\u303C\u3041-\u3096\u309D-\u309F\u30A1-\u30FA\u30FC-\u30FF\u3105-\u312E\u3131-\u318E\u31A0-\u31BA\u31F0-\u31FF\u3400-\u4DB5\u4E00-\u9FEA\uA000-\uA48C\uA4D0-\uA4FD\uA500-\uA60C\uA610-\uA61F\uA62A\uA62B\uA640-\uA66E\uA67F-\uA69D\uA6A0-\uA6EF\uA717-\uA71F\uA722-\uA788\uA78B-\uA7AE\uA7B0-\uA7B7\uA7F7-\uA801\uA803-\uA805\uA807-\uA80A\uA80C-\uA822\uA840-\uA873\uA882-\uA8B3\uA8F2-\uA8F7\uA8FB\uA8FD\uA90A-\uA925\uA930-\uA946\uA960-\uA97C\uA984-\uA9B2\uA9CF\uA9E0-\uA9E4\uA9E6-\uA9EF\uA9FA-\uA9FE\uAA00-\uAA28\uAA40-\uAA42\uAA44-\uAA4B\uAA60-\uAA76\uAA7A\uAA7E-\uAAAF\uAAB1\uAAB5\uAAB6\uAAB9-\uAABD\uAAC0\uAAC2\uAADB-\uAADD\uAAE0-\uAAEA\uAAF2-\uAAF4\uAB01-\uAB06\uAB09-\uAB0E\uAB11-\uAB16\uAB20-\uAB26\uAB28-\uAB2E\uAB30-\uAB5A\uAB5C-\uAB65\uAB70-\uABE2\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFB00-\uFB06\uFB13-\uFB17\uFB1D\uFB1F-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40\uFB41\uFB43\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE70-\uFE74\uFE76-\uFEFC\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC]|\uD800[\uDC00-\uDC0B\uDC0D-\uDC26\uDC28-\uDC3A\uDC3C\uDC3D\uDC3F-\uDC4D\uDC50-\uDC5D\uDC80-\uDCFA\uDD40-\uDD74\uDE80-\uDE9C\uDEA0-\uDED0\uDF00-\uDF1F\uDF2D-\uDF4A\uDF50-\uDF75\uDF80-\uDF9D\uDFA0-\uDFC3\uDFC8-\uDFCF\uDFD1-\uDFD5]|\uD801[\uDC00-\uDC9D\uDCB0-\uDCD3\uDCD8-\uDCFB\uDD00-\uDD27\uDD30-\uDD63\uDE00-\uDF36\uDF40-\uDF55\uDF60-\uDF67]|\uD802[\uDC00-\uDC05\uDC08\uDC0A-\uDC35\uDC37\uDC38\uDC3C\uDC3F-\uDC55\uDC60-\uDC76\uDC80-\uDC9E\uDCE0-\uDCF2\uDCF4\uDCF5\uDD00-\uDD15\uDD20-\uDD39\uDD80-\uDDB7\uDDBE\uDDBF\uDE00\uDE10-\uDE13\uDE15-\uDE17\uDE19-\uDE33\uDE60-\uDE7C\uDE80-\uDE9C\uDEC0-\uDEC7\uDEC9-\uDEE4\uDF00-\uDF35\uDF40-\uDF55\uDF60-\uDF72\uDF80-\uDF91]|\uD803[\uDC00-\uDC48\uDC80-\uDCB2\uDCC0-\uDCF2]|\uD804[\uDC03-\uDC37\uDC83-\uDCAF\uDCD0-\uDCE8\uDD03-\uDD26\uDD50-\uDD72\uDD76\uDD83-\uDDB2\uDDC1-\uDDC4\uDDDA\uDDDC\uDE00-\uDE11\uDE13-\uDE2B\uDE80-\uDE86\uDE88\uDE8A-\uDE8D\uDE8F-\uDE9D\uDE9F-\uDEA8\uDEB0-\uDEDE\uDF05-\uDF0C\uDF0F\uDF10\uDF13-\uDF28\uDF2A-\uDF30\uDF32\uDF33\uDF35-\uDF39\uDF3D\uDF50\uDF5D-\uDF61]|\uD805[\uDC00-\uDC34\uDC47-\uDC4A\uDC80-\uDCAF\uDCC4\uDCC5\uDCC7\uDD80-\uDDAE\uDDD8-\uDDDB\uDE00-\uDE2F\uDE44\uDE80-\uDEAA\uDF00-\uDF19]|\uD806[\uDCA0-\uDCDF\uDCFF\uDE00\uDE0B-\uDE32\uDE3A\uDE50\uDE5C-\uDE83\uDE86-\uDE89\uDEC0-\uDEF8]|\uD807[\uDC00-\uDC08\uDC0A-\uDC2E\uDC40\uDC72-\uDC8F\uDD00-\uDD06\uDD08\uDD09\uDD0B-\uDD30\uDD46]|\uD808[\uDC00-\uDF99]|\uD809[\uDC00-\uDC6E\uDC80-\uDD43]|[\uD80C\uD81C-\uD820\uD840-\uD868\uD86A-\uD86C\uD86F-\uD872\uD874-\uD879][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC2E]|\uD811[\uDC00-\uDE46]|\uD81A[\uDC00-\uDE38\uDE40-\uDE5E\uDED0-\uDEED\uDF00-\uDF2F\uDF40-\uDF43\uDF63-\uDF77\uDF7D-\uDF8F]|\uD81B[\uDF00-\uDF44\uDF50\uDF93-\uDF9F\uDFE0\uDFE1]|\uD821[\uDC00-\uDFEC]|\uD822[\uDC00-\uDEF2]|\uD82C[\uDC00-\uDD1E\uDD70-\uDEFB]|\uD82F[\uDC00-\uDC6A\uDC70-\uDC7C\uDC80-\uDC88\uDC90-\uDC99]|\uD835[\uDC00-\uDC54\uDC56-\uDC9C\uDC9E\uDC9F\uDCA2\uDCA5\uDCA6\uDCA9-\uDCAC\uDCAE-\uDCB9\uDCBB\uDCBD-\uDCC3\uDCC5-\uDD05\uDD07-\uDD0A\uDD0D-\uDD14\uDD16-\uDD1C\uDD1E-\uDD39\uDD3B-\uDD3E\uDD40-\uDD44\uDD46\uDD4A-\uDD50\uDD52-\uDEA5\uDEA8-\uDEC0\uDEC2-\uDEDA\uDEDC-\uDEFA\uDEFC-\uDF14\uDF16-\uDF34\uDF36-\uDF4E\uDF50-\uDF6E\uDF70-\uDF88\uDF8A-\uDFA8\uDFAA-\uDFC2\uDFC4-\uDFCB]|\uD83A[\uDC00-\uDCC4\uDD00-\uDD43]|\uD83B[\uDE00-\uDE03\uDE05-\uDE1F\uDE21\uDE22\uDE24\uDE27\uDE29-\uDE32\uDE34-\uDE37\uDE39\uDE3B\uDE42\uDE47\uDE49\uDE4B\uDE4D-\uDE4F\uDE51\uDE52\uDE54\uDE57\uDE59\uDE5B\uDE5D\uDE5F\uDE61\uDE62\uDE64\uDE67-\uDE6A\uDE6C-\uDE72\uDE74-\uDE77\uDE79-\uDE7C\uDE7E\uDE80-\uDE89\uDE8B-\uDE9B\uDEA1-\uDEA3\uDEA5-\uDEA9\uDEAB-\uDEBB]|\uD869[\uDC00-\uDED6\uDF00-\uDFFF]|\uD86D[\uDC00-\uDF34\uDF40-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEA1\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0]|\uD87E[\uDC00-\uDE1D]/;
+    module.exports.ID_Continue = /[\xAA\xB5\xBA\xC0-\xD6\xD8-\xF6\xF8-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0300-\u0374\u0376\u0377\u037A-\u037D\u037F\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03F5\u03F7-\u0481\u0483-\u0487\u048A-\u052F\u0531-\u0556\u0559\u0561-\u0587\u0591-\u05BD\u05BF\u05C1\u05C2\u05C4\u05C5\u05C7\u05D0-\u05EA\u05F0-\u05F2\u0610-\u061A\u0620-\u0669\u066E-\u06D3\u06D5-\u06DC\u06DF-\u06E8\u06EA-\u06FC\u06FF\u0710-\u074A\u074D-\u07B1\u07C0-\u07F5\u07FA\u0800-\u082D\u0840-\u085B\u0860-\u086A\u08A0-\u08B4\u08B6-\u08BD\u08D4-\u08E1\u08E3-\u0963\u0966-\u096F\u0971-\u0983\u0985-\u098C\u098F\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BC-\u09C4\u09C7\u09C8\u09CB-\u09CE\u09D7\u09DC\u09DD\u09DF-\u09E3\u09E6-\u09F1\u09FC\u0A01-\u0A03\u0A05-\u0A0A\u0A0F\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32\u0A33\u0A35\u0A36\u0A38\u0A39\u0A3C\u0A3E-\u0A42\u0A47\u0A48\u0A4B-\u0A4D\u0A51\u0A59-\u0A5C\u0A5E\u0A66-\u0A75\u0A81-\u0A83\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2\u0AB3\u0AB5-\u0AB9\u0ABC-\u0AC5\u0AC7-\u0AC9\u0ACB-\u0ACD\u0AD0\u0AE0-\u0AE3\u0AE6-\u0AEF\u0AF9-\u0AFF\u0B01-\u0B03\u0B05-\u0B0C\u0B0F\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32\u0B33\u0B35-\u0B39\u0B3C-\u0B44\u0B47\u0B48\u0B4B-\u0B4D\u0B56\u0B57\u0B5C\u0B5D\u0B5F-\u0B63\u0B66-\u0B6F\u0B71\u0B82\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99\u0B9A\u0B9C\u0B9E\u0B9F\u0BA3\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BBE-\u0BC2\u0BC6-\u0BC8\u0BCA-\u0BCD\u0BD0\u0BD7\u0BE6-\u0BEF\u0C00-\u0C03\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C39\u0C3D-\u0C44\u0C46-\u0C48\u0C4A-\u0C4D\u0C55\u0C56\u0C58-\u0C5A\u0C60-\u0C63\u0C66-\u0C6F\u0C80-\u0C83\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBC-\u0CC4\u0CC6-\u0CC8\u0CCA-\u0CCD\u0CD5\u0CD6\u0CDE\u0CE0-\u0CE3\u0CE6-\u0CEF\u0CF1\u0CF2\u0D00-\u0D03\u0D05-\u0D0C\u0D0E-\u0D10\u0D12-\u0D44\u0D46-\u0D48\u0D4A-\u0D4E\u0D54-\u0D57\u0D5F-\u0D63\u0D66-\u0D6F\u0D7A-\u0D7F\u0D82\u0D83\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0DCA\u0DCF-\u0DD4\u0DD6\u0DD8-\u0DDF\u0DE6-\u0DEF\u0DF2\u0DF3\u0E01-\u0E3A\u0E40-\u0E4E\u0E50-\u0E59\u0E81\u0E82\u0E84\u0E87\u0E88\u0E8A\u0E8D\u0E94-\u0E97\u0E99-\u0E9F\u0EA1-\u0EA3\u0EA5\u0EA7\u0EAA\u0EAB\u0EAD-\u0EB9\u0EBB-\u0EBD\u0EC0-\u0EC4\u0EC6\u0EC8-\u0ECD\u0ED0-\u0ED9\u0EDC-\u0EDF\u0F00\u0F18\u0F19\u0F20-\u0F29\u0F35\u0F37\u0F39\u0F3E-\u0F47\u0F49-\u0F6C\u0F71-\u0F84\u0F86-\u0F97\u0F99-\u0FBC\u0FC6\u1000-\u1049\u1050-\u109D\u10A0-\u10C5\u10C7\u10CD\u10D0-\u10FA\u10FC-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u135D-\u135F\u1380-\u138F\u13A0-\u13F5\u13F8-\u13FD\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16EE-\u16F8\u1700-\u170C\u170E-\u1714\u1720-\u1734\u1740-\u1753\u1760-\u176C\u176E-\u1770\u1772\u1773\u1780-\u17D3\u17D7\u17DC\u17DD\u17E0-\u17E9\u180B-\u180D\u1810-\u1819\u1820-\u1877\u1880-\u18AA\u18B0-\u18F5\u1900-\u191E\u1920-\u192B\u1930-\u193B\u1946-\u196D\u1970-\u1974\u1980-\u19AB\u19B0-\u19C9\u19D0-\u19D9\u1A00-\u1A1B\u1A20-\u1A5E\u1A60-\u1A7C\u1A7F-\u1A89\u1A90-\u1A99\u1AA7\u1AB0-\u1ABD\u1B00-\u1B4B\u1B50-\u1B59\u1B6B-\u1B73\u1B80-\u1BF3\u1C00-\u1C37\u1C40-\u1C49\u1C4D-\u1C7D\u1C80-\u1C88\u1CD0-\u1CD2\u1CD4-\u1CF9\u1D00-\u1DF9\u1DFB-\u1F15\u1F18-\u1F1D\u1F20-\u1F45\u1F48-\u1F4D\u1F50-\u1F57\u1F59\u1F5B\u1F5D\u1F5F-\u1F7D\u1F80-\u1FB4\u1FB6-\u1FBC\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FCC\u1FD0-\u1FD3\u1FD6-\u1FDB\u1FE0-\u1FEC\u1FF2-\u1FF4\u1FF6-\u1FFC\u203F\u2040\u2054\u2071\u207F\u2090-\u209C\u20D0-\u20DC\u20E1\u20E5-\u20F0\u2102\u2107\u210A-\u2113\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u212F-\u2139\u213C-\u213F\u2145-\u2149\u214E\u2160-\u2188\u2C00-\u2C2E\u2C30-\u2C5E\u2C60-\u2CE4\u2CEB-\u2CF3\u2D00-\u2D25\u2D27\u2D2D\u2D30-\u2D67\u2D6F\u2D7F-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u2DE0-\u2DFF\u2E2F\u3005-\u3007\u3021-\u302F\u3031-\u3035\u3038-\u303C\u3041-\u3096\u3099\u309A\u309D-\u309F\u30A1-\u30FA\u30FC-\u30FF\u3105-\u312E\u3131-\u318E\u31A0-\u31BA\u31F0-\u31FF\u3400-\u4DB5\u4E00-\u9FEA\uA000-\uA48C\uA4D0-\uA4FD\uA500-\uA60C\uA610-\uA62B\uA640-\uA66F\uA674-\uA67D\uA67F-\uA6F1\uA717-\uA71F\uA722-\uA788\uA78B-\uA7AE\uA7B0-\uA7B7\uA7F7-\uA827\uA840-\uA873\uA880-\uA8C5\uA8D0-\uA8D9\uA8E0-\uA8F7\uA8FB\uA8FD\uA900-\uA92D\uA930-\uA953\uA960-\uA97C\uA980-\uA9C0\uA9CF-\uA9D9\uA9E0-\uA9FE\uAA00-\uAA36\uAA40-\uAA4D\uAA50-\uAA59\uAA60-\uAA76\uAA7A-\uAAC2\uAADB-\uAADD\uAAE0-\uAAEF\uAAF2-\uAAF6\uAB01-\uAB06\uAB09-\uAB0E\uAB11-\uAB16\uAB20-\uAB26\uAB28-\uAB2E\uAB30-\uAB5A\uAB5C-\uAB65\uAB70-\uABEA\uABEC\uABED\uABF0-\uABF9\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFB00-\uFB06\uFB13-\uFB17\uFB1D-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40\uFB41\uFB43\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE00-\uFE0F\uFE20-\uFE2F\uFE33\uFE34\uFE4D-\uFE4F\uFE70-\uFE74\uFE76-\uFEFC\uFF10-\uFF19\uFF21-\uFF3A\uFF3F\uFF41-\uFF5A\uFF66-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC]|\uD800[\uDC00-\uDC0B\uDC0D-\uDC26\uDC28-\uDC3A\uDC3C\uDC3D\uDC3F-\uDC4D\uDC50-\uDC5D\uDC80-\uDCFA\uDD40-\uDD74\uDDFD\uDE80-\uDE9C\uDEA0-\uDED0\uDEE0\uDF00-\uDF1F\uDF2D-\uDF4A\uDF50-\uDF7A\uDF80-\uDF9D\uDFA0-\uDFC3\uDFC8-\uDFCF\uDFD1-\uDFD5]|\uD801[\uDC00-\uDC9D\uDCA0-\uDCA9\uDCB0-\uDCD3\uDCD8-\uDCFB\uDD00-\uDD27\uDD30-\uDD63\uDE00-\uDF36\uDF40-\uDF55\uDF60-\uDF67]|\uD802[\uDC00-\uDC05\uDC08\uDC0A-\uDC35\uDC37\uDC38\uDC3C\uDC3F-\uDC55\uDC60-\uDC76\uDC80-\uDC9E\uDCE0-\uDCF2\uDCF4\uDCF5\uDD00-\uDD15\uDD20-\uDD39\uDD80-\uDDB7\uDDBE\uDDBF\uDE00-\uDE03\uDE05\uDE06\uDE0C-\uDE13\uDE15-\uDE17\uDE19-\uDE33\uDE38-\uDE3A\uDE3F\uDE60-\uDE7C\uDE80-\uDE9C\uDEC0-\uDEC7\uDEC9-\uDEE6\uDF00-\uDF35\uDF40-\uDF55\uDF60-\uDF72\uDF80-\uDF91]|\uD803[\uDC00-\uDC48\uDC80-\uDCB2\uDCC0-\uDCF2]|\uD804[\uDC00-\uDC46\uDC66-\uDC6F\uDC7F-\uDCBA\uDCD0-\uDCE8\uDCF0-\uDCF9\uDD00-\uDD34\uDD36-\uDD3F\uDD50-\uDD73\uDD76\uDD80-\uDDC4\uDDCA-\uDDCC\uDDD0-\uDDDA\uDDDC\uDE00-\uDE11\uDE13-\uDE37\uDE3E\uDE80-\uDE86\uDE88\uDE8A-\uDE8D\uDE8F-\uDE9D\uDE9F-\uDEA8\uDEB0-\uDEEA\uDEF0-\uDEF9\uDF00-\uDF03\uDF05-\uDF0C\uDF0F\uDF10\uDF13-\uDF28\uDF2A-\uDF30\uDF32\uDF33\uDF35-\uDF39\uDF3C-\uDF44\uDF47\uDF48\uDF4B-\uDF4D\uDF50\uDF57\uDF5D-\uDF63\uDF66-\uDF6C\uDF70-\uDF74]|\uD805[\uDC00-\uDC4A\uDC50-\uDC59\uDC80-\uDCC5\uDCC7\uDCD0-\uDCD9\uDD80-\uDDB5\uDDB8-\uDDC0\uDDD8-\uDDDD\uDE00-\uDE40\uDE44\uDE50-\uDE59\uDE80-\uDEB7\uDEC0-\uDEC9\uDF00-\uDF19\uDF1D-\uDF2B\uDF30-\uDF39]|\uD806[\uDCA0-\uDCE9\uDCFF\uDE00-\uDE3E\uDE47\uDE50-\uDE83\uDE86-\uDE99\uDEC0-\uDEF8]|\uD807[\uDC00-\uDC08\uDC0A-\uDC36\uDC38-\uDC40\uDC50-\uDC59\uDC72-\uDC8F\uDC92-\uDCA7\uDCA9-\uDCB6\uDD00-\uDD06\uDD08\uDD09\uDD0B-\uDD36\uDD3A\uDD3C\uDD3D\uDD3F-\uDD47\uDD50-\uDD59]|\uD808[\uDC00-\uDF99]|\uD809[\uDC00-\uDC6E\uDC80-\uDD43]|[\uD80C\uD81C-\uD820\uD840-\uD868\uD86A-\uD86C\uD86F-\uD872\uD874-\uD879][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC2E]|\uD811[\uDC00-\uDE46]|\uD81A[\uDC00-\uDE38\uDE40-\uDE5E\uDE60-\uDE69\uDED0-\uDEED\uDEF0-\uDEF4\uDF00-\uDF36\uDF40-\uDF43\uDF50-\uDF59\uDF63-\uDF77\uDF7D-\uDF8F]|\uD81B[\uDF00-\uDF44\uDF50-\uDF7E\uDF8F-\uDF9F\uDFE0\uDFE1]|\uD821[\uDC00-\uDFEC]|\uD822[\uDC00-\uDEF2]|\uD82C[\uDC00-\uDD1E\uDD70-\uDEFB]|\uD82F[\uDC00-\uDC6A\uDC70-\uDC7C\uDC80-\uDC88\uDC90-\uDC99\uDC9D\uDC9E]|\uD834[\uDD65-\uDD69\uDD6D-\uDD72\uDD7B-\uDD82\uDD85-\uDD8B\uDDAA-\uDDAD\uDE42-\uDE44]|\uD835[\uDC00-\uDC54\uDC56-\uDC9C\uDC9E\uDC9F\uDCA2\uDCA5\uDCA6\uDCA9-\uDCAC\uDCAE-\uDCB9\uDCBB\uDCBD-\uDCC3\uDCC5-\uDD05\uDD07-\uDD0A\uDD0D-\uDD14\uDD16-\uDD1C\uDD1E-\uDD39\uDD3B-\uDD3E\uDD40-\uDD44\uDD46\uDD4A-\uDD50\uDD52-\uDEA5\uDEA8-\uDEC0\uDEC2-\uDEDA\uDEDC-\uDEFA\uDEFC-\uDF14\uDF16-\uDF34\uDF36-\uDF4E\uDF50-\uDF6E\uDF70-\uDF88\uDF8A-\uDFA8\uDFAA-\uDFC2\uDFC4-\uDFCB\uDFCE-\uDFFF]|\uD836[\uDE00-\uDE36\uDE3B-\uDE6C\uDE75\uDE84\uDE9B-\uDE9F\uDEA1-\uDEAF]|\uD838[\uDC00-\uDC06\uDC08-\uDC18\uDC1B-\uDC21\uDC23\uDC24\uDC26-\uDC2A]|\uD83A[\uDC00-\uDCC4\uDCD0-\uDCD6\uDD00-\uDD4A\uDD50-\uDD59]|\uD83B[\uDE00-\uDE03\uDE05-\uDE1F\uDE21\uDE22\uDE24\uDE27\uDE29-\uDE32\uDE34-\uDE37\uDE39\uDE3B\uDE42\uDE47\uDE49\uDE4B\uDE4D-\uDE4F\uDE51\uDE52\uDE54\uDE57\uDE59\uDE5B\uDE5D\uDE5F\uDE61\uDE62\uDE64\uDE67-\uDE6A\uDE6C-\uDE72\uDE74-\uDE77\uDE79-\uDE7C\uDE7E\uDE80-\uDE89\uDE8B-\uDE9B\uDEA1-\uDEA3\uDEA5-\uDEA9\uDEAB-\uDEBB]|\uD869[\uDC00-\uDED6\uDF00-\uDFFF]|\uD86D[\uDC00-\uDF34\uDF40-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEA1\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0]|\uD87E[\uDC00-\uDE1D]|\uDB40[\uDD00-\uDDEF]/;
+  }
+});
+var require_util = __commonJS({
+  "node_modules/json5/lib/util.js"(exports, module) {
+    var unicode = require_unicode();
+    module.exports = {
+      isSpaceSeparator(c) {
+        return typeof c === "string" && unicode.Space_Separator.test(c);
+      },
+      isIdStartChar(c) {
+        return typeof c === "string" && (c >= "a" && c <= "z" || c >= "A" && c <= "Z" || c === "$" || c === "_" || unicode.ID_Start.test(c));
+      },
+      isIdContinueChar(c) {
+        return typeof c === "string" && (c >= "a" && c <= "z" || c >= "A" && c <= "Z" || c >= "0" && c <= "9" || c === "$" || c === "_" || c === "\u200C" || c === "\u200D" || unicode.ID_Continue.test(c));
+      },
+      isDigit(c) {
+        return typeof c === "string" && /[0-9]/.test(c);
+      },
+      isHexDigit(c) {
+        return typeof c === "string" && /[0-9A-Fa-f]/.test(c);
+      }
+    };
+  }
+});
+var require_parse = __commonJS({
+  "node_modules/json5/lib/parse.js"(exports, module) {
+    var util = require_util();
+    var source;
+    var parseState;
+    var stack;
+    var pos;
+    var line;
+    var column;
+    var token;
+    var key;
+    var root;
+    module.exports = function parse2(text2, reviver) {
+      source = String(text2);
+      parseState = "start";
+      stack = [];
+      pos = 0;
+      line = 1;
+      column = 0;
+      token = void 0;
+      key = void 0;
+      root = void 0;
+      do {
+        token = lex();
+        parseStates[parseState]();
+      } while (token.type !== "eof");
+      if (typeof reviver === "function") {
+        return internalize({ "": root }, "", reviver);
+      }
+      return root;
+    };
+    function internalize(holder, name2, reviver) {
+      const value = holder[name2];
+      if (value != null && typeof value === "object") {
+        if (Array.isArray(value)) {
+          for (let i = 0; i < value.length; i++) {
+            const key2 = String(i);
+            const replacement = internalize(value, key2, reviver);
+            if (replacement === void 0) {
+              delete value[key2];
+            } else {
+              Object.defineProperty(value, key2, {
+                value: replacement,
+                writable: true,
+                enumerable: true,
+                configurable: true
+              });
+            }
+          }
+        } else {
+          for (const key2 in value) {
+            const replacement = internalize(value, key2, reviver);
+            if (replacement === void 0) {
+              delete value[key2];
+            } else {
+              Object.defineProperty(value, key2, {
+                value: replacement,
+                writable: true,
+                enumerable: true,
+                configurable: true
+              });
+            }
+          }
+        }
+      }
+      return reviver.call(holder, name2, value);
+    }
+    var lexState;
+    var buffer;
+    var doubleQuote;
+    var sign;
+    var c;
+    function lex() {
+      lexState = "default";
+      buffer = "";
+      doubleQuote = false;
+      sign = 1;
+      for (; ; ) {
+        c = peek();
+        const token2 = lexStates[lexState]();
+        if (token2) {
+          return token2;
+        }
+      }
+    }
+    function peek() {
+      if (source[pos]) {
+        return String.fromCodePoint(source.codePointAt(pos));
+      }
+    }
+    function read() {
+      const c2 = peek();
+      if (c2 === "\n") {
+        line++;
+        column = 0;
+      } else if (c2) {
+        column += c2.length;
+      } else {
+        column++;
+      }
+      if (c2) {
+        pos += c2.length;
+      }
+      return c2;
+    }
+    var lexStates = {
+      default() {
+        switch (c) {
+          case "	":
+          case "\v":
+          case "\f":
+          case " ":
+          case "\xA0":
+          case "\uFEFF":
+          case "\n":
+          case "\r":
+          case "\u2028":
+          case "\u2029":
+            read();
+            return;
+          case "/":
+            read();
+            lexState = "comment";
+            return;
+          case void 0:
+            read();
+            return newToken("eof");
+        }
+        if (util.isSpaceSeparator(c)) {
+          read();
+          return;
+        }
+        return lexStates[parseState]();
+      },
+      comment() {
+        switch (c) {
+          case "*":
+            read();
+            lexState = "multiLineComment";
+            return;
+          case "/":
+            read();
+            lexState = "singleLineComment";
+            return;
+        }
+        throw invalidChar(read());
+      },
+      multiLineComment() {
+        switch (c) {
+          case "*":
+            read();
+            lexState = "multiLineCommentAsterisk";
+            return;
+          case void 0:
+            throw invalidChar(read());
+        }
+        read();
+      },
+      multiLineCommentAsterisk() {
+        switch (c) {
+          case "*":
+            read();
+            return;
+          case "/":
+            read();
+            lexState = "default";
+            return;
+          case void 0:
+            throw invalidChar(read());
+        }
+        read();
+        lexState = "multiLineComment";
+      },
+      singleLineComment() {
+        switch (c) {
+          case "\n":
+          case "\r":
+          case "\u2028":
+          case "\u2029":
+            read();
+            lexState = "default";
+            return;
+          case void 0:
+            read();
+            return newToken("eof");
+        }
+        read();
+      },
+      value() {
+        switch (c) {
+          case "{":
+          case "[":
+            return newToken("punctuator", read());
+          case "n":
+            read();
+            literal("ull");
+            return newToken("null", null);
+          case "t":
+            read();
+            literal("rue");
+            return newToken("boolean", true);
+          case "f":
+            read();
+            literal("alse");
+            return newToken("boolean", false);
+          case "-":
+          case "+":
+            if (read() === "-") {
+              sign = -1;
+            }
+            lexState = "sign";
+            return;
+          case ".":
+            buffer = read();
+            lexState = "decimalPointLeading";
+            return;
+          case "0":
+            buffer = read();
+            lexState = "zero";
+            return;
+          case "1":
+          case "2":
+          case "3":
+          case "4":
+          case "5":
+          case "6":
+          case "7":
+          case "8":
+          case "9":
+            buffer = read();
+            lexState = "decimalInteger";
+            return;
+          case "I":
+            read();
+            literal("nfinity");
+            return newToken("numeric", Infinity);
+          case "N":
+            read();
+            literal("aN");
+            return newToken("numeric", NaN);
+          case '"':
+          case "'":
+            doubleQuote = read() === '"';
+            buffer = "";
+            lexState = "string";
+            return;
+        }
+        throw invalidChar(read());
+      },
+      identifierNameStartEscape() {
+        if (c !== "u") {
+          throw invalidChar(read());
+        }
+        read();
+        const u = unicodeEscape();
+        switch (u) {
+          case "$":
+          case "_":
+            break;
+          default:
+            if (!util.isIdStartChar(u)) {
+              throw invalidIdentifier();
+            }
+            break;
+        }
+        buffer += u;
+        lexState = "identifierName";
+      },
+      identifierName() {
+        switch (c) {
+          case "$":
+          case "_":
+          case "\u200C":
+          case "\u200D":
+            buffer += read();
+            return;
+          case "\\":
+            read();
+            lexState = "identifierNameEscape";
+            return;
+        }
+        if (util.isIdContinueChar(c)) {
+          buffer += read();
+          return;
+        }
+        return newToken("identifier", buffer);
+      },
+      identifierNameEscape() {
+        if (c !== "u") {
+          throw invalidChar(read());
+        }
+        read();
+        const u = unicodeEscape();
+        switch (u) {
+          case "$":
+          case "_":
+          case "\u200C":
+          case "\u200D":
+            break;
+          default:
+            if (!util.isIdContinueChar(u)) {
+              throw invalidIdentifier();
+            }
+            break;
+        }
+        buffer += u;
+        lexState = "identifierName";
+      },
+      sign() {
+        switch (c) {
+          case ".":
+            buffer = read();
+            lexState = "decimalPointLeading";
+            return;
+          case "0":
+            buffer = read();
+            lexState = "zero";
+            return;
+          case "1":
+          case "2":
+          case "3":
+          case "4":
+          case "5":
+          case "6":
+          case "7":
+          case "8":
+          case "9":
+            buffer = read();
+            lexState = "decimalInteger";
+            return;
+          case "I":
+            read();
+            literal("nfinity");
+            return newToken("numeric", sign * Infinity);
+          case "N":
+            read();
+            literal("aN");
+            return newToken("numeric", NaN);
+        }
+        throw invalidChar(read());
+      },
+      zero() {
+        switch (c) {
+          case ".":
+            buffer += read();
+            lexState = "decimalPoint";
+            return;
+          case "e":
+          case "E":
+            buffer += read();
+            lexState = "decimalExponent";
+            return;
+          case "x":
+          case "X":
+            buffer += read();
+            lexState = "hexadecimal";
+            return;
+        }
+        return newToken("numeric", sign * 0);
+      },
+      decimalInteger() {
+        switch (c) {
+          case ".":
+            buffer += read();
+            lexState = "decimalPoint";
+            return;
+          case "e":
+          case "E":
+            buffer += read();
+            lexState = "decimalExponent";
+            return;
+        }
+        if (util.isDigit(c)) {
+          buffer += read();
+          return;
+        }
+        return newToken("numeric", sign * Number(buffer));
+      },
+      decimalPointLeading() {
+        if (util.isDigit(c)) {
+          buffer += read();
+          lexState = "decimalFraction";
+          return;
+        }
+        throw invalidChar(read());
+      },
+      decimalPoint() {
+        switch (c) {
+          case "e":
+          case "E":
+            buffer += read();
+            lexState = "decimalExponent";
+            return;
+        }
+        if (util.isDigit(c)) {
+          buffer += read();
+          lexState = "decimalFraction";
+          return;
+        }
+        return newToken("numeric", sign * Number(buffer));
+      },
+      decimalFraction() {
+        switch (c) {
+          case "e":
+          case "E":
+            buffer += read();
+            lexState = "decimalExponent";
+            return;
+        }
+        if (util.isDigit(c)) {
+          buffer += read();
+          return;
+        }
+        return newToken("numeric", sign * Number(buffer));
+      },
+      decimalExponent() {
+        switch (c) {
+          case "+":
+          case "-":
+            buffer += read();
+            lexState = "decimalExponentSign";
+            return;
+        }
+        if (util.isDigit(c)) {
+          buffer += read();
+          lexState = "decimalExponentInteger";
+          return;
+        }
+        throw invalidChar(read());
+      },
+      decimalExponentSign() {
+        if (util.isDigit(c)) {
+          buffer += read();
+          lexState = "decimalExponentInteger";
+          return;
+        }
+        throw invalidChar(read());
+      },
+      decimalExponentInteger() {
+        if (util.isDigit(c)) {
+          buffer += read();
+          return;
+        }
+        return newToken("numeric", sign * Number(buffer));
+      },
+      hexadecimal() {
+        if (util.isHexDigit(c)) {
+          buffer += read();
+          lexState = "hexadecimalInteger";
+          return;
+        }
+        throw invalidChar(read());
+      },
+      hexadecimalInteger() {
+        if (util.isHexDigit(c)) {
+          buffer += read();
+          return;
+        }
+        return newToken("numeric", sign * Number(buffer));
+      },
+      string() {
+        switch (c) {
+          case "\\":
+            read();
+            buffer += escape();
+            return;
+          case '"':
+            if (doubleQuote) {
+              read();
+              return newToken("string", buffer);
+            }
+            buffer += read();
+            return;
+          case "'":
+            if (!doubleQuote) {
+              read();
+              return newToken("string", buffer);
+            }
+            buffer += read();
+            return;
+          case "\n":
+          case "\r":
+            throw invalidChar(read());
+          case "\u2028":
+          case "\u2029":
+            separatorChar(c);
+            break;
+          case void 0:
+            throw invalidChar(read());
+        }
+        buffer += read();
+      },
+      start() {
+        switch (c) {
+          case "{":
+          case "[":
+            return newToken("punctuator", read());
+        }
+        lexState = "value";
+      },
+      beforePropertyName() {
+        switch (c) {
+          case "$":
+          case "_":
+            buffer = read();
+            lexState = "identifierName";
+            return;
+          case "\\":
+            read();
+            lexState = "identifierNameStartEscape";
+            return;
+          case "}":
+            return newToken("punctuator", read());
+          case '"':
+          case "'":
+            doubleQuote = read() === '"';
+            lexState = "string";
+            return;
+        }
+        if (util.isIdStartChar(c)) {
+          buffer += read();
+          lexState = "identifierName";
+          return;
+        }
+        throw invalidChar(read());
+      },
+      afterPropertyName() {
+        if (c === ":") {
+          return newToken("punctuator", read());
+        }
+        throw invalidChar(read());
+      },
+      beforePropertyValue() {
+        lexState = "value";
+      },
+      afterPropertyValue() {
+        switch (c) {
+          case ",":
+          case "}":
+            return newToken("punctuator", read());
+        }
+        throw invalidChar(read());
+      },
+      beforeArrayValue() {
+        if (c === "]") {
+          return newToken("punctuator", read());
+        }
+        lexState = "value";
+      },
+      afterArrayValue() {
+        switch (c) {
+          case ",":
+          case "]":
+            return newToken("punctuator", read());
+        }
+        throw invalidChar(read());
+      },
+      end() {
+        throw invalidChar(read());
+      }
+    };
+    function newToken(type, value) {
+      return {
+        type,
+        value,
+        line,
+        column
+      };
+    }
+    function literal(s) {
+      for (const c2 of s) {
+        const p = peek();
+        if (p !== c2) {
+          throw invalidChar(read());
+        }
+        read();
+      }
+    }
+    function escape() {
+      const c2 = peek();
+      switch (c2) {
+        case "b":
+          read();
+          return "\b";
+        case "f":
+          read();
+          return "\f";
+        case "n":
+          read();
+          return "\n";
+        case "r":
+          read();
+          return "\r";
+        case "t":
+          read();
+          return "	";
+        case "v":
+          read();
+          return "\v";
+        case "0":
+          read();
+          if (util.isDigit(peek())) {
+            throw invalidChar(read());
+          }
+          return "\0";
+        case "x":
+          read();
+          return hexEscape();
+        case "u":
+          read();
+          return unicodeEscape();
+        case "\n":
+        case "\u2028":
+        case "\u2029":
+          read();
+          return "";
+        case "\r":
+          read();
+          if (peek() === "\n") {
+            read();
+          }
+          return "";
+        case "1":
+        case "2":
+        case "3":
+        case "4":
+        case "5":
+        case "6":
+        case "7":
+        case "8":
+        case "9":
+          throw invalidChar(read());
+        case void 0:
+          throw invalidChar(read());
+      }
+      return read();
+    }
+    function hexEscape() {
+      let buffer2 = "";
+      let c2 = peek();
+      if (!util.isHexDigit(c2)) {
+        throw invalidChar(read());
+      }
+      buffer2 += read();
+      c2 = peek();
+      if (!util.isHexDigit(c2)) {
+        throw invalidChar(read());
+      }
+      buffer2 += read();
+      return String.fromCodePoint(parseInt(buffer2, 16));
+    }
+    function unicodeEscape() {
+      let buffer2 = "";
+      let count = 4;
+      while (count-- > 0) {
+        const c2 = peek();
+        if (!util.isHexDigit(c2)) {
+          throw invalidChar(read());
+        }
+        buffer2 += read();
+      }
+      return String.fromCodePoint(parseInt(buffer2, 16));
+    }
+    var parseStates = {
+      start() {
+        if (token.type === "eof") {
+          throw invalidEOF();
+        }
+        push();
+      },
+      beforePropertyName() {
+        switch (token.type) {
+          case "identifier":
+          case "string":
+            key = token.value;
+            parseState = "afterPropertyName";
+            return;
+          case "punctuator":
+            pop();
+            return;
+          case "eof":
+            throw invalidEOF();
+        }
+      },
+      afterPropertyName() {
+        if (token.type === "eof") {
+          throw invalidEOF();
+        }
+        parseState = "beforePropertyValue";
+      },
+      beforePropertyValue() {
+        if (token.type === "eof") {
+          throw invalidEOF();
+        }
+        push();
+      },
+      beforeArrayValue() {
+        if (token.type === "eof") {
+          throw invalidEOF();
+        }
+        if (token.type === "punctuator" && token.value === "]") {
+          pop();
+          return;
+        }
+        push();
+      },
+      afterPropertyValue() {
+        if (token.type === "eof") {
+          throw invalidEOF();
+        }
+        switch (token.value) {
+          case ",":
+            parseState = "beforePropertyName";
+            return;
+          case "}":
+            pop();
+        }
+      },
+      afterArrayValue() {
+        if (token.type === "eof") {
+          throw invalidEOF();
+        }
+        switch (token.value) {
+          case ",":
+            parseState = "beforeArrayValue";
+            return;
+          case "]":
+            pop();
+        }
+      },
+      end() {
+      }
+    };
+    function push() {
+      let value;
+      switch (token.type) {
+        case "punctuator":
+          switch (token.value) {
+            case "{":
+              value = {};
+              break;
+            case "[":
+              value = [];
+              break;
+          }
+          break;
+        case "null":
+        case "boolean":
+        case "numeric":
+        case "string":
+          value = token.value;
+          break;
+      }
+      if (root === void 0) {
+        root = value;
+      } else {
+        const parent = stack[stack.length - 1];
+        if (Array.isArray(parent)) {
+          parent.push(value);
+        } else {
+          Object.defineProperty(parent, key, {
+            value,
+            writable: true,
+            enumerable: true,
+            configurable: true
+          });
+        }
+      }
+      if (value !== null && typeof value === "object") {
+        stack.push(value);
+        if (Array.isArray(value)) {
+          parseState = "beforeArrayValue";
+        } else {
+          parseState = "beforePropertyName";
+        }
+      } else {
+        const current = stack[stack.length - 1];
+        if (current == null) {
+          parseState = "end";
+        } else if (Array.isArray(current)) {
+          parseState = "afterArrayValue";
+        } else {
+          parseState = "afterPropertyValue";
+        }
+      }
+    }
+    function pop() {
+      stack.pop();
+      const current = stack[stack.length - 1];
+      if (current == null) {
+        parseState = "end";
+      } else if (Array.isArray(current)) {
+        parseState = "afterArrayValue";
+      } else {
+        parseState = "afterPropertyValue";
+      }
+    }
+    function invalidChar(c2) {
+      if (c2 === void 0) {
+        return syntaxError(`JSON5: invalid end of input at ${line}:${column}`);
+      }
+      return syntaxError(`JSON5: invalid character '${formatChar(c2)}' at ${line}:${column}`);
+    }
+    function invalidEOF() {
+      return syntaxError(`JSON5: invalid end of input at ${line}:${column}`);
+    }
+    function invalidIdentifier() {
+      column -= 5;
+      return syntaxError(`JSON5: invalid identifier character at ${line}:${column}`);
+    }
+    function separatorChar(c2) {
+      console.warn(`JSON5: '${formatChar(c2)}' in strings is not valid ECMAScript; consider escaping`);
+    }
+    function formatChar(c2) {
+      const replacements = {
+        "'": "\\'",
+        '"': '\\"',
+        "\\": "\\\\",
+        "\b": "\\b",
+        "\f": "\\f",
+        "\n": "\\n",
+        "\r": "\\r",
+        "	": "\\t",
+        "\v": "\\v",
+        "\0": "\\0",
+        "\u2028": "\\u2028",
+        "\u2029": "\\u2029"
+      };
+      if (replacements[c2]) {
+        return replacements[c2];
+      }
+      if (c2 < " ") {
+        const hexString = c2.charCodeAt(0).toString(16);
+        return "\\x" + ("00" + hexString).substring(hexString.length);
+      }
+      return c2;
+    }
+    function syntaxError(message) {
+      const err = new SyntaxError(message);
+      err.lineNumber = line;
+      err.columnNumber = column;
+      return err;
+    }
+  }
+});
 var require_stringify = __commonJS({
   "node_modules/json5/lib/stringify.js"(exports, module) {
     var util = require_util();
@@ -314,1038 +1192,10 @@ function assessRedisRead(options, datasourceId) {
 }
 var import_json5 = __toESM(require_lib());
 var import_moment = __toESM(require_moment(), 1);
-var { defineProperty } = Object;
-var toUnenumerable = (object2, key) => {
-  if (object2) {
-    defineProperty(object2, key, { enumerable: false, value: object2[key] });
-  }
-};
-function toESTreeLocation(node) {
-  toUnenumerable(node.loc.start, "index");
-  toUnenumerable(node.loc.end, "index");
-  return node;
-}
-var estree_default = (superClass) => class ESTreeParserMixin extends superClass {
-  parse() {
-    const file = toESTreeLocation(super.parse());
-    if (this.optionFlags & OptionFlags.Tokens) {
-      file.tokens = file.tokens.map(toESTreeLocation);
-    }
-    return file;
-  }
-  // @ts-expect-error ESTree plugin changes node types
-  parseRegExpLiteral({ pattern, flags }) {
-    let regex = null;
-    try {
-      regex = new RegExp(pattern, flags);
-    } catch (_) {
-    }
-    const node = this.estreeParseLiteral(regex);
-    node.regex = { pattern, flags };
-    return node;
-  }
-  // @ts-expect-error ESTree plugin changes node types
-  parseBigIntLiteral(value) {
-    let bigInt;
-    try {
-      bigInt = BigInt(value);
-    } catch {
-      bigInt = null;
-    }
-    const node = this.estreeParseLiteral(bigInt);
-    node.bigint = String(node.value || value);
-    return node;
-  }
-  // @ts-expect-error ESTree plugin changes node types
-  parseDecimalLiteral(value) {
-    const decimal = null;
-    const node = this.estreeParseLiteral(decimal);
-    node.decimal = String(node.value || value);
-    return node;
-  }
-  estreeParseLiteral(value) {
-    return this.parseLiteral(value, "Literal");
-  }
-  // @ts-expect-error ESTree plugin changes node types
-  parseStringLiteral(value) {
-    return this.estreeParseLiteral(value);
-  }
-  parseNumericLiteral(value) {
-    return this.estreeParseLiteral(value);
-  }
-  // @ts-expect-error ESTree plugin changes node types
-  parseNullLiteral() {
-    return this.estreeParseLiteral(null);
-  }
-  parseBooleanLiteral(value) {
-    return this.estreeParseLiteral(value);
-  }
-  // https://github.com/estree/estree/blob/master/es2020.md#chainexpression
-  estreeParseChainExpression(node, endLoc) {
-    const chain = this.startNodeAtNode(node);
-    chain.expression = node;
-    return this.finishNodeAt(chain, "ChainExpression", endLoc);
-  }
-  // Cast a Directive to an ExpressionStatement. Mutates the input Directive.
-  directiveToStmt(directive) {
-    const expression = directive.value;
-    delete directive.value;
-    this.castNodeTo(expression, "Literal");
-    expression.raw = expression.extra.raw;
-    expression.value = expression.extra.expressionValue;
-    const stmt = this.castNodeTo(directive, "ExpressionStatement");
-    stmt.expression = expression;
-    stmt.directive = expression.extra.rawValue;
-    delete expression.extra;
-    return stmt;
-  }
-  /**
-   * The TS-ESLint always define optional AST properties, here we provide the
-   * default value for such properties immediately after `finishNode` was invoked.
-   * This hook will be implemented by the typescript plugin.
-   *
-   * Note: This hook should be manually invoked when we change the `type` of a given AST
-   * node, to ensure that the optional properties are correctly filled.
-   * @param node The AST node finished by finishNode
-   */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  fillOptionalPropertiesForTSESLint(node) {
-  }
-  cloneEstreeStringLiteral(node) {
-    const { start, end, loc, range, raw, value } = node;
-    const cloned = Object.create(node.constructor.prototype);
-    cloned.type = "Literal";
-    cloned.start = start;
-    cloned.end = end;
-    cloned.loc = loc;
-    cloned.range = range;
-    cloned.raw = raw;
-    cloned.value = value;
-    return cloned;
-  }
-  // ==================================
-  // Overrides
-  // ==================================
-  initFunction(node, isAsync) {
-    super.initFunction(node, isAsync);
-    node.expression = false;
-  }
-  checkDeclaration(node) {
-    if (node != null && this.isObjectProperty(node)) {
-      this.checkDeclaration(node.value);
-    } else {
-      super.checkDeclaration(node);
-    }
-  }
-  getObjectOrClassMethodParams(method) {
-    return method.value.params;
-  }
-  isValidDirective(stmt) {
-    return stmt.type === "ExpressionStatement" && stmt.expression.type === "Literal" && typeof stmt.expression.value === "string" && !stmt.expression.extra?.parenthesized;
-  }
-  parseBlockBody(node, allowDirectives, topLevel, end, afterBlockParse) {
-    super.parseBlockBody(
-      node,
-      allowDirectives,
-      topLevel,
-      end,
-      afterBlockParse
-    );
-    const directiveStatements = node.directives.map(
-      (d) => this.directiveToStmt(d)
-    );
-    node.body = directiveStatements.concat(node.body);
-    delete node.directives;
-  }
-  parsePrivateName() {
-    const node = super.parsePrivateName();
-    {
-      if (!this.getPluginOption("estree", "classFeatures")) {
-        return node;
-      }
-    }
-    return this.convertPrivateNameToPrivateIdentifier(node);
-  }
-  convertPrivateNameToPrivateIdentifier(node) {
-    const name = super.getPrivateNameSV(node);
-    delete node.id;
-    node.name = name;
-    return this.castNodeTo(node, "PrivateIdentifier");
-  }
-  // @ts-expect-error ESTree plugin changes node types
-  isPrivateName(node) {
-    {
-      if (!this.getPluginOption("estree", "classFeatures")) {
-        return super.isPrivateName(node);
-      }
-    }
-    return node.type === "PrivateIdentifier";
-  }
-  // @ts-expect-error ESTree plugin changes node types
-  getPrivateNameSV(node) {
-    {
-      if (!this.getPluginOption("estree", "classFeatures")) {
-        return super.getPrivateNameSV(node);
-      }
-    }
-    return node.name;
-  }
-  // @ts-expect-error plugin may override interfaces
-  parseLiteral(value, type) {
-    const node = super.parseLiteral(value, type);
-    node.raw = node.extra.raw;
-    delete node.extra;
-    return node;
-  }
-  parseFunctionBody(node, allowExpression, isMethod = false) {
-    super.parseFunctionBody(node, allowExpression, isMethod);
-    node.expression = node.body.type !== "BlockStatement";
-  }
-  // @ts-expect-error plugin may override interfaces
-  parseMethod(node, isGenerator, isAsync, isConstructor, allowDirectSuper, type, inClassScope = false) {
-    let funcNode = this.startNode();
-    funcNode.kind = node.kind;
-    funcNode = super.parseMethod(
-      funcNode,
-      isGenerator,
-      isAsync,
-      isConstructor,
-      allowDirectSuper,
-      type,
-      inClassScope
-    );
-    delete funcNode.kind;
-    const { typeParameters } = node;
-    if (typeParameters) {
-      delete node.typeParameters;
-      funcNode.typeParameters = typeParameters;
-      this.resetStartLocationFromNode(funcNode, typeParameters);
-    }
-    const valueNode = this.castNodeTo(
-      funcNode,
-      "FunctionExpression"
-    );
-    node.value = valueNode;
-    if (type === "ClassPrivateMethod") {
-      node.computed = false;
-    }
-    if (type === "ObjectMethod") {
-      if (node.kind === "method") {
-        node.kind = "init";
-      }
-      node.shorthand = false;
-      return this.finishNode(
-        // @ts-expect-error cast methods to estree types
-        node,
-        "Property"
-      );
-    } else {
-      return this.finishNode(
-        // @ts-expect-error cast methods to estree types
-        node,
-        "MethodDefinition"
-      );
-    }
-  }
-  nameIsConstructor(key) {
-    if (key.type === "Literal") return key.value === "constructor";
-    return super.nameIsConstructor(key);
-  }
-  parseClassProperty(...args) {
-    const propertyNode = super.parseClassProperty(...args);
-    {
-      if (!this.getPluginOption("estree", "classFeatures")) {
-        return propertyNode;
-      }
-    }
-    {
-      this.castNodeTo(propertyNode, "PropertyDefinition");
-    }
-    return propertyNode;
-  }
-  parseClassPrivateProperty(...args) {
-    const propertyNode = super.parseClassPrivateProperty(...args);
-    {
-      if (!this.getPluginOption("estree", "classFeatures")) {
-        return propertyNode;
-      }
-    }
-    {
-      this.castNodeTo(propertyNode, "PropertyDefinition");
-    }
-    propertyNode.computed = false;
-    return propertyNode;
-  }
-  parseClassAccessorProperty(node) {
-    const accessorPropertyNode = super.parseClassAccessorProperty(node);
-    {
-      if (!this.getPluginOption("estree", "classFeatures")) {
-        return accessorPropertyNode;
-      }
-    }
-    if (accessorPropertyNode.abstract && this.hasPlugin("typescript")) {
-      delete accessorPropertyNode.abstract;
-      this.castNodeTo(accessorPropertyNode, "TSAbstractAccessorProperty");
-    } else {
-      this.castNodeTo(accessorPropertyNode, "AccessorProperty");
-    }
-    return accessorPropertyNode;
-  }
-  parseObjectProperty(prop, startLoc, isPattern, refExpressionErrors) {
-    const node = super.parseObjectProperty(
-      prop,
-      startLoc,
-      isPattern,
-      refExpressionErrors
-    );
-    if (node) {
-      node.kind = "init";
-      this.castNodeTo(node, "Property");
-    }
-    return node;
-  }
-  finishObjectProperty(node) {
-    node.kind = "init";
-    return this.finishNode(
-      node,
-      "Property"
-    );
-  }
-  isValidLVal(type, disallowCallExpression, isUnparenthesizedInAssign, binding) {
-    return type === "Property" ? "value" : super.isValidLVal(
-      type,
-      disallowCallExpression,
-      isUnparenthesizedInAssign,
-      binding
-    );
-  }
-  isAssignable(node, isBinding) {
-    if (node != null && this.isObjectProperty(node)) {
-      return this.isAssignable(node.value, isBinding);
-    }
-    return super.isAssignable(node, isBinding);
-  }
-  toAssignable(node, isLHS = false) {
-    if (node != null && this.isObjectProperty(node)) {
-      const { key, value } = node;
-      if (this.isPrivateName(key)) {
-        this.classScope.usePrivateName(
-          this.getPrivateNameSV(key),
-          key.loc.start
-        );
-      }
-      this.toAssignable(value, isLHS);
-    } else {
-      super.toAssignable(node, isLHS);
-    }
-  }
-  toAssignableObjectExpressionProp(prop, isLast, isLHS) {
-    if (prop.type === "Property" && (prop.kind === "get" || prop.kind === "set")) {
-      this.raise(Errors.PatternHasAccessor, prop.key);
-    } else if (prop.type === "Property" && prop.method) {
-      this.raise(Errors.PatternHasMethod, prop.key);
-    } else {
-      super.toAssignableObjectExpressionProp(prop, isLast, isLHS);
-    }
-  }
-  finishCallExpression(unfinished, optional) {
-    const node = super.finishCallExpression(unfinished, optional);
-    if (node.callee.type === "Import") {
-      this.castNodeTo(node, "ImportExpression");
-      node.source = node.arguments[0];
-      node.options = node.arguments[1] ?? null;
-      {
-        node.attributes = node.arguments[1] ?? null;
-      }
-      delete node.arguments;
-      delete node.callee;
-    } else if (node.type === "OptionalCallExpression") {
-      this.castNodeTo(node, "CallExpression");
-    } else {
-      node.optional = false;
-    }
-    return node;
-  }
-  toReferencedArguments(node) {
-    if (node.type === "ImportExpression") {
-      return;
-    }
-    super.toReferencedArguments(node);
-  }
-  parseExport(unfinished, decorators) {
-    const exportStartLoc = this.state.lastTokStartLoc;
-    const node = super.parseExport(unfinished, decorators);
-    switch (node.type) {
-      case "ExportAllDeclaration":
-        node.exported = null;
-        break;
-      case "ExportNamedDeclaration":
-        if (node.specifiers.length === 1 && node.specifiers[0].type === "ExportNamespaceSpecifier") {
-          this.castNodeTo(node, "ExportAllDeclaration");
-          node.exported = node.specifiers[0].exported;
-          delete node.specifiers;
-        }
-      // fallthrough
-      case "ExportDefaultDeclaration":
-        {
-          const { declaration } = node;
-          if (declaration?.type === "ClassDeclaration" && // @ts-expect-error comparing undefined and number
-          declaration.decorators?.length > 0 && // decorator comes before export
-          declaration.start === node.start) {
-            this.resetStartLocation(
-              node,
-              // For compatibility with ESLint's keyword-spacing rule, which assumes that an
-              // export declaration must start with export.
-              // https://github.com/babel/babel/issues/15085
-              // Here we reset export declaration's start to be the start of the export token
-              exportStartLoc
-            );
-          }
-        }
-        break;
-    }
-    return node;
-  }
-  stopParseSubscript(base, state) {
-    const node = super.stopParseSubscript(base, state);
-    if (state.optionalChainMember) {
-      return this.estreeParseChainExpression(node, base.loc.end);
-    }
-    return node;
-  }
-  parseMember(base, startLoc, state, computed, optional) {
-    const node = super.parseMember(base, startLoc, state, computed, optional);
-    if (node.type === "OptionalMemberExpression") {
-      this.castNodeTo(node, "MemberExpression");
-    } else {
-      node.optional = false;
-    }
-    return node;
-  }
-  isOptionalMemberExpression(node) {
-    if (node.type === "ChainExpression") {
-      return node.expression.type === "MemberExpression";
-    }
-    return super.isOptionalMemberExpression(node);
-  }
-  hasPropertyAsPrivateName(node) {
-    if (node.type === "ChainExpression") {
-      node = node.expression;
-    }
-    return super.hasPropertyAsPrivateName(node);
-  }
-  // @ts-expect-error ESTree plugin changes node types
-  isObjectProperty(node) {
-    return node.type === "Property" && node.kind === "init" && !node.method;
-  }
-  // @ts-expect-error ESTree plugin changes node types
-  isObjectMethod(node) {
-    return node.type === "Property" && (node.method || node.kind === "get" || node.kind === "set");
-  }
-  /* ============================================================ *
-   * parser/node.ts                                               *
-   * ============================================================ */
-  castNodeTo(node, type) {
-    const result = super.castNodeTo(node, type);
-    this.fillOptionalPropertiesForTSESLint(result);
-    return result;
-  }
-  cloneIdentifier(node) {
-    const cloned = super.cloneIdentifier(node);
-    this.fillOptionalPropertiesForTSESLint(cloned);
-    return cloned;
-  }
-  cloneStringLiteral(node) {
-    if (node.type === "Literal") {
-      return this.cloneEstreeStringLiteral(node);
-    }
-    return super.cloneStringLiteral(node);
-  }
-  finishNodeAt(node, type, endLoc) {
-    return toESTreeLocation(super.finishNodeAt(node, type, endLoc));
-  }
-  // Override for TS-ESLint that does not allow optional AST properties
-  finishNode(node, type) {
-    const result = super.finishNode(node, type);
-    this.fillOptionalPropertiesForTSESLint(result);
-    return result;
-  }
-  resetStartLocation(node, startLoc) {
-    super.resetStartLocation(node, startLoc);
-    toESTreeLocation(node);
-  }
-  resetEndLocation(node, endLoc = this.state.lastTokEndLoc) {
-    super.resetEndLocation(node, endLoc);
-    toESTreeLocation(node);
-  }
-};
-var PlaceholderErrors = ParseErrorEnum`placeholders`({
-  ClassNameIsRequired: "A class name is required.",
-  UnexpectedSpace: "Unexpected space in placeholder."
-});
-var placeholders_default = (superClass) => class PlaceholdersParserMixin extends superClass {
-  parsePlaceholder(expectedNode) {
-    if (this.match(tt.placeholder)) {
-      const node = this.startNode();
-      this.next();
-      this.assertNoSpace();
-      node.name = super.parseIdentifier(
-        /* liberal */
-        true
-      );
-      this.assertNoSpace();
-      this.expect(tt.placeholder);
-      return this.finishPlaceholder(node, expectedNode);
-    }
-  }
-  finishPlaceholder(node, expectedNode) {
-    let placeholder = node;
-    if (!placeholder.expectedNode || !placeholder.type) {
-      placeholder = this.finishNode(
-        placeholder,
-        "Placeholder"
-      );
-    }
-    placeholder.expectedNode = expectedNode;
-    return placeholder;
-  }
-  /* ============================================================ *
-   * tokenizer/index.ts                                           *
-   * ============================================================ */
-  getTokenFromCode(code) {
-    if (code === percentSign && this.input.charCodeAt(this.state.pos + 1) === percentSign) {
-      this.finishOp(tt.placeholder, 2);
-    } else {
-      super.getTokenFromCode(code);
-    }
-  }
-  /* ============================================================ *
-   * parser/expression.ts                                         *
-   * ============================================================ */
-  parseExprAtom(refExpressionErrors) {
-    return this.parsePlaceholder("Expression") || super.parseExprAtom(refExpressionErrors);
-  }
-  parseIdentifier(liberal) {
-    return this.parsePlaceholder("Identifier") || super.parseIdentifier(liberal);
-  }
-  checkReservedWord(word, startLoc, checkKeywords, isBinding) {
-    if (word !== void 0) {
-      super.checkReservedWord(word, startLoc, checkKeywords, isBinding);
-    }
-  }
-  /* ============================================================ *
-   * parser/node.ts                                               *
-   * ============================================================ */
-  cloneIdentifier(node) {
-    const cloned = super.cloneIdentifier(node);
-    if (cloned.type === "Placeholder") {
-      cloned.expectedNode = node.expectedNode;
-    }
-    return cloned;
-  }
-  cloneStringLiteral(node) {
-    if (node.type === "Placeholder") {
-      return this.cloneIdentifier(node);
-    }
-    return super.cloneStringLiteral(node);
-  }
-  /* ============================================================ *
-   * parser/lval.ts                                               *
-   * ============================================================ */
-  parseBindingAtom() {
-    return this.parsePlaceholder("Pattern") || super.parseBindingAtom();
-  }
-  isValidLVal(type, disallowCallExpression, isParenthesized, binding) {
-    return type === "Placeholder" || super.isValidLVal(
-      type,
-      disallowCallExpression,
-      isParenthesized,
-      binding
-    );
-  }
-  toAssignable(node, isLHS) {
-    if (node && node.type === "Placeholder" && node.expectedNode === "Expression") {
-      node.expectedNode = "Pattern";
-    } else {
-      super.toAssignable(node, isLHS);
-    }
-  }
-  /* ============================================================ *
-   * parser/statement.ts                                          *
-   * ============================================================ */
-  chStartsBindingIdentifier(ch, pos) {
-    if (super.chStartsBindingIdentifier(ch, pos)) {
-      return true;
-    }
-    const next = this.nextTokenStart();
-    if (this.input.charCodeAt(next) === percentSign && this.input.charCodeAt(next + 1) === percentSign) {
-      return true;
-    }
-    return false;
-  }
-  verifyBreakContinue(node, isBreak) {
-    if (node.label?.type === "Placeholder") return;
-    super.verifyBreakContinue(node, isBreak);
-  }
-  // @ts-expect-error Plugin will override parser interface
-  parseExpressionStatement(node, expr) {
-    if (expr.type !== "Placeholder" || expr.extra?.parenthesized) {
-      return super.parseExpressionStatement(node, expr);
-    }
-    if (this.match(tt.colon)) {
-      const stmt = node;
-      stmt.label = this.finishPlaceholder(expr, "Identifier");
-      this.next();
-      stmt.body = super.parseStatementOrSloppyAnnexBFunctionDeclaration();
-      return this.finishNode(stmt, "LabeledStatement");
-    }
-    this.semicolon();
-    const stmtPlaceholder = node;
-    stmtPlaceholder.name = expr.name;
-    return this.finishPlaceholder(stmtPlaceholder, "Statement");
-  }
-  parseBlock(allowDirectives, createNewLexicalScope, afterBlockParse) {
-    return this.parsePlaceholder("BlockStatement") || super.parseBlock(
-      allowDirectives,
-      createNewLexicalScope,
-      afterBlockParse
-    );
-  }
-  parseFunctionId(requireId) {
-    return this.parsePlaceholder("Identifier") || super.parseFunctionId(requireId);
-  }
-  // @ts-expect-error Plugin will override parser interface
-  parseClass(node, isStatement, optionalId) {
-    const type = isStatement ? "ClassDeclaration" : "ClassExpression";
-    this.next();
-    const oldStrict = this.state.strict;
-    const placeholder = this.parsePlaceholder("Identifier");
-    if (placeholder) {
-      if (this.match(tt._extends) || this.match(tt.placeholder) || this.match(tt.braceL)) {
-        node.id = placeholder;
-      } else if (optionalId || !isStatement) {
-        node.id = null;
-        node.body = this.finishPlaceholder(placeholder, "ClassBody");
-        return this.finishNode(node, type);
-      } else {
-        throw this.raise(
-          PlaceholderErrors.ClassNameIsRequired,
-          this.state.startLoc
-        );
-      }
-    } else {
-      this.parseClassId(node, isStatement, optionalId);
-    }
-    super.parseClassSuper(node);
-    node.body = this.parsePlaceholder("ClassBody") || super.parseClassBody(!!node.superClass, oldStrict);
-    return this.finishNode(node, type);
-  }
-  parseExport(node, decorators) {
-    const placeholder = this.parsePlaceholder("Identifier");
-    if (!placeholder) return super.parseExport(node, decorators);
-    const node2 = node;
-    if (!this.isContextual(tt._from) && !this.match(tt.comma)) {
-      node2.specifiers = [];
-      node2.source = null;
-      node2.declaration = this.finishPlaceholder(placeholder, "Declaration");
-      return this.finishNode(node2, "ExportNamedDeclaration");
-    }
-    this.expectPlugin("exportDefaultFrom");
-    const specifier = this.startNode();
-    specifier.exported = placeholder;
-    node2.specifiers = [this.finishNode(specifier, "ExportDefaultSpecifier")];
-    return super.parseExport(node2, decorators);
-  }
-  isExportDefaultSpecifier() {
-    if (this.match(tt._default)) {
-      const next = this.nextTokenStart();
-      if (this.isUnparsedContextual(next, "from")) {
-        if (this.input.startsWith(
-          tokenLabelName(tt.placeholder),
-          this.nextTokenStartSince(next + 4)
-        )) {
-          return true;
-        }
-      }
-    }
-    return super.isExportDefaultSpecifier();
-  }
-  maybeParseExportDefaultSpecifier(node, maybeDefaultIdentifier) {
-    if (node.specifiers?.length) {
-      return true;
-    }
-    return super.maybeParseExportDefaultSpecifier(
-      node,
-      maybeDefaultIdentifier
-    );
-  }
-  checkExport(node) {
-    const { specifiers } = node;
-    if (specifiers?.length) {
-      node.specifiers = specifiers.filter(
-        // @ts-expect-error placeholder typings
-        (node2) => node2.exported.type === "Placeholder"
-      );
-    }
-    super.checkExport(node);
-    node.specifiers = specifiers;
-  }
-  parseImport(node) {
-    const placeholder = this.parsePlaceholder("Identifier");
-    if (!placeholder) return super.parseImport(node);
-    node.specifiers = [];
-    if (!this.isContextual(tt._from) && !this.match(tt.comma)) {
-      node.source = this.finishPlaceholder(placeholder, "StringLiteral");
-      this.semicolon();
-      return this.finishNode(node, "ImportDeclaration");
-    }
-    const specifier = this.startNodeAtNode(placeholder);
-    specifier.local = placeholder;
-    node.specifiers.push(
-      this.finishNode(specifier, "ImportDefaultSpecifier")
-    );
-    if (this.eat(tt.comma)) {
-      const hasStarImport = this.maybeParseStarImportSpecifier(node);
-      if (!hasStarImport) this.parseNamedImportSpecifiers(node);
-    }
-    this.expectContextual(tt._from);
-    node.source = this.parseImportSource();
-    this.semicolon();
-    return this.finishNode(node, "ImportDeclaration");
-  }
-  parseImportSource() {
-    return this.parsePlaceholder("StringLiteral") || super.parseImportSource();
-  }
-  // Throws if the current token and the prev one are separated by a space.
-  assertNoSpace() {
-    if (this.state.start > this.offsetToSourcePos(this.state.lastTokEndLoc.index)) {
-      this.raise(
-        PlaceholderErrors.UnexpectedSpace,
-        this.state.lastTokEndLoc
-      );
-    }
-  }
-};
-var v8intrinsic_default = (superClass) => class V8IntrinsicMixin extends superClass {
-  parseV8Intrinsic() {
-    if (this.match(tt.modulo)) {
-      const v8IntrinsicStartLoc = this.state.startLoc;
-      const node = this.startNode();
-      this.next();
-      if (tokenIsIdentifier(this.state.type)) {
-        const name = this.parseIdentifierName();
-        const identifier = this.createIdentifier(node, name);
-        this.castNodeTo(identifier, "V8IntrinsicIdentifier");
-        if (this.match(tt.parenL)) {
-          return identifier;
-        }
-      }
-      this.unexpected(v8IntrinsicStartLoc);
-    }
-  }
-  /* ============================================================ *
-   * parser/expression.js                                         *
-   * ============================================================ */
-  parseExprAtom(refExpressionErrors) {
-    return this.parseV8Intrinsic() || super.parseExprAtom(refExpressionErrors);
-  }
-};
-var PIPELINE_PROPOSALS = ["minimal", "fsharp", "hack", "smart"];
-var TOPIC_TOKENS = ["^^", "@@", "^", "%", "#"];
-function validatePlugins(pluginsMap) {
-  if (pluginsMap.has("decorators")) {
-    if (pluginsMap.has("decorators-legacy")) {
-      throw new Error(
-        "Cannot use the decorators and decorators-legacy plugin together"
-      );
-    }
-    const decoratorsBeforeExport = pluginsMap.get("decorators").decoratorsBeforeExport;
-    if (decoratorsBeforeExport != null && typeof decoratorsBeforeExport !== "boolean") {
-      throw new Error(
-        "'decoratorsBeforeExport' must be a boolean, if specified."
-      );
-    }
-    const allowCallParenthesized = pluginsMap.get("decorators").allowCallParenthesized;
-    if (allowCallParenthesized != null && typeof allowCallParenthesized !== "boolean") {
-      throw new Error("'allowCallParenthesized' must be a boolean.");
-    }
-  }
-  if (pluginsMap.has("flow") && pluginsMap.has("typescript")) {
-    throw new Error("Cannot combine flow and typescript plugins.");
-  }
-  if (pluginsMap.has("placeholders") && pluginsMap.has("v8intrinsic")) {
-    throw new Error("Cannot combine placeholders and v8intrinsic plugins.");
-  }
-  if (pluginsMap.has("pipelineOperator")) {
-    const proposal = pluginsMap.get("pipelineOperator").proposal;
-    if (!PIPELINE_PROPOSALS.includes(proposal)) {
-      const proposalList = PIPELINE_PROPOSALS.map((p) => `"${p}"`).join(", ");
-      throw new Error(
-        `"pipelineOperator" requires "proposal" option whose value must be one of: ${proposalList}.`
-      );
-    }
-    if (proposal === "hack") {
-      if (pluginsMap.has("placeholders")) {
-        throw new Error(
-          "Cannot combine placeholders plugin and Hack-style pipes."
-        );
-      }
-      if (pluginsMap.has("v8intrinsic")) {
-        throw new Error(
-          "Cannot combine v8intrinsic plugin and Hack-style pipes."
-        );
-      }
-      const topicToken = pluginsMap.get("pipelineOperator").topicToken;
-      if (!TOPIC_TOKENS.includes(topicToken)) {
-        const tokenList = TOPIC_TOKENS.map((t) => `"${t}"`).join(", ");
-        throw new Error(
-          `"pipelineOperator" in "proposal": "hack" mode also requires a "topicToken" option whose value must be one of: ${tokenList}.`
-        );
-      }
-      {
-        if (topicToken === "#" && pluginsMap.get("recordAndTuple")?.syntaxType === "hash") {
-          throw new Error(
-            `Plugin conflict between \`["pipelineOperator", { proposal: "hack", topicToken: "#" }]\` and \`${JSON.stringify(["recordAndTuple", pluginsMap.get("recordAndTuple")])}\`.`
-          );
-        }
-      }
-    } else if (proposal === "smart" && pluginsMap.get("recordAndTuple")?.syntaxType === "hash") {
-      throw new Error(
-        `Plugin conflict between \`["pipelineOperator", { proposal: "smart" }]\` and \`${JSON.stringify(["recordAndTuple", pluginsMap.get("recordAndTuple")])}\`.`
-      );
-    }
-  }
-  if (pluginsMap.has("moduleAttributes")) {
-    {
-      if (pluginsMap.has("deprecatedImportAssert") || pluginsMap.has("importAssertions")) {
-        throw new Error(
-          "Cannot combine importAssertions, deprecatedImportAssert and moduleAttributes plugins."
-        );
-      }
-      const moduleAttributesVersionPluginOption = pluginsMap.get("moduleAttributes").version;
-      if (moduleAttributesVersionPluginOption !== "may-2020") {
-        throw new Error(
-          "The 'moduleAttributes' plugin requires a 'version' option, representing the last proposal update. Currently, the only supported value is 'may-2020'."
-        );
-      }
-    }
-  }
-  if (pluginsMap.has("importAssertions")) {
-    if (pluginsMap.has("deprecatedImportAssert")) {
-      throw new Error(
-        "Cannot combine importAssertions and deprecatedImportAssert plugins."
-      );
-    }
-  }
-  if (pluginsMap.has("deprecatedImportAssert")) ;
-  else if (pluginsMap.has("importAttributes") && pluginsMap.get("importAttributes").deprecatedAssertSyntax) {
-    {
-      pluginsMap.set("deprecatedImportAssert", {});
-    }
-  }
-  if (pluginsMap.has("recordAndTuple")) {
-    {
-      const syntaxType = pluginsMap.get("recordAndTuple").syntaxType;
-      if (syntaxType != null) {
-        const RECORD_AND_TUPLE_SYNTAX_TYPES = ["hash", "bar"];
-        if (!RECORD_AND_TUPLE_SYNTAX_TYPES.includes(syntaxType)) {
-          throw new Error(
-            "The 'syntaxType' option of the 'recordAndTuple' plugin must be one of: " + RECORD_AND_TUPLE_SYNTAX_TYPES.map((p) => `'${p}'`).join(", ")
-          );
-        }
-      }
-    }
-  }
-  if (pluginsMap.has("asyncDoExpressions") && !pluginsMap.has("doExpressions")) {
-    const error = new Error(
-      "'asyncDoExpressions' requires 'doExpressions', please add 'doExpressions' to parser plugins."
-    );
-    error.missingPlugins = "doExpressions";
-    throw error;
-  }
-  if (pluginsMap.has("optionalChainingAssign") && pluginsMap.get("optionalChainingAssign").version !== "2023-07") {
-    throw new Error(
-      "The 'optionalChainingAssign' plugin requires a 'version' option, representing the last proposal update. Currently, the only supported value is '2023-07'."
-    );
-  }
-  if (pluginsMap.has("discardBinding") && pluginsMap.get("discardBinding").syntaxType !== "void") {
-    throw new Error(
-      "The 'discardBinding' plugin requires a 'syntaxType' option. Currently the only supported value is 'void'."
-    );
-  }
-}
-var mixinPlugins = {
-  estree: estree_default,
-  jsx: jsx_default,
-  flow: flow_default,
-  typescript: typescript_default,
-  v8intrinsic: v8intrinsic_default,
-  placeholders: placeholders_default
-};
-var mixinPluginNames = Object.keys(mixinPlugins);
-var Parser = class extends StatementParser {
-  constructor(options, input, pluginsMap) {
-    const normalizedOptions = getOptions(options);
-    super(normalizedOptions, input);
-    this.options = normalizedOptions;
-    this.initializeScopes();
-    this.plugins = pluginsMap;
-    this.filename = normalizedOptions.sourceFilename;
-    this.startIndex = normalizedOptions.startIndex;
-    let optionFlags = 0;
-    if (normalizedOptions.allowAwaitOutsideFunction) {
-      optionFlags |= OptionFlags.AllowAwaitOutsideFunction;
-    }
-    if (normalizedOptions.allowReturnOutsideFunction) {
-      optionFlags |= OptionFlags.AllowReturnOutsideFunction;
-    }
-    if (normalizedOptions.allowImportExportEverywhere) {
-      optionFlags |= OptionFlags.AllowImportExportEverywhere;
-    }
-    if (normalizedOptions.allowSuperOutsideMethod) {
-      optionFlags |= OptionFlags.AllowSuperOutsideMethod;
-    }
-    if (normalizedOptions.allowUndeclaredExports) {
-      optionFlags |= OptionFlags.AllowUndeclaredExports;
-    }
-    if (normalizedOptions.allowNewTargetOutsideFunction) {
-      optionFlags |= OptionFlags.AllowNewTargetOutsideFunction;
-    }
-    if (normalizedOptions.allowYieldOutsideFunction) {
-      optionFlags |= OptionFlags.AllowYieldOutsideFunction;
-    }
-    if (normalizedOptions.ranges) {
-      optionFlags |= OptionFlags.Ranges;
-    }
-    if (normalizedOptions.tokens) {
-      optionFlags |= OptionFlags.Tokens;
-    }
-    if (normalizedOptions.createImportExpressions) {
-      optionFlags |= OptionFlags.CreateImportExpressions;
-    }
-    if (normalizedOptions.createParenthesizedExpressions) {
-      optionFlags |= OptionFlags.CreateParenthesizedExpressions;
-    }
-    if (normalizedOptions.errorRecovery) {
-      optionFlags |= OptionFlags.ErrorRecovery;
-    }
-    if (normalizedOptions.attachComment) {
-      optionFlags |= OptionFlags.AttachComment;
-    }
-    if (normalizedOptions.annexB) {
-      optionFlags |= OptionFlags.AnnexB;
-    }
-    this.optionFlags = optionFlags;
-  }
-  // This can be overwritten, for example, by the TypeScript plugin.
-  getScopeHandler() {
-    return ScopeHandler;
-  }
-  parse() {
-    this.enterInitialScopes();
-    const file = this.startNode();
-    const program = this.startNode();
-    this.nextToken();
-    file.errors = null;
-    const result = this.parseTopLevel(file, program);
-    result.errors = this.state.errors;
-    result.comments.length = this.state.commentsLen;
-    return result;
-  }
-};
-function parse(input, options) {
-  if (options?.sourceType === "unambiguous") {
-    options = {
-      ...options
-    };
-    try {
-      options.sourceType = "module";
-      const parser = getParser(options, input);
-      const ast = parser.parse();
-      if (parser.sawUnambiguousESM) {
-        return ast;
-      }
-      if (parser.ambiguousScriptDifferentAst) {
-        try {
-          options.sourceType = "script";
-          return getParser(options, input).parse();
-        } catch {
-        }
-      } else {
-        ast.program.sourceType = "script";
-      }
-      return ast;
-    } catch (moduleError) {
-      try {
-        options.sourceType = "script";
-        return getParser(options, input).parse();
-      } catch {
-      }
-      throw moduleError;
-    }
-  } else {
-    return getParser(options, input).parse();
-  }
-}
-function parseExpression(input, options) {
-  const parser = getParser(options, input);
-  if (parser.options.strictMode) {
-    parser.state.strict = true;
-  }
-  return parser.getExpression();
-}
-function generateExportedTokenTypes(internalTokenTypes2) {
-  const tokenTypes = {};
-  for (const typeName of Object.keys(
-    internalTokenTypes2
-  )) {
-    tokenTypes[typeName] = getExportedToken(internalTokenTypes2[typeName]);
-  }
-  return tokenTypes;
-}
-generateExportedTokenTypes(tt);
-function getParser(options, input) {
-  let cls = Parser;
-  const pluginsMap = /* @__PURE__ */ new Map();
-  if (options?.plugins) {
-    for (const plugin of options.plugins) {
-      let name, opts;
-      if (typeof plugin === "string") {
-        name = plugin;
-      } else {
-        [name, opts] = plugin;
-      }
-      if (!pluginsMap.has(name)) {
-        pluginsMap.set(name, opts || {});
-      }
-    }
-    validatePlugins(pluginsMap);
-    cls = getParserClass(pluginsMap);
-  }
-  return new cls(options, input, pluginsMap);
-}
-var parserClassCache = /* @__PURE__ */ new Map();
-function getParserClass(pluginsMap) {
-  const pluginList = [];
-  for (const name of mixinPluginNames) {
-    if (pluginsMap.has(name)) {
-      pluginList.push(name);
-    }
-  }
-  const key = pluginList.join("|");
-  let cls = parserClassCache.get(key);
-  if (!cls) {
-    cls = Parser;
-    for (const plugin of pluginList) {
-      cls = mixinPlugins[plugin](cls);
-    }
-    parserClassCache.set(key, cls);
-  }
-  return cls;
-}
 var Unsupported = class extends Error {
 };
 var MAX_EXPRESSION_CHARS = 600;
+var currentParameters;
 var MAX_PAD = 1e3;
 var MATH_FNS = {
   floor: Math.floor,
@@ -1436,8 +1286,8 @@ var STRING_METHODS = {
 function unsupported() {
   throw new Unsupported();
 }
-function own(table, name) {
-  return typeof name === "string" && Object.prototype.hasOwnProperty.call(table, name) ? table[name] : void 0;
+function own(table, name2) {
+  return typeof name2 === "string" && Object.prototype.hasOwnProperty.call(table, name2) ? table[name2] : void 0;
 }
 function isUnit(v) {
   return typeof v === "string" && UNITS.has(v);
@@ -1565,13 +1415,19 @@ function interpret(node) {
     case "MemberExpression": {
       if (node.computed)
         return unsupported();
-      const name = node.property?.name;
+      const name2 = node.property?.name;
       if (node.object?.type === "Identifier" && node.object.name === "Math") {
-        const constant = own(MATH_CONSTANTS, name);
+        const constant = own(MATH_CONSTANTS, name2);
         return constant ?? unsupported();
       }
+      if (node.object?.type === "Identifier" && node.object.name === "parameters") {
+        if (!currentParameters || typeof name2 !== "string" || !Object.prototype.hasOwnProperty.call(currentParameters, name2)) {
+          return unsupported();
+        }
+        return currentParameters[name2];
+      }
       const target = interpret(node.object);
-      if (typeof target === "string" && name === "length")
+      if (typeof target === "string" && name2 === "length")
         return target.length;
       return unsupported();
     }
@@ -1595,31 +1451,31 @@ function interpret(node) {
       }
       if (callee.type !== "MemberExpression" || callee.computed)
         return unsupported();
-      const name = callee.property?.name;
+      const name2 = callee.property?.name;
       const object2 = callee.object;
       if (object2.type === "Identifier" && object2.name === "moment") {
-        if (name === "utc")
+        if (name2 === "utc")
           return box(import_moment.default.utc(...momentArgs(args)));
-        if (name === "unix" && args.length === 1)
+        if (name2 === "unix" && args.length === 1)
           return box(import_moment.default.unix(num(args[0])));
         return unsupported();
       }
       if (object2.type === "Identifier" && object2.name === "Math") {
-        const fn = own(MATH_FNS, name);
+        const fn = own(MATH_FNS, name2);
         return fn ? fn(...args.map((a) => num(a))) : unsupported();
       }
-      if (object2.type === "Identifier" && object2.name === "Date" && name === "now" && args.length === 0)
+      if (object2.type === "Identifier" && object2.name === "Date" && name2 === "now" && args.length === 0)
         return Date.now();
-      if (object2.type === "Identifier" && object2.name === "JSON" && name === "stringify" && args.length === 1) {
+      if (object2.type === "Identifier" && object2.name === "JSON" && name2 === "stringify" && args.length === 1) {
         return JSON.stringify(primitive(args[0]));
       }
       const target = interpret(object2);
       if (isMoment(target)) {
-        const check = own(MOMENT_METHODS, name);
+        const check = own(MOMENT_METHODS, name2);
         if (!check || !check(args))
           return unsupported();
         const unwrapped = args.map((a) => isMoment(a) ? a.m : a);
-        const result = target.m[name](...unwrapped);
+        const result = target.m[name2](...unwrapped);
         if (import_moment.default.isMoment(result))
           return box(result);
         if (typeof result === "string" || typeof result === "number" || typeof result === "boolean")
@@ -1627,13 +1483,13 @@ function interpret(node) {
         return unsupported();
       }
       if (typeof target === "string") {
-        const fn = own(STRING_METHODS, name);
+        const fn = own(STRING_METHODS, name2);
         return fn ? fn(target, args) : unsupported();
       }
       if (typeof target === "number") {
-        if (name === "toFixed" && args.length <= 1)
+        if (name2 === "toFixed" && args.length <= 1)
           return target.toFixed(args[0] === void 0 ? 0 : capped(args[0], 100));
-        if (name === "toString" && args.length === 0)
+        if (name2 === "toString" && args.length === 0)
           return String(target);
         return unsupported();
       }
@@ -1644,7 +1500,42 @@ function interpret(node) {
   }
 }
 var SERVER_BINDING = /\{\{(.*?)\}\}/gs;
+function declaredParameterDefaults(options) {
+  const declared = options && typeof options === "object" ? options.parameters : void 0;
+  const values = /* @__PURE__ */ Object.create(null);
+  if (!Array.isArray(declared))
+    return values;
+  for (const parameter of declared) {
+    if (!parameter || typeof parameter !== "object")
+      continue;
+    const { name: name2, defaultValue } = parameter;
+    if (typeof name2 !== "string" || !name2 || defaultValue === void 0 || defaultValue === null)
+      continue;
+    if (typeof defaultValue === "number" || typeof defaultValue === "boolean") {
+      values[name2] = defaultValue;
+    } else if (typeof defaultValue === "string") {
+      if (!defaultValue.includes("{{")) {
+        values[name2] = defaultValue;
+        continue;
+      }
+      const outcome = resolveString(defaultValue);
+      const value = outcome.ok ? outcome.value : void 0;
+      if (outcome.ok && (value === null || ["string", "number", "boolean"].includes(typeof value)))
+        values[name2] = value;
+    }
+  }
+  return values;
+}
 function resolveStaticBindings(options) {
+  const previous = currentParameters;
+  currentParameters = declaredParameterDefaults(options);
+  try {
+    return resolveWithParameters(options);
+  } finally {
+    currentParameters = previous;
+  }
+}
+function resolveWithParameters(options) {
   const resolved = {};
   const unresolved = [];
   const visit = (value) => {
@@ -1670,8 +1561,8 @@ function resolveStaticBindings(options) {
   visit(options);
   return { resolved, unresolved };
 }
-function resolveString(text) {
-  const matches = [...text.matchAll(SERVER_BINDING)];
+function resolveString(text2) {
+  const matches = [...text2.matchAll(SERVER_BINDING)];
   if (!matches.length)
     return { ok: false };
   const parts = [];
@@ -1681,10 +1572,10 @@ function resolveString(text) {
       return { ok: false };
     parts.push([m[0], result.value]);
   }
-  if (matches.length === 1 && matches[0][0] === text.trim())
+  if (matches.length === 1 && matches[0][0] === text2.trim())
     return { ok: true, value: parts[0][1], parts: [] };
   let i = 0;
-  return { ok: true, value: text.replace(SERVER_BINDING, () => String(parts[i++][1])), parts };
+  return { ok: true, value: text2.replace(SERVER_BINDING, () => String(parts[i++][1])), parts };
 }
 function evaluate(expression) {
   if (expression.length > MAX_EXPRESSION_CHARS)
@@ -1740,6 +1631,86 @@ function emptyViewerOnlyParams(options, resolution) {
 }
 function emptyParamsNote(names) {
   return `Ran with ${names.map((n) => `:${n}`).join(", ")} = null: ${names.length > 1 ? "they come" : "it comes"} from the app (a component or a picked row), which is empty outside the viewer. The query works for the empty case; check a value in the viewer.`;
+}
+var LABELS = {
+  postgresql: "PostgreSQL",
+  mysql: "MySQL",
+  mssql: "SQL Server",
+  mariadb: "MariaDB",
+  oracledb: "Oracle",
+  snowflake: "Snowflake",
+  databricks: "Databricks",
+  bigquery: "BigQuery",
+  clickhouse: "ClickHouse",
+  cosmosdb: "Cosmos DB",
+  couchbase: "Couchbase",
+  salesforce: "Salesforce",
+  harperdb: "HarperDB"
+};
+var MODE_SWITCH = /* @__PURE__ */ new Set(["postgresql", "mysql", "mssql"]);
+var GUI_ELSE_SQL = /* @__PURE__ */ new Set(["mariadb", "oracledb", "snowflake", "databricks"]);
+var GUI_SQL_KINDS = /* @__PURE__ */ new Set([...MODE_SWITCH, ...GUI_ELSE_SQL]);
+var SQL_DIALECT = {
+  postgresql: "postgresql",
+  tooljetdb: "postgresql",
+  mysql: "mysql",
+  mariadb: "mysql",
+  mssql: "mssql",
+  oracledb: "oracle"
+};
+var SQL_OPERATION = {
+  clickhouse: { operation: "sql", field: "query" },
+  cosmosdb: { operation: "query_database", field: "query" },
+  couchbase: { operation: "query", field: "query" },
+  salesforce: { operation: "soql", field: "soql_query" }
+};
+var GUI_LIST_ROWS_KEYS = /* @__PURE__ */ new Set(["where_filters", "order_filters", "aggregates", "group_by"]);
+var text = (options, field) => {
+  const value = options[field];
+  return typeof value === "string" && value.trim() ? value : void 0;
+};
+var connectorLabel = (kind) => LABELS[kind] ?? kind;
+function sqlConnectorPath(kind, options) {
+  const label = connectorLabel(kind);
+  const mode = options.mode;
+  const operation = options.operation;
+  if (GUI_SQL_KINDS.has(kind)) {
+    if (mode === "gui") {
+      if (operation === "list_rows")
+        return { path: "gui_list_rows" };
+      return {
+        path: "not_read",
+        reason: typeof operation === "string" && operation ? `${label} GUI operation "${operation}" is not a read (only list_rows reads).` : `${label} GUI query names no operation; only list_rows reads.`
+      };
+    }
+    const field = kind === "databricks" && !text(options, "query") ? "sql_query" : "query";
+    return { path: "sql", field, sql: text(options, field) };
+  }
+  if (kind === "bigquery") {
+    if (mode === "sql" || operation === "query")
+      return { path: "sql", field: "query", sql: text(options, "query") };
+    return {
+      path: "not_read",
+      reason: `BigQuery runs SQL text only in mode "sql" or operation "query"; this query runs operation "${String(operation ?? "<missing>")}".`
+    };
+  }
+  if (kind === "harperdb") {
+    if (mode !== void 0 && mode !== "sql") {
+      return { path: "not_read", reason: `HarperDB runs SQL text only in mode "sql"; this query is in mode "${String(mode)}".` };
+    }
+    return { path: "sql", field: "sql_query", sql: text(options, "sql_query") };
+  }
+  const sqlOperation = SQL_OPERATION[kind];
+  if (sqlOperation) {
+    if (typeof operation === "string" && operation && operation !== sqlOperation.operation) {
+      return {
+        path: "not_read",
+        reason: `${label} runs SQL text only for operation "${sqlOperation.operation}"; this query runs operation "${operation}".`
+      };
+    }
+    return { path: "sql", field: sqlOperation.field, sql: text(options, sqlOperation.field) };
+  }
+  return void 0;
 }
 var LARGE_READ_ROW_THRESHOLD = 1e3;
 var SQL_KINDS = /* @__PURE__ */ new Set([
@@ -1933,7 +1904,7 @@ var FLUX_EGRESS_PACKAGES = [
   "influxdata/influxdb/secrets",
   "influxdata/influxdb/tasks"
 ];
-var FLUX_EGRESS_IMPORT = new RegExp(String.raw`(^|\n)\s*import\s+(?:[A-Za-z_][A-Za-z0-9_]*\s+)?"(?:` + FLUX_EGRESS_PACKAGES.map((name) => name.replace(/\//g, String.raw`\/`)).join("|") + String.raw`)"`);
+var FLUX_EGRESS_IMPORT = new RegExp(String.raw`(^|\n)\s*import\s+(?:[A-Za-z_][A-Za-z0-9_]*\s+)?"(?:` + FLUX_EGRESS_PACKAGES.map((name2) => name2.replace(/\//g, String.raw`\/`)).join("|") + String.raw`)"`);
 var FLUX_LIMIT = /(^|[^A-Za-z0-9_.])limit\s*\(\s*n\s*:\s*(\d+)/;
 function assessInflux(options, datasourceId) {
   const identity = { datasourceKind: "influxdb", ...datasourceId ? { datasourceId } : {} };
@@ -2412,12 +2383,12 @@ function stripSql(sql) {
   return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
 }
 function sqlStatementText(sql, backslashEscapes) {
-  let text = "";
+  let text2 = "";
   for (let i = 0; i < sql.length; i++) {
     const char = sql[i];
     if (char === "'" || char === '"' || char === "`") {
       const quote = char;
-      text += quote + quote;
+      text2 += quote + quote;
       let closed = false;
       while (++i < sql.length) {
         if (sql[i] === "\\" && backslashEscapes) {
@@ -2438,7 +2409,7 @@ function sqlStatementText(sql, backslashEscapes) {
     } else if (char === "-" && sql[i + 1] === "-") {
       while (i < sql.length && sql[i] !== "\n")
         i++;
-      text += " ";
+      text2 += " ";
     } else if (char === "/" && sql[i + 1] === "*") {
       if (sql[i + 2] === "!")
         return void 0;
@@ -2446,11 +2417,11 @@ function sqlStatementText(sql, backslashEscapes) {
       if (end < 0)
         return void 0;
       i = end + 1;
-      text += " ";
+      text2 += " ";
     } else
-      text += char;
+      text2 += char;
   }
-  return text.trim().replace(/;\s*$/, "").trim();
+  return text2.trim().replace(/;\s*$/, "").trim();
 }
 function normalizeSqlTable(raw) {
   return raw.split(".").map((part) => part.replace(/^[`"\[]|[`"\]]$/g, "")).join(".").toLowerCase();
@@ -2469,10 +2440,10 @@ function mainStatementAfterCtes(sql) {
     return void 0;
   let i = head[0].length;
   for (let guard = 0; guard < 50; guard++) {
-    const name = /^\s*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\s*(?:\([^()]*\)\s*)?as\s+(?:not\s+)?(?:materialized\s+)?\(/i.exec(blank.slice(i));
-    if (!name)
+    const name2 = /^\s*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\s*(?:\([^()]*\)\s*)?as\s+(?:not\s+)?(?:materialized\s+)?\(/i.exec(blank.slice(i));
+    if (!name2)
       return void 0;
-    i += name[0].length;
+    i += name2[0].length;
     let depth = 1;
     while (i < blank.length && depth > 0) {
       if (blank[i] === "(")
@@ -2752,7 +2723,8 @@ function assessListRows(kind, options, datasourceId) {
     };
   }
   const listRows = record(options.list_rows);
-  const maxRows = staticPositiveInteger(listRows?.limit ?? options.limit);
+  const maxRows = staticPositiveInteger(kind === "tooljetdb" ? listRows?.limit : options.limit);
+  const misplaced = kind === "tooljetdb" ? options.limit !== void 0 && listRows?.limit === void 0 : listRows?.limit !== void 0 && options.limit === void 0;
   if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
     return {
       provenRead: true,
@@ -2778,7 +2750,7 @@ function assessListRows(kind, options, datasourceId) {
     source,
     maxRows,
     ...identity,
-    reason: maxRows === void 0 ? "list_rows has no statically provable row limit." : `list_rows can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+    reason: maxRows === void 0 ? misplaced ? kind === "tooljetdb" ? "list_rows has no statically provable row limit: ToolJet Database reads it from list_rows.limit and ignores a top-level limit." : `list_rows has no statically provable row limit: ${connectorLabel(kind)} reads it from the top-level limit and ignores list_rows.limit.` : "list_rows has no statically provable row limit." : `list_rows can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
   };
 }
 function assessQueryRead(query) {
@@ -2858,9 +2830,34 @@ function assessQueryRead(query) {
     };
   }
   if (SQL_KINDS.has(kind)) {
-    if (operation === "list_rows" || options.mode === "gui")
+    const path = sqlConnectorPath(kind, options);
+    if (path?.path === "not_read") {
+      return {
+        provenRead: false,
+        directSafe: false,
+        countOnly: false,
+        selectStar: false,
+        requiresCountPreflight: false,
+        reason: path.reason,
+        datasourceKind: kind,
+        ...datasourceId ? { datasourceId } : {}
+      };
+    }
+    if (path?.path === "gui_list_rows")
       return assessListRows(kind, options, datasourceId);
-    const sql = ["query", "sql_query", "sql", "presto_sql_query", "soql_query"].map((field) => options[field]).find((value) => typeof value === "string" && !!value.trim());
+    if (!path && operation === "list_rows") {
+      return {
+        provenRead: false,
+        directSafe: false,
+        countOnly: false,
+        selectStar: false,
+        requiresCountPreflight: false,
+        reason: `Datasource kind ${kind} has no GUI list_rows; its operation and options do not name a proven read.`,
+        datasourceKind: kind,
+        ...datasourceId ? { datasourceId } : {}
+      };
+    }
+    const sql = path ? path.sql : ["query", "sql_query", "sql", "presto_sql_query", "soql_query"].map((field) => options[field]).find((value) => typeof value === "string" && !!value.trim());
     return sql ? assessSql(sql, kind, datasourceId) : {
       provenRead: false,
       directSafe: false,
@@ -3295,11 +3292,11 @@ function workflowQueryIssues(options) {
     const value = options[field];
     if (field === "workflowVersionId" && (value === void 0 || value === null))
       continue;
-    if (typeof value !== "string" || !UUID.test(value))
+    if (typeof value !== "string" || (field === "workflowId" ? !UUID.test(value) : !value.trim() || value.length > 255))
       errors.push({
         code: "invalid_workflow_target",
         path: field,
-        message: `Workflow query options.${field} must be a literal workflow ${field === "workflowId" ? "ID from list_workflows/get_workflow" : "version ID from list_app_versions/get_workflow"}. A query and its success/failure handlers do not establish the workflow mapping.`
+        message: `Workflow query options.${field} must be a literal workflow ${field === "workflowId" ? "ID from list_workflows/get_workflow" : "version name, __current_branch__, __default_branch_draft__, or legacy version UUID"}. A query and its success/failure handlers do not establish the workflow mapping.`
       });
   }
   if (options.syncExecution !== void 0 && typeof options.syncExecution !== "boolean") {
@@ -3755,7 +3752,7 @@ function undeclaredNames(source, known) {
   };
   const used = [];
   const scopes = [];
-  const isDeclared = (name) => scopes.some((scope) => scope.has(name));
+  const isDeclared = (name2) => scopes.some((scope) => scope.has(name2));
   const walk2 = (node, parent, key) => {
     if (Array.isArray(node)) {
       for (const child of node)
@@ -3768,9 +3765,9 @@ function undeclaredNames(source, known) {
       const p = parent?.type;
       const notARead = (p === "MemberExpression" || p === "OptionalMemberExpression") && key === "property" && !parent.computed || (p === "ObjectProperty" || p === "ObjectMethod" || p === "ClassMethod" || p === "ClassProperty" || p === "ClassPrivateProperty") && key === "key" && !parent.computed || (p === "LabeledStatement" || p === "BreakStatement" || p === "ContinueStatement") && key === "label" || p === "UnaryExpression" && parent.operator === "typeof" || p === "MetaProperty" || // a declaration's own name, a parameter or a pattern binding is not a read
       p === "VariableDeclarator" && key === "id" || p !== void 0 && FUNCTION_TYPES.has(p) && (key === "id" || key === "params") || (p === "ClassDeclaration" || p === "ClassExpression") && key === "id" || p === "CatchClause" && key === "param";
-      const name = String(node.name);
-      if (!notARead && !isDeclared(name))
-        used.push(name);
+      const name2 = String(node.name);
+      if (!notARead && !isDeclared(name2))
+        used.push(name2);
       return;
     }
     if (node.type === "Program" || FUNCTION_TYPES.has(node.type)) {
@@ -3836,7 +3833,7 @@ function undeclaredNames(source, known) {
       walkPatternDefaults(pattern.argument);
   };
   walk2(ast);
-  return [...new Set(used.filter((name) => !known.has(name) && name !== "__runjs__" && name !== "__binding__"))];
+  return [...new Set(used.filter((name2) => !known.has(name2) && name2 !== "__runjs__" && name2 !== "__binding__"))];
 }
 function transformationWarnings(options) {
   const warnings = [];
@@ -4071,8 +4068,8 @@ function validateQueryOptions(kind, options, executionContext = "app") {
       errors.push({ code: "missing_target", path: targets[0], message: `${kind}/${operation} names nothing to act on: set ${targets.join(" or ")}.` });
     }
   }
-  const required = intersection(matching.map((variant) => variant.required));
-  for (const path of required) {
+  const required2 = intersection(matching.map((variant) => variant.required));
+  for (const path of required2) {
     const value = valueAtPath(options, path);
     if (value === void 0 || value === null || value === "") {
       errors.push({
@@ -4125,7 +4122,14 @@ function validateQueryOptions(kind, options, executionContext = "app") {
       });
     if (isObject(columns) && Object.keys(columns).length > 0) {
       const flat = Object.entries(columns).filter(([, clause]) => !isObject(clause) || typeof clause.column !== "string" || clause.column === "");
-      if (flat.length > 0) {
+      const nested = Object.entries(columns).find(([, clause]) => isObject(clause) && (isColumnRecordMap(clause) || isColumnRecordMap(clause.value)));
+      if (nested) {
+        errors.push({
+          code: "malformed_write_columns",
+          path: `${columnsPath}.${nested[0]}`,
+          message: `ToolJet DB ${operation} "${columnsPath}" holds a whole column map inside "${nested[0]}". ToolJet writes each entry as one column, so this inserts a column named "${nested[1].column ?? nested[0]}" and fails with "Could not find the column ... in the schema cache". Put the {column, value} entries directly under "${columnsPath}" (ToolJet DB has no "columns" level; that is the SQL plugins' shape).`
+        });
+      } else if (flat.length > 0) {
         const example = flat[0][0];
         errors.push({
           code: "malformed_write_columns",
@@ -4145,6 +4149,20 @@ function validateQueryOptions(kind, options, executionContext = "app") {
         code: "malformed_write_columns",
         path: "create_row.columns",
         message: misplaced ? `${kind} create_row expects the column map under "create_row.columns", not directly on "create_row" (that is the ToolJet DB shape). As authored no column is read, and the driver falls back to INSERT ... DEFAULT VALUES \u2014 inserting a BLANK ROW that reports success.` : `${kind} create_row requires "create_row.columns" as {"0": {"column": "<name>", "value": <v>}, \u2026}. With no usable column entry the driver emits INSERT ... DEFAULT VALUES, inserting a BLANK ROW and reporting success.`
+      });
+    }
+  }
+  if (kind === "tooljetdb" && operation === "delete_rows") {
+    const limit = valueAtPath(options, "delete_rows.limit");
+    const hasOrder = ["order_column", "order_column_id"].some((key) => {
+      const value = valueAtPath(options, `delete_rows.${key}`);
+      return typeof value === "string" && value.trim() !== "";
+    });
+    if ((limit === void 0 || Boolean(limit)) && !hasOrder) {
+      errors.push({
+        code: "missing_delete_order",
+        path: "delete_rows.order_column",
+        message: "ToolJet DB delete_rows defaults to limit 1 and bounded deletes require an explicit order. Set delete_rows.order_column or order_column_id to the actual primary key from get_table_schema. Preserve the intended filters and limit; do not assume the primary key is named id."
       });
     }
   }
@@ -4239,6 +4257,9 @@ function validateQueryOptions(kind, options, executionContext = "app") {
 function issueMessages(issues, prefix) {
   return issues.map((issue2) => `${prefix ? `${prefix}: ` : ""}${issue2.message}`);
 }
+function isColumnRecordMap(value) {
+  return isObject(value) && Object.keys(value).length > 0 && Object.values(value).every((clause) => isObject(clause) && typeof clause.column === "string" && clause.column !== "");
+}
 function normalizeWriteColumnMap(columns) {
   if (!isObject(columns) || Object.keys(columns).length === 0)
     return null;
@@ -4246,6 +4267,8 @@ function normalizeWriteColumnMap(columns) {
   if (entries.every(([, clause]) => isObject(clause) && typeof clause.column === "string" && clause.column !== "")) {
     return null;
   }
+  if (entries.some(([, clause]) => isColumnRecordMap(clause)))
+    return null;
   const normalized = {};
   entries.forEach(([key, clause], index) => {
     if (isObject(clause) && typeof clause.column === "string" && clause.column !== "") {
@@ -4276,8 +4299,13 @@ function normalizeQueryOptions(kind, rawOptions) {
     return options;
   const operation = typeof options.operation === "string" ? options.operation : "";
   if (operation === "create_row") {
-    const normalized = normalizeWriteColumnMap(options.create_row);
-    return normalized ? { ...options, create_row: normalized } : options;
+    const createRow = options.create_row;
+    const only = isObject(createRow) && Object.keys(createRow).length === 1 ? Object.values(createRow)[0] : void 0;
+    const unwrapped = isColumnRecordMap(createRow?.columns) ? createRow.columns : isObject(only) && only.column === "columns" && isColumnRecordMap(only.value) ? only.value : createRow;
+    const normalized = normalizeWriteColumnMap(unwrapped);
+    if (normalized)
+      return { ...options, create_row: normalized };
+    return unwrapped === createRow ? options : { ...options, create_row: unwrapped };
   }
   if (operation === "update_rows") {
     const updateRows = options.update_rows;
@@ -4288,29 +4316,861 @@ function normalizeQueryOptions(kind, rawOptions) {
   }
   return options;
 }
+createRequire(import.meta.url);
+var capabilityRequestSchema = external_exports.object({
+  version_id: external_exports.string().uuid()
+}).strict();
+var datasourceCapabilitySchema = external_exports.enum(["query", "ai-model", "email"]);
+var workflowCapabilityReportSchema = external_exports.object({
+  version_id: external_exports.string().uuid(),
+  authorable_node_types: external_exports.array(external_exports.string()),
+  datasources: external_exports.array(external_exports.object({
+    id: external_exports.string(),
+    name: external_exports.string(),
+    kind: external_exports.string(),
+    capabilities: external_exports.array(datasourceCapabilitySchema)
+  }).strict())
+}).strict();
+var AI_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["openai", "anthropic", "gemini", "mistral_ai"]);
+var EMAIL_DATASOURCE_KINDS = /* @__PURE__ */ new Set(["smtp", "sendgrid", "mailgun"]);
+function datasourceCapabilities(kind) {
+  const capabilities = ["query"];
+  if (AI_DATASOURCE_KINDS.has(kind))
+    capabilities.push("ai-model");
+  if (EMAIL_DATASOURCE_KINDS.has(kind))
+    capabilities.push("email");
+  return capabilities;
+}
+async function getWorkflowCapabilities(client, input) {
+  const { version_id } = capabilityRequestSchema.parse(input);
+  const datasources = await client.workflows.listDatasources(version_id);
+  return workflowCapabilityReportSchema.parse({
+    version_id,
+    authorable_node_types: nodeCatalog.nodes.map((node) => node.type),
+    datasources: datasources.map((datasource) => ({
+      id: datasource.id,
+      name: datasource.name,
+      kind: datasource.kind,
+      capabilities: datasourceCapabilities(datasource.kind)
+    }))
+  });
+}
+function workflowReadiness(graph, structuralErrors) {
+  if (structuralErrors.length)
+    return { runtime_readiness: "blocked", blockers: structuralErrors };
+  const adjacency = new Map(graph.nodes.map((node) => [node.id, []]));
+  for (const edge of controlFlowEdges(graph))
+    adjacency.get(edge.source)?.push(edge.target);
+  const reachable = /* @__PURE__ */ new Set();
+  const visit = (id) => {
+    if (reachable.has(id))
+      return;
+    reachable.add(id);
+    for (const target of adjacency.get(id) ?? [])
+      visit(target);
+  };
+  for (const start of graph.nodes.filter((node) => node.type === "input" && node.data.nodeType === "start"))
+    visit(start.id);
+  const blockers = [];
+  for (const node of graph.nodes.filter((node2) => reachable.has(node2.id))) {
+    const issues = [];
+    if (node.type === "query" && node.data.looped === true && (typeof node.data.iterationValuesCode !== "string" || !node.data.iterationValuesCode.trim()))
+      issues.push("Loop requires an array expression.");
+    if (node.type === "human")
+      issues.push(...humanConfigurationErrors(node.data));
+    if (node.type === "wait") {
+      const duration = node.data.durationSeconds;
+      if (typeof duration !== "number" || !Number.isFinite(duration) || duration < 1 || duration > 2592e3)
+        issues.push("Wait duration must be between 1 second and 30 days.");
+    }
+    if (node.type === "filter" && [node.data.inputExpression, node.data.predicateExpression].some((value) => typeof value !== "string" || !value.trim()))
+      issues.push("Filter requires input and predicate expressions.");
+    if (node.type === "if-condition") {
+      const conditions = Array.isArray(node.data.conditions) ? node.data.conditions : [{ code: node.data.code }];
+      if (!conditions.length || conditions.some((branch) => !branch || typeof branch.code !== "string" || !branch.code.trim()))
+        issues.push("Every condition branch requires an expression.");
+    }
+    for (const message of issues)
+      blockers.push({ code: "node_configuration", path: `nodes.${node.id}`, message });
+  }
+  for (const filter of graph.nodes.filter((node) => node.type === "filter")) {
+    if (!controlFlowEdges(graph).some((edge) => edge.target === filter.id))
+      blockers.push({
+        code: "filter_missing_input",
+        path: `nodes.${filter.id}`,
+        message: "Filter requires one upstream connection before it can run."
+      });
+  }
+  for (const agent of graph.nodes.filter((node) => node.type === "agent" && reachable.has(node.id))) {
+    const attachment = graph.edges.find((edge) => edge.target === agent.id && edge.targetHandle === "ai-model");
+    const child = attachment && graph.nodes.find((node) => node.id === attachment.source);
+    const definitionId = child?.data.idOnDefinition;
+    const mapping = typeof definitionId === "string" && graph.queries.find((query) => query.idOnDefinition === definitionId);
+    if (!attachment || !child || !mapping)
+      blockers.push({
+        code: "agent_missing_model",
+        path: `nodes.${agent.id}.model`,
+        message: "Reachable Agent requires one configured AI model attachment."
+      });
+  }
+  return { runtime_readiness: blockers.length ? "draft_only" : "runnable", blockers };
+}
+var plans = /* @__PURE__ */ new Map();
+var TTL = 30 * 6e4;
+function prune() {
+  for (const [key, plan] of plans)
+    if (plan.expires <= Date.now())
+      plans.delete(key);
+}
+async function prepare(client, workflowId, versionId, spec, ids) {
+  const snapshot = await client.get(workflowId, versionId);
+  if (!snapshot.editable)
+    throw new Error("Only editable draft workflow versions can be changed.");
+  const [queries, datasources] = await Promise.all([client.getQueries(versionId), client.listDatasources(versionId)]);
+  const compiled = compileGraph(snapshot.definition, spec, ids, new Map(datasources.map((datasource) => [datasource.id, datasource.kind])));
+  const warnings = [];
+  const writes = [];
+  const finalDefinitionIds = new Set(compiled.graph.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string"));
+  const removedDefinitionIds = new Set(snapshot.definition.nodes.map((node) => node.data.idOnDefinition).filter((value) => typeof value === "string" && !finalDefinitionIds.has(value)));
+  const deletions = [];
+  for (const mapping of snapshot.definition.queries) {
+    if (!removedDefinitionIds.has(mapping.idOnDefinition))
+      continue;
+    if (compiled.graph.queries.some((retained) => retained.id === mapping.id))
+      continue;
+    if (deletions.some((deletion) => deletion.query_id === mapping.id))
+      continue;
+    const node = snapshot.definition.nodes.find((candidate) => candidate.data.idOnDefinition === mapping.idOnDefinition);
+    if (!node)
+      continue;
+    if (!queries.some((query) => query.id === mapping.id))
+      throw new Error(`Query ${mapping.id} is missing from the target version.`);
+    deletions.push({ node_id: node.id, definition_id: mapping.idOnDefinition, query_id: mapping.id });
+  }
+  const claimedNames = /* @__PURE__ */ new Set();
+  for (const item of compiled.query_nodes) {
+    const existingMapping = snapshot.definition.queries.find((q) => q.idOnDefinition === item.definition_id);
+    const oldQuery = queries.find((q) => q.id === existingMapping?.id);
+    if (existingMapping && !oldQuery)
+      throw new Error(`Query ${existingMapping.id} is missing from the target version.`);
+    if (oldQuery && snapshot.definition.nodes.filter((n) => snapshot.definition.queries.some((q) => q.id === oldQuery.id && q.idOnDefinition === n.data.idOnDefinition)).length > 1)
+      throw new Error(`Query ${oldQuery.id} is shared by multiple nodes. Shared query editing is unsupported.`);
+    const input = item.role === "workflow-node" ? item.spec : void 0;
+    const datasource = item.role === "agent-model" ? datasources.find((d) => d.id === item.datasource_id) : input.type === "javascript" || input.type === "loop" ? datasources.find((d) => d.kind === "runjs") : datasources.find((d) => d.id === input.datasource_id);
+    const label = item.role === "agent-model" ? "Agent model" : `node ${input.ref}`;
+    if (!datasource)
+      throw new Error(`Datasource unavailable for ${label}.`);
+    if (item.role === "agent-model" && !AI_DATASOURCE_KINDS.has(datasource.kind))
+      throw new Error(`Datasource ${datasource.id} is not an AI model datasource.`);
+    const kind = datasource.kind;
+    const dataSourceId = datasource.id;
+    const name2 = item.role === "agent-model" ? item.name : input.name;
+    if (oldQuery && (oldQuery.kind !== kind || oldQuery.data_source_id !== dataSourceId))
+      throw new Error(item.role === "agent-model" ? "Changing an Agent model datasource is unsupported; remove the model first, then add its replacement in a second phase." : "Changing an existing query datasource is unsupported; add a new node.");
+    if (oldQuery?.name !== void 0 && oldQuery.name !== name2)
+      throw new Error(item.role === "agent-model" ? "Renaming an Agent model query is unsupported; remove the model first, then add its replacement in a second phase." : "Renaming existing queries is unsupported because code references cannot be rewritten safely.");
+    if (claimedNames.has(name2) || queries.some((q) => q.name === name2 && q.id !== oldQuery?.id))
+      throw new Error(`Duplicate query name: ${name2}`);
+    claimedNames.add(name2);
+    const requestedOptions = item.role === "agent-model" ? item.options : input.type === "javascript" || input.type === "loop" ? { ...oldQuery?.options ?? {}, code: input.code } : input.options;
+    let options = item.role === "agent-model" ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
+    if (kind === "workflows")
+      options = (await client.resolveReference(options, snapshot)).options;
+    if (item.role === "workflow-node" && kind === "runjs")
+      assertWorkflowJavaScript(options.code, label);
+    if (item.role === "workflow-node") {
+      const validation2 = validateQueryOptions(kind, options, "workflow");
+      if (validation2.errors.length)
+        throw new Error(issueMessages(validation2.errors).join(" "));
+      warnings.push(...issueMessages(validation2.warnings));
+    }
+    writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name: name2, dataSourceId: dataSourceId ?? "", kind, options });
+    if (!existingMapping && !compiled.graph.queries.some((mapping) => mapping.idOnDefinition === item.definition_id))
+      compiled.graph.queries.push({ idOnDefinition: item.definition_id, id: `pending:${item.node_id}` });
+  }
+  const stateNames = /* @__PURE__ */ new Set();
+  for (const node of compiled.graph.nodes) {
+    const mapping = compiled.graph.queries.find((mapping2) => mapping2.idOnDefinition === node.data.idOnDefinition);
+    const write = writes.find((write2) => write2.node_id === node.id);
+    const name2 = node.type === "query" ? write?.name ?? queries.find((query) => query.id === mapping?.id)?.name : node.data.nodeName;
+    if (typeof name2 !== "string" || !name2.trim())
+      continue;
+    if (stateNames.has(name2))
+      throw new Error(`Duplicate workflow node name: ${name2}`);
+    stateNames.add(name2);
+  }
+  const queryIds = /* @__PURE__ */ new Set([...queries.map((q) => q.id), ...writes.filter((q) => !q.existing_id).map((q) => `pending:${q.node_id}`)]);
+  const validation = validateGraph(compiled.graph, queryIds);
+  const readiness = workflowReadiness(compiled.graph, validation.errors);
+  return { snapshot, compiled, writes, deletions, validation, readiness, warnings };
+}
+async function lint(client, workflowId, versionId, spec, allowDraft = false) {
+  const prepared = await prepare(client, workflowId, versionId, spec);
+  if (prepared.validation.errors.length || prepared.readiness.runtime_readiness === "draft_only" && !allowDraft)
+    return { ...prepared.validation, ...prepared.readiness, query_warnings: prepared.warnings };
+  prune();
+  while (plans.size >= 200)
+    plans.delete(plans.keys().next().value);
+  const token = randomUUID();
+  plans.set(token, { scope: await client.planScope(), workflowId, versionId, spec: structuredClone(spec), ids: prepared.compiled, allowDraft, expires: Date.now() + TTL });
+  return {
+    plan_token: token,
+    expires_in_seconds: TTL / 1e3,
+    node_ids: prepared.compiled.node_ids,
+    edge_ids: prepared.compiled.edge_ids,
+    ...prepared.validation,
+    ...prepared.readiness,
+    query_warnings: prepared.warnings,
+    changes: { node_upserts: spec.nodes.length, edge_upserts: spec.edges.length, node_removals: spec.remove_node_ids, edge_removals: spec.remove_edge_ids, queries: [...prepared.writes.map((q) => ({ name: q.name, operation: q.existing_id ? "update" : "create" })), ...prepared.deletions.map((q) => ({ query_id: q.query_id, operation: "delete" }))] }
+  };
+}
+async function apply(client, token) {
+  prune();
+  const scope = await client.planScope();
+  const plan = plans.get(token);
+  if (!plan || plan.scope !== scope)
+    throw new Error("Unknown, expired, consumed, or differently scoped plan. Run lint_workflow_spec again.");
+  plans.delete(token);
+  const { compiled, snapshot, writes, deletions, validation, readiness } = await prepare(client, plan.workflowId, plan.versionId, plan.spec, plan.ids);
+  if (validation.errors.length)
+    throw new Error(JSON.stringify(validation.errors));
+  if (readiness.runtime_readiness === "draft_only" && !plan.allowDraft)
+    throw new Error(JSON.stringify(readiness.blockers));
+  const completed = [];
+  let phase = "queries";
+  let attemptedQuery;
+  try {
+    for (const write of writes) {
+      attemptedQuery = { name: write.name, node_id: write.node_id, existing_id: write.existing_id };
+      const result = write.existing_id ? await client.updateQuery({ queryId: write.existing_id, versionId: plan.versionId, name: write.name, options: write.options }) : await client.createWorkflowQuery({ workflowId: plan.workflowId, versionId: plan.versionId, name: write.name, dataSourceId: write.dataSourceId || void 0, kind: write.kind, options: write.options });
+      completed.push({ operation: write.existing_id ? "update" : "create", query_id: result.query_id, node_id: write.node_id });
+      compiled.graph.queries = compiled.graph.queries.filter((q) => q.idOnDefinition !== write.definition_id);
+      compiled.graph.queries.push({ idOnDefinition: write.definition_id, id: result.query_id });
+      attemptedQuery = void 0;
+    }
+    phase = "save";
+    await client.save(snapshot, compiled.graph);
+    phase = "readback";
+    const [saved, queries] = await Promise.all([client.get(plan.workflowId, plan.versionId), client.getQueries(plan.versionId)]);
+    const validation2 = validateGraph(saved.definition, new Set(queries.map((q) => q.id)));
+    if (!isDeepStrictEqual(saved.definition, compiled.graph))
+      throw new Error("Saved definition differs from the intended graph. Inspect get_workflow before retrying.");
+    for (const write of writes) {
+      const id = completed.find((q) => q.node_id === write.node_id).query_id;
+      const persisted = queries.find((q) => q.id === id);
+      if (!persisted || persisted.name !== write.name || persisted.kind !== write.kind || persisted.data_source_id !== write.dataSourceId || !isDeepStrictEqual(persisted.options, write.options))
+        throw new Error(`Query ${id} readback differs from intended datasource, kind, name, or options.`);
+    }
+    if (validation2.errors.length)
+      throw new Error(JSON.stringify(validation2.errors));
+    phase = "query_deletions";
+    for (const deletion of deletions) {
+      attemptedQuery = { name: deletion.query_id, node_id: deletion.node_id, existing_id: deletion.query_id };
+      await client.deleteQuery({ queryId: deletion.query_id, versionId: plan.versionId });
+      completed.push({ operation: "delete", query_id: deletion.query_id, node_id: deletion.node_id });
+      attemptedQuery = void 0;
+    }
+    return { workflow_id: plan.workflowId, version_id: plan.versionId, editor_url: saved.editor_url, node_ids: compiled.node_ids, edge_ids: compiled.edge_ids, completed, validation: validation2, ...readiness };
+  } catch (error) {
+    return {
+      failed: true,
+      workflow_id: plan.workflowId,
+      version_id: plan.versionId,
+      phase,
+      completed,
+      attempted_query: attemptedQuery,
+      node_ids: compiled.node_ids,
+      edge_ids: compiled.edge_ids,
+      graph_persistence: phase === "queries" ? "not_attempted" : phase === "save" ? "unknown" : "saved",
+      error: error instanceof Error ? error.message : String(error),
+      recovery: "Inspect get_workflow and its queries; reuse persisted IDs when replanning. Do not repeat creation blindly. No resources were automatically deleted."
+    };
+  }
+}
+async function deleteNode(client, workflowId, versionId, nodeId) {
+  const snapshot = await client.get(workflowId, versionId);
+  if (!snapshot.definition.nodes.some((node) => node.id === nodeId))
+    throw new Error(`Unknown workflow node: ${nodeId}`);
+  const spec = specSchema.parse({ remove_node_ids: [nodeId], remove_edge_ids: snapshot.definition.edges.filter((edge) => edge.source === nodeId || edge.target === nodeId).map((edge) => edge.id) });
+  const result = await lint(client, workflowId, versionId, spec, true);
+  if (!("plan_token" in result))
+    throw new Error(JSON.stringify({ errors: result.errors, blockers: result.blockers }));
+  return apply(client, result.plan_token);
+}
+createRequire(import.meta.url);
+var newPackSet = () => ({ schemas: null, definitions: {}, packs: null, derived: /* @__PURE__ */ new Map() });
+var processSet = newPackSet();
+var store = new AsyncLocalStorage();
+var activePackSet = () => store.getStore() ?? processSet;
+var inPackSet = (set, work) => store.run(set, work);
+var dataPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-schemas.json");
+var compatibilityPath = resolve(dirname(fileURLToPath(import.meta.url)), "../data/component-compatibility.json");
+var cache = null;
+var legacyReplacements = null;
+function load() {
+  if (!cache)
+    cache = readCatalog(dataPath);
+  return cache;
+}
+function loadLegacyReplacements() {
+  if (!legacyReplacements) {
+    const compatibility = JSON.parse(readFileSync(compatibilityPath, "utf8"));
+    legacyReplacements = compatibility.legacyReplacements ?? {};
+  }
+  return legacyReplacements;
+}
+var PACK_TYPE = /^Lib_[a-z0-9]+_/;
+function merged() {
+  const set = activePackSet();
+  if (!set.schemas)
+    return load();
+  let all = set.derived.get("catalog");
+  if (!all) {
+    const extra = set.schemas;
+    all = Object.fromEntries(Object.entries(load()).filter(([key]) => !PACK_TYPE.test(key) || key in extra));
+    Object.assign(all, extra);
+    set.derived.set("catalog", all);
+  }
+  return all;
+}
+function allComponentSchemas() {
+  return merged();
+}
+function registerComponentSchemas(extra) {
+  const set = activePackSet();
+  set.schemas = { ...extra };
+  set.derived.clear();
+}
+var INTERNAL_TYPES = {
+  LibraryComponent: "is ToolJet's internal host for a custom or pack component; write the pack's own type, Lib_<pack>_<Component> (get_component_catalog lists them), which is stored with the component it draws.",
+  PackComponent: "is ToolJet's internal host for a pack component; write the pack's own type, Lib_<pack>_<Component> (get_component_catalog lists them), which is stored with the component it draws.",
+  ModuleContainer: "is a module app's own root, which ToolJet creates with the module; in an app it draws an empty box. To show a module in an app, use ModuleViewer."
+};
+function internalComponentTypeNote(type) {
+  return INTERNAL_TYPES[type] ?? null;
+}
+function getCatalog() {
+  const legacy = loadLegacyReplacements();
+  return Object.values(merged()).filter((c) => !legacy[c.type] && !INTERNAL_TYPES[c.type]).map((c) => ({ type: c.type, description: c.description })).sort((a, b) => a.type.localeCompare(b.type));
+}
+function getComponentSchema(type) {
+  return merged()[type] ?? null;
+}
+function getLegacyComponentReplacement(type) {
+  return loadLegacyReplacements()[type] ?? null;
+}
+createRequire(import.meta.url);
+var name = external_exports.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/).refine((v) => !["__proto__", "prototype", "constructor"].includes(v));
+var editContractSchema = external_exports.object({
+  source_query: name.describe("Already-loaded bounded raw row-array query; never a display projection."),
+  table_component: name,
+  id_field: name.default("id"),
+  prefix: name.describe("Unique prefix for generated snapshot/draft variables and RunJS query names."),
+  fields: external_exports.array(external_exports.object({
+    field: name,
+    component: name,
+    type: external_exports.enum(["text", "number", "date_only", "boolean"]),
+    required: external_exports.boolean().default(false),
+    nullable: external_exports.boolean().default(false).describe("Opt in to clearing to null; a user change event is also required."),
+    trim: external_exports.boolean().default(false),
+    choices: external_exports.union([
+      external_exports.array(external_exports.object({ label: external_exports.string(), value: external_exports.union([external_exports.string(), external_exports.number().finite()]) }).strict()).min(1).max(100),
+      external_exports.object({ query: name, value_field: name, label_field: name }).strict()
+    ]).optional().describe("Opt-in DropdownV2 for text/number fields: literal label/value options or an already-loaded bounded raw option query. Values must match the declared field type.")
+  })).min(1).max(40)
+}).strict();
+function canonical(value, field) {
+  if (value === void 0)
+    throw new Error(`Missing input: ${field.field}`);
+  if (value === null || value === "") {
+    if (field.required)
+      throw new Error(`Required field: ${field.field}`);
+    if (value === null && !field.nullable)
+      throw new Error(`Null not allowed: ${field.field}`);
+    return value;
+  }
+  if (field.type === "text") {
+    if (typeof value !== "string")
+      throw new Error(`Expected text: ${field.field}`);
+    if (field.required && !value.trim())
+      throw new Error(`Required field: ${field.field}`);
+    return field.trim ? value.trim() : value;
+  }
+  if (field.type === "boolean") {
+    if (typeof value !== "boolean")
+      throw new Error(`Expected boolean: ${field.field}`);
+    return value;
+  }
+  if (field.type === "number") {
+    if (typeof value !== "number" && typeof value !== "string" || typeof value === "string" && !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value) || !Number.isFinite(Number(value)))
+      throw new Error(`Expected finite number: ${field.field}`);
+    return Number(value);
+  }
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))?$/.test(value)) {
+    throw new Error(`Expected ISO date: ${field.field}`);
+  }
+  const day = value.slice(0, 10);
+  const parsed = /* @__PURE__ */ new Date(day + "T00:00:00Z");
+  if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== day || !Number.isFinite(Date.parse(value))) {
+    throw new Error(`Invalid date: ${field.field}`);
+  }
+  return day;
+}
+function generateEditContract(input) {
+  const spec = editContractSchema.parse(input);
+  for (const key of ["field", "component"]) {
+    if (new Set(spec.fields.map((f) => f[key])).size !== spec.fields.length)
+      throw new Error(`Duplicate ${key} in edit contract`);
+  }
+  if (spec.fields.some((f) => f.field === spec.id_field))
+    throw new Error("The stable primary key cannot be edited");
+  if (spec.fields.some((f) => f.required && f.nullable))
+    throw new Error("A required field cannot be nullable");
+  for (const f of spec.fields)
+    if (f.choices) {
+      if (!["text", "number"].includes(f.type))
+        throw new Error("Choices require a text or number field");
+      if (Array.isArray(f.choices)) {
+        if (f.choices.some((o) => typeof o.value !== (f.type === "text" ? "string" : "number")))
+          throw new Error("Choice values must match field type");
+        if (new Set(f.choices.map((o) => o.value)).size !== f.choices.length)
+          throw new Error("Duplicate choice value");
+      }
+    }
+  const snapshot = `${spec.prefix}Snapshot`, draft = `${spec.prefix}Draft`;
+  const openName = `${spec.prefix}Open`, prepareName = `${spec.prefix}Prepare`;
+  const q = JSON.stringify;
+  const helpers = `const canonical = ${canonical.toString()};
+const fields = ${q(spec.fields)};
+const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+`;
+  const openCode = helpers + `await actions.setVariable(${q(snapshot)}, null);
+await actions.setVariable(${q(draft)}, null);
+const selection = components.${spec.table_component}.selectedRow;
+const id = selection && selection[${q(spec.id_field)}];
+if ((typeof id !== 'string' && typeof id !== 'number') || id === '' || (typeof id === 'number' && !Number.isFinite(id))) throw new Error('Select a record first');
+const rows = queries.${spec.source_query}.data;
+if (!Array.isArray(rows)) throw new Error('Raw records are not loaded');
+const matches = rows.filter(r => r && own(r, ${q(spec.id_field)}) && r[${q(spec.id_field)}] === id);
+if (matches.length !== 1) throw new Error('Expected exactly one raw record for the selected ID');
+const values = {};
+for (const field of fields) {
+  if (!own(matches[0], field.field)) throw new Error('Raw record omits: ' + field.field);
+  // Existing incomplete records must be openable for correction. Validate required
+  // values on Prepare, not before the user can edit them.
+  values[field.field] = canonical(matches[0][field.field], { ...field, required: false, nullable: true });
+}
+await actions.setVariable(${q(snapshot)}, { id, values });
+return { id };`;
+  const prepareCode = helpers + `const snapshot = variables.${snapshot};
+const draft = variables.${draft};
+const selection = components.${spec.table_component}.selectedRow;
+if (!snapshot || !selection || selection[${q(spec.id_field)}] !== snapshot.id) throw new Error('Reopen the selected record before saving');
+if (draft && draft.id !== snapshot.id) throw new Error('Draft belongs to another record');
+const changes = draft ? draft.values : {};
+if (!changes || typeof changes !== 'object' || Array.isArray(changes)) throw new Error('Invalid draft');
+const patch = {};
+for (const key of Object.keys(changes)) if (!fields.some(f => f.field === key)) throw new Error('Unknown draft field: ' + key);
+for (const field of fields) {
+  if (!own(snapshot.values, field.field)) throw new Error('Incomplete edit snapshot');
+  if (!own(changes, field.field)) {
+    canonical(snapshot.values[field.field], field);
+    continue;
+  }
+  const raw = changes[field.field];
+  let value = canonical(raw, field);
+  if (value === '' && field.type !== 'text') value = null;
+  if (value === '' || value === null) {
+    if (!field.nullable) throw new Error('Clearing is not allowed: ' + field.field);
+    value = null;
+  }
+  if (value !== snapshot.values[field.field]) patch[field.field] = value;
+}
+return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
+  const inputs = spec.fields.map((f) => {
+    const type = f.choices ? "DropdownV2" : { text: "TextInput", number: "NumberInput", date_only: "DatePickerV2", boolean: "Checkbox" }[f.type];
+    const initialKey = f.choices ? "schema" : ["date_only", "boolean"].includes(f.type) ? "defaultValue" : "value";
+    const exposed = f.type === "date_only" ? "selectedDate" : "value";
+    const trigger = f.choices || f.type === "date_only" ? "onSelect" : "onChange";
+    const schema = getComponentSchema(type);
+    if (!schema?.properties.some((p) => p.key === initialKey) || !schema.events?.some((e) => e.id === trigger))
+      throw new Error(`Unsupported edit adapter: ${type}`);
+    const initial = `variables.${snapshot} && variables.${snapshot}.values[${q(f.field)}]`;
+    let value = `{{${initial} != null ? variables.${snapshot}.values[${q(f.field)}] : ${f.type === "boolean" ? "false" : "''"}}}`;
+    if (f.choices) {
+      const options = Array.isArray(f.choices) ? q(f.choices) : `(queries.${f.choices.query}.data || []).map(r=>({label:r[${q(f.choices.label_field)}],value:r[${q(f.choices.value_field)}]}))`;
+      value = `{{(${options}).map(option=>({label:option.label,value:option.value,visible:true,default:!!variables.${snapshot} && option.value === variables.${snapshot}.values[${q(f.field)}]}))}}`;
+    }
+    const exposedValue = `components.${f.component}.${exposed}`;
+    const changedValue = f.choices && f.nullable ? `(${exposedValue} == null ? null : ${exposedValue})` : exposedValue;
+    const draftValue = `{{({id:variables.${snapshot}.id,values:Object.assign({},variables.${draft} && variables.${draft}.id === variables.${snapshot}.id ? variables.${draft}.values : {},{${q(f.field)}:${changedValue}})})}}`;
+    return {
+      name: f.component,
+      type,
+      properties: { [initialKey]: value, ...f.choices ? { advanced: "{{true}}", showClearBtn: f.nullable } : {}, ...f.type === "date_only" ? { dateFormat: "YYYY-MM-DD" } : {} },
+      validation: { mandatory: f.required },
+      events: [{ source_ref: f.component, source_type: "component", trigger, action: {
+        actionId: "set-custom-variable",
+        key: draft,
+        value: draftValue,
+        runOnlyIf: `{{!!variables.${snapshot}}}`
+      } }]
+    };
+  });
+  return {
+    queries: [
+      { name: openName, kind: "runjs", options: { code: openCode } },
+      { name: prepareName, kind: "runjs", options: { code: prepareCode } }
+    ],
+    inputs,
+    mutation_contract: {
+      id: `{{queries.${prepareName}.data.id}}`,
+      patch: `{{queries.${prepareName}.data.patch}}`,
+      runOnlyIf: `{{queries.${prepareName}.data && queries.${prepareName}.data.changed === true}}`
+    },
+    wiring: [
+      `Run ${openName} on Edit; open the editor only on its success. Merge the returned input properties and change events into your native layout. Never use display selectedRow fields as defaults.`,
+      `Run ${prepareName} on Save; run a datasource-specific PATCH/update ONLY on its success and with mutation_contract.runOnlyIf. No change means no write. Bind the ID and patch from mutation_contract; never expand missing patch keys to null or empty strings.`,
+      "Gate Save while open/prepare/write are loading. Preserve the editor on failure. Refresh affected queries and close/reset only after the actual mutation succeeds; refresh actions are not assumed to complete in order."
+    ],
+    limitations: [
+      "Requires an already-loaded bounded raw row array and a single stable scalar ID. This generates wiring only; it does not create resources or persist data.",
+      "Only text, finite number, ISO date-only and boolean fields are covered; text/number fields can opt into dropdown choices. Required/nullable/trim are explicit opt-ins; domain constraints, authorization and optimistic concurrency must be enforced separately.",
+      "Dropdown option queries must already return bounded raw arrays with matching ID types and include the current value, including inactive owners when necessary. Missing options are not permission to clear stored relationships. Validate membership/authorization separately; this helper does not create or execute option queries.",
+      "Draft tracks native change events, not every displayed input value. Programmatic field changes must update the draft explicitly. Browser-verify that all change events fire, including both checkbox transitions."
+    ]
+  };
+}
+createRequire(import.meta.url);
+var TableQuotaError = class extends Error {
+  code = "TJDB_TABLE_LIMIT_REACHED";
+  status = 451;
+  retryable = false;
+  constructor() {
+    super("The workspace has reached its ToolJet Database table limit. Stop creating tables. Ask the user to reuse existing tables, free table capacity, or increase the workspace allowance before continuing. Keep resources already created; do not delete tables automatically.");
+    this.name = "TableQuotaError";
+  }
+};
+function tableQuotaError(error) {
+  const seen = /* @__PURE__ */ new Set();
+  while (error instanceof Error && !seen.has(error)) {
+    if (error instanceof TableQuotaError)
+      return error;
+    seen.add(error);
+    error = error.cause;
+  }
+  return void 0;
+}
+createRequire(import.meta.url);
+function ok(value) {
+  return { content: [{ type: "text", text: JSON.stringify(value) }] };
+}
+function fail(err) {
+  const message = err instanceof Error ? err.message : String(err);
+  const quota = tableQuotaError(err);
+  const text2 = quota ? JSON.stringify({ error: {
+    code: quota.code,
+    status: quota.status,
+    retryable: quota.retryable,
+    message: quota.message,
+    details: message
+  } }) : `Error: ${message}`;
+  return { content: [{ type: "text", text: text2 }], isError: true };
+}
+var schemas = /* @__PURE__ */ new Map();
+function exposeActions(source, definitions, selector = "action") {
+  source.description += " Individually exposed operations: " + definitions.map((action) => action.name).join(", ") + ".";
+  const handler = source.handler;
+  return definitions.map(({ action, required: required2, optional = [], ...definition }) => {
+    let schema = schemas.get(definition.name);
+    if (!schema) {
+      const fields = {};
+      for (const key of [...required2, ...optional]) {
+        if (key === selector || !source.inputSchema[key])
+          throw new Error(`Invalid action field: ${definition.name}.${key}`);
+        fields[key] = source.inputSchema[key];
+      }
+      schema = external_exports.object(fields).required(Object.fromEntries(required2.map((key) => [key, true]))).strict();
+      if (required2.includes("confirm"))
+        schema = schema.extend({ confirm: external_exports.literal(true) });
+      schemas.set(definition.name, schema);
+    }
+    const input = schema;
+    return {
+      ...definition,
+      strictInput: true,
+      inputSchema: input.shape,
+      async handler(args) {
+        try {
+          return await handler({ ...input.parse(args), [selector]: action });
+        } catch (error) {
+          return fail(error);
+        }
+      }
+    };
+  });
+}
+createRequire(import.meta.url);
+var userRole = external_exports.enum(["admin", "builder", "end-user"]);
+var userStatus = external_exports.enum(["active", "archived", "invited"]);
+var listWorkspaceAppsInput = external_exports.object({
+  page: external_exports.number().int().positive().optional(),
+  search_text: external_exports.string().trim().max(100).describe("Filter by app name.").optional(),
+  folder_id: external_exports.string().uuid().describe("Folder ID returned by list_workspace_folders.").optional()
+}).strict();
+var listWorkspaceFoldersInput = external_exports.object({
+  search_text: external_exports.string().trim().max(100).describe("Case-insensitive folder-name search.").optional()
+}).strict();
+function listWorkspaceAppsTool(client) {
+  return {
+    name: "list_workspace_apps",
+    title: "List Workspace Apps",
+    strictInput: true,
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      openWorldHint: false
+    },
+    description: "List front-end apps in the workspace pinned to the current ToolJet connection, with pagination, app-name search, and optional folder_id filtering. Discover folder IDs with list_workspace_folders. Each app includes folders: [{id,name}] (empty when unfiled). The top-level folder describes the selected folder, or is null. meta.workspace_folder_count counts visible app folders; meta.folder_app_count counts matching apps in the selected folder (null without a folder filter). meta.total_count remains the workspace-wide count of matching apps even with folder_id; use meta.folder_app_count for the folder. This cannot inspect or switch to another workspace.",
+    inputSchema: listWorkspaceAppsInput.shape,
+    async handler(input) {
+      try {
+        const args = listWorkspaceAppsInput.parse(input);
+        return ok(await client.listWorkspaceApps({ page: args.page, searchText: args.search_text, folderId: args.folder_id }));
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  };
+}
+function listWorkspaceFoldersTool(client) {
+  return {
+    name: "list_workspace_folders",
+    title: "List Workspace Folders",
+    strictInput: true,
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      openWorldHint: false
+    },
+    description: "List visible front-end app folders in the workspace pinned to the current ToolJet connection. Returns folders: [{id,name,app_count}] and meta.total_count (matching folders). app_count counts apps visible to you. search_text filters folder names, not app names. Includes empty folders when ToolJet permits you to see them. Pass a returned id as folder_id to list_workspace_apps to read that folder\u2019s apps with pagination and app-name search. OAuth connections require the apps scope; existing ToolJet permissions still apply.",
+    inputSchema: listWorkspaceFoldersInput.shape,
+    async handler(input) {
+      try {
+        const args = listWorkspaceFoldersInput.parse(input);
+        return ok(await client.listWorkspaceFolders({ searchText: args.search_text }));
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  };
+}
+function listWorkspaceUsersTool(client) {
+  return {
+    name: "list_workspace_users",
+    title: "List Workspace Users",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      openWorldHint: false
+    },
+    description: "List users in the workspace pinned to the current ToolJet connection. Supports pagination, search, and status filtering. OAuth connections require the workspace_users scope.",
+    inputSchema: {
+      page: external_exports.number().int().positive().optional(),
+      search_text: external_exports.string().trim().max(100).optional(),
+      filter_status: userStatus.optional()
+    },
+    async handler(args) {
+      try {
+        return ok(await client.listWorkspaceUsers({
+          page: args.page,
+          searchText: args.search_text,
+          status: args.filter_status
+        }));
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  };
+}
+function required(value, label) {
+  if (!value)
+    throw new Error(`${label} is required for this action.`);
+  return value;
+}
+var manageWorkspaceUsersInput = external_exports.object({
+  action: external_exports.enum(["invite", "update", "archive", "unarchive"]),
+  organization_user_id: external_exports.string().uuid().optional(),
+  email: external_exports.string().email().optional(),
+  first_name: external_exports.string().trim().max(99).optional(),
+  last_name: external_exports.string().trim().max(99).optional(),
+  role: userRole.optional(),
+  group_ids: external_exports.array(external_exports.string().uuid()).max(100).optional(),
+  user_metadata: external_exports.record(external_exports.string(), external_exports.unknown()).optional(),
+  confirm: external_exports.boolean().optional()
+}).strict();
+function manageWorkspaceUsersTool(client) {
+  return {
+    name: "manage_workspace_users",
+    title: "Manage Workspace Users",
+    strictInput: true,
+    // invite is additive, but update overwrites a member's role and archive revokes their access to
+    // the workspace, so the hint covers its widest action.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
+    description: "Manage users only in the workspace pinned to the current ToolJet connection. OAuth connections require the workspace_users scope. Invite, update, archive, and unarchive require confirm:true. Updates can change role, add existing custom group_ids while preserving all other memberships, and merge supplied user_metadata keys while preserving other keys. Empty group_ids never removes groups. first_name/last_name are only supported for invitations: editing an existing name requires a Super Admin in ToolJet and is refused by this workspace-scoped tool before any mutation. Updates are read back before success is reported. Use manage_workspace_groups remove_member for explicit membership removal. Updates cannot change email or passwords. Changing a role to end-user also transfers any apps owned by that user to the acting admin under ToolJet's existing behavior; disclose this before confirmation. Invite accepts email, optional names/role/group_ids; archive/unarchive accepts only organization_user_id. Never substitute role or membership changes for a rejected name edit, or bypass the connection owner's ToolJet permissions.",
+    inputSchema: manageWorkspaceUsersInput.shape,
+    async handler(input) {
+      try {
+        const args = manageWorkspaceUsersInput.parse(input);
+        const allowed = args.action === "invite" ? ["email", "first_name", "last_name", "role", "group_ids"] : args.action === "update" ? ["organization_user_id", "first_name", "last_name", "role", "group_ids", "user_metadata"] : ["organization_user_id"];
+        for (const key of Object.keys(args)) {
+          if (!["action", "confirm", ...allowed].includes(key))
+            throw new Error(`${key} is not supported for ${args.action}; no changes were made.`);
+        }
+        if (args.action === "update" && (args.first_name !== void 0 || args.last_name !== void 0)) {
+          throw new Error("Name changes require a Super Admin and are not supported by this workspace-scoped tool. No changes were made. Ask a Super Admin to edit the name in ToolJet.");
+        }
+        if (args.confirm !== true) {
+          throw new Error(`${args.action} requires confirm:true after checking the exact workspace user.`);
+        }
+        if (args.action === "invite") {
+          await client.inviteWorkspaceUser({
+            email: required(args.email, "email"),
+            role: args.role ?? "end-user",
+            firstName: args.first_name,
+            lastName: args.last_name,
+            groupIds: args.group_ids
+          });
+          return ok({ invited: true, email: args.email });
+        }
+        const organizationUserId = required(args.organization_user_id, "organization_user_id");
+        if (args.action === "archive" || args.action === "unarchive") {
+          await client.setWorkspaceUserArchived(organizationUserId, args.action === "archive");
+          return ok({ organization_user_id: organizationUserId, status: args.action === "archive" ? "archived" : "active" });
+        }
+        if (args.first_name === void 0 && args.last_name === void 0 && args.role === void 0 && !args.group_ids?.length && args.user_metadata === void 0) {
+          throw new Error("update requires at least one changed field.");
+        }
+        const result = await client.updateWorkspaceUser(organizationUserId, {
+          firstName: args.first_name,
+          lastName: args.last_name,
+          role: args.role,
+          addGroupIds: args.group_ids,
+          userMetadata: args.user_metadata
+        });
+        return ok({
+          organization_user_id: organizationUserId,
+          ...result,
+          ...!result.updated ? { already_satisfied: true } : {}
+        });
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  };
+}
+var workspaceUsers = [
+  {
+    action: "invite",
+    name: "invite_workspace_user",
+    title: "Invite Workspace User",
+    description: "Send an email invitation to the pinned workspace. Requires confirm:true for the exact recipient and access. Role defaults to end-user; optional group_ids add existing custom groups. Requires workspace_users OAuth scope and ToolJet permissions. Do not automatically retry an uncertain send.",
+    required: ["email", "confirm"],
+    optional: ["first_name", "last_name", "role", "group_ids"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true }
+  },
+  {
+    action: "update",
+    name: "update_workspace_user",
+    title: "Update Workspace User",
+    description: "Change a workspace member role, add custom group memberships, or merge supplied metadata keys. Preserves other memberships and metadata; empty group_ids removes nothing. Changing role to end-user transfers owned apps to the acting admin: disclose before confirm:true. Cannot change names, email, or passwords. Requires workspace_users scope and ToolJet permissions; reads back updates.",
+    required: ["organization_user_id", "confirm"],
+    optional: ["role", "group_ids", "user_metadata"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
+  },
+  {
+    action: "archive",
+    name: "archive_workspace_user",
+    title: "Archive Workspace User",
+    description: "Archive the exact member of the pinned workspace and revoke their workspace access. Requires confirm:true, workspace_users OAuth scope, and ToolJet permissions.",
+    required: ["organization_user_id", "confirm"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
+  },
+  {
+    action: "unarchive",
+    name: "unarchive_workspace_user",
+    title: "Unarchive Workspace User",
+    description: "Restore an archived member to active status in the pinned workspace. Requires confirm:true, workspace_users OAuth scope, and ToolJet permissions.",
+    required: ["organization_user_id", "confirm"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
+  }
+];
+function workspaceUserActionTools(source) {
+  return exposeActions(source, workspaceUsers);
+}
+createRequire(import.meta.url);
+var COMPONENT_FX_GUIDANCE = "For properties/styles/validation with an FX toggle, use `{ value: <expression>, fxActive: true }` only for bindings/conditions/calculations the normal control cannot express. Keep defaults and panel-editable constants (including `{{true}}`/`{{false}}`, numbers, selections, colors) out of FX. For nested Table columns/buttons/options and KeyValuePair fields, add the property key (e.g. `columnVisibility`, `disableButton`, `fieldVisibility`, `isEditable`) to that object's `fxActiveFields`, preserving other entries. ";
+var COMPONENT_FX_UPDATE_GUIDANCE = COMPONENT_FX_GUIDANCE + "Updates must include both `value` and `fxActive`; revert with `{ value: <constant>, fxActive: false }`. For nested Table fields, remove only reverted property keys from `fxActiveFields`. KeyValuePair arrays merge by index; verify flag removals and report retained flags. ";
 export {
+  workspaceUserActionTools as $,
+  normalizeQueryOptions as A,
+  validateQueryOptions as B,
+  COMPONENT_FX_UPDATE_GUIDANCE as C,
+  arithmeticWriteWarning as D,
+  COMPONENT_FX_GUIDANCE as E,
+  sameReadSource as F,
+  GUI_LIST_ROWS_KEYS as G,
+  extractRowCount as H,
+  emptyViewerOnlyParams as I,
+  emptyParamsNote as J,
+  unresolvedNote as K,
   LARGE_READ_ROW_THRESHOLD as L,
-  parse as a,
-  bindingSpans as b,
-  assertPersistableQueryToggles as c,
-  assertWorkflowQueryOptions as d,
-  normalizeQueryOptions as e,
-  assessQueryRead as f,
-  arithmeticWriteWarning as g,
-  resolvedReadRefusal as h,
-  issueMessages as i,
-  extractRowCount as j,
-  emptyViewerOnlyParams as k,
+  declaredParameterDefaults as M,
+  inPackSet as N,
+  listWorkspaceAppsTool as O,
+  listWorkspaceFoldersTool as P,
+  listWorkspaceUsersTool as Q,
+  manageWorkspaceUsersTool as R,
+  SQL_DIALECT as S,
+  TableQuotaError as T,
+  capabilityRequestSchema as U,
+  getWorkflowCapabilities as V,
+  lint as W,
+  apply as X,
+  deleteNode as Y,
+  editContractSchema as Z,
+  generateEditContract as _,
+  activePackSet as a,
+  registerComponentSchemas as a0,
+  newPackSet as a1,
+  allComponentSchemas as a2,
+  getCatalog as b,
+  getLegacyComponentReplacement as c,
+  bindingSpans as d,
+  assertPersistableQueryToggles as e,
+  fail as f,
+  getComponentSchema as g,
+  assertWorkflowQueryOptions as h,
+  internalComponentTypeNote as i,
+  exposeActions as j,
+  assessQueryRead as k,
   lintBindingNames as l,
-  emptyParamsNote as m,
+  resolvedReadRefusal as m,
   normalizeWorkflowQueryOptions as n,
-  normalizeQueryToggles as o,
-  parseExpression as p,
-  queryToggleIssues as q,
-  resolveStaticBindings as r,
-  sameReadSource as s,
-  toggleRewriteWarning as t,
-  unresolvedNote as u,
-  validateQueryOptions as v,
-  workflowMappingMatches as w
+  ok as o,
+  resolveStaticBindings as p,
+  applyResolvedBindings as q,
+  require_lib as r,
+  sqlConnectorPath as s,
+  tableQuotaError as t,
+  connectorLabel as u,
+  normalizeQueryToggles as v,
+  workflowMappingMatches as w,
+  toggleRewriteWarning as x,
+  issueMessages as y,
+  queryToggleIssues as z
 };

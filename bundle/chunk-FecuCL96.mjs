@@ -1,6 +1,5 @@
 import { createRequire } from "node:module";
-import { B as BindingFlag, S as ScopeFlag, a as ScopeHandler, N as NameType, b as Scope } from "./chunk-ryBkEJai.mjs";
-import { aR as ParseErrorEnum, t as tt, aC as types, v as tokenIsLiteralPropertyName, E as Errors, aB as tokenIsKeyword, aA as tokenLabelName, aS as tokenIsIdentifier, aT as tokenIsKeywordOrIdentifier, aZ as tokenIsFlowInterfaceOrTypeOrOpaque, an as comma, X as equalsTo, am as colon, ap as rightParenthesis, R as leftCurlyBrace, Y as verticalBar, C as greaterThan, D as lessThan, $ as questionMark, W as dot, a_ as isIteratorStart, H as asterisk, G as slash, o as rightCurlyBrace, O as space, M as tab } from "./chunk-DOMNI22J.mjs";
+import { aB as ParseErrorEnum, t as tt, B as BindingFlag, e as ScopeFlag, al as types, d as tokenIsLiteralPropertyName, E as Errors, aj as tokenIsKeyword, ai as tokenLabelName, aC as tokenIsIdentifier, aD as tokenIsKeywordOrIdentifier, aM as tokenIsFlowInterfaceOrTypeOrOpaque, a5 as comma, D as equalsTo, a4 as colon, a7 as rightParenthesis, x as leftCurlyBrace, F as verticalBar, g as greaterThan, l as lessThan, I as questionMark, C as dot, aN as isIteratorStart, j as asterisk, s as slash, a as rightCurlyBrace, u as space, o as tab, aJ as ScopeHandler, aK as NameType, aL as Scope } from "./chunk-5U2_zDJi.mjs";
 createRequire(import.meta.url);
 var FlowScope = class extends Scope {
   // declare function foo(): type;

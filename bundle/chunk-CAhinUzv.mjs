@@ -1,6 +1,5 @@
 import { createRequire } from "node:module";
-import { B as BindingFlag, S as ScopeFlag, C as ClassElementType, a as ScopeHandler, N as NameType, b as Scope } from "./chunk-ryBkEJai.mjs";
-import { E as Errors, t as tt, n as rightSquareBracket, o as rightCurlyBrace, p as isStrictBindReservedWord, q as isStrictBindOnlyReservedWord, S as SourceLocation, s as isIdentifierChar, u as hasNewLine, v as tokenIsLiteralPropertyName, w as skipWhiteSpace, x as skipWhiteSpaceInLine, y as lineBreakG, z as isNewLine, A as isWhitespace, B as dash, C as greaterThan, D as lessThan, F as exclamationMark, G as slash, H as asterisk, I as paragraphSeparator, J as lineSeparator, K as lineFeed, L as carriageReturn, M as tab, N as nonBreakingSpace, O as space, P as digit0, Q as digit9, R as leftCurlyBrace, T as leftSquareBracket, U as isIdentifierStart, V as backslash, W as dot, X as equalsTo, Y as verticalBar, Z as caret, _ as atSign, $ as questionMark, a0 as numberSign, a1 as tilde, a2 as plusSign, a3 as ampersand, a4 as percentSign, a5 as apostrophe, a6 as quotationMark, a7 as digit8, a8 as digit7, a9 as digit6, aa as digit5, ab as digit4, ac as digit3, ad as digit2, ae as digit1, af as lowercaseX, ag as uppercaseX, ah as lowercaseO, ai as uppercaseO, aj as lowercaseB, ak as uppercaseB, al as graveAccent, am as colon, an as comma, ao as semicolon, ap as rightParenthesis, aq as leftParenthesis, ar as createPositionWithColumnOffset, as as lowercaseV, at as lowercaseU, au as lowercaseN, av as lowercaseM, aw as uppercaseE, ax as lowercaseE, ay as Position, az as keywords, aA as tokenLabelName, aB as tokenIsKeyword, aC as types, aD as lowercaseG, aE as lowercaseS, aF as lowercaseI, aG as lowercaseY, aH as lowercaseD, aI as underscore, aJ as dollarSign, aK as lowercaseF, aL as lowercaseT, aM as lowercaseR, aN as uppercaseA, aO as uppercaseF, aP as lowercaseA, aQ as isDigit, aR as ParseErrorEnum, aS as tokenIsIdentifier, aT as tokenIsKeywordOrIdentifier, aU as tokenIsTSTypeOperator, aV as tokenIsTSDeclarationStart, aW as tokenIsTemplate, aX as tokenCanStartExpression, aY as tokenOperatorPrecedence } from "./chunk-DOMNI22J.mjs";
+import { E as Errors, t as tt, r as rightSquareBracket, a as rightCurlyBrace, B as BindingFlag, i as isStrictBindReservedWord, b as isStrictBindOnlyReservedWord, S as SourceLocation, c as isIdentifierChar, d as tokenIsLiteralPropertyName, e as ScopeFlag, f as dash, g as greaterThan, l as lessThan, h as exclamationMark, s as slash, j as asterisk, p as paragraphSeparator, k as lineSeparator, m as lineFeed, n as carriageReturn, o as tab, q as nonBreakingSpace, u as space, v as digit0, w as digit9, x as leftCurlyBrace, y as leftSquareBracket, z as isIdentifierStart, A as backslash, C as dot, D as equalsTo, F as verticalBar, G as caret, H as atSign, I as questionMark, J as numberSign, K as tilde, L as plusSign, M as ampersand, N as percentSign, O as apostrophe, P as quotationMark, Q as digit8, R as digit7, T as digit6, U as digit5, V as digit4, W as digit3, X as digit2, Y as digit1, Z as lowercaseX, _ as uppercaseX, $ as lowercaseO, a0 as uppercaseO, a1 as lowercaseB, a2 as uppercaseB, a3 as graveAccent, a4 as colon, a5 as comma, a6 as semicolon, a7 as rightParenthesis, a8 as leftParenthesis, a9 as createPositionWithColumnOffset, aa as lowercaseV, ab as lowercaseU, ac as lowercaseN, ad as lowercaseM, ae as uppercaseE, af as lowercaseE, ag as Position, ah as keywords, ai as tokenLabelName, aj as tokenIsKeyword, ak as ClassElementType, al as types, am as oghamSpaceMark, an as lowercaseG, ao as lowercaseS, ap as lowercaseI, aq as lowercaseY, ar as lowercaseD, as as underscore, at as dollarSign, au as lowercaseF, av as lowercaseT, aw as lowercaseR, ax as uppercaseA, ay as uppercaseF, az as lowercaseA, aA as isDigit, aB as ParseErrorEnum, aC as tokenIsIdentifier, aD as tokenIsKeywordOrIdentifier, aE as tokenIsTSTypeOperator, aF as tokenIsTSDeclarationStart, aG as tokenIsTemplate, aH as tokenCanStartExpression, aI as tokenOperatorPrecedence, aJ as ScopeHandler, aK as NameType, aL as Scope } from "./chunk-5U2_zDJi.mjs";
 createRequire(import.meta.url);
 var OptionFlags = /* @__PURE__ */ ((OptionFlags2) => {
   OptionFlags2[OptionFlags2["AllowAwaitOutsideFunction"] = 1] = "AllowAwaitOutsideFunction";
@@ -593,6 +592,74 @@ var CommentsParser = class extends BaseParser {
     }
   }
 };
+var lineBreak = /\r\n|[\r\n\u2028\u2029]/;
+var lineBreakG = new RegExp(lineBreak.source, "g");
+function isNewLine(code) {
+  switch (code) {
+    case lineFeed:
+    case carriageReturn:
+    case lineSeparator:
+    case paragraphSeparator:
+      return true;
+    default:
+      return false;
+  }
+}
+function hasNewLine(input, start, end) {
+  for (let i = start; i < end; i++) {
+    if (isNewLine(input.charCodeAt(i))) {
+      return true;
+    }
+  }
+  return false;
+}
+var skipWhiteSpace = /(?:\s|\/\/.*|\/\*[^]*?\*\/)*/g;
+var skipWhiteSpaceInLine = /(?:[^\S\n\r\u2028\u2029]|\/\/.*|\/\*.*?\*\/)*/g;
+function isWhitespace(code) {
+  switch (code) {
+    case 9:
+    // CHARACTER TABULATION
+    case 11:
+    // LINE TABULATION
+    case 12:
+    // FORM FEED
+    case space:
+    case nonBreakingSpace:
+    case oghamSpaceMark:
+    case 8192:
+    // EN QUAD
+    case 8193:
+    // EM QUAD
+    case 8194:
+    // EN SPACE
+    case 8195:
+    // EM SPACE
+    case 8196:
+    // THREE-PER-EM SPACE
+    case 8197:
+    // FOUR-PER-EM SPACE
+    case 8198:
+    // SIX-PER-EM SPACE
+    case 8199:
+    // FIGURE SPACE
+    case 8200:
+    // PUNCTUATION SPACE
+    case 8201:
+    // THIN SPACE
+    case 8202:
+    // HAIR SPACE
+    case 8239:
+    // NARROW NO-BREAK SPACE
+    case 8287:
+    // MEDIUM MATHEMATICAL SPACE
+    case 12288:
+    // IDEOGRAPHIC SPACE
+    case 65279:
+      return true;
+    default:
+      return false;
+  }
+}
 var forbiddenNumericSeparatorSiblings = {
   decBinOct: /* @__PURE__ */ new Set([
     dot,
@@ -6716,6 +6783,7 @@ export {
   newArrowHeadScope as e,
   functionFlags as f,
   getOptions as g,
+  isNewLine as i,
   newParameterDeclarationScope as n,
   setInnerComments as s,
   typescript_default as t
